@@ -1,13 +1,15 @@
 from app import app, db
-from app.models import Group
+from app.models import Group, User
 
 # Importer les routes pour qu'elles soient enregistrées
 # Cela fonctionne car app existe déjà dans app/__init__.py
-from app.routes import main, admin, export
+from app.routes import main, admin, export, auth
 
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+        
+        # Créer le groupe par défaut s'il n'existe pas
         if not Group.query.first():
             default_group = Group(
                 name='Défaut',
@@ -16,5 +18,23 @@ if __name__ == '__main__':
             )
             db.session.add(default_group)
             db.session.commit()
+        
+        # Créer un utilisateur admin par défaut s'il n'existe pas
+        # (seulement si aucun utilisateur n'existe)
+        if not User.query.first():
+            default_group = Group.query.first()
+            admin_user = User(
+                name='Admin',
+                email='admin@leviia.local',
+                is_admin=True,
+                group_id=default_group.id if default_group else 1
+            )
+            admin_user.set_password('admin123')  # Mot de passe par défaut
+            db.session.add(admin_user)
+            db.session.commit()
+            print("✅ Utilisateur admin créé avec succès !")
+            print(f"   Email: admin@leviia.local")
+            print(f"   Mot de passe: admin123")
+            print("   Pensez à changer le mot de passe après la première connexion.")
 
     app.run(debug=True)

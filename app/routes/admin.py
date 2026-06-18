@@ -1,10 +1,26 @@
-from flask import render_template, request, redirect, url_for, flash
+from flask import render_template, request, redirect, url_for, flash, abort
+from flask_login import login_required, current_user
 from sqlalchemy.orm import selectinload
 from app import app, db
 from app.models import User, Shift, OnCall, Leave, Group
 
+
+def admin_required(f):
+    """Décorateur pour vérifier que l'utilisateur est admin."""
+    @login_required
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_admin:
+            abort(403)  # Forbidden
+        return f(*args, **kwargs)
+    # Conserver le nom de la fonction originale pour éviter les conflits
+    decorated_function.__name__ = f.__name__
+    decorated_function.__doc__ = f.__doc__
+    return decorated_function
+
+
 # Dashboard admin
 @app.route('/admin')
+@admin_required
 def admin_dashboard():
     users_count = User.query.count()
     shifts_count = Shift.query.count()
@@ -20,14 +36,18 @@ def admin_dashboard():
         groups_count=groups_count,
     )
 
+
 # ==================== GESTION DES GROUPES ====================
 
 @app.route('/admin/groups')
+@admin_required
 def list_groups():
     groups = Group.query.order_by(Group.name).all()
     return render_template('admin/groups.html', groups=groups)
 
+
 @app.route('/admin/groups/add', methods=['GET', 'POST'])
+@admin_required
 def add_group():
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
@@ -58,7 +78,9 @@ def add_group():
 
     return render_template('admin/add_group.html')
 
+
 @app.route('/admin/groups/edit/<int:group_id>', methods=['GET', 'POST'])
+@admin_required
 def edit_group(group_id):
     group = Group.query.get_or_404(group_id)
 
@@ -89,7 +111,9 @@ def edit_group(group_id):
 
     return render_template('admin/edit_group.html', group=group)
 
+
 @app.route('/admin/groups/delete/<int:group_id>')
+@admin_required
 def delete_group(group_id):
     group = Group.query.get_or_404(group_id)
 
@@ -107,9 +131,11 @@ def delete_group(group_id):
 
     return redirect(url_for('list_groups'))
 
+
 # ==================== GESTION DES UTILISATEURS ====================
 
 @app.route('/admin/users')
+@admin_required
 def list_users():
     users = User.query.options(
         selectinload(User.shifts),
@@ -119,7 +145,9 @@ def list_users():
     groups = Group.query.all()
     return render_template('admin/users.html', users=users, groups=groups)
 
+
 @app.route('/admin/users/add', methods=['GET', 'POST'])
+@admin_required
 def add_user():
     groups = Group.query.all()
 
@@ -127,6 +155,7 @@ def add_user():
         name = request.form.get('name', '').strip()
         email = request.form.get('email', '').strip()
         group_id = request.form.get('group_id')
+        password = request.form.get('password', '')
 
         if not all([name, email, group_id]):
             flash('❌ Tous les champs sont obligatoires.', 'danger')
@@ -138,6 +167,11 @@ def add_user():
 
         try:
             new_user = User(name=name, email=email, group_id=int(group_id))
+            if password:
+                new_user.set_password(password)
+            else:
+                # Générer un mot de passe par défaut
+                new_user.set_password('password123')
             db.session.add(new_user)
             db.session.commit()
             flash('✅ Utilisateur ajouté avec succès !', 'success')
@@ -148,7 +182,9 @@ def add_user():
 
     return render_template('admin/add_user.html', groups=groups)
 
+
 @app.route('/admin/users/edit/<int:user_id>', methods=['GET', 'POST'])
+@admin_required
 def edit_user(user_id):
     user = User.query.get_or_404(user_id)
     groups = Group.query.all()
@@ -157,6 +193,8 @@ def edit_user(user_id):
         name = request.form.get('name', '').strip()
         email = request.form.get('email', '').strip()
         group_id = request.form.get('group_id')
+        is_admin = 'is_admin' in request.form
+        password = request.form.get('password', '')
 
         if not all([name, email, group_id]):
             flash('❌ Tous les champs sont obligatoires.', 'danger')
@@ -171,6 +209,9 @@ def edit_user(user_id):
             user.name = name
             user.email = email
             user.group_id = int(group_id)
+            user.is_admin = is_admin
+            if password:
+                user.set_password(password)
             db.session.commit()
             flash('✅ Utilisateur modifié avec succès !', 'success')
             return redirect(url_for('list_users'))
@@ -180,7 +221,9 @@ def edit_user(user_id):
 
     return render_template('admin/edit_user.html', user=user, groups=groups)
 
+
 @app.route('/admin/users/delete/<int:user_id>')
+@admin_required
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
 

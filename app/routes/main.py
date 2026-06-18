@@ -1,4 +1,5 @@
 from flask import render_template, request, redirect, url_for, flash
+from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 from app import app, db
 from app.models import Shift, OnCall, Leave, User, Group
@@ -61,6 +62,7 @@ def _build_calendar_events(shifts, on_calls, leaves):
 
 @app.route('/')
 def index():
+    """Page d'accueil - accessible sans authentification pour voir le calendrier."""
     window_start, window_end = _calendar_window()
     window_start_date = window_start.date()
 
@@ -86,12 +88,14 @@ def index():
 # ========== ROUTES POUR LES CONGÉS ==========
 
 @app.route('/leave')
+@login_required
 def leave():
     leaves = Leave.query.options(joinedload(Leave.user)).order_by(Leave.start_date).all()
     return render_template('leave.html', leaves=leaves)
 
 
 @app.route('/leave/add', methods=['GET', 'POST'])
+@login_required
 def add_leave():
     if request.method == 'POST':
         user_id = request.form.get('user_id')
@@ -136,6 +140,7 @@ def add_leave():
 
 
 @app.route('/leave/delete/<int:leave_id>')
+@login_required
 def delete_leave(leave_id):
     leave_record = Leave.query.get_or_404(leave_id)
     try:
@@ -151,12 +156,14 @@ def delete_leave(leave_id):
 # ========== ROUTES POUR LES ASTREINTES ==========
 
 @app.route('/oncall')
+@login_required
 def oncall():
     on_calls = OnCall.query.options(joinedload(OnCall.user)).order_by(OnCall.start_time).all()
     return render_template('oncall.html', on_calls=on_calls)
 
 
 @app.route('/oncall/add', methods=['GET', 'POST'])
+@login_required
 def add_oncall():
     if request.method == 'POST':
         user_id = request.form.get('user_id')
@@ -203,6 +210,7 @@ def add_oncall():
 
 
 @app.route('/oncall/delete/<int:oncall_id>')
+@login_required
 def delete_oncall(oncall_id):
     oncall = OnCall.query.get_or_404(oncall_id)
     try:
@@ -218,12 +226,14 @@ def delete_oncall(oncall_id):
 # ========== ROUTES POUR LES SHIFTS ==========
 
 @app.route('/schedule')
+@login_required
 def schedule():
     shifts = Shift.query.options(joinedload(Shift.user)).order_by(Shift.start_time).all()
     return render_template('schedule.html', shifts=shifts)
 
 
 @app.route('/schedule/add', methods=['GET', 'POST'])
+@login_required
 def add_shift():
     if request.method == 'POST':
         user_id = request.form.get('user_id')
@@ -305,6 +315,7 @@ def add_shift():
 
 
 @app.route('/schedule/delete/<int:shift_id>')
+@login_required
 def delete_shift(shift_id):
     shift = Shift.query.get_or_404(shift_id)
     try:
