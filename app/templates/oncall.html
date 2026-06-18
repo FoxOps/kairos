@@ -36,7 +36,6 @@
                         <td>{{ oncall.start_time.strftime('%d/%m/%Y %H:%M') }}</td>
                         <td>{{ oncall.end_time.strftime('%d/%m/%Y %H:%M') }}</td>
                         <td>
-                            <!-- ✅ Lien corrigé vers delete_oncall -->
                             <a class="button is-danger is-small" 
                                href="{{ url_for('delete_oncall', oncall_id=oncall.id) }}"
                                onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette astreinte ?')">
