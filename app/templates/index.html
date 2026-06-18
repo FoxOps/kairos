@@ -63,6 +63,9 @@
                 <a class="button is-primary" href="{{ url_for('add_oncall') }}">
                     <i class="fas fa-plus"></i>&nbsp; Ajouter une astreinte
                 </a>
+                <a class="button is-primary" href="{{ url_for('add_leave') }}">
+                    <i class="fas fa-plus"></i>&nbsp; Ajouter un congé
+                </a>
                 <a class="button is-primary" href="{{ url_for('list_users') }}">
                     <i class="fas fa-users"></i>&nbsp; Gérer les utilisateurs
                 </a>
@@ -83,61 +86,17 @@
 {% block extra_js %}
 <!-- FullCalendar JS -->
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/fr.js'></script>
 <script>
-// Attendre que le DOM soit chargé
 document.addEventListener('DOMContentLoaded', function() {
     const calendarEl = document.getElementById('calendar');
-    
-    // Vérifier que calendarEl existe
     if (!calendarEl) {
         console.error("Élément #calendar introuvable !");
         return;
     }
-    
-    // Préparer les événements pour FullCalendar
-    const events = [];
-    
-    // Ajouter les shifts
-    {% if shifts %}
-    {% for shift in shifts %}
-    events.push({
-        title: '{{ shift.user_name }} - {{ shift.shift_type|replace({"morning": "07h-15h", "afternoon": "09h-17h", "evening": "13h-21h"}) }}',
-        start: '{{ shift.start_time.isoformat() }}',
-        end: '{{ shift.end_time.isoformat() }}',
-        className: 'fc-event-shift',
-        url: '{{ url_for("schedule") }}'
-    });
-    {% endfor %}
-    {% endif %}
-    
-    // Ajouter les astreintes
-    {% if on_calls %}
-    {% for oncall in on_calls %}
-    events.push({
-        title: 'Astreinte - {{ oncall.user_name }}',
-        start: '{{ oncall.start_time.isoformat() }}',
-        end: '{{ oncall.end_time.isoformat() }}',
-        className: 'fc-event-oncall',
-        url: '{{ url_for("oncall") }}'
-    });
-    {% endfor %}
-    {% endif %}
-    
-    // Ajouter les congés
-    {% if leaves %}
-    {% for leave in leaves %}
-    events.push({
-        title: 'Congé - {{ leave.user_name }}',
-        start: '{{ leave.start_date.isoformat() }}',
-        end: '{{ leave.end_date.isoformat() }}',
-        className: 'fc-event-leave',
-        allDay: true,
-        url: '{{ url_for("admin_dashboard") }}'
-    });
-    {% endfor %}
-    {% endif %}
 
-    // Initialiser le calendrier
+    const events = {{ events|tojson }};
+
     const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         headerToolbar: {
@@ -147,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         events: events,
         locale: 'fr',
-        firstDay: 1, // Lundi comme premier jour de la semaine
+        firstDay: 1,
         eventTimeFormat: {
             hour: '2-digit',
             minute: '2-digit',

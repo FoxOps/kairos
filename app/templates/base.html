@@ -11,6 +11,7 @@
         .navbar { margin-bottom: 20px; }
         .footer { margin-top: 2rem; padding: 2rem; background-color: #f5f5f5; }
     </style>
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
     <nav class="navbar is-primary" role="navigation">
@@ -21,6 +22,7 @@
             <div class="navbar-start">
                 <a class="navbar-item" href="{{ url_for('schedule') }}"><i class="fas fa-calendar-alt"></i>&nbsp; Shifts</a>
                 <a class="navbar-item" href="{{ url_for('oncall') }}"><i class="fas fa-moon"></i>&nbsp; Astreintes</a>
+                <a class="navbar-item" href="{{ url_for('leave') }}"><i class="fas fa-umbrella-beach"></i>&nbsp; Congés</a>
                 <a class="navbar-item" href="{{ url_for('list_users') }}"><i class="fas fa-users"></i>&nbsp; Utilisateurs</a>
                 <a class="navbar-item" href="{{ url_for('admin_dashboard') }}"><i class="fas fa-cog"></i>&nbsp; Admin</a>
             </div>
@@ -48,5 +50,6 @@
             <p>© 2026 Leviia</p>
         </div>
     </footer>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>
