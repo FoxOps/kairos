@@ -1,6 +1,7 @@
 from icalendar import Calendar, Event
 from datetime import datetime, timedelta
 from app.models import Shift, OnCall
+import pytz
 
 
 def generate_ics_standard(events, calendar_name="Leviia Schedule"):
@@ -14,6 +15,9 @@ def generate_ics_standard(events, calendar_name="Leviia Schedule"):
     Returns:
         str: Contenu du fichier ICS.
     """
+    # Timezone Europe/Paris
+    tz = pytz.timezone('Europe/Paris')
+    
     # Créer un nouveau calendrier
     cal = Calendar()
     cal.add('prodid', '-//Leviia Schedule//fr')
@@ -21,6 +25,7 @@ def generate_ics_standard(events, calendar_name="Leviia Schedule"):
     cal.add('calscale', 'GREGORIAN')
     cal.add('method', 'PUBLISH')
     cal.add('name', calendar_name)
+    cal.add('x-wr-timezone', 'Europe/Paris')
     
     # Ajouter chaque événement au calendrier
     for event_obj in events:
@@ -47,9 +52,18 @@ def generate_ics_standard(events, calendar_name="Leviia Schedule"):
             description = ""
         event.add('description', description)
         
-        # Définir les dates de début et de fin
-        event.add('dtstart', event_obj.start_time)
-        event.add('dtend', event_obj.end_time)
+        # Appliquer le timezone aux dates
+        start_time = event_obj.start_time
+        end_time = event_obj.end_time
+        
+        if start_time.tzinfo is None:
+            start_time = tz.localize(start_time)
+        if end_time.tzinfo is None:
+            end_time = tz.localize(end_time)
+        
+        # Définir les dates de début et de fin avec timezone
+        event.add('dtstart', start_time)
+        event.add('dtend', end_time)
         
         # Ajouter l'événement au calendrier
         cal.add_component(event)
@@ -94,12 +108,16 @@ def generate_ics_leaves(leaves):
     Returns:
         str: Contenu du fichier ICS.
     """
+    # Timezone Europe/Paris
+    tz = pytz.timezone('Europe/Paris')
+    
     cal = Calendar()
     cal.add('prodid', '-//Leviia Schedule//fr')
     cal.add('version', '2.0')
     cal.add('calscale', 'GREGORIAN')
     cal.add('method', 'PUBLISH')
     cal.add('name', "Leviia Schedule - Congés")
+    cal.add('x-wr-timezone', 'Europe/Paris')
     
     for leave in leaves:
         event = Event()
@@ -107,10 +125,14 @@ def generate_ics_leaves(leaves):
         event.add('summary', f"Congé - {leave.user.name}")
         event.add('description', f"Raison: {leave.reason or 'Non spécifié'}\nUtilisateur: {leave.user.name}")
         
+        # Appliquer le timezone aux dates (les dates sont naives, on les localise)
+        start_date = tz.localize(datetime.combine(leave.start_date, datetime.min.time()))
+        end_date = tz.localize(datetime.combine(leave.end_date + timedelta(days=1), datetime.min.time()))
+        
         # Les congés sont des événements toute la journée
-        event.add('dtstart', leave.start_date)
-        event.add('dtend', leave.end_date + timedelta(days=1))  # +1 jour pour inclure la journée de fin
-        event.add('dtstamp', datetime.now())
+        event.add('dtstart', start_date)
+        event.add('dtend', end_date)
+        event.add('dtstamp', datetime.now(tz))
         
         cal.add_component(event)
     
