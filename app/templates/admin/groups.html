@@ -1,0 +1,72 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title is-2">
+            <i class="fas fa-users"></i> Gestion des groupes
+        </h1>
+
+        <div class="buttons">
+            <a class="button is-primary" href="{{ url_for('add_group') }}">
+                <i class="fas fa-plus"></i>&nbsp; Ajouter un groupe
+            </a>
+            <a class="button is-light" href="{{ url_for('admin_dashboard') }}">
+                Retour au tableau de bord
+            </a>
+        </div>
+
+        {% if groups %}
+        <div class="table-container">
+            <table class="table is-fullwidth is-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nom</th>
+                        <th>Fait partie de Schedule</th>
+                        <th>Fait partie de l'astreinte</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for group in groups %}
+                    <tr>
+                        <td>{{ group.id }}</td>
+                        <td>{{ group.name }}</td>
+                        <td>
+                            {% if group.is_part_of_schedule %}
+                                <span class="tag is-success">Oui</span>
+                            {% else %}
+                                <span class="tag is-danger">Non</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if group.is_part_of_oncall %}
+                                <span class="tag is-success">Oui</span>
+                            {% else %}
+                                <span class="tag is-danger">Non</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a class="button is-small is-info" href="{{ url_for('edit_group', group_id=group.id) }}">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a class="button is-small is-danger"
+                               href="{{ url_for('delete_group', group_id=group.id) }}"
+                               onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce groupe ?')">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="notification is-warning">
+            <p>Aucun groupe trouvé.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

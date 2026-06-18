@@ -1,0 +1,55 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Modifier un utilisateur - Leviia{% endblock %}
+
+{% block admin_content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title is-2">
+            <i class="fas fa-user-edit"></i> Modifier un utilisateur
+        </h1>
+
+        <form method="POST" action="{{ url_for('edit_user', user_id=user.id) }}">
+            <div class="box">
+                <div class="field">
+                    <label class="label">Nom</label>
+                    <div class="control">
+                        <input class="input" type="text" name="name" value="{{ user.name }}" required>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Email</label>
+                    <div class="control">
+                        <input class="input" type="email" name="email" value="{{ user.email }}" required>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Groupe</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            <select name="group_id" required>
+                                {% for group in groups %}
+                                <option value="{{ group.id }}" {% if group.id == user.group_id %}selected{% endif %}>
+                                    {{ group.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="control">
+                        <button class="button is-primary" type="submit">
+                            <i class="fas fa-save"></i>&nbsp; Enregistrer
+                        </button>
+                        <a class="button is-light" href="{{ url_for('list_users') }}">Annuler</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

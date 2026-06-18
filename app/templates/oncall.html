@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Astreintes - Leviia Schedule{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title">
+            <i class="fas fa-moon"></i> Astreintes
+        </h1>
+        
+        <!-- Bouton pour ajouter une astreinte -->
+        <div class="buttons">
+            <a class="button is-primary" href="{{ url_for('add_oncall') }}">
+                <i class="fas fa-plus"></i>&nbsp; Ajouter une astreinte
+            </a>
+        </div>
+        
+        <!-- Tableau des astreintes -->
+        <div class="table-container">
+            <table class="table is-fullwidth is-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Utilisateur</th>
+                        <th>Début</th>
+                        <th>Fin</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for oncall in on_calls %}
+                    <tr>
+                        <td>{{ oncall.id }}</td>
+                        <td>{{ oncall.user.name }}</td>
+                        <td>{{ oncall.start_time.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>{{ oncall.end_time.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>
+                            <!-- ✅ Lien corrigé vers delete_oncall -->
+                            <a class="button is-danger is-small" 
+                               href="{{ url_for('delete_oncall', oncall_id=oncall.id) }}"
+                               onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette astreinte ?')">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

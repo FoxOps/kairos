@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Leviia{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { padding-top: 20px; }
+        .navbar { margin-bottom: 20px; }
+        .footer { margin-top: 2rem; padding: 2rem; background-color: #f5f5f5; }
+    </style>
+</head>
+<body>
+    <nav class="navbar is-primary" role="navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="{{ url_for('index') }}"><strong>Leviia</strong></a>
+        </div>
+        <div class="navbar-menu">
+            <div class="navbar-start">
+                <a class="navbar-item" href="{{ url_for('schedule') }}"><i class="fas fa-calendar-alt"></i>&nbsp; Shifts</a>
+                <a class="navbar-item" href="{{ url_for('oncall') }}"><i class="fas fa-moon"></i>&nbsp; Astreintes</a>
+                <a class="navbar-item" href="{{ url_for('list_users') }}"><i class="fas fa-users"></i>&nbsp; Utilisateurs</a>
+                <a class="navbar-item" href="{{ url_for('admin_dashboard') }}"><i class="fas fa-cog"></i>&nbsp; Admin</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="section">
+        <div class="container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="notification is-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+    </section>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="content has-text-centered">
+            <p>© 2026 Leviia</p>
+        </div>
+    </footer>
+</body>
+</html>

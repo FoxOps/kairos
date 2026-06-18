@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Emploi du temps - Leviia Schedule{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title">
+            <i class="fas fa-calendar-alt"></i> Emploi du temps
+        </h1>
+        
+        <!-- Bouton pour ajouter un shift -->
+        <div class="buttons">
+            <a class="button is-primary" href="{{ url_for('add_shift') }}">
+                <i class="fas fa-plus"></i>&nbsp; Ajouter un shift
+            </a>
+        </div>
+        
+        <!-- Tableau des shifts -->
+        <div class="table-container">
+            <table class="table is-fullwidth is-striped">
+                <thead>
+                    <tr>
+                        <th>Utilisateur</th>
+                        <th>Type de shift</th>
+                        <th>Date</th>
+                        <th>Heure de début</th>
+                        <th>Heure de fin</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for shift in shifts %}
+                    <tr>
+                        <td>{{ shift.user.name }}</td>
+                        <td>
+                            {% if shift.shift_type == 'morning' %}07h-15h
+                            {% elif shift.shift_type == 'afternoon' %}09h-17h
+                            {% elif shift.shift_type == 'evening' %}13h-21h
+                            {% else %}{{ shift.shift_type }}{% endif %}
+                        </td>
+                        <td>{{ shift.date.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ shift.start_time.strftime('%H:%M') }}</td>
+                        <td>{{ shift.end_time.strftime('%H:%M') }}</td>
+                        <td>
+                            <a class="button is-danger is-small" href="{{ url_for('delete_shift', shift_id=shift.id) }}">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

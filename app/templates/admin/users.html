@@ -1,0 +1,57 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Gestion des utilisateurs - Leviia Schedule{% endblock %}
+
+{% block admin_content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title">
+            <i class="fas fa-users"></i> Gestion des utilisateurs
+        </h1>
+        
+        <!-- Bouton pour ajouter un utilisateur -->
+        <div class="buttons">
+            <a class="button is-primary" href="{{ url_for('add_user') }}">
+                <i class="fas fa-plus"></i>&nbsp; Ajouter un utilisateur
+            </a>
+        </div>
+        
+        <!-- Tableau des utilisateurs -->
+        <div class="table-container">
+            <table class="table is-fullwidth is-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nom</th>
+                        <th>Email</th>
+                        <th>Shifts</th>
+                        <th>Astreintes</th>
+                        <th>Congés</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.name }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.shifts|length }}</td>
+                        <td>{{ user.on_calls|length }}</td>
+                        <td>{{ user.leaves|length }}</td>
+                        <td>
+                            <a class="button is-small is-warning" href="{{ url_for('edit_user', user_id=user.id) }}">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a class="button is-small is-danger" href="{{ url_for('delete_user', user_id=user.id) }}" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

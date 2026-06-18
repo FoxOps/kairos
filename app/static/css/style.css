@@ -1,0 +1,165 @@
+   /* === Mode sombre : Variables et base === */
+    .dark-mode {
+        --bg-dark: #1a1a1a;
+        --bg-darker: #121212;
+        --text-light: #e0e0e0;
+        --text-lighter: #ffffff;
+        --border-dark: #363636;
+    }
+    
+    /* Background du body en mode sombre */
+    .dark-mode body {
+        background-color: var(--bg-dark) !important;
+        color: var(--text-light) !important;
+        min-height: 100vh;
+    }
+    
+    /* === Navbar === */
+    .dark-mode .navbar {
+        background-color: var(--bg-darker) !important;
+    }
+    .dark-mode .navbar-item,
+    .dark-mode .navbar-burger,
+    .dark-mode .navbar-link {
+        color: var(--text-light) !important;
+    }
+    .dark-mode .navbar-item:hover,
+    .dark-mode .navbar-link:hover {
+        background-color: var(--border-dark) !important;
+        color: var(--text-lighter) !important;
+    }
+    
+    /* === Boxes, Notifications, Cards === */
+    .dark-mode .box,
+    .dark-mode .notification,
+    .dark-mode .card,
+    .dark-mode .modal-card {
+        background-color: var(--bg-darker) !important;
+        border-color: var(--border-dark) !important;
+        color: var(--text-light) !important;
+    }
+    
+    /* === Boutons === */
+    .dark-mode .button {
+        background-color: var(--border-dark) !important;
+        color: var(--text-light) !important;
+        border-color: var(--border-dark) !important;
+    }
+    .dark-mode .button:hover {
+        background-color: #4a4a4a !important;
+    }
+    .dark-mode .button.is-primary { background-color: #3273dc !important; }
+    .dark-mode .button.is-info { background-color: #48c774 !important; }
+    .dark-mode .button.is-warning { background-color: #ffdd57 !important; color: #363636 !important; }
+    .dark-mode .button.is-success { background-color: #23d160 !important; }
+    .dark-mode .button.is-danger { background-color: #f14668 !important; }
+    
+    /* === Tableaux === */
+    .dark-mode .table {
+        background-color: var(--bg-darker) !important;
+        color: var(--text-light) !important;
+    }
+    .dark-mode .table th,
+    .dark-mode .table td {
+        border-color: var(--border-dark) !important;
+    }
+    .dark-mode .table thead th {
+        background-color: var(--border-dark) !important;
+        color: var(--text-lighter) !important;
+    }
+    .dark-mode .table tbody tr:nth-child(even) {
+        background-color: #242424 !important;
+    }
+    .dark-mode .table tbody tr:hover {
+        background-color: var(--border-dark) !important;
+    }
+    
+    /* === FullCalendar === */
+    .dark-mode .fc {
+        background-color: var(--bg-darker) !important;
+        color: var(--text-light) !important;
+    }
+    .dark-mode .fc-today {
+        background-color: var(--border-dark) !important;
+    }
+    .dark-mode .fc-header-toolbar {
+        background-color: var(--bg-darker) !important;
+    }
+    .dark-mode .fc-col-header-cell,
+    .dark-mode .fc-day-header {
+        background-color: var(--border-dark) !important;
+        border-color: var(--border-dark) !important;
+        color: var(--text-lighter) !important;
+    }
+    .dark-mode .fc-day {
+        background-color: var(--bg-darker) !important;
+        border-color: var(--border-dark) !important;
+        color: var(--text-light) !important;
+    }
+    .dark-mode .fc-day:hover {
+        background-color: var(--border-dark) !important;
+    }
+    
+    /* === Inputs, Textareas, Selects === */
+    .dark-mode input,
+    .dark-mode textarea,
+    .dark-mode select,
+    .dark-mode .select {
+        background-color: var(--bg-darker) !important;
+        border-color: var(--border-dark) !important;
+        color: var(--text-light) !important;
+    }
+    
+    /* === Tags === */
+    .dark-mode .tag {
+        background-color: var(--border-dark) !important;
+        color: var(--text-light) !important;
+    }
+    .dark-mode .tag.is-primary { background-color: #3273dc !important; }
+    .dark-mode .tag.is-info { background-color: #48c774 !important; }
+    .dark-mode .tag.is-warning { background-color: #ffdd57 !important; color: #363636 !important; }
+    .dark-mode .tag.is-success { background-color: #23d160 !important; }
+    .dark-mode .tag.is-danger { background-color: #f14668 !important; }
+    
+    /* === Footer === */
+    .dark-mode .footer {
+        background-color: var(--bg-darker) !important;
+        color: var(--text-light) !important;
+    }
+    
+    /* === Section === */
+    .dark-mode .section {
+        background-color: var(--bg-dark) !important;
+        color: var(--text-light) !important;
+    }
+
+    /* Notifications colorées selon leur catégorie */
+    .notification.is-success {
+        background-color: #23d160 !important;
+        color: #fff !important;
+    }
+    
+    .notification.is-error {
+        background-color: #f14668 !important;
+        color: #fff !important;
+    }
+    
+    .notification.is-warning {
+        background-color: #ffdd57 !important;
+        color: #363636 !important;
+    }
+    
+    .notification.is-info {
+        background-color: #3273dc !important;
+        color: #fff !important;
+    }
+    
+    /* Bouton de fermeture des notifications */
+    .notification .delete {
+        background-color: transparent !important;
+        color: inherit !important;
+    }
+    
+    .notification .delete:hover {
+        background-color: rgba(0, 0, 0, 0.1) !important;
+    }

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Congés - Leviia Schedule{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title">
+            <i class="fas fa-umbrella-beach"></i> Congés
+        </h1>
+        
+        <!-- Bouton pour ajouter un congé -->
+        <div class="buttons">
+            <a class="button is-primary" href="{{ url_for('add_leave') }}">
+                <i class="fas fa-plus"></i>&nbsp; Ajouter un congé
+            </a>
+        </div>
+        
+        <!-- Tableau des congés -->
+        <div class="table-container">
+            <table class="table is-fullwidth is-striped">
+                <thead>
+                    <tr>
+                        <th>Utilisateur</th>
+                        <th>Début</th>
+                        <th>Fin</th>
+                        <th>Raison</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for leave in leaves %}
+                    <tr>
+                        <td>{{ leave.user.name }}</td>
+                        <td>{{ leave.start_date.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ leave.end_date.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ leave.reason or '-' }}</td>
+                        <td>
+                            <a class="button is-danger is-small" href="{{ url_for('delete_leave', leave_id=leave.id) }}">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title is-2"><i class="fas fa-tachometer-alt"></i> Tableau de bord Admin</h1>
+
+        <div class="columns">
+            <!-- Résumé des utilisateurs -->
+            <div class="column">
+                <div class="box">
+                    <h2 class="subtitle"><i class="fas fa-users"></i> Utilisateurs</h2>
+                    <p>Nombre total : {{ users|length }}</p>
+                    <a class="button is-info is-small mt-2" href="{{ url_for('list_users') }}">
+                        <i class="fas fa-list"></i>&nbsp; Voir la liste
+                    </a>
+                </div>
+            </div>
+
+            <!-- Résumé des groupes -->
+            <div class="column">
+                <div class="box">
+                    <h2 class="subtitle"><i class="fas fa-user-friends"></i> Groupes</h2>
+                    <p>Nombre total : {{ groups|length }}</p>
+                    <a class="button is-info is-small mt-2" href="{{ url_for('list_groups') }}">
+                        <i class="fas fa-list"></i>&nbsp; Voir la liste
+                    </a>
+                </div>
+            </div>
+
+            <!-- Résumé des shifts -->
+            <div class="column">
+                <div class="box">
+                    <h2 class="subtitle"><i class="fas fa-calendar-alt"></i> Shifts</h2>
+                    <p>Nombre total : {{ shifts|length }}</p>
+                    <a class="button is-info is-small mt-2" href="{{ url_for('schedule') }}">
+                        <i class="fas fa-list"></i>&nbsp; Voir la liste
+                    </a>
+                </div>
+            </div>
+
+            <!-- Résumé des astreintes -->
+            <div class="column">
+                <div class="box">
+                    <h2 class="subtitle"><i class="fas fa-moon"></i> Astreintes</h2>
+                    <p>Nombre total : {{ on_calls|length }}</p>
+                    <a class="button is-info is-small mt-2" href="{{ url_for('oncall') }}">
+                        <i class="fas fa-list"></i>&nbsp; Voir la liste
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="box">
+            <h2 class="subtitle"><i class="fas fa-bolt"></i> Actions rapides</h2>
+            <div class="buttons">
+                <a class="button is-primary is-small" href="{{ url_for('add_user') }}">
+                    <i class="fas fa-user-plus"></i>&nbsp; Ajouter un utilisateur
+                </a>
+                <a class="button is-primary is-small" href="{{ url_for('add_group') }}">
+                    <i class="fas fa-user-friends"></i>&nbsp; Ajouter un groupe
+                </a>
+                <a class="button is-success is-small" href="{{ url_for('export_leaves') }}">
+                    <i class="fas fa-file-export"></i>&nbsp; Exporter les congés
+                </a>
+                <a class="button is-success is-small" href="{{ url_for('export_shifts') }}">
+                    <i class="fas fa-file-export"></i>&nbsp; Exporter les shifts
+                </a>
+                <a class="button is-success is-small" href="{{ url_for('export_oncall') }}">
+                    <i class="fas fa-file-export"></i>&nbsp; Exporter les astreintes
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
