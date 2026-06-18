@@ -1,6 +1,6 @@
 from flask import make_response
 from sqlalchemy.orm import joinedload
-from app import app
+from app import app, db
 from app.models import Shift, OnCall, Leave
 from app.utils.ics_exporter import generate_ics_shifts, generate_ics_oncall, generate_ics_leaves
 
