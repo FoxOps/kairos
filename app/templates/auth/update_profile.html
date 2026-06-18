@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier mon profil - Leviia{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="container">
+        <div class="columns is-centered">
+            <div class="column is-6">
+                <div class="box">
+                    <h1 class="title is-4 has-text-centered">Modifier mon profil</h1>
+                    
+                    <form method="POST" action="{{ url_for('update_profile') }}">
+                        <div class="field is-horizontal">
+                            <div class="field-label is-normal">
+                                <label class="label" for="name">Nom</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <div class="control">
+                                        <input class="input" type="text" id="name" name="name" 
+                                               value="{{ user.name }}" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="field is-horizontal">
+                            <div class="field-label is-normal">
+                                <label class="label" for="email">Email</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <div class="control">
+                                        <input class="input" type="email" id="email" name="email" 
+                                               value="{{ user.email }}" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="field is-horizontal">
+                            <div class="field-label is-normal">
+                                <label class="label" for="current_password">Mot de passe actuel</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <div class="control">
+                                        <input class="input" type="password" id="current_password" name="current_password" 
+                                               placeholder="Obligatoire pour changer le mot de passe">
+                                    </div>
+                                    <p class="help is-size-7">
+                                        Obligatoire si vous souhaitez changer votre mot de passe
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="field is-horizontal">
+                            <div class="field-label is-normal">
+                                <label class="label" for="new_password">Nouveau mot de passe</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <div class="control">
+                                        <input class="input" type="password" id="new_password" name="new_password" 
+                                               placeholder="Laisser vide pour ne pas changer">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="field is-horizontal">
+                            <div class="field-label is-normal">
+                                <label class="label" for="confirm_password">Confirmer le mot de passe</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <div class="control">
+                                        <input class="input" type="password" id="confirm_password" name="confirm_password" 
+                                               placeholder="Laisser vide pour ne pas changer">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="field is-grouped is-grouped-centered mt-5">
+                            <div class="control">
+                                <button type="submit" class="button is-primary">
+                                    <span class="icon">
+                                        <i class="fas fa-save"></i>
+                                    </span>
+                                    <span>Enregistrer les modifications</span>
+                                </button>
+                            </div>
+                            <div class="control">
+                                <a href="{{ url_for('profile') }}" class="button is-light">
+                                    Annuler
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

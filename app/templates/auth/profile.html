@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Mon profil - Leviia{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="container">
+        <div class="columns is-centered">
+            <div class="column is-6">
+                <div class="box">
+                    <h1 class="title is-4 has-text-centered">Mon profil</h1>
+                    
+                    <div class="content">
+                        <div class="field is-horizontal">
+                            <div class="field-label is-normal">
+                                <label class="label">Nom</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <p class="control">
+                                        <span class="has-text-weight-semibold">{{ user.name }}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="field is-horizontal">
+                            <div class="field-label is-normal">
+                                <label class="label">Email</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <p class="control">
+                                        <span class="has-text-weight-semibold">{{ user.email }}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="field is-horizontal">
+                            <div class="field-label is-normal">
+                                <label class="label">Groupe</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <p class="control">
+                                        <span class="tag is-info">{{ user.group.name if user.group else 'Aucun' }}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="field is-horizontal">
+                            <div class="field-label is-normal">
+                                <label class="label">Rôle</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field">
+                                    <p class="control">
+                                        {% if user.is_admin %}
+                                            <span class="tag is-danger">Administrateur</span>
+                                        {% else %}
+                                            <span class="tag is-success">Utilisateur</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="field is-grouped is-grouped-centered mt-5">
+                        <div class="control">
+                            <a href="{{ url_for('update_profile') }}" class="button is-primary">
+                                <span class="icon">
+                                    <i class="fas fa-edit"></i>
+                                </span>
+                                <span>Modifier le profil</span>
+                            </a>
+                        </div>
+                        <div class="control">
+                            <a href="{{ url_for('index') }}" class="button is-light">
+                                Retour
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
