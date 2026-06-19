@@ -34,8 +34,9 @@ def generate_ics_standard(events, calendar_name="Leviia Schedule"):
 
         # Gestion des titres, descriptions et dates selon le type d'événement
         if isinstance(event_obj, Shift):
-            title = f"Shift {event_obj.shift_type} - {event_obj.user.name}"
-            description = f"Type: {event_obj.shift_type}\nUtilisateur: {event_obj.user.name}"
+            shift_type_label = event_obj.shift_type.label if event_obj.shift_type else event_obj.shift_type
+            title = f"Shift {shift_type_label} - {event_obj.user.name}"
+            description = f"Type: {shift_type_label}\nUtilisateur: {event_obj.user.name}"
             start_time = event_obj.start_time
             end_time = event_obj.end_time
         elif isinstance(event_obj, OnCall):

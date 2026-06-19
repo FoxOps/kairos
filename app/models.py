@@ -36,13 +36,24 @@ class User(db.Model, UserMixin):
         return f'<User {self.name} ({self.email})>'
 
 
+class ShiftType(db.Model):
+    __tablename__ = 'shift_types'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(20), nullable=False, unique=True)
+    label = db.Column(db.String(20), nullable=False)
+    start_hour = db.Column(db.Integer, nullable=False)
+    end_hour = db.Column(db.Integer, nullable=False)
+
+
 class Shift(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
-    shift_type = db.Column(db.String(20), nullable=False)
+    shift_type_id = db.Column(db.Integer, db.ForeignKey('shift_types.id'), nullable=False, index=True)
     start_time = db.Column(db.DateTime, nullable=False)
     end_time = db.Column(db.DateTime, nullable=False)
     date = db.Column(db.Date, nullable=False, index=True)
+    
+    shift_type = db.relationship('ShiftType', backref='shifts', lazy=True)
 
 
 class OnCall(db.Model):

@@ -2,7 +2,7 @@ from flask import render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 from sqlalchemy.orm import selectinload
 from app import app, db
-from app.models import User, Shift, OnCall, Leave, Group
+from app.models import User, Shift, OnCall, Leave, Group, ShiftType
 from app.utils.decorators import admin_required
 
 
@@ -230,3 +230,129 @@ def delete_user(user_id):
         flash(f'❌ Erreur : {str(e)}', 'danger')
 
     return redirect(url_for('list_users'))
+
+
+# ==================== GESTION DES TYPES DE SHIFTS ====================
+
+@app.route('/admin/shift-types')
+@admin_required
+def list_shift_types():
+    shift_types = ShiftType.query.order_by(ShiftType.name).all()
+    return render_template('admin/shift_types.html', shift_types=shift_types)
+
+
+@app.route('/admin/shift-types/add', methods=['GET', 'POST'])
+@admin_required
+def add_shift_type():
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        label = request.form.get('label', '').strip()
+        start_hour = request.form.get('start_hour')
+        end_hour = request.form.get('end_hour')
+
+        if not all([name, label, start_hour, end_hour]):
+            flash('❌ Tous les champs sont obligatoires.', 'danger')
+            return redirect(url_for('add_shift_type'))
+
+        if ShiftType.query.filter_by(name=name).first():
+            flash('❌ Un type de shift avec ce nom existe déjà.', 'danger')
+            return redirect(url_for('add_shift_type'))
+
+        try:
+            start_hour = int(start_hour)
+            end_hour = int(end_hour)
+            if not (0 <= start_hour < 24) or not (0 <= end_hour < 24):
+                flash('❌ Les heures doivent être comprises entre 0 et 23.', 'danger')
+                return redirect(url_for('add_shift_type'))
+            if start_hour >= end_hour:
+                flash('❌ L\'heure de début doit être antérieure à l\'heure de fin.', 'danger')
+                return redirect(url_for('add_shift_type'))
+
+            new_shift_type = ShiftType(
+                name=name,
+                label=label,
+                start_hour=start_hour,
+                end_hour=end_hour,
+            )
+            db.session.add(new_shift_type)
+            db.session.commit()
+            flash('✅ Type de shift ajouté avec succès !', 'success')
+            return redirect(url_for('list_shift_types'))
+        except ValueError:
+            db.session.rollback()
+            flash('❌ Les heures doivent être des nombres entiers.', 'danger')
+            return redirect(url_for('add_shift_type'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'❌ Erreur : {str(e)}', 'danger')
+
+    return render_template('admin/add_shift_type.html')
+
+
+@app.route('/admin/shift-types/edit/<int:shift_type_id>', methods=['GET', 'POST'])
+@admin_required
+def edit_shift_type(shift_type_id):
+    shift_type = ShiftType.query.get_or_404(shift_type_id)
+
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        label = request.form.get('label', '').strip()
+        start_hour = request.form.get('start_hour')
+        end_hour = request.form.get('end_hour')
+
+        if not all([name, label, start_hour, end_hour]):
+            flash('❌ Tous les champs sont obligatoires.', 'danger')
+            return redirect(url_for('edit_shift_type', shift_type_id=shift_type_id))
+
+        existing_shift_type = ShiftType.query.filter(ShiftType.name == name, ShiftType.id != shift_type_id).first()
+        if existing_shift_type:
+            flash('❌ Un type de shift avec ce nom existe déjà.', 'danger')
+            return redirect(url_for('edit_shift_type', shift_type_id=shift_type_id))
+
+        try:
+            start_hour = int(start_hour)
+            end_hour = int(end_hour)
+            if not (0 <= start_hour < 24) or not (0 <= end_hour < 24):
+                flash('❌ Les heures doivent être comprises entre 0 et 23.', 'danger')
+                return redirect(url_for('edit_shift_type', shift_type_id=shift_type_id))
+            if start_hour >= end_hour:
+                flash('❌ L\'heure de début doit être antérieure à l\'heure de fin.', 'danger')
+                return redirect(url_for('edit_shift_type', shift_type_id=shift_type_id))
+
+            shift_type.name = name
+            shift_type.label = label
+            shift_type.start_hour = start_hour
+            shift_type.end_hour = end_hour
+            db.session.commit()
+            flash('✅ Type de shift modifié avec succès !', 'success')
+            return redirect(url_for('list_shift_types'))
+        except ValueError:
+            db.session.rollback()
+            flash('❌ Les heures doivent être des nombres entiers.', 'danger')
+            return redirect(url_for('edit_shift_type', shift_type_id=shift_type_id))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'❌ Erreur : {str(e)}', 'danger')
+
+    return render_template('admin/edit_shift_type.html', shift_type=shift_type)
+
+
+@app.route('/admin/shift-types/delete/<int:shift_type_id>')
+@admin_required
+def delete_shift_type(shift_type_id):
+    shift_type = ShiftType.query.get_or_404(shift_type_id)
+
+    # Vérifier si le type de shift est utilisé
+    if Shift.query.filter_by(shift_type_id=shift_type_id).first():
+        flash('❌ Impossible de supprimer ce type de shift : il est utilisé dans des shifts existants.', 'danger')
+        return redirect(url_for('list_shift_types'))
+
+    try:
+        db.session.delete(shift_type)
+        db.session.commit()
+        flash('✅ Type de shift supprimé avec succès !', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'❌ Erreur : {str(e)}', 'danger')
+
+    return redirect(url_for('list_shift_types'))

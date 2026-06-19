@@ -1,13 +1,33 @@
 from app import app, db
-from app.models import Group, User
+from app.models import Group, User, ShiftType
 
 # Importer les routes pour qu'elles soient enregistrées
 # Cela fonctionne car app existe déjà dans app/__init__.py
 from app.routes import main, admin, export, auth
 
+# Types de shifts par défaut
+DEFAULT_SHIFT_TYPES = [
+    {'name': 'morning', 'label': '07h-15h', 'start_hour': 7, 'end_hour': 15},
+    {'name': 'afternoon', 'label': '09h-17h', 'start_hour': 9, 'end_hour': 17},
+    {'name': 'evening', 'label': '13h-21h', 'start_hour': 13, 'end_hour': 21},
+]
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+        
+        # Créer les types de shifts par défaut s'ils n'existent pas
+        if not ShiftType.query.first():
+            for shift_type_data in DEFAULT_SHIFT_TYPES:
+                shift_type = ShiftType(
+                    name=shift_type_data['name'],
+                    label=shift_type_data['label'],
+                    start_hour=shift_type_data['start_hour'],
+                    end_hour=shift_type_data['end_hour'],
+                )
+                db.session.add(shift_type)
+            db.session.commit()
+            print("✅ Types de shifts par défaut créés avec succès !")
         
         # Créer le groupe par défaut s'il n'existe pas
         if not Group.query.first():

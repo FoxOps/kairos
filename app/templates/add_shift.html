@@ -29,11 +29,11 @@
                     <label class="label">Type de shift</label>
                     <div class="control">
                         <div class="select is-fullwidth">
-                            <select name="shift_type" required>
+                            <select name="shift_type_id" required>
                                 <option value="" disabled selected>Sélectionner un type</option>
-                                <option value="morning">07h-15h (Matin)</option>
-                                <option value="afternoon">09h-17h (Après-midi)</option>
-                                <option value="evening">13h-21h (Soir)</option>
+                                {% for shift_type in shift_types %}
+                                <option value="{{ shift_type.id }}">{{ shift_type.label }} ({{ shift_type.name }})</option>
+                                {% endfor %}
                             </select>
                         </div>
                     </div>

@@ -33,12 +33,7 @@
                     {% for shift in shifts %}
                     <tr>
                         <td>{{ shift.user.name }}</td>
-                        <td>
-                            {% if shift.shift_type == 'morning' %}07h-15h
-                            {% elif shift.shift_type == 'afternoon' %}09h-17h
-                            {% elif shift.shift_type == 'evening' %}13h-21h
-                            {% else %}{{ shift.shift_type }}{% endif %}
-                        </td>
+                        <td>{{ shift.shift_type.label if shift.shift_type else shift.shift_type }}</td>
                         <td>{{ shift.date.strftime('%d/%m/%Y') }}</td>
                         <td>{{ shift.start_time.strftime('%H:%M') }}</td>
                         <td>{{ shift.end_time.strftime('%H:%M') }}</td>

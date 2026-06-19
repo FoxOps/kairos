@@ -38,6 +38,16 @@
 
             <div class="column is-one-fifth">
                 <div class="box">
+                    <h2 class="subtitle"><i class="fas fa-cogs"></i> Types de shifts</h2>
+                    <p>Gérer les types</p>
+                    <a class="button is-info is-small mt-2" href="{{ url_for('list_shift_types') }}">
+                        <i class="fas fa-list"></i>&nbsp; Voir la liste
+                    </a>
+                </div>
+            </div>
+
+            <div class="column is-one-fifth">
+                <div class="box">
                     <h2 class="subtitle"><i class="fas fa-moon"></i> Astreintes</h2>
                     <p>Nombre total : {{ on_calls_count }}</p>
                     <a class="button is-info is-small mt-2" href="{{ url_for('oncall') }}">
@@ -65,6 +75,9 @@
                 </a>
                 <a class="button is-primary is-small" href="{{ url_for('add_group') }}">
                     <i class="fas fa-user-friends"></i>&nbsp; Ajouter un groupe
+                </a>
+                <a class="button is-primary is-small" href="{{ url_for('add_shift_type') }}">
+                    <i class="fas fa-plus"></i>&nbsp; Ajouter un type de shift
                 </a>
                 <a class="button is-success is-small" href="{{ url_for('export_leaves') }}">
                     <i class="fas fa-file-export"></i>&nbsp; Exporter les congés

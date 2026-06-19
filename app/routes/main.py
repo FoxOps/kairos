@@ -2,7 +2,7 @@ from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 from app import app, db
-from app.models import Shift, OnCall, Leave, User, Group
+from app.models import Shift, OnCall, Leave, User, Group, ShiftType
 from app.utils.helpers import (
     can_add_shift,
     can_add_leave,
@@ -10,15 +10,6 @@ from app.utils.helpers import (
 )
 from app.utils.decorators import admin_required
 from datetime import datetime, timedelta
-
-# Constantes pour les types de shifts
-SHIFT_TYPES = {
-    'morning': {'label': '07h-15h', 'start': 7, 'end': 15},
-    'afternoon': {'label': '09h-17h', 'start': 9, 'end': 17},
-    'evening': {'label': '13h-21h', 'start': 13, 'end': 21},
-}
-
-SHIFT_TYPE_LABELS = {k: v['label'] for k, v in SHIFT_TYPES.items()}
 
 CALENDAR_WINDOW_DAYS = 180
 
@@ -33,7 +24,7 @@ def _build_calendar_events(shifts, on_calls, leaves):
     events = []
 
     for shift in shifts:
-        label = SHIFT_TYPE_LABELS.get(shift.shift_type, shift.shift_type)
+        label = shift.shift_type.label if shift.shift_type else shift.shift_type
         events.append({
             'title': f"{shift.user.name} - {label}",
             'start': shift.start_time.isoformat(),
@@ -277,19 +268,20 @@ def schedule():
 def add_shift():
     if request.method == 'POST':
         user_id = request.form.get('user_id')
-        shift_type = request.form.get('shift_type')
+        shift_type_id = request.form.get('shift_type_id')
         start_date_str = request.form.get('start_date')
         end_date_str = request.form.get('end_date')
 
-        if not all([user_id, shift_type, start_date_str, end_date_str]):
+        if not all([user_id, shift_type_id, start_date_str, end_date_str]):
             flash("Tous les champs sont obligatoires.", 'danger')
             return redirect(url_for('add_shift'))
 
-        if shift_type not in SHIFT_TYPES:
-            flash("Type de shift invalide.", 'danger')
-            return redirect(url_for('add_shift'))
-
         try:
+            shift_type = ShiftType.query.get(int(shift_type_id))
+            if not shift_type:
+                flash("Type de shift invalide.", 'danger')
+                return redirect(url_for('add_shift'))
+
             user_id = int(user_id)
             
             # Vérification des permissions : un utilisateur normal ne peut ajouter que ses propres shifts
@@ -306,28 +298,27 @@ def add_shift():
 
             current_date = start_date
             shifts_added = []
-            shift_hours = SHIFT_TYPES[shift_type]
 
             while current_date <= end_date:
                 if current_date.weekday() >= 5:
                     current_date += timedelta(days=1)
                     continue
 
-                can_add, error_message = can_add_shift(user_id, current_date, shift_type)
+                can_add, error_message = can_add_shift(user_id, current_date, shift_type.name)
                 if not can_add:
                     flash(f"{error_message} (le {current_date.strftime('%d/%m/%Y')})", 'danger')
                     return redirect(url_for('add_shift'))
 
                 start_time = datetime.combine(current_date, datetime.min.time()).replace(
-                    hour=shift_hours['start']
+                    hour=shift_type.start_hour
                 )
                 end_time = datetime.combine(current_date, datetime.min.time()).replace(
-                    hour=shift_hours['end']
+                    hour=shift_type.end_hour
                 )
 
                 new_shift = Shift(
                     user_id=user_id,
-                    shift_type=shift_type,
+                    shift_type_id=shift_type.id,
                     start_time=start_time,
                     end_time=end_time,
                     date=current_date,
@@ -360,7 +351,8 @@ def add_shift():
             users = [current_user]
         else:
             users = []
-    return render_template('add_shift.html', users=users, shift_types=SHIFT_TYPES)
+    shift_types = ShiftType.query.order_by(ShiftType.name).all()
+    return render_template('add_shift.html', users=users, shift_types=shift_types)
 
 
 @app.route('/schedule/delete/<int:shift_id>')

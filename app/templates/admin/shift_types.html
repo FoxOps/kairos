@@ -1,0 +1,57 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Types de shifts - Administration{% endblock %}
+
+{% block admin_content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title">
+            <i class="fas fa-cogs"></i> Gestion des types de shifts
+        </h1>
+        
+        <div class="buttons">
+            <a class="button is-primary" href="{{ url_for('add_shift_type') }}">
+                <i class="fas fa-plus"></i>&nbsp; Ajouter un type de shift
+            </a>
+        </div>
+        
+        {% if shift_types %}
+        <div class="table-container">
+            <table class="table is-fullwidth is-striped">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Libellé</th>
+                        <th>Heure de début</th>
+                        <th>Heure de fin</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for shift_type in shift_types %}
+                    <tr>
+                        <td>{{ shift_type.name }}</td>
+                        <td>{{ shift_type.label }}</td>
+                        <td>{{ "%02d"|format(shift_type.start_hour) }}h</td>
+                        <td>{{ "%02d"|format(shift_type.end_hour) }}h</td>
+                        <td>
+                            <a class="button is-small is-info" href="{{ url_for('edit_shift_type', shift_type_id=shift_type.id) }}">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a class="button is-small is-danger" href="{{ url_for('delete_shift_type', shift_type_id=shift_type.id) }}" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce type de shift ?')">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="notification is-info">
+            <p>Aucun type de shift n'a été créé pour le moment.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

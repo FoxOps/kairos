@@ -1,0 +1,58 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Ajouter un type de shift - Administration{% endblock %}
+
+{% block admin_content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title">
+            <i class="fas fa-plus"></i> Ajouter un type de shift
+        </h1>
+        
+        <form method="POST" action="{{ url_for('add_shift_type') }}">
+            <div class="box">
+                <div class="field">
+                    <label class="label">Nom *</label>
+                    <div class="control">
+                        <input class="input" type="text" name="name" placeholder="Ex: morning" required>
+                    </div>
+                    <p class="help">Nom technique du type de shift (utilisé dans le code)</p>
+                </div>
+                
+                <div class="field">
+                    <label class="label">Libellé *</label>
+                    <div class="control">
+                        <input class="input" type="text" name="label" placeholder="Ex: 07h-15h" required>
+                    </div>
+                    <p class="help">Libellé affiché aux utilisateurs</p>
+                </div>
+                
+                <div class="field">
+                    <label class="label">Heure de début *</label>
+                    <div class="control">
+                        <input class="input" type="number" name="start_hour" min="0" max="23" placeholder="Ex: 7" required>
+                    </div>
+                    <p class="help">Heure de début du shift (0-23)</p>
+                </div>
+                
+                <div class="field">
+                    <label class="label">Heure de fin *</label>
+                    <div class="control">
+                        <input class="input" type="number" name="end_hour" min="0" max="23" placeholder="Ex: 15" required>
+                    </div>
+                    <p class="help">Heure de fin du shift (0-23)</p>
+                </div>
+                
+                <div class="field">
+                    <div class="control">
+                        <button class="button is-primary" type="submit">
+                            <i class="fas fa-save"></i>&nbsp; Enregistrer
+                        </button>
+                        <a class="button is-light" href="{{ url_for('list_shift_types') }}">Annuler</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
