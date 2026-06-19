@@ -10,11 +10,14 @@ from app.utils.helpers import (
 )
 from datetime import datetime, timedelta
 
-SHIFT_TYPE_LABELS = {
-    'morning': '07h-15h',
-    'afternoon': '09h-17h',
-    'evening': '13h-21h',
+# Constantes pour les types de shifts
+SHIFT_TYPES = {
+    'morning': {'label': '07h-15h', 'start': 7, 'end': 15},
+    'afternoon': {'label': '09h-17h', 'start': 9, 'end': 17},
+    'evening': {'label': '13h-21h', 'start': 13, 'end': 21},
 }
+
+SHIFT_TYPE_LABELS = {k: v['label'] for k, v in SHIFT_TYPES.items()}
 
 CALENDAR_WINDOW_DAYS = 180
 
@@ -31,7 +34,7 @@ def _build_calendar_events(shifts, on_calls, leaves):
     for shift in shifts:
         label = SHIFT_TYPE_LABELS.get(shift.shift_type, shift.shift_type)
         events.append({
-            'title': f'{shift.user.name} - {label}',
+            'title': f"{shift.user.name} - {label}",
             'start': shift.start_time.isoformat(),
             'end': shift.end_time.isoformat(),
             'className': 'fc-event-shift',
@@ -40,7 +43,7 @@ def _build_calendar_events(shifts, on_calls, leaves):
 
     for oncall in on_calls:
         events.append({
-            'title': f'Astreinte - {oncall.user.name}',
+            'title': f"Astreinte - {oncall.user.name}",
             'start': oncall.start_time.isoformat(),
             'end': oncall.end_time.isoformat(),
             'className': 'fc-event-oncall',
@@ -49,7 +52,7 @@ def _build_calendar_events(shifts, on_calls, leaves):
 
     for leave in leaves:
         events.append({
-            'title': f'Congé - {leave.user.name}',
+            'title': f"Conge - {leave.user.name}",
             'start': leave.start_date.isoformat(),
             'end': (leave.end_date + timedelta(days=1)).isoformat(),
             'className': 'fc-event-leave',
@@ -104,7 +107,7 @@ def add_leave():
         reason = request.form.get('reason', '').strip()
 
         if not all([user_id, start_date_str, end_date_str]):
-            flash('❌ Tous les champs obligatoires doivent être remplis.', 'danger')
+            flash("Tous les champs obligatoires doivent être remplis.", 'danger')
             return redirect(url_for('add_leave'))
 
         try:
@@ -125,15 +128,15 @@ def add_leave():
             )
             db.session.add(new_leave)
             db.session.commit()
-            flash('✅ Congé ajouté avec succès !', 'success')
+            flash("Conge ajoute avec succes !", 'success')
             return redirect(url_for('leave'))
         except ValueError:
             db.session.rollback()
-            flash('❌ Format de date invalide. Utilise le format AAAA-MM-JJ.', 'danger')
+            flash("Format de date invalide. Utilisez le format AAAA-MM-JJ.", 'danger')
             return redirect(url_for('add_leave'))
         except Exception as e:
             db.session.rollback()
-            flash(f'❌ Erreur : {str(e)}', 'danger')
+            flash(f"Erreur : {str(e)}", 'danger')
 
     users = User.query.order_by(User.name).all()
     return render_template('add_leave.html', users=users)
@@ -146,10 +149,10 @@ def delete_leave(leave_id):
     try:
         db.session.delete(leave_record)
         db.session.commit()
-        flash('✅ Congé supprimé avec succès !', 'success')
+        flash("Conge supprime avec succes !", 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'❌ Erreur : {str(e)}', 'danger')
+        flash(f"Erreur : {str(e)}", 'danger')
     return redirect(url_for('leave'))
 
 
@@ -170,14 +173,14 @@ def add_oncall():
         start_date_str = request.form.get('start_date')
 
         if not all([user_id, start_date_str]):
-            flash('❌ Tous les champs sont obligatoires.', 'danger')
+            flash("Tous les champs sont obligatoires.", 'danger')
             return redirect(url_for('add_oncall'))
 
         try:
             user_id = int(user_id)
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
             if start_date.weekday() != 4:
-                flash('❌ L\'astreinte doit commencer un vendredi.', 'danger')
+                flash("L'astreinte doit commencer un vendredi.", 'danger')
                 return redirect(url_for('add_oncall'))
 
             start_time = datetime.combine(start_date, datetime.min.time()).replace(hour=21)
@@ -195,15 +198,15 @@ def add_oncall():
             )
             db.session.add(new_oncall)
             db.session.commit()
-            flash('✅ Astreinte ajoutée avec succès ! (Du vendredi 21h au vendredi suivant 07h)', 'success')
+            flash("Astreinte ajoutee avec succes ! (Du vendredi 21h au vendredi suivant 07h)", 'success')
             return redirect(url_for('oncall'))
         except ValueError:
             db.session.rollback()
-            flash('❌ Format de date invalide. Utilise le format AAAA-MM-JJ.', 'danger')
+            flash("Format de date invalide. Utilisez le format AAAA-MM-JJ.", 'danger')
             return redirect(url_for('add_oncall'))
         except Exception as e:
             db.session.rollback()
-            flash(f'❌ Erreur : {str(e)}', 'danger')
+            flash(f"Erreur : {str(e)}", 'danger')
 
     users = User.query.join(Group).filter(Group.is_part_of_oncall == True).all()
     return render_template('add_oncall.html', users=users)
@@ -216,10 +219,10 @@ def delete_oncall(oncall_id):
     try:
         db.session.delete(oncall)
         db.session.commit()
-        flash('✅ Astreinte supprimée avec succès !', 'success')
+        flash("Astreinte supprimee avec succes !", 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'❌ Erreur : {str(e)}', 'danger')
+        flash(f"Erreur : {str(e)}", 'danger')
     return redirect(url_for('oncall'))
 
 
@@ -242,17 +245,11 @@ def add_shift():
         end_date_str = request.form.get('end_date')
 
         if not all([user_id, shift_type, start_date_str, end_date_str]):
-            flash('❌ Tous les champs sont obligatoires.', 'danger')
+            flash("Tous les champs sont obligatoires.", 'danger')
             return redirect(url_for('add_shift'))
 
-        shift_hours = {
-            'morning': {'start': 7, 'end': 15},
-            'afternoon': {'start': 9, 'end': 17},
-            'evening': {'start': 13, 'end': 21},
-        }
-
-        if shift_type not in shift_hours:
-            flash('Type de shift invalide', 'danger')
+        if shift_type not in SHIFT_TYPES:
+            flash("Type de shift invalide.", 'danger')
             return redirect(url_for('add_shift'))
 
         try:
@@ -261,11 +258,12 @@ def add_shift():
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
 
             if start_date > end_date:
-                flash('La date de début doit être antérieure à la date de fin.', 'danger')
+                flash("La date de debut doit etre anterieure a la date de fin.", 'danger')
                 return redirect(url_for('add_shift'))
 
             current_date = start_date
             shifts_added = []
+            shift_hours = SHIFT_TYPES[shift_type]
 
             while current_date <= end_date:
                 if current_date.weekday() >= 5:
@@ -278,10 +276,10 @@ def add_shift():
                     return redirect(url_for('add_shift'))
 
                 start_time = datetime.combine(current_date, datetime.min.time()).replace(
-                    hour=shift_hours[shift_type]['start']
+                    hour=shift_hours['start']
                 )
                 end_time = datetime.combine(current_date, datetime.min.time()).replace(
-                    hour=shift_hours[shift_type]['end']
+                    hour=shift_hours['end']
                 )
 
                 new_shift = Shift(
@@ -297,21 +295,21 @@ def add_shift():
 
             db.session.commit()
             if shifts_added:
-                flash(f'✅ Shifts ajoutés avec succès pour les dates : {", ".join(shifts_added)} !', 'success')
+                flash(f"Shifts ajoutes avec succes pour les dates : {', '.join(shifts_added)} !", 'success')
             else:
-                flash('❌ Aucun shift ajouté (période invalide ou jours non ouvrés).', 'danger')
+                flash("Aucun shift ajoute (periode invalide ou jours non ouvres).", 'danger')
             return redirect(url_for('schedule'))
         except ValueError as e:
             db.session.rollback()
-            flash(f'❌ Format de date invalide : {str(e)}. Utilise le format AAAA-MM-JJ.', 'danger')
+            flash(f"Format de date invalide : {str(e)}. Utilisez le format AAAA-MM-JJ.", 'danger')
             return redirect(url_for('add_shift'))
         except Exception as e:
             db.session.rollback()
-            flash(f'❌ Erreur : {str(e)}', 'danger')
+            flash(f"Erreur : {str(e)}", 'danger')
             return redirect(url_for('add_shift'))
 
     users = User.query.join(Group).filter(Group.is_part_of_schedule == True).all()
-    return render_template('add_shift.html', users=users)
+    return render_template('add_shift.html', users=users, shift_types=SHIFT_TYPES)
 
 
 @app.route('/schedule/delete/<int:shift_id>')
@@ -321,8 +319,8 @@ def delete_shift(shift_id):
     try:
         db.session.delete(shift)
         db.session.commit()
-        flash('✅ Shift supprimé avec succès !', 'success')
+        flash("Shift supprime avec succes !", 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'❌ Erreur : {str(e)}', 'danger')
+        flash(f"Erreur : {str(e)}", 'danger')
     return redirect(url_for('schedule'))
