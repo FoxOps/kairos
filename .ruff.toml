@@ -1,4 +1,3 @@
-[tool.ruff]
 # Enable Pyflakes, pycodestyle, isort, and more
 select = [
     "E",   # pycodestyle errors
@@ -32,10 +31,10 @@ exclude = [
     "migrations",
 ]
 
-[tool.ruff.isort]
+[isort]
 known-first-party = ["app", "tests"]
 
-[tool.ruff.per-file-ignores]
+[per-file-ignores]
 "tests/*" = ["S101"]  # Allow assert in tests
 "run.py" = ["T201"]  # Allow print in run.py
 "app/routes/*" = ["B008"]  # Allow function calls in defaults for routes
