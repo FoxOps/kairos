@@ -6,6 +6,25 @@ from datetime import datetime, timedelta
 from app.models import Shift, OnCall, Leave, User, Group
 
 
+class TestRolePermissions:
+    """Tests pour les permissions basées sur les rôles."""
+    
+    def test_decorators_import(self):
+        """Test que les décorateurs peuvent être importés."""
+        from app.utils.decorators import admin_required, role_required
+        assert callable(admin_required)
+        assert callable(role_required)
+    
+    def test_models_have_is_admin(self):
+        """Test que le modèle User a le champ is_admin."""
+        from app.models import User
+        assert hasattr(User, 'is_admin')
+
+
+class TestShiftRoutes:
+    """Tests pour les routes des shifts."""
+
+
 class TestShiftRoutes:
     """Tests pour les routes des shifts."""
     

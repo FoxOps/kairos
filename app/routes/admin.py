@@ -3,19 +3,7 @@ from flask_login import login_required, current_user
 from sqlalchemy.orm import selectinload
 from app import app, db
 from app.models import User, Shift, OnCall, Leave, Group
-
-
-def admin_required(f):
-    """Décorateur pour vérifier que l'utilisateur est admin."""
-    @login_required
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_admin:
-            abort(403)  # Forbidden
-        return f(*args, **kwargs)
-    # Conserver le nom de la fonction originale pour éviter les conflits
-    decorated_function.__name__ = f.__name__
-    decorated_function.__doc__ = f.__doc__
-    return decorated_function
+from app.utils.decorators import admin_required
 
 
 # Dashboard admin

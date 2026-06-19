@@ -8,6 +8,7 @@ from app.utils.helpers import (
     can_add_leave,
     can_add_oncall,
 )
+from app.utils.decorators import admin_required
 from datetime import datetime, timedelta
 
 # Constantes pour les types de shifts
@@ -112,6 +113,12 @@ def add_leave():
 
         try:
             user_id = int(user_id)
+            
+            # Vérification des permissions : un utilisateur normal ne peut ajouter que ses propres congés
+            if not current_user.is_admin and current_user.id != user_id:
+                flash('❌ Vous ne pouvez ajouter des congés que pour vous-même.', 'danger')
+                return redirect(url_for('leave'))
+            
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
 
@@ -138,7 +145,11 @@ def add_leave():
             db.session.rollback()
             flash(f"Erreur : {str(e)}", 'danger')
 
-    users = User.query.order_by(User.name).all()
+    # Un utilisateur normal ne voit que lui-même dans la liste
+    if current_user.is_admin:
+        users = User.query.order_by(User.name).all()
+    else:
+        users = [current_user]
     return render_template('add_leave.html', users=users)
 
 
@@ -146,6 +157,12 @@ def add_leave():
 @login_required
 def delete_leave(leave_id):
     leave_record = Leave.query.get_or_404(leave_id)
+    
+    # Vérification des permissions : seul l'admin ou le propriétaire peut supprimer
+    if not current_user.is_admin and current_user.id != leave_record.user_id:
+        flash('❌ Vous ne pouvez supprimer que vos propres congés.', 'danger')
+        return redirect(url_for('leave'))
+    
     try:
         db.session.delete(leave_record)
         db.session.commit()
@@ -178,6 +195,12 @@ def add_oncall():
 
         try:
             user_id = int(user_id)
+            
+            # Vérification des permissions : un utilisateur normal ne peut ajouter que ses propres astreintes
+            if not current_user.is_admin and current_user.id != user_id:
+                flash('❌ Vous ne pouvez ajouter des astreintes que pour vous-même.', 'danger')
+                return redirect(url_for('oncall'))
+            
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
             if start_date.weekday() != 4:
                 flash("L'astreinte doit commencer un vendredi.", 'danger')
@@ -208,7 +231,15 @@ def add_oncall():
             db.session.rollback()
             flash(f"Erreur : {str(e)}", 'danger')
 
-    users = User.query.join(Group).filter(Group.is_part_of_oncall == True).all()
+    # Un utilisateur normal ne voit que lui-même dans la liste
+    if current_user.is_admin:
+        users = User.query.join(Group).filter(Group.is_part_of_oncall == True).all()
+    else:
+        # Vérifier si l'utilisateur fait partie d'un groupe éligible aux astreintes
+        if current_user.group and current_user.group.is_part_of_oncall:
+            users = [current_user]
+        else:
+            users = []
     return render_template('add_oncall.html', users=users)
 
 
@@ -216,6 +247,12 @@ def add_oncall():
 @login_required
 def delete_oncall(oncall_id):
     oncall = OnCall.query.get_or_404(oncall_id)
+    
+    # Vérification des permissions : seul l'admin ou le propriétaire peut supprimer
+    if not current_user.is_admin and current_user.id != oncall.user_id:
+        flash('❌ Vous ne pouvez supprimer que vos propres astreintes.', 'danger')
+        return redirect(url_for('oncall'))
+    
     try:
         db.session.delete(oncall)
         db.session.commit()
@@ -254,6 +291,12 @@ def add_shift():
 
         try:
             user_id = int(user_id)
+            
+            # Vérification des permissions : un utilisateur normal ne peut ajouter que ses propres shifts
+            if not current_user.is_admin and current_user.id != user_id:
+                flash('❌ Vous ne pouvez ajouter des shifts que pour vous-même.', 'danger')
+                return redirect(url_for('schedule'))
+            
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
 
@@ -308,7 +351,15 @@ def add_shift():
             flash(f"Erreur : {str(e)}", 'danger')
             return redirect(url_for('add_shift'))
 
-    users = User.query.join(Group).filter(Group.is_part_of_schedule == True).all()
+    # Un utilisateur normal ne voit que lui-même dans la liste
+    if current_user.is_admin:
+        users = User.query.join(Group).filter(Group.is_part_of_schedule == True).all()
+    else:
+        # Vérifier si l'utilisateur fait partie d'un groupe éligible au schedule
+        if current_user.group and current_user.group.is_part_of_schedule:
+            users = [current_user]
+        else:
+            users = []
     return render_template('add_shift.html', users=users, shift_types=SHIFT_TYPES)
 
 
@@ -316,6 +367,12 @@ def add_shift():
 @login_required
 def delete_shift(shift_id):
     shift = Shift.query.get_or_404(shift_id)
+    
+    # Vérification des permissions : seul l'admin ou le propriétaire peut supprimer
+    if not current_user.is_admin and current_user.id != shift.user_id:
+        flash('❌ Vous ne pouvez supprimer que vos propres shifts.', 'danger')
+        return redirect(url_for('schedule'))
+    
     try:
         db.session.delete(shift)
         db.session.commit()
