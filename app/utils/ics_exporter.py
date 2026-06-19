@@ -46,7 +46,7 @@ def generate_ics_standard(events, calendar_name="Leviia Schedule"):
             end_time = event_obj.end_time
         elif isinstance(event_obj, Leave):
             title = f"Conge - {event_obj.user.name}"
-            description = f"Raison: {event_obj.reason or 'Non specifie'}\nUtilisateur: {event_obj.user.name}"
+            description = f"Utilisateur: {event_obj.user.name}"
             # Pour les congés, créer des événements toute la journée
             start_time = datetime.combine(event_obj.start_date, datetime.min.time())
             end_time = datetime.combine(event_obj.end_date + timedelta(days=1), datetime.min.time())

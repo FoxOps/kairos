@@ -25,10 +25,11 @@ class TestIndexRoute:
     """Tests pour la route principale."""
     
     def test_index_route_accessible(self, client):
-        """Test que la page d'accueil est accessible sans authentification."""
+        """Test que la page d'accueil est accessible uniquement aux utilisateurs connectés."""
+        # Test sans authentification - doit rediriger vers login
         response = client.get('/')
-        assert response.status_code == 200
-        assert b'Leviia' in response.data or b'Schedule' in response.data
+        assert response.status_code == 302
+        assert response.location.endswith('/login?next=%2F')
 
 
 class TestAuthRoutes:
@@ -267,8 +268,7 @@ class TestLeaveRoutes:
         data = {
             'user_id': test_user.id,
             'start_date': '2023-12-20',
-            'end_date': '2023-12-25',
-            'reason': 'Test Leave'
+            'end_date': '2023-12-25'
         }
         response = logged_in_client.post('/leave/add', data=data, follow_redirects=True)
         assert response.status_code == 200
@@ -282,8 +282,7 @@ class TestLeaveRoutes:
         data = {
             'user_id': test_user.id,
             'start_date': '2023-12-25',
-            'end_date': '2023-12-20',
-            'reason': 'Test Leave'
+            'end_date': '2023-12-20'
         }
         response = logged_in_client.post('/leave/add', data=data, follow_redirects=True)
         assert response.status_code == 200

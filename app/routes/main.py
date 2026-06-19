@@ -56,8 +56,9 @@ def _build_calendar_events(shifts, on_calls, leaves):
 
 
 @app.route('/')
+@login_required
 def index():
-    """Page d'accueil - accessible sans authentification pour voir le calendrier."""
+    """Page d'accueil - accessible uniquement aux utilisateurs connectés."""
     window_start, window_end = _calendar_window()
     window_start_date = window_start.date()
 
@@ -96,7 +97,6 @@ def add_leave():
         user_id = request.form.get('user_id')
         start_date_str = request.form.get('start_date')
         end_date_str = request.form.get('end_date')
-        reason = request.form.get('reason', '').strip()
 
         if not all([user_id, start_date_str, end_date_str]):
             flash("Tous les champs obligatoires doivent être remplis.", 'danger')
@@ -122,7 +122,6 @@ def add_leave():
                 user_id=user_id,
                 start_date=start_date,
                 end_date=end_date,
-                reason=reason or None,
             )
             db.session.add(new_leave)
             db.session.commit()
