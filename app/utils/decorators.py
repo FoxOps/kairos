@@ -33,21 +33,23 @@ def role_required(*roles):
         def admin_route():
             ...
     """
-    @login_required
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        # Pour l'instant, on gère admin vs user
-        # L'admin a tous les droits
-        if 'admin' in roles and current_user.is_admin:
-            return f(*args, **kwargs)
-        
-        # Si user est requis et l'utilisateur est connecté
-        if 'user' in roles and current_user.is_authenticated:
-            return f(*args, **kwargs)
-        
-        flash('❌ Accès refusé : permissions insuffisantes.', 'danger')
-        return redirect(url_for('index'))
-    return decorated_function
+    def decorator(f):
+        @login_required
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # Pour l'instant, on gère admin vs user
+            # L'admin a tous les droits
+            if 'admin' in roles and current_user.is_admin:
+                return f(*args, **kwargs)
+            
+            # Si user est requis et l'utilisateur est connecté
+            if 'user' in roles and current_user.is_authenticated:
+                return f(*args, **kwargs)
+            
+            flash('Acces refuse : permissions insuffisantes.', 'danger')
+            return redirect(url_for('index'))
+        return decorated_function
+    return decorator
 
 
 def user_can_edit(user_id):

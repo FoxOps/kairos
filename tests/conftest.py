@@ -3,7 +3,7 @@ Configuration des tests pour Leviia Schedule.
 """
 import pytest
 from app import create_app, db
-from app.models import User, Group, Shift, OnCall, Leave
+from app.models import User, Group, Shift, OnCall, Leave, ShiftType
 from werkzeug.security import generate_password_hash
 
 
@@ -14,6 +14,7 @@ def app():
     app.config['TESTING'] = True
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
     app.config['WTF_CSRF_ENABLED'] = False
+    app.config['SECRET_KEY'] = 'test-secret-key'
 
     # Importer les routes
     from app.routes import main, admin, export, auth
@@ -78,14 +79,42 @@ def test_user(app, test_group):
 
 
 @pytest.fixture
+def second_user(app, test_group):
+    """Crée un deuxième utilisateur normal."""
+    user = User(
+        name='Second User',
+        email='second@test.com',
+        password_hash=generate_password_hash('second123'),
+        is_admin=False,
+        group_id=test_group.id
+    )
+    db.session.add(user)
+    db.session.commit()
+    return user
+
+
+@pytest.fixture
 def test_shift_type(app):
     """Crée un type de shift de test."""
-    from app.models import ShiftType
     shift_type = ShiftType(
         name='morning',
         label='Matin',
         start_hour=7,
         end_hour=15
+    )
+    db.session.add(shift_type)
+    db.session.commit()
+    return shift_type
+
+
+@pytest.fixture
+def afternoon_shift_type(app):
+    """Crée un type de shift après-midi."""
+    shift_type = ShiftType(
+        name='afternoon',
+        label='Après-midi',
+        start_hour=14,
+        end_hour=22
     )
     db.session.add(shift_type)
     db.session.commit()
@@ -171,3 +200,31 @@ def logged_in_admin_client(client, admin_user, app):
             'password': 'admin123'
         }, follow_redirects=True)
     yield client
+
+
+@pytest.fixture
+def group_not_in_schedule(app):
+    """Crée un groupe qui n'est pas dans le planning."""
+    group = Group(
+        name='Group No Schedule',
+        is_part_of_schedule=False,
+        is_part_of_oncall=False
+    )
+    db.session.add(group)
+    db.session.commit()
+    return group
+
+
+@pytest.fixture
+def user_not_in_schedule(app, group_not_in_schedule):
+    """Crée un utilisateur dans un groupe non dans le planning."""
+    user = User(
+        name='User No Schedule',
+        email='noschedule@test.com',
+        password_hash=generate_password_hash('noschedule123'),
+        is_admin=False,
+        group_id=group_not_in_schedule.id
+    )
+    db.session.add(user)
+    db.session.commit()
+    return user
