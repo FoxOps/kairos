@@ -79,62 +79,24 @@
                 <a class="button is-primary is-small" href="{{ url_for('add_shift_type') }}">
                     <i class="fas fa-plus"></i>&nbsp; Ajouter un type de shift
                 </a>
-                <div class="dropdown is-right" style="display: inline-block;">
-                    <div class="dropdown-trigger">
-                        <button class="button is-success is-small" aria-haspopup="true" aria-controls="export-shifts-dropdown">
-                            <i class="fas fa-file-export"></i>&nbsp; Exporter les shifts
-                            <i class="fas fa-chevron-down" style="margin-left: 5px;"></i>
-                        </button>
-                    </div>
-                    <div class="dropdown-menu" id="export-shifts-dropdown" role="menu">
-                        <div class="dropdown-content">
-                            <a class="dropdown-item" href="{{ url_for('export_shifts', scope='all') }}">
-                                <i class="fas fa-users"></i>&nbsp; Tous les utilisateurs
-                            </a>
-                            <a class="dropdown-item" href="{{ url_for('export_shifts', scope='my') }}">
-                                <i class="fas fa-user"></i>&nbsp; Mes shifts seulement
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="dropdown is-right" style="display: inline-block;">
-                    <div class="dropdown-trigger">
-                        <button class="button is-success is-small" aria-haspopup="true" aria-controls="export-oncall-dropdown">
-                            <i class="fas fa-file-export"></i>&nbsp; Exporter les astreintes
-                            <i class="fas fa-chevron-down" style="margin-left: 5px;"></i>
-                        </button>
-                    </div>
-                    <div class="dropdown-menu" id="export-oncall-dropdown" role="menu">
-                        <div class="dropdown-content">
-                            <a class="dropdown-item" href="{{ url_for('export_oncall', scope='all') }}">
-                                <i class="fas fa-users"></i>&nbsp; Tous les utilisateurs
-                            </a>
-                            <a class="dropdown-item" href="{{ url_for('export_oncall', scope='my') }}">
-                                <i class="fas fa-user"></i>&nbsp; Mes astreintes seulement
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="dropdown is-right" style="display: inline-block;">
-                    <div class="dropdown-trigger">
-                        <button class="button is-success is-small" aria-haspopup="true" aria-controls="export-leaves-dropdown">
-                            <i class="fas fa-file-export"></i>&nbsp; Exporter les congés
-                            <i class="fas fa-chevron-down" style="margin-left: 5px;"></i>
-                        </button>
-                    </div>
-                    <div class="dropdown-menu" id="export-leaves-dropdown" role="menu">
-                        <div class="dropdown-content">
-                            <a class="dropdown-item" href="{{ url_for('export_leaves', scope='all') }}">
-                                <i class="fas fa-users"></i>&nbsp; Tous les utilisateurs
-                            </a>
-                            <a class="dropdown-item" href="{{ url_for('export_leaves', scope='my') }}">
-                                <i class="fas fa-user"></i>&nbsp; Mes congés seulement
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                <a class="button is-success is-small" href="{{ url_for('export_shifts', scope='all') }}">
+                    <i class="fas fa-file-export"></i>&nbsp; Exporter tous les shifts
+                </a>
+                <a class="button is-success is-small" href="{{ url_for('export_shifts', scope='my') }}">
+                    <i class="fas fa-file-export"></i>&nbsp; Exporter mes shifts
+                </a>
+                <a class="button is-success is-small" href="{{ url_for('export_oncall', scope='all') }}">
+                    <i class="fas fa-file-export"></i>&nbsp; Exporter toutes les astreintes
+                </a>
+                <a class="button is-success is-small" href="{{ url_for('export_oncall', scope='my') }}">
+                    <i class="fas fa-file-export"></i>&nbsp; Exporter mes astreintes
+                </a>
+                <a class="button is-success is-small" href="{{ url_for('export_leaves', scope='all') }}">
+                    <i class="fas fa-file-export"></i>&nbsp; Exporter tous les congés
+                </a>
+                <a class="button is-success is-small" href="{{ url_for('export_leaves', scope='my') }}">
+                    <i class="fas fa-file-export"></i>&nbsp; Exporter mes congés
+                </a>
             </div>
         </div>
     </div>

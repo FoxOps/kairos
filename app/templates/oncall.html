@@ -15,43 +15,14 @@
             <a class="button is-primary" href="{{ url_for('add_oncall') }}">
                 <i class="fas fa-plus"></i>&nbsp; Ajouter une astreinte
             </a>
-            <div class="dropdown is-right" style="display: inline-block;">
-                <div class="dropdown-trigger">
-                    <button class="button is-success" aria-haspopup="true" aria-controls="export-oncall-dropdown">
-                        <i class="fas fa-file-export"></i>&nbsp; Exporter
-                        <i class="fas fa-chevron-down" style="margin-left: 5px;"></i>
-                    </button>
-                </div>
-                <div class="dropdown-menu" id="export-oncall-dropdown" role="menu">
-                    <div class="dropdown-content">
-                        <a class="dropdown-item" href="{{ url_for('export_oncall', scope='all') }}">
-                            <i class="fas fa-users"></i>&nbsp; Tous les utilisateurs
-                        </a>
-                        <a class="dropdown-item" href="{{ url_for('export_oncall', scope='my') }}">
-                            <i class="fas fa-user"></i>&nbsp; Mes astreintes seulement
-                        </a>
-                    </div>
-                </div>
-            </div>
-            {% elif current_user.is_authenticated %}
-            <div class="dropdown is-right" style="display: inline-block;">
-                <div class="dropdown-trigger">
-                    <button class="button is-success" aria-haspopup="true" aria-controls="export-oncall-dropdown">
-                        <i class="fas fa-file-export"></i>&nbsp; Exporter
-                        <i class="fas fa-chevron-down" style="margin-left: 5px;"></i>
-                    </button>
-                </div>
-                <div class="dropdown-menu" id="export-oncall-dropdown" role="menu">
-                    <div class="dropdown-content">
-                        <a class="dropdown-item" href="{{ url_for('export_oncall', scope='all') }}">
-                            <i class="fas fa-users"></i>&nbsp; Tous les utilisateurs
-                        </a>
-                        <a class="dropdown-item" href="{{ url_for('export_oncall', scope='my') }}">
-                            <i class="fas fa-user"></i>&nbsp; Mes astreintes seulement
-                        </a>
-                    </div>
-                </div>
-            </div>
+            {% endif %}
+            {% if current_user.is_authenticated %}
+            <a class="button is-success" href="{{ url_for('export_oncall', scope='all') }}">
+                <i class="fas fa-file-export"></i>&nbsp; Exporter toutes les astreintes
+            </a>
+            <a class="button is-success" href="{{ url_for('export_oncall', scope='my') }}">
+                <i class="fas fa-file-export"></i>&nbsp; Exporter mes astreintes
+            </a>
             {% endif %}
         </div>
         
