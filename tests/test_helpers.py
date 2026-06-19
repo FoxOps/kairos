@@ -57,8 +57,7 @@ class TestHelperFunctions:
             leave = Leave(
                 user_id=test_user.id,
                 start_date=start_date,
-                end_date=end_date,
-                reason='Test Leave'
+                end_date=end_date
             )
             db.session.add(leave)
             db.session.commit()
@@ -122,8 +121,7 @@ class TestHelperFunctions:
             leave = Leave(
                 user_id=test_user.id,
                 start_date=start_date,
-                end_date=end_date,
-                reason='Test Leave'
+                end_date=end_date
             )
             db.session.add(leave)
             db.session.commit()
@@ -176,8 +174,7 @@ class TestCanAddShift:
             leave = Leave(
                 user_id=test_user.id,
                 start_date=start_date,
-                end_date=end_date,
-                reason='Test Leave'
+                end_date=end_date
             )
             db.session.add(leave)
             db.session.commit()
@@ -279,8 +276,7 @@ class TestCanAddOnCall:
             leave = Leave(
                 user_id=test_user.id,
                 start_date=start_date,
-                end_date=end_date,
-                reason='Test Leave'
+                end_date=end_date
             )
             db.session.add(leave)
             db.session.commit()
@@ -367,8 +363,7 @@ class TestCanAddLeave:
             leave = Leave(
                 user_id=test_user.id,
                 start_date=start_date,
-                end_date=end_date,
-                reason='Test Leave'
+                end_date=end_date
             )
             db.session.add(leave)
             db.session.commit()

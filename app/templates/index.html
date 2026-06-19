@@ -57,25 +57,37 @@
                 <i class="fas fa-bolt" aria-hidden="true"></i> Actions rapides
             </h3>
             <div class="buttons">
-                <a class="button is-primary" href="{{ url_for('add_shift') }}">
-                    <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un shift
-                </a>
-                <a class="button is-primary" href="{{ url_for('add_oncall') }}">
-                    <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter une astreinte
-                </a>
-                <a class="button is-primary" href="{{ url_for('add_leave') }}">
-                    <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un congé
-                </a>
-                <a class="button is-primary" href="{{ url_for('list_users') }}">
-                    <i class="fas fa-users" aria-hidden="true"></i>&nbsp; Gérer les utilisateurs
-                </a>
-                {% if 'admin' in session and session.get('admin') %}
-                <a class="button is-primary" href="{{ url_for('list_groups') }}">
-                    <i class="fas fa-user-friends" aria-hidden="true"></i>&nbsp; Gérer les groupes
-                </a>
-                <a class="button is-light" href="{{ url_for('admin_dashboard') }}">
-                    <i class="fas fa-cog" aria-hidden="true"></i>&nbsp; Admin
-                </a>
+                {% if current_user.is_admin %}
+                    <!-- Actions pour les administrateurs -->
+                    <a class="button is-primary" href="{{ url_for('add_shift') }}">
+                        <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un shift
+                    </a>
+                    <a class="button is-primary" href="{{ url_for('add_oncall') }}">
+                        <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter une astreinte
+                    </a>
+                    <a class="button is-primary" href="{{ url_for('add_leave') }}">
+                        <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un congé
+                    </a>
+                    <a class="button is-primary" href="{{ url_for('list_users') }}">
+                        <i class="fas fa-users" aria-hidden="true"></i>&nbsp; Gérer les utilisateurs
+                    </a>
+                    <a class="button is-primary" href="{{ url_for('list_groups') }}">
+                        <i class="fas fa-user-friends" aria-hidden="true"></i>&nbsp; Gérer les groupes
+                    </a>
+                    <a class="button is-light" href="{{ url_for('admin_dashboard') }}">
+                        <i class="fas fa-cog" aria-hidden="true"></i>&nbsp; Admin
+                    </a>
+                {% else %}
+                    <!-- Actions pour les utilisateurs normaux - Export de leur calendrier -->
+                    <a class="button is-primary" href="{{ url_for('export_shifts', scope='my') }}">
+                        <i class="fas fa-download" aria-hidden="true"></i>&nbsp; Exporter mes shifts
+                    </a>
+                    <a class="button is-primary" href="{{ url_for('export_oncall', scope='my') }}">
+                        <i class="fas fa-download" aria-hidden="true"></i>&nbsp; Exporter mes astreintes
+                    </a>
+                    <a class="button is-primary" href="{{ url_for('export_leaves', scope='my') }}">
+                        <i class="fas fa-download" aria-hidden="true"></i>&nbsp; Exporter mes congés
+                    </a>
                 {% endif %}
             </div>
         </div>

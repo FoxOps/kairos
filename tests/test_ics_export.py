@@ -68,8 +68,7 @@ class TestICSExport:
         leave = Leave(
             user_id=test_user.id,
             start_date=start_date,
-            end_date=end_date,
-            reason='Test Leave'
+            end_date=end_date
         )
         db.session.add(leave)
         db.session.commit()
@@ -173,8 +172,7 @@ class TestICSExport:
             leave = Leave(
                 user_id=test_user.id,
                 start_date=leave_start,
-                end_date=leave_end,
-                reason='Test Leave'
+                end_date=leave_end
             )
             db.session.add(leave)
             
@@ -221,25 +219,24 @@ class TestICSExport:
             # Vérifier que le nom de l'utilisateur est présent
             assert test_user.name in ics_content
     
-    def test_generate_ics_leave_with_reason(self, app, test_user):
-        """Test que la raison du congé est incluse dans l'export."""
+    def test_generate_ics_leave_without_reason(self, app, test_user):
+        """Test que l'export des congés fonctionne sans raison."""
         with app.app_context():
             leave_start = datetime(2023, 12, 10).date()
             leave_end = datetime(2023, 12, 15).date()
-            reason = "Congé annuel"
             leave = Leave(
                 user_id=test_user.id,
                 start_date=leave_start,
-                end_date=leave_end,
-                reason=reason
+                end_date=leave_end
             )
             db.session.add(leave)
             db.session.commit()
             
             ics_content = generate_ics_leaves([leave])
             
-            # Vérifier que la raison est présente
-            assert reason in ics_content
+            # Vérifier que le congé est exporté correctement
+            assert 'Conge' in ics_content
+            assert test_user.name in ics_content
     
     def test_generate_ics_calendar_properties(self, test_shift):
         """Test que les propriétés du calendrier sont correctes."""

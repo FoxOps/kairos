@@ -170,8 +170,7 @@ def test_leave(app, test_user):
     leave = Leave(
         user_id=test_user.id,
         start_date=start_date,
-        end_date=end_date,
-        reason='Test Leave'
+        end_date=end_date
     )
     db.session.add(leave)
     db.session.commit()

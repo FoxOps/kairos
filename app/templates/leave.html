@@ -33,7 +33,6 @@
                         <th scope="col">Utilisateur</th>
                         <th scope="col">Début</th>
                         <th scope="col">Fin</th>
-                        <th scope="col">Raison</th>
                         <th scope="col">Actions</th>
                     </tr>
                 </thead>
@@ -43,7 +42,6 @@
                         <td>{{ leave.user.name }}</td>
                         <td>{{ leave.start_date.strftime('%d/%m/%Y') }}</td>
                         <td>{{ leave.end_date.strftime('%d/%m/%Y') }}</td>
-                        <td>{{ leave.reason or '-' }}</td>
                         <td>
                             <a class="button is-danger is-small" href="{{ url_for('delete_leave', leave_id=leave.id) }}" aria-label="Supprimer le congé">
                                 <i class="fas fa-trash" aria-hidden="true"></i>

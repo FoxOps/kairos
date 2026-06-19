@@ -174,8 +174,7 @@ class TestUserModel:
             leave = Leave(
                 user_id=test_user.id,
                 start_date=leave_start,
-                end_date=leave_end,
-                reason='Test Leave'
+                end_date=leave_end
             )
             db.session.add(leave)
             db.session.commit()
@@ -326,8 +325,7 @@ class TestLeaveModel:
             leave = Leave(
                 user_id=test_user.id,
                 start_date=start_date,
-                end_date=end_date,
-                reason='Vacation'
+                end_date=end_date
             )
             db.session.add(leave)
             db.session.commit()
@@ -336,7 +334,6 @@ class TestLeaveModel:
             assert leave.user_id == test_user.id
             assert leave.start_date == start_date
             assert leave.end_date == end_date
-            assert leave.reason == 'Vacation'
     
     def test_leave_relationship(self, app, test_leave):
         """Test la relation entre Leave et User."""
@@ -352,10 +349,9 @@ class TestLeaveModel:
             leave = Leave(
                 user_id=test_user.id,
                 start_date=start_date,
-                end_date=end_date,
-                reason=None
+                end_date=end_date
             )
             db.session.add(leave)
             db.session.commit()
             
-            assert leave.reason is None
+            assert leave.id is not None
