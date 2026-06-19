@@ -6,10 +6,7 @@ from app import db
 def is_user_on_shift(user_id, target_date):
     """Vérifie si un utilisateur a déjà un shift le jour donné."""
     return db.session.query(
-        db.exists().where(
-            Shift.user_id == user_id,
-            Shift.date == target_date
-        )
+        db.exists().where(Shift.user_id == user_id, Shift.date == target_date)
     ).scalar()
 
 
@@ -19,7 +16,7 @@ def is_user_on_leave(user_id, target_date):
         db.exists().where(
             Leave.user_id == user_id,
             Leave.start_date <= target_date,
-            Leave.end_date >= target_date
+            Leave.end_date >= target_date,
         )
     ).scalar()
 
@@ -30,36 +27,47 @@ def _has_overlapping_oncall(user_id, start_time, end_time):
         db.exists().where(
             OnCall.user_id == user_id,
             OnCall.start_time < end_time,
-            OnCall.end_time > start_time
+            OnCall.end_time > start_time,
         )
     ).scalar()
 
 
 def _get_overlapping_leave(user_id, start_date, end_date):
     """Récupère le premier congé chevauchant la période."""
-    return db.session.query(Leave).filter(
-        Leave.user_id == user_id,
-        Leave.start_date <= end_date,
-        Leave.end_date >= start_date
-    ).first()
+    return (
+        db.session.query(Leave)
+        .filter(
+            Leave.user_id == user_id,
+            Leave.start_date <= end_date,
+            Leave.end_date >= start_date,
+        )
+        .first()
+    )
 
 
 def _get_overlapping_shift(user_id, start_date, end_date):
     """Récupère le premier shift chevauchant la période."""
-    return db.session.query(Shift).filter(
-        Shift.user_id == user_id,
-        Shift.date >= start_date,
-        Shift.date <= end_date
-    ).first()
+    return (
+        db.session.query(Shift)
+        .filter(
+            Shift.user_id == user_id, Shift.date >= start_date, Shift.date <= end_date
+        )
+        .first()
+    )
 
 
 def _get_overlapping_oncall(user_id, start_date, end_date):
     """Récupère la première astreinte chevauchant la période."""
-    return db.session.query(OnCall).filter(
-        OnCall.user_id == user_id,
-        OnCall.start_time < datetime.combine(end_date + timedelta(days=1), datetime.min.time()),
-        OnCall.end_time > datetime.combine(start_date, datetime.min.time()),
-    ).first()
+    return (
+        db.session.query(OnCall)
+        .filter(
+            OnCall.user_id == user_id,
+            OnCall.start_time
+            < datetime.combine(end_date + timedelta(days=1), datetime.min.time()),
+            OnCall.end_time > datetime.combine(start_date, datetime.min.time()),
+        )
+        .first()
+    )
 
 
 def can_add_shift(user_id, shift_date, shift_type):
@@ -75,7 +83,10 @@ def can_add_shift(user_id, shift_date, shift_type):
     if is_user_on_shift(user_id, shift_date):
         return False, "Impossible : l'utilisateur a déjà un shift ce jour-là."
     if shift_date.weekday() >= 5:
-        return False, "Impossible : les shifts ne peuvent être ajoutés que du lundi au vendredi."
+        return (
+            False,
+            "Impossible : les shifts ne peuvent être ajoutés que du lundi au vendredi.",
+        )
     return True, ""
 
 
@@ -94,12 +105,20 @@ def can_add_oncall(user_id, oncall_start_time, oncall_end_time):
         return False, "L'astreinte doit commencer un vendredi à 21h."
 
     if _has_overlapping_oncall(user_id, oncall_start_time, oncall_end_time):
-        return False, "Impossible : l'utilisateur a déjà une astreinte sur cette période."
+        return (
+            False,
+            "Impossible : l'utilisateur a déjà une astreinte sur cette période.",
+        )
 
     # Vérification optimisée : une seule requête pour vérifier et récupérer le congé
-    overlapping_leave = _get_overlapping_leave(user_id, start_date, start_date + timedelta(days=7))
+    overlapping_leave = _get_overlapping_leave(
+        user_id, start_date, start_date + timedelta(days=7)
+    )
     if overlapping_leave:
-        return False, f"Impossible : l'utilisateur est en congé le {overlapping_leave.start_date.strftime('%d/%m/%Y')}."
+        return (
+            False,
+            f"Impossible : l'utilisateur est en congé le {overlapping_leave.start_date.strftime('%d/%m/%Y')}.",
+        )
 
     return True, ""
 
@@ -117,7 +136,10 @@ def can_add_leave(user_id, start_date, end_date):
     # Vérification optimisée : une seule requête pour les shifts sur la période
     overlapping_shift = _get_overlapping_shift(user_id, start_date, end_date)
     if overlapping_shift:
-        return False, f"Impossible : l'utilisateur a un shift le {overlapping_shift.date.strftime('%d/%m/%Y')}."
+        return (
+            False,
+            f"Impossible : l'utilisateur a un shift le {overlapping_shift.date.strftime('%d/%m/%Y')}.",
+        )
 
     # Vérification optimisée : une seule requête pour les astreintes chevauchantes
     overlapping_oncall = _get_overlapping_oncall(user_id, start_date, end_date)

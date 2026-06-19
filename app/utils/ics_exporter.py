@@ -16,27 +16,33 @@ def generate_ics_standard(events, calendar_name="Leviia Schedule"):
     Returns:
         str: Contenu du fichier ICS.
     """
-    tz = pytz.timezone('Europe/Paris')
+    tz = pytz.timezone("Europe/Paris")
 
     cal = Calendar()
-    cal.add('prodid', '-//Leviia Schedule//fr')
-    cal.add('version', '2.0')
-    cal.add('calscale', 'GREGORIAN')
-    cal.add('method', 'PUBLISH')
-    cal.add('name', calendar_name)
-    cal.add('x-wr-timezone', 'Europe/Paris')
+    cal.add("prodid", "-//Leviia Schedule//fr")
+    cal.add("version", "2.0")
+    cal.add("calscale", "GREGORIAN")
+    cal.add("method", "PUBLISH")
+    cal.add("name", calendar_name)
+    cal.add("x-wr-timezone", "Europe/Paris")
 
     for event_obj in events:
         event = Event()
 
         # Définir l'UID (identifiant unique)
-        event.add('uid', f"{event_obj.__class__.__name__}-{event_obj.id}@mtg-schedule")
+        event.add("uid", f"{event_obj.__class__.__name__}-{event_obj.id}@mtg-schedule")
 
         # Gestion des titres, descriptions et dates selon le type d'événement
         if isinstance(event_obj, Shift):
-            shift_type_label = event_obj.shift_type.label if event_obj.shift_type else event_obj.shift_type
+            shift_type_label = (
+                event_obj.shift_type.label
+                if event_obj.shift_type
+                else event_obj.shift_type
+            )
             title = f"Shift {shift_type_label} - {event_obj.user.name}"
-            description = f"Type: {shift_type_label}\nUtilisateur: {event_obj.user.name}"
+            description = (
+                f"Type: {shift_type_label}\nUtilisateur: {event_obj.user.name}"
+            )
             start_time = event_obj.start_time
             end_time = event_obj.end_time
         elif isinstance(event_obj, OnCall):
@@ -49,7 +55,9 @@ def generate_ics_standard(events, calendar_name="Leviia Schedule"):
             description = f"Utilisateur: {event_obj.user.name}"
             # Pour les congés, créer des événements toute la journée
             start_time = datetime.combine(event_obj.start_date, datetime.min.time())
-            end_time = datetime.combine(event_obj.end_date + timedelta(days=1), datetime.min.time())
+            end_time = datetime.combine(
+                event_obj.end_date + timedelta(days=1), datetime.min.time()
+            )
         else:
             continue  # Ignorer les objets non supportés
 
@@ -60,15 +68,15 @@ def generate_ics_standard(events, calendar_name="Leviia Schedule"):
             end_time = tz.localize(end_time)
 
         # Définir les dates de début et de fin avec timezone
-        event.add('summary', title)
-        event.add('description', description)
-        event.add('dtstart', start_time)
-        event.add('dtend', end_time)
+        event.add("summary", title)
+        event.add("description", description)
+        event.add("dtstart", start_time)
+        event.add("dtend", end_time)
 
         # Ajouter l'événement au calendrier
         cal.add_component(event)
 
-    return cal.to_ical().decode('utf-8')
+    return cal.to_ical().decode("utf-8")
 
 
 def generate_ics_shifts(shifts):
