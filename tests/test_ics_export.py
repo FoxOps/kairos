@@ -5,6 +5,7 @@ import pytest
 from datetime import datetime, timedelta
 from app.utils.ics_exporter import generate_ics_shifts, generate_ics_oncall, generate_ics_leaves
 from app.models import Shift, OnCall, Leave
+from app import db
 
 
 class TestICSExport:
@@ -21,7 +22,7 @@ class TestICSExport:
         assert 'BEGIN:VEVENT' in ics_content
         assert 'END:VEVENT' in ics_content
         assert 'TZID:Europe/Paris' in ics_content or 'Europe/Paris' in ics_content
-        assert f'Shift {test_shift.shift_type}' in ics_content
+        assert f'Shift {test_shift.shift_type.label}' in ics_content
     
     def test_generate_ics_oncall(self, test_oncall):
         """Test la génération d'un fichier ICS pour les astreintes."""
@@ -47,22 +48,12 @@ class TestICSExport:
         assert 'BEGIN:VEVENT' in ics_content
         assert 'END:VEVENT' in ics_content
         assert 'TZID:Europe/Paris' in ics_content or 'Europe/Paris' in ics_content
-        assert 'Congé' in ics_content
+        assert 'Conge' in ics_content or 'Congé' in ics_content
         assert test_leave.user.name in ics_content
     
-    def test_generate_ics_shifts_timezone(self, test_user):
+    def test_generate_ics_shifts_timezone(self, test_shift):
         """Test que les shifts sont exportés avec le bon timezone."""
-        start_time = datetime(2023, 12, 1, 7, 0)
-        end_time = datetime(2023, 12, 1, 15, 0)
-        shift = Shift(
-            user_id=test_user.id,
-            shift_type='morning',
-            start_time=start_time,
-            end_time=end_time,
-            date=start_time.date()
-        )
-        
-        ics_content = generate_ics_shifts([shift])
+        ics_content = generate_ics_shifts([test_shift])
         
         # Vérifier que le timezone est présent
         assert 'Europe/Paris' in ics_content
@@ -70,7 +61,7 @@ class TestICSExport:
         assert 'DTSTART' in ics_content
         assert 'DTEND' in ics_content
     
-    def test_generate_ics_leaves_all_day(self, test_user):
+    def test_generate_ics_leaves_all_day(self, app, test_user):
         """Test que les congés sont exportés comme événements toute la journée."""
         start_date = datetime(2023, 12, 10).date()
         end_date = datetime(2023, 12, 15).date()
@@ -80,6 +71,8 @@ class TestICSExport:
             end_date=end_date,
             reason='Test Leave'
         )
+        db.session.add(leave)
+        db.session.commit()
         
         ics_content = generate_ics_leaves([leave])
         

@@ -7,7 +7,7 @@ db = SQLAlchemy()
 
 # Initialisation de Flask-Login
 login_manager = LoginManager()
-login_manager.login_view = 'auth.login'  # Route pour la page de login
+login_manager.login_view = 'login'  # Route pour la page de login
 login_manager.login_message_category = 'danger'  # Catégorie pour les messages flash
 
 # Créer l'instance Flask

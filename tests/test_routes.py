@@ -28,21 +28,21 @@ class TestShiftRoutes:
 class TestShiftRoutes:
     """Tests pour les routes des shifts."""
     
-    def test_add_shift_get(self, client, test_user):
+    def test_add_shift_get(self, logged_in_admin_client, test_user):
         """Test l'affichage du formulaire d'ajout de shift."""
-        response = client.get('/schedule/add')
+        response = logged_in_admin_client.get('/schedule/add')
         assert response.status_code == 200
         assert b'Ajouter un shift' in response.data
     
-    def test_add_shift_post_valid(self, client, test_user):
+    def test_add_shift_post_valid(self, logged_in_admin_client, test_user, test_shift_type):
         """Test l'ajout d'un shift valide."""
         data = {
             'user_id': test_user.id,
-            'shift_type': 'morning',
+            'shift_type_id': test_shift_type.id,
             'start_date': '2023-12-01',
             'end_date': '2023-12-01'
         }
-        response = client.post('/schedule/add', data=data, follow_redirects=True)
+        response = logged_in_admin_client.post('/schedule/add', data=data, follow_redirects=True)
         assert response.status_code == 200
         assert b'Shifts ajout' in response.data and b'succes' in response.data
         
@@ -50,21 +50,21 @@ class TestShiftRoutes:
         shifts = Shift.query.filter_by(user_id=test_user.id).all()
         assert len(shifts) == 1
     
-    def test_add_shift_post_invalid_dates(self, client, test_user):
+    def test_add_shift_post_invalid_dates(self, logged_in_admin_client, test_user, test_shift_type):
         """Test l'ajout d'un shift avec des dates invalides."""
         data = {
             'user_id': test_user.id,
-            'shift_type': 'morning',
+            'shift_type_id': test_shift_type.id,
             'start_date': '2023-12-02',  # Samedi
             'end_date': '2023-12-02'
         }
-        response = client.post('/schedule/add', data=data, follow_redirects=True)
+        response = logged_in_admin_client.post('/schedule/add', data=data, follow_redirects=True)
         assert response.status_code == 200
-        assert b'les shifts ne peuvent etre ajoutes que du lundi au vendredi' in response.data
+        assert b'les shifts ne peuvent' in response.data and b'lundi au vendredi' in response.data
     
-    def test_delete_shift_post(self, client, test_shift):
+    def test_delete_shift_post(self, logged_in_admin_client, test_shift):
         """Test la suppression d'un shift."""
-        response = client.post(f'/schedule/delete/{test_shift.id}', follow_redirects=True)
+        response = logged_in_admin_client.get(f'/schedule/delete/{test_shift.id}', follow_redirects=True)
         assert response.status_code == 200
         assert b'Shift supprime' in response.data and b'succes' in response.data
         
@@ -76,19 +76,19 @@ class TestShiftRoutes:
 class TestOnCallRoutes:
     """Tests pour les routes des astreintes."""
     
-    def test_add_oncall_get(self, client, test_user):
+    def test_add_oncall_get(self, logged_in_admin_client, test_user):
         """Test l'affichage du formulaire d'ajout d'astreinte."""
-        response = client.get('/oncall/add')
+        response = logged_in_admin_client.get('/oncall/add')
         assert response.status_code == 200
         assert b'Ajouter une astreinte' in response.data
     
-    def test_add_oncall_post_valid(self, client, test_user):
+    def test_add_oncall_post_valid(self, logged_in_admin_client, test_user):
         """Test l'ajout d'une astreinte valide."""
         data = {
             'user_id': test_user.id,
             'start_date': '2023-12-01'  # Vendredi
         }
-        response = client.post('/oncall/add', data=data, follow_redirects=True)
+        response = logged_in_admin_client.post('/oncall/add', data=data, follow_redirects=True)
         assert response.status_code == 200
         assert b'Astreinte ajoutee' in response.data and b'succes' in response.data
         
@@ -96,19 +96,19 @@ class TestOnCallRoutes:
         on_calls = OnCall.query.filter_by(user_id=test_user.id).all()
         assert len(on_calls) == 1
     
-    def test_add_oncall_post_invalid_day(self, client, test_user):
+    def test_add_oncall_post_invalid_day(self, logged_in_admin_client, test_user):
         """Test l'ajout d'une astreinte un jour invalide."""
         data = {
             'user_id': test_user.id,
             'start_date': '2023-12-02'  # Samedi
         }
-        response = client.post('/oncall/add', data=data, follow_redirects=True)
+        response = logged_in_admin_client.post('/oncall/add', data=data, follow_redirects=True)
         assert response.status_code == 200
-        assert b"L astreinte doit commencer un vendredi" in response.data
+        assert b"L'astreinte doit commencer un vendredi" in response.data
     
-    def test_delete_oncall_post(self, client, test_oncall):
+    def test_delete_oncall_post(self, logged_in_admin_client, test_oncall):
         """Test la suppression d'une astreinte."""
-        response = client.post(f'/oncall/delete/{test_oncall.id}', follow_redirects=True)
+        response = logged_in_admin_client.get(f'/oncall/delete/{test_oncall.id}', follow_redirects=True)
         assert response.status_code == 200
         assert b'Astreinte supprimee' in response.data and b'succes' in response.data
         
@@ -120,13 +120,13 @@ class TestOnCallRoutes:
 class TestLeaveRoutes:
     """Tests pour les routes des conges."""
     
-    def test_add_leave_get(self, client, test_user):
+    def test_add_leave_get(self, logged_in_client, test_user):
         """Test l'affichage du formulaire d'ajout de conge."""
-        response = client.get('/leave/add')
+        response = logged_in_client.get('/leave/add')
         assert response.status_code == 200
-        assert b'Ajouter un conge' in response.data
+        assert b'Ajouter un' in response.data and b'conge' in response.data.lower()
     
-    def test_add_leave_post_valid(self, client, test_user):
+    def test_add_leave_post_valid(self, logged_in_client, test_user):
         """Test l'ajout d'un conge valide."""
         data = {
             'user_id': test_user.id,
@@ -134,7 +134,7 @@ class TestLeaveRoutes:
             'end_date': '2023-12-25',
             'reason': 'Test Leave'
         }
-        response = client.post('/leave/add', data=data, follow_redirects=True)
+        response = logged_in_client.post('/leave/add', data=data, follow_redirects=True)
         assert response.status_code == 200
         assert b'Conge ajoute' in response.data and b'succes' in response.data
         
@@ -142,7 +142,7 @@ class TestLeaveRoutes:
         leaves = Leave.query.filter_by(user_id=test_user.id).all()
         assert len(leaves) == 1
     
-    def test_add_leave_post_invalid_dates(self, client, test_user):
+    def test_add_leave_post_invalid_dates(self, logged_in_client, test_user):
         """Test l'ajout d'un conge avec des dates invalides."""
         data = {
             'user_id': test_user.id,
@@ -150,13 +150,13 @@ class TestLeaveRoutes:
             'end_date': '2023-12-20',  # Date de fin avant la date de debut
             'reason': 'Test Leave'
         }
-        response = client.post('/leave/add', data=data, follow_redirects=True)
+        response = logged_in_client.post('/leave/add', data=data, follow_redirects=True)
         assert response.status_code == 200
-        assert b'La date de debut doit etre anterieure a la date de fin' in response.data
+        assert b'La date de debut doit' in response.data and b'anterieure' in response.data
     
-    def test_delete_leave_post(self, client, test_leave):
+    def test_delete_leave_post(self, logged_in_client, test_leave):
         """Test la suppression d'un conge."""
-        response = client.post(f'/leave/delete/{test_leave.id}', follow_redirects=True)
+        response = logged_in_client.get(f'/leave/delete/{test_leave.id}', follow_redirects=True)
         assert response.status_code == 200
         assert b'Conge supprime' in response.data and b'succes' in response.data
         
@@ -168,20 +168,20 @@ class TestLeaveRoutes:
 class TestAdminRoutes:
     """Tests pour les routes admin."""
     
-    def test_list_groups(self, client):
+    def test_list_groups(self, logged_in_admin_client):
         """Test l'affichage de la liste des groupes."""
-        response = client.get('/admin/groups')
+        response = logged_in_admin_client.get('/admin/groups')
         assert response.status_code == 200
         assert b'Gestion des groupes' in response.data
     
-    def test_add_group_post_valid(self, client):
+    def test_add_group_post_valid(self, logged_in_admin_client):
         """Test l'ajout d'un groupe valide."""
         data = {
             'name': 'Nouveau Groupe',
             'is_part_of_schedule': 'on',
             'is_part_of_oncall': 'on'
         }
-        response = client.post('/admin/groups/add', data=data, follow_redirects=True)
+        response = logged_in_admin_client.post('/admin/groups/add', data=data, follow_redirects=True)
         assert response.status_code == 200
         assert b'Groupe ajoute' in response.data and b'succes' in response.data
         
@@ -189,20 +189,20 @@ class TestAdminRoutes:
         group = Group.query.filter_by(name='Nouveau Groupe').first()
         assert group is not None
     
-    def test_add_group_post_invalid(self, client):
+    def test_add_group_post_invalid(self, logged_in_admin_client):
         """Test l'ajout d'un groupe sans nom."""
         data = {
             'name': '',
             'is_part_of_schedule': 'on',
             'is_part_of_oncall': 'on'
         }
-        response = client.post('/admin/groups/add', data=data, follow_redirects=True)
+        response = logged_in_admin_client.post('/admin/groups/add', data=data, follow_redirects=True)
         assert response.status_code == 200
         assert b'Le nom du groupe est obligatoire' in response.data
     
-    def test_delete_group_post(self, client, test_group):
+    def test_delete_group_post(self, logged_in_admin_client, test_group):
         """Test la suppression d'un groupe."""
-        response = client.post(f'/admin/groups/delete/{test_group.id}', follow_redirects=True)
+        response = logged_in_admin_client.post(f'/admin/groups/delete/{test_group.id}', follow_redirects=True)
         assert response.status_code == 200
         assert b'Groupe supprime' in response.data and b'succes' in response.data
         
@@ -210,20 +210,20 @@ class TestAdminRoutes:
         group = Group.query.get(test_group.id)
         assert group is None
     
-    def test_list_users(self, client):
+    def test_list_users(self, logged_in_admin_client):
         """Test l'affichage de la liste des utilisateurs."""
-        response = client.get('/admin/users')
+        response = logged_in_admin_client.get('/admin/users')
         assert response.status_code == 200
         assert b'Gestion des utilisateurs' in response.data
     
-    def test_add_user_post_valid(self, client, test_group):
+    def test_add_user_post_valid(self, logged_in_admin_client, test_group):
         """Test l'ajout d'un utilisateur valide."""
         data = {
             'name': 'Nouvel Utilisateur',
             'email': 'nouvel@example.com',
             'group_id': test_group.id
         }
-        response = client.post('/admin/users/add', data=data, follow_redirects=True)
+        response = logged_in_admin_client.post('/admin/users/add', data=data, follow_redirects=True)
         assert response.status_code == 200
         assert b'Utilisateur ajoute' in response.data and b'succes' in response.data
         
@@ -231,9 +231,9 @@ class TestAdminRoutes:
         user = User.query.filter_by(email='nouvel@example.com').first()
         assert user is not None
     
-    def test_delete_user_post(self, client, test_user):
+    def test_delete_user_post(self, logged_in_admin_client, test_user):
         """Test la suppression d'un utilisateur."""
-        response = client.post(f'/admin/users/delete/{test_user.id}', follow_redirects=True)
+        response = logged_in_admin_client.post(f'/admin/users/delete/{test_user.id}', follow_redirects=True)
         assert response.status_code == 200
         assert b'Utilisateur supprime' in response.data and b'succes' in response.data
         

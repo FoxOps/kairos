@@ -92,6 +92,8 @@ class TestCanAddShift:
     def test_can_add_shift_user_already_has_shift(self, app):
         """Test qu'un shift ne peut pas être ajouté si l'utilisateur en a déjà un."""
         with app.app_context():
+            from app.models import ShiftType
+            
             # Créer un groupe et un utilisateur
             group = Group(name='Test Group', is_part_of_schedule=True, is_part_of_oncall=True)
             db.session.add(group)
@@ -101,12 +103,17 @@ class TestCanAddShift:
             db.session.add(user)
             db.session.commit()
             
+            # Créer un type de shift
+            shift_type = ShiftType(name='morning', label='Matin', start_hour=7, end_hour=15)
+            db.session.add(shift_type)
+            db.session.commit()
+            
             # Créer un shift existant
             start_time = datetime(2023, 12, 1, 7, 0)
             end_time = datetime(2023, 12, 1, 15, 0)
             shift = Shift(
                 user_id=user.id,
-                shift_type='morning',
+                shift_type_id=shift_type.id,
                 start_time=start_time,
                 end_time=end_time,
                 date=start_time.date()
@@ -333,6 +340,8 @@ class TestCanAddLeave:
     def test_can_add_leave_user_has_shift(self, app):
         """Test qu'un congé ne peut pas être ajouté si l'utilisateur a un shift."""
         with app.app_context():
+            from app.models import ShiftType
+            
             # Créer un groupe et un utilisateur
             group = Group(name='Test Group', is_part_of_schedule=True, is_part_of_oncall=True)
             db.session.add(group)
@@ -342,12 +351,17 @@ class TestCanAddLeave:
             db.session.add(user)
             db.session.commit()
             
+            # Créer un type de shift
+            shift_type = ShiftType(name='morning', label='Matin', start_hour=7, end_hour=15)
+            db.session.add(shift_type)
+            db.session.commit()
+            
             # Créer un shift
             start_time = datetime(2023, 12, 1, 7, 0)
             end_time = datetime(2023, 12, 1, 15, 0)
             shift = Shift(
                 user_id=user.id,
-                shift_type='morning',
+                shift_type_id=shift_type.id,
                 start_time=start_time,
                 end_time=end_time,
                 date=start_time.date()
