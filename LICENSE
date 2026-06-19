@@ -1,0 +1,491 @@
+CECILL FREE SOFTWARE LICENSE AGREEMENT
+
+Notice
+
+This agreement is a free software license written in French and English.
+It is provided in both languages, the two language versions being equally valid.
+
+Le présent contrat est une licence de logiciel libre rédigée en français et en anglais.
+Les deux versions linguistiques sont également valables.
+
+---
+
+CECILL FREE SOFTWARE LICENSE AGREEMENT
+
+Version 2.1 dated 2006-06-21
+
+Copyright (C) 2006 CEA, CNRS, INRIA
+
+This software is governed by the CeCILL license under French law and
+abiding by the rules of distribution of free software. You can use,
+modify and/or redistribute the software under the terms of the CeCILL
+license as circulated by CEA, CNRS and INRIA at the following URL
+"http://www.cecill.info".
+
+As a counterpart to the access to the source code and rights to copy,
+modify and redistribute granted by the license, users are provided only
+with a limited warranty and the software's author, the holder of the
+economic rights, and the successive licensors have only limited
+liability.
+
+In this respect, the user's attention is drawn to the risks associated
+with loading, using, modifying and/or developing or reproducing the
+software by the user in light of its specific status of free software,
+that may mean that it is complicated to manipulate, and that also
+therefore means that it is reserved for developers and experienced
+professionals having in-depth computer knowledge. Users are therefore
+encouraged to load and test the software's suitability as regards their
+requirements in conditions enabling the security of their systems and/or
+data to be ensured and, more generally, to use and operate it in the
+same conditions as regards security.
+
+The fact that you are presently reading this means that you have had
+knowledge of the CeCILL license and that you accept its terms.
+
+---
+
+CONTRACT
+
+Preamble
+
+This agreement is a free software license written in French and English.
+It is provided in both languages, the two language versions being equally valid.
+
+The purpose of this Free Software License Agreement is to grant users the
+right to modify and redistribute the software governed by this license
+within the framework of an open source distribution model.
+
+The exercise of these rights is conditional upon certain obligations
+for users so as to preserve this status and ensure the economic viability
+of this distribution model.
+
+In consideration of access to the source code and the rights to copy,
+modify and redistribute granted by the license, users are provided only
+with a limited warranty and the software's author, the holder of the
+economic rights, and the successive licensors have only limited
+liability.
+
+In this respect, the user's attention is drawn to the risks associated
+with loading, using, modifying and/or developing or reproducing the
+software by the user in light of its specific status of free software,
+that may mean that it is complicated to manipulate, and that also
+therefore means that it is reserved for developers and experienced
+professionals having in-depth computer knowledge. Users are therefore
+encouraged to load and test the software's suitability as regards their
+requirements in conditions enabling the security of their systems and/or
+data to be ensured and, more generally, to use and operate it in the
+same conditions as regards security.
+
+This Agreement is governed by French law. In the event of a dispute between
+its terms and French law, the latter shall prevail.
+
+Article 1 - DEFINITIONS
+
+1.1 "License" means this document by which the Licensor grants the Licensee
+a right to use, modify, and/or redistribute the Software under certain
+conditions.
+
+1.2 "Licensor" means any person or entity that distributes the Software
+under the License, being one of the original authors or a subsequent
+licensor.
+
+1.3 "Licensee" means any person or entity that uses, modifies, and/or
+redistributes the Software under the License.
+
+1.4 "Software" means the software in its Object Code and/or Source Code form
+and the documentation, as made available under the License.
+
+1.5 "Source Code" means all the Software's code and documentation, as
+defined in Article 1 of the French law no. 94-361 of 10 May 1994, that is
+distributed under the License.
+
+1.6 "Object Code" means the binary files resulting from the compilation of
+the Source Code.
+
+1.7 "Derivative Work" means a work, such as a translation, adaptation,
+arrangement, modification or any other transformation of the Software,
+or any work combining the Software with other software or works, or any
+work from which the Software is derived.
+
+1.8 "Contribution" means any work, including the original version of the
+Software and any Derivative Works.
+
+Article 2 - PURPOSE
+
+The purpose of this License is to grant the Licensee a right to use, modify,
+and redistribute the Software, as defined hereunder, on an "as is" basis and
+without having to pay any license fees for such use, modification or
+redistribution.
+
+Article 3 - GRANT OF RIGHTS
+
+3.1 The Licensor hereby grants the Licensee the following rights on the
+Software:
+
+  a) the right to use the Software,
+  b) the right to make copies of the Software,
+  c) the right to modify the Software, including the right to make
+     Derivative Works,
+  d) the right to redistribute the Software, including Derivative Works.
+
+3.2 The Licensee is allowed to make any use of the Software, including
+commercial use.
+
+3.3 The rights granted hereunder are granted for the duration of the
+copyright and similar rights in the Software.
+
+3.4 The Licensee is free to exercise the rights granted hereunder on any
+medium and for any purpose, commercial or non-commercial, including the
+right to sublicense the Software to third parties.
+
+Article 4 - LIMITATIONS ON COPYRIGHT
+
+4.1 The Licensee shall respect the intellectual property rights of the
+Licensor and any third party in the Software.
+
+4.2 The Licensee undertakes not to delete or modify the intellectual
+property notices attached to the Software, such as copyright notices,
+license notices or any other notices indicating that the Software is
+governed by this License.
+
+4.3 The Licensee undertakes not to present the Software as its own work.
+
+4.4 The Licensee undertakes not to use the names, trademarks or any other
+signs that might be attached to the Software to endorse products or
+services derived from the Software without the Licensor's prior written
+authorization.
+
+4.5 The Licensee may include the Software in aggregate form with other
+software or works, provided that the Licensee complies with the terms
+of this License for the Software.
+
+Article 5 - OBLIGATIONS OF THE LICENSEE
+
+5.1 The Licensee undertakes to inform any person to whom it distributes,
+conveys or communicates the Software of the existence of this License and
+to make available to them this License so that they are aware of their
+rights and obligations under this License.
+
+5.2 The Licensee undertakes, when modifying the Software, to indicate in
+the Source Code that it has been modified, and to include a dated notice
+stating that it has made a modification.
+
+5.3 The Licensee undertakes to provide access to the Source Code of the
+Software, or any Derivative Work, to any person to whom it distributes,
+conveys or communicates the Software or Derivative Work, under terms
+that allow that person to use, modify and redistribute the Software or
+Derivative Work.
+
+5.4 The Licensee undertakes to ensure that any Derivative Work it
+creates from the Software is governed by this License, or a compatible
+license.
+
+Article 6 - INTELLECTUAL PROPERTY
+
+6.1 The Licensor retains ownership of the intellectual property rights on
+the Software.
+
+6.2 The Licensee agrees that any Contribution it makes to the Software
+shall be governed by this License.
+
+Article 7 - LIMITED WARRANTY
+
+7.1 The Licensor warrants that the Software, as distributed by it, does
+not infringe any third party's intellectual property rights to the best
+of its knowledge.
+
+7.2 The Licensor does not warrant that the Software is free of errors or
+that it will operate without interruption.
+
+7.3 The Licensor does not warrant that the Software will meet the
+Licensee's requirements or that any errors in the Software will be
+corrected.
+
+7.4 The Licensor provides the Software on an "as is" basis, without any
+other express or implied warranty, including without limitation, any
+implied warranty of merchantability, fitness for a particular purpose or
+non-infringement.
+
+Article 8 - LIMITATION OF LIABILITY
+
+8.1 The Licensor shall not be liable for any direct, indirect, incidental,
+special, exemplary or consequential damages (including, but not limited
+to, procurement of substitute goods or services; loss of use, data or
+profits; or business interruption) however caused and on any theory of
+liability, whether in contract, strict liability or tort (including
+negligence or otherwise) arising in any way out of the use of the
+Software, even if advised of the possibility of such damage.
+
+8.2 The Licensor shall not be liable for any damages resulting from the
+use of the Software in a way that is not authorized under this License.
+
+Article 9 - TERMINATION
+
+9.1 This License shall automatically terminate upon any breach by the
+Licensee of the terms hereof.
+
+9.2 Any person who has received the Software under this License and who
+complies with the terms hereof shall have the right to continue to use,
+modify and redistribute the Software under this License.
+
+9.3 The termination of this License does not terminate the licenses of
+any person who has received the Software under this License from the
+Licensee.
+
+Article 10 - MISCELLANEOUS
+
+10.1 If any provision of this License is held to be invalid or
+unenforceable under any applicable law, it shall not affect the validity
+or enforceability of the License as a whole. Such provision shall be
+reformed to the minimum extent necessary to make it valid and enforceable.
+
+10.2 This License shall be governed by French law. Any dispute arising
+from the interpretation or performance of this License shall be
+submitted to the exclusive jurisdiction of the courts of Paris, France.
+
+10.3 The original version of this License is written in French. In case
+of discrepancy between the French and English versions, the French
+version shall prevail.
+
+---
+
+CONTRAT DE LICENCE DE LOGICIEL LIBRE CECILL
+
+Version 2.1 du 21 juin 2006
+
+Copyright (C) 2006 CEA, CNRS, INRIA
+
+Ce logiciel est régit par la licence CeCILL soumise au droit français et
+respectant les principes de diffusion des logiciels libres. Vous pouvez
+utiliser, modifier et/ou redistribuer ce logiciel sous les conditions
+de la licence CeCILL telle que diffusée par le CEA, le CNRS et l'INRIA sur
+le site "http://www.cecill.info".
+
+En contrepartie de l'accès au code source et des droits de copie, de
+modification et de redistribution accordés par cette licence, il n'est
+offert aux utilisateurs qu'une garantie limitée. Pour les mêmes raisons,
+seule une responsabilité restreinte pèse sur l'auteur du logiciel, le
+titulaire des droits patrimoniaux et les concédants successifs.
+
+À cet égard, l'attention de l'utilisateur est attirée sur les risques
+associés au chargement, à l'utilisation, à la modification et/ou au
+développement et à la reproduction du logiciel par l'utilisateur étant
+donné sa spécificité de logiciel libre, qui peut impliquer que sa
+manipulation est complexe et qui, de ce fait, réserve son utilisation à
+des développeurs et des professionnels avertis possèdant des
+connaissances approfondies en informatique.
+
+Les utilisateurs sont donc invités à charger et tester l'adéquation du
+logiciel à leurs besoins dans des conditions permettant d'assurer la
+sécurité de leurs systèmes et/ou de leurs données et, plus généralement,
+à l'utiliser et l'exploiter dans les mêmes conditions de sécurité.
+
+Le fait que vous puissiez accéder à cet en-tête signifie que vous avez
+pris connaissance de la licence CeCILL, et que vous en avez accepté les
+termes.
+
+---
+
+Préambule
+
+Le présent contrat est une licence de logiciel libre rédigée en français et
+en anglais. Les deux versions linguistiques sont également valables.
+
+L'objet de ce Contrat de Licence de Logiciel Libre (CLLL) est de conférer
+à l'Utilisateur des droits de modification et de redistribution du
+logiciel régit par ce contrat dans le cadre d'un modèle de distribution
+open source.
+
+L'exercice de ces droits est subordonné au respect de certaines obligations
+pour l'Utilisateur afin de préserver ce statut et d'assurer la viabilité
+économique de ce modèle de distribution.
+
+En contrepartie de l'accès au code source et des droits de copie, de
+modification et de redistribution accordés par cette licence, il n'est
+offert aux utilisateurs qu'une garantie limitée. Pour les mêmes raisons,
+seule une responsabilité restreinte pèse sur l'auteur du logiciel, le
+titulaire des droits patrimoniaux et les concédants successifs.
+
+À cet égard, l'attention de l'utilisateur est attirée sur les risques
+associés au chargement, à l'utilisation, à la modification et/ou au
+développement et à la reproduction du logiciel par l'utilisateur étant
+donné sa spécificité de logiciel libre, qui peut impliquer que sa
+manipulation est complexe et qui, de ce fait, réserve son utilisation à
+des développeurs et des professionnels avertis possèdant des
+connaissances approfondies en informatique.
+
+Les utilisateurs sont donc invités à charger et tester l'adéquation du
+logiciel à leurs besoins dans des conditions permettant d'assurer la
+sécurité de leurs systèmes et/ou de leurs données et, plus généralement,
+à l'utiliser et l'exploiter dans les mêmes conditions de sécurité.
+
+Le présent Contrat est régit par la loi française. En cas de contradiction
+entre ses termes et la loi française, cette dernière prévaudra.
+
+Article 1 - DÉFINITIONS
+
+1.1 "Contrat" désigne le présent document par lequel le Concédant accorde
+à l'Utilisateur une licence sur le Logiciel dans les conditions ci-dessous.
+
+1.2 "Concédant" désigne toute personne ou entité qui distribue le Logiciel
+sous le Contrat, étant l'un des auteurs originaux ou un concédant
+ultérieur.
+
+1.3 "Utilisateur" désigne toute personne ou entité qui utilise, modifie et/ou
+redistribue le Logiciel sous le Contrat.
+
+1.4 "Logiciel" désigne le logiciel sous forme de Code Objet et/ou de Code
+Source, ainsi que la documentation, le cas échéant, distribués sous le
+Contrat.
+
+1.5 "Code Source" désigne l'ensemble des instructions et des lignes de
+programme du Logiciel et la documentation, sous une forme lisible par
+l'homme, au format source, tel que défini dans l'article 1 de la loi
+n° 94-361 du 10 mai 1994, distribué sous le Contrat.
+
+1.6 "Code Objet" désigne les fichiers binaires résultant de la
+compilation du Code Source.
+
+1.7 "Œuvre Dérivée" désigne toute œuvre, telle qu'une traduction,
+adaptation, arrangement, modification ou toute autre transformation du
+Logiciel, ou toute œuvre intégrant le Logiciel à d'autres logiciels ou
+œuvres, ou toute œuvre à partir de laquelle le Logiciel est dérivé.
+
+1.8 "Contribution" désigne toute œuvre, y compris la version originale du
+Logiciel et toute Œuvre Dérivée.
+
+Article 2 - OBJET
+
+Le présent Contrat a pour objet de conférer à l'Utilisateur le droit
+d'utiliser, de modifier et de redistribuer le Logiciel, sous réserve du
+respect des conditions ci-dessous.
+
+Article 3 - ACCORD DE LICENCE
+
+3.1 Le Concédant accorde à l'Utilisateur les droits suivants sur le
+Logiciel :
+
+  a) le droit d'utiliser le Logiciel,
+  b) le droit de reproduire le Logiciel,
+  c) le droit de modifier le Logiciel, y compris le droit de réaliser
+     des Œuvres Dérivées,
+  d) le droit de distribuer le Logiciel, y compris les Œuvres Dérivées.
+
+3.2 L'Utilisateur est autorisé à utiliser le Logiciel à des fins
+commerciales.
+
+3.3 Les droits accordés ci-dessus sont accordés pour la durée de la
+protection des droits patrimoniaux sur le Logiciel.
+
+3.4 L'Utilisateur est libre d'exercer les droits accordés ci-dessus sur
+ tout support et pour tout usage, commercial ou non commercial, y compris
+le droit de concéder à titre de sous-licence le Logiciel à des tiers.
+
+Article 4 - DROITS D'AUTEUR
+
+4.1 L'Utilisateur s'engage à respecter les droits d'auteur sur le
+Logiciel.
+
+4.2 L'Utilisateur s'engage à conserver intactes toutes les mentions de
+droits d'auteur et de licence sur le Logiciel, et à reproduire ces mentions
+sur toute copie du Logiciel.
+
+4.3 L'Utilisateur s'engage à ne pas présenter le Logiciel comme son
+propre travail.
+
+4.4 L'Utilisateur s'engage à ne pas utiliser les noms, marques ou tout
+autre signe distinctif du Concédant pour promouvoir des produits ou
+services dérivés du Logiciel sans l'autorisation écrite préalable du
+Concédant.
+
+4.5 L'Utilisateur peut intégrer le Logiciel dans un logiciel ou une œuvre
+plus large, à condition de respecter les termes du présent Contrat pour le
+Logiciel.
+
+Article 5 - OBLIGATIONS DE L'UTILISATEUR
+
+5.1 L'Utilisateur s'engage à informer tout destinataire du Logiciel de
+l'existence du présent Contrat et à lui en fournir une copie afin qu'il
+en prenne connaissance de ses droits et obligations.
+
+5.2 L'Utilisateur s'engage, lors de toute modification du Logiciel, à
+indiquer de manière très visible que le Logiciel a été modifié, et à
+inclure une notice datée précisant qu'il a effectué des modifications.
+
+5.3 L'Utilisateur s'engage à fournir à tout destinataire du Logiciel ou
+d'une Œuvre Dérivée un accès au Code Source du Logiciel ou de l'Œuvre
+Dérivée, sous réserve que cet accès soit accordé sous des termes qui
+permettent au destinataire d'utiliser, de modifier et de redistribuer le
+Logiciel ou l'Œuvre Dérivée.
+
+5.4 L'Utilisateur s'engage à ce que toute Œuvre Dérivée qu'il crée à
+partir du Logiciel soit régie par le présent Contrat ou une licence
+compatible.
+
+Article 6 - PROPRIÉTÉ INTELLECTUELLE
+
+6.1 Le Concédant conserve la propriété des droits patrimoniaux sur le
+Logiciel.
+
+6.2 L'Utilisateur reconnaît que toute Contribution qu'il apporte au
+Logiciel sera régie par le présent Contrat.
+
+Article 7 - GARANTIE LIMITÉE
+
+7.1 Le Concédant garantit que, à sa connaissance, le Logiciel, au moment
+de sa distribution, ne porte pas atteinte aux droits de propriété
+intellectuelle de tiers.
+
+7.2 Le Concédant ne garantit pas que le Logiciel est exempt d'erreurs ou
+qu'il fonctionnera sans interruption.
+
+7.3 Le Concédant ne garantit pas que le Logiciel répondra aux besoins de
+l'Utilisateur ou que les éventuelles erreurs du Logiciel seront
+corrigées.
+
+7.4 Le Logiciel est fourni "en l'état", sans autre garantie expresse ou
+implicite, y compris, sans limitation, toute garantie implicite de
+qualité marchande, d'adéquation à un usage particulier ou de non-
+contrefaçon.
+
+Article 8 - RESPONSABILITÉ
+
+8.1 Le Concédant ne sera en aucun cas responsable des dommages directs,
+indirects, accessoires, spéciaux, exemplaires ou consécutifs (y compris,
+sans limitation, le remplacement de biens ou services, la perte d'usage,
+de données ou de profits, ou l'interruption d'activité) découlant de
+l'utilisation du Logiciel, même si le Concédant a été averti de la
+possibilité de tels dommages.
+
+8.2 Le Concédant ne sera pas responsable des dommages résultant de
+l'utilisation du Logiciel de manière non autorisée par le présent
+Contrat.
+
+Article 9 - RÉSILIATION
+
+9.1 Le présent Contrat prendra fin automatiquement en cas de violation
+de l'une de ses dispositions par l'Utilisateur.
+
+9.2 Toute personne ayant obtenu le Logiciel sous le présent Contrat et
+qui respecte ses termes pourra continuer à utiliser, modifier et
+distribuer le Logiciel sous le présent Contrat.
+
+9.3 La résiliation du présent Contrat n'entraîne pas la résiliation des
+licences accordées aux personnes ayant reçu le Logiciel sous le présent
+Contrat de la part de l'Utilisateur.
+
+Article 10 - DIVERS
+
+10.1 Si une disposition du présent Contrat est déclarée nulle ou
+inapplicable par une autorité compétente, cela n'affectera pas la validité
+et l'applicabilité du Contrat dans son ensemble. La disposition sera
+réformée dans la mesure minimale nécessaire pour la rendre valide et
+applicable.
+
+10.2 Le présent Contrat est régit par la loi française. Tout litige
+relatif à l'interprétation ou à l'exécution du présent Contrat sera de la
+compétence exclusive des tribunaux de Paris, France.
+
+10.3 La version originale du présent Contrat est rédigée en français.
+En cas de divergence entre la version française et la version anglaise,
+la version française prévaudra.

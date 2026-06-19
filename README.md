@@ -281,7 +281,9 @@ Pour signaler un bug, ouvrez une **Issue** sur GitHub avec les informations suiv
 
 ## 📜 Licence
 
-Ce projet est sous licence **MIT**. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+Ce projet est sous licence **CeCILL v2.1**. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+
+La licence CeCILL est une licence de logiciel libre conforme au droit français, compatible avec les principes du logiciel libre et open source.
 
 ## 🙏 Remerciements
 
