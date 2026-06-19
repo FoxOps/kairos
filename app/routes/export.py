@@ -28,11 +28,6 @@ def export_shifts():
     
     query = Shift.query.options(joinedload(Shift.user)).order_by(Shift.start_time)
     
-    # Vérification des permissions : un utilisateur normal ne peut exporter que ses propres données
-    if not current_user.is_admin and scope == 'all':
-        flash('❌ Vous ne pouvez exporter que vos propres shifts.', 'danger')
-        return redirect(url_for('schedule'))
-    
     filtered_query = _filter_by_scope(query, Shift, scope, current_user)
     shifts = filtered_query.all()
     
@@ -51,11 +46,6 @@ def export_oncall():
     
     query = OnCall.query.options(joinedload(OnCall.user)).order_by(OnCall.start_time)
     
-    # Vérification des permissions : un utilisateur normal ne peut exporter que ses propres données
-    if not current_user.is_admin and scope == 'all':
-        flash('❌ Vous ne pouvez exporter que vos propres astreintes.', 'danger')
-        return redirect(url_for('oncall'))
-    
     filtered_query = _filter_by_scope(query, OnCall, scope, current_user)
     on_calls = filtered_query.all()
     
@@ -73,11 +63,6 @@ def export_leaves():
     scope = _get_export_scope()
     
     query = Leave.query.options(joinedload(Leave.user)).order_by(Leave.start_date)
-    
-    # Vérification des permissions : un utilisateur normal ne peut exporter que ses propres données
-    if not current_user.is_admin and scope == 'all':
-        flash('❌ Vous ne pouvez exporter que vos propres congés.', 'danger')
-        return redirect(url_for('leave'))
     
     filtered_query = _filter_by_scope(query, Leave, scope, current_user)
     leaves = filtered_query.all()
