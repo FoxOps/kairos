@@ -6,15 +6,15 @@
 <section class="section">
     <div class="container">
         <h1 class="title">
-            <i class="fas fa-plus"></i> Ajouter un groupe
+            <i class="fas fa-plus" aria-hidden="true"></i> Ajouter un groupe
         </h1>
         
         <form method="POST" action="{{ url_for('add_group') }}">
             <div class="box">
                 <div class="field">
-                    <label class="label">Nom du groupe</label>
+                    <label class="label required">Nom du groupe</label>
                     <div class="control">
-                        <input class="input" type="text" name="name" required placeholder="Ex: Équipe A">
+                        <input class="input" type="text" name="name" required aria-required="true" placeholder="Ex: Équipe A">
                     </div>
                 </div>
                 
@@ -39,7 +39,7 @@
                 <div class="field">
                     <div class="control">
                         <button class="button is-primary" type="submit">
-                            <i class="fas fa-save"></i>&nbsp; Enregistrer
+                            <i class="fas fa-save" aria-hidden="true"></i>&nbsp; Enregistrer
                         </button>
                         <a class="button is-light" href="{{ url_for('list_groups') }}">Annuler</a>
                     </div>

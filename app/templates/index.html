@@ -29,21 +29,21 @@
 {% block content %}
 <section class="section">
     <div class="container">
-        <h1 class="title is-2">
-            <i class="fas fa-home"></i> Tableau de bord - Leviia
+        <h1 class="title">
+            <i class="fas fa-home" aria-hidden="true"></i> Tableau de bord - Leviia
         </h1>
 
         <!-- Calendrier -->
         <div class="box">
-            <h2 class="subtitle is-4">
-                <i class="fas fa-calendar-alt"></i> Calendrier des shifts, astreintes et congés
+            <h2>
+                <i class="fas fa-calendar-alt" aria-hidden="true"></i> Calendrier des shifts, astreintes et congés
             </h2>
             <div id="calendar"></div>
         </div>
 
         <!-- Légende -->
         <div class="box">
-            <h2 class="subtitle is-5">Légende</h2>
+            <h3>Légende</h3>
             <div class="tags are-medium">
                 <span class="tag is-primary">Shifts</span>
                 <span class="tag is-info">Astreintes</span>
@@ -53,28 +53,28 @@
 
         <!-- Actions rapides -->
         <div class="box">
-            <h2 class="subtitle is-5">
-                <i class="fas fa-bolt"></i> Actions rapides
-            </h2>
+            <h3>
+                <i class="fas fa-bolt" aria-hidden="true"></i> Actions rapides
+            </h3>
             <div class="buttons">
                 <a class="button is-primary" href="{{ url_for('add_shift') }}">
-                    <i class="fas fa-plus"></i>&nbsp; Ajouter un shift
+                    <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un shift
                 </a>
                 <a class="button is-primary" href="{{ url_for('add_oncall') }}">
-                    <i class="fas fa-plus"></i>&nbsp; Ajouter une astreinte
+                    <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter une astreinte
                 </a>
                 <a class="button is-primary" href="{{ url_for('add_leave') }}">
-                    <i class="fas fa-plus"></i>&nbsp; Ajouter un congé
+                    <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un congé
                 </a>
                 <a class="button is-primary" href="{{ url_for('list_users') }}">
-                    <i class="fas fa-users"></i>&nbsp; Gérer les utilisateurs
+                    <i class="fas fa-users" aria-hidden="true"></i>&nbsp; Gérer les utilisateurs
                 </a>
                 {% if 'admin' in session and session.get('admin') %}
                 <a class="button is-primary" href="{{ url_for('list_groups') }}">
-                    <i class="fas fa-user-friends"></i>&nbsp; Gérer les groupes
+                    <i class="fas fa-user-friends" aria-hidden="true"></i>&nbsp; Gérer les groupes
                 </a>
                 <a class="button is-light" href="{{ url_for('admin_dashboard') }}">
-                    <i class="fas fa-cog"></i>&nbsp; Admin
+                    <i class="fas fa-cog" aria-hidden="true"></i>&nbsp; Admin
                 </a>
                 {% endif %}
             </div>

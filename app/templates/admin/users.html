@@ -6,28 +6,29 @@
 <section class="section">
     <div class="container">
         <h1 class="title">
-            <i class="fas fa-users"></i> Gestion des utilisateurs
+            <i class="fas fa-users" aria-hidden="true"></i> Gestion des utilisateurs
         </h1>
         
         <!-- Bouton pour ajouter un utilisateur -->
         <div class="buttons">
             <a class="button is-primary" href="{{ url_for('add_user') }}">
-                <i class="fas fa-plus"></i>&nbsp; Ajouter un utilisateur
+                <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un utilisateur
             </a>
         </div>
         
         <!-- Tableau des utilisateurs -->
         <div class="table-container">
             <table class="table is-fullwidth is-striped">
+                <caption class="is-sr-only">Liste des utilisateurs</caption>
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Nom</th>
-                        <th>Email</th>
-                        <th>Shifts</th>
-                        <th>Astreintes</th>
-                        <th>Congés</th>
-                        <th>Actions</th>
+                        <th scope="col">ID</th>
+                        <th scope="col">Nom</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Shifts</th>
+                        <th scope="col">Astreintes</th>
+                        <th scope="col">Congés</th>
+                        <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -40,11 +41,11 @@
                         <td>{{ user.on_calls|length }}</td>
                         <td>{{ user.leaves|length }}</td>
                         <td>
-                            <a class="button is-small is-warning" href="{{ url_for('edit_user', user_id=user.id) }}">
-                                <i class="fas fa-edit"></i>
+                            <a class="button is-small is-warning" href="{{ url_for('edit_user', user_id=user.id) }}" aria-label="Modifier l'utilisateur">
+                                <i class="fas fa-edit" aria-hidden="true"></i>
                             </a>
-                            <a class="button is-small is-danger" href="{{ url_for('delete_user', user_id=user.id) }}" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')">
-                                <i class="fas fa-trash"></i>
+                            <a class="button is-small is-danger" href="{{ url_for('delete_user', user_id=user.id) }}" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')" aria-label="Supprimer l'utilisateur">
+                                <i class="fas fa-trash" aria-hidden="true"></i>
                             </a>
                         </td>
                     </tr>

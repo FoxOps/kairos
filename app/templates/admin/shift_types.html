@@ -6,25 +6,26 @@
 <section class="section">
     <div class="container">
         <h1 class="title">
-            <i class="fas fa-cogs"></i> Gestion des types de shifts
+            <i class="fas fa-cogs" aria-hidden="true"></i> Gestion des types de shifts
         </h1>
         
         <div class="buttons">
             <a class="button is-primary" href="{{ url_for('add_shift_type') }}">
-                <i class="fas fa-plus"></i>&nbsp; Ajouter un type de shift
+                <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un type de shift
             </a>
         </div>
         
         {% if shift_types %}
         <div class="table-container">
             <table class="table is-fullwidth is-striped">
+                <caption class="is-sr-only">Liste des types de shifts</caption>
                 <thead>
                     <tr>
-                        <th>Nom</th>
-                        <th>Libellé</th>
-                        <th>Heure de début</th>
-                        <th>Heure de fin</th>
-                        <th>Actions</th>
+                        <th scope="col">Nom</th>
+                        <th scope="col">Libellé</th>
+                        <th scope="col">Heure de début</th>
+                        <th scope="col">Heure de fin</th>
+                        <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -35,11 +36,11 @@
                         <td>{{ "%02d"|format(shift_type.start_hour) }}h</td>
                         <td>{{ "%02d"|format(shift_type.end_hour) }}h</td>
                         <td>
-                            <a class="button is-small is-info" href="{{ url_for('edit_shift_type', shift_type_id=shift_type.id) }}">
-                                <i class="fas fa-edit"></i>
+                            <a class="button is-small is-info" href="{{ url_for('edit_shift_type', shift_type_id=shift_type.id) }}" aria-label="Modifier le type de shift">
+                                <i class="fas fa-edit" aria-hidden="true"></i>
                             </a>
-                            <a class="button is-small is-danger" href="{{ url_for('delete_shift_type', shift_type_id=shift_type.id) }}" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce type de shift ?')">
-                                <i class="fas fa-trash"></i>
+                            <a class="button is-small is-danger" href="{{ url_for('delete_shift_type', shift_type_id=shift_type.id) }}" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce type de shift ?')" aria-label="Supprimer le type de shift">
+                                <i class="fas fa-trash" aria-hidden="true"></i>
                             </a>
                         </td>
                     </tr>

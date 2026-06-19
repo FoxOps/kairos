@@ -6,20 +6,20 @@
 <section class="section">
     <div class="container">
         <h1 class="title">
-            <i class="fas fa-umbrella-beach"></i> Congés
+            <i class="fas fa-umbrella-beach" aria-hidden="true"></i> Congés
         </h1>
         
         <!-- Boutons pour ajouter et exporter -->
         <div class="buttons">
             <a class="button is-primary" href="{{ url_for('add_leave') }}">
-                <i class="fas fa-plus"></i>&nbsp; Ajouter un congé
+                <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un congé
             </a>
             {% if current_user.is_authenticated %}
             <a class="button is-success" href="{{ url_for('export_leaves', scope='all') }}">
-                <i class="fas fa-file-export"></i>&nbsp; Exporter tous les congés
+                <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter tous les congés
             </a>
             <a class="button is-success" href="{{ url_for('export_leaves', scope='my') }}">
-                <i class="fas fa-file-export"></i>&nbsp; Exporter mes congés
+                <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter mes congés
             </a>
             {% endif %}
         </div>
@@ -27,13 +27,14 @@
         <!-- Tableau des congés -->
         <div class="table-container">
             <table class="table is-fullwidth is-striped">
+                <caption class="is-sr-only">Liste des congés</caption>
                 <thead>
                     <tr>
-                        <th>Utilisateur</th>
-                        <th>Début</th>
-                        <th>Fin</th>
-                        <th>Raison</th>
-                        <th>Actions</th>
+                        <th scope="col">Utilisateur</th>
+                        <th scope="col">Début</th>
+                        <th scope="col">Fin</th>
+                        <th scope="col">Raison</th>
+                        <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -44,8 +45,8 @@
                         <td>{{ leave.end_date.strftime('%d/%m/%Y') }}</td>
                         <td>{{ leave.reason or '-' }}</td>
                         <td>
-                            <a class="button is-danger is-small" href="{{ url_for('delete_leave', leave_id=leave.id) }}">
-                                <i class="fas fa-trash"></i>
+                            <a class="button is-danger is-small" href="{{ url_for('delete_leave', leave_id=leave.id) }}" aria-label="Supprimer le congé">
+                                <i class="fas fa-trash" aria-hidden="true"></i>
                             </a>
                         </td>
                     </tr>

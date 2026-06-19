@@ -3,13 +3,13 @@
 {% block admin_content %}
 <section class="section">
     <div class="container">
-        <h1 class="title is-2">
-            <i class="fas fa-users"></i> Gestion des groupes
+        <h1 class="title">
+            <i class="fas fa-users" aria-hidden="true"></i> Gestion des groupes
         </h1>
 
         <div class="buttons">
             <a class="button is-primary" href="{{ url_for('add_group') }}">
-                <i class="fas fa-plus"></i>&nbsp; Ajouter un groupe
+                <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un groupe
             </a>
             <a class="button is-light" href="{{ url_for('admin_dashboard') }}">
                 Retour au tableau de bord
@@ -19,13 +19,14 @@
         {% if groups %}
         <div class="table-container">
             <table class="table is-fullwidth is-striped">
+                <caption class="is-sr-only">Liste des groupes</caption>
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Nom</th>
-                        <th>Fait partie de Schedule</th>
-                        <th>Fait partie de l'astreinte</th>
-                        <th>Actions</th>
+                        <th scope="col">ID</th>
+                        <th scope="col">Nom</th>
+                        <th scope="col">Fait partie de Schedule</th>
+                        <th scope="col">Fait partie de l'astreinte</th>
+                        <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -48,13 +49,14 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a class="button is-small is-info" href="{{ url_for('edit_group', group_id=group.id) }}">
-                                <i class="fas fa-edit"></i>
+                            <a class="button is-small is-info" href="{{ url_for('edit_group', group_id=group.id) }}" aria-label="Modifier le groupe">
+                                <i class="fas fa-edit" aria-hidden="true"></i>
                             </a>
                             <a class="button is-small is-danger"
                                href="{{ url_for('delete_group', group_id=group.id) }}"
-                               onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce groupe ?')">
-                                <i class="fas fa-trash"></i>
+                               onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce groupe ?')"
+                               aria-label="Supprimer le groupe">
+                                <i class="fas fa-trash" aria-hidden="true"></i>
                             </a>
                         </td>
                     </tr>

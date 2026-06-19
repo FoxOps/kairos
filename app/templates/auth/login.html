@@ -12,23 +12,23 @@
                     
                     <form method="POST" action="{{ url_for('login') }}">
                         <div class="field">
-                            <label class="label" for="email">Email</label>
+                            <label class="label required" for="email">Email</label>
                             <div class="control has-icons-left">
                                 <input class="input" type="email" id="email" name="email" 
-                                       placeholder="votre@email.com" required autofocus>
+                                       placeholder="votre@email.com" required autofocus aria-required="true">
                                 <span class="icon is-small is-left">
-                                    <i class="fas fa-envelope"></i>
+                                    <i class="fas fa-envelope" aria-hidden="true"></i>
                                 </span>
                             </div>
                         </div>
                         
                         <div class="field">
-                            <label class="label" for="password">Mot de passe</label>
+                            <label class="label required" for="password">Mot de passe</label>
                             <div class="control has-icons-left">
                                 <input class="input" type="password" id="password" name="password" 
-                                       placeholder="Votre mot de passe" required>
+                                       placeholder="Votre mot de passe" required aria-required="true">
                                 <span class="icon is-small is-left">
-                                    <i class="fas fa-lock"></i>
+                                    <i class="fas fa-lock" aria-hidden="true"></i>
                                 </span>
                             </div>
                         </div>
@@ -46,7 +46,7 @@
                             <div class="control">
                                 <button type="submit" class="button is-primary is-fullwidth">
                                     <span class="icon">
-                                        <i class="fas fa-sign-in-alt"></i>
+                                        <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
                                     </span>
                                     <span>Se connecter</span>
                                 </button>

@@ -6,22 +6,22 @@
 <section class="section">
     <div class="container">
         <h1 class="title">
-            <i class="fas fa-moon"></i> Astreintes
+            <i class="fas fa-moon" aria-hidden="true"></i> Astreintes
         </h1>
         
         <!-- Boutons pour ajouter et exporter -->
         <div class="buttons">
             {% if current_user.is_admin %}
             <a class="button is-primary" href="{{ url_for('add_oncall') }}">
-                <i class="fas fa-plus"></i>&nbsp; Ajouter une astreinte
+                <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter une astreinte
             </a>
             {% endif %}
             {% if current_user.is_authenticated %}
             <a class="button is-success" href="{{ url_for('export_oncall', scope='all') }}">
-                <i class="fas fa-file-export"></i>&nbsp; Exporter toutes les astreintes
+                <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter toutes les astreintes
             </a>
             <a class="button is-success" href="{{ url_for('export_oncall', scope='my') }}">
-                <i class="fas fa-file-export"></i>&nbsp; Exporter mes astreintes
+                <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter mes astreintes
             </a>
             {% endif %}
         </div>
@@ -29,13 +29,14 @@
         <!-- Tableau des astreintes -->
         <div class="table-container">
             <table class="table is-fullwidth is-striped">
+                <caption class="is-sr-only">Liste des astreintes</caption>
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Utilisateur</th>
-                        <th>Début</th>
-                        <th>Fin</th>
-                        <th>Actions</th>
+                        <th scope="col">ID</th>
+                        <th scope="col">Utilisateur</th>
+                        <th scope="col">Début</th>
+                        <th scope="col">Fin</th>
+                        <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -49,8 +50,9 @@
                             {% if current_user.is_admin %}
                             <a class="button is-danger is-small" 
                                href="{{ url_for('delete_oncall', oncall_id=oncall.id) }}"
-                               onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette astreinte ?')">
-                                <i class="fas fa-trash"></i>
+                               onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette astreinte ?')"
+                               aria-label="Supprimer l'astreinte">
+                                <i class="fas fa-trash" aria-hidden="true"></i>
                             </a>
                             {% endif %}
                         </td>
