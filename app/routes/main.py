@@ -8,7 +8,7 @@ from app.utils.helpers import (
     can_add_leave,
     can_add_oncall,
 )
-from app.utils.decorators import admin_required
+from app.utils.decorators import admin_required, user_owns_resource
 from datetime import datetime, timedelta
 
 CALENDAR_WINDOW_DAYS = 180
@@ -145,13 +145,9 @@ def add_leave():
 
 @app.route('/leave/delete/<int:leave_id>')
 @login_required
+@user_owns_resource(Leave, 'leave_id')
 def delete_leave(leave_id):
     leave_record = Leave.query.get_or_404(leave_id)
-    
-    # Vérification des permissions : seul l'admin ou le propriétaire peut supprimer
-    if not current_user.is_admin and current_user.id != leave_record.user_id:
-        flash('❌ Vous ne pouvez supprimer que vos propres congés.', 'danger')
-        return redirect(url_for('leave'))
     
     try:
         db.session.delete(leave_record)
@@ -174,12 +170,8 @@ def oncall():
 
 @app.route('/oncall/add', methods=['GET', 'POST'])
 @login_required
+@admin_required
 def add_oncall():
-    # Seuls les administrateurs peuvent ajouter des astreintes
-    if not current_user.is_admin:
-        flash('❌ Seuls les administrateurs peuvent ajouter des astreintes.', 'danger')
-        return redirect(url_for('oncall'))
-    
     if request.method == 'POST':
         user_id = request.form.get('user_id')
         start_date_str = request.form.get('start_date')
@@ -228,13 +220,9 @@ def add_oncall():
 
 @app.route('/oncall/delete/<int:oncall_id>')
 @login_required
+@admin_required
 def delete_oncall(oncall_id):
     oncall = OnCall.query.get_or_404(oncall_id)
-    
-    # Seuls les administrateurs peuvent supprimer des astreintes
-    if not current_user.is_admin:
-        flash('❌ Seuls les administrateurs peuvent supprimer des astreintes.', 'danger')
-        return redirect(url_for('oncall'))
     
     try:
         db.session.delete(oncall)
@@ -257,12 +245,8 @@ def schedule():
 
 @app.route('/schedule/add', methods=['GET', 'POST'])
 @login_required
+@admin_required
 def add_shift():
-    # Seuls les administrateurs peuvent ajouter des shifts
-    if not current_user.is_admin:
-        flash('❌ Seuls les administrateurs peuvent ajouter des shifts.', 'danger')
-        return redirect(url_for('schedule'))
-    
     if request.method == 'POST':
         user_id = request.form.get('user_id')
         shift_type_id = request.form.get('shift_type_id')
@@ -342,13 +326,9 @@ def add_shift():
 
 @app.route('/schedule/delete/<int:shift_id>')
 @login_required
+@admin_required
 def delete_shift(shift_id):
     shift = Shift.query.get_or_404(shift_id)
-    
-    # Seuls les administrateurs peuvent supprimer des shifts
-    if not current_user.is_admin:
-        flash('❌ Seuls les administrateurs peuvent supprimer des shifts.', 'danger')
-        return redirect(url_for('schedule'))
     
     try:
         db.session.delete(shift)
