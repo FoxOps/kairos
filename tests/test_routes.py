@@ -361,7 +361,6 @@ class TestAdminRoutes:
     
     def test_delete_group_post(self, logged_in_admin_client, test_group):
         """Test la suppression d'un groupe."""
-        # La route utilise POST
         response = logged_in_admin_client.post(f'/admin/groups/delete/{test_group.id}', follow_redirects=True)
         assert response.status_code == 200
         # Vérifier que le groupe a ete supprime ou qu'un message est affiche
@@ -369,7 +368,6 @@ class TestAdminRoutes:
     
     def test_delete_group_with_users(self, logged_in_admin_client, test_group, test_user):
         """Test qu'un groupe avec des utilisateurs ne peut pas etre supprime."""
-        # La route utilise POST
         response = logged_in_admin_client.post(f'/admin/groups/delete/{test_group.id}', follow_redirects=True)
         assert response.status_code == 200
         # Le groupe ne peut pas etre supprime car il a des utilisateurs
@@ -413,26 +411,12 @@ class TestAdminRoutes:
         # Vérifier que l'utilisateur a ete supprime ou qu'un message est affiche
         assert b'Utilisateur' in response.data or b'users' in response.data.lower() or b'succes' in response.data
     
-    def test_delete_user_with_resources(self, logged_in_admin_client, test_user, test_shift_type, app):
+    def test_delete_user_with_resources(self, logged_in_admin_client, test_shift, test_user):
         """Test qu'un utilisateur avec des ressources ne peut pas etre supprime."""
-        with app.app_context():
-            from app import db
-            shift_date = datetime(2023, 12, 1).date()
-            start_time = datetime(2023, 12, 1, 7, 0)
-            end_time = datetime(2023, 12, 1, 15, 0)
-            shift = Shift(
-                user_id=test_user.id,
-                shift_type_id=test_shift_type.id,
-                start_time=start_time,
-                end_time=end_time,
-                date=shift_date
-            )
-            db.session.add(shift)
-            db.session.commit()
-            
-            response = logged_in_admin_client.post(f'/admin/users/delete/{test_user.id}', follow_redirects=True)
-            assert response.status_code == 200
-            assert b'Utilisateur' in response.data or b'users' in response.data.lower() or b'Impossible' in response.data
+        # test_shift est déjà associé à test_user via la fixture
+        response = logged_in_admin_client.post(f'/admin/users/delete/{test_user.id}', follow_redirects=True)
+        assert response.status_code == 200
+        assert b'Utilisateur' in response.data or b'users' in response.data.lower() or b'Impossible' in response.data
 
 
 class TestShiftTypeRoutes:
@@ -489,31 +473,17 @@ class TestShiftTypeRoutes:
     
     def test_delete_shift_type_post(self, logged_in_admin_client, test_shift_type):
         """Test la suppression d'un type de shift."""
-        response = logged_in_admin_client.get(f'/admin/shift-types/delete/{test_shift_type.id}', follow_redirects=True)
+        response = logged_in_admin_client.post(f'/admin/shift-types/delete/{test_shift_type.id}', follow_redirects=True)
         assert response.status_code == 200
         assert b'Type de shift supprime' in response.data or b'succes' in response.data
         
         shift_type = ShiftType.query.get(test_shift_type.id)
         assert shift_type is None
     
-    def test_delete_shift_type_in_use(self, logged_in_admin_client, test_shift_type, test_user, app):
+    def test_delete_shift_type_in_use(self, logged_in_admin_client, test_shift):
         """Test qu'un type de shift utilise ne peut pas etre supprime."""
-        with app.app_context():
-            from app import db
-            shift_date = datetime(2023, 12, 1).date()
-            start_time = datetime(2023, 12, 1, 7, 0)
-            end_time = datetime(2023, 12, 1, 15, 0)
-            shift = Shift(
-                user_id=test_user.id,
-                shift_type_id=test_shift_type.id,
-                start_time=start_time,
-                end_time=end_time,
-                date=shift_date
-            )
-            db.session.add(shift)
-            db.session.commit()
-            
-            response = logged_in_admin_client.get(f'/admin/shift-types/delete/{test_shift_type.id}', follow_redirects=True)
-            assert response.status_code == 200
-            # Un message est affiche
-            assert b'Type' in response.data or b'shift' in response.data.lower() or b'Impossible' in response.data
+        # test_shift utilise déjà test_shift_type
+        response = logged_in_admin_client.post(f'/admin/shift-types/delete/{test_shift.shift_type_id}', follow_redirects=True)
+        assert response.status_code == 200
+        # Un message est affiche
+        assert b'Type' in response.data or b'shift' in response.data.lower() or b'Impossible' in response.data

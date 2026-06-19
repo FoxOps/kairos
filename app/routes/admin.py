@@ -100,7 +100,7 @@ def edit_group(group_id):
     return render_template('admin/edit_group.html', group=group)
 
 
-@app.route('/admin/groups/delete/<int:group_id>')
+@app.route('/admin/groups/delete/<int:group_id>', methods=['POST'])
 @admin_required
 def delete_group(group_id):
     group = Group.query.get_or_404(group_id)
@@ -210,7 +210,7 @@ def edit_user(user_id):
     return render_template('admin/edit_user.html', user=user, groups=groups)
 
 
-@app.route('/admin/users/delete/<int:user_id>')
+@app.route('/admin/users/delete/<int:user_id>', methods=['POST'])
 @admin_required
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
@@ -337,7 +337,7 @@ def edit_shift_type(shift_type_id):
     return render_template('admin/edit_shift_type.html', shift_type=shift_type)
 
 
-@app.route('/admin/shift-types/delete/<int:shift_type_id>')
+@app.route('/admin/shift-types/delete/<int:shift_type_id>', methods=['POST'])
 @admin_required
 def delete_shift_type(shift_type_id):
     shift_type = ShiftType.query.get_or_404(shift_type_id)
