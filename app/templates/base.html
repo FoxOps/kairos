@@ -7,15 +7,14 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { padding-top: 20px; }
-        .navbar { margin-bottom: 20px; }
+        body { padding-top: 3.25rem; }
+        .navbar.is-fixed-top { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
         .footer { margin-top: 2rem; padding: 2rem; background-color: #f5f5f5; }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <a href="#main-content" class="skip-link">Aller au contenu principal</a>
-    <nav class="navbar is-primary" role="navigation">
+    <nav class="navbar is-primary is-fixed-top" role="navigation">
         <div class="navbar-brand">
             <a class="navbar-item" href="{{ url_for('index') }}" aria-label="Accueil - Leviia"><strong>Leviia</strong></a>
         </div>
