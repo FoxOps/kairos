@@ -13,13 +13,13 @@
                     <form method="POST" action="{{ url_for('update_profile') }}">
                         <div class="field is-horizontal">
                             <div class="field-label is-normal">
-                                <label class="label" for="name">Nom</label>
+                                <label class="label required" for="name">Nom</label>
                             </div>
                             <div class="field-body">
                                 <div class="field">
                                     <div class="control">
                                         <input class="input" type="text" id="name" name="name" 
-                                               value="{{ user.name }}" required>
+                                               value="{{ user.name }}" required aria-required="true">
                                     </div>
                                 </div>
                             </div>
@@ -27,13 +27,13 @@
                         
                         <div class="field is-horizontal">
                             <div class="field-label is-normal">
-                                <label class="label" for="email">Email</label>
+                                <label class="label required" for="email">Email</label>
                             </div>
                             <div class="field-body">
                                 <div class="field">
                                     <div class="control">
                                         <input class="input" type="email" id="email" name="email" 
-                                               value="{{ user.email }}" required>
+                                               value="{{ user.email }}" required aria-required="true">
                                     </div>
                                 </div>
                             </div>
@@ -88,7 +88,7 @@
                             <div class="control">
                                 <button type="submit" class="button is-primary">
                                     <span class="icon">
-                                        <i class="fas fa-save"></i>
+                                        <i class="fas fa-save" aria-hidden="true"></i>
                                     </span>
                                     <span>Enregistrer les modifications</span>
                                 </button>

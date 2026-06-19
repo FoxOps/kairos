@@ -14,39 +14,40 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <a href="#main-content" class="skip-link">Aller au contenu principal</a>
     <nav class="navbar is-primary" role="navigation">
         <div class="navbar-brand">
-            <a class="navbar-item" href="{{ url_for('index') }}"><strong>Leviia</strong></a>
+            <a class="navbar-item" href="{{ url_for('index') }}" aria-label="Accueil - Leviia"><strong>Leviia</strong></a>
         </div>
         <div class="navbar-menu">
             <div class="navbar-start">
-                <a class="navbar-item" href="{{ url_for('schedule') }}"><i class="fas fa-calendar-alt"></i>&nbsp; Shifts</a>
-                <a class="navbar-item" href="{{ url_for('oncall') }}"><i class="fas fa-moon"></i>&nbsp; Astreintes</a>
-                <a class="navbar-item" href="{{ url_for('leave') }}"><i class="fas fa-umbrella-beach"></i>&nbsp; Congés</a>
+                <a class="navbar-item" href="{{ url_for('schedule') }}"><i class="fas fa-calendar-alt" aria-hidden="true"></i>&nbsp; Shifts</a>
+                <a class="navbar-item" href="{{ url_for('oncall') }}"><i class="fas fa-moon" aria-hidden="true"></i>&nbsp; Astreintes</a>
+                <a class="navbar-item" href="{{ url_for('leave') }}"><i class="fas fa-umbrella-beach" aria-hidden="true"></i>&nbsp; Congés</a>
                 {% if current_user.is_authenticated and current_user.is_admin %}
-                <a class="navbar-item" href="{{ url_for('list_users') }}"><i class="fas fa-users"></i>&nbsp; Utilisateurs</a>
-                <a class="navbar-item" href="{{ url_for('admin_dashboard') }}"><i class="fas fa-cog"></i>&nbsp; Admin</a>
+                <a class="navbar-item" href="{{ url_for('list_users') }}"><i class="fas fa-users" aria-hidden="true"></i>&nbsp; Utilisateurs</a>
+                <a class="navbar-item" href="{{ url_for('admin_dashboard') }}"><i class="fas fa-cog" aria-hidden="true"></i>&nbsp; Admin</a>
                 {% endif %}
             </div>
             <div class="navbar-end">
                 {% if current_user.is_authenticated %}
                     <div class="navbar-item has-dropdown is-hoverable">
-                        <a class="navbar-link">
-                            <i class="fas fa-user"></i>&nbsp; {{ current_user.name }}
+                        <a class="navbar-link" aria-label="Menu utilisateur - {{ current_user.name }}">
+                            <i class="fas fa-user" aria-hidden="true"></i>&nbsp; {{ current_user.name }}
                         </a>
                         <div class="navbar-dropdown is-right">
                             <a class="navbar-item" href="{{ url_for('profile') }}">
-                                <i class="fas fa-user-circle"></i>&nbsp; Mon profil
+                                <i class="fas fa-user-circle" aria-hidden="true"></i>&nbsp; Mon profil
                             </a>
                             <hr class="navbar-divider">
                             <a class="navbar-item" href="{{ url_for('logout') }}">
-                                <i class="fas fa-sign-out-alt"></i>&nbsp; Déconnexion
+                                <i class="fas fa-sign-out-alt" aria-hidden="true"></i>&nbsp; Déconnexion
                             </a>
                         </div>
                     </div>
                 {% else %}
                     <a class="navbar-item" href="{{ url_for('login') }}">
-                        <i class="fas fa-sign-in-alt"></i>&nbsp; Connexion
+                        <i class="fas fa-sign-in-alt" aria-hidden="true"></i>&nbsp; Connexion
                     </a>
                 {% endif %}
             </div>
@@ -65,7 +66,7 @@
         </div>
     </section>
 
-    <main>
+    <main id="main-content">
         {% block content %}{% endblock %}
     </main>
 

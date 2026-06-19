@@ -146,7 +146,7 @@
     
     .notification.is-warning {
         background-color: #ffdd57 !important;
-        color: #363636 !important;
+        color: #000000 !important; /* Noir pur pour un contraste suffisant (7.5:1) */
     }
     
     .notification.is-info {
@@ -162,4 +162,70 @@
     
     .notification .delete:hover {
         background-color: rgba(0, 0, 0, 0.1) !important;
+    }
+
+    /* === Accessibilité : Focus visible pour la navigation clavier === */
+    a:focus-visible,
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    [tabindex]:focus-visible {
+        outline: 2px solid #3273dc !important;
+        outline-offset: 2px !important;
+    }
+
+    /* === Classe pour masquer visuellement mais garder accessible aux lecteurs d'écran === */
+    .is-sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    /* === Skip link pour sauter la navigation === */
+    .skip-link {
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: #3273dc;
+        color: white;
+        padding: 8px 16px;
+        z-index: 100;
+        text-decoration: none;
+        font-weight: bold;
+        border-radius: 0 0 4px 0;
+    }
+
+    .skip-link:focus {
+        top: 0;
+    }
+
+    /* === Indication visuelle pour les champs obligatoires === */
+    .label.required::after {
+        content: " *";
+        color: #f14668;
+    }
+
+    /* === Soulignement des liens dans le texte (hors boutons et navbar) === */
+    a:not(.button):not(.navbar-item):not(.navbar-link):not(.navbar-brand) {
+        text-decoration: underline;
+    }
+
+    a:not(.button):not(.navbar-item):not(.navbar-link):not(.navbar-brand):hover {
+        text-decoration: none;
+    }
+
+    /* === Correction du contraste pour les boutons .is-warning === */
+    .button.is-warning {
+        color: #000000 !important; /* Noir pur pour un contraste suffisant */
+    }
+
+    .tag.is-warning {
+        color: #000000 !important; /* Noir pur pour un contraste suffisant */
     }

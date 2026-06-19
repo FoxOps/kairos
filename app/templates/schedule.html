@@ -6,22 +6,22 @@
 <section class="section">
     <div class="container">
         <h1 class="title">
-            <i class="fas fa-calendar-alt"></i> Emploi du temps
+            <i class="fas fa-calendar-alt" aria-hidden="true"></i> Emploi du temps
         </h1>
         
         <!-- Boutons pour ajouter et exporter -->
         <div class="buttons">
             {% if current_user.is_admin %}
             <a class="button is-primary" href="{{ url_for('add_shift') }}">
-                <i class="fas fa-plus"></i>&nbsp; Ajouter un shift
+                <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un shift
             </a>
             {% endif %}
             {% if current_user.is_authenticated %}
             <a class="button is-success" href="{{ url_for('export_shifts', scope='all') }}">
-                <i class="fas fa-file-export"></i>&nbsp; Exporter tous les shifts
+                <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter tous les shifts
             </a>
             <a class="button is-success" href="{{ url_for('export_shifts', scope='my') }}">
-                <i class="fas fa-file-export"></i>&nbsp; Exporter mes shifts
+                <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter mes shifts
             </a>
             {% endif %}
         </div>
@@ -29,14 +29,15 @@
         <!-- Tableau des shifts -->
         <div class="table-container">
             <table class="table is-fullwidth is-striped">
+                <caption class="is-sr-only">Liste des shifts</caption>
                 <thead>
                     <tr>
-                        <th>Utilisateur</th>
-                        <th>Type de shift</th>
-                        <th>Date</th>
-                        <th>Heure de début</th>
-                        <th>Heure de fin</th>
-                        <th>Actions</th>
+                        <th scope="col">Utilisateur</th>
+                        <th scope="col">Type de shift</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Heure de début</th>
+                        <th scope="col">Heure de fin</th>
+                        <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -49,8 +50,8 @@
                         <td>{{ shift.end_time.strftime('%H:%M') }}</td>
                         <td>
                             {% if current_user.is_admin %}
-                            <a class="button is-danger is-small" href="{{ url_for('delete_shift', shift_id=shift.id) }}">
-                                <i class="fas fa-trash"></i>
+                            <a class="button is-danger is-small" href="{{ url_for('delete_shift', shift_id=shift.id) }}" aria-label="Supprimer le shift">
+                                <i class="fas fa-trash" aria-hidden="true"></i>
                             </a>
                             {% endif %}
                         </td>

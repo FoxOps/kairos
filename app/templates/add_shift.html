@@ -6,16 +6,16 @@
 <section class="section">
     <div class="container">
         <h1 class="title">
-            <i class="fas fa-plus"></i> Ajouter un shift
+            <i class="fas fa-plus" aria-hidden="true"></i> Ajouter un shift
         </h1>
         
         <form method="POST" action="{{ url_for('add_shift') }}">
             <div class="box">
                 <div class="field">
-                    <label class="label">Utilisateur</label>
+                    <label class="label required">Utilisateur</label>
                     <div class="control">
                         <div class="select is-fullwidth">
-                            <select name="user_id" required>
+                            <select name="user_id" required aria-required="true">
                                 <option value="" disabled selected>Sélectionner un utilisateur</option>
                                 {% for user in users %}
                                 <option value="{{ user.id }}">{{ user.name }}</option>
@@ -26,10 +26,10 @@
                 </div>
                 
                 <div class="field">
-                    <label class="label">Type de shift</label>
+                    <label class="label required">Type de shift</label>
                     <div class="control">
                         <div class="select is-fullwidth">
-                            <select name="shift_type_id" required>
+                            <select name="shift_type_id" required aria-required="true">
                                 <option value="" disabled selected>Sélectionner un type</option>
                                 {% for shift_type in shift_types %}
                                 <option value="{{ shift_type.id }}">{{ shift_type.label }} ({{ shift_type.name }})</option>
@@ -39,25 +39,25 @@
                     </div>
                 </div>
                 
-                <!-- NOUVEAU : Période de dates -->
+                <!-- Période de dates -->
                 <div class="field">
-                    <label class="label">Date de début</label>
+                    <label class="label required">Date de début</label>
                     <div class="control">
-                        <input class="input" type="date" name="start_date" required>
+                        <input class="input" type="date" name="start_date" required aria-required="true">
                     </div>
                 </div>
                 
                 <div class="field">
-                    <label class="label">Date de fin</label>
+                    <label class="label required">Date de fin</label>
                     <div class="control">
-                        <input class="input" type="date" name="end_date" required>
+                        <input class="input" type="date" name="end_date" required aria-required="true">
                     </div>
                 </div>
                 
                 <div class="field">
                     <div class="control">
                         <button class="button is-primary" type="submit">
-                            <i class="fas fa-save"></i>&nbsp; Enregistrer
+                            <i class="fas fa-save" aria-hidden="true"></i>&nbsp; Enregistrer
                         </button>
                         <a class="button is-light" href="{{ url_for('schedule') }}">Annuler</a>
                     </div>
