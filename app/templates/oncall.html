@@ -9,7 +9,7 @@
             <i class="fas fa-moon" aria-hidden="true"></i> Astreintes
         </h1>
         
-        <!-- Boutons pour ajouter et exporter -->
+        <!-- Boutons pour ajouter, exporter et supprimer -->
         <div class="buttons">
             {% if current_user.is_admin %}
             <a class="button is-primary" href="{{ url_for('add_oncall') }}">
@@ -23,6 +23,15 @@
             <a class="button is-success" href="{{ url_for('export_oncall', scope='my') }}">
                 <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter mes astreintes
             </a>
+            {% endif %}
+            {% if current_user.is_admin %}
+            <form method="POST" action="{{ url_for('delete_all_oncalls') }}" class="ml-2">
+                <button type="submit" class="button is-danger" 
+                        onclick="return confirm('Êtes-vous SÛR de vouloir supprimer TOUTES les astreintes ? Cette action est irréversible !')"
+                        aria-label="Supprimer toutes les astreintes">
+                    <i class="fas fa-trash-alt" aria-hidden="true"></i>&nbsp; Supprimer TOUTES les astreintes
+                </button>
+            </form>
             {% endif %}
         </div>
         
@@ -54,6 +63,19 @@
                                aria-label="Supprimer l'astreinte">
                                 <i class="fas fa-trash" aria-hidden="true"></i>
                             </a>
+                            <!-- Bouton pour supprimer toutes les astreintes de cet utilisateur -->
+                            <!-- Afficher seulement pour la première occurrence de chaque utilisateur -->
+                            {% set user_oncall_ids = namespace(value=[]) %}
+                            {% if oncall.user.id not in user_oncall_ids.value %}
+                                {% do user_oncall_ids.value.append(oncall.user.id) %}
+                            <form method="POST" action="{{ url_for('delete_all_oncalls_for_user', user_id=oncall.user.id) }}" class="ml-1">
+                                <button type="submit" class="button is-warning is-small"
+                                        onclick="return confirm('Êtes-vous sûr de vouloir supprimer TOUTES les astreintes de {{ oncall.user.name }} ?')"
+                                        aria-label="Supprimer toutes les astreintes de cet utilisateur">
+                                    <i class="fas fa-user-times" aria-hidden="true"></i>
+                                </button>
+                            </form>
+                            {% endif %}
                             {% endif %}
                         </td>
                     </tr>

@@ -270,7 +270,48 @@ def delete_oncall(oncall_id):
     return redirect(url_for("oncall"))
 
 
-# ========== ROUTES POUR LES SHIFTS ==========
+@app.route("/oncall/delete-all", methods=["POST"])
+@login_required
+@admin_required
+def delete_all_oncalls():
+    """Supprime toutes les astreintes."""
+    try:
+        count = OnCall.query.count()
+        OnCall.query.delete()
+        db.session.commit()
+        flash(f"✅ Toutes les {count} astreintes ont été supprimées avec succès !", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"❌ Erreur : {str(e)}", "danger")
+    return redirect(url_for("oncall"))
+
+
+@app.route("/oncall/delete-all-for-user/<int:user_id>", methods=["POST"])
+@login_required
+@admin_required
+def delete_all_oncalls_for_user(user_id):
+    """Supprime toutes les astreintes d'un utilisateur spécifique."""
+    user = User.query.get_or_404(user_id)
+    
+    try:
+        oncalls = OnCall.query.filter_by(user_id=user_id).all()
+        count = len(oncalls)
+        
+        if count == 0:
+            flash(f"⚠️ Aucun astreinte trouvée pour {user.name}.", "warning")
+            return redirect(url_for("oncall"))
+        
+        for oncall in oncalls:
+            db.session.delete(oncall)
+        db.session.commit()
+        flash(f"✅ Toutes les {count} astreintes de {user.name} ont été supprimées avec succès !", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"❌ Erreur : {str(e)}", "danger")
+    return redirect(url_for("oncall"))
+
+
+# ========== ROUTES POUR LES SHIFTS ====================
 
 
 @app.route("/schedule")
