@@ -11,6 +11,7 @@ from app.utils.automation import (
     generate_full_schedule,
     get_automation_status,
 )
+from app.utils.advanced_shift_automation import AdvancedShiftAutomation
 from datetime import datetime, date, timedelta
 
 
@@ -477,6 +478,18 @@ def automation_oncall():
                 else:
                     for msg in messages:
                         flash(msg, "success" if "✅" in msg or "🎉" in msg else "warning" if "⚠️" in msg else "danger")
+                    
+                    # Après la génération des astreintes, générer automatiquement les shifts
+                    # avec les nouvelles règles métiers
+                    try:
+                        shifts, shift_messages = AdvancedShiftAutomation.generate_full_schedule(
+                            start_date, end_date, dry_run=False
+                        )
+                        for msg in shift_messages:
+                            flash(msg, "success" if "✅" in msg or "🎉" in msg else "warning" if "⚠️" in msg else "info")
+                    except Exception as e:
+                        flash(f"⚠️ Génération automatique des shifts échouée : {str(e)}", "warning")
+                    
                     return redirect(url_for("automation_oncall"))
                 
             except ValueError as e:
@@ -689,3 +702,61 @@ def automation_status():
     """Affiche l'état actuel de l'automatisation."""
     status = get_automation_status()
     return render_template("admin/automation/status.html", status=status)
+
+
+@app.route("/admin/automation/refresh-shifts", methods=["GET", "POST"])
+@admin_required
+def refresh_shifts():
+    """
+    Rafraîchit les shifts en vérifiant les astreintes actuelles.
+    
+    Cette route permet de recalculer tous les shifts pour une période donnée
+    en tenant compte des astreintes actuelles (même modifiées manuellement).
+    """
+    if request.method == "POST":
+        start_date_str = request.form.get("start_date")
+        end_date_str = request.form.get("end_date")
+        
+        try:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+            
+            # D'abord, supprimer les shifts existants pour la période
+            existing_shifts = Shift.query.filter(
+                Shift.date >= start_date,
+                Shift.date <= end_date
+            ).all()
+            
+            if existing_shifts:
+                for shift in existing_shifts:
+                    db.session.delete(shift)
+                db.session.commit()
+                flash(f"🗑️ {len(existing_shifts)} shifts existants supprimés pour la période", "info")
+            
+            # Ensuite, régénérer les shifts avec les nouvelles règles
+            shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
+                start_date, end_date, dry_run=False
+            )
+            
+            for msg in messages:
+                flash(msg, "success" if "✅" in msg or "🎉" in msg else "warning" if "⚠️" in msg else "info")
+            
+            flash(f"🔄 {len(shifts)} shifts régénérés avec succès !", "success")
+            return redirect(url_for("refresh_shifts"))
+            
+        except ValueError as e:
+            flash(f"❌ Format de date invalide : {str(e)}", "danger")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"❌ Erreur : {str(e)}", "danger")
+    
+    # Valeurs par défaut : aujourd'hui à aujourd'hui + 6 mois
+    today = date.today()
+    end_date_default = today + timedelta(days=180)
+    start_date_default = today
+    
+    return render_template(
+        "admin/automation/refresh_shifts.html",
+        start_date_default=start_date_default,
+        end_date_default=end_date_default,
+    )

@@ -616,7 +616,8 @@ def generate_full_schedule(
     end_date: date,
     oncall_rotation_order: Optional[List[int]] = None,
     shift_rules: Optional[Dict[str, Any]] = None,
-    dry_run: bool = False
+    dry_run: bool = False,
+    use_advanced_rules: bool = True
 ) -> Dict[str, Any]:
     """
     Génère un schedule complet (astreintes + shifts) pour une période donnée.
@@ -625,8 +626,9 @@ def generate_full_schedule(
         start_date: Date de début de la période
         end_date: Date de fin de la période
         oncall_rotation_order: Ordre de rotation pour les astreintes
-        shift_rules: Règles métiers pour les shifts
+        shift_rules: Règles métiers pour les shifts (ignoré si use_advanced_rules=True)
         dry_run: Si True, ne sauvegarde pas en base
+        use_advanced_rules: Si True, utilise AdvancedShiftAutomation avec les nouvelles règles
     
     Returns:
         Dictionnaire contenant les résultats et messages
@@ -645,9 +647,17 @@ def generate_full_schedule(
     result['oncall']['messages'] = oncall_messages
     
     # Générer les shifts
-    shifts, shift_messages = ShiftAutomation.generate_shift_schedule(
-        start_date, end_date, shift_rules, dry_run
-    )
+    if use_advanced_rules:
+        # Utiliser les nouvelles règles métiers
+        from app.utils.advanced_shift_automation import AdvancedShiftAutomation
+        shifts, shift_messages = AdvancedShiftAutomation.generate_full_schedule(
+            start_date, end_date, dry_run
+        )
+    else:
+        # Utiliser l'ancienne méthode
+        shifts, shift_messages = ShiftAutomation.generate_shift_schedule(
+            start_date, end_date, shift_rules, dry_run
+        )
     result['shift']['generated'] = shifts
     result['shift']['messages'] = shift_messages
     

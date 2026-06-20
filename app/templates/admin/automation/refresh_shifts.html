@@ -1,0 +1,78 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Rafraîchir les Shifts - Automatisation{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="title">
+        <i class="fas fa-sync-alt" aria-hidden="true"></i> Rafraîchir les Shifts
+    </h1>
+    
+    <div class="notification is-info is-light">
+        <p>
+            <i class="fas fa-info-circle"></i> 
+            Cette page permet de recalculer tous les shifts pour une période donnée 
+            en tenant compte des <strong>astreintes actuelles</strong> (même modifiées manuellement).
+        </p>
+        <p>
+            Les nouvelles règles métiers seront appliquées :
+        </p>
+        <ul>
+            <li>Créneau 13h-21h pour la personne d'astreinte (si elle fait partie d'un groupe schedule)</li>
+            <li>Rotation : 13h-21h → 07h-15h la semaine suivante</li>
+            <li>09h-17h par défaut pour les autres</li>
+            <li>Cas spécial avec 2 personnes : la non-astreinte passe en 07h-15h</li>
+            <li>Contrainte légale : 2 semaines minimum entre deux astreintes</li>
+        </ul>
+    </div>
+    
+    <form method="POST" class="box">
+        <div class="field">
+            <label class="label">Période</label>
+            <div class="control">
+                <div class="field-body">
+                    <div class="field">
+                        <p class="control is-expanded">
+                            <label class="label">Date de début</label>
+                            <input class="input" type="date" name="start_date" 
+                                   value="{{ start_date_default.strftime('%Y-%m-%d') }}" required>
+                        </p>
+                    </div>
+                    <div class="field">
+                        <p class="control is-expanded">
+                            <label class="label">Date de fin</label>
+                            <input class="input" type="date" name="end_date" 
+                                   value="{{ end_date_default.strftime('%Y-%m-%d') }}" required>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="field">
+            <div class="control">
+                <button type="submit" class="button is-primary">
+                    <i class="fas fa-sync-alt" aria-hidden="true"></i>&nbsp; 
+                    Rafraîchir les Shifts
+                </button>
+                <a class="button is-outlined" href="{{ url_for('automation_dashboard') }}">
+                    <i class="fas fa-arrow-left" aria-hidden="true"></i>&nbsp; 
+                    Retour au tableau de bord
+                </a>
+            </div>
+        </div>
+    </form>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="mt-4">
+            {% for category, message in messages %}
+            <div class="notification is-{{ category }}">
+                {{ message | safe }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+</div>
+{% endblock %}
