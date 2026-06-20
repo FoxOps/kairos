@@ -6,14 +6,34 @@
     <title>{% block title %}Leviia{% endblock %}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-theme.css') }}">
     <style>
         body { padding-top: 3.25rem; }
         .navbar.is-fixed-top { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
         .footer { margin-top: 2rem; padding: 2rem; background-color: #f5f5f5; }
+        /* Skip link pour l'accessibilité */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: #00d1b2;
+            color: white;
+            padding: 8px 16px;
+            z-index: 100;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 0 0 4px 0;
+        }
+        .skip-link:focus {
+            top: 0;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <!-- Skip link pour l'accessibilité -->
+    <a href="#main-content" class="skip-link">Sauter la navigation</a>
+    
     <nav class="navbar is-primary is-fixed-top" role="navigation">
         <div class="navbar-brand">
             <a class="navbar-item" href="{{ url_for('index') }}" aria-label="Accueil - Leviia"><strong>Leviia</strong></a>
@@ -30,6 +50,16 @@
             </div>
             <div class="navbar-end">
                 {% if current_user.is_authenticated %}
+                    <!-- Toggle thème sombre -->
+                    <div class="navbar-item">
+                        <button id="theme-toggle" class="button is-small is-outlined is-rounded" 
+                                aria-label="Basculer entre le thème clair et sombre" 
+                                aria-pressed="false">
+                            <span class="icon is-small">
+                                <i class="fas fa-moon" aria-hidden="true"></i>
+                            </span>
+                        </button>
+                    </div>
                     <div class="navbar-item has-dropdown is-hoverable">
                         <a class="navbar-link" aria-label="Menu utilisateur - {{ current_user.name }}">
                             <i class="fas fa-user" aria-hidden="true"></i>&nbsp; {{ current_user.name }}
@@ -74,6 +104,86 @@
             <p>© 2026 Leviia</p>
         </div>
     </footer>
+    
+    <!-- JavaScript pour le thème sombre -->
+    <script>
+        // Fonction pour appliquer le thème
+        function applyTheme(theme) {
+            const html = document.documentElement;
+            
+            // Supprimer les classes existantes
+            html.classList.remove('dark-mode');
+            html.removeAttribute('data-theme');
+            
+            // Appliquer le nouveau thème
+            if (theme === 'dark') {
+                html.setAttribute('data-theme', 'dark');
+                html.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
+                updateToggleButton(true);
+            } else {
+                localStorage.setItem('theme', 'light');
+                updateToggleButton(false);
+            }
+        }
+        
+        // Fonction pour mettre à jour le bouton toggle
+        function updateToggleButton(isDark) {
+            const toggleBtn = document.getElementById('theme-toggle');
+            if (toggleBtn) {
+                const icon = toggleBtn.querySelector('i');
+                toggleBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+                
+                if (isDark) {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                } else {
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
+                }
+            }
+        }
+        
+        // Fonction pour détecter le thème préféré par le système
+        function getSystemTheme() {
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        
+        // Fonction pour obtenir le thème actuel
+        function getCurrentTheme() {
+            const storedTheme = localStorage.getItem('theme');
+            if (storedTheme) {
+                return storedTheme;
+            }
+            return getSystemTheme();
+        }
+        
+        // Initialiser le thème au chargement de la page
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentTheme = getCurrentTheme();
+            applyTheme(currentTheme);
+            
+            // Écouter les clics sur le bouton toggle
+            const toggleBtn = document.getElementById('theme-toggle');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function() {
+                    const isCurrentlyDark = document.documentElement.getAttribute('data-theme') === 'dark' || 
+                                           document.documentElement.classList.contains('dark-mode');
+                    const newTheme = isCurrentlyDark ? 'light' : 'dark';
+                    applyTheme(newTheme);
+                });
+            }
+            
+            // Écouter les changements de préférence système
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+                // Ne pas écraser le choix explicite de l'utilisateur
+                if (!localStorage.getItem('theme')) {
+                    applyTheme(e.matches ? 'dark' : 'light');
+                }
+            });
+        });
+    </script>
+    
     {% block extra_js %}{% endblock %}
 </body>
 </html>
