@@ -117,38 +117,26 @@ class AdvancedShiftAutomation:
         weeks_between = (new_start - last_end).days / 7
         return weeks_between >= 2
     
-    @staticmethod
-    def get_previous_week_shift(user: 'User', date: 'date') -> 'Optional[Tuple[int, int]]':
-        """Récupère le créneau de shift de l'utilisateur la semaine précédente."""
-        from datetime import timedelta
-        from app.models import Shift
-        
-        previous_week_date = date - timedelta(days=7)
-        shift = Shift.query.filter(
-            Shift.user_id == user.id,
-            Shift.date == previous_week_date
-        ).first()
-        
-        if shift and shift.shift_type:
-            return (shift.shift_type.start_hour, shift.shift_type.end_hour)
-        return None
-    
+
     @staticmethod
     def determine_shift_for_user(user: 'User', date: 'date') -> 'Tuple[int, int]':
         """
         Détermine le créneau de shift pour un utilisateur à une date donnée.
         
         Règles :
-        1. Si l'utilisateur était sur 13h-21h la semaine précédente -> 07h-15h
+        1. Si l'utilisateur était d'astreinte la semaine précédente -> 07h-15h (rotation)
         2. Si l'utilisateur est d'astreinte ET fait partie d'un groupe schedule -> 13h-21h
         3. Sinon -> 09h-17h
         """
-        # Règle 1 : Vérifier la semaine précédente
-        previous_shift = AdvancedShiftAutomation.get_previous_week_shift(user, date)
-        if previous_shift == AdvancedShiftAutomation.SHIFT_13_21:
+        from datetime import timedelta
+        
+        # Règle 1 : Vérifier si l'utilisateur était d'astreinte la semaine précédente
+        previous_week_date = date - timedelta(days=7)
+        previous_oncall_user = AdvancedShiftAutomation.get_oncall_user_for_date(previous_week_date)
+        if previous_oncall_user and previous_oncall_user.id == user.id:
             return AdvancedShiftAutomation.SHIFT_07_15
         
-        # Règle 2 : Vérifier si d'astreinte
+        # Règle 2 : Vérifier si d'astreinte cette semaine
         oncall_user = AdvancedShiftAutomation.get_oncall_user_for_date(date)
         if oncall_user and oncall_user.id == user.id:
             schedule_users = AdvancedShiftAutomation.get_users_in_schedule_groups()
