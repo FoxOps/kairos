@@ -50,7 +50,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for shift in shifts %}
+                    {% for shift in shifts.items %}
                     {% set is_first_user = namespace(value=(shift.user.id not in seen_users)) %}
                     {% set is_first_date = namespace(value=(shift.date not in seen_dates)) %}
                     {% set is_monday = namespace(value=(shift.date.weekday() == 0)) %}
@@ -123,6 +123,66 @@
                 </tbody>
             </table>
         </div>
+        
+        <!-- Légende des actions -->
+        {% if current_user.is_admin %}
+        <div class="notification is-info is-light mt-4">
+            <h3 class="subtitle is-6"><i class="fas fa-info-circle"></i> Légende des actions</h3>
+            <div class="content">
+                <p>
+                    <span class="button is-danger is-small"><i class="fas fa-trash"></i></span> 
+                    Supprimer ce shift<br>
+                    <span class="button is-warning is-small"><i class="fas fa-user-times"></i></span> 
+                    Supprimer TOUS les shifts de cet utilisateur<br>
+                    <span class="button is-info is-small"><i class="fas fa-calendar-day"></i></span> 
+                    Supprimer TOUS les shifts de cette journée<br>
+                    <span class="button is-primary is-small"><i class="fas fa-calendar-week"></i></span> 
+                    Supprimer TOUS les shifts de cette semaine
+                </p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Pagination -->
+        {% if shifts.has_prev or shifts.has_next %}
+        <nav class="pagination is-centered mt-4" role="navigation" aria-label="pagination">
+            <a class="pagination-previous {% if not shifts.has_prev %}is-disabled{% endif %}" 
+               href="{{ url_for('schedule', page=shifts.prev_num) if shifts.has_prev else '#' }}" 
+               aria-label="Page précédente">
+                <i class="fas fa-chevron-left" aria-hidden="true"></i>
+            </a>
+            <a class="pagination-next {% if not shifts.has_next %}is-disabled{% endif %}" 
+               href="{{ url_for('schedule', page=shifts.next_num) if shifts.has_next else '#' }}" 
+               aria-label="Page suivante">
+                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+            </a>
+            <ul class="pagination-list">
+                {% if shifts.has_prev %}
+                <li>
+                    <a class="pagination-link" href="{{ url_for('schedule', page=1) }}" aria-label="Première page">1</a>
+                </li>
+                {% endif %}
+                <li>
+                    <span class="pagination-ellipsis">&hellip;</span>
+                </li>
+                <li>
+                    <a class="pagination-link is-current" aria-label="Page {{ shifts.page }}" aria-current="page">{{ shifts.page }}</a>
+                </li>
+                <li>
+                    <span class="pagination-ellipsis">&hellip;</span>
+                </li>
+                {% if shifts.has_next %}
+                <li>
+                    <a class="pagination-link" href="{{ url_for('schedule', page=shifts.pages) }}" aria-label="Dernière page">{{ shifts.pages }}</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        <p class="has-text-centered mt-2">
+            Page {{ shifts.page }} sur {{ shifts.pages }} 
+            ({{ shifts.total }} shifts au total)
+        </p>
+        {% endif %}
     </div>
 </section>
 {% endblock %}

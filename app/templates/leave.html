@@ -11,9 +11,11 @@
         
         <!-- Boutons pour ajouter et exporter -->
         <div class="buttons">
+            {% if current_user.is_admin or current_user.is_authenticated %}
             <a class="button is-primary" href="{{ url_for('add_leave') }}">
                 <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un congé
             </a>
+            {% endif %}
             {% if current_user.is_authenticated %}
             <a class="button is-success" href="{{ url_for('export_leaves', scope='all') }}">
                 <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter tous les congés
@@ -37,21 +39,77 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for leave in leaves %}
+                    {% for leave in leaves.items %}
                     <tr>
                         <td>{{ leave.user.name }}</td>
                         <td>{{ leave.start_date.strftime('%d/%m/%Y') }}</td>
                         <td>{{ leave.end_date.strftime('%d/%m/%Y') }}</td>
                         <td>
-                            <a class="button is-danger is-small" href="{{ url_for('delete_leave', leave_id=leave.id) }}" aria-label="Supprimer le congé">
+                            {% if current_user.is_admin or current_user.id == leave.user.id %}
+                            <a class="button is-danger is-small" href="{{ url_for('delete_leave', leave_id=leave.id) }}" 
+                               onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce congé ?')"
+                               aria-label="Supprimer le congé" title="Supprimer ce congé">
                                 <i class="fas fa-trash" aria-hidden="true"></i>
                             </a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+        
+        <!-- Légende des actions -->
+        <div class="notification is-info is-light mt-4">
+            <h3 class="subtitle is-6"><i class="fas fa-info-circle"></i> Légende des actions</h3>
+            <div class="content">
+                <p>
+                    <span class="button is-danger is-small"><i class="fas fa-trash"></i></span> 
+                    Supprimer ce congé
+                </p>
+            </div>
+        </div>
+        
+        <!-- Pagination -->
+        {% if leaves.has_prev or leaves.has_next %}
+        <nav class="pagination is-centered mt-4" role="navigation" aria-label="pagination">
+            <a class="pagination-previous {% if not leaves.has_prev %}is-disabled{% endif %}" 
+               href="{{ url_for('leave', page=leaves.prev_num) if leaves.has_prev else '#' }}" 
+               aria-label="Page précédente">
+                <i class="fas fa-chevron-left" aria-hidden="true"></i>
+            </a>
+            <a class="pagination-next {% if not leaves.has_next %}is-disabled{% endif %}" 
+               href="{{ url_for('leave', page=leaves.next_num) if leaves.has_next else '#' }}" 
+               aria-label="Page suivante">
+                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+            </a>
+            <ul class="pagination-list">
+                {% if leaves.has_prev %}
+                <li>
+                    <a class="pagination-link" href="{{ url_for('leave', page=1) }}" aria-label="Première page">1</a>
+                </li>
+                {% endif %}
+                <li>
+                    <span class="pagination-ellipsis">&hellip;</span>
+                </li>
+                <li>
+                    <a class="pagination-link is-current" aria-label="Page {{ leaves.page }}" aria-current="page">{{ leaves.page }}</a>
+                </li>
+                <li>
+                    <span class="pagination-ellipsis">&hellip;</span>
+                </li>
+                {% if leaves.has_next %}
+                <li>
+                    <a class="pagination-link" href="{{ url_for('leave', page=leaves.pages) }}" aria-label="Dernière page">{{ leaves.pages }}</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        <p class="has-text-centered mt-2">
+            Page {{ leaves.page }} sur {{ leaves.pages }} 
+            ({{ leaves.total }} congés au total)
+        </p>
+        {% endif %}
     </div>
 </section>
 {% endblock %}

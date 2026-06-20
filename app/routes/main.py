@@ -111,10 +111,16 @@ def index():
 @app.route("/leave")
 @login_required
 def leave():
-    leaves = (
-        Leave.query.options(joinedload(Leave.user)).order_by(Leave.start_date).all()
+    page = request.args.get('page', 1, type=int)
+    per_page = 20  # Nombre d'éléments par page
+    
+    leaves_paginated = (
+        Leave.query.options(joinedload(Leave.user))
+        .order_by(Leave.start_date)
+        .paginate(page=page, per_page=per_page, error_out=False)
     )
-    return render_template("leave.html", leaves=leaves)
+    
+    return render_template("leave.html", leaves=leaves_paginated)
 
 
 @app.route("/leave/add", methods=["GET", "POST"])
@@ -212,10 +218,16 @@ def delete_leave(leave_id):
 @app.route("/oncall")
 @login_required
 def oncall():
-    on_calls = (
-        OnCall.query.options(joinedload(OnCall.user)).order_by(OnCall.start_time).all()
+    page = request.args.get('page', 1, type=int)
+    per_page = 20  # Nombre d'éléments par page
+    
+    on_calls_paginated = (
+        OnCall.query.options(joinedload(OnCall.user))
+        .order_by(OnCall.start_time)
+        .paginate(page=page, per_page=per_page, error_out=False)
     )
-    return render_template("oncall.html", on_calls=on_calls)
+    
+    return render_template("oncall.html", on_calls=on_calls_paginated)
 
 
 @app.route("/oncall/add", methods=["GET", "POST"])
@@ -440,10 +452,16 @@ def delete_all_shifts_for_week(date_str):
 @app.route("/schedule")
 @login_required
 def schedule():
-    shifts = (
-        Shift.query.options(joinedload(Shift.user)).order_by(Shift.start_time).all()
+    page = request.args.get('page', 1, type=int)
+    per_page = 20  # Nombre d'éléments par page
+    
+    shifts_paginated = (
+        Shift.query.options(joinedload(Shift.user))
+        .order_by(Shift.start_time)
+        .paginate(page=page, per_page=per_page, error_out=False)
     )
-    return render_template("schedule.html", shifts=shifts)
+    
+    return render_template("schedule.html", shifts=shifts_paginated)
 
 
 @app.route("/schedule/add", methods=["GET", "POST"])
