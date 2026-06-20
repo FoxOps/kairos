@@ -30,7 +30,6 @@ Utilisation:
 from functools import wraps
 from flask import abort, flash, redirect, url_for
 from flask_login import current_user, login_required
-from app import db
 
 
 def admin_required(f):
@@ -132,7 +131,8 @@ def user_owns_resource(model, resource_id_param, user_id_attr="user_id"):
                 return f(*args, **kwargs)
 
             # Récupérer la ressource depuis la base de données
-            resource = model.query.get(resource_id)
+            from app import db
+            resource = db.session.get(model, resource_id)
 
             # Si la ressource n'existe pas, on laisse passer (la route va gérer le 404)
             if resource is None:

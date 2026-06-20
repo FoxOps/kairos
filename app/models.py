@@ -1,27 +1,20 @@
-from typing import TYPE_CHECKING
-
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-
-if TYPE_CHECKING:
-    from flask_sqlalchemy import SQLAlchemy
-
-    db: SQLAlchemy
-else:
-    from app import db
+from app import db
 
 
-class Group(db.Model):  # type: ignore[name-defined]
+class Group(db.Model):
     __tablename__ = "groups"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), nullable=False, unique=True)
     is_part_of_schedule = db.Column(db.Boolean, default=False)
     is_part_of_oncall = db.Column(db.Boolean, default=False)
 
-    users = db.relationship("User", backref="group", lazy=True)
+    users = db.relationship("User", backref="group", lazy=True, cascade="all, delete-orphan")
 
 
-class User(db.Model, UserMixin):  # type: ignore[name-defined]
+class User(db.Model, UserMixin):
+    __tablename__ = "user"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -31,9 +24,9 @@ class User(db.Model, UserMixin):  # type: ignore[name-defined]
         db.Integer, db.ForeignKey("groups.id"), nullable=False, default=1
     )
 
-    shifts = db.relationship("Shift", backref="user", lazy=True)
-    on_calls = db.relationship("OnCall", backref="user", lazy=True)
-    leaves = db.relationship("Leave", backref="user", lazy=True)
+    shifts = db.relationship("Shift", backref="user", lazy=True, cascade="all, delete-orphan", foreign_keys="Shift.user_id")
+    on_calls = db.relationship("OnCall", backref="user", lazy=True, cascade="all, delete-orphan", foreign_keys="OnCall.user_id")
+    leaves = db.relationship("Leave", backref="user", lazy=True, cascade="all, delete-orphan", foreign_keys="Leave.user_id")
 
     def set_password(self, password):
         """Définir le mot de passe (hashé)."""
@@ -47,7 +40,7 @@ class User(db.Model, UserMixin):  # type: ignore[name-defined]
         return f"<User {self.name} ({self.email})>"
 
 
-class ShiftType(db.Model):  # type: ignore[name-defined]
+class ShiftType(db.Model):
     __tablename__ = "shift_types"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(20), nullable=False, unique=True)
@@ -55,8 +48,12 @@ class ShiftType(db.Model):  # type: ignore[name-defined]
     start_hour = db.Column(db.Integer, nullable=False)
     end_hour = db.Column(db.Integer, nullable=False)
 
+    # Relation bidirectionnelle avec Shift
+    shifts = db.relationship("Shift", backref="shift_type", lazy=True, cascade="all, delete-orphan")
 
-class Shift(db.Model):  # type: ignore[name-defined]
+
+class Shift(db.Model):
+    __tablename__ = "shift"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(
         db.Integer, db.ForeignKey("user.id"), nullable=False, index=True
@@ -68,10 +65,9 @@ class Shift(db.Model):  # type: ignore[name-defined]
     end_time = db.Column(db.DateTime, nullable=False)
     date = db.Column(db.Date, nullable=False, index=True)
 
-    shift_type = db.relationship("ShiftType", backref="shifts", lazy=True)
 
-
-class OnCall(db.Model):  # type: ignore[name-defined]
+class OnCall(db.Model):
+    __tablename__ = "oncall"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(
         db.Integer, db.ForeignKey("user.id"), nullable=False, index=True
@@ -80,7 +76,8 @@ class OnCall(db.Model):  # type: ignore[name-defined]
     end_time = db.Column(db.DateTime, nullable=False)
 
 
-class Leave(db.Model):  # type: ignore[name-defined]
+class Leave(db.Model):
+    __tablename__ = "leave"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(
         db.Integer, db.ForeignKey("user.id"), nullable=False, index=True

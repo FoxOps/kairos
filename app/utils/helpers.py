@@ -1,6 +1,6 @@
-from app.models import Shift, OnCall, Leave
 from datetime import datetime, timedelta
 from app import db
+from app.models import Shift, OnCall, Leave
 
 
 def is_user_on_shift(user_id, target_date):
