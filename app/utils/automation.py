@@ -151,6 +151,31 @@ class OnCallAutomation:
         return sorted(eligible_users, key=lambda u: u.name)
     
     @staticmethod
+    def check_oncall_constraint(user: User, start_time: datetime) -> bool:
+        """
+        Vérifie la contrainte légale : pas 2 astreintes de suite.
+        Il doit y avoir au moins 2 semaines sans astreinte entre deux astreintes.
+        
+        Args:
+            user: Utilisateur à vérifier
+            start_time: Date/heure de début de l'astreinte potentielle
+            
+        Returns:
+            True si l'utilisateur peut avoir une astreinte à cette date, False sinon
+        """
+        # Trouver la dernière astreinte de l'utilisateur
+        last_oncall = OnCall.query.filter_by(user_id=user.id).order_by(OnCall.start_time.desc()).first()
+        
+        if not last_oncall:
+            return True  # Pas d'astreinte précédente, donc OK
+        
+        # Calculer la différence en semaines
+        weeks_between = (start_time - last_oncall.end_time).days / 7
+        
+        # Il doit y avoir au moins 2 semaines (14 jours) entre la fin de la dernière et le début de la nouvelle
+        return weeks_between >= 2
+    
+    @staticmethod
     def find_next_available_user(
         rotation_order: List[User],
         start_time: datetime,
@@ -162,6 +187,7 @@ class OnCallAutomation:
         Un utilisateur est disponible s'il n'a pas :
         - Une astreinte qui chevauche la période
         - Un congé qui chevauche la période
+        - Une contrainte légale (2 astreintes de suite interdites)
         
         Args:
             rotation_order: Liste des utilisateurs dans l'ordre de rotation
@@ -197,6 +223,10 @@ class OnCallAutomation:
             ).scalar()
             
             if has_leave:
+                continue
+            
+            # Vérifier la contrainte légale (2 semaines minimum entre les astreintes)
+            if not OnCallAutomation.check_oncall_constraint(user, start_time):
                 continue
             
             return user

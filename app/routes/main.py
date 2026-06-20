@@ -9,6 +9,7 @@ from app.utils.helpers import (
     can_add_oncall,
 )
 from app.utils.decorators import admin_required, user_owns_resource
+from app.utils.advanced_shift_automation import AdvancedShiftAutomation
 from datetime import datetime, timedelta
 
 CALENDAR_WINDOW_DAYS = 180
@@ -153,6 +154,15 @@ def add_leave():
             )
             db.session.add(new_leave)
             db.session.commit()
+            
+            # Rééquilibrer automatiquement les shifts après l'ajout d'un congé
+            try:
+                _, rebalance_messages = AdvancedShiftAutomation.rebalance_after_leave(new_leave, dry_run=False)
+                for msg in rebalance_messages:
+                    flash(msg, "info")
+            except Exception as e:
+                flash(f"⚠️ Rééquilibrage automatique des shifts échoué : {str(e)}", "warning")
+            
             flash("Conge ajoute avec succes !", "success")
             return redirect(url_for("leave"))
         except ValueError:
@@ -180,6 +190,15 @@ def delete_leave(leave_id):
     try:
         db.session.delete(leave_record)
         db.session.commit()
+        
+        # Rééquilibrer automatiquement les shifts après la suppression d'un congé
+        try:
+            _, rebalance_messages = AdvancedShiftAutomation.rebalance_after_leave(leave_record, dry_run=False)
+            for msg in rebalance_messages:
+                flash(msg, "info")
+        except Exception as e:
+            flash(f"⚠️ Rééquilibrage automatique des shifts échoué : {str(e)}", "warning")
+        
         flash("Conge supprime avec succes !", "success")
     except Exception as e:
         db.session.rollback()
