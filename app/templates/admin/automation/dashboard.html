@@ -6,7 +6,7 @@
         <h1 class="title"><i class="fas fa-robot" aria-hidden="true"></i> Automatisation</h1>
         
         <div class="notification is-info is-light">
-            <p><i class="fas fa-info-circle"></i> Ce module permet de générer automatiquement les astreintes et les shifts selon des règles configurables.</p>
+            <p><i class="fas fa-info-circle"></i> Ce module permet de générer automatiquement les astreintes. Les shifts sont générés automatiquement après les astreintes selon les nouvelles règles métiers.</p>
         </div>
 
         <div class="columns is-multiline">
@@ -29,25 +29,8 @@
 
             <div class="column is-one-third">
                 <div class="box">
-                    <h2 class="subtitle"><i class="fas fa-calendar-check" aria-hidden="true"></i> Shifts</h2>
-                    <p><strong>Utilisateurs éligibles :</strong> {{ shift_users|length }}</p>
-                    <p><strong>Shifts existants :</strong> {{ status.shift_count }}</p>
-                    <p><strong>Types de shifts :</strong> {{ shift_types|length }}</p>
-                    <div class="buttons mt-3">
-                        <a class="button is-primary is-small" href="{{ url_for('automation_shifts') }}">
-                            <i class="fas fa-cog"></i>&nbsp; Configurer
-                        </a>
-                        <a class="button is-info is-small" href="{{ url_for('schedule') }}">
-                            <i class="fas fa-list"></i>&nbsp; Voir la liste
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="column is-one-third">
-                <div class="box">
                     <h2 class="subtitle"><i class="fas fa-cogs" aria-hidden="true"></i> Génération complète</h2>
-                    <p>Générer les astreintes et les shifts en une seule opération.</p>
+                    <p>Générer les astreintes. Les shifts seront automatiquement générés selon les nouvelles règles métiers.</p>
                     <div class="buttons mt-3">
                         <a class="button is-success is-small" href="{{ url_for('automation_full') }}">
                             <i class="fas fa-play"></i>&nbsp; Lancer
@@ -103,8 +86,8 @@
             <h2 class="subtitle"><i class="fas fa-question-circle" aria-hidden="true"></i> Aide</h2>
             <div class="content">
                 <p><strong>Rotation des astreintes :</strong> Une rotation simple où chaque semaine un membre différent est désigné. Vous pouvez configurer l'ordre de la première rotation.</p>
-                <p><strong>Génération des shifts :</strong> Basée sur des règles métiers spécifiques que vous pouvez configurer (nombre de shifts par type et par jour).</p>
-                <p><strong>Remplacement automatique :</strong> En cas de conflit (congé, astreinte existante), le système trouve automatiquement un remplaçant.</p>
+                <p><strong>Génération automatique des shifts :</strong> Après la génération des astreintes, les shifts sont automatiquement créés selon les nouvelles règles métiers (13h-21h pour l'astreinte, rotation des créneaux, etc.).</p>
+                <p><strong>Rafraîchissement manuel :</strong> Utilisez "Rafraîchir Shifts" pour recalculer les shifts si vous avez modifié manuellement les astreintes.</p>
                 <p><strong>Période par défaut :</strong> 6 mois à l'avance.</p>
             </div>
         </div>

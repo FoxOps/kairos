@@ -621,51 +621,56 @@ def automation_full():
         action = request.form.get("action")
         
         if action in ["generate", "dry_run"]:
-            dry_run = (action == "dry_run")
-            
             start_date_str = request.form.get("start_date")
             end_date_str = request.form.get("end_date")
             
-            rotation_order_ids = []
+            # Récupérer les positions et inclusions depuis le formulaire
+            user_data = []
             for key, value in request.form.items():
-                if key.startswith("rotation_order_") and value == "on":
+                if key.startswith("rotation_order_"):
                     user_id = int(key.replace("rotation_order_", ""))
-                    rotation_order_ids.append(user_id)
+                    position = int(request.form.get(f"rotation_order_{user_id}", loop.index))
+                    include = request.form.get(f"rotation_order_{user_id}", "off") == "on"
+                    user_data.append({
+                        'user_id': user_id,
+                        'position': position,
+                        'include': include
+                    })
             
-            rules = BusinessRules.get_shift_rules()
-            
-            for day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']:
-                for shift_type in ['morning', 'afternoon', 'evening']:
-                    count_key = f"{day}_{shift_type}"
-                    if count_key in request.form:
-                        try:
-                            count = int(request.form[count_key])
-                            if day not in rules['daily_requirements']:
-                                rules['daily_requirements'][day] = {}
-                            rules['daily_requirements'][day][shift_type] = count
-                        except ValueError:
-                            pass
+            # Trier par position et extraire les IDs dans l'ordre
+            user_data_sorted = sorted(user_data, key=lambda x: x['position'])
+            rotation_order_ids = [u['user_id'] for u in user_data_sorted if u['include']]
             
             try:
                 start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
                 end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
                 
-                result = generate_full_schedule(
-                    start_date, end_date, rotation_order_ids, rules, dry_run
+                dry_run = (action == "dry_run")
+                
+                # Générer les astreintes
+                oncalls, oncall_messages = OnCallAutomation.generate_oncall_schedule(
+                    start_date, end_date, rotation_order_ids, dry_run=dry_run
                 )
                 
                 if dry_run:
+                    # Pour le dry run, afficher les astreintes générées
                     return render_template(
-                        "admin/automation/full_dry_run.html",
-                        result=result,
+                        "admin/automation/oncall_dry_run.html",
+                        oncalls=oncalls,
+                        messages=oncall_messages,
                         start_date=start_date,
                         end_date=end_date,
                     )
                 else:
-                    for msg in result['oncall']['messages']:
+                    # Générer automatiquement les shifts après les astreintes
+                    shifts, shift_messages = AdvancedShiftAutomation.generate_full_schedule(
+                        start_date, end_date, dry_run=False
+                    )
+                    
+                    for msg in oncall_messages:
                         flash(msg, "success" if "✅" in msg or "🎉" in msg else "warning" if "⚠️" in msg else "danger")
-                    for msg in result['shift']['messages']:
-                        flash(msg, "success" if "✅" in msg or "🎉" in msg else "warning" if "⚠️" in msg else "danger")
+                    for msg in shift_messages:
+                        flash(msg, "success" if "✅" in msg or "🎉" in msg else "warning" if "⚠️" in msg else "info")
                     
                     return redirect(url_for("automation_full"))
                 
@@ -675,9 +680,6 @@ def automation_full():
                 flash(f"❌ Erreur : {str(e)}", "danger")
     
     oncall_users = OnCallAutomation.get_eligible_users()
-    shift_users = ShiftAutomation.get_eligible_users()
-    shift_types = ShiftAutomation.get_shift_types()
-    shift_rules = BusinessRules.get_shift_rules()
     
     today = date.today()
     end_date_default = today + timedelta(days=180)
@@ -688,9 +690,6 @@ def automation_full():
     return render_template(
         "admin/automation/full.html",
         oncall_users=oncall_users,
-        shift_users=shift_users,
-        shift_types=shift_types,
-        shift_rules=shift_rules,
         start_date_default=start_date_default,
         end_date_default=end_date_default,
     )
