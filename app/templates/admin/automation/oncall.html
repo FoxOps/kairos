@@ -23,7 +23,10 @@
                 <div class="field">
                     <label class="label">Ordre de rotation</label>
                     <div class="control">
-                        <p class="help">Sélectionnez l'ordre dans lequel les utilisateurs doivent être désignés pour les astreintes. La rotation se fera dans cet ordre.</p>
+                        <p class="help">
+                            <strong>Définissez l'ordre de rotation</strong> en attribuant une position à chaque utilisateur. 
+                            La rotation se fera dans l'ordre croissant des positions (1 = premier, 2 = deuxième, etc.).
+                        </p>
                         
                         <div class="table-container">
                             <table class="table is-fullwidth is-striped">
@@ -33,21 +36,30 @@
                                         <th>Nom</th>
                                         <th>Email</th>
                                         <th>Groupe</th>
-                                        <th>Dans la rotation</th>
+                                        <th>Inclure dans la rotation</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for user in oncall_users %}
                                     <tr>
-                                        <td>{{ loop.index }}</td>
+                                        <td>
+                                            <div class="control">
+                                                <input class="input" type="number" name="position_{{ user.id }}" 
+                                                       value="{{ loop.index }}" 
+                                                       min="1" 
+                                                       max="{{ oncall_users|length }}" 
+                                                       style="width: 60px;"
+                                                       required>
+                                            </div>
+                                        </td>
                                         <td>{{ user.name }}</td>
                                         <td>{{ user.email }}</td>
                                         <td>{{ user.group.name if user.group else 'N/A' }}</td>
                                         <td>
                                             <div class="control">
                                                 <label class="checkbox">
-                                                    <input type="checkbox" name="rotation_order_{{ user.id }}" value="on" checked>
-                                                    Inclure
+                                                    <input type="checkbox" name="include_{{ user.id }}" value="1" checked>
+                                                    Oui
                                                 </label>
                                             </div>
                                         </td>
@@ -123,7 +135,8 @@
             <h2 class="subtitle"><i class="fas fa-question-circle" aria-hidden="true"></i> Comment ça marche ?</h2>
             <div class="content">
                 <ol>
-                    <li><strong>Sélectionnez l'ordre de rotation :</strong> Cochez les utilisateurs que vous souhaitez inclure dans la rotation et définissez leur ordre.</li>
+                    <li><strong>Définissez l'ordre de rotation :</strong> Attribuez une position (1, 2, 3, ...) à chaque utilisateur pour définir l'ordre dans lequel ils seront désignés pour les astreintes.</li>
+                    <li><strong>Cochez les utilisateurs :</strong> Sélectionnez quels utilisateurs inclure dans la rotation.</li>
                     <li><strong>Choisissez la période :</strong> Sélectionnez la date de début et de fin pour la génération.</li>
                     <li><strong>Prévisualisez :</strong> Utilisez le bouton "Prévisualiser" pour voir ce qui sera généré sans sauvegarder.</li>
                     <li><strong>Générez :</strong> Cliquez sur "Générer les astreintes" pour créer les astreintes en base de données.</li>
@@ -131,7 +144,7 @@
                 <p class="mt-4"><strong>Règles appliquées :</strong></p>
                 <ul>
                     <li>Chaque astreinte commence le <strong>vendredi à 21h</strong> et se termine le <strong>vendredi suivant à 07h</strong>.</li>
-                    <li>La rotation suit l'ordre que vous avez défini.</li>
+                    <li>La rotation suit l'ordre que vous avez défini (position 1, puis 2, puis 3, etc.).</li>
                     <li>Si un utilisateur n'est pas disponible (congé, astreinte existante), le système passe au suivant dans la rotation.</li>
                     <li>Un message d'avertissement est affiché si aucun utilisateur n'est disponible pour une période.</li>
                 </ul>

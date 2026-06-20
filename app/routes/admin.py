@@ -436,59 +436,48 @@ def automation_oncall():
     if request.method == "POST":
         action = request.form.get("action")
         
-        if action == "generate":
+        if action in ["generate", "dry_run"]:
             start_date_str = request.form.get("start_date")
             end_date_str = request.form.get("end_date")
             
-            rotation_order_ids = []
+            # Récupérer les positions et inclusions depuis le formulaire
+            user_data = []
             for key, value in request.form.items():
-                if key.startswith("rotation_order_") and value == "on":
-                    user_id = int(key.replace("rotation_order_", ""))
-                    rotation_order_ids.append(user_id)
+                if key.startswith("position_"):
+                    user_id = int(key.replace("position_", ""))
+                    position = int(value)
+                    include = request.form.get(f"include_{user_id}", "0") == "1"
+                    user_data.append({
+                        'user_id': user_id,
+                        'position': position,
+                        'include': include
+                    })
+            
+            # Trier par position et extraire les IDs dans l'ordre
+            user_data_sorted = sorted(user_data, key=lambda x: x['position'])
+            rotation_order_ids = [u['user_id'] for u in user_data_sorted if u['include']]
             
             try:
                 start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
                 end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
                 
+                dry_run = (action == "dry_run")
                 oncalls, messages = OnCallAutomation.generate_oncall_schedule(
-                    start_date, end_date, rotation_order_ids, dry_run=False
+                    start_date, end_date, rotation_order_ids, dry_run=dry_run
                 )
                 
-                for msg in messages:
-                    flash(msg, "success" if "✅" in msg or "🎉" in msg else "warning" if "⚠️" in msg else "danger")
-                
-                return redirect(url_for("automation_oncall"))
-                
-            except ValueError as e:
-                flash(f"❌ Format de date invalide : {str(e)}", "danger")
-            except Exception as e:
-                flash(f"❌ Erreur : {str(e)}", "danger")
-        
-        elif action == "dry_run":
-            start_date_str = request.form.get("start_date")
-            end_date_str = request.form.get("end_date")
-            
-            rotation_order_ids = []
-            for key, value in request.form.items():
-                if key.startswith("rotation_order_") and value == "on":
-                    user_id = int(key.replace("rotation_order_", ""))
-                    rotation_order_ids.append(user_id)
-            
-            try:
-                start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-                end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-                
-                oncalls, messages = OnCallAutomation.generate_oncall_schedule(
-                    start_date, end_date, rotation_order_ids, dry_run=True
-                )
-                
-                return render_template(
-                    "admin/automation/oncall_dry_run.html",
-                    oncalls=oncalls,
-                    messages=messages,
-                    start_date=start_date,
-                    end_date=end_date,
-                )
+                if dry_run:
+                    return render_template(
+                        "admin/automation/oncall_dry_run.html",
+                        oncalls=oncalls,
+                        messages=messages,
+                        start_date=start_date,
+                        end_date=end_date,
+                    )
+                else:
+                    for msg in messages:
+                        flash(msg, "success" if "✅" in msg or "🎉" in msg else "warning" if "⚠️" in msg else "danger")
+                    return redirect(url_for("automation_oncall"))
                 
             except ValueError as e:
                 flash(f"❌ Format de date invalide : {str(e)}", "danger")
@@ -510,7 +499,6 @@ def automation_oncall():
         start_date_default=start_date_default,
         end_date_default=end_date_default,
     )
-
 
 @app.route("/admin/automation/shifts", methods=["GET", "POST"])
 @admin_required
