@@ -9,7 +9,7 @@
             <i class="fas fa-calendar-alt" aria-hidden="true"></i> Emploi du temps
         </h1>
         
-        <!-- Boutons pour ajouter et exporter -->
+        <!-- Boutons pour ajouter, exporter et supprimer -->
         <div class="buttons">
             {% if current_user.is_admin %}
             <a class="button is-primary" href="{{ url_for('add_shift') }}">
@@ -24,9 +24,19 @@
                 <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter mes shifts
             </a>
             {% endif %}
+            {% if current_user.is_admin %}
+            <form method="POST" action="{{ url_for('delete_all_shifts') }}" class="ml-2">
+                <button type="submit" class="button is-danger" 
+                        onclick="return confirm('Êtes-vous SÛR de vouloir supprimer TOUS les shifts ? Cette action est irréversible !')"
+                        aria-label="Supprimer tous les shifts">
+                    <i class="fas fa-trash-alt" aria-hidden="true"></i>&nbsp; Supprimer TOUS les shifts
+                </button>
+            </form>
+            {% endif %}
         </div>
         
         <!-- Tableau des shifts -->
+        {% set seen_users = [] %}
         <div class="table-container">
             <table class="table is-fullwidth is-striped">
                 <caption class="is-sr-only">Liste des shifts</caption>
@@ -50,9 +60,25 @@
                         <td>{{ shift.end_time.strftime('%H:%M') }}</td>
                         <td>
                             {% if current_user.is_admin %}
-                            <a class="button is-danger is-small" href="{{ url_for('delete_shift', shift_id=shift.id) }}" aria-label="Supprimer le shift">
-                                <i class="fas fa-trash" aria-hidden="true"></i>
-                            </a>
+                            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: nowrap;">
+                                <a class="button is-danger is-small" href="{{ url_for('delete_shift', shift_id=shift.id) }}" 
+                                   aria-label="Supprimer le shift" title="Supprimer ce shift">
+                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                </a>
+                                <!-- Bouton pour supprimer tous les shifts de cet utilisateur -->
+                                <!-- Afficher seulement pour la première occurrence de chaque utilisateur -->
+                                {% if shift.user.id not in seen_users %}
+                                <form method="POST" action="{{ url_for('delete_all_shifts_for_user', user_id=shift.user.id) }}" style="margin: 0;">
+                                    <button type="submit" class="button is-warning is-small"
+                                            onclick="return confirm('Êtes-vous sûr de vouloir supprimer TOUS les shifts de {{ shift.user.name }} ?')"
+                                            aria-label="Supprimer tous les shifts de cet utilisateur"
+                                            title="Supprimer TOUS les shifts de {{ shift.user.name }}">
+                                        <i class="fas fa-user-times" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+                                {% set seen_users = (seen_users or []) + [shift.user.id] %}
+                                {% endif %}
+                            </div>
                             {% endif %}
                         </td>
                     </tr>

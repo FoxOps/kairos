@@ -313,6 +313,48 @@ def delete_all_oncalls_for_user(user_id):
 
 # ========== ROUTES POUR LES SHIFTS ====================
 
+@app.route("/shift/delete-all", methods=["POST"])
+@login_required
+@admin_required
+def delete_all_shifts():
+    """Supprime tous les shifts."""
+    try:
+        count = Shift.query.count()
+        Shift.query.delete()
+        db.session.commit()
+        flash(f"✅ Tous les {count} shifts ont été supprimés avec succès !", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"❌ Erreur : {str(e)}", "danger")
+    return redirect(url_for("schedule"))
+
+
+@app.route("/shift/delete-all-for-user/<int:user_id>", methods=["POST"])
+@login_required
+@admin_required
+def delete_all_shifts_for_user(user_id):
+    """Supprime tous les shifts d'un utilisateur spécifique."""
+    user = User.query.get_or_404(user_id)
+    
+    try:
+        shifts = Shift.query.filter_by(user_id=user_id).all()
+        count = len(shifts)
+        
+        if count == 0:
+            flash(f"⚠️ Aucun shift trouvé pour {user.name}.", "warning")
+            return redirect(url_for("schedule"))
+        
+        for shift in shifts:
+            db.session.delete(shift)
+        db.session.commit()
+        flash(f"✅ Tous les {count} shifts de {user.name} ont été supprimés avec succès !", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"❌ Erreur : {str(e)}", "danger")
+    return redirect(url_for("schedule"))
+
+
+
 
 @app.route("/schedule")
 @login_required
