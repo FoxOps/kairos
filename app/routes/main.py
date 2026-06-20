@@ -372,6 +372,68 @@ def delete_all_shifts_for_user(user_id):
         flash(f"❌ Erreur : {str(e)}", "danger")
     return redirect(url_for("schedule"))
 
+@app.route("/shift/delete-day/<date_str>", methods=["POST"])
+@login_required
+@admin_required
+def delete_all_shifts_for_day(date_str):
+    """Supprime tous les shifts pour une journée spécifique."""
+    try:
+        date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+        shifts = Shift.query.filter_by(date=date_obj).all()
+        count = len(shifts)
+        
+        if count == 0:
+            flash(f"⚠️ Aucun shift trouvé pour le {date_obj.strftime('%d/%m/%Y')}.", "warning")
+            return redirect(url_for("schedule"))
+        
+        for shift in shifts:
+            db.session.delete(shift)
+        db.session.commit()
+        flash(f"✅ Tous les {count} shifts du {date_obj.strftime('%d/%m/%Y')} ont été supprimés avec succès !", "success")
+    except ValueError:
+        flash(f"❌ Format de date invalide.", "danger")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"❌ Erreur : {str(e)}", "danger")
+    return redirect(url_for("schedule"))
+
+
+@app.route("/shift/delete-week/<date_str>", methods=["POST"])
+@login_required
+@admin_required
+def delete_all_shifts_for_week(date_str):
+    """Supprime tous les shifts pour une semaine complète (lundi-vendredi)."""
+    try:
+        date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+        
+        # Trouver le lundi de la semaine
+        monday = date_obj - timedelta(days=date_obj.weekday())
+        
+        # Supprimer tous les shifts du lundi au vendredi
+        deleted_count = 0
+        for day in range(5):  # lundi (0) à vendredi (4)
+            current_date = monday + timedelta(days=day)
+            shifts = Shift.query.filter_by(date=current_date).all()
+            count = len(shifts)
+            deleted_count += count
+            for shift in shifts:
+                db.session.delete(shift)
+        
+        db.session.commit()
+        
+        if deleted_count == 0:
+            flash(f"⚠️ Aucun shift trouvé pour la semaine du {monday.strftime('%d/%m/%Y')}.", "warning")
+        else:
+            flash(f"✅ Tous les {deleted_count} shifts de la semaine du {monday.strftime('%d/%m/%Y')} ont été supprimés avec succès !", "success")
+    except ValueError:
+        flash(f"❌ Format de date invalide.", "danger")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"❌ Erreur : {str(e)}", "danger")
+    return redirect(url_for("schedule"))
+
+
+
 
 
 
