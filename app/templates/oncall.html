@@ -35,6 +35,11 @@
             {% endif %}
         </div>
         
+        <!-- Pagination en haut + sélecteur -->
+        {% if on_calls.has_prev or on_calls.has_next or on_calls.total > 0 %}
+        {% include "_pagination.html" with context %}
+        {% endif %}
+        
         <!-- Tableau des astreintes -->
         <div class="table-container">
             <table class="table is-fullwidth is-striped">
@@ -92,55 +97,17 @@
         <div class="notification is-info is-light mt-4">
             <h3 class="subtitle is-6"><i class="fas fa-info-circle"></i> Légende des actions</h3>
             <div class="content">
-                <p>
-                    <span class="button is-danger is-small"><i class="fas fa-trash"></i></span> 
-                    Supprimer cette astreinte<br>
-                    <span class="button is-warning is-small"><i class="fas fa-user-times"></i></span> 
-                    Supprimer TOUTES les astreintes de cet utilisateur
+                <p class="is-flex is-flex-wrap-wrap" style="gap: 0.5rem;">
+                    <span class="button is-danger is-small" style="min-width: 200px;"><i class="fas fa-trash"></i> Supprimer cette astreinte</span>
+                    <span class="button is-warning is-small" style="min-width: 200px;"><i class="fas fa-user-times"></i> Supprimer TOUTES les astreintes de cet utilisateur</span>
                 </p>
             </div>
         </div>
         {% endif %}
         
-        <!-- Pagination -->
-        {% if on_calls.has_prev or on_calls.has_next %}
-        <nav class="pagination is-centered mt-4" role="navigation" aria-label="pagination">
-            <a class="pagination-previous {% if not on_calls.has_prev %}is-disabled{% endif %}" 
-               href="{{ url_for('oncall', page=on_calls.prev_num) if on_calls.has_prev else '#' }}" 
-               aria-label="Page précédente">
-                <i class="fas fa-chevron-left" aria-hidden="true"></i>
-            </a>
-            <a class="pagination-next {% if not on_calls.has_next %}is-disabled{% endif %}" 
-               href="{{ url_for('oncall', page=on_calls.next_num) if on_calls.has_next else '#' }}" 
-               aria-label="Page suivante">
-                <i class="fas fa-chevron-right" aria-hidden="true"></i>
-            </a>
-            <ul class="pagination-list">
-                {% if on_calls.has_prev %}
-                <li>
-                    <a class="pagination-link" href="{{ url_for('oncall', page=1) }}" aria-label="Première page">1</a>
-                </li>
-                {% endif %}
-                <li>
-                    <span class="pagination-ellipsis">&hellip;</span>
-                </li>
-                <li>
-                    <a class="pagination-link is-current" aria-label="Page {{ on_calls.page }}" aria-current="page">{{ on_calls.page }}</a>
-                </li>
-                <li>
-                    <span class="pagination-ellipsis">&hellip;</span>
-                </li>
-                {% if on_calls.has_next %}
-                <li>
-                    <a class="pagination-link" href="{{ url_for('oncall', page=on_calls.pages) }}" aria-label="Dernière page">{{ on_calls.pages }}</a>
-                </li>
-                {% endif %}
-            </ul>
-        </nav>
-        <p class="has-text-centered mt-2">
-            Page {{ on_calls.page }} sur {{ on_calls.pages }} 
-            ({{ on_calls.total }} astreintes au total)
-        </p>
+        <!-- Pagination en bas -->
+        {% if on_calls.has_prev or on_calls.has_next or on_calls.total > 0 %}
+        {% include "_pagination.html" with context %}
         {% endif %}
     </div>
 </section>

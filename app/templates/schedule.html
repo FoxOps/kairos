@@ -35,7 +35,14 @@
             {% endif %}
         </div>
         
+        <!-- Pagination en haut + sélecteur -->
+        {% if shifts.has_prev or shifts.has_next or shifts.total > 0 %}
+        {% include "_pagination.html" with context %}
+        {% endif %}
+        
         <!-- Tableau des shifts -->
+        {% set seen_users = [] %}
+        {% set seen_dates = [] %}
         <div class="table-container">
             <table class="table is-fullwidth is-striped">
                 <caption class="is-sr-only">Liste des shifts</caption>
@@ -129,59 +136,19 @@
         <div class="notification is-info is-light mt-4">
             <h3 class="subtitle is-6"><i class="fas fa-info-circle"></i> Légende des actions</h3>
             <div class="content">
-                <p>
-                    <span class="button is-danger is-small"><i class="fas fa-trash"></i></span> 
-                    Supprimer ce shift<br>
-                    <span class="button is-warning is-small"><i class="fas fa-user-times"></i></span> 
-                    Supprimer TOUS les shifts de cet utilisateur<br>
-                    <span class="button is-info is-small"><i class="fas fa-calendar-day"></i></span> 
-                    Supprimer TOUS les shifts de cette journée<br>
-                    <span class="button is-primary is-small"><i class="fas fa-calendar-week"></i></span> 
-                    Supprimer TOUS les shifts de cette semaine
+                <p class="is-flex is-flex-wrap-wrap" style="gap: 0.5rem;">
+                    <span class="button is-danger is-small" style="min-width: 140px;"><i class="fas fa-trash"></i> Supprimer ce shift</span>
+                    <span class="button is-warning is-small" style="min-width: 140px;"><i class="fas fa-user-times"></i> Supprimer TOUS les shifts de cet utilisateur</span>
+                    <span class="button is-info is-small" style="min-width: 140px;"><i class="fas fa-calendar-day"></i> Supprimer TOUS les shifts de cette journée</span>
+                    <span class="button is-primary is-small" style="min-width: 140px;"><i class="fas fa-calendar-week"></i> Supprimer TOUS les shifts de cette semaine</span>
                 </p>
             </div>
         </div>
         {% endif %}
         
-        <!-- Pagination -->
-        {% if shifts.has_prev or shifts.has_next %}
-        <nav class="pagination is-centered mt-4" role="navigation" aria-label="pagination">
-            <a class="pagination-previous {% if not shifts.has_prev %}is-disabled{% endif %}" 
-               href="{{ url_for('schedule', page=shifts.prev_num) if shifts.has_prev else '#' }}" 
-               aria-label="Page précédente">
-                <i class="fas fa-chevron-left" aria-hidden="true"></i>
-            </a>
-            <a class="pagination-next {% if not shifts.has_next %}is-disabled{% endif %}" 
-               href="{{ url_for('schedule', page=shifts.next_num) if shifts.has_next else '#' }}" 
-               aria-label="Page suivante">
-                <i class="fas fa-chevron-right" aria-hidden="true"></i>
-            </a>
-            <ul class="pagination-list">
-                {% if shifts.has_prev %}
-                <li>
-                    <a class="pagination-link" href="{{ url_for('schedule', page=1) }}" aria-label="Première page">1</a>
-                </li>
-                {% endif %}
-                <li>
-                    <span class="pagination-ellipsis">&hellip;</span>
-                </li>
-                <li>
-                    <a class="pagination-link is-current" aria-label="Page {{ shifts.page }}" aria-current="page">{{ shifts.page }}</a>
-                </li>
-                <li>
-                    <span class="pagination-ellipsis">&hellip;</span>
-                </li>
-                {% if shifts.has_next %}
-                <li>
-                    <a class="pagination-link" href="{{ url_for('schedule', page=shifts.pages) }}" aria-label="Dernière page">{{ shifts.pages }}</a>
-                </li>
-                {% endif %}
-            </ul>
-        </nav>
-        <p class="has-text-centered mt-2">
-            Page {{ shifts.page }} sur {{ shifts.pages }} 
-            ({{ shifts.total }} shifts au total)
-        </p>
+        <!-- Pagination en bas -->
+        {% if shifts.has_prev or shifts.has_next or shifts.total > 0 %}
+        {% include "_pagination.html" with context %}
         {% endif %}
     </div>
 </section>

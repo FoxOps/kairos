@@ -26,6 +26,11 @@
             {% endif %}
         </div>
         
+        <!-- Pagination en haut + sélecteur -->
+        {% if leaves.has_prev or leaves.has_next or leaves.total > 0 %}
+        {% include "_pagination.html" with context %}
+        {% endif %}
+        
         <!-- Tableau des congés -->
         <div class="table-container">
             <table class="table is-fullwidth is-striped">
@@ -63,52 +68,15 @@
         <div class="notification is-info is-light mt-4">
             <h3 class="subtitle is-6"><i class="fas fa-info-circle"></i> Légende des actions</h3>
             <div class="content">
-                <p>
-                    <span class="button is-danger is-small"><i class="fas fa-trash"></i></span> 
-                    Supprimer ce congé
+                <p class="is-flex is-flex-wrap-wrap" style="gap: 0.5rem;">
+                    <span class="button is-danger is-small" style="min-width: 200px;"><i class="fas fa-trash"></i> Supprimer ce congé</span>
                 </p>
             </div>
         </div>
         
-        <!-- Pagination -->
-        {% if leaves.has_prev or leaves.has_next %}
-        <nav class="pagination is-centered mt-4" role="navigation" aria-label="pagination">
-            <a class="pagination-previous {% if not leaves.has_prev %}is-disabled{% endif %}" 
-               href="{{ url_for('leave', page=leaves.prev_num) if leaves.has_prev else '#' }}" 
-               aria-label="Page précédente">
-                <i class="fas fa-chevron-left" aria-hidden="true"></i>
-            </a>
-            <a class="pagination-next {% if not leaves.has_next %}is-disabled{% endif %}" 
-               href="{{ url_for('leave', page=leaves.next_num) if leaves.has_next else '#' }}" 
-               aria-label="Page suivante">
-                <i class="fas fa-chevron-right" aria-hidden="true"></i>
-            </a>
-            <ul class="pagination-list">
-                {% if leaves.has_prev %}
-                <li>
-                    <a class="pagination-link" href="{{ url_for('leave', page=1) }}" aria-label="Première page">1</a>
-                </li>
-                {% endif %}
-                <li>
-                    <span class="pagination-ellipsis">&hellip;</span>
-                </li>
-                <li>
-                    <a class="pagination-link is-current" aria-label="Page {{ leaves.page }}" aria-current="page">{{ leaves.page }}</a>
-                </li>
-                <li>
-                    <span class="pagination-ellipsis">&hellip;</span>
-                </li>
-                {% if leaves.has_next %}
-                <li>
-                    <a class="pagination-link" href="{{ url_for('leave', page=leaves.pages) }}" aria-label="Dernière page">{{ leaves.pages }}</a>
-                </li>
-                {% endif %}
-            </ul>
-        </nav>
-        <p class="has-text-centered mt-2">
-            Page {{ leaves.page }} sur {{ leaves.pages }} 
-            ({{ leaves.total }} congés au total)
-        </p>
+        <!-- Pagination en bas -->
+        {% if leaves.has_prev or leaves.has_next or leaves.total > 0 %}
+        {% include "_pagination.html" with context %}
         {% endif %}
     </div>
 </section>

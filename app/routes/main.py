@@ -112,7 +112,18 @@ def index():
 @login_required
 def leave():
     page = request.args.get('page', 1, type=int)
-    per_page = 20  # Nombre d'éléments par page
+    per_page = request.args.get('per_page', 20, type=int)
+    
+    # Options de pagination
+    per_page_options = [5, 10, 25, 50, 100]
+    
+    # Si "Tout" est sélectionné, utiliser un grand nombre
+    if per_page == 0 or per_page == -1:
+        per_page = 999999  # Tous les éléments
+    
+    # S'assurer que per_page est dans les options valides
+    if per_page not in per_page_options and per_page != 999999:
+        per_page = 20
     
     leaves_paginated = (
         Leave.query.options(joinedload(Leave.user))
@@ -120,7 +131,7 @@ def leave():
         .paginate(page=page, per_page=per_page, error_out=False)
     )
     
-    return render_template("leave.html", leaves=leaves_paginated)
+    return render_template("leave.html", leaves=leaves_paginated, per_page=per_page, per_page_options=per_page_options)
 
 
 @app.route("/leave/add", methods=["GET", "POST"])
@@ -219,7 +230,18 @@ def delete_leave(leave_id):
 @login_required
 def oncall():
     page = request.args.get('page', 1, type=int)
-    per_page = 20  # Nombre d'éléments par page
+    per_page = request.args.get('per_page', 20, type=int)
+    
+    # Options de pagination
+    per_page_options = [5, 10, 25, 50, 100]
+    
+    # Si "Tout" est sélectionné, utiliser un grand nombre
+    if per_page == 0 or per_page == -1:
+        per_page = 999999  # Tous les éléments
+    
+    # S'assurer que per_page est dans les options valides
+    if per_page not in per_page_options and per_page != 999999:
+        per_page = 20
     
     on_calls_paginated = (
         OnCall.query.options(joinedload(OnCall.user))
@@ -227,7 +249,7 @@ def oncall():
         .paginate(page=page, per_page=per_page, error_out=False)
     )
     
-    return render_template("oncall.html", on_calls=on_calls_paginated)
+    return render_template("oncall.html", on_calls=on_calls_paginated, per_page=per_page, per_page_options=per_page_options)
 
 
 @app.route("/oncall/add", methods=["GET", "POST"])
@@ -453,7 +475,18 @@ def delete_all_shifts_for_week(date_str):
 @login_required
 def schedule():
     page = request.args.get('page', 1, type=int)
-    per_page = 20  # Nombre d'éléments par page
+    per_page = request.args.get('per_page', 20, type=int)
+    
+    # Options de pagination
+    per_page_options = [5, 10, 25, 50, 100]
+    
+    # Si "Tout" est sélectionné, utiliser un grand nombre
+    if per_page == 0 or per_page == -1:
+        per_page = 999999  # Tous les éléments
+    
+    # S'assurer que per_page est dans les options valides
+    if per_page not in per_page_options and per_page != 999999:
+        per_page = 20
     
     shifts_paginated = (
         Shift.query.options(joinedload(Shift.user))
@@ -461,7 +494,7 @@ def schedule():
         .paginate(page=page, per_page=per_page, error_out=False)
     )
     
-    return render_template("schedule.html", shifts=shifts_paginated)
+    return render_template("schedule.html", shifts=shifts_paginated, per_page=per_page, per_page_options=per_page_options)
 
 
 @app.route("/schedule/add", methods=["GET", "POST"])
