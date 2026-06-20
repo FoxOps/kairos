@@ -18,19 +18,13 @@ app.config.from_object("config.Config")
 db.init_app(app)
 login_manager.init_app(app)
 
-# Importer les modèles
-from app import models
-
-# NE PAS importer les routes ici pour éviter la circularité
-# Les routes seront importées dans run.py ou par l'utilisateur
-
 
 @login_manager.user_loader
 def load_user(user_id):
     """Charger l'utilisateur depuis la base de données."""
     from app.models import User
 
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 
 # Gestion des erreurs personnalisées

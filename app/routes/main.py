@@ -297,7 +297,7 @@ def add_shift():
             return redirect(url_for("add_shift"))
 
         try:
-            shift_type = ShiftType.query.get(int(shift_type_id))
+            shift_type = db.session.get(ShiftType, int(shift_type_id))
             if not shift_type:
                 flash("Type de shift invalide.", "danger")
                 return redirect(url_for("add_shift"))

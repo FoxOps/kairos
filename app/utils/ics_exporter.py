@@ -1,7 +1,7 @@
 from icalendar import Calendar, Event
 from datetime import datetime, timedelta
-from app.models import Shift, OnCall, Leave
 import pytz
+from app.models import Shift, OnCall, Leave
 
 
 def generate_ics_standard(events, calendar_name="Leviia Schedule"):

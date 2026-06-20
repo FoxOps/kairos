@@ -1,8 +1,9 @@
 from app import app, db
-from app.models import Group, User, ShiftType, Shift
+
+# Importer les modèles pour enregistrer les tables avec SQLAlchemy
+from app.models import Group, User, ShiftType, Shift, OnCall, Leave
 
 # Importer les routes pour qu'elles soient enregistrées
-# Cela fonctionne car app existe déjà dans app/__init__.py
 from app.routes import main, admin, export, auth
 
 # Types de shifts par défaut
