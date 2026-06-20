@@ -67,7 +67,7 @@ class Shift(db.Model):
 
 
 class OnCall(db.Model):
-    __tablename__ = "oncall"
+    __tablename__ = "on_call"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(
         db.Integer, db.ForeignKey("user.id"), nullable=False, index=True
