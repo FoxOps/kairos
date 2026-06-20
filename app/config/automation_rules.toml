@@ -1,0 +1,62 @@
+# =============================================================================
+# CONFIGURATION DES RÈGLES D'AUTOMATISATION - Leviia Schedule
+# =============================================================================
+# Ce fichier permet de configurer les règles métiers pour la génération
+# automatique des astreintes et des shifts.
+# Modifiable via l'interface d'administration ou directement via un éditeur.
+
+[oncall]
+# Configuration des astreintes
+rotation_order = []  # Liste des IDs utilisateurs dans l'ordre de rotation (vide = ordre alphabétique)
+min_days_between_oncalls = 14  # Contrainte légale : minimum 2 semaines entre deux astreintes
+start_day = 4  # Jour de début : 4 = vendredi (0=lundi, 1=mardi, 2=mercredi, 3=jeudi, 4=vendredi, 5=samedi, 6=dimanche)
+start_hour = 21  # Heure de début de l'astreinte
+end_day = 4  # Jour de fin : 4 = vendredi (même semaine suivante)
+end_hour = 7  # Heure de fin de l'astreinte (vendredi suivant à 07h)
+
+[shifts]
+# Créneaux horaires disponibles
+shift_types = [
+    { name = "morning", start = 7, end = 15, label = "07h-15h" },
+    { name = "day", start = 9, end = 17, label = "09h-17h" },
+    { name = "evening", start = 13, end = 21, label = "13h-21h" }
+]
+
+# Règles d'assignation des shifts
+# Priorité : 1 (la plus haute) -> N (la plus basse)
+rules = [
+    # Règle 1 : La personne en astreinte (et dans groupe schedule) a le shift 13h-21h
+    { rule = "oncall_has_evening_shift", enabled = true, priority = 1, description = "Personne en astreinte = shift 13h-21h (si dans groupe schedule)" },
+    
+    # Règle 2 : Rotation après astreinte -> 07h-15h la semaine suivante
+    { rule = "rotation_after_oncall", enabled = true, priority = 2, description = "Rotation : après astreinte = shift 07h-15h la semaine suivante" },
+    
+    # Règle 3 : Par défaut 09h-17h
+    { rule = "default_shift", enabled = true, priority = 3, description = "Shift par défaut : 09h-17h" },
+    
+    # Règle 4 : Cas spécial avec 2 utilisateurs disponibles
+    { rule = "two_users_special_case", enabled = true, priority = 4, description = "2 utilisateurs : non-astreinte = 07h-15h, astreinte = 13h-21h" }
+]
+
+# Jours de travail (0=lundi, 1=mardi, 2=mercredi, 3=jeudi, 4=vendredi)
+work_days = [0, 1, 2, 3, 4]
+
+# Nombre de personnes requises par créneau et par jour
+daily_requirements = {
+    monday = { morning = 1, day = 1, evening = 1 },
+    tuesday = { morning = 1, day = 1, evening = 1 },
+    wednesday = { morning = 1, day = 1, evening = 1 },
+    thursday = { morning = 1, day = 1, evening = 1 },
+    friday = { morning = 1, day = 1, evening = 1 }
+}
+
+[groups]
+# Noms des groupes éligibles pour les astreintes et les shifts
+schedule_groups = ["Technique", "Support"]  # Groupes éligibles pour les shifts
+oncall_groups = ["Astreinte", "Technique"]  # Groupes éligibles pour les astreintes
+
+[generation]
+# Paramètres de génération par défaut
+default_period_days = 180  # Période par défaut : 6 mois
+advance_generation_enabled = true  # Génération automatique à l'avance
+rebalance_on_leave_change = true  # Rééquilibrer automatiquement lors des changements de congés
