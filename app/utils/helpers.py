@@ -133,17 +133,12 @@ def can_add_leave(user_id, start_date, end_date):
     if overlapping_leave:
         return False, "Impossible : un congé existe déjà sur cette période."
 
-    # Vérification optimisée : une seule requête pour les shifts sur la période
-    overlapping_shift = _get_overlapping_shift(user_id, start_date, end_date)
-    if overlapping_shift:
-        return (
-            False,
-            f"Impossible : l'utilisateur a un shift le {overlapping_shift.date.strftime('%d/%m/%Y')}.",
-        )
-
     # Vérification optimisée : une seule requête pour les astreintes chevauchantes
     overlapping_oncall = _get_overlapping_oncall(user_id, start_date, end_date)
     if overlapping_oncall:
         return False, "Impossible : l'utilisateur a une astreinte sur cette période."
+
+    # Note: Les shifts ne bloquent pas les congés - les congés sont prioritaires
+    # Les shifts existants seront gérés séparément (suppression automatique ou marquage)
 
     return True, ""

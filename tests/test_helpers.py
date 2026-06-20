@@ -376,7 +376,7 @@ class TestCanAddLeave:
             assert "un congé existe déjà sur cette période" in message
 
     def test_can_add_leave_user_has_shift(self, app, test_user, test_shift_type):
-        """Test qu'un congé ne peut pas être ajouté si l'utilisateur a un shift."""
+        """Test qu'un congé peut être ajouté même si l'utilisateur a un shift (les congés sont prioritaires)."""
         with app.app_context():
             # Créer un shift
             start_time = datetime(2023, 12, 1, 7, 0)
@@ -394,8 +394,9 @@ class TestCanAddLeave:
             start_date = shift.date
             end_date = shift.date + timedelta(days=1)
             can_add, message = can_add_leave(test_user.id, start_date, end_date)
-            assert can_add is False
-            assert "l'utilisateur a un shift" in message
+            # Les congés sont prioritaires, donc cela doit être autorisé
+            assert can_add is True
+            assert message == ""
 
     def test_can_add_leave_user_has_oncall(self, app, test_user):
         """Test qu'un congé ne peut pas être ajouté si l'utilisateur a une astreinte."""
