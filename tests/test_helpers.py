@@ -399,7 +399,7 @@ class TestCanAddLeave:
             assert message == ""
 
     def test_can_add_leave_user_has_oncall(self, app, test_user):
-        """Test qu'un congé ne peut pas être ajouté si l'utilisateur a une astreinte."""
+        """Test qu'un congé peut être ajouté même si l'utilisateur a une astreinte (les congés sont prioritaires)."""
         with app.app_context():
             # Créer une astreinte
             start_time = datetime(2023, 12, 1, 21, 0)  # Vendredi 21h
@@ -413,8 +413,9 @@ class TestCanAddLeave:
             start_date = oncall.start_time.date()
             end_date = oncall.end_time.date()
             can_add, message = can_add_leave(test_user.id, start_date, end_date)
-            assert can_add is False
-            assert "l'utilisateur a une astreinte sur cette période" in message
+            # Les congés sont prioritaires, donc cela doit être autorisé
+            assert can_add is True
+            assert message == ""
 
     def test_can_add_leave_different_users_overlapping(
         self, app, test_user, second_user

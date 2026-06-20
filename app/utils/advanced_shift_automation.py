@@ -293,15 +293,18 @@ class AdvancedShiftAutomation:
     @staticmethod
     def rebalance_after_leave(leave: 'Leave', dry_run: bool = False) -> 'Tuple[list, list]':
         """
-        Rééquilibre les shifts après l'ajout/modification d'un congé.
+        Rééquilibre les shifts et astreintes après l'ajout/modification d'un congé.
         Appelé automatiquement lors de l'ajout d'un congé.
+        Les congés sont prioritaires : ils suppriment et recalculent les shifts et astreintes chevauchantes.
         """
         from datetime import timedelta
         from app import db
-        from app.models import Shift
+        from app.models import Shift, OnCall
+        from app.utils.automation import OnCallAutomation
         
         messages = []
         regenerated_shifts = []
+        regenerated_oncalls = []
         
         # Récupérer toutes les dates du congé
         leave_dates = []
@@ -310,6 +313,31 @@ class AdvancedShiftAutomation:
             leave_dates.append(current_date)
             current_date += timedelta(days=1)
         
+        # Trouver la période des astreintes à recalculer
+        # Les astreintes couvrent du vendredi 21h au vendredi suivant 07h
+        # Nous devons trouver tous les vendredis qui ont des astreintes chevauchantes
+        oncall_periods_to_regenerate = set()
+        
+        # Trouver les astreintes qui chevauchent le congé
+        overlapping_oncalls = OnCall.query.filter(
+            OnCall.user_id == leave.user_id,
+            OnCall.start_time < datetime.combine(leave.end_date + timedelta(days=1), datetime.min.time()),
+            OnCall.end_time > datetime.combine(leave.start_date, datetime.min.time())
+        ).all()
+        
+        for oncall in overlapping_oncalls:
+            # Trouver le vendredi de début de cette astreinte
+            friday_start = oncall.start_time.date()
+            oncall_periods_to_regenerate.add(friday_start)
+        
+        # Supprimer les astreintes chevauchantes
+        if overlapping_oncalls and not dry_run:
+            for oncall in overlapping_oncalls:
+                db.session.delete(oncall)
+            db.session.commit()
+            messages.append(f"🗑️ {len(overlapping_oncalls)} astreintes supprimées pour l'utilisateur {leave.user_id}")
+        
+        # Supprimer et régénérer les shifts pour chaque date du congé
         for date in leave_dates:
             # Supprimer les shifts existants
             existing_shifts = Shift.query.filter_by(date=date).all()
@@ -319,9 +347,47 @@ class AdvancedShiftAutomation:
                 db.session.commit()
                 messages.append(f"🗑️ {len(existing_shifts)} shifts supprimés pour le {date.strftime('%d/%m/%Y')}")
             
-            # Régénérer
+            # Régénérer les shifts
             shifts, date_messages = AdvancedShiftAutomation.generate_daily_shifts(date, dry_run=dry_run)
             regenerated_shifts.extend(shifts)
             messages.extend(date_messages)
+        
+        # Régénérer les astreintes pour la période affectée
+        # Si des astreintes ont été supprimées, nous devons les recalculer
+        if oncall_periods_to_regenerate and not dry_run:
+            try:
+                # Trouver la période à couvrir : du premier vendredi avant le congé
+                # au dernier vendredi après la fin du congé
+                # Cela permet de couvrir toutes les astreintes affectées
+                
+                # Trouver le premier vendredi avant ou pendant le congé
+                first_friday = leave.start_date
+                while first_friday.weekday() != 4:  # 4 = vendredi
+                    first_friday -= timedelta(days=1)
+                
+                # Trouver le dernier vendredi après ou pendant le congé
+                last_friday = leave.end_date
+                while last_friday.weekday() != 4:
+                    last_friday += timedelta(days=1)
+                
+                # Étendre la période pour couvrir au moins 6 mois (période standard)
+                # ou au moins la période entre first_friday et last_friday + 7 jours
+                start_period = first_friday - timedelta(days=7)  # Prendre une semaine avant
+                end_period = last_friday + timedelta(days=21)  # Prendre 3 semaines après
+                
+                # Supprimer toutes les astreintes dans cette période pour cet utilisateur
+                # (déjà fait ci-dessus)
+                
+                # Régénérer toutes les astreintes pour cette période
+                # Utiliser l'ordre de rotation par défaut (None = ordre alphabétique)
+                from app.utils.automation import OnCallAutomation
+                oncalls, oncall_messages = OnCallAutomation.generate_oncall_schedule(
+                    start_period, end_period, rotation_order_ids=None, dry_run=False
+                )
+                regenerated_oncalls.extend(oncalls)
+                messages.extend(oncall_messages)
+                messages.append(f"🔄 {len(oncalls)} astreintes régénérées pour la période {start_period.strftime('%d/%m/%Y')} - {end_period.strftime('%d/%m/%Y')}")
+            except Exception as e:
+                messages.append(f"⚠️ Erreur lors du recalcul des astreintes: {str(e)}")
         
         return regenerated_shifts, messages
