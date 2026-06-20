@@ -451,7 +451,7 @@ def automation_oncall():
                 end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
                 
                 oncalls, messages = OnCallAutomation.generate_oncall_schedule(
-                    start_date, end_date, rotation_order_ids
+                    start_date, end_date, rotation_order_ids, dry_run=False
                 )
                 
                 for msg in messages:
