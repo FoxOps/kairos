@@ -21,7 +21,7 @@ def check_database_integrity():
     inspector = inspect(db.engine)
     
     # Vérifier que toutes les tables nécessaires existent
-    required_tables = ["groups", "user", "shift_types", "shift", "oncall", "leave"]
+    required_tables = ["groups", "user", "shift_types", "shift", "on_call", "leave"]
     for table in required_tables:
         if not inspector.has_table(table):
             return False
