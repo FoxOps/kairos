@@ -297,7 +297,7 @@ class AdvancedShiftAutomation:
         Appelé automatiquement lors de l'ajout d'un congé.
         Les congés sont prioritaires : ils suppriment et recalculent les shifts et astreintes chevauchantes.
         """
-        from datetime import timedelta
+        from datetime import timedelta, datetime
         from app import db
         from app.models import Shift, OnCall
         from app.utils.automation import OnCallAutomation
