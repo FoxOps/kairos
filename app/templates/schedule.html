@@ -90,7 +90,20 @@
                                 {% set seen_users = (seen_users or []) + [shift.user.id] %}
                                 {% endif %}
                                 
-                                <!-- Bouton pour supprimer tous les shifts de la journée (1ère occurrence) -->
+                                <!-- Bouton pour supprimer tous les shifts de la semaine (uniquement le lundi) -->
+                                {% if shift.date.weekday() == 0 and shift.date not in seen_dates %}
+                                <form method="POST" action="{{ url_for('delete_all_shifts_for_week', date_str=shift.date.strftime('%Y-%m-%d')) }}" style="margin: 0;">
+                                    <button type="submit" class="button is-primary is-small"
+                                            onclick="return confirm('Êtes-vous SÛR de vouloir supprimer TOUS les shifts de la SEMAINE du {{ shift.date.strftime('%d/%m/%Y') }} ?')"
+                                            aria-label="Supprimer tous les shifts de la semaine"
+                                            title="Supprimer TOUS les shifts de la semaine">
+                                        <i class="fas fa-calendar-week" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+                                {% set seen_dates = (seen_dates or []) + [shift.date] %}
+                                {% endif %}
+                                
+                                <!-- Bouton pour supprimer tous les shifts de la journée -->
                                 {% if shift.date not in seen_dates %}
                                 <form method="POST" action="{{ url_for('delete_all_shifts_for_day', date_str=shift.date.strftime('%Y-%m-%d')) }}" style="margin: 0;">
                                     <button type="submit" class="button is-info is-small"
@@ -101,18 +114,6 @@
                                     </button>
                                 </form>
                                 {% set seen_dates = (seen_dates or []) + [shift.date] %}
-                                {% endif %}
-                                
-                                <!-- Bouton pour supprimer tous les shifts de la semaine (1ère occurrence du lundi) -->
-                                {% if shift.date.weekday() == 0 and shift.date not in seen_dates %}
-                                <form method="POST" action="{{ url_for('delete_all_shifts_for_week', date_str=shift.date.strftime('%Y-%m-%d')) }}" style="margin: 0;">
-                                    <button type="submit" class="button is-primary is-small"
-                                            onclick="return confirm('Êtes-vous SÛR de vouloir supprimer TOUS les shifts de la SEMAINE du {{ shift.date.strftime('%d/%m/%Y') }} ?')"
-                                            aria-label="Supprimer tous les shifts de la semaine"
-                                            title="Supprimer TOUS les shifts de la semaine">
-                                        <i class="fas fa-calendar-week" aria-hidden="true"></i>
-                                    </button>
-                                </form>
                                 {% endif %}
                             </div>
                             {% endif %}
