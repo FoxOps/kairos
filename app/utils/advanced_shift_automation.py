@@ -337,56 +337,59 @@ class AdvancedShiftAutomation:
             db.session.commit()
             messages.append(f"🗑️ {len(overlapping_oncalls)} astreintes supprimées pour l'utilisateur {leave.user_id}")
         
-        # Supprimer et régénérer les shifts pour chaque date du congé
-        for date in leave_dates:
-            # Supprimer les shifts existants
-            existing_shifts = Shift.query.filter_by(date=date).all()
-            if existing_shifts and not dry_run:
-                for shift in existing_shifts:
-                    db.session.delete(shift)
-                db.session.commit()
-                messages.append(f"🗑️ {len(existing_shifts)} shifts supprimés pour le {date.strftime('%d/%m/%Y')}")
+        # Déterminer la période complète à recalculer
+        # Si des astreintes ont été supprimées, nous devons recalculer les shifts pour toute la période affectée
+        shift_period_start = leave.start_date
+        shift_period_end = leave.end_date
+        
+        if oncall_periods_to_regenerate:
+            # Trouver la période à couvrir : du premier vendredi avant le congé
+            # au dernier vendredi après la fin du congé + 7 jours (pour couvrir toute l'astreinte)
             
-            # Régénérer les shifts
-            shifts, date_messages = AdvancedShiftAutomation.generate_daily_shifts(date, dry_run=dry_run)
-            regenerated_shifts.extend(shifts)
-            messages.extend(date_messages)
+            # Trouver le premier vendredi avant ou pendant le congé
+            first_friday = leave.start_date
+            while first_friday.weekday() != 4:  # 4 = vendredi
+                first_friday -= timedelta(days=1)
+            
+            # Trouver le dernier vendredi après ou pendant le congé
+            last_friday = leave.end_date
+            while last_friday.weekday() != 4:
+                last_friday += timedelta(days=1)
+            
+            # Étendre la période pour couvrir les astreintes complètes
+            shift_period_start = first_friday - timedelta(days=7)  # Prendre une semaine avant
+            shift_period_end = last_friday + timedelta(days=7)  # Prendre une semaine après
+        
+        # Supprimer et régénérer les shifts pour toute la période affectée
+        current_date = shift_period_start
+        while current_date <= shift_period_end:
+            if current_date.weekday() < 5:  # Seulement du lundi au vendredi
+                # Supprimer les shifts existants
+                existing_shifts = Shift.query.filter_by(date=current_date).all()
+                if existing_shifts and not dry_run:
+                    for shift in existing_shifts:
+                        db.session.delete(shift)
+                    db.session.commit()
+                    messages.append(f"🗑️ {len(existing_shifts)} shifts supprimés pour le {current_date.strftime('%d/%m/%Y')}")
+                
+                # Régénérer les shifts avec les règles métiers avancées
+                shifts, date_messages = AdvancedShiftAutomation.generate_daily_shifts(current_date, dry_run=dry_run)
+                regenerated_shifts.extend(shifts)
+                messages.extend(date_messages)
+            current_date += timedelta(days=1)
         
         # Régénérer les astreintes pour la période affectée
         # Si des astreintes ont été supprimées, nous devons les recalculer
         if oncall_periods_to_regenerate and not dry_run:
             try:
-                # Trouver la période à couvrir : du premier vendredi avant le congé
-                # au dernier vendredi après la fin du congé
-                # Cela permet de couvrir toutes les astreintes affectées
-                
-                # Trouver le premier vendredi avant ou pendant le congé
-                first_friday = leave.start_date
-                while first_friday.weekday() != 4:  # 4 = vendredi
-                    first_friday -= timedelta(days=1)
-                
-                # Trouver le dernier vendredi après ou pendant le congé
-                last_friday = leave.end_date
-                while last_friday.weekday() != 4:
-                    last_friday += timedelta(days=1)
-                
-                # Étendre la période pour couvrir au moins 6 mois (période standard)
-                # ou au moins la période entre first_friday et last_friday + 7 jours
-                start_period = first_friday - timedelta(days=7)  # Prendre une semaine avant
-                end_period = last_friday + timedelta(days=21)  # Prendre 3 semaines après
-                
-                # Supprimer toutes les astreintes dans cette période pour cet utilisateur
-                # (déjà fait ci-dessus)
-                
-                # Régénérer toutes les astreintes pour cette période
-                # Utiliser l'ordre de rotation par défaut (None = ordre alphabétique)
+                # Utiliser la même période que pour les shifts
                 from app.utils.automation import OnCallAutomation
                 oncalls, oncall_messages = OnCallAutomation.generate_oncall_schedule(
-                    start_period, end_period, rotation_order_ids=None, dry_run=False
+                    shift_period_start, shift_period_end, rotation_order_ids=None, dry_run=False
                 )
                 regenerated_oncalls.extend(oncalls)
                 messages.extend(oncall_messages)
-                messages.append(f"🔄 {len(oncalls)} astreintes régénérées pour la période {start_period.strftime('%d/%m/%Y')} - {end_period.strftime('%d/%m/%Y')}")
+                messages.append(f"🔄 {len(oncalls)} astreintes régénérées pour la période {shift_period_start.strftime('%d/%m/%Y')} - {shift_period_end.strftime('%d/%m/%Y')}")
             except Exception as e:
                 messages.append(f"⚠️ Erreur lors du recalcul des astreintes: {str(e)}")
         
