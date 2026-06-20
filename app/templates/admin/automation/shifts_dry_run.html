@@ -1,0 +1,93 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title"><i class="fas fa-eye" aria-hidden="true"></i> Prévisualisation - Shifts</h1>
+        
+        <div class="notification is-info is-light">
+            <p><i class="fas fa-info-circle"></i> Ceci est une prévisualisation. Aucune donnée n'a été sauvegardée en base de données.</p>
+        </div>
+
+        <div class="box">
+            <h2 class="subtitle"><i class="fas fa-calendar-alt" aria-hidden="true"></i> Période : {{ start_date.strftime('%d/%m/%Y') }} au {{ end_date.strftime('%d/%m/%Y') }}</h2>
+            
+            {% if shifts %}
+            <div class="notification is-success is-light">
+                <p><strong>{{ shifts|length }}</strong> shift(s) sera(seront) généré(s)</p>
+            </div>
+            
+            <div class="table-container">
+                <table class="table is-fullwidth is-striped">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Utilisateur</th>
+                            <th>Heures</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for shift in shifts %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ shift.date.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ shift.shift_type.label if shift.shift_type else 'N/A' }}</td>
+                            <td>{{ shift.user.name if shift.user else 'N/A' }}</td>
+                            <td>{{ shift.start_time.strftime('%Hh') }} - {{ shift.end_time.strftime('%Hh') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% else %}
+            <div class="notification is-warning">
+                <p>Aucun shift ne sera généré pour cette période.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="box">
+            <h2 class="subtitle"><i class="fas fa-comments" aria-hidden="true"></i> Messages de génération</h2>
+            
+            {% if messages %}
+            <div class="content">
+                {% for msg in messages %}
+                <div class="notification {% if '✅' in msg or '🎉' in msg %}is-success{% elif '⚠️' in msg %}is-warning{% else %}is-danger{% endif %}">
+                    <p>{{ msg }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>Aucun message.</p>
+            {% endif %}
+        </div>
+
+        <div class="field is-grouped mt-5">
+            <div class="control">
+                <form method="POST" action="{{ url_for('automation_shifts') }}">
+                    <input type="hidden" name="action" value="generate">
+                    <input type="hidden" name="start_date" value="{{ start_date.strftime('%Y-%m-%d') }}">
+                    <input type="hidden" name="end_date" value="{{ end_date.strftime('%Y-%m-%d') }}">
+                    {% for shift in shifts %}
+                    {% if shift.shift_type %}
+                    <input type="hidden" name="{{ shift.date.strftime('%A').lower() }}_{{ shift.shift_type.name }}" 
+                           value="1">
+                    {% endif %}
+                    {% endfor %}
+                    <button type="submit" class="button is-primary">
+                        <i class="fas fa-save"></i>&nbsp; Confirmer et sauvegarder
+                    </button>
+                </form>
+            </div>
+            <div class="control">
+                <a class="button is-light" href="{{ url_for('automation_shifts') }}">
+                    <i class="fas fa-arrow-left"></i>&nbsp; Retour à la configuration
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

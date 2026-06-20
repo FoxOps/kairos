@@ -1,0 +1,683 @@
+"""
+Module d'automatisation pour la génération des astreintes et des shifts.
+
+Ce module fournit des fonctionnalités pour :
+1. Générer automatiquement des astreintes avec rotation entre les membres éligibles
+2. Générer automatiquement des shifts selon des règles métiers
+3. Gérer les remplacements automatiques en cas de conflits
+"""
+
+from datetime import datetime, timedelta, date
+from typing import List, Optional, Tuple, Dict, Any
+from app import db
+from app.models import User, Group, Shift, OnCall, Leave, ShiftType
+
+
+# ============================================================================
+# CONFIGURATION DES RÈGLES MÉTIERS
+# ============================================================================
+
+class BusinessRules:
+    """
+    Classe pour gérer les règles métiers spécifiques pour la génération des shifts.
+    
+    Ces règles peuvent être personnalisées selon les besoins de l'organisation.
+    """
+    
+    @staticmethod
+    def get_shift_rules() -> Dict[str, Any]:
+        """
+        Retourne les règles métiers pour la génération des shifts.
+        
+        Structure attendue :
+        {
+            'weekly_patterns': {
+                'user_id': {
+                    'monday': ['morning', 'afternoon', 'evening'],
+                    'tuesday': [...],
+                    ...
+                }
+            },
+            'daily_requirements': {
+                'monday': {'morning': 2, 'afternoon': 2, 'evening': 1},
+                ...
+            },
+            'max_shifts_per_user_per_week': 5,
+            'min_shifts_per_user_per_week': 2,
+        }
+        """
+        # Exemple de règles par défaut - à personnaliser
+        return {
+            'weekly_patterns': {},  # Vide par défaut, à remplir via configuration
+            'daily_requirements': {
+                'monday': {'morning': 1, 'afternoon': 1, 'evening': 0},
+                'tuesday': {'morning': 1, 'afternoon': 1, 'evening': 0},
+                'wednesday': {'morning': 1, 'afternoon': 1, 'evening': 0},
+                'thursday': {'morning': 1, 'afternoon': 1, 'evening': 0},
+                'friday': {'morning': 1, 'afternoon': 1, 'evening': 0},
+                'saturday': {},
+                'sunday': {},
+            },
+            'max_shifts_per_user_per_week': 5,
+            'min_shifts_per_user_per_week': 2,
+        }
+    
+    @staticmethod
+    def get_oncall_rules() -> Dict[str, Any]:
+        """
+        Retourne les règles métiers pour la génération des astreintes.
+        
+        Structure attendue :
+        {
+            'rotation_order': [user_id_1, user_id_2, ...],  # Ordre de rotation
+            'start_day': 'friday',  # Jour de début (friday pour vendredi 21h)
+            'start_hour': 21,  # Heure de début
+            'duration_days': 7,  # Durée en jours
+            'end_hour': 7,  # Heure de fin (le vendredi suivant)
+        }
+        """
+        return {
+            'rotation_order': [],  # À remplir via configuration
+            'start_day': 'friday',
+            'start_hour': 21,
+            'duration_days': 7,
+            'end_hour': 7,
+        }
+
+
+# ============================================================================
+# GÉNÉRATION DES ASTREINTES
+# ============================================================================
+
+class OnCallAutomation:
+    """
+    Classe pour gérer l'automatisation des astreintes (On-Call).
+    
+    Fonctionnalités :
+    - Génération automatique des astreintes avec rotation
+    - Gestion des remplacements en cas de conflit
+    - Configuration de l'ordre de rotation
+    """
+    
+    @staticmethod
+    def get_eligible_users() -> List[User]:
+        """
+        Récupère la liste des utilisateurs éligibles pour les astreintes.
+        Un utilisateur est éligible s'il appartient à un groupe participant aux astreintes.
+        """
+        return (
+            User.query
+            .join(Group)
+            .filter(Group.is_part_of_oncall == True)
+            .order_by(User.name)
+            .all()
+        )
+    
+    @staticmethod
+    def get_rotation_order(rotation_order_ids: Optional[List[int]] = None) -> List[User]:
+        """
+        Récupère l'ordre de rotation des utilisateurs.
+        
+        Args:
+            rotation_order_ids: Liste optionnelle d'IDs d'utilisateurs dans l'ordre souhaité.
+                              Si None, utilise l'ordre alphabétique.
+        
+        Returns:
+            Liste des utilisateurs dans l'ordre de rotation.
+        """
+        eligible_users = OnCallAutomation.get_eligible_users()
+        
+        if not eligible_users:
+            return []
+        
+        # Si un ordre personnalisé est fourni
+        if rotation_order_ids:
+            # Créer un mapping id -> user pour un accès rapide
+            user_map = {user.id: user for user in eligible_users}
+            
+            # Construire la liste dans l'ordre spécifié
+            ordered_users = []
+            for user_id in rotation_order_ids:
+                if user_id in user_map:
+                    ordered_users.append(user_map[user_id])
+            
+            # Ajouter les utilisateurs restants qui ne sont pas dans la liste
+            remaining_users = [u for u in eligible_users if u.id not in rotation_order_ids]
+            ordered_users.extend(sorted(remaining_users, key=lambda u: u.name))
+            
+            return ordered_users
+        
+        # Par défaut, trier par nom
+        return sorted(eligible_users, key=lambda u: u.name)
+    
+    @staticmethod
+    def find_next_available_user(
+        rotation_order: List[User],
+        start_time: datetime,
+        end_time: datetime
+    ) -> Optional[User]:
+        """
+        Trouve le prochain utilisateur disponible dans l'ordre de rotation.
+        
+        Un utilisateur est disponible s'il n'a pas :
+        - Une astreinte qui chevauche la période
+        - Un congé qui chevauche la période
+        
+        Args:
+            rotation_order: Liste des utilisateurs dans l'ordre de rotation
+            start_time: Date/heure de début de l'astreinte
+            end_time: Date/heure de fin de l'astreinte
+        
+        Returns:
+            Le premier utilisateur disponible, ou None si aucun n'est disponible
+        """
+        start_date = start_time.date()
+        end_date = end_time.date()
+        
+        for user in rotation_order:
+            # Vérifier les astreintes existantes
+            has_conflict = db.session.query(
+                db.exists().where(
+                    OnCall.user_id == user.id,
+                    OnCall.start_time < end_time,
+                    OnCall.end_time > start_time,
+                )
+            ).scalar()
+            
+            if has_conflict:
+                continue
+            
+            # Vérifier les congés
+            has_leave = db.session.query(
+                db.exists().where(
+                    Leave.user_id == user.id,
+                    Leave.start_date <= end_date,
+                    Leave.end_date >= start_date,
+                )
+            ).scalar()
+            
+            if has_leave:
+                continue
+            
+            return user
+        
+        return None
+    
+    @staticmethod
+    def generate_oncall_schedule(
+        start_date: date,
+        end_date: date,
+        rotation_order_ids: Optional[List[int]] = None,
+        dry_run: bool = False
+    ) -> Tuple[List[OnCall], List[str]]:
+        """
+        Génère automatiquement les astreintes pour une période donnée.
+        
+        Args:
+            start_date: Date de début de la période
+            end_date: Date de fin de la période
+            rotation_order_ids: Liste optionnelle d'IDs pour l'ordre de rotation
+            dry_run: Si True, ne sauvegarde pas en base (mode test)
+        
+        Returns:
+            Tuple contenant :
+            - Liste des astreintes générées
+            - Liste des messages (succès, avertissements, erreurs)
+        """
+        messages = []
+        generated_oncalls = []
+        
+        # Récupérer l'ordre de rotation
+        rotation_order = OnCallAutomation.get_rotation_order(rotation_order_ids)
+        
+        if not rotation_order:
+            messages.append("⚠️ Aucun utilisateur éligible trouvé pour les astreintes.")
+            return [], messages
+        
+        # Calculer le premier vendredi à partir de start_date
+        current_date = start_date
+        while current_date.weekday() != 4:  # 4 = vendredi
+            current_date += timedelta(days=1)
+        
+        # Si la date de début est après le premier vendredi, commencer au vendredi suivant
+        if current_date < start_date:
+            current_date += timedelta(days=7)
+        
+        # Générer les astreintes
+        rotation_index = 0
+        while current_date <= end_date:
+            # Calculer les dates/heures
+            start_time = datetime.combine(current_date, datetime.min.time()).replace(hour=21)
+            end_time = start_time + timedelta(days=7, hours=-14)  # Vendredi 21h -> Vendredi suivant 07h
+            
+            # Vérifier que end_time ne dépasse pas la période
+            if end_time.date() > end_date:
+                break
+            
+            # Trouver un utilisateur disponible
+            user = OnCallAutomation.find_next_available_user(
+                rotation_order, start_time, end_time
+            )
+            
+            if user:
+                # Créer l'astreinte
+                oncall = OnCall(
+                    user_id=user.id,
+                    start_time=start_time,
+                    end_time=end_time,
+                )
+                generated_oncalls.append(oncall)
+                
+                messages.append(
+                    f"✅ Astreinte créée pour {user.name} du {start_time.strftime('%d/%m/%Y %Hh')} "
+                    f"au {end_time.strftime('%d/%m/%Y %Hh')}"
+                )
+                
+                # Passer à l'utilisateur suivant dans la rotation
+                rotation_index = (rotation_index + 1) % len(rotation_order)
+                # Réorganiser la rotation pour commencer par l'utilisateur suivant
+                rotation_order = rotation_order[rotation_index:] + rotation_order[:rotation_index]
+            else:
+                messages.append(
+                    f"⚠️ Aucun utilisateur disponible pour l'astreinte du {start_time.strftime('%d/%m/%Y %Hh')} "
+                    f"au {end_time.strftime('%d/%m/%Y %Hh')}. Astreinte non créée."
+                )
+                # Passer à l'utilisateur suivant dans la rotation même sans création
+                rotation_index = (rotation_index + 1) % len(rotation_order)
+                rotation_order = rotation_order[rotation_index:] + rotation_order[:rotation_index]
+            
+            # Passer au vendredi suivant
+            current_date += timedelta(days=7)
+        
+        # Sauvegarder en base si ce n'est pas un dry run
+        if not dry_run and generated_oncalls:
+            try:
+                db.session.add_all(generated_oncalls)
+                db.session.commit()
+                messages.insert(0, f"🎉 {len(generated_oncalls)} astreintes générées avec succès !")
+            except Exception as e:
+                db.session.rollback()
+                messages.insert(0, f"❌ Erreur lors de la sauvegarde : {str(e)}")
+                return [], messages
+        
+        return generated_oncalls, messages
+
+
+# ============================================================================
+# GÉNÉRATION DES SHIFTS
+# ============================================================================
+
+class ShiftAutomation:
+    """
+    Classe pour gérer l'automatisation des shifts.
+    
+    Fonctionnalités :
+    - Génération automatique des shifts selon des règles métiers
+    - Gestion des remplacements en cas de conflit
+    - Distribution équilibrée entre les utilisateurs
+    """
+    
+    @staticmethod
+    def get_eligible_users() -> List[User]:
+        """
+        Récupère la liste des utilisateurs éligibles pour les shifts.
+        Un utilisateur est éligible s'il appartient à un groupe participant au schedule.
+        """
+        return (
+            User.query
+            .join(Group)
+            .filter(Group.is_part_of_schedule == True)
+            .order_by(User.name)
+            .all()
+        )
+    
+    @staticmethod
+    def get_shift_types() -> List[ShiftType]:
+        """Récupère tous les types de shifts disponibles."""
+        return ShiftType.query.order_by(ShiftType.name).all()
+    
+    @staticmethod
+    def can_assign_shift(user_id: int, date: date, shift_type: ShiftType) -> Tuple[bool, str]:
+        """
+        Vérifie si un shift peut être assigné à un utilisateur à une date donnée.
+        
+        Args:
+            user_id: ID de l'utilisateur
+            date: Date du shift
+            shift_type: Type de shift
+        
+        Returns:
+            Tuple (bool, message) où bool indique si l'assignation est possible
+        """
+        # Vérifier que la date est un jour de semaine (lundi-vendredi)
+        if date.weekday() >= 5:
+            return False, "Les shifts ne peuvent être assignés que du lundi au vendredi."
+        
+        # Vérifier si l'utilisateur a déjà un shift ce jour-là
+        has_shift = db.session.query(
+            db.exists().where(
+                Shift.user_id == user_id,
+                Shift.date == date,
+            )
+        ).scalar()
+        
+        if has_shift:
+            return False, "L'utilisateur a déjà un shift ce jour-là."
+        
+        # Vérifier si l'utilisateur est en congé
+        has_leave = db.session.query(
+            db.exists().where(
+                Leave.user_id == user_id,
+                Leave.start_date <= date,
+                Leave.end_date >= date,
+            )
+        ).scalar()
+        
+        if has_leave:
+            return False, "L'utilisateur est en congé à cette date."
+        
+        # Vérifier si l'utilisateur a une astreinte qui chevauche
+        # (on considère qu'une astreinte couvre toute la journée)
+        has_oncall = db.session.query(
+            db.exists().where(
+                OnCall.user_id == user_id,
+                OnCall.start_time <= datetime.combine(date, datetime.max.time()),
+                OnCall.end_time >= datetime.combine(date, datetime.min.time()),
+            )
+        ).scalar()
+        
+        if has_oncall:
+            return False, "L'utilisateur a une astreinte à cette date."
+        
+        return True, ""
+    
+    @staticmethod
+    def find_replacement_user(
+        excluded_user_ids: List[int],
+        date: date,
+        shift_type: ShiftType
+    ) -> Optional[User]:
+        """
+        Trouve un utilisateur de remplacement pour un shift.
+        
+        Args:
+            excluded_user_ids: Liste des IDs d'utilisateurs à exclure
+            date: Date du shift
+            shift_type: Type de shift
+        
+        Returns:
+            Le premier utilisateur disponible, ou None si aucun n'est disponible
+        """
+        eligible_users = ShiftAutomation.get_eligible_users()
+        
+        for user in eligible_users:
+            if user.id in excluded_user_ids:
+                continue
+            
+            can_assign, _ = ShiftAutomation.can_assign_shift(user.id, date, shift_type)
+            if can_assign:
+                return user
+        
+        return None
+    
+    @staticmethod
+    def generate_shift_schedule(
+        start_date: date,
+        end_date: date,
+        rules: Optional[Dict[str, Any]] = None,
+        dry_run: bool = False
+    ) -> Tuple[List[Shift], List[str]]:
+        """
+        Génère automatiquement les shifts pour une période donnée selon des règles métiers.
+        
+        Args:
+            start_date: Date de début de la période
+            end_date: Date de fin de la période
+            rules: Règles métiers spécifiques (optionnel)
+            dry_run: Si True, ne sauvegarde pas en base (mode test)
+        
+        Returns:
+            Tuple contenant :
+            - Liste des shifts générés
+            - Liste des messages (succès, avertissements, erreurs)
+        """
+        messages = []
+        generated_shifts = []
+        
+        # Utiliser les règles par défaut si aucune n'est fournie
+        if rules is None:
+            rules = BusinessRules.get_shift_rules()
+        
+        # Récupérer les types de shifts
+        shift_types = ShiftAutomation.get_shift_types()
+        shift_type_map = {st.name: st for st in shift_types}
+        
+        # Récupérer les utilisateurs éligibles
+        eligible_users = ShiftAutomation.get_eligible_users()
+        
+        if not eligible_users:
+            messages.append("⚠️ Aucun utilisateur éligible trouvé pour les shifts.")
+            return [], messages
+        
+        if not shift_types:
+            messages.append("⚠️ Aucun type de shift disponible.")
+            return [], messages
+        
+        # Parcourir chaque jour de la période
+        current_date = start_date
+        while current_date <= end_date:
+            # Ne générer que pour les jours de semaine
+            if current_date.weekday() >= 5:
+                current_date += timedelta(days=1)
+                continue
+            
+            # Récupérer les exigences pour ce jour
+            day_name = current_date.strftime('%A').lower()
+            day_requirements = rules.get('daily_requirements', {}).get(day_name, {})
+            
+            # Pour chaque type de shift requis
+            for shift_type_name, count in day_requirements.items():
+                if shift_type_name not in shift_type_map:
+                    messages.append(
+                        f"⚠️ Type de shift '{shift_type_name}' non trouvé. Ignoré pour le {current_date.strftime('%d/%m/%Y')}."
+                    )
+                    continue
+                
+                shift_type = shift_type_map[shift_type_name]
+                
+                # Générer 'count' shifts de ce type pour ce jour
+                for _ in range(count):
+                    # Trouver un utilisateur disponible
+                    assigned = False
+                    
+                    # Essayer d'assigner selon les patterns utilisateurs
+                    for user in eligible_users:
+                        can_assign, error_msg = ShiftAutomation.can_assign_shift(
+                            user.id, current_date, shift_type
+                        )
+                        
+                        if can_assign:
+                            # Créer le shift
+                            start_time = datetime.combine(
+                                current_date, datetime.min.time()
+                            ).replace(hour=shift_type.start_hour)
+                            end_time = datetime.combine(
+                                current_date, datetime.min.time()
+                            ).replace(hour=shift_type.end_hour)
+                            
+                            shift = Shift(
+                                user_id=user.id,
+                                shift_type_id=shift_type.id,
+                                start_time=start_time,
+                                end_time=end_time,
+                                date=current_date,
+                            )
+                            generated_shifts.append(shift)
+                            
+                            messages.append(
+                                f"✅ Shift {shift_type.label} assigné à {user.name} le {current_date.strftime('%d/%m/%Y')}"
+                            )
+                            assigned = True
+                            break
+                    
+                    # Si aucun utilisateur n'est disponible, essayer de trouver un remplaçant
+                    if not assigned:
+                        # Collecter les IDs des utilisateurs qui ont déjà un shift ce jour
+                        users_with_shift = [
+                            s.user_id for s in Shift.query
+                            .filter(Shift.date == current_date)
+                            .all()
+                        ]
+                        
+                        replacement = ShiftAutomation.find_replacement_user(
+                            users_with_shift, current_date, shift_type
+                        )
+                        
+                        if replacement:
+                            start_time = datetime.combine(
+                                current_date, datetime.min.time()
+                            ).replace(hour=shift_type.start_hour)
+                            end_time = datetime.combine(
+                                current_date, datetime.min.time()
+                            ).replace(hour=shift_type.end_hour)
+                            
+                            shift = Shift(
+                                user_id=replacement.id,
+                                shift_type_id=shift_type.id,
+                                start_time=start_time,
+                                end_time=end_time,
+                                date=current_date,
+                            )
+                            generated_shifts.append(shift)
+                            
+                            messages.append(
+                                f"✅ Shift {shift_type.label} assigné à {replacement.name} "
+                                f"(remplacement) le {current_date.strftime('%d/%m/%Y')}"
+                            )
+                        else:
+                            messages.append(
+                                f"⚠️ Impossible de trouver un utilisateur pour le shift "
+                                f"{shift_type.label} le {current_date.strftime('%d/%m/%Y')}. "
+                                f"Shift non créé."
+                            )
+            
+            current_date += timedelta(days=1)
+        
+        # Sauvegarder en base si ce n'est pas un dry run
+        if not dry_run and generated_shifts:
+            try:
+                db.session.add_all(generated_shifts)
+                db.session.commit()
+                messages.insert(0, f"🎉 {len(generated_shifts)} shifts générés avec succès !")
+            except Exception as e:
+                db.session.rollback()
+                messages.insert(0, f"❌ Erreur lors de la sauvegarde : {str(e)}")
+                return [], messages
+        
+        return generated_shifts, messages
+
+
+# ============================================================================
+# FONCTIONS UTILITAIRES POUR L'AUTOMATISATION COMPLÈTE
+# ============================================================================
+
+def generate_full_schedule(
+    start_date: date,
+    end_date: date,
+    oncall_rotation_order: Optional[List[int]] = None,
+    shift_rules: Optional[Dict[str, Any]] = None,
+    dry_run: bool = False
+) -> Dict[str, Any]:
+    """
+    Génère un schedule complet (astreintes + shifts) pour une période donnée.
+    
+    Args:
+        start_date: Date de début de la période
+        end_date: Date de fin de la période
+        oncall_rotation_order: Ordre de rotation pour les astreintes
+        shift_rules: Règles métiers pour les shifts
+        dry_run: Si True, ne sauvegarde pas en base
+    
+    Returns:
+        Dictionnaire contenant les résultats et messages
+    """
+    result = {
+        'oncall': {'generated': [], 'messages': []},
+        'shift': {'generated': [], 'messages': []},
+        'summary': []
+    }
+    
+    # Générer les astreintes
+    oncalls, oncall_messages = OnCallAutomation.generate_oncall_schedule(
+        start_date, end_date, oncall_rotation_order, dry_run
+    )
+    result['oncall']['generated'] = oncalls
+    result['oncall']['messages'] = oncall_messages
+    
+    # Générer les shifts
+    shifts, shift_messages = ShiftAutomation.generate_shift_schedule(
+        start_date, end_date, shift_rules, dry_run
+    )
+    result['shift']['generated'] = shifts
+    result['shift']['messages'] = shift_messages
+    
+    # Résumé
+    result['summary'] = [
+        f"Astreintes générées : {len(oncalls)}",
+        f"Shifts générés : {len(shifts)}",
+        f"Total : {len(oncalls) + len(shifts)} entrées"
+    ]
+    
+    return result
+
+
+def get_automation_status() -> Dict[str, Any]:
+    """
+    Retourne l'état actuel de l'automatisation.
+    
+    Returns:
+        Dictionnaire contenant :
+        - Nombre d'astreintes existantes
+        - Nombre de shifts existants
+        - Nombre d'utilisateurs éligibles pour les astreintes
+        - Nombre d'utilisateurs éligibles pour les shifts
+        - Prochaine date disponible pour la génération
+    """
+    # Compter les astreintes existantes
+    oncall_count = OnCall.query.count()
+    
+    # Compter les shifts existants
+    shift_count = Shift.query.count()
+    
+    # Compter les utilisateurs éligibles
+    oncall_eligible = len(OnCallAutomation.get_eligible_users())
+    shift_eligible = len(ShiftAutomation.get_eligible_users())
+    
+    # Trouver la prochaine date disponible (le premier vendredi dans le futur sans astreinte)
+    today = date.today()
+    current_date = today
+    while current_date.weekday() != 4:
+        current_date += timedelta(days=1)
+    
+    # Vérifier si une astreinte existe déjà pour ce vendredi
+    next_oncall_date = None
+    while next_oncall_date is None:
+        start_time = datetime.combine(current_date, datetime.min.time()).replace(hour=21)
+        end_time = start_time + timedelta(days=7, hours=-14)
+        
+        has_oncall = OnCall.query.filter(
+            OnCall.start_time == start_time
+        ).first()
+        
+        if not has_oncall:
+            next_oncall_date = current_date
+        else:
+            current_date += timedelta(days=7)
+    
+    return {
+        'oncall_count': oncall_count,
+        'shift_count': shift_count,
+        'oncall_eligible_users': oncall_eligible,
+        'shift_eligible_users': shift_eligible,
+        'next_available_oncall_date': next_oncall_date.strftime('%Y-%m-%d') if next_oncall_date else None,
+    }

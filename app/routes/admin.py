@@ -4,6 +4,15 @@ from sqlalchemy.orm import selectinload
 from app import app, db
 from app.models import User, Shift, OnCall, Leave, Group, ShiftType
 from app.utils.decorators import admin_required
+from app.utils.automation import (
+    OnCallAutomation,
+    ShiftAutomation,
+    BusinessRules,
+    generate_full_schedule,
+    get_automation_status,
+)
+from datetime import datetime, date, timedelta
+
 
 
 # Dashboard admin
@@ -386,3 +395,309 @@ def delete_shift_type(shift_type_id):
         flash(f"❌ Erreur : {str(e)}", "danger")
 
     return redirect(url_for("list_shift_types"))
+
+# ============================================================================
+# AUTOMATISATION - ASTREINTES ET SHIFTS
+# ============================================================================
+
+
+@app.route("/admin/automation")
+@admin_required
+def automation_dashboard():
+    """Tableau de bord de l'automatisation."""
+    status = get_automation_status()
+    
+    # Récupérer les utilisateurs éligibles
+    oncall_users = OnCallAutomation.get_eligible_users()
+    shift_users = ShiftAutomation.get_eligible_users()
+    
+    # Récupérer les types de shifts
+    shift_types = ShiftAutomation.get_shift_types()
+    
+    # Récupérer les règles par défaut
+    shift_rules = BusinessRules.get_shift_rules()
+    oncall_rules = BusinessRules.get_oncall_rules()
+    
+    return render_template(
+        "admin/automation/dashboard.html",
+        status=status,
+        oncall_users=oncall_users,
+        shift_users=shift_users,
+        shift_types=shift_types,
+        shift_rules=shift_rules,
+        oncall_rules=oncall_rules,
+    )
+
+
+@app.route("/admin/automation/oncall", methods=["GET", "POST"])
+@admin_required
+def automation_oncall():
+    """Configuration et génération des astreintes automatiques."""
+    if request.method == "POST":
+        action = request.form.get("action")
+        
+        if action == "generate":
+            start_date_str = request.form.get("start_date")
+            end_date_str = request.form.get("end_date")
+            
+            rotation_order_ids = []
+            for key, value in request.form.items():
+                if key.startswith("rotation_order_") and value == "on":
+                    user_id = int(key.replace("rotation_order_", ""))
+                    rotation_order_ids.append(user_id)
+            
+            try:
+                start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+                
+                oncalls, messages = OnCallAutomation.generate_oncall_schedule(
+                    start_date, end_date, rotation_order_ids
+                )
+                
+                for msg in messages:
+                    flash(msg, "success" if "✅" in msg or "🎉" in msg else "warning" if "⚠️" in msg else "danger")
+                
+                return redirect(url_for("automation_oncall"))
+                
+            except ValueError as e:
+                flash(f"❌ Format de date invalide : {str(e)}", "danger")
+            except Exception as e:
+                flash(f"❌ Erreur : {str(e)}", "danger")
+        
+        elif action == "dry_run":
+            start_date_str = request.form.get("start_date")
+            end_date_str = request.form.get("end_date")
+            
+            rotation_order_ids = []
+            for key, value in request.form.items():
+                if key.startswith("rotation_order_") and value == "on":
+                    user_id = int(key.replace("rotation_order_", ""))
+                    rotation_order_ids.append(user_id)
+            
+            try:
+                start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+                
+                oncalls, messages = OnCallAutomation.generate_oncall_schedule(
+                    start_date, end_date, rotation_order_ids, dry_run=True
+                )
+                
+                return render_template(
+                    "admin/automation/oncall_dry_run.html",
+                    oncalls=oncalls,
+                    messages=messages,
+                    start_date=start_date,
+                    end_date=end_date,
+                )
+                
+            except ValueError as e:
+                flash(f"❌ Format de date invalide : {str(e)}", "danger")
+            except Exception as e:
+                flash(f"❌ Erreur : {str(e)}", "danger")
+    
+    oncall_users = OnCallAutomation.get_eligible_users()
+    
+    today = date.today()
+    end_date_default = today + timedelta(days=180)
+    
+    start_date_default = today
+    while start_date_default.weekday() != 4:
+        start_date_default += timedelta(days=1)
+    
+    return render_template(
+        "admin/automation/oncall.html",
+        oncall_users=oncall_users,
+        start_date_default=start_date_default,
+        end_date_default=end_date_default,
+    )
+
+
+@app.route("/admin/automation/shifts", methods=["GET", "POST"])
+@admin_required
+def automation_shifts():
+    """Configuration et génération des shifts automatiques."""
+    if request.method == "POST":
+        action = request.form.get("action")
+        
+        if action == "generate":
+            start_date_str = request.form.get("start_date")
+            end_date_str = request.form.get("end_date")
+            
+            rules = BusinessRules.get_shift_rules()
+            
+            for day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']:
+                for shift_type in ['morning', 'afternoon', 'evening']:
+                    count_key = f"{day}_{shift_type}"
+                    if count_key in request.form:
+                        try:
+                            count = int(request.form[count_key])
+                            if day not in rules['daily_requirements']:
+                                rules['daily_requirements'][day] = {}
+                            rules['daily_requirements'][day][shift_type] = count
+                        except ValueError:
+                            pass
+            
+            try:
+                start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+                
+                shifts, messages = ShiftAutomation.generate_shift_schedule(
+                    start_date, end_date, rules
+                )
+                
+                for msg in messages:
+                    flash(msg, "success" if "✅" in msg or "🎉" in msg else "warning" if "⚠️" in msg else "danger")
+                
+                return redirect(url_for("automation_shifts"))
+                
+            except ValueError as e:
+                flash(f"❌ Format de date invalide : {str(e)}", "danger")
+            except Exception as e:
+                flash(f"❌ Erreur : {str(e)}", "danger")
+        
+        elif action == "dry_run":
+            start_date_str = request.form.get("start_date")
+            end_date_str = request.form.get("end_date")
+            
+            rules = BusinessRules.get_shift_rules()
+            
+            for day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']:
+                for shift_type in ['morning', 'afternoon', 'evening']:
+                    count_key = f"{day}_{shift_type}"
+                    if count_key in request.form:
+                        try:
+                            count = int(request.form[count_key])
+                            if day not in rules['daily_requirements']:
+                                rules['daily_requirements'][day] = {}
+                            rules['daily_requirements'][day][shift_type] = count
+                        except ValueError:
+                            pass
+            
+            try:
+                start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+                
+                shifts, messages = ShiftAutomation.generate_shift_schedule(
+                    start_date, end_date, rules, dry_run=True
+                )
+                
+                return render_template(
+                    "admin/automation/shifts_dry_run.html",
+                    shifts=shifts,
+                    messages=messages,
+                    start_date=start_date,
+                    end_date=end_date,
+                )
+                
+            except ValueError as e:
+                flash(f"❌ Format de date invalide : {str(e)}", "danger")
+            except Exception as e:
+                flash(f"❌ Erreur : {str(e)}", "danger")
+    
+    shift_users = ShiftAutomation.get_eligible_users()
+    shift_types = ShiftAutomation.get_shift_types()
+    shift_rules = BusinessRules.get_shift_rules()
+    
+    today = date.today()
+    end_date_default = today + timedelta(days=180)
+    start_date_default = today
+    
+    return render_template(
+        "admin/automation/shifts.html",
+        shift_users=shift_users,
+        shift_types=shift_types,
+        shift_rules=shift_rules,
+        start_date_default=start_date_default,
+        end_date_default=end_date_default,
+    )
+
+
+@app.route("/admin/automation/full", methods=["GET", "POST"])
+@admin_required
+def automation_full():
+    """Génération complète (astreintes + shifts)."""
+    if request.method == "POST":
+        action = request.form.get("action")
+        
+        if action in ["generate", "dry_run"]:
+            dry_run = (action == "dry_run")
+            
+            start_date_str = request.form.get("start_date")
+            end_date_str = request.form.get("end_date")
+            
+            rotation_order_ids = []
+            for key, value in request.form.items():
+                if key.startswith("rotation_order_") and value == "on":
+                    user_id = int(key.replace("rotation_order_", ""))
+                    rotation_order_ids.append(user_id)
+            
+            rules = BusinessRules.get_shift_rules()
+            
+            for day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']:
+                for shift_type in ['morning', 'afternoon', 'evening']:
+                    count_key = f"{day}_{shift_type}"
+                    if count_key in request.form:
+                        try:
+                            count = int(request.form[count_key])
+                            if day not in rules['daily_requirements']:
+                                rules['daily_requirements'][day] = {}
+                            rules['daily_requirements'][day][shift_type] = count
+                        except ValueError:
+                            pass
+            
+            try:
+                start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+                
+                result = generate_full_schedule(
+                    start_date, end_date, rotation_order_ids, rules, dry_run
+                )
+                
+                if dry_run:
+                    return render_template(
+                        "admin/automation/full_dry_run.html",
+                        result=result,
+                        start_date=start_date,
+                        end_date=end_date,
+                    )
+                else:
+                    for msg in result['oncall']['messages']:
+                        flash(msg, "success" if "✅" in msg or "🎉" in msg else "warning" if "⚠️" in msg else "danger")
+                    for msg in result['shift']['messages']:
+                        flash(msg, "success" if "✅" in msg or "🎉" in msg else "warning" if "⚠️" in msg else "danger")
+                    
+                    return redirect(url_for("automation_full"))
+                
+            except ValueError as e:
+                flash(f"❌ Format de date invalide : {str(e)}", "danger")
+            except Exception as e:
+                flash(f"❌ Erreur : {str(e)}", "danger")
+    
+    oncall_users = OnCallAutomation.get_eligible_users()
+    shift_users = ShiftAutomation.get_eligible_users()
+    shift_types = ShiftAutomation.get_shift_types()
+    shift_rules = BusinessRules.get_shift_rules()
+    
+    today = date.today()
+    end_date_default = today + timedelta(days=180)
+    start_date_default = today
+    while start_date_default.weekday() != 4:
+        start_date_default += timedelta(days=1)
+    
+    return render_template(
+        "admin/automation/full.html",
+        oncall_users=oncall_users,
+        shift_users=shift_users,
+        shift_types=shift_types,
+        shift_rules=shift_rules,
+        start_date_default=start_date_default,
+        end_date_default=end_date_default,
+    )
+
+
+@app.route("/admin/automation/status")
+@admin_required
+def automation_status():
+    """Affiche l'état actuel de l'automatisation."""
+    status = get_automation_status()
+    return render_template("admin/automation/status.html", status=status)

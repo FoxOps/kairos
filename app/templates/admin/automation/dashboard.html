@@ -1,0 +1,101 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title"><i class="fas fa-robot" aria-hidden="true"></i> Automatisation</h1>
+        
+        <div class="notification is-info is-light">
+            <p><i class="fas fa-info-circle"></i> Ce module permet de générer automatiquement les astreintes et les shifts selon des règles configurables.</p>
+        </div>
+
+        <div class="columns is-multiline">
+            <div class="column is-one-third">
+                <div class="box">
+                    <h2 class="subtitle"><i class="fas fa-bell" aria-hidden="true"></i> Astreintes</h2>
+                    <p><strong>Utilisateurs éligibles :</strong> {{ oncall_users|length }}</p>
+                    <p><strong>Astreintes existantes :</strong> {{ status.oncall_count }}</p>
+                    <p><strong>Prochaine date disponible :</strong> {{ status.next_available_oncall_date or 'Aucune' }}</p>
+                    <div class="buttons mt-3">
+                        <a class="button is-primary is-small" href="{{ url_for('automation_oncall') }}">
+                            <i class="fas fa-cog"></i>&nbsp; Configurer
+                        </a>
+                        <a class="button is-info is-small" href="{{ url_for('oncall') }}">
+                            <i class="fas fa-list"></i>&nbsp; Voir la liste
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="column is-one-third">
+                <div class="box">
+                    <h2 class="subtitle"><i class="fas fa-calendar-check" aria-hidden="true"></i> Shifts</h2>
+                    <p><strong>Utilisateurs éligibles :</strong> {{ shift_users|length }}</p>
+                    <p><strong>Shifts existants :</strong> {{ status.shift_count }}</p>
+                    <p><strong>Types de shifts :</strong> {{ shift_types|length }}</p>
+                    <div class="buttons mt-3">
+                        <a class="button is-primary is-small" href="{{ url_for('automation_shifts') }}">
+                            <i class="fas fa-cog"></i>&nbsp; Configurer
+                        </a>
+                        <a class="button is-info is-small" href="{{ url_for('schedule') }}">
+                            <i class="fas fa-list"></i>&nbsp; Voir la liste
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="column is-one-third">
+                <div class="box">
+                    <h2 class="subtitle"><i class="fas fa-cogs" aria-hidden="true"></i> Génération complète</h2>
+                    <p>Générer les astreintes et les shifts en une seule opération.</p>
+                    <div class="buttons mt-3">
+                        <a class="button is-success is-small" href="{{ url_for('automation_full') }}">
+                            <i class="fas fa-play"></i>&nbsp; Lancer
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="box mt-5">
+            <h2 class="subtitle"><i class="fas fa-chart-line" aria-hidden="true"></i> Statistiques</h2>
+            <div class="columns">
+                <div class="column is-one-quarter">
+                    <div class="notification is-primary">
+                        <p><strong>Total astreintes</strong></p>
+                        <p class="is-size-4">{{ status.oncall_count }}</p>
+                    </div>
+                </div>
+                <div class="column is-one-quarter">
+                    <div class="notification is-info">
+                        <p><strong>Total shifts</strong></p>
+                        <p class="is-size-4">{{ status.shift_count }}</p>
+                    </div>
+                </div>
+                <div class="column is-one-quarter">
+                    <div class="notification is-success">
+                        <p><strong>Utilisateurs astreintes</strong></p>
+                        <p class="is-size-4">{{ status.oncall_eligible_users }}</p>
+                    </div>
+                </div>
+                <div class="column is-one-quarter">
+                    <div class="notification is-warning">
+                        <p><strong>Utilisateurs shifts</strong></p>
+                        <p class="is-size-4">{{ status.shift_eligible_users }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="box">
+            <h2 class="subtitle"><i class="fas fa-question-circle" aria-hidden="true"></i> Aide</h2>
+            <div class="content">
+                <p><strong>Rotation des astreintes :</strong> Une rotation simple où chaque semaine un membre différent est désigné. Vous pouvez configurer l'ordre de la première rotation.</p>
+                <p><strong>Génération des shifts :</strong> Basée sur des règles métiers spécifiques que vous pouvez configurer (nombre de shifts par type et par jour).</p>
+                <p><strong>Remplacement automatique :</strong> En cas de conflit (congé, astreinte existante), le système trouve automatiquement un remplaçant.</p>
+                <p><strong>Période par défaut :</strong> 6 mois à l'avance.</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
