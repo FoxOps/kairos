@@ -36,6 +36,7 @@
         </div>
         
         <!-- Tableau des astreintes -->
+        {% set seen_users = [] %}
         <div class="table-container">
             <table class="table is-fullwidth is-striped">
                 <caption class="is-sr-only">Liste des astreintes</caption>
@@ -65,9 +66,7 @@
                             </a>
                             <!-- Bouton pour supprimer toutes les astreintes de cet utilisateur -->
                             <!-- Afficher seulement pour la première occurrence de chaque utilisateur -->
-                            {% set user_oncall_ids = namespace(value=[]) %}
-                            {% if oncall.user.id not in user_oncall_ids.value %}
-                                {% do user_oncall_ids.value.append(oncall.user.id) %}
+                            {% if oncall.user.id not in seen_users %}
                             <form method="POST" action="{{ url_for('delete_all_oncalls_for_user', user_id=oncall.user.id) }}" class="ml-1">
                                 <button type="submit" class="button is-warning is-small"
                                         onclick="return confirm('Êtes-vous sûr de vouloir supprimer TOUTES les astreintes de {{ oncall.user.name }} ?')"
@@ -75,6 +74,7 @@
                                     <i class="fas fa-user-times" aria-hidden="true"></i>
                                 </button>
                             </form>
+                            {% set seen_users = (seen_users or []) + [oncall.user.id] %}
                             {% endif %}
                             {% endif %}
                         </td>
