@@ -204,7 +204,7 @@ class DatabaseConfigMigrator:
             if new_config['shifts']['shift_types']:
                 messages.append(f"Types de shifts: {len(new_config['shifts']['shift_types'])} types")
             
-            logger.info(f"Migration terminée: {", ".join(messages)}")
+            logger.info(f"Migration terminée: {', '.join(messages)}")
             return "✅ Migration terminée. " + ", ".join(messages)
             
         except Exception as e:
@@ -256,7 +256,7 @@ class DatabaseConfigMigrator:
             db.session.commit()
             
             if messages:
-                logger.info(f"Synchronisation de la base depuis TOML: {", ".join(messages)}")
+                logger.info(f"Synchronisation de la base depuis TOML: {', '.join(messages)}")
                 return "✅ Synchronisation terminée. " + ", ".join(messages)
             else:
                 logger.info("Aucune modification nécessaire, la base est déjà synchronisée")
