@@ -50,6 +50,12 @@ def check_database_integrity():
             if col not in columns:
                 return False
     
+    # Vérifier que la table user a le champ is_part_of_oncall
+    if inspector.has_table("user"):
+        columns = [col["name"] for col in inspector.get_columns("user")]
+        if "is_part_of_oncall" not in columns:
+            return False
+    
     return True
 
 
@@ -75,6 +81,56 @@ def initialize_database():
     print("✅ Types de shifts par défaut créés.")
 
 
+def migrate_user_is_part_of_oncall():
+    """Migration pour ajouter le champ is_part_of_oncall à la table user."""
+    from sqlalchemy import inspect
+    
+    inspector = inspect(db.engine)
+    print("🔧 Migration: ajout du champ is_part_of_oncall à la table user...")
+    
+    # Vérifier si la colonne existe déjà
+    if inspector.has_table("user"):
+        columns = [col["name"] for col in inspector.get_columns("user")]
+        if "is_part_of_oncall" not in columns:
+            print("💾 Ajout du champ is_part_of_oncall...")
+            
+            try:
+                # Sauvegarder les données existantes
+                existing_users = db.session.execute(
+                    db.text("SELECT id, name, email, password_hash, is_admin, group_id FROM user")
+                ).fetchall()
+                
+                print(f"💾 Sauvegarde de {len(existing_users)} utilisateurs existants...")
+                
+                # Supprimer la table user
+                db.session.execute(db.text("DROP TABLE IF EXISTS user"))
+                db.session.commit()
+                
+                # Recréer la table avec la nouvelle structure
+                db.create_all()
+                
+                # Restaurer les données
+                for user_data in existing_users:
+                    new_user = User(
+                        id=user_data.id,
+                        name=user_data.name,
+                        email=user_data.email,
+                        password_hash=user_data.password_hash,
+                        is_admin=user_data.is_admin,
+                        group_id=user_data.group_id,
+                        is_part_of_oncall=False  # Valeur par défaut
+                    )
+                    db.session.add(new_user)
+                
+                db.session.commit()
+                print(f"✅ {len(existing_users)} utilisateurs migrés avec succès.")
+                
+            except Exception as e:
+                db.session.rollback()
+                print(f"❌ Erreur lors de la migration des utilisateurs: {e}")
+                raise
+
+
 def migrate_legacy_database():
     """Migration de l'ancienne structure de base de données (si nécessaire).
     
@@ -84,6 +140,13 @@ def migrate_legacy_database():
     
     inspector = inspect(db.engine)
     print("🔧 Migration de l'ancienne structure de base de données...")
+    
+    # Vérifier si la table user a besoin du champ is_part_of_oncall
+    if inspector.has_table("user"):
+        columns = [col["name"] for col in inspector.get_columns("user")]
+        if "is_part_of_oncall" not in columns:
+            migrate_user_is_part_of_oncall()
+            return
     
     # Vérifier si la table shift existe avec l'ancienne colonne shift_type
     if inspector.has_table("shift"):
