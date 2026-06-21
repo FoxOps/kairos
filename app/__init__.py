@@ -18,6 +18,10 @@ app.config.from_object("config.Config")
 db.init_app(app)
 login_manager.init_app(app)
 
+# Configurer les hooks de synchronisation automatique
+from app.models import setup_sync_hooks
+setup_sync_hooks()
+
 
 @login_manager.user_loader
 def load_user(user_id):

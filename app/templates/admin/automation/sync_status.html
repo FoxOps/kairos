@@ -1,0 +1,270 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Statut de Synchronisation - TOML &lt;-> BDD{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-sync-alt me-2"></i>
+                Statut de Synchronisation TOML ↔ BDD
+            </h1>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        État Global
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="flex-shrink-0">
+                                    {% if status.synced %}
+                                        <span class="badge bg-success p-2">
+                                            <i class="fas fa-check-circle me-1"></i>
+                                            Synchronisé
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger p-2">
+                                            <i class="fas fa-exclamation-circle me-1"></i>
+                                            Non Synchronisé
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5 class="mb-0">
+                                        {% if status.synced %}
+                                            Le fichier TOML et la base de données sont synchronisés.
+                                        {% else %}
+                                            Des incohérences ont été détectées entre TOML et la base de données.
+                                        {% endif %}
+                                    </h5>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <form method="POST" class="d-inline">
+                                <input type="hidden" name="action" value="sync_all">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="fas fa-sync-alt me-1"></i>
+                                    Synchroniser Tout
+                                </button>
+                            </form>
+                            <form method="POST" class="d-inline">
+                                <input type="hidden" name="action" value="check">
+                                <button type="submit" class="btn btn-info">
+                                    <i class="fas fa-search me-1"></i>
+                                    Vérifier à Nouveau
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if not status.synced and status.issues %}
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Problèmes de Synchronisation ({% if status.issues %}{{ status.issues|length }}{% else %}0{% endif %})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="syncIssuesAccordion">
+                        {% for issue in status.issues %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" 
+                                        data-bs-toggle="collapse" 
+                                        data-bs-target="#issue-{{ loop.index }}"
+                                        aria-expanded="false" 
+                                        aria-controls="issue-{{ loop.index }}">
+                                    <strong>Problème #{{ loop.index }}:</strong> 
+                                    {% if issue.type == 'groups' %}
+                                        Groupes - {{ issue.field }}
+                                    {% elif issue.type == 'shift_types' %}
+                                        Types de Shifts
+                                    {% elif issue.type == 'rotation_order' %}
+                                        Ordre de Rotation
+                                    {% else %}
+                                        {{ issue.type }}
+                                    {% endif %}
+                                </button>
+                            </h2>
+                            <div id="issue-{{ loop.index }}" class="accordion-collapse collapse" 
+                                 data-bs-parent="#syncIssuesAccordion">
+                                <div class="accordion-body">
+                                    <pre class="mb-0">{{ issue|tojson(indent=2) }}</pre>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="row">
+                <!-- Détails des Groupes -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">
+                                <i class="fas fa-users me-2"></i>
+                                Groupes
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <small class="text-muted">Schedule Groups</small>
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-primary me-2">
+                                            TOML: {{ status.details.schedule_groups.config }}
+                                        </span>
+                                        <span class="badge bg-secondary">
+                                            BDD: {{ status.details.schedule_groups.database }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">OnCall Groups</small>
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-primary me-2">
+                                            TOML: {{ status.details.oncall_groups.config }}
+                                        </span>
+                                        <span class="badge bg-secondary">
+                                            BDD: {{ status.details.oncall_groups.database }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <form method="POST">
+                                    <input type="hidden" name="action" value="sync_to_toml">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-arrow-right me-1"></i>
+                                        BDD → TOML
+                                    </button>
+                                </form>
+                                <form method="POST">
+                                    <input type="hidden" name="action" value="sync_to_db">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-arrow-left me-1"></i>
+                                        TOML → BDD
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Détails des Types de Shifts -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">
+                                <i class="fas fa-clock me-2"></i>
+                                Types de Shifts
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <small class="text-muted">Nombre de types</small>
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-primary me-2">
+                                            TOML: {{ status.details.shift_types.config }}
+                                        </span>
+                                        <span class="badge bg-secondary">
+                                            BDD: {{ status.details.shift_types.database }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <form method="POST">
+                                    <input type="hidden" name="action" value="sync_to_toml">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-arrow-right me-1"></i>
+                                        BDD → TOML
+                                    </button>
+                                </form>
+                                <form method="POST">
+                                    <input type="hidden" name="action" value="sync_to_db">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-arrow-left me-1"></i>
+                                        TOML → BDD
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Détails de l'Ordre de Rotation -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">
+                                <i class="fas fa-redo me-2"></i>
+                                Ordre de Rotation
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <small class="text-muted">Utilisateurs éligibles</small>
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-primary me-2">
+                                            TOML: {{ status.details.rotation_order.config }}
+                                        </span>
+                                        <span class="badge bg-secondary">
+                                            BDD: {{ status.details.rotation_order.database }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <form method="POST">
+                                    <input type="hidden" name="action" value="sync_to_db">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-arrow-left me-1"></i>
+                                        TOML → BDD
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if 'sync_results' in kwargs and sync_results %}
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Résultats de la Synchronisation
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <pre>{{ sync_results|tojson(indent=2) }}</pre>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if status.error %}
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <strong>Erreur:</strong> {{ status.error }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

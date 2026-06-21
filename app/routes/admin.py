@@ -71,9 +71,8 @@ def add_group():
             db.session.add(new_group)
             db.session.commit()
             
-            # Synchroniser avec la configuration TOML
-            if not AutomationConfig.sync_groups_to_toml():
-                flash("⚠️ La synchronisation avec la configuration TOML a échoué. Voir les logs pour plus de détails.", "warning")
+            # Synchroniser automatiquement avec la configuration TOML (via hooks)
+            # La synchronisation est maintenant gérée automatiquement par les hooks SQLAlchemy
             
             flash("✅ Groupe ajouté avec succès !", "success")
             return redirect(url_for("list_groups"))
@@ -111,9 +110,8 @@ def edit_group(group_id):
             group.is_part_of_oncall = is_part_of_oncall
             db.session.commit()
             
-            # Synchroniser avec la configuration TOML
-            if not AutomationConfig.sync_groups_to_toml():
-                flash("⚠️ La synchronisation avec la configuration TOML a échoué. Voir les logs pour plus de détails.", "warning")
+            # Synchroniser automatiquement avec la configuration TOML (via hooks)
+            # La synchronisation est maintenant gérée automatiquement par les hooks SQLAlchemy
             
             flash("✅ Groupe modifié avec succès !", "success")
             return redirect(url_for("list_groups"))
@@ -140,9 +138,8 @@ def delete_group(group_id):
         db.session.delete(group)
         db.session.commit()
         
-        # Synchroniser avec la configuration TOML
-        if not AutomationConfig.sync_groups_to_toml():
-            flash("⚠️ La synchronisation avec la configuration TOML a échoué. Voir les logs pour plus de détails.", "warning")
+        # Synchroniser automatiquement avec la configuration TOML (via hooks)
+        # La synchronisation est maintenant gérée automatiquement par les hooks SQLAlchemy
         
         flash("✅ Groupe supprimé avec succès !", "success")
     except Exception as e:
@@ -325,9 +322,8 @@ def add_shift_type():
             db.session.add(new_shift_type)
             db.session.commit()
             
-            # Synchroniser avec la configuration TOML
-            if not AutomationConfig.sync_shift_types_to_toml():
-                flash("⚠️ La synchronisation avec la configuration TOML a échoué. Voir les logs pour plus de détails.", "warning")
+            # Synchroniser automatiquement avec la configuration TOML (via hooks)
+            # La synchronisation est maintenant gérée automatiquement par les hooks SQLAlchemy
             
             flash("✅ Type de shift ajouté avec succès !", "success")
             return redirect(url_for("list_shift_types"))
@@ -383,9 +379,8 @@ def edit_shift_type(shift_type_id):
             shift_type.end_hour = end_hour
             db.session.commit()
             
-            # Synchroniser avec la configuration TOML
-            if not AutomationConfig.sync_shift_types_to_toml():
-                flash("⚠️ La synchronisation avec la configuration TOML a échoué. Voir les logs pour plus de détails.", "warning")
+            # Synchroniser automatiquement avec la configuration TOML (via hooks)
+            # La synchronisation est maintenant gérée automatiquement par les hooks SQLAlchemy
             
             flash("✅ Type de shift modifié avec succès !", "success")
             return redirect(url_for("list_shift_types"))
@@ -417,9 +412,8 @@ def delete_shift_type(shift_type_id):
         db.session.delete(shift_type)
         db.session.commit()
         
-        # Synchroniser avec la configuration TOML
-        if not AutomationConfig.sync_shift_types_to_toml():
-            flash("⚠️ La synchronisation avec la configuration TOML a échoué. Voir les logs pour plus de détails.", "warning")
+        # Synchroniser automatiquement avec la configuration TOML (via hooks)
+        # La synchronisation est maintenant gérée automatiquement par les hooks SQLAlchemy
         
         flash("✅ Type de shift supprimé avec succès !", "success")
     except Exception as e:
@@ -874,6 +868,76 @@ def automation_config():
         config=config,
         error_messages=[],
         success_messages=[]
+    )
+
+
+# ============================================================================
+# SYNCHRONISATION TOML <-> BDD
+# ============================================================================
+
+@app.route("/admin/automation/sync", methods=["GET", "POST"])
+@admin_required
+def automation_sync():
+    """Vérifie et corrige la synchronisation entre TOML et BDD."""
+    if request.method == "POST":
+        action = request.form.get("action")
+        
+        if action == "check":
+            # Vérifier l'état de synchronisation
+            status = AutomationConfig.check_sync_status()
+            return render_template(
+                "admin/automation/sync_status.html",
+                status=status
+            )
+        
+        elif action == "sync_all":
+            # Forcer la synchronisation complète
+            results = AutomationConfig.ensure_sync()
+            
+            if all(results.values()):
+                flash("✅ Synchronisation complète terminée avec succès !", "success")
+            else:
+                flash("⚠️ Synchronisation terminée avec des avertissements. Voir les logs.", "warning")
+            
+            # Recharger le statut
+            status = AutomationConfig.check_sync_status()
+            return render_template(
+                "admin/automation/sync_status.html",
+                status=status,
+                sync_results=results
+            )
+        
+        elif action == "sync_to_toml":
+            # Synchroniser BDD -> TOML
+            if AutomationConfig._sync_db_to_toml():
+                flash("✅ Synchronisation BDD → TOML terminée avec succès !", "success")
+            else:
+                flash("❌ Échec de la synchronisation BDD → TOML. Voir les logs.", "danger")
+            
+            status = AutomationConfig.check_sync_status()
+            return render_template(
+                "admin/automation/sync_status.html",
+                status=status
+            )
+        
+        elif action == "sync_to_db":
+            # Synchroniser TOML -> BDD
+            if AutomationConfig._sync_toml_to_db():
+                flash("✅ Synchronisation TOML → BDD terminée avec succès !", "success")
+            else:
+                flash("❌ Échec de la synchronisation TOML → BDD. Voir les logs.", "danger")
+            
+            status = AutomationConfig.check_sync_status()
+            return render_template(
+                "admin/automation/sync_status.html",
+                status=status
+            )
+    
+    # Afficher le statut par défaut
+    status = AutomationConfig.check_sync_status()
+    return render_template(
+        "admin/automation/sync_status.html",
+        status=status
     )
 
 

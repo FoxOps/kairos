@@ -632,3 +632,184 @@ class AutomationConfig:
             db.session.rollback()
             logger.error(f"Erreur lors de la synchronisation des groupes depuis TOML: {str(e)}")
             return False
+    
+    # =========================================================================
+    # SYSTÈME DE SYNCHRONISATION AUTOMATIQUE
+    # =========================================================================
+    
+    @classmethod
+    def ensure_sync(cls) -> Dict[str, bool]:
+        """
+        Assure la synchronisation complète entre le TOML et la base de données.
+        Cette méthode vérifie et corrige les incohérences dans les deux sens.
+        
+        Returns:
+            Dict[str, bool]: Statut de chaque synchronisation
+        """
+        results = {}
+        
+        # Synchroniser TOML -> BDD (pour s'assurer que la BDD reflète la config)
+        results['toml_to_db'] = cls._sync_toml_to_db()
+        
+        # Synchroniser BDD -> TOML (pour s'assurer que le TOML reflète la BDD)
+        results['db_to_toml'] = cls._sync_db_to_toml()
+        
+        logger.info(f"Synchronisation complète: {results}")
+        return results
+    
+    @classmethod
+    def _sync_toml_to_db(cls) -> bool:
+        """
+        Synchronise toutes les données de TOML vers la base de données.
+        
+        Returns:
+            bool: True si toutes les synchronisations ont réussi
+        """
+        try:
+            # Synchroniser les groupes
+            if not cls.sync_groups_from_toml():
+                logger.warning("Échec de la synchronisation des groupes depuis TOML")
+                return False
+            
+            # Synchroniser les types de shifts
+            if not cls.sync_shift_types_from_toml():
+                logger.warning("Échec de la synchronisation des types de shifts depuis TOML")
+                return False
+            
+            # Synchroniser l'ordre de rotation
+            if not cls.sync_rotation_order_from_toml():
+                logger.warning("Échec de la synchronisation de l'ordre de rotation depuis TOML")
+                return False
+            
+            logger.info("Synchronisation TOML -> BDD terminée avec succès")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la synchronisation TOML -> BDD: {str(e)}")
+            return False
+    
+    @classmethod
+    def _sync_db_to_toml(cls) -> bool:
+        """
+        Synchronise toutes les données de la base de données vers TOML.
+        
+        Returns:
+            bool: True si toutes les synchronisations ont réussi
+        """
+        try:
+            # Synchroniser les groupes
+            if not cls.sync_groups_to_toml():
+                logger.warning("Échec de la synchronisation des groupes vers TOML")
+                return False
+            
+            # Synchroniser les types de shifts
+            if not cls.sync_shift_types_to_toml():
+                logger.warning("Échec de la synchronisation des types de shifts vers TOML")
+                return False
+            
+            logger.info("Synchronisation BDD -> TOML terminée avec succès")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la synchronisation BDD -> TOML: {str(e)}")
+            return False
+    
+    @classmethod
+    def check_sync_status(cls) -> Dict[str, Any]:
+        """
+        Vérifie l'état de synchronisation entre TOML et BDD.
+        
+        Returns:
+            Dict[str, Any]: Statut détaillé de la synchronisation
+        """
+        from app import db
+        from app.models import Group, ShiftType, User
+        
+        status = {
+            'synced': True,
+            'issues': [],
+            'details': {}
+        }
+        
+        try:
+            config = cls.load()
+            
+            # Vérifier les groupes
+            schedule_groups_config = set(config['groups'].get('schedule_groups', []))
+            oncall_groups_config = set(config['groups'].get('oncall_groups', []))
+            
+            schedule_groups_db = set(g.name for g in Group.query.filter_by(is_part_of_schedule=True).all())
+            oncall_groups_db = set(g.name for g in Group.query.filter_by(is_part_of_oncall=True).all())
+            
+            if schedule_groups_config != schedule_groups_db:
+                status['synced'] = False
+                status['issues'].append({
+                    'type': 'groups',
+                    'field': 'schedule_groups',
+                    'config': list(schedule_groups_config),
+                    'database': list(schedule_groups_db),
+                    'diff': list(schedule_groups_config.symmetric_difference(schedule_groups_db))
+                })
+            
+            if oncall_groups_config != oncall_groups_db:
+                status['synced'] = False
+                status['issues'].append({
+                    'type': 'groups',
+                    'field': 'oncall_groups',
+                    'config': list(oncall_groups_config),
+                    'database': list(oncall_groups_db),
+                    'diff': list(oncall_groups_config.symmetric_difference(oncall_groups_db))
+                })
+            
+            # Vérifier les types de shifts
+            shift_types_config = {(st['name'], st['start'], st['end']) for st in config['shifts'].get('shift_types', [])}
+            shift_types_db = {(st.name, st.start_hour, st.end_hour) for st in ShiftType.query.all()}
+            
+            if shift_types_config != shift_types_db:
+                status['synced'] = False
+                status['issues'].append({
+                    'type': 'shift_types',
+                    'config_count': len(shift_types_config),
+                    'database_count': len(shift_types_db),
+                    'missing_in_db': list(shift_types_config - shift_types_db),
+                    'missing_in_config': list(shift_types_db - shift_types_config)
+                })
+            
+            # Vérifier l'ordre de rotation
+            rotation_order_config = set(config['oncall'].get('rotation_order', []))
+            rotation_order_db = set(u.id for u in User.query.filter_by(is_part_of_oncall=True).all())
+            
+            if rotation_order_config != rotation_order_db:
+                status['synced'] = False
+                status['issues'].append({
+                    'type': 'rotation_order',
+                    'config': list(rotation_order_config),
+                    'database': list(rotation_order_db),
+                    'diff': list(rotation_order_config.symmetric_difference(rotation_order_db))
+                })
+            
+            status['details'] = {
+                'schedule_groups': {
+                    'config': len(schedule_groups_config),
+                    'database': len(schedule_groups_db)
+                },
+                'oncall_groups': {
+                    'config': len(oncall_groups_config),
+                    'database': len(oncall_groups_db)
+                },
+                'shift_types': {
+                    'config': len(shift_types_config),
+                    'database': len(shift_types_db)
+                },
+                'rotation_order': {
+                    'config': len(rotation_order_config),
+                    'database': len(rotation_order_db)
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de la vérification de la synchronisation: {str(e)}")
+            status['error'] = str(e)
+            status['synced'] = False
+        
+        return status
