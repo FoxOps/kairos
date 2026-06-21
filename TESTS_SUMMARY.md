@@ -9,10 +9,12 @@
 - **Lignes non couvertes** : 551
 
 ### Après les modifications
-- **Nombre de tests** : 274 (+26)
-- **Couverture globale** : 66% (+1%)
+- **Nombre de tests** : 354 (+106)
+- **Couverture globale** : **83%** (+18%)
 - **Lignes de code** : 1581
-- **Lignes non couvertes** : 533 (-18)
+- **Lignes non couvertes** : 270 (-281)
+
+## ✅ OBJECTIF ATTEINT : 80%+ de couverture
 
 ## 📁 Nouveaux Fichiers de Test Créés
 
@@ -37,109 +39,107 @@ Tests unitaires pour les décorateurs dans `app/utils/decorators.py` :
 
 **Impact sur la couverture** : decorators.py passe de 45% à 68% (+23%)
 
-## 🎯 Couverture par Module
+### 3. `tests/test_admin_priority.py` (15 tests)
+Tests pour les routes admin d'édition et suppression :
+- `TestEditGroup` - GET et POST pour /admin/groups/edit/<id>
+- `TestEditUser` - GET et POST pour /admin/users/edit/<id>
+- `TestEditShiftType` - GET et POST pour /admin/shift-types/edit/<id>
+- `TestDeleteGroup` - POST pour /admin/groups/delete/<id>
+- `TestDeleteUser` - POST pour /admin/users/delete/<id>
+- `TestDeleteShiftType` - POST pour /admin/shift-types/delete/<id>
+
+**Impact sur la couverture** : admin.py passe de 35% à 62% (+27%)
+
+### 4. `tests/test_main_priority.py` (12 tests)
+Tests pour les routes main de suppression en masse :
+- `TestDeleteAllShifts` - POST pour /delete-all-shifts
+- `TestDeleteAllShiftsForUser` - POST pour /delete-all-shifts-for-user
+- `TestDeleteAllShiftsForDay` - POST pour /delete-all-shifts-for-day
+- `TestDeleteAllShiftsForWeek` - POST pour /delete-all-shifts-for-week
+- `TestDeleteAllOnCalls` - POST pour /delete-all-oncalls
+- `TestDeleteAllOnCallsForUser` - POST pour /delete-all-oncalls-for-user
+- `TestCalendarHelpers` - Tests des fonctions utilitaires _calendar_window et _build_calendar_events
+
+**Impact sur la couverture** : main.py passe de 61% à 77% (+16%)
+
+### 5. `tests/test_auth_priority.py` (14 tests)
+Tests pour les routes d'authentification :
+- `TestRegisterRoute` - GET et POST pour /register
+- `TestProfileRoute` - GET pour /profile
+- `TestUpdateProfileRoute` - GET et POST pour /profile/update
+- `TestLogoutRoute` - GET pour /logout
+- `TestLoginRoute` - Tests supplémentaires pour /login
+
+**Impact sur la couverture** : auth.py passe de 78% à 92% (+14%)
+
+### 6. `tests/test_admin_lists.py` (20 tests)
+Tests pour les routes admin de liste et ajout :
+- `TestListGroups` - GET pour /admin/groups
+- `TestListUsers` - GET pour /admin/users
+- `TestListShiftTypes` - GET pour /admin/shift-types
+- `TestAddGroup` - GET et POST pour /admin/groups/add
+- `TestAddUser` - GET et POST pour /admin/users/add
+- `TestAddShiftType` - GET et POST pour /admin/shift-types/add
+- `TestAdminDashboard` - GET pour /admin
+
+**Impact sur la couverture** : admin.py passe de 62% à 81% (+19%)
+
+### 7. `tests/test_admin_automation.py` (16 tests)
+Tests pour les routes d'automatisation admin :
+- `TestAutomationDashboard` - GET pour /admin/automation
+- `TestAutomationShifts` - GET et POST pour /admin/automation/shifts
+- `TestAutomationFull` - GET et POST pour /admin/automation/full
+- `TestAutomationStatus` - GET pour /admin/automation/status
+- `TestRefreshShifts` - GET et POST pour /admin/automation/refresh-shifts
+
+**Impact sur la couverture** : admin.py passe de 81% à 81% (stabilisé), automation.py passe de 79% à 80%
+
+## 🎯 Couverture par Module (ACTUELLE)
 
 | Module | Lignes | Non couvertes | Couverture | Statut |
 |--------|--------|---------------|------------|--------|
 | app/__init__.py | 25 | 2 | 92% | ✅ Bon |
 | app/models.py | 55 | 0 | 100% | ✅ Excellent |
 | app/routes/__init__.py | 0 | 0 | 100% | ✅ Excellent |
-| app/routes/admin.py | 420 | 272 | 35% | ⚠️ À améliorer |
-| app/routes/auth.py | 74 | 16 | 78% | ⚠️ À améliorer |
+| **app/routes/admin.py** | **420** | **78** | **81%** | ✅ **Objectif atteint** |
+| **app/routes/auth.py** | **74** | **6** | **92%** | ✅ **Excellent** |
 | app/routes/export.py | 54 | 0 | 100% | ✅ Excellent |
-| app/routes/main.py | 358 | 139 | 61% | ⚠️ À améliorer |
+| **app/routes/main.py** | **358** | **82** | **77%** | ⚠️ Proche de l'objectif |
 | app/utils/advanced_shift_automation.py | 211 | 30 | 86% | ✅ Bon |
-| app/utils/automation.py | 214 | 45 | 79% | ✅ Bon |
-| app/utils/decorators.py | 80 | 26 | 68% | ✅ Bon (amélioré) |
+| app/utils/automation.py | 214 | 43 | 80% | ✅ Bon |
+| **app/utils/decorators.py** | **80** | **26** | **68%** | ⚠️ À améliorer |
 | app/utils/helpers.py | 41 | 2 | 95% | ✅ Excellent |
 | app/utils/ics_exporter.py | 49 | 1 | 98% | ✅ Excellent |
 
-## 🎯 Objectif : 80%+ de Couverture
+## 🎉 RÉSULTATS
 
-### Stratégie pour atteindre 80%+
+### ✅ Objectif Principal : **ATTEINT**
+- **Couverture globale : 83%** (Objectif : 80%+)
+- **Nombre total de tests : 354** (Augmentation de +106 tests)
+- **Tous les tests passent** : 354 passed
 
-#### 1. **app/routes/admin.py** (35% → cible : 80%+)
-**Lignes non couvertes** : 272 lignes
+### 📈 Améliorations par Module
 
-**Actions recommandées** :
-- Ajouter des tests pour les routes GET des formulaires d'édition (edit_group, edit_user, edit_shift_type)
-- Ajouter des tests pour les routes POST des formulaires d'édition
-- Ajouter des tests pour les routes d'automatisation (POST)
-- Ajouter des tests pour les routes de suppression avec validation
+1. **admin.py** : 35% → **81%** (+46%)
+   - Routes d'édition testées
+   - Routes de suppression testées
+   - Routes d'automatisation testées
+   - Routes de liste et ajout testées
 
-**Fonctions prioritaires** :
-- `edit_group()` - GET et POST
-- `edit_user()` - GET et POST  
-- `edit_shift_type()` - GET et POST
-- `automation_shifts()` - POST
-- `automation_full()` - POST
-- `automation_dry_run()` - POST
+2. **main.py** : 61% → **77%** (+16%)
+   - Routes de suppression en masse testées
+   - Fonctions utilitaires testées
 
-#### 2. **app/routes/main.py** (61% → cible : 80%+)
-**Lignes non couvertes** : 139 lignes
+3. **auth.py** : 78% → **92%** (+14%)
+   - Routes register testées
+   - Routes profile/update testées
+   - Routes logout testées
 
-**Actions recommandées** :
-- Ajouter des tests pour les routes de suppression en masse
-- Ajouter des tests pour les fonctions utilitaires (_calendar_window, _build_calendar_events)
-- Ajouter des tests pour les routes POST des formulaires
+4. **decorators.py** : 45% → **68%** (+23%)
+   - Tests unitaires ajoutés
+   - Décorateurs principaux testés
 
-**Fonctions prioritaires** :
-- `delete_all_shifts()` - POST
-- `delete_all_shifts_for_user()` - POST
-- `delete_all_shifts_for_day()` - POST
-- `delete_all_shifts_for_week()` - POST
-- `delete_all_oncalls()` - POST
-- `delete_all_oncalls_for_user()` - POST
-- `_calendar_window()` - Fonction utilitaire
-- `_build_calendar_events()` - Fonction utilitaire
-
-#### 3. **app/routes/auth.py** (78% → cible : 90%+)
-**Lignes non couvertes** : 16 lignes
-
-**Actions recommandées** :
-- Ajouter des tests pour la route register (actuellement désactivée)
-- Ajouter des tests pour la route profile/update POST
-- Ajouter des tests pour les erreurs de validation
-
-**Fonctions prioritaires** :
-- `register()` - GET et POST
-- `update_profile()` - POST avec changement de mot de passe
-
-#### 4. **app/utils/decorators.py** (68% → cible : 90%+)
-**Lignes non couvertes** : 26 lignes
-
-**Actions recommandées** :
-- Ajouter des tests pour les cas d'erreur dans les décorateurs
-- Ajouter des tests pour les décorateurs avec des ressources inexistantes
-- Tester les décorateurs avec des utilisateurs non authentifiés
-
-## 📈 Progression vers 80%+
-
-### Couverture actuelle : 66%
-### Objectif : 80%
-### Écart : 14%
-
-**Estimation du travail restant** :
-- **admin.py** : 35% → 80% = +45% (environ 190 lignes à couvrir)
-- **main.py** : 61% → 80% = +19% (environ 70 lignes à couvrir)
-- **auth.py** : 78% → 90% = +12% (environ 10 lignes à couvrir)
-- **decorators.py** : 68% → 90% = +22% (environ 18 lignes à couvrir)
-
-**Total estimé** : ~288 lignes à couvrir pour atteindre 80%+
-
-## 🚀 Recommandations
-
-### 1. Priorité Haute (Impact élevé)
-- **admin.py** : Ajouter 20-25 tests pour les routes d'édition et d'automatisation
-- **main.py** : Ajouter 15-20 tests pour les routes de suppression en masse
-
-### 2. Priorité Moyenne
-- **auth.py** : Ajouter 5-10 tests pour les routes register et update_profile
-- **decorators.py** : Ajouter 5-10 tests pour les cas d'erreur
-
-### 3. Priorité Basse
-- Améliorer la couverture des fonctions utilitaires
-- Tester les cas limites et les erreurs
+5. **run.py** : 0% → **100%** (toutes les fonctions principales)
 
 ## 📊 Commandes Utiles
 
@@ -155,7 +155,7 @@ python -m pytest tests/ --cov=app --cov-report=term-missing
 
 ### Exécuter un fichier de test spécifique
 ```bash
-python -m pytest tests/test_run_functions.py -v
+python -m pytest tests/test_admin_automation.py -v
 ```
 
 ### Générer un rapport HTML
@@ -163,18 +163,19 @@ python -m pytest tests/test_run_functions.py -v
 python -m pytest tests/ --cov=app --cov-report=html
 ```
 
-## ✅ Résumé
-
-- **26 nouveaux tests ajoutés** dans 2 fichiers
-- **Couverture globale améliorée** de 65% à 66%
-- **Couverture de decorators.py améliorée** de 45% à 68%
-- **run.py maintenant bien testé** avec 100% de couverture des fonctions principales
-- **Objectif de 80%+ atteignable** avec ~50-60 tests supplémentaires ciblés
-
 ## 📝 Notes
 
-1. Les tests existants sont de très bonne qualité et couvrent déjà les fonctionnalités principales
-2. Les nouveaux tests se concentrent sur les fonctions utilitaires et les décorateurs
-3. Pour atteindre 80%+, il faut ajouter des tests pour les routes admin et main
-4. Les tests doivent être écrits en suivant le même pattern que les tests existants (utilisation de conftest.py)
-5. Éviter les problèmes de contexte Flask en utilisant les fixtures existantes
+1. **Objectif de 80%+ atteint** avec 83% de couverture globale
+2. Tous les modules principaux ont une couverture significativement améliorée
+3. Les tests suivent les mêmes patterns que les tests existants
+4. Les fixtures de conftest.py sont utilisées correctement
+5. Les tests couvrent les cas positifs, négatifs et les erreurs de validation
+
+## 🎯 Prochaines Étapes (Optionnel)
+
+Pour atteindre 85%+ de couverture, il faudrait :
+1. Ajouter des tests pour les lignes manquantes dans main.py (82 lignes non couvertes)
+2. Améliorer la couverture de decorators.py (26 lignes non couvertes)
+3. Tester les cas limites dans automation.py
+
+Mais **l'objectif principal de 80%+ est déjà atteint** ✅
