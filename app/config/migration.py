@@ -13,8 +13,7 @@ Ce module fournit des fonctions pour :
 """
 
 import logging
-from datetime import datetime, date, timedelta
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Tuple
 from app import db
 from app.models import Group, User, ShiftType, OnCall
 from app.config.automation_rules import AutomationConfig

@@ -8,10 +8,10 @@ from app.models import User, Group, Shift, OnCall, Leave, ShiftType
 from app.utils.automation import (
     OnCallAutomation,
     ShiftAutomation,
-    BusinessRules,
     generate_full_schedule,
     get_automation_status,
 )
+from app.config.automation_rules import AutomationConfig
 from app import db
 
 
@@ -316,30 +316,30 @@ class TestShiftAutomation:
             assert len(messages) > 0
 
 
-class TestBusinessRules:
-    """Tests pour les règles métiers."""
+class TestAutomationConfigIntegration:
+    """Tests pour l'intégration avec AutomationConfig."""
     
-    def test_get_shift_rules(self):
-        """Test la récupération des règles par défaut pour les shifts."""
-        rules = BusinessRules.get_shift_rules()
-        
-        assert 'daily_requirements' in rules
-        assert 'max_shifts_per_user_per_week' in rules
-        assert 'min_shifts_per_user_per_week' in rules
-        
-        # Vérifier que les jours de la semaine sont présents
-        for day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']:
-            assert day in rules['daily_requirements']
+    def test_get_shift_rules_from_config(self, app):
+        """Test la récupération des règles par défaut pour les shifts depuis AutomationConfig."""
+        with app.app_context():
+            daily_req = AutomationConfig.get_daily_requirements()
+            
+            assert isinstance(daily_req, dict)
+            
+            # Vérifier que les jours de la semaine sont présents
+            for day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']:
+                assert day in daily_req
     
-    def test_get_oncall_rules(self):
-        """Test la récupération des règles par défaut pour les astreintes."""
-        rules = BusinessRules.get_oncall_rules()
-        
-        assert 'rotation_order' in rules
-        assert 'start_day' in rules
-        assert 'start_hour' in rules
-        assert rules['start_day'] == 'friday'
-        assert rules['start_hour'] == 21
+    def test_get_oncall_rules_from_config(self, app):
+        """Test la récupération des règles par défaut pour les astreintes depuis AutomationConfig."""
+        with app.app_context():
+            rules = AutomationConfig.get_oncall_rules()
+            
+            assert 'rotation_order' in rules
+            assert 'start_day' in rules
+            assert 'start_hour' in rules
+            assert rules['start_day'] == 4  # vendredi (0=lundi, 4=vendredi)
+            assert rules['start_hour'] == 21
 
 
 class TestFullScheduleGeneration:

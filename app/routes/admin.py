@@ -7,7 +7,6 @@ from app.utils.decorators import admin_required, config_editor_required
 from app.utils.automation import (
     OnCallAutomation,
     ShiftAutomation,
-    BusinessRules,
     generate_full_schedule,
     get_automation_status,
 )
@@ -447,9 +446,9 @@ def automation_dashboard():
     # Récupérer les types de shifts
     shift_types = ShiftAutomation.get_shift_types()
     
-    # Récupérer les règles par défaut
-    shift_rules = BusinessRules.get_shift_rules()
-    oncall_rules = BusinessRules.get_oncall_rules()
+    # Récupérer les règles par défaut depuis la configuration TOML
+    shift_rules = {'daily_requirements': AutomationConfig.get_daily_requirements()}
+    oncall_rules = AutomationConfig.get_oncall_rules()
     
     return render_template(
         "admin/automation/dashboard.html",
@@ -475,7 +474,7 @@ def automation_shifts():
             start_date_str = request.form.get("start_date")
             end_date_str = request.form.get("end_date")
             
-            rules = BusinessRules.get_shift_rules()
+            rules = {'daily_requirements': AutomationConfig.get_daily_requirements()}
             
             for day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']:
                 for shift_type in ['morning', 'afternoon', 'evening']:
@@ -511,7 +510,7 @@ def automation_shifts():
             start_date_str = request.form.get("start_date")
             end_date_str = request.form.get("end_date")
             
-            rules = BusinessRules.get_shift_rules()
+            rules = {'daily_requirements': AutomationConfig.get_daily_requirements()}
             
             for day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']:
                 for shift_type in ['morning', 'afternoon', 'evening']:
@@ -548,7 +547,7 @@ def automation_shifts():
     
     shift_users = ShiftAutomation.get_eligible_users()
     shift_types = ShiftAutomation.get_shift_types()
-    shift_rules = BusinessRules.get_shift_rules()
+    shift_rules = {'daily_requirements': AutomationConfig.get_daily_requirements()}
     
     today = date.today()
     end_date_default = today + timedelta(days=180)
