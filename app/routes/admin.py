@@ -322,6 +322,10 @@ def add_shift_type():
             )
             db.session.add(new_shift_type)
             db.session.commit()
+            
+            # Synchroniser avec la configuration TOML
+            AutomationConfig.sync_shift_types_to_toml()
+            
             flash("✅ Type de shift ajouté avec succès !", "success")
             return redirect(url_for("list_shift_types"))
         except ValueError:
@@ -375,6 +379,10 @@ def edit_shift_type(shift_type_id):
             shift_type.start_hour = start_hour
             shift_type.end_hour = end_hour
             db.session.commit()
+            
+            # Synchroniser avec la configuration TOML
+            AutomationConfig.sync_shift_types_to_toml()
+            
             flash("✅ Type de shift modifié avec succès !", "success")
             return redirect(url_for("list_shift_types"))
         except ValueError:
@@ -404,6 +412,10 @@ def delete_shift_type(shift_type_id):
     try:
         db.session.delete(shift_type)
         db.session.commit()
+        
+        # Synchroniser avec la configuration TOML
+        AutomationConfig.sync_shift_types_to_toml()
+        
         flash("✅ Type de shift supprimé avec succès !", "success")
     except Exception as e:
         db.session.rollback()

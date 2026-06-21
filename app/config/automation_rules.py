@@ -326,3 +326,94 @@ class AutomationConfig:
         except Exception as e:
             # Ne pas faire échouer l'opération principale
             pass
+    
+    @classmethod
+    def sync_shift_types_to_toml(cls) -> None:
+        """
+        Synchronise les types de shifts de la base de données avec la configuration TOML.
+        Met à jour shift_types dans le fichier TOML à partir de la table ShiftType.
+        """
+        from app import db
+        from app.models import ShiftType
+        
+        try:
+            config = cls.load()
+            
+            # Récupérer tous les types de shifts
+            shift_types = ShiftType.query.order_by(ShiftType.start_hour).all()
+            
+            # Construire la liste des types de shifts
+            shift_types_list = []
+            for st in shift_types:
+                shift_types_list.append({
+                    'name': st.name,
+                    'start': st.start_hour,
+                    'end': st.end_hour,
+                    'label': st.label
+                })
+            
+            # Mettre à jour la configuration
+            config['shifts']['shift_types'] = shift_types_list
+            
+            # Sauvegarder
+            cls.save(config)
+            cls.reload()
+            
+        except Exception as e:
+            # Ne pas faire échouer l'opération principale
+            pass
+    
+    @classmethod
+    def sync_shift_types_from_toml(cls) -> None:
+        """
+        Synchronise les types de shifts de la configuration TOML vers la base de données.
+        Crée ou met à jour les ShiftType en base à partir de la configuration.
+        """
+        from app import db
+        from app.models import ShiftType
+        
+        try:
+            config = cls.load()
+            shift_types_config = config['shifts']['shift_types']
+            
+            # Récupérer les types de shifts existants
+            existing_shift_types = ShiftType.query.all()
+            existing_names = {st.name for st in existing_shift_types}
+            
+            # Mettre à jour ou créer les types de shifts
+            for st_config in shift_types_config:
+                name = st_config['name']
+                start = st_config['start']
+                end = st_config['end']
+                label = st_config['label']
+                
+                if name in existing_names:
+                    # Mettre à jour le type existant
+                    shift_type = ShiftType.query.filter_by(name=name).first()
+                    shift_type.label = label
+                    shift_type.start_hour = start
+                    shift_type.end_hour = end
+                    db.session.add(shift_type)
+                else:
+                    # Créer un nouveau type
+                    new_shift_type = ShiftType(
+                        name=name,
+                        label=label,
+                        start_hour=start,
+                        end_hour=end
+                    )
+                    db.session.add(new_shift_type)
+                
+                existing_names.discard(name)
+            
+            # Supprimer les types qui ne sont plus dans la configuration
+            for name in existing_names:
+                shift_type = ShiftType.query.filter_by(name=name).first()
+                db.session.delete(shift_type)
+            
+            db.session.commit()
+            
+        except Exception as e:
+            db.session.rollback()
+            # Ne pas faire échouer l'opération principale
+            pass
