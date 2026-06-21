@@ -8,7 +8,15 @@
         <h1 class="title">
             <i class="fas fa-cogs" aria-hidden="true"></i> Gestion des types de shifts
         </h1>
-        
+
+        <div class="notification is-info is-light mb-4">
+            <p><i class="fas fa-info-circle"></i> 
+                Les types de shifts seront automatiquement synchronisés avec la configuration des règles d'automatisation. 
+                Vous pouvez aussi configurer ces types via 
+                <a href="{{ url_for('automation_config') }}"><i class="fas fa-cog"></i> la page de configuration</a>.
+            </p>
+        </div>
+
         <div class="buttons">
             <a class="button is-primary" href="{{ url_for('add_shift_type') }}">
                 <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un type de shift
@@ -39,9 +47,13 @@
                             <a class="button is-small is-info" href="{{ url_for('edit_shift_type', shift_type_id=shift_type.id) }}" aria-label="Modifier le type de shift">
                                 <i class="fas fa-edit" aria-hidden="true"></i>
                             </a>
-                            <a class="button is-small is-danger" href="{{ url_for('delete_shift_type', shift_type_id=shift_type.id) }}" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce type de shift ?')" aria-label="Supprimer le type de shift">
-                                <i class="fas fa-trash" aria-hidden="true"></i>
-                            </a>
+                            <form method="POST" action="{{ url_for('delete_shift_type', shift_type_id=shift_type.id) }}" 
+                                  style="display: inline-block;" 
+                                  onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce type de shift ?')">
+                                <button type="submit" class="button is-small is-danger" aria-label="Supprimer le type de shift">
+                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                </button>
+                            </form>
                         </td>
                     </tr>
                     {% endfor %}
