@@ -1,0 +1,66 @@
+# =============================================================================
+# CONFIGURATION DES RÈGLES D'AUTOMATISATION - Leviia Schedule
+# =============================================================================
+# Ce fichier permet de configurer les règles métiers pour la génération
+# automatique des astreintes et des shifts.
+# Modifiable via l'interface d'administration ou directement via un éditeur.
+
+# Métadonnées (gérées automatiquement par le système)
+version = "1.0.0"
+last_modified = ""
+
+[oncall]
+# Configuration des astreintes
+rotation_order = []
+min_days_between_oncalls = 14
+start_day = 4
+start_hour = 21
+end_day = 4
+end_hour = 7
+
+[shifts]
+# Créneaux horaires disponibles
+shift_types = [
+    { name = "morning", start = 7, end = 15, label = "07h-15h" },
+    { name = "day", start = 9, end = 17, label = "09h-17h" },
+    { name = "evening", start = 13, end = 21, label = "13h-21h" }
+]
+
+# Règles d'assignation des shifts
+rules = [
+    { rule = "oncall_has_evening_shift", enabled = true, priority = 1, description = "Personne en astreinte = shift 13h-21h (si dans groupe schedule)" },
+    { rule = "rotation_after_oncall", enabled = true, priority = 2, description = "Rotation : après astreinte = shift 07h-15h la semaine suivante" },
+    { rule = "default_shift", enabled = true, priority = 3, description = "Shift par défaut : 09h-17h" },
+    { rule = "two_users_special_case", enabled = true, priority = 4, description = "2 utilisateurs : non-astreinte = 07h-15h, astreinte = 13h-21h" }
+]
+
+# Jours de travail (0=lundi, 1=mardi, 2=mercredi, 3=jeudi, 4=vendredi)
+work_days = [0, 1, 2, 3, 4]
+
+[shifts.daily_requirements]
+monday.morning = 1
+monday.day = 1
+monday.evening = 1
+tuesday.morning = 1
+tuesday.day = 1
+tuesday.evening = 1
+wednesday.morning = 1
+wednesday.day = 1
+wednesday.evening = 1
+thursday.morning = 1
+thursday.day = 1
+thursday.evening = 1
+friday.morning = 1
+friday.day = 1
+friday.evening = 1
+
+[groups]
+# Noms des groupes éligibles pour les astreintes et les shifts
+schedule_groups = ["Technique", "Support"]
+oncall_groups = ["Astreinte", "Technique"]
+
+[generation]
+# Paramètres de génération par défaut
+default_period_days = 180
+advance_generation_enabled = true
+rebalance_on_leave_change = true
