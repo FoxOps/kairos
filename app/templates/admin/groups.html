@@ -60,12 +60,13 @@
                             <a class="button is-small is-info" href="{{ url_for('edit_group', group_id=group.id) }}" aria-label="Modifier le groupe">
                                 <i class="fas fa-edit" aria-hidden="true"></i>
                             </a>
-                            <a class="button is-small is-danger"
-                               href="{{ url_for('delete_group', group_id=group.id) }}"
-                               onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce groupe ?')"
-                               aria-label="Supprimer le groupe">
-                                <i class="fas fa-trash" aria-hidden="true"></i>
-                            </a>
+                            <form method="POST" action="{{ url_for('delete_group', group_id=group.id) }}" 
+                                  style="display: inline-block;" 
+                                  onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce groupe ?')">
+                                <button type="submit" class="button is-small is-danger" aria-label="Supprimer le groupe">
+                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                </button>
+                            </form>
                         </td>
                     </tr>
                     {% endfor %}
