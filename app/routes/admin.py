@@ -3,6 +3,10 @@ from flask_login import login_required, current_user
 from sqlalchemy.orm import selectinload
 from app import app, db
 from app.models import User, Shift, OnCall, Leave, Group, ShiftType
+import logging
+
+# Configuration du logger
+logger = logging.getLogger(__name__)
 from app.utils.decorators import admin_required, config_editor_required
 from app.utils.automation import (
     OnCallAutomation,
@@ -879,65 +883,82 @@ def automation_config():
 @admin_required
 def automation_sync():
     """Vérifie et corrige la synchronisation entre TOML et BDD."""
-    if request.method == "POST":
-        action = request.form.get("action")
-        
-        if action == "check":
-            # Vérifier l'état de synchronisation
-            status = AutomationConfig.check_sync_status()
-            return render_template(
-                "admin/automation/sync_status.html",
-                status=status
-            )
-        
-        elif action == "sync_all":
-            # Forcer la synchronisation complète
-            results = AutomationConfig.ensure_sync()
-            
-            if all(results.values()):
-                flash("✅ Synchronisation complète terminée avec succès !", "success")
-            else:
-                flash("⚠️ Synchronisation terminée avec des avertissements. Voir les logs.", "warning")
-            
-            # Recharger le statut
-            status = AutomationConfig.check_sync_status()
-            return render_template(
-                "admin/automation/sync_status.html",
-                status=status,
-                sync_results=results
-            )
-        
-        elif action == "sync_to_toml":
-            # Synchroniser BDD -> TOML
-            if AutomationConfig._sync_db_to_toml():
-                flash("✅ Synchronisation BDD → TOML terminée avec succès !", "success")
-            else:
-                flash("❌ Échec de la synchronisation BDD → TOML. Voir les logs.", "danger")
-            
-            status = AutomationConfig.check_sync_status()
-            return render_template(
-                "admin/automation/sync_status.html",
-                status=status
-            )
-        
-        elif action == "sync_to_db":
-            # Synchroniser TOML -> BDD
-            if AutomationConfig._sync_toml_to_db():
-                flash("✅ Synchronisation TOML → BDD terminée avec succès !", "success")
-            else:
-                flash("❌ Échec de la synchronisation TOML → BDD. Voir les logs.", "danger")
-            
-            status = AutomationConfig.check_sync_status()
-            return render_template(
-                "admin/automation/sync_status.html",
-                status=status
-            )
+    status = None
+    sync_results = None
     
-    # Afficher le statut par défaut
-    status = AutomationConfig.check_sync_status()
+    try:
+        if request.method == "POST":
+            action = request.form.get("action")
+            
+            if action == "check":
+                # Vérifier l'état de synchronisation
+                status = AutomationConfig.check_sync_status()
+                return render_template(
+                    "admin/automation/sync_status.html",
+                    status=status
+                )
+            
+            elif action == "sync_all":
+                # Forcer la synchronisation complète
+                sync_results = AutomationConfig.ensure_sync()
+                
+                if all(sync_results.values()):
+                    flash("✅ Synchronisation complète terminée avec succès !", "success")
+                else:
+                    flash("⚠️ Synchronisation terminée avec des avertissements. Voir les logs.", "warning")
+                
+                # Recharger le statut
+                status = AutomationConfig.check_sync_status()
+                return render_template(
+                    "admin/automation/sync_status.html",
+                    status=status,
+                    sync_results=sync_results
+                )
+            
+            elif action == "sync_to_toml":
+                # Synchroniser BDD -> TOML
+                if AutomationConfig._sync_db_to_toml():
+                    flash("✅ Synchronisation BDD → TOML terminée avec succès !", "success")
+                else:
+                    flash("❌ Échec de la synchronisation BDD → TOML. Voir les logs.", "danger")
+                
+                status = AutomationConfig.check_sync_status()
+                return render_template(
+                    "admin/automation/sync_status.html",
+                    status=status
+                )
+            
+            elif action == "sync_to_db":
+                # Synchroniser TOML -> BDD
+                if AutomationConfig._sync_toml_to_db():
+                    flash("✅ Synchronisation TOML → BDD terminée avec succès !", "success")
+                else:
+                    flash("❌ Échec de la synchronisation TOML → BDD. Voir les logs.", "danger")
+                
+                status = AutomationConfig.check_sync_status()
+                return render_template(
+                    "admin/automation/sync_status.html",
+                    status=status
+                )
+        
+        # Afficher le statut par défaut
+        status = AutomationConfig.check_sync_status()
+        
+    except Exception as e:
+        logger.error(f"Erreur lors de la vérification de synchronisation: {str(e)}")
+        flash(f"❌ Erreur: {str(e)}", "danger")
+        # Créer un statut par défaut en cas d'erreur
+        status = {
+            'synced': False,
+            'issues': [{'type': 'error', 'message': str(e)}],
+            'details': {},
+            'error': str(e)
+        }
+    
     return render_template(
         "admin/automation/sync_status.html",
-        status=status
+        status=status,
+        sync_results=sync_results
     )
 
 
