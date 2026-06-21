@@ -320,15 +320,4 @@ class ConfigValidator:
         return (len(all_errors) == 0, all_errors)
 
 
-def migrate_and_sync() -> str:
-    """
-    Fonction principale pour migrer les données existantes vers TOML
-    et synchroniser la base de données.
-    """
-    # Étape 1 : Migrer de la base vers TOML
-    migration_result = DatabaseConfigMigrator.sync_toml_from_database()
-    
-    # Étape 2 : Synchroniser la base depuis TOML
-    sync_result = DatabaseConfigMigrator.sync_database_from_toml()
-    
-    return f"{migration_result}\n{sync_result}"
+

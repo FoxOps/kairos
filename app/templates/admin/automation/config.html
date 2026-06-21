@@ -214,27 +214,6 @@
                 </div>
             </div>
         </form>
-
-        <div class="box mt-5">
-            <h2 class="subtitle"><i class="fas fa-sync-alt"></i> Synchronisation</h2>
-            <p>Synchronisez les données entre la base de données et le fichier de configuration.</p>
-            
-            <div class="buttons mt-3">
-                <form method="POST" action="{{ url_for('migrate_to_toml') }}" class="mb-0">
-                    <button type="submit" class="button is-info" 
-                            onclick="return confirm('Cette action va migrer les données de la base vers le fichier TOML. Continuer ?')">
-                        <i class="fas fa-file-import"></i>&nbsp; Migrer vers TOML
-                    </button>
-                </form>
-                
-                <form method="POST" action="{{ url_for('sync_from_toml') }}" class="mb-0">
-                    <button type="submit" class="button is-warning" 
-                            onclick="return confirm('Cette action va synchroniser la base de données avec le fichier TOML. Continuer ?')">
-                        <i class="fas fa-database"></i>&nbsp; Synchroniser la base
-                    </button>
-                </form>
-            </div>
-        </div>
     </div>
 </section>
 {% endblock %}

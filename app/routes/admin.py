@@ -13,7 +13,7 @@ from app.utils.automation import (
 )
 from app.utils.advanced_shift_automation import AdvancedShiftAutomation
 from app.config.automation_rules import AutomationConfig
-from app.config.migration import DatabaseConfigMigrator, ConfigValidator, migrate_and_sync
+from app.config.migration import ConfigValidator
 from datetime import datetime, date, timedelta
 
 
@@ -788,27 +788,4 @@ def automation_config():
     )
 
 
-@app.route("/admin/automation/migrate-to-toml", methods=["POST"])
-@admin_required
-def migrate_to_toml():
-    """Migre les données de la base de données vers le fichier TOML."""
-    try:
-        result = DatabaseConfigMigrator.sync_toml_from_database()
-        flash(result, "info")
-    except Exception as e:
-        flash(f"❌ Erreur lors de la migration: {str(e)}", "danger")
-    
-    return redirect(url_for('automation_config'))
 
-
-@app.route("/admin/automation/sync-from-toml", methods=["POST"])
-@admin_required
-def sync_from_toml():
-    """Synchronise la base de données avec le fichier TOML."""
-    try:
-        result = DatabaseConfigMigrator.sync_database_from_toml()
-        flash(result, "info")
-    except Exception as e:
-        flash(f"❌ Erreur lors de la synchronisation: {str(e)}", "danger")
-    
-    return redirect(url_for('automation_config'))
