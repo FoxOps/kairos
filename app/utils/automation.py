@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, date
 from typing import List, Optional, Tuple, Dict, Any
 from app import db
 from app.models import User, Group, Shift, OnCall, Leave, ShiftType
+from app.config.automation_rules import AutomationConfig
 
 
 # ============================================================================
@@ -103,12 +104,15 @@ class OnCallAutomation:
     def get_eligible_users() -> List[User]:
         """
         Récupère la liste des utilisateurs éligibles pour les astreintes.
-        Un utilisateur est éligible s'il appartient à un groupe participant aux astreintes.
+        Un utilisateur est éligible s'il appartient à un groupe participant aux astreintes
+        (configuré dans automation_rules.toml).
         """
+        oncall_group_names = AutomationConfig.get_oncall_group_names()
+        
         return (
             User.query
             .join(Group)
-            .filter(Group.is_part_of_oncall == True)
+            .filter(Group.name.in_(oncall_group_names))
             .order_by(User.name)
             .all()
         )
@@ -154,7 +158,8 @@ class OnCallAutomation:
     def check_oncall_constraint(user: User, start_time: datetime) -> bool:
         """
         Vérifie la contrainte légale : pas 2 astreintes de suite.
-        Il doit y avoir au moins 2 semaines sans astreinte entre deux astreintes.
+        Il doit y avoir au moins X semaines sans astreinte entre deux astreintes
+        (configurable dans automation_rules.toml).
         
         Args:
             user: Utilisateur à vérifier
@@ -169,11 +174,14 @@ class OnCallAutomation:
         if not last_oncall:
             return True  # Pas d'astreinte précédente, donc OK
         
-        # Calculer la différence en semaines
-        weeks_between = (start_time - last_oncall.end_time).days / 7
+        # Récupérer le nombre minimum de jours depuis la configuration
+        min_days = AutomationConfig.get_min_days_between_oncalls()
         
-        # Il doit y avoir au moins 2 semaines (14 jours) entre la fin de la dernière et le début de la nouvelle
-        return weeks_between >= 2
+        # Calculer la différence en jours
+        days_between = (start_time - last_oncall.end_time).days
+        
+        # Vérifier la contrainte
+        return days_between >= min_days
     
     @staticmethod
     def find_next_available_user(
@@ -264,21 +272,26 @@ class OnCallAutomation:
             messages.append("⚠️ Aucun utilisateur éligible trouvé pour les astreintes.")
             return [], messages
         
-        # Calculer le premier vendredi à partir de start_date
+        # Récupérer la configuration des astreintes
+        oncall_config = AutomationConfig.get_oncall_rules()
+        start_day = oncall_config.get('start_day', 4)  # 4 = vendredi par défaut
+        start_hour = oncall_config.get('start_hour', 21)  # 21h par défaut
+        
+        # Calculer le premier jour correspondant à start_day à partir de start_date
         current_date = start_date
-        while current_date.weekday() != 4:  # 4 = vendredi
+        while current_date.weekday() != start_day:
             current_date += timedelta(days=1)
         
-        # Si la date de début est après le premier vendredi, commencer au vendredi suivant
+        # Si la date de début est après le premier jour valide, commencer au cycle suivant
         if current_date < start_date:
             current_date += timedelta(days=7)
         
         # Générer les astreintes
         rotation_index = 0
         while current_date <= end_date:
-            # Calculer les dates/heures
-            start_time = datetime.combine(current_date, datetime.min.time()).replace(hour=21)
-            end_time = start_time + timedelta(days=7, hours=-14)  # Vendredi 21h -> Vendredi suivant 07h
+            # Calculer les dates/heures à partir de la configuration
+            start_time = AutomationConfig.get_oncall_start_datetime(current_date)
+            end_time = AutomationConfig.get_oncall_end_datetime(start_time)
             
             # Vérifier que end_time ne dépasse pas la période
             if end_time.date() > end_date:
@@ -351,12 +364,15 @@ class ShiftAutomation:
     def get_eligible_users() -> List[User]:
         """
         Récupère la liste des utilisateurs éligibles pour les shifts.
-        Un utilisateur est éligible s'il appartient à un groupe participant au schedule.
+        Un utilisateur est éligible s'il appartient à un groupe participant au schedule
+        (configuré dans automation_rules.toml).
         """
+        schedule_group_names = AutomationConfig.get_schedule_group_names()
+        
         return (
             User.query
             .join(Group)
-            .filter(Group.is_part_of_schedule == True)
+            .filter(Group.name.in_(schedule_group_names))
             .order_by(User.name)
             .all()
         )
@@ -379,9 +395,10 @@ class ShiftAutomation:
         Returns:
             Tuple (bool, message) où bool indique si l'assignation est possible
         """
-        # Vérifier que la date est un jour de semaine (lundi-vendredi)
-        if date.weekday() >= 5:
-            return False, "Les shifts ne peuvent être assignés que du lundi au vendredi."
+        # Vérifier que la date est un jour de travail (configuré dans automation_rules.toml)
+        work_days = AutomationConfig.get_work_days()
+        if date.weekday() not in work_days:
+            return False, "Les shifts ne peuvent être assignés que les jours de travail configurés."
         
         # Vérifier si l'utilisateur a déjà un shift ce jour-là
         has_shift = db.session.query(

@@ -12,6 +12,18 @@
         <div class="columns is-multiline">
             <div class="column is-one-third">
                 <div class="box">
+                    <h2 class="subtitle"><i class="fas fa-cog" aria-hidden="true"></i> Configuration</h2>
+                    <p>Configurer les règles métiers pour les astreintes et les shifts.</p>
+                    <div class="buttons mt-3">
+                        <a class="button is-primary is-small" href="{{ url_for('automation_config') }}">
+                            <i class="fas fa-edit"></i>&nbsp; Configurer
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="column is-one-third">
+                <div class="box">
                     <h2 class="subtitle"><i class="fas fa-cogs" aria-hidden="true"></i> Génération complète</h2>
                     <p>Générer les astreintes. Les shifts seront automatiquement générés selon les nouvelles règles métiers.</p>
                     <div class="buttons mt-3">

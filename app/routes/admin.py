@@ -12,6 +12,8 @@ from app.utils.automation import (
     get_automation_status,
 )
 from app.utils.advanced_shift_automation import AdvancedShiftAutomation
+from app.config.automation_rules import AutomationConfig
+from app.config.migration import DatabaseConfigMigrator, ConfigValidator, migrate_and_sync
 from datetime import datetime, date, timedelta
 
 
@@ -678,3 +680,135 @@ def refresh_shifts():
         start_date_default=start_date_default,
         end_date_default=end_date_default,
     )
+
+
+# ============================================================================
+# CONFIGURATION DE L'AUTOMATISATION
+# ============================================================================
+
+@app.route("/admin/automation/config", methods=["GET", "POST"])
+@admin_required
+def automation_config():
+    """Configuration des règles d'automatisation."""
+    if request.method == "POST":
+        try:
+            # Récupérer la configuration actuelle
+            config = AutomationConfig.load()
+            
+            # Mettre à jour la configuration depuis le formulaire
+            # Section oncall
+            if 'rotation_order' in request.form:
+                rotation_order_str = request.form.get('rotation_order', '').strip()
+                if rotation_order_str:
+                    config['oncall']['rotation_order'] = [int(x.strip()) for x in rotation_order_str.split(',') if x.strip()]
+                else:
+                    config['oncall']['rotation_order'] = []
+            
+            if 'min_days_between_oncalls' in request.form:
+                config['oncall']['min_days_between_oncalls'] = int(request.form.get('min_days_between_oncalls'))
+            
+            if 'start_day' in request.form:
+                config['oncall']['start_day'] = int(request.form.get('start_day'))
+            
+            if 'start_hour' in request.form:
+                config['oncall']['start_hour'] = int(request.form.get('start_hour'))
+            
+            if 'end_day' in request.form:
+                config['oncall']['end_day'] = int(request.form.get('end_day'))
+            
+            if 'end_hour' in request.form:
+                config['oncall']['end_hour'] = int(request.form.get('end_hour'))
+            
+            # Section shifts
+            if 'work_days' in request.form:
+                work_days = request.form.getlist('work_days')
+                config['shifts']['work_days'] = [int(day) for day in work_days]
+            
+            # Section groups
+            if 'schedule_groups' in request.form:
+                schedule_groups_str = request.form.get('schedule_groups', '').strip()
+                if schedule_groups_str:
+                    config['groups']['schedule_groups'] = [g.strip() for g in schedule_groups_str.split(',') if g.strip()]
+                else:
+                    config['groups']['schedule_groups'] = []
+            
+            if 'oncall_groups' in request.form:
+                oncall_groups_str = request.form.get('oncall_groups', '').strip()
+                if oncall_groups_str:
+                    config['groups']['oncall_groups'] = [g.strip() for g in oncall_groups_str.split(',') if g.strip()]
+                else:
+                    config['groups']['oncall_groups'] = []
+            
+            # Section rules
+            for rule in config['shifts']['rules']:
+                rule_key = f"rule_{rule['rule']}"
+                if rule_key in request.form:
+                    rule['enabled'] = True
+                else:
+                    rule['enabled'] = False
+            
+            # Section generation
+            if 'default_period_days' in request.form:
+                config['generation']['default_period_days'] = int(request.form.get('default_period_days'))
+            
+            config['generation']['advance_generation_enabled'] = 'advance_generation_enabled' in request.form
+            config['generation']['rebalance_on_leave_change'] = 'rebalance_on_leave_change' in request.form
+            
+            # Valider la configuration
+            is_valid, errors = ConfigValidator.validate_all(config)
+            
+            if not is_valid:
+                return render_template(
+                    "admin/automation/config.html",
+                    config=config,
+                    error_messages=errors,
+                    success_messages=[]
+                )
+            
+            # Sauvegarder la configuration
+            AutomationConfig.save(config)
+            AutomationConfig.reload()
+            
+            flash("✅ Configuration sauvegardée avec succès !", "success")
+            return redirect(url_for('automation_config'))
+            
+        except ValueError as e:
+            flash(f"❌ Erreur de format : {str(e)}", "danger")
+        except Exception as e:
+            flash(f"❌ Erreur : {str(e)}", "danger")
+    
+    # Charger la configuration pour l'affichage
+    config = AutomationConfig.load()
+    
+    return render_template(
+        "admin/automation/config.html",
+        config=config,
+        error_messages=[],
+        success_messages=[]
+    )
+
+
+@app.route("/admin/automation/migrate-to-toml", methods=["POST"])
+@admin_required
+def migrate_to_toml():
+    """Migre les données de la base de données vers le fichier TOML."""
+    try:
+        result = DatabaseConfigMigrator.sync_toml_from_database()
+        flash(result, "info")
+    except Exception as e:
+        flash(f"❌ Erreur lors de la migration: {str(e)}", "danger")
+    
+    return redirect(url_for('automation_config'))
+
+
+@app.route("/admin/automation/sync-from-toml", methods=["POST"])
+@admin_required
+def sync_from_toml():
+    """Synchronise la base de données avec le fichier TOML."""
+    try:
+        result = DatabaseConfigMigrator.sync_database_from_toml()
+        flash(result, "info")
+    except Exception as e:
+        flash(f"❌ Erreur lors de la synchronisation: {str(e)}", "danger")
+    
+    return redirect(url_for('automation_config'))

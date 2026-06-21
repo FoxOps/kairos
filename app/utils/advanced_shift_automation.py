@@ -47,10 +47,14 @@ class AdvancedShiftAutomation:
     def get_users_in_schedule_groups() -> list:
         """Récupère les utilisateurs qui font partie de groupes pouvant être ajoutés au schedule."""
         from app.models import User, Group
+        from app.config.automation_rules import AutomationConfig
+        
+        schedule_group_names = AutomationConfig.get_schedule_group_names()
+        
         return (
             User.query
             .join(Group)
-            .filter(Group.is_part_of_schedule == True)
+            .filter(Group.name.in_(schedule_group_names))
             .all()
         )
     
@@ -123,25 +127,32 @@ class AdvancedShiftAutomation:
         """
         Détermine le créneau de shift pour un utilisateur à une date donnée.
         
-        Règles :
+        Règles (configurables dans automation_rules.toml) :
         1. Si l'utilisateur était d'astreinte la semaine précédente -> 07h-15h (rotation)
         2. Si l'utilisateur est d'astreinte ET fait partie d'un groupe schedule -> 13h-21h
         3. Sinon -> 09h-17h
         """
         from datetime import timedelta
+        from app.config.automation_rules import AutomationConfig
         
-        # Règle 1 : Vérifier si l'utilisateur était d'astreinte la semaine précédente
-        previous_week_date = date - timedelta(days=7)
-        previous_oncall_user = AdvancedShiftAutomation.get_oncall_user_for_date(previous_week_date)
-        if previous_oncall_user and previous_oncall_user.id == user.id:
-            return AdvancedShiftAutomation.SHIFT_07_15
+        # Vérifier si les règles sont activées
+        rotation_enabled = AutomationConfig.is_rule_enabled('rotation_after_oncall')
+        oncall_evening_enabled = AutomationConfig.is_rule_enabled('oncall_has_evening_shift')
         
-        # Règle 2 : Vérifier si d'astreinte cette semaine
-        oncall_user = AdvancedShiftAutomation.get_oncall_user_for_date(date)
-        if oncall_user and oncall_user.id == user.id:
-            schedule_users = AdvancedShiftAutomation.get_users_in_schedule_groups()
-            if any(u.id == user.id for u in schedule_users):
-                return AdvancedShiftAutomation.SHIFT_13_21
+        # Règle 1 : Rotation après astreinte (si activée)
+        if rotation_enabled:
+            previous_week_date = date - timedelta(days=7)
+            previous_oncall_user = AdvancedShiftAutomation.get_oncall_user_for_date(previous_week_date)
+            if previous_oncall_user and previous_oncall_user.id == user.id:
+                return AdvancedShiftAutomation.SHIFT_07_15
+        
+        # Règle 2 : Astreinte = shift 13h-21h (si activée)
+        if oncall_evening_enabled:
+            oncall_user = AdvancedShiftAutomation.get_oncall_user_for_date(date)
+            if oncall_user and oncall_user.id == user.id:
+                schedule_users = AdvancedShiftAutomation.get_users_in_schedule_groups()
+                if any(u.id == user.id for u in schedule_users):
+                    return AdvancedShiftAutomation.SHIFT_13_21
         
         # Règle 3 : Créneau par défaut
         return AdvancedShiftAutomation.SHIFT_09_17
@@ -150,8 +161,14 @@ class AdvancedShiftAutomation:
     def handle_two_users_case(available_users: list, date: 'date') -> 'Dict':
         """
         Gère le cas spécial où il n'y a que 2 personnes disponibles.
-        La personne NON d'astreinte doit être sur 07h-15h.
+        La personne NON d'astreinte doit être sur 07h-15h (si la règle est activée).
         """
+        from app.config.automation_rules import AutomationConfig
+        
+        # Vérifier si la règle est activée
+        if not AutomationConfig.is_rule_enabled('two_users_special_case'):
+            return {}
+        
         if len(available_users) != 2:
             return {}
         
@@ -180,8 +197,10 @@ class AdvancedShiftAutomation:
         messages = []
         generated_shifts = []
         
-        if date.weekday() >= 5:
-            return [], [f"⏭️ Pas de shift généré pour le {date.strftime('%d/%m/%Y')} (week-end)"]
+        from app.config.automation_rules import AutomationConfig
+        work_days = AutomationConfig.get_work_days()
+        if date.weekday() not in work_days:
+            return [], [f"⏭️ Pas de shift généré pour le {date.strftime('%d/%m/%Y')} (jour non ouvré)"]
         
         available_users = AdvancedShiftAutomation.get_available_users_for_date(date)
         

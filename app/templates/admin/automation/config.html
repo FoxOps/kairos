@@ -1,0 +1,240 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title"><i class="fas fa-cog" aria-hidden="true"></i> Configuration de l'automatisation</h1>
+        
+        <div class="notification is-info is-light">
+            <p><i class="fas fa-info-circle"></i> Ce module permet de configurer les règles métiers pour la génération automatique des astreintes et des shifts.</p>
+        </div>
+
+        {% if error_messages %}
+        <div class="notification is-danger">
+            <h3><i class="fas fa-exclamation-triangle"></i> Erreurs de validation</h3>
+            <ul>
+                {% for error in error_messages %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if success_messages %}
+        <div class="notification is-success">
+            {% for message in success_messages %}
+            <p><i class="fas fa-check-circle"></i> {{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('automation_config') }}" class="box">
+            <h2 class="subtitle"><i class="fas fa-bell"></i> Configuration des astreintes</h2>
+            
+            <div class="field">
+                <label class="label">Ordre de rotation (IDs utilisateurs)</label>
+                <div class="control">
+                    <input class="input" type="text" name="rotation_order" 
+                           value="{{ config.oncall.rotation_order|join(',') }}" 
+                           placeholder="1,2,3,4">
+                    <p class="help">Liste des IDs utilisateurs dans l'ordre de rotation (séparés par des virgules). Laisser vide pour l'ordre alphabétique.</p>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">Jours minimum entre deux astreintes</label>
+                <div class="control">
+                    <input class="input" type="number" name="min_days_between_oncalls" 
+                           value="{{ config.oncall.min_days_between_oncalls }}" min="0">
+                    <p class="help">Contrainte légale : nombre minimum de jours entre la fin d'une astreinte et le début de la suivante.</p>
+                </div>
+            </div>
+
+            <div class="columns">
+                <div class="column">
+                    <div class="field">
+                        <label class="label">Jour de début</label>
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                                <select name="start_day">
+                                    <option value="0" {% if config.oncall.start_day == 0 %}selected{% endif %}>Lundi</option>
+                                    <option value="1" {% if config.oncall.start_day == 1 %}selected{% endif %}>Mardi</option>
+                                    <option value="2" {% if config.oncall.start_day == 2 %}selected{% endif %}>Mercredi</option>
+                                    <option value="3" {% if config.oncall.start_day == 3 %}selected{% endif %}>Jeudi</option>
+                                    <option value="4" {% if config.oncall.start_day == 4 %}selected{% endif %}>Vendredi</option>
+                                    <option value="5" {% if config.oncall.start_day == 5 %}selected{% endif %}>Samedi</option>
+                                    <option value="6" {% if config.oncall.start_day == 6 %}selected{% endif %}>Dimanche</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="field">
+                        <label class="label">Heure de début</label>
+                        <div class="control">
+                            <input class="input" type="number" name="start_hour" 
+                                   value="{{ config.oncall.start_hour }}" min="0" max="23">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="columns">
+                <div class="column">
+                    <div class="field">
+                        <label class="label">Jour de fin</label>
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                                <select name="end_day">
+                                    <option value="0" {% if config.oncall.end_day == 0 %}selected{% endif %}>Lundi</option>
+                                    <option value="1" {% if config.oncall.end_day == 1 %}selected{% endif %}>Mardi</option>
+                                    <option value="2" {% if config.oncall.end_day == 2 %}selected{% endif %}>Mercredi</option>
+                                    <option value="3" {% if config.oncall.end_day == 3 %}selected{% endif %}>Jeudi</option>
+                                    <option value="4" {% if config.oncall.end_day == 4 %}selected{% endif %}>Vendredi</option>
+                                    <option value="5" {% if config.oncall.end_day == 5 %}selected{% endif %}>Samedi</option>
+                                    <option value="6" {% if config.oncall.end_day == 6 %}selected{% endif %}>Dimanche</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="field">
+                        <label class="label">Heure de fin</label>
+                        <div class="control">
+                            <input class="input" type="number" name="end_hour" 
+                                   value="{{ config.oncall.end_hour }}" min="0" max="23">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="subtitle mt-5"><i class="fas fa-calendar-alt"></i> Configuration des shifts</h2>
+
+            <div class="field">
+                <label class="label">Jours de travail</label>
+                <div class="control">
+                    <div class="select is-multiple is-fullwidth">
+                        <select name="work_days" multiple size="5">
+                            <option value="0" {% if 0 in config.shifts.work_days %}selected{% endif %}>Lundi</option>
+                            <option value="1" {% if 1 in config.shifts.work_days %}selected{% endif %}>Mardi</option>
+                            <option value="2" {% if 2 in config.shifts.work_days %}selected{% endif %}>Mercredi</option>
+                            <option value="3" {% if 3 in config.shifts.work_days %}selected{% endif %}>Jeudi</option>
+                            <option value="4" {% if 4 in config.shifts.work_days %}selected{% endif %}>Vendredi</option>
+                            <option value="5" {% if 5 in config.shifts.work_days %}selected{% endif %}>Samedi</option>
+                            <option value="6" {% if 6 in config.shifts.work_days %}selected{% endif %}>Dimanche</option>
+                        </select>
+                    </div>
+                    <p class="help">Sélectionnez les jours où des shifts peuvent être générés (Ctrl+clic pour sélection multiple).</p>
+                </div>
+            </div>
+
+            <h2 class="subtitle mt-5"><i class="fas fa-users"></i> Configuration des groupes</h2>
+
+            <div class="field">
+                <label class="label">Groupes éligibles pour les shifts</label>
+                <div class="control">
+                    <input class="input" type="text" name="schedule_groups" 
+                           value="{{ config.groups.schedule_groups|join(',') }}" 
+                           placeholder="Technique,Support">
+                    <p class="help">Noms des groupes séparés par des virgules.</p>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">Groupes éligibles pour les astreintes</label>
+                <div class="control">
+                    <input class="input" type="text" name="oncall_groups" 
+                           value="{{ config.groups.oncall_groups|join(',') }}" 
+                           placeholder="Astreinte,Technique">
+                    <p class="help">Noms des groupes séparés par des virgules.</p>
+                </div>
+            </div>
+
+            <h2 class="subtitle mt-5"><i class="fas fa-tasks"></i> Règles d'assignation</h2>
+
+            <div class="field">
+                <label class="label">Règles activées</label>
+                <div class="control">
+                    {% for rule in config.shifts.rules %}
+                    <div class="mb-3">
+                        <label class="checkbox">
+                            <input type="checkbox" name="rule_{{ rule.rule }}" 
+                                   value="true" {% if rule.enabled %}checked{% endif %}>
+                            <strong>{{ rule.description }}</strong> (Priorité: {{ rule.priority }})
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+                <p class="help">Cochez les règles à activer. Les règles sont appliquées dans l'ordre de priorité.</p>
+            </div>
+
+            <h2 class="subtitle mt-5"><i class="fas fa-calendar-check"></i> Génération</h2>
+
+            <div class="field">
+                <label class="label">Période par défaut (jours)</label>
+                <div class="control">
+                    <input class="input" type="number" name="default_period_days" 
+                           value="{{ config.generation.default_period_days }}" min="1">
+                    <p class="help">Nombre de jours à générer par défaut.</p>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">Génération automatique à l'avance</label>
+                <div class="control">
+                    <label class="checkbox">
+                        <input type="checkbox" name="advance_generation_enabled" 
+                               value="true" {% if config.generation.advance_generation_enabled %}checked{% endif %}>
+                        Activer la génération automatique
+                    </label>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">Rééquilibrage automatique lors des changements de congés</label>
+                <div class="control">
+                    <label class="checkbox">
+                        <input type="checkbox" name="rebalance_on_leave_change" 
+                               value="true" {% if config.generation.rebalance_on_leave_change %}checked{% endif %}>
+                        Activer le rééquilibrage automatique
+                    </label>
+                </div>
+            </div>
+
+            <div class="field mt-5">
+                <div class="control">
+                    <button type="submit" class="button is-primary">
+                        <i class="fas fa-save"></i>&nbsp; Sauvegarder la configuration
+                    </button>
+                    <a href="{{ url_for('automation_dashboard') }}" class="button is-light">
+                        <i class="fas fa-undo"></i>&nbsp; Annuler
+                    </a>
+                </div>
+            </div>
+        </form>
+
+        <div class="box mt-5">
+            <h2 class="subtitle"><i class="fas fa-sync-alt"></i> Synchronisation</h2>
+            <p>Synchronisez les données entre la base de données et le fichier de configuration.</p>
+            
+            <div class="buttons mt-3">
+                <form method="POST" action="{{ url_for('migrate_to_toml') }}" class="mb-0">
+                    <button type="submit" class="button is-info" 
+                            onclick="return confirm('Cette action va migrer les données de la base vers le fichier TOML. Continuer ?')">
+                        <i class="fas fa-file-import"></i>&nbsp; Migrer vers TOML
+                    </button>
+                </form>
+                
+                <form method="POST" action="{{ url_for('sync_from_toml') }}" class="mb-0">
+                    <button type="submit" class="button is-warning" 
+                            onclick="return confirm('Cette action va synchroniser la base de données avec le fichier TOML. Continuer ?')">
+                        <i class="fas fa-database"></i>&nbsp; Synchroniser la base
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
