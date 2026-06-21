@@ -238,6 +238,8 @@ LOG_LEVEL = logging.DEBUG
 
 ## 🧪 Tests
 
+> **✅ Statut** : 248 tests - Tous passent - Couverture : 66%
+
 ### Exécuter les tests
 
 ```bash
@@ -248,8 +250,25 @@ pytest tests/
 
 ```bash
 pip install pytest-cov
-pytest --cov=app tests/
+pytest --cov=app --cov=config tests/
 ```
+
+### Exécuter un test spécifique
+
+```bash
+pytest tests/test_models.py::TestUserModel::test_user_creation -v
+```
+
+### Voir le rapport de couverture détaillé
+
+```bash
+pytest tests/ --cov=app --cov=config --cov-report=html
+# Ouvre htmlcov/index.html dans ton navigateur
+```
+
+### Documentation complète
+
+Voir [TESTING_SUMMARY.md](TESTING_SUMMARY.md) pour une documentation détaillée de tous les tests.
 
 ## 📝 Contribution
 
