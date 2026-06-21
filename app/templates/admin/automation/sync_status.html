@@ -95,10 +95,10 @@
                             <p><strong>Schedule Groups</strong></p>
                             <div class="tags are-medium">
                                 <span class="tag is-primary">
-                                    TOML: {{ status.details['schedule_groups'].config }}
+                                    TOML: {{ status.details['schedule_groups'].config_names|join(', ') }}
                                 </span>
                                 <span class="tag is-info">
-                                    BDD: {{ status.details['schedule_groups'].database }}
+                                    BDD: {{ status.details['schedule_groups'].database_names|join(', ') }}
                                 </span>
                             </div>
                         </div>
@@ -106,10 +106,10 @@
                             <p><strong>OnCall Groups</strong></p>
                             <div class="tags are-medium">
                                 <span class="tag is-primary">
-                                    TOML: {{ status.details['oncall_groups'].config }}
+                                    TOML: {{ status.details['oncall_groups'].config_names|join(', ') }}
                                 </span>
                                 <span class="tag is-info">
-                                    BDD: {{ status.details['oncall_groups'].database }}
+                                    BDD: {{ status.details['oncall_groups'].database_names|join(', ') }}
                                 </span>
                             </div>
                         </div>

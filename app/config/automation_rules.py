@@ -382,6 +382,7 @@ class AutomationConfig:
         Synchronise les groupes de la base de données avec la configuration TOML.
         Met à jour schedule_groups et oncall_groups dans le fichier TOML
         en fonction des flags is_part_of_schedule et is_part_of_oncall.
+        Utilise des noms normalisés pour la cohérence.
         
         Returns:
             bool: True si la synchronisation a réussi, False sinon
@@ -395,15 +396,16 @@ class AutomationConfig:
             # Récupérer tous les groupes
             groups = Group.query.all()
             
-            # Construire les listes de groupes
+            # Construire les listes de groupes avec des noms normalisés
             schedule_groups = []
             oncall_groups = []
             
             for group in groups:
+                normalized_name = cls._normalize_group_name(group.name)
                 if group.is_part_of_schedule:
-                    schedule_groups.append(group.name)
+                    schedule_groups.append(normalized_name)
                 if group.is_part_of_oncall:
-                    oncall_groups.append(group.name)
+                    oncall_groups.append(normalized_name)
             
             # Mettre à jour la configuration
             config['groups']['schedule_groups'] = schedule_groups
@@ -420,11 +422,52 @@ class AutomationConfig:
             logger.error(f"Erreur lors de la synchronisation des groupes vers TOML: {str(e)}")
             return False
     
+    # Mapping entre les noms français et anglais pour les types de shifts
+    SHIFT_TYPE_NAME_MAPPING = {
+        'morning': 'Matin',
+        'Matin': 'morning',
+        'day': 'Journée',
+        'Journée': 'day',
+        'evening': 'Soir',
+        'Soir': 'evening',
+    }
+    
+    # Mapping entre les noms de groupes (français ↔ anglais/autres)
+    GROUP_NAME_MAPPING = {
+        'Technique': 'Technique',
+        'Support': 'Support',
+        'Astreinte': 'Astreinte',
+        'Run': 'Technique',
+        'Socle': 'Support',
+        'technique': 'Technique',
+        'support': 'Support',
+        'astreinte': 'Astreinte',
+    }
+    
+    @classmethod
+    def _normalize_shift_type_name(cls, name: str) -> str:
+        """
+        Normalise le nom d'un type de shift en utilisant le mapping.
+        Si le nom est dans le mapping, retourne la version anglaise.
+        Sinon, retourne le nom tel quel.
+        """
+        return cls.SHIFT_TYPE_NAME_MAPPING.get(name, name)
+    
+    @classmethod
+    def _normalize_group_name(cls, name: str) -> str:
+        """
+        Normalise le nom d'un groupe en utilisant le mapping.
+        Si le nom est dans le mapping, retourne la version standardisée.
+        Sinon, retourne le nom tel quel.
+        """
+        return cls.GROUP_NAME_MAPPING.get(name, name)
+    
     @classmethod
     def sync_shift_types_to_toml(cls) -> bool:
         """
         Synchronise les types de shifts de la base de données avec la configuration TOML.
         Met à jour shift_types dans le fichier TOML à partir de la table ShiftType.
+        Utilise des noms normalisés (anglais) pour la cohérence.
         
         Returns:
             bool: True si la synchronisation a réussi, False sinon
@@ -438,11 +481,13 @@ class AutomationConfig:
             # Récupérer tous les types de shifts
             shift_types = ShiftType.query.order_by(ShiftType.start_hour).all()
             
-            # Construire la liste des types de shifts
+            # Construire la liste des types de shifts avec des noms normalisés
             shift_types_list = []
             for st in shift_types:
+                # Normaliser le nom (convertir français → anglais)
+                normalized_name = cls._normalize_shift_type_name(st.name)
                 shift_types_list.append({
-                    'name': st.name,
+                    'name': normalized_name,
                     'start': st.start_hour,
                     'end': st.end_hour,
                     'label': st.label
@@ -467,6 +512,7 @@ class AutomationConfig:
         """
         Synchronise les types de shifts de la configuration TOML vers la base de données.
         Crée ou met à jour les ShiftType en base à partir de la configuration.
+        Utilise des noms normalisés (anglais) pour la cohérence.
         
         Returns:
             bool: True si la synchronisation a réussi, False sinon
@@ -480,38 +526,44 @@ class AutomationConfig:
             
             # Récupérer les types de shifts existants
             existing_shift_types = ShiftType.query.all()
-            existing_names = {st.name for st in existing_shift_types}
+            # Utiliser les noms normalisés pour la comparaison
+            existing_normalized_names = {cls._normalize_shift_type_name(st.name) for st in existing_shift_types}
             
             # Mettre à jour ou créer les types de shifts
             for st_config in shift_types_config:
                 name = st_config['name']
+                # Normaliser le nom pour la comparaison
+                normalized_name = cls._normalize_shift_type_name(name)
                 start = st_config['start']
                 end = st_config['end']
                 label = st_config['label']
                 
-                if name in existing_names:
-                    # Mettre à jour le type existant
-                    shift_type = ShiftType.query.filter_by(name=name).first()
-                    shift_type.label = label
-                    shift_type.start_hour = start
-                    shift_type.end_hour = end
-                    db.session.add(shift_type)
+                if normalized_name in existing_normalized_names:
+                    # Trouver le type existant par nom normalisé
+                    for st in existing_shift_types:
+                        if cls._normalize_shift_type_name(st.name) == normalized_name:
+                            # Mettre à jour le type existant (conserver le nom original en BDD)
+                            st.label = label
+                            st.start_hour = start
+                            st.end_hour = end
+                            db.session.add(st)
+                            break
                 else:
-                    # Créer un nouveau type
+                    # Créer un nouveau type avec le nom normalisé (anglais)
                     new_shift_type = ShiftType(
-                        name=name,
+                        name=normalized_name,
                         label=label,
                         start_hour=start,
                         end_hour=end
                     )
                     db.session.add(new_shift_type)
                 
-                existing_names.discard(name)
+                existing_normalized_names.discard(normalized_name)
             
             # Supprimer les types qui ne sont plus dans la configuration
-            for name in existing_names:
-                shift_type = ShiftType.query.filter_by(name=name).first()
-                db.session.delete(shift_type)
+            for st in existing_shift_types:
+                if cls._normalize_shift_type_name(st.name) in existing_normalized_names:
+                    db.session.delete(st)
             
             db.session.commit()
             logger.info(f"Synchronisation des types de shifts depuis TOML: {len(shift_types_config)} types synchronisés")
@@ -591,6 +643,7 @@ class AutomationConfig:
         """
         Synchronise les groupes de la configuration TOML vers la base de données.
         Met à jour les flags is_part_of_schedule et is_part_of_oncall.
+        Utilise des noms normalisés pour la comparaison.
         
         Returns:
             bool: True si la synchronisation a réussi, False sinon
@@ -603,21 +656,26 @@ class AutomationConfig:
             schedule_group_names = config['groups'].get('schedule_groups', [])
             oncall_group_names = config['groups'].get('oncall_groups', [])
             
+            # Normaliser les noms de groupes de la configuration
+            normalized_schedule_groups = {cls._normalize_group_name(name) for name in schedule_group_names}
+            normalized_oncall_groups = {cls._normalize_group_name(name) for name in oncall_group_names}
+            
             # Mettre à jour les flags des groupes existants
             for group in Group.query.all():
+                normalized_group_name = cls._normalize_group_name(group.name)
                 was_updated = False
                 
-                if group.name in schedule_group_names and not group.is_part_of_schedule:
+                if normalized_group_name in normalized_schedule_groups and not group.is_part_of_schedule:
                     group.is_part_of_schedule = True
                     was_updated = True
-                elif group.name not in schedule_group_names and group.is_part_of_schedule:
+                elif normalized_group_name not in normalized_schedule_groups and group.is_part_of_schedule:
                     group.is_part_of_schedule = False
                     was_updated = True
                 
-                if group.name in oncall_group_names and not group.is_part_of_oncall:
+                if normalized_group_name in normalized_oncall_groups and not group.is_part_of_oncall:
                     group.is_part_of_oncall = True
                     was_updated = True
-                elif group.name not in oncall_group_names and group.is_part_of_oncall:
+                elif normalized_group_name not in normalized_oncall_groups and group.is_part_of_oncall:
                     group.is_part_of_oncall = False
                     was_updated = True
                 
@@ -734,12 +792,12 @@ class AutomationConfig:
         try:
             config = cls.load()
             
-            # Vérifier les groupes
-            schedule_groups_config = set(config['groups'].get('schedule_groups', []))
-            oncall_groups_config = set(config['groups'].get('oncall_groups', []))
+            # Vérifier les groupes (en utilisant les noms normalisés)
+            schedule_groups_config = {cls._normalize_group_name(name) for name in config['groups'].get('schedule_groups', [])}
+            oncall_groups_config = {cls._normalize_group_name(name) for name in config['groups'].get('oncall_groups', [])}
             
-            schedule_groups_db = set(g.name for g in Group.query.filter_by(is_part_of_schedule=True).all())
-            oncall_groups_db = set(g.name for g in Group.query.filter_by(is_part_of_oncall=True).all())
+            schedule_groups_db = {cls._normalize_group_name(g.name) for g in Group.query.filter_by(is_part_of_schedule=True).all()}
+            oncall_groups_db = {cls._normalize_group_name(g.name) for g in Group.query.filter_by(is_part_of_oncall=True).all()}
             
             if schedule_groups_config != schedule_groups_db:
                 status['synced'] = False
@@ -761,18 +819,25 @@ class AutomationConfig:
                     'diff': list(oncall_groups_config.symmetric_difference(oncall_groups_db))
                 })
             
-            # Vérifier les types de shifts
-            shift_types_config = {(st['name'], st['start'], st['end']) for st in config['shifts'].get('shift_types', [])}
-            shift_types_db = {(st.name, st.start_hour, st.end_hour) for st in ShiftType.query.all()}
+            # Vérifier les types de shifts (en utilisant les noms normalisés)
+            shift_types_config = {(cls._normalize_shift_type_name(st['name']), st['start'], st['end']) 
+                                  for st in config['shifts'].get('shift_types', [])}
+            shift_types_db = {(cls._normalize_shift_type_name(st.name), st.start_hour, st.end_hour) 
+                               for st in ShiftType.query.all()}
             
             if shift_types_config != shift_types_db:
                 status['synced'] = False
+                # Pour l'affichage, utiliser les noms originaux
+                config_shift_names = [st['name'] for st in config['shifts'].get('shift_types', [])]
+                db_shift_names = [st.name for st in ShiftType.query.all()]
                 status['issues'].append({
                     'type': 'shift_types',
                     'config_count': len(shift_types_config),
                     'database_count': len(shift_types_db),
-                    'missing_in_db': list(shift_types_config - shift_types_db),
-                    'missing_in_config': list(shift_types_db - shift_types_config)
+                    'config_names': config_shift_names,
+                    'database_names': db_shift_names,
+                    'missing_in_db': [list(st) for st in shift_types_config - shift_types_db],
+                    'missing_in_config': [list(st) for st in shift_types_db - shift_types_config]
                 })
             
             # Vérifier l'ordre de rotation
@@ -788,14 +853,24 @@ class AutomationConfig:
                     'diff': list(rotation_order_config.symmetric_difference(rotation_order_db))
                 })
             
+            # Pour l'affichage, utiliser les noms originaux
+            original_schedule_groups_config = config['groups'].get('schedule_groups', [])
+            original_oncall_groups_config = config['groups'].get('oncall_groups', [])
+            original_schedule_groups_db = [g.name for g in Group.query.filter_by(is_part_of_schedule=True).all()]
+            original_oncall_groups_db = [g.name for g in Group.query.filter_by(is_part_of_oncall=True).all()]
+            
             status['details'] = {
                 'schedule_groups': {
                     'config': len(schedule_groups_config),
-                    'database': len(schedule_groups_db)
+                    'database': len(schedule_groups_db),
+                    'config_names': original_schedule_groups_config,
+                    'database_names': original_schedule_groups_db
                 },
                 'oncall_groups': {
                     'config': len(oncall_groups_config),
-                    'database': len(oncall_groups_db)
+                    'database': len(oncall_groups_db),
+                    'config_names': original_oncall_groups_config,
+                    'database_names': original_oncall_groups_db
                 },
                 'shift_types': {
                     'config': len(shift_types_config),
