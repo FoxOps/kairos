@@ -539,7 +539,7 @@ def automation_full():
     if request.method == "POST":
         action = request.form.get("action")
         
-        if action in ["generate", "dry_run"]:
+        if action in ["generate", "dry_run", "save_order"]:
             start_date_str = request.form.get("start_date")
             end_date_str = request.form.get("end_date")
             
@@ -548,8 +548,8 @@ def automation_full():
             for key, value in request.form.items():
                 if key.startswith("rotation_order_"):
                     user_id = int(key.replace("rotation_order_", ""))
-                    position = int(request.form.get(f"rotation_order_{user_id}", loop.index))
-                    include = request.form.get(f"rotation_order_{user_id}", "off") == "on"
+                    position = int(value)
+                    include = request.form.get(f"include_{user_id}", "0") == "1"
                     user_data.append({
                         'user_id': user_id,
                         'position': position,
@@ -559,6 +559,11 @@ def automation_full():
             # Trier par position et extraire les IDs dans l'ordre
             user_data_sorted = sorted(user_data, key=lambda x: x['position'])
             rotation_order_ids = [u['user_id'] for u in user_data_sorted if u['include']]
+            
+            # Si c'est juste pour sauvegarder l'ordre, on affiche un message
+            if action == "save_order":
+                flash("✅ Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour appliquer.", "success")
+                return redirect(url_for("automation_full"))
             
             try:
                 start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
@@ -600,6 +605,15 @@ def automation_full():
     
     oncall_users = OnCallAutomation.get_eligible_users()
     
+    # Essayer de récupérer l'ordre de rotation actuel depuis la configuration
+    # (si elle existe, sinon utiliser l'ordre par défaut)
+    try:
+        from app.utils.config_manager import AutomationConfig
+        config = AutomationConfig.load()
+        current_rotation_order = config.get('oncall', {}).get('rotation_order', [])
+    except (ImportError, Exception):
+        current_rotation_order = None
+    
     today = date.today()
     end_date_default = today + timedelta(days=180)
     start_date_default = today
@@ -611,6 +625,7 @@ def automation_full():
         oncall_users=oncall_users,
         start_date_default=start_date_default,
         end_date_default=end_date_default,
+        current_rotation_order=current_rotation_order,
     )
 
 
