@@ -2,8 +2,7 @@
 Tests pour les gestionnaires d'erreurs personnalisés.
 """
 
-import pytest
-from flask import Flask
+
 
 
 class TestErrorHandlers:
@@ -20,12 +19,12 @@ class TestErrorHandlers:
         """Test que les gestionnaires d'erreurs sont enregistrés."""
         with app.app_context():
             # Vérifier que les handlers sont enregistrés
-            assert hasattr(app, 'errorhandler')
-            
+            assert hasattr(app, "errorhandler")
+
             # Vérifier que les handlers pour 403 et 404 existent
             # Note: errorhandler est une méthode, pas un attribut
             # On vérifie que les handlers sont enregistrés dans l'app
-            assert hasattr(app, 'handle_url_build_error')
+            assert hasattr(app, "handle_url_build_error")
             # Les handlers personnalisés sont enregistrés via @app.errorhandler
             # On peut vérifier qu'ils existent en appelant app.errorhandler
             assert callable(app.errorhandler)
@@ -43,7 +42,7 @@ class TestCustomErrorPages:
                 assert html is not None
             except Exception as e:
                 # Si le template n'existe pas, pytest échouera
-                assert False, f"Template 403.html introuvable: {str(e)}"
+                raise AssertionError(f"Template 403.html introuvable: {str(e)}") from e
 
     def test_404_template_exists(self, app):
         """Test que le template 404.html existe."""
@@ -53,7 +52,7 @@ class TestCustomErrorPages:
                 html = render_template("404.html")
                 assert html is not None
             except Exception as e:
-                assert False, f"Template 404.html introuvable: {str(e)}"
+                raise AssertionError(f"Template 404.html introuvable: {str(e)}") from e
 
     def test_403_template_content(self, app):
         """Test le contenu du template 403.html."""

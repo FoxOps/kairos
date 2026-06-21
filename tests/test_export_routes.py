@@ -2,10 +2,10 @@
 Tests pour les routes d'export ICS.
 """
 
-import pytest
 from datetime import datetime, timedelta
-from app.models import Shift, OnCall, Leave, User, Group, ShiftType
+
 from app import db
+from app.models import Leave, OnCall, Shift
 
 
 class TestExportRoutes:
@@ -256,7 +256,7 @@ class TestExportRoutesAdminScope:
             shift_date = datetime(2023, 12, 1).date()
             start_time = datetime.combine(shift_date, datetime.min.time()).replace(hour=7)
             end_time = start_time + timedelta(hours=8)
-            
+
             shift1 = Shift(
                 user_id=test_user.id,
                 shift_type_id=test_shift_type.id,
@@ -288,11 +288,11 @@ class TestExportRoutesAdminScope:
             start_time1 = datetime(2023, 12, 1, 21, 0)
             end_time1 = start_time1 + timedelta(days=7, hours=-14)
             oncall1 = OnCall(user_id=test_user.id, start_time=start_time1, end_time=end_time1)
-            
+
             start_time2 = datetime(2023, 12, 8, 21, 0)
             end_time2 = start_time2 + timedelta(days=7, hours=-14)
             oncall2 = OnCall(user_id=second_user.id, start_time=start_time2, end_time=end_time2)
-            
+
             db.session.add(oncall1)
             db.session.add(oncall2)
             db.session.commit()
