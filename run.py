@@ -1,10 +1,26 @@
 from app import app, db
+import logging
+import os
 
 # Importer les modèles pour enregistrer les tables avec SQLAlchemy
 from app.models import Group, User, ShiftType, Shift, OnCall, Leave
 
 # Importer les routes pour qu'elles soient enregistrées
 from app.routes import main, admin, export, auth
+
+# Configuration du logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('leviia_schedule.log'),
+        logging.StreamHandler()
+    ]
+)
+
+# Configurer les loggers spécifiques
+logging.getLogger('app.config.automation_rules').setLevel(logging.INFO)
+logging.getLogger('app.config.migration').setLevel(logging.INFO)
 
 # Types de shifts par défaut
 DEFAULT_SHIFT_TYPES = [

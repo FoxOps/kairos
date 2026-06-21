@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from sqlalchemy.orm import selectinload
 from app import app, db
 from app.models import User, Shift, OnCall, Leave, Group, ShiftType
-from app.utils.decorators import admin_required
+from app.utils.decorators import admin_required, config_editor_required
 from app.utils.automation import (
     OnCallAutomation,
     ShiftAutomation,
@@ -73,7 +73,8 @@ def add_group():
             db.session.commit()
             
             # Synchroniser avec la configuration TOML
-            AutomationConfig.sync_groups_to_toml()
+            if not AutomationConfig.sync_groups_to_toml():
+                flash("⚠️ La synchronisation avec la configuration TOML a échoué. Voir les logs pour plus de détails.", "warning")
             
             flash("✅ Groupe ajouté avec succès !", "success")
             return redirect(url_for("list_groups"))
@@ -112,7 +113,8 @@ def edit_group(group_id):
             db.session.commit()
             
             # Synchroniser avec la configuration TOML
-            AutomationConfig.sync_groups_to_toml()
+            if not AutomationConfig.sync_groups_to_toml():
+                flash("⚠️ La synchronisation avec la configuration TOML a échoué. Voir les logs pour plus de détails.", "warning")
             
             flash("✅ Groupe modifié avec succès !", "success")
             return redirect(url_for("list_groups"))
@@ -140,7 +142,8 @@ def delete_group(group_id):
         db.session.commit()
         
         # Synchroniser avec la configuration TOML
-        AutomationConfig.sync_groups_to_toml()
+        if not AutomationConfig.sync_groups_to_toml():
+            flash("⚠️ La synchronisation avec la configuration TOML a échoué. Voir les logs pour plus de détails.", "warning")
         
         flash("✅ Groupe supprimé avec succès !", "success")
     except Exception as e:
@@ -324,7 +327,8 @@ def add_shift_type():
             db.session.commit()
             
             # Synchroniser avec la configuration TOML
-            AutomationConfig.sync_shift_types_to_toml()
+            if not AutomationConfig.sync_shift_types_to_toml():
+                flash("⚠️ La synchronisation avec la configuration TOML a échoué. Voir les logs pour plus de détails.", "warning")
             
             flash("✅ Type de shift ajouté avec succès !", "success")
             return redirect(url_for("list_shift_types"))
@@ -381,7 +385,8 @@ def edit_shift_type(shift_type_id):
             db.session.commit()
             
             # Synchroniser avec la configuration TOML
-            AutomationConfig.sync_shift_types_to_toml()
+            if not AutomationConfig.sync_shift_types_to_toml():
+                flash("⚠️ La synchronisation avec la configuration TOML a échoué. Voir les logs pour plus de détails.", "warning")
             
             flash("✅ Type de shift modifié avec succès !", "success")
             return redirect(url_for("list_shift_types"))
@@ -414,7 +419,8 @@ def delete_shift_type(shift_type_id):
         db.session.commit()
         
         # Synchroniser avec la configuration TOML
-        AutomationConfig.sync_shift_types_to_toml()
+        if not AutomationConfig.sync_shift_types_to_toml():
+            flash("⚠️ La synchronisation avec la configuration TOML a échoué. Voir les logs pour plus de détails.", "warning")
         
         flash("✅ Type de shift supprimé avec succès !", "success")
     except Exception as e:
@@ -771,6 +777,7 @@ def refresh_shifts():
 
 @app.route("/admin/automation/config", methods=["GET", "POST"])
 @admin_required
+@config_editor_required
 def automation_config():
     """Configuration des règles d'automatisation."""
     if request.method == "POST":

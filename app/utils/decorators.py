@@ -195,6 +195,30 @@ def user_can_delete_resource(model, resource_id_param, user_id_attr="user_id"):
     return user_owns_resource(model, resource_id_param, user_id_attr)
 
 
+# Décorateurs pour la configuration de l'automatisation
+
+def config_editor_required(f):
+    """
+    Décorateur pour vérifier que l'utilisateur a le droit de modifier la configuration.
+    Actuellement, seul l'admin peut modifier la configuration.
+    
+    Utilisation:
+        @app.route('/admin/automation/config')
+        @config_editor_required
+        def automation_config():
+            ...
+    """
+    @login_required
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_admin:
+            flash("❌ Accès refusé : vous devez être administrateur pour modifier la configuration.", "danger")
+            return redirect(url_for("index"))
+        return f(*args, **kwargs)
+    
+    return decorated_function
+
+
 # Décorateurs obsolètes - conservés pour compatibilité
 # Ces décorateurs sont conservés pour la rétrocompatibilité mais ne sont pas recommandés
 # pour les nouvelles implémentations. Utilisez plutôt user_owns_resource.

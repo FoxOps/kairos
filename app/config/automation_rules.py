@@ -20,9 +20,15 @@ Utilisation :
 """
 
 import toml
+import threading
+import logging
+import os
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import date, datetime, timedelta
+
+# Configuration du logger
+logger = logging.getLogger(__name__)
 
 
 class AutomationConfig:
@@ -30,6 +36,8 @@ class AutomationConfig:
     
     _config = None
     _config_path = Path(__file__).parent / "automation_rules.toml"
+    _config_mtime = None  # Date de modification du fichier
+    _lock = threading.Lock()  # Verrou pour la synchronisation thread-safe
     
     # Valeurs par défaut pour la validation
     DEFAULT_CONFIG = {
@@ -78,22 +86,53 @@ class AutomationConfig:
     }
     
     @classmethod
-    def load(cls) -> Dict[str, Any]:
-        """Charge la configuration depuis le fichier TOML."""
-        if cls._config is None:
-            try:
-                with open(cls._config_path, 'r', encoding='utf-8') as f:
-                    cls._config = toml.load(f)
-                # Appliquer les valeurs par défaut pour les clés manquantes
+    def _get_file_mtime(cls) -> float:
+        """Récupère la date de modification du fichier TOML."""
+        try:
+            return cls._config_path.stat().st_mtime
+        except FileNotFoundError:
+            return 0.0
+    
+    @classmethod
+    def _load_from_file(cls) -> Dict[str, Any]:
+        """Charge la configuration depuis le fichier TOML avec gestion des erreurs."""
+        try:
+            with open(cls._config_path, 'r', encoding='utf-8') as f:
+                config = toml.load(f)
+            logger.info(f"Configuration chargée depuis {cls._config_path}")
+            return config
+        except FileNotFoundError:
+            logger.warning(f"Fichier de configuration introuvable: {cls._config_path}. Utilisation de la configuration par défaut.")
+            return cls.DEFAULT_CONFIG.copy()
+        except toml.TomlDecodeError as e:
+            logger.error(f"Erreur de parsing TOML dans {cls._config_path}: {str(e)}. Utilisation de la configuration par défaut.")
+            return cls.DEFAULT_CONFIG.copy()
+        except Exception as e:
+            logger.error(f"Erreur inattendue lors du chargement de la configuration: {str(e)}. Utilisation de la configuration par défaut.")
+            return cls.DEFAULT_CONFIG.copy()
+    
+    @classmethod
+    def load(cls, force_reload: bool = False) -> Dict[str, Any]:
+        """
+        Charge la configuration depuis le fichier TOML.
+        
+        Args:
+            force_reload: Si True, force le rechargement depuis le fichier
+            
+        Returns:
+            Dictionnaire de configuration
+        """
+        with cls._lock:
+            # Vérifier si le fichier a été modifié depuis le dernier chargement
+            current_mtime = cls._get_file_mtime()
+            
+            if force_reload or cls._config is None or cls._config_mtime != current_mtime:
+                cls._config = cls._load_from_file()
                 cls._config = cls._merge_with_defaults(cls._config)
-            except FileNotFoundError:
-                # Si le fichier n'existe pas, créer une configuration par défaut
-                cls._config = cls.DEFAULT_CONFIG.copy()
-                cls.save(cls._config)
-            except Exception as e:
-                # En cas d'erreur de parsing, utiliser la config par défaut
-                cls._config = cls.DEFAULT_CONFIG.copy()
-        return cls._config
+                cls._config_mtime = current_mtime
+                logger.debug("Configuration rechargée (fichier modifié ou premier chargement)")
+            
+            return cls._config
     
     @classmethod
     def _merge_with_defaults(cls, config: Dict[str, Any]) -> Dict[str, Any]:
@@ -112,19 +151,45 @@ class AutomationConfig:
     
     @classmethod
     def save(cls, config: Dict[str, Any]) -> None:
-        """Sauvegarde la configuration dans le fichier TOML."""
-        cls._config = config
-        try:
-            with open(cls._config_path, 'w', encoding='utf-8') as f:
-                toml.dump(config, f)
-        except Exception as e:
-            raise Exception(f"Erreur lors de la sauvegarde de la configuration: {str(e)}")
+        """
+        Sauvegarde la configuration dans le fichier TOML.
+        
+        Args:
+            config: Dictionnaire de configuration à sauvegarder
+            
+        Raises:
+            Exception: En cas d'erreur de sauvegarde
+        """
+        with cls._lock:
+            try:
+                # Créer une copie pour éviter de modifier l'original
+                config_to_save = config.copy()
+                
+                # Sauvegarder dans le fichier
+                with open(cls._config_path, 'w', encoding='utf-8') as f:
+                    toml.dump(config_to_save, f)
+                
+                # Mettre à jour le cache et le timestamp
+                cls._config = config_to_save
+                cls._config_mtime = cls._get_file_mtime()
+                
+                logger.info(f"Configuration sauvegardée dans {cls._config_path}")
+                
+            except PermissionError as e:
+                logger.error(f"Permission refusée lors de la sauvegarde de la configuration: {str(e)}")
+                raise Exception(f"Permission refusée: {str(e)}")
+            except Exception as e:
+                logger.error(f"Erreur lors de la sauvegarde de la configuration: {str(e)}")
+                raise Exception(f"Erreur lors de la sauvegarde de la configuration: {str(e)}")
     
     @classmethod
     def reload(cls) -> None:
         """Recharge la configuration depuis le fichier."""
-        cls._config = None
-        cls.load()
+        with cls._lock:
+            cls._config = None
+            cls._config_mtime = None
+            cls.load()
+            logger.info("Configuration rechargée manuellement")
     
     # =========================================================================
     # Méthodes d'accès aux sections de configuration
@@ -290,11 +355,14 @@ class AutomationConfig:
     # =========================================================================
     
     @classmethod
-    def sync_groups_to_toml(cls) -> None:
+    def sync_groups_to_toml(cls) -> bool:
         """
         Synchronise les groupes de la base de données avec la configuration TOML.
         Met à jour schedule_groups et oncall_groups dans le fichier TOML
         en fonction des flags is_part_of_schedule et is_part_of_oncall.
+        
+        Returns:
+            bool: True si la synchronisation a réussi, False sinon
         """
         from app import db
         from app.models import Group
@@ -323,15 +391,21 @@ class AutomationConfig:
             cls.save(config)
             cls.reload()
             
+            logger.info(f"Synchronisation des groupes vers TOML: {len(schedule_groups)} groupes schedule, {len(oncall_groups)} groupes oncall")
+            return True
+            
         except Exception as e:
-            # Ne pas faire échouer l'opération principale
-            pass
+            logger.error(f"Erreur lors de la synchronisation des groupes vers TOML: {str(e)}")
+            return False
     
     @classmethod
-    def sync_shift_types_to_toml(cls) -> None:
+    def sync_shift_types_to_toml(cls) -> bool:
         """
         Synchronise les types de shifts de la base de données avec la configuration TOML.
         Met à jour shift_types dans le fichier TOML à partir de la table ShiftType.
+        
+        Returns:
+            bool: True si la synchronisation a réussi, False sinon
         """
         from app import db
         from app.models import ShiftType
@@ -359,15 +433,21 @@ class AutomationConfig:
             cls.save(config)
             cls.reload()
             
+            logger.info(f"Synchronisation des types de shifts vers TOML: {len(shift_types_list)} types")
+            return True
+            
         except Exception as e:
-            # Ne pas faire échouer l'opération principale
-            pass
+            logger.error(f"Erreur lors de la synchronisation des types de shifts vers TOML: {str(e)}")
+            return False
     
     @classmethod
-    def sync_shift_types_from_toml(cls) -> None:
+    def sync_shift_types_from_toml(cls) -> bool:
         """
         Synchronise les types de shifts de la configuration TOML vers la base de données.
         Crée ou met à jour les ShiftType en base à partir de la configuration.
+        
+        Returns:
+            bool: True si la synchronisation a réussi, False sinon
         """
         from app import db
         from app.models import ShiftType
@@ -412,8 +492,121 @@ class AutomationConfig:
                 db.session.delete(shift_type)
             
             db.session.commit()
+            logger.info(f"Synchronisation des types de shifts depuis TOML: {len(shift_types_config)} types synchronisés")
+            return True
             
         except Exception as e:
             db.session.rollback()
-            # Ne pas faire échouer l'opération principale
-            pass
+            logger.error(f"Erreur lors de la synchronisation des types de shifts depuis TOML: {str(e)}")
+            return False
+    
+    @classmethod
+    def sync_rotation_order_from_toml(cls) -> bool:
+        """
+        Synchronise l'ordre de rotation de la configuration TOML vers la base de données.
+        Met à jour les flags is_part_of_oncall des utilisateurs selon rotation_order.
+        
+        Returns:
+            bool: True si la synchronisation a réussi, False sinon
+        """
+        from app import db
+        from app.models import User
+        
+        try:
+            config = cls.load()
+            rotation_order_ids = config['oncall'].get('rotation_order', [])
+            
+            # Récupérer tous les utilisateurs
+            all_users = User.query.all()
+            
+            # Marquer tous les utilisateurs comme non éligibles pour les astreintes
+            for user in all_users:
+                user.is_part_of_oncall = False
+                db.session.add(user)
+            
+            # Marquer les utilisateurs dans rotation_order comme éligibles
+            for user_id in rotation_order_ids:
+                user = User.query.get(user_id)
+                if user:
+                    user.is_part_of_oncall = True
+                    db.session.add(user)
+                else:
+                    logger.warning(f"Utilisateur ID {user_id} introuvable dans la base de données")
+            
+            db.session.commit()
+            logger.info(f"Synchronisation de l'ordre de rotation depuis TOML: {len(rotation_order_ids)} utilisateurs marqués comme éligibles")
+            return True
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Erreur lors de la synchronisation de l'ordre de rotation depuis TOML: {str(e)}")
+            return False
+    
+    @classmethod
+    def sync_all_from_toml(cls) -> Dict[str, bool]:
+        """
+        Synchronise toutes les données de la configuration TOML vers la base de données.
+        
+        Returns:
+            Dict[str, bool]: Dictionnaire avec le statut de chaque synchronisation
+        """
+        results = {}
+        
+        # Synchroniser les groupes
+        results['groups'] = cls.sync_groups_from_toml()
+        
+        # Synchroniser les types de shifts
+        results['shift_types'] = cls.sync_shift_types_from_toml()
+        
+        # Synchroniser l'ordre de rotation
+        results['rotation_order'] = cls.sync_rotation_order_from_toml()
+        
+        logger.info(f"Synchronisation complète depuis TOML: {results}")
+        return results
+    
+    @classmethod
+    def sync_groups_from_toml(cls) -> bool:
+        """
+        Synchronise les groupes de la configuration TOML vers la base de données.
+        Met à jour les flags is_part_of_schedule et is_part_of_oncall.
+        
+        Returns:
+            bool: True si la synchronisation a réussi, False sinon
+        """
+        from app import db
+        from app.models import Group
+        
+        try:
+            config = cls.load()
+            schedule_group_names = config['groups'].get('schedule_groups', [])
+            oncall_group_names = config['groups'].get('oncall_groups', [])
+            
+            # Mettre à jour les flags des groupes existants
+            for group in Group.query.all():
+                was_updated = False
+                
+                if group.name in schedule_group_names and not group.is_part_of_schedule:
+                    group.is_part_of_schedule = True
+                    was_updated = True
+                elif group.name not in schedule_group_names and group.is_part_of_schedule:
+                    group.is_part_of_schedule = False
+                    was_updated = True
+                
+                if group.name in oncall_group_names and not group.is_part_of_oncall:
+                    group.is_part_of_oncall = True
+                    was_updated = True
+                elif group.name not in oncall_group_names and group.is_part_of_oncall:
+                    group.is_part_of_oncall = False
+                    was_updated = True
+                
+                if was_updated:
+                    db.session.add(group)
+            
+            db.session.commit()
+            logger.info(f"Synchronisation des groupes depuis TOML: {len(schedule_group_names)} groupes schedule, {len(oncall_group_names)} groupes oncall")
+            return True
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Erreur lors de la synchronisation des groupes depuis TOML: {str(e)}")
+            return False
