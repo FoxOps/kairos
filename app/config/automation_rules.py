@@ -40,13 +40,18 @@ class AutomationConfig:
     _lock = threading.Lock()  # Verrou pour la synchronisation thread-safe
     
     # Valeurs par défaut pour la validation
+    # Version de la configuration
+    CONFIG_VERSION = "1.0.0"
+    
     DEFAULT_CONFIG = {
+        'version': CONFIG_VERSION,
+        'last_modified': None,
         'oncall': {
             'rotation_order': [],
             'min_days_between_oncalls': 14,
-            'start_day': 4,
+            'start_day': 4,  # 4 = vendredi
             'start_hour': 21,
-            'end_day': 4,
+            'end_day': 4,    # 4 = vendredi (semaine suivante)
             'end_hour': 7
         },
         'shifts': {
@@ -65,13 +70,15 @@ class AutomationConfig:
                 {'rule': 'two_users_special_case', 'enabled': True, 'priority': 4,
                  'description': '2 utilisateurs : non-astreinte = 07h-15h, astreinte = 13h-21h'}
             ],
-            'work_days': [0, 1, 2, 3, 4],
+            'work_days': [0, 1, 2, 3, 4],  # Lundi au vendredi
             'daily_requirements': {
                 'monday': {'morning': 1, 'day': 1, 'evening': 1},
                 'tuesday': {'morning': 1, 'day': 1, 'evening': 1},
                 'wednesday': {'morning': 1, 'day': 1, 'evening': 1},
                 'thursday': {'morning': 1, 'day': 1, 'evening': 1},
-                'friday': {'morning': 1, 'day': 1, 'evening': 1}
+                'friday': {'morning': 1, 'day': 1, 'evening': 1},
+                'saturday': {},  # Pas de shifts par défaut le samedi
+                'sunday': {}     # Pas de shifts par défaut le dimanche
             }
         },
         'groups': {
@@ -79,7 +86,7 @@ class AutomationConfig:
             'oncall_groups': ['Astreinte', 'Technique']
         },
         'generation': {
-            'default_period_days': 180,
+            'default_period_days': 180,  # 6 mois
             'advance_generation_enabled': True,
             'rebalance_on_leave_change': True
         }
@@ -150,12 +157,13 @@ class AutomationConfig:
         return merged
     
     @classmethod
-    def save(cls, config: Dict[str, Any]) -> None:
+    def save(cls, config: Dict[str, Any], update_metadata: bool = True) -> None:
         """
         Sauvegarde la configuration dans le fichier TOML.
         
         Args:
             config: Dictionnaire de configuration à sauvegarder
+            update_metadata: Si True, met à jour la version et la date de modification
             
         Raises:
             Exception: En cas d'erreur de sauvegarde
@@ -164,6 +172,11 @@ class AutomationConfig:
             try:
                 # Créer une copie pour éviter de modifier l'original
                 config_to_save = config.copy()
+                
+                # Mettre à jour les métadonnées si demandé
+                if update_metadata:
+                    config_to_save['version'] = cls.CONFIG_VERSION
+                    config_to_save['last_modified'] = datetime.now().isoformat()
                 
                 # Sauvegarder dans le fichier
                 with open(cls._config_path, 'w', encoding='utf-8') as f:
@@ -190,6 +203,16 @@ class AutomationConfig:
             cls._config_mtime = None
             cls.load()
             logger.info("Configuration rechargée manuellement")
+    
+    @classmethod
+    def get_config_version(cls) -> str:
+        """Récupère la version de la configuration."""
+        return cls.load().get('version', cls.CONFIG_VERSION)
+    
+    @classmethod
+    def get_last_modified(cls) -> Optional[str]:
+        """Récupère la date de dernière modification de la configuration."""
+        return cls.load().get('last_modified')
     
     # =========================================================================
     # Méthodes d'accès aux sections de configuration
