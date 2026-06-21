@@ -71,6 +71,10 @@ def add_group():
             )
             db.session.add(new_group)
             db.session.commit()
+            
+            # Synchroniser avec la configuration TOML
+            AutomationConfig.sync_groups_to_toml()
+            
             flash("✅ Groupe ajouté avec succès !", "success")
             return redirect(url_for("list_groups"))
         except Exception as e:
@@ -106,6 +110,10 @@ def edit_group(group_id):
             group.is_part_of_schedule = is_part_of_schedule
             group.is_part_of_oncall = is_part_of_oncall
             db.session.commit()
+            
+            # Synchroniser avec la configuration TOML
+            AutomationConfig.sync_groups_to_toml()
+            
             flash("✅ Groupe modifié avec succès !", "success")
             return redirect(url_for("list_groups"))
         except Exception as e:
@@ -130,6 +138,10 @@ def delete_group(group_id):
     try:
         db.session.delete(group)
         db.session.commit()
+        
+        # Synchroniser avec la configuration TOML
+        AutomationConfig.sync_groups_to_toml()
+        
         flash("✅ Groupe supprimé avec succès !", "success")
     except Exception as e:
         db.session.rollback()

@@ -9,6 +9,12 @@
             <i class="fas fa-plus" aria-hidden="true"></i> Ajouter un groupe
         </h1>
         
+        <div class="notification is-info is-light mb-4">
+            <p><i class="fas fa-info-circle"></i> 
+                Les groupes marqués comme éligibles seront automatiquement synchronisés avec la configuration des règles d'automatisation.
+            </p>
+        </div>
+        
         <form method="POST" action="{{ url_for('add_group') }}">
             <div class="box">
                 <div class="field">

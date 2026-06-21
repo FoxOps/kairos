@@ -7,6 +7,14 @@
             <i class="fas fa-users" aria-hidden="true"></i> Gestion des groupes
         </h1>
 
+        <div class="notification is-info is-light mb-4">
+            <p><i class="fas fa-info-circle"></i> 
+                Les groupes marqués comme éligibles seront utilisés pour la génération automatique des astreintes et des shifts. 
+                Vous pouvez aussi configurer ces groupes via 
+                <a href="{{ url_for('automation_config') }}"><i class="fas fa-cog"></i> la page de configuration</a>.
+            </p>
+        </div>
+
         <div class="buttons">
             <a class="button is-primary" href="{{ url_for('add_group') }}">
                 <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un groupe
@@ -24,8 +32,8 @@
                     <tr>
                         <th scope="col">ID</th>
                         <th scope="col">Nom</th>
-                        <th scope="col">Fait partie de Schedule</th>
-                        <th scope="col">Fait partie de l'astreinte</th>
+                        <th scope="col">Schedule <i class="fas fa-question-circle has-tooltip" title="Peut avoir des shifts"></i></th>
+                        <th scope="col">Astreinte <i class="fas fa-question-circle has-tooltip" title="Peut être en astreinte"></i></th>
                         <th scope="col">Actions</th>
                     </tr>
                 </thead>

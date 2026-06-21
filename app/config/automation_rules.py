@@ -284,3 +284,45 @@ class AutomationConfig:
     def is_rebalance_on_leave_change_enabled(cls) -> bool:
         """Vérifie si le rééquilibrage automatique lors des changements de congés est activé."""
         return cls.get_generation_rules().get('rebalance_on_leave_change', True)
+    
+    # =========================================================================
+    # Méthodes de synchronisation avec la base de données
+    # =========================================================================
+    
+    @classmethod
+    def sync_groups_to_toml(cls) -> None:
+        """
+        Synchronise les groupes de la base de données avec la configuration TOML.
+        Met à jour schedule_groups et oncall_groups dans le fichier TOML
+        en fonction des flags is_part_of_schedule et is_part_of_oncall.
+        """
+        from app import db
+        from app.models import Group
+        
+        try:
+            config = cls.load()
+            
+            # Récupérer tous les groupes
+            groups = Group.query.all()
+            
+            # Construire les listes de groupes
+            schedule_groups = []
+            oncall_groups = []
+            
+            for group in groups:
+                if group.is_part_of_schedule:
+                    schedule_groups.append(group.name)
+                if group.is_part_of_oncall:
+                    oncall_groups.append(group.name)
+            
+            # Mettre à jour la configuration
+            config['groups']['schedule_groups'] = schedule_groups
+            config['groups']['oncall_groups'] = oncall_groups
+            
+            # Sauvegarder
+            cls.save(config)
+            cls.reload()
+            
+        except Exception as e:
+            # Ne pas faire échouer l'opération principale
+            pass
