@@ -541,7 +541,41 @@ def automation_full():
     if request.method == "POST":
         action = request.form.get("action")
         
-        if action in ["generate", "dry_run"]:
+        if action in ["generate", "dry_run", "save_order"]:
+            # Si c'est une sauvegarde de l'ordre de rotation
+            if action == "save_order":
+                try:
+                    # Récupérer l'ordre de rotation depuis le formulaire
+                    user_data = []
+                    for key, value in request.form.items():
+                        if key.startswith("rotation_order_"):
+                            user_id = int(key.replace("rotation_order_", ""))
+                            position = int(value)
+                            include = request.form.get(f"include_{user_id}", "0") == "1"
+                            user_data.append({
+                                'user_id': user_id,
+                                'position': position,
+                                'include': include
+                            })
+                    
+                    # Trier par position et extraire les IDs dans l'ordre
+                    user_data_sorted = sorted(user_data, key=lambda x: x['position'])
+                    rotation_order_ids = [u['user_id'] for u in user_data_sorted if u['include']]
+                    
+                    # Sauvegarder dans la configuration TOML
+                    config = AutomationConfig.load()
+                    config['oncall']['rotation_order'] = rotation_order_ids
+                    AutomationConfig.save(config)
+                    AutomationConfig.reload()
+                    
+                    flash("✅ Ordre de rotation sauvegardé avec succès !", "success")
+                    return redirect(url_for("automation_full"))
+                    
+                except Exception as e:
+                    flash(f"❌ Erreur lors de la sauvegarde de l'ordre: {str(e)}", "danger")
+                    return redirect(url_for("automation_full"))
+            
+            # Pour generate et dry_run
             start_date_str = request.form.get("start_date")
             end_date_str = request.form.get("end_date")
             
@@ -550,8 +584,8 @@ def automation_full():
             for key, value in request.form.items():
                 if key.startswith("rotation_order_"):
                     user_id = int(key.replace("rotation_order_", ""))
-                    position = int(request.form.get(f"rotation_order_{user_id}", loop.index))
-                    include = request.form.get(f"rotation_order_{user_id}", "off") == "on"
+                    position = int(value)
+                    include = request.form.get(f"include_{user_id}", "0") == "1"
                     user_data.append({
                         'user_id': user_id,
                         'position': position,
@@ -561,6 +595,12 @@ def automation_full():
             # Trier par position et extraire les IDs dans l'ordre
             user_data_sorted = sorted(user_data, key=lambda x: x['position'])
             rotation_order_ids = [u['user_id'] for u in user_data_sorted if u['include']]
+            
+            # Sauvegarder l'ordre dans la configuration TOML
+            config = AutomationConfig.load()
+            config['oncall']['rotation_order'] = rotation_order_ids
+            AutomationConfig.save(config)
+            AutomationConfig.reload()
             
             try:
                 start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
@@ -576,7 +616,7 @@ def automation_full():
                 if dry_run:
                     # Pour le dry run, afficher les astreintes générées
                     return render_template(
-                        "admin/automation/oncall_dry_run.html",
+                        "admin/automation/full_dry_run.html",
                         oncalls=oncalls,
                         messages=oncall_messages,
                         start_date=start_date,
@@ -601,6 +641,24 @@ def automation_full():
                 flash(f"❌ Erreur : {str(e)}", "danger")
     
     oncall_users = OnCallAutomation.get_eligible_users()
+    current_rotation_order = AutomationConfig.get_rotation_order()
+    
+    # Trier les utilisateurs selon l'ordre de rotation actuel
+    if current_rotation_order:
+        # Créer un mapping position -> user
+        user_map = {user.id: user for user in oncall_users}
+        ordered_users = []
+        remaining_users = list(oncall_users)
+        
+        # Ajouter les utilisateurs dans l'ordre de rotation
+        for user_id in current_rotation_order:
+            if user_id in user_map:
+                ordered_users.append(user_map[user_id])
+                remaining_users.remove(user_map[user_id])
+        
+        # Ajouter les utilisateurs restants à la fin
+        ordered_users.extend(remaining_users)
+        oncall_users = ordered_users
     
     today = date.today()
     end_date_default = today + timedelta(days=180)
@@ -611,6 +669,7 @@ def automation_full():
     return render_template(
         "admin/automation/full.html",
         oncall_users=oncall_users,
+        current_rotation_order=current_rotation_order,
         start_date_default=start_date_default,
         end_date_default=end_date_default,
     )

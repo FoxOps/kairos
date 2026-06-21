@@ -1,5 +1,141 @@
 {% extends "admin/base_admin.html" %}
 
+{% block extra_css %}
+<style>
+    .sortable-list {
+        list-style: none;
+        padding: 0;
+    }
+    .sortable-item {
+        background: #f5f5f5;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 12px 15px;
+        margin-bottom: 8px;
+        cursor: move;
+        display: flex;
+        align-items: center;
+        transition: background-color 0.2s;
+    }
+    .sortable-item:hover {
+        background: #e9e9e9;
+    }
+    .sortable-item.dragging {
+        opacity: 0.5;
+        background: #d4edda;
+    }
+    .sortable-item .drag-handle {
+        cursor: move;
+        padding: 0 10px;
+        color: #666;
+    }
+    .sortable-item .user-info {
+        flex: 1;
+    }
+    .sortable-item .include-checkbox {
+        margin-left: 15px;
+    }
+    .rotation-order-info {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        border-left: 4px solid #00d1b2;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Système de glisser-déposer pour l'ordre de rotation
+document.addEventListener('DOMContentLoaded', function() {
+    const sortableList = document.getElementById('rotation-order-list');
+    if (!sortableList) return;
+
+    let draggedItem = null;
+
+    // Ajouter les gestionnaires d'événements
+    sortableList.addEventListener('dragstart', function(e) {
+        if (e.target.classList.contains('sortable-item')) {
+            draggedItem = e.target;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', e.target.innerHTML);
+        }
+    });
+
+    sortableList.addEventListener('dragend', function(e) {
+        if (e.target.classList.contains('sortable-item')) {
+            e.target.classList.remove('dragging');
+            draggedItem = null;
+        }
+    });
+
+    sortableList.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        
+        const targetItem = e.target.closest('.sortable-item');
+        if (targetItem && targetItem !== draggedItem) {
+            const rect = targetItem.getBoundingClientRect();
+            const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+            
+            if (next) {
+                sortableList.insertBefore(draggedItem, targetItem.nextSibling);
+            } else {
+                sortableList.insertBefore(draggedItem, targetItem);
+            }
+        }
+    });
+
+    sortableList.addEventListener('dragenter', function(e) {
+        e.preventDefault();
+    });
+
+    sortableList.addEventListener('drop', function(e) {
+        e.preventDefault();
+    });
+
+    // Mettre à jour les positions cachées avant soumission
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const items = sortableList.querySelectorAll('.sortable-item');
+        items.forEach((item, index) => {
+            const userId = item.dataset.userId;
+            const positionInput = document.querySelector(`input[name="rotation_order_${userId}"]`);
+            if (positionInput) {
+                positionInput.value = index + 1;
+            }
+        });
+    });
+
+    // Fonction pour sauvegarder l'ordre de rotation
+    function saveRotationOrder() {
+        const form = document.querySelector('form');
+        const items = sortableList.querySelectorAll('.sortable-item');
+        
+        // Mettre à jour les positions
+        items.forEach((item, index) => {
+            const userId = item.dataset.userId;
+            const positionInput = form.querySelector(`input[name="rotation_order_${userId}"]`);
+            if (positionInput) {
+                positionInput.value = index + 1;
+            }
+        });
+        
+        // Créer un input caché pour l'action
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = 'save_order';
+        form.appendChild(actionInput);
+        
+        // Soumettre le formulaire
+        form.submit();
+    }
+});
+</script>
+{% endblock %}
+
 {% block admin_content %}
 <section class="section">
     <div class="container">
@@ -16,58 +152,54 @@
             <div class="notification is-success is-light">
                 <p>{{ oncall_users|length }} utilisateur(s) éligible(s) trouvé(s)</p>
             </div>
+
+            {% if current_rotation_order %}
+            <div class="rotation-order-info">
+                <h4 class="mb-2"><i class="fas fa-list-ol"></i> Ordre de rotation actuel :</h4>
+                <p class="mb-1">
+                    {% for user_id in current_rotation_order %}
+                        {% set user = oncall_users|selectattr("id", "equalto", user_id)|first %}
+                        {% if user %}
+                            <span class="tag is-info is-medium mr-2">{{ user.name }}</span>
+                        {% endif %}
+                    {% endfor %}
+                </p>
+                <p class="help">Glissez-déposez les utilisateurs ci-dessous pour modifier l'ordre.</p>
+            </div>
+            {% endif %}
             
             <form method="POST" action="{{ url_for('automation_full') }}">
                 <input type="hidden" name="action" value="generate">
                 
                 <div class="field">
-                    <label class="label">Ordre de rotation</label>
+                    <label class="label">Ordre de rotation <i class="fas fa-question-circle" title="Glissez-déposez pour réorganiser, cochez pour inclure dans la rotation"></i></label>
                     <div class="control">
                         <p class="help">
-                            <strong>Définissez l'ordre de rotation</strong> en attribuant une position à chaque utilisateur. 
-                            La rotation se fera dans l'ordre croissant des positions (1 = premier, 2 = deuxième, etc.).
+                            <strong>Définissez l'ordre de rotation</strong> en glissant-déposant les utilisateurs. 
+                            La rotation se fera dans l'ordre affiché.
                         </p>
                         
-                        <div class="table-container">
-                            <table class="table is-fullwidth is-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Position</th>
-                                        <th>Nom</th>
-                                        <th>Email</th>
-                                        <th>Groupe</th>
-                                        <th>Inclure dans la rotation</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for user in oncall_users %}
-                                    <tr>
-                                        <td>
-                                            <div class="control">
-                                                <input class="input" type="number" name="rotation_order_{{ user.id }}" 
-                                                       value="{{ loop.index }}" 
-                                                       min="1" 
-                                                       max="{{ oncall_users|length }}" 
-                                                       style="width: 60px;"
-                                                       required>
-                                            </div>
-                                        </td>
-                                        <td>{{ user.name }}</td>
-                                        <td>{{ user.email }}</td>
-                                        <td>{{ user.group.name if user.group else 'N/A' }}</td>
-                                        <td>
-                                            <div class="control">
-                                                <label class="checkbox">
-                                                    <input type="checkbox" name="rotation_order_{{ user.id }}" value="on" checked>
-                                                    Oui
-                                                </label>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                        <ol id="rotation-order-list" class="sortable-list">
+                            {% for user in oncall_users %}
+                            <li class="sortable-item" data-user-id="{{ user.id }}" draggable="true">
+                                <span class="drag-handle"><i class="fas fa-grip-vertical"></i></span>
+                                <div class="user-info">
+                                    <strong>{{ user.name }}</strong>
+                                    <span class="ml-2">{{ user.email }}</span>
+                                    <span class="tag is-light ml-2">{{ user.group.name if user.group else 'N/A' }}</span>
+                                </div>
+                                <div class="include-checkbox">
+                                    <label class="checkbox">
+                                        <input type="checkbox" name="include_{{ user.id }}" value="1" checked>
+                                        Inclure
+                                    </label>
+                                </div>
+                                <!-- Champ caché pour la position (mis à jour par JS) -->
+                                <input type="hidden" name="rotation_order_{{ user.id }}" 
+                                       value="{{ loop.index }}">
+                            </li>
+                            {% endfor %}
+                        </ol>
                     </div>
                 </div>
 
@@ -96,6 +228,11 @@
 
                 <div class="field is-grouped mt-5">
                     <div class="control">
+                        <button type="button" class="button is-info" onclick="saveRotationOrder()">
+                            <i class="fas fa-save"></i>&nbsp; Sauvegarder l'ordre
+                        </button>
+                    </div>
+                    <div class="control">
                         <button type="submit" class="button is-primary">
                             <i class="fas fa-play"></i>&nbsp; Générer les astreintes et shifts
                         </button>
@@ -119,13 +256,16 @@
                 <p>Vérifiez que :</p>
                 <ul>
                     <li>Des utilisateurs existent</li>
-                    <li>Les utilisateurs appartiennent à un groupe avec <code>is_part_of_oncall = True</code></li>
+                    <li>Les utilisateurs appartiennent à un groupe configuré dans <a href="{{ url_for('automation_config') }}">la configuration</a></li>
                 </ul>
                 <a class="button is-info mt-3" href="{{ url_for('list_groups') }}">
                     <i class="fas fa-users-cog"></i>&nbsp; Gérer les groupes
                 </a>
                 <a class="button is-info mt-3" href="{{ url_for('list_users') }}">
                     <i class="fas fa-user-plus"></i>&nbsp; Gérer les utilisateurs
+                </a>
+                <a class="button is-info mt-3" href="{{ url_for('automation_config') }}">
+                    <i class="fas fa-cog"></i>&nbsp; Configurer les groupes éligibles
                 </a>
             </div>
             {% endif %}
@@ -143,12 +283,16 @@
                 </ol>
                 <p class="mt-4"><strong>Règles appliquées :</strong></p>
                 <ul>
-                    <li>Chaque astreinte commence le <strong>vendredi à 21h</strong> et se termine le <strong>vendredi suivant à 07h</strong>.</li>
-                    <li>La rotation suit l'ordre que vous avez défini (position 1, puis 2, puis 3, etc.).</li>
+                    <li>Chaque astreinte commence selon la configuration (par défaut <strong>vendredi à 21h</strong>) et se termine selon la configuration (par défaut <strong>vendredi suivant à 07h</strong>).</li>
+                    <li>La rotation suit l'ordre que vous avez défini et sauvegardé. Cet ordre est stocké dans la configuration et sera réutilisé pour les prochaines générations.</li>
                     <li>Si un utilisateur n'est pas disponible (congé, astreinte existante), le système passe au suivant dans la rotation.</li>
                     <li>Un message d'avertissement est affiché si aucun utilisateur n'est disponible pour une période.</li>
                     <li><strong>Les shifts sont générés automatiquement</strong> après les astreintes selon les nouvelles règles métiers (13h-21h pour l'astreinte, rotation des créneaux, etc.).</li>
                 </ul>
+                <p class="mt-3">
+                    <strong>Astuce :</strong> Vous pouvez aussi configurer l'ordre de rotation et d'autres paramètres via 
+                    <a href="{{ url_for('automation_config') }}">la page de configuration</a>.
+                </p>
             </div>
         </div>
     </div>
