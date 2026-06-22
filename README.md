@@ -348,7 +348,7 @@ make security
 
 # Méthode 2 : Exécuter manuellement
 bandit -r app/ tests/ -f json -o bandit-results.json
-safety check --full-report --output json
+safety check --full-report
 ```
 
 > **Note** : Les commandes de sécurité peuvent générer des avertissements même si le code est sûr. Vérifiez toujours les résultats manuellement.
