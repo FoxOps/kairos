@@ -117,3 +117,27 @@ def update_profile():
             flash(f"❌ Erreur : {str(e)}", "danger")
 
     return render_template("auth/update_profile.html", user=current_user)
+
+
+@app.route("/profile/ics-token", methods=["GET", "POST"])
+@login_required
+def generate_ics_token():
+    """Génère ou régénère le token ICS pour l'export du calendrier."""
+    if request.method == "POST":
+        # Régénérer le token
+        token = current_user.generate_ics_token()
+        try:
+            db.session.commit()
+            flash(f"✅ Token ICS régénéré avec succès !", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"❌ Erreur : {str(e)}", "danger")
+    
+    # Afficher la page avec le token actuel
+    token = current_user.ics_token
+    
+    return render_template(
+        "auth/ics_token.html",
+        user=current_user,
+        token=token
+    )

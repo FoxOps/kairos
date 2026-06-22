@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Token ICS - Leviia{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="container">
+        <div class="columns is-centered">
+            <div class="column is-8">
+                <div class="box">
+                    <h1 class="title is-4 has-text-centered">Token d'export ICS</h1>
+                    
+                    <div class="content">
+                        <p class="mb-4">
+                            Ce token vous permet d'exporter les calendriers au format ICS 
+                            et de l'importer dans des logiciels comme Thunderbird, Google Calendar, Outlook, etc.
+                        </p>
+                        
+                        <div class="notification is-info is-light mb-4">
+                            <p>
+                                <span class="icon"><i class="fas fa-info-circle"></i></span>
+                                <strong>Important :</strong> Ce token est personnel et confidentiel. 
+                                Ne le partagez avec personne. Si vous pensez qu'il a été compromis, 
+                                régénérez-le immédiatement.
+                            </p>
+                        </div>
+                        
+                        <div class="notification is-warning is-light mb-4">
+                            <p>
+                                <span class="icon"><i class="fas fa-exclamation-triangle"></i></span>
+                                <strong>Attention :</strong> Ce token permet d'accéder à TOUS les shifts (scope=all).
+                                Utilisez-le avec précaution.
+                            </p>
+                        </div>
+                        
+                        {% if token %}
+                        <div class="field is-horizontal mb-4">
+                            <div class="field-label is-normal">
+                                <label class="label">Votre token</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field has-addons">
+                                    <div class="control is-expanded">
+                                        <input class="input" type="text" value="{{ token }}" id="tokenInput" readonly>
+                                    </div>
+                                    <div class="control">
+                                        <button class="button is-primary" onclick="copyToken()">
+                                            <span class="icon">
+                                                <i class="fas fa-copy"></i>
+                                            </span>
+                                            <span>Copier</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="field is-horizontal mb-4">
+                            <div class="field-label is-normal">
+                                <label class="label">URL (Tous)</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field has-addons">
+                                    <div class="control is-expanded">
+                                        <input class="input" type="text" 
+                                               value="{{ request.host_url ~ user.get_ics_export_url('all') }}" 
+                                               id="urlAllInput" readonly>
+                                    </div>
+                                    <div class="control">
+                                        <button class="button is-primary" onclick="copyUrlAll()">
+                                            <span class="icon">
+                                                <i class="fas fa-copy"></i>
+                                            </span>
+                                            <span>Copier</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="help">
+                                    URL pour exporter TOUS les shifts (scope=all)
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="field is-horizontal mb-4">
+                            <div class="field-label is-normal">
+                                <label class="label">URL (Perso)</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field has-addons">
+                                    <div class="control is-expanded">
+                                        <input class="input" type="text" 
+                                               value="{{ request.host_url ~ user.get_ics_export_url('my') }}" 
+                                               id="urlMyInput" readonly>
+                                    </div>
+                                    <div class="control">
+                                        <button class="button is-primary" onclick="copyUrlMy()">
+                                            <span class="icon">
+                                                <i class="fas fa-copy"></i>
+                                            </span>
+                                            <span>Copier</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="help">
+                                    URL pour exporter uniquement vos shifts (scope=my)
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="notification is-warning is-light mb-4">
+                            <p>
+                                <span class="icon"><i class="fas fa-exclamation-triangle"></i></span>
+                                <strong>Note :</strong> Certains logiciels de calendrier (comme Thunderbird) 
+                                peuvent nécessiter de rafraîchir manuellement le calendrier après des modifications.
+                            </p>
+                        </div>
+                        {% else %}
+                        <div class="notification is-warning mb-4">
+                            <p>Vous n'avez pas encore de token. Générez-en un ci-dessous.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <form method="POST" action="{{ url_for('generate_ics_token') }}">
+                        <div class="field is-grouped is-grouped-centered mt-5">
+                            <div class="control">
+                                <button type="submit" class="button is-primary">
+                                    <span class="icon">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </span>
+                                    <span>{% if token %}Régénérer le token{% else %}Générer un token{% endif %}</span>
+                                </button>
+                            </div>
+                            <div class="control">
+                                <a href="{{ url_for('profile') }}" class="button is-light">
+                                    Retour au profil
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyToken() {
+    const input = document.getElementById('tokenInput');
+    input.select();
+    document.execCommand('copy');
+    
+    // Show a brief notification
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<span class="icon"><i class="fas fa-check"></i></span><span>Copié !</span>';
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+    }, 2000);
+}
+
+function copyUrlAll() {
+    const input = document.getElementById('urlAllInput');
+    input.select();
+    document.execCommand('copy');
+    
+    // Show a brief notification
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<span class="icon"><i class="fas fa-check"></i></span><span>Copié !</span>';
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+    }, 2000);
+}
+
+function copyUrlMy() {
+    const input = document.getElementById('urlMyInput');
+    input.select();
+    document.execCommand('copy');
+    
+    // Show a brief notification
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<span class="icon"><i class="fas fa-check"></i></span><span>Copié !</span>';
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+    }, 2000);
+}
+</script>
+{% endblock %}

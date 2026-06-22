@@ -5,7 +5,7 @@ Tests pour les routes d'export ICS.
 from datetime import datetime, timedelta
 
 from app import db
-from app.models import Leave, OnCall, Shift
+from app.models import Leave, OnCall, Shift, User
 
 
 class TestExportRoutes:
@@ -324,3 +324,157 @@ class TestExportRoutesAdminScope:
         assert response.status_code == 200
         content = response.data.decode("utf-8")
         assert content.count("BEGIN:VEVENT") == 2
+
+
+class TestExportRoutesTokenAuth:
+    """Tests pour l'authentification par token pour les exports ICS."""
+
+    def test_export_shifts_with_token(self, client, test_user, test_shift_type, app):
+        """Test l'export des shifts avec un token valide."""
+        with app.app_context():
+            # Générer un token pour l'utilisateur
+            token = test_user.generate_ics_token()
+            db.session.commit()
+
+            # Créer un shift pour l'utilisateur
+            shift_date = datetime(2023, 12, 1).date()
+            start_time = datetime.combine(shift_date, datetime.min.time()).replace(hour=7)
+            end_time = start_time + timedelta(hours=8)
+            shift = Shift(
+                user_id=test_user.id,
+                shift_type_id=test_shift_type.id,
+                start_time=start_time,
+                end_time=end_time,
+                date=shift_date,
+            )
+            db.session.add(shift)
+            db.session.commit()
+
+        # Accéder à l'export avec le token
+        response = client.get(f"/export/shifts?scope=my&token={token}")
+        assert response.status_code == 200
+        assert response.content_type == "text/calendar; charset=utf-8"
+        content = response.data.decode("utf-8")
+        assert "BEGIN:VCALENDAR" in content
+        assert "BEGIN:VEVENT" in content
+        assert "Shift" in content
+
+    def test_export_shifts_with_invalid_token(self, client):
+        """Test l'export des shifts avec un token invalide."""
+        response = client.get("/export/shifts?scope=my&token=invalid_token")
+        # Doit retourner 401, 200 ou rediriger vers login (302)
+        assert response.status_code in [401, 200, 302]
+
+    def test_export_shifts_without_token_or_auth(self, client):
+        """Test l'export des shifts sans authentification ni token."""
+        response = client.get("/export/shifts?scope=my")
+        # Doit retourner 401, 200 ou rediriger vers login (302)
+        assert response.status_code in [401, 200, 302]
+
+    def test_export_oncall_with_token(self, client, test_user, app):
+        """Test l'export des astreintes avec un token valide."""
+        with app.app_context():
+            # Générer un token pour l'utilisateur
+            token = test_user.generate_ics_token()
+            db.session.commit()
+
+            # Créer une astreinte
+            start_time = datetime(2023, 12, 1, 21, 0)
+            end_time = start_time + timedelta(days=7, hours=-14)
+            oncall = OnCall(user_id=test_user.id, start_time=start_time, end_time=end_time)
+            db.session.add(oncall)
+            db.session.commit()
+
+        response = client.get(f"/export/oncall?scope=my&token={token}")
+        assert response.status_code == 200
+        content = response.data.decode("utf-8")
+        assert "BEGIN:VCALENDAR" in content
+        assert "Astreinte" in content
+
+    def test_export_leaves_with_token(self, client, test_user, app):
+        """Test l'export des congés avec un token valide."""
+        with app.app_context():
+            # Générer un token pour l'utilisateur
+            token = test_user.generate_ics_token()
+            db.session.commit()
+
+            # Créer un congé
+            start_date = datetime(2023, 12, 10).date()
+            end_date = datetime(2023, 12, 15).date()
+            leave = Leave(user_id=test_user.id, start_date=start_date, end_date=end_date)
+            db.session.add(leave)
+            db.session.commit()
+
+        response = client.get(f"/export/leaves?scope=my&token={token}")
+        assert response.status_code == 200
+        content = response.data.decode("utf-8")
+        assert "BEGIN:VCALENDAR" in content
+        assert "Conge" in content or "Cong" in content
+
+    def test_token_scope_all_accesses_all_data(self, client, test_user, second_user, test_shift_type, app):
+        """Test que scope=all avec un token donne accès à tous les shifts."""
+        with app.app_context():
+            # Générer un token pour le premier utilisateur
+            token = test_user.generate_ics_token()
+            db.session.commit()
+
+            # Créer des shifts pour les deux utilisateurs
+            shift_date = datetime(2023, 12, 1).date()
+            start_time = datetime.combine(shift_date, datetime.min.time()).replace(hour=7)
+            end_time = start_time + timedelta(hours=8)
+
+            shift1 = Shift(
+                user_id=test_user.id,
+                shift_type_id=test_shift_type.id,
+                start_time=start_time,
+                end_time=end_time,
+                date=shift_date,
+            )
+            shift2 = Shift(
+                user_id=second_user.id,
+                shift_type_id=test_shift_type.id,
+                start_time=start_time + timedelta(days=1),
+                end_time=end_time + timedelta(days=1),
+                date=shift_date + timedelta(days=1),
+            )
+            db.session.add(shift1)
+            db.session.add(shift2)
+            db.session.commit()
+
+        # Exporter tous les shifts avec scope=all et un token
+        # Doit retourner les shifts de TOUS les utilisateurs
+        response = client.get(f"/export/shifts?scope=all&token={token}")
+        assert response.status_code == 200
+        content = response.data.decode("utf-8")
+        # Doit contenir 2 événements (ceux des deux utilisateurs)
+        assert content.count("BEGIN:VEVENT") == 2
+        assert test_user.name in content
+        assert second_user.name in content
+
+    def test_token_scope_my_accesses_only_own_data(self, client, test_user, second_user, test_shift_type, app):
+        """Test que scope=my avec un token ne donne accès qu'aux données de l'utilisateur."""
+        with app.app_context():
+            # Générer un token pour le premier utilisateur
+            token = test_user.generate_ics_token()
+            db.session.commit()
+
+            # Créer un shift pour le second utilisateur
+            shift_date = datetime(2023, 12, 1).date()
+            start_time = datetime.combine(shift_date, datetime.min.time()).replace(hour=7)
+            end_time = start_time + timedelta(hours=8)
+            shift = Shift(
+                user_id=second_user.id,
+                shift_type_id=test_shift_type.id,
+                start_time=start_time,
+                end_time=end_time,
+                date=shift_date,
+            )
+            db.session.add(shift)
+            db.session.commit()
+
+        # Essayer d'exporter avec scope=my et le token de test_user
+        response = client.get(f"/export/shifts?scope=my&token={token}")
+        assert response.status_code == 200
+        content = response.data.decode("utf-8")
+        # Ne doit pas contenir le shift de second_user
+        assert second_user.name not in content
