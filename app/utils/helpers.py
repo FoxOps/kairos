@@ -70,6 +70,79 @@ def _get_overlapping_oncall(user_id, start_date, end_date):
     )
 
 
+# ============================================================================
+# FONCTIONS OPTIMISÉES POUR LES VÉRIFICATIONS BATCH
+# ============================================================================
+
+def check_users_on_shift(user_ids, target_date):
+    """
+    Vérifie quels utilisateurs ont déjà un shift à une date donnée.
+    Optimisation : une seule requête pour tous les utilisateurs.
+    
+    Args:
+        user_ids: Liste des IDs d'utilisateurs à vérifier
+        target_date: Date à vérifier
+    
+    Returns:
+        Set des IDs d'utilisateurs qui ont déjà un shift
+    """
+    if not user_ids:
+        return set()
+    
+    results = db.session.query(Shift.user_id).filter(
+        Shift.user_id.in_(user_ids),
+        Shift.date == target_date
+    ).all()
+    return {r.user_id for r in results}
+
+
+def check_users_on_leave(user_ids, target_date):
+    """
+    Vérifie quels utilisateurs sont en congé à une date donnée.
+    Optimisation : une seule requête pour tous les utilisateurs.
+    
+    Args:
+        user_ids: Liste des IDs d'utilisateurs à vérifier
+        target_date: Date à vérifier
+    
+    Returns:
+        Set des IDs d'utilisateurs qui sont en congé
+    """
+    if not user_ids:
+        return set()
+    
+    results = db.session.query(Leave.user_id).filter(
+        Leave.user_id.in_(user_ids),
+        Leave.start_date <= target_date,
+        Leave.end_date >= target_date,
+    ).all()
+    return {r.user_id for r in results}
+
+
+def check_users_overlapping_oncall(user_ids, start_time, end_time):
+    """
+    Vérifie quels utilisateurs ont une astreinte qui chevauche la période.
+    Optimisation : une seule requête pour tous les utilisateurs.
+    
+    Args:
+        user_ids: Liste des IDs d'utilisateurs à vérifier
+        start_time: Date/heure de début de la période
+        end_time: Date/heure de fin de la période
+    
+    Returns:
+        Set des IDs d'utilisateurs qui ont une astreinte chevauchante
+    """
+    if not user_ids:
+        return set()
+    
+    results = db.session.query(OnCall.user_id).filter(
+        OnCall.user_id.in_(user_ids),
+        OnCall.start_time < end_time,
+        OnCall.end_time > start_time,
+    ).all()
+    return {r.user_id for r in results}
+
+
 def can_add_shift(user_id, shift_date, shift_type):
     """
     Vérifie si un shift peut être ajouté pour un utilisateur à une date donnée.

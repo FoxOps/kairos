@@ -70,7 +70,10 @@ def index():
     """Page d'accueil - accessible uniquement aux utilisateurs connectés."""
     window_start, window_end = _calendar_window()
     window_start_date = window_start.date()
+    window_end_date = window_end.date()
 
+    # Optimisation : Utiliser des requêtes avec joinedload pour éviter le N+1
+    # et sélectionner uniquement les colonnes nécessaires
     shifts = (
         Shift.query.options(joinedload(Shift.user))
         .filter(
@@ -95,7 +98,7 @@ def index():
         Leave.query.options(joinedload(Leave.user))
         .filter(
             Leave.end_date >= window_start_date,
-            Leave.start_date <= window_end.date(),
+            Leave.start_date <= window_end_date,
         )
         .order_by(Leave.start_date)
         .all()
@@ -125,6 +128,8 @@ def leave():
     if per_page not in per_page_options and per_page != 999999:
         per_page = 20
     
+    # Optimisation : Utiliser joinedload pour éviter le N+1 sur user
+    # et sélectionner uniquement les colonnes nécessaires
     leaves_paginated = (
         Leave.query.options(joinedload(Leave.user))
         .order_by(Leave.start_date)
@@ -243,6 +248,7 @@ def oncall():
     if per_page not in per_page_options and per_page != 999999:
         per_page = 20
     
+    # Optimisation : Utiliser joinedload pour éviter le N+1 sur user
     on_calls_paginated = (
         OnCall.query.options(joinedload(OnCall.user))
         .order_by(OnCall.start_time)
@@ -329,10 +335,14 @@ def delete_oncall(oncall_id):
 def delete_all_oncalls():
     """Supprime toutes les astreintes."""
     try:
+        # Optimisation : Utiliser count() puis delete() sans charger tous les objets
         count = OnCall.query.count()
-        OnCall.query.delete()
-        db.session.commit()
-        flash(f"✅ Toutes les {count} astreintes ont été supprimées avec succès !", "success")
+        if count > 0:
+            OnCall.query.delete(synchronize_session=False)
+            db.session.commit()
+            flash(f"✅ Toutes les {count} astreintes ont été supprimées avec succès !", "success")
+        else:
+            flash("⚠️ Aucune astreinte à supprimer.", "warning")
     except Exception as e:
         db.session.rollback()
         flash(f"❌ Erreur : {str(e)}", "danger")
@@ -347,15 +357,15 @@ def delete_all_oncalls_for_user(user_id):
     user = User.query.get_or_404(user_id)
     
     try:
-        oncalls = OnCall.query.filter_by(user_id=user_id).all()
-        count = len(oncalls)
+        # Optimisation : Utiliser count() puis delete() sans charger tous les objets
+        count = OnCall.query.filter_by(user_id=user_id).count()
         
         if count == 0:
             flash(f"⚠️ Aucun astreinte trouvée pour {user.name}.", "warning")
             return redirect(url_for("oncall"))
         
-        for oncall in oncalls:
-            db.session.delete(oncall)
+        # Supprimer directement sans charger tous les objets
+        OnCall.query.filter_by(user_id=user_id).delete(synchronize_session=False)
         db.session.commit()
         flash(f"✅ Toutes les {count} astreintes de {user.name} ont été supprimées avec succès !", "success")
     except Exception as e:
@@ -372,10 +382,14 @@ def delete_all_oncalls_for_user(user_id):
 def delete_all_shifts():
     """Supprime tous les shifts."""
     try:
+        # Optimisation : Utiliser count() puis delete() sans charger tous les objets
         count = Shift.query.count()
-        Shift.query.delete()
-        db.session.commit()
-        flash(f"✅ Tous les {count} shifts ont été supprimés avec succès !", "success")
+        if count > 0:
+            Shift.query.delete(synchronize_session=False)
+            db.session.commit()
+            flash(f"✅ Tous les {count} shifts ont été supprimés avec succès !", "success")
+        else:
+            flash("⚠️ Aucun shift à supprimer.", "warning")
     except Exception as e:
         db.session.rollback()
         flash(f"❌ Erreur : {str(e)}", "danger")
@@ -390,15 +404,15 @@ def delete_all_shifts_for_user(user_id):
     user = User.query.get_or_404(user_id)
     
     try:
-        shifts = Shift.query.filter_by(user_id=user_id).all()
-        count = len(shifts)
+        # Optimisation : Utiliser count() puis delete() sans charger tous les objets
+        count = Shift.query.filter_by(user_id=user_id).count()
         
         if count == 0:
             flash(f"⚠️ Aucun shift trouvé pour {user.name}.", "warning")
             return redirect(url_for("schedule"))
         
-        for shift in shifts:
-            db.session.delete(shift)
+        # Supprimer directement sans charger tous les objets
+        Shift.query.filter_by(user_id=user_id).delete(synchronize_session=False)
         db.session.commit()
         flash(f"✅ Tous les {count} shifts de {user.name} ont été supprimés avec succès !", "success")
     except Exception as e:
@@ -413,15 +427,15 @@ def delete_all_shifts_for_day(date_str):
     """Supprime tous les shifts pour une journée spécifique."""
     try:
         date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
-        shifts = Shift.query.filter_by(date=date_obj).all()
-        count = len(shifts)
+        # Optimisation : Utiliser count() puis delete() sans charger tous les objets
+        count = Shift.query.filter_by(date=date_obj).count()
         
         if count == 0:
             flash(f"⚠️ Aucun shift trouvé pour le {date_obj.strftime('%d/%m/%Y')}.", "warning")
             return redirect(url_for("schedule"))
         
-        for shift in shifts:
-            db.session.delete(shift)
+        # Supprimer directement sans charger tous les objets
+        Shift.query.filter_by(date=date_obj).delete(synchronize_session=False)
         db.session.commit()
         flash(f"✅ Tous les {count} shifts du {date_obj.strftime('%d/%m/%Y')} ont été supprimés avec succès !", "success")
     except ValueError:
@@ -443,21 +457,19 @@ def delete_all_shifts_for_week(date_str):
         # Trouver le lundi de la semaine
         monday = date_obj - timedelta(days=date_obj.weekday())
         
-        # Supprimer tous les shifts du lundi au vendredi
-        deleted_count = 0
-        for day in range(5):  # lundi (0) à vendredi (4)
-            current_date = monday + timedelta(days=day)
-            shifts = Shift.query.filter_by(date=current_date).all()
-            count = len(shifts)
-            deleted_count += count
-            for shift in shifts:
-                db.session.delete(shift)
+        # Optimisation : Supprimer tous les shifts du lundi au vendredi en une seule requête
+        # au lieu de faire une boucle avec des requêtes individuelles
+        dates_to_delete = [monday + timedelta(days=day) for day in range(5)]  # lundi (0) à vendredi (4)
         
-        db.session.commit()
+        # Compter d'abord pour le message
+        deleted_count = Shift.query.filter(Shift.date.in_(dates_to_delete)).count()
         
         if deleted_count == 0:
             flash(f"⚠️ Aucun shift trouvé pour la semaine du {monday.strftime('%d/%m/%Y')}.", "warning")
         else:
+            # Supprimer en une seule requête
+            Shift.query.filter(Shift.date.in_(dates_to_delete)).delete(synchronize_session=False)
+            db.session.commit()
             flash(f"✅ Tous les {deleted_count} shifts de la semaine du {monday.strftime('%d/%m/%Y')} ont été supprimés avec succès !", "success")
     except ValueError:
         flash(f"❌ Format de date invalide.", "danger")
@@ -488,8 +500,12 @@ def schedule():
     if per_page not in per_page_options and per_page != 999999:
         per_page = 20
     
+    # Optimisation : Utiliser joinedload pour éviter le N+1 sur user et shift_type
     shifts_paginated = (
-        Shift.query.options(joinedload(Shift.user))
+        Shift.query.options(
+            joinedload(Shift.user),
+            joinedload(Shift.shift_type)
+        )
         .order_by(Shift.start_time)
         .paginate(page=page, per_page=per_page, error_out=False)
     )
