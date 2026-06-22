@@ -34,6 +34,14 @@ def check_database_integrity():
             if col not in columns:
                 return False
     
+    # Vérifier que la table user a la bonne structure (incluant ics_token)
+    if inspector.has_table("user"):
+        columns = [col["name"] for col in inspector.get_columns("user")]
+        required_columns = ["id", "name", "email", "password_hash", "is_admin", "group_id", "ics_token"]
+        for col in required_columns:
+            if col not in columns:
+                return False
+    
     return True
 
 
@@ -108,6 +116,7 @@ def create_default_data():
             group_id=default_group.id if default_group else 1,
         )
         admin_user.set_password("admin123")  # Mot de passe par défaut
+        admin_user.generate_ics_token()  # Générer un token ICS
         db.session.add(admin_user)
         db.session.commit()
         print("✅ Utilisateur admin créé avec succès !")
