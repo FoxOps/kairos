@@ -1,6 +1,7 @@
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
+import secrets
 
 
 class Group(db.Model):
@@ -23,6 +24,7 @@ class User(db.Model, UserMixin):
     group_id = db.Column(
         db.Integer, db.ForeignKey("groups.id"), nullable=False, default=1
     )
+    ics_token = db.Column(db.String(64), unique=True)
 
     shifts = db.relationship("Shift", backref="user", lazy=True, cascade="all, delete-orphan", foreign_keys="Shift.user_id")
     on_calls = db.relationship("OnCall", backref="user", lazy=True, cascade="all, delete-orphan", foreign_keys="OnCall.user_id")
@@ -35,6 +37,21 @@ class User(db.Model, UserMixin):
     def check_password(self, password):
         """Vérifier le mot de passe."""
         return check_password_hash(self.password_hash, password)
+
+    def generate_ics_token(self):
+        """Génère un token unique pour l'export ICS."""
+        self.ics_token = secrets.token_urlsafe(32)
+        return self.ics_token
+
+    def get_ics_export_url(self, scope="all"):
+        """Retourne l'URL d'export ICS avec le token.
+        
+        Args:
+            scope: "all" ou "my" (par défaut: "all")
+        """
+        if not self.ics_token:
+            return None
+        return f"/export/shifts?scope={scope}&token={self.ics_token}"
 
     def __repr__(self):
         return f"<User {self.name} ({self.email})>"
