@@ -24,7 +24,7 @@ class TestEditGroup:
             follow_redirects=True,
         )
         assert response.status_code == 200
-        updated_group = Group.query.get(test_group.id)
+        updated_group = db.session.get(Group, test_group.id)
         assert updated_group.name == "Updated Group"
 
     def test_edit_group_post_empty_name(self, logged_in_admin_client, test_group):
@@ -60,7 +60,7 @@ class TestEditUser:
             follow_redirects=True,
         )
         assert response.status_code == 200
-        updated_user = User.query.get(test_user.id)
+        updated_user = db.session.get(User, test_user.id)
         assert updated_user.name == "Updated User"
         assert updated_user.email == "updated@test.com"
 
@@ -81,7 +81,7 @@ class TestEditShiftType:
             follow_redirects=True,
         )
         assert response.status_code == 200
-        updated = ShiftType.query.get(test_shift_type.id)
+        updated = db.session.get(ShiftType, test_shift_type.id)
         assert updated.label == "Updated Label"
         assert updated.start_hour == 8
 
@@ -107,7 +107,7 @@ class TestDeleteGroup:
         )
         assert response.status_code == 200
         assert b"Impossible" in response.data
-        assert Group.query.get(test_group.id) is not None
+        assert db.session.get(Group, test_group.id) is not None
 
 
 class TestDeleteUser:
@@ -143,7 +143,7 @@ class TestDeleteUser:
         )
         assert response.status_code == 200
         assert b"Impossible" in response.data
-        assert User.query.get(test_user.id) is not None
+        assert db.session.get(User, test_user.id) is not None
 
 
 class TestDeleteShiftType:
@@ -179,7 +179,7 @@ class TestDeleteShiftType:
         )
         assert response.status_code == 200
         assert b"Impossible" in response.data
-        assert ShiftType.query.get(test_shift_type.id) is not None
+        assert db.session.get(ShiftType, test_shift_type.id) is not None
 
 
 class TestAutomationRoutes:

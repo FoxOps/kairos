@@ -3,6 +3,7 @@ Tests prioritaires pour auth.py.
 """
 
 import pytest
+from app import db
 from app.models import User, Group
 
 
@@ -68,7 +69,7 @@ class TestUpdateProfileRoute:
             follow_redirects=True,
         )
         assert response.status_code == 200
-        updated_user = User.query.get(test_user.id)
+        updated_user = db.session.get(User, test_user.id)
         assert updated_user.name == "Updated Name"
 
     def test_update_profile_post_empty_name(self, logged_in_client, test_user):
@@ -101,7 +102,7 @@ class TestUpdateProfileRoute:
             follow_redirects=True,
         )
         assert response.status_code == 200
-        updated_user = User.query.get(test_user.id)
+        updated_user = db.session.get(User, test_user.id)
         assert updated_user.check_password("newpassword123") is True
 
     def test_update_profile_post_password_mismatch(self, logged_in_client, test_user):

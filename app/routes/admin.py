@@ -88,7 +88,7 @@ def add_group():
 @app.route("/admin/groups/edit/<int:group_id>", methods=["GET", "POST"])
 @admin_required
 def edit_group(group_id):
-    group = Group.query.get_or_404(group_id)
+    group = db.session.get(Group, group_id) or abort(404)
 
     if request.method == "POST":
         name = request.form.get("name", "").strip()
@@ -123,7 +123,7 @@ def edit_group(group_id):
 @app.route("/admin/groups/delete/<int:group_id>", methods=["POST"])
 @admin_required
 def delete_group(group_id):
-    group = Group.query.get_or_404(group_id)
+    group = db.session.get(Group, group_id) or abort(404)
 
     if User.query.filter_by(group_id=group_id).first():
         flash(
@@ -202,7 +202,7 @@ def add_user():
 @app.route("/admin/users/edit/<int:user_id>", methods=["GET", "POST"])
 @admin_required
 def edit_user(user_id):
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id) or abort(404)
     groups = Group.query.all()
 
     if request.method == "POST":
@@ -243,7 +243,7 @@ def edit_user(user_id):
 @app.route("/admin/users/delete/<int:user_id>", methods=["POST"])
 @admin_required
 def delete_user(user_id):
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id) or abort(404)
 
     if (
         Shift.query.filter_by(user_id=user_id).first()
@@ -331,7 +331,7 @@ def add_shift_type():
 @app.route("/admin/shift-types/edit/<int:shift_type_id>", methods=["GET", "POST"])
 @admin_required
 def edit_shift_type(shift_type_id):
-    shift_type = ShiftType.query.get_or_404(shift_type_id)
+    shift_type = db.session.get(ShiftType, shift_type_id) or abort(404)
 
     if request.method == "POST":
         name = request.form.get("name", "").strip()
@@ -384,7 +384,7 @@ def edit_shift_type(shift_type_id):
 @app.route("/admin/shift-types/delete/<int:shift_type_id>", methods=["POST"])
 @admin_required
 def delete_shift_type(shift_type_id):
-    shift_type = ShiftType.query.get_or_404(shift_type_id)
+    shift_type = db.session.get(ShiftType, shift_type_id) or abort(404)
 
     # Vérifier si le type de shift est utilisé
     if Shift.query.filter_by(shift_type_id=shift_type_id).first():

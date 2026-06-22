@@ -157,8 +157,9 @@ class TestUserOwnsResourceDecorator:
 
         # Vérifier que le congé a été supprimé
         from app.models import Leave
+        from app import db
 
-        leave = Leave.query.get(test_leave.id)
+        leave = db.session.get(Leave, test_leave.id)
         assert leave is None
 
     def test_user_cannot_delete_others_leave(
@@ -183,8 +184,9 @@ class TestUserOwnsResourceDecorator:
 
             # Vérifier que le congé n'a pas été supprimé
             from app.models import Leave
+            from app import db
 
-            leave = Leave.query.get(test_leave.id)
+            leave = db.session.get(Leave, test_leave.id)
             assert leave is not None
 
     def test_admin_can_delete_any_leave(self, logged_in_admin_client, test_leave, app):
@@ -197,8 +199,9 @@ class TestUserOwnsResourceDecorator:
 
         # Vérifier que le congé a été supprimé
         from app.models import Leave
+        from app import db
 
-        leave = Leave.query.get(test_leave.id)
+        leave = db.session.get(Leave, test_leave.id)
         assert leave is None
 
 
@@ -251,8 +254,9 @@ class TestShiftPermissions:
         assert b"Shift supprime" in response.data or b"succes" in response.data
 
         from app.models import Shift
+        from app import db
 
-        shift = Shift.query.get(test_shift.id)
+        shift = db.session.get(Shift, test_shift.id)
         assert shift is None
 
     def test_non_admin_cannot_delete_shift(self, logged_in_client, test_shift):
@@ -307,8 +311,9 @@ class TestOnCallPermissions:
         assert b"Astreinte supprimee" in response.data or b"succes" in response.data
 
         from app.models import OnCall
+        from app import db
 
-        oncall = OnCall.query.get(test_oncall.id)
+        oncall = db.session.get(OnCall, test_oncall.id)
         assert oncall is None
 
     def test_non_admin_cannot_delete_oncall(self, logged_in_client, test_oncall):
