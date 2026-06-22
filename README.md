@@ -236,39 +236,145 @@ import logging
 LOG_LEVEL = logging.DEBUG
 ```
 
-## 🧪 Tests
+## 🧪 Tests et Qualité de Code
 
 > **✅ Statut** : 248 tests - Tous passent - Couverture : 66%
 
-### Exécuter les tests
+### Outils utilisés
+Ce projet utilise les outils suivants pour garantir la qualité, la sécurité et la cohérence du code :
+
+| Outil       | Rôle                          | Version   |
+|-------------|-------------------------------|-----------|
+| **pytest**  | Exécution des tests unitaires | 8.3.5     |
+| **Ruff**    | Linting (style et bonnes pratiques) | 0.6.4     |
+| **mypy**    | Vérification des types        | 1.12.0    |
+| **Black**   | Formatage automatique du code | 24.10.0   |
+| **Bandit**  | Analyse de sécurité statique  | 1.7.10    |
+| **Safety**  | Scan des vulnérabilités des dépendances | 2.3.5 |
+
+---
+
+### 📦 Installation des dépendances
+Avant d'exécuter les tests ou les outils de qualité, installez les dépendances :
 
 ```bash
-pytest tests/
+# Méthode 1 : Utiliser le Makefile (recommandé)
+make install
+
+# Méthode 2 : Installer manuellement
+pip install -r requirements.txt
 ```
 
-### Exécuter les tests avec couverture
+---
 
+### 🏃 Exécuter les tests
+
+#### Exécuter tous les tests
 ```bash
+# Méthode 1 : Avec le Makefile
+make test
+
+# Méthode 2 : Directement avec pytest
+pytest tests/ -v --tb=short
+```
+
+#### Exécuter les tests avec couverture de code
+```bash
+# Installer pytest-cov si ce n'est pas déjà fait
 pip install pytest-cov
-pytest --cov=app --cov=config tests/
+
+# Exécuter avec couverture
+pytest tests/ --cov=app --cov=config --cov-report=term-missing
+
+# Générer un rapport HTML (ouvrir htmlcov/index.html dans un navigateur)
+pytest tests/ --cov=app --cov=config --cov-report=html
 ```
 
-### Exécuter un test spécifique
-
+#### Exécuter un test spécifique
 ```bash
+# Syntaxe : pytest <fichier>::<classe>::<méthode>
 pytest tests/test_models.py::TestUserModel::test_user_creation -v
 ```
 
-### Voir le rapport de couverture détaillé
+---
 
+### 🔍 Vérification de la qualité du code
+
+#### Linting avec Ruff et mypy
 ```bash
-pytest tests/ --cov=app --cov=config --cov-report=html
-# Ouvre htmlcov/index.html dans ton navigateur
+# Méthode 1 : Avec le Makefile
+make lint
+
+# Méthode 2 : Exécuter manuellement
+ruff check . --config=.ruff.toml
+mypy app/ tests/ --ignore-missing-imports --allow-untyped-decorators
 ```
 
-### Documentation complète
+#### Corriger automatiquement les erreurs Ruff
+```bash
+ruff check . --config=.ruff.toml --fix
+```
 
-Voir [TESTING_SUMMARY.md](TESTING_SUMMARY.md) pour une documentation détaillée de tous les tests.
+---
+
+### 🎨 Formatage du code avec Black
+
+#### Vérifier le formatage (sans modifier les fichiers)
+```bash
+# Méthode 1 : Avec le Makefile
+make format
+
+# Méthode 2 : Directement avec Black
+black --check . --exclude=".git|__pycache__|instance|venv"
+```
+
+#### Appliquer le formatage
+```bash
+# Méthode 1 : Avec le Makefile
+make format-fix
+
+# Méthode 2 : Directement avec Black
+black . --exclude=".git|__pycache__|instance|venv"
+```
+
+---
+
+### 🔒 Analyse de sécurité
+
+#### Exécuter Bandit et Safety
+```bash
+# Méthode 1 : Avec le Makefile
+make security
+
+# Méthode 2 : Exécuter manuellement
+bandit -r app/ tests/ -f json -o bandit-results.json
+safety check --full-report --output json
+```
+
+> **Note** : Les commandes de sécurité peuvent générer des avertissements même si le code est sûr. Vérifiez toujours les résultats manuellement.
+
+---
+
+### 🚀 Exécuter tout en une seule commande
+Pour exécuter **tous les tests, le linting, le formatage et l'analyse de sécurité** en une seule commande :
+
+```bash
+make all
+```
+
+---
+
+### 🧹 Nettoyage
+Pour supprimer les fichiers temporaires (ex: `__pycache__`, `.pyc`, rapports de sécurité) :
+
+```bash
+make clean
+```
+
+---
+
+### 📄 Documentation complète
+Voir [TESTING_SUMMARY.md](TESTING_SUMMARY.md) pour une documentation détaillée de tous les tests unitaires.
 
 ## 📝 Contribution
 
