@@ -200,34 +200,64 @@ class OnCallAutomation:
         start_date = start_time.date()
         end_date = end_time.date()
         
+        if not rotation_order:
+            return None
+        
+        # Optimisation : Récupérer tous les user_ids d'un coup
+        user_ids = [user.id for user in rotation_order]
+        
+        # Récupérer tous les utilisateurs avec des astreintes chevauchantes en une seule requête
+        users_with_oncall_conflict = set()
+        oncall_conflicts = db.session.query(OnCall.user_id).filter(
+            OnCall.user_id.in_(user_ids),
+            OnCall.start_time < end_time,
+            OnCall.end_time > start_time,
+        ).all()
+        users_with_oncall_conflict = {oc.user_id for oc in oncall_conflicts}
+        
+        # Récupérer tous les utilisateurs avec des congés chevauchants en une seule requête
+        users_with_leave = set()
+        leave_conflicts = db.session.query(Leave.user_id).filter(
+            Leave.user_id.in_(user_ids),
+            Leave.start_date <= end_date,
+            Leave.end_date >= start_date,
+        ).all()
+        users_with_leave = {lc.user_id for lc in leave_conflicts}
+        
+        # Vérifier la contrainte légale pour tous les utilisateurs
+        # On récupère la dernière astreinte pour chaque utilisateur
+        last_oncalls = db.session.query(
+            OnCall.user_id,
+            OnCall.end_time
+        ).filter(
+            OnCall.user_id.in_(user_ids)
+        ).order_by(
+            OnCall.user_id,
+            OnCall.end_time.desc()
+        ).all()
+        
+        # Créer un mapping user_id -> last_oncall_end_time
+        last_oncall_map = {}
+        for user_id, end_time in last_oncalls:
+            if user_id not in last_oncall_map:
+                last_oncall_map[user_id] = end_time
+        
+        # Parcourir les utilisateurs dans l'ordre de rotation
         for user in rotation_order:
-            # Vérifier les astreintes existantes
-            has_conflict = db.session.query(
-                db.exists().where(
-                    OnCall.user_id == user.id,
-                    OnCall.start_time < end_time,
-                    OnCall.end_time > start_time,
-                )
-            ).scalar()
-            
-            if has_conflict:
+            # Vérifier les conflits d'astreinte
+            if user.id in users_with_oncall_conflict:
                 continue
             
             # Vérifier les congés
-            has_leave = db.session.query(
-                db.exists().where(
-                    Leave.user_id == user.id,
-                    Leave.start_date <= end_date,
-                    Leave.end_date >= start_date,
-                )
-            ).scalar()
-            
-            if has_leave:
+            if user.id in users_with_leave:
                 continue
             
             # Vérifier la contrainte légale (2 semaines minimum entre les astreintes)
-            if not OnCallAutomation.check_oncall_constraint(user, start_time):
-                continue
+            if user.id in last_oncall_map:
+                last_end = last_oncall_map[user.id]
+                weeks_between = (start_time - last_end).days / 7
+                if weeks_between < 2:
+                    continue
             
             return user
         
@@ -384,6 +414,7 @@ class ShiftAutomation:
             return False, "Les shifts ne peuvent être assignés que du lundi au vendredi."
         
         # Vérifier si l'utilisateur a déjà un shift ce jour-là
+        # Utilisation de exists() pour une vérification rapide
         has_shift = db.session.query(
             db.exists().where(
                 Shift.user_id == user_id,
@@ -440,13 +471,59 @@ class ShiftAutomation:
         """
         eligible_users = ShiftAutomation.get_eligible_users()
         
+        # Si pas d'utilisateurs éligibles, retourner None
+        if not eligible_users:
+            return None
+        
+        # Filtrer les utilisateurs exclus
+        candidate_ids = [user.id for user in eligible_users if user.id not in excluded_user_ids]
+        
+        if not candidate_ids:
+            return None
+        
+        # Vérifier que la date est un jour de semaine
+        if date.weekday() >= 5:
+            return None
+        
+        # Récupérer tous les utilisateurs qui ont déjà un shift ce jour-là
+        users_with_shift = set()
+        shifts = db.session.query(Shift.user_id).filter(
+            Shift.user_id.in_(candidate_ids),
+            Shift.date == date
+        ).all()
+        users_with_shift = {s.user_id for s in shifts}
+        
+        # Récupérer tous les utilisateurs en congé ce jour-là
+        users_on_leave = set()
+        leaves = db.session.query(Leave.user_id).filter(
+            Leave.user_id.in_(candidate_ids),
+            Leave.start_date <= date,
+            Leave.end_date >= date
+        ).all()
+        users_on_leave = {l.user_id for l in leaves}
+        
+        # Récupérer tous les utilisateurs avec une astreinte ce jour-là
+        users_with_oncall = set()
+        day_start = datetime.combine(date, datetime.min.time())
+        day_end = datetime.combine(date, datetime.max.time())
+        oncalls = db.session.query(OnCall.user_id).filter(
+            OnCall.user_id.in_(candidate_ids),
+            OnCall.start_time <= day_end,
+            OnCall.end_time >= day_start
+        ).all()
+        users_with_oncall = {o.user_id for o in oncalls}
+        
+        # Trouver le premier utilisateur disponible
         for user in eligible_users:
             if user.id in excluded_user_ids:
                 continue
-            
-            can_assign, _ = ShiftAutomation.can_assign_shift(user.id, date, shift_type)
-            if can_assign:
-                return user
+            if user.id in users_with_shift:
+                continue
+            if user.id in users_on_leave:
+                continue
+            if user.id in users_with_oncall:
+                continue
+            return user
         
         return None
     

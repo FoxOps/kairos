@@ -63,18 +63,23 @@ class AdvancedShiftAutomation:
         
         eligible_users = AdvancedShiftAutomation.get_users_in_schedule_groups()
         
-        available_users = []
-        for user in eligible_users:
-            has_leave = db.session.query(
-                db.exists().where(
-                    Leave.user_id == user.id,
-                    Leave.start_date <= date,
-                    Leave.end_date >= date,
-                )
-            ).scalar()
-            
-            if not has_leave:
-                available_users.append(user)
+        if not eligible_users:
+            return []
+        
+        # Optimisation : Récupérer tous les user_ids éligibles
+        user_ids = [user.id for user in eligible_users]
+        
+        # Récupérer tous les utilisateurs en congé pour cette date en une seule requête
+        users_on_leave = set()
+        leave_conflicts = db.session.query(Leave.user_id).filter(
+            Leave.user_id.in_(user_ids),
+            Leave.start_date <= date,
+            Leave.end_date >= date,
+        ).all()
+        users_on_leave = {lc.user_id for lc in leave_conflicts}
+        
+        # Filtrer les utilisateurs disponibles
+        available_users = [user for user in eligible_users if user.id not in users_on_leave]
         
         return available_users
     
@@ -82,9 +87,13 @@ class AdvancedShiftAutomation:
     def get_oncall_user_for_date(date: 'date') -> 'Optional[User]':
         """Récupère l'utilisateur d'astreinte pour une date donnée."""
         from datetime import datetime
+        from app import db
         from app.models import OnCall
         
-        oncall = OnCall.query.filter(
+        # Optimisation : utiliser une requête avec JOIN pour éviter le lazy loading
+        oncall = db.session.query(OnCall).options(
+            db.joinedload(OnCall.user)
+        ).filter(
             OnCall.start_time <= datetime.combine(date, datetime.max.time()),
             OnCall.end_time >= datetime.combine(date, datetime.min.time())
         ).first()
@@ -98,9 +107,15 @@ class AdvancedShiftAutomation:
         Il doit y avoir au moins 2 semaines sans astreinte entre deux astreintes.
         """
         from datetime import datetime, timedelta
+        from app import db
         from app.models import OnCall
         
-        last_oncall = OnCall.query.filter_by(user_id=user.id).order_by(OnCall.start_time.desc()).first()
+        # Optimisation : utiliser une requête avec limit(1) et order_by pour éviter de charger tous les résultats
+        last_oncall = db.session.query(OnCall).filter_by(
+            user_id=user.id
+        ).order_by(
+            OnCall.start_time.desc()
+        ).first()
         
         if not last_oncall:
             return True
@@ -139,8 +154,18 @@ class AdvancedShiftAutomation:
         # Règle 2 : Vérifier si d'astreinte cette semaine
         oncall_user = AdvancedShiftAutomation.get_oncall_user_for_date(date)
         if oncall_user and oncall_user.id == user.id:
-            schedule_users = AdvancedShiftAutomation.get_users_in_schedule_groups()
-            if any(u.id == user.id for u in schedule_users):
+            # Optimisation : vérifier directement si l'utilisateur est dans un groupe schedule
+            # au lieu de charger tous les utilisateurs
+            from app import db
+            from app.models import Group, User
+            user_in_schedule = db.session.query(
+                db.exists().where(
+                    User.id == user.id,
+                    User.group_id == Group.id,
+                    Group.is_part_of_schedule == True
+                )
+            ).scalar()
+            if user_in_schedule:
                 return AdvancedShiftAutomation.SHIFT_13_21
         
         # Règle 3 : Créneau par défaut
@@ -219,10 +244,12 @@ class AdvancedShiftAutomation:
                 return generated_shifts, messages
         
         # Cas normal : 3+ utilisateurs
+        # Optimisation : utiliser un set pour les user_ids disponibles pour éviter les lookups linéaires
+        available_user_ids = {user.id for user in available_users}
         schedule_users = AdvancedShiftAutomation.get_users_in_schedule_groups()
         
         for user in schedule_users:
-            if user not in available_users:
+            if user.id not in available_user_ids:
                 continue
             
             start_hour, end_hour = AdvancedShiftAutomation.determine_shift_for_user(user, date)

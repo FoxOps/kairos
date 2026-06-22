@@ -61,9 +61,15 @@ class Shift(db.Model):
     shift_type_id = db.Column(
         db.Integer, db.ForeignKey("shift_types.id"), nullable=False, index=True
     )
-    start_time = db.Column(db.DateTime, nullable=False)
+    start_time = db.Column(db.DateTime, nullable=False, index=True)
     end_time = db.Column(db.DateTime, nullable=False)
     date = db.Column(db.Date, nullable=False, index=True)
+    
+    # Index composite pour les requêtes fréquentes
+    __table_args__ = (
+        db.Index('idx_shift_user_date', 'user_id', 'date'),
+        db.Index('idx_shift_date_start', 'date', 'start_time'),
+    )
 
 
 class OnCall(db.Model):
@@ -74,6 +80,11 @@ class OnCall(db.Model):
     )
     start_time = db.Column(db.DateTime, nullable=False, index=True)
     end_time = db.Column(db.DateTime, nullable=False)
+    
+    # Index composite pour les requêtes fréquentes de chevauchement
+    __table_args__ = (
+        db.Index('idx_oncall_user_start_end', 'user_id', 'start_time', 'end_time'),
+    )
 
 
 class Leave(db.Model):
@@ -84,3 +95,8 @@ class Leave(db.Model):
     )
     start_date = db.Column(db.Date, nullable=False, index=True)
     end_date = db.Column(db.Date, nullable=False, index=True)
+    
+    # Index composite pour les requêtes fréquentes de chevauchement
+    __table_args__ = (
+        db.Index('idx_leave_user_date_range', 'user_id', 'start_date', 'end_date'),
+    )

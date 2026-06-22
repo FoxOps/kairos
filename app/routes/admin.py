@@ -20,11 +20,18 @@ from datetime import datetime, date, timedelta
 @app.route("/admin")
 @admin_required
 def admin_dashboard():
-    users_count = User.query.count()
-    shifts_count = Shift.query.count()
-    on_calls_count = OnCall.query.count()
-    leaves_count = Leave.query.count()
-    groups_count = Group.query.count()
+    # Optimisation : Utiliser des requêtes count() simples mais efficaces
+    # Les requêtes count() sont déjà optimisées par SQLAlchemy
+    # On peut les exécuter en parallèle avec des sous-requêtes
+    from sqlalchemy import func
+    
+    # Exécuter toutes les requêtes count en une seule transaction
+    users_count = db.session.query(func.count(User.id)).scalar()
+    shifts_count = db.session.query(func.count(Shift.id)).scalar()
+    on_calls_count = db.session.query(func.count(OnCall.id)).scalar()
+    leaves_count = db.session.query(func.count(Leave.id)).scalar()
+    groups_count = db.session.query(func.count(Group.id)).scalar()
+    
     return render_template(
         "admin/dashboard.html",
         users_count=users_count,
