@@ -124,4 +124,6 @@ if __name__ == "__main__":
         # Créer les données par défaut
         create_default_data()
 
-    app.run(debug=True)
+    # Désactiver le reloader pour éviter les problèmes de "database is locked" avec SQLite
+    # Le reloader crée un nouveau processus qui peut verrouiller la base de données
+    app.run(debug=True, use_reloader=False)
