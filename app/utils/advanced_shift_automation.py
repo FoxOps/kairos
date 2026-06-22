@@ -84,8 +84,8 @@ class AdvancedShiftAutomation:
         return available_users
     
     @staticmethod
-    def get_oncall_user_for_date(date: 'date') -> 'Optional[User]':
-        """Récupère l'utilisateur d'astreinte pour une date donnée."""
+    def get_oncall_for_date(date: 'date') -> 'Optional[OnCall]':
+        """Récupère l'astreinte (OnCall) pour une date donnée."""
         from datetime import datetime
         from app import db
         from app.models import OnCall
@@ -98,6 +98,12 @@ class AdvancedShiftAutomation:
             OnCall.end_time >= datetime.combine(date, datetime.min.time())
         ).first()
         
+        return oncall
+    
+    @staticmethod
+    def get_oncall_user_for_date(date: 'date') -> 'Optional[User]':
+        """Récupère l'utilisateur d'astreinte pour une date donnée."""
+        oncall = AdvancedShiftAutomation.get_oncall_for_date(date)
         return oncall.user if oncall else None
     
     @staticmethod
@@ -139,23 +145,24 @@ class AdvancedShiftAutomation:
         Détermine le créneau de shift pour un utilisateur à une date donnée.
         
         Règles :
-        1. Si l'utilisateur était d'astreinte la semaine précédente -> 07h-15h (rotation)
-        2. Si l'utilisateur est d'astreinte ET fait partie d'un groupe schedule -> 13h-21h
+        1. Si l'utilisateur est d'astreinte cette semaine :
+           - Si c'est le premier jour ouvré de son astreinte (lundi) -> 09h-17h (par défaut)
+           - Sinon (mardi-jeudi) -> 13h-21h (si éligible)
+           - Le vendredi (dernier jour de l'astreinte) -> 09h-17h (par défaut)
+        2. Si l'utilisateur était d'astreinte la semaine précédente (et pas cette semaine) -> 07h-15h (rotation)
         3. Sinon -> 09h-17h
         """
         from datetime import timedelta
         
-        # Règle 1 : Vérifier si l'utilisateur était d'astreinte la semaine précédente
-        previous_week_date = date - timedelta(days=7)
-        previous_oncall_user = AdvancedShiftAutomation.get_oncall_user_for_date(previous_week_date)
-        if previous_oncall_user and previous_oncall_user.id == user.id:
-            return AdvancedShiftAutomation.SHIFT_07_15
-        
-        # Règle 2 : Vérifier si d'astreinte cette semaine
-        oncall_user = AdvancedShiftAutomation.get_oncall_user_for_date(date)
-        if oncall_user and oncall_user.id == user.id:
-            # Optimisation : vérifier directement si l'utilisateur est dans un groupe schedule
-            # au lieu de charger tous les utilisateurs
+        # Règle 1 : Vérifier si l'utilisateur est d'astreinte cette semaine
+        oncall = AdvancedShiftAutomation.get_oncall_for_date(date)
+        if oncall and oncall.user_id == user.id:
+            # Vérifier si c'est le premier jour ouvré de l'astreinte (lundi)
+            # ou le dernier jour (vendredi, fin de l'astreinte à 07h)
+            if date.weekday() == 0 or date.weekday() == 4:  # 0 = lundi, 4 = vendredi
+                return AdvancedShiftAutomation.SHIFT_09_17
+            
+            # Pour les autres jours (mardi-jeudi), vérifier l'éligibilité
             from app import db
             from app.models import Group, User
             user_in_schedule = db.session.query(
@@ -167,6 +174,12 @@ class AdvancedShiftAutomation:
             ).scalar()
             if user_in_schedule:
                 return AdvancedShiftAutomation.SHIFT_13_21
+        
+        # Règle 2 : Vérifier si l'utilisateur était d'astreinte la semaine précédente
+        previous_week_date = date - timedelta(days=7)
+        previous_oncall_user = AdvancedShiftAutomation.get_oncall_user_for_date(previous_week_date)
+        if previous_oncall_user and previous_oncall_user.id == user.id:
+            return AdvancedShiftAutomation.SHIFT_07_15
         
         # Règle 3 : Créneau par défaut
         return AdvancedShiftAutomation.SHIFT_09_17
