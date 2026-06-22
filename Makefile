@@ -48,7 +48,7 @@ security: ## Exécute Bandit et Safety pour vérifier les vulnérabilités
 	@echo "$(YELLOW)Analyse de sécurité avec Bandit...$(NC)"
 	bandit -r app/ tests/ -f json -o bandit-results.json || true
 	@echo "$(YELLOW)Analyse de sécurité avec Safety...$(NC)"
-	safety check --full-report || true
+	safety scan --full-report || true
 	@echo "$(GREEN)✓ Analyse de sécurité terminée$(NC)"
 
 # Tout exécuter
