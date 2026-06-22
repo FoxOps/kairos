@@ -59,80 +59,8 @@ def initialize_database():
     print("✅ Types de shifts par défaut créés.")
 
 
-def migrate_legacy_database():
-    """Migration de l'ancienne structure de base de données (si nécessaire).
-    
-    Cette fonction est appelée UNIQUEMENT si la base existe mais a l'ancienne structure.
-    """
-    from sqlalchemy import inspect
-    
-    inspector = inspect(db.engine)
-    print("🔧 Migration de l'ancienne structure de base de données...")
-    
-    # Vérifier si la table shift existe avec l'ancienne colonne shift_type
-    if inspector.has_table("shift"):
-        columns = [col["name"] for col in inspector.get_columns("shift")]
-        if "shift_type" in columns and "shift_type_id" not in columns:
-            print("💾 Migration des shifts existants avec l'ancienne colonne 'shift_type'...")
-            
-            try:
-                # Sauvegarder les données existantes
-                existing_shifts = db.session.execute(
-                    db.text(
-                        "SELECT id, user_id, shift_type, start_time, end_time, date FROM shift"
-                    )
-                ).fetchall()
-                
-                print(f"💾 Sauvegarde de {len(existing_shifts)} shifts existants...")
-                
-                # Supprimer la table shift
-                db.session.execute(db.text("DROP TABLE IF EXISTS shift"))
-                db.session.commit()
-                
-                # Recréer la table avec la nouvelle structure
-                db.create_all()
-                
-                # Créer les types de shifts par défaut si ce n'est pas déjà fait
-                for shift_type_data in DEFAULT_SHIFT_TYPES:
-                    if not ShiftType.query.filter_by(name=shift_type_data["name"]).first():
-                        shift_type = ShiftType(
-                            name=shift_type_data["name"],
-                            label=shift_type_data["label"],
-                            start_hour=shift_type_data["start_hour"],
-                            end_hour=shift_type_data["end_hour"],
-                        )
-                        db.session.add(shift_type)
-                db.session.commit()
-                
-                # Restaurer les données avec la nouvelle structure
-                shift_type_map = {st.name: st.id for st in ShiftType.query.all()}
-                
-                for shift_data in existing_shifts:
-                    shift_type_id = shift_type_map.get(shift_data.shift_type)
-                    if shift_type_id:
-                        new_shift = Shift(
-                            id=shift_data.id,
-                            user_id=shift_data.user_id,
-                            shift_type_id=shift_type_id,
-                            start_time=shift_data.start_time,
-                            end_time=shift_data.end_time,
-                            date=shift_data.date,
-                        )
-                        db.session.add(new_shift)
-                
-                db.session.commit()
-                print(
-                    f"✅ {len(existing_shifts)} shifts migrés avec succès vers la nouvelle structure."
-                )
-                
-            except Exception as e:
-                db.session.rollback()
-                print(f"❌ Erreur lors de la migration des shifts: {e}")
-                raise
-
-
 def setup_database():
-    """Configure la base de données : initialisation ou migration si nécessaire.
+    """Configure la base de données : initialisation si nécessaire.
     
     Cette fonction est appelée UNIQUEMENT une fois au premier démarrage.
     """
@@ -150,8 +78,10 @@ def setup_database():
         print("✅ La base de données a une structure valide.")
         return
     
-    # Cas 3 : Migration nécessaire (ancienne structure détectée)
-    migrate_legacy_database()
+    # Cas 3 : La base existe mais a une structure invalide -> recréer
+    print("⚠️  La base de données a une structure invalide. Recréation des tables...")
+    db.drop_all()
+    initialize_database()
 
 
 def create_default_data():
