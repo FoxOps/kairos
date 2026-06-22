@@ -4,6 +4,7 @@ Tests pour les routes Flask.
 
 import pytest
 from datetime import datetime, timedelta
+from app import db
 from app.models import Shift, OnCall, Leave, User, Group, ShiftType
 
 
@@ -213,7 +214,7 @@ class TestShiftRoutes:
         assert response.status_code == 200
         assert b"Shift supprime" in response.data or b"succes" in response.data
 
-        shift = Shift.query.get(test_shift.id)
+        shift = db.session.get(Shift, test_shift.id)
         assert shift is None
 
     def test_delete_shift_unauthorized(self, logged_in_client, test_shift):
@@ -283,7 +284,7 @@ class TestOnCallRoutes:
         assert response.status_code == 200
         assert b"Astreinte supprimee" in response.data or b"succes" in response.data
 
-        oncall = OnCall.query.get(test_oncall.id)
+        oncall = db.session.get(OnCall, test_oncall.id)
         assert oncall is None
 
     def test_delete_oncall_unauthorized(self, logged_in_client, test_oncall):
@@ -355,7 +356,7 @@ class TestLeaveRoutes:
         assert response.status_code == 200
         assert b"Conge supprime" in response.data or b"succes" in response.data
 
-        leave = Leave.query.get(test_leave.id)
+        leave = db.session.get(Leave, test_leave.id)
         assert leave is None
 
     def test_delete_leave_unauthorized(self, client, test_leave, second_user, app):
@@ -594,7 +595,7 @@ class TestShiftTypeRoutes:
         assert response.status_code == 200
         assert b"Type de shift supprime" in response.data or b"succes" in response.data
 
-        shift_type = ShiftType.query.get(test_shift_type.id)
+        shift_type = db.session.get(ShiftType, test_shift_type.id)
         assert shift_type is None
 
     def test_delete_shift_type_in_use(self, logged_in_admin_client, test_shift):

@@ -111,7 +111,8 @@ def user_owns_resource(model, resource_id_param, user_id_attr="user_id"):
         @app.route('/leave/delete/<int:leave_id>')
         @user_owns_resource(Leave, 'leave_id')
         def delete_leave(leave_id):
-            leave = Leave.query.get_or_404(leave_id)
+            from flask import abort
+            leave = db.session.get(Leave, leave_id) or abort(404)
             # La vérification de propriété est déjà faite par le décorateur
             db.session.delete(leave)
             db.session.commit()

@@ -207,7 +207,7 @@ def add_leave():
 @login_required
 @user_owns_resource(Leave, "leave_id")
 def delete_leave(leave_id):
-    leave_record = Leave.query.get_or_404(leave_id)
+    leave_record = db.session.get(Leave, leave_id) or abort(404)
 
     try:
         db.session.delete(leave_record)
@@ -317,7 +317,7 @@ def add_oncall():
 @login_required
 @admin_required
 def delete_oncall(oncall_id):
-    oncall = OnCall.query.get_or_404(oncall_id)
+    oncall = db.session.get(OnCall, oncall_id) or abort(404)
 
     try:
         db.session.delete(oncall)
@@ -354,7 +354,7 @@ def delete_all_oncalls():
 @admin_required
 def delete_all_oncalls_for_user(user_id):
     """Supprime toutes les astreintes d'un utilisateur spécifique."""
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id) or abort(404)
     
     try:
         # Optimisation : Utiliser count() puis delete() sans charger tous les objets
@@ -401,7 +401,7 @@ def delete_all_shifts():
 @admin_required
 def delete_all_shifts_for_user(user_id):
     """Supprime tous les shifts d'un utilisateur spécifique."""
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id) or abort(404)
     
     try:
         # Optimisation : Utiliser count() puis delete() sans charger tous les objets
@@ -614,7 +614,7 @@ def add_shift():
 @login_required
 @admin_required
 def delete_shift(shift_id):
-    shift = Shift.query.get_or_404(shift_id)
+    shift = db.session.get(Shift, shift_id) or abort(404)
 
     try:
         db.session.delete(shift)
