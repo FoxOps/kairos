@@ -24,7 +24,7 @@ class User(db.Model, UserMixin):
     group_id = db.Column(
         db.Integer, db.ForeignKey("groups.id"), nullable=False, default=1
     )
-    ics_token = db.Column(db.String(64), unique=True)
+    ics_token = db.Column(db.String(64), unique=True, nullable=True)
 
     shifts = db.relationship("Shift", backref="user", lazy=True, cascade="all, delete-orphan", foreign_keys="Shift.user_id")
     on_calls = db.relationship("OnCall", backref="user", lazy=True, cascade="all, delete-orphan", foreign_keys="OnCall.user_id")
