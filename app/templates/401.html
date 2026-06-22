@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Non autorisé - Leviia{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="container">
+        <div class="columns is-centered">
+            <div class="column is-6">
+                <div class="box has-text-centered">
+                    <h1 class="title is-1 has-text-danger">401</h1>
+                    <h2 class="title is-3">Non autorisé</h2>
+                    <p class="subtitle is-5">
+                        Vous devez être authentifié pour accéder à cette page.
+                    </p>
+                    <div class="content">
+                        <p>
+                            Vous n'êtes pas connecté ou votre session a expiré.
+                            Veuillez vous authentifier pour continuer.
+                        </p>
+                        {% if error_message %}
+                        <div class="notification is-warning mt-4">
+                            <p><strong>Détails :</strong> {{ error_message }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="mt-5">
+                        <a href="{{ url_for('login') }}" class="button is-primary">
+                            <span class="icon">
+                                <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+                            </span>
+                            <span>Se connecter</span>
+                        </a>
+                        <a href="{{ url_for('index') }}" class="button is-light ml-3">
+                            <span class="icon">
+                                <i class="fas fa-home" aria-hidden="true"></i>
+                            </span>
+                            <span>Retour à l'accueil</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
