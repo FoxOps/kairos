@@ -153,8 +153,8 @@ class TestDetermineShiftForUser:
             db.session.add(oncall)
             db.session.commit()
 
-            # Vérifier la semaine suivante
-            test_date = date(2023, 12, 8)  # vendredi suivant
+            # Vérifier la semaine suivante (lundi, après l'astreinte)
+            test_date = date(2023, 12, 11)  # lundi de la semaine suivante
             shift_hours = AdvancedShiftAutomation.determine_shift_for_user(test_user, test_date)
 
             assert shift_hours == AdvancedShiftAutomation.SHIFT_07_15
