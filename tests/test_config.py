@@ -93,21 +93,27 @@ class TestConfig:
 
         from config import Config
         config = Config()
-        # Note: os.environ.get retourne une chaîne, mais LOGIN_DISABLED est un booléen par défaut
-        # Dans la classe Config, LOGIN_DISABLED = False (booléen), pas une chaîne
-        # Donc os.environ.get("LOGIN_DISABLED") retourne "True" (chaîne)
-        # qui est truthy, donc LOGIN_DISABLED = "True" (la chaîne)
-        # Mais en réalité, la ligne dans config.py est:
-        # LOGIN_DISABLED = False  # Désactive l'authentification si True (pour dev/test)
-        # Ce n'est PAS os.environ.get("LOGIN_DISABLED") or False
-        # Donc la variable d'environnement n'est pas lue pour LOGIN_DISABLED
-        # Seule SECRET_KEY utilise os.environ.get
-        # Donc ce test ne peut pas passer tel quel
-        # Vérifions simplement que la valeur par défaut est False
-        assert config.LOGIN_DISABLED is False
+        # Maintenant LOGIN_DISABLED est bien lu depuis les variables d'environnement
+        # via la fonction get_bool_from_env
+        assert config.LOGIN_DISABLED is True
 
         # Nettoyer après
         monkeypatch.delenv("LOGIN_DISABLED", raising=False)
+
+    def test_config_login_disabled_default(self, monkeypatch):
+        """Test que LOGIN_DISABLED a la valeur par défaut False."""
+        import sys
+
+        # Nettoyer d'abord
+        monkeypatch.delenv("LOGIN_DISABLED", raising=False)
+
+        # Recharger le module config pour prendre en compte l'absence de variable
+        if "config" in sys.modules:
+            del sys.modules["config"]
+
+        from config import Config
+        config = Config()
+        assert config.LOGIN_DISABLED is False
 
     def test_config_remember_cookie_duration(self):
         """Test que REMEMBER_COOKIE_DURATION est configuré."""
