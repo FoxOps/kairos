@@ -18,6 +18,15 @@ login_manager = LoginManager()
 login_manager.login_view = "login"  # Route pour la page de login
 login_manager.login_message_category = "danger"  # Catégorie pour les messages flash
 
+# Initialisation du cache
+from app.utils.cache import cache, init_cache, CacheConfig
+
+# Initialisation de la pagination
+from app.utils.pagination import Pagination, PaginationConfig, paginate_query
+
+# Initialisation du lazy loading
+from app.utils.lazy_loading import LazyLoader, LazyCollection, LazyQuery, LazyLoadingConfig
+
 # Créer l'instance Flask
 app = Flask(__name__)
 app.config.from_object("config.Config")
@@ -25,6 +34,9 @@ app.config.from_object("config.Config")
 # Initialiser les extensions
 db.init_app(app)
 login_manager.init_app(app)
+
+# Initialiser le cache
+init_cache(app)
 
 
 # ============================================================================
