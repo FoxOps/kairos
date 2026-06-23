@@ -223,6 +223,6 @@ Pour ajouter de nouveaux tests :
 
 ---
 
-**Dernière mise à jour** : 2024
+**Dernière mise à jour** : Juin 2026
 **Nombre de tests** : 248
 **Statut** : ✅ Tous les tests passent

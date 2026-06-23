@@ -1,7 +1,7 @@
 # 🗺️ Feuille de Route - Leviia Schedule
 
 > **Version** : 1.0.0 - Planification stratégique du développement
-> **Dernière mise à jour** : Juin 2025
+> **Dernière mise à jour** : Juin 2026
 > **Statut** : Développement actif
 
 ---
@@ -233,7 +233,7 @@ Pour toute question concernant la feuille de route :
 
 | Version | Date | Auteur | Changements |
 |---------|------|--------|-------------|
-| 1.0.0 | Juin 2025 | Vibe Code | Création initiale de la feuille de route |
+| 1.0.0 | Juin 2026 | Vibe Code | Création initiale de la feuille de route |
 
 ---
 
@@ -241,4 +241,4 @@ Pour toute question concernant la feuille de route :
 
 ---
 
-*Document généré automatiquement - Dernière synchronisation avec le dépôt : Juin 2025*
+*Document généré automatiquement - Dernière synchronisation avec le dépôt : Juin 2026*
