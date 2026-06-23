@@ -16,10 +16,15 @@ def app():
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
     app.config["WTF_CSRF_ENABLED"] = False
     app.config["SECRET_KEY"] = "test-secret-key"
+    app.config["RATE_LIMIT_ENABLED"] = False  # Désactiver le rate limiting pour les tests
     
     # Désactiver le cache pour les tests
     from app.utils.cache import CacheConfig
     CacheConfig.CACHE_ENABLED = False
+    
+    # Désactiver le rate limiter pour les tests
+    from app import limiter
+    limiter.enabled = False
 
     # Importer les routes
     from app.routes import main, admin, export, auth
