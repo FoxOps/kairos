@@ -122,7 +122,6 @@ def index():
 
 @app.route("/leave")
 @login_required
-@paginated_route(per_page=20, max_per_page=100)
 @eager_load(Leave, ['user'])
 def leave():
     page = request.args.get('page', 1, type=int)
@@ -140,7 +139,6 @@ def leave():
         per_page = 20
     
     # Optimisation : Utiliser joinedload pour éviter le N+1 sur user
-    # et sélectionner uniquement les colonnes nécessaires
     leaves_paginated = (
         Leave.query.options(joinedload(Leave.user))
         .order_by(Leave.start_date)
@@ -244,7 +242,6 @@ def delete_leave(leave_id):
 
 @app.route("/oncall")
 @login_required
-@paginated_route(per_page=20, max_per_page=100)
 @eager_load(OnCall, ['user'])
 def oncall():
     page = request.args.get('page', 1, type=int)
@@ -498,7 +495,6 @@ def delete_all_shifts_for_week(date_str):
 
 @app.route("/schedule")
 @login_required
-@paginated_route(per_page=20, max_per_page=100)
 @eager_load(Shift, ['user', 'shift_type'])
 def schedule():
     page = request.args.get('page', 1, type=int)

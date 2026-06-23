@@ -696,6 +696,14 @@ def init_data_cleanup():
 init_data_cleanup()
 
 
+# ============================================================================
+# IMPORT DES ROUTES POUR ENREGISTRER LES URLS
+# ============================================================================
+
+# Importer les routes pour qu'elles soient enregistrées avec Flask
+from app.routes import main, admin, export, auth
+
+
 def create_app():
     """Factory pour créer une instance de l'application Flask."""
     return app
