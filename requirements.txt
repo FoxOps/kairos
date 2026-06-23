@@ -43,7 +43,7 @@ pip>=26.1
 flask-compress==1.15
 
 # Pour PostgreSQL (optionnel)
-psycopg2-binary==2.9.9
+psycopg[binary]>=3.1.0
 
 # Pour MariaDB/MySQL (optionnel)
 mariadb==1.1.10
