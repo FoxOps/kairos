@@ -7,10 +7,28 @@
 
 ---
 
+## 📚 Documentation
+
+> **📖 Documentation complète disponible dans [docs/](docs/)**
+
+| Type | Document | Description | Public |
+|------|----------|-------------|--------|
+| **📖 Utilisateur** | [USER_GUIDE.md](docs/USER_GUIDE.md) | Guide utilisateur complet (15 chapitres) | ✅ Tous |
+| **🚀 Démarrage** | [QUICK_START.md](docs/QUICK_START.md) | Installation et configuration en 5 minutes | ✅ Tous |
+| **🛡️ Admin** | [ADMIN_GUIDE.md](docs/ADMIN_GUIDE.md) | Configuration avancée, sécurité, maintenance | ⚠️ Administrateurs |
+| **🏗️ Technique** | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture technique complète | ✅ Développeurs |
+| **📡 API** | [API.md](docs/API.md) | Documentation API REST complète | ✅ Développeurs |
+| **🔍 Erreurs** | [ERROR_HANDLING.md](docs/ERROR_HANDLING.md) | Gestion des erreurs et exceptions | ✅ Développeurs |
+| **📝 Résumé** | [SUMMARY.md](docs/SUMMARY.md) | Résumé technique complet | ✅ Développeurs |
+
+---
+
 ## 📋 Description
 
 **Leviia Schedule** est une application web de gestion des plannings et des astreintes conçue pour les équipes et organisations.
 Elle permet de gérer les horaires de travail, les rotations d'astreinte et les congés des membres d'une équipe.
+
+> **💡 Pour une prise en main rapide, consultez le [Guide de Démarrage Rapide](docs/QUICK_START.md)**
 
 ### Fonctionnalités principales
 
@@ -200,6 +218,8 @@ L'application sera accessible à l'adresse : **http://localhost:5000**
 
 ## 🎯 Utilisation
 
+> **📖 Pour une documentation utilisateur complète, consultez le [Guide Utilisateur](docs/USER_GUIDE.md)**
+
 ### Première connexion
 
 1. Connectez-vous avec les identifiants par défaut :
@@ -208,6 +228,8 @@ L'application sera accessible à l'adresse : **http://localhost:5000**
 
 2. **Changez immédiatement le mot de passe** après la première connexion via le menu Profil.
 
+> **⚠️ IMPORTANT** : Voir [ADMIN_GUIDE.md - Gestion de la Sécurité](docs/ADMIN_GUIDE.md#gestion-de-la-sécurité) pour les bonnes pratiques de sécurité.
+
 ### Gestion des utilisateurs
 
 - Les administrateurs peuvent créer, modifier et supprimer des utilisateurs
@@ -215,12 +237,16 @@ L'application sera accessible à l'adresse : **http://localhost:5000**
 - Les groupes peuvent être inclus ou exclus du planning et des astreintes
 - Chaque utilisateur peut générer un **token ICS unique** pour exporter son planning
 
+> **📖 Documentation détaillée** : [ADMIN_GUIDE.md - Gestion Avancée des Utilisateurs](docs/ADMIN_GUIDE.md#gestion-avancée-des-utilisateurs)
+
 ### Gestion des shifts
 
 1. Configurez les types de shifts dans l'interface d'administration
 2. Attribuez des shifts aux utilisateurs via le calendrier
 3. Visualisez le planning par jour, semaine ou mois
 4. **Automatisation** : Utilisez le système d'automatisation pour générer des shifts selon des règles métiers
+
+> **📖 Documentation détaillée** : [USER_GUIDE.md - Gestion des Shifts](docs/USER_GUIDE.md#gestion-des-shifts)
 
 ### Règles métiers avancées pour les shifts
 
@@ -238,6 +264,8 @@ Le système implémente les règles suivantes :
 3. Les utilisateurs sont notifiés de leurs périodes d'astreinte
 4. **Automatisation** : Utilisez le système de rotation automatique
 
+> **📖 Documentation détaillée** : [USER_GUIDE.md - Gestion des Astreintes](docs/USER_GUIDE.md#gestion-des-astreintes-on-call)
+
 ### Export du planning
 
 - Exportez votre planning personnel au format ICS
@@ -251,6 +279,8 @@ Le système implémente les règles suivantes :
   - `?scope=my` - Uniquement vos données
   - `?scope=all` - Toutes les données (admin uniquement)
 - **Accès par token** : `?token=VOTRE_TOKEN_ICS` pour un accès sans authentification
+
+> **📖 Documentation détaillée** : [USER_GUIDE.md - Export ICS](docs/USER_GUIDE.md#export-ics-et-intégration-calendrier)
 
 ## 📁 Structure du projet
 
@@ -295,11 +325,21 @@ leviia-schedule/
 │   ├── test_decorators.py   # Tests des décorateurs
 │   ├── test_config.py       # Tests de la configuration
 │   └── ...
-├── docs/                    # Documentation supplémentaire
+├── docs/                    # 📚 Documentation complète
+│   ├── README.md           # Index de la documentation
+│   ├── QUICK_START.md      # Guide de démarrage rapide
+│   ├── USER_GUIDE.md       # Guide utilisateur complet (15 chapitres)
+│   ├── ADMIN_GUIDE.md      # Guide administrateur
+│   ├── ARCHITECTURE.md     # Architecture technique
+│   ├── API.md              # Documentation API REST
+│   ├── ERROR_HANDLING.md   # Gestion des erreurs
+│   └── SUMMARY.md          # Résumé technique
 ├── instance/                # Fichiers d'instance (base de données)
 │   └── app.db               # Base de données SQLite
 └── logs/                    # Fichiers de log (créés automatiquement)
 ```
+
+> **📖 Documentation technique complète** : [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ### Modèles de données
 
@@ -313,6 +353,8 @@ leviia-schedule/
 | **Leave** | Congé | → User |
 
 ## 🔧 Configuration avancée
+
+> **📖 Documentation technique détaillée** : [ADMIN_GUIDE.md - Configuration Technique](docs/ADMIN_GUIDE.md#configuration-technique)
 
 ### Utiliser PostgreSQL
 
@@ -332,6 +374,8 @@ leviia-schedule/
    ```bash
    pip install psycopg2-binary
    ```
+
+> **📖 Architecture technique** : [ARCHITECTURE.md - Environnements](docs/ARCHITECTURE.md#environnements)
 
 ### Désactiver l'authentification (développement uniquement)
 
@@ -375,6 +419,8 @@ Le projet inclut plusieurs optimisations :
 ## 🧪 Tests et Qualité de Code
 
 > **✅ Statut** : **403 tests** - Tous passent - Couverture : ~66%
+
+> **📖 Documentation des tests** : [TESTING_SUMMARY.md](TESTING_SUMMARY.md) - Documentation détaillée de tous les tests unitaires
 
 ### Outils utilisés
 
@@ -538,6 +584,10 @@ make clean
 ### 📄 Documentation complète
 
 Voir les fichiers suivants pour une documentation détaillée :
+- **[docs/README.md](docs/README.md)** - Index complet de la documentation
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Architecture technique complète
+- **[docs/API.md](docs/API.md)** - Documentation API REST
+- **[docs/SUMMARY.md](docs/SUMMARY.md)** - Résumé technique complet
 - [TESTING_SUMMARY.md](TESTING_SUMMARY.md) - Documentation détaillée de tous les tests unitaires
 - [TESTS_SUMMARY.md](TESTS_SUMMARY.md) - Résumé des tests
 - [ROADMAP.md](ROADMAP.md) - Feuille de route du projet
@@ -560,6 +610,8 @@ Les contributions sont les bienvenues ! Voici comment contribuer :
 - Mettez à jour ce README si nécessaire
 - Utilisez les décorateurs de permissions appropriés
 - Suivez les conventions de nommage existantes
+
+> **📖 Guide de contribution** : Voir [docs/README.md - Contribuer à la Documentation](docs/README.md#contribuer-à-la-documentation) pour les règles de contribution à la documentation.
 
 ## 🐛 Signaler un bug
 
