@@ -46,7 +46,7 @@ flask-compress==1.15
 psycopg[binary]>=3.1.0
 
 # Pour MariaDB/MySQL (optionnel)
-mariadb==1.1.10
+mariadb>=1.1.11
 mysqlclient==2.2.1
 
 # Pour Redis (optionnel)
