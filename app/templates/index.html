@@ -3,8 +3,8 @@
 {% block title %}Leviia - Accueil{% endblock %}
 
 {% block extra_css %}
-<!-- FullCalendar CSS -->
-<link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' />
+<!-- FullCalendar v6 CSS -->
+<link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css' />
 <style>
     #calendar {
         max-width: 1200px;
@@ -24,6 +24,45 @@
         background-color: #F14668;
         border-color: #F14668;
         color: white;
+    }
+    /* Style pour le drag & drop */
+    .fc-event-draggable {
+        cursor: move;
+    }
+    .fc-event-resizable {
+        cursor: move;
+    }
+    /* External drag container */
+    .external-event-container {
+        padding: 10px;
+        background: #f5f5f5;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
+    .external-event {
+        padding: 8px 12px;
+        margin: 4px;
+        background: #00D1B2;
+        color: white;
+        border-radius: 4px;
+        cursor: move;
+        display: inline-block;
+        font-size: 14px;
+    }
+    .external-event.oncall {
+        background: #3E8ED0;
+    }
+    .external-event.leave {
+        background: #F14668;
+    }
+    /* Feedback visuel pendant le drag */
+    .fc-event-mirror {
+        opacity: 0.75;
+        z-index: 10000;
+    }
+    /* Style pour les événements en cours de modification */
+    .fc-event-selected {
+        box-shadow: 0 0 0 2px #ffeb3b;
     }
 </style>
 {% endblock %}
@@ -78,11 +117,31 @@
             </div>
         </div>
 
-        <!-- Calendrier -->
+        <!-- Calendrier interactif avec Drag & Drop -->
         <div class="box">
             <h2>
-                <i class="fas fa-calendar-alt" aria-hidden="true"></i> Calendrier des shifts, astreintes et congés
+                <i class="fas fa-calendar-alt" aria-hidden="true"></i> 
+                Calendrier interactif - Shifts, astreintes et congés
+                {% if current_user.is_admin %}
+                <span class="tag is-success is-pulled-right">
+                    <i class="fas fa-mouse-pointer" aria-hidden="true"></i>&nbsp; Drag & Drop activé
+                </span>
+                {% endif %}
             </h2>
+            
+            <!-- Conteneur pour les événements externes (pour créer de nouveaux shifts) -->
+            {% if current_user.is_admin %}
+            <div class="notification is-info is-light mb-4">
+                <p><strong><i class="fas fa-info-circle"></i> Conseils d'utilisation :</strong></p>
+                <ul>
+                    <li><strong>Déplacer un shift</strong> : Cliquez et faites glisser un événement vers une nouvelle date/heure</li>
+                    <li><strong>Redimensionner un shift</strong> : Passez la souris sur le bord d'un événement et faites glisser pour modifier la durée</li>
+                    <li><strong>Supprimer un shift</strong> : Cliquez sur un événement puis appuyez sur <kbd>Suppr</kbd> ou <kbd>Delete</kbd></li>
+                    <li><strong>Créer un shift</strong> : Sélectionnez une plage horaire vide dans le calendrier</li>
+                </ul>
+            </div>
+            {% endif %}
+            
             <div id="calendar"></div>
         </div>
 
@@ -90,9 +149,9 @@
         <div class="box">
             <h3>Légende</h3>
             <div class="tags are-medium">
-                <span class="tag is-primary">Shifts</span>
-                <span class="tag is-info">Astreintes</span>
-                <span class="tag is-danger">Congés</span>
+                <span class="tag is-primary"><i class="fas fa-calendar-check"></i> Shifts</span>
+                <span class="tag is-info"><i class="fas fa-moon"></i> Astreintes</span>
+                <span class="tag is-danger"><i class="fas fa-umbrella-beach"></i> Congés</span>
             </div>
         </div>
     </div>
@@ -100,9 +159,9 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- FullCalendar JS -->
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/fr.js'></script>
+<!-- FullCalendar v6 JS avec plugins -->
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales/fr.global.min.js'></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const calendarEl = document.getElementById('calendar');
@@ -111,6 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
+    const isAdmin = {{ current_user.is_admin|tojson }};
     const events = {{ events|tojson }};
 
     const calendar = new FullCalendar.Calendar(calendarEl, {
@@ -127,10 +187,368 @@ document.addEventListener('DOMContentLoaded', function() {
             hour: '2-digit',
             minute: '2-digit',
             hour12: false
+        },
+        height: 'auto',
+        
+        // Activation du Drag & Drop pour les administrateurs
+        editable: isAdmin,
+        selectable: isAdmin,
+        droppable: isAdmin,
+        
+        // Configuration du drag & drop
+        eventDrop: function(info) {
+            // Appelé quand un événement est déplacé
+            const shiftId = info.event.id;
+            const newStart = info.event.start;
+            const newEnd = info.event.end;
+            
+            if (!shiftId || shiftId === undefined) {
+                // C'est un nouvel événement créé par drop externe
+                return;
+            }
+            
+            // Vérifier que c'est un shift (et non une astreinte ou un congé)
+            if (!info.event.classNames.includes('fc-event-shift')) {
+                // Revert le changement pour les astreintes et congés
+                info.revert();
+                alert('Seuls les shifts peuvent être déplacés. Les astreintes et congés ne sont pas modifiables via drag & drop.');
+                return;
+            }
+            
+            // Envoyer la mise à jour au serveur
+            fetch(`/api/shifts/${shiftId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    start: newStart.toISOString(),
+                    end: newEnd.toISOString()
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Shift mis à jour:', data.message);
+                } else {
+                    // Revert le changement en cas d'erreur
+                    info.revert();
+                    alert('Erreur: ' + data.error);
+                }
+            })
+            .catch(error => {
+                info.revert();
+                console.error('Erreur:', error);
+                alert('Une erreur est survenue lors de la mise à jour du shift.');
+            });
+        },
+        
+        eventResize: function(info) {
+            // Appelé quand un événement est redimensionné
+            const shiftId = info.event.id;
+            const newStart = info.event.start;
+            const newEnd = info.event.end;
+            
+            if (!shiftId || shiftId === undefined) {
+                return;
+            }
+            
+            // Vérifier que c'est un shift
+            if (!info.event.classNames.includes('fc-event-shift')) {
+                info.revert();
+                alert('Seuls les shifts peuvent être redimensionnés.');
+                return;
+            }
+            
+            // Envoyer la mise à jour au serveur
+            fetch(`/api/shifts/${shiftId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    start: newStart.toISOString(),
+                    end: newEnd.toISOString()
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Shift redimensionné:', data.message);
+                } else {
+                    info.revert();
+                    alert('Erreur: ' + data.error);
+                }
+            })
+            .catch(error => {
+                info.revert();
+                console.error('Erreur:', error);
+                alert('Une erreur est survenue lors du redimensionnement du shift.');
+            });
+        },
+        
+        select: function(info) {
+            // Appelé quand une plage horaire est sélectionnée (pour créer un nouveau shift)
+            if (!isAdmin) {
+                calendar.unselect();
+                return;
+            }
+            
+            const start = info.start;
+            const end = info.end || start;
+            
+            // Ouvrir un modal pour sélectionner l'utilisateur et le type de shift
+            openShiftCreationModal(start, end);
+            
+            calendar.unselect();
+        },
+        
+        eventClick: function(info) {
+            // Appelé quand un événement est cliqué
+            const event = info.event;
+            const shiftId = event.id;
+            
+            if (!shiftId || shiftId === undefined) {
+                return;
+            }
+            
+            // Vérifier que c'est un shift
+            if (!event.classNames.includes('fc-event-shift')) {
+                return;
+            }
+            
+            // Demander confirmation pour la suppression
+            if (isAdmin && confirm('Voulez-vous supprimer ce shift ?')) {
+                fetch(`/api/shifts/${shiftId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        event.remove();
+                        console.log('Shift supprimé:', data.message);
+                    } else {
+                        alert('Erreur: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    alert('Une erreur est survenue lors de la suppression du shift.');
+                });
+            }
+        },
+        
+        eventDidMount: function(info) {
+            // Ajouter des données personnalisées à l'événement
+            const event = info.event;
+            if (event.extendedProps && event.extendedProps.userId) {
+                event.setExtendedProp('userId', event.extendedProps.userId);
+            }
+        },
+        
+        // Désactiver le drag & drop pour les week-ends
+        dateClick: function(info) {
+            const date = info.date;
+            if (date.getDay() === 0 || date.getDay() === 6) { // Dimanche (0) ou Samedi (6)
+                alert('Les shifts ne peuvent pas être créés ou déplacés vers les week-ends (samedi/dimanche).');
+                return false;
+            }
         }
     });
 
     calendar.render();
+
+    // Fonction pour ouvrir le modal de création de shift
+    function openShiftCreationModal(start, end) {
+        // Charger les utilisateurs et types de shifts
+        Promise.all([
+            fetch('/api/users').then(r => r.json()),
+            fetch('/api/shift-types').then(r => r.json())
+        ]).then(([users, shiftTypes]) => {
+            // Créer le modal
+            const modalId = 'create-shift-modal';
+            let modal = document.getElementById(modalId);
+            
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = modalId;
+                modal.className = 'modal';
+                modal.innerHTML = `
+                    <div class="modal-background"></div>
+                    <div class="modal-card">
+                        <header class="modal-card-head">
+                            <p class="modal-card-title">
+                                <i class="fas fa-plus"></i> Créer un nouveau shift
+                            </p>
+                            <button class="delete close-modal" aria-label="close"></button>
+                        </header>
+                        <section class="modal-card-body">
+                            <div class="field">
+                                <label class="label">Date et heure</label>
+                                <div class="control">
+                                    <input type="datetime-local" id="shift-start" class="input" value="${formatDateForInput(start)}">
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="label">Fin</label>
+                                <div class="control">
+                                    <input type="datetime-local" id="shift-end" class="input" value="${formatDateForInput(end)}">
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="label">Utilisateur</label>
+                                <div class="control">
+                                    <div class="select is-fullwidth">
+                                        <select id="shift-user">
+                                            ${users.map(u => `<option value="${u.id}">${u.name} (${u.email})</option>`).join('')}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="label">Type de shift</label>
+                                <div class="control">
+                                    <div class="select is-fullwidth">
+                                        <select id="shift-type">
+                                            ${shiftTypes.map(st => `<option value="${st.id}">${st.label} (${st.start_hour}:00 - ${st.end_hour}:00)</option>`).join('')}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                        <footer class="modal-card-foot">
+                            <button class="button is-primary create-shift-btn">
+                                <i class="fas fa-check"></i> Créer
+                            </button>
+                            <button class="button close-modal">
+                                <i class="fas fa-times"></i> Annuler
+                            </button>
+                        </footer>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            } else {
+                // Mettre à jour les valeurs
+                modal.querySelector('#shift-start').value = formatDateForInput(start);
+                modal.querySelector('#shift-end').value = formatDateForInput(end);
+            }
+
+            // Ouvrir le modal
+            modal.classList.add('is-active');
+
+            // Gérer les boutons
+            modal.querySelectorAll('.close-modal').forEach(btn => {
+                btn.onclick = () => modal.classList.remove('is-active');
+            });
+
+            modal.querySelector('.create-shift-btn').onclick = () => {
+                const userId = modal.querySelector('#shift-user').value;
+                const shiftTypeId = modal.querySelector('#shift-type').value;
+                const startInput = modal.querySelector('#shift-start').value;
+                const endInput = modal.querySelector('#shift-end').value;
+
+                if (!userId || !shiftTypeId || !startInput || !endInput) {
+                    alert('Veuillez remplir tous les champs.');
+                    return;
+                }
+
+                // Créer le shift via API
+                fetch('/api/shifts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        userId: userId,
+                        shiftTypeId: shiftTypeId,
+                        start: new Date(startInput).toISOString(),
+                        end: new Date(endInput).toISOString()
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Ajouter l'événement au calendrier
+                        calendar.addEvent({
+                            id: data.shift.id,
+                            title: data.shift.title,
+                            start: data.shift.start,
+                            end: data.shift.end,
+                            className: 'fc-event-shift',
+                            userId: data.shift.userId,
+                            shiftTypeId: data.shift.shiftTypeId
+                        });
+                        modal.classList.remove('is-active');
+                        console.log('Shift créé:', data.message);
+                    } else {
+                        alert('Erreur: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    alert('Une erreur est survenue lors de la création du shift.');
+                });
+            };
+        }).catch(error => {
+            console.error('Erreur lors du chargement des données:', error);
+            alert('Une erreur est survenue lors du chargement des données.');
+        });
+    }
+
+    // Fonction pour formater une date pour l'input datetime-local
+    function formatDateForInput(date) {
+        const pad = (num) => num.toString().padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    // Gérer la touche Suppr pour supprimer un événement
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Delete' || e.key === 'Suppr') {
+            const selectedEvent = calendar.getEventById(window.selectedEventId);
+            if (selectedEvent && isAdmin) {
+                if (confirm('Voulez-vous supprimer ce shift ?')) {
+                    const shiftId = selectedEvent.id;
+                    fetch(`/api/shifts/${shiftId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        credentials: 'same-origin'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            selectedEvent.remove();
+                            console.log('Shift supprimé:', data.message);
+                        } else {
+                            alert('Erreur: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        alert('Une erreur est survenue lors de la suppression du shift.');
+                    });
+                }
+            }
+        }
+    });
+
+    // Stocker l'ID de l'événement sélectionné
+    calendar.on('eventClick', function(info) {
+        window.selectedEventId = info.event.id;
+    });
 });
 </script>
 {% endblock %}

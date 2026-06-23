@@ -639,3 +639,281 @@ def delete_shift(shift_id):
         db.session.rollback()
         flash(f"Erreur : {str(e)}", "danger")
     return redirect(url_for("schedule"))
+
+
+# ========== API ENDPOINTS POUR DRAG & DROP ====================
+
+@app.route("/api/shifts", methods=["GET"])
+@login_required
+def api_get_shifts():
+    """API endpoint pour récupérer les shifts au format JSON pour FullCalendar."""
+    from flask import jsonify
+    
+    window_start, window_end = _calendar_window()
+    
+    shifts = (
+        Shift.query.options(
+            joinedload(Shift.user),
+            joinedload(Shift.shift_type)
+        )
+        .filter(
+            Shift.start_time >= window_start,
+            Shift.start_time <= window_end,
+        )
+        .order_by(Shift.start_time)
+        .all()
+    )
+    
+    on_calls = (
+        OnCall.query.options(joinedload(OnCall.user))
+        .filter(
+            OnCall.start_time <= window_end,
+            OnCall.end_time >= window_start,
+        )
+        .order_by(OnCall.start_time)
+        .all()
+    )
+    
+    leaves = (
+        Leave.query.options(joinedload(Leave.user))
+        .filter(
+            Leave.end_date >= window_start.date(),
+            Leave.start_date <= window_end.date(),
+        )
+        .order_by(Leave.start_date)
+        .all()
+    )
+    
+    events = _build_calendar_events(shifts, on_calls, leaves)
+    return jsonify(events)
+
+
+@app.route("/api/shifts/<int:shift_id>", methods=["PATCH", "PUT"])
+@login_required
+@admin_required
+def api_update_shift(shift_id):
+    """API endpoint pour mettre à jour un shift via drag & drop."""
+    from flask import jsonify, request
+    
+    shift = db.session.get(Shift, shift_id)
+    if not shift:
+        return jsonify({"success": False, "error": "Shift non trouvé"}), 404
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "error": "Aucune donnée reçue"}), 400
+    
+    try:
+        # Récupérer les nouvelles dates/heures
+        new_start_str = data.get("start")
+        new_end_str = data.get("end")
+        
+        if not new_start_str:
+            return jsonify({"success": False, "error": "Date de début manquante"}), 400
+        
+        # Parser les nouvelles dates
+        new_start = datetime.fromisoformat(new_start_str.replace('Z', '+00:00'))
+        
+        # Si end n'est pas fourni, calculer la durée originale
+        if new_end_str:
+            new_end = datetime.fromisoformat(new_end_str.replace('Z', '+00:00'))
+        else:
+            # Conserver la même durée que l'original
+            duration = shift.end_time - shift.start_time
+            new_end = new_start + duration
+        
+        # Vérifier que la date est valide (jour de semaine)
+        new_date = new_start.date()
+        if new_date.weekday() >= 5:  # Samedi ou dimanche
+            return jsonify({
+                "success": False, 
+                "error": "Impossible de déplacer vers un week-end (samedi/dimanche)"
+            }), 400
+        
+        # Vérifier qu'il n'y a pas de conflit avec un shift existant
+        existing_shift = Shift.query.filter(
+            Shift.user_id == shift.user_id,
+            Shift.date == new_date,
+            Shift.id != shift_id
+        ).first()
+        
+        if existing_shift:
+            return jsonify({
+                "success": False,
+                "error": f"Un shift existe déjà pour {shift.user.name} le {new_date.strftime('%d/%m/%Y')}"
+            }), 400
+        
+        # Mettre à jour le shift
+        shift.start_time = new_start
+        shift.end_time = new_end
+        shift.date = new_date
+        
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Shift mis à jour avec succès",
+            "shift": {
+                "id": shift.id,
+                "start": shift.start_time.isoformat(),
+                "end": shift.end_time.isoformat(),
+                "date": shift.date.isoformat()
+            }
+        })
+        
+    except ValueError as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": f"Format de date invalide: {str(e)}"}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
+
+
+@app.route("/api/shifts", methods=["POST"])
+@login_required
+@admin_required
+def api_create_shift():
+    """API endpoint pour créer un nouveau shift via drag & drop."""
+    from flask import jsonify, request
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "error": "Aucune donnée reçue"}), 400
+    
+    try:
+        user_id = data.get("userId")
+        shift_type_id = data.get("shiftTypeId")
+        start_str = data.get("start")
+        end_str = data.get("end")
+        
+        if not all([user_id, shift_type_id, start_str]):
+            return jsonify({"success": False, "error": "Données manquantes"}), 400
+        
+        user_id = int(user_id)
+        shift_type_id = int(shift_type_id)
+        
+        # Vérifier que l'utilisateur et le type de shift existent
+        user = db.session.get(User, user_id)
+        if not user:
+            return jsonify({"success": False, "error": "Utilisateur non trouvé"}), 404
+        
+        shift_type = db.session.get(ShiftType, shift_type_id)
+        if not shift_type:
+            return jsonify({"success": False, "error": "Type de shift non trouvé"}), 404
+        
+        # Parser les dates
+        start_time = datetime.fromisoformat(start_str.replace('Z', '+00:00'))
+        end_time = datetime.fromisoformat(end_str.replace('Z', '+00:00')) if end_str else start_time
+        
+        date = start_time.date()
+        
+        # Vérifier que c'est un jour de semaine
+        if date.weekday() >= 5:
+            return jsonify({
+                "success": False,
+                "error": "Impossible de créer un shift pour un week-end"
+            }), 400
+        
+        # Vérifier qu'il n'y a pas de conflit
+        can_add, error_message = can_add_shift(user_id, date, shift_type.name)
+        if not can_add:
+            return jsonify({"success": False, "error": error_message}), 400
+        
+        # Créer le nouveau shift
+        new_shift = Shift(
+            user_id=user_id,
+            shift_type_id=shift_type_id,
+            start_time=start_time,
+            end_time=end_time,
+            date=date,
+        )
+        
+        db.session.add(new_shift)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Shift créé avec succès",
+            "shift": {
+                "id": new_shift.id,
+                "title": f"{user.name} - {shift_type.label}",
+                "start": new_shift.start_time.isoformat(),
+                "end": new_shift.end_time.isoformat(),
+                "className": "fc-event-shift",
+                "userId": user_id,
+                "shiftTypeId": shift_type_id
+            }
+        })
+        
+    except ValueError as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": f"Format invalide: {str(e)}"}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
+
+
+@app.route("/api/shifts/<int:shift_id>", methods=["DELETE"])
+@login_required
+@admin_required
+def api_delete_shift(shift_id):
+    """API endpoint pour supprimer un shift via drag & drop."""
+    from flask import jsonify
+    
+    shift = db.session.get(Shift, shift_id)
+    if not shift:
+        return jsonify({"success": False, "error": "Shift non trouvé"}), 404
+    
+    try:
+        db.session.delete(shift)
+        db.session.commit()
+        return jsonify({"success": True, "message": "Shift supprimé avec succès"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
+
+
+@app.route("/api/users", methods=["GET"])
+@login_required
+def api_get_users():
+    """API endpoint pour récupérer la liste des utilisateurs pour le drag & drop."""
+    from flask import jsonify
+    
+    # Seuls les administrateurs peuvent voir tous les utilisateurs
+    if current_user.is_admin:
+        users = User.query.join(Group).filter(Group.is_part_of_schedule == True).all()
+    else:
+        users = [current_user]
+    
+    users_list = [
+        {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email
+        }
+        for user in users
+    ]
+    
+    return jsonify(users_list)
+
+
+@app.route("/api/shift-types", methods=["GET"])
+@login_required
+def api_get_shift_types():
+    """API endpoint pour récupérer la liste des types de shifts."""
+    from flask import jsonify
+    
+    shift_types = ShiftType.query.order_by(ShiftType.name).all()
+    
+    shift_types_list = [
+        {
+            "id": st.id,
+            "name": st.name,
+            "label": st.label,
+            "start_hour": st.start_hour,
+            "end_hour": st.end_hour
+        }
+        for st in shift_types
+    ]
+    
+    return jsonify(shift_types_list)
