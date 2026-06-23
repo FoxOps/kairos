@@ -1,6 +1,9 @@
 from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_compress import Compress
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import time
 import sqlite3
 import logging
@@ -31,6 +34,8 @@ from app.utils.lazy_loading import LazyLoader, LazyCollection, LazyQuery, LazyLo
 app = Flask(__name__)
 app.config.from_object("config.Config")
 
+# CONFIGURATION DU LOGGING
+# ============================================================================
 # Initialiser les extensions
 db.init_app(app)
 login_manager.init_app(app)
@@ -38,8 +43,62 @@ login_manager.init_app(app)
 # Initialiser le cache
 init_cache(app)
 
+# ============================================================================
+# CONFIGURATION DE LA SÉCURITÉ ET DES PERFORMANCES
+# ============================================================================
+
+# Rate Limiting
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://",
+    enabled=app.config.get("RATE_LIMIT_ENABLED", True)
+)
+
+# Compression Gzip
+compress = Compress()
+compress.init_app(app)
+
+# Configuration des headers de sécurité
+@app.after_request
+def add_security_headers(response):
+    """Ajoute les headers de sécurité aux réponses."""
+    csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;"
+    response.headers['Content-Security-Policy'] = csp
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+    
+    if response.content_type and (response.content_type.startswith('text/css') or 
+       response.content_type.startswith('application/javascript') or 
+       response.content_type.startswith('image/')):
+        response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+    
+    return response
+
+# Logging des requêtes lentes
+@app.after_request
+def log_slow_requests(response):
+    """Log les requêtes lentes (plus de 1 seconde)."""
+    if hasattr(request, 'start_time'):
+        duration = time.time() - request.start_time
+        if duration > 1.0:
+            app.logger.warning(f"Requête lente ({duration:.2f}s): {request.method} {request.path} - IP: {request.remote_addr}")
+    return response
+
+# Stocker le temps de début de la requête
+@app.before_request
+def before_request():
+    """Stocke le temps de début de la requête."""
+    request.start_time = time.time()
+
 
 # ============================================================================
+# CONFIGURATION DU LOGGING
+# ========================================================================================================================================================
 # CONFIGURATION DU LOGGING
 # ============================================================================
 
@@ -621,6 +680,20 @@ def get_error_template_data(error_code, error_message=None):
         'error_message': error_message,
         'current_user': current_user
     }
+
+
+# ============================================================================
+# INITIALISATION DU NETTOYAGE AUTOMATIQUE
+# ============================================================================
+
+def init_data_cleanup():
+    """Initialise le nettoyage automatique des données."""
+    from app.utils.automation import setup_data_cleanup
+    setup_data_cleanup(app)
+
+
+# Initialiser le nettoyage automatique (après l'initialisation complète de l'app)
+init_data_cleanup()
 
 
 def create_app():

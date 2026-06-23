@@ -3,7 +3,7 @@ Flask==3.1.3
 Flask-SQLAlchemy==3.1.1
 Flask-Login==0.6.3
 Flask-WTF==1.1.1
-Werkzeug==3.1.8
+Werkzeug==3.1.3
 
 # Base de données
 SQLAlchemy==2.0.51
@@ -38,3 +38,12 @@ flask-cors==6.0.5
 # pip>=26.1 corrige CVE-2026-1703, CVE-2026-3219, CVE-2026-6357
 cryptography>=49.0.0
 pip>=26.1
+
+# Compression
+flask-compress==1.15
+
+# Pour PostgreSQL (optionnel)
+psycopg2-binary==2.9.9
+
+# Pour Redis (optionnel)
+redis==5.0.1

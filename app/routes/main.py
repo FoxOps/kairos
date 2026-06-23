@@ -1,8 +1,10 @@
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy import func
 from app import app, db
 from app.models import Shift, OnCall, Leave, User, Group, ShiftType
+from app.utils.optimizations import cached_route, paginated_route, eager_load, optimize_query
 from app.utils.helpers import (
     can_add_shift,
     can_add_leave,
@@ -66,6 +68,10 @@ def _build_calendar_events(shifts, on_calls, leaves):
 
 @app.route("/")
 @login_required
+@cached_route(timeout=300)
+@eager_load(Shift, ['user', 'shift_type'])
+@eager_load(OnCall, ['user'])
+@eager_load(Leave, ['user'])
 def index():
     """Page d'accueil - accessible uniquement aux utilisateurs connectés."""
     window_start, window_end = _calendar_window()
@@ -75,7 +81,10 @@ def index():
     # Optimisation : Utiliser des requêtes avec joinedload pour éviter le N+1
     # et sélectionner uniquement les colonnes nécessaires
     shifts = (
-        Shift.query.options(joinedload(Shift.user))
+        Shift.query.options(
+            joinedload(Shift.user),
+            joinedload(Shift.shift_type)
+        )
         .filter(
             Shift.start_time >= window_start,
             Shift.start_time <= window_end,
@@ -113,6 +122,8 @@ def index():
 
 @app.route("/leave")
 @login_required
+@paginated_route(per_page=20, max_per_page=100)
+@eager_load(Leave, ['user'])
 def leave():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
@@ -233,6 +244,8 @@ def delete_leave(leave_id):
 
 @app.route("/oncall")
 @login_required
+@paginated_route(per_page=20, max_per_page=100)
+@eager_load(OnCall, ['user'])
 def oncall():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
@@ -485,6 +498,8 @@ def delete_all_shifts_for_week(date_str):
 
 @app.route("/schedule")
 @login_required
+@paginated_route(per_page=20, max_per_page=100)
+@eager_load(Shift, ['user', 'shift_type'])
 def schedule():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)

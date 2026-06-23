@@ -1,8 +1,10 @@
 from flask import render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
+from sqlalchemy import func
 from app import app, db
 from app.models import User, Shift, OnCall, Leave, Group, ShiftType
+from app.utils.optimizations import cached_route, paginated_route, eager_load, optimize_query, cache_result
 from app.utils.decorators import admin_required
 from app.utils.automation import (
     OnCallAutomation,
@@ -19,6 +21,7 @@ from datetime import datetime, date, timedelta
 # Dashboard admin
 @app.route("/admin")
 @admin_required
+@cached_route(timeout=300)
 def admin_dashboard():
     # Optimisation : Utiliser des requêtes count() simples mais efficaces
     # Les requêtes count() sont déjà optimisées par SQLAlchemy
@@ -47,6 +50,8 @@ def admin_dashboard():
 
 @app.route("/admin/groups")
 @admin_required
+@cached_route(timeout=300)
+@eager_load(Group, ['users'])
 def list_groups():
     groups = Group.query.order_by(Group.name).all()
     return render_template("admin/groups.html", groups=groups)
@@ -148,9 +153,12 @@ def delete_group(group_id):
 
 @app.route("/admin/users")
 @admin_required
+@cached_route(timeout=300)
+@eager_load(User, ['group', 'shifts', 'on_calls', 'leaves'])
 def list_users():
     users = (
         User.query.options(
+            selectinload(User.group),
             selectinload(User.shifts),
             selectinload(User.on_calls),
             selectinload(User.leaves),
@@ -272,6 +280,8 @@ def delete_user(user_id):
 
 @app.route("/admin/shift-types")
 @admin_required
+@cached_route(timeout=300)
+@eager_load(ShiftType, ['shifts'])
 def list_shift_types():
     shift_types = ShiftType.query.order_by(ShiftType.name).all()
     return render_template("admin/shift_types.html", shift_types=shift_types)

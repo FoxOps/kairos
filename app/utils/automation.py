@@ -798,3 +798,194 @@ def get_automation_status() -> Dict[str, Any]:
         'shift_eligible_users': shift_eligible,
         'next_available_oncall_date': next_oncall_date.strftime('%Y-%m-%d') if next_oncall_date else None,
     }
+
+
+# ============================================================================
+# NETTOYAGE AUTOMATIQUE DES DONNÉES
+# ============================================================================
+
+class DataCleanupConfig:
+    """
+    Configuration du nettoyage automatique des données.
+    
+    Variables d'environnement disponibles:
+    - DATA_CLEANUP_ENABLED: true/false (défaut: false - désactivé par défaut)
+    - DATA_CLEANUP_RETENTION: durée de rétention (ex: '1y', '6m', '30d', '365' en jours)
+    - DATA_CLEANUP_BATCH_SIZE: taille des lots pour la suppression (défaut: 1000)
+    - DATA_CLEANUP_SCHEDULE: planification cron (ex: '0 0 * * *' pour minuit)
+    """
+    
+    # Désactivé par défaut pour la sécurité
+    ENABLED = False
+    
+    # Durée de rétention par défaut: 1 an
+    RETENTION_DAYS = 365
+    
+    # Taille des lots pour la suppression
+    BATCH_SIZE = 1000
+    
+    # Planification par défaut: tous les jours à minuit
+    SCHEDULE = '0 0 * * *'
+    
+    @classmethod
+    def from_env(cls):
+        """Charge la configuration depuis les variables d'environnement."""
+        import os
+        
+        def get_bool(env_var, default=False):
+            value = os.environ.get(env_var, '').lower()
+            return value in ('true', '1', 'yes', 'y', 'on') if value else default
+        
+        def get_int(env_var, default=0):
+            value = os.environ.get(env_var, '')
+            try:
+                return int(value) if value else default
+            except ValueError:
+                return default
+        
+        def parse_retention(retention_str):
+            """Parse une chaîne de rétention (ex: '1y', '6m', '30d') en jours."""
+            if not retention_str:
+                return cls.RETENTION_DAYS
+            
+            retention_str = retention_str.lower().strip()
+            
+            if retention_str.endswith('y'):
+                years = int(retention_str[:-1])
+                return years * 365
+            elif retention_str.endswith('m'):
+                months = int(retention_str[:-1])
+                return months * 30
+            elif retention_str.endswith('d'):
+                days = int(retention_str[:-1])
+                return days
+            else:
+                try:
+                    return int(retention_str)
+                except ValueError:
+                    return cls.RETENTION_DAYS
+        
+        cls.ENABLED = get_bool('DATA_CLEANUP_ENABLED', cls.ENABLED)
+        
+        retention_str = os.environ.get('DATA_CLEANUP_RETENTION', f'{cls.RETENTION_DAYS}d')
+        cls.RETENTION_DAYS = parse_retention(retention_str)
+        
+        cls.BATCH_SIZE = get_int('DATA_CLEANUP_BATCH_SIZE', cls.BATCH_SIZE)
+        cls.SCHEDULE = os.environ.get('DATA_CLEANUP_SCHEDULE', cls.SCHEDULE)
+
+
+# Charger la configuration depuis l'environnement
+DataCleanupConfig.from_env()
+
+
+def cleanup_old_data(days=None):
+    """
+    Supprime les données anciennes (shifts, astreintes, congés).
+    
+    Args:
+        days: Nombre de jours à conserver (par défaut: DataCleanupConfig.RETENTION_DAYS)
+    
+    Returns:
+        Dict: Statistiques de nettoyage
+    """
+    if not DataCleanupConfig.ENABLED:
+        return {'status': 'disabled', 'message': 'Nettoyage automatique désactivé'}
+    
+    if days is None:
+        days = DataCleanupConfig.RETENTION_DAYS
+    
+    from datetime import datetime, timedelta
+    from app import db, app
+    
+    cutoff_date = datetime.now() - timedelta(days=days)
+    cutoff_date_obj = cutoff_date.date()
+    
+    stats = {
+        'cutoff_date': cutoff_date.isoformat(),
+        'shifts_deleted': 0,
+        'on_calls_deleted': 0,
+        'leaves_deleted': 0,
+        'errors': []
+    }
+    
+    batch_size = DataCleanupConfig.BATCH_SIZE
+    
+    try:
+        while True:
+            old_shifts = Shift.query.filter(Shift.end_time < cutoff_date).limit(batch_size).all()
+            if not old_shifts:
+                break
+            for shift in old_shifts:
+                db.session.delete(shift)
+            db.session.commit()
+            stats['shifts_deleted'] += len(old_shifts)
+            app.logger.info(f"Nettoyage: {len(old_shifts)} shifts supprimés")
+    except Exception as e:
+        db.session.rollback()
+        stats['errors'].append(f"Erreur lors de la suppression des shifts: {str(e)}")
+        app.logger.error(f"Erreur nettoyage shifts: {str(e)}")
+    
+    try:
+        while True:
+            old_on_calls = OnCall.query.filter(OnCall.end_time < cutoff_date).limit(batch_size).all()
+            if not old_on_calls:
+                break
+            for on_call in old_on_calls:
+                db.session.delete(on_call)
+            db.session.commit()
+            stats['on_calls_deleted'] += len(old_on_calls)
+            app.logger.info(f"Nettoyage: {len(old_on_calls)} astreintes supprimées")
+    except Exception as e:
+        db.session.rollback()
+        stats['errors'].append(f"Erreur lors de la suppression des astreintes: {str(e)}")
+        app.logger.error(f"Erreur nettoyage astreintes: {str(e)}")
+    
+    try:
+        while True:
+            old_leaves = Leave.query.filter(Leave.end_date < cutoff_date_obj).limit(batch_size).all()
+            if not old_leaves:
+                break
+            for leave in old_leaves:
+                db.session.delete(leave)
+            db.session.commit()
+            stats['leaves_deleted'] += len(old_leaves)
+            app.logger.info(f"Nettoyage: {len(old_leaves)} congés supprimés")
+    except Exception as e:
+        db.session.rollback()
+        stats['errors'].append(f"Erreur lors de la suppression des congés: {str(e)}")
+        app.logger.error(f"Erreur nettoyage congés: {str(e)}")
+    
+    stats['status'] = 'completed'
+    stats['total_deleted'] = stats['shifts_deleted'] + stats['on_calls_deleted'] + stats['leaves_deleted']
+    app.logger.info(f"Nettoyage automatique terminé: {stats['total_deleted']} éléments supprimés")
+    return stats
+
+
+def setup_data_cleanup(app):
+    """Configure le nettoyage automatique des données."""
+    if not DataCleanupConfig.ENABLED:
+        app.logger.info("Nettoyage automatique des données désactivé")
+        return
+    
+    try:
+        from apscheduler.schedulers.background import BackgroundScheduler
+        scheduler = BackgroundScheduler()
+        scheduler.add_job(cleanup_old_data, 'cron', **parse_cron_schedule(DataCleanupConfig.SCHEDULE))
+        scheduler.start()
+        app.extensions['data_cleanup_scheduler'] = scheduler
+        app.logger.info(f"Nettoyage automatique configuré: {DataCleanupConfig.SCHEDULE}")
+    except ImportError:
+        app.logger.warning("APScheduler non installé. Le nettoyage automatique ne sera pas disponible.")
+    except Exception as e:
+        app.logger.error(f"Erreur lors de la configuration du nettoyage automatique: {str(e)}")
+
+
+def parse_cron_schedule(schedule_str):
+    """Parse une chaîne cron en dictionnaire pour APScheduler."""
+    parts = schedule_str.split()
+    if len(parts) == 5:
+        return {'minute': parts[0], 'hour': parts[1], 'day': parts[2], 'month': parts[3], 'day_of_week': parts[4]}
+    elif len(parts) == 6:
+        return {'second': parts[0], 'minute': parts[1], 'hour': parts[2], 'day': parts[3], 'month': parts[4], 'day_of_week': parts[5]}
+    else:
+        return {'minute': '0', 'hour': '0'}
