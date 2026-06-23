@@ -17,12 +17,34 @@
             </a>
             {% endif %}
             {% if current_user.is_authenticated %}
-            <a class="button is-success" href="{{ url_for('export_oncall', scope='all') }}">
+            <a class="button is-success" href="{{ url_for('export_oncall', scope='all') }}" title="Exporter toutes les astreintes (nécessite authentification)">
                 <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter toutes les astreintes
             </a>
-            <a class="button is-success" href="{{ url_for('export_oncall', scope='my') }}">
+            <a class="button is-success" href="{{ url_for('export_oncall', scope='my') }}" title="Exporter mes astreintes (nécessite authentification)">
                 <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter mes astreintes
             </a>
+            {% if current_user.ics_token %}
+            <div class="dropdown is-right" style="display: inline-block;">
+                <div class="dropdown-trigger">
+                    <button class="button is-success" aria-haspopup="true" aria-controls="oncall-token-dropdown" title="URLs avec token pour export externe">
+                        <i class="fas fa-link" aria-hidden="true"></i>&nbsp; Lien token
+                        <span class="icon is-small">
+                            <i class="fas fa-angle-down" aria-hidden="true"></i>
+                        </span>
+                    </button>
+                </div>
+                <div class="dropdown-menu" id="oncall-token-dropdown" role="menu">
+                    <div class="dropdown-content">
+                        <a class="dropdown-item" href="{{ request.host_url ~ current_user.get_ics_export_url('oncall', 'all') }}" title="Copier ce lien pour export externe">
+                            <i class="fas fa-users" aria-hidden="true"></i>&nbsp; Toutes les astreintes (token)
+                        </a>
+                        <a class="dropdown-item" href="{{ request.host_url ~ current_user.get_ics_export_url('oncall', 'my') }}" title="Copier ce lien pour export externe">
+                            <i class="fas fa-user" aria-hidden="true"></i>&nbsp; Mes astreintes (token)
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
             {% endif %}
             {% if current_user.is_admin %}
             <form method="POST" action="{{ url_for('delete_all_oncalls') }}" class="ml-2">
