@@ -1,0 +1,39 @@
+{
+  "_comment": "Exemple de configuration pour les sauvegardes Leviia Schedule",
+  "_instructions": "Copiez ce fichier en backup_config.json et modifiez les valeurs selon vos besoins",
+  
+  "enabled": true,
+  
+  "local_enabled": true,
+  "local_dir": "backups",
+  
+  "s3_enabled": false,
+  "s3_bucket": "votre-bucket-s3",
+  "s3_endpoint": null,
+  "s3_region": "eu-west-1",
+  "s3_access_key": "votre-access-key",
+  "s3_secret_key": "votre-secret-key",
+  "s3_prefix": "leviia-schedule",
+  "s3_use_ssl": true,
+  
+  "retention_days": 30,
+  "max_backups": 30,
+  
+  "compress": true,
+  "encrypt": false,
+  "encryption_key": null,
+  
+  "frequency": "daily",
+  "include_timestamp": true,
+  "timestamp_format": "%Y%m%d_%H%M%S",
+  "backup_prefix": "leviia_backup",
+  
+  "verify_backup": true,
+  
+  "log_level": "INFO",
+  "log_file": null,
+  
+  "notify_on_success": false,
+  "notify_on_failure": true,
+  "notification_email": null
+}

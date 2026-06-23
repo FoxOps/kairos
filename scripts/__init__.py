@@ -1,2 +1,4 @@
-# Package pour les scripts utilitaires
-# Ce package contient des scripts pour la validation, la configuration, etc.
+# Scripts pour Leviia Schedule
+# Ce dossier contient les scripts utilitaires pour l'administration et la maintenance
+
+__all__ = []
