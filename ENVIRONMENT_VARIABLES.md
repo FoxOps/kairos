@@ -519,5 +519,5 @@ Les variables booléennes acceptent les valeurs suivantes (insensibles à la cas
 
 ---
 
-*Dernière mise à jour : 2024*
+*Dernière mise à jour : $(date +%Y-%m-%d)*
 *Ce fichier documente toutes les variables d'environnement disponibles dans Leviia Schedule.*
