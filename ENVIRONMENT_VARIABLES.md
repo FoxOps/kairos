@@ -50,29 +50,37 @@ FLASK_TESTING=false
 
 | Variable | Type | Défaut | Description | Obligatoire |
 |----------|------|--------|-------------|-------------|
-| `DATABASE_URL` | string | `sqlite:///app.db` | URI de la base de données. Formats supportés : SQLite, PostgreSQL, MySQL | ✅ Oui |
+| `DATABASE_URL` | string | `sqlite:///app.db` | URI de la base de données. Formats supportés : **SQLite** (par défaut), **PostgreSQL**, **MariaDB**, **MySQL**. La configuration se fait uniquement via cette variable d'environnement. | ✅ Oui |
 | `SQLALCHEMY_TRACK_MODIFICATIONS` | booléen | `false` | Désactive le suivi des modifications SQLAlchemy (recommandé : `false`) | ❌ Non |
 | `SQLALCHEMY_ECHO` | booléen | `false` | Affiche les requêtes SQL dans les logs (utile pour le débogage) | ❌ Non |
 | `SQLALCHEMY_ENGINE_OPTIONS` | JSON | `{}` | Options du moteur SQLAlchemy au format JSON. Exemple : `{"connect_args": {"timeout": 30}, "pool_pre_ping": true, "pool_recycle": 3600}` | ❌ Non |
-| `DATABASE_POOL_SIZE` | entier | `5` | Taille du pool de connexions à la base de données | ❌ Non |
-| `DATABASE_MAX_OVERFLOW` | entier | `10` | Nombre maximal de connexions supplémentaires | ❌ Non |
-| `DATABASE_CONNECT_TIMEOUT` | entier | `30` | Délai d'attente pour la connexion à la base de données (en secondes) | ❌ Non |
+| `DATABASE_POOL_SIZE` | entier | `5` (SQLite), `10` (PostgreSQL/MariaDB) | Taille du pool de connexions à la base de données | ❌ Non |
+| `DATABASE_MAX_OVERFLOW` | entier | `10` (SQLite), `20` (PostgreSQL/MariaDB) | Nombre maximal de connexions supplémentaires | ❌ Non |
+| `DATABASE_CONNECT_TIMEOUT` | entier | `30` (SQLite), `10` (PostgreSQL/MariaDB) | Délai d'attente pour la connexion à la base de données (en secondes) | ❌ Non |
 | `DATABASE_POOL_RECYCLE` | entier | `3600` | Recycle les connexions après ce nombre de secondes | ❌ Non |
 
 **Formats DATABASE_URL :**
 ```bash
-# SQLite (par défaut)
+# SQLite (par défaut - recommandé pour le développement et les tests)
 DATABASE_URL=sqlite:///chemin/vers/app.db
+DATABASE_URL=sqlite:///:memory:  # En mémoire (pour les tests)
 
 # PostgreSQL (recommandé pour la production)
-DATABASE_URL=postgresql://utilisateur:motdepasse@hote:port/base_de_donnees
+DATABASE_URL=postgresql://utilisateur:motdepasse@hote:5432/base_de_donnees
+DATABASE_URL=postgres://utilisateur:motdepasse@hote:5432/base_de_donnees
 
-# MySQL
-DATABASE_URL=mysql://utilisateur:motdepasse@hote:port/base_de_donnees
+# MariaDB (recommandé pour la production)
+DATABASE_URL=mariadb://utilisateur:motdepasse@hote:3306/base_de_donnees
 
-# SQLite en mémoire (pour les tests)
-DATABASE_URL=sqlite:///:memory:
+# MySQL (compatible)
+DATABASE_URL=mysql://utilisateur:motdepasse@hote:3306/base_de_donnees
 ```
+
+> **⚠️  IMPORTANT:**
+> - **SQLite** reste la base de données par défaut et est parfaite pour le développement et les tests.
+> - **En production**, il est fortement recommandé d'utiliser **PostgreSQL** ou **MariaDB** plutôt que SQLite, surtout avec plusieurs processus workers.
+> - La configuration de la base de données se fait **uniquement via la variable d'environnement `DATABASE_URL`** - un administrateur peut changer ce paramètre sans modifier le code.
+> - Les options du moteur (pool size, timeout, etc.) sont automatiquement optimisées selon le type de base de données détecté.
 
 ---
 
@@ -364,6 +372,40 @@ DATA_CLEANUP_RETENTION=1y
 DATA_CLEANUP_SCHEDULE="0 0 * * *"
 ```
 
+### Configuration pour la Production avec MariaDB
+
+```bash
+# Configuration de base
+FLASK_ENV=production
+SECRET_KEY=votre_cle_secrete_aleatoire_ici
+
+# Base de données MariaDB
+DATABASE_URL=mariadb://leviia_user:motdepasse_secure@localhost:3306/leviia_db
+
+# Logging
+LOG_LEVEL=WARNING
+SYSLOG_ENABLED=true
+SYSLOG_ADDRESS=/dev/log
+
+# Sécurité
+SESSION_COOKIE_SECURE=true
+SESSION_COOKIE_HTTPONLY=true
+SESSION_COOKIE_SAMESITE=Lax
+CORS_ENABLED=false
+DEBUG_ERRORS=false
+
+# Performances
+CACHE_TYPE=redis
+CACHE_REDIS_URL=redis://localhost:6379/0
+CACHE_ENABLED=true
+PERFORMANCE_MONITORING_ENABLED=true
+
+# Nettoyage automatique (optionnel)
+DATA_CLEANUP_ENABLED=true
+DATA_CLEANUP_RETENTION=1y
+DATA_CLEANUP_SCHEDULE="0 0 * * *"
+```
+
 ### Configuration pour le Développement
 
 ```bash
@@ -446,7 +488,7 @@ SLOW_QUERY_THRESHOLD=1.0
 
 2. **DEFAULT_ADMIN_PASSWORD** : Toujours changer le mot de passe admin après la première connexion.
 
-3. **Base de données** : En production, ne jamais utiliser SQLite avec plusieurs processus workers. Utilisez PostgreSQL ou MySQL.
+3. **Base de données** : En production, ne jamais utiliser SQLite avec plusieurs processus workers. Utilisez **PostgreSQL** ou **MariaDB** pour les environnements multi-processus.
 
 4. **Variables sensibles** : Ne jamais stocker de mots de passe ou clés secrètes dans le fichier `.env` commité dans Git. Utilisez les variables d'environnement du système ou un service de gestion des secrets.
 
