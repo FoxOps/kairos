@@ -46,6 +46,17 @@ class CacheConfig:
     Configuration du cache.
     
     Peut être configurée via variables d'environnement ou directement.
+    
+    Variables d'environnement disponibles:
+    - CACHE_TYPE: 'simple' (défaut), 'redis', 'memcached'
+    - CACHE_ENABLED: true/false (défaut: true)
+    - CACHE_DEFAULT_TIMEOUT: durée en secondes (défaut: 300)
+    - CACHE_MAX_ENTRIES: nombre maximal d'entrées (défaut: 1000)
+    - CACHE_THRESHOLD: seuil de nettoyage (défaut: 0.75)
+    - CACHE_KEY_PREFIX: préfixe pour les clés (défaut: 'leviia:')
+    - CACHE_REDIS_URL: URL Redis (ex: 'redis://localhost:6379/0')
+    - CACHE_REDIS_PASSWORD: mot de passe Redis
+    - CACHE_REDIS_DB: numéro de base Redis (défaut: 0)
     """
     
     # Type de cache : 'simple', 'redis', 'memcached'

@@ -184,6 +184,35 @@ class Config:
 
     # Configuration spécifique pour les tests
     TESTING = get_bool_from_env("FLASK_TESTING", False)
+    # ============================================================================
+    # CONFIGURATION DE LA SÉCURITÉ
+    # ============================================================================
+    
+    # Rate Limiting
+    RATE_LIMIT_ENABLED = get_bool_from_env("RATE_LIMIT_ENABLED", True)
+    RATE_LIMIT_DEFAULT = os.environ.get("RATE_LIMIT_DEFAULT", "200 per day, 50 per hour")
+    
+    # Compression Gzip
+    COMPRESS_ENABLED = get_bool_from_env("COMPRESS_ENABLED", True)
+    COMPRESS_MIMETYPES = [
+        'text/html',
+        'text/css',
+        'text/xml',
+        'application/json',
+        'application/javascript'
+    ]
+    
+    # CSRF Protection
+    WTF_CSRF_ENABLED = get_bool_from_env("WTF_CSRF_ENABLED", True)
+    WTF_CSRF_TIME_LIMIT = get_int_from_env("WTF_CSRF_TIME_LIMIT", 3600)
+    
+    # Headers de sécurité
+    SESSION_COOKIE_SECURE = get_bool_from_env("SESSION_COOKIE_SECURE", False)
+    SESSION_COOKIE_HTTPONLY = get_bool_from_env("SESSION_COOKIE_HTTPONLY", True)
+    SESSION_COOKIE_SAMESITE = os.environ.get("SESSION_COOKIE_SAMESITE", "Lax")
+    REMEMBER_COOKIE_SECURE = get_bool_from_env("REMEMBER_COOKIE_SECURE", False)
+    PREFERRED_URL_SCHEME = os.environ.get("PREFERRED_URL_SCHEME", "http")
+
 
 
 # ============================================================================
@@ -269,6 +298,69 @@ class TestingConfig(Config):
     WTF_CSRF_ENABLED = False
     LOG_LEVEL = "DEBUG"
     DEBUG_ERRORS = True
+    RATE_LIMIT_ENABLED = False
+    COMPRESS_ENABLED = False
+
+
+
+
+# ============================================================================
+# CONFIGURATION POUR LE NETTOYAGE AUTOMATIQUE
+# ============================================================================
+
+class DataCleanupConfig:
+    """
+    Configuration du nettoyage automatique des données.
+    
+    Variables d'environnement disponibles:
+    - DATA_CLEANUP_ENABLED: true/false (défaut: false - désactivé par défaut)
+    - DATA_CLEANUP_RETENTION: durée de rétention (ex: '1y', '6m', '30d', '365' en jours)
+    - DATA_CLEANUP_BATCH_SIZE: taille des lots pour la suppression (défaut: 1000)
+    - DATA_CLEANUP_SCHEDULE: planification cron (ex: '0 0 * * *' pour minuit)
+    """
+    
+    # Désactivé par défaut pour la sécurité
+    ENABLED = get_bool_from_env("DATA_CLEANUP_ENABLED", False)
+    
+    # Durée de rétention par défaut: 1 an
+    RETENTION_DAYS = get_int_from_env("DATA_CLEANUP_RETENTION_DAYS", 365)
+    
+    # Taille des lots pour la suppression
+    BATCH_SIZE = get_int_from_env("DATA_CLEANUP_BATCH_SIZE", 1000)
+    
+    # Planification par défaut: tous les jours à minuit
+    SCHEDULE = os.environ.get("DATA_CLEANUP_SCHEDULE", "0 0 * * *")
+    
+    @classmethod
+    def parse_retention(cls, retention_str):
+        """Parse une chaîne de rétention (ex: '1y', '6m', '30d') en jours."""
+        if not retention_str:
+            return cls.RETENTION_DAYS
+        retention_str = retention_str.lower().strip()
+        if retention_str.endswith('y'):
+            return int(retention_str[:-1]) * 365
+        elif retention_str.endswith('m'):
+            return int(retention_str[:-1]) * 30
+        elif retention_str.endswith('d'):
+            return int(retention_str[:-1])
+        else:
+            try:
+                return int(retention_str)
+            except ValueError:
+                return cls.RETENTION_DAYS
+    
+    @classmethod
+    def from_env(cls):
+        """Recharge la configuration depuis les variables d'environnement."""
+        cls.ENABLED = get_bool_from_env("DATA_CLEANUP_ENABLED", False)
+        retention_str = os.environ.get("DATA_CLEANUP_RETENTION", f"{cls.RETENTION_DAYS}d")
+        cls.RETENTION_DAYS = cls.parse_retention(retention_str)
+        cls.BATCH_SIZE = get_int_from_env("DATA_CLEANUP_BATCH_SIZE", 1000)
+        cls.SCHEDULE = os.environ.get("DATA_CLEANUP_SCHEDULE", "0 0 * * *")
+
+
+# Charger la configuration du nettoyage
+DataCleanupConfig.from_env()
 
 
 # Sélection de la configuration en fonction de l'environnement

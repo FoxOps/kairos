@@ -22,7 +22,7 @@ class User(db.Model, UserMixin):
     password_hash = db.Column(db.String(128))
     is_admin = db.Column(db.Boolean, default=False)
     group_id = db.Column(
-        db.Integer, db.ForeignKey("groups.id"), nullable=False, default=1
+        db.Integer, db.ForeignKey("groups.id"), nullable=False, default=1, index=True
     )
     ics_token = db.Column(db.String(64), unique=True, nullable=True)
 
@@ -53,6 +53,41 @@ class User(db.Model, UserMixin):
         if not self.ics_token:
             return None
         return f"/export/{export_type}?scope={scope}&token={self.ics_token}"
+
+
+    @property
+    def total_shifts(self):
+        """Nombre total de shifts pour cet utilisateur."""
+        return Shift.query.filter_by(user_id=self.id).count()
+
+    @property
+    def total_oncalls(self):
+        """Nombre total d'astreintes pour cet utilisateur."""
+        return OnCall.query.filter_by(user_id=self.id).count()
+
+    @property
+    def total_leaves(self):
+        """Nombre total de congés pour cet utilisateur."""
+        return Leave.query.filter_by(user_id=self.id).count()
+
+    @property
+    def next_shift(self):
+        """Prochain shift de l'utilisateur."""
+        from datetime import datetime
+        return Shift.query.filter(
+            Shift.user_id == self.id,
+            Shift.start_time > datetime.now()
+        ).order_by(Shift.start_time).first()
+
+    @property
+    def current_oncall(self):
+        """Astreinte actuelle de l'utilisateur."""
+        from datetime import datetime
+        return OnCall.query.filter(
+            OnCall.user_id == self.id,
+            OnCall.start_time <= datetime.now(),
+            OnCall.end_time >= datetime.now()
+        ).first()
 
     def __repr__(self):
         return f"<User {self.name} ({self.email})>"
