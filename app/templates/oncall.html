@@ -65,7 +65,7 @@
                         <td>{{ oncall.end_time.strftime('%d/%m/%Y %H:%M') }}</td>
                         <td>
                             {% if current_user.is_admin %}
-                            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: nowrap;">
+                            <div class="is-flex is-flex-wrap-nowrap gap-2 is-align-items-center">
                                 <a class="button is-danger is-small" 
                                    href="{{ url_for('delete_oncall', oncall_id=oncall.id) }}"
                                    onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette astreinte ?')"
@@ -76,7 +76,7 @@
                                 <!-- Afficher seulement pour la première occurrence de chaque utilisateur -->
                                 {% set is_first_user = namespace(value=(oncall.user.id not in seen_users)) %}
                                 {% if is_first_user.value %}
-                                <form method="POST" action="{{ url_for('delete_all_oncalls_for_user', user_id=oncall.user.id) }}" style="margin: 0;">
+                                <form method="POST" action="{{ url_for('delete_all_oncalls_for_user', user_id=oncall.user.id) }}" class="mb-0">
                                     <button type="submit" class="button is-warning is-small"
                                             onclick="return confirm('Êtes-vous sûr de vouloir supprimer TOUTES les astreintes de {{ oncall.user.name }} ?')"
                                             aria-label="Supprimer toutes les astreintes de cet utilisateur"
@@ -100,9 +100,9 @@
         <div class="notification is-info is-light mt-4">
             <h3 class="subtitle is-6"><i class="fas fa-info-circle"></i> Légende des actions</h3>
             <div class="content">
-                <p class="is-flex is-flex-wrap-wrap" style="gap: 0.5rem;">
-                    <span class="button is-danger is-small" style="min-width: 200px;"><i class="fas fa-trash"></i> Supprimer cette astreinte</span>
-                    <span class="button is-warning is-small" style="min-width: 200px;"><i class="fas fa-user-times"></i> Supprimer TOUTES les astreintes de cet utilisateur</span>
+                <p class="is-flex is-flex-wrap-wrap gap-2">
+                    <span class="button is-danger is-small min-w-200"><i class="fas fa-trash"></i> Supprimer cette astreinte</span>
+                    <span class="button is-warning is-small min-w-200"><i class="fas fa-user-times"></i> Supprimer TOUTES les astreintes de cet utilisateur</span>
                 </p>
             </div>
         </div>

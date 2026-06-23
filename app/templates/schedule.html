@@ -83,7 +83,7 @@
                         <td>{{ shift.end_time.strftime('%H:%M') }}</td>
                         <td>
                             {% if current_user.is_admin %}
-                            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                            <div class="is-flex is-flex-wrap-wrap gap-2">
                                 <!-- Bouton pour supprimer ce shift -->
                                 <a class="button is-danger is-small" href="{{ url_for('delete_shift', shift_id=shift.id) }}" 
                                    aria-label="Supprimer le shift" title="Supprimer ce shift">
@@ -92,7 +92,7 @@
                                 
                                 <!-- Bouton pour supprimer tous les shifts de cet utilisateur (1ère occurrence) -->
                                 {% if is_first_user.value %}
-                                <form method="POST" action="{{ url_for('delete_all_shifts_for_user', user_id=shift.user.id) }}" style="margin: 0;">
+                                <form method="POST" action="{{ url_for('delete_all_shifts_for_user', user_id=shift.user.id) }}" class="mb-0">
                                     <button type="submit" class="button is-warning is-small"
                                             onclick="return confirm('Êtes-vous sûr de vouloir supprimer TOUS les shifts de {{ shift.user.name }} ?')"
                                             aria-label="Supprimer tous les shifts de cet utilisateur"
@@ -104,7 +104,7 @@
                                 
                                 <!-- Bouton pour supprimer tous les shifts de la semaine (uniquement le lundi, 1ère occurrence) -->
                                 {% if is_monday.value and is_first_date.value %}
-                                <form method="POST" action="{{ url_for('delete_all_shifts_for_week', date_str=shift.date.strftime('%Y-%m-%d')) }}" style="margin: 0;">
+                                <form method="POST" action="{{ url_for('delete_all_shifts_for_week', date_str=shift.date.strftime('%Y-%m-%d')) }}" class="mb-0">
                                     <button type="submit" class="button is-primary is-small"
                                             onclick="return confirm('Êtes-vous SÛR de vouloir supprimer TOUS les shifts de la SEMAINE du {{ shift.date.strftime('%d/%m/%Y') }} ?')"
                                             aria-label="Supprimer tous les shifts de la semaine"
@@ -116,7 +116,7 @@
                                 
                                 <!-- Bouton pour supprimer tous les shifts de la journée (1ère occurrence) -->
                                 {% if is_first_date.value %}
-                                <form method="POST" action="{{ url_for('delete_all_shifts_for_day', date_str=shift.date.strftime('%Y-%m-%d')) }}" style="margin: 0;">
+                                <form method="POST" action="{{ url_for('delete_all_shifts_for_day', date_str=shift.date.strftime('%Y-%m-%d')) }}" class="mb-0">
                                     <button type="submit" class="button is-info is-small"
                                             onclick="return confirm('Êtes-vous sûr de vouloir supprimer TOUS les shifts du {{ shift.date.strftime('%d/%m/%Y') }} ?')"
                                             aria-label="Supprimer tous les shifts de la journée"
@@ -139,11 +139,11 @@
         <div class="notification is-info is-light mt-4">
             <h3 class="subtitle is-6"><i class="fas fa-info-circle"></i> Légende des actions</h3>
             <div class="content">
-                <p class="is-flex is-flex-wrap-wrap" style="gap: 0.5rem;">
-                    <span class="button is-danger is-small" style="min-width: 140px;"><i class="fas fa-trash"></i> Supprimer ce shift</span>
-                    <span class="button is-warning is-small" style="min-width: 140px;"><i class="fas fa-user-times"></i> Supprimer TOUS les shifts de cet utilisateur</span>
-                    <span class="button is-info is-small" style="min-width: 140px;"><i class="fas fa-calendar-day"></i> Supprimer TOUS les shifts de cette journée</span>
-                    <span class="button is-primary is-small" style="min-width: 140px;"><i class="fas fa-calendar-week"></i> Supprimer TOUS les shifts de cette semaine</span>
+                <p class="is-flex is-flex-wrap-wrap gap-2">
+                    <span class="button is-danger is-small min-w-140"><i class="fas fa-trash"></i> Supprimer ce shift</span>
+                    <span class="button is-warning is-small min-w-140"><i class="fas fa-user-times"></i> Supprimer TOUS les shifts de cet utilisateur</span>
+                    <span class="button is-info is-small min-w-140"><i class="fas fa-calendar-day"></i> Supprimer TOUS les shifts de cette journée</span>
+                    <span class="button is-primary is-small min-w-140"><i class="fas fa-calendar-week"></i> Supprimer TOUS les shifts de cette semaine</span>
                 </p>
             </div>
         </div>

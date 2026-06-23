@@ -1,4 +1,63 @@
+   SUPPORT DU MODE SOMBRE DU SYSTÈME
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+        --bg-primary: #1a1a1a;
+        --bg-secondary: #121212;
+        --bg-tertiary: #242424;
+        --text-primary: #e0e0e0;
+        --text-secondary: #b0b0b0;
+        --text-tertiary: #8a8a8a;
+        --border-primary: #363636;
+        --border-secondary: #2d2d2d;
+        --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.4);
+        --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.5);
+    }
+}
+=======
 /* ============================================
+   CLASSES UTILITAIRES POUR BULMA
+   ============================================ */
+
+/* Gap utilities - pour remplacer les styles inline */
+.gap-0 { gap: 0; }
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+.gap-5 { gap: 1.5rem; }
+
+/* Min-width utilities pour les boutons */
+.min-w-140 { min-width: 140px; }
+.min-w-150 { min-width: 150px; }
+.min-w-180 { min-width: 180px; }
+.min-w-200 { min-width: 200px; }
+
+/* Width utilities */
+.w-80 { width: 80px; }
+
+/* Margin bottom utility pour remplacer margin: 0 */
+.mb-0 { margin-bottom: 0 !important; }
+
+/* ============================================
+   SUPPORT DU MODE SOMBRE DU SYSTÈME
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+        --bg-primary: #1a1a1a;
+        --bg-secondary: #121212;
+        --bg-tertiary: #242424;
+        --text-primary: #e0e0e0;
+        --text-secondary: #b0b0b0;
+        --text-tertiary: #8a8a8a;
+        --border-primary: #363636;
+        --border-secondary: #2d2d2d;
+        --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.4);
+        --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.5);
+    }
+}============================================
    LEVIIA SCHEDULE - THÈME SOMBRE
    ============================================
    
