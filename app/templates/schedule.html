@@ -16,35 +16,13 @@
                 <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un shift
             </a>
             {% endif %}
-            {% if current_user.is_authenticated %}
-            <a class="button is-success" href="{{ url_for('export_shifts', scope='all') }}" title="Exporter tous les shifts (nécessite authentification)">
+            {% if current_user.is_authenticated and current_user.ics_token %}
+            <a class="button is-success" href="{{ request.host_url ~ current_user.get_ics_export_url('shifts', 'all') }}" title="Exporter tous les shifts">
                 <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter tous les shifts
             </a>
-            <a class="button is-success" href="{{ url_for('export_shifts', scope='my') }}" title="Exporter mes shifts (nécessite authentification)">
+            <a class="button is-success" href="{{ request.host_url ~ current_user.get_ics_export_url('shifts', 'my') }}" title="Exporter mes shifts">
                 <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter mes shifts
             </a>
-            {% if current_user.ics_token %}
-            <div class="dropdown is-right" style="display: inline-block;">
-                <div class="dropdown-trigger">
-                    <button class="button is-success" aria-haspopup="true" aria-controls="shifts-token-dropdown" title="URLs avec token pour export externe">
-                        <i class="fas fa-link" aria-hidden="true"></i>&nbsp; Lien token
-                        <span class="icon is-small">
-                            <i class="fas fa-angle-down" aria-hidden="true"></i>
-                        </span>
-                    </button>
-                </div>
-                <div class="dropdown-menu" id="shifts-token-dropdown" role="menu">
-                    <div class="dropdown-content">
-                        <a class="dropdown-item" href="{{ request.host_url ~ current_user.get_ics_export_url('shifts', 'all') }}" title="Copier ce lien pour export externe">
-                            <i class="fas fa-users" aria-hidden="true"></i>&nbsp; Tous les shifts (token)
-                        </a>
-                        <a class="dropdown-item" href="{{ request.host_url ~ current_user.get_ics_export_url('shifts', 'my') }}" title="Copier ce lien pour export externe">
-                            <i class="fas fa-user" aria-hidden="true"></i>&nbsp; Mes shifts (token)
-                        </a>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
             {% endif %}
             {% if current_user.is_admin %}
             <form method="POST" action="{{ url_for('delete_all_shifts') }}" class="ml-2">

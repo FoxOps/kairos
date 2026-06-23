@@ -16,35 +16,13 @@
                 <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un congé
             </a>
             {% endif %}
-            {% if current_user.is_authenticated %}
-            <a class="button is-success" href="{{ url_for('export_leaves', scope='all') }}" title="Exporter tous les congés (nécessite authentification)">
+            {% if current_user.is_authenticated and current_user.ics_token %}
+            <a class="button is-success" href="{{ request.host_url ~ current_user.get_ics_export_url('leaves', 'all') }}" title="Exporter tous les congés">
                 <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter tous les congés
             </a>
-            <a class="button is-success" href="{{ url_for('export_leaves', scope='my') }}" title="Exporter mes congés (nécessite authentification)">
+            <a class="button is-success" href="{{ request.host_url ~ current_user.get_ics_export_url('leaves', 'my') }}" title="Exporter mes congés">
                 <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter mes congés
             </a>
-            {% if current_user.ics_token %}
-            <div class="dropdown is-right" style="display: inline-block;">
-                <div class="dropdown-trigger">
-                    <button class="button is-success" aria-haspopup="true" aria-controls="leaves-token-dropdown" title="URLs avec token pour export externe">
-                        <i class="fas fa-link" aria-hidden="true"></i>&nbsp; Lien token
-                        <span class="icon is-small">
-                            <i class="fas fa-angle-down" aria-hidden="true"></i>
-                        </span>
-                    </button>
-                </div>
-                <div class="dropdown-menu" id="leaves-token-dropdown" role="menu">
-                    <div class="dropdown-content">
-                        <a class="dropdown-item" href="{{ request.host_url ~ current_user.get_ics_export_url('leaves', 'all') }}" title="Copier ce lien pour export externe">
-                            <i class="fas fa-users" aria-hidden="true"></i>&nbsp; Tous les congés (token)
-                        </a>
-                        <a class="dropdown-item" href="{{ request.host_url ~ current_user.get_ics_export_url('leaves', 'my') }}" title="Copier ce lien pour export externe">
-                            <i class="fas fa-user" aria-hidden="true"></i>&nbsp; Mes congés (token)
-                        </a>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
             {% endif %}
         </div>
         
