@@ -16,11 +16,11 @@
                 <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un congé
             </a>
             {% endif %}
-            {% if current_user.is_authenticated %}
-            <a class="button is-success" href="{{ url_for('export_leaves', scope='all') }}">
+            {% if current_user.is_authenticated and current_user.ics_token %}
+            <a class="button is-success" href="{{ request.host_url ~ current_user.get_ics_export_url('leaves', 'all') }}" title="Exporter tous les congés">
                 <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter tous les congés
             </a>
-            <a class="button is-success" href="{{ url_for('export_leaves', scope='my') }}">
+            <a class="button is-success" href="{{ request.host_url ~ current_user.get_ics_export_url('leaves', 'my') }}" title="Exporter mes congés">
                 <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter mes congés
             </a>
             {% endif %}

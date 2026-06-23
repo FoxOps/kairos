@@ -55,19 +55,20 @@
                             </div>
                         </div>
                         
+                        <!-- Shifts URLs -->
                         <div class="field is-horizontal mb-4">
                             <div class="field-label is-normal">
-                                <label class="label">URL (Tous)</label>
+                                <label class="label">URL Shifts (Tous)</label>
                             </div>
                             <div class="field-body">
                                 <div class="field has-addons">
                                     <div class="control is-expanded">
                                         <input class="input" type="text" 
-                                               value="{{ request.host_url ~ user.get_ics_export_url('all') }}" 
-                                               id="urlAllInput" readonly>
+                                               value="{{ request.host_url ~ user.get_ics_export_url('shifts', 'all') }}" 
+                                               id="urlShiftsAllInput" readonly>
                                     </div>
                                     <div class="control">
-                                        <button class="button is-primary" onclick="copyUrlAll()">
+                                        <button class="button is-primary" onclick="copyUrlShiftsAll()">
                                             <span class="icon">
                                                 <i class="fas fa-copy"></i>
                                             </span>
@@ -83,17 +84,17 @@
                         
                         <div class="field is-horizontal mb-4">
                             <div class="field-label is-normal">
-                                <label class="label">URL (Perso)</label>
+                                <label class="label">URL Shifts (Perso)</label>
                             </div>
                             <div class="field-body">
                                 <div class="field has-addons">
                                     <div class="control is-expanded">
                                         <input class="input" type="text" 
-                                               value="{{ request.host_url ~ user.get_ics_export_url('my') }}" 
-                                               id="urlMyInput" readonly>
+                                               value="{{ request.host_url ~ user.get_ics_export_url('shifts', 'my') }}" 
+                                               id="urlShiftsMyInput" readonly>
                                     </div>
                                     <div class="control">
-                                        <button class="button is-primary" onclick="copyUrlMy()">
+                                        <button class="button is-primary" onclick="copyUrlShiftsMy()">
                                             <span class="icon">
                                                 <i class="fas fa-copy"></i>
                                             </span>
@@ -103,6 +104,112 @@
                                 </div>
                                 <p class="help">
                                     URL pour exporter uniquement vos shifts (scope=my)
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- OnCall URLs -->
+                        <div class="field is-horizontal mb-4">
+                            <div class="field-label is-normal">
+                                <label class="label">URL Astreintes (Tous)</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field has-addons">
+                                    <div class="control is-expanded">
+                                        <input class="input" type="text" 
+                                               value="{{ request.host_url ~ user.get_ics_export_url('oncall', 'all') }}" 
+                                               id="urlOncallAllInput" readonly>
+                                    </div>
+                                    <div class="control">
+                                        <button class="button is-primary" onclick="copyUrlOncallAll()">
+                                            <span class="icon">
+                                                <i class="fas fa-copy"></i>
+                                            </span>
+                                            <span>Copier</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="help">
+                                    URL pour exporter TOUTES les astreintes (scope=all)
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="field is-horizontal mb-4">
+                            <div class="field-label is-normal">
+                                <label class="label">URL Astreintes (Perso)</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field has-addons">
+                                    <div class="control is-expanded">
+                                        <input class="input" type="text" 
+                                               value="{{ request.host_url ~ user.get_ics_export_url('oncall', 'my') }}" 
+                                               id="urlOncallMyInput" readonly>
+                                    </div>
+                                    <div class="control">
+                                        <button class="button is-primary" onclick="copyUrlOncallMy()">
+                                            <span class="icon">
+                                                <i class="fas fa-copy"></i>
+                                            </span>
+                                            <span>Copier</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="help">
+                                    URL pour exporter uniquement vos astreintes (scope=my)
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Leaves URLs -->
+                        <div class="field is-horizontal mb-4">
+                            <div class="field-label is-normal">
+                                <label class="label">URL Congés (Tous)</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field has-addons">
+                                    <div class="control is-expanded">
+                                        <input class="input" type="text" 
+                                               value="{{ request.host_url ~ user.get_ics_export_url('leaves', 'all') }}" 
+                                               id="urlLeavesAllInput" readonly>
+                                    </div>
+                                    <div class="control">
+                                        <button class="button is-primary" onclick="copyUrlLeavesAll()">
+                                            <span class="icon">
+                                                <i class="fas fa-copy"></i>
+                                            </span>
+                                            <span>Copier</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="help">
+                                    URL pour exporter TOUS les congés (scope=all)
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="field is-horizontal mb-4">
+                            <div class="field-label is-normal">
+                                <label class="label">URL Congés (Perso)</label>
+                            </div>
+                            <div class="field-body">
+                                <div class="field has-addons">
+                                    <div class="control is-expanded">
+                                        <input class="input" type="text" 
+                                               value="{{ request.host_url ~ user.get_ics_export_url('leaves', 'my') }}" 
+                                               id="urlLeavesMyInput" readonly>
+                                    </div>
+                                    <div class="control">
+                                        <button class="button is-primary" onclick="copyUrlLeavesMy()">
+                                            <span class="icon">
+                                                <i class="fas fa-copy"></i>
+                                            </span>
+                                            <span>Copier</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="help">
+                                    URL pour exporter uniquement vos congés (scope=my)
                                 </p>
                             </div>
                         </div>
@@ -160,12 +267,12 @@ function copyToken() {
     }, 2000);
 }
 
-function copyUrlAll() {
-    const input = document.getElementById('urlAllInput');
+// Shifts copy functions
+function copyUrlShiftsAll() {
+    const input = document.getElementById('urlShiftsAllInput');
     input.select();
     document.execCommand('copy');
     
-    // Show a brief notification
     const button = event.target.closest('button');
     const originalText = button.innerHTML;
     button.innerHTML = '<span class="icon"><i class="fas fa-check"></i></span><span>Copié !</span>';
@@ -175,12 +282,69 @@ function copyUrlAll() {
     }, 2000);
 }
 
-function copyUrlMy() {
-    const input = document.getElementById('urlMyInput');
+function copyUrlShiftsMy() {
+    const input = document.getElementById('urlShiftsMyInput');
     input.select();
     document.execCommand('copy');
     
-    // Show a brief notification
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<span class="icon"><i class="fas fa-check"></i></span><span>Copié !</span>';
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+    }, 2000);
+}
+
+// OnCall copy functions
+function copyUrlOncallAll() {
+    const input = document.getElementById('urlOncallAllInput');
+    input.select();
+    document.execCommand('copy');
+    
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<span class="icon"><i class="fas fa-check"></i></span><span>Copié !</span>';
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+    }, 2000);
+}
+
+function copyUrlOncallMy() {
+    const input = document.getElementById('urlOncallMyInput');
+    input.select();
+    document.execCommand('copy');
+    
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<span class="icon"><i class="fas fa-check"></i></span><span>Copié !</span>';
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+    }, 2000);
+}
+
+// Leaves copy functions
+function copyUrlLeavesAll() {
+    const input = document.getElementById('urlLeavesAllInput');
+    input.select();
+    document.execCommand('copy');
+    
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<span class="icon"><i class="fas fa-check"></i></span><span>Copié !</span>';
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+    }, 2000);
+}
+
+function copyUrlLeavesMy() {
+    const input = document.getElementById('urlLeavesMyInput');
+    input.select();
+    document.execCommand('copy');
+    
     const button = event.target.closest('button');
     const originalText = button.innerHTML;
     button.innerHTML = '<span class="icon"><i class="fas fa-check"></i></span><span>Copié !</span>';

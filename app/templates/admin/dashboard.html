@@ -89,15 +89,17 @@
                 <a class="button is-primary is-small" href="{{ url_for('add_shift_type') }}">
                     <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un type de shift
                 </a>
-                <a class="button is-success is-small" href="{{ url_for('export_shifts', scope='all') }}">
+                {% if current_user.ics_token %}
+                <a class="button is-success is-small" href="{{ request.host_url ~ current_user.get_ics_export_url('shifts', 'all') }}">
                     <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter tous les shifts
                 </a>
-                <a class="button is-success is-small" href="{{ url_for('export_oncall', scope='all') }}">
+                <a class="button is-success is-small" href="{{ request.host_url ~ current_user.get_ics_export_url('oncall', 'all') }}">
                     <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter toutes les astreintes
                 </a>
-                <a class="button is-success is-small" href="{{ url_for('export_leaves', scope='all') }}">
+                <a class="button is-success is-small" href="{{ request.host_url ~ current_user.get_ics_export_url('leaves', 'all') }}">
                     <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter tous les congés
                 </a>
+                {% endif %}
             </div>
         </div>
     </div>
