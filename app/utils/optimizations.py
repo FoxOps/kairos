@@ -228,9 +228,6 @@ def _make_function_cache_key(f: Callable, args: tuple, kwargs: dict) -> str:
     for key, value in sorted(kwargs.items()):
         key_parts.append(f"{key}={value}")
     
-# DÉCORATEURS DE PAGINATION
-# ============================================================================
-=======
     # Créer un hash
     # Note: SHA-256 est utilisé au lieu de MD5 pour des raisons de sécurité et de bonnes pratiques
     # Ce hash n'est pas utilisé pour la sécurité, mais pour générer des clés de cache uniques
@@ -239,8 +236,6 @@ def _make_function_cache_key(f: Callable, args: tuple, kwargs: dict) -> str:
 
 
 # ============================================================================
-# DÉCORATEURS DE PAGINATION
-# ========================================================================================================================================================
 # DÉCORATEURS DE PAGINATION
 # ============================================================================
 
