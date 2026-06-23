@@ -291,7 +291,7 @@ PAGINATION_MAX_PER_PAGE=100
 PAGINATION_PER_PAGE_OPTIONS=[5, 10, 20, 50, 100]
 
 # Style
-PAGINATION_STYLE=bulma  # bulma, bootstrap, simple, none
+PAGINATION_STYLE=bulma  # bulma, simple, none
 PAGINATION_WINDOW=2     # Nombre de pages autour de la page courante
 
 # Pagination par curseur
@@ -966,7 +966,7 @@ PAGINATION_ENABLED=true
 PAGINATION_DEFAULT_PER_PAGE=20
 PAGINATION_MAX_PER_PAGE=100
 PAGINATION_PER_PAGE_OPTIONS=[5, 10, 20, 50, 100]
-PAGINATION_STYLE=bootstrap
+PAGINATION_STYLE=bulma
 PAGINATION_WINDOW=2
 
 # Lazy Loading
@@ -1187,7 +1187,7 @@ performance_config = PerformanceConfig(
         enabled=True,
         default_per_page=20,
         max_per_page=100,
-        style='bootstrap'
+        style='bulma'
     ),
     lazy_loading=LazyLoadingSettings(
         enabled=True,

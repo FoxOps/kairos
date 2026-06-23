@@ -208,7 +208,7 @@ class Pagination:
         Génère les liens de pagination HTML.
         
         Args:
-            style: Style des liens ('bootstrap', 'simple', 'none')
+            style: Style des liens ('bulma', 'simple', 'none')
         
         Returns:
             HTML des liens de pagination
@@ -220,8 +220,6 @@ class Pagination:
         
         if style == 'bulma':
             return self._bulma_pagination()
-        elif style == 'bootstrap':
-            return self._bootstrap_pagination()
         else:
             return self._simple_pagination()
     
@@ -714,7 +712,7 @@ class PaginationHelper:
     
     @staticmethod
     def create_pagination_links(pagination: Pagination, 
-                               style: str = 'bootstrap') -> str:
+                               style: str = 'bulma') -> str:
         """Crée les liens de pagination."""
         return pagination.pagination_links(style=style)
 

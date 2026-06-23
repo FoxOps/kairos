@@ -134,7 +134,7 @@
                                     <div class="control">
                                         <input class="input" type="number" name="{{ day }}_{{ shift_type.name }}" 
                                                value="{{ shift_rules.daily_requirements[day][shift_type.name] if shift_rules.daily_requirements[day] and shift_type.name in shift_rules.daily_requirements[day] else 0 }}" 
-                                               min="0" max="10" style="width: 80px;">
+                                               min="0" max="10" class="w-80">
                                     </div>
                                 </td>
                                 {% endfor %}

@@ -36,7 +36,6 @@ class CacheType(Enum):
 class PaginationStyle(Enum):
     """Styles de pagination disponibles."""
     BULMA = 'bulma'
-    BOOTSTRAP = 'bootstrap'
     SIMPLE = 'simple'
     NONE = 'none'
 
@@ -291,7 +290,7 @@ class PerformanceConfig:
             default_per_page=pagination_data.get('default_per_page', 20),
             max_per_page=pagination_data.get('max_per_page', 100),
             per_page_options=pagination_data.get('per_page_options', [5, 10, 20, 50, 100]),
-            style=PaginationStyle(pagination_data.get('style', 'bootstrap')),
+            style=PaginationStyle(pagination_data.get('style', 'bulma')),
             window=pagination_data.get('window', 2),
         )
         
