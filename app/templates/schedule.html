@@ -278,10 +278,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Convertir les shifts en événements FullCalendar
-        const shifts = {{ shifts.items|tojson }};
+        const shifts = [
+            {% for shift in shifts.items %}
+            {
+                id: {{ shift.id }},
+                user_id: {{ shift.user_id }},
+                user_name: "{{ shift.user.name|tojson|safe }}",
+                shift_type_id: {{ shift.shift_type_id }},
+                shift_type_label: "{{ (shift.shift_type.label if shift.shift_type else '')|tojson|safe }}",
+                start_time: "{{ shift.start_time.isoformat() }}",
+                end_time: "{{ shift.end_time.isoformat() }}"
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
         const events = shifts.map(shift => ({
             id: shift.id,
-            title: `${shift.user.name} - ${shift.shift_type.label || shift.shift_type}`,
+            title: `${shift.user_name} - ${shift.shift_type_label || shift.shift_type_id}`,
             start: shift.start_time,
             end: shift.end_time,
             className: 'fc-event-shift',

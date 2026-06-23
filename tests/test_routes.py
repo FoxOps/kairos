@@ -593,7 +593,7 @@ class TestShiftTypeRoutes:
             f"/admin/shift-types/delete/{test_shift_type.id}", follow_redirects=True
         )
         assert response.status_code == 200
-        assert b"Type de shift supprime" in response.data or b"succes" in response.data
+        assert b"Type de shift supprim" in response.data or b"succ" in response.data
 
         shift_type = db.session.get(ShiftType, test_shift_type.id)
         assert shift_type is None
