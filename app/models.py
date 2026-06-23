@@ -43,15 +43,16 @@ class User(db.Model, UserMixin):
         self.ics_token = secrets.token_urlsafe(32)
         return self.ics_token
 
-    def get_ics_export_url(self, scope="all"):
+    def get_ics_export_url(self, export_type="shifts", scope="all"):
         """Retourne l'URL d'export ICS avec le token.
         
         Args:
+            export_type: "shifts", "oncall" ou "leaves" (par défaut: "shifts")
             scope: "all" ou "my" (par défaut: "all")
         """
         if not self.ics_token:
             return None
-        return f"/export/shifts?scope={scope}&token={self.ics_token}"
+        return f"/export/{export_type}?scope={scope}&token={self.ics_token}"
 
     def __repr__(self):
         return f"<User {self.name} ({self.email})>"
