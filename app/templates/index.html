@@ -63,15 +63,17 @@
                     </a>
                 {% else %}
                     <!-- Actions pour les utilisateurs normaux - Export de leur calendrier -->
-                    <a class="button is-primary" href="{{ url_for('export_shifts', scope='my') }}">
+                    {% if current_user.ics_token %}
+                    <a class="button is-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('shifts', 'my') }}">
                         <i class="fas fa-download" aria-hidden="true"></i>&nbsp; Exporter mes shifts
                     </a>
-                    <a class="button is-primary" href="{{ url_for('export_oncall', scope='my') }}">
+                    <a class="button is-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('oncall', 'my') }}">
                         <i class="fas fa-download" aria-hidden="true"></i>&nbsp; Exporter mes astreintes
                     </a>
-                    <a class="button is-primary" href="{{ url_for('export_leaves', scope='my') }}">
+                    <a class="button is-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('leaves', 'my') }}">
                         <i class="fas fa-download" aria-hidden="true"></i>&nbsp; Exporter mes congés
                     </a>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
