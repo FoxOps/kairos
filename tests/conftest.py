@@ -16,6 +16,10 @@ def app():
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
     app.config["WTF_CSRF_ENABLED"] = False
     app.config["SECRET_KEY"] = "test-secret-key"
+    
+    # Désactiver le cache pour les tests
+    from app.utils.cache import CacheConfig
+    CacheConfig.CACHE_ENABLED = False
 
     # Importer les routes
     from app.routes import main, admin, export, auth
@@ -35,7 +39,7 @@ def client(app):
         yield client
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def test_group(app):
     """Crée un groupe de test."""
     group = Group(name="Test Group", is_part_of_schedule=True, is_part_of_oncall=True)
@@ -44,7 +48,7 @@ def test_group(app):
     return group
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def admin_user(app, test_group):
     """Crée un utilisateur administrateur."""
     group = test_group
@@ -60,7 +64,7 @@ def admin_user(app, test_group):
     return user
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def test_user(app, test_group):
     """Crée un utilisateur normal."""
     user = User(
@@ -75,7 +79,7 @@ def test_user(app, test_group):
     return user
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def second_user(app, test_group):
     """Crée un deuxième utilisateur normal."""
     user = User(
@@ -90,7 +94,7 @@ def second_user(app, test_group):
     return user
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def test_shift_type(app):
     """Crée un type de shift de test."""
     shift_type = ShiftType(name="morning", label="Matin", start_hour=7, end_hour=15)
@@ -99,7 +103,7 @@ def test_shift_type(app):
     return shift_type
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def afternoon_shift_type(app):
     """Crée un type de shift après-midi."""
     shift_type = ShiftType(
@@ -110,7 +114,7 @@ def afternoon_shift_type(app):
     return shift_type
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def test_shift(app, test_user, test_shift_type):
     """Crée un shift de test."""
     from datetime import datetime, timedelta
@@ -130,7 +134,7 @@ def test_shift(app, test_user, test_shift_type):
     return shift
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def test_oncall(app, test_user):
     """Crée une astreinte de test."""
     from datetime import datetime, timedelta
@@ -149,7 +153,7 @@ def test_oncall(app, test_user):
     return oncall
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def test_leave(app, test_user):
     """Crée un congé de test."""
     from datetime import datetime, timedelta
@@ -163,7 +167,7 @@ def test_leave(app, test_user):
     return leave
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def logged_in_client(client, test_user, app):
     """Client de test avec un utilisateur connecté."""
     # Se connecter via le formulaire de login
@@ -176,7 +180,7 @@ def logged_in_client(client, test_user, app):
     yield client
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def logged_in_admin_client(client, admin_user, app):
     """Client de test avec un administrateur connecté."""
     # Se connecter via le formulaire de login
@@ -189,7 +193,7 @@ def logged_in_admin_client(client, admin_user, app):
     yield client
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def group_not_in_schedule(app):
     """Crée un groupe qui n'est pas dans le planning."""
     group = Group(

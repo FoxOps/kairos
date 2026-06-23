@@ -274,7 +274,7 @@ def paginated_route(per_page: int = 20,
             per_page_param = request.args.get('per_page', per_page, type=int)
             
             # Valider per_page
-            per_page = max(1, min(per_page_param, max_per_page))
+            per_page_validated = max(1, min(per_page_param, max_per_page))
             
             # Appeler la fonction pour obtenir la requête
             result = f(*args, **kwargs)
@@ -284,7 +284,7 @@ def paginated_route(per_page: int = 20,
                 return paginate_query(
                     result,
                     page=page,
-                    per_page=per_page,
+                    per_page=per_page_validated,
                     endpoint=endpoint or f.__name__,
                     args=request.args.to_dict(),
                     count=count
@@ -294,13 +294,13 @@ def paginated_route(per_page: int = 20,
             if isinstance(result, list):
                 from app.utils.pagination import Pagination
                 total = len(result)
-                offset = (page - 1) * per_page
-                items = result[offset:offset + per_page]
+                offset = (page - 1) * per_page_validated
+                items = result[offset:offset + per_page_validated]
                 
                 return Pagination(
                     items=items,
                     page=page,
-                    per_page=per_page,
+                    per_page=per_page_validated,
                     total=total,
                     endpoint=endpoint or f.__name__,
                     args=request.args.to_dict()
@@ -354,7 +354,7 @@ def paginated_api(per_page: int = 20,
             per_page_param = request.args.get('per_page', per_page, type=int)
             
             # Valider per_page
-            per_page = max(1, min(per_page_param, max_per_page))
+            per_page_validated = max(1, min(per_page_param, max_per_page))
             
             # Appeler la fonction
             result = f(*args, **kwargs)
@@ -364,20 +364,20 @@ def paginated_api(per_page: int = 20,
                 pagination = paginate_query(
                     result,
                     page=page,
-                    per_page=per_page,
+                    per_page=per_page_validated,
                     count=True
                 )
             else:
                 from app.utils.pagination import Pagination
                 items = result if isinstance(result, list) else [result]
                 total = len(items)
-                offset = (page - 1) * per_page
-                page_items = items[offset:offset + per_page]
+                offset = (page - 1) * per_page_validated
+                page_items = items[offset:offset + per_page_validated]
                 
                 pagination = Pagination(
                     items=page_items,
                     page=page,
-                    per_page=per_page,
+                    per_page=per_page_validated,
                     total=total
                 )
             

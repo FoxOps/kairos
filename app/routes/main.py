@@ -122,7 +122,6 @@ def index():
 
 @app.route("/leave")
 @login_required
-@paginated_route(per_page=20, max_per_page=100)
 @eager_load(Leave, ['user'])
 def leave():
     page = request.args.get('page', 1, type=int)
@@ -244,7 +243,6 @@ def delete_leave(leave_id):
 
 @app.route("/oncall")
 @login_required
-@paginated_route(per_page=20, max_per_page=100)
 @eager_load(OnCall, ['user'])
 def oncall():
     page = request.args.get('page', 1, type=int)
@@ -498,8 +496,6 @@ def delete_all_shifts_for_week(date_str):
 
 @app.route("/schedule")
 @login_required
-@paginated_route(per_page=20, max_per_page=100)
-@eager_load(Shift, ['user', 'shift_type'])
 def schedule():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
