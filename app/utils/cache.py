@@ -751,8 +751,10 @@ class CacheManager:
                 key_parts.append(f"user_id={current_user.id}")
         
         # Créer un hash de la clé pour éviter les clés trop longues
+        # Note: SHA-256 est utilisé au lieu de MD5 pour des raisons de sécurité et de bonnes pratiques
+        # Ce hash n'est pas utilisé pour la sécurité, mais pour générer des clés de cache uniques
         key_string = ':'.join(key_parts)
-        return hashlib.md5(key_string.encode('utf-8')).hexdigest()
+        return hashlib.sha256(key_string.encode('utf-8')).hexdigest()
     
     def cache_buster_filter(self, version: str = '1.0') -> str:
         """
