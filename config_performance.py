@@ -35,6 +35,7 @@ class CacheType(Enum):
 
 class PaginationStyle(Enum):
     """Styles de pagination disponibles."""
+    BULMA = 'bulma'
     BOOTSTRAP = 'bootstrap'
     SIMPLE = 'simple'
     NONE = 'none'
@@ -108,7 +109,7 @@ class PaginationSettings:
     per_page_options: List[int] = field(default_factory=lambda: [5, 10, 20, 50, 100])
     
     # Style des liens
-    style: PaginationStyle = PaginationStyle.BOOTSTRAP
+    style: PaginationStyle = PaginationStyle.BULMA
     
     # Nombre de pages à afficher autour de la page courante
     window: int = 2
@@ -236,7 +237,7 @@ class PerformanceConfig:
             default_per_page=get_int('PAGINATION_DEFAULT_PER_PAGE', 20),
             max_per_page=get_int('PAGINATION_MAX_PER_PAGE', 100),
             per_page_options=get_list('PAGINATION_PER_PAGE_OPTIONS', [5, 10, 20, 50, 100]),
-            style=PaginationStyle(os.environ.get('PAGINATION_STYLE', 'bootstrap')),
+            style=PaginationStyle(os.environ.get('PAGINATION_STYLE', 'bulma')),
             window=get_int('PAGINATION_WINDOW', 2),
             cursor_page_size=get_int('PAGINATION_CURSOR_PAGE_SIZE', 20),
         )

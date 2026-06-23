@@ -274,7 +274,7 @@ La pagination permet de **diviser les grands ensembles de données en pages gér
 - ✅ **Pagination par curseur** : Plus efficace pour les grandes tables
 - ✅ **Lazy loading** : Chargement progressif pour le scroll infini
 - ✅ **Options configurables** : Taille de page, style, etc.
-- ✅ **Intégration Bootstrap** : Liens de pagination prêts à l'emploi
+- ✅ **Intégration Bulma** : Liens de pagination prêts à l'emploi
 - ✅ **Support API JSON** : Pagination pour les endpoints REST
 
 ### 🚀 Configuration
@@ -291,8 +291,8 @@ PAGINATION_MAX_PER_PAGE=100
 PAGINATION_PER_PAGE_OPTIONS=[5, 10, 20, 50, 100]
 
 # Style
-PAGINATION_STYLE=bootstrap  # bootstrap, simple, none
-PAGINATION_WINDOW=2         # Nombre de pages autour de la page courante
+PAGINATION_STYLE=bulma  # bulma, bootstrap, simple, none
+PAGINATION_WINDOW=2     # Nombre de pages autour de la page courante
 
 # Pagination par curseur
 PAGINATION_CURSOR_PAGE_SIZE=20
@@ -368,7 +368,7 @@ def api_shifts():
     </tr>
 {% endfor %}
 
-<!-- Afficher la pagination (Bootstrap) -->
+<!-- Afficher la pagination (Bulma) -->
 {{ users.pagination_links() }}
 
 <!-- Afficher la pagination (Simple) -->

@@ -62,7 +62,7 @@ class PaginationConfig:
     PAGINATION_ENABLED = True
     
     # Style des liens de pagination
-    PAGINATION_STYLE = 'bootstrap'  # 'bootstrap', 'simple', 'none'
+    PAGINATION_STYLE = 'bulma'  # 'bulma', 'simple', 'none'
     
     # Nombre de pages à afficher autour de la page courante
     PAGINATION_WINDOW = 2
@@ -218,13 +218,15 @@ class Pagination:
         if style == 'none':
             return ''
         
-        if style == 'bootstrap':
+        if style == 'bulma':
+            return self._bulma_pagination()
+        elif style == 'bootstrap':
             return self._bootstrap_pagination()
         else:
             return self._simple_pagination()
     
-    def _bootstrap_pagination(self) -> str:
-        """Génère les liens de pagination au format Bootstrap."""
+    def _bulma_pagination(self) -> str:
+        """Génère les liens de pagination au format Bulma."""
         if self.pages <= 1:
             return ''
         
@@ -248,40 +250,40 @@ class Pagination:
         if current > 1:
             links.append(self._create_link(1, '«', 'first'))
         else:
-            links.append('<li class="page-item disabled"><span class="page-link">«</span></li>')
+            links.append('<a class="pagination-previous is-disabled" aria-label="Première page"><span>«</span></a>')
         
         # Lien vers la page précédente
         if self.has_previous:
             links.append(self._create_link(current - 1, '‹', 'previous'))
         else:
-            links.append('<li class="page-item disabled"><span class="page-link">‹</span></li>')
+            links.append('<a class="pagination-previous is-disabled" aria-label="Page précédente"><span>‹</span></a>')
         
         # Pages
         if start_page > 1:
-            links.append('<li class="page-item disabled"><span class="page-link">...</span></li>')
+            links.append('<span class="pagination-ellipsis">…</span>')
         
         for page in range(start_page, end_page + 1):
             if page == current:
-                links.append(f'<li class="page-item active"><span class="page-link">{page}</span></li>')
+                links.append(f'<a class="pagination-link is-current" aria-label="Page {page}" aria-current="page">{page}</a>')
             else:
                 links.append(self._create_link(page, str(page)))
         
         if end_page < total_pages:
-            links.append('<li class="page-item disabled"><span class="page-link">...</span></li>')
+            links.append('<span class="pagination-ellipsis">…</span>')
         
         # Lien vers la page suivante
         if self.has_next:
             links.append(self._create_link(current + 1, '›', 'next'))
         else:
-            links.append('<li class="page-item disabled"><span class="page-link">›</span></li>')
+            links.append('<a class="pagination-next is-disabled" aria-label="Page suivante"><span>›</span></a>')
         
         # Lien vers la dernière page
         if current < total_pages:
             links.append(self._create_link(total_pages, '»', 'last'))
         else:
-            links.append('<li class="page-item disabled"><span class="page-link">»</span></li>')
+            links.append('<a class="pagination-next is-disabled" aria-label="Dernière page"><span>»</span></a>')
         
-        return f'<nav aria-label="Page navigation"><ul class="pagination justify-content-center">{ " ".join(links) }</ul></nav>'
+        return f'<nav class="pagination is-centered" role="navigation" aria-label="pagination">{ " ".join(links) }</nav>'
     
     def _simple_pagination(self) -> str:
         """Génère les liens de pagination au format simple."""
@@ -308,7 +310,7 @@ class Pagination:
         return ' | '.join(links)
     
     def _create_link(self, page: int, text: str, rel: Optional[str] = None) -> str:
-        """Crée un lien de pagination."""
+        """Crée un lien de pagination compatible avec Bulma."""
         if not self.endpoint:
             return f'<span>{text}</span>'
         
@@ -322,10 +324,17 @@ class Pagination:
         
         url = url_for(self.endpoint, **args)
         
-        if rel:
-            return f'<li class="page-item"><a class="page-link" href="{url}" rel="{rel}">{text}</a></li>'
+        # Pour Bulma, utiliser des classes spécifiques
+        if rel == 'first':
+            return f'<a class="pagination-previous" href="{url}" aria-label="Première page">{text}</a>'
+        elif rel == 'previous':
+            return f'<a class="pagination-previous" href="{url}" aria-label="Page précédente">{text}</a>'
+        elif rel == 'next':
+            return f'<a class="pagination-next" href="{url}" aria-label="Page suivante">{text}</a>'
+        elif rel == 'last':
+            return f'<a class="pagination-next" href="{url}" aria-label="Dernière page">{text}</a>'
         else:
-            return f'<li class="page-item"><a class="page-link" href="{url}">{text}</a></li>'
+            return f'<a class="pagination-link" href="{url}" aria-label="Page {page}">{text}</a>'
     
     def to_dict(self) -> Dict[str, Any]:
         """Convertit la pagination en dictionnaire (pour les APIs JSON)."""
