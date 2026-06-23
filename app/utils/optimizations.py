@@ -152,8 +152,10 @@ def _make_cache_key(f: Callable, request, key_prefix: str = '', vary_on: Optiona
         key_parts.append(f"user_id={current_user.id}")
     
     # Créer un hash
+    # Note: SHA-256 est utilisé au lieu de MD5 pour des raisons de sécurité et de bonnes pratiques
+    # Ce hash n'est pas utilisé pour la sécurité, mais pour générer des clés de cache uniques
     key_string = ':'.join(key_parts)
-    return hashlib.md5(key_string.encode('utf-8')).hexdigest()
+    return hashlib.sha256(key_string.encode('utf-8')).hexdigest()
 
 
 def cache_result(timeout: int = 300, 
@@ -226,12 +228,19 @@ def _make_function_cache_key(f: Callable, args: tuple, kwargs: dict) -> str:
     for key, value in sorted(kwargs.items()):
         key_parts.append(f"{key}={value}")
     
+# DÉCORATEURS DE PAGINATION
+# ============================================================================
+=======
     # Créer un hash
+    # Note: SHA-256 est utilisé au lieu de MD5 pour des raisons de sécurité et de bonnes pratiques
+    # Ce hash n'est pas utilisé pour la sécurité, mais pour générer des clés de cache uniques
     key_string = ':'.join(key_parts)
-    return hashlib.md5(key_string.encode('utf-8')).hexdigest()
+    return hashlib.sha256(key_string.encode('utf-8')).hexdigest()
 
 
 # ============================================================================
+# DÉCORATEURS DE PAGINATION
+# ========================================================================================================================================================
 # DÉCORATEURS DE PAGINATION
 # ============================================================================
 
