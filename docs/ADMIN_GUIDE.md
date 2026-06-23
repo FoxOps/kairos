@@ -587,6 +587,39 @@ L'export ICS est disponible via l'URL :
 3. Collez l'URL
 4. **Suivant**
 
+### Export Avancé
+
+Leviia Schedule propose trois endpoints d'export distincts :
+
+#### Endpoints disponibles
+
+| Endpoint | Description | Paramètres |
+|----------|-------------|------------|
+| `/export/shifts` | Exporte les shifts (plannings de travail) | `scope`, `token` |
+| `/export/oncall` | Exporte les astreintes (on-call) | `scope`, `token` |
+| `/export/leaves` | Exporte les congés | `scope`, `token` |
+
+#### Paramètres communs
+
+| Paramètre | Valeurs possibles | Description |
+|-----------|-------------------|-------------|
+| `scope` | `my`, `all` | `my` = données de l'utilisateur, `all` = toutes les données (admin seulement) |
+| `token` | Token ICS | Token d'authentification généré dans le profil |
+
+#### Exemples d'URLs
+
+```bash
+# Export personnel
+/export/shifts?scope=my&token=VOTRE_TOKEN
+/export/oncall?scope=my&token=VOTRE_TOKEN
+/export/leaves?scope=my&token=VOTRE_TOKEN
+
+# Export complet (admin)
+/export/shifts?scope=all&token=TOKEN_ADMIN
+/export/oncall?scope=all&token=TOKEN_ADMIN
+/export/leaves?scope=all&token=TOKEN_ADMIN
+```
+
 ### API REST (À venir)
 
 > 📌 **Fonctionnalité prévue** : Une API REST publique sera disponible dans la version 0.8.

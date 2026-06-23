@@ -665,6 +665,32 @@ Remplacez :
 - `votre-serveur` : L'adresse de votre instance Leviia Schedule
 - `VOTRE_TOKEN` : Le token que vous avez généré
 
+### Exporter d'autres données
+
+Leviia Schedule permet également d'exporter :
+
+#### Exporter les astreintes
+```
+http://votre-serveur:5000/export/oncall?scope=my&token=VOTRE_TOKEN
+```
+
+#### Exporter les congés
+```
+http://votre-serveur:5000/export/leaves?scope=my&token=VOTRE_TOKEN
+```
+
+#### Exporter tout (Administrateur)
+```
+# Tous les shifts
+http://votre-serveur:5000/export/shifts?scope=all&token=VOTRE_TOKEN_ADMIN
+
+# Toutes les astreintes
+http://votre-serveur:5000/export/oncall?scope=all&token=VOTRE_TOKEN_ADMIN
+
+# Tous les congés
+http://votre-serveur:5000/export/leaves?scope=all&token=VOTRE_TOKEN_ADMIN
+```
+
 #### Étape 3 : Importer dans votre calendrier
 
 ##### Google Calendar
