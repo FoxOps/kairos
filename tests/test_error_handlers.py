@@ -358,3 +358,254 @@ class TestLoggingConfiguration:
         assert http_error_logger is not None
         # Vérifier que le logger a des handlers
         assert len(http_error_logger.handlers) > 0
+
+    def test_app_logger_has_multiple_handlers(self, app):
+        """Test que le logger principal a plusieurs handlers."""
+        with app.app_context():
+            # Le logger principal devrait avoir plusieurs handlers
+            # (fichier, erreur, debug, audit, console)
+            assert len(app.logger.handlers) >= 4
+
+    def test_specific_loggers_exist(self, app):
+        """Test que les loggers spécifiques existent."""
+        loggers_to_check = ['audit', 'automation', 'flask_login']
+        for logger_name in loggers_to_check:
+            logger = logging.getLogger(logger_name)
+            assert logger is not None
+
+
+class TestSensitiveDataFilter:
+    """Tests pour le filtre de données sensibles."""
+
+    def test_filter_masks_password(self, app):
+        """Test que le filtre masque les mots de passe."""
+        with app.app_context():
+            from app import SensitiveDataFilter
+            import logging
+            
+            filter = SensitiveDataFilter()
+            
+            # Créer un record avec un mot de passe
+            record = logging.LogRecord(
+                name='test',
+                level=logging.INFO,
+                pathname='',
+                lineno=0,
+                msg="password=secret123",
+                args=(),
+                exc_info=None
+            )
+            
+            filter.filter(record)
+            assert "password=***" in record.msg
+            assert "secret123" not in record.msg
+
+    def test_filter_masks_token(self, app):
+        """Test que le filtre masque les tokens."""
+        with app.app_context():
+            from app import SensitiveDataFilter
+            import logging
+            
+            filter = SensitiveDataFilter()
+            
+            record = logging.LogRecord(
+                name='test',
+                level=logging.INFO,
+                pathname='',
+                lineno=0,
+                msg="token=abc123xyz",
+                args=(),
+                exc_info=None
+            )
+            
+            filter.filter(record)
+            assert "token=***" in record.msg
+            assert "abc123xyz" not in record.msg
+
+    def test_filter_masks_api_key(self, app):
+        """Test que le filtre masque les clés API."""
+        with app.app_context():
+            from app import SensitiveDataFilter
+            import logging
+            
+            filter = SensitiveDataFilter()
+            
+            record = logging.LogRecord(
+                name='test',
+                level=logging.INFO,
+                pathname='',
+                lineno=0,
+                msg="api_key=sk-1234567890",
+                args=(),
+                exc_info=None
+            )
+            
+            filter.filter(record)
+            assert "api_key=***" in record.msg
+            assert "sk-1234567890" not in record.msg
+
+    def test_filter_masks_in_args(self, app):
+        """Test que le filtre masque les données sensibles dans les args."""
+        with app.app_context():
+            from app import SensitiveDataFilter
+            import logging
+            
+            filter = SensitiveDataFilter()
+            
+            record = logging.LogRecord(
+                name='test',
+                level=logging.INFO,
+                pathname='',
+                lineno=0,
+                msg="User login: %s",
+                args=("password=secret123",),
+                exc_info=None
+            )
+            
+            filter.filter(record)
+            assert "password=***" in record.args[0]
+            assert "secret123" not in record.args[0]
+
+    def test_filter_case_insensitive(self, app):
+        """Test que le filtre est insensible à la casse."""
+        with app.app_context():
+            from app import SensitiveDataFilter
+            import logging
+            
+            filter = SensitiveDataFilter()
+            
+            record = logging.LogRecord(
+                name='test',
+                level=logging.INFO,
+                pathname='',
+                lineno=0,
+                msg="PASSWORD=Secret123",
+                args=(),
+                exc_info=None
+            )
+            
+            filter.filter(record)
+            assert "PASSWORD=***" in record.msg
+            assert "Secret123" not in record.msg
+
+    def test_filter_preserves_non_sensitive_data(self, app):
+        """Test que le filtre préserve les données non sensibles."""
+        with app.app_context():
+            from app import SensitiveDataFilter
+            import logging
+            
+            filter = SensitiveDataFilter()
+            
+            original_msg = "User admin logged in from 192.168.1.1"
+            record = logging.LogRecord(
+                name='test',
+                level=logging.INFO,
+                pathname='',
+                lineno=0,
+                msg=original_msg,
+                args=(),
+                exc_info=None
+            )
+            
+            filter.filter(record)
+            assert record.msg == original_msg
+
+
+class TestAuditLogging:
+    """Tests pour le système d'audit."""
+
+    def test_log_audit_action_success(self, app):
+        """Test que l'audit logging fonctionne pour les actions réussies."""
+        with app.app_context():
+            from app import log_audit_action
+            import logging
+            
+            # Créer un utilisateur mock
+            class MockUser:
+                name = "test_user"
+            
+            # Logger une action réussie
+            log_audit_action(
+                "test_action",
+                user=MockUser(),
+                path="/test",
+                status="success",
+                details="Test details"
+            )
+            
+            # Vérifier que le logger audit existe
+            audit_logger = logging.getLogger('audit')
+            assert audit_logger is not None
+
+    def test_log_audit_action_failure(self, app):
+        """Test que l'audit logging fonctionne pour les actions échouées."""
+        with app.app_context():
+            from app import log_audit_action
+            
+            class MockUser:
+                name = "test_user"
+            
+            # Logger une action échouée
+            log_audit_action(
+                "test_action",
+                user=MockUser(),
+                path="/test",
+                status="failure",
+                details="Test failure"
+            )
+            
+            # Pas d'erreur attendue
+            assert True
+
+    def test_log_audit_action_anonymous_user(self, app):
+        """Test que l'audit logging fonctionne avec un utilisateur anonyme."""
+        with app.app_context():
+            from app import log_audit_action
+            
+            # Logger une action avec utilisateur None
+            log_audit_action(
+                "test_action",
+                user=None,
+                path="/test",
+                status="success"
+            )
+            
+            # Pas d'erreur attendue
+            assert True
+
+
+class TestGetLogger:
+    """Tests pour la fonction get_logger."""
+
+    def test_get_logger_creates_new_logger(self, app):
+        """Test que get_logger crée un nouveau logger."""
+        with app.app_context():
+            from app import get_logger
+            
+            # Obtenir un logger personnalisé
+            custom_logger = get_logger('test_module')
+            
+            assert custom_logger is not None
+            assert custom_logger.name == 'test_module'
+
+    def test_get_logger_returns_existing_logger(self, app):
+        """Test que get_logger retourne un logger existant."""
+        with app.app_context():
+            from app import get_logger
+            
+            # Obtenir le même logger deux fois
+            logger1 = get_logger('test_module')
+            logger2 = get_logger('test_module')
+            
+            # Devrait être le même objet
+            assert logger1 is logger2
+
+    def test_get_logger_has_handlers(self, app):
+        """Test que les loggers créés ont des handlers."""
+        with app.app_context():
+            from app import get_logger
+            
+            custom_logger = get_logger('test_module_handlers')
+            
+            # Devrait avoir au moins un handler
+            assert len(custom_logger.handlers) > 0

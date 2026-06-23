@@ -4,9 +4,10 @@ from flask_login import LoginManager
 import time
 import sqlite3
 import logging
-from logging.handlers import RotatingFileHandler
+from logging.handlers import RotatingFileHandler, SysLogHandler
 import os
 import traceback
+import re
 from datetime import datetime
 
 # Initialisation de la base de données
@@ -30,66 +31,266 @@ login_manager.init_app(app)
 # CONFIGURATION DU LOGGING
 # ============================================================================
 
+class SensitiveDataFilter(logging.Filter):
+    """Filtre pour masquer les données sensibles dans les logs."""
+    
+    def __init__(self, patterns=None):
+        super().__init__()
+        self.patterns = patterns or [
+            r'password["\']?\s*[:=]\s*[^\s]+',
+            r'secret["\']?\s*[:=]\s*[^\s]+',
+            r'token["\']?\s*[:=]\s*[^\s]+',
+            r'api[_-]?key["\']?\s*[:=]\s*[^\s]+',
+            r'auth["\']?\s*[:=]\s*[^\s]+',
+        ]
+    
+    def filter(self, record):
+        """Masque les données sensibles dans le message de log."""
+        if hasattr(record, 'msg') and isinstance(record.msg, str):
+            message = record.msg
+            for pattern in self.patterns:
+                message = re.sub(pattern, lambda m: m.group(0).split('=')[0] + '=***', message, flags=re.IGNORECASE)
+            record.msg = message
+        
+        if hasattr(record, 'args') and record.args:
+            new_args = []
+            for arg in record.args:
+                if isinstance(arg, str):
+                    filtered_arg = arg
+                    for pattern in self.patterns:
+                        filtered_arg = re.sub(pattern, lambda m: m.group(0).split('=')[0] + '=***', filtered_arg, flags=re.IGNORECASE)
+                    new_args.append(filtered_arg)
+                else:
+                    new_args.append(arg)
+            record.args = tuple(new_args)
+        
+        return True
+
+
+def get_log_level(level_name):
+    """Convertit un nom de niveau de log en constante logging."""
+    level_map = {
+        'DEBUG': logging.DEBUG,
+        'INFO': logging.INFO,
+        'WARNING': logging.WARNING,
+        'ERROR': logging.ERROR,
+        'CRITICAL': logging.CRITICAL,
+    }
+    return level_map.get(level_name.upper(), logging.INFO)
+
+
+def create_rotating_file_handler(filepath, max_bytes, backup_count, level, formatter, encoding='utf-8'):
+    """Crée un handler de fichier avec rotation."""
+    handler = RotatingFileHandler(
+        filepath,
+        maxBytes=max_bytes,
+        backupCount=backup_count,
+        encoding=encoding
+    )
+    handler.setLevel(level)
+    handler.setFormatter(formatter)
+    return handler
+
+
 def setup_logging():
-    """Configure le logging pour l'application avec rotation des fichiers."""
+    """Configure le logging pour l'application avec rotation des fichiers et gestion avancée."""
+    from config import Config
+    
     # Créer le dossier de logs s'il n'existe pas
-    log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs')
+    log_dir = Config.LOG_DIR
     os.makedirs(log_dir, exist_ok=True)
     
-    # Configuration du logger principal
-    app.logger.setLevel(logging.INFO)
+    # Récupérer les niveaux de log depuis la configuration
+    log_level = get_log_level(Config.LOG_LEVEL)
+    app_log_level = get_log_level(Config.LOG_LEVEL_APP)
+    error_log_level = get_log_level(Config.LOG_LEVEL_ERRORS)
+    http_log_level = get_log_level(Config.LOG_LEVEL_HTTP)
+    debug_log_level = get_log_level(Config.LOG_LEVEL_DEBUG)
+    audit_log_level = get_log_level(Config.LOG_LEVEL_AUDIT)
     
-    # Handler pour les fichiers (rotation)
-    file_handler = RotatingFileHandler(
-        os.path.join(log_dir, 'leviia-app.log'),
-        maxBytes=1024 * 1024 * 5,  # 5 Mo
-        backupCount=10,
-        encoding='utf-8'
-    )
-    file_handler.setLevel(logging.INFO)
-    file_formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-    file_handler.setFormatter(file_formatter)
-    app.logger.addHandler(file_handler)
+    # Format des logs
+    log_format = Config.LOG_FORMAT
+    date_format = Config.LOG_DATE_FORMAT
     
-    # Handler pour les erreurs
-    error_handler = RotatingFileHandler(
-        os.path.join(log_dir, 'leviia-errors.log'),
-        maxBytes=1024 * 1024 * 5,  # 5 Mo
-        backupCount=10,
-        encoding='utf-8'
-    )
-    error_handler.setLevel(logging.ERROR)
+    # Formatter principal
+    formatter = logging.Formatter(log_format, datefmt=date_format)
+    
+    # Formatter détaillé pour les erreurs (inclut la trace)
     error_formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s\n\n%(exc_text)s'
+        f'{log_format}\n\n%(exc_text)s',
+        datefmt=date_format
     )
-    error_handler.setFormatter(error_formatter)
-    app.logger.addHandler(error_handler)
     
-    # Handler console
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    console_formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    # Formatter pour les erreurs HTTP (avec contexte)
+    http_formatter = logging.Formatter(
+        '%(asctime)s - %(levelname)s - IP: %(ip)s - Path: %(path)s - User: %(user)s - Error: %(message)s',
+        datefmt=date_format
     )
+    
+    # Formatter simple pour la console
+    console_formatter = logging.Formatter(
+        '%(asctime)s - %(levelname)s - %(message)s',
+        datefmt=date_format
+    )
+    
+    # Filtre pour les données sensibles
+    sensitive_filter = SensitiveDataFilter(Config.LOG_FILTER_PATTERNS) if Config.LOG_FILTER_SENSITIVE else None
+    
+    # ========================================================================
+    # Configuration du logger principal de l'application
+    # ========================================================================
+    app.logger.setLevel(app_log_level)
+    
+    # Handler pour les fichiers d'application (INFO et plus)
+    app_file_handler = create_rotating_file_handler(
+        os.path.join(log_dir, Config.LOG_FILE_APP),
+        Config.LOG_FILE_SIZE,
+        Config.LOG_BACKUP_COUNT,
+        logging.INFO,
+        formatter
+    )
+    if sensitive_filter:
+        app_file_handler.addFilter(sensitive_filter)
+    app.logger.addHandler(app_file_handler)
+    
+    # Handler pour les erreurs (ERROR et plus)
+    error_file_handler = create_rotating_file_handler(
+        os.path.join(log_dir, Config.LOG_FILE_ERRORS),
+        Config.LOG_FILE_SIZE,
+        Config.LOG_BACKUP_COUNT,
+        logging.ERROR,
+        error_formatter
+    )
+    if sensitive_filter:
+        error_file_handler.addFilter(sensitive_filter)
+    app.logger.addHandler(error_file_handler)
+    
+    # Handler pour le debug (DEBUG seulement)
+    debug_file_handler = create_rotating_file_handler(
+        os.path.join(log_dir, Config.LOG_FILE_DEBUG),
+        Config.LOG_FILE_SIZE,
+        Config.LOG_BACKUP_COUNT,
+        logging.DEBUG,
+        formatter
+    )
+    if sensitive_filter:
+        debug_file_handler.addFilter(sensitive_filter)
+    app.logger.addHandler(debug_file_handler)
+    
+    # Handler pour l'audit (INFO et plus - actions utilisateur)
+    audit_file_handler = create_rotating_file_handler(
+        os.path.join(log_dir, Config.LOG_FILE_AUDIT),
+        Config.LOG_FILE_SIZE,
+        Config.LOG_BACKUP_COUNT,
+        logging.INFO,
+        formatter
+    )
+    if sensitive_filter:
+        audit_file_handler.addFilter(sensitive_filter)
+    app.logger.addHandler(audit_file_handler)
+    
+    # ========================================================================
+    # Handler console (pour le développement)
+    # ========================================================================
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(log_level)
     console_handler.setFormatter(console_formatter)
+    if sensitive_filter:
+        console_handler.addFilter(sensitive_filter)
     app.logger.addHandler(console_handler)
     
+    # ========================================================================
     # Logger dédié aux erreurs HTTP
+    # ========================================================================
     http_error_logger = logging.getLogger('http_errors')
-    http_error_logger.setLevel(logging.WARNING)
-    http_error_handler = RotatingFileHandler(
-        os.path.join(log_dir, 'leviia-http-errors.log'),
-        maxBytes=1024 * 1024 * 5,
-        backupCount=10,
-        encoding='utf-8'
+    http_error_logger.setLevel(http_log_level)
+    http_error_logger.propagate = False  # Éviter la duplication des logs
+    
+    http_error_handler = create_rotating_file_handler(
+        os.path.join(log_dir, Config.LOG_FILE_HTTP),
+        Config.LOG_FILE_SIZE,
+        Config.LOG_BACKUP_COUNT,
+        http_log_level,
+        http_formatter
     )
-    http_error_formatter = logging.Formatter(
-        '%(asctime)s - %(levelname)s - IP: %(ip)s - Path: %(path)s - User: %(user)s - Error: %(message)s'
-    )
-    http_error_handler.setFormatter(http_error_formatter)
+    if sensitive_filter:
+        http_error_handler.addFilter(sensitive_filter)
     http_error_logger.addHandler(http_error_handler)
+    
+    # ========================================================================
+    # Syslog pour la production (si activé)
+    # ========================================================================
+    if Config.SYSLOG_ENABLED:
+        try:
+            syslog_handler = SysLogHandler(address=Config.SYSLOG_ADDRESS)
+            syslog_handler.setLevel(log_level)
+            syslog_formatter = logging.Formatter(
+                f'LeviiaSchedule - %(levelname)s - %(message)s',
+                datefmt=date_format
+            )
+            syslog_handler.setFormatter(syslog_formatter)
+            if sensitive_filter:
+                syslog_handler.addFilter(sensitive_filter)
+            app.logger.addHandler(syslog_handler)
+            http_error_logger.addHandler(syslog_handler)
+            app.logger.info("Syslog handler activé")
+        except Exception as e:
+            app.logger.warning(f"Impossible d'activer syslog: {str(e)}")
+    
+    # ========================================================================
+    # Loggers spécifiques pour différents modules
+    # ========================================================================
+    
+    # Logger pour les requêtes SQL (si SQLALCHEMY_ECHO est activé)
+    if Config.SQLALCHEMY_ECHO:
+        sql_logger = logging.getLogger('sqlalchemy.engine')
+        sql_logger.setLevel(logging.DEBUG)
+        sql_handler = create_rotating_file_handler(
+            os.path.join(log_dir, 'leviia-sql.log'),
+            Config.LOG_FILE_SIZE,
+            Config.LOG_BACKUP_COUNT,
+            logging.DEBUG,
+            formatter
+        )
+        if sensitive_filter:
+            sql_handler.addFilter(sensitive_filter)
+        sql_logger.addHandler(sql_handler)
+        sql_logger.propagate = False
+    
+    # Logger pour Flask-Login
+    login_logger = logging.getLogger('flask_login')
+    login_logger.setLevel(logging.INFO)
+    login_handler = create_rotating_file_handler(
+        os.path.join(log_dir, 'leviia-auth.log'),
+        Config.LOG_FILE_SIZE,
+        Config.LOG_BACKUP_COUNT,
+        logging.INFO,
+        formatter
+    )
+    if sensitive_filter:
+        login_handler.addFilter(sensitive_filter)
+    login_logger.addHandler(login_handler)
+    login_logger.propagate = False
+    
+    # Logger pour les tâches planifiées
+    automation_logger = logging.getLogger('automation')
+    automation_logger.setLevel(logging.INFO)
+    automation_handler = create_rotating_file_handler(
+        os.path.join(log_dir, 'leviia-automation.log'),
+        Config.LOG_FILE_SIZE,
+        Config.LOG_BACKUP_COUNT,
+        logging.INFO,
+        formatter
+    )
+    if sensitive_filter:
+        automation_handler.addFilter(sensitive_filter)
+    automation_logger.addHandler(automation_handler)
+    automation_logger.propagate = False
+    
+    # Message de démarrage
+    app.logger.info(f"Configuration du logging terminée - Niveau: {Config.LOG_LEVEL}")
+    app.logger.info(f"Dossier des logs: {log_dir}")
+    app.logger.info(f"Filtrage des données sensibles: {'activé' if Config.LOG_FILTER_SENSITIVE else 'désactivé'}")
     
     return http_error_logger
 
@@ -143,19 +344,57 @@ def log_http_error(error_code, error_message=None, exc_info=None):
     if exc_info:
         error_msg += f"\n{traceback.format_exception(*exc_info)}"
     
+    # Logger dans le logger dédié aux erreurs HTTP
     http_error_logger.error(
         error_msg,
         extra={'ip': ip, 'path': path, 'user': user}
     )
+    
+    # Logger aussi dans le logger principal selon le niveau
+    if error_code >= 500:
+        app.logger.error(f"Erreur serveur {error_code}: {error_message or error_code} - Path: {path}")
+    elif error_code >= 400:
+        app.logger.warning(f"Erreur client {error_code}: {error_message or error_code} - Path: {path}")
 
 
-def get_error_template_data(error_code, error_message=None):
-    """Retourne les données pour le rendu des templates d'erreur."""
-    return {
-        'error_code': error_code,
-        'error_message': error_message,
-        'current_user': current_user
-    }
+def log_audit_action(action, user=None, path=None, status="success", details=None):
+    """Log une action utilisateur pour l'audit."""
+    audit_logger = logging.getLogger('audit')
+    user_name = user.name if user and hasattr(user, 'name') else 'anonymous'
+    
+    message = f"AUDIT: {action} - User: {user_name} - Status: {status}"
+    if path:
+        message += f" - Path: {path}"
+    if details:
+        message += f" - Details: {details}"
+    
+    if status == "success":
+        audit_logger.info(message)
+    elif status == "failure":
+        audit_logger.warning(message)
+    else:
+        audit_logger.info(message)
+
+
+def get_logger(name):
+    """Obtient un logger spécifique avec la configuration par défaut."""
+    logger = logging.getLogger(name)
+    if not logger.handlers:
+        # Ajouter un handler par défaut si aucun n'existe
+        from config import Config
+        log_dir = Config.LOG_DIR
+        handler = create_rotating_file_handler(
+            os.path.join(log_dir, f'leviia-{name}.log'),
+            Config.LOG_FILE_SIZE,
+            Config.LOG_BACKUP_COUNT,
+            logging.INFO,
+            logging.Formatter(Config.LOG_FORMAT, datefmt=Config.LOG_DATE_FORMAT)
+        )
+        if Config.LOG_FILTER_SENSITIVE:
+            handler.addFilter(SensitiveDataFilter(Config.LOG_FILTER_PATTERNS))
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+    return logger
 
 
 # ============================================================================
@@ -361,6 +600,15 @@ def handle_type_error(error):
 
 # Import tardif pour éviter les problèmes de circular import
 from flask_login import current_user
+
+
+def get_error_template_data(error_code, error_message=None):
+    """Retourne les données pour le rendu des templates d'erreur."""
+    return {
+        'error_code': error_code,
+        'error_message': error_message,
+        'current_user': current_user
+    }
 
 
 def create_app():

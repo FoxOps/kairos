@@ -24,6 +24,9 @@ class Config:
     LOGIN_DISABLED = False  # Désactive l'authentification si True (pour dev/test)
     REMEMBER_COOKIE_DURATION = 86400  # 1 jour en secondes
     SESSION_PROTECTION = "strong"
+    
+    # Configuration SQLAlchemy
+    SQLALCHEMY_ECHO = os.environ.get("SQLALCHEMY_ECHO", "false").lower() == "true"
 
     # ============================================================================
     # CONFIGURATION DE LA GESTION DES ERREURS
@@ -34,10 +37,43 @@ class Config:
     DEBUG_ERRORS = os.environ.get("DEBUG_ERRORS", "false").lower() == "true"
 
     # Configuration du logging
-    LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")  # INFO, WARNING, ERROR, DEBUG
-    LOG_FILE_SIZE = 5 * 1024 * 1024  # 5 Mo par fichier de log
-    LOG_BACKUP_COUNT = 10  # Nombre de fichiers de backup
+    LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+    LOG_FILE_SIZE = int(os.environ.get("LOG_FILE_SIZE", 5 * 1024 * 1024))  # 5 Mo par fichier de log
+    LOG_BACKUP_COUNT = int(os.environ.get("LOG_BACKUP_COUNT", 10))  # Nombre de fichiers de backup
     LOG_DIR = os.environ.get("LOG_DIR") or os.path.join(os.path.dirname(__file__), '..', 'logs')
+    
+    # Configuration des fichiers de log
+    LOG_FILE_APP = os.environ.get("LOG_FILE_APP", "leviia-app.log")
+    LOG_FILE_ERRORS = os.environ.get("LOG_FILE_ERRORS", "leviia-errors.log")
+    LOG_FILE_HTTP = os.environ.get("LOG_FILE_HTTP", "leviia-http-errors.log")
+    LOG_FILE_DEBUG = os.environ.get("LOG_FILE_DEBUG", "leviia-debug.log")
+    LOG_FILE_AUDIT = os.environ.get("LOG_FILE_AUDIT", "leviia-audit.log")
+    
+    # Niveaux de log par module
+    LOG_LEVEL_APP = os.environ.get("LOG_LEVEL_APP", LOG_LEVEL)
+    LOG_LEVEL_ERRORS = os.environ.get("LOG_LEVEL_ERRORS", "ERROR")
+    LOG_LEVEL_HTTP = os.environ.get("LOG_LEVEL_HTTP", "WARNING")
+    LOG_LEVEL_DEBUG = os.environ.get("LOG_LEVEL_DEBUG", "DEBUG")
+    LOG_LEVEL_AUDIT = os.environ.get("LOG_LEVEL_AUDIT", "INFO")
+    
+    # Configuration syslog pour la production
+    SYSLOG_ENABLED = os.environ.get("SYSLOG_ENABLED", "false").lower() == "true"
+    SYSLOG_ADDRESS = os.environ.get("SYSLOG_ADDRESS", "/dev/log")
+    SYSLOG_FACILITY = os.environ.get("SYSLOG_FACILITY", "local0")
+    
+    # Filtres de log
+    LOG_FILTER_SENSITIVE = os.environ.get("LOG_FILTER_SENSITIVE", "true").lower() == "true"
+    LOG_FILTER_PATTERNS = [
+        r'password["\']?\s*[:=]\s*[^\s]+',
+        r'secret["\']?\s*[:=]\s*[^\s]+',
+        r'token["\']?\s*[:=]\s*[^\s]+',
+        r'api[_-]?key["\']?\s*[:=]\s*[^\s]+',
+        r'auth["\']?\s*[:=]\s*[^\s]+',
+    ]
+    
+    # Format des logs
+    LOG_FORMAT = os.environ.get("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    LOG_DATE_FORMAT = os.environ.get("LOG_DATE_FORMAT", "%Y-%m-%d %H:%M:%S")
 
     # Configuration des erreurs HTTP
     # Afficher les pages d'erreur personnalisées
