@@ -544,7 +544,7 @@ def test_500_template_content(self, app):
 
 ## 📝 Historique des Changements
 
-### Version 1.0 (2024)
+### Version 1.0 (Juin 2026)
 - Ajout des pages d'erreur personnalisées pour tous les codes HTTP principaux
 - Implémentation du système de logging avec rotation des fichiers
 - Ajout des gestionnaires d'erreurs HTTP et d'exceptions
