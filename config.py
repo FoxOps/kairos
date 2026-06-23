@@ -63,32 +63,96 @@ def get_json_from_env(env_var, default=None):
         return default
 
 
+# Fonction utilitaire pour détecter le type de base de données
+# Doit être définie avant la classe Config pour éviter les problèmes de référence circulaire
+def get_database_type(database_uri=None):
+    """Détecte le type de base de données à partir de l'URI."""
+    if database_uri is None:
+        database_uri = os.environ.get("DATABASE_URL") or "sqlite:///app.db"
+    
+    if database_uri.startswith("postgresql://") or database_uri.startswith("postgres://"):
+        return "postgresql"
+    elif database_uri.startswith("mysql://") or database_uri.startswith("mariadb://"):
+        return "mysql"
+    elif database_uri.startswith("sqlite://"):
+        return "sqlite"
+    else:
+        # Par défaut, on suppose SQLite
+        return "sqlite"
+
+
 # Configuration de base pour Flask
 class Config:
     # Clé secrète pour Flask (OBLIGATOIRE en production)
     SECRET_KEY = os.environ.get("SECRET_KEY") or "ta-cle-secrete-ici"
     
     # URI de la base de données - peut être configurée via DATABASE_URL
+    # SQLite reste la base de données par défaut
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL") or "sqlite:///app.db"
     SQLALCHEMY_TRACK_MODIFICATIONS = get_bool_from_env("SQLALCHEMY_TRACK_MODIFICATIONS", False)
     
-    # Configuration SQLite pour éviter les problèmes de "database is locked"
-    # Ces paramètres permettent une meilleure gestion des accès concurrents
-    # Peut être personnalisée via SQLALCHEMY_ENGINE_OPTIONS (JSON)
+    # Détecter le type de base de données à partir de l'URI
+    @staticmethod
+    def get_database_type(database_uri=None):
+        """Détecte le type de base de données à partir de l'URI."""
+        return get_database_type(database_uri or Config.SQLALCHEMY_DATABASE_URI)
+    
+    # Configuration des options du moteur SQLAlchemy selon le type de base de données
     custom_engine_options = get_json_from_env("SQLALCHEMY_ENGINE_OPTIONS")
     if custom_engine_options:
         SQLALCHEMY_ENGINE_OPTIONS = custom_engine_options
     else:
-        SQLALCHEMY_ENGINE_OPTIONS = {
-            "connect_args": {
-                "timeout": get_int_from_env("DATABASE_CONNECT_TIMEOUT", 30),  # Timeout de connexion en secondes
-                "isolation_level": None,  # Désactive l'isolation pour SQLite (utilise AUTCOMMIT)
-            },
-            "pool_pre_ping": True,  # Vérifie la connexion avant de l'utiliser
-            "pool_recycle": get_int_from_env("DATABASE_POOL_RECYCLE", 3600),  # Recycle les connexions après 1 heure
-            "pool_size": get_int_from_env("DATABASE_POOL_SIZE", 5),  # Nombre de connexions dans le pool
-            "max_overflow": get_int_from_env("DATABASE_MAX_OVERFLOW", 10),  # Nombre maximal de connexions supplémentaires
-        }
+        # Utiliser la variable d'environnement directement pour éviter les problèmes de référence circulaire
+        db_type = get_database_type(os.environ.get("DATABASE_URL") or "sqlite:///app.db")
+        
+        if db_type == "sqlite":
+            # Configuration SQLite pour éviter les problèmes de "database is locked"
+            SQLALCHEMY_ENGINE_OPTIONS = {
+                "connect_args": {
+                    "timeout": get_int_from_env("DATABASE_CONNECT_TIMEOUT", 30),  # Timeout de connexion en secondes
+                    "isolation_level": None,  # Désactive l'isolation pour SQLite (utilise AUTCOMMIT)
+                },
+                "pool_pre_ping": True,  # Vérifie la connexion avant de l'utiliser
+                "pool_recycle": get_int_from_env("DATABASE_POOL_RECYCLE", 3600),  # Recycle les connexions après 1 heure
+                "pool_size": get_int_from_env("DATABASE_POOL_SIZE", 5),  # Nombre de connexions dans le pool
+                "max_overflow": get_int_from_env("DATABASE_MAX_OVERFLOW", 10),  # Nombre maximal de connexions supplémentaires
+            }
+        elif db_type == "postgresql":
+            # Configuration PostgreSQL optimisée
+            SQLALCHEMY_ENGINE_OPTIONS = {
+                "connect_args": {
+                    "connect_timeout": get_int_from_env("DATABASE_CONNECT_TIMEOUT", 10),  # Timeout de connexion en secondes
+                },
+                "pool_pre_ping": True,  # Vérifie la connexion avant de l'utiliser
+                "pool_recycle": get_int_from_env("DATABASE_POOL_RECYCLE", 3600),  # Recycle les connexions après 1 heure
+                "pool_size": get_int_from_env("DATABASE_POOL_SIZE", 10),  # Nombre de connexions dans le pool
+                "max_overflow": get_int_from_env("DATABASE_MAX_OVERFLOW", 20),  # Nombre maximal de connexions supplémentaires
+            }
+        elif db_type == "mysql":
+            # Configuration MariaDB/MySQL optimisée
+            SQLALCHEMY_ENGINE_OPTIONS = {
+                "connect_args": {
+                    "connect_timeout": get_int_from_env("DATABASE_CONNECT_TIMEOUT", 10),  # Timeout de connexion en secondes
+                    "charset": "utf8mb4",  # Support complet des caractères Unicode
+                    "collation": "utf8mb4_unicode_ci",  # Collation Unicode
+                },
+                "pool_pre_ping": True,  # Vérifie la connexion avant de l'utiliser
+                "pool_recycle": get_int_from_env("DATABASE_POOL_RECYCLE", 3600),  # Recycle les connexions après 1 heure
+                "pool_size": get_int_from_env("DATABASE_POOL_SIZE", 10),  # Nombre de connexions dans le pool
+                "max_overflow": get_int_from_env("DATABASE_MAX_OVERFLOW", 20),  # Nombre maximal de connexions supplémentaires
+            }
+        else:
+            # Configuration par défaut (SQLite)
+            SQLALCHEMY_ENGINE_OPTIONS = {
+                "connect_args": {
+                    "timeout": get_int_from_env("DATABASE_CONNECT_TIMEOUT", 30),
+                    "isolation_level": None,
+                },
+                "pool_pre_ping": True,
+                "pool_recycle": get_int_from_env("DATABASE_POOL_RECYCLE", 3600),
+                "pool_size": get_int_from_env("DATABASE_POOL_SIZE", 5),
+                "max_overflow": get_int_from_env("DATABASE_MAX_OVERFLOW", 10),
+            }
 
     # Configuration Flask-Login
     LOGIN_DISABLED = get_bool_from_env("LOGIN_DISABLED", False)  # Désactive l'authentification si True (pour dev/test)
@@ -280,15 +344,28 @@ class DevelopmentConfig(Config):
 
 
 class ProductionConfig(Config):
-    """Configuration pour la production."""
+    """Configuration pour la production.
+    
+    En production, il est fortement recommandé d'utiliser PostgreSQL ou MariaDB
+    plutôt que SQLite. La configuration se fait uniquement via la variable
+    d'environnement DATABASE_URL.
+    
+    Exemples:
+    - PostgreSQL: postgresql://user:password@localhost:5432/leviia
+    - MariaDB: mariadb://user:password@localhost:3306/leviia
+    - MySQL: mysql://user:password@localhost:3306/leviia
+    
+    SQLite reste disponible mais n'est pas recommandé pour la production
+    avec plusieurs processus workers.
+    """
     DEBUG = False
     DEBUG_ERRORS = False
     LOG_LEVEL = "WARNING"
     SQLALCHEMY_ECHO = False
     
-    # Utiliser une base de données plus robuste en production
-    # Exemple : PostgreSQL
-    # SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL") or "postgresql://user:password@localhost/leviia"
+    # En production, la base de données doit être configurée via DATABASE_URL
+    # SQLite reste la valeur par défaut mais n'est pas recommandé pour la production
+    # SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL") or "sqlite:///app.db"
 
 
 class TestingConfig(Config):
