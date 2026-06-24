@@ -3,8 +3,7 @@
 {% block title %}Emploi du temps - Leviia Schedule{% endblock %}
 
 {% block extra_css %}
-<!-- FullCalendar v6 - CSS pour les icônes et styles par défaut -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.21/index.global.min.css">
+<!-- FullCalendar v6 - pas de CSS externe, tout est géré par JS -->
 <style>
     #schedule-calendar {
         max-width: 1200px;
@@ -42,6 +41,71 @@
     /* Toggle pour changer de vue */
     .view-toggle {
         margin-bottom: 15px;
+    }
+    
+    /* FullCalendar v6 - Styles pour les icônes SVG par défaut */
+    /* D'après https://fullcalendar.io/docs/css-customization */
+    .fc .fc-icon {
+        display: inline-block;
+        vertical-align: middle;
+        width: 1em;
+        height: 1em;
+        fill: currentColor;
+        stroke: none;
+    }
+    
+    /* Style des boutons de la toolbar */
+    .fc-toolbar-chunk button {
+        padding: 6px 12px;
+        margin: 0 2px;
+    }
+    
+    /* Assurer que les boutons de navigation ont assez d'espace */
+    .fc-prev-button,
+    .fc-next-button,
+    .fc-today-button {
+        min-width: 36px;
+        text-align: center;
+    }
+    
+    /* Masquer le texte si on veut seulement les icônes */
+    .fc-prev-button .fc-button-label,
+    .fc-next-button .fc-button-label,
+    .fc-today-button .fc-button-label {
+        display: none;
+    }
+    
+    /* FullCalendar v6 - Styles pour les icônes SVG par défaut */
+    /* D'après https://fullcalendar.io/docs/css-customization */
+    .fc .fc-icon {
+        /* Assurer que les SVG sont visibles */
+        display: inline-block;
+        vertical-align: middle;
+        width: 1em;
+        height: 1em;
+        fill: currentColor;
+        stroke: none;
+    }
+    
+    /* Style des boutons de la toolbar */
+    .fc-toolbar-chunk button {
+        padding: 6px 12px;
+        margin: 0 2px;
+    }
+    
+    /* Assurer que les boutons de navigation ont assez d'espace */
+    .fc-prev-button,
+    .fc-next-button,
+    .fc-today-button {
+        min-width: 36px;
+        text-align: center;
+    }
+    
+    /* Masquer le texte si on veut seulement les icônes */
+    .fc-prev-button .fc-button-label,
+    .fc-next-button .fc-button-label,
+    .fc-today-button .fc-button-label {
+        display: none;
     }
 </style>
 {% endblock %}
