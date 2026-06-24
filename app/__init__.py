@@ -31,7 +31,11 @@ from app.utils.pagination import Pagination, PaginationConfig, paginate_query
 from app.utils.lazy_loading import LazyLoader, LazyCollection, LazyQuery, LazyLoadingConfig
 
 # Créer l'instance Flask
-app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
+app = Flask(
+    __name__,
+    template_folder=os.path.join(os.path.dirname(__file__), 'templates'),
+    static_folder=os.path.join(os.path.dirname(__file__), 'static')
+)
 app.config.from_object("config.Config")
 
 # CONFIGURATION DU LOGGING
