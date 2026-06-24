@@ -43,12 +43,7 @@
         margin-bottom: 15px;
     }
     /* Icônes de navigation FullCalendar avec Font Awesome */
-    /* FullCalendar v6 utilise des SVG, on les masque et on utilise Font Awesome */
-    .fc-prev-button svg,
-    .fc-next-button svg,
-    .fc-today-button svg {
-        display: none !important;
-    }
+    /* buttonIcons: false désactive les icônes par défaut de FullCalendar */
     .fc-prev-button::before {
         content: "\f053";
         font-family: "Font Awesome 6 Free";
@@ -57,7 +52,7 @@
         display: inline-block;
         vertical-align: middle;
         line-height: 1;
-        margin-right: 0;
+        margin-right: 4px;
     }
     .fc-next-button::before {
         content: "\f054";
@@ -67,7 +62,7 @@
         display: inline-block;
         vertical-align: middle;
         line-height: 1;
-        margin-right: 0;
+        margin-right: 4px;
     }
     .fc-today-button::before {
         content: "\f073";
@@ -77,23 +72,28 @@
         display: inline-block;
         vertical-align: middle;
         line-height: 1;
-        margin-right: 0;
+        margin-right: 4px;
     }
-    /* Masquer le texte par défaut des boutons de navigation */
+    /* Style des boutons de navigation */
     .fc-prev-button,
     .fc-next-button,
     .fc-today-button {
+        padding: 6px 12px;
         position: relative;
-        padding: 6px 12px !important;
-        min-width: auto;
     }
     .fc-prev-button::before,
     .fc-next-button::before,
     .fc-today-button::before {
         position: absolute;
-        left: 50%;
+        left: 8px;
         top: 50%;
-        transform: translate(-50%, -50%);
+        transform: translateY(-50%);
+    }
+    /* Masquer le texte des boutons (Précédent, Suivant, Aujourd'hui) */
+    .fc-prev-button .fc-button-label,
+    .fc-next-button .fc-button-label,
+    .fc-today-button .fc-button-label {
+        display: none;
     }
 </style>
 {% endblock %}
@@ -368,6 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 minute: '2-digit',
                 hour12: false
             },
+            buttonIcons: false,
             height: 'auto',
             
             // Activation du Drag & Drop pour les administrateurs
