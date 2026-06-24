@@ -19,23 +19,23 @@ from urllib.error import URLError, HTTPError
 VENDOR_DIR = Path(__file__).parent.parent / "app" / "static" / "vendor"
 
 # Ressources à télécharger
-# Utilisation des releases GitHub pour éviter les problèmes de CDN
+# Utilisation des URLs raw GitHub pour éviter les problèmes de CDN
 RESOURCES = {
     "bulma": {
-        "url": "https://github.com/jgthms/bulma/releases/download/1.0.0/bulma-1.0.0.min.css",
+        "url": "https://raw.githubusercontent.com/jgthms/bulma/1.0.0/css/bulma.min.css",
         "path": VENDOR_DIR / "bulma" / "bulma.min.css"
     },
     "font-awesome": {
-        "url": "https://github.com/FortAwesome/Font-Awesome/releases/download/6.4.0/fontawesome-free-6.4.0-web.min.css",
+        "url": "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/6.4.0/css/all.min.css",
         "path": VENDOR_DIR / "font-awesome" / "all.min.css"
     },
     # FullCalendar v7 - Tous les plugins sont inclus dans le package principal
     "fullcalendar-v7-css": {
-        "url": "https://github.com/fullcalendar/fullcalendar/releases/download/v7.0.0/fullcalendar-main.min.css",
+        "url": "https://raw.githubusercontent.com/fullcalendar/fullcalendar/v7.0.0/packages/core/main.css",
         "path": VENDOR_DIR / "fullcalendar" / "index.global.min.css"
     },
     "fullcalendar-v7-js": {
-        "url": "https://github.com/fullcalendar/fullcalendar/releases/download/v7.0.0/fullcalendar-main.min.js",
+        "url": "https://raw.githubusercontent.com/fullcalendar/fullcalendar/v7.0.0/packages/core/main.js",
         "path": VENDOR_DIR / "fullcalendar" / "index.global.min.js"
     }
 }
