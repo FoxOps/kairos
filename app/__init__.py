@@ -68,7 +68,7 @@ compress.init_app(app)
 @app.after_request
 def add_security_headers(response):
     """Ajoute les headers de sécurité aux réponses."""
-    csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;"
+    csp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:;"
     response.headers['Content-Security-Policy'] = csp
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
