@@ -3,8 +3,7 @@
 {% block title %}Emploi du temps - Leviia Schedule{% endblock %}
 
 {% block extra_css %}
-<!-- FullCalendar v6 CSS -->
-<link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css' />
+<!-- FullCalendar v6 - CSS est inclus dans le JS, pas besoin de fichier CSS séparé -->
 <style>
     #schedule-calendar {
         max-width: 1200px;
@@ -231,9 +230,9 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- FullCalendar v6 JS -->
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales/fr.global.min.js'></script>
+<!-- FullCalendar v6 JS - servi localement -->
+<script src="{{ url_for('static', filename='vendor/fullcalendar/index.global.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/fullcalendar/locales/fr.global.min.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const isAdmin = {{ current_user.is_admin|tojson }};

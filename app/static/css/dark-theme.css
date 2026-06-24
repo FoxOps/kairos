@@ -1,21 +1,9 @@
+/* ============================================
    SUPPORT DU MODE SOMBRE DU SYSTÈME
    ============================================ */
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme]) {
-        --bg-primary: #1a1a1a;
-        --bg-secondary: #121212;
-        --bg-tertiary: #242424;
-        --text-primary: #e0e0e0;
-        --text-secondary: #b0b0b0;
-        --text-tertiary: #8a8a8a;
-        --border-primary: #363636;
-        --border-secondary: #2d2d2d;
-        --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.3);
-        --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.4);
-        --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.5);
-    }
-}
-=======
+/* Bulma gère déjà le mode sombre système via @media (prefers-color-scheme: dark)
+   Nous utilisons [data-theme="dark"] pour le mode sombre manuel (toggle)
+   Cela évite les conflits avec le dark mode natif de Bulma */
 /* ============================================
    CLASSES UTILITAIRES POUR BULMA
    ============================================ */
@@ -42,23 +30,6 @@
 
 /* ============================================
    SUPPORT DU MODE SOMBRE DU SYSTÈME
-   ============================================ */
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme]) {
-        --bg-primary: #1a1a1a;
-        --bg-secondary: #121212;
-        --bg-tertiary: #242424;
-        --text-primary: #e0e0e0;
-        --text-secondary: #b0b0b0;
-        --text-tertiary: #8a8a8a;
-        --border-primary: #363636;
-        --border-secondary: #2d2d2d;
-        --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.3);
-        --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.4);
-        --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.5);
-    }
-}============================================
-   LEVIIA SCHEDULE - THÈME SOMBRE
    ============================================
    
    Bonnes pratiques appliquées :
@@ -859,23 +830,4 @@
 [data-theme="dark"] .tag.is-warning,
 .dark-mode .tag.is-warning {
     color: #000 !important; /* Noir pur pour un contraste suffisant */
-}
-
-/* ============================================
-   SUPPORT DU MODE SOMBRE DU SYSTÈME
-   ============================================ */
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme]) {
-        --bg-primary: #1a1a1a;
-        --bg-secondary: #121212;
-        --bg-tertiary: #242424;
-        --text-primary: #e0e0e0;
-        --text-secondary: #b0b0b0;
-        --text-tertiary: #8a8a8a;
-        --border-primary: #363636;
-        --border-secondary: #2d2d2d;
-        --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.3);
-        --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.4);
-        --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.5);
-    }
 }
