@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Leviia{% endblock %}</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Bulma CSS - servi localement pour éviter les problèmes de CDN -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bulma/bulma.min.css') }}">
+    
+    <!-- Font Awesome - servi localement pour éviter les problèmes de CDN -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/font-awesome/all.min.css') }}">
+    
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-theme.css') }}">
     <style>
         body { padding-top: 3.25rem; }
