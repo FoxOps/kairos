@@ -30,6 +30,39 @@ RESOURCES = {
         "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
         "path": VENDOR_DIR / "font-awesome" / "all.min.css"
     },
+    # Font Awesome webfonts (polices nécessaires pour le CSS)
+    "font-awesome-webfonts": {
+        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-brands-400.woff2",
+        "path": VENDOR_DIR / "font-awesome" / "webfonts" / "fa-brands-400.woff2"
+    },
+    "font-awesome-webfonts-2": {
+        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-brands-400.ttf",
+        "path": VENDOR_DIR / "font-awesome" / "webfonts" / "fa-brands-400.ttf"
+    },
+    "font-awesome-webfonts-3": {
+        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-regular-400.woff2",
+        "path": VENDOR_DIR / "font-awesome" / "webfonts" / "fa-regular-400.woff2"
+    },
+    "font-awesome-webfonts-4": {
+        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-regular-400.ttf",
+        "path": VENDOR_DIR / "font-awesome" / "webfonts" / "fa-regular-400.ttf"
+    },
+    "font-awesome-webfonts-5": {
+        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-solid-900.woff2",
+        "path": VENDOR_DIR / "font-awesome" / "webfonts" / "fa-solid-900.woff2"
+    },
+    "font-awesome-webfonts-6": {
+        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-solid-900.ttf",
+        "path": VENDOR_DIR / "font-awesome" / "webfonts" / "fa-solid-900.ttf"
+    },
+    "font-awesome-webfonts-7": {
+        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-v4compatibility.woff2",
+        "path": VENDOR_DIR / "font-awesome" / "webfonts" / "fa-v4compatibility.woff2"
+    },
+    "font-awesome-webfonts-8": {
+        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-v4compatibility.ttf",
+        "path": VENDOR_DIR / "font-awesome" / "webfonts" / "fa-v4compatibility.ttf"
+    },
     # FullCalendar v6.1.21 - JS principal (inclut déjà interaction, daygrid, timegrid, list, multimonth)
     "fullcalendar-v6-js": {
         "url": "https://cdn.jsdelivr.net/npm/fullcalendar@6.1.21/index.global.min.js",
