@@ -19,24 +19,32 @@ from urllib.error import URLError, HTTPError
 VENDOR_DIR = Path(__file__).parent.parent / "app" / "static" / "vendor"
 
 # Ressources à télécharger
-# Utilisation des URLs raw GitHub pour éviter les problèmes de CDN
+# Utilisation de jsdelivr avec des versions testées et fonctionnelles
 RESOURCES = {
     "bulma": {
-        "url": "https://raw.githubusercontent.com/jgthms/bulma/1.0.0/css/bulma.min.css",
-        "path": VENDOR_DIR / "bulma" / "bulma.min.css"
+        "url": "https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.css",
+        "path": VENDOR_DIR / "bulma" / "bulma.css"
     },
     "font-awesome": {
-        "url": "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/6.4.0/css/all.min.css",
+        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
         "path": VENDOR_DIR / "font-awesome" / "all.min.css"
     },
-    # FullCalendar v7 - Tous les plugins sont inclus dans le package principal
-    "fullcalendar-v7-css": {
-        "url": "https://raw.githubusercontent.com/fullcalendar/fullcalendar/v7.0.0/packages/core/main.css",
+    # FullCalendar v6.1.21 - Version stable qui fonctionne sur jsdelivr
+    "fullcalendar-v6-css": {
+        "url": "https://cdn.jsdelivr.net/npm/fullcalendar@6.1.21/index.global.min.css",
         "path": VENDOR_DIR / "fullcalendar" / "index.global.min.css"
     },
-    "fullcalendar-v7-js": {
-        "url": "https://raw.githubusercontent.com/fullcalendar/fullcalendar/v7.0.0/packages/core/main.js",
+    "fullcalendar-v6-js": {
+        "url": "https://cdn.jsdelivr.net/npm/fullcalendar@6.1.21/index.global.min.js",
         "path": VENDOR_DIR / "fullcalendar" / "index.global.min.js"
+    },
+    "fullcalendar-v6-locale-fr": {
+        "url": "https://cdn.jsdelivr.net/npm/fullcalendar@6.1.21/locales/fr.global.min.js",
+        "path": VENDOR_DIR / "fullcalendar" / "locales" / "fr.global.min.js"
+    },
+    "fullcalendar-v6-interaction": {
+        "url": "https://cdn.jsdelivr.net/npm/@fullcalendar/interaction@6.1.21/index.global.min.js",
+        "path": VENDOR_DIR / "fullcalendar" / "interaction.global.min.js"
     }
 }
 
