@@ -126,10 +126,10 @@
                     <span class="tag is-danger" id="drag-drop-status-tag" style="min-width: 180px; justify-content: center;">
                         <i class="fas fa-mouse-pointer" aria-hidden="true"></i>&nbsp; Drag & Drop désactivé
                     </span>
-                    <button class="button is-small is-outlined is-success" id="toggle-drag-drop" style="min-width: 180px;">
+                    <button class="button is-small is-success" id="toggle-drag-drop" style="min-width: 180px;">
                         <i class="fas fa-toggle-on" aria-hidden="true"></i>&nbsp; Activer Drag & Drop
                     </button>
-                    <button class="button is-small is-outlined is-info" id="toggle-tips" style="min-width: 180px;">
+                    <button class="button is-small is-info" id="toggle-tips" style="min-width: 180px;">
                         <i class="fas fa-eye" aria-hidden="true"></i>&nbsp; Afficher conseils
                     </button>
                 </div>
@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 dragDropStatusTag.classList.remove('is-danger');
                 dragDropStatusTag.classList.add('is-success');
                 toggleDragDropBtn.innerHTML = '<i class="fas fa-toggle-off" aria-hidden="true"></i>&nbsp; Désactiver Drag & Drop';
-                toggleDragDropBtn.classList.remove('is-outlined', 'is-success');
+                toggleDragDropBtn.classList.remove('is-success');
                 toggleDragDropBtn.classList.add('is-danger');
             } else {
                 dragDropStatusTag.innerHTML = '<i class="fas fa-mouse-pointer" aria-hidden="true"></i>&nbsp; Drag & Drop désactivé';
@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 dragDropStatusTag.classList.add('is-danger');
                 toggleDragDropBtn.innerHTML = '<i class="fas fa-toggle-on" aria-hidden="true"></i>&nbsp; Activer Drag & Drop';
                 toggleDragDropBtn.classList.remove('is-danger');
-                toggleDragDropBtn.classList.add('is-outlined', 'is-success');
+                toggleDragDropBtn.classList.add('is-success');
             }
             
             // Mettre à jour les propriétés du calendrier
@@ -226,13 +226,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (tipsVisible) {
                 tipsContainer.style.display = 'block';
                 toggleTipsBtn.innerHTML = '<i class="fas fa-eye-slash" aria-hidden="true"></i>&nbsp; Cacher conseils';
-                toggleTipsBtn.classList.remove('is-outlined', 'is-info');
+                toggleTipsBtn.classList.remove('is-info');
                 toggleTipsBtn.classList.add('is-warning');
             } else {
                 tipsContainer.style.display = 'none';
                 toggleTipsBtn.innerHTML = '<i class="fas fa-eye" aria-hidden="true"></i>&nbsp; Afficher conseils';
                 toggleTipsBtn.classList.remove('is-warning');
-                toggleTipsBtn.classList.add('is-outlined', 'is-info');
+                toggleTipsBtn.classList.add('is-info');
             }
         });
     }
