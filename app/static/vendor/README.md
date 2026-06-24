@@ -39,7 +39,7 @@ Ce script télécharge automatiquement toutes les ressources nécessaires depuis
 
 ## Versions utilisées
 
-- Bulma: 0.9.4
+- Bulma: 1.0.4
 - Font Awesome: 6.4.0
 - FullCalendar: 6.1.10 (avec plugin interaction)
 

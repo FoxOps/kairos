@@ -22,8 +22,8 @@ VENDOR_DIR = Path(__file__).parent.parent / "app" / "static" / "vendor"
 # Utilisation de jsdelivr avec des versions testées et fonctionnelles
 RESOURCES = {
     "bulma": {
-        "url": "https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css",
-        "path": VENDOR_DIR / "bulma" / "bulma.min.css"
+        "url": "https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.css",
+        "path": VENDOR_DIR / "bulma" / "bulma.css"
     },
     "font-awesome": {
         "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
