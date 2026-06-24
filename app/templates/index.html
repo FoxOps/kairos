@@ -3,8 +3,8 @@
 {% block title %}Leviia - Accueil{% endblock %}
 
 {% block extra_css %}
-<!-- FullCalendar v6 CSS -->
-<link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css' />
+<!-- FullCalendar v6 CSS - servi localement -->
+<link rel='stylesheet' href='{{ url_for("static", filename="vendor/fullcalendar/index.global.min.css") }}' />
 <style>
     #calendar {
         max-width: 1200px;
@@ -159,9 +159,11 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- FullCalendar v6 JS avec plugins -->
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales/fr.global.min.js'></script>
+<!-- FullCalendar v6 JS avec plugins - servi localement -->
+<script src='{{ url_for("static", filename="vendor/fullcalendar/index.global.min.js") }}'></script>
+<script src='{{ url_for("static", filename="vendor/fullcalendar/locales/fr.global.min.js") }}'></script>
+<!-- Plugin Interaction pour le drag & drop -->
+<script src='{{ url_for("static", filename="vendor/fullcalendar/interaction.global.min.js") }}'></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const calendarEl = document.getElementById('calendar');
