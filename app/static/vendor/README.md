@@ -7,12 +7,11 @@ Ce dossier contient les ressources CSS/JS nécessaires pour le bon fonctionnemen
 ```
 vendor/
 ├── bulma/
-│   └── bulma.min.css          # Framework CSS Bulma
+│   └── bulma.css              # Framework CSS Bulma
 ├── font-awesome/
 │   └── all.min.css            # Icônes Font Awesome
 └── fullcalendar/
-    ├── index.global.min.css   # FullCalendar v6 - CSS principal
-    ├── index.global.min.js    # FullCalendar v6 - Core JS
+    ├── index.global.min.js    # FullCalendar v6.1.21 - Core JS (inclut CSS)
     ├── locales/
     │   └── fr.global.min.js    # Locale française
     └── interaction.global.min.js  # Plugin pour drag & drop
@@ -41,7 +40,9 @@ Ce script télécharge automatiquement toutes les ressources nécessaires depuis
 
 - Bulma: 1.0.4
 - Font Awesome: 6.4.0
-- FullCalendar: 6.1.21 (JS) + 6.1.10 (CSS/locale) avec plugin interaction 6.1.21
+- FullCalendar: 6.1.21 (JS principal + plugin interaction) avec locale française depuis @fullcalendar/core 6.1.21
+
+> **Note**: FullCalendar v6 n'a pas de fichier CSS séparé. Le CSS est inclus directement dans le fichier JS principal.
 
 ## Notes
 
