@@ -3,7 +3,8 @@
 {% block title %}Emploi du temps - Leviia Schedule{% endblock %}
 
 {% block extra_css %}
-<!-- FullCalendar v6 - CSS est inclus dans le JS, pas besoin de fichier CSS séparé -->
+<!-- FullCalendar v6 - CSS pour les icônes et styles par défaut -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.21/index.global.min.css">
 <style>
     #schedule-calendar {
         max-width: 1200px;
@@ -41,59 +42,6 @@
     /* Toggle pour changer de vue */
     .view-toggle {
         margin-bottom: 15px;
-    }
-    /* Icônes de navigation FullCalendar avec Font Awesome */
-    /* buttonIcons: false désactive les icônes par défaut de FullCalendar */
-    .fc-prev-button::before {
-        content: "\f053";
-        font-family: "Font Awesome 6 Free";
-        font-weight: 900;
-        font-size: 1.2em;
-        display: inline-block;
-        vertical-align: middle;
-        line-height: 1;
-        margin-right: 4px;
-    }
-    .fc-next-button::before {
-        content: "\f054";
-        font-family: "Font Awesome 6 Free";
-        font-weight: 900;
-        font-size: 1.2em;
-        display: inline-block;
-        vertical-align: middle;
-        line-height: 1;
-        margin-right: 4px;
-    }
-    .fc-today-button::before {
-        content: "\f073";
-        font-family: "Font Awesome 6 Free";
-        font-weight: 900;
-        font-size: 1.2em;
-        display: inline-block;
-        vertical-align: middle;
-        line-height: 1;
-        margin-right: 4px;
-    }
-    /* Style des boutons de navigation */
-    .fc-prev-button,
-    .fc-next-button,
-    .fc-today-button {
-        padding: 6px 12px;
-        position: relative;
-    }
-    .fc-prev-button::before,
-    .fc-next-button::before,
-    .fc-today-button::before {
-        position: absolute;
-        left: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-    }
-    /* Masquer le texte des boutons (Précédent, Suivant, Aujourd'hui) */
-    .fc-prev-button .fc-button-label,
-    .fc-next-button .fc-button-label,
-    .fc-today-button .fc-button-label {
-        display: none;
     }
 </style>
 {% endblock %}
@@ -368,7 +316,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 minute: '2-digit',
                 hour12: false
             },
-            buttonIcons: false,
+
             height: 'auto',
             
             // Activation du Drag & Drop pour les administrateurs
