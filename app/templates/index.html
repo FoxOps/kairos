@@ -3,7 +3,7 @@
 {% block title %}Leviia - Accueil{% endblock %}
 
 {% block extra_css %}
-<!-- FullCalendar v6 CSS - servi localement -->
+<!-- FullCalendar v7 CSS - servi localement -->
 <link rel='stylesheet' href='{{ url_for("static", filename="vendor/fullcalendar/index.global.min.css") }}' />
 <style>
     #calendar {
@@ -159,11 +159,8 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- FullCalendar v6 JS avec plugins - servi localement -->
+<!-- FullCalendar v7 JS - servi localement (tous les plugins inclus) -->
 <script src='{{ url_for("static", filename="vendor/fullcalendar/index.global.min.js") }}'></script>
-<script src='{{ url_for("static", filename="vendor/fullcalendar/locales/fr.global.min.js") }}'></script>
-<!-- Plugin Interaction pour le drag & drop -->
-<script src='{{ url_for("static", filename="vendor/fullcalendar/interaction.global.min.js") }}'></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const calendarEl = document.getElementById('calendar');
@@ -175,7 +172,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const isAdmin = {{ current_user.is_admin|tojson }};
     const events = {{ events|tojson }};
 
-    const calendar = new FullCalendar.Calendar(calendarEl, {
+    const calendar = new Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         headerToolbar: {
             left: 'prev,next today',

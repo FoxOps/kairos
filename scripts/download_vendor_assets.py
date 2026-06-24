@@ -21,28 +21,21 @@ VENDOR_DIR = Path(__file__).parent.parent / "app" / "static" / "vendor"
 # Ressources à télécharger
 RESOURCES = {
     "bulma": {
-        "url": "https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css",
+        "url": "https://cdn.jsdelivr.net/npm/bulma@1.0.5/css/bulma.min.css",
         "path": VENDOR_DIR / "bulma" / "bulma.min.css"
     },
     "font-awesome": {
         "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
         "path": VENDOR_DIR / "font-awesome" / "all.min.css"
     },
-    "fullcalendar-core-css": {
-        "url": "https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css",
+    # FullCalendar v7 - Tous les plugins sont inclus dans le package principal
+    "fullcalendar-v7-css": {
+        "url": "https://cdn.jsdelivr.net/npm/fullcalendar@7.0.1/index.global.min.css",
         "path": VENDOR_DIR / "fullcalendar" / "index.global.min.css"
     },
-    "fullcalendar-core-js": {
-        "url": "https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js",
+    "fullcalendar-v7-js": {
+        "url": "https://cdn.jsdelivr.net/npm/fullcalendar@7.0.1/index.global.min.js",
         "path": VENDOR_DIR / "fullcalendar" / "index.global.min.js"
-    },
-    "fullcalendar-fr-locale": {
-        "url": "https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales/fr.global.min.js",
-        "path": VENDOR_DIR / "fullcalendar" / "locales" / "fr.global.min.js"
-    },
-    "fullcalendar-interaction": {
-        "url": "https://cdn.jsdelivr.net/npm/@fullcalendar/interaction@6.1.11/index.global.min.js",
-        "path": VENDOR_DIR / "fullcalendar" / "interaction.global.min.js"
     }
 }
 
