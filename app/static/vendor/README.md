@@ -32,13 +32,13 @@ Exécutez le script de téléchargement :
 python scripts/download_vendor_assets.py
 ```
 
-Ce script télécharge automatiquement toutes les ressources nécessaires depuis les **releases GitHub officielles** (plus fiable que les CDN).
+Ce script télécharge automatiquement toutes les ressources nécessaires depuis **raw.githubusercontent.com** (plus fiable que les CDN tiers).
 
 ## Versions utilisées
 
-- Bulma: 1.0.0 (via GitHub releases)
-- Font Awesome: 6.4.0 (via GitHub releases)
-- FullCalendar: 7.0.0 (via GitHub releases, tous les plugins inclus)
+- Bulma: 1.0.0 (via raw.githubusercontent.com)
+- Font Awesome: 6.4.0 (via raw.githubusercontent.com)
+- FullCalendar: 7.0.0 (via raw.githubusercontent.com, tous les plugins inclus)
 
 ## Notes
 
