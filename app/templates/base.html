@@ -15,7 +15,7 @@
     <style>
         body { padding-top: 3.25rem; }
         .navbar.is-fixed-top { position: fixed; top: 0; left: 0; right: 0; z-index: 100; }
-        .footer { margin-top: 2rem; padding: 2rem; background-color: #f5f5f5; }
+        .footer { margin-top: 2rem; padding: 2rem; background-color: var(--bulma-background); color: var(--bulma-text); }
         /* Skip link pour l'accessibilité */
         .skip-link {
             position: absolute;
@@ -127,6 +127,7 @@
                 localStorage.setItem('theme', 'dark');
                 updateToggleButton(true);
             } else {
+                html.setAttribute('data-theme', 'light');
                 localStorage.setItem('theme', 'light');
                 updateToggleButton(false);
             }
