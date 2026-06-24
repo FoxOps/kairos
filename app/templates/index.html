@@ -158,11 +158,9 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- FullCalendar v6.1.21 JS avec plugins - servi localement -->
+<!-- FullCalendar v6.1.21 JS avec plugins (inclut déjà interaction) - servi localement -->
 <script src='{{ url_for("static", filename="vendor/fullcalendar/index.global.min.js") }}'></script>
 <script src='{{ url_for("static", filename="vendor/fullcalendar/locales/fr.global.min.js") }}'></script>
-<!-- Plugin Interaction pour le drag & drop -->
-<script src='{{ url_for("static", filename="vendor/fullcalendar/interaction.global.min.js") }}'></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const calendarEl = document.getElementById('calendar');

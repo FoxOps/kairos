@@ -30,7 +30,7 @@ RESOURCES = {
         "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
         "path": VENDOR_DIR / "font-awesome" / "all.min.css"
     },
-    # FullCalendar v6.1.21 - JS principal
+    # FullCalendar v6.1.21 - JS principal (inclut déjà interaction, daygrid, timegrid, list, multimonth)
     "fullcalendar-v6-js": {
         "url": "https://cdn.jsdelivr.net/npm/fullcalendar@6.1.21/index.global.min.js",
         "path": VENDOR_DIR / "fullcalendar" / "index.global.min.js"
@@ -39,11 +39,6 @@ RESOURCES = {
     "fullcalendar-v6-locale-fr": {
         "url": "https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.21/locales/fr.global.min.js",
         "path": VENDOR_DIR / "fullcalendar" / "locales" / "fr.global.min.js"
-    },
-    # FullCalendar v6.1.21 - Plugin Interaction pour le drag & drop
-    "fullcalendar-v6-interaction": {
-        "url": "https://cdn.jsdelivr.net/npm/@fullcalendar/interaction@6.1.21/index.global.min.js",
-        "path": VENDOR_DIR / "fullcalendar" / "interaction.global.min.js"
     }
 }
 
