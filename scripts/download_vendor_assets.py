@@ -21,7 +21,7 @@ VENDOR_DIR = Path(__file__).parent.parent / "app" / "static" / "vendor"
 # Ressources à télécharger
 RESOURCES = {
     "bulma": {
-        "url": "https://cdn.jsdelivr.net/npm/bulma@1.0.5/css/bulma.min.css",
+        "url": "https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css",
         "path": VENDOR_DIR / "bulma" / "bulma.min.css"
     },
     "font-awesome": {
@@ -30,11 +30,11 @@ RESOURCES = {
     },
     # FullCalendar v7 - Tous les plugins sont inclus dans le package principal
     "fullcalendar-v7-css": {
-        "url": "https://cdn.jsdelivr.net/npm/fullcalendar@7.0.1/index.global.min.css",
+        "url": "https://cdn.jsdelivr.net/npm/fullcalendar@7.0.0/index.global.min.css",
         "path": VENDOR_DIR / "fullcalendar" / "index.global.min.css"
     },
     "fullcalendar-v7-js": {
-        "url": "https://cdn.jsdelivr.net/npm/fullcalendar@7.0.1/index.global.min.js",
+        "url": "https://cdn.jsdelivr.net/npm/fullcalendar@7.0.0/index.global.min.js",
         "path": VENDOR_DIR / "fullcalendar" / "index.global.min.js"
     }
 }

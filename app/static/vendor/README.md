@@ -11,11 +11,8 @@ vendor/
 ├── font-awesome/
 │   └── all.min.css            # Icônes Font Awesome
 └── fullcalendar/
-    ├── index.global.min.css   # FullCalendar v6 - CSS principal
-    ├── index.global.min.js    # FullCalendar v6 - Core JS
-    ├── locales/
-    │   └── fr.global.min.js    # Locale française
-    └── interaction.global.min.js  # Plugin pour drag & drop
+    ├── index.global.min.css   # FullCalendar v7 - CSS principal
+    └── index.global.min.js    # FullCalendar v7 - Core JS (tous plugins inclus)
 ```
 
 ## Pourquoi ces fichiers ?
@@ -23,7 +20,7 @@ vendor/
 L'application utilise plusieurs bibliothèques externes :
 - **Bulma** : Framework CSS pour le design
 - **Font Awesome** : Icônes
-- **FullCalendar v6** : Calendrier interactif avec drag & drop
+- **FullCalendar v7** : Calendrier interactif avec drag & drop (tous plugins inclus)
 
 En production, surtout dans des environnements sans accès internet, il est **fortement recommandé** de servir ces fichiers localement plutôt que de dépendre des CDN.
 
@@ -39,9 +36,9 @@ Ce script télécharge automatiquement toutes les ressources nécessaires depuis
 
 ## Versions utilisées
 
-- Bulma: 1.0.5
+- Bulma: 1.0.0
 - Font Awesome: 6.4.0
-- FullCalendar: 7.0.1 (tous les plugins inclus)
+- FullCalendar: 7.0.0 (tous les plugins inclus)
 
 ## Notes
 
