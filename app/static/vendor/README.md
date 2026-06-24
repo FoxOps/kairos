@@ -11,8 +11,11 @@ vendor/
 ├── font-awesome/
 │   └── all.min.css            # Icônes Font Awesome
 └── fullcalendar/
-    ├── index.global.min.css   # FullCalendar v7 - CSS principal
-    └── index.global.min.js    # FullCalendar v7 - Core JS (tous plugins inclus)
+    ├── index.global.min.css   # FullCalendar v6 - CSS principal
+    ├── index.global.min.js    # FullCalendar v6 - Core JS
+    ├── locales/
+    │   └── fr.global.min.js    # Locale française
+    └── interaction.global.min.js  # Plugin pour drag & drop
 ```
 
 ## Pourquoi ces fichiers ?
@@ -20,7 +23,7 @@ vendor/
 L'application utilise plusieurs bibliothèques externes :
 - **Bulma** : Framework CSS pour le design
 - **Font Awesome** : Icônes
-- **FullCalendar v7** : Calendrier interactif avec drag & drop (tous plugins inclus)
+- **FullCalendar v6** : Calendrier interactif avec drag & drop
 
 En production, surtout dans des environnements sans accès internet, il est **fortement recommandé** de servir ces fichiers localement plutôt que de dépendre des CDN.
 
@@ -32,13 +35,13 @@ Exécutez le script de téléchargement :
 python scripts/download_vendor_assets.py
 ```
 
-Ce script télécharge automatiquement toutes les ressources nécessaires depuis **raw.githubusercontent.com** (plus fiable que les CDN tiers).
+Ce script télécharge automatiquement toutes les ressources nécessaires depuis les CDN (jsdelivr, cdnjs).
 
 ## Versions utilisées
 
-- Bulma: 1.0.0 (via raw.githubusercontent.com)
-- Font Awesome: 6.4.0 (via raw.githubusercontent.com)
-- FullCalendar: 7.0.0 (via raw.githubusercontent.com, tous les plugins inclus)
+- Bulma: 0.9.4
+- Font Awesome: 6.4.0
+- FullCalendar: 6.1.10 (avec plugin interaction)
 
 ## Notes
 
