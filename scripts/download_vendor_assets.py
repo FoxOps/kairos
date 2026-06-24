@@ -29,9 +29,10 @@ RESOURCES = {
         "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
         "path": VENDOR_DIR / "font-awesome" / "all.min.css"
     },
-    # FullCalendar v6.1.21 - Version stable qui fonctionne sur jsdelivr
+    # FullCalendar v6.1.21 - JS et plugin depuis jsdelivr
+    # Note: Le CSS n'est pas disponible pour 6.1.21, on utilise 6.1.10 pour le CSS
     "fullcalendar-v6-css": {
-        "url": "https://cdn.jsdelivr.net/npm/fullcalendar@6.1.21/index.global.min.css",
+        "url": "https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css",
         "path": VENDOR_DIR / "fullcalendar" / "index.global.min.css"
     },
     "fullcalendar-v6-js": {
@@ -39,7 +40,7 @@ RESOURCES = {
         "path": VENDOR_DIR / "fullcalendar" / "index.global.min.js"
     },
     "fullcalendar-v6-locale-fr": {
-        "url": "https://cdn.jsdelivr.net/npm/fullcalendar@6.1.21/locales/fr.global.min.js",
+        "url": "https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/fr.global.min.js",
         "path": VENDOR_DIR / "fullcalendar" / "locales" / "fr.global.min.js"
     },
     "fullcalendar-v6-interaction": {
