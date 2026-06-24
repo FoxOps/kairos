@@ -58,6 +58,7 @@ Le **Guide Utilisateur Complet** couvre en détail :
 | [🛡️ **Guide Administrateur**](ADMIN_GUIDE.md) | Configuration avancée, sécurité, maintenance et gestion complète | 40 min | ⚠️ Administrateurs |
 | [🔄 **Guide de Sauvegarde**](BACKUP_GUIDE.md) | Procédures de sauvegarde et restauration de la base de données | 15 min | ⚠️ Administrateurs |
 | [📈 **Guide d'Optimisation des Performances**](PERFORMANCE_OPTIMIZATION.md) | Optimisation de l'application pour les environnements de production | 20 min | ⚠️ Administrateurs |
+| [🐳 **Guide Docker**](DOCKER_GUIDE.md) | Déploiement avec Docker et Docker Compose | 20 min | ⚠️ Administrateurs |
 
 ### 📌 **Contenu de la catégorie Administrateurs**
 
@@ -98,6 +99,7 @@ Le **Guide d'Optimisation des Performances** couvre :
 | Document | Description | Temps de lecture | Public |
 |----------|-------------|------------------|--------|
 | [🏗️ **Architecture Technique**](ARCHITECTURE.md) | Architecture complète, composants, flux de données | 25 min | ✅ Développeurs |
+| [🐳 **Guide Docker**](DOCKER_GUIDE.md) | Déploiement avec Docker et Docker Compose | 20 min | ✅ Tous |
 | [📡 **API REST**](API.md) | Documentation complète de l'API (endpoints, schémas, exemples) | 20 min | ✅ Développeurs |
 | [🔍 **Gestion des Erreurs**](ERROR_HANDLING.md) | Architecture de gestion des erreurs et système de logging | 15 min | ✅ Développeurs |
 | [📝 **Résumé Technique**](SUMMARY.md) | Résumé complet de l'architecture, l'API et les composants | 20 min | ✅ Développeurs |

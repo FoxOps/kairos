@@ -18,6 +18,7 @@
 | **👥 Utilisateur** | [docs/QUICK_START.md](docs/QUICK_START.md) | Guide de démarrage rapide (5 min) |
 | **🛡️ Administrateur** | [docs/ADMIN_GUIDE.md](docs/ADMIN_GUIDE.md) | Configuration, sécurité, maintenance |
 | **💻 Développeur** | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture technique, API |
+| **🐳 Docker** | [docker/README.md](docker/README.md) | Déploiement avec Docker et Docker Compose |
 | **📖 Tous** | [docs/README.md](docs/README.md) | **Index complet** de toute la documentation |
 
 > **💡 Pour une prise en main rapide, consultez le [Guide de Démarrage Rapide](docs/QUICK_START.md)**

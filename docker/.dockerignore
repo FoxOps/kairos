@@ -1,0 +1,171 @@
+# =============================================================================
+# Leviia Schedule - .dockerignore
+# =============================================================================
+#
+# Ce fichier spécifie les fichiers et répertoires à exclure lors de la
+# construction de l'image Docker.
+#
+# Cela permet de:
+# - Réduire la taille de l'image
+# - Accélérer le build
+# - Éviter d'inclure des fichiers sensibles
+#
+# =============================================================================
+
+# =============================================================================
+# Fichiers et répertoires à exclure
+# =============================================================================
+
+# Environnement virtuel Python
+venv/
+.env/
+ENV/
+env/
+
+# Fichiers Python compilés
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Fichiers de configuration locale
+.env
+.env.local
+.env.*.local
+
+# Fichiers de log
+*.log
+logs/
+
+# Base de données SQLite locale
+*.db
+*.sqlite
+*.sqlite3
+data/
+instance/
+
+# Fichiers temporaires
+*.tmp
+*.temp
+*~
+*.swp
+*.swo
+
+# Fichiers de test et coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Fichiers de documentation générée
+*.md
+*.rst
+docs/_build/
+
+# Fichiers IDE
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+*.pydevproject
+*.project
+*.settings/
+
+# Fichiers Git
+.git/
+.gitignore
+.gitmodules
+
+# Fichiers de build Docker
+.docker/
+
+# Fichiers de cache
+.cache/
+*.cache
+
+# Fichiers de backup
+*.bak
+*.backup
+*.old
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Fichiers de configuration sensible
+config_performance.py
+!config.py
+
+# Fichiers de test
+Tests/
+tests/
+
+# Fichiers de développement
+Makefile
+*.sh
+!entrypoint.sh
+
+# Fichiers de configuration locale
+*.local
+
+# Fichiers de dépendances alternatives
+requirements-*.txt
+!requirements.txt
+
+# Fichiers de lock des dépendances
+Pipfile
+Pipfile.lock
+poetry.lock
+
+# Fichiers de configuration CI/CD
+.github/
+.gitlab-ci.yml
+.gitlab/
+
+# Fichiers de sécurité
+SECURITY_AUDIT_REPORT.md
+
+# Fichiers de roadmap et documentation technique
+ROADMAP.md
+TESTING_SUMMARY.md
+ENVIRONMENT_VARIABLES.md
+
+# =============================================================================
+# Exceptions (fichiers à inclure malgré tout)
+# =============================================================================
+
+# Le Dockerfile lui-même doit être inclus
+!Dockerfile
+
+# Le docker-compose.yml doit être inclus
+!docker-compose.yml
+
+# Le .dockerignore lui-même doit être inclus
+!.dockerignore
+
+# Le script d'entrée doit être inclus
+!entrypoint.sh
+
+# Les fichiers de configuration principaux doivent être inclus
+!config.py
+!run.py
+!requirements.txt
+
+# =============================================================================

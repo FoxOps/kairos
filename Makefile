@@ -1,7 +1,102 @@
-# Makefile pour Leviia Schedule
+# COMMANDES DOCKER
+# ============================================================================
+
+docker-build: ## Construit l'image Docker
+	@echo "$(YELLOW)Construction de l'image Docker...$(NC)"
+	docker build -t leviia-schedule .
+	@echo "$(GREEN)✓ Image Docker construite$(NC)"
+
+docker-up: ## Démarre les services avec Docker Compose
+	@echo "$(YELLOW)Démarrage des services Docker...$(NC)"
+	docker-compose up -d
+	@echo "$(GREEN)✓ Services démarrés$(NC)"
+
+docker-down: ## Arrête les services Docker
+	@echo "$(YELLOW)Arrêt des services Docker...$(NC)"
+	docker-compose down
+	@echo "$(GREEN)✓ Services arrêtés$(NC)"
+
+docker-logs: ## Affiche les logs des services Docker
+	@echo "$(YELLOW)Affichage des logs...$(NC)"
+	docker-compose logs -f app
+
+docker-shell: ## Ouvre un shell dans le conteneur de l'application
+	@echo "$(YELLOW)Ouverture d'un shell dans le conteneur...$(NC)"
+	docker-compose exec app bash
+	@echo "$(GREEN)✓ Shell ouvert$(NC)"
+
+docker-clean: ## Nettoie les conteneurs, images et volumes Docker
+	@echo "$(YELLOW)Nettoyage des ressources Docker...$(NC)"
+	docker-compose down -v --rmi local
+	@echo "$(GREEN)✓ Nettoyage Docker terminé$(NC)"
+
+docker-rebuild: ## Reconstruit et redémarre les services
+	@echo "$(YELLOW)Reconstruction et redémarrage...$(NC)"
+	docker-compose down
+	docker-compose build --no-cache
+	docker-compose up -d
+	@echo "$(GREEN)✓ Services reconstruits et redémarrés$(NC)"
+
+docker-ps: ## Affiche l'état des services Docker
+	@echo "$(YELLOW)État des services Docker:$(NC)"
+	docker-compose ps
+
+docker-test: ## Démarre les services pour les tests (SQLite)
+	@echo "$(YELLOW)Démarrage pour les tests avec SQLite...$(NC)"
+	DATABASE_URL=sqlite:////app/data/app.db docker-compose up -d app
+	@echo "$(GREEN)✓ Services démarrés pour les tests$(NC)"
+=======
+# ============================================================================
+# COMMANDES DOCKER
+# ============================================================================
+
+docker-build: ## Construit l'image Docker
+	@echo "$(YELLOW)Construction de l'image Docker...$(NC)"
+	cd docker && docker build -t leviia-schedule .
+	@echo "$(GREEN)✓ Image Docker construite$(NC)"
+
+docker-up: ## Démarre les services avec Docker Compose
+	@echo "$(YELLOW)Démarrage des services Docker...$(NC)"
+	cd docker && docker-compose up -d
+	@echo "$(GREEN)✓ Services démarrés$(NC)"
+
+docker-down: ## Arrête les services Docker
+	@echo "$(YELLOW)Arrêt des services Docker...$(NC)"
+	cd docker && docker-compose down
+	@echo "$(GREEN)✓ Services arrêtés$(NC)"
+
+docker-logs: ## Affiche les logs des services Docker
+	@echo "$(YELLOW)Affichage des logs...$(NC)"
+	cd docker && docker-compose logs -f app
+
+docker-shell: ## Ouvre un shell dans le conteneur de l'application
+	@echo "$(YELLOW)Ouverture d'un shell dans le conteneur...$(NC)"
+	cd docker && docker-compose exec app bash
+	@echo "$(GREEN)✓ Shell ouvert$(NC)"
+
+docker-clean: ## Nettoie les conteneurs, images et volumes Docker
+	@echo "$(YELLOW)Nettoyage des ressources Docker...$(NC)"
+	cd docker && docker-compose down -v --rmi local
+	@echo "$(GREEN)✓ Nettoyage Docker terminé$(NC)"
+
+docker-rebuild: ## Reconstruit et redémarre les services
+	@echo "$(YELLOW)Reconstruction et redémarrage...$(NC)"
+	cd docker && docker-compose down
+	cd docker && docker-compose build --no-cache
+	cd docker && docker-compose up -d
+	@echo "$(GREEN)✓ Services reconstruits et redémarrés$(NC)"
+
+docker-ps: ## Affiche l'état des services Docker
+	@echo "$(YELLOW)État des services Docker:$(NC)"
+	cd docker && docker-compose ps
+
+docker-test: ## Démarre les services pour les tests (SQLite)
+	@echo "$(YELLOW)Démarrage pour les tests avec SQLite...$(NC)"
+	cd docker && DATABASE_URL=sqlite:////app/data/app.db docker-compose up -d app
+	@echo "$(GREEN)✓ Services démarrés pour les tests$(NC)"Makefile pour Leviia Schedule
 # Exécutez `make help` pour voir les commandes disponibles
 
-.PHONY: help install test lint format security all clean backup backup-local backup-s3 backup-list backup-restore
+.PHONY: help install test lint format security all clean backup backup-local backup-s3 backup-list backup-restore docker-build docker-up docker-down docker-logs docker-shell docker-clean
 
 # Couleurs pour les messages
 GREEN := \033[0;32m
@@ -111,3 +206,52 @@ backup-restore: ## Restaure une sauvegarde (spécifiez BACKUP=chemin/vers/fichie
 	@echo "$(YELLOW)Restauration de la sauvegarde: $(BACKUP)$(NC)"
 	python scripts/backup_database.py --restore $(BACKUP)
 	@echo "$(GREEN)✓ Restauration terminée$(NC)"
+
+# ============================================================================
+# COMMANDES DOCKER
+# ============================================================================
+
+docker-build: ## Construit l'image Docker
+	@echo "$(YELLOW)Construction de l'image Docker...$(NC)"
+	docker build -t leviia-schedule .
+	@echo "$(GREEN)✓ Image Docker construite$(NC)"
+
+docker-up: ## Démarre les services avec Docker Compose
+	@echo "$(YELLOW)Démarrage des services Docker...$(NC)"
+	docker-compose up -d
+	@echo "$(GREEN)✓ Services démarrés$(NC)"
+
+docker-down: ## Arrête les services Docker
+	@echo "$(YELLOW)Arrêt des services Docker...$(NC)"
+	docker-compose down
+	@echo "$(GREEN)✓ Services arrêtés$(NC)"
+
+docker-logs: ## Affiche les logs des services Docker
+	@echo "$(YELLOW)Affichage des logs...$(NC)"
+	docker-compose logs -f app
+
+docker-shell: ## Ouvre un shell dans le conteneur de l'application
+	@echo "$(YELLOW)Ouverture d'un shell dans le conteneur...$(NC)"
+	docker-compose exec app bash
+	@echo "$(GREEN)✓ Shell ouvert$(NC)"
+
+docker-clean: ## Nettoie les conteneurs, images et volumes Docker
+	@echo "$(YELLOW)Nettoyage des ressources Docker...$(NC)"
+	docker-compose down -v --rmi local
+	@echo "$(GREEN)✓ Nettoyage Docker terminé$(NC)"
+
+docker-rebuild: ## Reconstruit et redémarre les services
+	@echo "$(YELLOW)Reconstruction et redémarrage...$(NC)"
+	docker-compose down
+	docker-compose build --no-cache
+	docker-compose up -d
+	@echo "$(GREEN)✓ Services reconstruits et redémarrés$(NC)"
+
+docker-ps: ## Affiche l'état des services Docker
+	@echo "$(YELLOW)État des services Docker:$(NC)"
+	docker-compose ps
+
+docker-test: ## Démarre les services pour les tests (SQLite)
+	@echo "$(YELLOW)Démarrage pour les tests avec SQLite...$(NC)"
+	DATABASE_URL=sqlite:////app/data/app.db docker-compose up -d app
+	@echo "$(GREEN)✓ Services démarrés pour les tests$(NC)"
