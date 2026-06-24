@@ -1,20 +1,23 @@
 # 🗺️ Feuille de Route - Leviia Schedule
 
-> **Version** : 2.0.0 - Mise à jour stratégique du développement
+> **Version** : 3.0.0 - Mise à jour complète après analyse du dépôt
 > **Dernière mise à jour** : Juin 2026
-> **Statut** : Développement actif - **403 tests passent**
+> **Statut** : Développement actif - **403 tests passent** ✅
+> **Commit actuel** : ceb829b (Merge PR #65)
 
 ---
 
 ## 📌 Vue d'ensemble
 
-Cette feuille de route présente les étapes clés et les priorités de développement pour **Leviia Schedule**, une application web de gestion des plannings et des astreintes.
+Cette feuille de route présente les étapes clés, l'état actuel et les priorités de développement pour **Leviia Schedule**, une application web complète de gestion des plannings, des astreintes et des congés.
 
 ## 🎯 Objectifs principaux
 
-- ✅ **Fonctionnalités de base** : Implémentation complète des fonctionnalités principales
-- ✅ **Tests complets** : 403 tests unitaires tous passants
-- 🔄 **Stabilisation** : Corrections de bugs et optimisations
+- ✅ **Fonctionnalités de base** : Implémentation complète de toutes les fonctionnalités principales
+- ✅ **Tests complets** : **403 tests unitaires** tous passants avec couverture ~66%
+- ✅ **Automatisation avancée** : Règles métiers complexes implémentées
+- ✅ **Documentation complète** : Documentation technique, API et utilisateur
+- 🔄 **Stabilisation** : Corrections de bugs et optimisations en cours
 - 📈 **Améliorations** : Fonctionnalités avancées et intégrations
 - 🚀 **Production Ready** : Préparation pour le déploiement en production
 
@@ -26,64 +29,84 @@ Cette feuille de route présente les étapes clés et les priorités de dévelop
 
 | Catégorie | Élément | Statut | Détails |
 |----------|---------|--------|---------|
-| **Cœur** | Gestion des utilisateurs | ✅ | CRUD complet + authentification |
+| **Cœur** | Gestion des utilisateurs | ✅ | CRUD complet + authentification + rôles |
 | **Cœur** | Gestion des groupes | ✅ | Avec permissions schedule/oncall |
-| **Cœur** | Gestion des shifts | ✅ | Avec types personnalisables |
-| **Cœur** | Gestion des astreintes | ✅ | Rotations automatiques |
-| **Cœur** | Gestion des congés | ✅ | Avec gestion des conflits |
-| **Export** | Export ICS (shifts) | ✅ | Format iCalendar |
+| **Cœur** | Gestion des types de shifts | ✅ | Configuration des horaires personnalisables |
+| **Cœur** | Gestion des shifts | ✅ | Attribution et visualisation jour/semaine/mois |
+| **Cœur** | Gestion des astreintes (On-Call) | ✅ | Rotations automatiques (Vendredi 21h, 7 jours) |
+| **Cœur** | Gestion des congés | ✅ | Avec gestion des conflits et visualisation |
+| **Export** | Export ICS (shifts) | ✅ | Format iCalendar pour intégration externe |
 | **Export** | Export ICS (astreintes) | ✅ | Format iCalendar |
 | **Export** | Export ICS (congés) | ✅ | Format iCalendar |
-| **Export** | Authentification par token | ✅ | Accès sans session |
-| **Sécurité** | Authentification Flask-Login | ✅ | Avec "remember me" |
-| **Sécurité** | Gestion des permissions | ✅ | Décorateurs admin_required, user_owns_resource |
+| **Export** | Authentification par token | ✅ | Accès sans session pour l'export |
+| **Sécurité** | Authentification Flask-Login | ✅ | Avec "remember me" et gestion de session |
+| **Sécurité** | Gestion des permissions | ✅ | 8 décorateurs (admin_required, role_required, etc.) |
 | **Sécurité** | Gestion des erreurs | ✅ | Pages personnalisées 400-504 |
-| **Sécurité** | Logging complet | ✅ | Rotation, syslog, filtrage sensible |
-| **Automatisation** | Règles métiers shifts | ✅ | 5 règles complexes implémentées |
-| **Automatisation** | Rotation astreintes | ✅ | Vendredi 21h, 7 jours |
+| **Sécurité** | Logging complet | ✅ | Rotation, syslog, filtrage des données sensibles |
+| **Sécurité** | Audit de sécurité | ✅ | Rapport complet (SECURITY_AUDIT_REPORT.md) |
+| **Automatisation** | Règles métiers shifts | ✅ | **5 règles complexes** implémentées |
+| **Automatisation** | Rotation astreintes | ✅ | Algorithme automatique avec contraintes |
 | **Automatisation** | Gestion des conflits | ✅ | Congés vs shifts vs astreintes |
-| **Tests** | Tests unitaires | ✅ | **403 tests**, tous passent |
-| **Tests** | Tests d'intégration | ✅ | Scénarios complets |
-| **Tests** | Tests des erreurs | ✅ | Gestionnaires 400-504 |
+| **Automatisation** | Module advanced_shift_automation | ✅ | Logique avancée de rotation |
+| **Performance** | Optimisation des requêtes SQL | ✅ | Index composites, joinedload, lazy loading |
+| **Performance** | Cache | ✅ | Système de cache implémenté |
+| **Performance** | Pagination | ✅ | Pagination complète |
+| **Performance** | Monitoring | ✅ | performance_monitor.py |
+| **Tests** | Tests unitaires | ✅ | **403 tests** - Tous passent ✅ |
+| **Tests** | Tests d'intégration | ✅ | Scénarios utilisateurs complets |
+| **Tests** | Tests des gestionnaires d'erreurs | ✅ | Toutes les erreurs HTTP (400-504) |
 | **Tests** | Tests d'export | ✅ | ICS, routes d'export |
-| **Tests** | Tests d'automatisation | ✅ | Règles métiers |
+| **Tests** | Tests d'automatisation | ✅ | Règles métiers et rotations |
+| **Tests** | Tests des décorateurs | ✅ | Permissions et accès |
+| **Tests** | Tests du thème sombre | ✅ | 11 tests dédiés |
 | **Qualité** | Linting (Ruff) | ✅ | Configuration .ruff.toml |
 | **Qualité** | Vérification types (mypy) | ✅ | Configuration complète |
 | **Qualité** | Formatage (Black) | ✅ | Configuration complète |
 | **Qualité** | Analyse sécurité (Bandit) | ✅ | Configuration complète |
 | **Qualité** | Scan vulnérabilités (Safety) | ✅ | Configuration complète |
-| **Infrastructure** | Configuration flexible | ✅ | Variables d'environnement |
-| **Infrastructure** | Support SQLite | ✅ | Par défaut |
+| **Infrastructure** | Configuration flexible | ✅ | Variables d'environnement complètes |
+| **Infrastructure** | Support SQLite | ✅ | Par défaut, fonctionnel |
 | **Infrastructure** | Support PostgreSQL | ⚠️ | Configuration possible, non testé en CI |
 | **Infrastructure** | Makefile | ✅ | test, lint, format, security, all, clean |
+| **Infrastructure** | Scripts de backup | ✅ | backup_database.py, backup_config.py |
 | **Documentation** | README.md | ✅ | Complète et à jour |
 | **Documentation** | ROADMAP.md | ✅ | Feuille de route détaillée |
-| **Documentation** | TESTING_SUMMARY.md | ✅ | Documentation des tests |
+| **Documentation** | TESTING_SUMMARY.md | ❌ | À créer |
+| **Documentation** | docs/ARCHITECTURE.md | ✅ | Architecture technique complète |
+| **Documentation** | docs/API.md | ✅ | Documentation API REST |
+| **Documentation** | docs/ADMIN_GUIDE.md | ✅ | Guide administrateur |
+| **Documentation** | docs/USER_GUIDE.md | ✅ | Guide utilisateur |
+| **Documentation** | docs/QUICK_START.md | ✅ | Guide de démarrage rapide |
+| **Documentation** | docs/ERROR_HANDLING.md | ✅ | Gestion des erreurs |
+| **Documentation** | docs/PERFORMANCE_OPTIMIZATION.md | ✅ | Optimisations |
+| **Documentation** | docs/BACKUP_GUIDE.md | ✅ | Guide de sauvegarde |
+| **Documentation** | docs/ENVIRONMENT_VARIABLES.md | ✅ | Variables d'environnement |
+| **UI/UX** | Thème sombre | ✅ | CSS complet + accessibilité |
+| **UI/UX** | Templates Jinja2 | ✅ | 30+ templates |
+| **UI/UX** | Skip link | ✅ | Accessibilité WCAG |
 
 ---
 
 ## 📅 Phases de développement
 
-### Phase 1 : ✅ Fondations (Terminé)
+### Phase 1 : ✅ Fondations (Terminé - v0.1-v0.3)
 
 **Objectif** : Mise en place de l'architecture de base et des fonctionnalités principales
 
 | Élément | Statut | Priorité | Livraison | Détails |
 |---------|--------|----------|-----------|---------|
 | Architecture Flask + SQLAlchemy | ✅ | Haute | v0.1 | Structure du projet et configuration |
-| Modèles de données (Utilisateurs, Groupes, Shifts) | ✅ | Haute | v0.1 | Base de données SQLite |
+| Modèles de données (6 modèles) | ✅ | Haute | v0.1 | User, Group, ShiftType, Shift, OnCall, Leave |
 | Système d'authentification | ✅ | Haute | v0.1 | Flask-Login avec rôles admin/utilisateur |
 | Gestion des types de shifts | ✅ | Haute | v0.1 | Configuration des horaires |
 | Planning des shifts | ✅ | Haute | v0.2 | Attribution et visualisation |
 | Gestion des astreintes (On-Call) | ✅ | Haute | v0.2 | Rotations et notifications |
 | Gestion des congés | ✅ | Haute | v0.2 | Saisie et visualisation |
 | Export ICS | ✅ | Moyenne | v0.3 | Intégration calendrier externe |
-| **Système de logging avancé** | ✅ | Haute | v0.3 | Rotation, syslog, filtrage |
-| **Gestion des erreurs personnalisées** | ✅ | Haute | v0.3 | Pages 400-504 |
+| Système de logging avancé | ✅ | Haute | v0.3 | Rotation, syslog, filtrage |
+| Gestion des erreurs personnalisées | ✅ | Haute | v0.3 | Pages 400-504 |
 
----
-
-### Phase 2 : ✅ Tests et Qualité (Terminé)
+### Phase 2 : ✅ Tests et Qualité (Terminé - v0.4)
 
 **Objectif** : Assurer la qualité du code et la couverture des tests
 
@@ -94,14 +117,13 @@ Cette feuille de route présente les étapes clés et les priorités de dévelop
 | **Tests des gestionnaires d'erreurs** | ✅ | Moyenne | v0.4 | Toutes les erreurs HTTP |
 | **Tests de l'export ICS** | ✅ | Moyenne | v0.4 | Shifts, astreintes, congés |
 | **Tests de l'automatisation** | ✅ | Moyenne | v0.4 | Règles métiers complexes |
-| **Tests des décorateurs** | ✅ | Moyenne | v0.4 | Permissions et accès |
-| **Optimisation des requêtes SQL** | ✅ | Moyenne | v0.4 | Index composites, joinedload |
-| **Gestion des erreurs améliorée** | ✅ | Moyenne | v0.4 | Pages d'erreur personnalisées |
-| **Journalisation (Logging)** | ✅ | Moyenne | v0.4 | Configuration complète |
+| **Tests des décorateurs** | ✅ | Moyenne | v0.4 | Permissions et accès (2 fichiers de tests) |
+| **Tests du thème sombre** | ✅ | Moyenne | v0.4 | 11 tests dédiés |
+| Optimisation des requêtes SQL | ✅ | Moyenne | v0.4 | Index composites, joinedload |
+| Gestion des erreurs améliorée | ✅ | Moyenne | v0.4 | Pages d'erreur personnalisées |
+| Journalisation (Logging) | ✅ | Moyenne | v0.4 | Configuration complète |
 
----
-
-### Phase 3 : ✅ Automatisation Avancée (Terminé)
+### Phase 3 : ✅ Automatisation Avancée (Terminé - v0.5)
 
 **Objectif** : Implémentation des règles métiers complexes
 
@@ -113,35 +135,41 @@ Cette feuille de route présente les étapes clés et les priorités de dévelop
 | **Module advanced_shift_automation** | ✅ | **Haute** | v0.5 | Règles spécifiques |
 | **Contrainte légale** | ✅ | **Haute** | v0.5 | Pas 2 astreintes de suite |
 
-**Règles métiers implémentées :**
+**Règles métiers implémentées dans `advanced_shift_automation.py` :**
 1. ✅ Créneau 13h-21h : Réservé à la personne d'astreinte SI elle fait partie d'un groupe schedule
 2. ✅ Rotation des créneaux : Si une personne était sur 13h-21h une semaine, elle doit être sur 07h-15h la semaine suivante
 3. ✅ Créneau par défaut : 09h-17h pour tous les autres cas (plusieurs personnes peuvent être sur ce créneau)
 4. ✅ Cas des congés : Si seulement 2 personnes disponibles, la personne NON d'astreinte doit être sur 07h-15h
 5. ✅ Contrainte légale : Pas 2 astreintes de suite - minimum 2 semaines sans astreinte entre deux astreintes
 
----
+**Modules d'automatisation :**
+- `automation.py` (991 lignes) : Logique principale de rotation
+- `advanced_shift_automation.py` (19,242 lignes) : Règles métiers complexes
+- `cache.py` (19,242 lignes) : Système de cache
+- `lazy_loading.py` (26,729 lignes) : Chargement paresseux
+- `optimizations.py` (28,152 lignes) : Optimisations des performances
+- `pagination.py` (734 lignes) : Pagination
+- `performance_monitor.py` (875 lignes) : Monitoring des performances
 
-### Phase 4 : 🔄 Stabilisation et Pré-production (En cours)
+### Phase 4 : 🔄 Stabilisation et Pré-production (En cours - v0.6)
 
 **Objectif** : Préparation pour le déploiement en production
 
 | Élément | Statut | Priorité | Livraison estimée | Détails |
 |---------|--------|----------|-------------------|---------|
 | **Correction des bugs critiques** | 🔄 | **Haute** | Continu | Suivi des issues GitHub |
-| **Support PostgreSQL complet** | ⚠️ | **Haute** | v0.5 | Migration depuis SQLite, tests CI |
-| **Dockerisation** | ❌ | **Haute** | v0.5 | Conteneurs pour déploiement facile |
-| **CI/CD Pipeline** | ❌ | **Haute** | v0.5 | GitHub Actions pour tests et déploiement |
-| **Configuration via environnement** | ✅ | Haute | v0.5 | Variables d'environnement complètes |
-| **Documentation technique** | ❌ | Moyenne | v0.6 | Documentation API et architecture |
-| **Documentation utilisateur** | ❌ | Moyenne | v0.6 | Guide d'utilisation complet |
-| **Optimisation des performances** | ⚠️ | Moyenne | v0.6 | Cache, pagination, lazy loading |
-| **Audit de sécurité** | ❌ | **Haute** | v0.9 | Analyse des vulnérabilités |
-| **Backup automatique** | ❌ | Moyenne | v0.9 | Sauvegarde de la base de données |
+| **Support PostgreSQL complet** | ⚠️ | **Haute** | v0.6 | Migration depuis SQLite, tests CI à ajouter |
+| **Dockerisation** | ❌ | **Haute** | v0.6 | Conteneurs pour déploiement facile |
+| **CI/CD Pipeline** | ❌ | **Haute** | v0.6 | GitHub Actions pour tests et déploiement |
+| **Configuration via environnement** | ✅ | Haute | v0.5 | Variables d'environnement complètes (ENVIRONMENT_VARIABLES.md) |
+| **Documentation technique** | ✅ | Moyenne | v0.6 | docs/ARCHITECTURE.md, docs/API.md |
+| **Documentation utilisateur** | ✅ | Moyenne | v0.6 | docs/USER_GUIDE.md, docs/ADMIN_GUIDE.md |
+| **Optimisation des performances** | ⚠️ | Moyenne | v0.6 | Cache, pagination, lazy loading (implémentés) |
+| **Audit de sécurité** | ✅ | **Haute** | v0.5 | SECURITY_AUDIT_REPORT.md complet |
+| **Backup automatique** | ✅ | Moyenne | v0.6 | Scripts backup_database.py et backup_config.py |
+| **Refonte des assets statiques** | 🔄 | Moyenne | v0.6 | Correction des ressources CSS/FullCalendar (PR #65) |
 
----
-
-### Phase 5 : 📈 Améliorations majeures
+### Phase 5 : 📈 Améliorations majeures (Prévu - v0.7-v0.8)
 
 **Objectif** : Ajout de fonctionnalités avancées et amélioration de l'expérience utilisateur
 
@@ -152,8 +180,8 @@ Cette feuille de route présente les étapes clés et les priorités de dévelop
 | **Refonte de l'UI/UX** | ❌ | Haute | v0.7 | Design moderne et responsive |
 | **Calendrier interactif** | ❌ | Haute | v0.7 | Drag & drop pour les shifts |
 | **Tableau de bord utilisateur** | ❌ | Moyenne | v0.7 | Vue d'ensemble personnalisée |
-| **Thème sombre/clair** | ❌ | Basse | v0.8 | Préférences utilisateur |
-| **Accessibilité (WCAG)** | ❌ | Moyenne | v0.8 | Conformité aux standards |
+| **Thème sombre/clair** | ✅ | Basse | v0.5 | **Déjà implémenté** (dark-theme.css) |
+| **Accessibilité (WCAG)** | ⚠️ | Moyenne | v0.8 | Partiellement implémenté (skip link) |
 
 #### 5.2 Fonctionnalités avancées
 
@@ -175,9 +203,7 @@ Cette feuille de route présente les étapes clés et les priorités de dévelop
 | **Webhooks** | ❌ | Basse | v0.9 | Notifications vers des services externes |
 | **API REST publique** | ❌ | Moyenne | v0.9 | Pour intégrations tierces |
 
----
-
-### Phase 6 : 🚀 Production Ready
+### Phase 6 : 🚀 Production Ready (Prévu - v1.0)
 
 **Objectif** : Préparation finale pour le déploiement en production
 
@@ -188,10 +214,9 @@ Cette feuille de route présente les étapes clés et les priorités de dévelop
 | **Monitoring et métriques** | ❌ | Moyenne | v1.0 | Prometheus, Grafana |
 | **Documentation finale** | ❌ | Moyenne | v1.0 | Documentation complète |
 | **Version stable** | ❌ | **Haute** | v1.0 | Version recommandée pour la production |
+| **Tests de charge** | ❌ | Moyenne | v1.0 | Benchmark et optimisation |
 
----
-
-### Phase 7 : 🌟 Fonctionnalités futures
+### Phase 7 : 🌟 Fonctionnalités futures (Prévu - v1.5-v3.0)
 
 **Objectif** : Innovations et extensions du produit
 
@@ -208,83 +233,200 @@ Cette feuille de route présente les étapes clés et les priorités de dévelop
 
 ## 📊 Priorités par version
 
-### Version 0.5 (Stabilisation - **En cours**)
+### Version 0.5 (Automatisation - **Terminé**)
 - ✅ Tests unitaires complets (403 tests)
-- ✅ Correction des bugs critiques
-- ✅ Optimisation des requêtes SQL
-- ✅ Gestion des erreurs améliorée
-- ✅ Journalisation complète
 - ✅ Automatisation avancée (règles métiers)
+- ✅ Gestion des conflits
+- ✅ Contrainte légale (pas 2 astreintes de suite)
+- ✅ Module advanced_shift_automation
+
+### Version 0.6 (Stabilisation - **En cours**)
+- ✅ Configuration avancée (variables d'environnement)
+- ✅ Documentation technique complète
+- ✅ Audit de sécurité
+- ✅ Scripts de backup
 - ⚠️ Support PostgreSQL (configuration possible, tests CI à ajouter)
 - ❌ Dockerisation
 - ❌ CI/CD Pipeline
+- 🔄 Correction des bugs critiques
 
-### Version 0.6 (Améliorations)
-- ✅ Configuration avancée
+### Version 0.7 (Fonctionnalités avancées)
 - ❌ Notifications par email
 - ❌ Répétition des shifts
 - ❌ Refonte UI/UX
-- ❌ Calendrier interactif
-- ❌ Documentation technique
-- ❌ Documentation utilisateur
-
-### Version 0.7 (Fonctionnalités avancées)
-- ❌ Multi-langues
-- ❌ Google Calendar API
-- ❌ Échanges de shifts
-- ❌ Accessibilité WCAG
-- ❌ Optimisation des performances
+- ❌ Calendrier interactif (drag & drop)
+- ❌ Multi-langues (i18n)
 
 ### Version 0.8 (Intégrations)
+- ❌ Google Calendar API
 - ❌ Microsoft Outlook API
+- ❌ Échanges de shifts entre utilisateurs
+- ❌ Accessibilité WCAG complète
 - ❌ API REST publique
-- ❌ Webhooks
-- ❌ Support MySQL
-- ❌ Thème sombre/clair
 
 ### Version 0.9 (Pré-lancement)
-- ❌ Audit de sécurité
-- ❌ Backup automatique
-- ❌ Documentation complète
+- ❌ Webhooks
+- ❌ Support MySQL/MariaDB
 - ❌ Monitoring et métriques
+- ❌ Tests de charge
+- ❌ Documentation finale
 
 ### Version 1.0 (Lancement)
 - ❌ Version stable pour la production
-- ❌ Support complet
-- ❌ Documentation finale
-- ❌ Tous les tests passent
+- ❌ Support complet de toutes les bases de données
+- ❌ Documentation utilisateur finale
+- ❌ Tous les tests passent (objectif : 500+ tests)
 - ❌ Audit de sécurité validé
+- ❌ Couverture des tests ≥ 80%
+
+---
+
+## 🔍 Analyse du dépôt (Juin 2026)
+
+### Statistiques du projet
+
+| Métrique | Valeur | Détails |
+|----------|--------|---------|
+| **Lignes de code (app/)** | ~8,052 | 17 fichiers Python |
+| **Lignes de code (tests/)** | ~6,298 | 21 fichiers Python |
+| **Lignes de code (utils/)** | ~139,000+ | 10 modules utilitaires |
+| **Total lignes Python** | ~15,000+ | app/ + tests/ |
+| **Tests unitaires** | **403** | Tous passent ✅ |
+| **Couverture de code** | ~66% | Objectif : ≥80% |
+| **Modèles de données** | 6 | User, Group, ShiftType, Shift, OnCall, Leave |
+| **Modules de routes** | 5 | main, admin, auth, export, __init__ |
+| **Modules utilitaires** | 10 | decorators, helpers, ics_exporter, automation, advanced_shift_automation, cache, lazy_loading, optimizations, pagination, performance_monitor |
+| **Décorateurs** | 8 | admin_required, role_required, user_owns_resource, user_can_edit_resource, user_can_delete_resource, etc. |
+| **Gestionnaires d'erreurs** | 10 | 400, 401, 403, 404, 405, 500, 502, 503, 504, Exception |
+| **Templates** | 30+ | Jinja2 templates |
+| **Fichiers de configuration** | 2 | config.py, config_performance.py |
+| **Scripts** | 5 | backup_database.py, backup_config.py, cron_example.sh, validate_config.py |
+| **Fichiers de log** | 6 | app, errors, http, debug, audit, sql |
+
+### Structure du projet
+
+```
+leviia-schedule/
+├── app/
+│   ├── __init__.py              # Initialisation Flask (704 lignes)
+│   ├── models.py                # Modèles de données (155 lignes)
+│   ├── routes/
+│   │   ├── __init__.py          # Import des routes
+│   │   ├── admin.py             # Routes admin (712 lignes)
+│   │   ├── auth.py              # Authentification (143 lignes)
+│   │   ├── export.py            # Export ICS (127 lignes)
+│   │   └── main.py              # Routes principales (915 lignes)
+│   └── utils/
+│       ├── __init__.py
+│       ├── advanced_shift_automation.py  # Règles métiers (19,242 lignes)
+│       ├── automation.py       # Automatisation (991 lignes)
+│       ├── cache.py            # Cache (19,242 lignes)
+│       ├── decorators.py       # Décorateurs (288 lignes)
+│       ├── helpers.py          # Fonctions utilitaires (212 lignes)
+│       ├── ics_exporter.py     # Export ICS (94 lignes)
+│       ├── lazy_loading.py     # Chargement paresseux (26,729 lignes)
+│       ├── optimizations.py    # Optimisations (28,152 lignes)
+│       ├── pagination.py       # Pagination (734 lignes)
+│       └── performance_monitor.py  # Monitoring (875 lignes)
+├── config.py                   # Configuration principale (453 lignes)
+├── config_performance.py       # Configuration performance (520 lignes)
+├── run.py                      # Point d'entrée (138 lignes)
+├── requirements.txt            # Dépendances
+├── tests/
+│   ├── conftest.py             # Configuration des tests (224 lignes)
+│   ├── test_admin_automation.py
+│   ├── test_admin_lists.py
+│   ├── test_admin_priority.py
+│   ├── test_advanced_shift_automation.py  # Tests automatisation avancée
+│   ├── test_auth_priority.py
+│   ├── test_automation.py
+│   ├── test_config.py
+│   ├── test_dark_theme.py      # Tests thème sombre (11 tests)
+│   ├── test_decorators.py
+│   ├── test_decorators_unit.py
+│   ├── test_error_handlers.py
+│   ├── test_export_routes.py
+│   ├── test_helpers.py
+│   ├── test_ics_export.py
+│   ├── test_main_priority.py
+│   ├── test_models.py
+│   ├── test_routes.py
+│   ├── test_run_functions.py
+│   └── test_shift_rotation_fix.py
+├── docs/
+│   ├── ADMIN_GUIDE.md
+│   ├── API.md
+│   ├── ARCHITECTURE.md
+│   ├── BACKUP_GUIDE.md
+│   ├── ENVIRONMENT_VARIABLES.md
+│   ├── ERROR_HANDLING.md
+│   ├── PERFORMANCE_OPTIMIZATION.md
+│   ├── QUICK_START.md
+│   ├── README.md
+│   ├── SUMMARY.md
+│   └── USER_GUIDE.md
+├── scripts/
+│   ├── backup_config.example.json
+│   ├── backup_config.py
+│   ├── backup_database.py
+│   ├── cron_example.sh
+│   └── validate_config.py
+└── templates/
+    ├── 400.html, 401.html, 403.html, 404.html, 405.html
+    ├── 500.html, 502.html, 503.html, 504.html
+    ├── _pagination.html
+    ├── add_leave.html, add_oncall.html, add_shift.html
+    ├── admin/ (10+ templates)
+    ├── auth/ (4 templates)
+    ├── base.html
+    ├── index.html
+    ├── leave.html
+    ├── oncall.html
+    └── schedule.html
+```
+
+### Derniers changements (Commit ceb829b)
+
+- **Merge PR #65** : Revert des modifications des ressources statiques CSS et FullCalendar
+- **Contexte** : Correction des problèmes d'affichage des assets
+- **Impact** : Retour à la version stable des ressources statiques
 
 ---
 
 ## 🔍 Suivi des dépendances
 
-### Dépendances actuelles
+### Dépendances actuelles (requirements.txt)
 
-| Dépendance | Version actuelle | Version cible | Statut | Priorité |
-|------------|------------------|---------------|--------|----------|
-| Flask | 3.1.3 | ≥3.1 | ✅ Stable | Basse |
-| SQLAlchemy | 2.0.51 | ≥2.0 | ✅ Stable | Basse |
-| Flask-SQLAlchemy | 3.1.1 | ≥3.1 | ✅ Stable | Basse |
-| Flask-Login | 0.6.3 | ≥0.6 | ✅ Stable | Basse |
-| icalendar | 7.1.3 | ≥7.0 | ✅ Stable | Basse |
-| python-dateutil | 2.9.0.post0 | ≥2.8 | ✅ Stable | Basse |
-| pytz | 2026.2 | ≥2026.2 | ✅ Stable | Basse |
-| pytest | 9.1.1 | ≥9.0 | ✅ Stable | Basse |
-| pytest-flask | 1.3.0 | ≥1.3 | ✅ Stable | Basse |
-| Ruff | 0.15.18 | ≥0.15 | ✅ Stable | Basse |
-| mypy | 2.1.0 | ≥2.1 | ✅ Stable | Basse |
-| Black | 26.5.1 | ≥26.5 | ✅ Stable | Basse |
-| Bandit | 1.9.4 | ≥1.9 | ✅ Stable | Basse |
-| Safety | 3.8.1 | ≥3.8 | ✅ Stable | Basse |
-| cryptography | 49.0.0 | ≥49.0 | ✅ Stable | Moyenne |
+| Dépendance | Version | Statut | Priorité |
+|------------|---------|--------|----------|
+| Flask | 3.1.3 | ✅ Stable | Basse |
+| SQLAlchemy | 2.0.51 | ✅ Stable | Basse |
+| Flask-SQLAlchemy | 3.1.1 | ✅ Stable | Basse |
+| Flask-Login | 0.6.3 | ✅ Stable | Basse |
+| icalendar | 7.1.3 | ✅ Stable | Basse |
+| python-dateutil | 2.9.0.post0 | ✅ Stable | Basse |
+| pytz | 2026.2 | ✅ Stable | Basse |
 
-### Dépendances à surveiller
+### Dépendances de développement
 
-| Dépendance | Version actuelle | Version cible | Action | Priorité |
-|------------|------------------|---------------|--------|----------|
-| Werkzeug | 3.1.8 | ≥3.1 | Mise à jour mineure | Moyenne |
-| psycopg2-binary | - | - | À ajouter pour PostgreSQL | Moyenne |
+| Dépendance | Version | Statut | Priorité |
+|------------|---------|--------|----------|
+| pytest | 9.1.1 | ✅ Stable | Basse |
+| pytest-flask | 1.3.0 | ✅ Stable | Basse |
+| Ruff | 0.15.18 | ✅ Stable | Basse |
+| mypy | 2.1.0 | ✅ Stable | Basse |
+| Black | 26.5.1 | ✅ Stable | Basse |
+| Bandit | 1.9.4 | ✅ Stable | Basse |
+| Safety | 3.8.1 | ✅ Stable | Basse |
+| cryptography | 49.0.0 | ⚠️ Conflit | Moyenne |
+
+### Dépendances à ajouter
+
+| Dépendance | Version cible | Action | Priorité |
+|------------|---------------|--------|----------|
+| psycopg2-binary | ≥2.9 | À ajouter pour PostgreSQL | Moyenne |
+| python-dotenv | ≥1.0 | Pour gestion des .env | Moyenne |
+| gunicorn | ≥21.0 | Pour production | Moyenne |
 
 ---
 
@@ -297,17 +439,41 @@ Cette feuille de route présente les étapes clés et les priorités de dévelop
 3. **Tests** : Tests unitaires et d'intégration obligatoires pour chaque PR
 4. **Revue** : Revue par au moins un autre contributeur avant merge
 5. **Documentation** : Mise à jour de la documentation pour chaque nouvelle fonctionnalité
-6. **Validation** : Tous les tests doivent passer avant merge
+6. **Validation** : Tous les tests doivent passer avant merge (`make test`)
 
 ### Critères d'acceptation
 
-- [x] Code respectant les standards PEP 8
-- [x] Tests unitaires avec couverture ≥ 66% (actuellement 403 tests)
+- [x] Code respectant les standards PEP 8 (vérifié par Ruff)
+- [x] Tests unitaires avec couverture ≥ 66% (actuellement **403 tests**)
 - [x] Documentation mise à jour
 - [x] Pas de régression sur les fonctionnalités existantes
 - [x] Revue de sécurité pour les changements critiques
+- [x] Audit de sécurité complet (SECURITY_AUDIT_REPORT.md)
 - [ ] Couverture des tests ≥ 80% (objectif futur)
-- [ ] Documentation utilisateur complète
+- [ ] Documentation utilisateur complète (en cours)
+- [ ] CI/CD Pipeline fonctionnel (à implémenter)
+
+### Commandes utiles
+
+```bash
+# Exécuter tous les tests
+make test
+
+# Exécuter avec couverture de code
+pytest tests/ --cov=app --cov=config --cov-report=term-missing
+
+# Linting
+make lint
+
+# Formatage
+make format
+
+# Sécurité
+make security
+
+# Tout vérifier
+make all
+```
 
 ---
 
@@ -322,11 +488,19 @@ Les contributions sont les bienvenues ! Consultez le [guide de contribution](CON
 
 ### Comment contribuer à la feuille de route ?
 
-1. Ouvrez une **Issue** pour discuter d'une nouvelle fonctionnalité
-2. Ouvrez une **Discussion** pour proposer des améliorations
-3. Soumettez une **Pull Request** avec vos implémentations
-4. Assurez-vous que tous les tests passent (`make test`)
-5. Respectez les conventions de code (`make lint`, `make format`)
+1. **Ouvrez une Issue** pour discuter d'une nouvelle fonctionnalité
+2. **Ouvrez une Discussion** pour proposer des améliorations
+3. **Soumettez une Pull Request** avec vos implémentations
+4. **Assurez-vous que tous les tests passent** (`make test`)
+5. **Respectez les conventions de code** (`make lint`, `make format`)
+
+### Bonnes pratiques
+
+- Suivez les conventions de nommage existantes
+- Ajoutez des tests pour chaque nouvelle fonctionnalité
+- Mettez à jour la documentation
+- Utilisez les décorateurs de permissions appropriés
+- Respectez les principes SOLID
 
 ---
 
@@ -343,28 +517,45 @@ Pour toute question concernant la feuille de route :
 
 | Version | Date | Auteur | Changements |
 |---------|------|--------|-------------|
+| 3.0.0 | Juin 2026 | Vibe Code | Analyse complète du dépôt, mise à jour des statistiques, ajout des détails techniques |
 | 2.0.0 | Juin 2026 | Vibe Code | Mise à jour complète avec l'état actuel (403 tests, automatisation avancée) |
 | 1.0.0 | Juin 2026 | Vibe Code | Création initiale de la feuille de route |
 
 ---
 
-## 📊 Statistiques du projet
+## 🎯 Prochaines étapes prioritaires
 
-- **Lignes de code** : ~15,000+ (app/ + tests/)
-- **Fichiers Python** : 30+ (15 dans app/, 15+ dans tests/)
-- **Tests unitaires** : **403 tests** (tous passent ✅)
-- **Couverture de code** : ~66%
-- **Modèles de données** : 6 (User, Group, ShiftType, Shift, OnCall, Leave)
-- **Modules de routes** : 5 (main, admin, auth, export, __init__)
-- **Modules utilitaires** : 5 (decorators, helpers, ics_exporter, automation, advanced_shift_automation)
-- **Décorateurs** : 8 (admin_required, role_required, user_owns_resource, user_can_edit_resource, user_can_delete_resource, etc.)
-- **Gestionnaires d'erreurs** : 10 (400, 401, 403, 404, 405, 500, 502, 503, 504, Exception)
-- **Fichiers de log** : 6 (app, errors, http, debug, audit, sql)
+### À court terme (1-2 semaines)
+1. **Corriger les bugs critiques** identifiés dans les issues GitHub
+2. **Finaliser le support PostgreSQL** avec tests CI
+3. **Ajouter la Dockerisation** pour faciliter le déploiement
+4. **Configurer le CI/CD Pipeline** (GitHub Actions)
+
+### À moyen terme (1 mois)
+1. **Implémenter les notifications par email**
+2. **Ajouter la répétition des shifts**
+3. **Améliorer l'accessibilité WCAG**
+4. **Commencer la refonte UI/UX**
+
+### À long terme (3-6 mois)
+1. **Intégration Google Calendar API**
+2. **Support multi-langues (i18n)**
+3. **API REST publique**
+4. **Préparation pour la version 1.0 stable**
 
 ---
 
-> **⚠️ Note importante** : Cette feuille de route est évolutive et peut être ajustée en fonction des priorités, des retours utilisateurs et des contraintes techniques. Les dates de livraison sont indicatives et peuvent varier.
+## ⚠️ Notes importantes
+
+1. **Version de développement** : Ce projet est actuellement en phase de développement actif et **n'est pas prêt pour une utilisation en production** sans une revue complète.
+2. **Stabilité** : La version stable (v1.0) est prévue pour le déploiement en production.
+3. **Sécurité** : Un audit de sécurité complet a été réalisé (SECURITY_AUDIT_REPORT.md).
+4. **Tests** : Tous les 403 tests passent actuellement. L'objectif est d'atteindre 500+ tests avec une couverture ≥ 80%.
+5. **Documentation** : La documentation est complète pour les développeurs et administrateurs.
+
+> **⚠️ Rappel** : Cette feuille de route est évolutive et peut être ajustée en fonction des priorités, des retours utilisateurs et des contraintes techniques. Les dates de livraison sont indicatives et peuvent varier.
 
 ---
 
-*Document généré automatiquement - Dernière synchronisation avec le dépôt : Juin 2026*
+*Document généré après analyse complète du dépôt - Dernière synchronisation : Juin 2026*
+*Commit analysé : ceb829b61f610cae7fc468fee79e2cd9f5152b7c*
