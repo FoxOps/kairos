@@ -11,7 +11,6 @@ omit =
     app/utils/lazy_loading.py
     app/utils/pagination.py
     app/utils/optimizations.py
-    app/utils/automation.py
     */tests/*
     */test_*
     */conftest.py
