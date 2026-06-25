@@ -30,6 +30,33 @@ test: ## Exécute les tests avec pytest
 	@echo "$(YELLOW)Exécution des tests...$(NC)"
 	python -m pytest tests/ -v --tb=short
 
+test-quick: ## Exécute les tests rapidement (sans sortie détaillée)
+	@echo "$(YELLOW)Exécution rapide des tests...$(NC)"
+	python -m pytest tests/ --tb=no -q
+
+test-coverage: ## Exécute les tests avec couverture de code
+	@echo "$(YELLOW)Exécution des tests avec couverture...$(NC)"
+	python -m pytest tests/ --cov=app --cov=config --cov-report=term-missing
+
+test-coverage-html: ## Exécute les tests avec couverture et génère un rapport HTML
+	@echo "$(YELLOW)Exécution des tests avec couverture (rapport HTML)...$(NC)"
+	python -m pytest tests/ --cov=app --cov=config --cov-report=html
+	@echo "$(GREEN)✓ Rapport de couverture généré dans htmlcov/$(NC)"
+
+test-coverage-json: ## Exécute les tests avec couverture et génère un rapport JSON
+	@echo "$(YELLOW)Exécution des tests avec couverture (rapport JSON)...$(NC)"
+	python -m pytest tests/ --cov=app --cov=config --cov-report=json
+	@echo "$(GREEN)✓ Rapport de couverture généré$(NC)"
+
+# Tests spécifiques
+test-main: ## Exécute les tests pour les routes principales
+	@echo "$(YELLOW)Exécution des tests pour main.py...$(NC)"
+	python -m pytest tests/test_main_coverage.py -v
+
+test-dark-theme: ## Exécute les tests pour le thème sombre
+	@echo "$(YELLOW)Exécution des tests pour le thème sombre...$(NC)"
+	python -m pytest tests/test_dark_theme.py -v
+
 # Linting
 lint: ## Exécute Ruff et mypy pour vérifier la qualité du code
 	@echo "$(YELLOW)Vérification avec Ruff...$(NC)"
@@ -59,6 +86,9 @@ security: ## Exécute Bandit et Safety pour vérifier les vulnérabilités
 
 # Tout exécuter
 all: test lint format security ## Exécute tous les tests, linting, formatage et analyses de sécurité
+
+# Tests complets avec couverture
+all-tests: test lint test-coverage ## Exécute tous les tests + linting + couverture
 
 # Nettoyage
 clean: ## Nettoie les fichiers temporaires et artifacts

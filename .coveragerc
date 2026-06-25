@@ -1,0 +1,34 @@
+# Configuration pour pytest-cov
+# Ce fichier configure la couverture de code pour exclure les modules d'optimisation
+
+[run]
+# Source packages à mesurer
+source = app, config
+
+# Exclure les modules d'optimisation (non critiques pour la fonctionnalité métier)
+omit = 
+    app/utils/cache.py
+    app/utils/lazy_loading.py
+    app/utils/pagination.py
+    app/utils/optimizations.py
+    */tests/*
+    */test_*
+    */conftest.py
+    */__pycache__/*
+    */venv/*
+    */.venv/*
+
+# Exclure les tests et les fichiers temporaires
+
+[report]
+# Exclure les lignes de code non critiques
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+
+[html]
+directory = htmlcov
