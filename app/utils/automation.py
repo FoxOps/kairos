@@ -348,20 +348,24 @@ class OnCallAutomation:
                 )
                 generated_oncalls.append(oncall)
                 
-                messages.append(
-                    f"✅ Astreinte créée pour {user.name} du {start_time.strftime('%d/%m/%Y %Hh')} "
-                    f"au {end_time.strftime('%d/%m/%Y %Hh')}"
-                )
+                # Stocker pour le résumé (au lieu de messages détaillés)
+                if 'oncall_created' not in locals():
+                    oncall_created = []
+                oncall_created.append({
+                    'user': user.name,
+                    'start': start_time.strftime('%d/%m/%Y %Hh'),
+                    'end': end_time.strftime('%d/%m/%Y %Hh')
+                })
                 
                 # Passer à l'utilisateur suivant dans la rotation
                 rotation_index = (rotation_index + 1) % len(rotation_order)
                 # Réorganiser la rotation pour commencer par l'utilisateur suivant
                 rotation_order = rotation_order[rotation_index:] + rotation_order[:rotation_index]
             else:
-                messages.append(
-                    f"⚠️ Aucun utilisateur disponible pour l'astreinte du {start_time.strftime('%d/%m/%Y %Hh')} "
-                    f"au {end_time.strftime('%d/%m/%Y %Hh')}. Astreinte non créée."
-                )
+                # Stocker pour le résumé
+                if 'oncall_skipped' not in locals():
+                    oncall_skipped = []
+                oncall_skipped.append(start_time.strftime('%d/%m/%Y %Hh'))
                 # Passer à l'utilisateur suivant dans la rotation même sans création
                 rotation_index = (rotation_index + 1) % len(rotation_order)
                 rotation_order = rotation_order[rotation_index:] + rotation_order[:rotation_index]
@@ -374,11 +378,21 @@ class OnCallAutomation:
             try:
                 db.session.add_all(generated_oncalls)
                 db.session.commit()
-                messages.insert(0, f"🎉 {len(generated_oncalls)} astreintes générées avec succès !")
+                # Générer un résumé au lieu de messages détaillés
+                if 'oncall_created' in locals() and oncall_created:
+                    messages.append(f"✅ {len(generated_oncalls)} astreintes générées avec succès !")
+                if 'oncall_skipped' in locals() and oncall_skipped:
+                    messages.append(f"⚠️ {len(oncall_skipped)} astreintes non créées (aucun utilisateur disponible)")
             except Exception as e:
                 db.session.rollback()
                 messages.insert(0, f"❌ Erreur lors de la sauvegarde : {str(e)}")
                 return [], messages
+        else:
+            # Pour le dry run, générer un résumé
+            if 'oncall_created' in locals() and oncall_created:
+                messages.append(f"📋 Prévisualisation : {len(generated_oncalls)} astreintes seraient créées")
+            if 'oncall_skipped' in locals() and oncall_skipped:
+                messages.append(f"⚠️ {len(oncall_skipped)} astreintes ne pourraient pas être créées")
         
         return generated_oncalls, messages
 
@@ -641,9 +655,14 @@ class ShiftAutomation:
                             )
                             generated_shifts.append(shift)
                             
-                            messages.append(
-                                f"✅ Shift {shift_type.label} assigné à {user.name} le {current_date.strftime('%d/%m/%Y')}"
-                            )
+                            # Stocker pour résumé
+                            if 'shifts_created' not in locals():
+                                shifts_created = []
+                            shifts_created.append({
+                                'type': shift_type.label,
+                                'user': user.name,
+                                'date': current_date.strftime('%d/%m/%Y')
+                            })
                             assigned = True
                             break
                     
@@ -677,16 +696,22 @@ class ShiftAutomation:
                             )
                             generated_shifts.append(shift)
                             
-                            messages.append(
-                                f"✅ Shift {shift_type.label} assigné à {replacement.name} "
-                                f"(remplacement) le {current_date.strftime('%d/%m/%Y')}"
-                            )
+                            # Stocker pour résumé
+                            if 'shifts_created' not in locals():
+                                shifts_created = []
+                            shifts_created.append({
+                                'type': shift_type.label,
+                                'user': replacement.name,
+                                'date': current_date.strftime('%d/%m/%Y')
+                            })
                         else:
-                            messages.append(
-                                f"⚠️ Impossible de trouver un utilisateur pour le shift "
-                                f"{shift_type.label} le {current_date.strftime('%d/%m/%Y')}. "
-                                f"Shift non créé."
-                            )
+                            # Stocker pour résumé
+                            if 'shifts_skipped' not in locals():
+                                shifts_skipped = []
+                            shifts_skipped.append({
+                                'type': shift_type.label,
+                                'date': current_date.strftime('%d/%m/%Y')
+                            })
             
             current_date += timedelta(days=1)
         
@@ -695,11 +720,21 @@ class ShiftAutomation:
             try:
                 db.session.add_all(generated_shifts)
                 db.session.commit()
-                messages.insert(0, f"🎉 {len(generated_shifts)} shifts générés avec succès !")
+                # Générer un résumé
+                if 'shifts_created' in locals() and shifts_created:
+                    messages.append(f"✅ {len(generated_shifts)} shifts générés avec succès !")
+                if 'shifts_skipped' in locals() and shifts_skipped:
+                    messages.append(f"⚠️ {len(shifts_skipped)} shifts non créés (aucun utilisateur disponible)")
             except Exception as e:
                 db.session.rollback()
                 messages.insert(0, f"❌ Erreur lors de la sauvegarde : {str(e)}")
                 return [], messages
+        else:
+            # Pour le dry run, générer un résumé
+            if 'shifts_created' in locals() and shifts_created:
+                messages.append(f"📋 Prévisualisation : {len(generated_shifts)} shifts seraient créés")
+            if 'shifts_skipped' in locals() and shifts_skipped:
+                messages.append(f"⚠️ {len(shifts_skipped)} shifts ne pourraient pas être créés")
         
         return generated_shifts, messages
 

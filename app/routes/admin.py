@@ -21,7 +21,6 @@ from datetime import datetime, date, timedelta
 # Dashboard admin
 @app.route("/admin")
 @admin_required
-@cached_route(timeout=300)
 def admin_dashboard():
     # Optimisation : Utiliser des requêtes count() simples mais efficaces
     # Les requêtes count() sont déjà optimisées par SQLAlchemy
@@ -50,7 +49,6 @@ def admin_dashboard():
 
 @app.route("/admin/groups")
 @admin_required
-@cached_route(timeout=300)
 @eager_load(Group, ['users'])
 def list_groups():
     groups = Group.query.order_by(Group.name).all()
