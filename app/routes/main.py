@@ -776,6 +776,127 @@ def api_update_shift(shift_id):
         return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
 
 
+# ========== TABLEAU DE BORD UTILISATEUR ==========
+
+@app.route("/dashboard")
+@login_required
+def user_dashboard():
+    """Tableau de bord utilisateur - Vue d'ensemble personnalisée."""
+    from datetime import date
+    
+    # Récupérer les statistiques pour l'utilisateur connecté
+    user_id = current_user.id
+    
+    # Compter les shifts de l'utilisateur
+    total_shifts = Shift.query.filter_by(user_id=user_id).count()
+    
+    # Compter les astreintes de l'utilisateur
+    total_oncalls = OnCall.query.filter_by(user_id=user_id).count()
+    
+    # Compter les congés de l'utilisateur
+    total_leaves = Leave.query.filter_by(user_id=user_id).count()
+    
+    # Récupérer les prochains shifts (5 prochains)
+    now = datetime.now()
+    upcoming_shifts = (
+        Shift.query.options(joinedload(Shift.shift_type))
+        .filter(
+            Shift.user_id == user_id,
+            Shift.start_time >= now
+        )
+        .order_by(Shift.start_time)
+        .limit(5)
+        .all()
+    )
+    
+    # Récupérer les prochaines astreintes (5 prochaines)
+    upcoming_oncalls = (
+        OnCall.query
+        .filter(
+            OnCall.user_id == user_id,
+            OnCall.start_time >= now
+        )
+        .order_by(OnCall.start_time)
+        .limit(5)
+        .all()
+    )
+    
+    # Récupérer les prochains congés (5 prochains)
+    today = date.today()
+    upcoming_leaves = (
+        Leave.query
+        .filter(
+            Leave.user_id == user_id,
+            Leave.start_date >= today
+        )
+        .order_by(Leave.start_date)
+        .limit(5)
+        .all()
+    )
+    
+    # Récupérer les shifts récents (5 derniers)
+    recent_shifts = (
+        Shift.query.options(joinedload(Shift.shift_type))
+        .filter(
+            Shift.user_id == user_id,
+            Shift.end_time <= now
+        )
+        .order_by(Shift.end_time.desc())
+        .limit(5)
+        .all()
+    )
+    
+    # Statistiques par type de shift
+    shift_types_stats = []
+    shift_types = ShiftType.query.all()
+    for shift_type in shift_types:
+        count = Shift.query.filter_by(
+            user_id=user_id,
+            shift_type_id=shift_type.id
+        ).count()
+        if count > 0:
+            shift_types_stats.append({
+                'name': shift_type.name,
+                'label': shift_type.label,
+                'count': count
+            })
+    
+    # Heures travaillées ce mois-ci
+    first_day_of_month = date(today.year, today.month, 1)
+    shifts_this_month = Shift.query.filter(
+        Shift.user_id == user_id,
+        Shift.date >= first_day_of_month,
+        Shift.date <= today
+    ).all()
+    
+    total_hours_this_month = sum(
+        (shift.end_time - shift.start_time).total_seconds() / 3600
+        for shift in shifts_this_month
+    )
+    
+    # Astreintes ce mois-ci
+    oncalls_this_month = OnCall.query.filter(
+        OnCall.user_id == user_id,
+        OnCall.start_time >= datetime.combine(first_day_of_month, datetime.min.time()),
+        OnCall.end_time <= datetime.combine(today, datetime.max.time())
+    ).count()
+    
+    return render_template(
+        "dashboard.html",
+        total_shifts=total_shifts,
+        total_oncalls=total_oncalls,
+        total_leaves=total_leaves,
+        upcoming_shifts=upcoming_shifts,
+        upcoming_oncalls=upcoming_oncalls,
+        upcoming_leaves=upcoming_leaves,
+        recent_shifts=recent_shifts,
+        shift_types_stats=shift_types_stats,
+        total_hours_this_month=total_hours_this_month,
+        oncalls_this_month=oncalls_this_month,
+        user=current_user
+    )
+
+
 @app.route("/api/shifts", methods=["POST"])
 @login_required
 @admin_required
