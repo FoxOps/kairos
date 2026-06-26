@@ -32,34 +32,46 @@ def _build_calendar_events(shifts, on_calls, leaves):
         label = shift.shift_type.label if shift.shift_type else shift.shift_type
         events.append(
             {
+                "id": f"shift-{shift.id}",
                 "title": f"{shift.user.name} - {label}",
                 "start": shift.start_time.isoformat(),
                 "end": shift.end_time.isoformat(),
                 "className": "fc-event-shift",
-                "url": url_for("schedule"),
+                "extendedProps": {
+                    "type": "shift",
+                    "resourceId": shift.id
+                }
             }
         )
 
     for oncall in on_calls:
         events.append(
             {
+                "id": f"oncall-{oncall.id}",
                 "title": f"Astreinte - {oncall.user.name}",
                 "start": oncall.start_time.isoformat(),
                 "end": oncall.end_time.isoformat(),
                 "className": "fc-event-oncall",
-                "url": url_for("oncall"),
+                "extendedProps": {
+                    "type": "oncall",
+                    "resourceId": oncall.id
+                }
             }
         )
 
     for leave in leaves:
         events.append(
             {
+                "id": f"leave-{leave.id}",
                 "title": f"Conge - {leave.user.name}",
                 "start": leave.start_date.isoformat(),
                 "end": (leave.end_date + timedelta(days=1)).isoformat(),
                 "className": "fc-event-leave",
                 "allDay": True,
-                "url": url_for("leave"),
+                "extendedProps": {
+                    "type": "leave",
+                    "resourceId": leave.id
+                }
             }
         )
 
@@ -912,3 +924,55 @@ def api_get_shift_types():
     ]
     
     return jsonify(shift_types_list)
+
+
+@app.route("/api/oncall/<int:oncall_id>", methods=["DELETE"])
+@login_required
+@admin_required
+def api_delete_oncall(oncall_id):
+    """API endpoint pour supprimer une astreinte."""
+    from flask import jsonify
+    
+    oncall = db.session.get(OnCall, oncall_id)
+    if not oncall:
+        return jsonify({"success": False, "error": "Astreinte non trouvée"}), 404
+    
+    try:
+        db.session.delete(oncall)
+        db.session.commit()
+        return jsonify({"success": True, "message": "Astreinte supprimée avec succès"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
+
+
+@app.route("/api/leave/<int:leave_id>", methods=["DELETE"])
+@login_required
+def api_delete_leave(leave_id):
+    """API endpoint pour supprimer un congé."""
+    from flask import jsonify
+    from app.utils.decorators import user_owns_resource
+    
+    leave = db.session.get(Leave, leave_id)
+    if not leave:
+        return jsonify({"success": False, "error": "Congé non trouvé"}), 404
+    
+    # Vérification des permissions : un utilisateur normal ne peut supprimer que ses propres congés
+    if not current_user.is_admin and current_user.id != leave.user_id:
+        return jsonify({"success": False, "error": "Vous ne pouvez supprimer que vos propres congés"}), 403
+    
+    try:
+        db.session.delete(leave)
+        db.session.commit()
+        
+        # Rééquilibrer automatiquement les shifts après la suppression d'un congé
+        try:
+            from app.utils.advanced_shift_automation import AdvancedShiftAutomation
+            _, rebalance_messages = AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
+        except Exception as e:
+            pass  # On ignore les erreurs de rééquilibrage pour l'API
+        
+        return jsonify({"success": True, "message": "Congé supprimé avec succès"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500

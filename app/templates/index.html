@@ -380,43 +380,61 @@ document.addEventListener('DOMContentLoaded', function() {
         eventClick: function(info) {
             // Appelé quand un événement est cliqué
             const event = info.event;
-            const shiftId = event.id;
+            const eventId = event.id;
             
-            if (!shiftId || shiftId === undefined) {
+            if (!eventId || eventId === undefined) {
                 return;
             }
             
-            // Vérifier que c'est un shift
-            if (!event.classNames.includes('fc-event-shift')) {
-                return;
-            }
-            
-            // En mode édition, cliquer sur un shift permet de le supprimer avec confirmation
+            // En mode édition, cliquer sur un événement permet de le supprimer avec confirmation
             // Hors mode édition, cliquer ne fait rien
-            if (editModeEnabled && isAdmin && confirm('Voulez-vous supprimer ce shift ?')) {
-                fetch(`/api/shifts/${shiftId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    credentials: 'same-origin'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        event.remove();
-                        console.log('Shift supprimé:', data.message);
-                        // Recharger la page pour synchroniser avec le backend
-                        location.reload();
-                    } else {
-                        alert('Erreur: ' + data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    alert('Une erreur est survenue lors de la suppression du shift.');
-                });
+            if (editModeEnabled && isAdmin) {
+                // Déterminer le type d'événement et l'ID de la ressource
+                const extendedProps = event.extendedProps || {};
+                const type = extendedProps.type;
+                const resourceId = extendedProps.resourceId;
+                
+                let endpoint = '';
+                let message = '';
+                
+                if (type === 'shift') {
+                    endpoint = `/api/shifts/${resourceId}`;
+                    message = 'Voulez-vous supprimer ce shift ?';
+                } else if (type === 'oncall') {
+                    endpoint = `/api/oncall/${resourceId}`;
+                    message = 'Voulez-vous supprimer cette astreinte ?';
+                } else if (type === 'leave') {
+                    endpoint = `/api/leave/${resourceId}`;
+                    message = 'Voulez-vous supprimer ce congé ?';
+                } else {
+                    return;
+                }
+                
+                if (confirm(message)) {
+                    fetch(endpoint, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        credentials: 'same-origin'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            event.remove();
+                            console.log('Événement supprimé:', data.message);
+                            // Recharger la page pour synchroniser avec le backend
+                            location.reload();
+                        } else {
+                            alert('Erreur: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        alert('Une erreur est survenue lors de la suppression.');
+                    });
+                }
             }
         },
         
@@ -583,11 +601,31 @@ document.addEventListener('DOMContentLoaded', function() {
     // Gérer la touche Suppr pour supprimer un événement (uniquement en mode édition)
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Delete' || e.key === 'Suppr') {
-            const selectedEvent = calendar.getEventById(window.selectedEventId);
+            const selectedEvent = window.selectedEvent;
             if (selectedEvent && isAdmin && editModeEnabled) {
-                if (confirm('Voulez-vous supprimer ce shift ?')) {
-                    const shiftId = selectedEvent.id;
-                    fetch(`/api/shifts/${shiftId}`, {
+                // Déterminer le type d'événement et l'ID de la ressource
+                const extendedProps = selectedEvent.extendedProps || {};
+                const type = extendedProps.type;
+                const resourceId = extendedProps.resourceId;
+                
+                let endpoint = '';
+                let message = '';
+                
+                if (type === 'shift') {
+                    endpoint = `/api/shifts/${resourceId}`;
+                    message = 'Voulez-vous supprimer ce shift ?';
+                } else if (type === 'oncall') {
+                    endpoint = `/api/oncall/${resourceId}`;
+                    message = 'Voulez-vous supprimer cette astreinte ?';
+                } else if (type === 'leave') {
+                    endpoint = `/api/leave/${resourceId}`;
+                    message = 'Voulez-vous supprimer ce congé ?';
+                } else {
+                    return;
+                }
+                
+                if (confirm(message)) {
+                    fetch(endpoint, {
                         method: 'DELETE',
                         headers: {
                             'Content-Type': 'application/json',
@@ -599,7 +637,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     .then(data => {
                         if (data.success) {
                             selectedEvent.remove();
-                            console.log('Shift supprimé:', data.message);
+                            console.log('Événement supprimé:', data.message);
                             // Recharger la page pour synchroniser avec le backend
                             location.reload();
                         } else {
@@ -608,16 +646,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     })
                     .catch(error => {
                         console.error('Erreur:', error);
-                        alert('Une erreur est survenue lors de la suppression du shift.');
+                        alert('Une erreur est survenue lors de la suppression.');
                     });
                 }
             }
         }
     });
 
-    // Stocker l'ID de l'événement sélectionné
+    // Stocker l'événement sélectionné
     calendar.on('eventClick', function(info) {
-        window.selectedEventId = info.event.id;
+        window.selectedEvent = info.event;
     });
 });
 </script>
