@@ -32,34 +32,46 @@ def _build_calendar_events(shifts, on_calls, leaves):
         label = shift.shift_type.label if shift.shift_type else shift.shift_type
         events.append(
             {
+                "id": f"shift-{shift.id}",
                 "title": f"{shift.user.name} - {label}",
                 "start": shift.start_time.isoformat(),
                 "end": shift.end_time.isoformat(),
                 "className": "fc-event-shift",
-                "url": url_for("schedule"),
+                "extendedProps": {
+                    "type": "shift",
+                    "resourceId": shift.id
+                }
             }
         )
 
     for oncall in on_calls:
         events.append(
             {
+                "id": f"oncall-{oncall.id}",
                 "title": f"Astreinte - {oncall.user.name}",
                 "start": oncall.start_time.isoformat(),
                 "end": oncall.end_time.isoformat(),
                 "className": "fc-event-oncall",
-                "url": url_for("oncall"),
+                "extendedProps": {
+                    "type": "oncall",
+                    "resourceId": oncall.id
+                }
             }
         )
 
     for leave in leaves:
         events.append(
             {
+                "id": f"leave-{leave.id}",
                 "title": f"Conge - {leave.user.name}",
                 "start": leave.start_date.isoformat(),
                 "end": (leave.end_date + timedelta(days=1)).isoformat(),
                 "className": "fc-event-leave",
                 "allDay": True,
-                "url": url_for("leave"),
+                "extendedProps": {
+                    "type": "leave",
+                    "resourceId": leave.id
+                }
             }
         )
 
@@ -912,3 +924,227 @@ def api_get_shift_types():
     ]
     
     return jsonify(shift_types_list)
+
+
+@app.route("/api/oncall/<int:oncall_id>", methods=["DELETE"])
+@login_required
+@admin_required
+def api_delete_oncall(oncall_id):
+    """API endpoint pour supprimer une astreinte."""
+    from flask import jsonify
+    
+    oncall = db.session.get(OnCall, oncall_id)
+    if not oncall:
+        return jsonify({"success": False, "error": "Astreinte non trouvée"}), 404
+    
+    try:
+        db.session.delete(oncall)
+        db.session.commit()
+        return jsonify({"success": True, "message": "Astreinte supprimée avec succès"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
+
+
+@app.route("/api/leave/<int:leave_id>", methods=["DELETE"])
+@login_required
+def api_delete_leave(leave_id):
+    """API endpoint pour supprimer un congé."""
+    from flask import jsonify
+    from app.utils.decorators import user_owns_resource
+    
+    leave = db.session.get(Leave, leave_id)
+    if not leave:
+        return jsonify({"success": False, "error": "Congé non trouvé"}), 404
+    
+    # Vérification des permissions : un utilisateur normal ne peut supprimer que ses propres congés
+    if not current_user.is_admin and current_user.id != leave.user_id:
+        return jsonify({"success": False, "error": "Vous ne pouvez supprimer que vos propres congés"}), 403
+    
+    try:
+        db.session.delete(leave)
+        db.session.commit()
+        
+        # Rééquilibrer automatiquement les shifts après la suppression d'un congé
+        try:
+            from app.utils.advanced_shift_automation import AdvancedShiftAutomation
+            _, rebalance_messages = AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
+        except Exception as e:
+            pass  # On ignore les erreurs de rééquilibrage pour l'API
+        
+        return jsonify({"success": True, "message": "Congé supprimé avec succès"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
+
+
+@app.route("/api/oncall/<int:oncall_id>", methods=["PATCH", "PUT"])
+@login_required
+@admin_required
+def api_update_oncall(oncall_id):
+    """API endpoint pour mettre à jour une astreinte via drag & drop."""
+    from flask import jsonify, request
+    
+    oncall = db.session.get(OnCall, oncall_id)
+    if not oncall:
+        return jsonify({"success": False, "error": "Astreinte non trouvée"}), 404
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "error": "Aucune donnée reçue"}), 400
+    
+    try:
+        # Récupérer les nouvelles dates/heures
+        new_start_str = data.get("start")
+        new_end_str = data.get("end")
+        
+        if not new_start_str:
+            return jsonify({"success": False, "error": "Date de début manquante"}), 400
+        
+        # Parser les nouvelles dates
+        new_start = datetime.fromisoformat(new_start_str.replace('Z', '+00:00'))
+        
+        # Si end n'est pas fourni, calculer la durée originale
+        if new_end_str:
+            new_end = datetime.fromisoformat(new_end_str.replace('Z', '+00:00'))
+        else:
+            # Conserver la même durée que l'original
+            duration = oncall.end_time - oncall.start_time
+            new_end = new_start + duration
+        
+        # Vérifier que l'astreinte commence un vendredi
+        if new_start.weekday() != 4:  # Vendredi = 4
+            return jsonify({
+                "success": False, 
+                "error": "L'astreinte doit commencer un vendredi"
+            }), 400
+        
+        # Vérifier qu'il n'y a pas de conflit avec une astreinte existante
+        existing_oncall = OnCall.query.filter(
+            OnCall.user_id == oncall.user_id,
+            OnCall.id != oncall_id,
+            OnCall.start_time <= new_end,
+            OnCall.end_time >= new_start
+        ).first()
+        
+        if existing_oncall:
+            return jsonify({
+                "success": False,
+                "error": f"Une astreinte existe déjà pour {oncall.user.name} pendant cette période"
+            }), 400
+        
+        # Mettre à jour l'astreinte
+        oncall.start_time = new_start
+        oncall.end_time = new_end
+        
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Astreinte mise à jour avec succès",
+            "oncall": {
+                "id": oncall.id,
+                "start": oncall.start_time.isoformat(),
+                "end": oncall.end_time.isoformat()
+            }
+        })
+        
+    except ValueError as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": f"Format de date invalide: {str(e)}"}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
+
+
+@app.route("/api/leave/<int:leave_id>", methods=["PATCH", "PUT"])
+@login_required
+def api_update_leave(leave_id):
+    """API endpoint pour mettre à jour un congé via drag & drop."""
+    from flask import jsonify, request
+    
+    leave = db.session.get(Leave, leave_id)
+    if not leave:
+        return jsonify({"success": False, "error": "Congé non trouvé"}), 404
+    
+    # Vérification des permissions : un utilisateur normal ne peut modifier que ses propres congés
+    if not current_user.is_admin and current_user.id != leave.user_id:
+        return jsonify({"success": False, "error": "Vous ne pouvez modifier que vos propres congés"}), 403
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "error": "Aucune donnée reçue"}), 400
+    
+    try:
+        # Récupérer les nouvelles dates
+        new_start_str = data.get("start")
+        new_end_str = data.get("end")
+        
+        if not new_start_str:
+            return jsonify({"success": False, "error": "Date de début manquante"}), 400
+        
+        # Parser les nouvelles dates
+        new_start = datetime.fromisoformat(new_start_str.replace('Z', '+00:00'))
+        
+        # Si end n'est pas fourni, conserver la même durée
+        if new_end_str:
+            new_end = datetime.fromisoformat(new_end_str.replace('Z', '+00:00'))
+        else:
+            # Conserver la même durée que l'original
+            duration = leave.end_date - leave.start_date
+            new_end = new_start + duration
+        
+        # Convertir en dates (les congés sont des événements toute la journée)
+        new_start_date = new_start.date()
+        new_end_date = new_end.date()
+        
+        # Vérifier que la date de fin est après la date de début
+        if new_end_date < new_start_date:
+            return jsonify({
+                "success": False,
+                "error": "La date de fin doit être après la date de début"
+            }), 400
+        
+        # Vérifier qu'il n'y a pas de conflit avec un congé existant
+        existing_leave = Leave.query.filter(
+            Leave.user_id == leave.user_id,
+            Leave.id != leave_id,
+            Leave.start_date <= new_end_date,
+            Leave.end_date >= new_start_date
+        ).first()
+        
+        if existing_leave:
+            return jsonify({
+                "success": False,
+                "error": f"Un congé existe déjà pour {leave.user.name} pendant cette période"
+            }), 400
+        
+        # Mettre à jour le congé
+        leave.start_date = new_start_date
+        leave.end_date = new_end_date
+        
+        db.session.commit()
+        
+        # Rééquilibrer automatiquement les shifts après la modification d'un congé
+        try:
+            from app.utils.advanced_shift_automation import AdvancedShiftAutomation
+            _, rebalance_messages = AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
+        except Exception as e:
+            pass  # On ignore les erreurs de rééquilibrage pour l'API
+        
+        return jsonify({
+            "success": True,
+            "message": "Congé mis à jour avec succès",
+            "leave": {
+                "id": leave.id,
+                "start": leave.start_date.isoformat(),
+                "end": leave.end_date.isoformat()
+            }
+        })
+        
+    except ValueError as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": f"Format de date invalide: {str(e)}"}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500

@@ -123,11 +123,11 @@
                 Calendrier interactif - Shifts, astreintes et congés
                 {% if current_user.is_admin %}
                 <div class="is-pulled-right is-flex is-align-items-center gap-2 mb-6">
-                    <span class="tag is-danger" id="drag-drop-status-tag" style="min-width: 180px; justify-content: center;">
-                        <i class="fas fa-mouse-pointer" aria-hidden="true"></i>&nbsp; Drag & Drop désactivé
+                    <span class="tag is-danger" id="edit-mode-status-tag" style="min-width: 180px; justify-content: center;">
+                        <i class="fas fa-edit" aria-hidden="true"></i>&nbsp; Mode édition désactivé
                     </span>
-                    <button class="button is-small is-success" id="toggle-drag-drop" style="min-width: 180px;">
-                        <i class="fas fa-toggle-on" aria-hidden="true"></i>&nbsp; Activer Drag & Drop
+                    <button class="button is-small is-success" id="toggle-edit-mode" style="min-width: 180px;">
+                        <i class="fas fa-toggle-on" aria-hidden="true"></i>&nbsp; Activer l'édition
                     </button>
                     <button class="button is-small is-info" id="toggle-tips" style="min-width: 180px;">
                         <i class="fas fa-eye" aria-hidden="true"></i>&nbsp; Afficher conseils
@@ -141,10 +141,12 @@
             <div class="notification is-info is-light mb-4" id="tips-container" style="display: none;">
                 <p><strong><i class="fas fa-info-circle"></i> Conseils d'utilisation :</strong></p>
                 <ul>
-                    <li><strong>Déplacer un shift</strong> : Cliquez et faites glisser un événement vers une nouvelle date/heure</li>
-                    <li><strong>Redimensionner un shift</strong> : Passez la souris sur le bord d'un événement et faites glisser pour modifier la durée</li>
-                    <li><strong>Supprimer un shift</strong> : Cliquez sur un événement puis appuyez sur <kbd>Suppr</kbd> ou <kbd>Delete</kbd></li>
+                    <li><strong>Mode édition activé</strong> : Le drag & drop est activé. Cliquez sur un événement (shift, astreinte, congé) pour le supprimer (avec confirmation).</li>
+                    <li><strong>Déplacer un événement</strong> : Cliquez et faites glisser un événement (shift, astreinte, congé) vers une nouvelle date/heure</li>
+                    <li><strong>Redimensionner un événement</strong> : Passez la souris sur le bord d'un événement et faites glisser pour modifier la durée</li>
                     <li><strong>Créer un shift</strong> : Sélectionnez une plage horaire vide dans le calendrier</li>
+                    <li><strong>Mode édition désactivé</strong> : Le drag & drop est désactivé. Cliquer sur un événement ne fait rien.</li>
+                    <li><strong>Contraintes</strong> : Les astreintes doivent commencer un vendredi. Les congés et shifts ne peuvent pas être placés sur des week-ends.</li>
                 </ul>
             </div>
             {% endif %}
@@ -180,42 +182,66 @@ document.addEventListener('DOMContentLoaded', function() {
     const isAdmin = {{ current_user.is_admin|tojson }};
     const events = {{ events|tojson }};
 
-    // État initial : drag & drop désactivé, conseils cachés
-    let dragDropEnabled = false;
+    // Lire l'état du mode édition depuis l'URL
+    const urlParams = new URLSearchParams(window.location.search);
+    let editModeEnabled = urlParams.get('edit') === 'true';
     let tipsVisible = false;
 
     // Gestion des boutons de toggle
-    const toggleDragDropBtn = document.getElementById('toggle-drag-drop');
+    const toggleEditModeBtn = document.getElementById('toggle-edit-mode');
     const toggleTipsBtn = document.getElementById('toggle-tips');
-    const dragDropStatusTag = document.getElementById('drag-drop-status-tag');
+    const editModeStatusTag = document.getElementById('edit-mode-status-tag');
     const tipsContainer = document.getElementById('tips-container');
 
-    if (toggleDragDropBtn && dragDropStatusTag) {
-        toggleDragDropBtn.addEventListener('click', function() {
-            dragDropEnabled = !dragDropEnabled;
-            
-            if (dragDropEnabled) {
-                dragDropStatusTag.innerHTML = '<i class="fas fa-mouse-pointer" aria-hidden="true"></i>&nbsp; Drag & Drop activé';
-                dragDropStatusTag.classList.remove('is-danger');
-                dragDropStatusTag.classList.add('is-success');
-                toggleDragDropBtn.innerHTML = '<i class="fas fa-toggle-off" aria-hidden="true"></i>&nbsp; Désactiver Drag & Drop';
-                toggleDragDropBtn.classList.remove('is-success');
-                toggleDragDropBtn.classList.add('is-danger');
+    // Fonction pour mettre à jour l'URL et l'état du mode édition
+    function updateEditModeState(enabled) {
+        editModeEnabled = enabled;
+        
+        // Mettre à jour l'URL sans recharger la page
+        const url = new URL(window.location);
+        if (enabled) {
+            url.searchParams.set('edit', 'true');
+        } else {
+            url.searchParams.delete('edit');
+        }
+        window.history.pushState({}, '', url);
+        
+        // Mettre à jour l'UI
+        if (editModeStatusTag) {
+            if (enabled) {
+                editModeStatusTag.innerHTML = '<i class="fas fa-edit" aria-hidden="true"></i>&nbsp; Mode édition activé';
+                editModeStatusTag.classList.remove('is-danger');
+                editModeStatusTag.classList.add('is-success');
             } else {
-                dragDropStatusTag.innerHTML = '<i class="fas fa-mouse-pointer" aria-hidden="true"></i>&nbsp; Drag & Drop désactivé';
-                dragDropStatusTag.classList.remove('is-success');
-                dragDropStatusTag.classList.add('is-danger');
-                toggleDragDropBtn.innerHTML = '<i class="fas fa-toggle-on" aria-hidden="true"></i>&nbsp; Activer Drag & Drop';
-                toggleDragDropBtn.classList.remove('is-danger');
-                toggleDragDropBtn.classList.add('is-success');
+                editModeStatusTag.innerHTML = '<i class="fas fa-edit" aria-hidden="true"></i>&nbsp; Mode édition désactivé';
+                editModeStatusTag.classList.remove('is-success');
+                editModeStatusTag.classList.add('is-danger');
             }
-            
-            // Mettre à jour les propriétés du calendrier
-            if (window.calendar) {
-                window.calendar.setOption('editable', dragDropEnabled && isAdmin);
-                window.calendar.setOption('selectable', dragDropEnabled && isAdmin);
-                window.calendar.setOption('droppable', dragDropEnabled && isAdmin);
+        }
+        
+        if (toggleEditModeBtn) {
+            if (enabled) {
+                toggleEditModeBtn.innerHTML = '<i class="fas fa-toggle-off" aria-hidden="true"></i>&nbsp; Désactiver l\'édition';
+                toggleEditModeBtn.classList.remove('is-success');
+                toggleEditModeBtn.classList.add('is-danger');
+            } else {
+                toggleEditModeBtn.innerHTML = '<i class="fas fa-toggle-on" aria-hidden="true"></i>&nbsp; Activer l\'édition';
+                toggleEditModeBtn.classList.remove('is-danger');
+                toggleEditModeBtn.classList.add('is-success');
             }
+        }
+        
+        // Mettre à jour les propriétés du calendrier
+        if (window.calendar) {
+            window.calendar.setOption('editable', enabled && isAdmin);
+            window.calendar.setOption('selectable', enabled && isAdmin);
+            window.calendar.setOption('droppable', enabled && isAdmin);
+        }
+    }
+
+    if (toggleEditModeBtn && editModeStatusTag) {
+        toggleEditModeBtn.addEventListener('click', function() {
+            updateEditModeState(!editModeEnabled);
         });
     }
 
@@ -254,33 +280,44 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         height: 'auto',
         
-        // Activation du Drag & Drop pour les administrateurs (désactivé par défaut)
-        editable: dragDropEnabled && isAdmin,
-        selectable: dragDropEnabled && isAdmin,
-        droppable: dragDropEnabled && isAdmin,
+        // Activation du Drag & Drop pour les administrateurs
+        editable: editModeEnabled && isAdmin,
+        selectable: editModeEnabled && isAdmin,
+        droppable: editModeEnabled && isAdmin,
         
         // Configuration du drag & drop
         eventDrop: function(info) {
             // Appelé quand un événement est déplacé
-            const shiftId = info.event.id;
-            const newStart = info.event.start;
-            const newEnd = info.event.end;
+            const event = info.event;
+            const eventId = event.id;
+            const newStart = event.start;
+            const newEnd = event.end;
             
-            if (!shiftId || shiftId === undefined) {
+            if (!eventId || eventId === undefined) {
                 // C'est un nouvel événement créé par drop externe
                 return;
             }
             
-            // Vérifier que c'est un shift (et non une astreinte ou un congé)
-            if (!info.event.classNames.includes('fc-event-shift')) {
-                // Revert le changement pour les astreintes et congés
+            // Déterminer le type d'événement et l'ID de la ressource
+            const extendedProps = event.extendedProps || {};
+            const type = extendedProps.type;
+            const resourceId = extendedProps.resourceId;
+            
+            let endpoint = '';
+            
+            if (type === 'shift') {
+                endpoint = `/api/shifts/${resourceId}`;
+            } else if (type === 'oncall') {
+                endpoint = `/api/oncall/${resourceId}`;
+            } else if (type === 'leave') {
+                endpoint = `/api/leave/${resourceId}`;
+            } else {
                 info.revert();
-                alert('Seuls les shifts peuvent être déplacés. Les astreintes et congés ne sont pas modifiables via drag & drop.');
                 return;
             }
             
             // Envoyer la mise à jour au serveur
-            fetch(`/api/shifts/${shiftId}`, {
+            fetch(endpoint, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -295,7 +332,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    console.log('Shift mis à jour:', data.message);
+                    console.log('Événement mis à jour:', data.message);
                     // Recharger la page pour synchroniser avec le backend
                     location.reload();
                 } else {
@@ -307,29 +344,41 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => {
                 info.revert();
                 console.error('Erreur:', error);
-                alert('Une erreur est survenue lors de la mise à jour du shift.');
+                alert('Une erreur est survenue lors de la mise à jour.');
             });
         },
         
         eventResize: function(info) {
             // Appelé quand un événement est redimensionné
-            const shiftId = info.event.id;
-            const newStart = info.event.start;
-            const newEnd = info.event.end;
+            const event = info.event;
+            const eventId = event.id;
+            const newStart = event.start;
+            const newEnd = event.end;
             
-            if (!shiftId || shiftId === undefined) {
+            if (!eventId || eventId === undefined) {
                 return;
             }
             
-            // Vérifier que c'est un shift
-            if (!info.event.classNames.includes('fc-event-shift')) {
+            // Déterminer le type d'événement et l'ID de la ressource
+            const extendedProps = event.extendedProps || {};
+            const type = extendedProps.type;
+            const resourceId = extendedProps.resourceId;
+            
+            let endpoint = '';
+            
+            if (type === 'shift') {
+                endpoint = `/api/shifts/${resourceId}`;
+            } else if (type === 'oncall') {
+                endpoint = `/api/oncall/${resourceId}`;
+            } else if (type === 'leave') {
+                endpoint = `/api/leave/${resourceId}`;
+            } else {
                 info.revert();
-                alert('Seuls les shifts peuvent être redimensionnés.');
                 return;
             }
             
             // Envoyer la mise à jour au serveur
-            fetch(`/api/shifts/${shiftId}`, {
+            fetch(endpoint, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -344,7 +393,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    console.log('Shift redimensionné:', data.message);
+                    console.log('Événement redimensionné:', data.message);
                     // Recharger la page pour synchroniser avec le backend
                     location.reload();
                 } else {
@@ -355,13 +404,14 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => {
                 info.revert();
                 console.error('Erreur:', error);
-                alert('Une erreur est survenue lors du redimensionnement du shift.');
+                alert('Une erreur est survenue lors du redimensionnement.');
             });
         },
         
         select: function(info) {
             // Appelé quand une plage horaire est sélectionnée (pour créer un nouveau shift)
-            if (!isAdmin) {
+            // Uniquement en mode édition
+            if (!isAdmin || !editModeEnabled) {
                 calendar.unselect();
                 return;
             }
@@ -378,42 +428,61 @@ document.addEventListener('DOMContentLoaded', function() {
         eventClick: function(info) {
             // Appelé quand un événement est cliqué
             const event = info.event;
-            const shiftId = event.id;
+            const eventId = event.id;
             
-            if (!shiftId || shiftId === undefined) {
+            if (!eventId || eventId === undefined) {
                 return;
             }
             
-            // Vérifier que c'est un shift
-            if (!event.classNames.includes('fc-event-shift')) {
-                return;
-            }
-            
-            // Demander confirmation pour la suppression
-            if (isAdmin && confirm('Voulez-vous supprimer ce shift ?')) {
-                fetch(`/api/shifts/${shiftId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    credentials: 'same-origin'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        event.remove();
-                        console.log('Shift supprimé:', data.message);
-                        // Recharger la page pour synchroniser avec le backend
-                        location.reload();
-                    } else {
-                        alert('Erreur: ' + data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    alert('Une erreur est survenue lors de la suppression du shift.');
-                });
+            // En mode édition, cliquer sur un événement permet de le supprimer avec confirmation
+            // Hors mode édition, cliquer ne fait rien
+            if (editModeEnabled && isAdmin) {
+                // Déterminer le type d'événement et l'ID de la ressource
+                const extendedProps = event.extendedProps || {};
+                const type = extendedProps.type;
+                const resourceId = extendedProps.resourceId;
+                
+                let endpoint = '';
+                let message = '';
+                
+                if (type === 'shift') {
+                    endpoint = `/api/shifts/${resourceId}`;
+                    message = 'Voulez-vous supprimer ce shift ?';
+                } else if (type === 'oncall') {
+                    endpoint = `/api/oncall/${resourceId}`;
+                    message = 'Voulez-vous supprimer cette astreinte ?';
+                } else if (type === 'leave') {
+                    endpoint = `/api/leave/${resourceId}`;
+                    message = 'Voulez-vous supprimer ce congé ?';
+                } else {
+                    return;
+                }
+                
+                if (confirm(message)) {
+                    fetch(endpoint, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        credentials: 'same-origin'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            event.remove();
+                            console.log('Événement supprimé:', data.message);
+                            // Recharger la page pour synchroniser avec le backend
+                            location.reload();
+                        } else {
+                            alert('Erreur: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        alert('Une erreur est survenue lors de la suppression.');
+                    });
+                }
             }
         },
         
@@ -439,6 +508,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Rendre le calendrier accessible globalement
     window.calendar = calendar;
+    
+    // Initialiser l'UI et le calendrier selon l'état du mode édition
+    updateEditModeState(editModeEnabled);
 
     // Fonction pour ouvrir le modal de création de shift
     function openShiftCreationModal(start, end) {
@@ -577,14 +649,34 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
     }
 
-    // Gérer la touche Suppr pour supprimer un événement
+    // Gérer la touche Suppr pour supprimer un événement (uniquement en mode édition)
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Delete' || e.key === 'Suppr') {
-            const selectedEvent = calendar.getEventById(window.selectedEventId);
-            if (selectedEvent && isAdmin) {
-                if (confirm('Voulez-vous supprimer ce shift ?')) {
-                    const shiftId = selectedEvent.id;
-                    fetch(`/api/shifts/${shiftId}`, {
+            const selectedEvent = window.selectedEvent;
+            if (selectedEvent && isAdmin && editModeEnabled) {
+                // Déterminer le type d'événement et l'ID de la ressource
+                const extendedProps = selectedEvent.extendedProps || {};
+                const type = extendedProps.type;
+                const resourceId = extendedProps.resourceId;
+                
+                let endpoint = '';
+                let message = '';
+                
+                if (type === 'shift') {
+                    endpoint = `/api/shifts/${resourceId}`;
+                    message = 'Voulez-vous supprimer ce shift ?';
+                } else if (type === 'oncall') {
+                    endpoint = `/api/oncall/${resourceId}`;
+                    message = 'Voulez-vous supprimer cette astreinte ?';
+                } else if (type === 'leave') {
+                    endpoint = `/api/leave/${resourceId}`;
+                    message = 'Voulez-vous supprimer ce congé ?';
+                } else {
+                    return;
+                }
+                
+                if (confirm(message)) {
+                    fetch(endpoint, {
                         method: 'DELETE',
                         headers: {
                             'Content-Type': 'application/json',
@@ -596,7 +688,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     .then(data => {
                         if (data.success) {
                             selectedEvent.remove();
-                            console.log('Shift supprimé:', data.message);
+                            console.log('Événement supprimé:', data.message);
                             // Recharger la page pour synchroniser avec le backend
                             location.reload();
                         } else {
@@ -605,16 +697,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     })
                     .catch(error => {
                         console.error('Erreur:', error);
-                        alert('Une erreur est survenue lors de la suppression du shift.');
+                        alert('Une erreur est survenue lors de la suppression.');
                     });
                 }
             }
         }
     });
 
-    // Stocker l'ID de l'événement sélectionné
+    // Stocker l'événement sélectionné
     calendar.on('eventClick', function(info) {
-        window.selectedEventId = info.event.id;
+        window.selectedEvent = info.event;
     });
 });
 </script>
