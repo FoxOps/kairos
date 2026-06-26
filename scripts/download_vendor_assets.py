@@ -86,6 +86,57 @@ def download_file(url, path):
         return False
 
 
+def copy_webfonts_to_vendor():
+    """Copie les fichiers de polices Font Awesome dans app/static/vendor/webfonts/.
+    
+    Le CSS de Font Awesome utilise des chemins relatifs comme ../webfonts/
+    qui pointent vers app/static/vendor/webfonts/.
+    
+    Cette fonction copie les fichiers de polices depuis 
+    app/static/vendor/font-awesome/webfonts/ vers app/static/vendor/webfonts/.
+    """
+    webfonts_source = VENDOR_DIR / "font-awesome" / "webfonts"
+    webfonts_target = VENDOR_DIR / "webfonts"
+    
+    # Vérifier que la source existe
+    if not webfonts_source.exists():
+        print(f"  ⚠️  Le dossier source n'existe pas: {webfonts_source}")
+        return False
+    
+    # Supprimer la cible si elle existe déjà
+    if webfonts_target.exists():
+        import shutil
+        shutil.rmtree(str(webfonts_target))
+    
+    # Copier les fichiers
+    try:
+        import shutil
+        shutil.copytree(str(webfonts_source), str(webfonts_target))
+        print(f"  ✅ Fichiers copiés: {webfonts_source} -> {webfonts_target}")
+        
+        # Patcher le CSS pour utiliser des chemins relatifs
+        # Le CSS est servi depuis /static/vendor/font-awesome/all.min.css
+        # donc ../webfonts/ pointe vers /static/vendor/webfonts/ qui est correct
+        css_file = VENDOR_DIR / "font-awesome" / "all.min.css"
+        if css_file.exists():
+            with open(css_file, 'r') as f:
+                css_content = f.read()
+            
+            # S'assurer que le CSS utilise des chemins relatifs ../webfonts/
+            # (le CSS original utilise déjà ../webfonts/, mais au cas où)
+            css_patched = css_content.replace('/static/vendor/webfonts/', '../webfonts/')
+            
+            with open(css_file, 'w') as f:
+                f.write(css_patched)
+            
+            print(f"  ✅ CSS patché pour utiliser des chemins relatifs")
+        
+        return True
+    except Exception as e:
+        print(f"  ❌ Impossible de copier les fichiers: {e}")
+        return False
+
+
 def main():
     """Télécharge toutes les ressources."""
     print("Téléchargement des ressources statiques pour Leviia Schedule\n")
@@ -94,6 +145,11 @@ def main():
     for name, resource in RESOURCES.items():
         if download_file(resource["url"], resource["path"]):
             success_count += 1
+    
+    # Copier les polices Font Awesome dans vendor/webfonts/
+    print("\nCopie des polices Font Awesome dans vendor/webfonts/...")
+    if copy_webfonts_to_vendor():
+        success_count += 1
     
     print(f"\n{success_count}/{len(RESOURCES)} fichiers téléchargés avec succès.")
     

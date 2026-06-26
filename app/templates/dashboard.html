@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de bord - Leviia{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Styles minimaux - respect strict de Bulma */
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+    }
+    .stat-label {
+        font-size: 0.9rem;
+        color: #4a4a4a;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .upcoming-item {
+        border-left: 3px solid #00d1b2;
+        padding-left: 1rem;
+        margin-bottom: 0.75rem;
+    }
+    .chart-container {
+        height: 200px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-around;
+        padding: 1rem 0;
+    }
+    .chart-bar {
+        flex: 1;
+        margin: 0 0.25rem;
+        background-color: #00d1b2;
+        border-radius: 4px 4px 0 0;
+        position: relative;
+    }
+    .chart-bar-label {
+        text-align: center;
+        font-size: 0.75rem;
+        margin-top: 0.5rem;
+        color: #4a4a4a;
+    }
+    .chart-value {
+        position: absolute;
+        top: -25px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.85rem;
+        font-weight: bold;
+        color: #00d1b2;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: #4a4a4a;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="columns">
+            <div class="column is-12">
+                <h1 class="title"><i class="fas fa-tachometer-alt" aria-hidden="true"></i> Mon Tableau de bord</h1>
+                <p class="subtitle">Bienvenue, {{ user.name }} ! Voici votre vue d'ensemble personnalisée.</p>
+            </div>
+        </div>
+
+        <!-- Statistiques principales -->
+        <div class="columns is-multiline">
+            <div class="column is-3">
+                <div class="box dashboard-card">
+                    <div class="content">
+                        <div class="has-text-centered">
+                            <span class="icon is-large has-text-primary">
+                                <i class="fas fa-3x fa-calendar-check" aria-hidden="true"></i>
+                            </span>
+                            <p class="stat-label mt-2">Shifts totaux</p>
+                            <p class="stat-number">{{ total_shifts }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="column is-3">
+                <div class="box dashboard-card">
+                    <div class="content">
+                        <div class="has-text-centered">
+                            <span class="icon is-large has-text-info">
+                                <i class="fas fa-3x fa-moon" aria-hidden="true"></i>
+                            </span>
+                            <p class="stat-label mt-2">Astreintes</p>
+                            <p class="stat-number has-text-info">{{ total_oncalls }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="column is-3">
+                <div class="box dashboard-card">
+                    <div class="content">
+                        <div class="has-text-centered">
+                            <span class="icon is-large has-text-warning">
+                                <i class="fas fa-3x fa-umbrella-beach" aria-hidden="true"></i>
+                            </span>
+                            <p class="stat-label mt-2">Congés</p>
+                            <p class="stat-number has-text-warning">{{ total_leaves }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="column is-3">
+                <div class="box dashboard-card">
+                    <div class="content">
+                        <div class="has-text-centered">
+                            <span class="icon is-large has-text-success">
+                                <i class="fas fa-3x fa-clock" aria-hidden="true"></i>
+                            </span>
+                            <p class="stat-label mt-2">Heures ce mois</p>
+                            <p class="stat-number has-text-success">{{ "%.1f" % total_hours_this_month }}h</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistiques par type de shift -->
+        {% if shift_types_stats %}
+        <div class="columns">
+            <div class="column is-12">
+                <div class="box">
+                    <h2 class="title is-5"><i class="fas fa-chart-bar" aria-hidden="true"></i> Répartition par type de shift</h2>
+                    <div class="chart-container">
+                        {% for stat in shift_types_stats %}
+                        {% set max_count = shift_types_stats|map(attribute='count')|max %}
+                        {% set bar_height = (stat.count / max_count * 100)|int if max_count > 0 else 0 %}
+                        <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                            <div class="chart-bar" style="height: {{ bar_height }}%; max-height: 100%;">
+                                <span class="chart-value">{{ stat.count }}</span>
+                            </div>
+                            <div class="chart-bar-label">{{ stat.label }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Prochains événements -->
+        <div class="columns">
+            <div class="column is-6">
+                <div class="box">
+                    <h2 class="title is-5"><i class="fas fa-calendar-alt" aria-hidden="true"></i> Prochains Shifts</h2>
+                    {% if upcoming_shifts %}
+                        {% for shift in upcoming_shifts %}
+                        <div class="upcoming-item">
+                            <p>
+                                <strong>{{ shift.start_time.strftime('%a %d/%m') }}</strong>
+                                à {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
+                            </p>
+                            <p>
+                                <span class="type-tag" style="background-color: var(--bulma-primary); color: white;">
+                                    {{ shift.shift_type.label if shift.shift_type else 'N/A' }}
+                                </span>
+                                <span class="has-text-grey">{{ shift.shift_type.name if shift.shift_type else '' }}</span>
+                            </p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-times" aria-hidden="true"></i>
+                            <p>Aucun shift à venir</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="column is-6">
+                <div class="box">
+                    <h2 class="title is-5"><i class="fas fa-moon" aria-hidden="true"></i> Prochaines Astreintes</h2>
+                    {% if upcoming_oncalls %}
+                        {% for oncall in upcoming_oncalls %}
+                        <div class="upcoming-item">
+                            <p>
+                                <strong>{{ oncall.start_time.strftime('%a %d/%m') }}</strong>
+                                de {{ oncall.start_time.strftime('%H:%M') }} à {{ oncall.end_time.strftime('%H:%M') }}
+                            </p>
+                            <p class="has-text-grey">Astreinte programmée</p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-moon" aria-hidden="true"></i>
+                            <p>Aucune astreinte à venir</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Congés à venir -->
+        <div class="columns">
+            <div class="column is-6">
+                <div class="box">
+                    <h2 class="title is-5"><i class="fas fa-umbrella-beach" aria-hidden="true"></i> Prochains Congés</h2>
+                    {% if upcoming_leaves %}
+                        {% for leave in upcoming_leaves %}
+                        <div class="upcoming-item">
+                            <p>
+                                <strong>Du {{ leave.start_date.strftime('%d/%m') }}</strong>
+                                au {{ leave.end_date.strftime('%d/%m/%Y') }}
+                            </p>
+                            <p class="has-text-grey">
+                                {{ (leave.end_date - leave.start_date).days + 1 }} jour(s)
+                            </p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-umbrella-beach" aria-hidden="true"></i>
+                            <p>Aucun congé à venir</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="column is-6">
+                <div class="box">
+                    <h2 class="title is-5"><i class="fas fa-history" aria-hidden="true"></i> Shifts récents</h2>
+                    {% if recent_shifts %}
+                        {% for shift in recent_shifts %}
+                        <div class="upcoming-item">
+                            <p>
+                                <strong>{{ shift.date.strftime('%a %d/%m') }}</strong>
+                                à {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
+                            </p>
+                            <p>
+                                <span class="type-tag" style="background-color: var(--bulma-grey); color: white;">
+                                    {{ shift.shift_type.label if shift.shift_type else 'N/A' }}
+                                </span>
+                            </p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-history" aria-hidden="true"></i>
+                            <p>Aucun shift récent</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="columns">
+            <div class="column is-12">
+                <div class="box">
+                    <h2 class="title is-5"><i class="fas fa-bolt" aria-hidden="true"></i> Actions rapides</h2>
+                    <div class="buttons is-centered">
+                        <a class="button is-primary" href="{{ url_for('schedule') }}">
+                            <span class="icon">
+                                <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                            </span>
+                            <span>Voir mon planning</span>
+                        </a>
+                        <a class="button is-info" href="{{ url_for('oncall') }}">
+                            <span class="icon">
+                                <i class="fas fa-moon" aria-hidden="true"></i>
+                            </span>
+                            <span>Voir les astreintes</span>
+                        </a>
+                        <a class="button is-warning" href="{{ url_for('leave') }}">
+                            <span class="icon">
+                                <i class="fas fa-umbrella-beach" aria-hidden="true"></i>
+                            </span>
+                            <span>Gérer mes congés</span>
+                        </a>
+                        <a class="button is-success" href="{{ url_for('add_shift') }}">
+                            <span class="icon">
+                                <i class="fas fa-plus" aria-hidden="true"></i>
+                            </span>
+                            <span>Ajouter un shift</span>
+                        </a>
+                        {% if user.ics_token %}
+                        <a class="button is-link" href="{{ url_for('generate_ics_token') }}" target="_blank">
+                            <span class="icon">
+                                <i class="fas fa-file-export" aria-hidden="true"></i>
+                            </span>
+                            <span>Exporter mon calendrier</span>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informations utilisateur -->
+        <div class="columns">
+            <div class="column is-12">
+                <div class="box">
+                    <h2 class="title is-5"><i class="fas fa-user-circle" aria-hidden="true"></i> Mes informations</h2>
+                    <div class="columns">
+                        <div class="column is-4">
+                            <div class="field is-horizontal">
+                                <div class="field-label is-normal">
+                                    <label class="label">Nom</label>
+                                </div>
+                                <div class="field-body">
+                                    <p class="control">{{ user.name }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-4">
+                            <div class="field is-horizontal">
+                                <div class="field-label is-normal">
+                                    <label class="label">Email</label>
+                                </div>
+                                <div class="field-body">
+                                    <p class="control">{{ user.email }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column is-4">
+                            <div class="field is-horizontal">
+                                <div class="field-label is-normal">
+                                    <label class="label">Groupe</label>
+                                </div>
+                                <div class="field-body">
+                                    <p class="control">
+                                        <span class="tag is-info">{{ user.group.name if user.group else 'Aucun' }}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="field is-grouped is-grouped-centered mt-4">
+                        <div class="control">
+                            <a href="{{ url_for('profile') }}" class="button is-small is-outlined">
+                                <span class="icon">
+                                    <i class="fas fa-user-edit" aria-hidden="true"></i>
+                                </span>
+                                <span>Modifier mon profil</span>
+                            </a>
+                        </div>
+                        <div class="control">
+                            <a href="{{ url_for('generate_ics_token') }}" class="button is-small is-outlined">
+                                <span class="icon">
+                                    <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                                </span>
+                                <span>Gérer mon token ICS</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
