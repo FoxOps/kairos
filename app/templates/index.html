@@ -141,11 +141,12 @@
             <div class="notification is-info is-light mb-4" id="tips-container" style="display: none;">
                 <p><strong><i class="fas fa-info-circle"></i> Conseils d'utilisation :</strong></p>
                 <ul>
-                    <li><strong>Mode édition activé</strong> : Le drag & drop est activé. Cliquez sur un événement shift pour le supprimer (avec confirmation).</li>
-                    <li><strong>Déplacer un shift</strong> : Cliquez et faites glisser un événement vers une nouvelle date/heure</li>
-                    <li><strong>Redimensionner un shift</strong> : Passez la souris sur le bord d'un événement et faites glisser pour modifier la durée</li>
+                    <li><strong>Mode édition activé</strong> : Le drag & drop est activé. Cliquez sur un événement (shift, astreinte, congé) pour le supprimer (avec confirmation).</li>
+                    <li><strong>Déplacer un événement</strong> : Cliquez et faites glisser un événement (shift, astreinte, congé) vers une nouvelle date/heure</li>
+                    <li><strong>Redimensionner un événement</strong> : Passez la souris sur le bord d'un événement et faites glisser pour modifier la durée</li>
                     <li><strong>Créer un shift</strong> : Sélectionnez une plage horaire vide dans le calendrier</li>
                     <li><strong>Mode édition désactivé</strong> : Le drag & drop est désactivé. Cliquer sur un événement ne fait rien.</li>
+                    <li><strong>Contraintes</strong> : Les astreintes doivent commencer un vendredi. Les congés et shifts ne peuvent pas être placés sur des week-ends.</li>
                 </ul>
             </div>
             {% endif %}
@@ -263,25 +264,36 @@ document.addEventListener('DOMContentLoaded', function() {
         // Configuration du drag & drop
         eventDrop: function(info) {
             // Appelé quand un événement est déplacé
-            const shiftId = info.event.id;
-            const newStart = info.event.start;
-            const newEnd = info.event.end;
+            const event = info.event;
+            const eventId = event.id;
+            const newStart = event.start;
+            const newEnd = event.end;
             
-            if (!shiftId || shiftId === undefined) {
+            if (!eventId || eventId === undefined) {
                 // C'est un nouvel événement créé par drop externe
                 return;
             }
             
-            // Vérifier que c'est un shift (et non une astreinte ou un congé)
-            if (!info.event.classNames.includes('fc-event-shift')) {
-                // Revert le changement pour les astreintes et congés
+            // Déterminer le type d'événement et l'ID de la ressource
+            const extendedProps = event.extendedProps || {};
+            const type = extendedProps.type;
+            const resourceId = extendedProps.resourceId;
+            
+            let endpoint = '';
+            
+            if (type === 'shift') {
+                endpoint = `/api/shifts/${resourceId}`;
+            } else if (type === 'oncall') {
+                endpoint = `/api/oncall/${resourceId}`;
+            } else if (type === 'leave') {
+                endpoint = `/api/leave/${resourceId}`;
+            } else {
                 info.revert();
-                alert('Seuls les shifts peuvent être déplacés. Les astreintes et congés ne sont pas modifiables via drag & drop.');
                 return;
             }
             
             // Envoyer la mise à jour au serveur
-            fetch(`/api/shifts/${shiftId}`, {
+            fetch(endpoint, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -296,7 +308,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    console.log('Shift mis à jour:', data.message);
+                    console.log('Événement mis à jour:', data.message);
                     // Recharger la page pour synchroniser avec le backend
                     location.reload();
                 } else {
@@ -308,29 +320,41 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => {
                 info.revert();
                 console.error('Erreur:', error);
-                alert('Une erreur est survenue lors de la mise à jour du shift.');
+                alert('Une erreur est survenue lors de la mise à jour.');
             });
         },
         
         eventResize: function(info) {
             // Appelé quand un événement est redimensionné
-            const shiftId = info.event.id;
-            const newStart = info.event.start;
-            const newEnd = info.event.end;
+            const event = info.event;
+            const eventId = event.id;
+            const newStart = event.start;
+            const newEnd = event.end;
             
-            if (!shiftId || shiftId === undefined) {
+            if (!eventId || eventId === undefined) {
                 return;
             }
             
-            // Vérifier que c'est un shift
-            if (!info.event.classNames.includes('fc-event-shift')) {
+            // Déterminer le type d'événement et l'ID de la ressource
+            const extendedProps = event.extendedProps || {};
+            const type = extendedProps.type;
+            const resourceId = extendedProps.resourceId;
+            
+            let endpoint = '';
+            
+            if (type === 'shift') {
+                endpoint = `/api/shifts/${resourceId}`;
+            } else if (type === 'oncall') {
+                endpoint = `/api/oncall/${resourceId}`;
+            } else if (type === 'leave') {
+                endpoint = `/api/leave/${resourceId}`;
+            } else {
                 info.revert();
-                alert('Seuls les shifts peuvent être redimensionnés.');
                 return;
             }
             
             // Envoyer la mise à jour au serveur
-            fetch(`/api/shifts/${shiftId}`, {
+            fetch(endpoint, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -345,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    console.log('Shift redimensionné:', data.message);
+                    console.log('Événement redimensionné:', data.message);
                     // Recharger la page pour synchroniser avec le backend
                     location.reload();
                 } else {
@@ -356,7 +380,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => {
                 info.revert();
                 console.error('Erreur:', error);
-                alert('Une erreur est survenue lors du redimensionnement du shift.');
+                alert('Une erreur est survenue lors du redimensionnement.');
             });
         },
         
