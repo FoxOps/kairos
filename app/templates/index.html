@@ -123,11 +123,11 @@
                 Calendrier interactif - Shifts, astreintes et congés
                 {% if current_user.is_admin %}
                 <div class="is-pulled-right is-flex is-align-items-center gap-2 mb-6">
-                    <span class="tag is-danger" id="drag-drop-status-tag" style="min-width: 180px; justify-content: center;">
-                        <i class="fas fa-mouse-pointer" aria-hidden="true"></i>&nbsp; Drag & Drop désactivé
+                    <span class="tag is-danger" id="edit-mode-status-tag" style="min-width: 180px; justify-content: center;">
+                        <i class="fas fa-edit" aria-hidden="true"></i>&nbsp; Mode édition désactivé
                     </span>
-                    <button class="button is-small is-success" id="toggle-drag-drop" style="min-width: 180px;">
-                        <i class="fas fa-toggle-on" aria-hidden="true"></i>&nbsp; Activer Drag & Drop
+                    <button class="button is-small is-success" id="toggle-edit-mode" style="min-width: 180px;">
+                        <i class="fas fa-toggle-on" aria-hidden="true"></i>&nbsp; Activer l'édition
                     </button>
                     <button class="button is-small is-info" id="toggle-tips" style="min-width: 180px;">
                         <i class="fas fa-eye" aria-hidden="true"></i>&nbsp; Afficher conseils
@@ -141,10 +141,11 @@
             <div class="notification is-info is-light mb-4" id="tips-container" style="display: none;">
                 <p><strong><i class="fas fa-info-circle"></i> Conseils d'utilisation :</strong></p>
                 <ul>
+                    <li><strong>Mode édition activé</strong> : Le drag & drop est activé. Cliquez sur un événement shift pour le supprimer (avec confirmation).</li>
                     <li><strong>Déplacer un shift</strong> : Cliquez et faites glisser un événement vers une nouvelle date/heure</li>
                     <li><strong>Redimensionner un shift</strong> : Passez la souris sur le bord d'un événement et faites glisser pour modifier la durée</li>
-                    <li><strong>Supprimer un shift</strong> : Cliquez sur un événement puis appuyez sur <kbd>Suppr</kbd> ou <kbd>Delete</kbd></li>
                     <li><strong>Créer un shift</strong> : Sélectionnez une plage horaire vide dans le calendrier</li>
+                    <li><strong>Mode édition désactivé</strong> : Le drag & drop est désactivé. Cliquer sur un événement ne fait rien.</li>
                 </ul>
             </div>
             {% endif %}
@@ -180,41 +181,41 @@ document.addEventListener('DOMContentLoaded', function() {
     const isAdmin = {{ current_user.is_admin|tojson }};
     const events = {{ events|tojson }};
 
-    // État initial : drag & drop désactivé, conseils cachés
-    let dragDropEnabled = false;
+    // État initial : mode édition désactivé, conseils cachés
+    let editModeEnabled = false;
     let tipsVisible = false;
 
     // Gestion des boutons de toggle
-    const toggleDragDropBtn = document.getElementById('toggle-drag-drop');
+    const toggleEditModeBtn = document.getElementById('toggle-edit-mode');
     const toggleTipsBtn = document.getElementById('toggle-tips');
-    const dragDropStatusTag = document.getElementById('drag-drop-status-tag');
+    const editModeStatusTag = document.getElementById('edit-mode-status-tag');
     const tipsContainer = document.getElementById('tips-container');
 
-    if (toggleDragDropBtn && dragDropStatusTag) {
-        toggleDragDropBtn.addEventListener('click', function() {
-            dragDropEnabled = !dragDropEnabled;
+    if (toggleEditModeBtn && editModeStatusTag) {
+        toggleEditModeBtn.addEventListener('click', function() {
+            editModeEnabled = !editModeEnabled;
             
-            if (dragDropEnabled) {
-                dragDropStatusTag.innerHTML = '<i class="fas fa-mouse-pointer" aria-hidden="true"></i>&nbsp; Drag & Drop activé';
-                dragDropStatusTag.classList.remove('is-danger');
-                dragDropStatusTag.classList.add('is-success');
-                toggleDragDropBtn.innerHTML = '<i class="fas fa-toggle-off" aria-hidden="true"></i>&nbsp; Désactiver Drag & Drop';
-                toggleDragDropBtn.classList.remove('is-success');
-                toggleDragDropBtn.classList.add('is-danger');
+            if (editModeEnabled) {
+                editModeStatusTag.innerHTML = '<i class="fas fa-edit" aria-hidden="true"></i>&nbsp; Mode édition activé';
+                editModeStatusTag.classList.remove('is-danger');
+                editModeStatusTag.classList.add('is-success');
+                toggleEditModeBtn.innerHTML = '<i class="fas fa-toggle-off" aria-hidden="true"></i>&nbsp; Désactiver l\'édition';
+                toggleEditModeBtn.classList.remove('is-success');
+                toggleEditModeBtn.classList.add('is-danger');
             } else {
-                dragDropStatusTag.innerHTML = '<i class="fas fa-mouse-pointer" aria-hidden="true"></i>&nbsp; Drag & Drop désactivé';
-                dragDropStatusTag.classList.remove('is-success');
-                dragDropStatusTag.classList.add('is-danger');
-                toggleDragDropBtn.innerHTML = '<i class="fas fa-toggle-on" aria-hidden="true"></i>&nbsp; Activer Drag & Drop';
-                toggleDragDropBtn.classList.remove('is-danger');
-                toggleDragDropBtn.classList.add('is-success');
+                editModeStatusTag.innerHTML = '<i class="fas fa-edit" aria-hidden="true"></i>&nbsp; Mode édition désactivé';
+                editModeStatusTag.classList.remove('is-success');
+                editModeStatusTag.classList.add('is-danger');
+                toggleEditModeBtn.innerHTML = '<i class="fas fa-toggle-on" aria-hidden="true"></i>&nbsp; Activer l\'édition';
+                toggleEditModeBtn.classList.remove('is-danger');
+                toggleEditModeBtn.classList.add('is-success');
             }
             
             // Mettre à jour les propriétés du calendrier
             if (window.calendar) {
-                window.calendar.setOption('editable', dragDropEnabled && isAdmin);
-                window.calendar.setOption('selectable', dragDropEnabled && isAdmin);
-                window.calendar.setOption('droppable', dragDropEnabled && isAdmin);
+                window.calendar.setOption('editable', editModeEnabled && isAdmin);
+                window.calendar.setOption('selectable', editModeEnabled && isAdmin);
+                window.calendar.setOption('droppable', editModeEnabled && isAdmin);
             }
         });
     }
@@ -255,9 +256,9 @@ document.addEventListener('DOMContentLoaded', function() {
         height: 'auto',
         
         // Activation du Drag & Drop pour les administrateurs (désactivé par défaut)
-        editable: dragDropEnabled && isAdmin,
-        selectable: dragDropEnabled && isAdmin,
-        droppable: dragDropEnabled && isAdmin,
+        editable: editModeEnabled && isAdmin,
+        selectable: editModeEnabled && isAdmin,
+        droppable: editModeEnabled && isAdmin,
         
         // Configuration du drag & drop
         eventDrop: function(info) {
@@ -361,7 +362,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         select: function(info) {
             // Appelé quand une plage horaire est sélectionnée (pour créer un nouveau shift)
-            if (!isAdmin) {
+            // Uniquement en mode édition
+            if (!isAdmin || !editModeEnabled) {
                 calendar.unselect();
                 return;
             }
@@ -389,8 +391,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Demander confirmation pour la suppression
-            if (isAdmin && confirm('Voulez-vous supprimer ce shift ?')) {
+            // En mode édition, cliquer sur un shift permet de le supprimer avec confirmation
+            // Hors mode édition, cliquer ne fait rien
+            if (editModeEnabled && isAdmin && confirm('Voulez-vous supprimer ce shift ?')) {
                 fetch(`/api/shifts/${shiftId}`, {
                     method: 'DELETE',
                     headers: {
@@ -577,11 +580,11 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
     }
 
-    // Gérer la touche Suppr pour supprimer un événement
+    // Gérer la touche Suppr pour supprimer un événement (uniquement en mode édition)
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Delete' || e.key === 'Suppr') {
             const selectedEvent = calendar.getEventById(window.selectedEventId);
-            if (selectedEvent && isAdmin) {
+            if (selectedEvent && isAdmin && editModeEnabled) {
                 if (confirm('Voulez-vous supprimer ce shift ?')) {
                     const shiftId = selectedEvent.id;
                     fetch(`/api/shifts/${shiftId}`, {
