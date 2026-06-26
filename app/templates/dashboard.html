@@ -136,7 +136,7 @@
                         {% for stat in shift_types_stats %}
                         {% set max_count = shift_types_stats|map(attribute='count')|max %}
                         {% set bar_height = (stat.count / max_count * 100)|int if max_count > 0 else 0 %}
-                        <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                        <div class="chart-item">
                             <div class="chart-bar" style="height: {{ bar_height }}%; max-height: 100%;">
                                 <span class="chart-value">{{ stat.count }}</span>
                             </div>
@@ -162,7 +162,7 @@
                                 à {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
                             </p>
                             <p>
-                                <span class="type-tag" style="background-color: var(--bulma-primary); color: white;">
+                                <span class="type-tag is-primary">
                                     {{ shift.shift_type.label if shift.shift_type else 'N/A' }}
                                 </span>
                                 <span class="has-text-grey">{{ shift.shift_type.name if shift.shift_type else '' }}</span>
@@ -238,7 +238,7 @@
                                 à {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
                             </p>
                             <p>
-                                <span class="type-tag" style="background-color: var(--bulma-grey); color: white;">
+                                <span class="type-tag is-light">
                                     {{ shift.shift_type.label if shift.shift_type else 'N/A' }}
                                 </span>
                             </p>
