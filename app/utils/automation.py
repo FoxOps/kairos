@@ -330,6 +330,7 @@ class OnCallAutomation:
             end_time = start_time + timedelta(days=7, hours=-14)  # Vendredi 21h -> Vendredi suivant 07h
             
             # Vérifier que end_time ne dépasse pas la période
+            # On inclut les astreintes dont end_time est <= end_date
             if end_time.date() > end_date:
                 break
             
