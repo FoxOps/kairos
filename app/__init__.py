@@ -699,6 +699,13 @@ def init_data_cleanup():
 init_data_cleanup()
 
 
+# Route pour le favicon (redirige vers favicon.png)
+@app.route('/favicon.ico')
+def favicon():
+    """Redirige /favicon.ico vers /static/images/favicon.png."""
+    return app.send_static_file('images/favicon.png')
+
+
 def create_app():
     """Factory pour créer une instance de l'application Flask."""
     return app

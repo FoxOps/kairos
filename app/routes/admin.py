@@ -21,7 +21,6 @@ from datetime import datetime, date, timedelta
 # Dashboard admin
 @app.route("/admin")
 @admin_required
-@cached_route(timeout=300)
 def admin_dashboard():
     # Optimisation : Utiliser des requêtes count() simples mais efficaces
     # Les requêtes count() sont déjà optimisées par SQLAlchemy
@@ -50,7 +49,6 @@ def admin_dashboard():
 
 @app.route("/admin/groups")
 @admin_required
-@cached_route(timeout=300)
 @eager_load(Group, ['users'])
 def list_groups():
     groups = Group.query.order_by(Group.name).all()
@@ -153,7 +151,6 @@ def delete_group(group_id):
 
 @app.route("/admin/users")
 @admin_required
-@cached_route(timeout=300)
 @eager_load(User, ['group', 'shifts', 'on_calls', 'leaves'])
 def list_users():
     users = (
@@ -280,7 +277,6 @@ def delete_user(user_id):
 
 @app.route("/admin/shift-types")
 @admin_required
-@cached_route(timeout=300)
 @eager_load(ShiftType, ['shifts'])
 def list_shift_types():
     shift_types = ShiftType.query.order_by(ShiftType.name).all()
@@ -577,9 +573,15 @@ def automation_full():
             user_data_sorted = sorted(user_data, key=lambda x: x['position'])
             rotation_order_ids = [u['user_id'] for u in user_data_sorted if u['include']]
             
-            # Si c'est juste pour sauvegarder l'ordre, on affiche un message
+            # Si c'est juste pour sauvegarder l'ordre, on sauvegarde dans la base
             if action == "save_order":
-                flash("✅ Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour appliquer.", "success")
+                try:
+                    from app.models import AutomationConfig
+                    AutomationConfig.set_rotation_order(rotation_order_ids)
+                    flash("✅ Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour appliquer.", "success")
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f"❌ Erreur lors de la sauvegarde de l'ordre : {str(e)}", "danger")
                 return redirect(url_for("automation_full"))
             
             try:
@@ -587,6 +589,35 @@ def automation_full():
                 end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
                 
                 dry_run = (action == "dry_run")
+                
+                if not dry_run:
+                    # Supprimer les astreintes et shifts existants pour la période AVANT de régénérer
+                    from app.models import Shift, OnCall
+                    
+                    # Supprimer les astreintes existantes qui chevauchent la période
+                    # Une astreinte chevauche si : start_time < end_date+1 ET end_time > start_date
+                    existing_oncalls = OnCall.query.filter(
+                        OnCall.start_time < datetime.combine(end_date + timedelta(days=1), datetime.min.time()),
+                        OnCall.end_time > datetime.combine(start_date, datetime.min.time())
+                    ).all()
+                    
+                    if existing_oncalls:
+                        for oncall in existing_oncalls:
+                            db.session.delete(oncall)
+                        db.session.commit()
+                        flash(f"🗑️ {len(existing_oncalls)} astreintes existantes supprimées pour la période", "info")
+                    
+                    # Supprimer les shifts existants pour la période
+                    existing_shifts = Shift.query.filter(
+                        Shift.date >= start_date,
+                        Shift.date <= end_date
+                    ).all()
+                    
+                    if existing_shifts:
+                        for shift in existing_shifts:
+                            db.session.delete(shift)
+                        db.session.commit()
+                        flash(f"🗑️ {len(existing_shifts)} shifts existants supprimés pour la période", "info")
                 
                 # Générer les astreintes
                 oncalls, oncall_messages = OnCallAutomation.generate_oncall_schedule(
@@ -603,7 +634,7 @@ def automation_full():
                         end_date=end_date,
                     )
                 else:
-                    # Générer automatiquement les shifts après les astreintes
+                    # Générer automatiquement les shifts
                     shifts, shift_messages = AdvancedShiftAutomation.generate_full_schedule(
                         start_date, end_date, dry_run=False
                     )
@@ -613,6 +644,7 @@ def automation_full():
                     for msg in shift_messages:
                         flash(msg, "success" if "✅" in msg or "🎉" in msg else "warning" if "⚠️" in msg else "info")
                     
+                    flash(f"🔄 Régénération complète terminée pour la période du {start_date.strftime('%d/%m/%Y')} au {end_date.strftime('%d/%m/%Y')}", "success")
                     return redirect(url_for("automation_full"))
                 
             except ValueError as e:
@@ -622,13 +654,11 @@ def automation_full():
     
     oncall_users = OnCallAutomation.get_eligible_users()
     
-    # Essayer de récupérer l'ordre de rotation actuel depuis la configuration
-    # (si elle existe, sinon utiliser l'ordre par défaut)
+    # Essayer de récupérer l'ordre de rotation actuel depuis la base de données
     try:
-        from app.utils.config_manager import AutomationConfig
-        config = AutomationConfig.load()
-        current_rotation_order = config.get('oncall', {}).get('rotation_order', [])
-    except (ImportError, Exception):
+        from app.models import AutomationConfig
+        current_rotation_order = AutomationConfig.get_rotation_order()
+    except Exception:
         current_rotation_order = None
     
     today = date.today()

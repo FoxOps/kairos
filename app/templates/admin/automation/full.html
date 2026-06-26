@@ -181,25 +181,70 @@ document.addEventListener('DOMContentLoaded', function() {
                         </p>
                         
                         <ol id="rotation-order-list" class="sortable-list">
-                            {% for user in oncall_users %}
-                            <li class="sortable-item" data-user-id="{{ user.id }}" draggable="true">
-                                <span class="drag-handle"><i class="fas fa-grip-vertical"></i></span>
-                                <div class="user-info">
-                                    <strong>{{ user.name }}</strong>
-                                    <span class="ml-2">{{ user.email }}</span>
-                                    <span class="tag is-light ml-2">{{ user.group.name if user.group else 'N/A' }}</span>
-                                </div>
-                                <div class="include-checkbox">
-                                    <label class="checkbox">
-                                        <input type="checkbox" name="include_{{ user.id }}" value="1" checked>
-                                        Inclure
-                                    </label>
-                                </div>
-                                <!-- Champ caché pour la position (mis à jour par JS) -->
-                                <input type="hidden" name="rotation_order_{{ user.id }}" 
-                                       value="{{ loop.index }}">
-                            </li>
-                            {% endfor %}
+                            {% if current_rotation_order %}
+                                {% for user_id in current_rotation_order %}
+                                    {% set user = oncall_users|selectattr("id", "equalto", user_id)|first %}
+                                    {% if user %}
+                                        {% set position = loop.index %}
+                                        <li class="sortable-item" data-user-id="{{ user.id }}" draggable="true">
+                                            <span class="drag-handle"><i class="fas fa-grip-vertical"></i></span>
+                                            <div class="user-info">
+                                                <strong>{{ user.name }}</strong>
+                                                <span class="ml-2">{{ user.email }}</span>
+                                                <span class="tag is-light ml-2">{{ user.group.name if user.group else 'N/A' }}</span>
+                                            </div>
+                                            <div class="include-checkbox">
+                                                <label class="checkbox">
+                                                    <input type="checkbox" name="include_{{ user.id }}" value="1" checked>
+                                                    Inclure
+                                                </label>
+                                            </div>
+                                            <!-- Champ caché pour la position (mis à jour par JS) -->
+                                            <input type="hidden" name="rotation_order_{{ user.id }}" value="{{ position }}">
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                {% for user in oncall_users %}
+                                    {% if user.id not in current_rotation_order %}
+                                        {% set position = loop.index + current_rotation_order|length %}
+                                        <li class="sortable-item" data-user-id="{{ user.id }}" draggable="true">
+                                            <span class="drag-handle"><i class="fas fa-grip-vertical"></i></span>
+                                            <div class="user-info">
+                                                <strong>{{ user.name }}</strong>
+                                                <span class="ml-2">{{ user.email }}</span>
+                                                <span class="tag is-light ml-2">{{ user.group.name if user.group else 'N/A' }}</span>
+                                            </div>
+                                            <div class="include-checkbox">
+                                                <label class="checkbox">
+                                                    <input type="checkbox" name="include_{{ user.id }}" value="1" checked>
+                                                    Inclure
+                                                </label>
+                                            </div>
+                                            <!-- Champ caché pour la position (mis à jour par JS) -->
+                                            <input type="hidden" name="rotation_order_{{ user.id }}" value="{{ position }}">
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                {% for user in oncall_users %}
+                                    <li class="sortable-item" data-user-id="{{ user.id }}" draggable="true">
+                                        <span class="drag-handle"><i class="fas fa-grip-vertical"></i></span>
+                                        <div class="user-info">
+                                            <strong>{{ user.name }}</strong>
+                                            <span class="ml-2">{{ user.email }}</span>
+                                            <span class="tag is-light ml-2">{{ user.group.name if user.group else 'N/A' }}</span>
+                                        </div>
+                                        <div class="include-checkbox">
+                                            <label class="checkbox">
+                                                <input type="checkbox" name="include_{{ user.id }}" value="1" checked>
+                                                Inclure
+                                            </label>
+                                        </div>
+                                        <!-- Champ caché pour la position (mis à jour par JS) -->
+                                        <input type="hidden" name="rotation_order_{{ user.id }}" value="{{ loop.index }}">
+                                    </li>
+                                {% endfor %}
+                            {% endif %}
                         </ol>
                     </div>
                 </div>
@@ -291,8 +336,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <li><strong>Les shifts sont générés automatiquement</strong> après les astreintes selon les nouvelles règles métiers (13h-21h pour l'astreinte, rotation des créneaux, etc.).</li>
                 </ul>
                 <p class="mt-3">
-                    <strong>Astuce :</strong> Vous pouvez aussi configurer l'ordre de rotation et d'autres paramètres via 
-                    <a href="{{ url_for('automation_dashboard') }}">la page de configuration</a>.
+                    <strong>Note :</strong> L'ordre de rotation est sauvegardé automatiquement dans la base de données lorsque vous cliquez sur "Sauvegarder l'ordre".
                 </p>
             </div>
         </div>

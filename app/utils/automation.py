@@ -179,7 +179,8 @@ class OnCallAutomation:
     def find_next_available_user(
         rotation_order: List[User],
         start_time: datetime,
-        end_time: datetime
+        end_time: datetime,
+        existing_oncalls: Optional[List[OnCall]] = None
     ) -> Optional[User]:
         """
         Trouve le prochain utilisateur disponible dans l'ordre de rotation.
@@ -193,6 +194,7 @@ class OnCallAutomation:
             rotation_order: Liste des utilisateurs dans l'ordre de rotation
             start_time: Date/heure de début de l'astreinte
             end_time: Date/heure de fin de l'astreinte
+            existing_oncalls: Liste des astreintes déjà générées (pour vérifier la contrainte)
         
         Returns:
             Le premier utilisateur disponible, ou None si aucun n'est disponible
@@ -215,6 +217,14 @@ class OnCallAutomation:
         ).all()
         users_with_oncall_conflict = {oc.user_id for oc in oncall_conflicts}
         
+        # Ajouter les conflits avec les astreintes déjà générées (passées en paramètre)
+        if existing_oncalls:
+            for oncall in existing_oncalls:
+                if oncall.user_id in user_ids:
+                    # Vérifier si cette astreinte chevauche la période demandée
+                    if oncall.start_time < end_time and oncall.end_time > start_time:
+                        users_with_oncall_conflict.add(oncall.user_id)
+        
         # Récupérer tous les utilisateurs avec des congés chevauchants en une seule requête
         users_with_leave = set()
         leave_conflicts = db.session.query(Leave.user_id).filter(
@@ -225,8 +235,11 @@ class OnCallAutomation:
         users_with_leave = {lc.user_id for lc in leave_conflicts}
         
         # Vérifier la contrainte légale pour tous les utilisateurs
-        # On récupère la dernière astreinte pour chaque utilisateur
-        last_oncalls = db.session.query(
+        # On récupère la dernière astreinte pour chaque utilisateur (en base + en cours de génération)
+        last_oncall_map = {}
+        
+        # D'abord, les astreintes existantes en base
+        db_last_oncalls = db.session.query(
             OnCall.user_id,
             OnCall.end_time
         ).filter(
@@ -236,11 +249,17 @@ class OnCallAutomation:
             OnCall.end_time.desc()
         ).all()
         
-        # Créer un mapping user_id -> last_oncall_end_time
-        last_oncall_map = {}
-        for user_id, end_time in last_oncalls:
+        for user_id, end_time in db_last_oncalls:
             if user_id not in last_oncall_map:
                 last_oncall_map[user_id] = end_time
+        
+        # Ensuite, prendre en compte les astreintes déjà générées (passées en paramètre)
+        if existing_oncalls:
+            for oncall in existing_oncalls:
+                if oncall.user_id in user_ids:
+                    # Garder la plus récente
+                    if oncall.user_id not in last_oncall_map or oncall.end_time > last_oncall_map[oncall.user_id]:
+                        last_oncall_map[oncall.user_id] = oncall.end_time
         
         # Parcourir les utilisateurs dans l'ordre de rotation
         for user in rotation_order:
@@ -311,12 +330,14 @@ class OnCallAutomation:
             end_time = start_time + timedelta(days=7, hours=-14)  # Vendredi 21h -> Vendredi suivant 07h
             
             # Vérifier que end_time ne dépasse pas la période
+            # On inclut les astreintes dont end_time est <= end_date
             if end_time.date() > end_date:
                 break
             
             # Trouver un utilisateur disponible
+            # Passer les astreintes déjà générées pour vérifier la contrainte des 2 semaines
             user = OnCallAutomation.find_next_available_user(
-                rotation_order, start_time, end_time
+                rotation_order, start_time, end_time, generated_oncalls
             )
             
             if user:
@@ -328,20 +349,24 @@ class OnCallAutomation:
                 )
                 generated_oncalls.append(oncall)
                 
-                messages.append(
-                    f"✅ Astreinte créée pour {user.name} du {start_time.strftime('%d/%m/%Y %Hh')} "
-                    f"au {end_time.strftime('%d/%m/%Y %Hh')}"
-                )
+                # Stocker pour le résumé (au lieu de messages détaillés)
+                if 'oncall_created' not in locals():
+                    oncall_created = []
+                oncall_created.append({
+                    'user': user.name,
+                    'start': start_time.strftime('%d/%m/%Y %Hh'),
+                    'end': end_time.strftime('%d/%m/%Y %Hh')
+                })
                 
                 # Passer à l'utilisateur suivant dans la rotation
                 rotation_index = (rotation_index + 1) % len(rotation_order)
                 # Réorganiser la rotation pour commencer par l'utilisateur suivant
                 rotation_order = rotation_order[rotation_index:] + rotation_order[:rotation_index]
             else:
-                messages.append(
-                    f"⚠️ Aucun utilisateur disponible pour l'astreinte du {start_time.strftime('%d/%m/%Y %Hh')} "
-                    f"au {end_time.strftime('%d/%m/%Y %Hh')}. Astreinte non créée."
-                )
+                # Stocker pour le résumé
+                if 'oncall_skipped' not in locals():
+                    oncall_skipped = []
+                oncall_skipped.append(start_time.strftime('%d/%m/%Y %Hh'))
                 # Passer à l'utilisateur suivant dans la rotation même sans création
                 rotation_index = (rotation_index + 1) % len(rotation_order)
                 rotation_order = rotation_order[rotation_index:] + rotation_order[:rotation_index]
@@ -354,11 +379,27 @@ class OnCallAutomation:
             try:
                 db.session.add_all(generated_oncalls)
                 db.session.commit()
-                messages.insert(0, f"🎉 {len(generated_oncalls)} astreintes générées avec succès !")
+                # Générer un résumé
+                msg = f"✅ {len(generated_oncalls)} astreintes générées avec succès !"
+                if 'oncall_skipped' in locals() and oncall_skipped:
+                    msg += f" (⚠️ {len(oncall_skipped)} non créées)"
+                messages.append(msg)
             except Exception as e:
                 db.session.rollback()
                 messages.insert(0, f"❌ Erreur lors de la sauvegarde : {str(e)}")
                 return [], messages
+        elif not generated_oncalls:
+            # Aucun astreinte générée
+            if 'oncall_skipped' in locals() and oncall_skipped:
+                messages.append(f"⚠️ Aucune astreinte générée ({len(oncall_skipped)} périodes sans utilisateur disponible)")
+            else:
+                messages.append("⚠️ Aucune astreinte générée")
+        else:
+            # Dry run avec des astreintes générées
+            msg = f"📋 Prévisualisation : {len(generated_oncalls)} astreintes seraient créées"
+            if 'oncall_skipped' in locals() and oncall_skipped:
+                msg += f" (⚠️ {len(oncall_skipped)} non créées)"
+            messages.append(msg)
         
         return generated_oncalls, messages
 
@@ -621,9 +662,14 @@ class ShiftAutomation:
                             )
                             generated_shifts.append(shift)
                             
-                            messages.append(
-                                f"✅ Shift {shift_type.label} assigné à {user.name} le {current_date.strftime('%d/%m/%Y')}"
-                            )
+                            # Stocker pour résumé
+                            if 'shifts_created' not in locals():
+                                shifts_created = []
+                            shifts_created.append({
+                                'type': shift_type.label,
+                                'user': user.name,
+                                'date': current_date.strftime('%d/%m/%Y')
+                            })
                             assigned = True
                             break
                     
@@ -657,16 +703,22 @@ class ShiftAutomation:
                             )
                             generated_shifts.append(shift)
                             
-                            messages.append(
-                                f"✅ Shift {shift_type.label} assigné à {replacement.name} "
-                                f"(remplacement) le {current_date.strftime('%d/%m/%Y')}"
-                            )
+                            # Stocker pour résumé
+                            if 'shifts_created' not in locals():
+                                shifts_created = []
+                            shifts_created.append({
+                                'type': shift_type.label,
+                                'user': replacement.name,
+                                'date': current_date.strftime('%d/%m/%Y')
+                            })
                         else:
-                            messages.append(
-                                f"⚠️ Impossible de trouver un utilisateur pour le shift "
-                                f"{shift_type.label} le {current_date.strftime('%d/%m/%Y')}. "
-                                f"Shift non créé."
-                            )
+                            # Stocker pour résumé
+                            if 'shifts_skipped' not in locals():
+                                shifts_skipped = []
+                            shifts_skipped.append({
+                                'type': shift_type.label,
+                                'date': current_date.strftime('%d/%m/%Y')
+                            })
             
             current_date += timedelta(days=1)
         
@@ -675,11 +727,27 @@ class ShiftAutomation:
             try:
                 db.session.add_all(generated_shifts)
                 db.session.commit()
-                messages.insert(0, f"🎉 {len(generated_shifts)} shifts générés avec succès !")
+                # Générer un résumé
+                msg = f"✅ {len(generated_shifts)} shifts générés avec succès !"
+                if 'shifts_skipped' in locals() and shifts_skipped:
+                    msg += f" (⚠️ {len(shifts_skipped)} non créés)"
+                messages.append(msg)
             except Exception as e:
                 db.session.rollback()
                 messages.insert(0, f"❌ Erreur lors de la sauvegarde : {str(e)}")
                 return [], messages
+        elif not generated_shifts:
+            # Aucun shift généré
+            if 'shifts_skipped' in locals() and shifts_skipped:
+                messages.append(f"⚠️ Aucun shift généré ({len(shifts_skipped)} besoins non satisfaits)")
+            else:
+                messages.append("⚠️ Aucun shift généré")
+        else:
+            # Dry run avec des shifts générés
+            msg = f"📋 Prévisualisation : {len(generated_shifts)} shifts seraient créés"
+            if 'shifts_skipped' in locals() and shifts_skipped:
+                msg += f" (⚠️ {len(shifts_skipped)} non créés)"
+            messages.append(msg)
         
         return generated_shifts, messages
 

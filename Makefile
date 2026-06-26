@@ -18,7 +18,9 @@ help: ## Affiche cette aide
 install: ## Installe les dépendances du projet
 	@echo "$(YELLOW)Installation des dépendances...$(NC)"
 	pip install -r requirements.txt
-	@echo "$(GREEN)✓ Dépendances installées$(NC)"
+	@echo "$(YELLOW)Téléchargement des assets vendor...$(NC)"
+	python scripts/download_vendor_assets.py
+	@echo "$(GREEN)✓ Dépendances et assets installés$(NC)"
 
 install-boto3: ## Installe boto3 pour les sauvegardes S3
 	@echo "$(YELLOW)Installation de boto3 pour les sauvegardes S3...$(NC)"

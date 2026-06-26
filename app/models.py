@@ -153,3 +153,72 @@ class Leave(db.Model):
     __table_args__ = (
         db.Index('idx_leave_user_date_range', 'user_id', 'start_date', 'end_date'),
     )
+
+
+class AutomationConfig(db.Model):
+    """
+    Configuration pour l'automatisation des astreintes et shifts.
+    
+    Stocke les paramètres de configuration comme l'ordre de rotation des astreintes.
+    """
+    __tablename__ = "automation_config"
+    id = db.Column(db.Integer, primary_key=True)
+    # Clé unique pour identifier le type de configuration (ex: 'oncall_rotation_order')
+    config_key = db.Column(db.String(80), nullable=False, unique=True)
+    # Valeur de la configuration (JSON pour les listes/objets complexes)
+    config_value = db.Column(db.Text, nullable=False)
+    # Date de dernière mise à jour
+    updated_at = db.Column(db.DateTime, nullable=False, default=db.func.now(), onupdate=db.func.now())
+    
+    @classmethod
+    def get_config(cls, key: str, default=None):
+        """
+        Récupère une valeur de configuration.
+        
+        Args:
+            key: Clé de la configuration
+            default: Valeur par défaut si non trouvée
+            
+        Returns:
+            Valeur de la configuration (décodée depuis JSON si nécessaire)
+        """
+        import json
+        config = cls.query.filter_by(config_key=key).first()
+        if config:
+            try:
+                return json.loads(config.config_value)
+            except json.JSONDecodeError:
+                return config.config_value
+        return default
+    
+    @classmethod
+    def set_config(cls, key: str, value):
+        """
+        Définit une valeur de configuration.
+        
+        Args:
+            key: Clé de la configuration
+            value: Valeur à stocker (sera encodée en JSON si nécessaire)
+        """
+        import json
+        config = cls.query.filter_by(config_key=key).first()
+        if config:
+            config.config_value = json.dumps(value) if not isinstance(value, str) else value
+        else:
+            config = cls(
+                config_key=key,
+                config_value=json.dumps(value) if not isinstance(value, str) else value
+            )
+            db.session.add(config)
+        db.session.commit()
+        return config
+    
+    @classmethod
+    def get_rotation_order(cls) -> list:
+        """Récupère l'ordre de rotation des astreintes."""
+        return cls.get_config('oncall_rotation_order', [])
+    
+    @classmethod
+    def set_rotation_order(cls, rotation_order: list):
+        """Définit l'ordre de rotation des astreintes."""
+        cls.set_config('oncall_rotation_order', rotation_order)

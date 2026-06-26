@@ -23,19 +23,32 @@ class TestOnCallAutomationGenerateScheduleFull:
             test_group.is_part_of_oncall = True
             db.session.commit()
             
+            # Créer un deuxième utilisateur pour la rotation
+            from app.models import User as UserModel, Group as GroupModel
+            test_user2 = UserModel(
+                name='Test User 2',
+                email='test2@example.com',
+                group_id=test_group.id
+            )
+            test_user2.set_password('test_password')
+            db.session.add(test_user2)
+            db.session.commit()
+            
             # Trouver le prochain vendredi
             today = date.today()
             days_until_friday = (4 - today.weekday()) % 7
             start_date = today + timedelta(days=days_until_friday)
-            end_date = start_date + timedelta(days=28)  # 4 semaines
+            # Utiliser 35 jours pour s'assurer d'inclure 4 astreintes complètes
+            # (chaque astreinte dure jusqu'au vendredi suivant à 07h)
+            end_date = start_date + timedelta(days=35)  # 5 semaines
             
             oncalls, messages = OnCallAutomation.generate_oncall_schedule(
                 start_date, end_date, 
-                rotation_order_ids=[test_user.id],
+                rotation_order_ids=[test_user.id, test_user2.id],
                 dry_run=True
             )
             
-            # Devrait générer 4 astreintes (une par semaine)
+            # Devrait générer 4 astreintes (une par semaine) avec 2 utilisateurs
             assert len(oncalls) == 4
 
     def test_respects_start_date(self, app, test_user, test_group):

@@ -83,7 +83,8 @@ class CacheConfig:
     CACHE_KEY_PREFIX = 'leviia:'
     
     # Activer/désactiver le cache (utile pour le développement)
-    CACHE_ENABLED = True
+    # Désactivé par défaut - doit être activé explicitement par l'administrateur
+    CACHE_ENABLED = False
     
     @classmethod
     def from_env(cls):

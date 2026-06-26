@@ -66,6 +66,9 @@ instance/
 .webassets-cache
 app.db
 
+# Vendor assets (locally served static files)
+app/static/vendor/
+
 # Logs
 logs/
 *.log

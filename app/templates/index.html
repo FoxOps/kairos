@@ -296,6 +296,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.success) {
                     console.log('Shift mis à jour:', data.message);
+                    // Recharger la page pour synchroniser avec le backend
+                    location.reload();
                 } else {
                     // Revert le changement en cas d'erreur
                     info.revert();
@@ -343,6 +345,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.success) {
                     console.log('Shift redimensionné:', data.message);
+                    // Recharger la page pour synchroniser avec le backend
+                    location.reload();
                 } else {
                     info.revert();
                     alert('Erreur: ' + data.error);
@@ -400,6 +404,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.success) {
                         event.remove();
                         console.log('Shift supprimé:', data.message);
+                        // Recharger la page pour synchroniser avec le backend
+                        location.reload();
                     } else {
                         alert('Erreur: ' + data.error);
                     }
@@ -546,18 +552,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Ajouter l'événement au calendrier
-                        calendar.addEvent({
-                            id: data.shift.id,
-                            title: data.shift.title,
-                            start: data.shift.start,
-                            end: data.shift.end,
-                            className: 'fc-event-shift',
-                            userId: data.shift.userId,
-                            shiftTypeId: data.shift.shiftTypeId
-                        });
                         modal.classList.remove('is-active');
                         console.log('Shift créé:', data.message);
+                        // Recharger la page pour synchroniser avec le backend
+                        location.reload();
                     } else {
                         alert('Erreur: ' + data.error);
                     }
@@ -599,6 +597,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (data.success) {
                             selectedEvent.remove();
                             console.log('Shift supprimé:', data.message);
+                            // Recharger la page pour synchroniser avec le backend
+                            location.reload();
                         } else {
                             alert('Erreur: ' + data.error);
                         }

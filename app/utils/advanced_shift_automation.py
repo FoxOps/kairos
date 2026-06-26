@@ -243,7 +243,6 @@ class AdvancedShiftAutomation:
                         date=date,
                     )
                     generated_shifts.append(shift)
-                    messages.append(f"✅ Shift {start_hour:02d}h-{end_hour:02d}h assigné à {user.name} le {date.strftime('%d/%m/%Y')}")
                 
                 if not dry_run:
                     try:
@@ -278,7 +277,6 @@ class AdvancedShiftAutomation:
                 date=date,
             )
             generated_shifts.append(shift)
-            messages.append(f"✅ Shift {start_hour:02d}h-{end_hour:02d}h assigné à {user.name} le {date.strftime('%d/%m/%Y')}")
         
         if not dry_run and generated_shifts:
             try:
@@ -289,34 +287,40 @@ class AdvancedShiftAutomation:
                 messages.append(f"❌ Erreur : {str(e)}")
                 return [], messages
         
-        return generated_shifts, messages
+        # Retourner un résumé au lieu de messages détaillés
+        if generated_shifts:
+            return generated_shifts, [f"✅ {len(generated_shifts)} shifts générés pour le {date.strftime('%d/%m/%Y')}"]
+        elif date.weekday() >= 5:
+            return [], [f"⏭️ Pas de shift généré pour le {date.strftime('%d/%m/%Y')} (week-end)"]
+        else:
+            return [], [f"⚠️ Aucun shift généré pour le {date.strftime('%d/%m/%Y')}"]
     
     @staticmethod
     def generate_full_schedule(start_date: 'date', end_date: 'date', dry_run: bool = False) -> 'Tuple[list, list]':
         """Génère les shifts pour toute une période."""
         all_shifts = []
-        all_messages = []
+        days_with_shifts = 0
+        days_skipped = 0
         from datetime import timedelta
         
         current_date = start_date
         while current_date <= end_date:
-            shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(current_date, dry_run=True)
+            shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(current_date, dry_run=dry_run)
             all_shifts.extend(shifts)
-            all_messages.extend(messages)
+            if shifts:
+                days_with_shifts += 1
+            else:
+                days_skipped += 1
             current_date += timedelta(days=1)
         
-        if not dry_run and all_shifts:
-            try:
-                from app import db
-                db.session.add_all(all_shifts)
-                db.session.commit()
-                all_messages.insert(0, f"🎉 {len(all_shifts)} shifts générés !")
-            except Exception as e:
-                db.session.rollback()
-                all_messages.insert(0, f"❌ Erreur : {str(e)}")
-                return [], all_messages
-        
-        return all_shifts, all_messages
+        # Retourner un résumé
+        if dry_run:
+            msg = f"📋 Prévisualisation : {len(all_shifts)} shifts seraient générés pour la période du {start_date.strftime('%d/%m/%Y')} au {end_date.strftime('%d/%m/%Y')}"
+        else:
+            msg = f"🎉 {len(all_shifts)} shifts générés pour la période du {start_date.strftime('%d/%m/%Y')} au {end_date.strftime('%d/%m/%Y')}"
+        if days_skipped > 0:
+            msg += f" ({days_with_shifts} jours avec shifts, {days_skipped} jours sans)"
+        return all_shifts, [msg]
     
     @staticmethod
     def rebalance_after_leave(leave: 'Leave', dry_run: bool = False) -> 'Tuple[list, list]':
