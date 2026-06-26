@@ -321,7 +321,7 @@
                             <span>Ajouter un shift</span>
                         </a>
                         {% if user.ics_token %}
-                        <a class="button is-link" href="{{ request.host_url ~ user.get_ics_export_url('shifts', 'my') }}" target="_blank">
+                        <a class="button is-link" href="{{ url_for('generate_ics_token') }}" target="_blank">
                             <span class="icon">
                                 <i class="fas fa-file-export" aria-hidden="true"></i>
                             </span>
