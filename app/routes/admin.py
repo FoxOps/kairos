@@ -590,26 +590,12 @@ def automation_full():
                 
                 dry_run = (action == "dry_run")
                 
-                # Générer les astreintes
-                oncalls, oncall_messages = OnCallAutomation.generate_oncall_schedule(
-                    start_date, end_date, rotation_order_ids, dry_run=dry_run
-                )
-                
-                if dry_run:
-                    # Pour le dry run, afficher les astreintes générées
-                    return render_template(
-                        "admin/automation/oncall_dry_run.html",
-                        oncalls=oncalls,
-                        messages=oncall_messages,
-                        start_date=start_date,
-                        end_date=end_date,
-                    )
-                else:
-                    # Supprimer les astreintes et shifts existants pour la période avant de régénérer
+                if not dry_run:
+                    # Supprimer les astreintes et shifts existants pour la période AVANT de régénérer
                     from app.models import Shift, OnCall
                     
                     # Supprimer les astreintes existantes qui chevauchent la période
-                    # Une astreinte chevauche si : start_time < end_date ET end_time > start_date
+                    # Une astreinte chevauche si : start_time < end_date+1 ET end_time > start_date
                     existing_oncalls = OnCall.query.filter(
                         OnCall.start_time < datetime.combine(end_date + timedelta(days=1), datetime.min.time()),
                         OnCall.end_time > datetime.combine(start_date, datetime.min.time())
@@ -632,8 +618,23 @@ def automation_full():
                             db.session.delete(shift)
                         db.session.commit()
                         flash(f"🗑️ {len(existing_shifts)} shifts existants supprimés pour la période", "info")
-                    
-                    # Générer automatiquement les astreintes et shifts
+                
+                # Générer les astreintes
+                oncalls, oncall_messages = OnCallAutomation.generate_oncall_schedule(
+                    start_date, end_date, rotation_order_ids, dry_run=dry_run
+                )
+                
+                if dry_run:
+                    # Pour le dry run, afficher les astreintes générées
+                    return render_template(
+                        "admin/automation/oncall_dry_run.html",
+                        oncalls=oncalls,
+                        messages=oncall_messages,
+                        start_date=start_date,
+                        end_date=end_date,
+                    )
+                else:
+                    # Générer automatiquement les shifts
                     shifts, shift_messages = AdvancedShiftAutomation.generate_full_schedule(
                         start_date, end_date, dry_run=False
                     )
