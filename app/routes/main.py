@@ -868,6 +868,7 @@ def user_dashboard():
             })
     
     # Astreintes ce mois-ci
+    first_day_of_month = date(today.year, today.month, 1)
     oncalls_this_month = OnCall.query.filter(
         OnCall.user_id == user_id,
         OnCall.start_time >= datetime.combine(first_day_of_month, datetime.min.time()),
