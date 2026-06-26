@@ -153,7 +153,6 @@ def delete_group(group_id):
 
 @app.route("/admin/users")
 @admin_required
-@cached_route(timeout=300)
 @eager_load(User, ['group', 'shifts', 'on_calls', 'leaves'])
 def list_users():
     users = (
@@ -280,7 +279,6 @@ def delete_user(user_id):
 
 @app.route("/admin/shift-types")
 @admin_required
-@cached_route(timeout=300)
 @eager_load(ShiftType, ['shifts'])
 def list_shift_types():
     shift_types = ShiftType.query.order_by(ShiftType.name).all()
