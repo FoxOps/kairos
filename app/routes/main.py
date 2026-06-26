@@ -68,7 +68,6 @@ def _build_calendar_events(shifts, on_calls, leaves):
 
 @app.route("/")
 @login_required
-@cached_route(timeout=300)
 @eager_load(Shift, ['user', 'shift_type'])
 @eager_load(OnCall, ['user'])
 @eager_load(Leave, ['user'])
