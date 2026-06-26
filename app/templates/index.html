@@ -244,9 +244,6 @@ document.addEventListener('DOMContentLoaded', function() {
             updateEditModeState(!editModeEnabled);
         });
     }
-    
-    // Initialiser l'UI selon l'état actuel
-    updateEditModeState(editModeEnabled);
 
     if (toggleTipsBtn && tipsContainer) {
         toggleTipsBtn.addEventListener('click', function() {
@@ -511,6 +508,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Rendre le calendrier accessible globalement
     window.calendar = calendar;
+    
+    // Initialiser l'UI et le calendrier selon l'état du mode édition
+    updateEditModeState(editModeEnabled);
 
     // Fonction pour ouvrir le modal de création de shift
     function openShiftCreationModal(start, end) {
