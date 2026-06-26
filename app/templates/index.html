@@ -182,8 +182,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const isAdmin = {{ current_user.is_admin|tojson }};
     const events = {{ events|tojson }};
 
-    // État initial : mode édition désactivé, conseils cachés
-    let editModeEnabled = false;
+    // Lire l'état du mode édition depuis l'URL
+    const urlParams = new URLSearchParams(window.location.search);
+    let editModeEnabled = urlParams.get('edit') === 'true';
     let tipsVisible = false;
 
     // Gestion des boutons de toggle
@@ -192,34 +193,60 @@ document.addEventListener('DOMContentLoaded', function() {
     const editModeStatusTag = document.getElementById('edit-mode-status-tag');
     const tipsContainer = document.getElementById('tips-container');
 
-    if (toggleEditModeBtn && editModeStatusTag) {
-        toggleEditModeBtn.addEventListener('click', function() {
-            editModeEnabled = !editModeEnabled;
-            
-            if (editModeEnabled) {
+    // Fonction pour mettre à jour l'URL et l'état du mode édition
+    function updateEditModeState(enabled) {
+        editModeEnabled = enabled;
+        
+        // Mettre à jour l'URL sans recharger la page
+        const url = new URL(window.location);
+        if (enabled) {
+            url.searchParams.set('edit', 'true');
+        } else {
+            url.searchParams.delete('edit');
+        }
+        window.history.pushState({}, '', url);
+        
+        // Mettre à jour l'UI
+        if (editModeStatusTag) {
+            if (enabled) {
                 editModeStatusTag.innerHTML = '<i class="fas fa-edit" aria-hidden="true"></i>&nbsp; Mode édition activé';
                 editModeStatusTag.classList.remove('is-danger');
                 editModeStatusTag.classList.add('is-success');
-                toggleEditModeBtn.innerHTML = '<i class="fas fa-toggle-off" aria-hidden="true"></i>&nbsp; Désactiver l\'édition';
-                toggleEditModeBtn.classList.remove('is-success');
-                toggleEditModeBtn.classList.add('is-danger');
             } else {
                 editModeStatusTag.innerHTML = '<i class="fas fa-edit" aria-hidden="true"></i>&nbsp; Mode édition désactivé';
                 editModeStatusTag.classList.remove('is-success');
                 editModeStatusTag.classList.add('is-danger');
+            }
+        }
+        
+        if (toggleEditModeBtn) {
+            if (enabled) {
+                toggleEditModeBtn.innerHTML = '<i class="fas fa-toggle-off" aria-hidden="true"></i>&nbsp; Désactiver l\'édition';
+                toggleEditModeBtn.classList.remove('is-success');
+                toggleEditModeBtn.classList.add('is-danger');
+            } else {
                 toggleEditModeBtn.innerHTML = '<i class="fas fa-toggle-on" aria-hidden="true"></i>&nbsp; Activer l\'édition';
                 toggleEditModeBtn.classList.remove('is-danger');
                 toggleEditModeBtn.classList.add('is-success');
             }
-            
-            // Mettre à jour les propriétés du calendrier
-            if (window.calendar) {
-                window.calendar.setOption('editable', editModeEnabled && isAdmin);
-                window.calendar.setOption('selectable', editModeEnabled && isAdmin);
-                window.calendar.setOption('droppable', editModeEnabled && isAdmin);
-            }
+        }
+        
+        // Mettre à jour les propriétés du calendrier
+        if (window.calendar) {
+            window.calendar.setOption('editable', enabled && isAdmin);
+            window.calendar.setOption('selectable', enabled && isAdmin);
+            window.calendar.setOption('droppable', enabled && isAdmin);
+        }
+    }
+
+    if (toggleEditModeBtn && editModeStatusTag) {
+        toggleEditModeBtn.addEventListener('click', function() {
+            updateEditModeState(!editModeEnabled);
         });
     }
+    
+    // Initialiser l'UI selon l'état actuel
+    updateEditModeState(editModeEnabled);
 
     if (toggleTipsBtn && tipsContainer) {
         toggleTipsBtn.addEventListener('click', function() {
@@ -256,7 +283,7 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         height: 'auto',
         
-        // Activation du Drag & Drop pour les administrateurs (désactivé par défaut)
+        // Activation du Drag & Drop pour les administrateurs
         editable: editModeEnabled && isAdmin,
         selectable: editModeEnabled && isAdmin,
         droppable: editModeEnabled && isAdmin,
