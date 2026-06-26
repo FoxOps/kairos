@@ -608,10 +608,11 @@ def automation_full():
                     # Supprimer les astreintes et shifts existants pour la période avant de régénérer
                     from app.models import Shift, OnCall
                     
-                    # Supprimer les astreintes existantes pour la période
+                    # Supprimer les astreintes existantes qui chevauchent la période
+                    # Une astreinte chevauche si : start_time < end_date ET end_time > start_date
                     existing_oncalls = OnCall.query.filter(
-                        OnCall.start_time >= datetime.combine(start_date, datetime.min.time()),
-                        OnCall.end_time <= datetime.combine(end_date, datetime.max.time())
+                        OnCall.start_time < datetime.combine(end_date + timedelta(days=1), datetime.min.time()),
+                        OnCall.end_time > datetime.combine(start_date, datetime.min.time())
                     ).all()
                     
                     if existing_oncalls:

@@ -378,21 +378,27 @@ class OnCallAutomation:
             try:
                 db.session.add_all(generated_oncalls)
                 db.session.commit()
-                # Générer un résumé au lieu de messages détaillés
-                if 'oncall_created' in locals() and oncall_created:
-                    messages.append(f"✅ {len(generated_oncalls)} astreintes générées avec succès !")
+                # Générer un résumé
+                msg = f"✅ {len(generated_oncalls)} astreintes générées avec succès !"
                 if 'oncall_skipped' in locals() and oncall_skipped:
-                    messages.append(f"⚠️ {len(oncall_skipped)} astreintes non créées (aucun utilisateur disponible)")
+                    msg += f" (⚠️ {len(oncall_skipped)} non créées)"
+                messages.append(msg)
             except Exception as e:
                 db.session.rollback()
                 messages.insert(0, f"❌ Erreur lors de la sauvegarde : {str(e)}")
                 return [], messages
-        else:
-            # Pour le dry run, générer un résumé
-            if 'oncall_created' in locals() and oncall_created:
-                messages.append(f"📋 Prévisualisation : {len(generated_oncalls)} astreintes seraient créées")
+        elif not generated_oncalls:
+            # Aucun astreinte générée
             if 'oncall_skipped' in locals() and oncall_skipped:
-                messages.append(f"⚠️ {len(oncall_skipped)} astreintes ne pourraient pas être créées")
+                messages.append(f"⚠️ Aucune astreinte générée ({len(oncall_skipped)} périodes sans utilisateur disponible)")
+            else:
+                messages.append("⚠️ Aucune astreinte générée")
+        else:
+            # Dry run avec des astreintes générées
+            msg = f"📋 Prévisualisation : {len(generated_oncalls)} astreintes seraient créées"
+            if 'oncall_skipped' in locals() and oncall_skipped:
+                msg += f" (⚠️ {len(oncall_skipped)} non créées)"
+            messages.append(msg)
         
         return generated_oncalls, messages
 
@@ -721,20 +727,26 @@ class ShiftAutomation:
                 db.session.add_all(generated_shifts)
                 db.session.commit()
                 # Générer un résumé
-                if 'shifts_created' in locals() and shifts_created:
-                    messages.append(f"✅ {len(generated_shifts)} shifts générés avec succès !")
+                msg = f"✅ {len(generated_shifts)} shifts générés avec succès !"
                 if 'shifts_skipped' in locals() and shifts_skipped:
-                    messages.append(f"⚠️ {len(shifts_skipped)} shifts non créés (aucun utilisateur disponible)")
+                    msg += f" (⚠️ {len(shifts_skipped)} non créés)"
+                messages.append(msg)
             except Exception as e:
                 db.session.rollback()
                 messages.insert(0, f"❌ Erreur lors de la sauvegarde : {str(e)}")
                 return [], messages
-        else:
-            # Pour le dry run, générer un résumé
-            if 'shifts_created' in locals() and shifts_created:
-                messages.append(f"📋 Prévisualisation : {len(generated_shifts)} shifts seraient créés")
+        elif not generated_shifts:
+            # Aucun shift généré
             if 'shifts_skipped' in locals() and shifts_skipped:
-                messages.append(f"⚠️ {len(shifts_skipped)} shifts ne pourraient pas être créés")
+                messages.append(f"⚠️ Aucun shift généré ({len(shifts_skipped)} besoins non satisfaits)")
+            else:
+                messages.append("⚠️ Aucun shift généré")
+        else:
+            # Dry run avec des shifts générés
+            msg = f"📋 Prévisualisation : {len(generated_shifts)} shifts seraient créés"
+            if 'shifts_skipped' in locals() and shifts_skipped:
+                msg += f" (⚠️ {len(shifts_skipped)} non créés)"
+            messages.append(msg)
         
         return generated_shifts, messages
 
