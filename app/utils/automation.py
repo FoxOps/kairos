@@ -283,6 +283,78 @@ class OnCallAutomation:
         return None
     
     @staticmethod
+    def find_user_with_legal_constraint_only(
+        rotation_order: List[User],
+        start_time: datetime,
+        end_time: datetime,
+        existing_oncalls: Optional[List[OnCall]] = None
+    ) -> Optional[User]:
+        """
+        Trouve un utilisateur qui respecte au moins la contrainte légale (2 semaines entre astreintes).
+        Cette méthode est utilisée comme fallback lorsque aucun utilisateur n'est disponible
+        normalement, mais il faut absolument assigner quelqu'un (règle : minimum 1 personne d'astreinte par semaine).
+        
+        Un utilisateur est éligible s'il respecte :
+        - La contrainte légale (2 semaines minimum entre les astreintes)
+        
+        Il peut avoir :
+        - Un congé qui chevauche (on l'assigne quand même)
+        - Une astreinte qui chevauche (on l'assigne quand même)
+        
+        Args:
+            rotation_order: Liste des utilisateurs dans l'ordre de rotation
+            start_time: Date/heure de début de l'astreinte
+            end_time: Date/heure de fin de l'astreinte
+            existing_oncalls: Liste des astreintes déjà générées (pour vérifier la contrainte)
+        
+        Returns:
+            Le premier utilisateur respectant la contrainte légale, ou None si aucun n'existe
+        """
+        if not rotation_order:
+            return None
+        
+        # Vérifier la contrainte légale pour tous les utilisateurs
+        last_oncall_map = {}
+        
+        # D'abord, les astreintes existantes en base
+        user_ids = [user.id for user in rotation_order]
+        db_last_oncalls = db.session.query(
+            OnCall.user_id,
+            OnCall.end_time
+        ).filter(
+            OnCall.user_id.in_(user_ids)
+        ).order_by(
+            OnCall.user_id,
+            OnCall.end_time.desc()
+        ).all()
+        
+        for user_id, end_time in db_last_oncalls:
+            if user_id not in last_oncall_map:
+                last_oncall_map[user_id] = end_time
+        
+        # Ensuite, prendre en compte les astreintes déjà générées (passées en paramètre)
+        if existing_oncalls:
+            for oncall in existing_oncalls:
+                if oncall.user_id in user_ids:
+                    # Garder la plus récente
+                    if oncall.user_id not in last_oncall_map or oncall.end_time > last_oncall_map[oncall.user_id]:
+                        last_oncall_map[oncall.user_id] = oncall.end_time
+        
+        # Parcourir les utilisateurs dans l'ordre de rotation
+        for user in rotation_order:
+            # Vérifier la contrainte légale (2 semaines minimum entre les astreintes)
+            if user.id in last_oncall_map:
+                last_end = last_oncall_map[user.id]
+                weeks_between = (start_time - last_end).days / 7
+                if weeks_between < 2:
+                    continue
+            
+            # Si on arrive ici, l'utilisateur respecte la contrainte légale
+            return user
+        
+        return None
+    
+    @staticmethod
     def generate_oncall_schedule(
         start_date: date,
         end_date: date,
@@ -339,6 +411,20 @@ class OnCallAutomation:
             user = OnCallAutomation.find_next_available_user(
                 rotation_order, start_time, end_time, generated_oncalls
             )
+            
+            # RÈGLE : Il doit y avoir au minimum une personne d'astreinte par semaine
+            # Si aucun utilisateur n'est disponible normalement, essayer de trouver un utilisateur
+            # qui respecte au moins la contrainte légale (2 semaines entre les astreintes)
+            if not user:
+                user = OnCallAutomation.find_user_with_legal_constraint_only(
+                    rotation_order, start_time, end_time, generated_oncalls
+                )
+            
+            # Si toujours aucun utilisateur (même en relâchant les contraintes de congé/chevauchement),
+            # prendre le premier dans la rotation comme dernier recours
+            if not user:
+                user = rotation_order[0]
+                messages.append(f"⚠️ Aucun utilisateur disponible pour l'astreinte du {start_time.strftime('%d/%m/%Y %Hh')}. {user.name} a été assigné malgré les conflits.")
             
             if user:
                 # Créer l'astreinte

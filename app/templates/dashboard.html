@@ -69,7 +69,7 @@
 
         <!-- Statistiques principales -->
         <div class="columns is-multiline">
-            <div class="column is-3">
+            <div class="column is-4">
                 <div class="box dashboard-card">
                     <div class="content">
                         <div class="has-text-centered">
@@ -83,7 +83,7 @@
                 </div>
             </div>
 
-            <div class="column is-3">
+            <div class="column is-4">
                 <div class="box dashboard-card">
                     <div class="content">
                         <div class="has-text-centered">
@@ -97,7 +97,7 @@
                 </div>
             </div>
 
-            <div class="column is-3">
+            <div class="column is-4">
                 <div class="box dashboard-card">
                     <div class="content">
                         <div class="has-text-centered">
@@ -111,19 +111,7 @@
                 </div>
             </div>
 
-            <div class="column is-3">
-                <div class="box dashboard-card">
-                    <div class="content">
-                        <div class="has-text-centered">
-                            <span class="icon is-large has-text-success">
-                                <i class="fas fa-3x fa-clock" aria-hidden="true"></i>
-                            </span>
-                            <p class="stat-label mt-2">Heures ce mois</p>
-                            <p class="stat-number has-text-success">{{ "%.1f" % total_hours_this_month }}h</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
         </div>
 
         <!-- Statistiques par type de shift -->
@@ -132,6 +120,7 @@
             <div class="column is-12">
                 <div class="box">
                     <h2 class="title is-5"><i class="fas fa-chart-bar" aria-hidden="true"></i> Répartition par type de shift</h2>
+                    <p class="subtitle is-6 has-text-grey">Nombre de shifts par créneau horaire (ex: 07h-15h, 09h-17h, 13h-21h)</p>
                     <div class="chart-container">
                         {% for stat in shift_types_stats %}
                         {% set max_count = shift_types_stats|map(attribute='count')|max %}
@@ -250,110 +239,6 @@
                             <p>Aucun shift récent</p>
                         </div>
                     {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Actions rapides -->
-        <div class="columns">
-            <div class="column is-12">
-                <div class="box">
-                    <h2 class="title is-5"><i class="fas fa-bolt" aria-hidden="true"></i> Actions rapides</h2>
-                    <div class="buttons is-centered">
-                        <a class="button is-primary" href="{{ url_for('schedule') }}">
-                            <span class="icon">
-                                <i class="fas fa-calendar-alt" aria-hidden="true"></i>
-                            </span>
-                            <span>Voir mon planning</span>
-                        </a>
-                        <a class="button is-info" href="{{ url_for('oncall') }}">
-                            <span class="icon">
-                                <i class="fas fa-moon" aria-hidden="true"></i>
-                            </span>
-                            <span>Voir les astreintes</span>
-                        </a>
-                        <a class="button is-warning" href="{{ url_for('leave') }}">
-                            <span class="icon">
-                                <i class="fas fa-umbrella-beach" aria-hidden="true"></i>
-                            </span>
-                            <span>Gérer mes congés</span>
-                        </a>
-                        <a class="button is-success" href="{{ url_for('add_shift') }}">
-                            <span class="icon">
-                                <i class="fas fa-plus" aria-hidden="true"></i>
-                            </span>
-                            <span>Ajouter un shift</span>
-                        </a>
-                        {% if user.ics_token %}
-                        <a class="button is-link" href="{{ url_for('generate_ics_token') }}" target="_blank">
-                            <span class="icon">
-                                <i class="fas fa-file-export" aria-hidden="true"></i>
-                            </span>
-                            <span>Exporter mon calendrier</span>
-                        </a>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Informations utilisateur -->
-        <div class="columns">
-            <div class="column is-12">
-                <div class="box">
-                    <h2 class="title is-5"><i class="fas fa-user-circle" aria-hidden="true"></i> Mes informations</h2>
-                    <div class="columns">
-                        <div class="column is-4">
-                            <div class="field is-horizontal">
-                                <div class="field-label is-normal">
-                                    <label class="label">Nom</label>
-                                </div>
-                                <div class="field-body">
-                                    <p class="control">{{ user.name }}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="column is-4">
-                            <div class="field is-horizontal">
-                                <div class="field-label is-normal">
-                                    <label class="label">Email</label>
-                                </div>
-                                <div class="field-body">
-                                    <p class="control">{{ user.email }}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="column is-4">
-                            <div class="field is-horizontal">
-                                <div class="field-label is-normal">
-                                    <label class="label">Groupe</label>
-                                </div>
-                                <div class="field-body">
-                                    <p class="control">
-                                        <span class="tag is-info">{{ user.group.name if user.group else 'Aucun' }}</span>
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="field is-grouped is-grouped-centered mt-4">
-                        <div class="control">
-                            <a href="{{ url_for('profile') }}" class="button is-small is-outlined">
-                                <span class="icon">
-                                    <i class="fas fa-user-edit" aria-hidden="true"></i>
-                                </span>
-                                <span>Modifier mon profil</span>
-                            </a>
-                        </div>
-                        <div class="control">
-                            <a href="{{ url_for('generate_ics_token') }}" class="button is-small is-outlined">
-                                <span class="icon">
-                                    <i class="fas fa-calendar-alt" aria-hidden="true"></i>
-                                </span>
-                                <span>Gérer mon token ICS</span>
-                            </a>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

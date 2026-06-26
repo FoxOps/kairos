@@ -344,9 +344,8 @@ class TestLoggingConfiguration:
             import logging
             
             # Vérifier que le dossier logs existe
+            # Note: __file__ est dans tests/, donc on remonte d'un niveau pour atteindre le répertoire du projet
             log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs')
-            # Note: __file__ est dans tests/, donc on remonte de deux niveaux
-            log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'logs')
             
             # Le dossier peut ne pas exister si on est en mode test
             # On vérifie juste que la fonction setup_logging a été appelée

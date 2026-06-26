@@ -200,9 +200,12 @@ def add_leave():
             
             # Rééquilibrer automatiquement les shifts après l'ajout d'un congé
             try:
-                _, rebalance_messages = AdvancedShiftAutomation.rebalance_after_leave(new_leave, dry_run=False)
-                for msg in rebalance_messages:
-                    flash(msg, "info")
+                regenerated_shifts, rebalance_messages = AdvancedShiftAutomation.rebalance_after_leave(new_leave, dry_run=False)
+                # Afficher un message résumé au lieu de tous les messages détaillés
+                if regenerated_shifts:
+                    flash(f"✅ Congé ajouté. {len(regenerated_shifts)} shifts ont été recalculés.", "success")
+                else:
+                    flash("✅ Congé ajouté. Aucun shift à recalculer.", "success")
             except Exception as e:
                 flash(f"⚠️ Rééquilibrage automatique des shifts échoué : {str(e)}", "warning")
             
@@ -236,9 +239,12 @@ def delete_leave(leave_id):
         
         # Rééquilibrer automatiquement les shifts après la suppression d'un congé
         try:
-            _, rebalance_messages = AdvancedShiftAutomation.rebalance_after_leave(leave_record, dry_run=False)
-            for msg in rebalance_messages:
-                flash(msg, "info")
+            regenerated_shifts, rebalance_messages = AdvancedShiftAutomation.rebalance_after_leave(leave_record, dry_run=False)
+            # Afficher un message résumé au lieu de tous les messages détaillés
+            if regenerated_shifts:
+                flash(f"✅ Congé supprimé. {len(regenerated_shifts)} shifts ont été recalculés.", "success")
+            else:
+                flash("✅ Congé supprimé. Aucun shift à recalculer.", "success")
         except Exception as e:
             flash(f"⚠️ Rééquilibrage automatique des shifts échoué : {str(e)}", "warning")
         
@@ -861,20 +867,8 @@ def user_dashboard():
                 'count': count
             })
     
-    # Heures travaillées ce mois-ci
-    first_day_of_month = date(today.year, today.month, 1)
-    shifts_this_month = Shift.query.filter(
-        Shift.user_id == user_id,
-        Shift.date >= first_day_of_month,
-        Shift.date <= today
-    ).all()
-    
-    total_hours_this_month = sum(
-        (shift.end_time - shift.start_time).total_seconds() / 3600
-        for shift in shifts_this_month
-    )
-    
     # Astreintes ce mois-ci
+    first_day_of_month = date(today.year, today.month, 1)
     oncalls_this_month = OnCall.query.filter(
         OnCall.user_id == user_id,
         OnCall.start_time >= datetime.combine(first_day_of_month, datetime.min.time()),
@@ -891,7 +885,6 @@ def user_dashboard():
         upcoming_leaves=upcoming_leaves,
         recent_shifts=recent_shifts,
         shift_types_stats=shift_types_stats,
-        total_hours_this_month=total_hours_this_month,
         oncalls_this_month=oncalls_this_month,
         user=current_user
     )

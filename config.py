@@ -186,7 +186,7 @@ class Config:
     LOG_LEVEL = os.environ.get("LOG_LEVEL") or "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
     LOG_FILE_SIZE = get_int_from_env("LOG_FILE_SIZE", 5 * 1024 * 1024)  # 5 Mo par fichier de log
     LOG_BACKUP_COUNT = get_int_from_env("LOG_BACKUP_COUNT", 10)  # Nombre de fichiers de backup
-    LOG_DIR = os.environ.get("LOG_DIR") or os.path.join(os.path.dirname(__file__), '..', 'logs')
+    LOG_DIR = os.environ.get("LOG_DIR") or os.path.join(os.path.dirname(__file__), 'logs')
     
     # Configuration des fichiers de log
     LOG_FILE_APP = os.environ.get("LOG_FILE_APP") or "leviia-app.log"
