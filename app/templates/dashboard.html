@@ -4,51 +4,21 @@
 
 {% block extra_css %}
 <style>
-    .dashboard-card {
-        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    }
-    .dashboard-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
+    /* Styles minimaux - respect strict de Bulma */
     .stat-number {
         font-size: 2.5rem;
         font-weight: bold;
-        color: var(--bulma-primary);
     }
     .stat-label {
         font-size: 0.9rem;
-        color: var(--bulma-text-light);
+        color: #4a4a4a;
         text-transform: uppercase;
         letter-spacing: 1px;
     }
-    .progress-wrapper {
-        margin-top: 1rem;
-        height: 8px;
-        background-color: var(--bulma-background);
-        border-radius: 4px;
-        overflow: hidden;
-    }
-    .progress-bar {
-        height: 100%;
-        border-radius: 4px;
-        transition: width 0.5s ease-in-out;
-    }
     .upcoming-item {
-        border-left: 3px solid var(--bulma-primary);
+        border-left: 3px solid #00d1b2;
         padding-left: 1rem;
         margin-bottom: 0.75rem;
-    }
-    .upcoming-item:last-child {
-        margin-bottom: 0;
-    }
-    .type-tag {
-        display: inline-block;
-        padding: 0.25rem 0.5rem;
-        border-radius: 4px;
-        font-size: 0.75rem;
-        font-weight: bold;
-        margin-right: 0.5rem;
     }
     .chart-container {
         height: 200px;
@@ -60,16 +30,15 @@
     .chart-bar {
         flex: 1;
         margin: 0 0.25rem;
-        background-color: var(--bulma-primary);
+        background-color: #00d1b2;
         border-radius: 4px 4px 0 0;
         position: relative;
-        transition: height 0.5s ease-in-out;
     }
     .chart-bar-label {
         text-align: center;
         font-size: 0.75rem;
         margin-top: 0.5rem;
-        color: var(--bulma-text-light);
+        color: #4a4a4a;
     }
     .chart-value {
         position: absolute;
@@ -78,17 +47,12 @@
         transform: translateX(-50%);
         font-size: 0.85rem;
         font-weight: bold;
-        color: var(--bulma-primary);
+        color: #00d1b2;
     }
     .empty-state {
         text-align: center;
         padding: 2rem;
-        color: var(--bulma-text-light);
-    }
-    .empty-state i {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        color: var(--bulma-grey-lighter);
+        color: #4a4a4a;
     }
 </style>
 {% endblock %}
