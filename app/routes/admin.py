@@ -605,7 +605,34 @@ def automation_full():
                         end_date=end_date,
                     )
                 else:
-                    # Générer automatiquement les shifts après les astreintes
+                    # Supprimer les astreintes et shifts existants pour la période avant de régénérer
+                    from app.models import Shift, OnCall
+                    
+                    # Supprimer les astreintes existantes pour la période
+                    existing_oncalls = OnCall.query.filter(
+                        OnCall.start_time >= datetime.combine(start_date, datetime.min.time()),
+                        OnCall.end_time <= datetime.combine(end_date, datetime.max.time())
+                    ).all()
+                    
+                    if existing_oncalls:
+                        for oncall in existing_oncalls:
+                            db.session.delete(oncall)
+                        db.session.commit()
+                        flash(f"🗑️ {len(existing_oncalls)} astreintes existantes supprimées pour la période", "info")
+                    
+                    # Supprimer les shifts existants pour la période
+                    existing_shifts = Shift.query.filter(
+                        Shift.date >= start_date,
+                        Shift.date <= end_date
+                    ).all()
+                    
+                    if existing_shifts:
+                        for shift in existing_shifts:
+                            db.session.delete(shift)
+                        db.session.commit()
+                        flash(f"🗑️ {len(existing_shifts)} shifts existants supprimés pour la période", "info")
+                    
+                    # Générer automatiquement les astreintes et shifts
                     shifts, shift_messages = AdvancedShiftAutomation.generate_full_schedule(
                         start_date, end_date, dry_run=False
                     )
@@ -615,6 +642,7 @@ def automation_full():
                     for msg in shift_messages:
                         flash(msg, "success" if "✅" in msg or "🎉" in msg else "warning" if "⚠️" in msg else "info")
                     
+                    flash(f"🔄 Régénération complète terminée pour la période du {start_date.strftime('%d/%m/%Y')} au {end_date.strftime('%d/%m/%Y')}", "success")
                     return redirect(url_for("automation_full"))
                 
             except ValueError as e:
