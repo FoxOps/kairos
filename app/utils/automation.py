@@ -179,7 +179,8 @@ class OnCallAutomation:
     def find_next_available_user(
         rotation_order: List[User],
         start_time: datetime,
-        end_time: datetime
+        end_time: datetime,
+        existing_oncalls: Optional[List[OnCall]] = None
     ) -> Optional[User]:
         """
         Trouve le prochain utilisateur disponible dans l'ordre de rotation.
@@ -193,6 +194,7 @@ class OnCallAutomation:
             rotation_order: Liste des utilisateurs dans l'ordre de rotation
             start_time: Date/heure de début de l'astreinte
             end_time: Date/heure de fin de l'astreinte
+            existing_oncalls: Liste des astreintes déjà générées (pour vérifier la contrainte)
         
         Returns:
             Le premier utilisateur disponible, ou None si aucun n'est disponible
@@ -215,6 +217,14 @@ class OnCallAutomation:
         ).all()
         users_with_oncall_conflict = {oc.user_id for oc in oncall_conflicts}
         
+        # Ajouter les conflits avec les astreintes déjà générées (passées en paramètre)
+        if existing_oncalls:
+            for oncall in existing_oncalls:
+                if oncall.user_id in user_ids:
+                    # Vérifier si cette astreinte chevauche la période demandée
+                    if oncall.start_time < end_time and oncall.end_time > start_time:
+                        users_with_oncall_conflict.add(oncall.user_id)
+        
         # Récupérer tous les utilisateurs avec des congés chevauchants en une seule requête
         users_with_leave = set()
         leave_conflicts = db.session.query(Leave.user_id).filter(
@@ -225,8 +235,11 @@ class OnCallAutomation:
         users_with_leave = {lc.user_id for lc in leave_conflicts}
         
         # Vérifier la contrainte légale pour tous les utilisateurs
-        # On récupère la dernière astreinte pour chaque utilisateur
-        last_oncalls = db.session.query(
+        # On récupère la dernière astreinte pour chaque utilisateur (en base + en cours de génération)
+        last_oncall_map = {}
+        
+        # D'abord, les astreintes existantes en base
+        db_last_oncalls = db.session.query(
             OnCall.user_id,
             OnCall.end_time
         ).filter(
@@ -236,11 +249,17 @@ class OnCallAutomation:
             OnCall.end_time.desc()
         ).all()
         
-        # Créer un mapping user_id -> last_oncall_end_time
-        last_oncall_map = {}
-        for user_id, end_time in last_oncalls:
+        for user_id, end_time in db_last_oncalls:
             if user_id not in last_oncall_map:
                 last_oncall_map[user_id] = end_time
+        
+        # Ensuite, prendre en compte les astreintes déjà générées (passées en paramètre)
+        if existing_oncalls:
+            for oncall in existing_oncalls:
+                if oncall.user_id in user_ids:
+                    # Garder la plus récente
+                    if oncall.user_id not in last_oncall_map or oncall.end_time > last_oncall_map[oncall.user_id]:
+                        last_oncall_map[oncall.user_id] = oncall.end_time
         
         # Parcourir les utilisateurs dans l'ordre de rotation
         for user in rotation_order:
@@ -315,8 +334,9 @@ class OnCallAutomation:
                 break
             
             # Trouver un utilisateur disponible
+            # Passer les astreintes déjà générées pour vérifier la contrainte des 2 semaines
             user = OnCallAutomation.find_next_available_user(
-                rotation_order, start_time, end_time
+                rotation_order, start_time, end_time, generated_oncalls
             )
             
             if user:
