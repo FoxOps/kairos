@@ -113,6 +113,21 @@ def copy_webfonts_to_vendor():
         import shutil
         shutil.copytree(str(webfonts_source), str(webfonts_target))
         print(f"  ✅ Fichiers copiés: {webfonts_source} -> {webfonts_target}")
+        
+        # Patcher le CSS pour utiliser des chemins absolus
+        css_file = VENDOR_DIR / "font-awesome" / "all.min.css"
+        if css_file.exists():
+            with open(css_file, 'r') as f:
+                css_content = f.read()
+            
+            # Remplacer les chemins relatifs par des chemins absolus
+            css_patched = css_content.replace('../webfonts/', '/static/vendor/webfonts/')
+            
+            with open(css_file, 'w') as f:
+                f.write(css_patched)
+            
+            print(f"  ✅ CSS patché pour utiliser des chemins absolus")
+        
         return True
     except Exception as e:
         print(f"  ❌ Impossible de copier les fichiers: {e}")
