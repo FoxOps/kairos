@@ -3,8 +3,8 @@
 Script pour télécharger les ressources statiques (Bulma, Font Awesome, FullCalendar)
 nécessaires pour l'application Leviia Schedule.
 
-Ce script télécharge les fichiers CSS/JS depuis les CDN et les place dans app/static/vendor/
-pour permettre un fonctionnement hors ligne.
+Ce script télécharge les fichiers CSS/JS depuis les CDN ou les archives officielles
+et les place dans app/static/vendor/ pour permettre un fonctionnement hors ligne.
 
 Utilise urllib.request au lieu de requests pour éviter les dépendances externes.
 """
@@ -26,42 +26,28 @@ RESOURCES = {
         "url": "https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.css",
         "path": VENDOR_DIR / "bulma" / "bulma.css"
     },
+    # Font Awesome 7.2.0 - CSS principal
     "font-awesome": {
-        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
+        "url": "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.2.0/css/all.min.css",
         "path": VENDOR_DIR / "font-awesome" / "all.min.css"
     },
-    # Font Awesome webfonts (polices nécessaires pour le CSS)
-    "font-awesome-webfonts": {
-        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-brands-400.woff2",
+    # Font Awesome 7.2.0 webfonts (polices nécessaires pour le CSS)
+    # Note: Font Awesome 7.2.0 ne fournit que des fichiers WOFF2 (pas de TTF)
+    "font-awesome-webfonts-brands-400": {
+        "url": "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.2.0/webfonts/fa-brands-400.woff2",
         "path": VENDOR_DIR / "font-awesome" / "webfonts" / "fa-brands-400.woff2"
     },
-    "font-awesome-webfonts-2": {
-        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-brands-400.ttf",
-        "path": VENDOR_DIR / "font-awesome" / "webfonts" / "fa-brands-400.ttf"
-    },
-    "font-awesome-webfonts-3": {
-        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-regular-400.woff2",
+    "font-awesome-webfonts-regular-400": {
+        "url": "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.2.0/webfonts/fa-regular-400.woff2",
         "path": VENDOR_DIR / "font-awesome" / "webfonts" / "fa-regular-400.woff2"
     },
-    "font-awesome-webfonts-4": {
-        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-regular-400.ttf",
-        "path": VENDOR_DIR / "font-awesome" / "webfonts" / "fa-regular-400.ttf"
-    },
-    "font-awesome-webfonts-5": {
-        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-solid-900.woff2",
+    "font-awesome-webfonts-solid-900": {
+        "url": "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.2.0/webfonts/fa-solid-900.woff2",
         "path": VENDOR_DIR / "font-awesome" / "webfonts" / "fa-solid-900.woff2"
     },
-    "font-awesome-webfonts-6": {
-        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-solid-900.ttf",
-        "path": VENDOR_DIR / "font-awesome" / "webfonts" / "fa-solid-900.ttf"
-    },
-    "font-awesome-webfonts-7": {
-        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-v4compatibility.woff2",
+    "font-awesome-webfonts-v4compatibility": {
+        "url": "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.2.0/webfonts/fa-v4compatibility.woff2",
         "path": VENDOR_DIR / "font-awesome" / "webfonts" / "fa-v4compatibility.woff2"
-    },
-    "font-awesome-webfonts-8": {
-        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/webfonts/fa-v4compatibility.ttf",
-        "path": VENDOR_DIR / "font-awesome" / "webfonts" / "fa-v4compatibility.ttf"
     },
     # FullCalendar v6.1.21 - JS principal (inclut déjà interaction, daygrid, timegrid, list, multimonth)
     "fullcalendar-v6-js": {
