@@ -139,7 +139,7 @@ leviia-schedule/
 │   ├── API.md             # Documentation API REST
 │   ├── ERROR_HANDLING.md  # Gestion des erreurs
 │   └── SUMMARY.md         # Résumé technique
-└── tests/                  # Tests unitaires (403 tests)
+└── tests/                  # Tests unitaires (522 tests)
 ```
 
 > **📖 Documentation technique** : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
@@ -148,7 +148,7 @@ leviia-schedule/
 
 ## 🧪 Tests et Qualité de Code
 
-> **✅ Statut** : **403 tests** - Tous passent - Couverture : ~66%
+> **⚠️ Statut** : **522 tests** - 515 passent, 2 échouent, 7 ignorés - Couverture : ~66%
 
 ### Exécuter les tests
 
@@ -227,7 +227,7 @@ Pour toute question ou suggestion, n'hésitez pas à ouvrir une **Issue** ou une
 - **Statut** : Développement actif
 - **Stabilité** : Non recommandé pour la production
 - **Fonctionnalités** : Toutes les fonctionnalités de base sont implémentées
-- **Tests** : 403 tests unitaires (tous passent)
+- **Tests** : 522 tests unitaires (515 passent, 2 échouent, 7 ignorés)
 - **Couverture** : ~66%
 
 > **📖 Feuille de route** : [ROADMAP.md](ROADMAP.md)

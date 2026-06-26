@@ -2,13 +2,14 @@
 
 ## 📊 Aperçu Global
 
-- **Date de mise à jour** : 25 juin 2025
-- **Nombre total de tests** : 505
-- **Tests réussis** : 505 ✅
-- **Tests échoués** : 0 ❌
-- **Taux de réussite** : 100%
-- **Durée totale** : ~1 minute 10 secondes
-- **Couverture de code** : **80%** ✅
+- **Date de mise à jour** : 26 juin 2026
+- **Nombre total de tests** : 522
+- **Tests réussis** : 515 ✅
+- **Tests échoués** : 2 ❌
+- **Tests ignorés** : 7
+- **Taux de réussite** : ~98.7%
+- **Durée totale** : ~1 minute 15 secondes
+- **Couverture de code** : **~66%** ⚠️
 - **Avertissements** : 1 ⚠️
 
 ---
@@ -64,7 +65,7 @@ tests/
 
 ## 📈 Résultats par Catégorie
 
-### ✅ Tous les tests passent (411/411)
+### ⚠️ 515 tests passent, 2 échouent, 7 ignorés (522/522)
 
 #### Configuration et Initialisation
 - **test_config.py** : 16/16 tests passés
@@ -74,28 +75,28 @@ tests/
   - Mode test
 
 #### Authentification et Autorisation
-- **test_auth_priority.py** : 15/15 tests passés
+- **test_auth_priority.py** : 17/17 tests passés
   - Routes d'inscription, connexion, déconnexion
   - Gestion des profils utilisateurs
   - Protection des routes
   - Gestion des cookies
 
 #### Routes Principales
-- **test_main_priority.py** : Tous les tests passés
+- **test_main_priority.py** : 9/9 tests passés
   - Routes principales de l'application
   - Gestion des priorités
 
 #### Administration
-- **test_admin_lists.py** : 22/22 tests passés
+- **test_admin_lists.py** : 20/20 tests passés
   - Gestion des groupes, utilisateurs, types de shifts
   - Routes d'administration
   - Autorisations
 
-- **test_admin_priority.py** : 15/15 tests passés
+- **test_admin_priority.py** : 18/18 tests passés
   - Édition et suppression des ressources
   - Gestion des contraintes
 
-- **test_admin_automation.py** : 15/15 tests passés
+- **test_admin_automation.py** : 16/16 tests passés
   - Tableau de bord d'automatisation
   - Génération des shifts
   - Statut de l'automatisation
@@ -107,7 +108,7 @@ tests/
   - Règles métiers
   - Cas limites
 
-- **test_advanced_shift_automation.py** : 28/28 tests passés
+- **test_advanced_shift_automation.py** : 31/31 tests passés
   - Génération quotidienne des shifts
   - Rotation des utilisateurs
   - Contraintes on-call
@@ -117,38 +118,45 @@ tests/
   - Correction de la rotation des shifts
   - Gestion du premier jour on-call
 
+- **test_automation_full.py** : 10/12 tests passés, **2 échouent** ⚠️
+  - Scénarios complexes d'automatisation
+  - Tests d'intégration complète
+
+- **test_automation_unit.py** : 22/22 tests passés
+  - Tests unitaires de l'automatisation
+
 #### Export et Intégrations
-- **test_export_routes.py** : Tous les tests passés
+- **test_export_routes.py** : 27/27 tests passés
   - Export ICS des plannings
   - Routes d'export
 
-- **test_ics_export.py** : Tous les tests passés
+- **test_ics_export.py** : 13/13 tests passés
   - Génération des fichiers ICS
   - Formatage des événements
 
 #### Modèles de Données
-- **test_models.py** : Tous les tests passés
+- **test_models.py** : 20/20 tests passés
   - Modèles User, Shift, OnCall, Leave, Group, ShiftType
   - Relations entre modèles
   - Validations
 
 #### Routes Générales
-- **test_routes.py** : Tous les tests passés
+- **test_routes.py** : 51/51 tests passés
   - Routes d'authentification
   - Routes des shifts, on-call, congés
   - Routes d'administration
   - Permissions par rôle
 
 #### Utilitaires
-- **test_helpers.py** : Tous les tests passés
+- **test_helpers.py** : 29/29 tests passés
   - Fonctions utilitaires
   - Calculs et validations
 
-- **test_decorators.py** : Tous les tests passés
+- **test_decorators.py** : 32/32 tests passés
   - Décorateurs personnalisés
   - Vérification des permissions
 
-- **test_decorators_unit.py** : Tous les tests passés
+- **test_decorators_unit.py** : 27/27 tests passés
   - Tests unitaires des décorateurs
 
 #### Thème Sombre (Complètement refactorisé)
@@ -177,13 +185,29 @@ tests/
   - ✅ Styles de focus pour l'accessibilité
 
 #### Autres
-- **test_run_functions.py** : Tous les tests passés
+- **test_run_functions.py** : 11/11 tests passés
   - Initialisation de la base de données
   - Intégrité des données
   - Création des données par défaut
 
-- **test_error_handlers.py** : Tous les tests passés
+- **test_error_handlers.py** : 45/45 tests passés
   - Gestion des erreurs
+
+#### Nouveaux tests (ajoutés récemment)
+- **test_main_api.py** : 14/14 tests passés
+  - Tests des endpoints API
+
+- **test_main_delete_all.py** : 14/14 tests passés
+  - Tests de suppression en masse
+
+- **test_main_coverage.py** : 32/32 tests passés
+  - Tests pour la couverture de code
+
+- **test_theme_fixes.py** : 12/12 tests passés
+  - Tests des corrections du thème
+
+- **test_vendor_assets.py** : 7/7 tests passés
+  - Tests des assets vendors
 
 ---
 
@@ -321,8 +345,8 @@ DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for r
   - `test_main_api.py` (11 tests pour les endpoints API)
   - `test_main_delete_all.py` (10 tests pour les suppressions en masse)
 - ✅ **Configuration de .coveragerc** pour exclure les modules d'optimisation non critiques
-- ✅ **505 tests** passent maintenant (auparavant 403)
-- ✅ **Couverture globale** : **80%** (sur le code métier principal)
+- ✅ **515 tests** passent maintenant (auparavant 403, puis 505)
+- ✅ **Couverture globale** : **~66%** (sur le code métier principal)
 
 **Modules exclus de la couverture** (car non critiques pour la fonctionnalité métier) :
 - `app/utils/cache.py` - Module de cache (optimisation)
@@ -352,35 +376,39 @@ DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for r
 |----------------|-------|--------|---------|------------------|
 | test_config.py | 16 | 16 | 0 | 100% |
 | test_auth_priority.py | 15 | 15 | 0 | 100% |
-| test_main_priority.py | - | - | 0 | 100% |
-| test_admin_lists.py | 22 | 22 | 0 | 100% |
-| test_admin_priority.py | 15 | 15 | 0 | 100% |
-| test_admin_automation.py | 15 | 15 | 0 | 100% |
+| test_main_priority.py | 9 | 9 | 0 | 100% |
+| test_admin_lists.py | 20 | 20 | 0 | 100% |
+| test_admin_priority.py | 18 | 18 | 0 | 100% |
+| test_admin_automation.py | 16 | 16 | 0 | 100% |
 | test_automation.py | 19 | 19 | 0 | 100% |
-| test_advanced_shift_automation.py | 28 | 28 | 0 | 100% |
+| test_advanced_shift_automation.py | 31 | 31 | 0 | 100% |
 | test_shift_rotation_fix.py | 3 | 3 | 0 | 100% |
-| test_export_routes.py | - | - | 0 | 100% |
-| test_ics_export.py | - | - | 0 | 100% |
-| test_models.py | - | - | 0 | 100% |
-| test_routes.py | - | - | 0 | 100% |
-| test_helpers.py | - | - | 0 | 100% |
-| test_decorators.py | - | - | 0 | 100% |
-| test_decorators_unit.py | - | - | 0 | 100% |
+| test_export_routes.py | 27 | 27 | 0 | 100% |
+| test_ics_export.py | 13 | 13 | 0 | 100% |
+| test_models.py | 20 | 20 | 0 | 100% |
+| test_routes.py | 51 | 51 | 0 | 100% |
+| test_helpers.py | 29 | 29 | 0 | 100% |
+| test_decorators.py | 32 | 32 | 0 | 100% |
+| test_decorators_unit.py | 27 | 27 | 0 | 100% |
 | **test_dark_theme.py** | **22** | **22** | **0** | **100%** |
 | **test_main_coverage.py** | **32** | **32** | **0** | **100%** |
 | **test_automation_unit.py** | **22** | **22** | **0** | **100%** |
-| **test_automation_full.py** | **12** | **12** | **0** | **100%** |
-| **test_main_api.py** | **11** | **11** | **0** | **100%** |
-| **test_main_delete_all.py** | **10** | **10** | **0** | **100%** |
-| test_run_functions.py | - | - | 0 | 100% |
-| test_error_handlers.py | - | - | 0 | 100% |
-| **Total** | **505** | **505** | **0** | **100%** |
+| **test_automation_full.py** | **12** | **10** | **2** | **~83.3%** |
+| **test_main_api.py** | **14** | **14** | **0** | **100%** |
+| **test_main_delete_all.py** | **14** | **14** | **0** | **100%** |
+| test_run_functions.py | 11 | 11 | 0 | 100% |
+| test_error_handlers.py | 45 | 45 | 0 | 100% |
+| test_config.py | 16 | 16 | 0 | 100% |
+| test_auth_priority.py | 17 | 17 | 0 | 100% |
+| test_theme_fixes.py | 12 | 12 | 0 | 100% |
+| test_vendor_assets.py | 7 | 7 | 0 | 100% |
+| **Total** | **522** | **515** | **2** | **~98.7%** |
 
 ---
 
 ## 🎉 Conclusion
 
-Le projet **Leviia Schedule** a maintenant un **taux de réussite de 100%** avec **411 tests** tous passants. 
+Le projet **Leviia Schedule** a maintenant un **taux de réussite de ~98.7%** avec **522 tests** (515 passent, 2 échouent, 7 ignorés). 
 
 ### Points Forts :
 - ✅ **Couverture complète** des fonctionnalités critiques
