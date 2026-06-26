@@ -243,7 +243,6 @@ class AdvancedShiftAutomation:
                         date=date,
                     )
                     generated_shifts.append(shift)
-                    messages.append(f"✅ Shift {start_hour:02d}h-{end_hour:02d}h assigné à {user.name} le {date.strftime('%d/%m/%Y')}")
                 
                 if not dry_run:
                     try:
@@ -278,7 +277,6 @@ class AdvancedShiftAutomation:
                 date=date,
             )
             generated_shifts.append(shift)
-            messages.append(f"✅ Shift {start_hour:02d}h-{end_hour:02d}h assigné à {user.name} le {date.strftime('%d/%m/%Y')}")
         
         if not dry_run and generated_shifts:
             try:
@@ -289,7 +287,13 @@ class AdvancedShiftAutomation:
                 messages.append(f"❌ Erreur : {str(e)}")
                 return [], messages
         
-        return generated_shifts, messages
+        # Retourner un résumé au lieu de messages détaillés
+        if generated_shifts:
+            return generated_shifts, [f"✅ {len(generated_shifts)} shifts générés pour le {date.strftime('%d/%m/%Y')}"]
+        elif date.weekday() >= 5:
+            return [], [f"⏭️ Pas de shift généré pour le {date.strftime('%d/%m/%Y')} (week-end)"]
+        else:
+            return [], [f"⚠️ Aucun shift généré pour le {date.strftime('%d/%m/%Y')}"]
     
     @staticmethod
     def generate_full_schedule(start_date: 'date', end_date: 'date', dry_run: bool = False) -> 'Tuple[list, list]':
@@ -310,13 +314,14 @@ class AdvancedShiftAutomation:
                 from app import db
                 db.session.add_all(all_shifts)
                 db.session.commit()
-                all_messages.insert(0, f"🎉 {len(all_shifts)} shifts générés !")
+                # Retourner un résumé au lieu de messages détaillés
+                return all_shifts, [f"🎉 {len(all_shifts)} shifts générés pour la période du {start_date.strftime('%d/%m/%Y')} au {end_date.strftime('%d/%m/%Y')}"]
             except Exception as e:
                 db.session.rollback()
-                all_messages.insert(0, f"❌ Erreur : {str(e)}")
-                return [], all_messages
+                return [], [f"❌ Erreur : {str(e)}"]
         
-        return all_shifts, all_messages
+        # Pour le dry run, retourner un résumé
+        return all_shifts, [f"📋 Prévisualisation : {len(all_shifts)} shifts seraient générés pour la période du {start_date.strftime('%d/%m/%Y')} au {end_date.strftime('%d/%m/%Y')}"]
     
     @staticmethod
     def rebalance_after_leave(leave: 'Leave', dry_run: bool = False) -> 'Tuple[list, list]':
