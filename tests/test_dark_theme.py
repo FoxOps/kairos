@@ -293,11 +293,13 @@ class TestDarkThemeTemplate:
         assert response.status_code == 200
         html_content = response.data.decode('utf-8')
         
-        # Vérifier la présence des fonctions JavaScript
-        assert 'applyTheme' in html_content
-        assert 'getSystemTheme' in html_content
-        assert 'getCurrentTheme' in html_content
-        assert 'localStorage.setItem' in html_content
+        # Vérifier que le fichier script.js est inclus (centralisation du JS)
+        assert 'script.js' in html_content
+        assert 'src="{{ url_for(\'static\', filename=\'js/script.js\') }}"' in html_content or '/static/js/script.js' in html_content
+        
+        # Vérifier que les anciennes fonctions inline ne sont plus présentes
+        # (car elles sont maintenant dans script.js)
+        assert 'function applyTheme' not in html_content
 
     def test_skip_link_present(self, client):
         """Test que le skip link pour l'accessibilité est présent."""
