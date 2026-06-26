@@ -48,8 +48,9 @@ class TestOnCallAutomationGenerateScheduleFull:
                 dry_run=True
             )
             
-            # Devrait générer 4 astreintes (une par semaine) avec 2 utilisateurs
-            assert len(oncalls) == 4
+            # Devrait générer 5 astreintes (une par semaine) avec 2 utilisateurs
+            # 35 jours = 5 semaines, donc 5 vendredis -> 5 astreintes
+            assert len(oncalls) == 5
 
     def test_respects_start_date(self, app, test_user, test_group):
         """Test que generate_oncall_schedule respecte la date de début."""
@@ -100,7 +101,9 @@ class TestOnCallAutomationGenerateScheduleFull:
             )
             
             # Devrait générer des messages sur les utilisateurs non disponibles
-            assert any('Aucun utilisateur disponible' in msg or 'générée' in msg for msg in messages)
+            # Le message peut être soit "Utilisateur avec contrainte légale seulement" (fallback avec contrainte)
+            # soit "Aucun utilisateur disponible" (fallback sans contrainte)
+            assert any('Utilisateur avec contrainte légale seulement' in msg or 'Aucun utilisateur disponible' in msg or 'générée' in msg for msg in messages)
 
 
 class TestShiftAutomationGenerateScheduleFull:

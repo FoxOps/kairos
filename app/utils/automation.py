@@ -419,6 +419,9 @@ class OnCallAutomation:
                 user = OnCallAutomation.find_user_with_legal_constraint_only(
                     rotation_order, start_time, end_time, generated_oncalls
                 )
+                # Message pour indiquer qu'on utilise le fallback avec contrainte légale
+                if user:
+                    messages.append(f"ℹ️ Utilisateur avec contrainte légale seulement pour l'astreinte du {start_time.strftime('%d/%m/%Y %Hh')}. {user.name} assigné malgré les conflits de congé.")
             
             # Si toujours aucun utilisateur (même en relâchant les contraintes de congé/chevauchement),
             # prendre le premier dans la rotation comme dernier recours
