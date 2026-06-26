@@ -305,7 +305,7 @@ class AdvancedShiftAutomation:
         
         current_date = start_date
         while current_date <= end_date:
-            shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(current_date, dry_run=True)
+            shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(current_date, dry_run=dry_run)
             all_shifts.extend(shifts)
             if shifts:
                 days_with_shifts += 1
@@ -313,22 +313,11 @@ class AdvancedShiftAutomation:
                 days_skipped += 1
             current_date += timedelta(days=1)
         
-        if not dry_run and all_shifts:
-            try:
-                from app import db
-                db.session.add_all(all_shifts)
-                db.session.commit()
-                # Retourner un résumé
-                msg = f"🎉 {len(all_shifts)} shifts générés pour la période du {start_date.strftime('%d/%m/%Y')} au {end_date.strftime('%d/%m/%Y')}"
-                if days_skipped > 0:
-                    msg += f" ({days_with_shifts} jours avec shifts, {days_skipped} jours sans)"
-                return all_shifts, [msg]
-            except Exception as e:
-                db.session.rollback()
-                return [], [f"❌ Erreur : {str(e)}"]
-        
-        # Pour le dry run, retourner un résumé
-        msg = f"📋 Prévisualisation : {len(all_shifts)} shifts seraient générés pour la période du {start_date.strftime('%d/%m/%Y')} au {end_date.strftime('%d/%m/%Y')}"
+        # Retourner un résumé
+        if dry_run:
+            msg = f"📋 Prévisualisation : {len(all_shifts)} shifts seraient générés pour la période du {start_date.strftime('%d/%m/%Y')} au {end_date.strftime('%d/%m/%Y')}"
+        else:
+            msg = f"🎉 {len(all_shifts)} shifts générés pour la période du {start_date.strftime('%d/%m/%Y')} au {end_date.strftime('%d/%m/%Y')}"
         if days_skipped > 0:
             msg += f" ({days_with_shifts} jours avec shifts, {days_skipped} jours sans)"
         return all_shifts, [msg]
