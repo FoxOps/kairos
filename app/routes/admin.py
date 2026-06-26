@@ -575,9 +575,14 @@ def automation_full():
             user_data_sorted = sorted(user_data, key=lambda x: x['position'])
             rotation_order_ids = [u['user_id'] for u in user_data_sorted if u['include']]
             
-            # Si c'est juste pour sauvegarder l'ordre, on affiche un message
+            # Si c'est juste pour sauvegarder l'ordre, on sauvegarde dans la config
             if action == "save_order":
-                flash("✅ Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour appliquer.", "success")
+                try:
+                    from app.utils.config_manager import AutomationConfig
+                    AutomationConfig.save_rotation_order(rotation_order_ids)
+                    flash("✅ Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour appliquer.", "success")
+                except Exception as e:
+                    flash(f"❌ Erreur lors de la sauvegarde de l'ordre : {str(e)}", "danger")
                 return redirect(url_for("automation_full"))
             
             try:
@@ -624,8 +629,7 @@ def automation_full():
     # (si elle existe, sinon utiliser l'ordre par défaut)
     try:
         from app.utils.config_manager import AutomationConfig
-        config = AutomationConfig.load()
-        current_rotation_order = config.get('oncall', {}).get('rotation_order', [])
+        current_rotation_order = AutomationConfig.get_rotation_order()
     except (ImportError, Exception):
         current_rotation_order = None
     
