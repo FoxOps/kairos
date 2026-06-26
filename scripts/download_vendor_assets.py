@@ -114,19 +114,22 @@ def copy_webfonts_to_vendor():
         shutil.copytree(str(webfonts_source), str(webfonts_target))
         print(f"  ✅ Fichiers copiés: {webfonts_source} -> {webfonts_target}")
         
-        # Patcher le CSS pour utiliser des chemins absolus
+        # Patcher le CSS pour utiliser des chemins relatifs
+        # Le CSS est servi depuis /static/vendor/font-awesome/all.min.css
+        # donc ../webfonts/ pointe vers /static/vendor/webfonts/ qui est correct
         css_file = VENDOR_DIR / "font-awesome" / "all.min.css"
         if css_file.exists():
             with open(css_file, 'r') as f:
                 css_content = f.read()
             
-            # Remplacer les chemins relatifs par des chemins absolus
-            css_patched = css_content.replace('../webfonts/', '/static/vendor/webfonts/')
+            # S'assurer que le CSS utilise des chemins relatifs ../webfonts/
+            # (le CSS original utilise déjà ../webfonts/, mais au cas où)
+            css_patched = css_content.replace('/static/vendor/webfonts/', '../webfonts/')
             
             with open(css_file, 'w') as f:
                 f.write(css_patched)
             
-            print(f"  ✅ CSS patché pour utiliser des chemins absolus")
+            print(f"  ✅ CSS patché pour utiliser des chemins relatifs")
         
         return True
     except Exception as e:
