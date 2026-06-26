@@ -4,66 +4,7 @@
 
 {% block extra_css %}
 <!-- FullCalendar v6 - Le CSS est inclus dans le JS, pas de fichier CSS séparé -->
-<style>
-    #calendar {
-        width: 100%;
-        max-width: 100%;
-    }
-    .fc-event-shift {
-        background-color: #00D1B2;
-        border-color: #00D1B2;
-        color: white;
-    }
-    .fc-event-oncall {
-        background-color: #3E8ED0;
-        border-color: #3E8ED0;
-        color: white;
-    }
-    .fc-event-leave {
-        background-color: #F14668;
-        border-color: #F14668;
-        color: white;
-    }
-    /* Style pour le drag & drop */
-    .fc-event-draggable {
-        cursor: move;
-    }
-    .fc-event-resizable {
-        cursor: move;
-    }
-    /* External drag container */
-    .external-event-container {
-        padding: 10px;
-        background: #f5f5f5;
-        border-radius: 4px;
-        margin-bottom: 20px;
-    }
-    .external-event {
-        padding: 8px 12px;
-        margin: 4px;
-        background: #00D1B2;
-        color: white;
-        border-radius: 4px;
-        cursor: move;
-        display: inline-block;
-        font-size: 14px;
-    }
-    .external-event.oncall {
-        background: #3E8ED0;
-    }
-    .external-event.leave {
-        background: #F14668;
-    }
-    /* Feedback visuel pendant le drag */
-    .fc-event-mirror {
-        opacity: 0.75;
-        z-index: 10000;
-    }
-    /* Style pour les événements en cours de modification */
-    .fc-event-selected {
-        box-shadow: 0 0 0 2px #ffeb3b;
-    }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/fullcalendar-styles.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -123,13 +64,13 @@
                 Calendrier interactif - Shifts, astreintes et congés
                 {% if current_user.is_admin %}
                 <div class="is-pulled-right is-flex is-align-items-center gap-2 mb-6">
-                    <span class="tag is-danger" id="edit-mode-status-tag" style="min-width: 180px; justify-content: center;">
+                    <span class="tag is-danger min-w-180" id="edit-mode-status-tag">
                         <i class="fas fa-edit" aria-hidden="true"></i>&nbsp; Mode édition désactivé
                     </span>
-                    <button class="button is-small is-success" id="toggle-edit-mode" style="min-width: 180px;">
+                    <button class="button is-small is-success min-w-180" id="toggle-edit-mode">
                         <i class="fas fa-toggle-on" aria-hidden="true"></i>&nbsp; Activer l'édition
                     </button>
-                    <button class="button is-small is-info" id="toggle-tips" style="min-width: 180px;">
+                    <button class="button is-small is-info min-w-180" id="toggle-tips">
                         <i class="fas fa-eye" aria-hidden="true"></i>&nbsp; Afficher conseils
                     </button>
                 </div>
@@ -138,7 +79,7 @@
             
             <!-- Conteneur pour les événements externes (pour créer de nouveaux shifts) -->
             {% if current_user.is_admin %}
-            <div class="notification is-info is-light mb-4" id="tips-container" style="display: none;">
+            <div class="notification is-info is-light mb-4 d-none" id="tips-container">
                 <p><strong><i class="fas fa-info-circle"></i> Conseils d'utilisation :</strong></p>
                 <ul>
                     <li><strong>Mode édition activé</strong> : Le drag & drop est activé. Cliquez sur un événement (shift, astreinte, congé) pour le supprimer (avec confirmation).</li>
