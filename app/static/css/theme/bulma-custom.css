@@ -1,0 +1,888 @@
+/* ============================================
+   LEVIIA SCHEDULE - BULMA CUSTOM THEME
+   ============================================
+   
+   Ce fichier tend Bulma avec un thme moderne et professionnel
+   tout en respectant l'accessibilit (WCAG 2.1 AA)
+   
+   ============================================ */
+
+/* ============================================
+   VARIABLES DE COULEURS PERSONNALISES
+   ============================================ */
+
+:root {
+    /* Couleurs primaires - Palette moderne et professionnelle */
+    --color-primary: #3B82F6;
+    --color-primary-light: #60A5FA;
+    --color-primary-dark: #2563EB;
+    --color-primary-invert: #FFFFFF;
+    
+    /* Couleurs secondaires */
+    --color-info: #06B6D4;
+    --color-info-light: #22D3EE;
+    --color-info-dark: #0891B2;
+    --color-info-invert: #FFFFFF;
+    
+    --color-success: #10B981;
+    --color-success-light: #34D399;
+    --color-success-dark: #059669;
+    --color-success-invert: #FFFFFF;
+    
+    --color-warning: #F59E0B;
+    --color-warning-light: #FBBF24;
+    --color-warning-dark: #D97706;
+    --color-warning-invert: #000000;
+    
+    --color-danger: #EF4444;
+    --color-danger-light: #F87171;
+    --color-danger-dark: #DC2626;
+    --color-danger-invert: #FFFFFF;
+    
+    /* Couleurs neutres */
+    --color-grey: #6B7280;
+    --color-grey-light: #F3F4F6;
+    --color-grey-dark: #374151;
+    
+    /* Couleurs de fond et texte */
+    --bg-primary: #F9FAFB;
+    --bg-secondary: #FFFFFF;
+    --bg-tertiary: #F3F4F6;
+    
+    --text-primary: #1F2937;
+    --text-secondary: #6B7280;
+    --text-tertiary: #111827;
+    --text-light: #9CA3AF;
+    
+    /* Bordures */
+    --border-primary: #E5E7EB;
+    --border-secondary: #F3F4F6;
+    --border-strong: #D1D5DB;
+    
+    /* Ombres */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    
+    /* Espacements */
+    --size-1: 0.25rem;
+    --size-2: 0.5rem;
+    --size-3: 0.75rem;
+    --size-4: 1rem;
+    --size-5: 1.5rem;
+    --size-6: 2rem;
+    --size-7: 3rem;
+    
+    /* Typographie */
+    --family-primary: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --family-secondary: var(--family-primary);
+    --family-code: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    
+    /* Tailles de police */
+    --size-1: 0.75rem;
+    --size-2: 0.875rem;
+    --size-3: 1rem;
+    --size-4: 1.125rem;
+    --size-5: 1.25rem;
+    --size-6: 1.5rem;
+    --size-7: 2rem;
+    
+    /* Hauteur de ligne */
+    --line-height: 1.6;
+    
+    /* Poids des polices */
+    --weight-light: 300;
+    --weight-normal: 400;
+    --weight-medium: 500;
+    --weight-semibold: 600;
+    --weight-bold: 700;
+    
+    /* Bordures et ombres */
+    --radius: 0.5rem;
+    --radius-small: 0.375rem;
+    --radius-large: 0.75rem;
+    --radius-rounded: 9999px;
+    
+    /* Transitions */
+    --transition: 0.2s ease-in-out;
+    --transition-fast: 0.1s ease-in-out;
+    --transition-slow: 0.3s ease-in-out;
+    
+    /* Taille de la navbar */
+    --navbar-height: 3.5rem;
+}
+
+/* ============================================
+   MAPPAGE VERS LES VARIABLES BULMA
+   ============================================ */
+
+:root {
+    /* Mapper nos variables vers Bulma pour la compatibilit */
+    --bulma-primary: var(--color-primary);
+    --bulma-primary-light: var(--color-primary-light);
+    --bulma-primary-dark: var(--color-primary-dark);
+    
+    --bulma-info: var(--color-info);
+    --bulma-info-light: var(--color-info-light);
+    --bulma-info-dark: var(--color-info-dark);
+    
+    --bulma-success: var(--color-success);
+    --bulma-success-light: var(--color-success-light);
+    --bulma-success-dark: var(--color-success-dark);
+    
+    --bulma-warning: var(--color-warning);
+    --bulma-warning-light: var(--color-warning-light);
+    --bulma-warning-dark: var(--color-warning-dark);
+    
+    --bulma-danger: var(--color-danger);
+    --bulma-danger-light: var(--color-danger-light);
+    --bulma-danger-dark: var(--color-danger-dark);
+    
+    /* Variables de fond et texte Bulma */
+    --bulma-background: var(--bg-primary);
+    --bulma-background-bis: var(--bg-secondary);
+    --bulma-background-ter: var(--bg-tertiary);
+    
+    --bulma-text: var(--text-primary);
+    --bulma-text-weak: var(--text-secondary);
+    --bulma-text-strong: var(--text-tertiary);
+    
+    /* Variables de bordure Bulma */
+    --bulma-border: var(--border-primary);
+    --bulma-border-weak: var(--border-secondary);
+}
+
+/* ============================================
+   STYLES DE BASE POUR BULMA
+   ============================================ */
+
+/* Navbar moderne */
+.navbar {
+    box-shadow: var(--shadow-md);
+    border-bottom: 1px solid var(--border-secondary);
+    min-height: var(--navbar-height);
+}
+
+.navbar.is-primary {
+    background-color: var(--color-primary);
+}
+
+.navbar.is-primary .navbar-item,
+.navbar.is-primary .navbar-link {
+    color: var(--color-primary-invert);
+}
+
+.navbar.is-primary .navbar-item:hover,
+.navbar.is-primary .navbar-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-primary-invert);
+}
+
+.navbar-brand .navbar-item {
+    font-weight: var(--weight-semibold);
+    font-size: var(--size-5);
+}
+
+/* Boutons modernes avec effet hover */
+.button {
+    transition: all var(--transition);
+    border-radius: var(--radius);
+    font-weight: var(--weight-medium);
+}
+
+.button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+/* Variantes de boutons */
+.button.is-primary {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-primary-invert);
+}
+
+.button.is-primary:hover:not(:disabled) {
+    background-color: var(--color-primary-dark);
+    border-color: var(--color-primary-dark);
+}
+
+.button.is-info {
+    background-color: var(--color-info);
+    border-color: var(--color-info);
+    color: var(--color-info-invert);
+}
+
+.button.is-info:hover:not(:disabled) {
+    background-color: var(--color-info-dark);
+    border-color: var(--color-info-dark);
+}
+
+.button.is-success {
+    background-color: var(--color-success);
+    border-color: var(--color-success);
+    color: var(--color-success-invert);
+}
+
+.button.is-success:hover:not(:disabled) {
+    background-color: var(--color-success-dark);
+    border-color: var(--color-success-dark);
+}
+
+.button.is-warning {
+    background-color: var(--color-warning);
+    border-color: var(--color-warning);
+    color: var(--color-warning-invert);
+}
+
+.button.is-warning:hover:not(:disabled) {
+    background-color: var(--color-warning-dark);
+    border-color: var(--color-warning-dark);
+}
+
+.button.is-danger {
+    background-color: var(--color-danger);
+    border-color: var(--color-danger);
+    color: var(--color-danger-invert);
+}
+
+.button.is-danger:hover:not(:disabled) {
+    background-color: var(--color-danger-dark);
+    border-color: var(--color-danger-dark);
+}
+
+/* Cartes (Box) modernes */
+.box {
+    border-radius: var(--radius-large);
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition);
+    border: 1px solid var(--border-secondary);
+    background-color: var(--bg-secondary);
+}
+
+.box:hover {
+    box-shadow: var(--shadow-md);
+}
+
+/* Tags modernes */
+.tag {
+    border-radius: var(--radius-rounded);
+    font-weight: var(--weight-medium);
+    padding: 0.25rem 0.75rem;
+    transition: all var(--transition);
+}
+
+.tag:hover {
+    transform: scale(1.05);
+}
+
+/* Inputs modernes */
+.input,
+.select select,
+.textarea {
+    border-radius: var(--radius);
+    border: 1px solid var(--border-primary);
+    transition: all var(--transition);
+    background-color: var(--bg-secondary);
+}
+
+.input:focus,
+.select select:focus,
+.textarea:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    outline: none;
+}
+
+/* Labels amliors */
+.label {
+    font-weight: var(--weight-medium);
+    color: var(--text-tertiary);
+    margin-bottom: 0.25rem;
+}
+
+/* Notifications modernes */
+.notification {
+    border-radius: var(--radius);
+    border: none;
+    box-shadow: var(--shadow-sm);
+}
+
+.notification.is-primary {
+    background-color: var(--color-primary-light);
+    color: var(--color-primary-dark);
+}
+
+.notification.is-info {
+    background-color: var(--color-info-light);
+    color: var(--color-info-dark);
+}
+
+.notification.is-success {
+    background-color: var(--color-success-light);
+    color: var(--color-success-dark);
+}
+
+.notification.is-warning {
+    background-color: var(--color-warning-light);
+    color: var(--color-warning-dark);
+}
+
+.notification.is-danger {
+    background-color: var(--color-danger-light);
+    color: var(--color-danger-dark);
+}
+
+/* Tableaux modernes */
+.table {
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.table th {
+    background-color: var(--bg-tertiary);
+    color: var(--text-tertiary);
+    font-weight: var(--weight-semibold);
+    border-bottom: 2px solid var(--border-primary);
+}
+
+.table td {
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+.table td:last-child {
+    border-bottom: none;
+}
+
+.table tr:hover {
+    background-color: var(--bg-tertiary);
+}
+
+/* Modales modernes */
+.modal-card {
+    border-radius: var(--radius-large);
+    box-shadow: var(--shadow-lg);
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: var(--bg-secondary);
+}
+
+.modal-card-head {
+    background-color: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-primary);
+    border-radius: var(--radius-large) var(--radius-large) 0 0;
+}
+
+.modal-card-title {
+    font-weight: var(--weight-semibold);
+}
+
+.modal-card-body {
+    padding: var(--size-6);
+}
+
+.modal-card-foot {
+    background-color: var(--bg-tertiary);
+    border-top: 1px solid var(--border-primary);
+    border-radius: 0 0 var(--radius-large) var(--radius-large);
+    justify-content: flex-end;
+}
+
+/* Onglets modernes */
+.tabs {
+    border-bottom: 2px solid var(--border-primary);
+}
+
+.tabs li.is-active {
+    border-bottom: 2px solid var(--color-primary);
+}
+
+.tabs li.is-active a {
+    color: var(--color-primary);
+    font-weight: var(--weight-semibold);
+}
+
+/* ============================================
+   ANIMATIONS SUBTILES
+   ============================================ */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn var(--transition-slow);
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Text utilities */
+.has-text-primary {
+    color: var(--color-primary) !important;
+}
+
+.has-text-info {
+    color: var(--color-info) !important;
+}
+
+.has-text-success {
+    color: var(--color-success) !important;
+}
+
+.has-text-warning {
+    color: var(--color-warning) !important;
+}
+
+.has-text-danger {
+    color: var(--color-danger) !important;
+}
+
+/* Background utilities */
+.has-background-primary {
+    background-color: var(--color-primary) !important;
+    color: var(--color-primary-invert) !important;
+}
+
+.has-background-info {
+    background-color: var(--color-info) !important;
+    color: var(--color-info-invert) !important;
+}
+
+.has-background-success {
+    background-color: var(--color-success) !important;
+    color: var(--color-success-invert) !important;
+}
+
+.has-background-warning {
+    background-color: var(--color-warning) !important;
+    color: var(--color-warning-invert) !important;
+}
+
+.has-background-danger {
+    background-color: var(--color-danger) !important;
+    color: var(--color-danger-invert) !important;
+}
+
+/* ============================================
+   RESPONSIVE ENHANCEMENTS
+   ============================================ */
+
+/* Mobile-first improvements */
+@media screen and (max-width: 768px) {
+    .navbar-menu {
+        background-color: var(--bg-secondary);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .box {
+        margin-bottom: var(--size-5);
+    }
+    
+    .title {
+        font-size: var(--size-5);
+    }
+    
+    .subtitle {
+        font-size: var(--size-4);
+    }
+    
+    /* Full width buttons on mobile */
+    .buttons .button {
+        width: 100%;
+        margin-bottom: var(--size-3);
+    }
+}
+
+/* Tablet improvements */
+@media screen and (min-width: 769px) and (max-width: 1023px) {
+    .columns .column {
+        padding: var(--size-3);
+    }
+}
+
+/* Desktop improvements */
+@media screen and (min-width: 1024px) {
+    .container {
+        max-width: 1200px;
+    }
+}
+
+/* ============================================
+   ACCESSIBILITY IMPROVEMENTS (WCAG 2.1 AA)
+   ============================================ */
+
+/* Focus visible pour tous les lments interactifs */
+*:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* Skip link pour l'accessibilit */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--color-primary);
+    color: var(--color-primary-invert);
+    padding: var(--size-3) var(--size-4);
+    z-index: 100;
+    text-decoration: none;
+    font-weight: var(--weight-semibold);
+    border-radius: 0 0 var(--radius) 0;
+}
+
+.skip-link:focus {
+    top: 0;
+}
+
+/* Contrast improvements for buttons - WCAG compliance */
+.button.is-warning {
+    color: var(--color-warning-invert) !important;
+}
+
+.button.is-warning:hover:not(:disabled) {
+    color: var(--color-warning-invert) !important;
+}
+
+.tag.is-warning {
+    color: var(--color-warning-invert) !important;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .button,
+    .input,
+    .select select,
+    .textarea {
+        border-width: 2px;
+    }
+    
+    .label {
+        font-weight: var(--weight-bold);
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ============================================
+   DARK THEME SUPPORT
+   ============================================ */
+
+[data-theme="dark"],
+.dark-mode {
+    /* Variables pour le thme sombre */
+    --bulma-background: #1F2937;
+    --bulma-background-bis: #111827;
+    --bulma-background-ter: #374151;
+    --bulma-text: #F9FAFB;
+    --bulma-text-weak: #9CA3AF;
+    --bulma-text-strong: #FFFFFF;
+    --bulma-border: #374151;
+    --bulma-border-weak: #4B5563;
+    
+    /* Couleurs adaptes pour le dark mode */
+    --bulma-primary: #60A5FA;
+    --bulma-info: #818CF8;
+    --bulma-success: #34D399;
+    --bulma-warning: #FBBF24;
+    --bulma-danger: #F87171;
+    
+    /* Mettre   jour les variables de couleur */
+    --color-primary: var(--bulma-primary);
+    --color-info: var(--bulma-info);
+    --color-success: var(--bulma-success);
+    --color-warning: var(--bulma-warning);
+    --color-danger: var(--bulma-danger);
+    
+    --bg-primary: var(--bulma-background);
+    --bg-secondary: var(--bulma-background-bis);
+    --bg-tertiary: var(--bulma-background-ter);
+    
+    --text-primary: var(--bulma-text);
+    --text-secondary: var(--bulma-text-weak);
+    --text-tertiary: var(--bulma-text-strong);
+    
+    --border-primary: var(--bulma-border);
+    --border-secondary: var(--bulma-border-weak);
+}
+
+[data-theme="dark"] .box,
+.dark-mode .box {
+    background-color: var(--bulma-background-bis);
+    border-color: var(--bulma-border);
+}
+
+[data-theme="dark"] .input,
+.dark-mode .input,
+[data-theme="dark"] .select select,
+.dark-mode .select select,
+[data-theme="dark"] .textarea,
+.dark-mode .textarea {
+    background-color: var(--bulma-background-bis);
+    border-color: var(--bulma-border);
+    color: var(--bulma-text);
+}
+
+[data-theme="dark"] .input:focus,
+.dark-mode .input:focus,
+[data-theme="dark"] .select select:focus,
+.dark-mode .select select:focus,
+[data-theme="dark"] .textarea:focus,
+.dark-mode .textarea:focus {
+    background-color: var(--bulma-background-bis);
+    border-color: var(--bulma-primary);
+    color: var(--bulma-text);
+}
+
+[data-theme="dark"] .button.is-primary,
+.dark-mode .button.is-primary {
+    background-color: var(--bulma-primary);
+    border-color: var(--bulma-primary);
+    color: #1F2937;
+}
+
+[data-theme="dark"] .button.is-primary:hover:not(:disabled),
+.dark-mode .button.is-primary:hover:not(:disabled) {
+    background-color: #78B8FA;
+    border-color: #78B8FA;
+}
+
+[data-theme="dark"] .button.is-info,
+.dark-mode .button.is-info {
+    background-color: var(--bulma-info);
+    border-color: var(--bulma-info);
+    color: #1F2937;
+}
+
+[data-theme="dark"] .button.is-info:hover:not(:disabled),
+.dark-mode .button.is-info:hover:not(:disabled) {
+    background-color: #93A3F8;
+    border-color: #93A3F8;
+}
+
+[data-theme="dark"] .button.is-success,
+.dark-mode .button.is-success {
+    background-color: var(--bulma-success);
+    border-color: var(--bulma-success);
+    color: #1F2937;
+}
+
+[data-theme="dark"] .button.is-success:hover:not(:disabled),
+.dark-mode .button.is-success:hover:not(:disabled) {
+    background-color: #4ADEB9;
+    border-color: #4ADEB9;
+}
+
+[data-theme="dark"] .button.is-warning,
+.dark-mode .button.is-warning {
+    background-color: var(--bulma-warning);
+    border-color: var(--bulma-warning);
+    color: #1F2937;
+}
+
+[data-theme="dark"] .button.is-warning:hover:not(:disabled),
+.dark-mode .button.is-warning:hover:not(:disabled) {
+    background-color: #FCD34D;
+    border-color: #FCD34D;
+}
+
+[data-theme="dark"] .button.is-danger,
+.dark-mode .button.is-danger {
+    background-color: var(--bulma-danger);
+    border-color: var(--bulma-danger);
+    color: #1F2937;
+}
+
+[data-theme="dark"] .button.is-danger:hover:not(:disabled),
+.dark-mode .button.is-danger:hover:not(:disabled) {
+    background-color: #FB8A8A;
+    border-color: #FB8A8A;
+}
+
+[data-theme="dark"] .table th,
+.dark-mode .table th {
+    background-color: var(--bulma-background-ter);
+    color: var(--bulma-text-strong);
+}
+
+[data-theme="dark"] .table td,
+.dark-mode .table td {
+    border-bottom-color: var(--bulma-border);
+}
+
+[data-theme="dark"] .table tr:hover,
+.dark-mode .table tr:hover {
+    background-color: var(--bulma-background-ter);
+}
+
+[data-theme="dark"] .modal-card,
+.dark-mode .modal-card {
+    background-color: var(--bulma-background-bis);
+}
+
+[data-theme="dark"] .modal-card-head,
+.dark-mode .modal-card-head {
+    background-color: var(--bulma-background-ter);
+    border-bottom-color: var(--bulma-border);
+}
+
+[data-theme="dark"] .modal-card-foot,
+.dark-mode .modal-card-foot {
+    background-color: var(--bulma-background-ter);
+    border-top-color: var(--bulma-border);
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
+    .navbar,
+    .footer,
+    .button,
+    .notification {
+        display: none !important;
+    }
+    
+    body {
+        padding-top: 0 !important;
+    }
+    
+    .box {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+        page-break-inside: avoid;
+    }
+    
+    .table {
+        page-break-inside: auto;
+    }
+    
+    tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+}
+
+/* ============================================
+   FULLCALENDAR DARK THEME SUPPORT
+   ============================================ */
+
+[data-theme="dark"] .fc,
+.dark-mode .fc {
+    background-color: var(--bulma-background) !important;
+    color: var(--bulma-text) !important;
+}
+
+[data-theme="dark"] .fc-today,
+.dark-mode .fc-today {
+    background-color: var(--bulma-background-ter) !important;
+}
+
+[data-theme="dark"] .fc-header-toolbar,
+.dark-mode .fc-header-toolbar {
+    background-color: var(--bulma-background) !important;
+}
+
+[data-theme="dark"] .fc-col-header-cell,
+.dark-mode .fc-col-header-cell,
+[data-theme="dark"] .fc-day-header,
+.dark-mode .fc-day-header {
+    background-color: var(--bulma-background-ter) !important;
+    border-color: var(--bulma-border) !important;
+    color: var(--bulma-text) !important;
+}
+
+[data-theme="dark"] .fc-day,
+.dark-mode .fc-day {
+    background-color: var(--bulma-background) !important;
+    border-color: var(--bulma-border) !important;
+    color: var(--bulma-text) !important;
+}
+
+[data-theme="dark"] .fc-day:hover,
+.dark-mode .fc-day:hover {
+    background-color: var(--bulma-background-ter) !important;
+}
+
+[data-theme="dark"] .fc-event-shift,
+.dark-mode .fc-event-shift {
+    background-color: var(--bulma-primary) !important;
+    border-color: var(--bulma-primary) !important;
+    color: #1F2937 !important;
+}
+
+[data-theme="dark"] .fc-event-oncall,
+.dark-mode .fc-event-oncall {
+    background-color: var(--bulma-info) !important;
+    border-color: var(--bulma-info) !important;
+    color: #1F2937 !important;
+}
+
+[data-theme="dark"] .fc-event-leave,
+.dark-mode .fc-event-leave {
+    background-color: var(--bulma-danger) !important;
+    border-color: var(--bulma-danger) !important;
+    color: #1F2937 !important;
+}
+
+/* ============================================
+   COMPATIBILITY WITH EXISTING STYLES
+   ============================================ */
+
+/* Ensure compatibility with existing Bulma classes */
+.is-primary {
+    color: var(--color-primary) !important;
+}
+
+.is-info {
+    color: var(--color-info) !important;
+}
+
+.is-success {
+    color: var(--color-success) !important;
+}
+
+.is-warning {
+    color: var(--color-warning) !important;
+}
+
+.is-danger {
+    color: var(--color-danger) !important;
+}
