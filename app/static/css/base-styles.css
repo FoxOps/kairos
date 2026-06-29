@@ -144,21 +144,6 @@ a:focus-visible {
    ACCESSIBILITÉ - CONTRASTE DES COULEURS
    ============================================ */
 
-/* Assurer un contraste suffisant pour les liens */
-a {
-    color: var(--color-primary, var(--bulma-primary));
-    text-decoration: underline;
-    transition: color 0.2s ease-in-out;
-}
-
-a:hover {
-    color: var(--color-primary-dark, #00a896);
-}
-
-a:focus-visible {
-    color: var(--color-primary-dark, #00a896);
-}
-
 /* Contraste pour les liens dans le texte */
 .content a {
     color: var(--color-primary, var(--bulma-primary));

@@ -119,22 +119,6 @@
 }
 
 /* ============================================
-   SOULIGNEMENT DES LIENS DANS LE TEXTE
-   (hors boutons et navbar)
-   ============================================ */
-[data-theme="dark"] a:not(.button):not(.navbar-item):not(.navbar-link):not(.navbar-brand),
-.dark-mode a:not(.button):not(.navbar-item):not(.navbar-link):not(.navbar-brand) {
-    text-decoration: underline;
-    color: var(--color-primary-light);
-}
-
-[data-theme="dark"] a:not(.button):not(.navbar-item):not(.navbar-link):not(.navbar-brand):hover,
-.dark-mode a:not(.button):not(.navbar-item):not(.navbar-link):not(.navbar-brand):hover {
-    text-decoration: none;
-    color: var(--color-primary);
-}
-
-/* ============================================
    CORRECTION DU CONTRASTE POUR LES BOUTONS .is-warning
    (Bulma utilise du texte blanc sur fond jaune, ce qui a un mauvais contraste)
    ============================================ */
