@@ -3,62 +3,80 @@
 {% block title %}Ajouter un utilisateur - Leviia{% endblock %}
 
 {% block admin_content %}
-<section class="section">
-    <div class="container">
-        <h1 class="title">
-            <i class="fas fa-user-plus" aria-hidden="true"></i> Ajouter un utilisateur
-        </h1>
+<main role="main" aria-labelledby="add-user-title">
+    <section class="section">
+        <div class="container">
+            <h1 id="add-user-title" class="title">
+                <i class="fas fa-user-plus" aria-hidden="true"></i> Ajouter un utilisateur
+            </h1>
 
-        <form method="POST" action="{{ url_for('add_user') }}">
-            <div class="box">
-                <div class="field">
-                    <label class="label required">Nom</label>
-                    <div class="control">
-                        <input class="input" type="text" name="name" required aria-required="true" placeholder="Ex: Jean Dupont">
+            {% if errors %}
+            <div class="notification is-danger" role="alert" aria-live="assertive">
+                <p><strong>Erreurs :</strong></p>
+                <ul>
+                    {% for error in errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('add_user') }}" aria-labelledby="add-user-title">
+                <div class="box" role="region" aria-labelledby="form-title">
+                    <h2 id="form-title" class="is-sr-only">Formulaire d'ajout d'utilisateur</h2>
+                    
+                    <div class="field">
+                        <label class="label required" for="name">Nom complet</label>
+                        <div class="control">
+                            <input class="input" type="text" id="name" name="name" required aria-required="true" placeholder="Ex: Jean Dupont" aria-describedby="name-help">
+                        </div>
+                        <p class="help is-hidden" id="name-help">Exemple : Jean Dupont</p>
                     </div>
-                </div>
 
-                <div class="field">
-                    <label class="label required">Email</label>
-                    <div class="control">
-                        <input class="input" type="email" name="email" required aria-required="true" placeholder="Ex: jean.dupont@exemple.com">
+                    <div class="field">
+                        <label class="label required" for="email">Adresse email</label>
+                        <div class="control">
+                            <input class="input" type="email" id="email" name="email" required aria-required="true" placeholder="Ex: jean.dupont@exemple.com" aria-describedby="email-help">
+                        </div>
+                        <p class="help is-hidden" id="email-help">Exemple : jean.dupont@exemple.com</p>
                     </div>
-                </div>
 
-                <div class="field">
-                    <label class="label required">Groupe</label>
-                    <div class="control">
-                        <div class="select is-fullwidth">
-                            <select name="group_id" required aria-required="true">
-                                <option value="" disabled selected>Sélectionner un groupe</option>
-                                {% for group in groups %}
-                                <option value="{{ group.id }}">{{ group.name }}</option>
-                                {% endfor %}
-                            </select>
+                    <div class="field">
+                        <label class="label required" for="group_id">Groupe</label>
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                                <select id="group_id" name="group_id" required aria-required="true" aria-describedby="group-help">
+                                    <option value="" disabled selected>Sélectionner un groupe</option>
+                                    {% for group in groups %}
+                                    <option value="{{ group.id }}">{{ group.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <p class="help is-hidden" id="group-help">Sélectionnez le groupe auquel l'utilisateur appartiendra.</p>
+                    </div>
+
+                    <div class="field">
+                        <label class="label" for="password">Mot de passe</label>
+                        <div class="control">
+                            <input class="input" type="password" id="password" name="password" placeholder="Laisser vide pour un mot de passe par défaut" aria-describedby="password-help">
+                        </div>
+                        <p class="help is-size-7" id="password-help">
+                            Si vous ne spécifiez pas de mot de passe, un mot de passe par défaut sera généré (password123).
+                        </p>
+                    </div>
+
+                    <div class="field">
+                        <div class="control">
+                            <button class="button is-primary" type="submit" aria-label="Enregistrer l'utilisateur">
+                                <i class="fas fa-save" aria-hidden="true"></i>&nbsp; Enregistrer
+                            </button>
+                            <a class="button is-light" href="{{ url_for('list_users') }}" aria-label="Annuler et retourner à la liste des utilisateurs">Annuler</a>
                         </div>
                     </div>
                 </div>
-
-                <div class="field">
-                    <label class="label">Mot de passe</label>
-                    <div class="control">
-                        <input class="input" type="password" name="password" placeholder="Laisser vide pour un mot de passe par défaut">
-                    </div>
-                    <p class="help is-size-7">
-                        Si vous ne spécifiez pas de mot de passe, un mot de passe par défaut sera généré (password123).
-                    </p>
-                </div>
-
-                <div class="field">
-                    <div class="control">
-                        <button class="button is-primary" type="submit">
-                            <i class="fas fa-save" aria-hidden="true"></i>&nbsp; Enregistrer
-                        </button>
-                        <a class="button is-light" href="{{ url_for('list_users') }}">Annuler</a>
-                    </div>
-                </div>
-            </div>
-        </form>
-    </div>
-</section>
+            </form>
+        </div>
+    </section>
+</main>
 {% endblock %}

@@ -8,48 +8,48 @@
 {% endblock %}
 
 {% block content %}
-<section class="section">
+<section class="section" aria-labelledby="page-title">
     <div class="container">
-        <h1 class="title">
+        <h1 id="page-title" class="title">
             <i class="fas fa-home" aria-hidden="true"></i> Tableau de bord - Leviia
         </h1>
 
         <!-- Actions rapides -->
-        <div class="box">
-            <h3>
+        <div class="box" role="region" aria-labelledby="quick-actions-title">
+            <h2 id="quick-actions-title" class="title is-4">
                 <i class="fas fa-bolt" aria-hidden="true"></i> Actions rapides
-            </h3>
-            <div class="buttons">
+            </h2>
+            <div class="buttons" role="group" aria-label="Actions rapides">
                 {% if current_user.is_admin %}
                     <!-- Actions pour les administrateurs -->
-                    <a class="button is-primary" href="{{ url_for('add_shift') }}">
+                    <a class="button is-primary" href="{{ url_for('add_shift') }}" aria-label="Ajouter un shift">
                         <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un shift
                     </a>
-                    <a class="button is-primary" href="{{ url_for('add_oncall') }}">
+                    <a class="button is-primary" href="{{ url_for('add_oncall') }}" aria-label="Ajouter une astreinte">
                         <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter une astreinte
                     </a>
-                    <a class="button is-primary" href="{{ url_for('add_leave') }}">
+                    <a class="button is-primary" href="{{ url_for('add_leave') }}" aria-label="Ajouter un congé">
                         <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un congé
                     </a>
-                    <a class="button is-primary" href="{{ url_for('list_users') }}">
+                    <a class="button is-primary" href="{{ url_for('list_users') }}" aria-label="Gérer les utilisateurs">
                         <i class="fas fa-users" aria-hidden="true"></i>&nbsp; Gérer les utilisateurs
                     </a>
-                    <a class="button is-primary" href="{{ url_for('list_groups') }}">
+                    <a class="button is-primary" href="{{ url_for('list_groups') }}" aria-label="Gérer les groupes">
                         <i class="fas fa-user-friends" aria-hidden="true"></i>&nbsp; Gérer les groupes
                     </a>
-                    <a class="button is-light" href="{{ url_for('admin_dashboard') }}">
+                    <a class="button is-light" href="{{ url_for('admin_dashboard') }}" aria-label="Tableau de bord administrateur">
                         <i class="fas fa-cog" aria-hidden="true"></i>&nbsp; Admin
                     </a>
                 {% else %}
                     <!-- Actions pour les utilisateurs normaux - Export de leur calendrier -->
                     {% if current_user.ics_token %}
-                    <a class="button is-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('shifts', 'my') }}">
+                    <a class="button is-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('shifts', 'my') }}" aria-label="Exporter mes shifts">
                         <i class="fas fa-download" aria-hidden="true"></i>&nbsp; Exporter mes shifts
                     </a>
-                    <a class="button is-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('oncall', 'my') }}">
+                    <a class="button is-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('oncall', 'my') }}" aria-label="Exporter mes astreintes">
                         <i class="fas fa-download" aria-hidden="true"></i>&nbsp; Exporter mes astreintes
                     </a>
-                    <a class="button is-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('leaves', 'my') }}">
+                    <a class="button is-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('leaves', 'my') }}" aria-label="Exporter mes congés">
                         <i class="fas fa-download" aria-hidden="true"></i>&nbsp; Exporter mes congés
                     </a>
                     {% endif %}
@@ -58,29 +58,30 @@
         </div>
 
         <!-- Calendrier interactif avec Drag & Drop -->
-        <div class="box">
-            <h2 class="mb-5">
+        <div class="box" role="region" aria-labelledby="calendar-title">
+            <h2 id="calendar-title" class="title is-4">
                 <i class="fas fa-calendar-alt" aria-hidden="true"></i> 
                 Calendrier interactif - Shifts, astreintes et congés
-                {% if current_user.is_admin %}
-                <div class="is-pulled-right is-flex is-align-items-center gap-2 mb-6">
-                    <span class="tag is-danger min-w-180" id="edit-mode-status-tag">
-                        <i class="fas fa-edit" aria-hidden="true"></i>&nbsp; Mode édition désactivé
-                    </span>
-                    <button class="button is-small is-success min-w-180" id="toggle-edit-mode">
-                        <i class="fas fa-toggle-on" aria-hidden="true"></i>&nbsp; Activer l'édition
-                    </button>
-                    <button class="button is-small is-info min-w-180" id="toggle-tips">
-                        <i class="fas fa-eye" aria-hidden="true"></i>&nbsp; Afficher conseils
-                    </button>
-                </div>
-                {% endif %}
             </h2>
+            
+            {% if current_user.is_admin %}
+            <div class="is-pulled-right is-flex is-align-items-center gap-2 mb-6" role="group" aria-label="Options du calendrier">
+                <span class="tag is-danger min-w-180" id="edit-mode-status-tag" role="status" aria-live="polite">
+                    <i class="fas fa-edit" aria-hidden="true"></i>&nbsp; Mode édition désactivé
+                </span>
+                <button class="button is-small is-success min-w-180" id="toggle-edit-mode" aria-label="Activer le mode édition">
+                    <i class="fas fa-toggle-on" aria-hidden="true"></i>&nbsp; Activer l'édition
+                </button>
+                <button class="button is-small is-info min-w-180" id="toggle-tips" aria-label="Afficher les conseils">
+                    <i class="fas fa-eye" aria-hidden="true"></i>&nbsp; Afficher conseils
+                </button>
+            </div>
+            {% endif %}
             
             <!-- Conteneur pour les événements externes (pour créer de nouveaux shifts) -->
             {% if current_user.is_admin %}
-            <div class="notification is-info is-light mb-4 d-none" id="tips-container">
-                <p><strong><i class="fas fa-info-circle"></i> Conseils d'utilisation :</strong></p>
+            <div class="notification is-info is-light mb-4 d-none" id="tips-container" role="status" aria-live="polite" aria-label="Conseils d'utilisation">
+                <p><strong><i class="fas fa-info-circle" aria-hidden="true"></i> Conseils d'utilisation :</strong></p>
                 <ul>
                     <li><strong>Mode édition activé</strong> : Le drag & drop est activé. Cliquez sur un événement (shift, astreinte, congé) pour le supprimer (avec confirmation).</li>
                     <li><strong>Déplacer un événement</strong> : Cliquez et faites glisser un événement (shift, astreinte, congé) vers une nouvelle date/heure</li>
@@ -92,16 +93,16 @@
             </div>
             {% endif %}
             
-            <div id="calendar" class="mt-4 is-fullwidth"></div>
+            <div id="calendar" class="mt-4 is-fullwidth" role="application" aria-label="Calendrier interactif"></div>
         </div>
 
         <!-- Légende -->
-        <div class="box">
-            <h3>Légende</h3>
-            <div class="tags are-medium">
-                <span class="tag is-primary"><i class="fas fa-calendar-check"></i> Shifts</span>
-                <span class="tag is-info"><i class="fas fa-moon"></i> Astreintes</span>
-                <span class="tag is-danger"><i class="fas fa-umbrella-beach"></i> Congés</span>
+        <div class="box" role="region" aria-labelledby="legend-title">
+            <h2 id="legend-title" class="title is-4">Légende</h2>
+            <div class="tags are-medium" role="list" aria-label="Types d'événements">
+                <span class="tag is-primary" role="listitem"><i class="fas fa-calendar-check" aria-hidden="true"></i> Shifts</span>
+                <span class="tag is-info" role="listitem"><i class="fas fa-moon" aria-hidden="true"></i> Astreintes</span>
+                <span class="tag is-danger" role="listitem"><i class="fas fa-umbrella-beach" aria-hidden="true"></i> Congés</span>
             </div>
         </div>
     </div>
@@ -153,10 +154,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 editModeStatusTag.innerHTML = '<i class="fas fa-edit" aria-hidden="true"></i>&nbsp; Mode édition activé';
                 editModeStatusTag.classList.remove('is-danger');
                 editModeStatusTag.classList.add('is-success');
+                editModeStatusTag.setAttribute('aria-label', 'Mode édition activé');
             } else {
                 editModeStatusTag.innerHTML = '<i class="fas fa-edit" aria-hidden="true"></i>&nbsp; Mode édition désactivé';
                 editModeStatusTag.classList.remove('is-success');
                 editModeStatusTag.classList.add('is-danger');
+                editModeStatusTag.setAttribute('aria-label', 'Mode édition désactivé');
             }
         }
         
@@ -165,10 +168,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 toggleEditModeBtn.innerHTML = '<i class="fas fa-toggle-off" aria-hidden="true"></i>&nbsp; Désactiver l\'édition';
                 toggleEditModeBtn.classList.remove('is-success');
                 toggleEditModeBtn.classList.add('is-danger');
+                toggleEditModeBtn.setAttribute('aria-label', 'Désactiver le mode édition');
             } else {
                 toggleEditModeBtn.innerHTML = '<i class="fas fa-toggle-on" aria-hidden="true"></i>&nbsp; Activer l\'édition';
                 toggleEditModeBtn.classList.remove('is-danger');
                 toggleEditModeBtn.classList.add('is-success');
+                toggleEditModeBtn.setAttribute('aria-label', 'Activer le mode édition');
             }
         }
         
@@ -195,11 +200,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 toggleTipsBtn.innerHTML = '<i class="fas fa-eye-slash" aria-hidden="true"></i>&nbsp; Cacher conseils';
                 toggleTipsBtn.classList.remove('is-info');
                 toggleTipsBtn.classList.add('is-warning');
+                toggleTipsBtn.setAttribute('aria-label', 'Cacher les conseils');
             } else {
                 tipsContainer.style.display = 'none';
                 toggleTipsBtn.innerHTML = '<i class="fas fa-eye" aria-hidden="true"></i>&nbsp; Afficher conseils';
                 toggleTipsBtn.classList.remove('is-warning');
                 toggleTipsBtn.classList.add('is-info');
+                toggleTipsBtn.setAttribute('aria-label', 'Afficher les conseils');
             }
         });
     }
@@ -279,13 +286,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     // Revert le changement en cas d'erreur
                     info.revert();
-                    alert('Erreur: ' + data.error);
+                    Leviia.announceToScreenReader('Erreur: ' + data.error, 'assertive');
                 }
             })
             .catch(error => {
                 info.revert();
                 console.error('Erreur:', error);
-                alert('Une erreur est survenue lors de la mise à jour.');
+                Leviia.announceToScreenReader('Une erreur est survenue lors de la mise à jour.', 'assertive');
             });
         },
         
@@ -339,13 +346,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     location.reload();
                 } else {
                     info.revert();
-                    alert('Erreur: ' + data.error);
+                    Leviia.announceToScreenReader('Erreur: ' + data.error, 'assertive');
                 }
             })
             .catch(error => {
                 info.revert();
                 console.error('Erreur:', error);
-                alert('Une erreur est survenue lors du redimensionnement.');
+                Leviia.announceToScreenReader('Une erreur est survenue lors du redimensionnement.', 'assertive');
             });
         },
         
@@ -399,31 +406,37 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-                if (confirm(message)) {
-                    fetch(endpoint, {
-                        method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        credentials: 'same-origin'
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            event.remove();
-                            console.log('Événement supprimé:', data.message);
-                            // Recharger la page pour synchroniser avec le backend
-                            location.reload();
-                        } else {
-                            alert('Erreur: ' + data.error);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Erreur:', error);
-                        alert('Une erreur est survenue lors de la suppression.');
-                    });
-                }
+                Leviia.confirmActionAccessible(message,
+                    () => {
+                        fetch(endpoint, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            credentials: 'same-origin'
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                event.remove();
+                                console.log('Événement supprimé:', data.message);
+                                Leviia.announceToScreenReader('Événement supprimé avec succès.', 'polite');
+                                // Recharger la page pour synchroniser avec le backend
+                                location.reload();
+                            } else {
+                                Leviia.announceToScreenReader('Erreur: ' + data.error, 'assertive');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erreur:', error);
+                            Leviia.announceToScreenReader('Une erreur est survenue lors de la suppression.', 'assertive');
+                        });
+                    },
+                    () => {
+                        Leviia.announceToScreenReader('Suppression annulée.', 'polite');
+                    }
+                );
             }
         },
         
@@ -439,7 +452,7 @@ document.addEventListener('DOMContentLoaded', function() {
         dateClick: function(info) {
             const date = info.date;
             if (date.getDay() === 0 || date.getDay() === 6) { // Dimanche (0) ou Samedi (6)
-                alert('Les shifts ne peuvent pas être créés ou déplacés vers les week-ends (samedi/dimanche).');
+                Leviia.announceToScreenReader('Les shifts ne peuvent pas être créés ou déplacés vers les week-ends (samedi/dimanche).', 'assertive');
                 return false;
             }
         }
@@ -468,55 +481,62 @@ document.addEventListener('DOMContentLoaded', function() {
                 modal = document.createElement('div');
                 modal.id = modalId;
                 modal.className = 'modal';
+                modal.setAttribute('role', 'dialog');
+                modal.setAttribute('aria-modal', 'true');
+                modal.setAttribute('aria-labelledby', 'create-shift-title');
                 modal.innerHTML = `
-                    <div class="modal-background"></div>
+                    <div class="modal-background" role="button" tabindex="0" aria-label="Fermer"></div>
                     <div class="modal-card">
                         <header class="modal-card-head">
-                            <p class="modal-card-title">
-                                <i class="fas fa-plus"></i> Créer un nouveau shift
-                            </p>
-                            <button class="delete close-modal" aria-label="close"></button>
+                            <h2 id="create-shift-title" class="modal-card-title">
+                                <i class="fas fa-plus" aria-hidden="true"></i> Créer un nouveau shift
+                            </h2>
+                            <button class="delete close-modal" aria-label="Fermer" role="button"></button>
                         </header>
                         <section class="modal-card-body">
-                            <div class="field">
-                                <label class="label">Date et heure</label>
-                                <div class="control">
-                                    <input type="datetime-local" id="shift-start" class="input" value="${formatDateForInput(start)}">
-                                </div>
-                            </div>
-                            <div class="field">
-                                <label class="label">Fin</label>
-                                <div class="control">
-                                    <input type="datetime-local" id="shift-end" class="input" value="${formatDateForInput(end)}">
-                                </div>
-                            </div>
-                            <div class="field">
-                                <label class="label">Utilisateur</label>
-                                <div class="control">
-                                    <div class="select is-fullwidth">
-                                        <select id="shift-user">
-                                            ${users.map(u => `<option value="${u.id}">${u.name} (${u.email})</option>`).join('')}
-                                        </select>
+                            <form id="shift-creation-form" aria-labelledby="create-shift-title">
+                                <div class="field">
+                                    <label class="label" for="shift-start">Date et heure de début</label>
+                                    <div class="control">
+                                        <input type="datetime-local" id="shift-start" class="input" value="${formatDateForInput(start)}" required aria-required="true">
                                     </div>
                                 </div>
-                            </div>
-                            <div class="field">
-                                <label class="label">Type de shift</label>
-                                <div class="control">
-                                    <div class="select is-fullwidth">
-                                        <select id="shift-type">
-                                            ${shiftTypes.map(st => `<option value="${st.id}">${st.label} (${st.start_hour}:00 - ${st.end_hour}:00)</option>`).join('')}
-                                        </select>
+                                <div class="field">
+                                    <label class="label" for="shift-end">Date et heure de fin</label>
+                                    <div class="control">
+                                        <input type="datetime-local" id="shift-end" class="input" value="${formatDateForInput(end)}" required aria-required="true">
                                     </div>
                                 </div>
-                            </div>
+                                <div class="field">
+                                    <label class="label" for="shift-user">Utilisateur</label>
+                                    <div class="control">
+                                        <div class="select is-fullwidth">
+                                            <select id="shift-user" required aria-required="true">
+                                                <option value="">Sélectionnez un utilisateur</option>
+                                                ${users.map(u => `<option value="${u.id}">${u.name} (${u.email})</option>`).join('')}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="label" for="shift-type">Type de shift</label>
+                                    <div class="control">
+                                        <div class="select is-fullwidth">
+                                            <select id="shift-type" required aria-required="true">
+                                                <option value="">Sélectionnez un type de shift</option>
+                                                ${shiftTypes.map(st => `<option value="${st.id}">${st.label} (${st.start_hour}:00 - ${st.end_hour}:00)</option>`).join('')}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
                         </section>
                         <footer class="modal-card-foot">
-                            <button class="button is-primary create-shift-btn">
-                                <i class="fas fa-check"></i> Créer
+                            <button class="button is-primary create-shift-btn" aria-label="Créer le shift">
+                                <i class="fas fa-check" aria-hidden="true"></i> Créer
                             </button>
-                            <button class="button close-modal">
-                                <i class="fas fa-times"></i> Annuler
+                            <button class="button close-modal" aria-label="Annuler">
+                                <i class="fas fa-times" aria-hidden="true"></i> Annuler
                             </button>
                         </footer>
                     </div>
@@ -530,10 +550,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Ouvrir le modal
             modal.classList.add('is-active');
+            
+            // Piège de focus dans la modale
+            Leviia.setupKeyboardNavigation(modal, '[tabindex], button, [href], input, select, textarea');
+
+            // Mettre le focus sur le premier champ du formulaire
+            const firstInput = modal.querySelector('#shift-start');
+            if (firstInput) {
+                Leviia.focusElement(firstInput);
+            }
 
             // Gérer les boutons
             modal.querySelectorAll('.close-modal').forEach(btn => {
-                btn.onclick = () => modal.classList.remove('is-active');
+                btn.onclick = () => {
+                    modal.classList.remove('is-active');
+                    Leviia.announceToScreenReader('Création de shift annulée.', 'polite');
+                };
             });
 
             modal.querySelector('.create-shift-btn').onclick = () => {
@@ -543,7 +575,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const endInput = modal.querySelector('#shift-end').value;
 
                 if (!userId || !shiftTypeId || !startInput || !endInput) {
-                    alert('Veuillez remplir tous les champs.');
+                    Leviia.announceToScreenReader('Veuillez remplir tous les champs obligatoires.', 'assertive');
                     return;
                 }
 
@@ -567,20 +599,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.success) {
                         modal.classList.remove('is-active');
                         console.log('Shift créé:', data.message);
+                        Leviia.announceToScreenReader('Shift créé avec succès.', 'polite');
                         // Recharger la page pour synchroniser avec le backend
                         location.reload();
                     } else {
-                        alert('Erreur: ' + data.error);
+                        Leviia.announceToScreenReader('Erreur: ' + data.error, 'assertive');
                     }
                 })
                 .catch(error => {
                     console.error('Erreur:', error);
-                    alert('Une erreur est survenue lors de la création du shift.');
+                    Leviia.announceToScreenReader('Une erreur est survenue lors de la création du shift.', 'assertive');
                 });
             };
         }).catch(error => {
             console.error('Erreur lors du chargement des données:', error);
-            alert('Une erreur est survenue lors du chargement des données.');
+            Leviia.announceToScreenReader('Une erreur est survenue lors du chargement des données.', 'assertive');
         });
     }
 
@@ -616,31 +649,37 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-                if (confirm(message)) {
-                    fetch(endpoint, {
-                        method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        credentials: 'same-origin'
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            selectedEvent.remove();
-                            console.log('Événement supprimé:', data.message);
-                            // Recharger la page pour synchroniser avec le backend
-                            location.reload();
-                        } else {
-                            alert('Erreur: ' + data.error);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Erreur:', error);
-                        alert('Une erreur est survenue lors de la suppression.');
-                    });
-                }
+                Leviia.confirmActionAccessible(message,
+                    () => {
+                        fetch(endpoint, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            credentials: 'same-origin'
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                selectedEvent.remove();
+                                console.log('Événement supprimé:', data.message);
+                                Leviia.announceToScreenReader('Événement supprimé avec succès.', 'polite');
+                                // Recharger la page pour synchroniser avec le backend
+                                location.reload();
+                            } else {
+                                Leviia.announceToScreenReader('Erreur: ' + data.error, 'assertive');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erreur:', error);
+                            Leviia.announceToScreenReader('Une erreur est survenue lors de la suppression.', 'assertive');
+                        });
+                    },
+                    () => {
+                        Leviia.announceToScreenReader('Suppression annulée.', 'polite');
+                    }
+                );
             }
         }
     });

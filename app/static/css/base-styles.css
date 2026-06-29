@@ -44,6 +44,8 @@ body {
 
 .skip-link:focus {
     top: 0;
+    outline: 3px solid var(--color-primary-dark, #00a896);
+    outline-offset: 2px;
 }
 
 /* Conteneur principal */
@@ -55,6 +57,149 @@ body {
 .notification {
     margin-bottom: 1rem;
 }
+
+/* ============================================
+   ACCESSIBILITÉ - FOCUS VISIBLE
+   ============================================ */
+
+/* Style pour :focus-visible (navigateurs modernes) */
+:focus-visible {
+    outline: 3px solid var(--color-primary, var(--bulma-primary));
+    outline-offset: 2px;
+}
+
+/* Style pour les liens au focus */
+a:focus-visible {
+    outline: 3px solid var(--color-primary, var(--bulma-primary));
+    outline-offset: 2px;
+}
+
+/* Style pour les boutons au focus */
+.button:focus-visible {
+    outline: 3px solid var(--color-primary-dark, #00a896);
+    outline-offset: 2px;
+}
+
+/* Style pour les inputs au focus */
+.input:focus-visible,
+.select:focus-visible,
+.textarea:focus-visible {
+    outline: 3px solid var(--color-primary, var(--bulma-primary));
+    outline-offset: 0;
+    box-shadow: 0 0 0 3px rgba(0, 209, 178, 0.2);
+}
+
+/* Style pour les éléments de navigation au focus */
+.navbar-item:focus-visible,
+.navbar-link:focus-visible {
+    outline: 3px solid var(--color-primary-dark, #00a896);
+    outline-offset: -2px;
+}
+
+/* Style pour les éléments de menu au focus */
+.dropdown-item:focus-visible,
+.menu-item:focus-visible {
+    outline: 3px solid var(--color-primary, var(--bulma-primary));
+    outline-offset: -2px;
+    background-color: var(--bg-secondary, var(--bulma-background-bis));
+}
+
+/* ============================================
+   ACCESSIBILITÉ - TAILLE DES CIBLES TACTILES
+   ============================================ */
+
+/* Taille minimale des boutons (44x44px) */
+.button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease-in-out;
+}
+
+/* Taille minimale des liens dans la navigation */
+.navbar-item {
+    min-height: 44px;
+    padding: 0.5rem 1rem;
+}
+
+/* Taille minimale des éléments de menu déroulant */
+.navbar-link {
+    min-height: 44px;
+    padding: 0.5rem 1rem;
+}
+
+/* Taille minimale des éléments de dropdown */
+.dropdown-item {
+    min-height: 44px;
+    padding: 0.5rem 1rem;
+}
+
+/* Taille minimale des icônes cliquables */
+.button .icon {
+    min-width: 24px;
+    min-height: 24px;
+}
+
+/* ============================================
+   ACCESSIBILITÉ - CONTRASTE DES COULEURS
+   ============================================ */
+
+/* Assurer un contraste suffisant pour les liens */
+a {
+    color: var(--color-primary, var(--bulma-primary));
+    text-decoration: underline;
+    transition: color 0.2s ease-in-out;
+}
+
+a:hover {
+    color: var(--color-primary-dark, #00a896);
+}
+
+a:focus-visible {
+    color: var(--color-primary-dark, #00a896);
+}
+
+/* Contraste pour les liens dans le texte */
+.content a {
+    color: var(--color-primary, var(--bulma-primary));
+    text-decoration: underline;
+}
+
+.content a:hover,
+.content a:focus-visible {
+    color: var(--color-primary-dark, #00a896);
+}
+
+/* Contraste pour les boutons */
+.button {
+    transition: all 0.2s ease-in-out;
+}
+
+.button:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+/* Contraste pour les boutons désactivés */
+.button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ============================================
+   STYLES POUR LES NOTIFICATIONS ACCESSIBLES
+   ============================================ */
+
+.notification[role="alert"] {
+    border: 2px solid var(--color-danger, var(--bulma-danger));
+}
+
+.notification[role="status"] {
+    border: 2px solid var(--color-info, var(--bulma-info));
+}
+
+/* ============================================
+   STYLES POUR LES ÉLÉMENTS INTERACTIFS
+   ============================================ */
 
 /* Styles pour les boutons */
 .button {
@@ -362,9 +507,6 @@ li {
 }
 
 /* Styles pour les liens */
-a {
-    transition: color 0.2s ease-in-out;
-}
 
 /* Styles pour les images */
 img {
@@ -524,4 +666,29 @@ figcaption {
     text-align: center;
     padding: 2rem;
     color: var(--text-secondary, #4a4a4a);
+}
+
+/* ============================================
+   ACCESSIBILITÉ - RÉDUCTION DES MOUVEMENTS
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    /* Désactiver les transitions et animations */
+    body,
+    .button,
+    .box,
+    .dashboard-card,
+    .navbar,
+    .modal {
+        transition: none !important;
+    }
 }

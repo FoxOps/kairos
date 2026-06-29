@@ -3,65 +3,75 @@
 {% block title %}Connexion - Leviia{% endblock %}
 
 {% block content %}
-<div class="section">
-    <div class="container">
-        <div class="columns is-centered">
-            <div class="column is-4">
-                <div class="box">
-                    <h1 class="title is-4 has-text-centered">Connexion</h1>
-                    
-                    <form method="POST" action="{{ url_for('login') }}">
-                        <div class="field">
-                            <label class="label required" for="email">Email</label>
-                            <div class="control has-icons-left">
-                                <input class="input" type="email" id="email" name="email" 
-                                       placeholder="votre@email.com" required autofocus aria-required="true">
-                                <span class="icon is-small is-left">
-                                    <i class="fas fa-envelope" aria-hidden="true"></i>
-                                </span>
-                            </div>
-                        </div>
+<main role="main" aria-labelledby="login-title">
+    <div class="section">
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column is-4">
+                    <div class="box" role="region" aria-labelledby="login-title">
+                        <h1 id="login-title" class="title is-4 has-text-centered">Connexion</h1>
                         
-                        <div class="field">
-                            <label class="label required" for="password">Mot de passe</label>
-                            <div class="control has-icons-left">
-                                <input class="input" type="password" id="password" name="password" 
-                                       placeholder="Votre mot de passe" required aria-required="true">
-                                <span class="icon is-small is-left">
-                                    <i class="fas fa-lock" aria-hidden="true"></i>
-                                </span>
-                            </div>
+                        {% if error %}
+                        <div class="notification is-danger" role="alert" aria-live="assertive">
+                            <p><strong>Erreur :</strong> {{ error }}</p>
                         </div>
+                        {% endif %}
                         
-                        <div class="field">
-                            <div class="control">
-                                <label class="checkbox">
-                                    <input type="checkbox" name="remember" id="remember">
-                                    <span class="ml-2">Se souvenir de moi</span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div class="field">
-                            <div class="control">
-                                <button type="submit" class="button is-primary is-fullwidth">
-                                    <span class="icon">
-                                        <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+                        <form method="POST" action="{{ url_for('login') }}" aria-labelledby="login-title">
+                            <div class="field">
+                                <label class="label required" for="email">Adresse email</label>
+                                <div class="control has-icons-left">
+                                    <input class="input" type="email" id="email" name="email" 
+                                           placeholder="votre@email.com" required autofocus aria-required="true" aria-describedby="email-help">
+                                    <span class="icon is-small is-left">
+                                        <i class="fas fa-envelope" aria-hidden="true"></i>
                                     </span>
-                                    <span>Se connecter</span>
-                                </button>
+                                </div>
+                                <p class="help is-hidden" id="email-help">Exemple : votre@email.com</p>
                             </div>
+                            
+                            <div class="field">
+                                <label class="label required" for="password">Mot de passe</label>
+                                <div class="control has-icons-left">
+                                    <input class="input" type="password" id="password" name="password" 
+                                           placeholder="Votre mot de passe" required aria-required="true" aria-describedby="password-help">
+                                    <span class="icon is-small is-left">
+                                        <i class="fas fa-lock" aria-hidden="true"></i>
+                                    </span>
+                                </div>
+                                <p class="help is-hidden" id="password-help">Votre mot de passe doit contenir au moins 8 caractères.</p>
+                            </div>
+                            
+                            <div class="field">
+                                <div class="control">
+                                    <label class="checkbox" for="remember">
+                                        <input type="checkbox" name="remember" id="remember">
+                                        <span class="ml-2">Se souvenir de moi</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="field">
+                                <div class="control">
+                                    <button type="submit" class="button is-primary is-fullwidth" aria-label="Se connecter">
+                                        <span class="icon">
+                                            <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+                                        </span>
+                                        <span>Se connecter</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                        
+                        <div class="has-text-centered mt-4">
+                            <p class="is-size-7">
+                                <a href="{{ url_for('index') }}" aria-label="Retour à la page d'accueil">Retour à l'accueil</a>
+                            </p>
                         </div>
-                    </form>
-                    
-                    <div class="has-text-centered mt-4">
-                        <p class="is-size-7">
-                            <a href="{{ url_for('index') }}">Retour à l'accueil</a>
-                        </p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+</main>
 {% endblock %}
