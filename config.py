@@ -248,6 +248,23 @@ class Config:
 
     # Configuration spécifique pour les tests
     TESTING = get_bool_from_env("FLASK_TESTING", False)
+
+    # ============================================================================
+    # CONFIGURATION I18N (INTERNATIONALISATION)
+    # ============================================================================
+
+    # Langues supportées
+    LANGUAGES = ['fr', 'en']
+    
+    # Langue par défaut
+    BABEL_DEFAULT_LOCALE = os.environ.get("BABEL_DEFAULT_LOCALE") or 'fr'
+    
+    # Dossier des traductions
+    BABEL_TRANSLATION_DIRECTORIES = os.environ.get("BABEL_TRANSLATION_DIRECTORIES") or 'translations'
+    
+    # Détecter automatiquement la langue depuis le navigateur
+    BABEL_DEFAULT_TIMEZONE = os.environ.get("BABEL_DEFAULT_TIMEZONE") or 'UTC'
+
     # ============================================================================
     # CONFIGURATION DE LA SÉCURITÉ
     # ============================================================================

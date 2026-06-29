@@ -1,0 +1,220 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Leviia Schedule\n"
+"POT-Creation-Date: 2026-01-01 00:00+0000\n"
+"PO-Revision-Date: 2026-01-01 00:00+0000\n"
+"Last-Translator: Leviia Team <team@leviia.com>\n"
+"Language-Team: English <en@li.org>\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: app/templates/base.html:3
+msgid "Leviia"
+msgstr "Leviia"
+
+#: app/templates/base.html:4
+msgid "Accueil - Leviia"
+msgstr "Home - Leviia"
+
+#: app/templates/base.html:10
+msgid "Tableau de bord"
+msgstr "Dashboard"
+
+#: app/templates/base.html:13
+msgid "Shifts"
+msgstr "Shifts"
+
+#: app/templates/base.html:16
+msgid "Astreintes"
+msgstr "On-Call"
+
+#: app/templates/base.html:19
+msgid "Congés"
+msgstr "Leave"
+
+#: app/templates/base.html:23
+msgid "Utilisateurs"
+msgstr "Users"
+
+#: app/templates/base.html:26
+msgid "Admin"
+msgstr "Admin"
+
+#: app/templates/base.html:35
+msgid "Basculer entre le thème clair et sombre"
+msgstr "Toggle between light and dark theme"
+
+#: app/templates/base.html:40
+msgid "Menu utilisateur"
+msgstr "User menu"
+
+#: app/templates/base.html:45
+msgid "Mon profil"
+msgstr "My profile"
+
+#: app/templates/base.html:50
+msgid "Déconnexion"
+msgstr "Logout"
+
+#: app/templates/base.html:53
+msgid "Connexion"
+msgstr "Login"
+
+#: app/templates/base.html:65
+msgid "Sauter la navigation"
+msgstr "Skip navigation"
+
+#: app/templates/base.html:70
+msgid "Navigation principale"
+msgstr "Main navigation"
+
+#: app/templates/base.html:85
+msgid "Leviia Schedule"
+msgstr "Leviia Schedule"
+
+#: app/templates/base.html:86
+msgid "Application de gestion des plannings et des astreintes pour les équipes et organisations."
+msgstr "Scheduling and on-call management application for teams and organizations."
+
+#: app/templates/base.html:88
+msgid "Version dev 0.5 | © 2026 Leviia"
+msgstr "Version dev 0.5 | © 2026 Leviia"
+
+#: app/templates/base.html:90
+msgid "Déclaration d'accessibilité"
+msgstr "Accessibility statement"
+
+#: app/templates/400.html:5
+msgid "Erreur 400"
+msgstr "Error 400"
+
+#: app/templates/400.html:6
+msgid "Requête incorrecte"
+msgstr "Bad request"
+
+#: app/templates/400.html:10
+msgid "La requête envoyée est mal formée ou invalide."
+msgstr "The request sent is malformed or invalid."
+
+#: app/templates/400.html:13
+msgid "Le serveur ne peut pas traiter votre requête en raison d'une erreur de syntaxe."
+msgstr "The server cannot process your request due to a syntax error."
+
+#: app/templates/400.html:17
+msgid "Détails"
+msgstr "Details"
+
+#: app/templates/400.html:20
+msgid "Cela peut être dû à"
+msgstr "This may be due to"
+
+#: app/templates/400.html:23
+msgid "Un format de données incorrect"
+msgstr "Incorrect data format"
+
+#: app/templates/400.html:24
+msgid "Un champ obligatoire manquant"
+msgstr "Missing required field"
+
+#: app/templates/400.html:25
+msgid "Une URL mal formée"
+msgstr "Malformed URL"
+
+#: app/templates/400.html:32
+msgid "Retour à l'accueil"
+msgstr "Back to home"
+
+#: app/templates/400.html:38
+msgid "Retour en arrière"
+msgstr "Go back"
+
+#: app/templates/400.html:44
+msgid "Se déconnecter"
+msgstr "Logout"
+
+#: app/templates/400.html:50
+msgid "Se connecter"
+msgstr "Login"
+
+#: app/templates/401.html:5
+msgid "Erreur 401"
+msgstr "Error 401"
+
+#: app/templates/401.html:6
+msgid "Non autorisé"
+msgstr "Unauthorized"
+
+#: app/templates/401.html:10
+msgid "Vous n'avez pas l'autorisation d'accéder à cette page."
+msgstr "You do not have permission to access this page."
+
+#: app/templates/401.html:13
+msgid "L'accès à cette ressource nécessite une authentification valide ou des permissions spécifiques."
+msgstr "Access to this resource requires valid authentication or specific permissions."
+
+#: app/templates/403.html:5
+msgid "Erreur 403"
+msgstr "Error 403"
+
+#: app/templates/403.html:6
+msgid "Accès interdit"
+msgstr "Forbidden"
+
+#: app/templates/403.html:10
+msgid "L'accès à cette ressource est interdit."
+msgstr "Access to this resource is forbidden."
+
+#: app/templates/403.html:13
+msgid "Le serveur a compris votre requête mais refuse de l'exécuter en raison de restrictions d'accès."
+msgstr "The server understood your request but refuses to execute it due to access restrictions."
+
+#: app/templates/404.html:5
+msgid "Erreur 404"
+msgstr "Error 404"
+
+#: app/templates/404.html:6
+msgid "Page non trouvée"
+msgstr "Page not found"
+
+#: app/templates/404.html:10
+msgid "La page que vous cherchez n'existe pas ou a été déplacée."
+msgstr "The page you are looking for does not exist or has been moved."
+
+#: app/templates/404.html:13
+msgid "Le serveur n'a pas trouvé la ressource demandée."
+msgstr "The server could not find the requested resource."
+
+#: app/templates/500.html:5
+msgid "Erreur 500"
+msgstr "Error 500"
+
+#: app/templates/500.html:6
+msgid "Erreur interne du serveur"
+msgstr "Internal server error"
+
+#: app/templates/502.html:5
+msgid "Erreur 502"
+msgstr "Error 502"
+
+#: app/templates/502.html:6
+msgid "Mauvaise passerelle"
+msgstr "Bad gateway"
+
+#: app/templates/503.html:5
+msgid "Erreur 503"
+msgstr "Error 503"
+
+#: app/templates/503.html:6
+msgid "Service indisponible"
+msgstr "Service unavailable"
+
+#: app/templates/504.html:5
+msgid "Erreur 504"
+msgstr "Error 504"
+
+#: app/templates/504.html:6
+msgid "Délai d'attente de la passerelle"
+msgstr "Gateway timeout"

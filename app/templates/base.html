@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ g.get('locale', 'fr') }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Leviia{% endblock %}</title>
+    <title>{% block title %}{{ _('Leviia') }}{% endblock %}</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
     <!-- Bulma CSS - servi localement pour éviter les problèmes de CDN -->
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bulma/bulma.css') }}">
@@ -17,42 +17,58 @@
 </head>
 <body>
     <!-- Skip link pour l'accessibilité -->
-    <a href="#main-content" class="skip-link">Sauter la navigation</a>
+    <a href="#main-content" class="skip-link">{{ _('Sauter la navigation') }}</a>
     
     <header>
-        <nav class="navbar is-primary is-fixed-top" role="navigation" aria-label="Navigation principale">
+        <nav class="navbar is-primary is-fixed-top" role="navigation" aria-label="{{ _('Navigation principale') }}">
             <div class="navbar-brand">
-                <a class="navbar-item" href="{{ url_for('index') }}" aria-label="Accueil - Leviia"><strong>Leviia</strong></a>
+                <a class="navbar-item" href="{{ url_for('index') }}" aria-label="{{ _('Accueil - Leviia') }}"><strong>{{ _('Leviia') }}</strong></a>
             </div>
             <div class="navbar-menu">
                 <div class="navbar-start">
-                    <a class="navbar-item" href="{{ url_for('user_dashboard') }}" aria-label="Tableau de bord">
-                        <i class="fas fa-tachometer-alt" aria-hidden="true"></i>&nbsp; Tableau de bord
+                    <a class="navbar-item" href="{{ url_for('user_dashboard') }}" aria-label="{{ _('Tableau de bord') }}">
+                        <i class="fas fa-tachometer-alt" aria-hidden="true"></i>&nbsp; {{ _('Tableau de bord') }}
                     </a>
-                    <a class="navbar-item" href="{{ url_for('schedule') }}" aria-label="Shifts">
-                        <i class="fas fa-calendar-alt" aria-hidden="true"></i>&nbsp; Shifts
+                    <a class="navbar-item" href="{{ url_for('schedule') }}" aria-label="{{ _('Shifts') }}">
+                        <i class="fas fa-calendar-alt" aria-hidden="true"></i>&nbsp; {{ _('Shifts') }}
                     </a>
-                    <a class="navbar-item" href="{{ url_for('oncall') }}" aria-label="Astreintes">
-                        <i class="fas fa-moon" aria-hidden="true"></i>&nbsp; Astreintes
+                    <a class="navbar-item" href="{{ url_for('oncall') }}" aria-label="{{ _('Astreintes') }}">
+                        <i class="fas fa-moon" aria-hidden="true"></i>&nbsp; {{ _('Astreintes') }}
                     </a>
-                    <a class="navbar-item" href="{{ url_for('leave') }}" aria-label="Congés">
-                        <i class="fas fa-umbrella-beach" aria-hidden="true"></i>&nbsp; Congés
+                    <a class="navbar-item" href="{{ url_for('leave') }}" aria-label="{{ _('Congés') }}">
+                        <i class="fas fa-umbrella-beach" aria-hidden="true"></i>&nbsp; {{ _('Congés') }}
                     </a>
                     {% if current_user.is_authenticated and current_user.is_admin %}
-                    <a class="navbar-item" href="{{ url_for('list_users') }}" aria-label="Utilisateurs">
-                        <i class="fas fa-users" aria-hidden="true"></i>&nbsp; Utilisateurs
+                    <a class="navbar-item" href="{{ url_for('list_users') }}" aria-label="{{ _('Utilisateurs') }}">
+                        <i class="fas fa-users" aria-hidden="true"></i>&nbsp; {{ _('Utilisateurs') }}
                     </a>
-                    <a class="navbar-item" href="{{ url_for('admin_dashboard') }}" aria-label="Admin">
-                        <i class="fas fa-cog" aria-hidden="true"></i>&nbsp; Admin
+                    <a class="navbar-item" href="{{ url_for('admin_dashboard') }}" aria-label="{{ _('Admin') }}">
+                        <i class="fas fa-cog" aria-hidden="true"></i>&nbsp; {{ _('Admin') }}
                     </a>
                     {% endif %}
                 </div>
                 <div class="navbar-end">
+                    <!-- Sélecteur de langue - design intégré Bulma -->
+                    <div class="navbar-item">
+                        <div class="buttons are-small">
+                            <a href="{{ url_for('i18n.set_language', lang='fr') }}" 
+                               class="button is-outlined is-white {% if g.get('locale') == 'fr' %}is-active{% endif %}"
+                               aria-label="Français" title="Français">
+                                <span>FR</span>
+                            </a>
+                            <a href="{{ url_for('i18n.set_language', lang='en') }}" 
+                               class="button is-outlined is-white {% if g.get('locale') == 'en' %}is-active{% endif %}"
+                               aria-label="English" title="English">
+                                <span>EN</span>
+                            </a>
+                        </div>
+                    </div>
+                    
                     {% if current_user.is_authenticated %}
                         <!-- Toggle thème sombre -->
                         <div class="navbar-item">
                             <button id="theme-toggle" class="button is-small is-outlined is-rounded" 
-                                    aria-label="Basculer entre le thème clair et sombre" 
+                                    aria-label="{{ _('Basculer entre le thème clair et sombre') }}" 
                                     aria-pressed="false">
                                 <span class="icon is-small">
                                     <i class="fas fa-moon" aria-hidden="true"></i>
@@ -60,22 +76,22 @@
                             </button>
                         </div>
                         <div class="navbar-item has-dropdown is-hoverable">
-                            <a class="navbar-link" aria-label="Menu utilisateur - {{ current_user.name }}" aria-expanded="false" aria-controls="user-dropdown">
+                            <a class="navbar-link" aria-label="{{ _('Menu utilisateur') }} - {{ current_user.name }}" aria-expanded="false" aria-controls="user-dropdown">
                                 <i class="fas fa-user" aria-hidden="true"></i>&nbsp; {{ current_user.name }}
                             </a>
                             <div id="user-dropdown" class="navbar-dropdown is-right" role="menu">
                                 <a class="navbar-item" href="{{ url_for('profile') }}" role="menuitem">
-                                    <i class="fas fa-user-circle" aria-hidden="true"></i>&nbsp; Mon profil
+                                    <i class="fas fa-user-circle" aria-hidden="true"></i>&nbsp; {{ _('Mon profil') }}
                                 </a>
                                 <hr class="navbar-divider" role="separator">
                                 <a class="navbar-item" href="{{ url_for('logout') }}" role="menuitem">
-                                    <i class="fas fa-sign-out-alt" aria-hidden="true"></i>&nbsp; Déconnexion
+                                    <i class="fas fa-sign-out-alt" aria-hidden="true"></i>&nbsp; {{ _('Déconnexion') }}
                                 </a>
                             </div>
                         </div>
                     {% else %}
-                        <a class="navbar-item" href="{{ url_for('login') }}" aria-label="Connexion">
-                            <i class="fas fa-sign-in-alt" aria-hidden="true"></i>&nbsp; Connexion
+                        <a class="navbar-item" href="{{ url_for('login') }}" aria-label="{{ _('Connexion') }}">
+                            <i class="fas fa-sign-in-alt" aria-hidden="true"></i>&nbsp; {{ _('Connexion') }}
                         </a>
                     {% endif %}
                 </div>
@@ -102,12 +118,12 @@
     <footer class="footer" role="contentinfo">
         <div class="content has-text-centered">
             <p>
-                <strong>Leviia Schedule</strong> - Application de gestion des plannings et des astreintes pour les équipes et organisations.
+                <strong>{{ _('Leviia Schedule') }}</strong> - {{ _('Application de gestion des plannings et des astreintes pour les équipes et organisations.') }}
                 <br>
-                Version dev 0.5 | © 2026 Leviia
+                {{ _('Version dev 0.5 | © 2026 Leviia') }}
             </p>
             <p>
-                <a href="{{ url_for('accessibility_statement') }}" aria-label="Déclaration d'accessibilité">Déclaration d'accessibilité</a>
+                <a href="{{ url_for('accessibility_statement') }}">{{ _('Déclaration d\'accessibilité') }}</a>
             </p>
         </div>
     </footer>

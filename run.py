@@ -4,7 +4,7 @@ from app import app, db
 from app.models import Group, User, ShiftType, Shift, OnCall, Leave
 
 # Importer les routes pour qu'elles soient enregistrées
-from app.routes import main, admin, export, auth
+from app.routes import main, admin, export, auth, i18n
 
 # Types de shifts par défaut
 DEFAULT_SHIFT_TYPES = [

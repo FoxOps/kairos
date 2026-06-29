@@ -1,0 +1,220 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Leviia Schedule\n"
+"POT-Creation-Date: 2026-01-01 00:00+0000\n"
+"PO-Revision-Date: 2026-01-01 00:00+0000\n"
+"Last-Translator: Leviia Team <team@leviia.com>\n"
+"Language-Team: French <fr@li.org>\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: app/templates/base.html:3
+msgid "Leviia"
+msgstr "Leviia"
+
+#: app/templates/base.html:4
+msgid "Accueil - Leviia"
+msgstr "Accueil - Leviia"
+
+#: app/templates/base.html:10
+msgid "Tableau de bord"
+msgstr "Tableau de bord"
+
+#: app/templates/base.html:13
+msgid "Shifts"
+msgstr "Shifts"
+
+#: app/templates/base.html:16
+msgid "Astreintes"
+msgstr "Astreintes"
+
+#: app/templates/base.html:19
+msgid "Congés"
+msgstr "Congés"
+
+#: app/templates/base.html:23
+msgid "Utilisateurs"
+msgstr "Utilisateurs"
+
+#: app/templates/base.html:26
+msgid "Admin"
+msgstr "Admin"
+
+#: app/templates/base.html:35
+msgid "Basculer entre le thème clair et sombre"
+msgstr "Basculer entre le thème clair et sombre"
+
+#: app/templates/base.html:40
+msgid "Menu utilisateur"
+msgstr "Menu utilisateur"
+
+#: app/templates/base.html:45
+msgid "Mon profil"
+msgstr "Mon profil"
+
+#: app/templates/base.html:50
+msgid "Déconnexion"
+msgstr "Déconnexion"
+
+#: app/templates/base.html:53
+msgid "Connexion"
+msgstr "Connexion"
+
+#: app/templates/base.html:65
+msgid "Sauter la navigation"
+msgstr "Sauter la navigation"
+
+#: app/templates/base.html:70
+msgid "Navigation principale"
+msgstr "Navigation principale"
+
+#: app/templates/base.html:85
+msgid "Leviia Schedule"
+msgstr "Leviia Schedule"
+
+#: app/templates/base.html:86
+msgid "Application de gestion des plannings et des astreintes pour les équipes et organisations."
+msgstr "Application de gestion des plannings et des astreintes pour les équipes et organisations."
+
+#: app/templates/base.html:88
+msgid "Version dev 0.5 | © 2026 Leviia"
+msgstr "Version dev 0.5 | © 2026 Leviia"
+
+#: app/templates/base.html:90
+msgid "Déclaration d'accessibilité"
+msgstr "Déclaration d'accessibilité"
+
+#: app/templates/400.html:5
+msgid "Erreur 400"
+msgstr "Erreur 400"
+
+#: app/templates/400.html:6
+msgid "Requête incorrecte"
+msgstr "Requête incorrecte"
+
+#: app/templates/400.html:10
+msgid "La requête envoyée est mal formée ou invalide."
+msgstr "La requête envoyée est mal formée ou invalide."
+
+#: app/templates/400.html:13
+msgid "Le serveur ne peut pas traiter votre requête en raison d'une erreur de syntaxe."
+msgstr "Le serveur ne peut pas traiter votre requête en raison d'une erreur de syntaxe."
+
+#: app/templates/400.html:17
+msgid "Détails"
+msgstr "Détails"
+
+#: app/templates/400.html:20
+msgid "Cela peut être dû à"
+msgstr "Cela peut être dû à"
+
+#: app/templates/400.html:23
+msgid "Un format de données incorrect"
+msgstr "Un format de données incorrect"
+
+#: app/templates/400.html:24
+msgid "Un champ obligatoire manquant"
+msgstr "Un champ obligatoire manquant"
+
+#: app/templates/400.html:25
+msgid "Une URL mal formée"
+msgstr "Une URL mal formée"
+
+#: app/templates/400.html:32
+msgid "Retour à l'accueil"
+msgstr "Retour à l'accueil"
+
+#: app/templates/400.html:38
+msgid "Retour en arrière"
+msgstr "Retour en arrière"
+
+#: app/templates/400.html:44
+msgid "Se déconnecter"
+msgstr "Se déconnecter"
+
+#: app/templates/400.html:50
+msgid "Se connecter"
+msgstr "Se connecter"
+
+#: app/templates/401.html:5
+msgid "Erreur 401"
+msgstr "Erreur 401"
+
+#: app/templates/401.html:6
+msgid "Non autorisé"
+msgstr "Non autorisé"
+
+#: app/templates/401.html:10
+msgid "Vous n'avez pas l'autorisation d'accéder à cette page."
+msgstr "Vous n'avez pas l'autorisation d'accéder à cette page."
+
+#: app/templates/401.html:13
+msgid "L'accès à cette ressource nécessite une authentification valide ou des permissions spécifiques."
+msgstr "L'accès à cette ressource nécessite une authentification valide ou des permissions spécifiques."
+
+#: app/templates/403.html:5
+msgid "Erreur 403"
+msgstr "Erreur 403"
+
+#: app/templates/403.html:6
+msgid "Accès interdit"
+msgstr "Accès interdit"
+
+#: app/templates/403.html:10
+msgid "L'accès à cette ressource est interdit."
+msgstr "L'accès à cette ressource est interdit."
+
+#: app/templates/403.html:13
+msgid "Le serveur a compris votre requête mais refuse de l'exécuter en raison de restrictions d'accès."
+msgstr "Le serveur a compris votre requête mais refuse de l'exécuter en raison de restrictions d'accès."
+
+#: app/templates/404.html:5
+msgid "Erreur 404"
+msgstr "Erreur 404"
+
+#: app/templates/404.html:6
+msgid "Page non trouvée"
+msgstr "Page non trouvée"
+
+#: app/templates/404.html:10
+msgid "La page que vous cherchez n'existe pas ou a été déplacée."
+msgstr "La page que vous cherchez n'existe pas ou a été déplacée."
+
+#: app/templates/404.html:13
+msgid "Le serveur n'a pas trouvé la ressource demandée."
+msgstr "Le serveur n'a pas trouvé la ressource demandée."
+
+#: app/templates/500.html:5
+msgid "Erreur 500"
+msgstr "Erreur 500"
+
+#: app/templates/500.html:6
+msgid "Erreur interne du serveur"
+msgstr "Erreur interne du serveur"
+
+#: app/templates/502.html:5
+msgid "Erreur 502"
+msgstr "Erreur 502"
+
+#: app/templates/502.html:6
+msgid "Mauvaise passerelle"
+msgstr "Mauvaise passerelle"
+
+#: app/templates/503.html:5
+msgid "Erreur 503"
+msgstr "Erreur 503"
+
+#: app/templates/503.html:6
+msgid "Service indisponible"
+msgstr "Service indisponible"
+
+#: app/templates/504.html:5
+msgid "Erreur 504"
+msgstr "Erreur 504"
+
+#: app/templates/504.html:6
+msgid "Délai d'attente de la passerelle"
+msgstr "Délai d'attente de la passerelle"

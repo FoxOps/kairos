@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Page non trouvée - Leviia{% endblock %}
+{% block title %}{{ _('Erreur 404') }} - {{ _('Leviia') }}{% endblock %}
 
 {% block content %}
 <main role="main" aria-labelledby="error-title">
@@ -10,35 +10,54 @@
                 <div class="column is-6">
                     <div class="box has-text-centered" role="region" aria-labelledby="error-title" aria-describedby="error-description">
                         <h1 id="error-title" class="title is-1 has-text-warning">404</h1>
-                        <h2 id="error-description" class="title is-3">Page non trouvée</h2>
+                        <h2 id="error-description" class="title is-3">{{ _('Page non trouvée') }}</h2>
                         <p class="subtitle is-5">
-                            La page que vous cherchez n'existe pas.
+                            {{ _('La page que vous cherchez n\'existe pas ou a été déplacée.') }}
                         </p>
                         <div class="content">
-                            <p role="alert" aria-live="assertive">
-                                Vérifiez l'URL ou retournez à la page d'accueil.
+                            <p>
+                                {{ _('Le serveur n\'a pas trouvé la ressource demandée.') }}
                             </p>
+                            {% if error_message %}
+                            <div class="notification is-warning mt-4" role="alert" aria-live="assertive">
+                                <p><strong>{{ _('Détails') }} :</strong> {{ error_message }}</p>
+                            </div>
+                            {% endif %}
+                            <p>
+                                <strong>{{ _('Cela peut être dû à') }} :</strong>
+                            </p>
+                            <ul class="ml-5">
+                                <li>{{ _('Une URL incorrecte') }}</li>
+                                <li>{{ _('Une page supprimée') }}</li>
+                                <li>{{ _('Une modification de la structure du site') }}</li>
+                            </ul>
                         </div>
                         <div class="mt-5">
-                            <a href="{{ url_for('index') }}" class="button is-primary" aria-label="Retour à l'accueil">
+                            <a href="{{ url_for('index') }}" class="button is-primary" aria-label="{{ _('Retour à l\'accueil') }}">
                                 <span class="icon">
                                     <i class="fas fa-home" aria-hidden="true"></i>
                                 </span>
-                                <span>Retour à l'accueil</span>
+                                <span>{{ _('Retour à l\'accueil') }}</span>
                             </a>
+                            <button onclick="history.back()" class="button is-info ml-3" aria-label="{{ _('Retour en arrière') }}">
+                                <span class="icon">
+                                    <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                                </span>
+                                <span>{{ _('Retour en arrière') }}</span>
+                            </button>
                             {% if current_user.is_authenticated %}
-                                <a href="{{ url_for('logout') }}" class="button is-light ml-3" aria-label="Se déconnecter">
+                                <a href="{{ url_for('logout') }}" class="button is-light ml-3" aria-label="{{ _('Se déconnecter') }}">
                                     <span class="icon">
                                         <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
                                     </span>
-                                    <span>Se déconnecter</span>
+                                    <span>{{ _('Se déconnecter') }}</span>
                                 </a>
                             {% else %}
-                                <a href="{{ url_for('login') }}" class="button is-light ml-3" aria-label="Se connecter">
+                                <a href="{{ url_for('login') }}" class="button is-light ml-3" aria-label="{{ _('Se connecter') }}">
                                     <span class="icon">
                                         <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
                                     </span>
-                                    <span>Se connecter</span>
+                                    <span>{{ _('Se connecter') }}</span>
                                 </a>
                             {% endif %}
                         </div>

@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify
+from flask_babel import Babel, get_locale, gettext as _
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_compress import Compress
@@ -15,6 +16,9 @@ from datetime import datetime
 
 # Initialisation de la base de données
 db = SQLAlchemy()
+
+# Initialisation de Babel pour i18n
+babel = Babel()
 
 # Initialisation de Flask-Login
 login_manager = LoginManager()
@@ -43,6 +47,30 @@ app.config.from_object("config.Config")
 # Initialiser les extensions
 db.init_app(app)
 login_manager.init_app(app)
+
+# Initialiser Babel
+from app.routes.i18n import get_locale
+babel.init_app(app, locale_selector=get_locale)
+
+# Ajouter un before_request pour définir g.locale
+@app.before_request
+def before_request_set_g_locale():
+    from flask import g, session, request
+    from config import Config
+    
+    # Déterminer la locale
+    if 'language' in session:
+        g.locale = session['language']
+    elif request.cookies.get('language'):
+        g.locale = request.cookies.get('language')
+    elif request.accept_languages:
+        best = request.accept_languages.best_match(Config.LANGUAGES)
+        if best:
+            g.locale = best
+        else:
+            g.locale = Config.BABEL_DEFAULT_LOCALE
+    else:
+        g.locale = Config.BABEL_DEFAULT_LOCALE
 
 # Initialiser le cache
 init_cache(app)
@@ -704,6 +732,14 @@ init_data_cleanup()
 def favicon():
     """Redirige /favicon.ico vers /static/images/favicon.png."""
     return app.send_static_file('images/favicon.png')
+
+
+# Importer les routes pour qu'elles soient enregistrées
+from app.routes import main, admin, export, auth, i18n
+
+
+# Importer les routes pour qu'elles soient enregistrées
+from app.routes import main, admin, export, auth, i18n
 
 
 def create_app():
