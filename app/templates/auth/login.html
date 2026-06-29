@@ -8,35 +8,57 @@
         <div class="columns is-centered">
             <div class="column is-4">
                 <div class="box">
-                    <h1 class="title is-4 has-text-centered">Connexion</h1>
+                    <h1 class="title is-4 has-text-centered" id="login-title">Connexion</h1>
                     
-                    <form method="POST" action="{{ url_for('login') }}">
+                    <form method="POST" action="{{ url_for('login') }}" aria-labelledby="login-title" aria-describedby="login-description" novalidate>
+                        <p id="login-description" class="is-sr-only">Veuillez entrer votre email et mot de passe pour vous connecter</p>
+                        
                         <div class="field">
                             <label class="label required" for="email">Email</label>
                             <div class="control has-icons-left">
-                                <input class="input" type="email" id="email" name="email" 
-                                       placeholder="votre@email.com" required autofocus aria-required="true">
+                                <input class="input" 
+                                       type="email" 
+                                       id="email" 
+                                       name="email" 
+                                       placeholder="votre@email.com" 
+                                       required 
+                                       autofocus 
+                                       aria-required="true"
+                                       aria-describedby="email-help"
+                                       autocomplete="email">
                                 <span class="icon is-small is-left">
                                     <i class="fas fa-envelope" aria-hidden="true"></i>
                                 </span>
                             </div>
+                            <p id="email-help" class="help">Format : votre@email.com</p>
                         </div>
                         
                         <div class="field">
                             <label class="label required" for="password">Mot de passe</label>
                             <div class="control has-icons-left">
-                                <input class="input" type="password" id="password" name="password" 
-                                       placeholder="Votre mot de passe" required aria-required="true">
+                                <input class="input" 
+                                       type="password" 
+                                       id="password" 
+                                       name="password" 
+                                       placeholder="Votre mot de passe" 
+                                       required 
+                                       aria-required="true"
+                                       aria-describedby="password-help"
+                                       autocomplete="current-password">
                                 <span class="icon is-small is-left">
                                     <i class="fas fa-lock" aria-hidden="true"></i>
                                 </span>
                             </div>
+                            <p id="password-help" class="help">Le mot de passe doit contenir au moins 8 caractères</p>
                         </div>
                         
                         <div class="field">
                             <div class="control">
                                 <label class="checkbox">
-                                    <input type="checkbox" name="remember" id="remember">
+                                    <input type="checkbox" 
+                                           name="remember" 
+                                           id="remember"
+                                           autocomplete="remember-me">
                                     <span class="ml-2">Se souvenir de moi</span>
                                 </label>
                             </div>
@@ -56,12 +78,108 @@
                     
                     <div class="has-text-centered mt-4">
                         <p class="is-size-7">
-                            <a href="{{ url_for('index') }}">Retour à l'accueil</a>
+                            <a href="{{ url_for('index') }}" aria-label="Retour à la page d'accueil">Retour à l'accueil</a>
                         </p>
                     </div>
+                    
+                    {% if error %}
+                    <div class="notification is-danger mt-4" role="alert" aria-live="assertive">
+                        <strong>Erreur :</strong> {{ error }}
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    
+    // Focus sur le champ email au chargement
+    if (emailInput) {
+        emailInput.focus();
+    }
+    
+    // Validation accessible du formulaire
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            const errors = [];
+            
+            // Validation de l'email
+            if (emailInput && !emailInput.value.trim()) {
+                errors.push('Veuillez entrer votre email');
+                isValid = false;
+            } else if (emailInput && !emailInput.checkValidity()) {
+                errors.push('Veuillez entrer un email valide');
+                isValid = false;
+            }
+            
+            // Validation du mot de passe
+            if (passwordInput && !passwordInput.value.trim()) {
+                errors.push('Veuillez entrer votre mot de passe');
+                isValid = false;
+            } else if (passwordInput && passwordInput.value.length < 8) {
+                errors.push('Le mot de passe doit contenir au moins 8 caractères');
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+                
+                // Afficher les erreurs de manière accessible
+                const errorRegion = document.createElement('div');
+                errorRegion.setAttribute('aria-live', 'assertive');
+                errorRegion.setAttribute('aria-atomic', 'true');
+                errorRegion.className = 'notification is-danger';
+                errorRegion.innerHTML = '<strong>Erreur :</strong> ' + errors.join(', ');
+                
+                // Insérer avant le formulaire
+                form.parentNode.insertBefore(errorRegion, form);
+                
+                // Focus sur le premier champ invalide
+                if (!emailInput.value.trim()) {
+                    emailInput.focus();
+                } else if (!passwordInput.value.trim() || passwordInput.value.length < 8) {
+                    passwordInput.focus();
+                }
+                
+                // Supprimer l'erreur après 5 secondes
+                setTimeout(() => {
+                    errorRegion.remove();
+                }, 5000);
+            }
+        });
+        
+        // Gestion des erreurs de validation en temps réel
+        if (emailInput) {
+            emailInput.addEventListener('blur', function() {
+                if (this.value && !this.checkValidity()) {
+                    this.setCustomValidity('Veuillez entrer un email valide');
+                    this.reportValidity();
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+        }
+        
+        if (passwordInput) {
+            passwordInput.addEventListener('blur', function() {
+                if (this.value && this.value.length < 8) {
+                    this.setCustomValidity('Le mot de passe doit contenir au moins 8 caractères');
+                    this.reportValidity();
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+        }
+    }
+});
+</script>
 {% endblock %}

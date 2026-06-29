@@ -8,79 +8,83 @@
 {% endblock %}
 
 {% block content %}
-<section class="section">
+<section class="section" aria-labelledby="home-title">
     <div class="container">
-        <h1 class="title">
+        <h1 class="title" id="home-title">
             <i class="fas fa-home" aria-hidden="true"></i> Tableau de bord - Leviia
         </h1>
+        <p class="subtitle" id="home-description">Gestion interactive des plannings et astreintes.</p>
 
         <!-- Actions rapides -->
         <div class="box">
-            <h3>
-                <i class="fas fa-bolt" aria-hidden="true"></i> Actions rapides
-            </h3>
-            <div class="buttons">
-                {% if current_user.is_admin %}
-                    <!-- Actions pour les administrateurs -->
-                    <a class="button is-primary" href="{{ url_for('add_shift') }}">
-                        <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un shift
-                    </a>
-                    <a class="button is-primary" href="{{ url_for('add_oncall') }}">
-                        <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter une astreinte
-                    </a>
-                    <a class="button is-primary" href="{{ url_for('add_leave') }}">
-                        <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un congé
-                    </a>
-                    <a class="button is-primary" href="{{ url_for('list_users') }}">
-                        <i class="fas fa-users" aria-hidden="true"></i>&nbsp; Gérer les utilisateurs
-                    </a>
-                    <a class="button is-primary" href="{{ url_for('list_groups') }}">
-                        <i class="fas fa-user-friends" aria-hidden="true"></i>&nbsp; Gérer les groupes
-                    </a>
-                    <a class="button is-light" href="{{ url_for('admin_dashboard') }}">
-                        <i class="fas fa-cog" aria-hidden="true"></i>&nbsp; Admin
-                    </a>
-                {% else %}
-                    <!-- Actions pour les utilisateurs normaux - Export de leur calendrier -->
-                    {% if current_user.ics_token %}
-                    <a class="button is-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('shifts', 'my') }}">
-                        <i class="fas fa-download" aria-hidden="true"></i>&nbsp; Exporter mes shifts
-                    </a>
-                    <a class="button is-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('oncall', 'my') }}">
-                        <i class="fas fa-download" aria-hidden="true"></i>&nbsp; Exporter mes astreintes
-                    </a>
-                    <a class="button is-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('leaves', 'my') }}">
-                        <i class="fas fa-download" aria-hidden="true"></i>&nbsp; Exporter mes congés
-                    </a>
+            <h2 class="title is-5" id="quick-actions-title"><i class="fas fa-bolt" aria-hidden="true"></i> Actions rapides</h2>
+            <p class="subtitle is-6" id="quick-actions-description">Accédez rapidement aux fonctionnalités principales.</p>
+            <nav aria-label="Actions rapides">
+                <div class="buttons" role="menubar">
+                    {% if current_user.is_admin %}
+                        <!-- Actions pour les administrateurs -->
+                        <a class="button is-primary" href="{{ url_for('add_shift') }}" role="menuitem" aria-label="Ajouter un nouveau shift">
+                            <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un shift
+                        </a>
+                        <a class="button is-primary" href="{{ url_for('add_oncall') }}" role="menuitem" aria-label="Ajouter une nouvelle astreinte">
+                            <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter une astreinte
+                        </a>
+                        <a class="button is-primary" href="{{ url_for('add_leave') }}" role="menuitem" aria-label="Ajouter un nouveau congé">
+                            <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un congé
+                        </a>
+                        <a class="button is-primary" href="{{ url_for('list_users') }}" role="menuitem" aria-label="Gérer les utilisateurs">
+                            <i class="fas fa-users" aria-hidden="true"></i>&nbsp; Gérer les utilisateurs
+                        </a>
+                        <a class="button is-primary" href="{{ url_for('list_groups') }}" role="menuitem" aria-label="Gérer les groupes">
+                            <i class="fas fa-user-friends" aria-hidden="true"></i>&nbsp; Gérer les groupes
+                        </a>
+                        <a class="button is-light" href="{{ url_for('admin_dashboard') }}" role="menuitem" aria-label="Accéder au panneau d'administration">
+                            <i class="fas fa-cog" aria-hidden="true"></i>&nbsp; Admin
+                        </a>
+                    {% else %}
+                        <!-- Actions pour les utilisateurs normaux - Export de leur calendrier -->
+                        {% if current_user.ics_token %}
+                        <a class="button is-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('shifts', 'my') }}" role="menuitem" aria-label="Exporter mes shifts au format iCalendar">
+                            <i class="fas fa-download" aria-hidden="true"></i>&nbsp; Exporter mes shifts
+                        </a>
+                        <a class="button is-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('oncall', 'my') }}" role="menuitem" aria-label="Exporter mes astreintes au format iCalendar">
+                            <i class="fas fa-download" aria-hidden="true"></i>&nbsp; Exporter mes astreintes
+                        </a>
+                        <a class="button is-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('leaves', 'my') }}" role="menuitem" aria-label="Exporter mes congés au format iCalendar">
+                            <i class="fas fa-download" aria-hidden="true"></i>&nbsp; Exporter mes congés
+                        </a>
+                        {% endif %}
                     {% endif %}
-                {% endif %}
-            </div>
+                </div>
+            </nav>
         </div>
 
         <!-- Calendrier interactif avec Drag & Drop -->
         <div class="box">
-            <h2 class="mb-5">
+            <h2 class="title is-5" id="calendar-title">
                 <i class="fas fa-calendar-alt" aria-hidden="true"></i> 
                 Calendrier interactif - Shifts, astreintes et congés
-                {% if current_user.is_admin %}
-                <div class="is-pulled-right is-flex is-align-items-center gap-2 mb-6">
-                    <span class="tag is-danger min-w-180" id="edit-mode-status-tag">
-                        <i class="fas fa-edit" aria-hidden="true"></i>&nbsp; Mode édition désactivé
-                    </span>
-                    <button class="button is-small is-success min-w-180" id="toggle-edit-mode">
-                        <i class="fas fa-toggle-on" aria-hidden="true"></i>&nbsp; Activer l'édition
-                    </button>
-                    <button class="button is-small is-info min-w-180" id="toggle-tips">
-                        <i class="fas fa-eye" aria-hidden="true"></i>&nbsp; Afficher conseils
-                    </button>
-                </div>
-                {% endif %}
             </h2>
+            <p class="subtitle is-6" id="calendar-description">Visualisez et gérez vos plannings de manière interactive.</p>
+            
+            {% if current_user.is_admin %}
+            <div class="is-flex is-align-items-center gap-2 mb-6" role="group" aria-label="Options du calendrier">
+                <span class="tag is-danger min-w-180" id="edit-mode-status-tag" role="status" aria-live="polite">
+                    <i class="fas fa-edit" aria-hidden="true"></i>&nbsp; Mode édition désactivé
+                </span>
+                <button class="button is-small is-success min-w-180" id="toggle-edit-mode" aria-label="Activer le mode édition" aria-pressed="false">
+                    <i class="fas fa-toggle-on" aria-hidden="true"></i>&nbsp; Activer l'édition
+                </button>
+                <button class="button is-small is-info min-w-180" id="toggle-tips" aria-label="Afficher les conseils d'utilisation" aria-expanded="false">
+                    <i class="fas fa-eye" aria-hidden="true"></i>&nbsp; Afficher conseils
+                </button>
+            </div>
+            {% endif %}
             
             <!-- Conteneur pour les événements externes (pour créer de nouveaux shifts) -->
             {% if current_user.is_admin %}
-            <div class="notification is-info is-light mb-4 d-none" id="tips-container">
-                <p><strong><i class="fas fa-info-circle"></i> Conseils d'utilisation :</strong></p>
+            <div class="notification is-info is-light mb-4 d-none" id="tips-container" role="alert" aria-live="polite">
+                <h3><strong><i class="fas fa-info-circle"></i> Conseils d'utilisation :</strong></h3>
                 <ul>
                     <li><strong>Mode édition activé</strong> : Le drag & drop est activé. Cliquez sur un événement (shift, astreinte, congé) pour le supprimer (avec confirmation).</li>
                     <li><strong>Déplacer un événement</strong> : Cliquez et faites glisser un événement (shift, astreinte, congé) vers une nouvelle date/heure</li>
@@ -92,16 +96,16 @@
             </div>
             {% endif %}
             
-            <div id="calendar" class="mt-4 is-fullwidth"></div>
+            <div id="calendar" class="mt-4 is-fullwidth" role="application" aria-label="Calendrier interactif pour la gestion des shifts, astreintes et congés"></div>
         </div>
 
         <!-- Légende -->
         <div class="box">
-            <h3>Légende</h3>
-            <div class="tags are-medium">
-                <span class="tag is-primary"><i class="fas fa-calendar-check"></i> Shifts</span>
-                <span class="tag is-info"><i class="fas fa-moon"></i> Astreintes</span>
-                <span class="tag is-danger"><i class="fas fa-umbrella-beach"></i> Congés</span>
+            <h3 id="legend-title">Légende</h3>
+            <div class="tags are-medium" role="list" aria-label="Légende des couleurs du calendrier">
+                <span class="tag is-primary" role="listitem"><i class="fas fa-calendar-check" aria-hidden="true"></i> Shifts</span>
+                <span class="tag is-info" role="listitem"><i class="fas fa-moon" aria-hidden="true"></i> Astreintes</span>
+                <span class="tag is-danger" role="listitem"><i class="fas fa-umbrella-beach" aria-hidden="true"></i> Congés</span>
             </div>
         </div>
     </div>
@@ -153,10 +157,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 editModeStatusTag.innerHTML = '<i class="fas fa-edit" aria-hidden="true"></i>&nbsp; Mode édition activé';
                 editModeStatusTag.classList.remove('is-danger');
                 editModeStatusTag.classList.add('is-success');
+                editModeStatusTag.setAttribute('aria-label', 'Mode édition activé');
             } else {
                 editModeStatusTag.innerHTML = '<i class="fas fa-edit" aria-hidden="true"></i>&nbsp; Mode édition désactivé';
                 editModeStatusTag.classList.remove('is-success');
                 editModeStatusTag.classList.add('is-danger');
+                editModeStatusTag.setAttribute('aria-label', 'Mode édition désactivé');
             }
         }
         
@@ -165,10 +171,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 toggleEditModeBtn.innerHTML = '<i class="fas fa-toggle-off" aria-hidden="true"></i>&nbsp; Désactiver l\'édition';
                 toggleEditModeBtn.classList.remove('is-success');
                 toggleEditModeBtn.classList.add('is-danger');
+                toggleEditModeBtn.setAttribute('aria-label', 'Désactiver le mode édition');
+                toggleEditModeBtn.setAttribute('aria-pressed', 'true');
             } else {
                 toggleEditModeBtn.innerHTML = '<i class="fas fa-toggle-on" aria-hidden="true"></i>&nbsp; Activer l\'édition';
                 toggleEditModeBtn.classList.remove('is-danger');
                 toggleEditModeBtn.classList.add('is-success');
+                toggleEditModeBtn.setAttribute('aria-label', 'Activer le mode édition');
+                toggleEditModeBtn.setAttribute('aria-pressed', 'false');
             }
         }
         
@@ -178,11 +188,28 @@ document.addEventListener('DOMContentLoaded', function() {
             window.calendar.setOption('selectable', enabled && isAdmin);
             window.calendar.setOption('droppable', enabled && isAdmin);
         }
+        
+        // Annoncer le changement aux lecteurs d'écran
+        const liveRegion = document.createElement('div');
+        liveRegion.setAttribute('aria-live', 'polite');
+        liveRegion.setAttribute('aria-atomic', 'true');
+        liveRegion.className = 'is-sr-only';
+        liveRegion.textContent = `Mode édition ${enabled ? 'activé' : 'désactivé'}`;
+        document.body.appendChild(liveRegion);
+        setTimeout(() => liveRegion.remove(), 1000);
     }
 
     if (toggleEditModeBtn && editModeStatusTag) {
         toggleEditModeBtn.addEventListener('click', function() {
             updateEditModeState(!editModeEnabled);
+        });
+        
+        // Gestion du clavier
+        toggleEditModeBtn.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                updateEditModeState(!editModeEnabled);
+            }
         });
     }
 
@@ -195,11 +222,39 @@ document.addEventListener('DOMContentLoaded', function() {
                 toggleTipsBtn.innerHTML = '<i class="fas fa-eye-slash" aria-hidden="true"></i>&nbsp; Cacher conseils';
                 toggleTipsBtn.classList.remove('is-info');
                 toggleTipsBtn.classList.add('is-warning');
+                toggleTipsBtn.setAttribute('aria-label', 'Cacher les conseils d\'utilisation');
+                toggleTipsBtn.setAttribute('aria-expanded', 'true');
             } else {
                 tipsContainer.style.display = 'none';
                 toggleTipsBtn.innerHTML = '<i class="fas fa-eye" aria-hidden="true"></i>&nbsp; Afficher conseils';
                 toggleTipsBtn.classList.remove('is-warning');
                 toggleTipsBtn.classList.add('is-info');
+                toggleTipsBtn.setAttribute('aria-label', 'Afficher les conseils d\'utilisation');
+                toggleTipsBtn.setAttribute('aria-expanded', 'false');
+            }
+        });
+        
+        // Gestion du clavier
+        toggleTipsBtn.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                tipsVisible = !tipsVisible;
+                
+                if (tipsVisible) {
+                    tipsContainer.style.display = 'block';
+                    toggleTipsBtn.innerHTML = '<i class="fas fa-eye-slash" aria-hidden="true"></i>&nbsp; Cacher conseils';
+                    toggleTipsBtn.classList.remove('is-info');
+                    toggleTipsBtn.classList.add('is-warning');
+                    toggleTipsBtn.setAttribute('aria-label', 'Cacher les conseils d\'utilisation');
+                    toggleTipsBtn.setAttribute('aria-expanded', 'true');
+                } else {
+                    tipsContainer.style.display = 'none';
+                    toggleTipsBtn.innerHTML = '<i class="fas fa-eye" aria-hidden="true"></i>&nbsp; Afficher conseils';
+                    toggleTipsBtn.classList.remove('is-warning');
+                    toggleTipsBtn.classList.add('is-info');
+                    toggleTipsBtn.setAttribute('aria-label', 'Afficher les conseils d\'utilisation');
+                    toggleTipsBtn.setAttribute('aria-expanded', 'false');
+                }
             }
         });
     }
@@ -433,6 +488,28 @@ document.addEventListener('DOMContentLoaded', function() {
             if (event.extendedProps && event.extendedProps.userId) {
                 event.setExtendedProp('userId', event.extendedProps.userId);
             }
+            
+            // Ajouter des attributs ARIA pour l'accessibilité
+            const el = info.el;
+            const extendedProps = event.extendedProps || {};
+            const type = extendedProps.type || '';
+            const userName = extendedProps.userName || '';
+            const date = event.start ? event.start.toLocaleDateString('fr-FR') : '';
+            
+            let ariaLabel = '';
+            if (type === 'shift') {
+                ariaLabel = `Shift de ${userName} le ${date}`;
+            } else if (type === 'oncall') {
+                ariaLabel = `Astreinte de ${userName} le ${date}`;
+            } else if (type === 'leave') {
+                ariaLabel = `Congé de ${userName} le ${date}`;
+            }
+            
+            if (ariaLabel) {
+                el.setAttribute('aria-label', ariaLabel);
+                el.setAttribute('role', 'button');
+                el.setAttribute('tabindex', '0');
+            }
         },
         
         // Désactiver le drag & drop pour les week-ends
@@ -468,43 +545,48 @@ document.addEventListener('DOMContentLoaded', function() {
                 modal = document.createElement('div');
                 modal.id = modalId;
                 modal.className = 'modal';
+                modal.setAttribute('role', 'dialog');
+                modal.setAttribute('aria-labelledby', 'create-shift-title');
+                modal.setAttribute('aria-modal', 'true');
                 modal.innerHTML = `
                     <div class="modal-background"></div>
                     <div class="modal-card">
                         <header class="modal-card-head">
-                            <p class="modal-card-title">
+                            <p class="modal-card-title" id="create-shift-title">
                                 <i class="fas fa-plus"></i> Créer un nouveau shift
                             </p>
-                            <button class="delete close-modal" aria-label="close"></button>
+                            <button class="delete close-modal" aria-label="Fermer"></button>
                         </header>
                         <section class="modal-card-body">
                             <div class="field">
-                                <label class="label">Date et heure</label>
+                                <label class="label" for="shift-start">Date et heure de début</label>
                                 <div class="control">
-                                    <input type="datetime-local" id="shift-start" class="input" value="${formatDateForInput(start)}">
+                                    <input type="datetime-local" id="shift-start" class="input" value="${formatDateForInput(start)}" aria-required="true">
                                 </div>
                             </div>
                             <div class="field">
-                                <label class="label">Fin</label>
+                                <label class="label" for="shift-end">Date et heure de fin</label>
                                 <div class="control">
-                                    <input type="datetime-local" id="shift-end" class="input" value="${formatDateForInput(end)}">
+                                    <input type="datetime-local" id="shift-end" class="input" value="${formatDateForInput(end)}" aria-required="true">
                                 </div>
                             </div>
                             <div class="field">
-                                <label class="label">Utilisateur</label>
+                                <label class="label" for="shift-user">Utilisateur</label>
                                 <div class="control">
                                     <div class="select is-fullwidth">
-                                        <select id="shift-user">
+                                        <select id="shift-user" aria-required="true">
+                                            <option value="" selected disabled>Sélectionner un utilisateur</option>
                                             ${users.map(u => `<option value="${u.id}">${u.name} (${u.email})</option>`).join('')}
                                         </select>
                                     </div>
                                 </div>
                             </div>
                             <div class="field">
-                                <label class="label">Type de shift</label>
+                                <label class="label" for="shift-type">Type de shift</label>
                                 <div class="control">
                                     <div class="select is-fullwidth">
-                                        <select id="shift-type">
+                                        <select id="shift-type" aria-required="true">
+                                            <option value="" selected disabled>Sélectionner un type</option>
                                             ${shiftTypes.map(st => `<option value="${st.id}">${st.label} (${st.start_hour}:00 - ${st.end_hour}:00)</option>`).join('')}
                                         </select>
                                     </div>
@@ -534,6 +616,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // Gérer les boutons
             modal.querySelectorAll('.close-modal').forEach(btn => {
                 btn.onclick = () => modal.classList.remove('is-active');
+                
+                // Gestion du clavier
+                btn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        modal.classList.remove('is-active');
+                    }
+                });
             });
 
             modal.querySelector('.create-shift-btn').onclick = () => {
@@ -578,6 +668,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('Une erreur est survenue lors de la création du shift.');
                 });
             };
+            
+            // Gestion du clavier pour le bouton créer
+            modal.querySelector('.create-shift-btn').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    modal.querySelector('.create-shift-btn').click();
+                }
+            });
+            
+            // Focus sur le premier champ
+            modal.querySelector('#shift-user').focus();
+            
+            // Gérer la fermeture avec Escape
+            modal.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    modal.classList.remove('is-active');
+                }
+            });
         }).catch(error => {
             console.error('Erreur lors du chargement des données:', error);
             alert('Une erreur est survenue lors du chargement des données.');

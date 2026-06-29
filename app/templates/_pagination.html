@@ -8,38 +8,54 @@
 #}
 
 {% if pagination.has_prev or pagination.has_next or pagination.total > 0 %}
-<nav class="pagination is-centered" role="navigation" aria-label="pagination">
+<nav class="pagination is-centered" role="navigation" aria-label="Pagination des {{ pagination_total_name }}">
     {# Boutons Précédent/Suivant #}
     <a class="pagination-previous {% if not pagination.has_prev %}is-disabled{% endif %}" 
        href="{{ url_for(route, page=pagination.prev_num, per_page=per_page) if pagination.has_prev else '#' }}" 
-       aria-label="Page précédente">
+       aria-label="Aller à la page précédente"
+       aria-disabled="{{ 'true' if not pagination.has_prev else 'false' }}"
+       tabindex="{{ '-1' if not pagination.has_prev else '0' }}">
         <i class="fas fa-chevron-left" aria-hidden="true"></i>
+        <span class="is-sr-only">Précédent</span>
     </a>
     <a class="pagination-next {% if not pagination.has_next %}is-disabled{% endif %}" 
        href="{{ url_for(route, page=pagination.next_num, per_page=per_page) if pagination.has_next else '#' }}" 
-       aria-label="Page suivante">
+       aria-label="Aller à la page suivante"
+       aria-disabled="{{ 'true' if not pagination.has_next else 'false' }}"
+       tabindex="{{ '-1' if not pagination.has_next else '0' }}">
         <i class="fas fa-chevron-right" aria-hidden="true"></i>
+        <span class="is-sr-only">Suivant</span>
     </a>
     
     {# Liste des pages #}
-    <ul class="pagination-list">
+    <ul class="pagination-list" role="menubar">
         {% if pagination.has_prev %}
-        <li>
-            <a class="pagination-link" href="{{ url_for(route, page=1, per_page=per_page) }}" aria-label="Première page">1</a>
+        <li role="none">
+            <a class="pagination-link" 
+               href="{{ url_for(route, page=1, per_page=per_page) }}" 
+               aria-label="Aller à la première page"
+               role="menuitem">1</a>
         </li>
         {% endif %}
-        <li>
-            <span class="pagination-ellipsis">&hellip;</span>
+        <li role="none">
+            <span class="pagination-ellipsis" role="separator" aria-hidden="true">&hellip;</span>
         </li>
-        <li>
-            <a class="pagination-link is-current" aria-label="Page {{ pagination.page }}" aria-current="page">{{ pagination.page }}</a>
+        <li role="none">
+            <a class="pagination-link is-current" 
+               aria-label="Page actuelle, page {{ pagination.page }}" 
+               aria-current="page"
+               role="menuitem"
+               tabindex="-1">{{ pagination.page }}</a>
         </li>
-        <li>
-            <span class="pagination-ellipsis">&hellip;</span>
+        <li role="none">
+            <span class="pagination-ellipsis" role="separator" aria-hidden="true">&hellip;</span>
         </li>
         {% if pagination.has_next %}
-        <li>
-            <a class="pagination-link" href="{{ url_for(route, page=pagination.pages, per_page=per_page) }}" aria-label="Dernière page">{{ pagination.pages }}</a>
+        <li role="none">
+            <a class="pagination-link" 
+               href="{{ url_for(route, page=pagination.pages, per_page=per_page) }}" 
+               aria-label="Aller à la dernière page, page {{ pagination.pages }}"
+               role="menuitem">{{ pagination.pages }}</a>
         </li>
         {% endif %}
     </ul>
@@ -49,9 +65,13 @@
 <div class="level is-mobile mt-2 mb-4">
     <div class="level-left">
         <div class="level-item">
-            <form method="get" action="{{ url_for(route) }}" class="is-flex">
+            <form method="get" action="{{ url_for(route) }}" class="is-flex" aria-label="Changer le nombre d'éléments par page">
+                <label for="per_page_{{ route }}" class="is-sr-only">Nombre d'éléments par page</label>
                 <div class="select is-small">
-                    <select name="per_page" onchange="this.form.submit()">
+                    <select name="per_page" 
+                            id="per_page_{{ route }}"
+                            onchange="this.form.submit()"
+                            aria-label="Nombre d'éléments par page">
                         {% for option in per_page_options %}
                         <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
                         {% endfor %}
@@ -64,7 +84,7 @@
     </div>
     <div class="level-right">
         <div class="level-item has-text-right">
-            <small>
+            <small aria-live="polite">
                 Afficher {{ pagination.items|length }} sur {{ pagination.total }} 
                 {{ pagination_total_name }}
             </small>

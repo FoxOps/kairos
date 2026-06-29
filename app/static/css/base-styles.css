@@ -11,6 +11,9 @@
 /* Structure de base */
 body {
     padding-top: 3.25rem;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 .navbar.is-fixed-top {
@@ -22,33 +25,40 @@ body {
 }
 
 .footer {
-    margin-top: 2rem;
+    margin-top: auto;
     padding: 2rem;
     background-color: var(--bg-primary, var(--bulma-background));
     color: var(--text-primary, var(--bulma-text));
 }
 
-/* Skip link pour l'accessibilité */
+/* Skip link pour l'accessibilité - conforme WCAG 2.1 */
 .skip-link {
     position: absolute;
-    top: -40px;
+    top: -100px;
     left: 0;
     background: var(--color-primary, var(--bulma-primary));
     color: white;
-    padding: 8px 16px;
-    z-index: 100;
+    padding: 12px 24px;
+    z-index: 1000;
     text-decoration: none;
     font-weight: bold;
-    border-radius: 0 0 4px 0;
+    border-radius: 0 0 8px 0;
+    transition: top 0.3s ease;
 }
 
 .skip-link:focus {
     top: 0;
+    outline: 3px solid var(--color-primary-dark, #00a896);
+    outline-offset: 2px;
+}
+
+.skip-link:hover {
+    background: var(--color-primary-dark, #00a896);
 }
 
 /* Conteneur principal */
 .main-content {
-    min-height: calc(100vh - 3.25rem - 2rem - 2rem);
+    flex: 1;
 }
 
 /* Styles pour les notifications */
@@ -65,6 +75,11 @@ body {
     transform: translateY(-1px);
 }
 
+.button:focus-visible {
+    outline: 3px solid var(--color-primary, var(--bulma-primary));
+    outline-offset: 2px;
+}
+
 /* Styles pour les icônes */
 .icon {
     vertical-align: middle;
@@ -77,6 +92,12 @@ body {
 
 .table {
     width: 100%;
+}
+
+.table th,
+.table td {
+    padding: 0.75rem;
+    vertical-align: top;
 }
 
 /* Styles pour les cartes */
@@ -192,13 +213,20 @@ body {
     transition: border-color 0.2s ease-in-out;
 }
 
-.input:focus {
+.input:focus-visible {
     border-color: var(--color-primary, var(--bulma-primary));
+    box-shadow: 0 0 0 3px rgba(0, 209, 178, 0.2);
+    outline: none;
 }
 
 /* Styles pour les selects */
 .select {
     width: 100%;
+}
+
+.select:focus-visible {
+    box-shadow: 0 0 0 3px rgba(0, 209, 178, 0.2);
+    outline: none;
 }
 
 /* Styles pour les textareas */
@@ -207,10 +235,26 @@ body {
     resize: vertical;
 }
 
+.textarea:focus-visible {
+    box-shadow: 0 0 0 3px rgba(0, 209, 178, 0.2);
+    outline: none;
+}
+
 /* Styles pour les checkboxes et radios */
 .checkbox,
 .radio {
     margin-bottom: 0.5rem;
+}
+
+.checkbox input[type="checkbox"],
+.radio input[type="radio"] {
+    margin-right: 0.5rem;
+}
+
+.checkbox input[type="checkbox"]:focus-visible + span,
+.radio input[type="radio"]:focus-visible + span {
+    outline: 2px solid var(--color-primary, var(--bulma-primary));
+    outline-offset: 2px;
 }
 
 /* Styles pour les labels */
@@ -277,6 +321,10 @@ body {
     background-color: var(--bg-secondary, var(--bulma-background-bis));
     border-top: 1px solid var(--border-primary, var(--bulma-border));
     justify-content: flex-end;
+}
+
+.modal-card-foot .button:not(:last-child) {
+    margin-right: 0.5rem;
 }
 
 /* Styles pour les onglets */
@@ -364,6 +412,17 @@ li {
 /* Styles pour les liens */
 a {
     transition: color 0.2s ease-in-out;
+}
+
+/* Focus visible pour tous les éléments interactifs */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+    outline: 3px solid var(--color-primary, var(--bulma-primary));
+    outline-offset: 2px;
 }
 
 /* Styles pour les images */
@@ -524,4 +583,126 @@ figcaption {
     text-align: center;
     padding: 2rem;
     color: var(--text-secondary, #4a4a4a);
+}
+
+/* ============================================
+   ACCESSIBILITÉ - CLASSE POUR MASQUER VISUELLEMENT
+   (mais accessible aux lecteurs d'écran)
+   ============================================ */
+.is-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ============================================
+   ACCESSIBILITÉ - FOCUS VISIBLE
+   ============================================ */
+:focus-visible {
+    outline: 3px solid var(--color-primary, var(--bulma-primary));
+    outline-offset: 2px;
+}
+
+/* ============================================
+   ACCESSIBILITÉ - CONTRASTE MINIMUM
+   ============================================ */
+/* Assurer un contraste suffisant pour le texte */
+body {
+    color: var(--text-primary, var(--bulma-text));
+    background-color: var(--bg-primary, var(--bulma-background));
+}
+
+/* Lien souligné par défaut pour meilleure visibilité */
+a:not(.button):not(.navbar-item):not(.navbar-link):not(.navbar-brand) {
+    text-decoration: underline;
+}
+
+a:hover:not(.button):not(.navbar-item):not(.navbar-link):not(.navbar-brand) {
+    text-decoration: none;
+}
+
+/* ============================================
+   ACCESSIBILITÉ - TAILLE MINIMALE DES CIBLES TOUCH
+   ============================================ */
+.button,
+.a {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* Pour les boutons avec icônes seulement */
+.button .icon:only-child {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* ============================================
+   ACCESSIBILITÉ - ESPACEMENT SUFFISANT
+   ============================================ */
+/* Espacement entre les éléments interactifs */
+.button + .button,
+.a + .a {
+    margin-left: 0.5rem;
+}
+
+/* ============================================
+   ACCESSIBILITÉ - COULEURS POUR DALTONIENS
+   ============================================ */
+/* Utilisation de couleurs avec contraste élevé */
+.is-primary {
+    background-color: var(--color-primary, #00d1b2) !important;
+    color: #fff !important;
+}
+
+.is-info {
+    background-color: var(--color-info, #3273dc) !important;
+    color: #fff !important;
+}
+
+.is-success {
+    background-color: var(--color-success, #48c774) !important;
+    color: #fff !important;
+}
+
+.is-warning {
+    background-color: var(--color-warning, #ffe066) !important;
+    color: #000 !important;
+}
+
+.is-danger {
+    background-color: var(--color-danger, #f14668) !important;
+    color: #fff !important;
+}
+
+/* ============================================
+   ACCESSIBILITÉ - ANIMATIONS RÉDUITES
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ============================================
+   ACCESSIBILITÉ - MODE SOMBRE
+   ============================================ */
+[data-theme="dark"] .button.is-warning,
+.dark-mode .button.is-warning {
+    color: #000 !important; /* Noir pur pour un contraste suffisant */
+}
+
+[data-theme="dark"] .tag.is-warning,
+.dark-mode .tag.is-warning {
+    color: #000 !important; /* Noir pur pour un contraste suffisant */
 }

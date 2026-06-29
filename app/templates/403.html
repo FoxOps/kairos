@@ -3,47 +3,49 @@
 {% block title %}Accès interdit - Leviia{% endblock %}
 
 {% block content %}
-<div class="section">
-    <div class="container">
-        <div class="columns is-centered">
-            <div class="column is-6">
-                <div class="box has-text-centered">
-                    <h1 class="title is-1 has-text-danger">403</h1>
-                    <h2 class="title is-3">Accès interdit</h2>
-                    <p class="subtitle is-5">
-                        Vous n'avez pas la permission d'accéder à cette page.
-                    </p>
-                    <div class="content">
-                        <p>
-                            Si vous pensez que c'est une erreur, veuillez contacter l'administrateur.
+<main role="main" aria-labelledby="error-title">
+    <div class="section">
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column is-6">
+                    <div class="box has-text-centered" role="alert" aria-live="assertive">
+                        <h1 class="title is-1 has-text-danger" id="error-title">403</h1>
+                        <h2 class="title is-3">Accès interdit</h2>
+                        <p class="subtitle is-5">
+                            Vous n'avez pas la permission d'accéder à cette ressource.
                         </p>
-                    </div>
-                    <div class="mt-5">
-                        <a href="{{ url_for('index') }}" class="button is-primary">
-                            <span class="icon">
-                                <i class="fas fa-home" aria-hidden="true"></i>
-                            </span>
-                            <span>Retour à l'accueil</span>
-                        </a>
-                        {% if current_user.is_authenticated %}
-                            <a href="{{ url_for('logout') }}" class="button is-light ml-3">
+                        <div class="content">
+                            <p>
+                                Contactez l'administrateur si vous pensez que c'est une erreur.
+                            </p>
+                        </div>
+                        <nav class="mt-5" aria-label="Navigation d'erreur">
+                            <a href="{{ url_for('index') }}" class="button is-primary" aria-label="Retourner à la page d'accueil">
                                 <span class="icon">
-                                    <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+                                    <i class="fas fa-home" aria-hidden="true"></i>
                                 </span>
-                                <span>Se déconnecter</span>
+                                <span>Retour à l'accueil</span>
                             </a>
-                        {% else %}
-                            <a href="{{ url_for('login') }}" class="button is-light ml-3">
-                                <span class="icon">
-                                    <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
-                                </span>
-                                <span>Se connecter</span>
-                            </a>
-                        {% endif %}
+                            {% if current_user.is_authenticated %}
+                                <a href="{{ url_for('logout') }}" class="button is-light ml-3" aria-label="Se déconnecter">
+                                    <span class="icon">
+                                        <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+                                    </span>
+                                    <span>Se déconnecter</span>
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('login') }}" class="button is-info ml-3" aria-label="Se connecter">
+                                    <span class="icon">
+                                        <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+                                    </span>
+                                    <span>Se connecter</span>
+                                </a>
+                            {% endif %}
+                        </nav>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+</main>
 {% endblock %}

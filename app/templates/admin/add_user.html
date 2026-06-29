@@ -3,33 +3,57 @@
 {% block title %}Ajouter un utilisateur - Leviia{% endblock %}
 
 {% block admin_content %}
-<section class="section">
+<section class="section" aria-labelledby="add-user-title">
     <div class="container">
-        <h1 class="title">
+        <h1 class="title" id="add-user-title">
             <i class="fas fa-user-plus" aria-hidden="true"></i> Ajouter un utilisateur
         </h1>
+        <p class="subtitle" id="add-user-description">Remplissez ce formulaire pour créer un nouvel utilisateur dans le système.</p>
 
-        <form method="POST" action="{{ url_for('add_user') }}">
+        <form method="POST" action="{{ url_for('add_user') }}" aria-labelledby="add-user-title" aria-describedby="add-user-description" novalidate>
             <div class="box">
                 <div class="field">
-                    <label class="label required">Nom</label>
+                    <label class="label required" for="name">Nom</label>
                     <div class="control">
-                        <input class="input" type="text" name="name" required aria-required="true" placeholder="Ex: Jean Dupont">
+                        <input class="input" 
+                               type="text" 
+                               name="name" 
+                               id="name"
+                               required 
+                               aria-required="true"
+                               aria-describedby="name-help"
+                               placeholder="Ex: Jean Dupont"
+                               autocomplete="name">
                     </div>
+                    <p id="name-help" class="help">Entrez le nom complet de l'utilisateur</p>
                 </div>
 
                 <div class="field">
-                    <label class="label required">Email</label>
+                    <label class="label required" for="email">Email</label>
                     <div class="control">
-                        <input class="input" type="email" name="email" required aria-required="true" placeholder="Ex: jean.dupont@exemple.com">
+                        <input class="input" 
+                               type="email" 
+                               name="email" 
+                               id="email"
+                               required 
+                               aria-required="true"
+                               aria-describedby="email-help"
+                               placeholder="Ex: jean.dupont@exemple.com"
+                               autocomplete="email">
                     </div>
+                    <p id="email-help" class="help">Format : utilisateur@domaine.com</p>
                 </div>
 
                 <div class="field">
-                    <label class="label required">Groupe</label>
+                    <label class="label required" for="group_id">Groupe</label>
                     <div class="control">
                         <div class="select is-fullwidth">
-                            <select name="group_id" required aria-required="true">
+                            <select name="group_id" 
+                                    id="group_id"
+                                    required 
+                                    aria-required="true"
+                                    aria-describedby="group-help"
+                                    autocomplete="group">
                                 <option value="" disabled selected>Sélectionner un groupe</option>
                                 {% for group in groups %}
                                 <option value="{{ group.id }}">{{ group.name }}</option>
@@ -37,28 +61,134 @@
                             </select>
                         </div>
                     </div>
+                    <p id="group-help" class="help">Sélectionnez le groupe auquel l'utilisateur appartiendra</p>
                 </div>
 
                 <div class="field">
-                    <label class="label">Mot de passe</label>
+                    <label class="label" for="password">Mot de passe</label>
                     <div class="control">
-                        <input class="input" type="password" name="password" placeholder="Laisser vide pour un mot de passe par défaut">
+                        <input class="input" 
+                               type="password" 
+                               name="password" 
+                               id="password"
+                               aria-describedby="password-help"
+                               placeholder="Laisser vide pour un mot de passe par défaut"
+                               autocomplete="new-password">
                     </div>
-                    <p class="help is-size-7">
+                    <p id="password-help" class="help is-size-7">
                         Si vous ne spécifiez pas de mot de passe, un mot de passe par défaut sera généré (password123).
                     </p>
                 </div>
 
-                <div class="field">
+                <div class="field is-grouped">
                     <div class="control">
                         <button class="button is-primary" type="submit">
                             <i class="fas fa-save" aria-hidden="true"></i>&nbsp; Enregistrer
                         </button>
+                    </div>
+                    <div class="control">
                         <a class="button is-light" href="{{ url_for('list_users') }}">Annuler</a>
                     </div>
                 </div>
             </div>
         </form>
+        
+        {% if error %}
+        <div class="notification is-danger mt-4" role="alert" aria-live="assertive">
+            <strong>Erreur :</strong> {{ error }}
+        </div>
+        {% endif %}
+        
+        {% if success %}
+        <div class="notification is-success mt-4" role="alert" aria-live="polite">
+            <strong>Succès :</strong> {{ success }}
+        </div>
+        {% endif %}
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const nameInput = document.getElementById('name');
+    const emailInput = document.getElementById('email');
+    const groupSelect = document.getElementById('group_id');
+    
+    // Focus sur le premier champ
+    if (nameInput) {
+        nameInput.focus();
+    }
+    
+    // Validation accessible du formulaire
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            const errors = [];
+            
+            // Validation du nom
+            if (nameInput && !nameInput.value.trim()) {
+                errors.push('Le nom est obligatoire');
+                isValid = false;
+            }
+            
+            // Validation de l'email
+            if (emailInput && !emailInput.value.trim()) {
+                errors.push('L\'email est obligatoire');
+                isValid = false;
+            } else if (emailInput && !emailInput.checkValidity()) {
+                errors.push('Veuillez entrer un email valide');
+                isValid = false;
+            }
+            
+            // Validation du groupe
+            if (groupSelect && !groupSelect.value) {
+                errors.push('Le groupe est obligatoire');
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+                
+                // Afficher les erreurs de manière accessible
+                const errorRegion = document.createElement('div');
+                errorRegion.setAttribute('aria-live', 'assertive');
+                errorRegion.setAttribute('aria-atomic', 'true');
+                errorRegion.className = 'notification is-danger';
+                errorRegion.innerHTML = '<strong>Erreur :</strong> ' + errors.join(', ');
+                
+                // Insérer avant le formulaire
+                form.parentNode.insertBefore(errorRegion, form);
+                
+                // Focus sur le premier champ invalide
+                if (!nameInput.value.trim()) {
+                    nameInput.focus();
+                } else if (!emailInput.value.trim() || !emailInput.checkValidity()) {
+                    emailInput.focus();
+                } else if (!groupSelect.value) {
+                    groupSelect.focus();
+                }
+                
+                // Supprimer l'erreur après 5 secondes
+                setTimeout(() => {
+                    errorRegion.remove();
+                }, 5000);
+            }
+        });
+        
+        // Gestion des erreurs de validation en temps réel
+        if (emailInput) {
+            emailInput.addEventListener('blur', function() {
+                if (this.value && !this.checkValidity()) {
+                    this.setCustomValidity('Veuillez entrer un email valide');
+                    this.reportValidity();
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+        }
+    }
+});
+</script>
 {% endblock %}
