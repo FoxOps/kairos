@@ -3,62 +3,64 @@
 {% block title %}Service indisponible - Leviia{% endblock %}
 
 {% block content %}
-<div class="section">
-    <div class="container">
-        <div class="columns is-centered">
-            <div class="column is-6">
-                <div class="box has-text-centered">
-                    <h1 class="title is-1 has-text-warning">503</h1>
-                    <h2 class="title is-3">Service temporairement indisponible</h2>
-                    <p class="subtitle is-5">
-                        Le serveur est actuellement surchargé ou en maintenance.
-                    </p>
-                    <div class="content">
-                        <p>
-                            Nous effectuons actuellement une maintenance ou notre serveur est surchargé.
-                            Veuillez réessayer dans quelques minutes.
+<main role="main" aria-labelledby="error-title">
+    <div class="section">
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column is-6">
+                    <div class="box has-text-centered" role="region" aria-labelledby="error-title" aria-describedby="error-description">
+                        <h1 id="error-title" class="title is-1 has-text-warning">503</h1>
+                        <h2 id="error-description" class="title is-3">Service temporairement indisponible</h2>
+                        <p class="subtitle is-5">
+                            Le serveur est actuellement surchargé ou en maintenance.
                         </p>
-                        {% if retry_after %}
-                        <div class="notification is-info mt-4">
-                            <p>
-                                <strong>Temps estimé avant disponibilité :</strong> 
-                                {{ retry_after }} secondes
+                        <div class="content">
+                            <p role="alert" aria-live="assertive">
+                                Nous effectuons actuellement une maintenance ou notre serveur est surchargé.
+                                Veuillez réessayer dans quelques minutes.
                             </p>
+                            {% if retry_after %}
+                            <div class="notification is-info mt-4" role="status" aria-live="polite">
+                                <p>
+                                    <strong>Temps estimé avant disponibilité :</strong> 
+                                    {{ retry_after }} secondes
+                                </p>
+                            </div>
+                            {% endif %}
                         </div>
-                        {% endif %}
-                    </div>
-                    <div class="mt-5">
-                        <a href="{{ url_for('index') }}" class="button is-primary">
-                            <span class="icon">
-                                <i class="fas fa-home" aria-hidden="true"></i>
-                            </span>
-                            <span>Retour à l'accueil</span>
-                        </a>
-                        <button onclick="location.reload()" class="button is-info ml-3">
-                            <span class="icon">
-                                <i class="fas fa-sync-alt" aria-hidden="true"></i>
-                            </span>
-                            <span>Réessayer</span>
-                        </button>
-                        {% if current_user.is_authenticated %}
-                            <a href="{{ url_for('logout') }}" class="button is-light ml-3">
+                        <div class="mt-5">
+                            <a href="{{ url_for('index') }}" class="button is-primary" aria-label="Retour à l'accueil">
                                 <span class="icon">
-                                    <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+                                    <i class="fas fa-home" aria-hidden="true"></i>
                                 </span>
-                                <span>Se déconnecter</span>
+                                <span>Retour à l'accueil</span>
                             </a>
-                        {% else %}
-                            <a href="{{ url_for('login') }}" class="button is-light ml-3">
+                            <button onclick="location.reload()" class="button is-info ml-3" aria-label="Réessayer">
                                 <span class="icon">
-                                    <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+                                    <i class="fas fa-sync-alt" aria-hidden="true"></i>
                                 </span>
-                                <span>Se connecter</span>
-                            </a>
-                        {% endif %}
+                                <span>Réessayer</span>
+                            </button>
+                            {% if current_user.is_authenticated %}
+                                <a href="{{ url_for('logout') }}" class="button is-light ml-3" aria-label="Se déconnecter">
+                                    <span class="icon">
+                                        <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+                                    </span>
+                                    <span>Se déconnecter</span>
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('login') }}" class="button is-light ml-3" aria-label="Se connecter">
+                                    <span class="icon">
+                                        <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+                                    </span>
+                                    <span>Se connecter</span>
+                                </a>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+</main>
 {% endblock %}

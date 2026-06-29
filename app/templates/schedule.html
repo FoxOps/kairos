@@ -3,162 +3,161 @@
 {% block title %}Emploi du temps - Leviia Schedule{% endblock %}
 
 {% block content %}
-<section class="section">
-    <div class="container">
-        <h1 class="title">
-            <i class="fas fa-calendar-alt" aria-hidden="true"></i> Emploi du temps
-        </h1>
-        
-
-        
-        <!-- Boutons pour ajouter, exporter et supprimer -->
-        <div class="buttons">
-            {% if current_user.is_admin %}
-            <a class="button is-primary" href="{{ url_for('add_shift') }}">
-                <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un shift
-            </a>
-            {% endif %}
-            {% if current_user.is_authenticated and current_user.ics_token %}
-            <a class="button is-success" href="{{ request.host_url ~ current_user.get_ics_export_url('shifts', 'all') }}" title="Exporter tous les shifts">
-                <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter tous les shifts
-            </a>
-            <a class="button is-success" href="{{ request.host_url ~ current_user.get_ics_export_url('shifts', 'my') }}" title="Exporter mes shifts">
-                <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter mes shifts
-            </a>
-            {% endif %}
-            {% if current_user.is_admin %}
-            <form method="POST" action="{{ url_for('delete_all_shifts') }}" class="ml-2">
-                <button type="submit" class="button is-danger" 
-                        onclick="return confirm('Êtes-vous SÛR de vouloir supprimer TOUS les shifts ? Cette action est irréversible !')"
-                        aria-label="Supprimer tous les shifts">
-                    <i class="fas fa-trash-alt" aria-hidden="true"></i>&nbsp; Supprimer TOUS les shifts
-                </button>
-            </form>
-            {% endif %}
-        </div>
-        
-        <!-- Pagination en haut + sélecteur -->
-        {% if shifts.has_prev or shifts.has_next or shifts.total > 0 %}
-        {% set pagination = shifts %}
-        {% set route = 'schedule' %}
-        {% set pagination_total_name = 'shifts' %}
-        {% include "_pagination.html" %}
-        {% endif %}
-        
-        <!-- Tableau des shifts -->
-        {% set seen_users = [] %}
-        {% set seen_dates = [] %}
-        <div class="table-container">
-            <table class="table is-fullwidth is-striped">
-                <caption class="is-sr-only">Liste des shifts</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">Utilisateur</th>
-                        <th scope="col">Type de shift</th>
-                        <th scope="col">Date</th>
-                        <th scope="col">Heure de début</th>
-                        <th scope="col">Heure de fin</th>
-                        <th scope="col">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for shift in shifts.items %}
-                    {% set is_first_user = namespace(value=(shift.user.id not in seen_users)) %}
-                    {% set is_first_date = namespace(value=(shift.date not in seen_dates)) %}
-                    {% set is_monday = namespace(value=(shift.date.weekday() == 0)) %}
-                    
-                    <tr>
-                        <td>
-                            {% if is_first_user.value %}
-                                {{ shift.user.name }}
-                                {% set seen_users = (seen_users or []) + [shift.user.id] %}
-                            {% endif %}
-                        </td>
-                        <td>{{ shift.shift_type.label if shift.shift_type else shift.shift_type }}</td>
-                        <td>
-                            {% if is_first_date.value %}
-                                {{ shift.date.strftime('%d/%m/%Y') }}
-                                {% set seen_dates = (seen_dates or []) + [shift.date] %}
-                            {% endif %}
-                        </td>
-                        <td>{{ shift.start_time.strftime('%H:%M') }}</td>
-                        <td>{{ shift.end_time.strftime('%H:%M') }}</td>
-                        <td>
-                            {% if current_user.is_admin %}
-                            <div class="is-flex is-flex-wrap-wrap gap-2">
-                                <!-- Bouton pour supprimer ce shift -->
-                                <a class="button is-danger is-small" href="{{ url_for('delete_shift', shift_id=shift.id) }}" 
-                                   aria-label="Supprimer le shift" title="Supprimer ce shift">
-                                    <i class="fas fa-trash" aria-hidden="true"></i>
-                                </a>
-                                
-                                <!-- Bouton pour supprimer tous les shifts de cet utilisateur (1ère occurrence) -->
-                                {% if is_first_user.value %}
-                                <form method="POST" action="{{ url_for('delete_all_shifts_for_user', user_id=shift.user.id) }}" class="mb-0">
-                                    <button type="submit" class="button is-warning is-small"
-                                            onclick="return confirm('Êtes-vous sûr de vouloir supprimer TOUS les shifts de {{ shift.user.name }} ?')"
-                                            aria-label="Supprimer tous les shifts de cet utilisateur"
-                                            title="Supprimer TOUS les shifts de {{ shift.user.name }}">
-                                        <i class="fas fa-user-times" aria-hidden="true"></i>
-                                    </button>
-                                </form>
-                                {% endif %}
-                                
-                                <!-- Bouton pour supprimer tous les shifts de la semaine (uniquement le lundi, 1ère occurrence) -->
-                                {% if is_monday.value and is_first_date.value %}
-                                <form method="POST" action="{{ url_for('delete_all_shifts_for_week', date_str=shift.date.strftime('%Y-%m-%d')) }}" class="mb-0">
-                                    <button type="submit" class="button is-primary is-small"
-                                            onclick="return confirm('Êtes-vous SÛR de vouloir supprimer TOUS les shifts de la SEMAINE du {{ shift.date.strftime('%d/%m/%Y') }} ?')"
-                                            aria-label="Supprimer tous les shifts de la semaine"
-                                            title="Supprimer TOUS les shifts de la semaine">
-                                        <i class="fas fa-calendar-week" aria-hidden="true"></i>
-                                    </button>
-                                </form>
-                                {% endif %}
-                                
-                                <!-- Bouton pour supprimer tous les shifts de la journée (1ère occurrence) -->
-                                {% if is_first_date.value %}
-                                <form method="POST" action="{{ url_for('delete_all_shifts_for_day', date_str=shift.date.strftime('%Y-%m-%d')) }}" class="mb-0">
-                                    <button type="submit" class="button is-info is-small"
-                                            onclick="return confirm('Êtes-vous sûr de vouloir supprimer TOUS les shifts du {{ shift.date.strftime('%d/%m/%Y') }} ?')"
-                                            aria-label="Supprimer tous les shifts de la journée"
-                                            title="Supprimer TOUS les shifts du {{ shift.date.strftime('%d/%m/%Y') }}">
-                                        <i class="fas fa-calendar-day" aria-hidden="true"></i>
-                                    </button>
-                                </form>
-                                {% endif %}
-                            </div>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- Légende des actions -->
-        {% if current_user.is_admin %}
-        <div class="notification is-info is-light mt-4">
-            <h3 class="subtitle is-6"><i class="fas fa-info-circle"></i> Légende des actions</h3>
-            <div class="content">
-                <p class="is-flex is-flex-wrap-wrap gap-2">
-                    <span class="button is-danger is-small min-w-140"><i class="fas fa-trash"></i> Supprimer ce shift</span>
-                    <span class="button is-warning is-small min-w-140"><i class="fas fa-user-times"></i> Supprimer TOUS les shifts de cet utilisateur</span>
-                    <span class="button is-info is-small min-w-140"><i class="fas fa-calendar-day"></i> Supprimer TOUS les shifts de cette journée</span>
-                    <span class="button is-primary is-small min-w-140"><i class="fas fa-calendar-week"></i> Supprimer TOUS les shifts de cette semaine</span>
-                </p>
+<main role="main" aria-labelledby="schedule-title">
+    <section class="section">
+        <div class="container">
+            <h1 id="schedule-title" class="title">
+                <i class="fas fa-calendar-alt" aria-hidden="true"></i> Emploi du temps
+            </h1>
+            
+            <!-- Boutons pour ajouter, exporter et supprimer -->
+            <div class="buttons" role="group" aria-label="Actions principales">
+                {% if current_user.is_admin %}
+                <a class="button is-primary" href="{{ url_for('add_shift') }}" aria-label="Ajouter un nouveau shift">
+                    <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un shift
+                </a>
+                {% endif %}
+                {% if current_user.is_authenticated and current_user.ics_token %}
+                <a class="button is-success" href="{{ request.host_url ~ current_user.get_ics_export_url('shifts', 'all') }}" aria-label="Exporter tous les shifts au format iCalendar">
+                    <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter tous les shifts
+                </a>
+                <a class="button is-success" href="{{ request.host_url ~ current_user.get_ics_export_url('shifts', 'my') }}" aria-label="Exporter mes shifts au format iCalendar">
+                    <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter mes shifts
+                </a>
+                {% endif %}
+                {% if current_user.is_admin %}
+                <form method="POST" action="{{ url_for('delete_all_shifts') }}" class="ml-2">
+                    <button type="submit" class="button is-danger" 
+                            onclick="return Leviia.confirmActionAccessible('Êtes-vous SÛR de vouloir supprimer TOUS les shifts ? Cette action est irréversible !', function() { this.form.submit(); }, function() {}); return false;"
+                            aria-label="Supprimer tous les shifts">
+                        <i class="fas fa-trash-alt" aria-hidden="true"></i>&nbsp; Supprimer TOUS les shifts
+                    </button>
+                </form>
+                {% endif %}
             </div>
+            
+            <!-- Pagination en haut + sélecteur -->
+            {% if shifts.has_prev or shifts.has_next or shifts.total > 0 %}
+            {% set pagination = shifts %}
+            {% set route = 'schedule' %}
+            {% set pagination_total_name = 'shifts' %}
+            {% include "_pagination.html" %}
+            {% endif %}
+            
+            <!-- Tableau des shifts -->
+            {% set seen_users = [] %}
+            {% set seen_dates = [] %}
+            <div class="table-container" role="region" aria-labelledby="schedule-title">
+                <table class="table is-fullwidth is-striped" aria-describedby="schedule-title">
+                    <caption class="is-sr-only">Liste des shifts avec les utilisateurs, types, dates et heures</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Utilisateur</th>
+                            <th scope="col">Type de shift</th>
+                            <th scope="col">Date</th>
+                            <th scope="col">Heure de début</th>
+                            <th scope="col">Heure de fin</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for shift in shifts.items %}
+                        {% set is_first_user = namespace(value=(shift.user.id not in seen_users)) %}
+                        {% set is_first_date = namespace(value=(shift.date not in seen_dates)) %}
+                        {% set is_monday = namespace(value=(shift.date.weekday() == 0)) %}
+                        
+                        <tr>
+                            <td>
+                                {% if is_first_user.value %}
+                                    {{ shift.user.name }}
+                                    {% set seen_users = (seen_users or []) + [shift.user.id] %}
+                                {% endif %}
+                            </td>
+                            <td>{{ shift.shift_type.label if shift.shift_type else shift.shift_type }}</td>
+                            <td>
+                                {% if is_first_date.value %}
+                                    {{ shift.date.strftime('%d/%m/%Y') }}
+                                    {% set seen_dates = (seen_dates or []) + [shift.date] %}
+                                {% endif %}
+                            </td>
+                            <td>{{ shift.start_time.strftime('%H:%M') }}</td>
+                            <td>{{ shift.end_time.strftime('%H:%M') }}</td>
+                            <td>
+                                {% if current_user.is_admin %}
+                                <div class="is-flex is-flex-wrap-wrap gap-2" role="group" aria-label="Actions pour ce shift">
+                                    <!-- Bouton pour supprimer ce shift -->
+                                    <a class="button is-danger is-small" href="{{ url_for('delete_shift', shift_id=shift.id) }}" 
+                                       aria-label="Supprimer le shift du {{ shift.date.strftime('%d/%m/%Y') }}" title="Supprimer ce shift">
+                                        <i class="fas fa-trash" aria-hidden="true"></i>
+                                    </a>
+                                    
+                                    <!-- Bouton pour supprimer tous les shifts de cet utilisateur (1ère occurrence) -->
+                                    {% if is_first_user.value %}
+                                    <form method="POST" action="{{ url_for('delete_all_shifts_for_user', user_id=shift.user.id) }}" class="mb-0">
+                                        <button type="submit" class="button is-warning is-small"
+                                                onclick="return Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer TOUS les shifts de {{ shift.user.name }} ?', function() { this.form.submit(); }, function() {}); return false;"
+                                                aria-label="Supprimer tous les shifts de {{ shift.user.name }}"
+                                                title="Supprimer TOUS les shifts de {{ shift.user.name }}">
+                                            <i class="fas fa-user-times" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    
+                                    <!-- Bouton pour supprimer tous les shifts de la semaine (uniquement le lundi, 1ère occurrence) -->
+                                    {% if is_monday.value and is_first_date.value %}
+                                    <form method="POST" action="{{ url_for('delete_all_shifts_for_week', date_str=shift.date.strftime('%Y-%m-%d')) }}" class="mb-0">
+                                        <button type="submit" class="button is-primary is-small"
+                                                onclick="return Leviia.confirmActionAccessible('Êtes-vous SÛR de vouloir supprimer TOUS les shifts de la SEMAINE du {{ shift.date.strftime('%d/%m/%Y') }} ?', function() { this.form.submit(); }, function() {}); return false;"
+                                                aria-label="Supprimer tous les shifts de la semaine du {{ shift.date.strftime('%d/%m/%Y') }}"
+                                                title="Supprimer TOUS les shifts de la semaine">
+                                            <i class="fas fa-calendar-week" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    
+                                    <!-- Bouton pour supprimer tous les shifts de la journée (1ère occurrence) -->
+                                    {% if is_first_date.value %}
+                                    <form method="POST" action="{{ url_for('delete_all_shifts_for_day', date_str=shift.date.strftime('%Y-%m-%d')) }}" class="mb-0">
+                                        <button type="submit" class="button is-info is-small"
+                                                onclick="return Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer TOUS les shifts du {{ shift.date.strftime('%d/%m/%Y') }} ?', function() { this.form.submit(); }, function() {}); return false;"
+                                                aria-label="Supprimer tous les shifts de la journée du {{ shift.date.strftime('%d/%m/%Y') }}"
+                                                title="Supprimer TOUS les shifts du {{ shift.date.strftime('%d/%m/%Y') }}">
+                                            <i class="fas fa-calendar-day" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Légende des actions -->
+            {% if current_user.is_admin %}
+            <div class="notification is-info is-light mt-4" role="status" aria-live="polite">
+                <h3 class="subtitle is-6"><i class="fas fa-info-circle" aria-hidden="true"></i> Légende des actions</h3>
+                <div class="content">
+                    <p class="is-flex is-flex-wrap-wrap gap-2" role="list" aria-label="Légende des boutons d'action">
+                        <span class="button is-danger is-small min-w-140" role="listitem"><i class="fas fa-trash" aria-hidden="true"></i> Supprimer ce shift</span>
+                        <span class="button is-warning is-small min-w-140" role="listitem"><i class="fas fa-user-times" aria-hidden="true"></i> Supprimer TOUS les shifts de cet utilisateur</span>
+                        <span class="button is-info is-small min-w-140" role="listitem"><i class="fas fa-calendar-day" aria-hidden="true"></i> Supprimer TOUS les shifts de cette journée</span>
+                        <span class="button is-primary is-small min-w-140" role="listitem"><i class="fas fa-calendar-week" aria-hidden="true"></i> Supprimer TOUS les shifts de cette semaine</span>
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Pagination en bas -->
+            {% if shifts.has_prev or shifts.has_next or shifts.total > 0 %}
+            {% set pagination = shifts %}
+            {% set route = 'schedule' %}
+            {% set pagination_total_name = 'shifts' %}
+            {% include "_pagination.html" %}
+            {% endif %}
         </div>
-        {% endif %}
-        
-        <!-- Pagination en bas -->
-        {% if shifts.has_prev or shifts.has_next or shifts.total > 0 %}
-        {% set pagination = shifts %}
-        {% set route = 'schedule' %}
-        {% set pagination_total_name = 'shifts' %}
-        {% include "_pagination.html" %}
-        {% endif %}
-        
-    </div>
-</section>
+    </section>
+</main>
 {% endblock %}

@@ -1,96 +1,4 @@
-   MAPPAGE DES VARIABLES DE COULEUR
-   (pour la compatibilité avec les templates existants)
-   ============================================ */
-:root {
-    /* Mapper nos variables vers les variables Bulma */
-    --color-primary: var(--bulma-primary);
-    --color-primary-light: var(--bulma-primary-light);
-    --color-primary-dark: var(--bulma-primary-dark);
-    
-    --color-info: var(--bulma-info);
-    --color-info-light: var(--bulma-info-light);
-    --color-info-dark: var(--bulma-info-dark);
-    
-    --color-success: var(--bulma-success);
-    --color-success-light: var(--bulma-success-light);
-    --color-success-dark: var(--bulma-success-dark);
-    
-    --color-warning: var(--bulma-warning);
-    --color-warning-light: var(--bulma-warning-light);
-    --color-warning-dark: var(--bulma-warning-dark);
-    
-    --color-danger: var(--bulma-danger);
-    --color-danger-light: var(--bulma-danger-light);
-    --color-danger-dark: var(--bulma-danger-dark);
-    
-    /* Variables de fond et texte */
-    --bg-primary: var(--bulma-background);
-    --bg-secondary: var(--bulma-background-bis);
-    --bg-tertiary: var(--bulma-background-ter);
-    
-    --text-primary: var(--bulma-text);
-    --text-secondary: var(--bulma-text-weak);
-    --text-tertiary: var(--bulma-text-strong);
-    
-    /* Variables de bordure */
-    --border-primary: var(--bulma-border);
-    --border-secondary: var(--bulma-border-weak);
-    
-    /* Variables d'ombre */
-    --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.1);
-}
-=======
 /* ============================================
-   MAPPAGE DES VARIABLES DE COULEUR
-   (pour la compatibilité avec les templates existants)
-   ============================================ */
-:root {
-    /* Mapper nos variables vers les variables Bulma */
-    --color-primary: var(--bulma-primary);
-    --color-primary-light: var(--bulma-primary-light);
-    --color-primary-dark: var(--bulma-primary-dark);
-    
-    --color-info: var(--bulma-info);
-    --color-info-light: var(--bulma-info-light);
-    --color-info-dark: var(--bulma-info-dark);
-    
-    --color-success: var(--bulma-success);
-    --color-success-light: var(--bulma-success-light);
-    --color-success-dark: var(--bulma-success-dark);
-    
-    --color-warning: var(--bulma-warning);
-    --color-warning-light: var(--bulma-warning-light);
-    --color-warning-dark: var(--bulma-warning-dark);
-    
-    --color-danger: var(--bulma-danger);
-    --color-danger-light: var(--bulma-danger-light);
-    --color-danger-dark: var(--bulma-danger-dark);
-    
-    /* Variables de fond et texte */
-    --bg-primary: var(--bulma-background);
-    --bg-secondary: var(--bulma-background-bis);
-    --bg-tertiary: var(--bulma-background-ter);
-    
-    --text-primary: var(--bulma-text);
-    --text-secondary: var(--bulma-text-weak);
-    --text-tertiary: var(--bulma-text-strong);
-    
-    /* Variables de bordure */
-    --border-primary: var(--bulma-border);
-    --border-secondary: var(--bulma-border-weak);
-    
-    /* Variables d'ombre */
-    --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.1);
-    
-    /* Variables supplémentaires pour la compatibilité */
-    --bulma-grey: var(--bulma-background-bis);
-    --bulma-grey-light: var(--bulma-background-ter);
-    --bulma-grey-dark: var(--bulma-border);
-}============================================
    LEVIIA SCHEDULE - THÈME SOMBRE
    ============================================
 
@@ -149,6 +57,11 @@
     --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.1);
+    
+    /* Variables supplémentaires pour la compatibilité */
+    --bulma-grey: var(--bulma-background-bis);
+    --bulma-grey-light: var(--bulma-background-ter);
+    --bulma-grey-dark: var(--bulma-border);
 }
 
 /* ============================================
@@ -201,20 +114,8 @@
 
 .skip-link:focus {
     top: 0;
-}
-
-/* ============================================
-   SOULIGNEMENT DES LIENS DANS LE TEXTE
-   (hors boutons et navbar)
-   ============================================ */
-[data-theme="dark"] a:not(.button):not(.navbar-item):not(.navbar-link):not(.navbar-brand),
-.dark-mode a:not(.button):not(.navbar-item):not(.navbar-link):not(.navbar-brand) {
-    text-decoration: underline;
-}
-
-[data-theme="dark"] a:not(.button):not(.navbar-item):not(.navbar-link):not(.navbar-brand):hover,
-.dark-mode a:not(.button):not(.navbar-item):not(.navbar-link):not(.navbar-brand):hover {
-    text-decoration: none;
+    outline: 3px solid var(--color-primary-dark);
+    outline-offset: 2px;
 }
 
 /* ============================================
@@ -229,6 +130,23 @@
 [data-theme="dark"] .tag.is-warning,
 .dark-mode .tag.is-warning {
     color: #000 !important; /* Noir pur pour un contraste suffisant */
+}
+
+/* ============================================
+   NOTIFICATIONS ACCESSIBLES
+   ============================================ */
+[data-theme="dark"] .notification[role="alert"],
+.dark-mode .notification[role="alert"] {
+    border: 2px solid var(--color-danger) !important;
+    background-color: var(--bulma-danger-light) !important;
+    color: var(--bulma-danger-dark) !important;
+}
+
+[data-theme="dark"] .notification[role="status"],
+.dark-mode .notification[role="status"] {
+    border: 2px solid var(--color-info) !important;
+    background-color: var(--bulma-info-light) !important;
+    color: var(--bulma-info-dark) !important;
 }
 
 /* ============================================
@@ -327,7 +245,7 @@
 }
 
 /* ============================================
-   ACCESIBILITÉ - FOCUS VISIBLE
+   ACCESSIBILITÉ - FOCUS VISIBLE
    ============================================ */
 [data-theme="dark"] a:focus-visible,
 .dark-mode a:focus-visible,
@@ -343,4 +261,92 @@
 .dark-mode [tabindex]:focus-visible {
     outline: 2px solid var(--color-primary) !important;
     outline-offset: 2px !important;
+}
+
+/* ============================================
+   ACCESSIBILITÉ - RÉDUCTION DES MOUVEMENTS
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+    [data-theme="dark"] *,
+    .dark-mode *,
+    [data-theme="dark"] *::before,
+    .dark-mode *::before,
+    [data-theme="dark"] *::after,
+    .dark-mode *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ============================================
+   ACCESSIBILITÉ - CONTRASTE DES COULEURS
+   ============================================ */
+
+/* Assurer un contraste suffisant pour les liens dans le texte en mode sombre */
+[data-theme="dark"] .content a,
+.dark-mode .content a {
+    color: var(--color-primary-light);
+    text-decoration: underline;
+}
+
+[data-theme="dark"] .content a:hover,
+.dark-mode .content a:hover,
+[data-theme="dark"] .content a:focus-visible,
+.dark-mode .content a:focus-visible {
+    color: var(--color-primary);
+    text-decoration: none;
+
+/* Supprimer le soulignement des liens dans les boutons et menus en mode sombre */
+[data-theme="dark"] .button a,
+[data-theme="dark"] .navbar-item a,
+[data-theme="dark"] .navbar-link a,
+[data-theme="dark"] .navbar-brand a,
+[data-theme="dark"] .dropdown-item a,
+[data-theme="dark"] .menu-item a,
+[data-theme="dark"] .pagination-link a,
+.dark-mode .button a,
+.dark-mode .navbar-item a,
+.dark-mode .navbar-link a,
+.dark-mode .navbar-brand a,
+.dark-mode .dropdown-item a,
+.dark-mode .menu-item a,
+.dark-mode .pagination-link a {
+    text-decoration: none !important;
+}
+}
+
+/* Assurer un contraste suffisant pour les boutons en mode sombre */
+[data-theme="dark"] .button.is-primary,
+.dark-mode .button.is-primary {
+    background-color: var(--color-primary) !important;
+    color: #fff !important;
+}
+
+[data-theme="dark"] .button.is-primary:hover,
+.dark-mode .button.is-primary:hover {
+    background-color: var(--color-primary-dark) !important;
+    color: #fff !important;
+}
+
+/* Assurer un contraste suffisant pour les messages d'erreur */
+[data-theme="dark"] .message.is-danger,
+.dark-mode .message.is-danger {
+    background-color: var(--bulma-danger-light) !important;
+    color: var(--bulma-danger-dark) !important;
+    border-color: var(--color-danger) !important;
+}
+
+/* Assurer un contraste suffisant pour les notifications */
+[data-theme="dark"] .notification.is-danger,
+.dark-mode .notification.is-danger {
+    background-color: var(--bulma-danger-light) !important;
+    color: var(--bulma-danger-dark) !important;
+}
+
+[data-theme="dark"] .notification.is-warning,
+.dark-mode .notification.is-warning {
+    background-color: var(--bulma-warning-light) !important;
+    color: #000 !important;
 }

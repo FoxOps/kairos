@@ -890,6 +890,13 @@ def user_dashboard():
     )
 
 
+
+@app.route("/accessibility-statement")
+@login_required
+def accessibility_statement():
+    """Page de déclaration d'accessibilité."""
+    return render_template("accessibility_statement.html")
+
 @app.route("/api/shifts", methods=["POST"])
 @login_required
 @admin_required
