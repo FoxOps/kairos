@@ -297,6 +297,24 @@
 .dark-mode .content a:focus-visible {
     color: var(--color-primary);
     text-decoration: none;
+
+/* Supprimer le soulignement des liens dans les boutons et menus en mode sombre */
+[data-theme="dark"] .button a,
+[data-theme="dark"] .navbar-item a,
+[data-theme="dark"] .navbar-link a,
+[data-theme="dark"] .navbar-brand a,
+[data-theme="dark"] .dropdown-item a,
+[data-theme="dark"] .menu-item a,
+[data-theme="dark"] .pagination-link a,
+.dark-mode .button a,
+.dark-mode .navbar-item a,
+.dark-mode .navbar-link a,
+.dark-mode .navbar-brand a,
+.dark-mode .dropdown-item a,
+.dark-mode .menu-item a,
+.dark-mode .pagination-link a {
+    text-decoration: none !important;
+}
 }
 
 /* Assurer un contraste suffisant pour les boutons en mode sombre */
