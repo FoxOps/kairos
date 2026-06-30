@@ -46,10 +46,6 @@ services:
       - DEFAULT_ADMIN_PASSWORD=${ADMIN_PASSWORD:-changez-moi}
       - DEFAULT_GROUP_NAME=Defaut
     
-    # Utiliser Gunicorn comme serveur WSGI pour la production
-    # Avec PostgreSQL, on peut utiliser plusieurs workers
-    command: gunicorn --bind 0.0.0.0:5000 --workers 4 --threads 2 --timeout 120 --log-level info run:app
-    
     # Limiter les ressources
     deploy:
       resources:

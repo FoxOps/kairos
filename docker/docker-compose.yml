@@ -59,6 +59,8 @@ services:
     volumes:
       # Persistance des logs
       - ../logs:/app/logs
+      # Persistance des données (SQLite)
+      - ../data:/app/data
       # Pour le développement: monter le code source
       - ..:/app:ro
     networks:

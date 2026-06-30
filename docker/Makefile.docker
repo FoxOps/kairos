@@ -12,7 +12,8 @@
 #   make -f docker/Makefile.docker up-prod-sqlite # Démarrer en production avec SQLite
 #   make -f docker/Makefile.docker up-prod-pg     # Démarrer en production avec PostgreSQL
 #
-# IMPORTANT: Ce Makefile doit être appelé depuis la racine du projet
+# Note: Ce Makefile doit être appelé depuis la racine du projet
+# Le conteneur utilise automatiquement le bon serveur (Flask en dev, Gunicorn en prod)
 #
 
 .PHONY: help build up down restart logs shell test lint clean
@@ -34,6 +35,9 @@ help: ## Affiche cette aide
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-25s\033[0m %s\n", $$1, $$2}'
 	@echo ""
+	@echo "Note: Le conteneur utilise automatiquement:"
+	@echo "  - Flask (run.py) en mode développement"
+	@echo "  - Gunicorn en mode production"
 
 build: ## Construire l'image Docker
 	docker compose -f $(BASE_COMPOSE_FILE) build
@@ -100,9 +104,9 @@ logs-web: ## Afficher les logs du service web
 	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml logs -f web
 
 shell: ## Ouvrir un shell dans le conteneur web
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml exec web sh
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml exec web bash
 
-bash: ## Ouvrir un bash dans le conteneur web
+bash: ## Ouvrir un bash dans le conteneur web (alias de shell)
 	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml exec web bash
 
 python: ## Exécuter Python dans le conteneur web

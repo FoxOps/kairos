@@ -44,10 +44,6 @@ services:
       - DEFAULT_ADMIN_PASSWORD=${ADMIN_PASSWORD:-changez-moi}
       - DEFAULT_GROUP_NAME=Defaut
     
-    # Utiliser Gunicorn comme serveur WSGI pour la production
-    # Avec SQLite, on limite à 1 worker pour éviter les problèmes de verrouillage
-    command: gunicorn --bind 0.0.0.0:5000 --workers 1 --threads 4 --timeout 120 --log-level info run:app
-    
     # Monter le volume pour la persistance de la base de données SQLite
     volumes:
       - ../data:/app/data

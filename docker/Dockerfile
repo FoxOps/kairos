@@ -39,6 +39,9 @@ COPY requirements.txt .
 RUN python -m venv /opt/venv
 RUN /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
 
+# Installer gunicorn (nécessaire pour la production)
+RUN /opt/venv/bin/pip install --no-cache-dir gunicorn
+
 # ============================================================================
 # STAGE 2: Runtime - Image finale optimisée
 # ============================================================================
@@ -52,7 +55,7 @@ ENV PYTHONFAULTHANDLER=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     FLASK_APP=run.py \
-    FLASK_ENV=production \
+    FLASK_ENV=development \
     PORT=5000
 
 # Installer les dépendances système minimales pour le runtime
@@ -73,6 +76,10 @@ COPY --from=builder /opt/venv /opt/venv
 # Rendre les scripts exécutables
 RUN chmod -R +x /opt/venv/bin
 
+# Copier le script d'entrée
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Copier l'application
 COPY --chown=appuser:appuser . .
 
@@ -85,9 +92,8 @@ USER appuser
 # Ajouter le virtual environment au PATH
 ENV PATH=/opt/venv/bin:$PATH
 
-# Définir le point d'entrée
-ENTRYPOINT ["/opt/venv/bin/python"]
-CMD ["run.py"]
+# Définir le point d'entrée pour utiliser notre script
+ENTRYPOINT ["/entrypoint.sh"]
 
 # Exposer le port par défaut de Flask
 EXPOSE 5000
