@@ -10,8 +10,7 @@ ENV PYTHONFAULTHANDLER=1 \
     FLASK_ENV=development \
     PORT=5000
 
-# Créer l'utilisateur non-root avec un UID/GID fixe pour éviter les problèmes de permissions
-# Utiliser 1000:1000 qui est souvent l'UID/GID par défaut pour le premier utilisateur sur beaucoup de systèmes
+# Créer l'utilisateur non-root avec un UID/GID fixe
 RUN adduser -D -u 1000 -g 1000 appuser
 WORKDIR /app
 
@@ -25,8 +24,10 @@ RUN apk add --no-cache --virtual .build-deps gcc musl-dev && \
     apk del .build-deps gcc musl-dev && \
     rm /tmp/requirements.txt
 
-# Créer les répertoires nécessaires
-RUN mkdir -p /app/data /app/logs /app/instance
+# Créer les répertoires nécessaires avec les bonnes permissions
+RUN mkdir -p /app/data /app/logs /app/instance && \
+    chown 1000:1000 /app/data /app/logs /app/instance && \
+    chmod 755 /app/data /app/logs /app/instance
 
 # Copier l'application
 COPY --chown=1000:1000 . .

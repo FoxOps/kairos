@@ -12,9 +12,9 @@ services:
     environment:
       - FLASK_ENV=${FLASK_ENV:-development}
       - SECRET_KEY=${SECRET_KEY:-changez-moi}
-      - DATABASE_URL=${DATABASE_URL:-sqlite:///app/data/app.db}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////app/data/app.db}
       - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-admin123}
     volumes:
       - ../data:/app/data
       - ../logs:/app/logs
-    user: "1000:1000"  # Utiliser le même UID/GID que dans le conteneur
+    user: "1000:1000"
