@@ -9,7 +9,7 @@ version: '3.8'
 # en mode volume pour un développement en temps réel.
 #
 # Usage:
-#   docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d
 #
 
 services:
@@ -32,7 +32,7 @@ services:
     
     # Monter le code source en mode read-write pour le développement
     volumes:
-      - .:/app:rw
+      - ..:/app:rw
     
     # Exposer le port pour le debug
     ports:
@@ -45,8 +45,8 @@ services:
   # Service pour exécuter les tests
   test:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: leviia-schedule-test
     environment:
       - FLASK_ENV=testing
@@ -54,7 +54,7 @@ services:
       - DATABASE_URL=sqlite:///:memory:
       - SECRET_KEY=test-secret-key
     volumes:
-      - .:/app:ro
+      - ..:/app:ro
     depends_on:
       - web
     networks:
@@ -67,13 +67,13 @@ services:
   # Service pour le linting et la qualité de code
   lint:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: leviia-schedule-lint
     environment:
       - FLASK_ENV=testing
     volumes:
-      - .:/app:ro
+      - ..:/app:ro
     networks:
       - leviia-network
     command: ruff check . && black --check . && mypy .

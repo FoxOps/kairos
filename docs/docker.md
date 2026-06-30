@@ -4,6 +4,7 @@
 
 - [Introduction](#introduction)
 - [Prérequis](#prérequis)
+- [Structure des fichiers](#structure-des-fichiers)
 - [Installation](#installation)
 - [Configuration](#configuration)
   - [Variables d'environnement](#variables-denvironnement)
@@ -30,6 +31,27 @@ Ce guide explique comment déployer **Leviia Schedule** avec Docker. L'applicati
 ✅ **Reproductibilité** : Pas de problèmes de "ça marche chez moi"
 ✅ **Scalabilité** : Facile à mettre à l'échelle
 ✅ **Gestion simplifiée** : Une seule commande pour démarrer tous les services
+
+---
+
+## 📁 Structure des fichiers
+
+```
+leviia-schedule/
+├── docker/                          # Tous les fichiers Docker
+│   ├── Dockerfile                  # Image Docker (multi-stage)
+│   ├── docker-compose.yml          # Configuration de base commune
+│   ├── docker-compose.dev.yml      # Développement
+│   ├── docker-compose.prod.sqlite.yml   # Production avec SQLite
+│   ├── docker-compose.prod.postgres.yml # Production avec PostgreSQL
+│   ├── Makefile.docker             # Commandes utiles
+│   └── .dockerignore                # Exclusion des fichiers inutiles
+│
+├── docs/
+│   └── docker.md                   # Cette documentation
+│
+└── ...                            # Autres fichiers du projet
+```
 
 ---
 
@@ -134,7 +156,7 @@ Le projet utilise les variables d'environnement pour la configuration. Voici les
 
 ### Configuration pour le développement
 
-Le fichier `docker-compose.dev.yml` configure :
+Le fichier `docker/docker-compose.dev.yml` configure :
 
 - Mode debug activé
 - Affichage des requêtes SQL
@@ -145,13 +167,13 @@ Le fichier `docker-compose.dev.yml` configure :
 Pour démarrer :
 
 ```bash
-make -f Makefile.docker up-dev
+make -f docker/Makefile.docker up-dev
 ```
 
 Ou avec docker compose directement :
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d
 ```
 
 ### Configuration pour la production
@@ -162,7 +184,7 @@ Deux options sont disponibles pour la production :
 
 **⚠️ Attention** : SQLite n'est pas recommandé pour la production avec plusieurs workers Gunicorn. Utilisez cette option uniquement pour des environnements avec une charge légère ou un seul worker.
 
-Le fichier `docker-compose.prod.sqlite.yml` configure :
+Le fichier `docker/docker-compose.prod.sqlite.yml` configure :
 - Gunicorn avec 1 worker (pour éviter les problèmes de verrouillage SQLite)
 - SQLite comme base de données
 - Persistance des données dans `./data/`
@@ -170,20 +192,20 @@ Le fichier `docker-compose.prod.sqlite.yml` configure :
 Pour démarrer :
 
 ```bash
-make -f Makefile.docker up-prod-sqlite
+make -f docker/Makefile.docker up-prod-sqlite
 ```
 
 Ou avec docker compose :
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.sqlite.yml up -d
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.sqlite.yml up -d
 ```
 
 #### Production avec PostgreSQL
 
 **✅ Recommandé** : PostgreSQL est la solution idéale pour la production, surtout avec plusieurs workers.
 
-Le fichier `docker-compose.prod.postgres.yml` configure :
+Le fichier `docker/docker-compose.prod.postgres.yml` configure :
 - Gunicorn avec 4 workers et 2 threads par worker
 - PostgreSQL comme base de données
 - Redis pour le cache
@@ -192,13 +214,13 @@ Le fichier `docker-compose.prod.postgres.yml` configure :
 Pour démarrer :
 
 ```bash
-make -f Makefile.docker up-prod-pg
+make -f docker/Makefile.docker up-prod-pg
 ```
 
 Ou avec docker compose :
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.postgres.yml up -d
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.postgres.yml up -d
 ```
 
 ---
@@ -209,48 +231,48 @@ docker compose -f docker-compose.yml -f docker-compose.prod.postgres.yml up -d
 
 | Commande | Description |
 |----------|-------------|
-| `make -f Makefile.docker build` | Construire l'image Docker |
-| `make -f Makefile.docker up-dev` | Démarrer en mode développement |
-| `make -f Makefile.docker down-dev` | Arrêter le développement |
-| `make -f Makefile.docker up-prod-pg` | Démarrer en production (PostgreSQL) |
-| `make -f Makefile.docker up-prod-sqlite` | Démarrer en production (SQLite) |
-| `make -f Makefile.docker down-prod-pg` | Arrêter la production (PostgreSQL) |
-| `make -f Makefile.docker down-prod-sqlite` | Arrêter la production (SQLite) |
+| `make -f docker/Makefile.docker build` | Construire l'image Docker |
+| `make -f docker/Makefile.docker up-dev` | Démarrer en mode développement |
+| `make -f docker/Makefile.docker down-dev` | Arrêter le développement |
+| `make -f docker/Makefile.docker up-prod-pg` | Démarrer en production (PostgreSQL) |
+| `make -f docker/Makefile.docker up-prod-sqlite` | Démarrer en production (SQLite) |
+| `make -f docker/Makefile.docker down-prod-pg` | Arrêter la production (PostgreSQL) |
+| `make -f docker/Makefile.docker down-prod-sqlite` | Arrêter la production (SQLite) |
 
 ### Commandes de service
 
 | Commande | Description |
 |----------|-------------|
-| `make -f Makefile.docker logs` | Afficher les logs |
-| `make -f Makefile.docker logs-web` | Afficher les logs du service web |
-| `make -f Makefile.docker shell` | Ouvrir un shell dans le conteneur |
-| `make -f Makefile.docker bash` | Ouvrir un bash dans le conteneur |
-| `make -f Makefile.docker ps` | Lister les conteneurs |
+| `make -f docker/Makefile.docker logs` | Afficher les logs |
+| `make -f docker/Makefile.docker logs-web` | Afficher les logs du service web |
+| `make -f docker/Makefile.docker shell` | Ouvrir un shell dans le conteneur |
+| `make -f docker/Makefile.docker bash` | Ouvrir un bash dans le conteneur |
+| `make -f docker/Makefile.docker ps` | Lister les conteneurs |
 
 ### Commandes de base de données (PostgreSQL)
 
 | Commande | Description |
 |----------|-------------|
-| `make -f Makefile.docker db-shell-pg` | Ouvrir un shell PostgreSQL |
-| `make -f Makefile.docker db-backup-pg` | Créer une sauvegarde |
-| `make -f Makefile.docker db-restore-pg FILE=backup.sql` | Restaurer une sauvegarde |
+| `make -f docker/Makefile.docker db-shell-pg` | Ouvrir un shell PostgreSQL |
+| `make -f docker/Makefile.docker db-backup-pg` | Créer une sauvegarde |
+| `make -f docker/Makefile.docker db-restore-pg FILE=backup.sql` | Restaurer une sauvegarde |
 
 ### Commandes de test et qualité
 
 | Commande | Description |
 |----------|-------------|
-| `make -f Makefile.docker test` | Exécuter les tests |
-| `make -f Makefile.docker lint` | Exécuter le linting |
-| `make -f Makefile.docker quality` | Exécuter toutes les vérifications |
+| `make -f docker/Makefile.docker test` | Exécuter les tests |
+| `make -f docker/Makefile.docker lint` | Exécuter le linting |
+| `make -f docker/Makefile.docker quality` | Exécuter toutes les vérifications |
 
 ### Commandes avancées
 
 | Commande | Description |
 |----------|-------------|
-| `make -f Makefile.docker rebuild` | Reconstruire et redémarrer (dev) |
-| `make -f Makefile.docker rebuild-prod-pg` | Reconstruire et redémarrer (prod PostgreSQL) |
-| `make -f Makefile.docker rebuild-prod-sqlite` | Reconstruire et redémarrer (prod SQLite) |
-| `make -f Makefile.docker clean` | Nettoyer les ressources inutilisées |
+| `make -f docker/Makefile.docker rebuild` | Reconstruire et redémarrer (dev) |
+| `make -f docker/Makefile.docker rebuild-prod-pg` | Reconstruire et redémarrer (prod PostgreSQL) |
+| `make -f docker/Makefile.docker rebuild-prod-sqlite` | Reconstruire et redémarrer (prod SQLite) |
+| `make -f docker/Makefile.docker clean` | Nettoyer les ressources inutilisées |
 
 ---
 
@@ -383,7 +405,7 @@ chmod -R 755 data logs
 **Solution** :
 - Trouver le processus utilisant le port : `sudo lsof -i :5000`
 - Arrêter le processus : `kill <PID>`
-- Ou changer le port dans `docker-compose.yml`
+- Ou changer le port dans `docker/docker-compose.yml`
 
 #### 5. Problèmes avec SQLite en production
 
@@ -391,21 +413,21 @@ chmod -R 755 data logs
 
 **Solution** :
 - Utiliser PostgreSQL à la place
-- Ou limiter à 1 worker Gunicorn (déjà configuré dans `docker-compose.prod.sqlite.yml`)
-- Vérifier que le volume `./data` est correctement monté
+- Ou limiter à 1 worker Gunicorn (déjà configuré dans `docker/docker-compose.prod.sqlite.yml`)
+- Vérifier que le volume `../data` est correctement monté
 
 ### Commandes de diagnostic
 
 ```bash
 # Vérifier l'état des services
-docker compose ps
+docker compose -f docker/docker-compose.yml ps
 
 # Vérifier les logs
-docker compose logs
+docker compose -f docker/docker-compose.yml logs
 
 # Vérifier les logs d'un service spécifique
-docker compose logs web
-docker compose logs db
+docker compose -f docker/docker-compose.yml logs web
+docker compose -f docker/docker-compose.yml logs db
 
 # Vérifier les ressources
 docker stats
@@ -428,7 +450,7 @@ docker network ls
 
 1. Arrêter les services :
    ```bash
-   make -f Makefile.docker down-prod-pg  # ou down-prod-sqlite
+   make -f docker/Makefile.docker down-prod-pg  # ou down-prod-sqlite
    ```
 
 2. Mettre à jour le code :
@@ -438,7 +460,7 @@ docker network ls
 
 3. Reconstruire et redémarrer :
    ```bash
-   make -f Makefile.docker rebuild-prod-pg  # ou rebuild-prod-sqlite
+   make -f docker/Makefile.docker rebuild-prod-pg  # ou rebuild-prod-sqlite
    ```
 
 ### Mettre à jour les dépendances
@@ -446,14 +468,14 @@ docker network ls
 1. Mettre à jour `requirements.txt` :
    ```bash
    # Dans le conteneur
-   make -f Makefile.docker shell
+   make -f docker/Makefile.docker shell
    pip freeze > requirements.txt
    exit
    ```
 
 2. Reconstruire l'image :
    ```bash
-   make -f Makefile.docker rebuild-prod-pg  # ou rebuild-prod-sqlite
+   make -f docker/Makefile.docker rebuild-prod-pg  # ou rebuild-prod-sqlite
    ```
 
 ---
@@ -481,7 +503,7 @@ Les contributions sont les bienvenues ! Pour contribuer :
 
 ## 📜 Licence
 
-Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+Ce projet est sous licence MIT. Voir le fichier [LICENSE](../LICENSE) pour plus de détails.
 
 ---
 

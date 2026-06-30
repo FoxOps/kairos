@@ -11,7 +11,7 @@ version: '3.8'
 # workers Gunicorn.
 #
 # Usage:
-#   docker compose -f docker-compose.yml -f docker-compose.prod.postgres.yml up -d
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.postgres.yml up -d
 #
 
 services:

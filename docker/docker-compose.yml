@@ -7,13 +7,13 @@ version: '3.8'
 # Ce fichier contient la configuration de base commune à tous les environnements.
 #
 # Pour le développement:
-#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d
 #
 # Pour la production avec SQLite:
-#   docker compose -f docker-compose.yml -f docker-compose.prod.sqlite.yml up -d
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.sqlite.yml up -d
 #
 # Pour la production avec PostgreSQL:
-#   docker compose -f docker-compose.yml -f docker-compose.prod.postgres.yml up -d
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.postgres.yml up -d
 #
 
 services:
@@ -22,8 +22,8 @@ services:
   # ===========================================================================
   web:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: leviia-schedule-web
     restart: unless-stopped
     ports:
@@ -58,9 +58,9 @@ services:
       - DEFAULT_GROUP_NAME=${DEFAULT_GROUP_NAME:-Defaut}
     volumes:
       # Persistance des logs
-      - ./logs:/app/logs
+      - ../logs:/app/logs
       # Pour le développement: monter le code source
-      - .:/app:ro
+      - ..:/app:ro
     networks:
       - leviia-network
     healthcheck:
