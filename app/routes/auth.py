@@ -56,6 +56,7 @@ def oidc_login():
     print(f"[DEBUG oidc_login] OIDCConfig.ENABLED: {OIDCConfig.ENABLED}")
     print(f"[DEBUG oidc_login] OIDCConfig.is_configured(): {OIDCConfig.is_configured()}")
     print(f"[DEBUG oidc_login] oidc_auth.oidc_client: {oidc_auth.oidc_client}")
+    print(f"[DEBUG oidc_login] session avant: {dict(session)}")
     
     if not OIDCConfig.ENABLED or not OIDCConfig.is_configured():
         print("[DEBUG oidc_login] OIDC non configuré, redirection vers login")
@@ -65,6 +66,7 @@ def oidc_login():
     # Générer l'URL d'autorisation OIDC
     auth_url = oidc_auth.get_authorization_url()
     print(f"[DEBUG oidc_login] auth_url générée: {auth_url}")
+    print(f"[DEBUG oidc_login] session après get_authorization_url: {dict(session)}")
     
     if not auth_url:
         print("[DEBUG oidc_login] auth_url est None!")
@@ -78,6 +80,9 @@ def oidc_login():
 @app.route("/oidc/callback")
 def oidc_callback():
     """Gère le callback OIDC après l'authentification."""
+    print(f"[DEBUG callback] session à l'arrivée: {dict(session)}")
+    print(f"[DEBUG callback] request.args: {dict(request.args)}")
+    
     if current_user.is_authenticated:
         return redirect(url_for("index"))
     
@@ -89,6 +94,7 @@ def oidc_callback():
     user_data = oidc_auth.handle_oauth_callback(request)
     
     if not user_data:
+        print("[DEBUG callback] user_data est None")
         return redirect(url_for("login"))
     
     # Connecter l'utilisateur
