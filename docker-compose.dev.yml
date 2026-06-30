@@ -1,0 +1,89 @@
+version: '3.8'
+
+# =============================================================================
+# Docker Compose pour le développement
+# =============================================================================
+#
+# Ce fichier étend docker-compose.yml pour le développement.
+# Il active le mode debug, le reloader, et monte le code source
+# en mode volume pour un développement en temps réel.
+#
+# Usage:
+#   docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#
+
+services:
+  web:
+    # Override pour le développement
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - DEBUG_ERRORS=true
+      - SQLALCHEMY_ECHO=true
+      - LOG_LEVEL=DEBUG
+      
+      # Désactiver la sécurité stricte en développement
+      - SESSION_COOKIE_SECURE=false
+      - SESSION_COOKIE_SAMESITE=Lax
+      - RATE_LIMIT_ENABLED=false
+      
+      # Utiliser SQLite pour le développement (plus simple)
+      - DATABASE_URL=sqlite:////app/data/dev.db
+    
+    # Monter le code source en mode read-write pour le développement
+    volumes:
+      - .:/app:rw
+    
+    # Exposer le port pour le debug
+    ports:
+      - "5000:5000"
+      - "5678:5678"  # Port pour le debugger
+    
+    # Commande pour le développement avec reloader
+    command: python run.py
+
+  # Service pour exécuter les tests
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: leviia-schedule-test
+    environment:
+      - FLASK_ENV=testing
+      - FLASK_TESTING=true
+      - DATABASE_URL=sqlite:///:memory:
+      - SECRET_KEY=test-secret-key
+    volumes:
+      - .:/app:ro
+    depends_on:
+      - web
+    networks:
+      - leviia-network
+    # Commande par défaut: exécuter les tests
+    command: pytest tests/ -v
+    profiles:
+      - test
+
+  # Service pour le linting et la qualité de code
+  lint:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: leviia-schedule-lint
+    environment:
+      - FLASK_ENV=testing
+    volumes:
+      - .:/app:ro
+    networks:
+      - leviia-network
+    command: ruff check . && black --check . && mypy .
+    profiles:
+      - lint
+      - quality
+
+# ===========================================================================
+# Réseau (hérité du fichier principal)
+# ===========================================================================
+networks:
+  leviia-network:
+    external: true

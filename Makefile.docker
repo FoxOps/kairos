@@ -1,0 +1,182 @@
+# Makefile pour la gestion Docker de Leviia Schedule
+# =============================================================================
+#
+# Ce Makefile fournit des commandes utiles pour gérer le projet avec Docker.
+#
+# Usage:
+#   make -f Makefile.docker <command>
+#
+# Exemples:
+#   make -f Makefile.docker build          # Construire l'image
+#   make -f Makefile.docker up             # Démarrer les services
+#   make -f Makefile.docker down           # Arrêter les services
+#   make -f Makefile.docker test           # Exécuter les tests
+#
+
+.PHONY: help build up down restart logs shell test lint backup clean
+
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
+
+# Nom du projet
+PROJECT_NAME ?= leviia-schedule
+
+# Fichiers docker-compose
+DOCKER_COMPOSE_FILES ?= docker-compose.yml
+
+# Environnement (dev ou prod)
+ENVIRONMENT ?= dev
+
+# =============================================================================
+# COMMANDES PRINCIPALES
+# =============================================================================
+
+help: ## Affiche cette aide
+	@echo "Commandes disponibles pour Docker:"
+	@echo ""
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@echo ""
+
+build: ## Construire l'image Docker
+	docker compose -f $(DOCKER_COMPOSE_FILES) build
+
+up: ## Démarrer les services
+	docker compose -f $(DOCKER_COMPOSE_FILES) up -d
+
+up-logs: ## Démarrer les services et afficher les logs
+	docker compose -f $(DOCKER_COMPOSE_FILES) up
+
+down: ## Arrêter les services
+	docker compose -f $(DOCKER_COMPOSE_FILES) down
+
+restart: ## Redémarrer les services
+	docker compose -f $(DOCKER_COMPOSE_FILES) restart
+
+logs: ## Afficher les logs
+	docker compose -f $(DOCKER_COMPOSE_FILES) logs -f
+
+logs-web: ## Afficher les logs du service web
+	docker compose -f $(DOCKER_COMPOSE_FILES) logs -f web
+
+logs-db: ## Afficher les logs de la base de données
+	docker compose -f $(DOCKER_COMPOSE_FILES) logs -f db
+
+# =============================================================================
+# COMMANDES DE DÉVELOPPEMENT
+# =============================================================================
+
+up-dev: ## Démarrer les services en mode développement
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+up-dev-logs: ## Démarrer les services en mode développement avec logs
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+down-dev: ## Arrêter les services de développement
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+
+shell: ## Ouvrir un shell dans le conteneur web
+	docker compose -f $(DOCKER_COMPOSE_FILES) exec web sh
+
+bash: ## Ouvrir un bash dans le conteneur web
+	docker compose -f $(DOCKER_COMPOSE_FILES) exec web bash
+
+python: ## Exécuter Python dans le conteneur web
+	docker compose -f $(DOCKER_COMPOSE_FILES) exec web python
+
+# =============================================================================
+# COMMANDES DE PRODUCTION
+# =============================================================================
+
+up-prod: ## Démarrer les services en mode production
+	docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+up-prod-logs: ## Démarrer les services en mode production avec logs
+	docker compose -f docker-compose.yml -f docker-compose.prod.yml up
+
+down-prod: ## Arrêter les services de production
+	docker compose -f docker-compose.yml -f docker-compose.prod.yml down
+
+# =============================================================================
+# COMMANDES DE TEST ET QUALITÉ
+# =============================================================================
+
+test: ## Exécuter les tests
+	docker compose -f $(DOCKER_COMPOSE_FILES) --profile test up test
+
+test-all: ## Exécuter tous les tests avec couverture
+	docker compose -f $(DOCKER_COMPOSE_FILES) --profile test run --rm test pytest tests/ -v --cov=app --cov-report=html
+
+lint: ## Exécuter le linting
+	docker compose -f $(DOCKER_COMPOSE_FILES) --profile lint up lint
+
+quality: ## Exécuter toutes les vérifications de qualité
+	docker compose -f $(DOCKER_COMPOSE_FILES) --profile lint --profile quality up lint
+
+# =============================================================================
+# COMMANDES DE BASE DE DONNÉES
+# =============================================================================
+
+db-shell: ## Ouvrir un shell PostgreSQL
+	docker compose -f $(DOCKER_COMPOSE_FILES) exec db psql -U leviia -d leviia
+
+db-backup: ## Créer une sauvegarde de la base de données
+	docker compose -f $(DOCKER_COMPOSE_FILES) exec db pg_dump -U leviia -d leviia > backups/leviia-$$(date +%Y%m%d-%H%M%S).sql
+
+db-restore: ## Restaurer une sauvegarde de la base de données
+	@echo "Usage: make db-restore FILE=<fichier.sql>"
+	@if [ -z "$(FILE)" ]; then echo "Erreur: Spécifiez le fichier de sauvegarde avec FILE=<fichier.sql>"; exit 1; fi
+	docker compose -f $(DOCKER_COMPOSE_FILES) exec -T db psql -U leviia -d leviia < $(FILE)
+
+# =============================================================================
+# COMMANDES DE NETTOYAGE
+# =============================================================================
+
+clean: ## Nettoyer les conteneurs, images et volumes inutilisés
+	docker system prune -f
+
+clean-all: ## Nettoyer TOUT (y compris les images et volumes utilisés)
+	docker system prune -a -f --volumes
+
+clean-logs: ## Nettoyer les fichiers de logs
+	rm -rf logs/*.log
+
+clean-data: ## Nettoyer les données de développement
+	rm -rf data/dev.db
+
+# =============================================================================
+# COMMANDES DIVERSES
+# =============================================================================
+
+ps: ## Lister les conteneurs en cours d'exécution
+	docker compose -f $(DOCKER_COMPOSE_FILES) ps
+
+images: ## Lister les images Docker
+	docker images
+
+volumes: ## Lister les volumes Docker
+	docker volume ls
+
+networks: ## Lister les réseaux Docker
+	docker network ls
+
+# =============================================================================
+# COMMANDES AVANCÉES
+# =============================================================================
+
+rebuild: ## Reconstruire l'image et redémarrer
+	docker compose -f $(DOCKER_COMPOSE_FILES) down && \
+	docker compose -f $(DOCKER_COMPOSE_FILES) build --no-cache && \
+	docker compose -f $(DOCKER_COMPOSE_FILES) up -d
+
+migrate: ## Appliquer les migrations de base de données
+	docker compose -f $(DOCKER_COMPOSE_FILES) exec web python -c "from app import app, db; from app.models import *; with app.app_context(): db.create_all()"
+
+init-db: ## Initialiser la base de données avec des données par défaut
+	docker compose -f $(DOCKER_COMPOSE_FILES) exec web python run.py
+
+# =============================================================================
+# CIBLES PAR DÉFAUT
+# =============================================================================
+
+.default: help
