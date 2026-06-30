@@ -38,6 +38,7 @@ Elle permet de gérer les horaires de travail, les rotations d'astreinte et les 
 - ✅ **Gestion des congés** avec visualisation dans le planning
 - ✅ **Export ICS** pour intégration avec Google Calendar, Outlook, etc.
 - ✅ **Authentification sécurisée** (Flask-Login)
+- ✅ **Authentification SSO/OIDC** (Keycloak, Okta, Auth0, etc.)
 - ✅ **Système de logging complet** avec rotation automatique
 - ✅ **Automatisation intelligente** avec règles métiers
 
@@ -50,7 +51,7 @@ Elle permet de gérer les horaires de travail, les rotations d'astreinte et les 
 | **Framework Web** | Flask | 3.1.3 |
 | **ORM** | SQLAlchemy | 2.0.51 |
 | **Base de données** | SQLite (par défaut), PostgreSQL | - |
-| **Authentification** | Flask-Login | 0.6.3 |
+| **Authentification** | Flask-Login, Authlib (OIDC) | 0.6.3, 1.3.0 |
 | **Export ICS** | icalendar | 7.1.3 |
 
 ---

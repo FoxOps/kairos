@@ -70,10 +70,11 @@ Le **Guide Administrateur** couvre :
 6. **Tableau de bord et statistiques** - Suivi de l'activité, rapports
 7. **Automatisation complète** - Configuration des règles métiers
 8. **Configuration technique** - Paramètres avancés, variables d'environnement
+9. **Configuration SSO/OIDC** - Authentification avec Keycloak, Okta, Auth0, etc.
 9. Export et intégrations (configuration côté serveur)
-10. Personnalisation de l'application
-11. **Maintenance et sauvegardes** - Planification, procédures d'urgence
-12. Gestion des erreurs (côté administration)
+11. Personnalisation de l'application
+12. **Maintenance et sauvegardes** - Planification, procédures d'urgence
+13. Gestion des erreurs (côté administration)
 
 Le **Guide de Sauvegarde** couvre :
 - Sauvegarde manuelle et automatique de la base de données
