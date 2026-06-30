@@ -38,8 +38,18 @@ app = Flask(
 )
 app.config.from_object("config.Config")
 
-# CONFIGURATION DU LOGGING
 # ============================================================================
+# CONFIGURATION DU LOGGING - FORCER L'AFFICHAGE EN CONSOLE
+# ============================================================================
+# Configurer le logger racine pour afficher les logs en console
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()  # ✅ Forcer l'affichage en console
+    ]
+)
+
 # Initialiser les extensions
 db.init_app(app)
 login_manager.init_app(app)
@@ -60,41 +70,31 @@ OIDCConfig.load_config()  # Recharger la configuration
 # ============================================================================
 # DEBUG: Vérifier la configuration OIDC
 # ============================================================================
-app.logger.info("=" * 60)
-app.logger.info("DEBUG: Vérification de la configuration OIDC")
-app.logger.info("=" * 60)
-app.logger.info(f"OIDCConfig.ENABLED: {OIDCConfig.ENABLED} (type: {type(OIDCConfig.ENABLED)})")
-app.logger.info(f"OIDCConfig.ISSUER: '{OIDCConfig.ISSUER}' (type: {type(OIDCConfig.ISSUER)})")
-app.logger.info(f"OIDCConfig.CLIENT_ID: '{OIDCConfig.CLIENT_ID}' (type: {type(OIDCConfig.CLIENT_ID)})")
-app.logger.info(f"OIDCConfig.CLIENT_SECRET: '{OIDCConfig.CLIENT_SECRET}' (type: {type(OIDCConfig.CLIENT_SECRET)})")
-app.logger.info(f"OIDCConfig.REDIRECT_URI: '{OIDCConfig.REDIRECT_URI}' (type: {type(OIDCConfig.REDIRECT_URI)})")
-app.logger.info(f"OIDCConfig.is_configured(): {OIDCConfig.is_configured()}")
-
-# Vérifier les variables d'environnement brutes
-import os
-app.logger.info("=" * 60)
-app.logger.info("DEBUG: Variables d'environnement brutes")
-app.logger.info("=" * 60)
-app.logger.info(f"os.environ.get('OIDC_ENABLED'): '{os.environ.get('OIDC_ENABLED')}'")
-app.logger.info(f"os.environ.get('OIDC_ISSUER'): '{os.environ.get('OIDC_ISSUER')}'")
-app.logger.info(f"os.environ.get('OIDC_CLIENT_ID'): '{os.environ.get('OIDC_CLIENT_ID')}'")
-app.logger.info(f"os.environ.get('OIDC_CLIENT_SECRET'): '{os.environ.get('OIDC_CLIENT_SECRET')}'")
-app.logger.info(f"os.environ.get('OIDC_REDIRECT_URI'): '{os.environ.get('OIDC_REDIRECT_URI')}'")
-app.logger.info("=" * 60)
+app.logger.setLevel(logging.INFO)  # ✅ Forcer le niveau INFO
+print("=" * 60)  # ✅ Utiliser print pour être sûr que ça s'affiche
+print("DEBUG: Vérification de la configuration OIDC")
+print("=" * 60)
+print(f"OIDCConfig.ENABLED: {OIDCConfig.ENABLED} (type: {type(OIDCConfig.ENABLED)})")
+print(f"OIDCConfig.ISSUER: '{OIDCConfig.ISSUER}' (type: {type(OIDCConfig.ISSUER)})")
+print(f"OIDCConfig.CLIENT_ID: '{OIDCConfig.CLIENT_ID}' (type: {type(OIDCConfig.CLIENT_ID)})")
+print(f"OIDCConfig.CLIENT_SECRET: '{OIDCConfig.CLIENT_SECRET}' (type: {type(OIDCConfig.CLIENT_SECRET)})")
+print(f"OIDCConfig.REDIRECT_URI: '{OIDCConfig.REDIRECT_URI}' (type: {type(OIDCConfig.REDIRECT_URI)})")
+print(f"OIDCConfig.is_configured(): {OIDCConfig.is_configured()}")
+print("=" * 60)
 
 # Initialisation de l'authentification OIDC (optionnelle)
 if OIDCConfig.ENABLED and OIDCConfig.is_configured():
     from app.auth.oidc_auth import oidc_auth
     oidc_auth.init_app(app)
-    app.logger.info("Authentification OIDC activée")
+    print(f"✅ Authentification OIDC activée")
     
     # Vérifier que le client OIDC est bien enregistré
     if oidc_auth.oidc_client:
-        app.logger.info(f"Client OIDC enregistré avec succès: {oidc_auth.oidc_client.name}")
+        print(f"✅ Client OIDC enregistré avec succès: {oidc_auth.oidc_client.name}")
     else:
-        app.logger.error("ERREUR: Client OIDC est None après initialisation!")
+        print("❌ ERREUR: Client OIDC est None après initialisation!")
 else:
-    app.logger.warning(f"Authentification OIDC désactivée. ENABLED={OIDCConfig.ENABLED}, is_configured={OIDCConfig.is_configured()}")
+    print(f"⚠️  Authentification OIDC désactivée. ENABLED={OIDCConfig.ENABLED}, is_configured={OIDCConfig.is_configured()}")
 
 
 # Initialiser le cache
