@@ -1,80 +1,25 @@
 version: '3.8'
 
-# =============================================================================
-# Docker Compose pour Leviia Schedule
-# =============================================================================
-#
-# Ce fichier contient la configuration de base commune à tous les environnements.
-#
-# Pour le développement:
-#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up -d
-#
-# Pour la production avec SQLite:
-#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.sqlite.yml up -d
-#
-# Pour la production avec PostgreSQL:
-#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.postgres.yml up -d
-#
-
 services:
-  # ===========================================================================
-  # Service principal de l'application
-  # ===========================================================================
   web:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    container_name: leviia-schedule-web
+    container_name: leviia-web
     restart: unless-stopped
     ports:
       - "5000:5000"
     environment:
-      # Configuration de base
       - FLASK_ENV=${FLASK_ENV:-development}
-      - SECRET_KEY=${SECRET_KEY:-changez-moi-en-production}
-      
-      # Base de données (à surcharger dans les fichiers spécifiques)
-      - DATABASE_URL=${DATABASE_URL:-sqlite:///app.db}
-      
-      # Configuration des logs
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - LOG_DIR=${LOG_DIR:-/app/logs}
-      
-      # Sécurité
-      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-false}
-      - SESSION_COOKIE_HTTPONLY=${SESSION_COOKIE_HTTPONLY:-true}
-      - SESSION_COOKIE_SAMESITE=${SESSION_COOKIE_SAMESITE:-Lax}
-      
-      # Rate limiting
-      - RATE_LIMIT_ENABLED=${RATE_LIMIT_ENABLED:-true}
-      - RATE_LIMIT_DEFAULT=${RATE_LIMIT_DEFAULT:-200 per day, 50 per hour}
-      
-      # Compression
-      - COMPRESS_ENABLED=${COMPRESS_ENABLED:-true}
-      
-      # Données par défaut
-      - DEFAULT_ADMIN_EMAIL=${DEFAULT_ADMIN_EMAIL:-admin@leviia.local}
+      - SECRET_KEY=${SECRET_KEY:-changez-moi}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///app/data/app.db}
       - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-admin123}
-      - DEFAULT_GROUP_NAME=${DEFAULT_GROUP_NAME:-Defaut}
     volumes:
-      # Persistance des logs
-      - ../logs:/app/logs
-      # Persistance des données (SQLite)
       - ../data:/app/data
-      # Pour le développement: monter le code source
-      - ..:/app:ro
+      - ../logs:/app/logs
     networks:
-      - leviia-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      - leviia-net
 
-# ===========================================================================
-# Réseau dédié
-# ===========================================================================
 networks:
-  leviia-network:
+  leviia-net:
     driver: bridge

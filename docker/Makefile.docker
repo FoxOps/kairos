@@ -1,207 +1,62 @@
-# Makefile pour la gestion Docker de Leviia Schedule
-# =============================================================================
-#
-# Ce Makefile fournit des commandes utiles pour gérer le projet avec Docker.
-#
-# Usage:
-#   make -f docker/Makefile.docker <command>
-#
-# Exemples:
-#   make -f docker/Makefile.docker build          # Construire l'image
-#   make -f docker/Makefile.docker up-dev         # Démarrer en développement
-#   make -f docker/Makefile.docker up-prod-sqlite # Démarrer en production avec SQLite
-#   make -f docker/Makefile.docker up-prod-pg     # Démarrer en production avec PostgreSQL
-#
-# Note: Ce Makefile doit être appelé depuis la racine du projet
-# Le conteneur utilise automatiquement le bon serveur (Flask en dev, Gunicorn en prod)
-#
+# Makefile simplifié pour Leviia Schedule
+# Usage: make -f docker/Makefile.docker <command>
 
-.PHONY: help build up down restart logs shell test lint clean
+.PHONY: help build up up-dev up-prod down down-dev down-prod logs shell
 
-# =============================================================================
-# CONFIGURATION
-# =============================================================================
-
-# Tous les chemins sont relatifs à la racine du projet
 DOCKER_DIR = docker
-BASE_COMPOSE_FILE = $(DOCKER_DIR)/docker-compose.yml
+BASE = $(DOCKER_DIR)/docker-compose.yml
+DEV = $(DOCKER_DIR)/docker-compose.dev.yml
+PROD = $(DOCKER_DIR)/docker-compose.prod.yml
 
-# =============================================================================
-# COMMANDES PRINCIPALES
-# =============================================================================
-
-help: ## Affiche cette aide
-	@echo "Commandes disponibles pour Docker:"
+help: ## Affiche l'aide
+	@echo "Commandes Docker pour Leviia Schedule:"
 	@echo ""
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-25s\033[0m %s\n", $$1, $$2}'
+	@echo "  Développement:"
+	@echo "    make -f docker/Makefile.docker up-dev    # Démarrer"
+	@echo "    make -f docker/Makefile.docker down-dev  # Arrêter"
+	@echo "    make -f docker/Makefile.docker logs      # Voir les logs"
+	@echo "    make -f docker/Makefile.docker shell     # Shell dans le conteneur"
 	@echo ""
-	@echo "Note: Le conteneur utilise automatiquement:"
-	@echo "  - Flask (run.py) en mode développement"
-	@echo "  - Gunicorn en mode production"
+	@echo "  Production:"
+	@echo "    make -f docker/Makefile.docker up-prod   # Démarrer"
+	@echo "    make -f docker/Makefile.docker down-prod # Arrêter"
+	@echo ""
 
-build: ## Construire l'image Docker
-	docker compose -f $(BASE_COMPOSE_FILE) build
+build: ## Construire l'image
+	docker compose -f $(BASE) build
 
-# =============================================================================
-# COMMANDES DE DÉVELOPPEMENT
-# =============================================================================
+up-dev: ## Démarrer en développement
+	docker compose -f $(BASE) -f $(DEV) up -d
 
-up-dev: ## Démarrer les services en mode développement
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml up -d
+down-dev: ## Arrêter le développement
+	docker compose -f $(BASE) -f $(DEV) down
 
-up-dev-logs: ## Démarrer les services en mode développement avec logs
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml up
+up-prod: ## Démarrer en production
+	docker compose -f $(BASE) -f $(PROD) up -d
 
-down-dev: ## Arrêter les services de développement
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml down
+down-prod: ## Arrêter la production
+	docker compose -f $(BASE) -f $(PROD) down
 
-# =============================================================================
-# COMMANDES DE PRODUCTION
-# =============================================================================
+up: up-dev ## Démarrer (défaut: dev)
+down: down-dev ## Arrêter (défaut: dev)
 
-up-prod-sqlite: ## Démarrer les services en production avec SQLite
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.sqlite.yml up -d
+logs: ## Voir les logs
+	docker compose -f $(BASE) -f $(DEV) logs -f
 
-up-prod-sqlite-logs: ## Démarrer les services en production avec SQLite et logs
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.sqlite.yml up
+shell: ## Shell dans le conteneur
+	docker compose -f $(BASE) -f $(DEV) exec web bash
 
-down-prod-sqlite: ## Arrêter les services de production avec SQLite
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.sqlite.yml down
+# Commandes utiles
+ps: ## Lister les conteneurs
+	docker compose -f $(BASE) -f $(DEV) ps
 
-up-prod-pg: ## Démarrer les services en production avec PostgreSQL
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.postgres.yml up -d
-
-up-prod-pg-logs: ## Démarrer les services en production avec PostgreSQL et logs
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.postgres.yml up
-
-down-prod-pg: ## Arrêter les services de production avec PostgreSQL
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.postgres.yml down
-
-# Alias pour la compatibilité
-up-prod: up-prod-pg ## Démarrer en production (PostgreSQL par défaut)
-down-prod: down-prod-pg ## Arrêter la production (PostgreSQL par défaut)
-
-# =============================================================================
-# COMMANDES GÉNÉRALES
-# =============================================================================
-
-up: ## Démarrer les services (défaut: développement)
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml up -d
-
-up-logs: ## Démarrer les services et afficher les logs
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml up
-
-down: ## Arrêter les services
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml down
-
-restart: ## Redémarrer les services
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml restart
-
-logs: ## Afficher les logs
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml logs -f
-
-logs-web: ## Afficher les logs du service web
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml logs -f web
-
-shell: ## Ouvrir un shell dans le conteneur web
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml exec web bash
-
-bash: ## Ouvrir un bash dans le conteneur web (alias de shell)
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml exec web bash
-
-python: ## Exécuter Python dans le conteneur web
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml exec web python
-
-# =============================================================================
-# COMMANDES DE TEST ET QUALITÉ
-# =============================================================================
-
-test: ## Exécuter les tests
-	docker compose -f $(BASE_COMPOSE_FILE) --profile test up test
-
-test-all: ## Exécuter tous les tests avec couverture
-	docker compose -f $(BASE_COMPOSE_FILE) --profile test run --rm test pytest tests/ -v --cov=app --cov-report=html
-
-lint: ## Exécuter le linting
-	docker compose -f $(BASE_COMPOSE_FILE) --profile lint up lint
-
-quality: ## Exécuter toutes les vérifications de qualité
-	docker compose -f $(BASE_COMPOSE_FILE) --profile lint --profile quality up lint
-
-# =============================================================================
-# COMMANDES DE BASE DE DONNÉES
-# =============================================================================
-
-db-shell-pg: ## Ouvrir un shell PostgreSQL (production)
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.postgres.yml exec db psql -U leviia -d leviia
-
-db-backup-pg: ## Créer une sauvegarde de la base de données PostgreSQL
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.postgres.yml exec db pg_dump -U leviia -d leviia > backups/leviia-$$(date +%Y%m%d-%H%M%S).sql
-
-db-restore-pg: ## Restaurer une sauvegarde de la base de données PostgreSQL
-	@echo "Usage: make db-restore-pg FILE=<fichier.sql>"
-	@if [ -z "$(FILE)" ]; then echo "Erreur: Spécifiez le fichier de sauvegarde avec FILE=<fichier.sql>"; exit 1; fi
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.postgres.yml exec -T db psql -U leviia -d leviia < $(FILE)
-
-# =============================================================================
-# COMMANDES DE NETTOYAGE
-# =============================================================================
-
-clean: ## Nettoyer les conteneurs, images et volumes inutilisés
+clean: ## Nettoyer
 	docker system prune -f
 
-clean-all: ## Nettoyer TOUT (y compris les images et volumes utilisés)
-	docker system prune -a -f --volumes
+.db-backup: ## Sauvegarder la base de données (prod)
+	docker compose -f $(BASE) -f $(PROD) exec db pg_dump -U leviia -d leviia > backups/leviia-$(date +%Y%m%d-%H%M%S).sql
 
-clean-logs: ## Nettoyer les fichiers de logs
-	rm -rf logs/*.log
-
-clean-data: ## Nettoyer les données de développement
-	rm -rf data/*.db
-
-# =============================================================================
-# COMMANDES DIVERSES
-# =============================================================================
-
-ps: ## Lister les conteneurs en cours d'exécution
-	docker compose -f $(BASE_COMPOSE_FILE) ps
-
-images: ## Lister les images Docker
-	docker images
-
-volumes: ## Lister les volumes Docker
-	docker volume ls
-
-networks: ## Lister les réseaux Docker
-	docker network ls
-
-# =============================================================================
-# COMMANDES AVANCÉES
-# =============================================================================
-
-rebuild: ## Reconstruire l'image et redémarrer (dev)
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml down && \
-	docker compose -f $(BASE_COMPOSE_FILE) build --no-cache && \
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml up -d
-
-rebuild-prod-pg: ## Reconstruire l'image et redémarrer (production PostgreSQL)
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.postgres.yml down && \
-	docker compose -f $(BASE_COMPOSE_FILE) build --no-cache && \
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.postgres.yml up -d
-
-rebuild-prod-sqlite: ## Reconstruire l'image et redémarrer (production SQLite)
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.sqlite.yml down && \
-	docker compose -f $(BASE_COMPOSE_FILE) build --no-cache && \
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.sqlite.yml up -d
-
-migrate: ## Appliquer les migrations de base de données
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml exec web python -c "from app import app, db; from app.models import *; with app.app_context(): db.create_all()"
-
-init-db: ## Initialiser la base de données avec des données par défaut
-	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml exec web python run.py
-
-# =============================================================================
-# CIBLES PAR DÉFAUT
-# =============================================================================
-
-.default: help
+.db-restore: ## Restaurer la base de données (prod)
+	@echo "Usage: make -f docker/Makefile.docker db-restore FILE=backup.sql"
+	@if [ -z "$(FILE)" ]; then echo "Erreur: FILE requis"; exit 1; fi
+	docker compose -f $(BASE) -f $(PROD) exec -T db psql -U leviia -d leviia < $(FILE)
