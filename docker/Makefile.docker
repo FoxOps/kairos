@@ -12,6 +12,8 @@
 #   make -f docker/Makefile.docker up-prod-sqlite # Démarrer en production avec SQLite
 #   make -f docker/Makefile.docker up-prod-pg     # Démarrer en production avec PostgreSQL
 #
+# IMPORTANT: Ce Makefile doit être appelé depuis la racine du projet
+#
 
 .PHONY: help build up down restart logs shell test lint clean
 
@@ -19,14 +21,9 @@
 # CONFIGURATION
 # =============================================================================
 
-# Nom du projet
-PROJECT_NAME ?= leviia-schedule
-
-# Répertoire racine du projet
-PROJECT_ROOT ?= ..
-
-# Fichiers docker-compose de base
-BASE_COMPOSE_FILE ?= $(PROJECT_ROOT)/docker/docker-compose.yml
+# Tous les chemins sont relatifs à la racine du projet
+DOCKER_DIR = docker
+BASE_COMPOSE_FILE = $(DOCKER_DIR)/docker-compose.yml
 
 # =============================================================================
 # COMMANDES PRINCIPALES
@@ -39,42 +36,42 @@ help: ## Affiche cette aide
 	@echo ""
 
 build: ## Construire l'image Docker
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) build
+	docker compose -f $(BASE_COMPOSE_FILE) build
 
 # =============================================================================
 # COMMANDES DE DÉVELOPPEMENT
 # =============================================================================
 
 up-dev: ## Démarrer les services en mode développement
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.dev.yml up -d
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml up -d
 
 up-dev-logs: ## Démarrer les services en mode développement avec logs
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.dev.yml up
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml up
 
 down-dev: ## Arrêter les services de développement
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.dev.yml down
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml down
 
 # =============================================================================
 # COMMANDES DE PRODUCTION
 # =============================================================================
 
 up-prod-sqlite: ## Démarrer les services en production avec SQLite
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.prod.sqlite.yml up -d
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.sqlite.yml up -d
 
 up-prod-sqlite-logs: ## Démarrer les services en production avec SQLite et logs
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.prod.sqlite.yml up
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.sqlite.yml up
 
 down-prod-sqlite: ## Arrêter les services de production avec SQLite
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.prod.sqlite.yml down
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.sqlite.yml down
 
 up-prod-pg: ## Démarrer les services en production avec PostgreSQL
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.prod.postgres.yml up -d
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.postgres.yml up -d
 
 up-prod-pg-logs: ## Démarrer les services en production avec PostgreSQL et logs
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.prod.postgres.yml up
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.postgres.yml up
 
 down-prod-pg: ## Arrêter les services de production avec PostgreSQL
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.prod.postgres.yml down
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.postgres.yml down
 
 # Alias pour la compatibilité
 up-prod: up-prod-pg ## Démarrer en production (PostgreSQL par défaut)
@@ -85,62 +82,62 @@ down-prod: down-prod-pg ## Arrêter la production (PostgreSQL par défaut)
 # =============================================================================
 
 up: ## Démarrer les services (défaut: développement)
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.dev.yml up -d
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml up -d
 
 up-logs: ## Démarrer les services et afficher les logs
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.dev.yml up
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml up
 
 down: ## Arrêter les services
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.dev.yml down
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml down
 
 restart: ## Redémarrer les services
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.dev.yml restart
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml restart
 
 logs: ## Afficher les logs
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.dev.yml logs -f
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml logs -f
 
 logs-web: ## Afficher les logs du service web
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.dev.yml logs -f web
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml logs -f web
 
 shell: ## Ouvrir un shell dans le conteneur web
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.dev.yml exec web sh
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml exec web sh
 
 bash: ## Ouvrir un bash dans le conteneur web
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.dev.yml exec web bash
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml exec web bash
 
 python: ## Exécuter Python dans le conteneur web
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.dev.yml exec web python
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml exec web python
 
 # =============================================================================
 # COMMANDES DE TEST ET QUALITÉ
 # =============================================================================
 
 test: ## Exécuter les tests
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) --profile test up test
+	docker compose -f $(BASE_COMPOSE_FILE) --profile test up test
 
 test-all: ## Exécuter tous les tests avec couverture
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) --profile test run --rm test pytest tests/ -v --cov=app --cov-report=html
+	docker compose -f $(BASE_COMPOSE_FILE) --profile test run --rm test pytest tests/ -v --cov=app --cov-report=html
 
 lint: ## Exécuter le linting
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) --profile lint up lint
+	docker compose -f $(BASE_COMPOSE_FILE) --profile lint up lint
 
 quality: ## Exécuter toutes les vérifications de qualité
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) --profile lint --profile quality up lint
+	docker compose -f $(BASE_COMPOSE_FILE) --profile lint --profile quality up lint
 
 # =============================================================================
 # COMMANDES DE BASE DE DONNÉES
 # =============================================================================
 
 db-shell-pg: ## Ouvrir un shell PostgreSQL (production)
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.prod.postgres.yml exec db psql -U leviia -d leviia
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.postgres.yml exec db psql -U leviia -d leviia
 
 db-backup-pg: ## Créer une sauvegarde de la base de données PostgreSQL
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.prod.postgres.yml exec db pg_dump -U leviia -d leviia > backups/leviia-$$(date +%Y%m%d-%H%M%S).sql
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.postgres.yml exec db pg_dump -U leviia -d leviia > backups/leviia-$$(date +%Y%m%d-%H%M%S).sql
 
 db-restore-pg: ## Restaurer une sauvegarde de la base de données PostgreSQL
 	@echo "Usage: make db-restore-pg FILE=<fichier.sql>"
 	@if [ -z "$(FILE)" ]; then echo "Erreur: Spécifiez le fichier de sauvegarde avec FILE=<fichier.sql>"; exit 1; fi
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.prod.postgres.yml exec -T db psql -U leviia -d leviia < $(FILE)
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.postgres.yml exec -T db psql -U leviia -d leviia < $(FILE)
 
 # =============================================================================
 # COMMANDES DE NETTOYAGE
@@ -153,17 +150,17 @@ clean-all: ## Nettoyer TOUT (y compris les images et volumes utilisés)
 	docker system prune -a -f --volumes
 
 clean-logs: ## Nettoyer les fichiers de logs
-	cd $(PROJECT_ROOT) && rm -rf logs/*.log
+	rm -rf logs/*.log
 
 clean-data: ## Nettoyer les données de développement
-	cd $(PROJECT_ROOT) && rm -rf data/*.db
+	rm -rf data/*.db
 
 # =============================================================================
 # COMMANDES DIVERSES
 # =============================================================================
 
 ps: ## Lister les conteneurs en cours d'exécution
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) ps
+	docker compose -f $(BASE_COMPOSE_FILE) ps
 
 images: ## Lister les images Docker
 	docker images
@@ -179,25 +176,25 @@ networks: ## Lister les réseaux Docker
 # =============================================================================
 
 rebuild: ## Reconstruire l'image et redémarrer (dev)
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.dev.yml down && \
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) build --no-cache && \
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.dev.yml up -d
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml down && \
+	docker compose -f $(BASE_COMPOSE_FILE) build --no-cache && \
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml up -d
 
 rebuild-prod-pg: ## Reconstruire l'image et redémarrer (production PostgreSQL)
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.prod.postgres.yml down && \
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) build --no-cache && \
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.prod.postgres.yml up -d
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.postgres.yml down && \
+	docker compose -f $(BASE_COMPOSE_FILE) build --no-cache && \
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.postgres.yml up -d
 
 rebuild-prod-sqlite: ## Reconstruire l'image et redémarrer (production SQLite)
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.prod.sqlite.yml down && \
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) build --no-cache && \
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.prod.sqlite.yml up -d
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.sqlite.yml down && \
+	docker compose -f $(BASE_COMPOSE_FILE) build --no-cache && \
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.prod.sqlite.yml up -d
 
 migrate: ## Appliquer les migrations de base de données
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.dev.yml exec web python -c "from app import app, db; from app.models import *; with app.app_context(): db.create_all()"
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml exec web python -c "from app import app, db; from app.models import *; with app.app_context(): db.create_all()"
 
 init-db: ## Initialiser la base de données avec des données par défaut
-	cd $(PROJECT_ROOT) && docker compose -f $(BASE_COMPOSE_FILE) -f $(PROJECT_ROOT)/docker/docker-compose.dev.yml exec web python run.py
+	docker compose -f $(BASE_COMPOSE_FILE) -f $(DOCKER_DIR)/docker-compose.dev.yml exec web python run.py
 
 # =============================================================================
 # CIBLES PAR DÉFAUT
