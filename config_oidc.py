@@ -5,10 +5,35 @@ Ce module contient la configuration pour l'authentification OIDC (OpenID Connect
 avec des fournisseurs comme Keycloak, Okta, Auth0, etc.
 
 L'authentification OIDC est optionnelle et peut être activée via des variables d'environnement.
+
+NOTE: Ce module ne dépend pas de python-dotenv. Les variables d'environnement doivent
+être définies directement dans l'environnement du système (via Docker, .env file monté,
+etc.) avant l'import de ce module.
 """
 
 import os
-from config import get_bool_from_env
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def get_bool_from_env(env_var, default=False):
+    """Convertit une variable d'environnement en booléen.
+    
+    Accepte: true, True, TRUE, 1, yes, Yes, YES, false, False, FALSE, 0, no, No, NO
+    """
+    value = os.environ.get(env_var)
+    if value is None:
+        return default
+    
+    value_lower = value.lower().strip()
+    if value_lower in ('true', '1', 'yes', 'y', 'on'):
+        return True
+    elif value_lower in ('false', '0', 'no', 'n', 'off'):
+        return False
+    else:
+        logger.warning(f"Valeur non reconnue pour {env_var}: '{value}'. Utilisation de la valeur par défaut: {default}")
+        return default
 
 
 class OIDCConfig:
@@ -31,7 +56,11 @@ class OIDCConfig:
     
     @classmethod
     def load_config(cls):
-        """Charge la configuration depuis les variables d'environnement."""
+        """Charge la configuration depuis les variables d'environnement.
+        
+        NOTE: Ce module suppose que les variables d'environnement sont déjà définies
+        (via Docker, .env file, etc.) et ne dépend pas de python-dotenv.
+        """
         cls.ENABLED = get_bool_from_env("OIDC_ENABLED", False)
         cls.ISSUER = os.environ.get("OIDC_ISSUER") or ""
         cls.CLIENT_ID = os.environ.get("OIDC_CLIENT_ID") or ""
@@ -45,6 +74,12 @@ class OIDCConfig:
         cls.SIGNATURE_ALGORITHMS = os.environ.get("OIDC_SIGNATURE_ALGORITHMS") or "RS256"
         cls.SCOPE = os.environ.get("OIDC_SCOPE") or "openid profile email"
         cls.DISABLE_BASIC_AUTH = get_bool_from_env("OIDC_DISABLE_BASIC_AUTH", True)
+        
+        # Log pour débogage
+        logger.info(f"OIDC Config loaded - ENABLED: {cls.ENABLED}")
+        logger.info(f"OIDC Config loaded - ISSUER: '{cls.ISSUER}'")
+        logger.info(f"OIDC Config loaded - CLIENT_ID: '{cls.CLIENT_ID}'")
+        logger.info(f"OIDC Config loaded - is_configured: {cls.is_configured()}")
     
     @classmethod
     def is_configured(cls):
@@ -78,4 +113,6 @@ class OIDCConfig:
 
 
 # Charger la configuration au moment de l'import
+# NOTE: Cela charge la configuration une première fois, mais elle sera rechargée
+# dans __init__.py après que Flask ait chargé sa configuration
 OIDCConfig.load_config()
