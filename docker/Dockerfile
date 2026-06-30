@@ -10,8 +10,9 @@ ENV PYTHONFAULTHANDLER=1 \
     FLASK_ENV=development \
     PORT=5000
 
-# Créer l'utilisateur non-root
-RUN adduser -D appuser
+# Créer l'utilisateur non-root avec un UID/GID fixe pour éviter les problèmes de permissions
+# Utiliser 1000:1000 qui est souvent l'UID/GID par défaut pour le premier utilisateur sur beaucoup de systèmes
+RUN adduser -D -u 1000 -g 1000 appuser
 WORKDIR /app
 
 # Copier le fichier requirements.txt dédié
@@ -24,13 +25,11 @@ RUN apk add --no-cache --virtual .build-deps gcc musl-dev && \
     apk del .build-deps gcc musl-dev && \
     rm /tmp/requirements.txt
 
-# Créer les répertoires nécessaires et donner les permissions
-RUN mkdir -p /app/data /app/logs /app/instance && \
-    chown appuser:appuser /app/data /app/logs /app/instance && \
-    chmod 755 /app/data /app/logs /app/instance
+# Créer les répertoires nécessaires
+RUN mkdir -p /app/data /app/logs /app/instance
 
 # Copier l'application
-COPY --chown=appuser:appuser . .
+COPY --chown=1000:1000 . .
 
 # Copier le script d'entrée
 COPY docker/entrypoint.sh /entrypoint.sh

@@ -17,3 +17,4 @@ services:
     volumes:
       - ../data:/app/data
       - ../logs:/app/logs
+    user: "1000:1000"  # Utiliser le même UID/GID que dans le conteneur
