@@ -13,8 +13,7 @@ ENV PYTHONFAULTHANDLER=1 \
 # Installer les dépendances minimales
 RUN apk add --no-cache --virtual .build-deps gcc musl-dev && \
     apk add --no-cache libpq postgresql-dev && \
-    pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir gunicorn && \
+    pip install --no-cache-dir -r docker/requirements.txt && \
     apk del .build-deps gcc musl-dev
 
 # Créer l'utilisateur non-root
@@ -31,7 +30,6 @@ COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 USER appuser
-ENV PATH=/app/.local/bin:$PATH
 
 ENTRYPOINT ["/entrypoint.sh"]
 EXPOSE 5000
