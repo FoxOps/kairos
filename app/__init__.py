@@ -44,18 +44,27 @@ app.config.from_object("config.Config")
 db.init_app(app)
 login_manager.init_app(app)
 
+# ✅ CONFIGURATION DU USER_LOADER POUR FLASK-LOGIN
+# Cela doit être fait AVANT d'utiliser current_user
+from app.models import User
+
+@login_manager.user_loader
+def load_user(user_id):
+    """Charge un utilisateur depuis la base de données."""
+    return User.query.get(int(user_id))
+
 # Initialisation de l'authentification OIDC (optionnelle)
 from config_oidc import OIDCConfig
 
 # Vérifier la configuration OIDC
-app.logger.info(f"OIDC_ENABLED: {OIDCConfig.ENABLED}")
-app.logger.info(f"OIDC_ISSUER: {OIDCConfig.ISSUER}")
-app.logger.info(f"OIDC_CLIENT_ID: {OIDCConfig.CLIENT_ID}")
-app.logger.info(f"OIDC_CLIENT_SECRET: {'***' if OIDCConfig.CLIENT_SECRET else 'None'}")
-app.logger.info(f"OIDC_REDIRECT_URI: {OIDCConfig.REDIRECT_URI}")
+app.logger.info(f"OIDC_ENABLED: {bool(OIDCConfig.ENABLED)}")
+app.logger.info(f"OIDC_ISSUER: {str(OIDCConfig.ISSUER)}")
+app.logger.info(f"OIDC_CLIENT_ID: {str(OIDCConfig.CLIENT_ID)}")
+app.logger.info(f"OIDC_CLIENT_SECRET: {'***' if str(OIDCConfig.CLIENT_SECRET) else 'None'}")
+app.logger.info(f"OIDC_REDIRECT_URI: {str(OIDCConfig.REDIRECT_URI)}")
 app.logger.info(f"OIDC is_configured: {OIDCConfig.is_configured()}")
 
-if OIDCConfig.ENABLED and OIDCConfig.is_configured():
+if bool(OIDCConfig.ENABLED) and OIDCConfig.is_configured():
     from app.auth.oidc_auth import oidc_auth
     oidc_auth.init_app(app)
     app.logger.info("Authentification OIDC activée")
