@@ -24,9 +24,10 @@ RUN apk add --no-cache --virtual .build-deps gcc musl-dev && \
     apk del .build-deps gcc musl-dev && \
     rm /tmp/requirements.txt
 
-# Créer les répertoires nécessaires
-RUN mkdir -p /app/data /app/logs && \
-    chown appuser:appuser /app/data /app/logs
+# Créer les répertoires nécessaires et donner les permissions
+RUN mkdir -p /app/data /app/logs /app/instance && \
+    chown appuser:appuser /app/data /app/logs /app/instance && \
+    chmod 755 /app/data /app/logs /app/instance
 
 # Copier l'application
 COPY --chown=appuser:appuser . .
