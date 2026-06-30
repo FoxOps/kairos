@@ -79,17 +79,20 @@ class OIDCConfig:
         logger.info(f"OIDC Config loaded - ENABLED: {cls.ENABLED}")
         logger.info(f"OIDC Config loaded - ISSUER: '{cls.ISSUER}'")
         logger.info(f"OIDC Config loaded - CLIENT_ID: '{cls.CLIENT_ID}'")
+        logger.info(f"OIDC Config loaded - CLIENT_SECRET: {'***' if cls.CLIENT_SECRET else 'empty'}")
+        logger.info(f"OIDC Config loaded - REDIRECT_URI: '{cls.REDIRECT_URI}'")
         logger.info(f"OIDC Config loaded - is_configured: {cls.is_configured()}")
     
     @classmethod
     def is_configured(cls):
         """Vérifie si OIDC est correctement configuré."""
+        # ✅ CORRECTION: Convertir chaque variable en booléen explicitement
         return (
-            cls.ENABLED and 
-            cls.ISSUER and 
-            cls.CLIENT_ID and 
-            cls.CLIENT_SECRET and 
-            cls.REDIRECT_URI
+            bool(cls.ENABLED) and 
+            bool(cls.ISSUER) and 
+            bool(cls.CLIENT_ID) and 
+            bool(cls.CLIENT_SECRET) and 
+            bool(cls.REDIRECT_URI)
         )
     
     @classmethod

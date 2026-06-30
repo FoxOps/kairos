@@ -28,6 +28,9 @@ class OIDCAuthLib:
         self.app = app
         self.oauth = None
         self.oidc_client = None
+        self.authorization_endpoint = None  # ✅ Stocker l'endpoint manuellement
+        self.token_endpoint = None
+        self.userinfo_endpoint = None
         if app:
             self.init_app(app)
     
@@ -56,11 +59,22 @@ class OIDCAuthLib:
             logger.info(f"Tentative de configuration OIDC avec issuer: {issuer_url}")
             logger.info(f"URL de découverte: {server_metadata_url}")
             
-            # Tester si l'URL de découverte est accessible
+            # Tester si l'URL de découverte est accessible et récupérer les endpoints manuellement
             import requests
             try:
                 response = requests.get(server_metadata_url, timeout=5)
                 response.raise_for_status()
+                discovery_doc = response.json()
+                
+                # ✅ Récupérer les endpoints manuellement depuis le document de découverte
+                self.authorization_endpoint = discovery_doc.get('authorization_endpoint')
+                self.token_endpoint = discovery_doc.get('token_endpoint')
+                self.userinfo_endpoint = discovery_doc.get('userinfo_endpoint')
+                
+                logger.info(f"Authorization endpoint: {self.authorization_endpoint}")
+                logger.info(f"Token endpoint: {self.token_endpoint}")
+                logger.info(f"Userinfo endpoint: {self.userinfo_endpoint}")
+                
                 logger.info("Document de découverte OIDC accessible")
             except requests.RequestException as e:
                 logger.error(f"Impossible d'accéder au document de découverte OIDC: {e}")
@@ -97,6 +111,11 @@ class OIDCAuthLib:
             return None
         
         try:
+            # ✅ Utiliser l'endpoint d'autorisation stocké manuellement
+            if not self.authorization_endpoint:
+                logger.error("Authorization endpoint non disponible")
+                return None
+            
             # Générer un state et un nonce si non fournis
             if state is None:
                 state = self._generate_state()
@@ -106,10 +125,6 @@ class OIDCAuthLib:
             # Stocker le state et le nonce dans la session
             session['oidc_state'] = state
             session['oidc_nonce'] = nonce
-            
-            # Utiliser l'endpoint d'autorisation découvert automatiquement
-            # Authlib charge les endpoints depuis le document de découverte
-            authorize_endpoint = self.oidc_client.authorize_url
             
             from urllib.parse import urlencode
             
@@ -122,7 +137,8 @@ class OIDCAuthLib:
                 'nonce': nonce,
             }
             
-            return f"{authorize_endpoint}?{urlencode(params)}"
+            # ✅ Utiliser l'endpoint stocké manuellement
+            return f"{self.authorization_endpoint}?{urlencode(params)}"
                 
         except Exception as e:
             logger.error(f"Erreur lors de la génération de l'URL d'autorisation: {e}")
@@ -153,7 +169,10 @@ class OIDCAuthLib:
             # car nous ne sommes pas dans un contexte de requête Flask
             import requests
             
-            token_endpoint = self.oidc_client.access_token_url
+            # ✅ Utiliser l'endpoint stocké manuellement
+            if not self.token_endpoint:
+                logger.error("Token endpoint non disponible")
+                return None
             
             data = {
                 'grant_type': 'authorization_code',
@@ -167,7 +186,7 @@ class OIDCAuthLib:
                 'Content-Type': 'application/x-www-form-urlencoded',
             }
             
-            response = requests.post(token_endpoint, data=data, headers=headers, timeout=10)
+            response = requests.post(self.token_endpoint, data=data, headers=headers, timeout=10)
             response.raise_for_status()
             
             token_data = response.json()
@@ -193,14 +212,17 @@ class OIDCAuthLib:
             # Mais pour userinfo, nous devons faire une requête HTTP
             import requests
             
-            userinfo_endpoint = self.oidc_client.userinfo_endpoint
+            # ✅ Utiliser l'endpoint stocké manuellement
+            if not self.userinfo_endpoint:
+                logger.error("Userinfo endpoint non disponible")
+                return None
             
             headers = {
                 'Authorization': f'Bearer {access_token}',
                 'Accept': 'application/json',
             }
             
-            response = requests.get(userinfo_endpoint, headers=headers, timeout=10)
+            response = requests.get(self.userinfo_endpoint, headers=headers, timeout=10)
             response.raise_for_status()
             
             user_info = response.json()
