@@ -52,16 +52,26 @@ def oidc_login():
     if current_user.is_authenticated:
         return redirect(url_for("index"))
     
+    # ✅ DEBUG: Vérifier l'état de l'authentification OIDC
+    print(f"[DEBUG oidc_login] OIDCConfig.ENABLED: {OIDCConfig.ENABLED}")
+    print(f"[DEBUG oidc_login] OIDCConfig.is_configured(): {OIDCConfig.is_configured()}")
+    print(f"[DEBUG oidc_login] oidc_auth.oidc_client: {oidc_auth.oidc_client}")
+    
     if not OIDCConfig.ENABLED or not OIDCConfig.is_configured():
+        print("[DEBUG oidc_login] OIDC non configuré, redirection vers login")
         flash("L'authentification OIDC n'est pas configurée.", "danger")
         return redirect(url_for("login"))
     
     # Générer l'URL d'autorisation OIDC
     auth_url = oidc_auth.get_authorization_url()
+    print(f"[DEBUG oidc_login] auth_url générée: {auth_url}")
+    
     if not auth_url:
+        print("[DEBUG oidc_login] auth_url est None!")
         flash("Impossible de générer l'URL d'authentification OIDC.", "danger")
         return redirect(url_for("login"))
     
+    print(f"[DEBUG oidc_login] Redirection vers: {auth_url}")
     return redirect(auth_url)
 
 
