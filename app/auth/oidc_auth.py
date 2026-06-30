@@ -31,6 +31,7 @@ class OIDCAuthLib:
         self.authorization_endpoint = None
         self.token_endpoint = None
         self.userinfo_endpoint = None
+        self.end_session_endpoint = None  # ✅ Ajouter l'endpoint de fin de session
         if app:
             self.init_app(app)
     
@@ -66,10 +67,12 @@ class OIDCAuthLib:
                 self.authorization_endpoint = discovery_doc.get('authorization_endpoint')
                 self.token_endpoint = discovery_doc.get('token_endpoint')
                 self.userinfo_endpoint = discovery_doc.get('userinfo_endpoint')
+                self.end_session_endpoint = discovery_doc.get('end_session_endpoint')  # ✅ Ajouter l'endpoint de fin de session
                 
                 logger.info(f"Authorization endpoint: {self.authorization_endpoint}")
                 logger.info(f"Token endpoint: {self.token_endpoint}")
                 logger.info(f"Userinfo endpoint: {self.userinfo_endpoint}")
+                logger.info(f"End session endpoint: {self.end_session_endpoint}")
                 
                 logger.info("Document de découverte OIDC accessible")
             except requests.RequestException as e:
@@ -183,6 +186,10 @@ class OIDCAuthLib:
             response.raise_for_status()
             
             token_data = response.json()
+            
+            # ✅ Stocker l'id_token dans la session pour la déconnexion
+            if 'id_token' in token_data:
+                session['oidc_id_token'] = token_data['id_token']
             
             logger.info("Token OIDC obtenu avec succès")
             return token_data

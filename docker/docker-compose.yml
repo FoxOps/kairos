@@ -1,5 +1,5 @@
 services:
-  web:
+  leviia-schedule:
     build:
       context: ..
       dockerfile: docker/Dockerfile
