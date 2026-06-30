@@ -38,7 +38,7 @@ Ce guide explique comment déployer **Leviia Schedule** avec Docker. L'applicati
 
 ```
 leviia-schedule/
-├── docker/                          # Tous les fichiers Docker
+├── docker/                          # ⭐ Tous les fichiers Docker
 │   ├── Dockerfile                  # Image Docker (multi-stage)
 │   ├── docker-compose.yml          # Configuration de base commune
 │   ├── docker-compose.dev.yml      # Développement
@@ -98,19 +98,44 @@ nano .env
 
 #### Pour la production :
 
+**Méthode recommandée (sécurisée) :**
+
 ```bash
-# Créer un fichier .env sécurisé
+# Créer un fichier .env à partir de l'exemple
 cp .env.example .env
 
-# Générer une clé secrète
-python -c "import secrets; print('SECRET_KEY=' + secrets.token_hex(32))" >> .env
+# Générer une clé secrète et un mot de passe admin sécurisés
+# Puis éditer le fichier pour remplacer les valeurs par défaut
+SECRET_KEY=$(python -c "import secrets; print(secrets.token_hex(32))")
+ADMIN_PASSWORD=$(python -c "import secrets; print(secrets.token_urlsafe(16))")
 
-# Générer un mot de passe admin sécurisé
-python -c "import secrets; print('DEFAULT_ADMIN_PASSWORD=' + secrets.token_urlsafe(16))" >> .env
+# Utiliser sed pour remplacer les valeurs dans le fichier .env
+# (cette méthode évite d'ajouter des doublons)
+sed -i "s/^SECRET_KEY=.*/SECRET_KEY=$SECRET_KEY/" .env
+sed -i "s/^DEFAULT_ADMIN_PASSWORD=.*/DEFAULT_ADMIN_PASSWORD=$ADMIN_PASSWORD/" .env
+sed -i "s/^FLASK_ENV=.*/FLASK_ENV=production/" .env
 
-# Modifier le fichier .env
+# Vérifier et modifier manuellement si nécessaire
 nano .env
 ```
+
+**Méthode alternative (éditer manuellement) :**
+
+```bash
+# Créer un fichier .env
+cp .env.example .env
+
+# Générer une clé secrète (à copier-coller dans le fichier)
+python -c "import secrets; print('SECRET_KEY=' + secrets.token_hex(32))"
+
+# Générer un mot de passe admin sécurisé (à copier-coller dans le fichier)
+python -c "import secrets; print('DEFAULT_ADMIN_PASSWORD=' + secrets.token_urlsafe(16))"
+
+# Éditer le fichier .env et remplacer les valeurs par défaut
+nano .env
+```
+
+⚠️ **Important** : Ne jamais utiliser `>>` pour ajouter des variables au fichier `.env` existant, car cela créerait des doublons. Toujours **remplacer** les valeurs existantes.
 
 ---
 
