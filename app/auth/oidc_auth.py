@@ -50,7 +50,7 @@ class OIDCAuthLib:
         try:
             # Enregistrer le client OIDC avec découverte automatique
             # Authlib va automatiquement charger les endpoints depuis le document de découverte
-            issuer_url = OIDCConfig.ISSUER.rstrip('/')
+            issuer_url = str(OIDCConfig.ISSUER).rstrip('/')  # ✅ Convertir en str avant rstrip
             server_metadata_url = f"{issuer_url}/.well-known/openid-configuration"
             
             logger.info(f"Tentative de configuration OIDC avec issuer: {issuer_url}")
@@ -72,13 +72,13 @@ class OIDCAuthLib:
                 name='oidc',
                 server_metadata_url=server_metadata_url,
                 client_kwargs={
-                    'scope': OIDCConfig.SCOPE,
+                    'scope': str(OIDCConfig.SCOPE),  # ✅ Convertir en str
                 },
             )
             
             # Mettre à jour les informations du client avec les credentials
-            self.oidc_client.client_id = OIDCConfig.CLIENT_ID
-            self.oidc_client.client_secret = OIDCConfig.CLIENT_SECRET
+            self.oidc_client.client_id = str(OIDCConfig.CLIENT_ID)  # ✅ Convertir en str
+            self.oidc_client.client_secret = str(OIDCConfig.CLIENT_SECRET)  # ✅ Convertir en str
             
             logger.info("Client OIDC Authlib configuré avec succès")
             logger.debug(f"Client ID: {OIDCConfig.CLIENT_ID}")
@@ -115,9 +115,9 @@ class OIDCAuthLib:
             
             params = {
                 'response_type': 'code',
-                'client_id': OIDCConfig.CLIENT_ID,
-                'redirect_uri': OIDCConfig.REDIRECT_URI,
-                'scope': OIDCConfig.SCOPE,
+                'client_id': str(OIDCConfig.CLIENT_ID),  # ✅ Convertir en str
+                'redirect_uri': str(OIDCConfig.REDIRECT_URI),  # ✅ Convertir en str
+                'scope': str(OIDCConfig.SCOPE),  # ✅ Convertir en str
                 'state': state,
                 'nonce': nonce,
             }
@@ -158,9 +158,9 @@ class OIDCAuthLib:
             data = {
                 'grant_type': 'authorization_code',
                 'code': code,
-                'redirect_uri': OIDCConfig.REDIRECT_URI,
-                'client_id': OIDCConfig.CLIENT_ID,
-                'client_secret': OIDCConfig.CLIENT_SECRET,
+                'redirect_uri': str(OIDCConfig.REDIRECT_URI),  # ✅ Convertir en str
+                'client_id': str(OIDCConfig.CLIENT_ID),  # ✅ Convertir en str
+                'client_secret': str(OIDCConfig.CLIENT_SECRET),  # ✅ Convertir en str
             }
             
             headers = {
@@ -235,27 +235,27 @@ class OIDCAuthLib:
         # Si user_info est fourni, l'utiliser
         if user_info:
             # Extraire l'email
-            email_claim = OIDCConfig.EMAIL_CLAIM
+            email_claim = str(OIDCConfig.EMAIL_CLAIM)  # ✅ Convertir en str
             if email_claim in user_info:
                 user_data['email'] = user_info[email_claim]
             
             # Extraire le nom
-            name_claim = OIDCConfig.NAME_CLAIM
+            name_claim = str(OIDCConfig.NAME_CLAIM)  # ✅ Convertir en str
             if name_claim in user_info:
                 user_data['name'] = user_info[name_claim]
             
             # Extraire le nom d'utilisateur
-            username_claim = OIDCConfig.USERNAME_CLAIM
+            username_claim = str(OIDCConfig.USERNAME_CLAIM)  # ✅ Convertir en str
             if username_claim in user_info:
                 user_data['username'] = user_info[username_claim]
             
             # Extraire les groupes si configuré
-            groups_claim = OIDCConfig.GROUPS_CLAIM
+            groups_claim = str(OIDCConfig.GROUPS_CLAIM)  # ✅ Convertir en str
             if groups_claim and groups_claim in user_info:
                 user_data['groups'] = user_info[groups_claim]
             
             # Extraire les rôles si configuré
-            roles_claim = OIDCConfig.ROLES_CLAIM
+            roles_claim = str(OIDCConfig.ROLES_CLAIM)  # ✅ Convertir en str
             if roles_claim and roles_claim in user_info:
                 user_data['roles'] = user_info[roles_claim]
         
@@ -278,23 +278,23 @@ class OIDCAuthLib:
                         token_payload = json.loads(decoded)
                         
                         # Extraire les informations
-                        email_claim = OIDCConfig.EMAIL_CLAIM
+                        email_claim = str(OIDCConfig.EMAIL_CLAIM)  # ✅ Convertir en str
                         if email_claim in token_payload:
                             user_data['email'] = token_payload[email_claim]
                         
-                        name_claim = OIDCConfig.NAME_CLAIM
+                        name_claim = str(OIDCConfig.NAME_CLAIM)  # ✅ Convertir en str
                         if name_claim in token_payload:
                             user_data['name'] = token_payload[name_claim]
                         
-                        username_claim = OIDCConfig.USERNAME_CLAIM
+                        username_claim = str(OIDCConfig.USERNAME_CLAIM)  # ✅ Convertir en str
                         if username_claim in token_payload:
                             user_data['username'] = token_payload[username_claim]
                         
-                        groups_claim = OIDCConfig.GROUPS_CLAIM
+                        groups_claim = str(OIDCConfig.GROUPS_CLAIM)  # ✅ Convertir en str
                         if groups_claim and groups_claim in token_payload:
                             user_data['groups'] = token_payload[groups_claim]
                         
-                        roles_claim = OIDCConfig.ROLES_CLAIM
+                        roles_claim = str(OIDCConfig.ROLES_CLAIM)  # ✅ Convertir en str
                         if roles_claim and roles_claim in token_payload:
                             user_data['roles'] = token_payload[roles_claim]
                             
