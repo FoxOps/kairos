@@ -10,15 +10,21 @@ ENV PYTHONFAULTHANDLER=1 \
     FLASK_ENV=development \
     PORT=5000
 
-# Installer les dépendances minimales
-RUN apk add --no-cache --virtual .build-deps gcc musl-dev && \
-    apk add --no-cache libpq postgresql-dev && \
-    pip install --no-cache-dir -r docker/requirements.txt && \
-    apk del .build-deps gcc musl-dev
-
 # Créer l'utilisateur non-root
 RUN adduser -D appuser
 WORKDIR /app
+
+# Copier le fichier requirements.txt dédié
+COPY docker/requirements.txt /tmp/requirements.txt
+
+# Installer les dépendances minimales
+RUN apk add --no-cache --virtual .build-deps gcc musl-dev && \
+    apk add --no-cache libpq postgresql-dev && \
+    pip install --no-cache-dir -r /tmp/requirements.txt && \
+    apk del .build-deps gcc musl-dev && \
+    rm /tmp/requirements.txt
+
+# Créer les répertoires nécessaires
 RUN mkdir -p /app/data /app/logs && \
     chown appuser:appuser /app/data /app/logs
 
