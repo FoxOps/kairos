@@ -1,8 +1,15 @@
 #!/bin/sh
 set -e
 
+# Afficher la configuration actuelle
+echo "🔍 Configuration actuelle:"
+echo "  FLASK_ENV: ${FLASK_ENV:-non défini}"
+echo "  DATABASE_URL: ${DATABASE_URL:-non défini}"
+echo ""
+
 # Initialiser la base de données SQLite
 if [ ! -f "/app/data/app.db" ]; then
+    echo "🔧 Initialisation de la base de données SQLite..."
     python -c "
 from app import app, db
 from app.models import Group, User, ShiftType
@@ -30,13 +37,18 @@ with app.app_context():
         admin.generate_ics_token()
         db.session.add(admin)
         db.session.commit()
+        print('✅ Utilisateur admin créé')
 "
+    echo "✅ Base de données initialisée"
 fi
 
 # Choisir le serveur selon FLASK_ENV
+# Note: Docker Compose charge les variables d'environnement, mais python-dotenv
+# peut aussi les charger depuis .env. On vérifie explicitement FLASK_ENV.
 if [ "$FLASK_ENV" = "production" ]; then
-    # Gunicorn est plus léger que uWSGI pour cette utilisation
+    echo "🎯 Mode PRODUCTION détecté - Démarrage de Gunicorn"
     exec gunicorn --bind 0.0.0.0:5000 --workers 1 --threads 4 --timeout 120 run:app
 else
+    echo "🎯 Mode DEVELOPPEMENT détecté - Démarrage de Flask"
     exec python run.py
 fi
