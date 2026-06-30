@@ -34,6 +34,26 @@ python run.py
 
 ---
 
+### 2️⃣ Authentification SSO/OIDC (Optionnelle)
+
+Si vous utilisez **Keycloak**, **Okta**, **Auth0** ou un autre fournisseur OIDC :
+
+1. Configurez votre fournisseur OIDC avec l'URL de callback : `http://localhost:5000/oidc/callback`
+2. Ajoutez les variables d'environnement dans votre fichier `.env` :
+   ```bash
+   OIDC_ENABLED=true
+   OIDC_ISSUER=https://votre-fournisseur.com/realms/votre-realm
+   OIDC_CLIENT_ID=votre-client-id
+   OIDC_CLIENT_SECRET=votre-client-secret
+   OIDC_REDIRECT_URI=http://localhost:5000/oidc/callback
+   ```
+3. Redémarrez l'application : `python run.py`
+4. Connectez-vous via le bouton **Se connecter avec SSO**
+
+> ⚠️ **Info** : Consultez le [Guide Administrateur](ADMIN_GUIDE.md) pour une configuration complète SSO/OIDC.
+
+---
+
 ### 3️⃣ Configuration de Base
 
 #### Créer un groupe

@@ -44,6 +44,16 @@ app.config.from_object("config.Config")
 db.init_app(app)
 login_manager.init_app(app)
 
+# Initialisation de l'authentification OIDC (optionnelle)
+from config_oidc import OIDCConfig
+if OIDCConfig.ENABLED:
+    from app.auth.oidc_auth import oidc_auth
+    oidc_auth.init_app(app)
+    app.logger.info("Authentification OIDC activée")
+else:
+    app.logger.info("Authentification OIDC désactivée")
+
+
 # Initialiser le cache
 init_cache(app)
 

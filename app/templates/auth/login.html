@@ -17,6 +17,23 @@
                         </div>
                         {% endif %}
                         
+                        {% if oidc_enabled %}
+                        <div class="field mb-4">
+                            <div class="control">
+                                <a href="{{ url_for('oidc_login') }}" class="button is-info is-fullwidth" aria-label="Se connecter avec OIDC">
+                                    <span class="icon">
+                                        <i class="fas fa-key" aria-hidden="true"></i>
+                                    </span>
+                                    <span>Se connecter avec SSO</span>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="divider has-text-centered mb-4">
+                            <span class="is-size-7 has-text-grey">ou</span>
+                        </div>
+                        {% endif %}
+                        
                         <form method="POST" action="{{ url_for('login') }}" aria-labelledby="login-title">
                             <div class="field">
                                 <label class="label required" for="email">Adresse email</label>

@@ -563,3 +563,55 @@ Les variables booléennes acceptent les valeurs suivantes (insensibles à la cas
 
 *Dernière mise à jour : $(date +%Y-%m-%d)*
 *Ce fichier documente toutes les variables d'environnement disponibles dans Leviia Schedule.*
+
+## \ud83d\udce4 Configuration OIDC/SSO (Optionnelle)
+
+| Variable | Type | Défaut | Description | Obligatoire |
+|----------|------|--------|-------------|-------------|
+| `OIDC_ENABLED` | booléen | `false` | Active l'authentification OIDC/SSO | ❌ Non |
+| `OIDC_ISSUER` | string | `""` | URL du fournisseur OIDC (ex: `https://keycloak.example.com/realms/myrealm`) | ❌ Non |
+| `OIDC_CLIENT_ID` | string | `""` | Client ID pour l'application OIDC | ❌ Non |
+| `OIDC_CLIENT_SECRET` | string | `""` | Client Secret pour l'application OIDC | ❌ Non |
+| `OIDC_REDIRECT_URI` | string | `""` | URL de redirection après l'authentification (ex: `http://localhost:5000/oidc/callback`) | ❌ Non |
+| `OIDC_EMAIL_CLAIM` | string | `email` | Nom du claim pour l'email dans le token OIDC | ❌ Non |
+| `OIDC_NAME_CLAIM` | string | `name` | Nom du claim pour le nom dans le token OIDC | ❌ Non |
+| `OIDC_USERNAME_CLAIM` | string | `preferred_username` | Nom du claim pour le nom d'utilisateur dans le token OIDC | ❌ Non |
+| `OIDC_GROUPS_CLAIM` | string | `""` | Nom du claim pour les groupes dans le token OIDC (optionnel) | ❌ Non |
+| `OIDC_ROLES_CLAIM` | string | `""` | Nom du claim pour les rôles dans le token OIDC (optionnel) | ❌ Non |
+| `OIDC_SIGNATURE_ALGORITHMS` | string | `RS256` | Algorithme de signature du token OIDC | ❌ Non |
+| `OIDC_SCOPE` | string | `openid profile email` | Scope OIDC | ❌ Non |
+| `OIDC_DISABLE_BASIC_AUTH` | booléen | `true` | Si vrai, l'authentification basique est désactivée lorsque OIDC est activé | ❌ Non |
+
+**Exemple de configuration pour Keycloak :**
+```bash
+OIDC_ENABLED=true
+OIDC_ISSUER=https://keycloak.example.com/realms/myrealm
+OIDC_CLIENT_ID=my-client-id
+OIDC_CLIENT_SECRET=my-client-secret
+OIDC_REDIRECT_URI=https://myapp.example.com/oidc/callback
+OIDC_EMAIL_CLAIM=email
+OIDC_NAME_CLAIM=name
+OIDC_USERNAME_CLAIM=preferred_username
+OIDC_GROUPS_CLAIM=groups
+OIDC_ROLES_CLAIM=roles
+OIDC_DISABLE_BASIC_AUTH=true
+```
+
+**Exemple de configuration pour Okta :**
+```bash
+OIDC_ENABLED=true
+OIDC_ISSUER=https://{yourOktaDomain}.okta.com/oauth2/default
+OIDC_CLIENT_ID=0oa1a2b3c4d5e6f7g8h9i
+OIDC_CLIENT_SECRET=your-client-secret
+OIDC_REDIRECT_URI=https://myapp.example.com/oidc/callback
+OIDC_EMAIL_CLAIM=email
+OIDC_NAME_CLAIM=name
+OIDC_USERNAME_CLAIM=login
+```
+
+> **⚠️  IMPORTANT:**
+> - Lorsque `OIDC_ENABLED=true` et `OIDC_DISABLE_BASIC_AUTH=true`, l'authentification basique (email/mot de passe) est désactivée.
+> - Les utilisateurs doivent être créés automatiquement à la première connexion OIDC.
+> - Le nom et l'email sont récupérés depuis le fournisseur OIDC.
+> - Les groupes et rôles peuvent être synchronisés si les claims correspondants sont configurés.
+> - Assurez-vous que l'URL de redirection (`OIDC_REDIRECT_URI`) est correctement configurée dans votre fournisseur OIDC.
