@@ -25,6 +25,10 @@ cryptography>=49.0.0
 # WSGI Server pour la production
 gunicorn==21.2.0
 
+# Authentification OIDC/SSO (requis pour l'import dans app/auth/oidc_auth.py)
+authlib==1.3.0
+requests==2.32.3
+
 # Pour PostgreSQL (optionnel - sera utilise si DATABASE_URL est postgresql)
 psycopg[binary]>=3.1.0
 
