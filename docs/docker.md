@@ -1,120 +1,118 @@
-# Dockerisation simplifiée de Leviia Schedule
+# Dockerisation de Leviia Schedule (Version Simplifiée)
 
-## 📋 Structure simplifiée
+## 📋 Structure Ultra-Simple
 
 ```
 leviia-schedule/
 ├── docker/
-│   ├── Dockerfile          # Image Docker
-│   ├── entrypoint.sh       # Script de démarrage
+│   ├── Dockerfile      # Image Docker ultra-légère
+│   ├── entrypoint.sh   # Script de démarrage
 │   ├── docker-compose.yml  # Configuration de base
-│   ├── docker-compose.dev.yml  # Développement
-│   ├── docker-compose.prod.yml  # Production
-│   └── Makefile.docker     # Commandes
+│   └── Makefile        # Commandes simplifiées
 │
-├── .env                   # Variables d'environnement
-├── data/                  # Données persistantes
-└── logs/                  # Logs
+├── .env               # Variables d'environnement
+├── data/              # Données SQLite persistantes
+└── logs/              # Logs
 ```
+
+**Taille de l'image** : ~150 Mo (avec Alpine Linux)
 
 ---
 
-## 🚀 Utilisation
+## 🚀 Utilisation de Base
 
-### 1. Configurer l'environnement
+### 1️⃣ Configurer l'environnement
 
 ```bash
-# Copier l'exemple et modifier
+# Copier l'exemple
 cp .env.example .env
+
+# Modifier les variables importantes
 nano .env
 ```
 
-**Variables importantes dans .env :**
+**Variables minimales dans `.env` :**
 ```env
 SECRET_KEY=votre_clé_secrète
-FLASK_ENV=development  # ou production
-DATABASE_URL=sqlite:///app/data/app.db
 DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe
 ```
 
-### 2. Construire l'image
+### 2️⃣ Construire l'image
 
 ```bash
-make -f docker/Makefile.docker build
+make -f docker/Makefile build
 ```
 
-### 3. Démarrer
+### 3️⃣ Démarrer
 
-**Développement :**
 ```bash
-make -f docker/Makefile.docker up-dev
+# Mode développement (Flask avec reloader)
+make -f docker/Makefile up
+
+# Mode production (Gunicorn avec 1 worker)
+make -f docker/Makefile up-prod
 ```
 
-**Production (avec PostgreSQL) :**
-```bash
-make -f docker/Makefile.docker up-prod
-```
+### 4️⃣ Accéder à l'application
+
+Ouvrez votre navigateur : [http://localhost:5000](http://localhost:5000)
+
+**Identifiants par défaut :**
+- Email : `admin@leviia.local`
+- Mot de passe : `admin123` (ou celui que vous avez configuré dans `.env`)
 
 ---
 
 ## ⚙️ Configuration
 
-### Développement vs Production
-
-| Aspect | Développement | Production |
-|--------|---------------|------------|
-| Serveur | Flask (run.py) | Gunicorn |
-| Workers | 1 | 4 (PostgreSQL) ou 1 (SQLite) |
-| Base de données | SQLite | PostgreSQL |
-| Cache | Non | Redis |
-| Debug | Oui | Non |
-
 ### Variables d'environnement
 
-| Variable | Description | Défaut |
-|----------|-------------|--------|
-| `FLASK_ENV` | Mode (development/production) | development |
-| `SECRET_KEY` | Clé secrète Flask | requis |
-| `DATABASE_URL` | URL de la base de données | sqlite:///app/data/app.db |
-| `POSTGRES_*` | Config PostgreSQL | voir ci-dessous |
+| Variable | Description | Défaut | Requis |
+|----------|-------------|--------|--------|
+| `FLASK_ENV` | Mode (development/production) | development | ❌ |
+| `SECRET_KEY` | Clé secrète Flask | requis | ✅ |
+| `DATABASE_URL` | URL de la base de données | sqlite:///app/data/app.db | ❌ |
+| `DEFAULT_ADMIN_PASSWORD` | Mot de passe admin | admin123 | ✅ |
 
-**Pour PostgreSQL en production :**
+### Exemple de `.env` complet
+
 ```env
-DATABASE_URL=postgresql://leviia:leviia-pass@db:5432/leviia
-POSTGRES_DB=leviia
-POSTGRES_USER=leviia
-POSTGRES_PASSWORD=leviia-pass
+# Configuration de base
+FLASK_ENV=development
+SECRET_KEY=votre_clé_secrète_générée
+
+# Base de données (SQLite par défaut)
+DATABASE_URL=sqlite:///app/data/app.db
+
+# Mot de passe admin
+DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe_sécurisé
 ```
 
 ---
 
-## 📦 Fichiers
+## 📦 Fichiers Expliqués
 
 ### Dockerfile
-- Multi-stage build pour optimiser la taille
-- Virtual environment dans `/opt/venv`
-- Gunicorn installé pour la production
-- Utilisateur non-root (`appuser`)
+- **Base** : Python 3.11 Alpine (ultra-léger)
+- **Dépendances** : Installe `requirements.txt` + Gunicorn
+- **Utilisateur** : `appuser` (non-root) pour la sécurité
+- **Taille** : Optimisée avec Alpine et nettoyage des dépendances de build
 
 ### entrypoint.sh
-- Détecte automatiquement le mode (dev/prod)
-- Initialise la base de données en dev
-- Attend PostgreSQL si nécessaire
-- Lance le bon serveur automatiquement
+- **Initialisation** : Crée la base de données SQLite si elle n'existe pas
+- **Données par défaut** : Crée les types de shifts, le groupe et l'admin
+- **Sélection serveur** : 
+  - `development` → `python run.py` (avec reloader)
+  - `production` → `gunicorn` (1 worker pour SQLite)
 
 ### docker-compose.yml
-- Configuration de base du service web
-- Volumes pour les données et logs
+- **Service web** : Conteneur avec l'application
+- **Volumes** : Persistance des données et logs
+- **Ports** : 5000 exposé
 
-### docker-compose.dev.yml
-- Mode développement
-- Montage du code source
-- Désactive les protections de sécurité
-
-### docker-compose.prod.yml
-- Mode production
-- PostgreSQL + Redis
-- Gunicorn avec 4 workers
+### Makefile
+- **Commandes simplifiées** : build, up, down, logs, shell
+- **Mode production** : `up-prod` pour démarrer avec Gunicorn
 
 ---
 
@@ -122,56 +120,141 @@ POSTGRES_PASSWORD=leviia-pass
 
 | Commande | Description |
 |----------|-------------|
-| `make -f docker/Makefile.docker build` | Construire |
-| `make -f docker/Makefile.docker up-dev` | Démarrer (dev) |
-| `make -f docker/Makefile.docker up-prod` | Démarrer (prod) |
-| `make -f docker/Makefile.docker down-dev` | Arrêter (dev) |
-| `make -f docker/Makefile.docker down-prod` | Arrêter (prod) |
-| `make -f docker/Makefile.docker logs` | Voir les logs |
-| `make -f docker/Makefile.docker shell` | Shell dans le conteneur |
+| `make -f docker/Makefile build` | Construire l'image |
+| `make -f docker/Makefile up` | Démarrer (dev) |
+| `make -f docker/Makefile up-prod` | Démarrer (prod) |
+| `make -f docker/Makefile down` | Arrêter |
+| `make -f docker/Makefile logs` | Voir les logs |
+| `make -f docker/Makefile shell` | Shell dans le conteneur |
 
 ---
 
-## 🔒 Sécurité
+## 🔒 Sécurité de Base
 
-1. **Ne jamais commiter .env**
-   ```bash
-   echo ".env" >> .gitignore
-   ```
+### 1. Générer une clé secrète
 
-2. **En production :**
-   - Utiliser PostgreSQL
-   - Changer `SECRET_KEY` et `DEFAULT_ADMIN_PASSWORD`
-   - Configurer HTTPS via un reverse proxy
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
 
-3. **Générer une clé secrète :**
-   ```bash
-   python -c "import secrets; print(secrets.token_hex(32))"
-   ```
+### 2. Générer un mot de passe admin
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(16))"
+```
+
+### 3. Ne jamais commiter `.env`
+
+```bash
+echo ".env" >> .gitignore
+```
+
+### 4. En production
+
+- Utiliser `make -f docker/Makefile up-prod`
+- Changer `SECRET_KEY` et `DEFAULT_ADMIN_PASSWORD`
+- Configurer un reverse proxy (Nginx, Traefik) pour HTTPS
+
+---
+
+## 🌐 Pour aller plus loin
+
+Cette configuration de base utilise **SQLite** et est optimisée pour :
+- **Simplicité** : Un seul conteneur, facile à déployer
+- **Portabilité** : Fonctionne partout avec Docker
+- **Légèreté** : Image de ~150 Mo
+
+### Pour ajouter PostgreSQL et Redis
+
+Consultez le guide avancé : [DEPLOYMENT_ADVANCED.md](DEPLOYMENT_ADVANCED.md)
+
+Ce guide explique comment étendre cette configuration pour utiliser :
+- **PostgreSQL** comme base de données relationnelle
+- **Redis** comme cache
+- **Gunicorn avec plusieurs workers** pour de meilleures performances
+
+⚠️ **Recommandation** : Maîtrisez d'abord le déploiement de base avec SQLite avant d'ajouter ces composants.
 
 ---
 
 ## 🐛 Dépannage
 
-### Problème de port
+### Problème : Le conteneur ne démarre pas
+
+**Vérifier les logs :**
 ```bash
-# Vérifier ce qui utilise le port 5000
+docker compose logs web
+```
+
+**Vérifier le build :**
+```bash
+docker compose build --no-cache
+```
+
+### Problème : Erreur de permissions
+
+**Solution :**
+```bash
+# Donner les permissions à l'utilisateur courant
+sudo chown -R $USER:$USER .
+
+# Créer les répertoires nécessaires
+mkdir -p data logs
+chmod -R 755 data logs
+```
+
+### Problème : Base de données non initialisée
+
+**Solution :**
+```bash
+# Supprimer la base de données existante
+rm -f data/app.db
+
+# Redémarrer le conteneur
+docker compose down && docker compose up -d
+```
+
+### Problème : Port 5000 déjà utilisé
+
+**Solution :**
+```bash
+# Trouver le processus
 sudo lsof -i :5000
 
 # Tuer le processus
 kill <PID>
+
+# Ou changer le port dans docker-compose.yml
 ```
 
-### Base de données non prête
-Le script d'entrée attend automatiquement PostgreSQL. Si ça bloque :
+---
+
+## 🔄 Mises à jour
+
+### Mettre à jour l'application
+
 ```bash
-# Vérifier les logs de PostgreSQL
-docker compose logs db
+# Arrêter
+docker compose down
+
+# Mettre à jour le code
+git pull origin main
+
+# Reconstruire et redémarrer
+docker compose build --no-cache
+docker compose up -d
 ```
 
-### Erreur de build
+### Mettre à jour les dépendances
+
 ```bash
-# Reconstruire sans cache
+# Dans le conteneur
+make -f docker/Makefile shell
+
+# Mettre à jour requirements.txt
+pip freeze > requirements.txt
+
+# Reconstruire
 docker compose build --no-cache
 ```
 
@@ -179,24 +262,33 @@ docker compose build --no-cache
 
 ## 📚 Exemples
 
-### Développement local
+### Déploiement local rapide
+
 ```bash
+# Cloner le projet
+git clone https://github.com/FoxOps/leviia-schedule.git
+cd leviia-schedule
+
+# Configurer
+cp .env.example .env
+nano .env  # Modifier SECRET_KEY et DEFAULT_ADMIN_PASSWORD
+
 # Démarrer
-make -f docker/Makefile.docker up-dev
+make -f docker/Makefile up
 
 # Accéder à l'application
 # http://localhost:5000
-# admin@leviia.local / admin123
 ```
 
-### Production avec PostgreSQL
-```bash
-# Configurer .env pour la production
-cp .env.example .env
-# Modifier DATABASE_URL, POSTGRES_*, SECRET_KEY, etc.
+### Déploiement en production simple
 
-# Démarrer
-make -f docker/Makefile.docker up-prod
+```bash
+# Configurer pour la production
+cp .env.example .env
+nano .env  # Modifier SECRET_KEY, DEFAULT_ADMIN_PASSWORD, FLASK_ENV=production
+
+# Démarrer en production
+make -f docker/Makefile up-prod
 
 # Accéder à l'application
 # http://localhost:5000
@@ -204,17 +296,16 @@ make -f docker/Makefile.docker up-prod
 
 ---
 
-## 🔄 Mises à jour
+## 📞 Support
 
-Pour mettre à jour l'application :
-```bash
-# Arrêter
-make -f docker/Makefile.docker down-prod
+Pour des configurations avancées (PostgreSQL, Redis, etc.), consultez :
+- [Guide Avancé : PostgreSQL et Redis](DEPLOYMENT_ADVANCED.md)
 
-# Mettre à jour le code
-git pull origin main
+Pour des problèmes spécifiques, vérifiez :
+1. Les logs avec `docker compose logs`
+2. La configuration dans `.env`
+3. Les permissions des fichiers
 
-# Reconstruire et redémarrer
-make -f docker/Makefile.docker build --no-cache
-make -f docker/Makefile.docker up-prod
-```
+---
+
+*Documentation simplifiée pour Leviia Schedule - Dockerisation de base*

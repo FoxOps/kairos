@@ -17,9 +17,3 @@ services:
     volumes:
       - ../data:/app/data
       - ../logs:/app/logs
-    networks:
-      - leviia-net
-
-networks:
-  leviia-net:
-    driver: bridge

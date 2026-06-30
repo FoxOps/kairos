@@ -1,15 +1,8 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
-# Attendre PostgreSQL si utilisé
-if [[ "$DATABASE_URL" == postgresql* ]]; then
-    until python -c "import psycopg; psycopg.connect('${DATABASE_URL}')" 2>/dev/null; do
-        sleep 2
-    done
-fi
-
-# Initialiser la base de données (uniquement en dev)
-if [ "$FLASK_ENV" != "production" ]; then
+# Initialiser la base de données SQLite
+if [ ! -f "/app/data/app.db" ]; then
     python -c "
 from app import app, db
 from app.models import Group, User, ShiftType
@@ -40,13 +33,10 @@ with app.app_context():
 "
 fi
 
-# Lancer le bon serveur
+# Choisir le serveur selon FLASK_ENV
 if [ "$FLASK_ENV" = "production" ]; then
-    if [[ "$DATABASE_URL" == postgresql* ]]; then
-        exec gunicorn --bind 0.0.0.0:5000 --workers 4 --threads 2 --timeout 120 run:app
-    else
-        exec gunicorn --bind 0.0.0.0:5000 --workers 1 --threads 4 --timeout 120 run:app
-    fi
+    # Gunicorn est plus léger que uWSGI pour cette utilisation
+    exec gunicorn --bind 0.0.0.0:5000 --workers 1 --threads 4 --timeout 120 run:app
 else
     exec python run.py
 fi
