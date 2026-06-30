@@ -115,7 +115,7 @@ class Shift(db.Model):
         db.Integer, db.ForeignKey("shift_types.id"), nullable=False, index=True
     )
     start_time = db.Column(db.DateTime, nullable=False, index=True)
-    end_time = db.Column(db.DateTime, nullable=False)
+    end_time = db.Column(db.DateTime, nullable=False, index=True)
     date = db.Column(db.Date, nullable=False, index=True)
     
     # Index composite pour les requêtes fréquentes
@@ -132,7 +132,7 @@ class OnCall(db.Model):
         db.Integer, db.ForeignKey("user.id"), nullable=False, index=True
     )
     start_time = db.Column(db.DateTime, nullable=False, index=True)
-    end_time = db.Column(db.DateTime, nullable=False)
+    end_time = db.Column(db.DateTime, nullable=False, index=True)
     
     # Index composite pour les requêtes fréquentes de chevauchement
     __table_args__ = (
