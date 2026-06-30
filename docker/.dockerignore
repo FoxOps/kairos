@@ -1,0 +1,93 @@
+# .dockerignore
+# =============================================================================
+# Fichier .dockerignore pour Leviia Schedule
+# =============================================================================
+#
+# Ce fichier spécifie les fichiers et répertoires à exclure lors de la
+# construction de l'image Docker.
+#
+
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Local configuration
+.env.local
+.env.*.local
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Documentation
+docs/
+*.md
+
+# Tests
+tests/
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Static files (will be built in the image)
+app/static/node_modules/
+app/static/.cache/
+
+# Data directories (will be mounted as volumes)
+data/
+backups/
+
+# Certificates (will be mounted as volumes)
+certs/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/

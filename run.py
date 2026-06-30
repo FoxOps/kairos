@@ -18,114 +18,86 @@ def check_database_integrity():
     """Vérifie l'intégrité de la base de données et retourne True si elle est valide."""
     from sqlalchemy import inspect
     
-    inspector = inspect(db.engine)
-    
-    # Vérifier que toutes les tables nécessaires existent
-    required_tables = ["groups", "user", "shift_types", "shift", "on_call", "leave"]
-    for table in required_tables:
-        if not inspector.has_table(table):
-            return False
-    
-    # Vérifier que la table shift a la bonne structure
-    if inspector.has_table("shift"):
-        columns = [col["name"] for col in inspector.get_columns("shift")]
-        required_columns = ["id", "user_id", "shift_type_id", "start_time", "end_time", "date"]
-        for col in required_columns:
-            if col not in columns:
+    try:
+        # Vérifier que toutes les tables existent
+        inspector = inspect(db.engine)
+        tables = inspector.get_table_names()
+        
+        required_tables = ['user', 'group', 'shift_type', 'shift', 'oncall', 'leave']
+        
+        for table in required_tables:
+            if table not in tables:
                 return False
-    
-    # Vérifier que la table user a la bonne structure (incluant ics_token)
-    if inspector.has_table("user"):
-        columns = [col["name"] for col in inspector.get_columns("user")]
-        required_columns = ["id", "name", "email", "password_hash", "is_admin", "group_id", "ics_token"]
-        for col in required_columns:
-            if col not in columns:
-                return False
-    
-    return True
-
-
-def initialize_database():
-    """Initialise la base de données avec les tables et données par défaut."""
-    print("🔧 Initialisation de la base de données...")
-    
-    # Créer toutes les tables
-    db.create_all()
-    print("✅ Tables créées.")
-    
-    # Créer les types de shifts par défaut
-    for shift_type_data in DEFAULT_SHIFT_TYPES:
-        if not ShiftType.query.filter_by(name=shift_type_data["name"]).first():
-            shift_type = ShiftType(
-                name=shift_type_data["name"],
-                label=shift_type_data["label"],
-                start_hour=shift_type_data["start_hour"],
-                end_hour=shift_type_data["end_hour"],
-            )
-            db.session.add(shift_type)
-    db.session.commit()
-    print("✅ Types de shifts par défaut créés.")
+        
+        return True
+    except Exception:
+        return False
 
 
 def setup_database():
-    """Configure la base de données : initialisation si nécessaire.
-    
-    Cette fonction est appelée UNIQUEMENT une fois au premier démarrage.
-    """
-    from sqlalchemy import inspect
-    
-    inspector = inspect(db.engine)
-    
-    # Cas 1 : Aucune table n'existe -> initialisation complète
-    if not inspector.get_table_names():
-        initialize_database()
-        return
-    
-    # Cas 2 : Vérifier si la base a la bonne structure
-    if check_database_integrity():
-        print("✅ La base de données a une structure valide.")
-        return
-    
-    # Cas 3 : La base existe mais a une structure invalide -> recréer
-    print("⚠️  La base de données a une structure invalide. Recréation des tables...")
-    db.drop_all()
-    initialize_database()
+    """Configure la base de données."""
+    with app.app_context():
+        # Créer les tables si elles n'existent pas
+        db.create_all()
+        
+        # Vérifier l'intégrité de la base de données
+        if not check_database_integrity():
+            # Si les tables n'existent pas, les recréer
+            db.drop_all()
+            db.create_all()
 
 
 def create_default_data():
-    """Crée les données par défaut (groupe, utilisateur admin) si elles n'existent pas."""
-    # Créer le groupe par défaut s'il n'existe pas
-    if not Group.query.first():
-        default_group = Group(
-            name="Défaut",
-            is_part_of_schedule=True,
-            is_part_of_oncall=True,
-        )
-        db.session.add(default_group)
+    """Crée les données par défaut si elles n'existent pas."""
+    import os
+    from werkzeug.security import generate_password_hash
+    
+    with app.app_context():
+        # Créer le groupe par défaut
+        default_group_name = os.environ.get("DEFAULT_GROUP_NAME") or "Defaut"
+        default_group = Group.query.filter_by(name=default_group_name).first()
+        if not default_group:
+            default_group = Group(name=default_group_name)
+            db.session.add(default_group)
+            db.session.commit()
+        
+        # Créer l'utilisateur admin par défaut
+        default_admin_email = os.environ.get("DEFAULT_ADMIN_EMAIL") or "admin@leviia.local"
+        default_admin_password = os.environ.get("DEFAULT_ADMIN_PASSWORD") or "admin123"
+        
+        admin_user = User.query.filter_by(email=default_admin_email).first()
+        if not admin_user:
+            # ✅ CORRIGÉ: Le modèle User n'a pas de champ 'username', utiliser 'name' à la place
+            admin_user = User(
+                email=default_admin_email,
+                name="Administrateur",  # Utiliser 'name' au lieu de 'username'
+                password_hash=generate_password_hash(default_admin_password),
+                is_admin=True,
+                group_id=default_group.id
+            )
+            db.session.add(admin_user)
+            db.session.commit()
+            print(f"✅ Utilisateur admin créé: {default_admin_email}")
+        else:
+            print(f"✅ Utilisateur admin existe déjà: {default_admin_email}")
+        
+        # Créer les types de shifts par défaut
+        for shift_type_data in DEFAULT_SHIFT_TYPES:
+            shift_type = ShiftType.query.filter_by(name=shift_type_data["name"]).first()
+            if not shift_type:
+                shift_type = ShiftType(
+                    name=shift_type_data["name"],
+                    label=shift_type_data["label"],
+                    start_hour=shift_type_data["start_hour"],
+                    end_hour=shift_type_data["end_hour"]
+                )
+                db.session.add(shift_type)
         db.session.commit()
-        print("✅ Groupe par défaut créé.")
-
-    # Créer un utilisateur admin par défaut s'il n'existe pas
-    # (seulement si aucun utilisateur n'existe)
-    if not User.query.first():
-        default_group = Group.query.first()
-        admin_user = User(
-            name="Admin",
-            email="admin@leviia.local",
-            is_admin=True,
-            group_id=default_group.id if default_group else 1,
-        )
-        admin_user.set_password("admin123")  # Mot de passe par défaut
-        admin_user.generate_ics_token()  # Générer un token ICS
-        db.session.add(admin_user)
-        db.session.commit()
-        print("✅ Utilisateur admin créé avec succès !")
-        print(f"   Email: admin@leviia.local")
-        print(f"   Mot de passe: admin123")
-        print("   Pensez à changer le mot de passe après la première connexion.")
 
 
 if __name__ == "__main__":
+    import os
+    
     with app.app_context():
         # Configurer la base de données (une seule fois)
         setup_database()
@@ -133,6 +105,10 @@ if __name__ == "__main__":
         # Créer les données par défaut
         create_default_data()
 
+    # ✅ Écouter sur 0.0.0.0:5000 pour permettre les connexions externes
+    host = os.environ.get("FLASK_HOST") or "0.0.0.0"
+    port = int(os.environ.get("FLASK_PORT") or 5000)
+    
     # Désactiver le reloader pour éviter les problèmes de "database is locked" avec SQLite
     # Le reloader crée un nouveau processus qui peut verrouiller la base de données
-    app.run(debug=True, use_reloader=False)
+    app.run(host=host, port=port, debug=True, use_reloader=False)

@@ -5,67 +5,94 @@ Ce module contient la configuration pour l'authentification OIDC (OpenID Connect
 avec des fournisseurs comme Keycloak, Okta, Auth0, etc.
 
 L'authentification OIDC est optionnelle et peut être activée via des variables d'environnement.
+
+NOTE: Ce module ne dépend pas de python-dotenv. Les variables d'environnement doivent
+être définies directement dans l'environnement du système (via Docker, .env file monté,
+etc.) avant l'import de ce module.
 """
 
 import os
-from config import get_bool_from_env
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def get_bool_from_env(env_var, default=False):
+    """Convertit une variable d'environnement en booléen.
+    
+    Accepte: true, True, TRUE, 1, yes, Yes, YES, false, False, FALSE, 0, no, No, NO
+    """
+    value = os.environ.get(env_var)
+    if value is None:
+        return default
+    
+    value_lower = value.lower().strip()
+    if value_lower in ('true', '1', 'yes', 'y', 'on'):
+        return True
+    elif value_lower in ('false', '0', 'no', 'n', 'off'):
+        return False
+    else:
+        logger.warning(f"Valeur non reconnue pour {env_var}: '{value}'. Utilisation de la valeur par défaut: {default}")
+        return default
 
 
 class OIDCConfig:
     """Configuration OIDC/SSO."""
     
-    # Activer l'authentification OIDC/SSO
-    ENABLED = get_bool_from_env("OIDC_ENABLED", False)
+    # Variables de classe initialisées à None
+    ENABLED = None
+    ISSUER = None
+    CLIENT_ID = None
+    CLIENT_SECRET = None
+    REDIRECT_URI = None
+    EMAIL_CLAIM = None
+    NAME_CLAIM = None
+    USERNAME_CLAIM = None
+    GROUPS_CLAIM = None
+    ROLES_CLAIM = None
+    SIGNATURE_ALGORITHMS = None
+    SCOPE = None
+    DISABLE_BASIC_AUTH = None
     
-    # URL du fournisseur OIDC (ex: Keycloak, Okta, etc.)
-    # Exemple pour Keycloak: https://keycloak.example.com/realms/myrealm
-    ISSUER = os.environ.get("OIDC_ISSUER") or ""
-    
-    # Client ID pour l'application OIDC
-    CLIENT_ID = os.environ.get("OIDC_CLIENT_ID") or ""
-    
-    # Client Secret pour l'application OIDC
-    CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET") or ""
-    
-    # URL de redirection après l'authentification OIDC
-    # Doit correspondre à l'URL configurée dans le fournisseur OIDC
-    REDIRECT_URI = os.environ.get("OIDC_REDIRECT_URI") or ""
-    
-    # Nom du claim pour l'email dans le token OIDC (par défaut: email)
-    EMAIL_CLAIM = os.environ.get("OIDC_EMAIL_CLAIM") or "email"
-    
-    # Nom du claim pour le nom dans le token OIDC (par défaut: name)
-    NAME_CLAIM = os.environ.get("OIDC_NAME_CLAIM") or "name"
-    
-    # Nom du claim pour le nom d'utilisateur dans le token OIDC (par défaut: preferred_username)
-    USERNAME_CLAIM = os.environ.get("OIDC_USERNAME_CLAIM") or "preferred_username"
-    
-    # Nom du claim pour les groupes dans le token OIDC (optionnel)
-    # Si défini, les groupes seront synchronisés avec les groupes locaux
-    GROUPS_CLAIM = os.environ.get("OIDC_GROUPS_CLAIM") or ""
-    
-    # Nom du claim pour les rôles dans le token OIDC (optionnel)
-    # Si défini, les rôles seront synchronisés avec les rôles locaux
-    ROLES_CLAIM = os.environ.get("OIDC_ROLES_CLAIM") or ""
-    
-    # Algorithme de signature du token OIDC (par défaut: RS256)
-    SIGNATURE_ALGORITHMS = os.environ.get("OIDC_SIGNATURE_ALGORITHMS") or "RS256"
-    
-    # Scope OIDC (par défaut: openid profile email)
-    SCOPE = os.environ.get("OIDC_SCOPE") or "openid profile email"
-    
-    # Si vrai, l'authentification basique est désactivée lorsque OIDC est activé
-    DISABLE_BASIC_AUTH = get_bool_from_env("OIDC_DISABLE_BASIC_AUTH", True)
+    @classmethod
+    def load_config(cls):
+        """Charge la configuration depuis les variables d'environnement.
+        
+        NOTE: Ce module suppose que les variables d'environnement sont déjà définies
+        (via Docker, .env file, etc.) et ne dépend pas de python-dotenv.
+        """
+        cls.ENABLED = get_bool_from_env("OIDC_ENABLED", False)
+        cls.ISSUER = os.environ.get("OIDC_ISSUER") or ""
+        cls.CLIENT_ID = os.environ.get("OIDC_CLIENT_ID") or ""
+        cls.CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET") or ""
+        cls.REDIRECT_URI = os.environ.get("OIDC_REDIRECT_URI") or ""
+        cls.EMAIL_CLAIM = os.environ.get("OIDC_EMAIL_CLAIM") or "email"
+        cls.NAME_CLAIM = os.environ.get("OIDC_NAME_CLAIM") or "name"
+        cls.USERNAME_CLAIM = os.environ.get("OIDC_USERNAME_CLAIM") or "preferred_username"
+        cls.GROUPS_CLAIM = os.environ.get("OIDC_GROUPS_CLAIM") or ""
+        cls.ROLES_CLAIM = os.environ.get("OIDC_ROLES_CLAIM") or ""
+        cls.SIGNATURE_ALGORITHMS = os.environ.get("OIDC_SIGNATURE_ALGORITHMS") or "RS256"
+        cls.SCOPE = os.environ.get("OIDC_SCOPE") or "openid profile email"
+        cls.DISABLE_BASIC_AUTH = get_bool_from_env("OIDC_DISABLE_BASIC_AUTH", True)
+        
+        # Log pour débogage
+        logger.info(f"OIDC Config loaded - ENABLED: {cls.ENABLED}")
+        logger.info(f"OIDC Config loaded - ISSUER: '{cls.ISSUER}'")
+        logger.info(f"OIDC Config loaded - CLIENT_ID: '{cls.CLIENT_ID}'")
+        logger.info(f"OIDC Config loaded - CLIENT_SECRET: {'***' if cls.CLIENT_SECRET else 'empty'}")
+        logger.info(f"OIDC Config loaded - REDIRECT_URI: '{cls.REDIRECT_URI}'")
+        logger.info(f"OIDC Config loaded - is_configured: {cls.is_configured()}")
     
     @classmethod
     def is_configured(cls):
         """Vérifie si OIDC est correctement configuré."""
+        # ✅ CORRECTION: Convertir chaque variable en booléen explicitement
         return (
-            cls.ENABLED and 
-            cls.ISSUER and 
-            cls.CLIENT_ID and 
-            cls.CLIENT_SECRET and 
-            cls.REDIRECT_URI
+            bool(cls.ENABLED) and 
+            bool(cls.ISSUER) and 
+            bool(cls.CLIENT_ID) and 
+            bool(cls.CLIENT_SECRET) and 
+            bool(cls.REDIRECT_URI)
         )
     
     @classmethod
@@ -86,3 +113,9 @@ class OIDCConfig:
             'OIDC_SCOPE': cls.SCOPE,
             'OIDC_DISABLE_BASIC_AUTH': cls.DISABLE_BASIC_AUTH,
         }
+
+
+# Charger la configuration au moment de l'import
+# NOTE: Cela charge la configuration une première fois, mais elle sera rechargée
+# dans __init__.py après que Flask ait chargé sa configuration
+OIDCConfig.load_config()

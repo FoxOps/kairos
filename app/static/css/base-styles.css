@@ -187,11 +187,11 @@ a:focus-visible {
    ============================================ */
 
 .notification[role="alert"] {
-    border: 2px solid var(--color-danger, var(--bulma-danger));
+    border: none;
 }
 
 .notification[role="status"] {
-    border: 2px solid var(--color-info, var(--bulma-info));
+    border: none;
 }
 
 /* ============================================

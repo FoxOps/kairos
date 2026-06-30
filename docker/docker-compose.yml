@@ -1,0 +1,20 @@
+services:
+  leviia-schedule:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: leviia-web
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - ../.env
+    environment:
+      - FLASK_ENV=${FLASK_ENV:-development}
+      - SECRET_KEY=${SECRET_KEY:-changez-moi}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:////app/data/app.db}
+      - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-admin123}
+    volumes:
+      - ../data:/app/data
+      - ../logs:/app/logs
+    user: "1000:1000"

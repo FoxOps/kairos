@@ -9,7 +9,7 @@ remplaçant l'ancienne bibliothèque flask-oidc.
 """
 
 import logging
-from flask import redirect, url_for, session, current_app, flash
+from flask import redirect, url_for, session, current_app, flash, request
 from flask_login import login_user, logout_user
 from authlib.integrations.flask_client import OAuth
 from authlib.oauth2.rfc6749 import OAuth2Token
@@ -28,6 +28,10 @@ class OIDCAuthLib:
         self.app = app
         self.oauth = None
         self.oidc_client = None
+        self.authorization_endpoint = None
+        self.token_endpoint = None
+        self.userinfo_endpoint = None
+        self.end_session_endpoint = None  # ✅ Ajouter l'endpoint de fin de session
         if app:
             self.init_app(app)
     
@@ -44,15 +48,39 @@ class OIDCAuthLib:
             return
             
         if not OIDCConfig.is_configured():
-            logger.info("OIDC n'est pas configuré, saut de la configuration OAuth")
+            logger.warning("OIDC n'est pas configuré, saut de la configuration OAuth. Vérifiez que OIDC_ENABLED=true, OIDC_ISSUER, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET et OIDC_REDIRECT_URI sont définis.")
             return
         
         try:
-            # Enregistrer le client OIDC avec découverte automatique
-            # Authlib va automatiquement charger les endpoints depuis le document de découverte
             issuer_url = OIDCConfig.ISSUER.rstrip('/')
             server_metadata_url = f"{issuer_url}/.well-known/openid-configuration"
             
+            logger.info(f"Tentative de configuration OIDC avec issuer: {issuer_url}")
+            logger.info(f"URL de découverte: {server_metadata_url}")
+            
+            import requests
+            try:
+                response = requests.get(server_metadata_url, timeout=5)
+                response.raise_for_status()
+                discovery_doc = response.json()
+                
+                self.authorization_endpoint = discovery_doc.get('authorization_endpoint')
+                self.token_endpoint = discovery_doc.get('token_endpoint')
+                self.userinfo_endpoint = discovery_doc.get('userinfo_endpoint')
+                self.end_session_endpoint = discovery_doc.get('end_session_endpoint')  # ✅ Ajouter l'endpoint de fin de session
+                
+                logger.info(f"Authorization endpoint: {self.authorization_endpoint}")
+                logger.info(f"Token endpoint: {self.token_endpoint}")
+                logger.info(f"Userinfo endpoint: {self.userinfo_endpoint}")
+                logger.info(f"End session endpoint: {self.end_session_endpoint}")
+                
+                logger.info("Document de découverte OIDC accessible")
+            except requests.RequestException as e:
+                logger.error(f"Impossible d'accéder au document de découverte OIDC: {e}")
+                logger.error(f"Vérifiez que OIDC_ISSUER={issuer_url} est correct et accessible depuis ce conteneur")
+                logger.error("Si vous utilisez Docker, assurez-vous que le service oidc-mock est démarré et accessible via le nom de service Docker")
+                return
+
             self.oidc_client = self.oauth.register(
                 name='oidc',
                 server_metadata_url=server_metadata_url,
@@ -61,7 +89,6 @@ class OIDCAuthLib:
                 },
             )
             
-            # Mettre à jour les informations du client avec les credentials
             self.oidc_client.client_id = OIDCConfig.CLIENT_ID
             self.oidc_client.client_secret = OIDCConfig.CLIENT_SECRET
             
@@ -75,20 +102,17 @@ class OIDCAuthLib:
             logger.error(f"Erreur lors de la configuration OAuth: {e}")
             self.oidc_client = None
     
-    def init_app(self, app):
-        """Initialise l'application Flask."""
-        self.app = app
-        self.oauth = OAuth(app)
-        self._configure_oauth()
-    
     def get_authorization_url(self, state=None, nonce=None):
         """Génère l'URL d'autorisation OIDC."""
         if not self.oidc_client:
-            logger.error("Client OIDC non configuré")
+            logger.error("Client OIDC non configuré. Vérifiez que la configuration OIDC est correcte.")
             return None
         
         try:
-            # Générer un state et un nonce si non fournis
+            if not self.authorization_endpoint:
+                logger.error("Authorization endpoint non disponible")
+                return None
+            
             if state is None:
                 state = self._generate_state()
             if nonce is None:
@@ -98,9 +122,9 @@ class OIDCAuthLib:
             session['oidc_state'] = state
             session['oidc_nonce'] = nonce
             
-            # Utiliser l'endpoint d'autorisation découvert automatiquement
-            # Authlib charge les endpoints depuis le document de découverte
-            authorize_endpoint = self.oidc_client.authorize_url
+            # ✅ DEBUG: Afficher le state généré
+            logger.info(f"[DEBUG] State généré: {state}")
+            logger.info(f"[DEBUG] State stocké dans session: {session.get('oidc_state')}")
             
             from urllib.parse import urlencode
             
@@ -113,7 +137,7 @@ class OIDCAuthLib:
                 'nonce': nonce,
             }
             
-            return f"{authorize_endpoint}?{urlencode(params)}"
+            return f"{self.authorization_endpoint}?{urlencode(params)}"
                 
         except Exception as e:
             logger.error(f"Erreur lors de la génération de l'URL d'autorisation: {e}")
@@ -140,11 +164,11 @@ class OIDCAuthLib:
         try:
             logger.info("Échange du code contre un token OIDC")
             
-            # Utiliser requests pour échanger le code directement
-            # car nous ne sommes pas dans un contexte de requête Flask
             import requests
             
-            token_endpoint = self.oidc_client.access_token_url
+            if not self.token_endpoint:
+                logger.error("Token endpoint non disponible")
+                return None
             
             data = {
                 'grant_type': 'authorization_code',
@@ -158,10 +182,14 @@ class OIDCAuthLib:
                 'Content-Type': 'application/x-www-form-urlencoded',
             }
             
-            response = requests.post(token_endpoint, data=data, headers=headers, timeout=10)
+            response = requests.post(self.token_endpoint, data=data, headers=headers, timeout=10)
             response.raise_for_status()
             
             token_data = response.json()
+            
+            # ✅ Stocker l'id_token dans la session pour la déconnexion
+            if 'id_token' in token_data:
+                session['oidc_id_token'] = token_data['id_token']
             
             logger.info("Token OIDC obtenu avec succès")
             return token_data
@@ -179,19 +207,18 @@ class OIDCAuthLib:
         try:
             logger.info("Récupération des informations utilisateur OIDC")
             
-            # Utiliser le client OIDC pour récupérer les informations utilisateur
-            # Authlib's parse_id_token peut être utilisé pour décoder le token
-            # Mais pour userinfo, nous devons faire une requête HTTP
             import requests
             
-            userinfo_endpoint = self.oidc_client.userinfo_endpoint
+            if not self.userinfo_endpoint:
+                logger.error("Userinfo endpoint non disponible")
+                return None
             
             headers = {
                 'Authorization': f'Bearer {access_token}',
                 'Accept': 'application/json',
             }
             
-            response = requests.get(userinfo_endpoint, headers=headers, timeout=10)
+            response = requests.get(self.userinfo_endpoint, headers=headers, timeout=10)
             response.raise_for_status()
             
             user_info = response.json()
@@ -209,7 +236,6 @@ class OIDCAuthLib:
         if not token_data:
             return False
         
-        # Vérifier l'expiration
         expires_at = token_data.get('expires_at')
         if expires_at:
             import time
@@ -223,52 +249,41 @@ class OIDCAuthLib:
         """Extrait les informations utilisateur du token OIDC."""
         user_data = {}
         
-        # Si user_info est fourni, l'utiliser
         if user_info:
-            # Extraire l'email
             email_claim = OIDCConfig.EMAIL_CLAIM
             if email_claim in user_info:
                 user_data['email'] = user_info[email_claim]
             
-            # Extraire le nom
             name_claim = OIDCConfig.NAME_CLAIM
             if name_claim in user_info:
                 user_data['name'] = user_info[name_claim]
             
-            # Extraire le nom d'utilisateur
             username_claim = OIDCConfig.USERNAME_CLAIM
             if username_claim in user_info:
                 user_data['username'] = user_info[username_claim]
             
-            # Extraire les groupes si configuré
             groups_claim = OIDCConfig.GROUPS_CLAIM
             if groups_claim and groups_claim in user_info:
                 user_data['groups'] = user_info[groups_claim]
             
-            # Extraire les rôles si configuré
             roles_claim = OIDCConfig.ROLES_CLAIM
             if roles_claim and roles_claim in user_info:
                 user_data['roles'] = user_info[roles_claim]
         
-        # Sinon, essayer d'extraire depuis le token lui-même
         elif token_data:
-            # Décoder le payload du token (sans vérification de signature)
             import base64
             import json
             
             id_token = token_data.get('id_token') or token_data.get('access_token')
             if id_token:
                 try:
-                    # Décoder le payload (partie du milieu du JWT)
                     parts = id_token.split('.')
                     if len(parts) >= 2:
-                        # Ajouter un padding si nécessaire
                         payload = parts[1]
                         payload += '=' * (4 - len(payload) % 4)
                         decoded = base64.urlsafe_b64decode(payload)
                         token_payload = json.loads(decoded)
                         
-                        # Extraire les informations
                         email_claim = OIDCConfig.EMAIL_CLAIM
                         if email_claim in token_payload:
                             user_data['email'] = token_payload[email_claim]
@@ -296,9 +311,19 @@ class OIDCAuthLib:
     
     def handle_oauth_callback(self, request):
         """Gère le callback OIDC après l'authentification."""
+        # ✅ DEBUG: Afficher tous les paramètres reçus
+        logger.info(f"[DEBUG callback] request.args: {dict(request.args)}")
+        logger.info(f"[DEBUG callback] session: {dict(session)}")
+        
         # Vérifier l'état
         state = request.args.get('state')
-        if not state or state != session.get('oidc_state'):
+        session_state = session.get('oidc_state')
+        
+        logger.info(f"[DEBUG callback] state reçu: {state}")
+        logger.info(f"[DEBUG callback] state dans session: {session_state}")
+        logger.info(f"[DEBUG callback] state == session_state: {state == session_state}")
+        
+        if not state or state != session_state:
             logger.error("State OIDC invalide")
             flash("Erreur d'authentification: state invalide", "danger")
             return None

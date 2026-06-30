@@ -28,20 +28,20 @@ def login():
         remember = "remember" in request.form
 
         if not email or not password:
-            flash("e94c Email et mot de passe sont obligatoires.", "danger")
+            flash("Email et mot de passe sont obligatoires.", "danger")
             return redirect(url_for("login"))
 
         user = User.query.filter_by(email=email).first()
 
         if user and user.check_password(password):
             login_user(user, remember=remember)
-            flash("e905 Connexion réussie !", "success")
+            flash("Connexion réussie !", "success")
 
             # Rediriger vers la page demandée ou vers l'index
             next_page = request.args.get("next")
             return redirect(next_page or url_for("index"))
         else:
-            flash("e94c Email ou mot de passe incorrect.", "danger")
+            flash("Email ou mot de passe incorrect.", "danger")
 
     return render_template("auth/login.html", oidc_enabled=OIDCConfig.ENABLED)
 
@@ -52,22 +52,37 @@ def oidc_login():
     if current_user.is_authenticated:
         return redirect(url_for("index"))
     
+    # ✅ DEBUG: Vérifier l'état de l'authentification OIDC
+    print(f"[DEBUG oidc_login] OIDCConfig.ENABLED: {OIDCConfig.ENABLED}")
+    print(f"[DEBUG oidc_login] OIDCConfig.is_configured(): {OIDCConfig.is_configured()}")
+    print(f"[DEBUG oidc_login] oidc_auth.oidc_client: {oidc_auth.oidc_client}")
+    print(f"[DEBUG oidc_login] session avant: {dict(session)}")
+    
     if not OIDCConfig.ENABLED or not OIDCConfig.is_configured():
+        print("[DEBUG oidc_login] OIDC non configuré, redirection vers login")
         flash("L'authentification OIDC n'est pas configurée.", "danger")
         return redirect(url_for("login"))
     
     # Générer l'URL d'autorisation OIDC
     auth_url = oidc_auth.get_authorization_url()
+    print(f"[DEBUG oidc_login] auth_url générée: {auth_url}")
+    print(f"[DEBUG oidc_login] session après get_authorization_url: {dict(session)}")
+    
     if not auth_url:
+        print("[DEBUG oidc_login] auth_url est None!")
         flash("Impossible de générer l'URL d'authentification OIDC.", "danger")
         return redirect(url_for("login"))
     
+    print(f"[DEBUG oidc_login] Redirection vers: {auth_url}")
     return redirect(auth_url)
 
 
 @app.route("/oidc/callback")
 def oidc_callback():
     """Gère le callback OIDC après l'authentification."""
+    print(f"[DEBUG callback] session à l'arrivée: {dict(session)}")
+    print(f"[DEBUG callback] request.args: {dict(request.args)}")
+    
     if current_user.is_authenticated:
         return redirect(url_for("index"))
     
@@ -79,6 +94,7 @@ def oidc_callback():
     user_data = oidc_auth.handle_oauth_callback(request)
     
     if not user_data:
+        print("[DEBUG callback] user_data est None")
         return redirect(url_for("login"))
     
     # Connecter l'utilisateur
@@ -88,7 +104,7 @@ def oidc_callback():
         flash("Impossible de connecter l'utilisateur OIDC.", "danger")
         return redirect(url_for("login"))
     
-    flash("e905 Connexion OIDC réussie !", "success")
+    flash("Connexion OIDC réussie !", "success")
     
     # Rediriger vers la page demandée ou vers l'index
     next_page = session.pop('next', None) or request.args.get('next')
@@ -100,18 +116,61 @@ def oidc_callback():
 def logout():
     """Déconnexion."""
     # Déconnexion OIDC si nécessaire
-    if OIDCConfig.ENABLED:
-        # Pour une déconnexion complète OIDC, il faudrait rediriger vers 
-        # l'endpoint de fin de session du fournisseur OIDC
-        # Pour l'instant, on se contente de la déconnexion locale
-        pass
+    if OIDCConfig.ENABLED and OIDCConfig.is_configured():
+        # Construire l'URL de fin de session OIDC
+        end_session_endpoint = getattr(oidc_auth, 'end_session_endpoint', None)
+        
+        if end_session_endpoint:
+            # Récupérer l'ID token de la session
+            id_token = session.get('oidc_id_token')
+            
+            from urllib.parse import urlencode
+            
+            # Paramètres pour la déconnexion OIDC
+            params = {
+                'id_token_hint': id_token,
+                'post_logout_redirect_uri': url_for('index', _external=True),
+            }
+            
+            # Rediriger vers l'endpoint de fin de session OIDC
+            logout_url = f"{end_session_endpoint}?{urlencode(params)}"
+            
+            # Déconnecter localement d'abord
+            logout_user()
+            session.clear()
+            
+            return redirect(logout_url)
+        else:
+            # Si pas d'endpoint de fin de session, essayer de récupérer depuis la découverte
+            import requests
+            try:
+                issuer_url = OIDCConfig.ISSUER.rstrip('/')
+                server_metadata_url = f"{issuer_url}/.well-known/openid-configuration"
+                response = requests.get(server_metadata_url, timeout=5)
+                response.raise_for_status()
+                discovery_doc = response.json()
+                end_session_endpoint = discovery_doc.get('end_session_endpoint')
+                
+                if end_session_endpoint:
+                    id_token = session.get('oidc_id_token')
+                    from urllib.parse import urlencode
+                    params = {
+                        'id_token_hint': id_token,
+                        'post_logout_redirect_uri': url_for('index', _external=True),
+                    }
+                    logout_url = f"{end_session_endpoint}?{urlencode(params)}"
+                    logout_user()
+                    session.clear()
+                    return redirect(logout_url)
+            except Exception as e:
+                current_app.logger.warning(f"Impossible de récupérer l'endpoint de fin de session OIDC: {e}")
     
     logout_user()
     
     # Nettoyer la session
     session.clear()
     
-    flash("e905 Déconnexion réussie.", "success")
+    flash("Déconnexion réussie.", "success")
     return redirect(url_for("index"))
 
 
@@ -124,11 +183,11 @@ def register():
     # Si OIDC est activé et que l'authentification basique est désactivée,
     # rediriger vers la connexion OIDC
     if is_basic_auth_disabled():
-        flash("e94c L'inscription publique est désactivée. Utilisez l'authentification OIDC.", "danger")
+        flash("L'inscription publique est désactivée. Utilisez l'authentification OIDC.", "danger")
         return redirect(url_for("oidc_login"))
     
     flash(
-        "e94c L'inscription publique est désactivée. Contactez l'administrateur.",
+        "L'inscription publique est désactivée. Contactez l'administrateur.",
         "danger",
     )
     return redirect(url_for("login"))
@@ -153,7 +212,7 @@ def update_profile():
         confirm_password = request.form.get("confirm_password", "")
 
         if not name or not email:
-            flash("e94c Le nom et l'email sont obligatoires.", "danger")
+            flash("Le nom et l'email sont obligatoires.", "danger")
             return redirect(url_for("update_profile"))
 
         # Vérifier si l'email est déjà utilisé par un autre utilisateur
@@ -161,7 +220,7 @@ def update_profile():
             User.email == email, User.id != current_user.id
         ).first()
         if existing_user:
-            flash("e94c Cet email est déjà utilisé par un autre utilisateur.", "danger")
+            flash("Cet email est déjà utilisé par un autre utilisateur.", "danger")
             return redirect(url_for("update_profile"))
 
         # Mettre à jour les informations de base
@@ -174,35 +233,35 @@ def update_profile():
             # car ils s'authentifient via OIDC
             if current_user.password_hash is None:
                 flash(
-                    "e94c Les utilisateurs OIDC ne peuvent pas changer leur mot de passe. Utilisez votre fournisseur OIDC.",
+                    "Les utilisateurs OIDC ne peuvent pas changer leur mot de passe. Utilisez votre fournisseur OIDC.",
                     "danger",
                 )
                 return redirect(url_for("update_profile"))
             
             if not current_password:
                 flash(
-                    "e94c Le mot de passe actuel est obligatoire pour changer de mot de passe.",
+                    "Le mot de passe actuel est obligatoire pour changer de mot de passe.",
                     "danger",
                 )
                 return redirect(url_for("update_profile"))
 
             if not current_user.check_password(current_password):
-                flash("e94c Le mot de passe actuel est incorrect.", "danger")
+                flash("Le mot de passe actuel est incorrect.", "danger")
                 return redirect(url_for("update_profile"))
 
             if new_password != confirm_password:
-                flash("e94c Les nouveaux mots de passe ne correspondent pas.", "danger")
+                flash("Les nouveaux mots de passe ne correspondent pas.", "danger")
                 return redirect(url_for("update_profile"))
 
             current_user.set_password(new_password)
 
         try:
             db.session.commit()
-            flash("e905 Profil mis à jour avec succès !", "success")
+            flash("Profil mis à jour avec succès !", "success")
             return redirect(url_for("profile"))
         except Exception as e:
             db.session.rollback()
-            flash(f"e94c Erreur : {str(e)}", "danger")
+            flash(f"Erreur : {str(e)}", "danger")
 
     return render_template("auth/update_profile.html", user=current_user)
 
@@ -216,10 +275,10 @@ def generate_ics_token():
         token = current_user.generate_ics_token()
         try:
             db.session.commit()
-            flash(f"e905 Token ICS régénéré avec succès !", "success")
+            flash("Token ICS régénéré avec succès !", "success")
         except Exception as e:
             db.session.rollback()
-            flash(f"e94c Erreur : {str(e)}", "danger")
+            flash(f"Erreur : {str(e)}", "danger")
     
     # Afficher la page avec le token actuel
     token = current_user.ics_token
