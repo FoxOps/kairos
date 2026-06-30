@@ -3,9 +3,14 @@ Configuration des tests pour Leviia Schedule.
 """
 
 import pytest
+import warnings
+from datetime import datetime, timedelta
 from app import create_app, db
 from app.models import User, Group, Shift, OnCall, Leave, ShiftType
 from werkzeug.security import generate_password_hash
+
+# Filtrer les warnings de dépréciation de datetime.utcnow()
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="flask_login")
 
 
 @pytest.fixture(scope="function")
@@ -122,8 +127,6 @@ def afternoon_shift_type(app):
 @pytest.fixture(scope="function")
 def test_shift(app, test_user, test_shift_type):
     """Crée un shift de test."""
-    from datetime import datetime, timedelta
-
     start_time = datetime.now() + timedelta(days=1)
     end_time = start_time + timedelta(hours=8)
 
@@ -142,7 +145,7 @@ def test_shift(app, test_user, test_shift_type):
 @pytest.fixture(scope="function")
 def test_oncall(app, test_user):
     """Crée une astreinte de test."""
-    from datetime import datetime, timedelta
+    from datetime import timedelta
 
     # Commence un vendredi à 21h
     now = datetime.now()
@@ -161,7 +164,7 @@ def test_oncall(app, test_user):
 @pytest.fixture(scope="function")
 def test_leave(app, test_user):
     """Crée un congé de test."""
-    from datetime import datetime, timedelta
+    from datetime import timedelta
 
     start_date = datetime.now().date() + timedelta(days=10)
     end_date = start_date + timedelta(days=5)

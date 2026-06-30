@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import secrets
 
 # Charger les variables d'environnement depuis un fichier .env si présent
 # Cela permet une configuration facile sans modifier le code
@@ -84,7 +85,7 @@ def get_database_type(database_uri=None):
 # Configuration de base pour Flask
 class Config:
     # Clé secrète pour Flask (OBLIGATOIRE en production)
-    SECRET_KEY = os.environ.get("SECRET_KEY") or "ta-cle-secrete-ici"
+    SECRET_KEY = os.environ.get("SECRET_KEY") or secrets.token_urlsafe(32)
     
     # URI de la base de données - peut être configurée via DATABASE_URL
     # SQLite reste la base de données par défaut
@@ -155,7 +156,6 @@ class Config:
             }
 
     # Configuration Flask-Login
-    LOGIN_DISABLED = get_bool_from_env("LOGIN_DISABLED", False)  # Désactive l'authentification si True (pour dev/test)
     REMEMBER_COOKIE_DURATION = get_int_from_env("REMEMBER_COOKIE_DURATION", 86400)  # 1 jour en secondes
     SESSION_PROTECTION = os.environ.get("SESSION_PROTECTION") or "strong"
     
@@ -271,11 +271,11 @@ class Config:
     WTF_CSRF_TIME_LIMIT = get_int_from_env("WTF_CSRF_TIME_LIMIT", 3600)
     
     # Headers de sécurité
-    SESSION_COOKIE_SECURE = get_bool_from_env("SESSION_COOKIE_SECURE", False)
+    SESSION_COOKIE_SECURE = get_bool_from_env("SESSION_COOKIE_SECURE", True)
     SESSION_COOKIE_HTTPONLY = get_bool_from_env("SESSION_COOKIE_HTTPONLY", True)
     SESSION_COOKIE_SAMESITE = os.environ.get("SESSION_COOKIE_SAMESITE", "Lax")
-    REMEMBER_COOKIE_SECURE = get_bool_from_env("REMEMBER_COOKIE_SECURE", False)
-    PREFERRED_URL_SCHEME = os.environ.get("PREFERRED_URL_SCHEME", "http")
+    REMEMBER_COOKIE_SECURE = get_bool_from_env("REMEMBER_COOKIE_SECURE", True)
+    PREFERRED_URL_SCHEME = os.environ.get("PREFERRED_URL_SCHEME", "https")
 
 
 
@@ -372,7 +372,7 @@ class TestingConfig(Config):
     """Configuration pour les tests."""
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
-    WTF_CSRF_ENABLED = False
+    WTF_CSRF_ENABLED = True
     LOG_LEVEL = "DEBUG"
     DEBUG_ERRORS = True
     RATE_LIMIT_ENABLED = False
