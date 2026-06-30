@@ -16,9 +16,10 @@
 FROM python:3.11-slim as builder
 
 # Définir les variables d'environnement pour éviter les prompts interactifs
+# Note: PYTHONHASHSEED doit être "random" (sans le "d") ou un entier
 ENV PYTHONFAULTHANDLER=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONHASHSEED=randomized \
+    PYTHONHASHSEED=random \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_DEFAULT_TIMEOUT=100
@@ -44,9 +45,10 @@ RUN /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
 FROM python:3.11-slim
 
 # Définir les mêmes variables d'environnement
+# Note: PYTHONHASHSEED doit être "random" (sans le "d") ou un entier
 ENV PYTHONFAULTHANDLER=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONHASHSEED=randomized \
+    PYTHONHASHSEED=random \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     FLASK_APP=run.py \
