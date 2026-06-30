@@ -49,8 +49,7 @@ def setup_database():
 
 def create_default_data():
     """Crée les données par défaut si elles n'existent pas."""
-    from config import Config
-    from app.models import User, Group
+    import os
     from werkzeug.security import generate_password_hash
     
     with app.app_context():
@@ -68,10 +67,10 @@ def create_default_data():
         
         admin_user = User.query.filter_by(email=default_admin_email).first()
         if not admin_user:
+            # ✅ CORRIGÉ: Le modèle User n'a pas de champ 'username', utiliser 'name' à la place
             admin_user = User(
                 email=default_admin_email,
-                name="Administrateur",
-                username="admin",
+                name="Administrateur",  # Utiliser 'name' au lieu de 'username'
                 password_hash=generate_password_hash(default_admin_password),
                 is_admin=True,
                 group_id=default_group.id
@@ -83,7 +82,6 @@ def create_default_data():
             print(f"✅ Utilisateur admin existe déjà: {default_admin_email}")
         
         # Créer les types de shifts par défaut
-        from app.models import ShiftType
         for shift_type_data in DEFAULT_SHIFT_TYPES:
             shift_type = ShiftType.query.filter_by(name=shift_type_data["name"]).first()
             if not shift_type:
