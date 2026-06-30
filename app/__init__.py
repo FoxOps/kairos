@@ -48,7 +48,7 @@ login_manager.init_app(app)
 from config_oidc import OIDCConfig
 if OIDCConfig.ENABLED:
     from app.auth.oidc_auth import oidc_auth
-    oidc_auth.app = app
+    oidc_auth.init_app(app)
     app.logger.info("Authentification OIDC activée")
 else:
     app.logger.info("Authentification OIDC désactivée")
