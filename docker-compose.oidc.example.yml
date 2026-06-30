@@ -1,0 +1,135 @@
+version: '3.8'
+
+# Exemple de configuration Docker Compose pour Leviia Schedule avec OIDC-Mock
+# Ce fichier montre comment configurer Leviia Schedule avec un fournisseur OIDC mock
+# pour le développement et les tests.
+#
+# Pour l'utiliser:
+# 1. Copiez ce fichier en docker-compose.yml
+# 2. Créez un fichier .env avec les variables d'environnement nécessaires
+# 3. Lancez avec: docker-compose up -d
+
+services:
+  leviia-schedule:
+    image: docker-web:latest
+    container_name: leviia-schedule
+    ports:
+      - "5000:5000"
+    user: "1000:1000"
+    env_file:
+      - ./.env
+    environment:
+      # Configuration OIDC - doit correspondre à la configuration de oidc-mock
+      OIDC_ENABLED: "true"
+      OIDC_PROVIDER_NAME: oidc-mock
+      OIDC_ISSUER: http://oidc-mock:8080  # Nom du service Docker + port
+      OIDC_CLIENT_ID: leviia-app
+      OIDC_CLIENT_SECRET: leviia-secret
+      OIDC_REDIRECT_URI: http://localhost:5000/oidc/callback
+      OIDC_SCOPE: openid profile email
+      OIDC_DISABLE_BASIC_AUTH: "true"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - leviia-network
+    depends_on:
+      oidc-mock:
+        condition: service_healthy
+
+  oidc-mock:
+    container_name: oidc-mock
+    image: ghcr.io/soluto/oidc-server-mock:latest
+    ports:
+      - "4011:8080"  # Port 4011 sur l'hôte → 8080 dans le conteneur
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/.well-known/openid-configuration"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      
+      # Configuration du serveur
+      SERVER_OPTIONS_INLINE: |
+        {
+          "AccessTokenJwtType": "JWT",
+          "Discovery": {
+            "ShowKeySet": true
+          },
+          "Authentication": {
+            "CookieSameSiteMode": "Lax",
+            "CheckSessionCookieSameSiteMode": "Lax"
+          }
+        }
+      
+      # Options de login
+      LOGIN_OPTIONS_INLINE: |-
+        { "AllowRememberLogin": true }
+      
+      # Options de logout
+      LOGOUT_OPTIONS_INLINE: |-
+        { "AutomaticRedirectAfterSignOut": true }
+      
+      # Utilisateurs mock
+      USERS_CONFIGURATION_INLINE: |
+        [
+          {
+            "SubjectId": "1",
+            "Username": "admin",
+            "Password": "admin123",
+            "Claims": [
+              { "Type": "name", "Value": "Admin User", "ValueType": "string" },
+              { "Type": "email", "Value": "admin@leviia.local", "ValueType": "string" },
+              { "Type": "preferred_username", "Value": "admin", "ValueType": "string" },
+              { "Type": "role", "Value": "admin", "ValueType": "string" }
+            ]
+          },
+          {
+            "SubjectId": "2",
+            "Username": "Benjamin",
+            "Password": "password123",
+            "Claims": [
+              { "Type": "name", "Value": "Benjamin", "ValueType": "string" },
+              { "Type": "email", "Value": "user1@leviia.local", "ValueType": "string" },
+              { "Type": "preferred_username", "Value": "Benjamin", "ValueType": "string" }
+            ]
+          },
+          {
+            "SubjectId": "3",
+            "Username": "Morgan",
+            "Password": "password123",
+            "Claims": [
+              { "Type": "name", "Value": "Morgan", "ValueType": "string" },
+              { "Type": "email", "Value": "user2@leviia.local", "ValueType": "string" },
+              { "Type": "preferred_username", "Value": "Morgan", "ValueType": "string" },
+              { "Type": "role", "Value": "admin", "ValueType": "string" }
+            ]
+          }
+        ]
+      
+      # Clients OIDC - doit correspondre à la configuration de Leviia Schedule
+      CLIENTS_CONFIGURATION_INLINE: |
+        [
+          {
+            "ClientId": "leviia-app",
+            "ClientSecrets": ["leviia-secret"],
+            "Description": "Leviia Schedule OIDC Client",
+            "AllowedGrantTypes": ["authorization_code"],
+            "RequirePkce": false,
+            "AllowAccessTokensViaBrowser": true,
+            "RedirectUris": ["http://localhost:5000/oidc/callback"],
+            "PostLogoutRedirectUris": ["http://localhost:5000"],
+            "AllowedScopes": ["openid", "profile", "email"],
+            "IdentityTokenLifetime": 3600,
+            "AccessTokenLifetime": 3600,
+            "RequireClientSecret": true
+          }
+        ]
+    networks:
+      - leviia-network
+
+networks:
+  leviia-network:
+    driver: bridge

@@ -44,7 +44,7 @@ class OIDCAuthLib:
             return
             
         if not OIDCConfig.is_configured():
-            logger.info("OIDC n'est pas configuré, saut de la configuration OAuth")
+            logger.warning("OIDC n'est pas configuré, saut de la configuration OAuth. Vérifiez que OIDC_ENABLED=true, OIDC_ISSUER, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET et OIDC_REDIRECT_URI sont définis.")
             return
         
         try:
@@ -53,6 +53,21 @@ class OIDCAuthLib:
             issuer_url = OIDCConfig.ISSUER.rstrip('/')
             server_metadata_url = f"{issuer_url}/.well-known/openid-configuration"
             
+            logger.info(f"Tentative de configuration OIDC avec issuer: {issuer_url}")
+            logger.info(f"URL de découverte: {server_metadata_url}")
+            
+            # Tester si l'URL de découverte est accessible
+            import requests
+            try:
+                response = requests.get(server_metadata_url, timeout=5)
+                response.raise_for_status()
+                logger.info("Document de découverte OIDC accessible")
+            except requests.RequestException as e:
+                logger.error(f"Impossible d'accéder au document de découverte OIDC: {e}")
+                logger.error(f"Vérifiez que OIDC_ISSUER={issuer_url} est correct et accessible depuis ce conteneur")
+                logger.error(f"Si vous utilisez Docker, assurez-vous que le service oidc-mock est démarré et accessible via le nom de service Docker")
+                return
+
             self.oidc_client = self.oauth.register(
                 name='oidc',
                 server_metadata_url=server_metadata_url,
@@ -75,16 +90,10 @@ class OIDCAuthLib:
             logger.error(f"Erreur lors de la configuration OAuth: {e}")
             self.oidc_client = None
     
-    def init_app(self, app):
-        """Initialise l'application Flask."""
-        self.app = app
-        self.oauth = OAuth(app)
-        self._configure_oauth()
-    
     def get_authorization_url(self, state=None, nonce=None):
         """Génère l'URL d'autorisation OIDC."""
         if not self.oidc_client:
-            logger.error("Client OIDC non configuré")
+            logger.error("Client OIDC non configuré. Vérifiez que la configuration OIDC est correcte.")
             return None
         
         try:
