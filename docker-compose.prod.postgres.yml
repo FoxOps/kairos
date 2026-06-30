@@ -1,19 +1,22 @@
 version: '3.8'
 
 # =============================================================================
-# Docker Compose pour la production
+# Docker Compose pour la production avec PostgreSQL
 # =============================================================================
 #
-# Ce fichier étend docker-compose.yml pour la production.
-# Il configure l'application pour un environnement sécurisé et performant.
+# Ce fichier configure Leviia Schedule pour un environnement de production
+# utilisant PostgreSQL comme base de données.
+#
+# PostgreSQL est recommandé pour la production, surtout avec plusieurs
+# workers Gunicorn.
 #
 # Usage:
-#   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#   docker compose -f docker-compose.yml -f docker-compose.prod.postgres.yml up -d
 #
 
 services:
   web:
-    # Override pour la production
+    # Override pour la production avec PostgreSQL
     environment:
       - FLASK_ENV=production
       - FLASK_DEBUG=0
@@ -32,7 +35,7 @@ services:
       - WTF_CSRF_ENABLED=true
       
       # Configuration PostgreSQL pour la production
-      - DATABASE_URL=postgresql://leviia:leviia-pass@db:5432/leviia
+      - DATABASE_URL=postgresql://leviia:${POSTGRES_PASSWORD:-leviia-pass}@db:5432/leviia
       
       # Configuration du cache Redis
       - CACHE_TYPE=RedisCache
@@ -41,8 +44,10 @@ services:
       # Configuration des données par défaut (à changer !)
       - DEFAULT_ADMIN_EMAIL=admin@leviia.local
       - DEFAULT_ADMIN_PASSWORD=${ADMIN_PASSWORD:-changez-moi}
+      - DEFAULT_GROUP_NAME=Defaut
     
     # Utiliser Gunicorn comme serveur WSGI pour la production
+    # Avec PostgreSQL, on peut utiliser plusieurs workers
     command: gunicorn --bind 0.0.0.0:5000 --workers 4 --threads 2 --timeout 120 --log-level info run:app
     
     # Limiter les ressources
@@ -55,76 +60,62 @@ services:
           cpus: '0.5'
           memory: 256M
     
-    # Configuration pour le reverse proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.leviia.rule=Host(`leviia.example.com`)"
-      - "traefik.http.routers.leviia.entrypoints=websecure"
-      - "traefik.http.routers.leviia.tls=true"
-      - "traefik.http.services.leviia.loadbalancer.server.port=5000"
-
-  # ===========================================================================
-  # Nginx comme reverse proxy (optionnel)
-  # ===========================================================================
-  nginx:
-    image: nginx:alpine
-    container_name: leviia-schedule-nginx
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./certs:/etc/nginx/certs:ro
     depends_on:
-      - web
-    networks:
-      - leviia-network
-    profiles:
-      - nginx
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   # ===========================================================================
-  # Backup automatique de la base de données
+  # Base de données PostgreSQL
   # ===========================================================================
-  backup:
+  db:
     image: postgres:15-alpine
-    container_name: leviia-schedule-backup
+    container_name: leviia-schedule-db
     restart: unless-stopped
     environment:
-      - POSTGRES_HOST=db
-      - POSTGRES_USER=leviia
-      - POSTGRES_PASSWORD=leviia-pass
-      - POSTGRES_DB=leviia
+      - POSTGRES_DB=${POSTGRES_DB:-leviia}
+      - POSTGRES_USER=${POSTGRES_USER:-leviia}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-leviia-pass}
     volumes:
-      - ./backups:/backups
-    command: >
-      sh -c 'while true; do 
-        pg_dump -h $$POSTGRES_HOST -U $$POSTGRES_USER -d $$POSTGRES_DB > /backups/leviia-$$(date +%Y%m%d-%H%M%S).sql && 
-        find /backups -type f -mtime +7 -delete && 
-        sleep 86400; 
-      done'
+      # Persistance des données PostgreSQL
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - leviia-network
-    profiles:
-      - backup
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U leviia -d leviia"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+
+  # ===========================================================================
+  # Redis pour le cache
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: leviia-schedule-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - leviia-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
 # ===========================================================================
-# Volumes pour la production
+# Volumes pour la production avec PostgreSQL
 # ===========================================================================
 volumes:
   postgres_data:
     driver: local
-    driver_opts:
-      type: none
-      device: ./data/postgres
-      o: bind
   redis_data:
     driver: local
-    driver_opts:
-      type: none
-      device: ./data/redis
-      o: bind
 
 # ===========================================================================
 # Réseau (hérité du fichier principal)

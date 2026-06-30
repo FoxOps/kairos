@@ -4,15 +4,16 @@ version: '3.8'
 # Docker Compose pour Leviia Schedule
 # =============================================================================
 #
-# Ce fichier permet de déployer Leviia Schedule avec tous ses services
-# dépendants (base de données, Redis, etc.) en une seule commande.
+# Ce fichier contient la configuration de base commune à tous les environnements.
 #
-# Usage:
-#   Développement: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-#   Production:    docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Pour le développement:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 #
-# Pour arrêter: docker-compose down
-# Pour voir les logs: docker-compose logs -f
+# Pour la production avec SQLite:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.sqlite.yml up -d
+#
+# Pour la production avec PostgreSQL:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.postgres.yml up -d
 #
 
 services:
@@ -29,18 +30,18 @@ services:
       - "5000:5000"
     environment:
       # Configuration de base
-      - FLASK_ENV=${FLASK_ENV:-production}
+      - FLASK_ENV=${FLASK_ENV:-development}
       - SECRET_KEY=${SECRET_KEY:-changez-moi-en-production}
       
-      # Base de données (par défaut: PostgreSQL)
-      - DATABASE_URL=${DATABASE_URL:-postgresql://leviia:leviia-pass@db:5432/leviia}
+      # Base de données (à surcharger dans les fichiers spécifiques)
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///app.db}
       
       # Configuration des logs
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - LOG_DIR=${LOG_DIR:-/app/logs}
       
       # Sécurité
-      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-true}
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-false}
       - SESSION_COOKIE_HTTPONLY=${SESSION_COOKIE_HTTPONLY:-true}
       - SESSION_COOKIE_SAMESITE=${SESSION_COOKIE_SAMESITE:-Lax}
       
@@ -56,14 +57,10 @@ services:
       - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-admin123}
       - DEFAULT_GROUP_NAME=${DEFAULT_GROUP_NAME:-Defaut}
     volumes:
-      # Persistance des données (SQLite) et logs
-      - ./data:/app/data
+      # Persistance des logs
       - ./logs:/app/logs
       # Pour le développement: monter le code source
       - .:/app:ro
-    depends_on:
-      db:
-        condition: service_healthy
     networks:
       - leviia-network
     healthcheck:
@@ -72,59 +69,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
-  # ===========================================================================
-  # Base de données PostgreSQL
-  # ===========================================================================
-  db:
-    image: postgres:15-alpine
-    container_name: leviia-schedule-db
-    restart: unless-stopped
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB:-leviia}
-      - POSTGRES_USER=${POSTGRES_USER:-leviia}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-leviia-pass}
-    volumes:
-      # Persistance des données PostgreSQL
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - leviia-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U leviia -d leviia"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    ports:
-      - "5432:5432"
-
-  # ===========================================================================
-  # Redis pour le cache (optionnel)
-  # ===========================================================================
-  redis:
-    image: redis:7-alpine
-    container_name: leviia-schedule-redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
-    networks:
-      - leviia-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    ports:
-      - "6379:6379"
-
-# ===========================================================================
-# Volumes pour la persistance des données
-# ===========================================================================
-volumes:
-  postgres_data:
-    driver: local
-  redis_data:
-    driver: local
 
 # ===========================================================================
 # Réseau dédié

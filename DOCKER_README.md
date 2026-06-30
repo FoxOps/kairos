@@ -9,6 +9,8 @@
   - [Variables d'environnement](#variables-denvironnement)
   - [Configuration pour le développement](#configuration-pour-le-développement)
   - [Configuration pour la production](#configuration-pour-la-production)
+    - [Production avec SQLite](#production-avec-sqlite)
+    - [Production avec PostgreSQL](#production-avec-postgresql)
 - [Commandes Docker](#commandes-docker)
 - [Architecture](#architecture)
 - [Sécurité](#sécurité)
@@ -26,7 +28,7 @@ Ce guide explique comment déployer **Leviia Schedule** avec Docker. L'applicati
 ✅ **Isolation** : Chaque service (web, base de données, cache) fonctionne dans son propre conteneur
 ✅ **Portabilité** : Déploiement identique sur tous les environnements (dev, staging, prod)
 ✅ **Reproductibilité** : Pas de problèmes de "ça marche chez moi"
-✅ **Scalabilité** : Facile à mettre à l'échelle avec Kubernetes ou Docker Swarm
+✅ **Scalabilité** : Facile à mettre à l'échelle
 ✅ **Gestion simplifiée** : Une seule commande pour démarrer tous les services
 
 ---
@@ -88,37 +90,6 @@ python -c "import secrets; print('DEFAULT_ADMIN_PASSWORD=' + secrets.token_urlsa
 nano .env
 ```
 
-### 3. Construire et démarrer les conteneurs
-
-#### Développement :
-
-```bash
-# Démarrer tous les services en mode développement
-make -f Makefile.docker up-dev
-
-# Ou avec docker compose directement
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-```
-
-#### Production :
-
-```bash
-# Démarrer tous les services en mode production
-make -f Makefile.docker up-prod
-
-# Ou avec docker compose directement
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-```
-
-### 4. Accéder à l'application
-
-- **Développement** : http://localhost:5000
-- **Production** : https://leviia.example.com (à configurer)
-
-Identifiants par défaut :
-- Email : `admin@leviia.local`
-- Mot de passe : `admin123` (à changer immédiatement en production !)
-
 ---
 
 ## ⚙️ Configuration
@@ -135,7 +106,7 @@ Le projet utilise les variables d'environnement pour la configuration. Voici les
 | `FLASK_ENV` | Environnement (development/production) | development | ❌ |
 | `DATABASE_URL` | URL de la base de données | sqlite:///app.db | ❌ |
 
-#### Base de données
+#### Base de données (PostgreSQL)
 
 | Variable | Description | Valeur par défaut | Requis |
 |----------|-------------|-------------------|--------|
@@ -149,6 +120,7 @@ Le projet utilise les variables d'environnement pour la configuration. Voici les
 |----------|-------------|-------------------|--------|
 | `SESSION_COOKIE_SECURE` | Cookies sécurisés (HTTPS) | true | ✅ Production |
 | `SESSION_COOKIE_HTTPONLY` | Cookies HTTP-only | true | ✅ Production |
+| `SESSION_COOKIE_SAMESITE` | Politique SameSite | Lax | ✅ Production |
 | `RATE_LIMIT_ENABLED` | Activer le rate limiting | true | ❌ |
 | `WTF_CSRF_ENABLED` | Activer la protection CSRF | true | ✅ Production |
 
@@ -176,22 +148,57 @@ Pour démarrer :
 make -f Makefile.docker up-dev
 ```
 
+Ou avec docker compose directement :
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+```
+
 ### Configuration pour la production
 
-Le fichier `docker-compose.prod.yml` configure :
+Deux options sont disponibles pour la production :
 
-- Mode production
-- Utilisation de PostgreSQL
-- Gunicorn comme serveur WSGI (4 workers, 2 threads)
-- Cache Redis activé
-- Sécurité maximale (HTTPS, cookies sécurisés, etc.)
-- Reverse proxy Nginx (optionnel)
-- Backup automatique de la base de données (optionnel)
+#### Production avec SQLite
+
+**⚠️ Attention** : SQLite n'est pas recommandé pour la production avec plusieurs workers Gunicorn. Utilisez cette option uniquement pour des environnements avec une charge légère ou un seul worker.
+
+Le fichier `docker-compose.prod.sqlite.yml` configure :
+- Gunicorn avec 1 worker (pour éviter les problèmes de verrouillage SQLite)
+- SQLite comme base de données
+- Persistance des données dans `./data/`
 
 Pour démarrer :
 
 ```bash
-make -f Makefile.docker up-prod
+make -f Makefile.docker up-prod-sqlite
+```
+
+Ou avec docker compose :
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.sqlite.yml up -d
+```
+
+#### Production avec PostgreSQL
+
+**✅ Recommandé** : PostgreSQL est la solution idéale pour la production, surtout avec plusieurs workers.
+
+Le fichier `docker-compose.prod.postgres.yml` configure :
+- Gunicorn avec 4 workers et 2 threads par worker
+- PostgreSQL comme base de données
+- Redis pour le cache
+- Persistance des données PostgreSQL et Redis
+
+Pour démarrer :
+
+```bash
+make -f Makefile.docker up-prod-pg
+```
+
+Ou avec docker compose :
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.postgres.yml up -d
 ```
 
 ---
@@ -203,21 +210,30 @@ make -f Makefile.docker up-prod
 | Commande | Description |
 |----------|-------------|
 | `make -f Makefile.docker build` | Construire l'image Docker |
-| `make -f Makefile.docker up` | Démarrer les services |
 | `make -f Makefile.docker up-dev` | Démarrer en mode développement |
-| `make -f Makefile.docker up-prod` | Démarrer en mode production |
-| `make -f Makefile.docker down` | Arrêter les services |
-| `make -f Makefile.docker restart` | Redémarrer les services |
-| `make -f Makefile.docker logs` | Afficher les logs |
-| `make -f Makefile.docker shell` | Ouvrir un shell dans le conteneur |
+| `make -f Makefile.docker down-dev` | Arrêter le développement |
+| `make -f Makefile.docker up-prod-pg` | Démarrer en production (PostgreSQL) |
+| `make -f Makefile.docker up-prod-sqlite` | Démarrer en production (SQLite) |
+| `make -f Makefile.docker down-prod-pg` | Arrêter la production (PostgreSQL) |
+| `make -f Makefile.docker down-prod-sqlite` | Arrêter la production (SQLite) |
 
-### Commandes de base de données
+### Commandes de service
 
 | Commande | Description |
 |----------|-------------|
-| `make -f Makefile.docker db-shell` | Ouvrir un shell PostgreSQL |
-| `make -f Makefile.docker db-backup` | Créer une sauvegarde |
-| `make -f Makefile.docker db-restore FILE=backup.sql` | Restaurer une sauvegarde |
+| `make -f Makefile.docker logs` | Afficher les logs |
+| `make -f Makefile.docker logs-web` | Afficher les logs du service web |
+| `make -f Makefile.docker shell` | Ouvrir un shell dans le conteneur |
+| `make -f Makefile.docker bash` | Ouvrir un bash dans le conteneur |
+| `make -f Makefile.docker ps` | Lister les conteneurs |
+
+### Commandes de base de données (PostgreSQL)
+
+| Commande | Description |
+|----------|-------------|
+| `make -f Makefile.docker db-shell-pg` | Ouvrir un shell PostgreSQL |
+| `make -f Makefile.docker db-backup-pg` | Créer une sauvegarde |
+| `make -f Makefile.docker db-restore-pg FILE=backup.sql` | Restaurer une sauvegarde |
 
 ### Commandes de test et qualité
 
@@ -231,37 +247,49 @@ make -f Makefile.docker up-prod
 
 | Commande | Description |
 |----------|-------------|
-| `make -f Makefile.docker rebuild` | Reconstruire et redémarrer |
-| `make -f Makefile.docker migrate` | Appliquer les migrations |
-| `make -f Makefile.docker init-db` | Initialiser la base de données |
+| `make -f Makefile.docker rebuild` | Reconstruire et redémarrer (dev) |
+| `make -f Makefile.docker rebuild-prod-pg` | Reconstruire et redémarrer (prod PostgreSQL) |
+| `make -f Makefile.docker rebuild-prod-sqlite` | Reconstruire et redémarrer (prod SQLite) |
 | `make -f Makefile.docker clean` | Nettoyer les ressources inutilisées |
 
 ---
 
 ## 🏗️ Architecture
 
-### Schéma des services
+### Schéma des services (Production avec PostgreSQL)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        Reverse Proxy (Nginx)                   │
-│                         (Optionnel en production)             │
-└─────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────┐
 │                        Application Web                         │
 │  ┌─────────────┐    ┌─────────────┐    ┌───────────────────┐  │
-│  │   Flask     │    │  Gunicorn   │    │  Static Files     │  │
-│  │  (Dev)      │    │  (Prod)     │    │  (CSS, JS, etc.)   │  │
+│  │   Gunicorn   │    │   Flask     │    │  Static Files     │  │
+│  │  (4 workers) │    │  (Dev)      │    │  (CSS, JS, etc.)   │  │
 │  └─────────────┘    └─────────────┘    └───────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
-         │                          │                          │
-         ▼                          ▼                          ▼
-┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
-│   PostgreSQL     │   │     Redis       │   │   Volume        │
-│   (Production)   │   │   (Cache)       │   │   (Données)     │
-└─────────────────┘   └─────────────────┘   └─────────────────┘
+         │                          │
+         ▼                          ▼
+┌─────────────────┐   ┌─────────────────┐
+│   PostgreSQL     │   │     Redis       │
+│   (Production)   │   │   (Cache)       │
+└─────────────────┘   └─────────────────┘
+```
+
+### Schéma des services (Production avec SQLite)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Application Web                         │
+│  ┌─────────────┐    ┌───────────────────┐                  │
+│  │   Gunicorn   │    │  Static Files     │                  │
+│  │  (1 worker)  │    │  (CSS, JS, etc.)   │                  │
+│  └─────────────┘    └───────────────────┘                  │
+└─────────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│   SQLite         │
+│   (Fichier DB)   │
+└─────────────────┘
 ```
 
 ### Ports utilisés
@@ -269,9 +297,8 @@ make -f Makefile.docker up-prod
 | Service | Port interne | Port externe | Description |
 |---------|--------------|--------------|-------------|
 | Web | 5000 | 5000 | Application Flask/Gunicorn |
-| PostgreSQL | 5432 | 5432 | Base de données |
-| Redis | 6379 | 6379 | Cache |
-| Nginx | 80/443 | 80/443 | Reverse proxy (optionnel) |
+| PostgreSQL | 5432 | 5432 | Base de données (uniquement avec PostgreSQL) |
+| Redis | 6379 | 6379 | Cache (uniquement avec PostgreSQL) |
 
 ---
 
@@ -290,42 +317,23 @@ make -f Makefile.docker up-prod
    ```
 
 3. **HTTPS** : Toujours utiliser HTTPS en production
-   - Configurer Nginx avec des certificats SSL valides
-   - Utiliser Let's Encrypt pour des certificats gratuits
+   - Le reverse proxy (Nginx, Traefik, etc.) doit être configuré séparément
+   - Configurer `PREFERRED_URL_SCHEME=https`
+   - Configurer `SESSION_COOKIE_SECURE=true`
 
 4. **Base de données** : 
-   - Ne jamais utiliser SQLite en production avec plusieurs workers
-   - Utiliser PostgreSQL ou MariaDB
-   - Configurer des sauvegardes automatiques
+   - **PostgreSQL recommandé** pour la production avec plusieurs workers
+   - **SQLite** uniquement pour des environnements légers ou un seul worker
+   - Configurer des sauvegardes automatiques pour PostgreSQL
 
 5. **Réseau** :
    - Limiter l'accès aux ports de la base de données
    - Utiliser des réseaux Docker dédiés
+   - Ne pas exposer les ports de PostgreSQL et Redis en production
 
 6. **Mises à jour** :
    - Garder Docker et les images à jour
    - Mettre à jour régulièrement les dépendances
-
-### Configuration SSL avec Let's Encrypt
-
-1. Installer Certbot :
-   ```bash
-   sudo apt-get install certbot
-   ```
-
-2. Obtenir un certificat :
-   ```bash
-   sudo certbot certonly --standalone -d leviia.example.com
-   ```
-
-3. Copier les certificats dans le dossier `certs/` :
-   ```bash
-   sudo cp /etc/letsencrypt/live/leviia.example.com/fullchain.pem certs/leviia.crt
-   sudo cp /etc/letsencrypt/live/leviia.example.com/privkey.pem certs/leviia.key
-   sudo chmod 644 certs/leviia.key
-   ```
-
-4. Configurer Nginx pour utiliser les certificats (déjà configuré dans `nginx/conf.d/leviia.conf`)
 
 ---
 
@@ -342,11 +350,12 @@ make -f Makefile.docker up-prod
 # Donner les permissions à l'utilisateur courant
 sudo chown -R $USER:$USER .
 
-# Ou démarrer avec l'utilisateur root (non recommandé)
-docker compose -f docker-compose.yml up -d --user root
+# Créer les répertoires nécessaires
+mkdir -p data logs
+chmod -R 755 data logs
 ```
 
-#### 2. La base de données ne se connecte pas
+#### 2. La base de données PostgreSQL ne se connecte pas
 
 **Symptôme** : Erreur de connexion à PostgreSQL
 
@@ -355,6 +364,7 @@ docker compose -f docker-compose.yml up -d --user root
 - Vérifier les logs : `docker compose logs db`
 - Attendre que PostgreSQL soit prêt (healthcheck)
 - Vérifier les variables d'environnement dans `.env`
+- Vérifier que le mot de passe PostgreSQL est correct
 
 #### 3. L'application ne démarre pas
 
@@ -364,6 +374,7 @@ docker compose -f docker-compose.yml up -d --user root
 - Vérifier les logs : `docker compose logs web`
 - Vérifier que toutes les dépendances sont installées
 - Vérifier la configuration de la base de données
+- Vérifier que le fichier `.env` contient les bonnes variables
 
 #### 4. Problème de port déjà utilisé
 
@@ -374,6 +385,15 @@ docker compose -f docker-compose.yml up -d --user root
 - Arrêter le processus : `kill <PID>`
 - Ou changer le port dans `docker-compose.yml`
 
+#### 5. Problèmes avec SQLite en production
+
+**Symptôme** : Erreurs "database is locked" avec SQLite
+
+**Solution** :
+- Utiliser PostgreSQL à la place
+- Ou limiter à 1 worker Gunicorn (déjà configuré dans `docker-compose.prod.sqlite.yml`)
+- Vérifier que le volume `./data` est correctement monté
+
 ### Commandes de diagnostic
 
 ```bash
@@ -382,6 +402,10 @@ docker compose ps
 
 # Vérifier les logs
 docker compose logs
+
+# Vérifier les logs d'un service spécifique
+docker compose logs web
+docker compose logs db
 
 # Vérifier les ressources
 docker stats
@@ -404,7 +428,7 @@ docker network ls
 
 1. Arrêter les services :
    ```bash
-   make -f Makefile.docker down
+   make -f Makefile.docker down-prod-pg  # ou down-prod-sqlite
    ```
 
 2. Mettre à jour le code :
@@ -414,7 +438,7 @@ docker network ls
 
 3. Reconstruire et redémarrer :
    ```bash
-   make -f Makefile.docker rebuild
+   make -f Makefile.docker rebuild-prod-pg  # ou rebuild-prod-sqlite
    ```
 
 ### Mettre à jour les dépendances
@@ -429,7 +453,7 @@ docker network ls
 
 2. Reconstruire l'image :
    ```bash
-   make -f Makefile.docker rebuild
+   make -f Makefile.docker rebuild-prod-pg  # ou rebuild-prod-sqlite
    ```
 
 ---
