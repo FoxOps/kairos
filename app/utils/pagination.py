@@ -72,33 +72,7 @@ class PaginationConfig:
         """Charge la configuration depuis les variables d'environnement."""
         import os
         
-        def get_int(env_var, default=0):
-            value = os.environ.get(env_var, '')
-            try:
-                return int(value) if value else default
-            except ValueError:
-                return default
         
-        def get_list(env_var, default=None):
-            value = os.environ.get(env_var, '')
-            if not value:
-                return default
-            try:
-                return json.loads(value)
-            except json.JSONDecodeError:
-                # Essayer de parser comme une liste séparée par des virgules
-                return [int(x.strip()) for x in value.split(',') if x.strip().isdigit()]
-        
-        cls.DEFAULT_PER_PAGE = get_int('PAGINATION_DEFAULT_PER_PAGE', cls.DEFAULT_PER_PAGE)
-        cls.MAX_PER_PAGE = get_int('PAGINATION_MAX_PER_PAGE', cls.MAX_PER_PAGE)
-        cls.PER_PAGE_OPTIONS = get_list('PAGINATION_PER_PAGE_OPTIONS', cls.PER_PAGE_OPTIONS)
-        cls.CURSOR_PAGE_SIZE = get_int('PAGINATION_CURSOR_PAGE_SIZE', cls.CURSOR_PAGE_SIZE)
-        cls.LAZY_LOAD_THRESHOLD = get_int('PAGINATION_LAZY_LOAD_THRESHOLD', cls.LAZY_LOAD_THRESHOLD)
-        cls.LAZY_LOAD_BATCH_SIZE = get_int('PAGINATION_LAZY_LOAD_BATCH_SIZE', cls.LAZY_LOAD_BATCH_SIZE)
-        cls.PAGINATION_WINDOW = get_int('PAGINATION_WINDOW', cls.PAGINATION_WINDOW)
-        cls.PAGINATION_STYLE = os.environ.get('PAGINATION_STYLE', cls.PAGINATION_STYLE)
-
-
 # Charger la configuration depuis l'environnement
 PaginationConfig.from_env()
 

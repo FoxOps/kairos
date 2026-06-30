@@ -1,4 +1,5 @@
 from app import app, db
+import secrets
 
 # Importer les modèles pour enregistrer les tables avec SQLAlchemy
 from app.models import Group, User, ShiftType, Shift, OnCall, Leave
@@ -63,7 +64,7 @@ def create_default_data():
         
         # Créer l'utilisateur admin par défaut
         default_admin_email = os.environ.get("DEFAULT_ADMIN_EMAIL") or "admin@leviia.local"
-        default_admin_password = os.environ.get("DEFAULT_ADMIN_PASSWORD") or "admin123"
+        default_admin_password = os.environ.get("DEFAULT_ADMIN_PASSWORD") or secrets.token_urlsafe(16)
         
         admin_user = User.query.filter_by(email=default_admin_email).first()
         if not admin_user:

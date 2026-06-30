@@ -1,25 +1,19 @@
-from flask import Flask, render_template, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
-from flask_compress import Compress
+import logging
+import os
+
+from flask import Flask
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import time
-import sqlite3
-import logging
-from logging.handlers import RotatingFileHandler, SysLogHandler
-import os
-import traceback
-import re
-from datetime import datetime
+from flask_login import LoginManager
+from flask_sqlalchemy import SQLAlchemy
 
 # Initialisation de la base de données
 db = SQLAlchemy()
 
 # Initialisation de Flask-Login
 login_manager = LoginManager()
-login_manager.login_view = "login"  # Route pour la page de login
-login_manager.login_message_category = "danger"  # Catégorie pour les messages flash
+login_manager.login_view = "login"
+login_manager.login_message_category = "danger"
 
 # Initialisation du cache
 from app.utils.cache import cache, init_cache, CacheConfig

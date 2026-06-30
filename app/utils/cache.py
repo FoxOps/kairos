@@ -89,18 +89,9 @@ class CacheConfig:
     @classmethod
     def from_env(cls):
         """Charge la configuration depuis les variables d'environnement."""
+        from app.utils.env_helpers import get_bool, get_int
         import os
-        
-        def get_bool(env_var, default=False):
-            value = os.environ.get(env_var, '').lower()
-            return value in ('true', '1', 'yes', 'y', 'on') if value else default
-        
-        def get_int(env_var, default=0):
-            value = os.environ.get(env_var, '')
-            try:
-                return int(value) if value else default
-            except ValueError:
-                return default
+        import json
         
         cls.CACHE_TYPE = os.environ.get('CACHE_TYPE', cls.CACHE_TYPE)
         cls.CACHE_DEFAULT_TIMEOUT = get_int('CACHE_DEFAULT_TIMEOUT', cls.CACHE_DEFAULT_TIMEOUT)

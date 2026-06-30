@@ -989,48 +989,7 @@ class DataCleanupConfig:
         """Charge la configuration depuis les variables d'environnement."""
         import os
         
-        def get_bool(env_var, default=False):
-            value = os.environ.get(env_var, '').lower()
-            return value in ('true', '1', 'yes', 'y', 'on') if value else default
         
-        def get_int(env_var, default=0):
-            value = os.environ.get(env_var, '')
-            try:
-                return int(value) if value else default
-            except ValueError:
-                return default
-        
-        def parse_retention(retention_str):
-            """Parse une chaîne de rétention (ex: '1y', '6m', '30d') en jours."""
-            if not retention_str:
-                return cls.RETENTION_DAYS
-            
-            retention_str = retention_str.lower().strip()
-            
-            if retention_str.endswith('y'):
-                years = int(retention_str[:-1])
-                return years * 365
-            elif retention_str.endswith('m'):
-                months = int(retention_str[:-1])
-                return months * 30
-            elif retention_str.endswith('d'):
-                days = int(retention_str[:-1])
-                return days
-            else:
-                try:
-                    return int(retention_str)
-                except ValueError:
-                    return cls.RETENTION_DAYS
-        
-        cls.ENABLED = get_bool('DATA_CLEANUP_ENABLED', cls.ENABLED)
-        
-        retention_str = os.environ.get('DATA_CLEANUP_RETENTION', f'{cls.RETENTION_DAYS}d')
-        cls.RETENTION_DAYS = parse_retention(retention_str)
-        
-        cls.BATCH_SIZE = get_int('DATA_CLEANUP_BATCH_SIZE', cls.BATCH_SIZE)
-        cls.SCHEDULE = os.environ.get('DATA_CLEANUP_SCHEDULE', cls.SCHEDULE)
-
-
 # Charger la configuration depuis l'environnement
 DataCleanupConfig.from_env()
 

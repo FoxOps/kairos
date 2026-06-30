@@ -75,34 +75,7 @@ class PerformanceMonitorConfig:
         """Charge la configuration depuis les variables d'environnement."""
         import os
         
-        def get_bool(env_var, default=False):
-            value = os.environ.get(env_var, '').lower()
-            return value in ('true', '1', 'yes', 'y', 'on') if value else default
         
-        def get_float(env_var, default=0.0):
-            value = os.environ.get(env_var, '')
-            try:
-                return float(value) if value else default
-            except ValueError:
-                return default
-        
-        def get_int(env_var, default=0):
-            value = os.environ.get(env_var, '')
-            try:
-                return int(value) if value else default
-            except ValueError:
-                return default
-        
-        cls.ENABLED = get_bool('PERFORMANCE_MONITORING_ENABLED', cls.ENABLED)
-        cls.SLOW_QUERY_THRESHOLD = get_float('SLOW_QUERY_THRESHOLD', cls.SLOW_QUERY_THRESHOLD)
-        cls.WARNING_THRESHOLD = get_float('PERFORMANCE_WARNING_THRESHOLD', cls.WARNING_THRESHOLD)
-        cls.MAX_REQUESTS_STORED = get_int('PERFORMANCE_MAX_REQUESTS_STORED', cls.MAX_REQUESTS_STORED)
-        cls.STATS_RETENTION = get_int('PERFORMANCE_STATS_RETENTION', cls.STATS_RETENTION)
-        cls.LOG_SLOW_QUERIES = get_bool('PERFORMANCE_LOG_SLOW_QUERIES', cls.LOG_SLOW_QUERIES)
-        cls.LOG_STATISTICS = get_bool('PERFORMANCE_LOG_STATISTICS', cls.LOG_STATISTICS)
-        cls.STATS_LOG_INTERVAL = get_int('PERFORMANCE_STATS_LOG_INTERVAL', cls.STATS_LOG_INTERVAL)
-
-
 # Charger la configuration depuis l'environnement
 PerformanceMonitorConfig.from_env()
 
