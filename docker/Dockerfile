@@ -11,7 +11,7 @@
 #
 
 # ============================================================================
-# STAGE 1: Build - Installation des dépendances et compilation
+# STAGE 1: Build - Installation des dépendances
 # ============================================================================
 FROM python:3.11-slim as builder
 
@@ -21,16 +21,12 @@ ENV PYTHONFAULTHANDLER=1 \
     PYTHONHASHSEED=randomized \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_DEFAULT_TIMEOUT=100 \
-    POETRY_VERSION=1.8.3
+    PIP_DEFAULT_TIMEOUT=100
 
 # Installer les dépendances système nécessaires
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
-
-# Créer et activer un utilisateur non-root pour la sécurité
-RUN useradd --create-home --shell /bin/bash appuser
 
 # Créer le répertoire de travail
 WORKDIR /app
@@ -38,8 +34,9 @@ WORKDIR /app
 # Copier les fichiers de dépendances
 COPY requirements.txt .
 
-# Installer les dépendances Python dans un répertoire temporaire
-RUN pip install --user -r requirements.txt
+# Créer un virtual environment et installer les dépendances
+RUN python -m venv /opt/venv
+RUN /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
 
 # ============================================================================
 # STAGE 2: Runtime - Image finale optimisée
@@ -68,14 +65,11 @@ RUN useradd --create-home --shell /bin/bash appuser
 WORKDIR /app
 RUN mkdir -p /app/data /app/logs /app/instance
 
-# Copier les dépendances Python depuis le stage builder
-COPY --from=builder /root/.local /home/appuser/.local
+# Copier le virtual environment depuis le stage builder
+COPY --from=builder /opt/venv /opt/venv
 
-# Rendre les scripts dans .local exécutables
-RUN chmod -R +x /home/appuser/.local/bin
-
-# Ajouter .local/bin au PATH
-ENV PATH=/home/appuser/.local/bin:$PATH
+# Rendre les scripts exécutables
+RUN chmod -R +x /opt/venv/bin
 
 # Copier l'application
 COPY --chown=appuser:appuser . .
@@ -86,8 +80,11 @@ RUN chown -R appuser:appuser /app/data /app/logs /app/instance
 # Basculer vers l'utilisateur non-root
 USER appuser
 
+# Ajouter le virtual environment au PATH
+ENV PATH=/opt/venv/bin:$PATH
+
 # Définir le point d'entrée
-ENTRYPOINT ["python"]
+ENTRYPOINT ["/opt/venv/bin/python"]
 CMD ["run.py"]
 
 # Exposer le port par défaut de Flask
