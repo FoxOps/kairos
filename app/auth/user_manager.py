@@ -46,11 +46,11 @@ class UserManager:
                 pass  # Les utilisateurs OIDC n'ont pas de mot de passe local
             
             # Synchroniser les groupes si configuré
-            if str(OIDCConfig.GROUPS_CLAIM) and 'groups' in user_data:  # ✅ Convertir en str
+            if OIDCConfig.GROUPS_CLAIM and 'groups' in user_data:
                 self._sync_user_groups(user, user_data['groups'])
             
             # Synchroniser les rôles si configuré
-            if str(OIDCConfig.ROLES_CLAIM) and 'roles' in user_data:  # ✅ Convertir en str
+            if OIDCConfig.ROLES_CLAIM and 'roles' in user_data:
                 self._sync_user_roles(user, user_data['roles'])
             
             db.session.commit()
@@ -73,11 +73,11 @@ class UserManager:
                 user.group_id = default_group.id
             
             # Synchroniser les groupes si configuré
-            if str(OIDCConfig.GROUPS_CLAIM) and 'groups' in user_data:  # ✅ Convertir en str
+            if OIDCConfig.GROUPS_CLAIM and 'groups' in user_data:
                 self._sync_user_groups(user, user_data['groups'])
             
             # Synchroniser les rôles si configuré
-            if str(OIDCConfig.ROLES_CLAIM) and 'roles' in user_data:  # ✅ Convertir en str
+            if OIDCConfig.ROLES_CLAIM and 'roles' in user_data:
                 self._sync_user_roles(user, user_data['roles'])
             
             db.session.add(user)

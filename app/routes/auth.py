@@ -8,7 +8,7 @@ from app.auth.oidc_auth import oidc_auth
 
 def is_basic_auth_disabled():
     """Vérifie si l'authentification basique est désactivée."""
-    return bool(OIDCConfig.ENABLED) and bool(OIDCConfig.DISABLE_BASIC_AUTH)  # ✅ Convertir en bool
+    return OIDCConfig.ENABLED and OIDCConfig.DISABLE_BASIC_AUTH
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -43,7 +43,7 @@ def login():
         else:
             flash("e94c Email ou mot de passe incorrect.", "danger")
 
-    return render_template("auth/login.html", oidc_enabled=bool(OIDCConfig.ENABLED))  # ✅ Convertir en bool
+    return render_template("auth/login.html", oidc_enabled=OIDCConfig.ENABLED)
 
 
 @app.route("/oidc/login")
@@ -52,7 +52,7 @@ def oidc_login():
     if current_user.is_authenticated:
         return redirect(url_for("index"))
     
-    if not bool(OIDCConfig.ENABLED) or not OIDCConfig.is_configured():  # ✅ Convertir en bool
+    if not OIDCConfig.ENABLED or not OIDCConfig.is_configured():
         flash("L'authentification OIDC n'est pas configurée.", "danger")
         return redirect(url_for("login"))
     
@@ -71,7 +71,7 @@ def oidc_callback():
     if current_user.is_authenticated:
         return redirect(url_for("index"))
     
-    if not bool(OIDCConfig.ENABLED) or not OIDCConfig.is_configured():  # ✅ Convertir en bool
+    if not OIDCConfig.ENABLED or not OIDCConfig.is_configured():
         flash("L'authentification OIDC n'est pas configurée.", "danger")
         return redirect(url_for("login"))
     
@@ -100,7 +100,7 @@ def oidc_callback():
 def logout():
     """Déconnexion."""
     # Déconnexion OIDC si nécessaire
-    if bool(OIDCConfig.ENABLED):  # ✅ Convertir en bool
+    if OIDCConfig.ENABLED:
         # Pour une déconnexion complète OIDC, il faudrait rediriger vers 
         # l'endpoint de fin de session du fournisseur OIDC
         # Pour l'instant, on se contente de la déconnexion locale
