@@ -2,61 +2,6 @@
 
 {% block title %}Tableau de bord - Leviia{% endblock %}
 
-{% block extra_css %}
-<style>
-    /* Styles minimaux - respect strict de Bulma */
-    .stat-number {
-        font-size: 2.5rem;
-        font-weight: bold;
-    }
-    .stat-label {
-        font-size: 0.9rem;
-        color: var(--text-secondary, #4a4a4a);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    .upcoming-item {
-        border-left: 3px solid var(--color-primary, #00d1b2);
-        padding-left: 1rem;
-        margin-bottom: 0.75rem;
-    }
-    .chart-container {
-        height: 200px;
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-around;
-        padding: 1rem 0;
-    }
-    .chart-bar {
-        flex: 1;
-        margin: 0 0.25rem;
-        background-color: var(--color-primary, #00d1b2);
-        border-radius: 4px 4px 0 0;
-        position: relative;
-    }
-    .chart-bar-label {
-        text-align: center;
-        font-size: 0.75rem;
-        margin-top: 0.5rem;
-        color: var(--text-secondary, #4a4a4a);
-    }
-    .chart-value {
-        position: absolute;
-        top: -25px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 0.85rem;
-        font-weight: bold;
-        color: var(--color-primary, #00d1b2);
-    }
-    .empty-state {
-        text-align: center;
-        padding: 2rem;
-        color: var(--text-secondary, #4a4a4a);
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <main role="main" aria-labelledby="dashboard-title">
     <section class="section">

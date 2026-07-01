@@ -1,0 +1,31 @@
+{# Template partiel pour les boutons d'export ICS #}
+{# Variables requises dans le contexte :
+   - current_user: l'utilisateur actuel (doit avoir is_authenticated et ics_token)
+   - resource_type: type de ressource ('shifts', 'oncall', ou 'leaves')
+   - resource_name: nom affiché de la ressource ('shifts', 'astreintes', ou 'congés')
+   - show_all: booléen pour afficher le bouton "Tous" (défaut: true)
+   - show_my: booléen pour afficher le bouton "Mes" (défaut: true)
+#}
+
+{% set show_all = show_all|default(true) %}
+{% set show_my = show_my|default(true) %}
+
+{% if current_user.is_authenticated and current_user.ics_token %}
+    {% if show_all %}
+    <a class="button is-success" 
+       href="{{ request.host_url ~ current_user.get_ics_export_url(resource_type, 'all') }}" 
+       aria-label="Exporter tous les {{ resource_name }} au format iCalendar"
+       title="Exporter tous les {{ resource_name }}">
+        <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter tous les {{ resource_name }}
+    </a>
+    {% endif %}
+    
+    {% if show_my %}
+    <a class="button is-success" 
+       href="{{ request.host_url ~ current_user.get_ics_export_url(resource_type, 'my') }}" 
+       aria-label="Exporter mes {{ resource_name }} au format iCalendar"
+       title="Exporter mes {{ resource_name }}">
+        <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter mes {{ resource_name }}
+    </a>
+    {% endif %}
+{% endif %}
