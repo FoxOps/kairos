@@ -143,3 +143,41 @@ backup-restore: ## Restaure une sauvegarde (spécifiez BACKUP=chemin/vers/fichie
 	@echo "$(YELLOW)Restauration de la sauvegarde: $(BACKUP)$(NC)"
 	python scripts/backup_database.py --restore $(BACKUP)
 	@echo "$(GREEN)✓ Restauration terminée$(NC)"
+
+# ============================================================================
+# CHASSE AU BUG
+# ============================================================================
+
+bug-hunt: bug-hunt-full ## Exécute une chasse au bug complète
+
+bug-hunt-full: ## Exécute tous les checks de chasse au bug
+	@echo "Exécution de la chasse au bug complète..."
+	./scripts/bug_hunt.sh --full --report
+
+bug-hunt-security: ## Analyse de sécurité uniquement
+	@echo "Analyse de sécurité..."
+	./scripts/bug_hunt.sh --security
+
+bug-hunt-lint: ## Vérification du linter uniquement
+	@echo "Vérification du linter..."
+	./scripts/bug_hunt.sh --lint
+
+bug-hunt-tests: ## Exécution des tests uniquement
+	@echo "Exécution des tests..."
+	./scripts/bug_hunt.sh --test
+
+bug-hunt-duplicates: ## Recherche de code dupliqué uniquement
+	@echo "Recherche de code dupliqué..."
+	./scripts/bug_hunt.sh --duplicate
+
+bug-hunt-quick: ## Analyse rapide (sécurité + linter)
+	@echo "Analyse rapide..."
+	./scripts/bug_hunt.sh --quick
+
+bug-hunt-report: ## Génère un rapport complet
+	@echo "Génération du rapport de chasse au bug..."
+	./scripts/bug_hunt.sh --full --report
+
+find-duplicates: ## Trouve le code dupliqué
+	@echo "Recherche de code dupliqué..."
+	python scripts/find_duplicates.py --check-imports

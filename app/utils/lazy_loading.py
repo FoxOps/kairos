@@ -69,24 +69,7 @@ class LazyLoadingConfig:
         """Charge la configuration depuis les variables d'environnement."""
         import os
         
-        def get_bool(env_var, default=False):
-            value = os.environ.get(env_var, '').lower()
-            return value in ('true', '1', 'yes', 'y', 'on') if value else default
         
-        def get_int(env_var, default=0):
-            value = os.environ.get(env_var, '')
-            try:
-                return int(value) if value else default
-            except ValueError:
-                return default
-        
-        cls.DEFAULT_BATCH_SIZE = get_int('LAZY_LOAD_DEFAULT_BATCH_SIZE', cls.DEFAULT_BATCH_SIZE)
-        cls.SCROLL_THRESHOLD = get_int('LAZY_LOAD_SCROLL_THRESHOLD', cls.SCROLL_THRESHOLD)
-        cls.DEBOUNCE_DELAY = get_int('LAZY_LOAD_DEBOUNCE_DELAY', cls.DEBOUNCE_DELAY)
-        cls.LAZY_LOADING_ENABLED = get_bool('LAZY_LOADING_ENABLED', cls.LAZY_LOADING_ENABLED)
-        cls.LOG_LAZY_OPERATIONS = get_bool('LAZY_LOAD_LOG_OPERATIONS', cls.LOG_LAZY_OPERATIONS)
-
-
 # Charger la configuration depuis l'environnement
 LazyLoadingConfig.from_env()
 

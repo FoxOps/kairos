@@ -1,36 +1,119 @@
-from flask import Flask, render_template, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
+"""
+Initialisation de l'application Flask pour Leviia Schedule.
+
+Note: Ce module utilise une approche hybride pour supporter à la fois
+l'instance globale (pour la compatibilité) et la factory function create_app().
+"""
+
+import logging
+import os
+import secrets
+
+from flask import Flask
 from flask_login import LoginManager
-from flask_compress import Compress
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import time
-import sqlite3
-import logging
-from logging.handlers import RotatingFileHandler, SysLogHandler
-import os
-import traceback
-import re
-from datetime import datetime
+from flask_sqlalchemy import SQLAlchemy
+from flask_talisman import Talisman
+from flask_cors import CORS
 
-# Initialisation de la base de données
+# ---------------------------------------------------------------------------
+# Initialisation des extensions
+# ---------------------------------------------------------------------------
+
 db = SQLAlchemy()
-
-# Initialisation de Flask-Login
 login_manager = LoginManager()
-login_manager.login_view = "login"  # Route pour la page de login
-login_manager.login_message_category = "danger"  # Catégorie pour les messages flash
+login_manager.login_view = "login"
+login_manager.login_message_category = "danger"
+limiter = Limiter(key_func=get_remote_address)
 
-# Initialisation du cache
-from app.utils.cache import cache, init_cache, CacheConfig
+# Variable pour la factory function
+_app_for_factory = None
 
-# Initialisation de la pagination
-from app.utils.pagination import Pagination, PaginationConfig, paginate_query
 
-# Initialisation du lazy loading
-from app.utils.lazy_loading import LazyLoader, LazyCollection, LazyQuery, LazyLoadingConfig
+def create_app(config_object="config.Config"):
+    """
+    Factory function pour créer et configurer l'application Flask.
+    
+    Cette fonction peut être appelée pour créer une nouvelle instance
+    de l'application, utile pour les tests.
+    
+    Args:
+        config_object: Objet de configuration à utiliser
+        
+    Returns:
+        Instance de l'application Flask
+    """
+    global _app_for_factory
+    
+    # Si une instance existe déjà, la retourner
+    if _app_for_factory is not None:
+        return _app_for_factory
+    
+    # Créer l'application Flask
+    app = Flask(
+        __name__,
+        template_folder=os.path.join(os.path.dirname(__file__), 'templates'),
+        static_folder=os.path.join(os.path.dirname(__file__), 'static')
+    )
+    
+    # Charger la configuration
+    app.config.from_object(config_object)
+    
+    # Configuration du logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler()
+        ]
+    )
+    
+    # Initialiser les extensions
+    db.init_app(app)
+    login_manager.init_app(app)
+    limiter.init_app(app)
+    
+    # Configurer le rate limiting si activé
+    if app.config.get('RATE_LIMIT_ENABLED', True):
+        limiter.enabled = True
+        # Appliquer les limites par défaut
+        limiter.limit(app.config.get('RATE_LIMIT_DEFAULT', '200 per day, 50 per hour'))(app)
+    else:
+        limiter.enabled = False
+    
+    # Initialiser le cache
+    from app.utils.cache import init_cache
+    init_cache(app)
+    
+    # Configuration du User Loader
+    from app.models import User
+    
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
+    
+    # Configuration OIDC
+    from config_oidc import OIDCConfig
+    OIDCConfig.load_config()
+    
+    if OIDCConfig.ENABLED and OIDCConfig.is_configured():
+        from app.auth.oidc_auth import oidc_auth
+        oidc_auth.init_app(app)
+    
+    # Stocker l'instance pour la factory
+    _app_for_factory = app
+    
+    # Importer les routes
+    from app.routes import admin, auth, export, main
+    
+    return app
 
-# Créer l'instance Flask
+
+# ---------------------------------------------------------------------------
+# Instance globale par défaut (créée directement pour éviter les circular imports)
+# ---------------------------------------------------------------------------
+# On crée l'instance directement ici pour que les imports dans les routes fonctionnent
 app = Flask(
     __name__,
     template_folder=os.path.join(os.path.dirname(__file__), 'templates'),
@@ -38,66 +121,46 @@ app = Flask(
 )
 app.config.from_object("config.Config")
 
-# ============================================================================
-# CONFIGURATION DU LOGGING - FORCER L'AFFICHAGE EN CONSOLE
-# ============================================================================
-# Configurer le logger racine pour afficher les logs en console
+# Configuration du logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.StreamHandler()  # ✅ Forcer l'affichage en console
+        logging.StreamHandler()
     ]
 )
 
 # Initialiser les extensions
 db.init_app(app)
 login_manager.init_app(app)
+limiter.init_app(app)
 
-# ✅ CONFIGURATION DU USER_LOADER POUR FLASK-LOGIN
-# Cela doit être fait AVANT d'utiliser current_user
+# Configuration du User Loader
 from app.models import User
 
 @login_manager.user_loader
 def load_user(user_id):
-    """Charge un utilisateur depuis la base de données."""
     return User.query.get(int(user_id))
 
-# ✅ Recharger la configuration OIDC après que Flask ait chargé sa configuration
+# Configuration OIDC
 from config_oidc import OIDCConfig
-OIDCConfig.load_config()  # Recharger la configuration
+OIDCConfig.load_config()
 
-# ============================================================================
-# DEBUG: Vérifier la configuration OIDC
-# ============================================================================
-app.logger.setLevel(logging.INFO)  # ✅ Forcer le niveau INFO
-print("=" * 60)  # ✅ Utiliser print pour être sûr que ça s'affiche
-print("DEBUG: Vérification de la configuration OIDC")
-print("=" * 60)
-print(f"OIDCConfig.ENABLED: {OIDCConfig.ENABLED} (type: {type(OIDCConfig.ENABLED)})")
-print(f"OIDCConfig.ISSUER: '{OIDCConfig.ISSUER}' (type: {type(OIDCConfig.ISSUER)})")
-print(f"OIDCConfig.CLIENT_ID: '{OIDCConfig.CLIENT_ID}' (type: {type(OIDCConfig.CLIENT_ID)})")
-print(f"OIDCConfig.CLIENT_SECRET: '{OIDCConfig.CLIENT_SECRET}' (type: {type(OIDCConfig.CLIENT_SECRET)})")
-print(f"OIDCConfig.REDIRECT_URI: '{OIDCConfig.REDIRECT_URI}' (type: {type(OIDCConfig.REDIRECT_URI)})")
-print(f"OIDCConfig.is_configured(): {OIDCConfig.is_configured()}")
-print("=" * 60)
-
-# Initialisation de l'authentification OIDC (optionnelle)
 if OIDCConfig.ENABLED and OIDCConfig.is_configured():
     from app.auth.oidc_auth import oidc_auth
     oidc_auth.init_app(app)
-    print(f"✅ Authentification OIDC activée")
-    
-    # Vérifier que le client OIDC est bien enregistré
-    if oidc_auth.oidc_client:
-        print(f"✅ Client OIDC enregistré avec succès: {oidc_auth.oidc_client.name}")
-    else:
-        print("❌ ERREUR: Client OIDC est None après initialisation!")
-else:
-    print(f"⚠️  Authentification OIDC désactivée. ENABLED={OIDCConfig.ENABLED}, is_configured={OIDCConfig.is_configured()}")
-
 
 # Initialiser le cache
+from app.utils.cache import init_cache
 init_cache(app)
 
-# ============================================================================
+# Importer les routes
+from app.routes import admin, auth, export, main
+
+# Stocker l'instance pour la factory
+_app_for_factory = app
+
+# ---------------------------------------------------------------------------
+# Exports
+# ---------------------------------------------------------------------------
+__all__ = ['app', 'create_app', 'db', 'login_manager', 'limiter']

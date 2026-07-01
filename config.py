@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+from datetime import timedelta
 import secrets
 
 # Charger les variables d'environnement depuis un fichier .env si présent
@@ -51,6 +52,14 @@ def get_int_from_env(env_var, default=0):
 
 
 # Fonction utilitaire pour obtenir une valeur JSON depuis les variables d'environnement
+def get_str_from_env(env_var, default=''):
+    """Convertit une variable d'environnement en string."""
+    value = os.environ.get(env_var)
+    if value is None or value.strip() == '':
+        return default
+    return value.strip()
+
+
 def get_json_from_env(env_var, default=None):
     """Convertit une variable d'environnement en objet Python via JSON."""
     value = os.environ.get(env_var)
