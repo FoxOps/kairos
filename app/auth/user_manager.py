@@ -33,10 +33,13 @@ class UserManager:
         name = user_data.get('name', '')
         username = user_data.get('username', email.split('@')[0])
         
+        logger.info(f"[OIDC Sync] Début synchronisation pour: {email}")
+        
         # Chercher l'utilisateur existant par email
         user = User.query.filter_by(email=email).first()
         
         if user:
+            logger.info(f"[OIDC Sync] Utilisateur existant trouvé: {email} (ID: {user.id})")
             # Mettre à jour l'utilisateur existant
             user.name = name or user.name
             user.username = username or user.username
@@ -85,7 +88,7 @@ class UserManager:
             
             db.session.add(user)
             db.session.commit()
-            logger.info(f"Nouvel utilisateur OIDC créé: {email} (ID: {user.id})")
+            logger.info(f"[OIDC Sync] Nouvel utilisateur OIDC créé: {email} (ID: {user.id})")
             return user
     
     def _sync_user_groups(self, user, oidc_groups):
