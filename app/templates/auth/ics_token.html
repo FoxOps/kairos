@@ -44,7 +44,7 @@
                                         <input class="input" type="text" value="{{ token }}" id="tokenInput" readonly>
                                     </div>
                                     <div class="control">
-                                        <button class="button is-primary is-small no-transform" onclick="copyToken(event)">
+                                        <button class="button is-primary is-small no-hover-transform" onclick="copyToken(event)">
                                             <span class="icon">
                                                 <i class="fas fa-copy"></i>
                                             </span>
@@ -68,7 +68,7 @@
                                                id="urlShiftsAllInput" readonly>
                                     </div>
                                     <div class="control">
-                                        <button class="button is-primary is-small no-transform" onclick="copyUrlShiftsAll(event)">
+                                        <button class="button is-primary is-small no-hover-transform" onclick="copyUrlShiftsAll(event)">
                                             <span class="icon">
                                                 <i class="fas fa-copy"></i>
                                             </span>
@@ -94,7 +94,7 @@
                                                id="urlShiftsMyInput" readonly>
                                     </div>
                                     <div class="control">
-                                        <button class="button is-primary is-small no-transform" onclick="copyUrlShiftsMy(event)">
+                                        <button class="button is-primary is-small no-hover-transform" onclick="copyUrlShiftsMy(event)">
                                             <span class="icon">
                                                 <i class="fas fa-copy"></i>
                                             </span>
@@ -121,7 +121,7 @@
                                                id="urlOncallAllInput" readonly>
                                     </div>
                                     <div class="control">
-                                        <button class="button is-primary is-small no-transform" onclick="copyUrlOncallAll(event)">
+                                        <button class="button is-primary is-small no-hover-transform" onclick="copyUrlOncallAll(event)">
                                             <span class="icon">
                                                 <i class="fas fa-copy"></i>
                                             </span>
@@ -147,7 +147,7 @@
                                                id="urlOncallMyInput" readonly>
                                     </div>
                                     <div class="control">
-                                        <button class="button is-primary is-small no-transform" onclick="copyUrlOncallMy(event)">
+                                        <button class="button is-primary is-small no-hover-transform" onclick="copyUrlOncallMy(event)">
                                             <span class="icon">
                                                 <i class="fas fa-copy"></i>
                                             </span>
@@ -174,7 +174,7 @@
                                                id="urlLeavesAllInput" readonly>
                                     </div>
                                     <div class="control">
-                                        <button class="button is-primary is-small no-transform" onclick="copyUrlLeavesAll(event)">
+                                        <button class="button is-primary is-small no-hover-transform" onclick="copyUrlLeavesAll(event)">
                                             <span class="icon">
                                                 <i class="fas fa-copy"></i>
                                             </span>
@@ -200,7 +200,7 @@
                                                id="urlLeavesMyInput" readonly>
                                     </div>
                                     <div class="control">
-                                        <button class="button is-primary is-small no-transform" onclick="copyUrlLeavesMy(event)">
+                                        <button class="button is-primary is-small no-hover-transform" onclick="copyUrlLeavesMy(event)">
                                             <span class="icon">
                                                 <i class="fas fa-copy"></i>
                                             </span>
@@ -221,45 +221,26 @@
                                 peuvent nécessiter de rafraîchir manuellement le calendrier après des modifications.
                             </p>
                         </div>
+                        {% endif %}
                         
-                        <div class="field is-grouped is-grouped-centered mt-5">
-                            <div class="control">
-                                <form method="POST" action="{{ url_for('generate_ics_token') }}">
-                                    <button type="submit" class="button is-primary no-transform">
-                                        <span class="icon">
-                                            <i class="fas fa-sync-alt"></i>
-                                        </span>
-                                        <span>{% if token %}Régénérer le token{% else %}Générer un token{% endif %}</span>
-                                    </button>
-                                </form>
-                            </div>
-                            <div class="control">
-                                <a href="{{ url_for('profile') }}" class="button is-light no-transform">
-                                    Retour au profil
-                                </a>
-                            </div>
+                        <!-- Boutons d'action - TOUJOURS dans le content -->
+                        <div class="buttons is-centered mt-5">
+                            <form method="POST" action="{{ url_for('generate_ics_token') }}" class="control">
+                                <button type="submit" class="button is-primary no-hover-transform">
+                                    <span class="icon">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </span>
+                                    <span>{% if token %}Régénérer le token{% else %}Générer un token{% endif %}</span>
+                                </button>
+                            </form>
+                            <a href="{{ url_for('profile') }}" class="button is-light no-hover-transform">
+                                Retour au profil
+                            </a>
                         </div>
-                        {% else %}
+                        
+                        {% if not token %}
                         <div class="notification is-warning mb-4">
-                            <p>Vous n'avez pas encore de token. Générez-en un ci-dessous.</p>
-                        </div>
-                        
-                        <div class="field is-grouped is-grouped-centered mt-5">
-                            <div class="control">
-                                <form method="POST" action="{{ url_for('generate_ics_token') }}">
-                                    <button type="submit" class="button is-primary no-transform">
-                                        <span class="icon">
-                                            <i class="fas fa-sync-alt"></i>
-                                        </span>
-                                        <span>Générer un token</span>
-                                    </button>
-                                </form>
-                            </div>
-                            <div class="control">
-                                <a href="{{ url_for('profile') }}" class="button is-light no-transform">
-                                    Retour au profil
-                                </a>
-                            </div>
+                            <p>Vous n'avez pas encore de token. Générez-en un ci-dessus.</p>
                         </div>
                         {% endif %}
                     </div>
@@ -270,9 +251,17 @@
 </div>
 
 <style>
-/* Supprimer l'animation de transformation mais garder le changement de couleur */
-.no-transform:hover {
+/* Désactiver l'animation de transformation sur les boutons */
+.no-hover-transform:hover {
     transform: none !important;
+}
+
+/* Assurer que les boutons restent alignés */
+.buttons.is-centered {
+    justify-content: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 </style>
 
