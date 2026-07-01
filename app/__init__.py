@@ -69,6 +69,9 @@ def create_app(config_object="config.Config"):
         static_folder=os.path.join(os.path.dirname(__file__), 'static')
     )
     
+    # Enregistrer les filtres de template IMMÉDIATEMENT après la création
+    register_template_filters(app)
+    
     # Charger la configuration
     app.config.from_object(config_object)
     
@@ -97,9 +100,6 @@ def create_app(config_object="config.Config"):
     # Initialiser le cache
     from app.utils.cache import init_cache
     init_cache(app)
-    
-    # Enregistrer les filtres de template AVANT d'importer les routes
-    register_template_filters(app)
     
     # Configuration du User Loader
     from app.models import User
@@ -134,6 +134,10 @@ app = Flask(
     template_folder=os.path.join(os.path.dirname(__file__), 'templates'),
     static_folder=os.path.join(os.path.dirname(__file__), 'static')
 )
+
+# Enregistrer les filtres de template IMMÉDIATEMENT après la création
+register_template_filters(app)
+
 app.config.from_object("config.Config")
 
 # Configuration du logging
@@ -149,9 +153,6 @@ logging.basicConfig(
 db.init_app(app)
 login_manager.init_app(app)
 limiter.init_app(app)
-
-# Enregistrer les filtres de template AVANT d'importer les routes
-register_template_filters(app)
 
 # Configuration du User Loader
 from app.models import User
