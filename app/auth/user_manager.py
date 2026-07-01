@@ -30,8 +30,8 @@ class UserManager:
             return None
         
         email = user_data['email']
-        name = user_data.get('name', '')
-        username = user_data.get('username', email.split('@')[0])
+        # Utiliser 'name' comme champ principal, avec fallback sur 'username' ou email
+        name = user_data.get('name') or user_data.get('username') or email.split('@')[0]
         
         logger.info(f"[OIDC Sync] Début synchronisation pour: {email}")
         
@@ -42,7 +42,6 @@ class UserManager:
             logger.info(f"[OIDC Sync] Utilisateur existant trouvé: {email} (ID: {user.id})")
             # Mettre à jour l'utilisateur existant
             user.name = name or user.name
-            user.username = username or user.username
             
             # Si l'utilisateur n'a pas de mot de passe (utilisateur OIDC), ne pas le modifier
             if not user.password_hash:
@@ -66,7 +65,6 @@ class UserManager:
             user = User(
                 email=email,
                 name=name,
-                username=username,
                 is_admin=False  # Par défaut, les utilisateurs OIDC ne sont pas admin
             )
             
