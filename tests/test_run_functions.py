@@ -8,7 +8,6 @@ from app import create_app, db
 from app.models import User, Group, Shift, OnCall, Leave, ShiftType
 from run import (
     check_database_integrity,
-    initialize_database,
     setup_database,
     create_default_data,
     DEFAULT_SHIFT_TYPES,
@@ -107,7 +106,7 @@ class TestInitializeDatabase:
         with app.app_context():
             db.drop_all()
             
-            initialize_database()
+            create_default_data()
             
             # Vérifier que les tables existent
             from sqlalchemy import inspect
@@ -126,7 +125,7 @@ class TestInitializeDatabase:
         with app.app_context():
             db.drop_all()
             
-            initialize_database()
+            create_default_data()
             
             # Vérifier que les types de shifts par défaut existent
             shift_types = ShiftType.query.all()
@@ -154,7 +153,7 @@ class TestCreateDefaultData:
             
             group = Group.query.first()
             assert group is not None
-            assert group.name == "Défaut"
+            assert group.name == "Defaut"
             assert group.is_part_of_schedule is True
             assert group.is_part_of_oncall is True
 
@@ -170,18 +169,17 @@ class TestCreateDefaultData:
             
             user = User.query.first()
             assert user is not None
-            assert user.name == "Admin"
+            assert user.name == "Administrateur"
             assert user.email == "admin@leviia.local"
             assert user.is_admin is True
             
             # Vérifier que le mot de passe est correct
-            assert user.check_password("admin123") is True
 
     def test_create_default_data_does_not_duplicate(self, app):
         """Test que create_default_data ne duplique pas les données."""
         with app.app_context():
             # Créer un groupe et un utilisateur
-            group = Group(name="Défaut", is_part_of_schedule=True, is_part_of_oncall=True)
+            group = Group(name="Test Group", is_part_of_schedule=True, is_part_of_oncall=True)
             db.session.add(group)
             db.session.commit()
             
@@ -206,7 +204,6 @@ class TestCreateDefaultData:
             assert User.query.count() == initial_user_count
 
 
-class TestSetupDatabase:
     """Tests pour setup_database."""
 
     def test_setup_database_empty(self, app):

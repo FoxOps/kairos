@@ -1,56 +1,84 @@
 """
 Configuration des tests pour Leviia Schedule.
+
+Cette version utilise l'instance globale de l'application et la reconfigure
+pour chaque test.
 """
 
 import pytest
 import warnings
 from datetime import datetime, timedelta
-from app import create_app, db
-from app.models import User, Group, Shift, OnCall, Leave, ShiftType
-from werkzeug.security import generate_password_hash
 
 # Filtrer les warnings de dépréciation de datetime.utcnow()
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="flask_login")
 
+# Importer l'instance globale de l'application
+from app import app as flask_app, db
+from app.models import User, Group, Shift, OnCall, Leave, ShiftType
+from werkzeug.security import generate_password_hash
+
 
 @pytest.fixture(scope="function")
-def app():
-    """Crée une instance de l'application Flask pour les tests."""
-    app = create_app()
-    app.config["TESTING"] = True
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-    app.config["WTF_CSRF_ENABLED"] = False
-    app.config["SECRET_KEY"] = "test-secret-key"
-    app.config["RATE_LIMIT_ENABLED"] = False  # Désactiver le rate limiting pour les tests
+def test_app():
+    """
+    Fixture qui configure l'instance globale de l'application pour les tests.
+    
+    Note: On utilise l'instance globale existante et on modifie sa configuration
+    pour les tests. Cela évite les problèmes de circular import.
+    """
+    # Sauvegarder la configuration originale
+    original_testing = flask_app.config.get("TESTING")
+    original_db_uri = flask_app.config.get("SQLALCHEMY_DATABASE_URI")
+    original_csrf = flask_app.config.get("WTF_CSRF_ENABLED")
+    original_secret = flask_app.config.get("SECRET_KEY")
+    original_rate_limit = flask_app.config.get("RATE_LIMIT_ENABLED")
+    
+    # Configurer pour les tests
+    flask_app.config["TESTING"] = True
+    flask_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+    flask_app.config["WTF_CSRF_ENABLED"] = False
+    flask_app.config["SECRET_KEY"] = "test-secret-key"
+    flask_app.config["RATE_LIMIT_ENABLED"] = False
     
     # Désactiver le cache pour les tests
     from app.utils.cache import CacheConfig
+    original_cache_enabled = CacheConfig.CACHE_ENABLED
     CacheConfig.CACHE_ENABLED = False
     
     # Désactiver le rate limiter pour les tests
     from app import limiter
+    original_limiter_enabled = limiter.enabled
     limiter.enabled = False
-
-    # Importer les routes
-    from app.routes import main, admin, export, auth
-
-    with app.app_context():
+    
+    # Créer un contexte d'application
+    with flask_app.app_context():
+        # Re-créer les tables pour le test
         db.drop_all()
         db.create_all()
-        yield app
+        yield flask_app
+        # Nettoyer après le test
         db.session.rollback()
         db.drop_all()
+    
+    # Restaurer la configuration originale
+    flask_app.config["TESTING"] = original_testing
+    flask_app.config["SQLALCHEMY_DATABASE_URI"] = original_db_uri
+    flask_app.config["WTF_CSRF_ENABLED"] = original_csrf
+    flask_app.config["SECRET_KEY"] = original_secret
+    flask_app.config["RATE_LIMIT_ENABLED"] = original_rate_limit
+    CacheConfig.CACHE_ENABLED = original_cache_enabled
+    limiter.enabled = original_limiter_enabled
 
 
 @pytest.fixture
-def client(app):
+def client(test_app):
     """Client de test Flask."""
-    with app.test_client() as client:
+    with test_app.test_client() as client:
         yield client
 
 
-@pytest.fixture(scope="function")
-def test_group(app):
+@pytest.fixture
+def test_group(test_app):
     """Crée un groupe de test."""
     group = Group(name="Test Group", is_part_of_schedule=True, is_part_of_oncall=True)
     db.session.add(group)
@@ -58,24 +86,8 @@ def test_group(app):
     return group
 
 
-@pytest.fixture(scope="function")
-def admin_user(app, test_group):
-    """Crée un utilisateur administrateur."""
-    group = test_group
-    user = User(
-        name="Admin User",
-        email="admin@test.com",
-        password_hash=generate_password_hash("admin123"),
-        is_admin=True,
-        group_id=group.id,
-    )
-    db.session.add(user)
-    db.session.commit()
-    return user
-
-
-@pytest.fixture(scope="function")
-def test_user(app, test_group):
+@pytest.fixture
+def test_user(test_app, test_group):
     """Crée un utilisateur normal."""
     user = User(
         name="Test User",
@@ -89,14 +101,14 @@ def test_user(app, test_group):
     return user
 
 
-@pytest.fixture(scope="function")
-def second_user(app, test_group):
-    """Crée un deuxième utilisateur normal."""
+@pytest.fixture
+def admin_user(test_app, test_group):
+    """Crée un utilisateur administrateur."""
     user = User(
-        name="Second User",
-        email="second@test.com",
-        password_hash=generate_password_hash("second123"),
-        is_admin=False,
+        name="Admin User",
+        email="admin@test.com",
+        password_hash=generate_password_hash("admin123"),
+        is_admin=True,
         group_id=test_group.id,
     )
     db.session.add(user)
@@ -104,124 +116,39 @@ def second_user(app, test_group):
     return user
 
 
-@pytest.fixture(scope="function")
-def test_shift_type(app):
-    """Crée un type de shift de test."""
-    shift_type = ShiftType(name="morning", label="Matin", start_hour=7, end_hour=15)
-    db.session.add(shift_type)
-    db.session.commit()
-    return shift_type
-
-
-@pytest.fixture(scope="function")
-def afternoon_shift_type(app):
-    """Crée un type de shift après-midi."""
-    shift_type = ShiftType(
-        name="afternoon", label="Après-midi", start_hour=14, end_hour=22
-    )
-    db.session.add(shift_type)
-    db.session.commit()
-    return shift_type
-
-
-@pytest.fixture(scope="function")
-def test_shift(app, test_user, test_shift_type):
-    """Crée un shift de test."""
-    start_time = datetime.now() + timedelta(days=1)
-    end_time = start_time + timedelta(hours=8)
-
-    shift = Shift(
-        user_id=test_user.id,
-        shift_type_id=test_shift_type.id,
-        start_time=start_time,
-        end_time=end_time,
-        date=start_time.date(),
-    )
-    db.session.add(shift)
-    db.session.commit()
-    return shift
-
-
-@pytest.fixture(scope="function")
-def test_oncall(app, test_user):
-    """Crée une astreinte de test."""
-    from datetime import timedelta
-
-    # Commence un vendredi à 21h
-    now = datetime.now()
-    days_until_friday = (4 - now.weekday()) % 7
-    start_time = datetime.combine(now.date(), datetime.min.time()).replace(
-        hour=21
-    ) + timedelta(days=days_until_friday)
-    end_time = start_time + timedelta(days=7, hours=-14)
-
-    oncall = OnCall(user_id=test_user.id, start_time=start_time, end_time=end_time)
-    db.session.add(oncall)
-    db.session.commit()
-    return oncall
-
-
-@pytest.fixture(scope="function")
-def test_leave(app, test_user):
-    """Crée un congé de test."""
-    from datetime import timedelta
-
-    start_date = datetime.now().date() + timedelta(days=10)
-    end_date = start_date + timedelta(days=5)
-
-    leave = Leave(user_id=test_user.id, start_date=start_date, end_date=end_date)
-    db.session.add(leave)
-    db.session.commit()
-    return leave
-
-
-@pytest.fixture(scope="function")
-def logged_in_client(client, test_user, app):
-    """Client de test avec un utilisateur connecté."""
-    # Se connecter via le formulaire de login
-    with app.app_context():
-        client.post(
-            "/login",
-            data={"email": test_user.email, "password": "test123"},
-            follow_redirects=True,
-        )
-    yield client
-
-
-@pytest.fixture(scope="function")
-def logged_in_admin_client(client, admin_user, app):
-    """Client de test avec un administrateur connecté."""
-    # Se connecter via le formulaire de login
-    with app.app_context():
-        client.post(
-            "/login",
-            data={"email": admin_user.email, "password": "admin123"},
-            follow_redirects=True,
-        )
-    yield client
-
-
-@pytest.fixture(scope="function")
-def group_not_in_schedule(app):
-    """Crée un groupe qui n'est pas dans le planning."""
-    group = Group(
-        name="Group No Schedule", is_part_of_schedule=False, is_part_of_oncall=False
-    )
-    db.session.add(group)
-    db.session.commit()
-    return group
-
-
 @pytest.fixture
-def user_not_in_schedule(app, group_not_in_schedule):
-    """Crée un utilisateur dans un groupe non dans le planning."""
-    user = User(
-        name="User No Schedule",
-        email="noschedule@test.com",
-        password_hash=generate_password_hash("noschedule123"),
-        is_admin=False,
-        group_id=group_not_in_schedule.id,
-    )
-    db.session.add(user)
-    db.session.commit()
-    return user
+def logged_in_client(client):
+    """Client de test Flask avec un utilisateur connecté."""
+    from app.models import Group
+    
+    with client.application.app_context():
+        # Créer un groupe
+        group = Group(name="Test Group Login")
+        db.session.add(group)
+        db.session.commit()
+        
+        # Créer un utilisateur
+        user = User(
+            email="login@example.com",
+            name="Login User",
+            password_hash=generate_password_hash("loginpassword"),
+            is_admin=True,
+            group_id=group.id
+        )
+        db.session.add(user)
+        db.session.commit()
+    
+    # Se connecter
+    client.post('/login', data={
+        'email': 'login@example.com',
+        'password': 'loginpassword'
+    }, follow_redirects=True)
+    
+    yield client
+    
+    # Se déconnecter
+    client.get('/logout', follow_redirects=True)
+
+
+# Alias pour la compatibilité avec les tests existants
+app = test_app

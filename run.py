@@ -24,7 +24,7 @@ def check_database_integrity():
         inspector = inspect(db.engine)
         tables = inspector.get_table_names()
         
-        required_tables = ['user', 'group', 'shift_type', 'shift', 'oncall', 'leave']
+        required_tables = ['user', 'groups', 'shift_types', 'shift', 'on_call', 'leave']
         
         for table in required_tables:
             if table not in tables:
