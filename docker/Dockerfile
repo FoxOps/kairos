@@ -34,14 +34,14 @@ RUN mkdir -p /app/data /app/logs /app/instance && \
     chown 1000:1000 /app/data /app/logs /app/instance && \
     chmod 755 /app/data /app/logs /app/instance
 
-# Copier l'application dans le répertoire courant (WORKDIR=/app)
-# On copie le contenu de app/ directement dans /app/ pour éviter /app/app/
-COPY --chown=1000:1000 app/ ./app/
-COPY --chown=1000:1000 config.py ./config.py
-COPY --chown=1000:1000 config_oidc.py ./config_oidc.py
-COPY --chown=1000:1000 config_performance.py ./config_performance.py
-COPY --chown=1000:1000 run.py ./run.py
-COPY --chown=1000:1000 .env.example ./.env.example
+# Copier l'application - CORRECTION: copier le contenu de app/ dans /app/ directement
+# On utilise . pour copier dans le répertoire courant (WORKDIR=/app)
+COPY --chown=1000:1000 app/ ./
+COPY --chown=1000:1000 config.py ./
+COPY --chown=1000:1000 config_oidc.py ./
+COPY --chown=1000:1000 config_performance.py ./
+COPY --chown=1000:1000 run.py ./
+COPY --chown=1000:1000 .env.example ./
 
 # Copier le script d'entrée
 COPY --chown=1000:1000 docker/entrypoint.sh /entrypoint.sh
