@@ -4,7 +4,7 @@
 # ============================================
 # Stage 1: Build - Installation des dépendances
 # ============================================
-FROM python:3.11-alpine as builder
+FROM python:3.11-alpine AS builder
 
 # Configuration de base pour le build
 ENV PYTHONFAULTHANDLER=1 \
@@ -16,15 +16,17 @@ ENV PYTHONFAULTHANDLER=1 \
 
 WORKDIR /app
 
-# Installer les dépendances de build
+# Installer les dépendances de build pour Alpine
+# Note: psutil nécessite linux-headers pour la compilation
 RUN apk add --no-cache --virtual .build-deps \
     gcc \
     musl-dev \
     libpq-dev \
-    postgresql-dev
+    postgresql-dev \
+    linux-headers \
+    python3-dev
 
 # Copier uniquement les fichiers nécessaires pour pip
-# On copie docker/requirements.txt vers /tmp/requirements.txt pour l'installation
 COPY docker/requirements.txt /tmp/requirements.txt
 
 # Installer toutes les dépendances dans un dossier dédié
