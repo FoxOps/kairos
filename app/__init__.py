@@ -14,6 +14,8 @@ from flask_login import LoginManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
+from flask_talisman import Talisman
+from flask_cors import CORS
 
 # ---------------------------------------------------------------------------
 # Initialisation des extensions
@@ -71,6 +73,14 @@ def create_app(config_object="config.Config"):
     db.init_app(app)
     login_manager.init_app(app)
     limiter.init_app(app)
+    
+    # Configurer le rate limiting si activé
+    if app.config.get('RATE_LIMIT_ENABLED', True):
+        limiter.enabled = True
+        # Appliquer les limites par défaut
+        limiter.limit(app.config.get('RATE_LIMIT_DEFAULT', '200 per day, 50 per hour'))(app)
+    else:
+        limiter.enabled = False
     
     # Initialiser le cache
     from app.utils.cache import init_cache
