@@ -18,10 +18,15 @@ WORKDIR /app
 COPY docker/requirements.txt /tmp/requirements.txt
 
 # Installer les dépendances minimales
-RUN apk add --no-cache --virtual .build-deps gcc musl-dev && \
+# Note: psutil nécessite linux-headers et python3-dev pour la compilation
+RUN apk add --no-cache --virtual .build-deps \
+    gcc \
+    musl-dev \
+    linux-headers \
+    python3-dev && \
     apk add --no-cache libpq postgresql-dev && \
     pip install --no-cache-dir -r /tmp/requirements.txt && \
-    apk del .build-deps gcc musl-dev && \
+    apk del .build-deps gcc musl-dev linux-headers python3-dev && \
     rm /tmp/requirements.txt
 
 # Créer les répertoires nécessaires avec les bonnes permissions
