@@ -31,16 +31,13 @@ limiter = Limiter(key_func=get_remote_address)
 _app_for_factory = None
 
 
-def register_template_filters(app):
-    """Enregistre les filtres Jinja2 personnalisés."""
-    @app.template_filter('asset_exists')
-    def asset_exists_filter(filename):
-        """Vérifie si un fichier existe dans le dossier static."""
-        static_folder = app.static_folder
-        if static_folder:
-            filepath = os.path.join(static_folder, filename)
-            return os.path.exists(filepath)
-        return False
+def asset_exists_filter(app, filename):
+    """Vérifie si un fichier existe dans le dossier static."""
+    static_folder = app.static_folder
+    if static_folder:
+        filepath = os.path.join(static_folder, filename)
+        return os.path.exists(filepath)
+    return False
 
 
 def create_app(config_object="config.Config"):
@@ -68,9 +65,6 @@ def create_app(config_object="config.Config"):
         template_folder=os.path.join(os.path.dirname(__file__), 'templates'),
         static_folder=os.path.join(os.path.dirname(__file__), 'static')
     )
-    
-    # Enregistrer les filtres de template IMMÉDIATEMENT après la création
-    register_template_filters(app)
     
     # Charger la configuration
     app.config.from_object(config_object)
@@ -100,6 +94,10 @@ def create_app(config_object="config.Config"):
     # Initialiser le cache
     from app.utils.cache import init_cache
     init_cache(app)
+    
+    # Enregistrer le template filter pour asset_exists
+    # Utiliser une fonction lambda pour capturer l'app
+    app.add_template_filter(lambda filename: asset_exists_filter(app, filename), name='asset_exists')
     
     # Configuration du User Loader
     from app.models import User
@@ -135,9 +133,6 @@ app = Flask(
     static_folder=os.path.join(os.path.dirname(__file__), 'static')
 )
 
-# Enregistrer les filtres de template IMMÉDIATEMENT après la création
-register_template_filters(app)
-
 app.config.from_object("config.Config")
 
 # Configuration du logging
@@ -153,6 +148,9 @@ logging.basicConfig(
 db.init_app(app)
 login_manager.init_app(app)
 limiter.init_app(app)
+
+# Enregistrer le template filter pour asset_exists sur l'instance globale
+app.add_template_filter(lambda filename: asset_exists_filter(app, filename), name='asset_exists')
 
 # Configuration du User Loader
 from app.models import User
