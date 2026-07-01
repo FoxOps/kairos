@@ -69,8 +69,11 @@ class UserManager:
             
             # Trouver le groupe par défaut
             default_group = Group.query.filter_by(name="Defaut").first()
-            if default_group:
-                user.group_id = default_group.id
+            if not default_group:
+                default_group = Group(name="Defaut")
+                db.session.add(default_group)
+                db.session.commit()
+            user.group_id = default_group.id
             
             # Synchroniser les groupes si configuré
             if OIDCConfig.GROUPS_CLAIM and 'groups' in user_data:
