@@ -1,24 +1,30 @@
 {% extends "admin/base_admin.html" %}
 
+{% block title %}Gestion des groupes - Leviia Schedule{% endblock %}
+
 {% block admin_content %}
 <section class="section">
     <div class="container">
         <h1 class="title">
-            <i class="fas fa-users" aria-hidden="true"></i> Gestion des groupes
+            <i class="fas fa-user-friends" aria-hidden="true"></i> Gestion des groupes
         </h1>
 
-        <div class="buttons">
-            <a class="button is-primary" href="{{ url_for('add_group') }}">
-                <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un groupe
-            </a>
-            <a class="button is-light" href="{{ url_for('admin_dashboard') }}">
+        <div class="buttons" role="group" aria-label="Actions groupes">
+            {% include "_add_button.html" with {
+                'route': 'add_group',
+                'label': 'Ajouter un groupe',
+                'icon': 'plus',
+                'resource_name': 'Ajouter un nouveau groupe'
+            } %}
+            <a class="button is-light" href="{{ url_for('admin_dashboard') }}" 
+               aria-label="Retour au tableau de bord administrateur" title="Retour au tableau de bord">
                 Retour au tableau de bord
             </a>
         </div>
 
         {% if groups %}
-        <div class="table-container">
-            <table class="table is-fullwidth is-striped">
+        <div class="table-container" role="region" aria-labelledby="groups-title">
+            <table class="table is-fullwidth is-striped" aria-describedby="groups-title">
                 <caption class="is-sr-only">Liste des groupes</caption>
                 <thead>
                     <tr>
@@ -49,25 +55,30 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a class="button is-small is-info" href="{{ url_for('edit_group', group_id=group.id) }}" aria-label="Modifier le groupe">
-                                <i class="fas fa-edit" aria-hidden="true"></i>
-                            </a>
-                            <a class="button is-small is-danger"
-                               href="{{ url_for('delete_group', group_id=group.id) }}"
-                               onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce groupe ?')"
-                               aria-label="Supprimer le groupe">
-                                <i class="fas fa-trash" aria-hidden="true"></i>
-                            </a>
+                            <div class="is-flex gap-2" role="group" aria-label="Actions pour le groupe {{ group.name }}">
+                                <a class="button is-small is-info" href="{{ url_for('edit_group', group_id=group.id) }}" 
+                                   aria-label="Modifier le groupe {{ group.name }}" title="Modifier le groupe">
+                                    <i class="fas fa-edit" aria-hidden="true"></i>
+                                </a>
+                                <a class="button is-small is-danger" href="{{ url_for('delete_group', group_id=group.id) }}"
+                                   onclick="return Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer le groupe {{ group.name }} ?', function() { return true; }, function() { return false; });"
+                                   aria-label="Supprimer le groupe {{ group.name }}" title="Supprimer le groupe">
+                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        {% else %}
-        <div class="notification is-warning">
-            <p>Aucun groupe trouvé.</p>
-        </div>
+        
+        <!-- Légende des actions -->
+        {% set action_items = [
+            {'class': 'is-info is-small', 'icon': 'edit', 'label': 'Modifier', 'description': 'Modifier le groupe'},
+            {'class': 'is-danger is-small', 'icon': 'trash', 'label': 'Supprimer', 'description': 'Supprimer le groupe'}
+        ] %}
+        {% include "_action_legend.html" %}
         {% endif %}
     </div>
 </section>

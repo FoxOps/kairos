@@ -1,0 +1,19 @@
+{# Template partiel pour les boutons d'ajout #}
+{# Variables requises dans le contexte :
+   - route: la route Flask (ex: 'add_shift')
+   - label: le texte du bouton (ex: 'Ajouter un shift')
+   - icon: la classe Font Awesome (ex: 'plus')
+   - resource_name: nom de la ressource pour aria-label (optionnel, défaut: label)
+   - class: classes supplémentaires (optionnel, ex: 'is-small')
+#}
+
+{% set resource_name = resource_name|default(label) %}
+{% set button_class = 'button is-primary' %}
+{% if class %}
+{% set button_class = button_class + ' ' + class %}
+{% endif %}
+
+<a class="{{ button_class }}" href="{{ url_for(route) }}" 
+   aria-label="{{ resource_name }}" title="{{ resource_name }}">
+    <i class="fas fa-{{ icon }}" aria-hidden="true"></i>&nbsp; {{ label }}
+</a>
