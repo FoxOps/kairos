@@ -86,6 +86,16 @@ def create_app(config_object="config.Config"):
     from app.utils.cache import init_cache
     init_cache(app)
     
+    # Ajouter un template filter pour vérifier l'existence des assets
+    @app.template_filter('asset_exists')
+    def asset_exists_filter(filename):
+        """Vérifie si un fichier existe dans le dossier static."""
+        static_folder = app.static_folder
+        if static_folder:
+            filepath = os.path.join(static_folder, filename)
+            return os.path.exists(filepath)
+        return False
+    
     # Configuration du User Loader
     from app.models import User
     
@@ -134,6 +144,16 @@ logging.basicConfig(
 db.init_app(app)
 login_manager.init_app(app)
 limiter.init_app(app)
+
+# Ajouter un template filter pour vérifier l'existence des assets
+@app.template_filter('asset_exists')
+def asset_exists_filter_global(filename):
+    """Vérifie si un fichier existe dans le dossier static."""
+    static_folder = app.static_folder
+    if static_folder:
+        filepath = os.path.join(static_folder, filename)
+        return os.path.exists(filepath)
+    return False
 
 # Configuration du User Loader
 from app.models import User

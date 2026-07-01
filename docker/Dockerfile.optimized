@@ -45,7 +45,7 @@ ENV PYTHONFAULTHANDLER=1 \
     FLASK_ENV=production \
     PORT=5000 \
     # Chemin pour les dépendances Python installées dans le stage builder
-    PYTHONPATH=/root/.local/lib/python3.11/site-packages
+    PYTHONPATH=/root/.local/lib/python3.11/site-packages:/app
 
 # Créer l'utilisateur non-root avec un UID/GID fixe
 RUN adduser -D -u 1000 -g 1000 appuser
