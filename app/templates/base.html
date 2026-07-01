@@ -6,19 +6,11 @@
     <title>{% block title %}Leviia{% endblock %}</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
     
-    <!-- Bulma CSS - servi localement si disponible, sinon CDN -->
-    {% if asset_exists('vendor/bulma/bulma.css') %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bulma/bulma.css') }}">
-    {% else %}
+    <!-- Bulma CSS - Utilisation du CDN pour éviter les problèmes de chemins -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
-    {% endif %}
     
-    <!-- Font Awesome - servi localement si disponible, sinon CDN -->
-    {% if asset_exists('vendor/font-awesome/all.min.css') %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/font-awesome/all.min.css') }}">
-    {% else %}
+    <!-- Font Awesome - Utilisation du CDN pour éviter les problèmes de chemins -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    {% endif %}
     
     <!-- CSS de l'application -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base-styles.css') }}">
@@ -26,7 +18,7 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Skip link pour l'accessibilit -->
+    <!-- Skip link pour l'accessibilité -->
     <a href="#main-content" class="skip-link">Sauter la navigation</a>
     
     <header>
@@ -45,8 +37,8 @@
                     <a class="navbar-item" href="{{ url_for('oncall') }}" aria-label="Astreintes">
                         <i class="fas fa-moon" aria-hidden="true"></i>&nbsp; Astreintes
                     </a>
-                    <a class="navbar-item" href="{{ url_for('leave') }}" aria-label="Congs">
-                        <i class="fas fa-umbrella-beach" aria-hidden="true"></i>&nbsp; Congs
+                    <a class="navbar-item" href="{{ url_for('leave') }}" aria-label="Congés">
+                        <i class="fas fa-umbrella-beach" aria-hidden="true"></i>&nbsp; Congés
                     </a>
                     {% if current_user.is_authenticated and current_user.is_admin %}
                     <a class="navbar-item" href="{{ url_for('list_users') }}" aria-label="Utilisateurs">

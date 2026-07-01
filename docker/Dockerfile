@@ -8,7 +8,8 @@ ENV PYTHONFAULTHANDLER=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     FLASK_ENV=development \
-    PORT=5000
+    PORT=5000 \
+    PYTHONPATH=/app
 
 # Créer l'utilisateur non-root avec un UID/GID fixe
 RUN adduser -D -u 1000 -g 1000 appuser
@@ -34,14 +35,14 @@ RUN mkdir -p /app/data /app/logs /app/instance && \
     chown 1000:1000 /app/data /app/logs /app/instance && \
     chmod 755 /app/data /app/logs /app/instance
 
-# Copier l'application - CORRECTION: copier le contenu de app/ dans /app/ directement
-# On utilise . pour copier dans le répertoire courant (WORKDIR=/app)
-COPY --chown=1000:1000 app/ ./
-COPY --chown=1000:1000 config.py ./
-COPY --chown=1000:1000 config_oidc.py ./
-COPY --chown=1000:1000 config_performance.py ./
-COPY --chown=1000:1000 run.py ./
-COPY --chown=1000:1000 .env.example ./
+# Copier l'application - CORRECTION FINALE
+# Copier le contenu de app/ directement dans /app/ (pas de sous-dossier)
+COPY --chown=1000:1000 app/ /app/
+COPY --chown=1000:1000 config.py /app/
+COPY --chown=1000:1000 config_oidc.py /app/
+COPY --chown=1000:1000 config_performance.py /app/
+COPY --chown=1000:1000 run.py /app/
+COPY --chown=1000:1000 .env.example /app/
 
 # Copier le script d'entrée
 COPY --chown=1000:1000 docker/entrypoint.sh /entrypoint.sh
