@@ -9,57 +9,65 @@
             <i class="fas fa-plus" aria-hidden="true"></i> Ajouter un shift
         </h1>
         
-        <form method="POST" action="{{ url_for('add_shift') }}">
+        <form method="POST" action="{{ url_for('add_shift') }}" aria-labelledby="form-title">
             <div class="box">
                 <div class="field">
-                    <label class="label required">Utilisateur</label>
+                    <label class="label required" for="user_id">Utilisateur</label>
                     <div class="control">
                         <div class="select is-fullwidth">
-                            <select name="user_id" required aria-required="true">
+                            <select id="user_id" name="user_id" required aria-required="true" aria-describedby="user-help">
                                 <option value="" disabled selected>Sélectionner un utilisateur</option>
                                 {% for user in users %}
                                 <option value="{{ user.id }}">{{ user.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
+                        <p class="help" id="user-help">Sélectionnez l'utilisateur pour ce shift</p>
                     </div>
                 </div>
                 
                 <div class="field">
-                    <label class="label required">Type de shift</label>
+                    <label class="label required" for="shift_type_id">Type de shift</label>
                     <div class="control">
                         <div class="select is-fullwidth">
-                            <select name="shift_type_id" required aria-required="true">
+                            <select id="shift_type_id" name="shift_type_id" required aria-required="true" aria-describedby="shift-type-help">
                                 <option value="" disabled selected>Sélectionner un type</option>
                                 {% for shift_type in shift_types %}
                                 <option value="{{ shift_type.id }}">{{ shift_type.label }} ({{ shift_type.name }})</option>
                                 {% endfor %}
                             </select>
                         </div>
+                        <p class="help" id="shift-type-help">Sélectionnez le type de shift</p>
                     </div>
                 </div>
                 
                 <!-- Période de dates -->
                 <div class="field">
-                    <label class="label required">Date de début</label>
+                    <label class="label required" for="start_date">Date de début</label>
                     <div class="control">
-                        <input class="input" type="date" name="start_date" required aria-required="true">
+                        <input class="input" type="date" id="start_date" name="start_date" required aria-required="true" aria-describedby="start-date-help">
+                        <p class="help" id="start-date-help">Date de début du shift</p>
                     </div>
                 </div>
                 
                 <div class="field">
-                    <label class="label required">Date de fin</label>
+                    <label class="label required" for="end_date">Date de fin</label>
                     <div class="control">
-                        <input class="input" type="date" name="end_date" required aria-required="true">
+                        <input class="input" type="date" id="end_date" name="end_date" required aria-required="true" aria-describedby="end-date-help">
+                        <p class="help" id="end-date-help">Date de fin du shift</p>
                     </div>
                 </div>
                 
                 <div class="field">
                     <div class="control">
-                        <button class="button is-primary" type="submit">
-                            <i class="fas fa-save" aria-hidden="true"></i>&nbsp; Enregistrer
-                        </button>
-                        <a class="button is-light" href="{{ url_for('schedule') }}">Annuler</a>
+                        <div class="buttons" role="group" aria-label="Actions du formulaire">
+                            <button class="button is-primary" type="submit" aria-label="Enregistrer le shift" title="Enregistrer le shift">
+                                <i class="fas fa-save" aria-hidden="true"></i>&nbsp; Enregistrer
+                            </button>
+                            <a class="button is-light" href="{{ url_for('schedule') }}" aria-label="Annuler et retourner à la liste" title="Annuler">
+                                Annuler
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

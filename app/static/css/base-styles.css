@@ -56,6 +56,12 @@ body {
 /* Styles pour les notifications */
 .notification {
     margin-bottom: 1rem;
+    border-radius: 4px;
+}
+
+.notification[role="alert"],
+.notification[role="status"] {
+    border: none;
 }
 
 /* ============================================
@@ -116,6 +122,10 @@ a:focus-visible {
     transition: all 0.2s ease-in-out;
 }
 
+.button:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
 /* Taille minimale des liens dans la navigation */
 .navbar-item {
     min-height: 44px;
@@ -155,7 +165,6 @@ a:focus-visible {
     color: var(--color-primary-dark, #00a896);
 }
 
-
 /* Supprimer le soulignement des liens dans les boutons et menus */
 .button a,
 .navbar-item a,
@@ -167,15 +176,6 @@ a:focus-visible {
     text-decoration: none !important;
 }
 
-/* Contraste pour les boutons */
-.button {
-    transition: all 0.2s ease-in-out;
-}
-
-.button:hover:not(:disabled) {
-    transform: translateY(-1px);
-}
-
 /* Contraste pour les boutons désactivés */
 .button:disabled {
     opacity: 0.6;
@@ -183,29 +183,8 @@ a:focus-visible {
 }
 
 /* ============================================
-   STYLES POUR LES NOTIFICATIONS ACCESSIBLES
-   ============================================ */
-
-.notification[role="alert"] {
-    border: none;
-}
-
-.notification[role="status"] {
-    border: none;
-}
-
-/* ============================================
    STYLES POUR LES ÉLÉMENTS INTERACTIFS
    ============================================ */
-
-/* Styles pour les boutons */
-.button {
-    transition: all 0.2s ease-in-out;
-}
-
-.button:hover:not(:disabled) {
-    transform: translateY(-1px);
-}
 
 /* Styles pour les icônes */
 .icon {
@@ -273,11 +252,6 @@ a:focus-visible {
 .type-tag.is-danger {
     background-color: var(--color-danger, var(--bulma-danger));
     color: white;
-}
-
-/* Styles pour les notifications */
-.notification {
-    border-radius: 4px;
 }
 
 /* Styles pour les sections */
@@ -387,11 +361,6 @@ a:focus-visible {
     padding: 1rem;
 }
 
-/* Styles pour les notifications */
-.notification {
-    border-radius: 4px;
-}
-
 /* Styles pour les modales */
 .modal {
     z-index: 1000;
@@ -488,7 +457,7 @@ a:focus-visible {
 }
 
 /* Styles pour les paragraphes */
-.p {
+p {
     margin-bottom: 1rem;
 }
 

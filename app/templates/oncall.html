@@ -10,25 +10,24 @@
         </h1>
         
         <!-- Boutons pour ajouter, exporter et supprimer -->
-        <div class="buttons">
+        <div class="buttons" role="group" aria-label="Actions principales">
             {% if current_user.is_admin %}
-            <a class="button is-primary" href="{{ url_for('add_oncall') }}">
+            <a class="button is-primary" href="{{ url_for('add_oncall') }}" 
+               aria-label="Ajouter une astreinte" title="Ajouter une astreinte">
                 <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter une astreinte
             </a>
             {% endif %}
-            {% if current_user.is_authenticated and current_user.ics_token %}
-            <a class="button is-success" href="{{ request.host_url ~ current_user.get_ics_export_url('oncall', 'all') }}" title="Exporter toutes les astreintes">
-                <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter toutes les astreintes
-            </a>
-            <a class="button is-success" href="{{ request.host_url ~ current_user.get_ics_export_url('oncall', 'my') }}" title="Exporter mes astreintes">
-                <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter mes astreintes
-            </a>
-            {% endif %}
+            
+            {# Boutons d'export ICS #}
+            {% set resource_type = 'oncall' %}
+            {% set resource_name = 'astreintes' %}
+            {% include "_ics_export_buttons.html" %}
+            
             {% if current_user.is_admin %}
             <form method="POST" action="{{ url_for('delete_all_oncalls') }}" class="ml-2">
                 <button type="submit" class="button is-danger" 
-                        onclick="return confirm('Êtes-vous SÛR de vouloir supprimer TOUTES les astreintes ? Cette action est irréversible !')"
-                        aria-label="Supprimer toutes les astreintes">
+                        onclick="return Leviia.confirmActionAccessible('Êtes-vous SÛR de vouloir supprimer TOUTES les astreintes ? Cette action est irréversible !', function() { this.form.submit(); }, function() {}); return false;"
+                        aria-label="Supprimer toutes les astreintes" title="Supprimer toutes les astreintes">
                     <i class="fas fa-trash-alt" aria-hidden="true"></i>&nbsp; Supprimer TOUTES les astreintes
                 </button>
             </form>
@@ -44,8 +43,8 @@
         {% endif %}
         
         <!-- Tableau des astreintes -->
-        <div class="table-container">
-            <table class="table is-fullwidth is-striped">
+        <div class="table-container" role="region" aria-labelledby="oncall-title">
+            <table class="table is-fullwidth is-striped" aria-describedby="oncall-title">
                 <caption class="is-sr-only">Liste des astreintes</caption>
                 <thead>
                     <tr>
@@ -65,10 +64,10 @@
                         <td>{{ oncall.end_time.strftime('%d/%m/%Y %H:%M') }}</td>
                         <td>
                             {% if current_user.is_admin %}
-                            <div class="is-flex is-flex-wrap-nowrap gap-2 is-align-items-center">
+                            <div class="is-flex is-flex-wrap-nowrap gap-2 is-align-items-center" role="group" aria-label="Actions pour cette astreinte">
                                 <a class="button is-danger is-small" 
                                    href="{{ url_for('delete_oncall', oncall_id=oncall.id) }}"
-                                   onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette astreinte ?')"
+                                   onclick="return Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer cette astreinte ?', function() { return true; }, function() { return false; });"
                                    aria-label="Supprimer l'astreinte" title="Supprimer cette astreinte">
                                     <i class="fas fa-trash" aria-hidden="true"></i>
                                 </a>
@@ -78,7 +77,7 @@
                                 {% if is_first_user.value %}
                                 <form method="POST" action="{{ url_for('delete_all_oncalls_for_user', user_id=oncall.user.id) }}" class="mb-0">
                                     <button type="submit" class="button is-warning is-small"
-                                            onclick="return confirm('Êtes-vous sûr de vouloir supprimer TOUTES les astreintes de {{ oncall.user.name }} ?')"
+                                            onclick="return Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer TOUTES les astreintes de {{ oncall.user.name }} ?', function() { this.form.submit(); }, function() {}); return false;"
                                             aria-label="Supprimer toutes les astreintes de cet utilisateur"
                                             title="Supprimer TOUTES les astreintes de {{ oncall.user.name }}">
                                         <i class="fas fa-user-times" aria-hidden="true"></i>
@@ -97,15 +96,11 @@
         
         <!-- Légende des actions -->
         {% if current_user.is_admin %}
-        <div class="notification is-info is-light mt-4">
-            <h3 class="subtitle is-6"><i class="fas fa-info-circle"></i> Légende des actions</h3>
-            <div class="content">
-                <p class="is-flex is-flex-wrap-wrap gap-2">
-                    <span class="button is-danger is-small min-w-200"><i class="fas fa-trash"></i> Supprimer cette astreinte</span>
-                    <span class="button is-warning is-small min-w-200"><i class="fas fa-user-times"></i> Supprimer TOUTES les astreintes de cet utilisateur</span>
-                </p>
-            </div>
-        </div>
+        {% set action_items = [
+            {'class': 'is-danger is-small min-w-200', 'icon': 'trash', 'label': 'Supprimer cette astreinte', 'description': 'Supprimer l\'astreinte sélectionnée'},
+            {'class': 'is-warning is-small min-w-200', 'icon': 'user-times', 'label': 'Supprimer TOUTES les astreintes de cet utilisateur', 'description': 'Supprimer toutes les astreintes d\'un utilisateur'}
+        ] %}
+        {% include "_action_legend.html" %}
         {% endif %}
         
         <!-- Pagination en bas -->

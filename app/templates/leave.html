@@ -10,20 +10,18 @@
         </h1>
         
         <!-- Boutons pour ajouter et exporter -->
-        <div class="buttons">
+        <div class="buttons" role="group" aria-label="Actions principales">
             {% if current_user.is_admin or current_user.is_authenticated %}
-            <a class="button is-primary" href="{{ url_for('add_leave') }}">
+            <a class="button is-primary" href="{{ url_for('add_leave') }}" 
+               aria-label="Ajouter un congé" title="Ajouter un congé">
                 <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un congé
             </a>
             {% endif %}
-            {% if current_user.is_authenticated and current_user.ics_token %}
-            <a class="button is-success" href="{{ request.host_url ~ current_user.get_ics_export_url('leaves', 'all') }}" title="Exporter tous les congés">
-                <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter tous les congés
-            </a>
-            <a class="button is-success" href="{{ request.host_url ~ current_user.get_ics_export_url('leaves', 'my') }}" title="Exporter mes congés">
-                <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter mes congés
-            </a>
-            {% endif %}
+            
+            {# Boutons d'export ICS #}
+            {% set resource_type = 'leaves' %}
+            {% set resource_name = 'congés' %}
+            {% include "_ics_export_buttons.html" %}
         </div>
         
         <!-- Pagination en haut + sélecteur -->
@@ -35,8 +33,8 @@
         {% endif %}
         
         <!-- Tableau des congés -->
-        <div class="table-container">
-            <table class="table is-fullwidth is-striped">
+        <div class="table-container" role="region" aria-labelledby="leave-title">
+            <table class="table is-fullwidth is-striped" aria-describedby="leave-title">
                 <caption class="is-sr-only">Liste des congés</caption>
                 <thead>
                     <tr>
@@ -54,11 +52,13 @@
                         <td>{{ leave.end_date.strftime('%d/%m/%Y') }}</td>
                         <td>
                             {% if current_user.is_admin or current_user.id == leave.user.id %}
-                            <a class="button is-danger is-small" href="{{ url_for('delete_leave', leave_id=leave.id) }}" 
-                               onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce congé ?')"
-                               aria-label="Supprimer le congé" title="Supprimer ce congé">
-                                <i class="fas fa-trash" aria-hidden="true"></i>
-                            </a>
+                            <div class="is-flex is-flex-wrap-nowrap gap-2" role="group" aria-label="Actions pour ce congé">
+                                <a class="button is-danger is-small" href="{{ url_for('delete_leave', leave_id=leave.id) }}" 
+                                   onclick="return Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer ce congé ?', function() { return true; }, function() { return false; });"
+                                   aria-label="Supprimer le congé" title="Supprimer ce congé">
+                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                </a>
+                            </div>
                             {% endif %}
                         </td>
                     </tr>
@@ -68,14 +68,10 @@
         </div>
         
         <!-- Légende des actions -->
-        <div class="notification is-info is-light mt-4">
-            <h3 class="subtitle is-6"><i class="fas fa-info-circle"></i> Légende des actions</h3>
-            <div class="content">
-                <p class="is-flex is-flex-wrap-wrap gap-2">
-                    <span class="button is-danger is-small min-w-200"><i class="fas fa-trash"></i> Supprimer ce congé</span>
-                </p>
-            </div>
-        </div>
+        {% set action_items = [
+            {'class': 'is-danger is-small min-w-200', 'icon': 'trash', 'label': 'Supprimer ce congé', 'description': 'Supprimer le congé sélectionné'}
+        ] %}
+        {% include "_action_legend.html" %}
         
         <!-- Pagination en bas -->
         {% if leaves.has_prev or leaves.has_next or leaves.total > 0 %}

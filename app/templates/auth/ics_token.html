@@ -8,9 +8,9 @@
         <div class="columns is-centered">
             <div class="column is-8">
                 <div class="box">
-                    <h1 class="title is-4 has-text-centered">Token d'export ICS</h1>
-                    
                     <div class="content">
+                        <h1 class="title is-4 has-text-centered">Token d'export ICS</h1>
+                        
                         <p class="mb-4">
                             Ce token vous permet d'exporter les calendriers au format ICS 
                             et de l'importer dans des logiciels comme Thunderbird, Google Calendar, Outlook, etc.
@@ -44,7 +44,7 @@
                                         <input class="input" type="text" value="{{ token }}" id="tokenInput" readonly>
                                     </div>
                                     <div class="control">
-                                        <button class="button is-primary" onclick="copyToken()">
+                                        <button class="button is-primary is-small no-hover-transform" onclick="copyToken(event)">
                                             <span class="icon">
                                                 <i class="fas fa-copy"></i>
                                             </span>
@@ -68,7 +68,7 @@
                                                id="urlShiftsAllInput" readonly>
                                     </div>
                                     <div class="control">
-                                        <button class="button is-primary" onclick="copyUrlShiftsAll()">
+                                        <button class="button is-primary is-small no-hover-transform" onclick="copyUrlShiftsAll(event)">
                                             <span class="icon">
                                                 <i class="fas fa-copy"></i>
                                             </span>
@@ -94,7 +94,7 @@
                                                id="urlShiftsMyInput" readonly>
                                     </div>
                                     <div class="control">
-                                        <button class="button is-primary" onclick="copyUrlShiftsMy()">
+                                        <button class="button is-primary is-small no-hover-transform" onclick="copyUrlShiftsMy(event)">
                                             <span class="icon">
                                                 <i class="fas fa-copy"></i>
                                             </span>
@@ -121,7 +121,7 @@
                                                id="urlOncallAllInput" readonly>
                                     </div>
                                     <div class="control">
-                                        <button class="button is-primary" onclick="copyUrlOncallAll()">
+                                        <button class="button is-primary is-small no-hover-transform" onclick="copyUrlOncallAll(event)">
                                             <span class="icon">
                                                 <i class="fas fa-copy"></i>
                                             </span>
@@ -147,7 +147,7 @@
                                                id="urlOncallMyInput" readonly>
                                     </div>
                                     <div class="control">
-                                        <button class="button is-primary" onclick="copyUrlOncallMy()">
+                                        <button class="button is-primary is-small no-hover-transform" onclick="copyUrlOncallMy(event)">
                                             <span class="icon">
                                                 <i class="fas fa-copy"></i>
                                             </span>
@@ -174,7 +174,7 @@
                                                id="urlLeavesAllInput" readonly>
                                     </div>
                                     <div class="control">
-                                        <button class="button is-primary" onclick="copyUrlLeavesAll()">
+                                        <button class="button is-primary is-small no-hover-transform" onclick="copyUrlLeavesAll(event)">
                                             <span class="icon">
                                                 <i class="fas fa-copy"></i>
                                             </span>
@@ -200,7 +200,7 @@
                                                id="urlLeavesMyInput" readonly>
                                     </div>
                                     <div class="control">
-                                        <button class="button is-primary" onclick="copyUrlLeavesMy()">
+                                        <button class="button is-primary is-small no-hover-transform" onclick="copyUrlLeavesMy(event)">
                                             <span class="icon">
                                                 <i class="fas fa-copy"></i>
                                             </span>
@@ -221,38 +221,52 @@
                                 peuvent nécessiter de rafraîchir manuellement le calendrier après des modifications.
                             </p>
                         </div>
-                        {% else %}
-                        <div class="notification is-warning mb-4">
-                            <p>Vous n'avez pas encore de token. Générez-en un ci-dessous.</p>
-                        </div>
                         {% endif %}
-                    </div>
-                    
-                    <form method="POST" action="{{ url_for('generate_ics_token') }}">
-                        <div class="field is-grouped is-grouped-centered mt-5">
-                            <div class="control">
-                                <button type="submit" class="button is-primary">
+                        
+                        <!-- Boutons d'action - TOUJOURS dans le content -->
+                        <div class="buttons is-centered mt-5">
+                            <form method="POST" action="{{ url_for('generate_ics_token') }}" class="control">
+                                <button type="submit" class="button is-primary no-hover-transform">
                                     <span class="icon">
                                         <i class="fas fa-sync-alt"></i>
                                     </span>
                                     <span>{% if token %}Régénérer le token{% else %}Générer un token{% endif %}</span>
                                 </button>
-                            </div>
-                            <div class="control">
-                                <a href="{{ url_for('profile') }}" class="button is-light">
-                                    Retour au profil
-                                </a>
-                            </div>
+                            </form>
+                            <a href="{{ url_for('profile') }}" class="button is-light no-hover-transform">
+                                Retour au profil
+                            </a>
                         </div>
-                    </form>
+                        
+                        {% if not token %}
+                        <div class="notification is-warning mb-4">
+                            <p>Vous n'avez pas encore de token. Générez-en un ci-dessus.</p>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<style>
+/* Désactiver l'animation de transformation sur les boutons */
+.no-hover-transform:hover {
+    transform: none !important;
+}
+
+/* Assurer que les boutons restent alignés */
+.buttons.is-centered {
+    justify-content: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+</style>
+
 <script>
-function copyToken() {
+function copyToken(event) {
     const input = document.getElementById('tokenInput');
     input.select();
     document.execCommand('copy');
@@ -268,7 +282,7 @@ function copyToken() {
 }
 
 // Shifts copy functions
-function copyUrlShiftsAll() {
+function copyUrlShiftsAll(event) {
     const input = document.getElementById('urlShiftsAllInput');
     input.select();
     document.execCommand('copy');
@@ -282,7 +296,7 @@ function copyUrlShiftsAll() {
     }, 2000);
 }
 
-function copyUrlShiftsMy() {
+function copyUrlShiftsMy(event) {
     const input = document.getElementById('urlShiftsMyInput');
     input.select();
     document.execCommand('copy');
@@ -297,7 +311,7 @@ function copyUrlShiftsMy() {
 }
 
 // OnCall copy functions
-function copyUrlOncallAll() {
+function copyUrlOncallAll(event) {
     const input = document.getElementById('urlOncallAllInput');
     input.select();
     document.execCommand('copy');
@@ -311,7 +325,7 @@ function copyUrlOncallAll() {
     }, 2000);
 }
 
-function copyUrlOncallMy() {
+function copyUrlOncallMy(event) {
     const input = document.getElementById('urlOncallMyInput');
     input.select();
     document.execCommand('copy');
@@ -326,7 +340,7 @@ function copyUrlOncallMy() {
 }
 
 // Leaves copy functions
-function copyUrlLeavesAll() {
+function copyUrlLeavesAll(event) {
     const input = document.getElementById('urlLeavesAllInput');
     input.select();
     document.execCommand('copy');
@@ -340,7 +354,7 @@ function copyUrlLeavesAll() {
     }, 2000);
 }
 
-function copyUrlLeavesMy() {
+function copyUrlLeavesMy(event) {
     const input = document.getElementById('urlLeavesMyInput');
     input.select();
     document.execCommand('copy');

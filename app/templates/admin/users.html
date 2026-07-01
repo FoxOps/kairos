@@ -10,15 +10,17 @@
         </h1>
         
         <!-- Bouton pour ajouter un utilisateur -->
-        <div class="buttons">
-            <a class="button is-primary" href="{{ url_for('add_user') }}">
-                <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un utilisateur
-            </a>
+        <div class="buttons" role="group" aria-label="Actions utilisateurs">
+            {% set add_button_route = 'add_user' %}
+            {% set add_button_label = 'Ajouter un utilisateur' %}
+            {% set add_button_icon = 'plus' %}
+            {% set add_button_resource_name = 'Ajouter un nouvel utilisateur' %}
+            {% include "_add_button.html" %}
         </div>
         
         <!-- Tableau des utilisateurs -->
-        <div class="table-container">
-            <table class="table is-fullwidth is-striped">
+        <div class="table-container" role="region" aria-labelledby="users-title">
+            <table class="table is-fullwidth is-striped" aria-describedby="users-title">
                 <caption class="is-sr-only">Liste des utilisateurs</caption>
                 <thead>
                     <tr>
@@ -45,18 +47,30 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a class="button is-small is-warning" href="{{ url_for('edit_user', user_id=user.id) }}" aria-label="Modifier l'utilisateur">
-                                <i class="fas fa-edit" aria-hidden="true"></i>
-                            </a>
-                            <a class="button is-small is-danger" href="{{ url_for('delete_user', user_id=user.id) }}" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')" aria-label="Supprimer l'utilisateur">
-                                <i class="fas fa-trash" aria-hidden="true"></i>
-                            </a>
+                            <div class="is-flex gap-2" role="group" aria-label="Actions pour l'utilisateur {{ user.name }}">
+                                <a class="button is-small is-warning" href="{{ url_for('edit_user', user_id=user.id) }}" 
+                                   aria-label="Modifier l'utilisateur {{ user.name }}" title="Modifier l'utilisateur">
+                                    <i class="fas fa-edit" aria-hidden="true"></i>
+                                </a>
+                                <a class="button is-small is-danger" href="{{ url_for('delete_user', user_id=user.id) }}"
+                                   onclick="return Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer l\'utilisateur {{ user.name }} ?', function() { return true; }, function() { return false; });"
+                                   aria-label="Supprimer l'utilisateur {{ user.name }}" title="Supprimer l'utilisateur">
+                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+        
+        <!-- Légende des actions -->
+        {% set action_items = [
+            {'class': 'is-warning is-small', 'icon': 'edit', 'label': 'Modifier', 'description': 'Modifier l\'utilisateur'},
+            {'class': 'is-danger is-small', 'icon': 'trash', 'label': 'Supprimer', 'description': 'Supprimer l\'utilisateur'}
+        ] %}
+        {% include "_action_legend.html" %}
     </div>
 </section>
 {% endblock %}

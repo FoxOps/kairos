@@ -13,23 +13,22 @@
             <!-- Boutons pour ajouter, exporter et supprimer -->
             <div class="buttons" role="group" aria-label="Actions principales">
                 {% if current_user.is_admin %}
-                <a class="button is-primary" href="{{ url_for('add_shift') }}" aria-label="Ajouter un nouveau shift">
+                <a class="button is-primary" href="{{ url_for('add_shift') }}" 
+                   aria-label="Ajouter un nouveau shift" title="Ajouter un nouveau shift">
                     <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un shift
                 </a>
                 {% endif %}
-                {% if current_user.is_authenticated and current_user.ics_token %}
-                <a class="button is-success" href="{{ request.host_url ~ current_user.get_ics_export_url('shifts', 'all') }}" aria-label="Exporter tous les shifts au format iCalendar">
-                    <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter tous les shifts
-                </a>
-                <a class="button is-success" href="{{ request.host_url ~ current_user.get_ics_export_url('shifts', 'my') }}" aria-label="Exporter mes shifts au format iCalendar">
-                    <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter mes shifts
-                </a>
-                {% endif %}
+                
+                {# Boutons d'export ICS #}
+                {% set resource_type = 'shifts' %}
+                {% set resource_name = 'shifts' %}
+                {% include "_ics_export_buttons.html" %}
+                
                 {% if current_user.is_admin %}
                 <form method="POST" action="{{ url_for('delete_all_shifts') }}" class="ml-2">
                     <button type="submit" class="button is-danger" 
                             onclick="return Leviia.confirmActionAccessible('Êtes-vous SÛR de vouloir supprimer TOUS les shifts ? Cette action est irréversible !', function() { this.form.submit(); }, function() {}); return false;"
-                            aria-label="Supprimer tous les shifts">
+                            aria-label="Supprimer tous les shifts" title="Supprimer tous les shifts">
                         <i class="fas fa-trash-alt" aria-hidden="true"></i>&nbsp; Supprimer TOUS les shifts
                     </button>
                 </form>
@@ -87,7 +86,9 @@
                                 <div class="is-flex is-flex-wrap-wrap gap-2" role="group" aria-label="Actions pour ce shift">
                                     <!-- Bouton pour supprimer ce shift -->
                                     <a class="button is-danger is-small" href="{{ url_for('delete_shift', shift_id=shift.id) }}" 
-                                       aria-label="Supprimer le shift du {{ shift.date.strftime('%d/%m/%Y') }}" title="Supprimer ce shift">
+                                       onclick="return Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer ce shift ?', function() { return true; }, function() { return false; });"
+                                       aria-label="Supprimer le shift du {{ shift.date.strftime('%d/%m/%Y') }}" 
+                                       title="Supprimer ce shift">
                                         <i class="fas fa-trash" aria-hidden="true"></i>
                                     </a>
                                     
@@ -137,17 +138,13 @@
             
             <!-- Légende des actions -->
             {% if current_user.is_admin %}
-            <div class="notification is-info is-light mt-4" role="status" aria-live="polite">
-                <h3 class="subtitle is-6"><i class="fas fa-info-circle" aria-hidden="true"></i> Légende des actions</h3>
-                <div class="content">
-                    <p class="is-flex is-flex-wrap-wrap gap-2" role="list" aria-label="Légende des boutons d'action">
-                        <span class="button is-danger is-small min-w-140" role="listitem"><i class="fas fa-trash" aria-hidden="true"></i> Supprimer ce shift</span>
-                        <span class="button is-warning is-small min-w-140" role="listitem"><i class="fas fa-user-times" aria-hidden="true"></i> Supprimer TOUS les shifts de cet utilisateur</span>
-                        <span class="button is-info is-small min-w-140" role="listitem"><i class="fas fa-calendar-day" aria-hidden="true"></i> Supprimer TOUS les shifts de cette journée</span>
-                        <span class="button is-primary is-small min-w-140" role="listitem"><i class="fas fa-calendar-week" aria-hidden="true"></i> Supprimer TOUS les shifts de cette semaine</span>
-                    </p>
-                </div>
-            </div>
+            {% set action_items = [
+                {'class': 'is-danger is-small min-w-140', 'icon': 'trash', 'label': 'Supprimer ce shift', 'description': 'Supprimer le shift sélectionné'},
+                {'class': 'is-warning is-small min-w-140', 'icon': 'user-times', 'label': 'Supprimer TOUS les shifts de cet utilisateur', 'description': 'Supprimer tous les shifts d\'un utilisateur'},
+                {'class': 'is-info is-small min-w-140', 'icon': 'calendar-day', 'label': 'Supprimer TOUS les shifts de cette journée', 'description': 'Supprimer tous les shifts d\'une journée'},
+                {'class': 'is-primary is-small min-w-140', 'icon': 'calendar-week', 'label': 'Supprimer TOUS les shifts de cette semaine', 'description': 'Supprimer tous les shifts d\'une semaine'}
+            ] %}
+            {% include "_action_legend.html" %}
             {% endif %}
             
             <!-- Pagination en bas -->

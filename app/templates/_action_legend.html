@@ -1,0 +1,26 @@
+{# Template partiel pour la légende des actions #}
+{# Variables requises dans le contexte :
+   - action_items: liste de dictionnaires avec les clés:
+     - class: classes CSS pour le bouton (ex: "is-danger is-small min-w-140")
+     - icon: classe Font Awesome (ex: "fa-trash")
+     - label: texte du bouton (ex: "Supprimer ce shift")
+     - description: description pour aria-label (optionnel)
+#}
+
+{% if action_items and action_items|length > 0 %}
+<div class="notification is-info is-light mt-4" role="status" aria-live="polite">
+    <h3 class="subtitle is-6">
+        <i class="fas fa-info-circle" aria-hidden="true"></i> Légende des actions
+    </h3>
+    <div class="content">
+        <p class="is-flex is-flex-wrap-wrap gap-2" role="list" aria-label="Légende des boutons d'action">
+            {% for item in action_items %}
+            <span class="button {{ item.class }}" role="listitem" 
+                  {% if item.description %}aria-label="{{ item.description }}"{% endif %}>
+                <i class="fas fa-{{ item.icon }}" aria-hidden="true"></i> {{ item.label }}
+            </span>
+            {% endfor %}
+        </p>
+    </div>
+</div>
+{% endif %}

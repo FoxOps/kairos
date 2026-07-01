@@ -1,20 +1,21 @@
-{% extends "base.html" %}
+{% extends "admin/base_admin.html" %}
 
 {% block title %}Modifier un groupe - Leviia{% endblock %}
 
-{% block content %}
+{% block admin_content %}
 <section class="section">
     <div class="container">
         <h1 class="title">
             <i class="fas fa-edit" aria-hidden="true"></i> Modifier un groupe
         </h1>
         
-        <form method="POST" action="{{ url_for('edit_group', group_id=group.id) }}">
+        <form method="POST" action="{{ url_for('edit_group', group_id=group.id) }}" aria-labelledby="form-title">
             <div class="box">
                 <div class="field">
-                    <label class="label required">Nom du groupe</label>
+                    <label class="label required" for="name">Nom du groupe</label>
                     <div class="control">
-                        <input class="input" type="text" name="name" value="{{ group.name }}" required aria-required="true">
+                        <input class="input" type="text" id="name" name="name" value="{{ group.name }}" required aria-required="true" aria-describedby="name-help">
+                        <p class="help" id="name-help">Nom unique du groupe</p>
                     </div>
                 </div>
                 
@@ -40,10 +41,14 @@
                 
                 <div class="field">
                     <div class="control">
-                        <button class="button is-primary" type="submit">
-                            <i class="fas fa-save" aria-hidden="true"></i>&nbsp; Enregistrer
-                        </button>
-                        <a class="button is-light" href="{{ url_for('list_groups') }}">Annuler</a>
+                        <div class="buttons" role="group" aria-label="Actions du formulaire">
+                            <button class="button is-primary" type="submit" aria-label="Enregistrer les modifications" title="Enregistrer les modifications">
+                                <i class="fas fa-save" aria-hidden="true"></i>&nbsp; Enregistrer
+                            </button>
+                            <a class="button is-light" href="{{ url_for('list_groups') }}" aria-label="Annuler et retourner à la liste" title="Annuler">
+                                Annuler
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

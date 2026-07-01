@@ -65,30 +65,6 @@
 }
 
 /* ============================================
-   CLASSES UTILITAIRES POUR BULMA
-   ============================================ */
-
-/* Gap utilities - pour remplacer les styles inline */
-.gap-0 { gap: 0; }
-.gap-1 { gap: 0.25rem; }
-.gap-2 { gap: 0.5rem; }
-.gap-3 { gap: 0.75rem; }
-.gap-4 { gap: 1rem; }
-.gap-5 { gap: 1.5rem; }
-
-/* Min-width utilities pour les boutons */
-.min-w-140 { min-width: 140px; }
-.min-w-150 { min-width: 150px; }
-.min-w-180 { min-width: 180px; }
-.min-w-200 { min-width: 200px; }
-
-/* Width utilities */
-.w-80 { width: 80px; }
-
-/* Margin bottom utility pour remplacer margin: 0 */
-.mb-0 { margin-bottom: 0 !important; }
-
-/* ============================================
    INDICATION VISUELLE POUR LES CHAMPS OBLIGATOIRES
    ============================================ */
 .label.required::after {
@@ -297,6 +273,7 @@
 .dark-mode .content a:focus-visible {
     color: var(--color-primary);
     text-decoration: none;
+}
 
 /* Supprimer le soulignement des liens dans les boutons et menus en mode sombre */
 [data-theme="dark"] .button a,
@@ -314,7 +291,6 @@
 .dark-mode .menu-item a,
 .dark-mode .pagination-link a {
     text-decoration: none !important;
-}
 }
 
 /* Assurer un contraste suffisant pour les boutons en mode sombre */

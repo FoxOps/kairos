@@ -10,7 +10,8 @@
                 <div class="box">
                     <h2><i class="fas fa-users" aria-hidden="true"></i> Utilisateurs</h2>
                     <p>Nombre total : {{ users_count }}</p>
-                    <a class="button is-info is-small mt-2" href="{{ url_for('list_users') }}">
+                    <a class="button is-info is-small mt-2" href="{{ url_for('list_users') }}" 
+                       aria-label="Voir la liste des utilisateurs" title="Voir la liste des utilisateurs">
                         <i class="fas fa-list" aria-hidden="true"></i>&nbsp; Voir la liste
                     </a>
                 </div>
@@ -20,7 +21,8 @@
                 <div class="box">
                     <h2><i class="fas fa-user-friends" aria-hidden="true"></i> Groupes</h2>
                     <p>Nombre total : {{ groups_count }}</p>
-                    <a class="button is-info is-small mt-2" href="{{ url_for('list_groups') }}">
+                    <a class="button is-info is-small mt-2" href="{{ url_for('list_groups') }}" 
+                       aria-label="Voir la liste des groupes" title="Voir la liste des groupes">
                         <i class="fas fa-list" aria-hidden="true"></i>&nbsp; Voir la liste
                     </a>
                 </div>
@@ -30,7 +32,8 @@
                 <div class="box">
                     <h2><i class="fas fa-calendar-alt" aria-hidden="true"></i> Shifts</h2>
                     <p>Nombre total : {{ shifts_count }}</p>
-                    <a class="button is-info is-small mt-2" href="{{ url_for('schedule') }}">
+                    <a class="button is-info is-small mt-2" href="{{ url_for('schedule') }}" 
+                       aria-label="Voir la liste des shifts" title="Voir la liste des shifts">
                         <i class="fas fa-list" aria-hidden="true"></i>&nbsp; Voir la liste
                     </a>
                 </div>
@@ -40,7 +43,8 @@
                 <div class="box">
                     <h2><i class="fas fa-cogs" aria-hidden="true"></i> Types de shifts</h2>
                     <p>Gérer les types</p>
-                    <a class="button is-info is-small mt-2" href="{{ url_for('list_shift_types') }}">
+                    <a class="button is-info is-small mt-2" href="{{ url_for('list_shift_types') }}" 
+                       aria-label="Voir la liste des types de shifts" title="Voir la liste des types de shifts">
                         <i class="fas fa-list" aria-hidden="true"></i>&nbsp; Voir la liste
                     </a>
                 </div>
@@ -50,7 +54,8 @@
                 <div class="box">
                     <h2><i class="fas fa-moon" aria-hidden="true"></i> Astreintes</h2>
                     <p>Nombre total : {{ on_calls_count }}</p>
-                    <a class="button is-info is-small mt-2" href="{{ url_for('oncall') }}">
+                    <a class="button is-info is-small mt-2" href="{{ url_for('oncall') }}" 
+                       aria-label="Voir la liste des astreintes" title="Voir la liste des astreintes">
                         <i class="fas fa-list" aria-hidden="true"></i>&nbsp; Voir la liste
                     </a>
                 </div>
@@ -60,7 +65,8 @@
                 <div class="box">
                     <h2><i class="fas fa-umbrella-beach" aria-hidden="true"></i> Congés</h2>
                     <p>Nombre total : {{ leaves_count }}</p>
-                    <a class="button is-info is-small mt-2" href="{{ url_for('leave') }}">
+                    <a class="button is-info is-small mt-2" href="{{ url_for('leave') }}" 
+                       aria-label="Voir la liste des congés" title="Voir la liste des congés">
                         <i class="fas fa-list" aria-hidden="true"></i>&nbsp; Voir la liste
                     </a>
                 </div>
@@ -70,7 +76,8 @@
                 <div class="box">
                     <h2><i class="fas fa-robot" aria-hidden="true"></i> Automatisation</h2>
                     <p>Génération automatique</p>
-                    <a class="button is-success is-small mt-2" href="{{ url_for('automation_dashboard') }}">
+                    <a class="button is-success is-small mt-2" href="{{ url_for('automation_dashboard') }}" 
+                       aria-label="Configurer l'automatisation" title="Configurer l'automatisation">
                         <i class="fas fa-cog" aria-hidden="true"></i>&nbsp; Configurer
                     </a>
                 </div>
@@ -79,26 +86,44 @@
 
         <div class="box">
             <h2><i class="fas fa-bolt" aria-hidden="true"></i> Actions rapides</h2>
-            <div class="buttons">
-                <a class="button is-primary is-small" href="{{ url_for('add_user') }}">
-                    <i class="fas fa-user-plus" aria-hidden="true"></i>&nbsp; Ajouter un utilisateur
-                </a>
-                <a class="button is-primary is-small" href="{{ url_for('add_group') }}">
-                    <i class="fas fa-user-friends" aria-hidden="true"></i>&nbsp; Ajouter un groupe
-                </a>
-                <a class="button is-primary is-small" href="{{ url_for('add_shift_type') }}">
-                    <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un type de shift
-                </a>
+            <div class="buttons" role="group" aria-label="Actions rapides administrateur">
+                {% set add_button_route = 'add_user' %}
+                {% set add_button_label = 'Ajouter un utilisateur' %}
+                {% set add_button_icon = 'user-plus' %}
+                {% set add_button_resource_name = 'Ajouter un utilisateur' %}
+                {% set add_button_class = 'is-small' %}
+                {% include "_add_button.html" %}
+                
+                {% set add_button_route = 'add_group' %}
+                {% set add_button_label = 'Ajouter un groupe' %}
+                {% set add_button_icon = 'user-friends' %}
+                {% set add_button_resource_name = 'Ajouter un groupe' %}
+                {% set add_button_class = 'is-small' %}
+                {% include "_add_button.html" %}
+                
+                {% set add_button_route = 'add_shift_type' %}
+                {% set add_button_label = 'Ajouter un type de shift' %}
+                {% set add_button_icon = 'plus' %}
+                {% set add_button_resource_name = 'Ajouter un type de shift' %}
+                {% set add_button_class = 'is-small' %}
+                {% include "_add_button.html" %}
+                
                 {% if current_user.ics_token %}
-                <a class="button is-success is-small" href="{{ request.host_url ~ current_user.get_ics_export_url('shifts', 'all') }}">
-                    <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter tous les shifts
-                </a>
-                <a class="button is-success is-small" href="{{ request.host_url ~ current_user.get_ics_export_url('oncall', 'all') }}">
-                    <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter toutes les astreintes
-                </a>
-                <a class="button is-success is-small" href="{{ request.host_url ~ current_user.get_ics_export_url('leaves', 'all') }}">
-                    <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter tous les congés
-                </a>
+                {# Boutons d'export ICS pour admin #}
+                {% set resource_type = 'shifts' %}
+                {% set resource_name = 'shifts' %}
+                {% set show_my = false %}
+                {% include "_ics_export_buttons.html" %}
+                
+                {% set resource_type = 'oncall' %}
+                {% set resource_name = 'astreintes' %}
+                {% set show_my = false %}
+                {% include "_ics_export_buttons.html" %}
+                
+                {% set resource_type = 'leaves' %}
+                {% set resource_name = 'congés' %}
+                {% set show_my = false %}
+                {% include "_ics_export_buttons.html" %}
                 {% endif %}
             </div>
         </div>
