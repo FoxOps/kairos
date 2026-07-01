@@ -11,12 +11,11 @@
         
         <!-- Bouton pour ajouter un utilisateur -->
         <div class="buttons" role="group" aria-label="Actions utilisateurs">
-            {% include "_add_button.html" with {
-                'route': 'add_user',
-                'label': 'Ajouter un utilisateur',
-                'icon': 'plus',
-                'resource_name': 'Ajouter un nouvel utilisateur'
-            } %}
+            {% set add_button_route = 'add_user' %}
+            {% set add_button_label = 'Ajouter un utilisateur' %}
+            {% set add_button_icon = 'plus' %}
+            {% set add_button_resource_name = 'Ajouter un nouvel utilisateur' %}
+            {% include "_add_button.html" %}
         </div>
         
         <!-- Tableau des utilisateurs -->

@@ -87,18 +87,27 @@
         <div class="box">
             <h2><i class="fas fa-bolt" aria-hidden="true"></i> Actions rapides</h2>
             <div class="buttons" role="group" aria-label="Actions rapides administrateur">
-                <a class="button is-primary is-small" href="{{ url_for('add_user') }}" 
-                   aria-label="Ajouter un utilisateur" title="Ajouter un utilisateur">
-                    <i class="fas fa-user-plus" aria-hidden="true"></i>&nbsp; Ajouter un utilisateur
-                </a>
-                <a class="button is-primary is-small" href="{{ url_for('add_group') }}" 
-                   aria-label="Ajouter un groupe" title="Ajouter un groupe">
-                    <i class="fas fa-user-friends" aria-hidden="true"></i>&nbsp; Ajouter un groupe
-                </a>
-                <a class="button is-primary is-small" href="{{ url_for('add_shift_type') }}" 
-                   aria-label="Ajouter un type de shift" title="Ajouter un type de shift">
-                    <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un type de shift
-                </a>
+                {% set add_button_route = 'add_user' %}
+                {% set add_button_label = 'Ajouter un utilisateur' %}
+                {% set add_button_icon = 'user-plus' %}
+                {% set add_button_resource_name = 'Ajouter un utilisateur' %}
+                {% set add_button_class = 'is-small' %}
+                {% include "_add_button.html" %}
+                
+                {% set add_button_route = 'add_group' %}
+                {% set add_button_label = 'Ajouter un groupe' %}
+                {% set add_button_icon = 'user-friends' %}
+                {% set add_button_resource_name = 'Ajouter un groupe' %}
+                {% set add_button_class = 'is-small' %}
+                {% include "_add_button.html" %}
+                
+                {% set add_button_route = 'add_shift_type' %}
+                {% set add_button_label = 'Ajouter un type de shift' %}
+                {% set add_button_icon = 'plus' %}
+                {% set add_button_resource_name = 'Ajouter un type de shift' %}
+                {% set add_button_class = 'is-small' %}
+                {% include "_add_button.html" %}
+                
                 {% if current_user.ics_token %}
                 {# Boutons d'export ICS pour admin #}
                 {% set resource_type = 'shifts' %}
