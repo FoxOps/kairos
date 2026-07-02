@@ -15,8 +15,8 @@ from app.utils.helpers import (
     can_add_leave,
     can_add_oncall,
 )
-from app.utils.decorators import admin_required, user_owns_resource
-from app.utils.advanced_shift_automation import AdvancedShiftAutomation
+from app.auth.decorators import admin_required, user_owns_resource
+from app.utils.automation.advanced_shift_automation import AdvancedShiftAutomation
 from flask import Blueprint
 
 # Create blueprint
@@ -1081,7 +1081,7 @@ def api_delete_oncall(oncall_id):
 def api_delete_leave(leave_id):
     """API endpoint pour supprimer un congé."""
     from flask import jsonify
-    from app.utils.decorators import user_owns_resource
+    from app.auth.decorators import user_owns_resource
     
     leave = db.session.get(Leave, leave_id)
     if not leave:
@@ -1097,7 +1097,7 @@ def api_delete_leave(leave_id):
         
         # Rééquilibrer automatiquement les shifts après la suppression d'un congé
         try:
-            from app.utils.advanced_shift_automation import AdvancedShiftAutomation
+            from app.utils.automation.advanced_shift_automation import AdvancedShiftAutomation
             _, rebalance_messages = AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
         except Exception as e:
             pass  # On ignore les erreurs de rééquilibrage pour l'API
@@ -1257,7 +1257,7 @@ def api_update_leave(leave_id):
         
         # Rééquilibrer automatiquement les shifts après la modification d'un congé
         try:
-            from app.utils.advanced_shift_automation import AdvancedShiftAutomation
+            from app.utils.automation.advanced_shift_automation import AdvancedShiftAutomation
             _, rebalance_messages = AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
         except Exception as e:
             pass  # On ignore les erreurs de rééquilibrage pour l'API

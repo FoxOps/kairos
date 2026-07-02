@@ -10,12 +10,12 @@ from flask import current_app
 from app import db
 from app.models import User, Shift, OnCall, Leave, Group, ShiftType
 from app.utils.optimizations import cached_route, paginated_route, eager_load, optimize_query, cache_result
-from app.utils.decorators import admin_required
+from app.auth.decorators import admin_required
 from app.utils.automation import (
     OnCallAutomation,
     ShiftAutomation,
     BusinessRules,
-    generate_full_schedule,
+    
     get_automation_status,
 )
 from app.utils.advanced_shift_automation import AdvancedShiftAutomation
