@@ -6,7 +6,7 @@ Ce test vérifie que le premier jour d'astreinte (lundi) utilise 09h-17h et non 
 from datetime import date, datetime, timedelta
 import pytest
 from app.models import User, Group, OnCall, ShiftType
-from app.utils.advanced_shift_automation import AdvancedShiftAutomation
+from app.utils.automation import AdvancedShiftAutomation
 from app import db, create_app
 
 

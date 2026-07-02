@@ -4,7 +4,7 @@ Tests pour l'export ICS.
 
 import pytest
 from datetime import datetime, timedelta
-from app.utils.ics_exporter import (
+from app.utils.export import (
     generate_ics_shifts,
     generate_ics_oncall,
     generate_ics_leaves,

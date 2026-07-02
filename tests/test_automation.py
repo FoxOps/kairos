@@ -9,7 +9,7 @@ from app.utils.automation import (
     OnCallAutomation,
     ShiftAutomation,
     BusinessRules,
-    generate_full_schedule,
+    
     get_automation_status,
 )
 from app import db

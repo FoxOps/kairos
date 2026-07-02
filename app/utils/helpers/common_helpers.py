@@ -4,9 +4,36 @@ Common helper functions for Leviia Schedule.
 This module provides general utility functions used throughout the application.
 """
 
+import os
 from datetime import datetime, date, time, timedelta
 from typing import Optional, Union
 from flask_login import current_user
+from app import db
+from app.models import Shift, OnCall, Leave
+
+
+def get_bool(env_var: str, default: bool = False) -> bool:
+    """Get a boolean value from environment variable."""
+    value = os.environ.get(env_var)
+    if value is None:
+        return default
+    value_lower = value.lower().strip()
+    if value_lower in ('true', '1', 'yes', 'y', 'on'):
+        return True
+    elif value_lower in ('false', '0', 'no', 'n', 'off'):
+        return False
+    return default
+
+
+def get_int(env_var: str, default: int = 0) -> int:
+    """Get an integer value from environment variable."""
+    value = os.environ.get(env_var)
+    if value is None:
+        return default
+    try:
+        return int(value.strip())
+    except ValueError:
+        return default
 
 
 def format_date(d: date, format_str: str = "%Y-%m-%d") -> str:
@@ -134,8 +161,6 @@ def can_add_shift(user=None, date=None, shift_type_id=None):
     Returns:
         True if user can add a shift, False otherwise
     """
-    from app.models import Shift
-    
     if user is None:
         user = current_user
     
@@ -166,8 +191,6 @@ def can_add_leave(user=None, start_date=None, end_date=None):
     Returns:
         True if user can add leave, False otherwise
     """
-    from app.models import Leave
-    
     if user is None:
         user = current_user
     
@@ -199,8 +222,6 @@ def can_add_oncall(user=None, start_time=None, end_time=None):
     Returns:
         True if user can add on-call, False otherwise
     """
-    from app.models import OnCall
-    
     if user is None:
         user = current_user
     
@@ -218,3 +239,74 @@ def can_add_oncall(user=None, start_time=None, end_time=None):
     ).first()
     
     return overlapping_oncall is None
+
+
+# ---------------------------------------------------------------------------
+# Overlap checking functions (for compatibility with existing code)
+# ---------------------------------------------------------------------------
+
+def is_user_on_shift(user_id, target_date):
+    """Check if a user already has a shift on the given date."""
+    return db.session.query(
+        db.exists().where(Shift.user_id == user_id, Shift.date == target_date)
+    ).scalar()
+
+
+def is_user_on_leave(user_id, target_date):
+    """Check if a user is on leave on the given date."""
+    return db.session.query(
+        db.exists().where(
+            Leave.user_id == user_id,
+            Leave.start_date <= target_date,
+            Leave.end_date >= target_date,
+        )
+    ).scalar()
+
+
+def _has_overlapping_oncall(user_id, start_time, end_time):
+    """Check if user already has an on-call that overlaps with the period."""
+    return db.session.query(
+        db.exists().where(
+            OnCall.user_id == user_id,
+            OnCall.start_time < end_time,
+            OnCall.end_time > start_time,
+        )
+    ).scalar()
+
+
+def _get_overlapping_leave(user_id, start_date, end_date):
+    """Get the first leave overlapping with the period."""
+    return (
+        db.session.query(Leave)
+        .filter(
+            Leave.user_id == user_id,
+            Leave.start_date <= end_date,
+            Leave.end_date >= start_date,
+        )
+        .first()
+    )
+
+
+def _get_overlapping_shift(user_id, start_date, end_date):
+    """Get the first shift overlapping with the period."""
+    return (
+        db.session.query(Shift)
+        .filter(
+            Shift.user_id == user_id, Shift.date >= start_date, Shift.date <= end_date
+        )
+        .first()
+    )
+
+
+def _get_overlapping_oncall(user_id, start_date, end_date):
+    """Get the first on-call overlapping with the period."""
+    return (
+        db.session.query(OnCall)
+        .filter(
+            OnCall.user_id == user_id,
+            OnCall.start_time
+            < datetime.combine(end_date + timedelta(days=1), datetime.min.time()),
+            OnCall.end_time > datetime.combine(start_date, datetime.min.time()),
+        )
+        .first()
+    )

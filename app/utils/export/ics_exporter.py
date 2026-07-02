@@ -108,3 +108,22 @@ def generate_ics_calendar(events, calendar_name="Leviia Schedule") -> bytes:
         ICS formatted bytes
     """
     return generate_ics_standard(events, calendar_name).encode('utf-8')
+
+
+# ---------------------------------------------------------------------------
+# Convenience functions for specific event types (for backward compatibility)
+# ---------------------------------------------------------------------------
+
+def generate_ics_shifts(shifts):
+    """Generate an ICS file for shifts."""
+    return generate_ics_standard(shifts, "Leviia Schedule - Shifts")
+
+
+def generate_ics_oncall(on_calls):
+    """Generate an ICS file for on-call duties."""
+    return generate_ics_standard(on_calls, "Leviia Schedule - Astreintes")
+
+
+def generate_ics_leaves(leaves):
+    """Generate an ICS file for leaves."""
+    return generate_ics_standard(leaves, "Leviia Schedule - Conge")

@@ -8,7 +8,7 @@ from werkzeug.security import generate_password_hash
 
 from app import db
 from app.models import Group, Leave, OnCall, Shift, ShiftType, User
-from app.utils.advanced_shift_automation import AdvancedShiftAutomation
+from app.utils.automation import AdvancedShiftAutomation
 
 
 class TestAdvancedShiftAutomationBasics:
