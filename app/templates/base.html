@@ -5,16 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Leviia{% endblock %}</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
-    
-    <!-- Bulma CSS - Utilisation du CDN pour éviter les problèmes de chemins -->
+    <!-- Bulma CSS - servi localement pour éviter les problèmes de CDN -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
     
-    <!-- Font Awesome - Utilisation du CDN pour éviter les problèmes de chemins -->
+    <!-- Font Awesome - servi localement pour éviter les problèmes de CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- CSS de l'application -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base-styles.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base-styles.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -50,3 +48,73 @@
                     {% endif %}
                 </div>
                 <div class="navbar-end">
+                    {% if current_user.is_authenticated %}
+                        <!-- Toggle thème sombre -->
+                        <div class="navbar-item">
+                            <button id="theme-toggle" class="button is-small is-outlined is-rounded" 
+                                    aria-label="Basculer entre le thème clair et sombre" 
+                                    aria-pressed="false">
+                                <span class="icon is-small">
+                                    <i class="fas fa-moon" aria-hidden="true"></i>
+                                </span>
+                            </button>
+                        </div>
+                        <div class="navbar-item has-dropdown is-hoverable">
+                            <a class="navbar-link" aria-label="Menu utilisateur - {{ current_user.name }}" aria-expanded="false" aria-controls="user-dropdown">
+                                <i class="fas fa-user" aria-hidden="true"></i>&nbsp; {{ current_user.name }}
+                            </a>
+                            <div id="user-dropdown" class="navbar-dropdown is-right" role="menu">
+                                <a class="navbar-item" href="{{ url_for('profile') }}" role="menuitem">
+                                    <i class="fas fa-user-circle" aria-hidden="true"></i>&nbsp; Mon profil
+                                </a>
+                                <hr class="navbar-divider" role="separator">
+                                <a class="navbar-item" href="{{ url_for('logout') }}" role="menuitem">
+                                    <i class="fas fa-sign-out-alt" aria-hidden="true"></i>&nbsp; Déconnexion
+                                </a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a class="navbar-item" href="{{ url_for('login') }}" aria-label="Connexion">
+                            <i class="fas fa-sign-in-alt" aria-hidden="true"></i>&nbsp; Connexion
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <section class="section" aria-live="polite" aria-atomic="true">
+        <div class="container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="notification is-{{ category }}" role="alert" aria-live="assertive">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+    </section>
+
+    <main id="main-content" role="main" aria-labelledby="page-title">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer" role="contentinfo">
+        <div class="content has-text-centered">
+            <p>
+                <strong>Leviia Schedule</strong> - Application de gestion des plannings et des astreintes pour les équipes et organisations.
+                <br>
+                Version dev 0.5 | © 2026 Leviia
+            </p>
+            <p>
+                <a href="{{ url_for('accessibility_statement') }}" aria-label="Déclaration d'accessibilité">Déclaration d'accessibilité</a>
+            </p>
+        </div>
+    </footer>
+    
+    <!-- JavaScript centralisé -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
