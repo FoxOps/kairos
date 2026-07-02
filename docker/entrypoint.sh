@@ -1,6 +1,12 @@
 #!/bin/sh
 set -e
 
+# Configurer PYTHONPATH pour s'assurer que le module app est trouvable
+export PYTHONPATH=/app:$PYTHONPATH
+
+# Changer de répertoire vers /app
+cd /app
+
 # Afficher la configuration actuelle
 echo "🔍 Configuration actuelle:"
 echo "  FLASK_ENV: ${FLASK_ENV:-non défini}"
@@ -10,7 +16,7 @@ echo ""
 # Initialiser la base de données SQLite
 if [ ! -f "/app/data/app.db" ]; then
     echo "🔧 Initialisation de la base de données SQLite..."
-    python /app/docker/init_database.py
+    python docker/init_database.py
     echo "✅ Base de données initialisée"
 fi
 
