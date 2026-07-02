@@ -1,8 +1,13 @@
+from flask import Blueprint
+
+# Create blueprint
+main_bp = Blueprint("main", __name__)
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy import func
-from app import app, db
+from flask import current_app
+from app import db
 from app.models import Shift, OnCall, Leave, User, Group, ShiftType
 from app.utils.optimizations import cached_route, paginated_route, eager_load, optimize_query
 from app.utils.helpers import (
@@ -12,6 +17,10 @@ from app.utils.helpers import (
 )
 from app.utils.decorators import admin_required, user_owns_resource
 from app.utils.advanced_shift_automation import AdvancedShiftAutomation
+from flask import Blueprint
+
+# Create blueprint
+main_bp = Blueprint("main", __name__)
 from datetime import datetime, timedelta
 
 CALENDAR_WINDOW_DAYS = 180
@@ -78,7 +87,7 @@ def _build_calendar_events(shifts, on_calls, leaves):
     return events
 
 
-@app.route("/")
+@main_bp.route("/")
 @login_required
 @eager_load(Shift, ['user', 'shift_type'])
 @eager_load(OnCall, ['user'])
@@ -131,7 +140,7 @@ def index():
 # ========== ROUTES POUR LES CONGÉS ==========
 
 
-@app.route("/leave")
+@main_bp.route("/leave")
 @login_required
 @eager_load(Leave, ['user'])
 def leave():
@@ -160,7 +169,7 @@ def leave():
     return render_template("leave.html", leaves=leaves_paginated, per_page=per_page, per_page_options=per_page_options)
 
 
-@app.route("/leave/add", methods=["GET", "POST"])
+@main_bp.route("/leave/add", methods=["GET", "POST"])
 @login_required
 def add_leave():
     if request.method == "POST":
@@ -227,7 +236,7 @@ def add_leave():
     return render_template("add_leave.html", users=users)
 
 
-@app.route("/leave/delete/<int:leave_id>")
+@main_bp.route("/leave/delete/<int:leave_id>")
 @login_required
 @user_owns_resource(Leave, "leave_id")
 def delete_leave(leave_id):
@@ -258,7 +267,7 @@ def delete_leave(leave_id):
 # ========== ROUTES POUR LES ASTREINTES ==========
 
 
-@app.route("/oncall")
+@main_bp.route("/oncall")
 @login_required
 @eager_load(OnCall, ['user'])
 def oncall():
@@ -286,7 +295,7 @@ def oncall():
     return render_template("oncall.html", on_calls=on_calls_paginated, per_page=per_page, per_page_options=per_page_options)
 
 
-@app.route("/oncall/add", methods=["GET", "POST"])
+@main_bp.route("/oncall/add", methods=["GET", "POST"])
 @login_required
 @admin_required
 def add_oncall():
@@ -341,7 +350,7 @@ def add_oncall():
     return render_template("add_oncall.html", users=users)
 
 
-@app.route("/oncall/delete/<int:oncall_id>")
+@main_bp.route("/oncall/delete/<int:oncall_id>")
 @login_required
 @admin_required
 def delete_oncall(oncall_id):
@@ -357,7 +366,7 @@ def delete_oncall(oncall_id):
     return redirect(url_for("oncall"))
 
 
-@app.route("/oncall/delete-all", methods=["POST"])
+@main_bp.route("/oncall/delete-all", methods=["POST"])
 @login_required
 @admin_required
 def delete_all_oncalls():
@@ -377,7 +386,7 @@ def delete_all_oncalls():
     return redirect(url_for("oncall"))
 
 
-@app.route("/oncall/delete-all-for-user/<int:user_id>", methods=["POST"])
+@main_bp.route("/oncall/delete-all-for-user/<int:user_id>", methods=["POST"])
 @login_required
 @admin_required
 def delete_all_oncalls_for_user(user_id):
@@ -404,7 +413,7 @@ def delete_all_oncalls_for_user(user_id):
 
 # ========== ROUTES POUR LES SHIFTS ====================
 
-@app.route("/shift/delete-all", methods=["POST"])
+@main_bp.route("/shift/delete-all", methods=["POST"])
 @login_required
 @admin_required
 def delete_all_shifts():
@@ -424,7 +433,7 @@ def delete_all_shifts():
     return redirect(url_for("schedule"))
 
 
-@app.route("/shift/delete-all-for-user/<int:user_id>", methods=["POST"])
+@main_bp.route("/shift/delete-all-for-user/<int:user_id>", methods=["POST"])
 @login_required
 @admin_required
 def delete_all_shifts_for_user(user_id):
@@ -448,7 +457,7 @@ def delete_all_shifts_for_user(user_id):
         flash(f"❌ Erreur : {str(e)}", "danger")
     return redirect(url_for("schedule"))
 
-@app.route("/shift/delete-day/<date_str>", methods=["POST"])
+@main_bp.route("/shift/delete-day/<date_str>", methods=["POST"])
 @login_required
 @admin_required
 def delete_all_shifts_for_day(date_str):
@@ -474,7 +483,7 @@ def delete_all_shifts_for_day(date_str):
     return redirect(url_for("schedule"))
 
 
-@app.route("/shift/delete-week/<date_str>", methods=["POST"])
+@main_bp.route("/shift/delete-week/<date_str>", methods=["POST"])
 @login_required
 @admin_required
 def delete_all_shifts_for_week(date_str):
@@ -511,7 +520,7 @@ def delete_all_shifts_for_week(date_str):
 
 
 
-@app.route("/schedule")
+@main_bp.route("/schedule")
 @login_required
 def schedule():
     page = request.args.get('page', 1, type=int)
@@ -541,7 +550,7 @@ def schedule():
     return render_template("schedule.html", shifts=shifts_paginated, per_page=per_page, per_page_options=per_page_options)
 
 
-@app.route("/schedule/add", methods=["GET", "POST"])
+@main_bp.route("/schedule/add", methods=["GET", "POST"])
 @login_required
 @admin_required
 def add_shift():
@@ -638,7 +647,7 @@ def add_shift():
     return render_template("add_shift.html", users=users, shift_types=shift_types)
 
 
-@app.route("/schedule/delete/<int:shift_id>")
+@main_bp.route("/schedule/delete/<int:shift_id>")
 @login_required
 @admin_required
 def delete_shift(shift_id):
@@ -656,7 +665,7 @@ def delete_shift(shift_id):
 
 # ========== API ENDPOINTS POUR DRAG & DROP ====================
 
-@app.route("/api/shifts", methods=["GET"])
+@main_bp.route("/api/shifts", methods=["GET"])
 @login_required
 def api_get_shifts():
     """API endpoint pour récupérer les shifts au format JSON pour FullCalendar."""
@@ -701,7 +710,7 @@ def api_get_shifts():
     return jsonify(events)
 
 
-@app.route("/api/shifts/<int:shift_id>", methods=["PATCH", "PUT"])
+@main_bp.route("/api/shifts/<int:shift_id>", methods=["PATCH", "PUT"])
 @login_required
 @admin_required
 def api_update_shift(shift_id):
@@ -784,7 +793,7 @@ def api_update_shift(shift_id):
 
 # ========== TABLEAU DE BORD UTILISATEUR ==========
 
-@app.route("/dashboard")
+@main_bp.route("/dashboard")
 @login_required
 def user_dashboard():
     """Tableau de bord utilisateur - Vue d'ensemble personnalisée."""
@@ -891,13 +900,13 @@ def user_dashboard():
 
 
 
-@app.route("/accessibility-statement")
+@main_bp.route("/accessibility-statement")
 @login_required
 def accessibility_statement():
     """Page de déclaration d'accessibilité."""
     return render_template("accessibility_statement.html")
 
-@app.route("/api/shifts", methods=["POST"])
+@main_bp.route("/api/shifts", methods=["POST"])
 @login_required
 @admin_required
 def api_create_shift():
@@ -981,7 +990,7 @@ def api_create_shift():
         return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
 
 
-@app.route("/api/shifts/<int:shift_id>", methods=["DELETE"])
+@main_bp.route("/api/shifts/<int:shift_id>", methods=["DELETE"])
 @login_required
 @admin_required
 def api_delete_shift(shift_id):
@@ -1001,7 +1010,7 @@ def api_delete_shift(shift_id):
         return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
 
 
-@app.route("/api/users", methods=["GET"])
+@main_bp.route("/api/users", methods=["GET"])
 @login_required
 def api_get_users():
     """API endpoint pour récupérer la liste des utilisateurs pour le drag & drop."""
@@ -1025,7 +1034,7 @@ def api_get_users():
     return jsonify(users_list)
 
 
-@app.route("/api/shift-types", methods=["GET"])
+@main_bp.route("/api/shift-types", methods=["GET"])
 @login_required
 def api_get_shift_types():
     """API endpoint pour récupérer la liste des types de shifts."""
@@ -1047,7 +1056,7 @@ def api_get_shift_types():
     return jsonify(shift_types_list)
 
 
-@app.route("/api/oncall/<int:oncall_id>", methods=["DELETE"])
+@main_bp.route("/api/oncall/<int:oncall_id>", methods=["DELETE"])
 @login_required
 @admin_required
 def api_delete_oncall(oncall_id):
@@ -1067,7 +1076,7 @@ def api_delete_oncall(oncall_id):
         return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
 
 
-@app.route("/api/leave/<int:leave_id>", methods=["DELETE"])
+@main_bp.route("/api/leave/<int:leave_id>", methods=["DELETE"])
 @login_required
 def api_delete_leave(leave_id):
     """API endpoint pour supprimer un congé."""
@@ -1099,7 +1108,7 @@ def api_delete_leave(leave_id):
         return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
 
 
-@app.route("/api/oncall/<int:oncall_id>", methods=["PATCH", "PUT"])
+@main_bp.route("/api/oncall/<int:oncall_id>", methods=["PATCH", "PUT"])
 @login_required
 @admin_required
 def api_update_oncall(oncall_id):
@@ -1178,7 +1187,7 @@ def api_update_oncall(oncall_id):
         return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
 
 
-@app.route("/api/leave/<int:leave_id>", methods=["PATCH", "PUT"])
+@main_bp.route("/api/leave/<int:leave_id>", methods=["PATCH", "PUT"])
 @login_required
 def api_update_leave(leave_id):
     """API endpoint pour mettre à jour un congé via drag & drop."""

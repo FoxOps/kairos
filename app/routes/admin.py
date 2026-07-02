@@ -1,8 +1,13 @@
+from flask import Blueprint
+
+# Create blueprint
+admin_bp = Blueprint("admin", __name__)
 from flask import render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy import func
-from app import app, db
+from flask import current_app
+from app import db
 from app.models import User, Shift, OnCall, Leave, Group, ShiftType
 from app.utils.optimizations import cached_route, paginated_route, eager_load, optimize_query, cache_result
 from app.utils.decorators import admin_required
@@ -19,7 +24,7 @@ from datetime import datetime, date, timedelta
 
 
 # Dashboard admin
-@app.route("/admin")
+@admin_bp.route("/admin")
 @admin_required
 def admin_dashboard():
     # Optimisation : Utiliser des requêtes count() simples mais efficaces
@@ -47,7 +52,7 @@ def admin_dashboard():
 # ==================== GESTION DES GROUPES ====================
 
 
-@app.route("/admin/groups")
+@admin_bp.route("/admin/groups")
 @admin_required
 @eager_load(Group, ['users'])
 def list_groups():
@@ -55,7 +60,7 @@ def list_groups():
     return render_template("admin/groups.html", groups=groups)
 
 
-@app.route("/admin/groups/add", methods=["GET", "POST"])
+@admin_bp.route("/admin/groups/add", methods=["GET", "POST"])
 @admin_required
 def add_group():
     if request.method == "POST":
@@ -88,7 +93,7 @@ def add_group():
     return render_template("admin/add_group.html")
 
 
-@app.route("/admin/groups/edit/<int:group_id>", methods=["GET", "POST"])
+@admin_bp.route("/admin/groups/edit/<int:group_id>", methods=["GET", "POST"])
 @admin_required
 def edit_group(group_id):
     group = db.session.get(Group, group_id) or abort(404)
@@ -123,7 +128,7 @@ def edit_group(group_id):
     return render_template("admin/edit_group.html", group=group)
 
 
-@app.route("/admin/groups/delete/<int:group_id>", methods=["POST"])
+@admin_bp.route("/admin/groups/delete/<int:group_id>", methods=["POST"])
 @admin_required
 def delete_group(group_id):
     group = db.session.get(Group, group_id) or abort(404)
@@ -149,7 +154,7 @@ def delete_group(group_id):
 # ==================== GESTION DES UTILISATEURS ====================
 
 
-@app.route("/admin/users")
+@admin_bp.route("/admin/users")
 @admin_required
 @eager_load(User, ['group', 'shifts', 'on_calls', 'leaves'])
 def list_users():
@@ -167,7 +172,7 @@ def list_users():
     return render_template("admin/users.html", users=users, groups=groups)
 
 
-@app.route("/admin/users/add", methods=["GET", "POST"])
+@admin_bp.route("/admin/users/add", methods=["GET", "POST"])
 @admin_required
 def add_user():
     groups = Group.query.all()
@@ -204,7 +209,7 @@ def add_user():
     return render_template("admin/add_user.html", groups=groups)
 
 
-@app.route("/admin/users/edit/<int:user_id>", methods=["GET", "POST"])
+@admin_bp.route("/admin/users/edit/<int:user_id>", methods=["GET", "POST"])
 @admin_required
 def edit_user(user_id):
     user = db.session.get(User, user_id) or abort(404)
@@ -245,7 +250,7 @@ def edit_user(user_id):
     return render_template("admin/edit_user.html", user=user, groups=groups)
 
 
-@app.route("/admin/users/delete/<int:user_id>", methods=["POST"])
+@admin_bp.route("/admin/users/delete/<int:user_id>", methods=["POST"])
 @admin_required
 def delete_user(user_id):
     user = db.session.get(User, user_id) or abort(404)
@@ -275,7 +280,7 @@ def delete_user(user_id):
 # ==================== GESTION DES TYPES DE SHIFTS ====================
 
 
-@app.route("/admin/shift-types")
+@admin_bp.route("/admin/shift-types")
 @admin_required
 @eager_load(ShiftType, ['shifts'])
 def list_shift_types():
@@ -283,7 +288,7 @@ def list_shift_types():
     return render_template("admin/shift_types.html", shift_types=shift_types)
 
 
-@app.route("/admin/shift-types/add", methods=["GET", "POST"])
+@admin_bp.route("/admin/shift-types/add", methods=["GET", "POST"])
 @admin_required
 def add_shift_type():
     if request.method == "POST":
@@ -334,7 +339,7 @@ def add_shift_type():
     return render_template("admin/add_shift_type.html")
 
 
-@app.route("/admin/shift-types/edit/<int:shift_type_id>", methods=["GET", "POST"])
+@admin_bp.route("/admin/shift-types/edit/<int:shift_type_id>", methods=["GET", "POST"])
 @admin_required
 def edit_shift_type(shift_type_id):
     shift_type = db.session.get(ShiftType, shift_type_id) or abort(404)
@@ -387,7 +392,7 @@ def edit_shift_type(shift_type_id):
     return render_template("admin/edit_shift_type.html", shift_type=shift_type)
 
 
-@app.route("/admin/shift-types/delete/<int:shift_type_id>", methods=["POST"])
+@admin_bp.route("/admin/shift-types/delete/<int:shift_type_id>", methods=["POST"])
 @admin_required
 def delete_shift_type(shift_type_id):
     shift_type = db.session.get(ShiftType, shift_type_id) or abort(404)
@@ -415,7 +420,7 @@ def delete_shift_type(shift_type_id):
 # ============================================================================
 
 
-@app.route("/admin/automation")
+@admin_bp.route("/admin/automation")
 @admin_required
 def automation_dashboard():
     """Tableau de bord de l'automatisation."""
@@ -445,7 +450,7 @@ def automation_dashboard():
 
 
 
-@app.route("/admin/automation/shifts", methods=["GET", "POST"])
+@admin_bp.route("/admin/automation/shifts", methods=["GET", "POST"])
 @admin_required
 def automation_shifts():
     """Configuration et génération des shifts automatiques."""
@@ -545,7 +550,7 @@ def automation_shifts():
     )
 
 
-@app.route("/admin/automation/full", methods=["GET", "POST"])
+@admin_bp.route("/admin/automation/full", methods=["GET", "POST"])
 @admin_required
 def automation_full():
     """Génération complète (astreintes + shifts)."""
@@ -676,7 +681,7 @@ def automation_full():
     )
 
 
-@app.route("/admin/automation/status")
+@admin_bp.route("/admin/automation/status")
 @admin_required
 def automation_status():
     """Affiche l'état actuel de l'automatisation."""
@@ -684,7 +689,7 @@ def automation_status():
     return render_template("admin/automation/status.html", status=status)
 
 
-@app.route("/admin/automation/refresh-shifts", methods=["GET", "POST"])
+@admin_bp.route("/admin/automation/refresh-shifts", methods=["GET", "POST"])
 @admin_required
 def refresh_shifts():
     """
