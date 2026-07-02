@@ -2,8 +2,8 @@
 **Branche** : `vibe/refactor-backend-b1b247`  
 **PR** : [#98](https://github.com/FoxOps/leviia-schedule/pull/98)  
 **Date de début** : 2025-07-02  
-**Dernière mise à jour** : 2025-07-02 (15h45 UTC)  
-**Statut** : ⏳ En cours (80% terminé)
+**Dernière mise à jour** : 2025-07-02 (22h45 UTC)  
+**Statut** : ⏳ En cours (85% terminé)
 
 ---
 
@@ -18,15 +18,13 @@ Refactoriser l'architecture backend pour :
 
 ## ✅ **JALONS ATTEINTS**
 
-### 🎉 **Jalon 1 : Application Démarre** (Commit `97fabb3`)
-- ✅ Tous les circular imports résolus
-- ✅ Application peut être créée avec `create_app()`
-- ✅ Toutes les routes sont accessibles
+| Jalon | Date | Commit | Tests passant | Statut |
+|-------|------|--------|----------------|--------|
+| Application démarre | 15h15 | `97fabb3` | 0 → 135 | ✅ **ATTEINT** |
+| 135 tests passent | 15h45 | `9f52532` | 135 → 186 | ✅ **ATTEINT** |
+| 186 tests passent | 16h00 | `8a4e00b` | 186 → 198 | ✅ **ATTEINT** |
 
-### 🎉 **Jalon 2 : 135 Tests Passent** (Commit `9f52532`)
-- ✅ 135 tests sur 515 passent
-- ✅ Les imports principaux sont corrigés
-- ✅ Les classes d'automatisation sont disponibles
+**Progrès total** : 0 → 198 tests passant (+198) 🎉
 
 ---
 
@@ -34,7 +32,7 @@ Refactoriser l'architecture backend pour :
 
 ### 1. **Restructuration de la Configuration** (`app/config/`)
 - ✅ `base.py` : Configuration de base avec utilitaires pour les variables d'environnement
-- ✅ `development.py` : Configuration pour le développement (debug, logging détaillé)
+- ✅ `development.py` : Configuration pour le développement (debug, logging détaillée)
 - ✅ `production.py` : Configuration pour la production (sécurité, cache Redis)
 - ✅ `testing.py` : Configuration pour les tests (base de données en mémoire)
 - ✅ `__init__.py` : Export des classes de configuration
@@ -117,16 +115,7 @@ Refactoriser l'architecture backend pour :
 
 ---
 
-### 6. **Création des Structures pour les Services et Repositories**
-- ✅ `app/services/__init__.py` : Structure prête pour les services
-- ✅ `app/repositories/__init__.py` : Structure prête pour les repositories
-
-**Statut** : ⏳ **À implémenter** (structure créée, contenu vide)  
-**Fichiers créés** : 2
-
----
-
-### 7. **Correction des Classes d'Automatisation**
+### 6. **Correction des Classes d'Automatisation**
 - ✅ `AdvancedShiftAutomation` : Déplacée et exportée
 - ✅ `OnCallAutomation` : Créée et exportée
 - ✅ `ShiftAutomation` : Créée et exportée
@@ -138,61 +127,61 @@ Refactoriser l'architecture backend pour :
 
 ---
 
-### 8. **Correction des Tests**
-- ✅ `test_advanced_shift_automation.py` : Imports corrigés
-- ✅ `test_automation.py` : Imports corrigés
-- ✅ `test_decorators_unit.py` : Imports corrigés
-- ✅ `test_ics_export.py` : Imports corrigés
-- ✅ `test_shift_rotation_fix.py` : Imports corrigés
-- ✅ `test_theme_fixes.py` : Imports corrigés (partiellement)
+### 7. **Correction des Tests**
+- ✅ **38 templates modifiés** : Tous les `url_for` mis à jour avec les préfixes de blueprints
+- ✅ `logged_in_admin_client` → `logged_in_client` dans tous les tests
+- ✅ Ajout de la fixture `test_shift_type` dans `conftest.py`
+- ✅ Correction des imports dans les tests (automation, decorators, ics_export, etc.)
 
-**Statut** : ⏳ **En cours** (135/515 tests passent)  
-**Tests corrigés** : 10+
+**Statut** : ✅ **Terminé** (pour les problèmes d'imports)  
+**Tests corrigés** : 20+
 
 ---
 
-## 🎯 **JALONS ATTEINTS**
+## 🎯 **JALON ACTUEL**
 
-| Jalon | Date | Commit | Statut |
-|-------|------|--------|--------|
-| Application démarre | 15h15 | `97fabb3` | ✅ **ATTEINT** |
-| 135 tests passent | 15h45 | `9f52532` | ✅ **ATTEINT** |
-| Tous les tests passent | - | - | ⏳ **À FAIRE** |
-| Services implémentés | - | - | ⏳ **À FAIRE** |
-| Repositories implémentés | - | - | ⏳ **À FAIRE** |
+**198/515 tests passent** (38% de couverture)  
+**Progrès depuis le début** : +198 tests
 
 ---
 
 ## ❌ Problèmes Restants
 
-### 1. **Endpoints des Blueprints** (Priorité ⭐⭐⭐⭐⭐)
-- ❌ Les tests utilisent encore les anciens noms d'endpoints (ex: `index` au lieu de `main.index`)
-- **Exemple d'erreur** : `BuildError: Could not build url for endpoint 'index'. Did you mean 'main.index' instead?`
-- **Solution** : Mettre à jour tous les `url_for('index')` en `url_for('main.index')` dans les tests et templates
-- **Fichiers concernés** : `tests/test_*.py`, `templates/*.html`
+### 1. **Problèmes de Méthodes HTTP** (Priorité ⭐⭐⭐⭐)
+- ❌ Certains tests échouent avec **405 METHOD NOT ALLOWED**
+- **Cause** : Les routes n'acceptent pas les méthodes HTTP utilisées par les tests
+- **Exemple** : `test_delete_shift_type_post` attend 200 mais reçoit 405
+- **Solution** : Vérifier que les routes acceptent les bonnes méthodes (GET, POST, etc.)
 
-### 2. **Fichiers Utilitaires Restants**
+### 2. **Problèmes de Permissions** (Priorité ⭐⭐⭐⭐)
+- ❌ Certains tests échouent avec **403 FORBIDDEN**
+- **Cause** : Les décorateurs `@admin_required` ou `@login_required` bloquent l'accès
+- **Solution** : Vérifier que les tests utilisent des utilisateurs avec les bons droits
+
+### 3. **Problèmes de Redirections** (Priorité ⭐⭐⭐)
+- ❌ Certains tests échouent avec **302 FOUND** (redirection)
+- **Cause** : Les routes redirigent vers d'autres pages (ex: login)
+- **Solution** : Vérifier que les tests utilisent `follow_redirects=True` ou des utilisateurs authentifiés
+
+### 4. **Fichiers Utilitaires Restants**
 - ⏳ `optimizations.py` → `app/utils/optimizations/`
 - ⏳ `pagination.py` → `app/utils/pagination/`
 - ⏳ `performance_monitor.py` → `app/utils/monitoring/`
 - ⏳ `encryption.py` → `app/utils/security/`
 - ⏳ `env_helpers.py` → `app/utils/helpers/`
 
-### 3. **Implémentation des Services**
+### 5. **Implémentation des Services**
 - ⏳ `user_service.py` : Logique métier pour les utilisateurs
 - ⏳ `shift_service.py` : Logique métier pour les shifts
 - ⏳ `oncall_service.py` : Logique métier pour les astreintes
 - ⏳ `leave_service.py` : Logique métier pour les congés
 - ⏳ `export_service.py` : Logique métier pour l'export
 
-### 4. **Implémentation des Repositories**
+### 6. **Implémentation des Repositories**
 - ⏳ `user_repository.py` : Accès aux données pour User/Group
 - ⏳ `shift_repository.py` : Accès aux données pour Shift/ShiftType
 - ⏳ `oncall_repository.py` : Accès aux données pour OnCall
 - ⏳ `leave_repository.py` : Accès aux données pour Leave
-
-### 5. **Suppression de l'ancien `app/models.py`**
-- ⏳ Une fois que tous les imports pointent vers `app/models/`
 
 ---
 
@@ -200,25 +189,24 @@ Refactoriser l'architecture backend pour :
 
 | Métrique | Valeur | Évolution |
 |---------|--------|-----------|
-| **Fichiers créés** | 45+ | +5 |
-| **Fichiers modifiés** | 30+ | +15 |
+| **Fichiers créés** | 50+ | +5 |
+| **Fichiers modifiés** | 60+ | +30 |
 | **Fichiers déplacés** | 6 | - |
 | **Fichiers supprimés** | 3 | - |
-| **Lignes de code ajoutées** | ~16,000 | +4,000 |
-| **Lignes de code supprimées** | ~6,000 | +1,000 |
-| **Commits** | 4 | +1 |
-| **Tests passant** | 135/515 | +135 |
+| **Lignes de code ajoutées** | ~20,000 | +4,000 |
+| **Lignes de code supprimées** | ~8,000 | +2,000 |
+| **Commits** | 5 | +1 |
+| **Tests passant** | 198/515 | +63 |
 | **PR** | [#98](https://github.com/FoxOps/leviia-schedule/pull/98) | - |
 
 ---
 
 ## 🎯 Prochaines Étapes (Prioritaires)
 
-### 1. **🔥 URGENT** : Corriger les noms d'endpoints dans les tests et templates
-- Remplacer `url_for('index')` par `url_for('main.index')`
-- Remplacer `url_for('login')` par `url_for('auth.login')`
-- etc.
-- **Impact** : ~100 tests devraient passer en plus
+### 1. **🔥 URGENT** : Corriger les problèmes de méthodes HTTP et permissions
+- Vérifier que les routes acceptent les bonnes méthodes (GET, POST, DELETE)
+- Vérifier que les tests utilisent des utilisateurs avec les bons droits
+- **Impact** : ~50-100 tests devraient passer en plus
 
 ### 2. **Déplacer les fichiers utilitaires restants**
 - `optimizations.py`, `pagination.py`, `performance_monitor.py`, `encryption.py`, `env_helpers.py`
@@ -229,8 +217,9 @@ Refactoriser l'architecture backend pour :
 ### 4. **Implémenter les Repositories** (`app/repositories/`)
 - Créer les classes de repository pour chaque modèle
 
-### 5. **Supprimer `app/models.py`**
-- Une fois que tous les imports sont mis à jour
+### 5. **Nettoyer le code**
+- Supprimer `fix_url_for.py` (script temporaire)
+- Supprimer l'ancien `app/models.py` une fois que tous les imports sont mis à jour
 
 ---
 
@@ -238,13 +227,13 @@ Refactoriser l'architecture backend pour :
 
 | Tâche | Durée estimée | Priorité | Statut |
 |-------|---------------|----------|--------|
-| Corriger les endpoints dans les tests | 30-45 min | ⭐⭐⭐⭐⭐ | ⏳ |
-| Commit "135+ tests pass" | 5 min | ⭐⭐⭐⭐⭐ | ⏳ |
+| Corriger méthodes HTTP/permissions | 30-45 min | ⭐⭐⭐⭐⭐ | ⏳ |
+| Commit "198+ tests pass" | 5 min | ⭐⭐⭐⭐⭐ | ⏳ |
 | Déplacer utilitaires restants | 20 min | ⭐⭐⭐ | ⏳ |
 | Implémenter services | 1-2 heures | ⭐⭐⭐ | ⏳ |
 | Implémenter repositories | 1-2 heures | ⭐⭐⭐ | ⏳ |
-| Supprimer `app/models.py` | 5 min | ⭐ | ⏳ |
-| Tous les tests passent | 1 heure | ⭐⭐⭐⭐⭐ | ⏳ |
+| Nettoyer le code | 10 min | ⭐ | ⏳ |
+| Tous les tests passent | 1-2 heures | ⭐⭐⭐⭐⭐ | ⏳ |
 
 ---
 
@@ -260,15 +249,18 @@ Refactoriser l'architecture backend pour :
 ### Structure des Blueprints
 Avec la conversion aux blueprints, les endpoints ont changé :
 
-| Ancien endpoint | Nouveau endpoint |
-|-----------------|------------------|
-| `index` | `main.index` |
-| `login` | `auth.login` |
-| `logout` | `auth.logout` |
-| `admin.users` | `admin.list_users` |
-| etc. | etc. |
+| Ancien endpoint | Nouveau endpoint | Blueprint |
+|-----------------|------------------|----------|
+| `index` | `main.index` | main |
+| `login` | `auth.login` | auth |
+| `logout` | `auth.logout` | auth |
+| `schedule` | `main.schedule` | main |
+| `user_dashboard` | `main.user_dashboard` | main |
+| `admin_dashboard` | `admin.admin_dashboard` | admin |
+| `list_users` | `admin.list_users` | admin |
+| etc. | etc. | etc. |
 
-**Action requise** : Mettre à jour tous les `url_for()` dans les tests et templates.
+**Script utilisé** : `fix_url_for.py` pour corriger automatiquement les `url_for` dans les templates.
 
 ### Classes d'Automatisation
 Les classes suivantes ont été identifiées et créées :
@@ -283,6 +275,15 @@ Les classes suivantes ont été identifiées et créées :
 - `get_cache()` : Récupère l'instance du cache
 - `clear_cache()` : Vide le cache
 
+### Fixtures de Test
+- `test_app` : Application configurée pour les tests
+- `client` : Client de test Flask
+- `test_group` : Groupe de test
+- `test_user` : Utilisateur normal de test
+- `admin_user` : Utilisateur administrateur de test
+- `logged_in_client` : Client avec utilisateur connecté
+- `test_shift_type` : **NOUVEAU** - Type de shift de test
+
 ---
 
 ## 🔗 Liens Utiles
@@ -292,6 +293,7 @@ Les classes suivantes ont été identifiées et créées :
 - **Commit 2** : [3731d50](https://github.com/FoxOps/leviia-schedule/commit/3731d50) - Fix automation classes
 - **Commit 3** : [97fabb3](https://github.com/FoxOps/leviia-schedule/commit/97fabb3) - Application starts successfully
 - **Commit 4** : [9f52532](https://github.com/FoxOps/leviia-schedule/commit/9f52532) - 135 tests pass
+- **Commit 5** : [8a4e00b](https://github.com/FoxOps/leviia-schedule/commit/8a4e00b) - 198 tests pass
 
 ---
 
@@ -359,38 +361,29 @@ app/
     └── health.py          (NOUVEAU)
 
 tests/
-├── test_advanced_shift_automation.py  ✅ Imports corrigés
-├── test_automation.py                ✅ Imports corrigés
-├── test_decorators_unit.py          ✅ Imports corrigés
-├── test_ics_export.py                ✅ Imports corrigés
-├── test_shift_rotation_fix.py        ✅ Imports corrigés
-└── ... (autres tests à corriger)
+├── conftest.py            ✅ Modifié (ajout test_shift_type)
+├── test_*.py              ✅ Modifié (10+ fichiers - imports et fixtures)
+└── (38 templates modifiés)
 
 report/
 └── vibe-refactor-backend-b1b247.md  ✅ NOUVEAU (ce fichier)
+
+Racine/
+└── fix_url_for.py        ⏳ À supprimer (script temporaire)
 ```
 
 ---
 
 ## 🎯 **PROCHAINE ÉTAPE PRIORITAIRE**
 
-**Corriger les noms d'endpoints dans les tests et templates** pour faire passer +100 tests !
+**Corriger les problèmes de méthodes HTTP et permissions** pour faire passer +50 tests !
 
-**Commande pour identifier les problèmes** :
-```bash
-python -m pytest tests/ -v --tb=line 2>&1 | grep "BuildError: Could not build url for endpoint"
-```
-
-**Exemple de correction** :
-```python
-# Avant
-url_for('index')
-
-# Après
-url_for('main.index')
-```
+**Exemples de corrections nécessaires** :
+1. Vérifier que les routes admin acceptent POST
+2. Vérifier que les tests utilisent des utilisateurs admin
+3. Vérifier que `follow_redirects=True` est utilisé où nécessaire
 
 ---
 
-*Dernière mise à jour : 2025-07-02 15h45 UTC*  
+*Dernière mise à jour : 2025-07-02 22h45 UTC*  
 *Prochaine mise à jour : Après le prochain commit*
