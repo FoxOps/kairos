@@ -18,7 +18,7 @@ from app.utils.automation import (
     
     get_automation_status,
 )
-from app.utils.advanced_shift_automation import AdvancedShiftAutomation
+from app.utils.automation import AdvancedShiftAutomation
 from datetime import datetime, date, timedelta
 
 
