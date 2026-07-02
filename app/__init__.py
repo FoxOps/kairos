@@ -2,7 +2,7 @@
 Initialisation de l'application Flask pour Leviia Schedule.
 
 Note: Ce module utilise une approche hybride pour supporter à la fois
-l'instance globale (pour la compatibilité) et la factory function create_app().
+l'instance globale (pour la compatibilite) et la factory function create_app().
 """
 
 import logging
@@ -23,7 +23,6 @@ from flask_cors import CORS
 
 db = SQLAlchemy()
 login_manager = LoginManager()
-login_manager.login_view = "login"
 login_manager.login_message_category = "danger"
 limiter = Limiter(key_func=get_remote_address)
 
@@ -33,24 +32,24 @@ _app_for_factory = None
 
 def create_app(config_object="config.Config"):
     """
-    Factory function pour créer et configurer l'application Flask.
+    Factory function pour creer et configurer l'application Flask.
     
-    Cette fonction peut être appelée pour créer une nouvelle instance
+    Cette fonction peut etre appelee pour creer une nouvelle instance
     de l'application, utile pour les tests.
     
     Args:
-        config_object: Objet de configuration à utiliser
+        config_object: Objet de configuration a utiliser
         
     Returns:
         Instance de l'application Flask
     """
     global _app_for_factory
     
-    # Si une instance existe déjà, la retourner
+    # Si une instance existe deja, la retourner
     if _app_for_factory is not None:
         return _app_for_factory
     
-    # Créer l'application Flask
+    # Creer l'application Flask
     app = Flask(
         __name__,
         template_folder=os.path.join(os.path.dirname(__file__), 'templates'),
@@ -74,10 +73,10 @@ def create_app(config_object="config.Config"):
     login_manager.init_app(app)
     limiter.init_app(app)
     
-    # Configurer le rate limiting si activé
+    # Configurer le rate limiting si active
     if app.config.get('RATE_LIMIT_ENABLED', True):
         limiter.enabled = True
-        # Appliquer les limites par défaut
+        # Appliquer les limites par defaut
         limiter.limit(app.config.get('RATE_LIMIT_DEFAULT', '200 per day, 50 per hour'))(app)
     else:
         limiter.enabled = False
@@ -86,6 +85,17 @@ def create_app(config_object="config.Config"):
     from app.utils.cache import init_cache
     init_cache(app)
     
+    # Configuration OIDC - charger avant de configurer login_manager
+    from config_oidc import OIDCConfig
+    OIDCConfig.load_config()
+    
+    # Configurer login_manager.login_view dynamiquement
+    # Si OIDC est active et que l'auth basique est desactivee, rediriger vers oidc_login
+    if OIDCConfig.ENABLED and OIDCConfig.is_configured() and OIDCConfig.DISABLE_BASIC_AUTH:
+        login_manager.login_view = "oidc_login"
+    else:
+        login_manager.login_view = "login"
+    
     # Configuration du User Loader
     from app.models import User
     
@@ -93,10 +103,7 @@ def create_app(config_object="config.Config"):
     def load_user(user_id):
         return User.query.get(int(user_id))
     
-    # Configuration OIDC
-    from config_oidc import OIDCConfig
-    OIDCConfig.load_config()
-    
+    # Initialiser OIDC si configure
     if OIDCConfig.ENABLED and OIDCConfig.is_configured():
         from app.auth.oidc_auth import oidc_auth
         oidc_auth.init_app(app)
@@ -111,9 +118,9 @@ def create_app(config_object="config.Config"):
 
 
 # ---------------------------------------------------------------------------
-# Instance globale par défaut (créée directement pour éviter les circular imports)
+# Instance globale par defaut (creee directement pour eviter les circular imports)
 # ---------------------------------------------------------------------------
-# On crée l'instance directement ici pour que les imports dans les routes fonctionnent
+# On cree l'instance directement ici pour que les imports dans les routes fonctionnent
 app = Flask(
     __name__,
     template_folder=os.path.join(os.path.dirname(__file__), 'templates'),
@@ -132,8 +139,19 @@ logging.basicConfig(
 
 # Initialiser les extensions
 db.init_app(app)
-login_manager.init_app(app)
 limiter.init_app(app)
+
+# Configuration OIDC - charger avant de configurer login_manager
+from config_oidc import OIDCConfig
+OIDCConfig.load_config()
+
+# Configurer login_manager.login_view dynamiquement
+if OIDCConfig.ENABLED and OIDCConfig.is_configured() and OIDCConfig.DISABLE_BASIC_AUTH:
+    login_manager.login_view = "oidc_login"
+else:
+    login_manager.login_view = "login"
+
+login_manager.init_app(app)
 
 # Configuration du User Loader
 from app.models import User
@@ -142,10 +160,7 @@ from app.models import User
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Configuration OIDC
-from config_oidc import OIDCConfig
-OIDCConfig.load_config()
-
+# Initialiser OIDC si configure
 if OIDCConfig.ENABLED and OIDCConfig.is_configured():
     from app.auth.oidc_auth import oidc_auth
     oidc_auth.init_app(app)

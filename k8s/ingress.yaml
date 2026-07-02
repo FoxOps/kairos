@@ -1,0 +1,98 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: leviia-schedule
+  namespace: leviia-schedule
+  labels:
+    app: leviia-schedule
+  annotations:
+    # Annotations pour le contrôleur Ingress
+    # Exemple pour Nginx Ingress Controller
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "16m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    
+    # Pour activer HTTPS (nécessite cert-manager)
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    
+    # Pour Traefik
+    # traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    # traefik.ingress.kubernetes.io/router.tls: "true"
+    
+    # Pour HAProxy
+    # haproxy.org/ssl-passthrough: "true"
+    # haproxy.org/backend-config-snippet: |
+    #   timeout server 600s
+    
+    # Pour AWS ALB
+    # alb.ingress.kubernetes.io/scheme: internet-facing
+    # alb.ingress.kubernetes.io/target-type: ip
+    # alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    # alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
+    
+    # Redirection HTTP vers HTTPS
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    
+    # Configuration CORS
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+    
+    # Configuration de la sécurité
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      add_header X-Frame-Options "SAMEORIGIN" always;
+      add_header X-Content-Type-Options "nosniff" always;
+      add_header X-XSS-Protection "1; mode=block" always;
+      add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+      add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
+
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: schedule.yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: leviia-schedule
+            port:
+              number: 80
+  
+  # Configuration TLS (décommenter si vous avez des certificats)
+  # tls:
+  # - hosts:
+  #   - schedule.yourdomain.com
+  #   secretName: leviia-schedule-tls
+
+---
+# Ingress pour l'API (optionnel, si vous voulez séparer l'API)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: leviia-schedule-api
+  namespace: leviia-schedule
+  labels:
+    app: leviia-schedule
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/proxy-body-size: "16m"
+
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: api.schedule.yourdomain.com
+    http:
+      paths:
+      - path: /(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: leviia-schedule
+            port:
+              number: 80

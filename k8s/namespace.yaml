@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: leviia-schedule
+  labels:
+    app: leviia-schedule
+    environment: production
+    team: operations

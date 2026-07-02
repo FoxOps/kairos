@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Leviia{% endblock %}</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
-    <!-- Bulma CSS - servi localement pour éviter les problèmes de CDN -->
+    <!-- Bulma CSS - servi localement -->
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bulma/bulma.css') }}">
     
-    <!-- Font Awesome - servi localement pour éviter les problèmes de CDN -->
+    <!-- Font Awesome - servi localement -->
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/font-awesome/all.min.css') }}">
     
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-theme.css') }}">
@@ -16,7 +16,7 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Skip link pour l'accessibilité -->
+    <!-- Skip link pour l'accessibilite -->
     <a href="#main-content" class="skip-link">Sauter la navigation</a>
     
     <header>
@@ -35,8 +35,8 @@
                     <a class="navbar-item" href="{{ url_for('oncall') }}" aria-label="Astreintes">
                         <i class="fas fa-moon" aria-hidden="true"></i>&nbsp; Astreintes
                     </a>
-                    <a class="navbar-item" href="{{ url_for('leave') }}" aria-label="Congés">
-                        <i class="fas fa-umbrella-beach" aria-hidden="true"></i>&nbsp; Congés
+                    <a class="navbar-item" href="{{ url_for('leave') }}" aria-label="Conges">
+                        <i class="fas fa-umbrella-beach" aria-hidden="true"></i>&nbsp; Conges
                     </a>
                     {% if current_user.is_authenticated and current_user.is_admin %}
                     <a class="navbar-item" href="{{ url_for('list_users') }}" aria-label="Utilisateurs">
@@ -49,10 +49,10 @@
                 </div>
                 <div class="navbar-end">
                     {% if current_user.is_authenticated %}
-                        <!-- Toggle thème sombre -->
+                        <!-- Toggle theme sombre -->
                         <div class="navbar-item">
                             <button id="theme-toggle" class="button is-small is-outlined is-rounded" 
-                                    aria-label="Basculer entre le thème clair et sombre" 
+                                    aria-label="Basculer entre le theme clair et sombre" 
                                     aria-pressed="false">
                                 <span class="icon is-small">
                                     <i class="fas fa-moon" aria-hidden="true"></i>
@@ -69,7 +69,7 @@
                                 </a>
                                 <hr class="navbar-divider" role="separator">
                                 <a class="navbar-item" href="{{ url_for('logout') }}" role="menuitem">
-                                    <i class="fas fa-sign-out-alt" aria-hidden="true"></i>&nbsp; Déconnexion
+                                    <i class="fas fa-sign-out-alt" aria-hidden="true"></i>&nbsp; Deconnexion
                                 </a>
                             </div>
                         </div>
@@ -102,17 +102,17 @@
     <footer class="footer" role="contentinfo">
         <div class="content has-text-centered">
             <p>
-                <strong>Leviia Schedule</strong> - Application de gestion des plannings et des astreintes pour les équipes et organisations.
+                <strong>Leviia Schedule</strong> - Application de gestion des plannings et des astreintes pour les equipes et organisations.
                 <br>
-                Version dev 0.5 | © 2026 Leviia
+                Version dev 0.5 | (c) 2026 Leviia
             </p>
             <p>
-                <a href="{{ url_for('accessibility_statement') }}" aria-label="Déclaration d'accessibilité">Déclaration d'accessibilité</a>
+                <a href="{{ url_for('accessibility_statement') }}" aria-label="Declaration d'accessibilite">Declaration d'accessibilite</a>
             </p>
         </div>
     </footer>
     
-    <!-- JavaScript centralisé -->
+    <!-- JavaScript centralise -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     
     {% block extra_js %}{% endblock %}

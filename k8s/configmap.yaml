@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: leviia-config
+  namespace: leviia-schedule
+  labels:
+    app: leviia-schedule
+data:
+  # Configuration Flask
+  FLASK_ENV: "production"
+  FLASK_DEBUG: "0"
+  
+  # Configuration de la base de données
+  # Note: DATABASE_URL doit être dans les secrets
+  SQLALCHEMY_TRACK_MODIFICATIONS: "0"
+  
+  # Configuration du cache
+  CACHE_TYPE: "SimpleCache"
+  CACHE_DEFAULT_TIMEOUT: "3600"
+  
+  # Configuration du rate limiting
+  RATE_LIMIT_ENABLED: "1"
+  RATE_LIMIT_DEFAULT: "200 per day, 50 per hour"
+  
+  # Configuration des logs
+  LOG_LEVEL: "INFO"
+  LOG_FORMAT: "json"
+  
+  # Configuration de l'export ICS
+  ICS_EXPORT_ENABLED: "1"
+  ICS_TOKEN_EXPIRY_DAYS: "365"
+  
+  # Configuration des astreintes
+  ONCALL_ROTATION_DAYS: "7"
+  ONCALL_ROTATION_TIME: "21:00"
+  
+  # Configuration des shifts
+  SHIFT_DEFAULT_DURATION: "8"
+  
+  # Configuration CORS
+  CORS_ORIGINS: "*"
+  
+  # Configuration du serveur
+  PORT: "5000"
+  WORKERS: "4"
+  THREADS: "2"
+  TIMEOUT: "120"
+  
+  # Configuration OIDC (exemple, à adapter)
+  OIDC_ENABLED: "0"
+  # OIDC_ISSUER: "https://keycloak.example.com/auth/realms/leviia"
+  # OIDC_CLIENT_ID: "leviia-schedule"
+  # OIDC_CLIENT_SECRET: ""  # Dans les secrets
+  # OIDC_REDIRECT_URI: "https://schedule.example.com/auth/callback"

@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: leviia-schedule
+  namespace: leviia-schedule
+  labels:
+    app: leviia-schedule
+spec:
+  selector:
+    app: leviia-schedule
+  ports:
+  - name: http
+    port: 80
+    targetPort: 5000
+    protocol: TCP
+  type: ClusterIP
+
+---
+# Service pour accéder depuis l'extérieur du cluster (optionnel)
+apiVersion: v1
+kind: Service
+metadata:
+  name: leviia-schedule-external
+  namespace: leviia-schedule
+  labels:
+    app: leviia-schedule
+spec:
+  selector:
+    app: leviia-schedule
+  ports:
+  - name: http
+    port: 80
+    targetPort: 5000
+    protocol: TCP
+  type: LoadBalancer
+  # Pour les clouds qui supportent LoadBalancer
+  # type: NodePort
+  # Pour Minikube, utiliser NodePort

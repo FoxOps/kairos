@@ -18,10 +18,11 @@ WORKDIR /app
 COPY docker/requirements.txt /tmp/requirements.txt
 
 # Installer les dépendances minimales
-RUN apk add --no-cache --virtual .build-deps gcc musl-dev && \
+# CORRECTION: Ajout de linux-headers et python3-dev pour psutil
+RUN apk add --no-cache --virtual .build-deps gcc musl-dev linux-headers python3-dev && \
     apk add --no-cache libpq postgresql-dev && \
     pip install --no-cache-dir -r /tmp/requirements.txt && \
-    apk del .build-deps gcc musl-dev && \
+    apk del .build-deps gcc musl-dev linux-headers python3-dev && \
     rm /tmp/requirements.txt
 
 # Créer les répertoires nécessaires avec les bonnes permissions
@@ -29,7 +30,7 @@ RUN mkdir -p /app/data /app/logs /app/instance && \
     chown 1000:1000 /app/data /app/logs /app/instance && \
     chmod 755 /app/data /app/logs /app/instance
 
-# Copier l'application
+# Copier l'application (comme dans main, mais avec les nouveaux fichiers)
 COPY --chown=1000:1000 . .
 
 # Copier le script d'entrée

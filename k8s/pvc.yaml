@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: leviia-data
+  namespace: leviia-schedule
+  labels:
+    app: leviia-schedule
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: standard
+  # Pour les environnements avec des classes de stockage spécifiques
+  # storageClassName: gp2 (AWS EBS)
+  # storageClassName: standard (GKE)
+  # storageClassName: managed-premium (Azure)
+
+---
+# PersistentVolumeClaim pour les logs (optionnel)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: leviia-logs
+  namespace: leviia-schedule
+  labels:
+    app: leviia-schedule
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
+  storageClassName: standard
