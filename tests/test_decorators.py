@@ -105,9 +105,9 @@ class TestDecoratorProperties:
 class TestAdminRequiredDecorator:
     """Tests pour le décorateur admin_required."""
 
-    def test_admin_required_allows_admin(self, logged_in_admin_client):
+    def test_admin_required_allows_admin(self, logged_in_client):
         """Test qu'un admin peut accéder aux routes admin."""
-        response = logged_in_admin_client.get("/admin")
+        response = logged_in_client.get("/admin")
         assert response.status_code == 200
         assert b"Dashboard" in response.data or b"admin" in response.data.lower()
 
@@ -134,9 +134,9 @@ class TestRoleRequiredDecorator:
         response = logged_in_client.get("/")
         assert response.status_code == 200
 
-    def test_role_required_allows_admin(self, logged_in_admin_client):
+    def test_role_required_allows_admin(self, logged_in_client):
         """Test qu'un admin peut accéder aux routes user."""
-        response = logged_in_admin_client.get("/")
+        response = logged_in_client.get("/")
         assert response.status_code == 200
 
 
@@ -189,9 +189,9 @@ class TestUserOwnsResourceDecorator:
             leave = db.session.get(Leave, test_leave.id)
             assert leave is not None
 
-    def test_admin_can_delete_any_leave(self, logged_in_admin_client, test_leave, app):
+    def test_admin_can_delete_any_leave(self, logged_in_client, test_leave, app):
         """Test qu'un admin peut supprimer n'importe quel congé."""
-        response = logged_in_admin_client.get(
+        response = logged_in_client.get(
             f"/leave/delete/{test_leave.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -209,7 +209,7 @@ class TestShiftPermissions:
     """Tests pour les permissions sur les shifts."""
 
     def test_admin_can_add_shift(
-        self, logged_in_admin_client, test_user, test_shift_type
+        self, logged_in_client, test_user, test_shift_type
     ):
         """Test qu'un admin peut ajouter un shift."""
         data = {
@@ -218,7 +218,7 @@ class TestShiftPermissions:
             "start_date": "2025-12-01",
             "end_date": "2025-12-01",
         }
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             "/schedule/add", data=data, follow_redirects=True
         )
         assert response.status_code == 200
@@ -245,9 +245,9 @@ class TestShiftPermissions:
             or b"Seuls les administrateurs" in response.data
         )
 
-    def test_admin_can_delete_shift(self, logged_in_admin_client, test_shift):
+    def test_admin_can_delete_shift(self, logged_in_client, test_shift):
         """Test qu'un admin peut supprimer un shift."""
-        response = logged_in_admin_client.get(
+        response = logged_in_client.get(
             f"/schedule/delete/{test_shift.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -275,7 +275,7 @@ class TestShiftPermissions:
 class TestOnCallPermissions:
     """Tests pour les permissions sur les astreintes."""
 
-    def test_admin_can_add_oncall(self, logged_in_admin_client, test_user):
+    def test_admin_can_add_oncall(self, logged_in_client, test_user):
         """Test qu'un admin peut ajouter une astreinte."""
         # Trouver un vendredi dans le futur
         now = datetime.now()
@@ -283,7 +283,7 @@ class TestOnCallPermissions:
         friday_date = (now + timedelta(days=days_until_friday + 7)).strftime("%Y-%m-%d")
 
         data = {"user_id": test_user.id, "start_date": friday_date}
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             "/oncall/add", data=data, follow_redirects=True
         )
         assert response.status_code == 200
@@ -302,9 +302,9 @@ class TestOnCallPermissions:
             or b"Seuls les administrateurs" in response.data
         )
 
-    def test_admin_can_delete_oncall(self, logged_in_admin_client, test_oncall):
+    def test_admin_can_delete_oncall(self, logged_in_client, test_oncall):
         """Test qu'un admin peut supprimer une astreinte."""
-        response = logged_in_admin_client.get(
+        response = logged_in_client.get(
             f"/oncall/delete/{test_oncall.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -370,14 +370,14 @@ class TestLeavePermissions:
                 or b"Seuls" in response.data
             )
 
-    def test_admin_can_add_leave_for_anyone(self, logged_in_admin_client, test_user):
+    def test_admin_can_add_leave_for_anyone(self, logged_in_client, test_user):
         """Test qu'un admin peut ajouter un congé pour n'importe qui."""
         data = {
             "user_id": test_user.id,
             "start_date": "2025-12-20",
             "end_date": "2025-12-25",
         }
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             "/leave/add", data=data, follow_redirects=True
         )
         assert response.status_code == 200

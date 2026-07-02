@@ -12,7 +12,7 @@
         <!-- Boutons pour ajouter et exporter -->
         <div class="buttons" role="group" aria-label="Actions principales">
             {% if current_user.is_admin or current_user.is_authenticated %}
-            <a class="button is-primary" href="{{ url_for('add_leave') }}" 
+            <a class="button is-primary" href="{{ url_for('main.add_leave') }}" 
                aria-label="Ajouter un congé" title="Ajouter un congé">
                 <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un congé
             </a>
@@ -53,7 +53,7 @@
                         <td>
                             {% if current_user.is_admin or current_user.id == leave.user.id %}
                             <div class="is-flex is-flex-wrap-nowrap gap-2" role="group" aria-label="Actions pour ce congé">
-                                <a class="button is-danger is-small" href="{{ url_for('delete_leave', leave_id=leave.id) }}" 
+                                <a class="button is-danger is-small" href="{{ url_for('main.delete_leave', leave_id=leave.id) }}" 
                                    onclick="return Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer ce congé ?', function() { return true; }, function() { return false; });"
                                    aria-label="Supprimer le congé" title="Supprimer ce congé">
                                     <i class="fas fa-trash" aria-hidden="true"></i>

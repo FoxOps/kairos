@@ -35,7 +35,7 @@ class TestExportRoutes:
         assert "BEGIN:VEVENT" in response.data.decode("utf-8")
         assert "Shift" in response.data.decode("utf-8")
 
-    def test_export_shifts_scope_all(self, logged_in_admin_client, test_user, test_shift_type, app):
+    def test_export_shifts_scope_all(self, logged_in_client, test_user, test_shift_type, app):
         """Test l'export de tous les shifts (scope=all)."""
         with app.app_context():
             # Créer un shift
@@ -52,7 +52,7 @@ class TestExportRoutes:
             db.session.add(shift)
             db.session.commit()
 
-        response = logged_in_admin_client.get("/export/shifts?scope=all")
+        response = logged_in_client.get("/export/shifts?scope=all")
         assert response.status_code == 200
         content = response.data.decode("utf-8")
         assert "BEGIN:VCALENDAR" in content
@@ -98,7 +98,7 @@ class TestExportRoutes:
         assert "BEGIN:VCALENDAR" in content
         assert "Astreinte" in content
 
-    def test_export_oncall_scope_all(self, logged_in_admin_client, test_user, app):
+    def test_export_oncall_scope_all(self, logged_in_client, test_user, app):
         """Test l'export de toutes les astreintes (scope=all)."""
         with app.app_context():
             # Créer une astreinte
@@ -108,7 +108,7 @@ class TestExportRoutes:
             db.session.add(oncall)
             db.session.commit()
 
-        response = logged_in_admin_client.get("/export/oncall?scope=all")
+        response = logged_in_client.get("/export/oncall?scope=all")
         assert response.status_code == 200
         assert "oncall_all.ics" in response.headers["Content-Disposition"]
 
@@ -143,7 +143,7 @@ class TestExportRoutes:
         assert "BEGIN:VCALENDAR" in content
         assert "Conge" in content or "Cong" in content
 
-    def test_export_leaves_scope_all(self, logged_in_admin_client, test_user, app):
+    def test_export_leaves_scope_all(self, logged_in_client, test_user, app):
         """Test l'export de tous les congés (scope=all)."""
         with app.app_context():
             # Créer un congé
@@ -153,7 +153,7 @@ class TestExportRoutes:
             db.session.add(leave)
             db.session.commit()
 
-        response = logged_in_admin_client.get("/export/leaves?scope=all")
+        response = logged_in_client.get("/export/leaves?scope=all")
         assert response.status_code == 200
         assert "leaves_all.ics" in response.headers["Content-Disposition"]
 
@@ -249,7 +249,7 @@ class TestExportRoutes:
 class TestExportRoutesAdminScope:
     """Tests pour vérifier que les admins peuvent exporter tous les données."""
 
-    def test_admin_export_all_shifts(self, logged_in_admin_client, test_user, second_user, test_shift_type, app):
+    def test_admin_export_all_shifts(self, logged_in_client, test_user, second_user, test_shift_type, app):
         """Test qu'un admin peut exporter les shifts de tous les utilisateurs."""
         with app.app_context():
             # Créer des shifts pour deux utilisateurs différents
@@ -275,13 +275,13 @@ class TestExportRoutesAdminScope:
             db.session.add(shift2)
             db.session.commit()
 
-        response = logged_in_admin_client.get("/export/shifts?scope=all")
+        response = logged_in_client.get("/export/shifts?scope=all")
         assert response.status_code == 200
         content = response.data.decode("utf-8")
         # Doit contenir les shifts des deux utilisateurs
         assert content.count("BEGIN:VEVENT") == 2
 
-    def test_admin_export_all_oncalls(self, logged_in_admin_client, test_user, second_user, app):
+    def test_admin_export_all_oncalls(self, logged_in_client, test_user, second_user, app):
         """Test qu'un admin peut exporter les astreintes de tous les utilisateurs."""
         with app.app_context():
             # Créer des astreintes pour deux utilisateurs différents
@@ -297,12 +297,12 @@ class TestExportRoutesAdminScope:
             db.session.add(oncall2)
             db.session.commit()
 
-        response = logged_in_admin_client.get("/export/oncall?scope=all")
+        response = logged_in_client.get("/export/oncall?scope=all")
         assert response.status_code == 200
         content = response.data.decode("utf-8")
         assert content.count("BEGIN:VEVENT") == 2
 
-    def test_admin_export_all_leaves(self, logged_in_admin_client, test_user, second_user, app):
+    def test_admin_export_all_leaves(self, logged_in_client, test_user, second_user, app):
         """Test qu'un admin peut exporter les congés de tous les utilisateurs."""
         with app.app_context():
             # Créer des congés pour deux utilisateurs différents
@@ -320,7 +320,7 @@ class TestExportRoutesAdminScope:
             db.session.add(leave2)
             db.session.commit()
 
-        response = logged_in_admin_client.get("/export/leaves?scope=all")
+        response = logged_in_client.get("/export/leaves?scope=all")
         assert response.status_code == 200
         content = response.data.decode("utf-8")
         assert content.count("BEGIN:VEVENT") == 2

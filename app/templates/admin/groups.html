@@ -15,7 +15,7 @@
             {% set add_button_icon = 'plus' %}
             {% set add_button_resource_name = 'Ajouter un nouveau groupe' %}
             {% include "_add_button.html" %}
-            <a class="button is-light" href="{{ url_for('admin_dashboard') }}" 
+            <a class="button is-light" href="{{ url_for('admin.admin_dashboard') }}" 
                aria-label="Retour au tableau de bord administrateur" title="Retour au tableau de bord">
                 Retour au tableau de bord
             </a>
@@ -55,11 +55,11 @@
                         </td>
                         <td>
                             <div class="is-flex gap-2" role="group" aria-label="Actions pour le groupe {{ group.name }}">
-                                <a class="button is-small is-info" href="{{ url_for('edit_group', group_id=group.id) }}" 
+                                <a class="button is-small is-info" href="{{ url_for('admin.edit_group', group_id=group.id) }}" 
                                    aria-label="Modifier le groupe {{ group.name }}" title="Modifier le groupe">
                                     <i class="fas fa-edit" aria-hidden="true"></i>
                                 </a>
-                                <a class="button is-small is-danger" href="{{ url_for('delete_group', group_id=group.id) }}"
+                                <a class="button is-small is-danger" href="{{ url_for('admin.delete_group', group_id=group.id) }}"
                                    onclick="return Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer le groupe {{ group.name }} ?', function() { return true; }, function() { return false; });"
                                    aria-label="Supprimer le groupe {{ group.name }}" title="Supprimer le groupe">
                                     <i class="fas fa-trash" aria-hidden="true"></i>

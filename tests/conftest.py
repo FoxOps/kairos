@@ -9,7 +9,7 @@ import pytest
 import warnings
 from datetime import datetime, timedelta
 
-# Filtrer les warnings de dépréciation de datetime.utcnow()
+# Filtrer les warnings de dprciation de datetime.utcnow()
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="flask_login")
 
 # Importer l'instance globale de l'application
@@ -24,7 +24,7 @@ def test_app():
     Fixture qui configure l'instance globale de l'application pour les tests.
     
     Note: On utilise l'instance globale existante et on modifie sa configuration
-    pour les tests. Cela évite les problèmes de circular import.
+    pour les tests. Cela vite les problmes de circular import.
     """
     # Sauvegarder la configuration originale
     original_testing = flask_app.config.get("TESTING")
@@ -40,23 +40,23 @@ def test_app():
     flask_app.config["SECRET_KEY"] = "test-secret-key"
     flask_app.config["RATE_LIMIT_ENABLED"] = False
     
-    # Désactiver le cache pour les tests
+    # Dsactiver le cache pour les tests
     from app.utils.cache import CacheConfig
     original_cache_enabled = CacheConfig.CACHE_ENABLED
     CacheConfig.CACHE_ENABLED = False
     
-    # Désactiver le rate limiter pour les tests
+    # Dsactiver le rate limiter pour les tests
     from app import limiter
     original_limiter_enabled = limiter.enabled
     limiter.enabled = False
     
-    # Créer un contexte d'application
+    # Crer un contexte d'application
     with flask_app.app_context():
-        # Re-créer les tables pour le test
+        # Re-crer les tables pour le test
         db.drop_all()
         db.create_all()
         yield flask_app
-        # Nettoyer après le test
+        # Nettoyer aprs le test
         db.session.rollback()
         db.drop_all()
     
@@ -79,7 +79,7 @@ def client(test_app):
 
 @pytest.fixture
 def test_group(test_app):
-    """Crée un groupe de test."""
+    """Cre un groupe de test."""
     group = Group(name="Test Group", is_part_of_schedule=True, is_part_of_oncall=True)
     db.session.add(group)
     db.session.commit()
@@ -88,7 +88,7 @@ def test_group(test_app):
 
 @pytest.fixture
 def test_user(test_app, test_group):
-    """Crée un utilisateur normal."""
+    """Cre un utilisateur normal."""
     user = User(
         name="Test User",
         email="test@test.com",
@@ -103,7 +103,7 @@ def test_user(test_app, test_group):
 
 @pytest.fixture
 def admin_user(test_app, test_group):
-    """Crée un utilisateur administrateur."""
+    """Cre un utilisateur administrateur."""
     user = User(
         name="Admin User",
         email="admin@test.com",
@@ -118,16 +118,16 @@ def admin_user(test_app, test_group):
 
 @pytest.fixture
 def logged_in_client(client):
-    """Client de test Flask avec un utilisateur connecté."""
+    """Client de test Flask avec un utilisateur connect."""
     from app.models import Group
     
     with client.application.app_context():
-        # Créer un groupe
+        # Crer un groupe
         group = Group(name="Test Group Login")
         db.session.add(group)
         db.session.commit()
         
-        # Créer un utilisateur
+        # Crer un utilisateur
         user = User(
             email="login@example.com",
             name="Login User",
@@ -146,9 +146,24 @@ def logged_in_client(client):
     
     yield client
     
-    # Se déconnecter
+    # Se dconnecter
     client.get('/logout', follow_redirects=True)
 
 
-# Alias pour la compatibilité avec les tests existants
+@pytest.fixture
+def test_shift_type(test_app):
+    """Cre un type de shift de test."""
+    from app.models import ShiftType
+    shift_type = ShiftType(
+        name='morning',
+        label='Matin',
+        start_hour=7,
+        end_hour=15
+    )
+    db.session.add(shift_type)
+    db.session.commit()
+    return shift_type
+
+
+# Alias pour la compatibilit avec les tests existants
 app = test_app

@@ -225,7 +225,7 @@
                         
                         <!-- Boutons d'action - TOUJOURS dans le content -->
                         <div class="buttons is-centered mt-5">
-                            <form method="POST" action="{{ url_for('generate_ics_token') }}" class="control">
+                            <form method="POST" action="{{ url_for('auth.generate_ics_token') }}" class="control">
                                 <button type="submit" class="button is-primary no-hover-transform">
                                     <span class="icon">
                                         <i class="fas fa-sync-alt"></i>
@@ -233,7 +233,7 @@
                                     <span>{% if token %}Régénérer le token{% else %}Générer un token{% endif %}</span>
                                 </button>
                             </form>
-                            <a href="{{ url_for('profile') }}" class="button is-light no-hover-transform">
+                            <a href="{{ url_for('auth.profile') }}" class="button is-light no-hover-transform">
                                 Retour au profil
                             </a>
                         </div>

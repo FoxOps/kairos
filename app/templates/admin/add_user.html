@@ -21,7 +21,7 @@
             </div>
             {% endif %}
 
-            <form method="POST" action="{{ url_for('add_user') }}" aria-labelledby="add-user-title">
+            <form method="POST" action="{{ url_for('admin.add_user') }}" aria-labelledby="add-user-title">
                 <div class="box" role="region" aria-labelledby="form-title">
                     <h2 id="form-title" class="is-sr-only">Formulaire d'ajout d'utilisateur</h2>
                     
@@ -71,7 +71,7 @@
                             <button class="button is-primary" type="submit" aria-label="Enregistrer l'utilisateur">
                                 <i class="fas fa-save" aria-hidden="true"></i>&nbsp; Enregistrer
                             </button>
-                            <a class="button is-light" href="{{ url_for('list_users') }}" aria-label="Annuler et retourner à la liste des utilisateurs">Annuler</a>
+                            <a class="button is-light" href="{{ url_for('admin.list_users') }}" aria-label="Annuler et retourner à la liste des utilisateurs">Annuler</a>
                         </div>
                     </div>
                 </div>

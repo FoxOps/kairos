@@ -11,12 +11,12 @@ from app.models import User, Group, Shift, OnCall, Leave, ShiftType
 class TestDeleteAllShifts:
     """Tests pour /shift/delete-all."""
 
-    def test_delete_all_shifts(self, logged_in_admin_client, test_shift):
+    def test_delete_all_shifts(self, logged_in_client, test_shift):
         """Test la suppression de tous les shifts."""
         initial_count = Shift.query.count()
         assert initial_count > 0
         
-        response = logged_in_admin_client.post("/shift/delete-all", follow_redirects=True)
+        response = logged_in_client.post("/shift/delete-all", follow_redirects=True)
         assert response.status_code == 200
         assert Shift.query.count() == 0
 
@@ -24,7 +24,7 @@ class TestDeleteAllShifts:
 class TestDeleteAllShiftsForUser:
     """Tests pour /shift/delete-all-for-user/<user_id>."""
 
-    def test_delete_all_shifts_for_user(self, logged_in_admin_client, test_user, test_shift_type):
+    def test_delete_all_shifts_for_user(self, logged_in_client, test_user, test_shift_type):
         """Test la suppression de tous les shifts d'un utilisateur."""
         # Créer des shifts
         for i in range(3):
@@ -39,7 +39,7 @@ class TestDeleteAllShiftsForUser:
             db.session.add(shift)
         db.session.commit()
         
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             f"/shift/delete-all-for-user/{test_user.id}",
             follow_redirects=True,
         )
@@ -50,7 +50,7 @@ class TestDeleteAllShiftsForUser:
 class TestDeleteAllShiftsForDay:
     """Tests pour /shift/delete-day/<date_str>."""
 
-    def test_delete_all_shifts_for_day(self, logged_in_admin_client, test_user, test_shift_type):
+    def test_delete_all_shifts_for_day(self, logged_in_client, test_user, test_shift_type):
         """Test la suppression de tous les shifts pour un jour."""
         today = datetime.now().date()
         # Créer des shifts pour aujourd'hui
@@ -66,7 +66,7 @@ class TestDeleteAllShiftsForDay:
             db.session.add(shift)
         db.session.commit()
         
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             f"/shift/delete-day/{today.strftime('%Y-%m-%d')}",
             follow_redirects=True,
         )
@@ -77,7 +77,7 @@ class TestDeleteAllShiftsForDay:
 class TestDeleteAllShiftsForWeek:
     """Tests pour /shift/delete-week/<date_str>."""
 
-    def test_delete_all_shifts_for_week(self, logged_in_admin_client, test_user, test_shift_type):
+    def test_delete_all_shifts_for_week(self, logged_in_client, test_user, test_shift_type):
         """Test la suppression de tous les shifts pour une semaine."""
         today = datetime.now().date()
         monday = today - timedelta(days=today.weekday())
@@ -96,7 +96,7 @@ class TestDeleteAllShiftsForWeek:
             db.session.add(shift)
         db.session.commit()
         
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             f"/shift/delete-week/{monday.strftime('%Y-%m-%d')}",
             follow_redirects=True,
         )
@@ -110,12 +110,12 @@ class TestDeleteAllShiftsForWeek:
 class TestDeleteAllOnCalls:
     """Tests pour /oncall/delete-all."""
 
-    def test_delete_all_oncalls(self, logged_in_admin_client, test_oncall):
+    def test_delete_all_oncalls(self, logged_in_client, test_oncall):
         """Test la suppression de toutes les astreintes."""
         initial_count = OnCall.query.count()
         assert initial_count > 0
         
-        response = logged_in_admin_client.post("/oncall/delete-all", follow_redirects=True)
+        response = logged_in_client.post("/oncall/delete-all", follow_redirects=True)
         assert response.status_code == 200
         assert OnCall.query.count() == 0
 
@@ -123,7 +123,7 @@ class TestDeleteAllOnCalls:
 class TestDeleteAllOnCallsForUser:
     """Tests pour /oncall/delete-all-for-user/<user_id>."""
 
-    def test_delete_all_oncalls_for_user(self, logged_in_admin_client, test_user):
+    def test_delete_all_oncalls_for_user(self, logged_in_client, test_user):
         """Test la suppression de toutes les astreintes d'un utilisateur."""
         # Créer des astreintes
         for i in range(3):
@@ -138,7 +138,7 @@ class TestDeleteAllOnCallsForUser:
             db.session.add(oncall)
         db.session.commit()
         
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             f"/oncall/delete-all-for-user/{test_user.id}",
             follow_redirects=True,
         )

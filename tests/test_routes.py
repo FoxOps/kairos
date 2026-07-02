@@ -160,14 +160,14 @@ class TestShiftRoutes:
         # L'utilisateur est redirige vers l'index ou voit un message
         assert b"Leviia" in response.data or b"Schedule" in response.data
 
-    def test_add_shift_get_admin(self, logged_in_admin_client):
+    def test_add_shift_get_admin(self, logged_in_client):
         """Test qu'un administrateur peut acceder au formulaire d'ajout de shift."""
-        response = logged_in_admin_client.get("/schedule/add")
+        response = logged_in_client.get("/schedule/add")
         assert response.status_code == 200
         assert b"Ajouter un shift" in response.data or b"Add Shift" in response.data
 
     def test_add_shift_post_valid(
-        self, logged_in_admin_client, test_user, test_shift_type
+        self, logged_in_client, test_user, test_shift_type
     ):
         """Test l'ajout d'un shift valide."""
         data = {
@@ -176,7 +176,7 @@ class TestShiftRoutes:
             "start_date": "2023-12-01",
             "end_date": "2023-12-01",
         }
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             "/schedule/add", data=data, follow_redirects=True
         )
         assert response.status_code == 200
@@ -186,7 +186,7 @@ class TestShiftRoutes:
         assert len(shifts) >= 1
 
     def test_add_shift_post_invalid_dates_weekend(
-        self, logged_in_admin_client, test_user, test_shift_type
+        self, logged_in_client, test_user, test_shift_type
     ):
         """Test l'ajout d'un shift avec des dates invalides (weekend)."""
         data = {
@@ -195,7 +195,7 @@ class TestShiftRoutes:
             "start_date": "2023-12-02",
             "end_date": "2023-12-02",
         }
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             "/schedule/add", data=data, follow_redirects=True
         )
         assert response.status_code == 200
@@ -206,9 +206,9 @@ class TestShiftRoutes:
             or b"Add" in response.data
         )
 
-    def test_delete_shift_post(self, logged_in_admin_client, test_shift):
+    def test_delete_shift_post(self, logged_in_client, test_shift):
         """Test la suppression d'un shift."""
-        response = logged_in_admin_client.get(
+        response = logged_in_client.get(
             f"/schedule/delete/{test_shift.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -247,18 +247,18 @@ class TestOnCallRoutes:
         # L'utilisateur est redirige
         assert b"Leviia" in response.data or b"Schedule" in response.data
 
-    def test_add_oncall_get_admin(self, logged_in_admin_client):
+    def test_add_oncall_get_admin(self, logged_in_client):
         """Test qu'un administrateur peut acceder au formulaire d'ajout d'astreinte."""
-        response = logged_in_admin_client.get("/oncall/add")
+        response = logged_in_client.get("/oncall/add")
         assert response.status_code == 200
         assert (
             b"Ajouter une astreinte" in response.data or b"Add OnCall" in response.data
         )
 
-    def test_add_oncall_post_valid(self, logged_in_admin_client, test_user):
+    def test_add_oncall_post_valid(self, logged_in_client, test_user):
         """Test l'ajout d'une astreinte valide."""
         data = {"user_id": test_user.id, "start_date": "2023-12-01"}
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             "/oncall/add", data=data, follow_redirects=True
         )
         assert response.status_code == 200
@@ -267,18 +267,18 @@ class TestOnCallRoutes:
         on_calls = OnCall.query.filter_by(user_id=test_user.id).all()
         assert len(on_calls) >= 1
 
-    def test_add_oncall_post_invalid_day(self, logged_in_admin_client, test_user):
+    def test_add_oncall_post_invalid_day(self, logged_in_client, test_user):
         """Test l'ajout d'une astreinte un jour invalide."""
         data = {"user_id": test_user.id, "start_date": "2023-12-02"}
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             "/oncall/add", data=data, follow_redirects=True
         )
         assert response.status_code == 200
         assert b"vendredi" in response.data.lower()
 
-    def test_delete_oncall_post(self, logged_in_admin_client, test_oncall):
+    def test_delete_oncall_post(self, logged_in_client, test_oncall):
         """Test la suppression d'une astreinte."""
-        response = logged_in_admin_client.get(
+        response = logged_in_client.get(
             f"/oncall/delete/{test_oncall.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -384,9 +384,9 @@ class TestLeaveRoutes:
 class TestAdminRoutes:
     """Tests pour les routes admin."""
 
-    def test_admin_dashboard(self, logged_in_admin_client):
+    def test_admin_dashboard(self, logged_in_client):
         """Test l'acces au dashboard admin."""
-        response = logged_in_admin_client.get("/admin")
+        response = logged_in_client.get("/admin")
         assert response.status_code == 200
         assert b"Dashboard" in response.data or b"admin" in response.data.lower()
 
@@ -397,23 +397,23 @@ class TestAdminRoutes:
         # L'utilisateur est redirige
         assert b"Leviia" in response.data or b"Schedule" in response.data
 
-    def test_list_groups(self, logged_in_admin_client):
+    def test_list_groups(self, logged_in_client):
         """Test l'affichage de la liste des groupes."""
-        response = logged_in_admin_client.get("/admin/groups")
+        response = logged_in_client.get("/admin/groups")
         assert response.status_code == 200
         assert (
             b"Gestion des groupes" in response.data
             or b"groups" in response.data.lower()
         )
 
-    def test_add_group_post_valid(self, logged_in_admin_client):
+    def test_add_group_post_valid(self, logged_in_client):
         """Test l'ajout d'un groupe valide."""
         data = {
             "name": "Nouveau Groupe",
             "is_part_of_schedule": "on",
             "is_part_of_oncall": "on",
         }
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             "/admin/groups/add", data=data, follow_redirects=True
         )
         assert response.status_code == 200
@@ -422,18 +422,18 @@ class TestAdminRoutes:
         group = Group.query.filter_by(name="Nouveau Groupe").first()
         assert group is not None
 
-    def test_add_group_post_invalid(self, logged_in_admin_client):
+    def test_add_group_post_invalid(self, logged_in_client):
         """Test l'ajout d'un groupe sans nom."""
         data = {"name": "", "is_part_of_schedule": "on", "is_part_of_oncall": "on"}
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             "/admin/groups/add", data=data, follow_redirects=True
         )
         assert response.status_code == 200
         assert b"Le nom du groupe est obligatoire" in response.data
 
-    def test_delete_group_post(self, logged_in_admin_client, test_group):
+    def test_delete_group_post(self, logged_in_client, test_group):
         """Test la suppression d'un groupe."""
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             f"/admin/groups/delete/{test_group.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -445,10 +445,10 @@ class TestAdminRoutes:
         )
 
     def test_delete_group_with_users(
-        self, logged_in_admin_client, test_group, test_user
+        self, logged_in_client, test_group, test_user
     ):
         """Test qu'un groupe avec des utilisateurs ne peut pas etre supprime."""
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             f"/admin/groups/delete/{test_group.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -459,23 +459,23 @@ class TestAdminRoutes:
             or b"Impossible" in response.data
         )
 
-    def test_list_users(self, logged_in_admin_client):
+    def test_list_users(self, logged_in_client):
         """Test l'affichage de la liste des utilisateurs."""
-        response = logged_in_admin_client.get("/admin/users")
+        response = logged_in_client.get("/admin/users")
         assert response.status_code == 200
         assert (
             b"Gestion des utilisateurs" in response.data
             or b"users" in response.data.lower()
         )
 
-    def test_add_user_post_valid(self, logged_in_admin_client, test_group):
+    def test_add_user_post_valid(self, logged_in_client, test_group):
         """Test l'ajout d'un utilisateur valide."""
         data = {
             "name": "Nouvel Utilisateur",
             "email": "nouvel@example.com",
             "group_id": test_group.id,
         }
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             "/admin/users/add", data=data, follow_redirects=True
         )
         assert response.status_code == 200
@@ -484,18 +484,18 @@ class TestAdminRoutes:
         user = User.query.filter_by(email="nouvel@example.com").first()
         assert user is not None
 
-    def test_add_user_post_invalid(self, logged_in_admin_client):
+    def test_add_user_post_invalid(self, logged_in_client):
         """Test l'ajout d'un utilisateur avec des champs manquants."""
         data = {"name": "", "email": "", "group_id": ""}
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             "/admin/users/add", data=data, follow_redirects=True
         )
         assert response.status_code == 200
         assert b"Tous les champs sont obligatoires" in response.data
 
-    def test_delete_user_post(self, logged_in_admin_client, test_user):
+    def test_delete_user_post(self, logged_in_client, test_user):
         """Test la suppression d'un utilisateur."""
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             f"/admin/users/delete/{test_user.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -507,11 +507,11 @@ class TestAdminRoutes:
         )
 
     def test_delete_user_with_resources(
-        self, logged_in_admin_client, test_shift, test_user
+        self, logged_in_client, test_shift, test_user
     ):
         """Test qu'un utilisateur avec des ressources ne peut pas etre supprime."""
         # test_shift est déjà associé à test_user via la fixture
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             f"/admin/users/delete/{test_user.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -525,16 +525,16 @@ class TestAdminRoutes:
 class TestShiftTypeRoutes:
     """Tests pour les routes des types de shifts."""
 
-    def test_list_shift_types(self, logged_in_admin_client):
+    def test_list_shift_types(self, logged_in_client):
         """Test l'affichage de la liste des types de shifts."""
-        response = logged_in_admin_client.get("/admin/shift-types")
+        response = logged_in_client.get("/admin/shift-types")
         assert response.status_code == 200
         assert b"Types de shifts" in response.data or b"shift" in response.data.lower()
 
-    def test_add_shift_type_post_valid(self, logged_in_admin_client):
+    def test_add_shift_type_post_valid(self, logged_in_client):
         """Test l'ajout d'un type de shift valide."""
         data = {"name": "night", "label": "Nuit", "start_hour": "22", "end_hour": "6"}
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             "/admin/shift-types/add", data=data, follow_redirects=True
         )
         assert response.status_code == 200
@@ -549,7 +549,7 @@ class TestShiftTypeRoutes:
         if shift_type:
             assert shift_type.name == "night"
 
-    def test_add_shift_type_post_invalid_hours(self, logged_in_admin_client):
+    def test_add_shift_type_post_invalid_hours(self, logged_in_client):
         """Test l'ajout d'un type de shift avec des heures invalides."""
         data = {
             "name": "invalid",
@@ -557,7 +557,7 @@ class TestShiftTypeRoutes:
             "start_hour": "25",
             "end_hour": "6",
         }
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             "/admin/shift-types/add", data=data, follow_redirects=True
         )
         assert response.status_code == 200
@@ -568,7 +568,7 @@ class TestShiftTypeRoutes:
             or b"Add" in response.data
         )
 
-    def test_add_shift_type_start_after_end(self, logged_in_admin_client):
+    def test_add_shift_type_start_after_end(self, logged_in_client):
         """Test l'ajout d'un type de shift ou l'heure de debut est apres l'heure de fin."""
         data = {
             "name": "invalid",
@@ -576,7 +576,7 @@ class TestShiftTypeRoutes:
             "start_hour": "15",
             "end_hour": "10",
         }
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             "/admin/shift-types/add", data=data, follow_redirects=True
         )
         assert response.status_code == 200
@@ -587,9 +587,9 @@ class TestShiftTypeRoutes:
             or b"Add" in response.data
         )
 
-    def test_delete_shift_type_post(self, logged_in_admin_client, test_shift_type):
+    def test_delete_shift_type_post(self, logged_in_client, test_shift_type):
         """Test la suppression d'un type de shift."""
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             f"/admin/shift-types/delete/{test_shift_type.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -598,10 +598,10 @@ class TestShiftTypeRoutes:
         shift_type = db.session.get(ShiftType, test_shift_type.id)
         assert shift_type is None
 
-    def test_delete_shift_type_in_use(self, logged_in_admin_client, test_shift):
+    def test_delete_shift_type_in_use(self, logged_in_client, test_shift):
         """Test qu'un type de shift utilise ne peut pas etre supprime."""
         # test_shift utilise déjà test_shift_type
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             f"/admin/shift-types/delete/{test_shift.shift_type_id}",
             follow_redirects=True,
         )

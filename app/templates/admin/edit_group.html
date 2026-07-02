@@ -9,7 +9,7 @@
             <i class="fas fa-edit" aria-hidden="true"></i> Modifier un groupe
         </h1>
         
-        <form method="POST" action="{{ url_for('edit_group', group_id=group.id) }}" aria-labelledby="form-title">
+        <form method="POST" action="{{ url_for('admin.edit_group', group_id=group.id) }}" aria-labelledby="form-title">
             <div class="box">
                 <div class="field">
                     <label class="label required" for="name">Nom du groupe</label>
@@ -45,7 +45,7 @@
                             <button class="button is-primary" type="submit" aria-label="Enregistrer les modifications" title="Enregistrer les modifications">
                                 <i class="fas fa-save" aria-hidden="true"></i>&nbsp; Enregistrer
                             </button>
-                            <a class="button is-light" href="{{ url_for('list_groups') }}" aria-label="Annuler et retourner à la liste" title="Annuler">
+                            <a class="button is-light" href="{{ url_for('admin.list_groups') }}" aria-label="Annuler et retourner à la liste" title="Annuler">
                                 Annuler
                             </a>
                         </div>

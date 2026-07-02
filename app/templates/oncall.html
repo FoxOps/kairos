@@ -12,7 +12,7 @@
         <!-- Boutons pour ajouter, exporter et supprimer -->
         <div class="buttons" role="group" aria-label="Actions principales">
             {% if current_user.is_admin %}
-            <a class="button is-primary" href="{{ url_for('add_oncall') }}" 
+            <a class="button is-primary" href="{{ url_for('main.add_oncall') }}" 
                aria-label="Ajouter une astreinte" title="Ajouter une astreinte">
                 <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter une astreinte
             </a>
@@ -66,7 +66,7 @@
                             {% if current_user.is_admin %}
                             <div class="is-flex is-flex-wrap-nowrap gap-2 is-align-items-center" role="group" aria-label="Actions pour cette astreinte">
                                 <a class="button is-danger is-small" 
-                                   href="{{ url_for('delete_oncall', oncall_id=oncall.id) }}"
+                                   href="{{ url_for('main.delete_oncall', oncall_id=oncall.id) }}"
                                    onclick="return Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer cette astreinte ?', function() { return true; }, function() { return false; });"
                                    aria-label="Supprimer l'astreinte" title="Supprimer cette astreinte">
                                     <i class="fas fa-trash" aria-hidden="true"></i>

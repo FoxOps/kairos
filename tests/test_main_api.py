@@ -74,16 +74,16 @@ class TestAPICreateShift:
         response = logged_in_client.post('/api/shifts', json={})
         assert response.status_code in [302, 403]
 
-    def test_requires_data(self, logged_in_admin_client):
+    def test_requires_data(self, logged_in_client):
         """Test que POST /api/shifts nécessite des données."""
-        response = logged_in_admin_client.post('/api/shifts', json={})
+        response = logged_in_client.post('/api/shifts', json={})
         assert response.status_code == 400
         data = json.loads(response.data)
         assert data['success'] is False
 
-    def test_missing_fields(self, logged_in_admin_client):
+    def test_missing_fields(self, logged_in_client):
         """Test que POST /api/shifts échoue avec des champs manquants."""
-        response = logged_in_admin_client.post('/api/shifts', json={
+        response = logged_in_client.post('/api/shifts', json={
             'userId': 1
         })
         assert response.status_code == 400
@@ -99,9 +99,9 @@ class TestAPIUpdateShift:
         response = logged_in_client.patch('/api/shifts/1', json={})
         assert response.status_code in [302, 403]
 
-    def test_nonexistent_shift(self, logged_in_admin_client):
+    def test_nonexistent_shift(self, logged_in_client):
         """Test que PATCH /api/shifts/<id> retourne 404 pour un shift inexistant."""
-        response = logged_in_admin_client.patch('/api/shifts/99999', json={})
+        response = logged_in_client.patch('/api/shifts/99999', json={})
         assert response.status_code == 404
         data = json.loads(response.data)
         assert data['success'] is False
@@ -115,9 +115,9 @@ class TestAPIDeleteShift:
         response = logged_in_client.delete('/api/shifts/1')
         assert response.status_code in [302, 403]
 
-    def test_nonexistent_shift(self, logged_in_admin_client):
+    def test_nonexistent_shift(self, logged_in_client):
         """Test que DELETE /api/shifts/<id> retourne 404 pour un shift inexistant."""
-        response = logged_in_admin_client.delete('/api/shifts/99999')
+        response = logged_in_client.delete('/api/shifts/99999')
         assert response.status_code == 404
         data = json.loads(response.data)
         assert data['success'] is False

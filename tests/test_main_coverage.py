@@ -186,15 +186,15 @@ class TestAddOnCallRoute:
         # 302 = redirection vers login (car non admin)
         assert response.status_code in [302, 403]
 
-    def test_add_oncall_post_missing_fields(self, logged_in_admin_client):
+    def test_add_oncall_post_missing_fields(self, logged_in_client):
         """Test que add_oncall POST échoue avec des champs manquants."""
-        response = logged_in_admin_client.post('/oncall/add', data={})
+        response = logged_in_client.post('/oncall/add', data={})
         # 302 = redirection avec flash message
         assert response.status_code == 302
 
-    def test_add_oncall_post_invalid_date(self, logged_in_admin_client):
+    def test_add_oncall_post_invalid_date(self, logged_in_client):
         """Test que add_oncall POST échoue avec une date invalide."""
-        response = logged_in_admin_client.post('/oncall/add', data={
+        response = logged_in_client.post('/oncall/add', data={
             'user_id': 1,
             'start_date': 'invalid-date'
         })
@@ -211,9 +211,9 @@ class TestAddShiftRoute:
         # 302 = redirection vers login (car non admin)
         assert response.status_code in [302, 403]
 
-    def test_add_shift_post_missing_fields(self, logged_in_admin_client):
+    def test_add_shift_post_missing_fields(self, logged_in_client):
         """Test que add_shift POST échoue avec des champs manquants."""
-        response = logged_in_admin_client.post('/schedule/add', data={})
+        response = logged_in_client.post('/schedule/add', data={})
         # 302 = redirection avec flash message
         assert response.status_code == 302
 
