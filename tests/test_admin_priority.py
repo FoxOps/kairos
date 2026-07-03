@@ -24,7 +24,7 @@ class TestEditGroup:
             follow_redirects=True,
         )
         assert response.status_code == 200
-        updated_group = db.session.get(Group, test_group.id)
+        updated_group = db.session.get(Group, group_not_in_schedule.id)
         assert updated_group.name == "Updated Group"
 
     def test_edit_group_post_empty_name(self, logged_in_client, group_not_in_schedule):
