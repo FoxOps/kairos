@@ -72,8 +72,9 @@ def test_app():
 
 @pytest.fixture
 def client(test_app):
-    """Client de test Flask."""
-    with test_app.test_client() as client:
+    """Client de test Flask avec cookies et session activés."""
+    # Utiliser use_cookies=True pour sauvegarder les cookies de session
+    with test_app.test_client(use_cookies=True) as client:
         yield client
 
 
@@ -121,6 +122,7 @@ def logged_in_client(client):
     """Client de test Flask avec un utilisateur connect."""
     from app.models import Group
     
+    # Crer un groupe et un utilisateur dans le contexte du client
     with client.application.app_context():
         # Crer un groupe
         group = Group(name="Test Group Login")
@@ -138,7 +140,7 @@ def logged_in_client(client):
         db.session.add(user)
         db.session.commit()
     
-    # Se connecter
+    # Se connecter - le client sauvegarde automatiquement les cookies avec use_cookies=True
     client.post('/login', data={
         'email': 'login@example.com',
         'password': 'loginpassword'

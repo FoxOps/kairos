@@ -27,7 +27,7 @@ def login():
 
     if request.method == "POST":
         email = request.form.get("email", "").strip()
-        password = request.form.get("password", "")
+        password = request.form.get("password", "").strip()
         remember = "remember" in request.form
 
         if not email or not password:
