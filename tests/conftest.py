@@ -131,6 +131,21 @@ def admin_user(test_app, test_group):
 
 
 @pytest.fixture
+def second_user(test_app, test_group):
+    """Crée un deuxième utilisateur normal."""
+    user = User(
+        name="Second User",
+        email="second@test.com",
+        password_hash=generate_password_hash("test123"),
+        is_admin=False,
+        group_id=test_group.id,
+    )
+    db.session.add(user)
+    db.session.commit()
+    return user
+
+
+@pytest.fixture
 def logged_in_client(client):
     """Client de test Flask avec un utilisateur connecté.
     
