@@ -13,7 +13,7 @@ class TestExportRoutes:
 
     def test_export_shifts_route(self, logged_in_client, test_user, test_shift_type, app):
         """Test l'export des shifts."""
-        with app.app_context():
+        with test_app.app_context():
             # Créer un shift pour l'utilisateur
             shift_date = datetime(2023, 12, 1).date()
             start_time = datetime.combine(shift_date, datetime.min.time()).replace(hour=7)
@@ -37,7 +37,7 @@ class TestExportRoutes:
 
     def test_export_shifts_scope_all(self, logged_in_client, test_user, test_shift_type, app):
         """Test l'export de tous les shifts (scope=all)."""
-        with app.app_context():
+        with test_app.app_context():
             # Créer un shift
             shift_date = datetime(2023, 12, 1).date()
             start_time = datetime.combine(shift_date, datetime.min.time()).replace(hour=7)
@@ -60,7 +60,7 @@ class TestExportRoutes:
 
     def test_export_shifts_scope_my(self, logged_in_client, test_user, test_shift_type, app):
         """Test l'export des shifts de l'utilisateur connecté (scope=my)."""
-        with app.app_context():
+        with test_app.app_context():
             # Créer un shift pour l'utilisateur connecté
             shift_date = datetime(2023, 12, 1).date()
             start_time = datetime.combine(shift_date, datetime.min.time()).replace(hour=7)
@@ -83,7 +83,7 @@ class TestExportRoutes:
 
     def test_export_oncall_route(self, logged_in_client, test_user, app):
         """Test l'export des astreintes."""
-        with app.app_context():
+        with test_app.app_context():
             # Créer une astreinte
             start_time = datetime(2023, 12, 1, 21, 0)
             end_time = start_time + timedelta(days=7, hours=-14)
@@ -100,7 +100,7 @@ class TestExportRoutes:
 
     def test_export_oncall_scope_all(self, logged_in_client, test_user, app):
         """Test l'export de toutes les astreintes (scope=all)."""
-        with app.app_context():
+        with test_app.app_context():
             # Créer une astreinte
             start_time = datetime(2023, 12, 1, 21, 0)
             end_time = start_time + timedelta(days=7, hours=-14)
@@ -114,7 +114,7 @@ class TestExportRoutes:
 
     def test_export_oncall_scope_my(self, logged_in_client, test_user, app):
         """Test l'export des astreintes de l'utilisateur connecté (scope=my)."""
-        with app.app_context():
+        with test_app.app_context():
             # Créer une astreinte pour l'utilisateur connecté
             start_time = datetime(2023, 12, 1, 21, 0)
             end_time = start_time + timedelta(days=7, hours=-14)
@@ -128,7 +128,7 @@ class TestExportRoutes:
 
     def test_export_leaves_route(self, logged_in_client, test_user, app):
         """Test l'export des congés."""
-        with app.app_context():
+        with test_app.app_context():
             # Créer un congé
             start_date = datetime(2023, 12, 10).date()
             end_date = datetime(2023, 12, 15).date()
@@ -145,7 +145,7 @@ class TestExportRoutes:
 
     def test_export_leaves_scope_all(self, logged_in_client, test_user, app):
         """Test l'export de tous les congés (scope=all)."""
-        with app.app_context():
+        with test_app.app_context():
             # Créer un congé
             start_date = datetime(2023, 12, 10).date()
             end_date = datetime(2023, 12, 15).date()
@@ -159,7 +159,7 @@ class TestExportRoutes:
 
     def test_export_leaves_scope_my(self, logged_in_client, test_user, app):
         """Test l'export des congés de l'utilisateur connecté (scope=my)."""
-        with app.app_context():
+        with test_app.app_context():
             # Créer un congé pour l'utilisateur connecté
             start_date = datetime(2023, 12, 10).date()
             end_date = datetime(2023, 12, 15).date()
@@ -225,7 +225,7 @@ class TestExportRoutes:
 
     def test_export_content_disposition_header(self, logged_in_client, test_user, test_shift_type, app):
         """Test que le header Content-Disposition est correct."""
-        with app.app_context():
+        with test_app.app_context():
             # Créer un shift
             shift_date = datetime(2023, 12, 1).date()
             start_time = datetime.combine(shift_date, datetime.min.time()).replace(hour=7)
@@ -251,7 +251,7 @@ class TestExportRoutesAdminScope:
 
     def test_admin_export_all_shifts(self, logged_in_client, test_user, second_user, test_shift_type, app):
         """Test qu'un admin peut exporter les shifts de tous les utilisateurs."""
-        with app.app_context():
+        with test_app.app_context():
             # Créer des shifts pour deux utilisateurs différents
             shift_date = datetime(2023, 12, 1).date()
             start_time = datetime.combine(shift_date, datetime.min.time()).replace(hour=7)
@@ -283,7 +283,7 @@ class TestExportRoutesAdminScope:
 
     def test_admin_export_all_oncalls(self, logged_in_client, test_user, second_user, app):
         """Test qu'un admin peut exporter les astreintes de tous les utilisateurs."""
-        with app.app_context():
+        with test_app.app_context():
             # Créer des astreintes pour deux utilisateurs différents
             start_time1 = datetime(2023, 12, 1, 21, 0)
             end_time1 = start_time1 + timedelta(days=7, hours=-14)
@@ -304,7 +304,7 @@ class TestExportRoutesAdminScope:
 
     def test_admin_export_all_leaves(self, logged_in_client, test_user, second_user, app):
         """Test qu'un admin peut exporter les congés de tous les utilisateurs."""
-        with app.app_context():
+        with test_app.app_context():
             # Créer des congés pour deux utilisateurs différents
             leave1 = Leave(
                 user_id=test_user.id,
@@ -331,7 +331,7 @@ class TestExportRoutesTokenAuth:
 
     def test_export_shifts_with_token(self, client, test_user, test_shift_type, app):
         """Test l'export des shifts avec un token valide."""
-        with app.app_context():
+        with test_app.app_context():
             # Générer un token pour l'utilisateur
             token = test_user.generate_ics_token()
             db.session.commit()
@@ -373,7 +373,7 @@ class TestExportRoutesTokenAuth:
 
     def test_export_oncall_with_token(self, client, test_user, app):
         """Test l'export des astreintes avec un token valide."""
-        with app.app_context():
+        with test_app.app_context():
             # Générer un token pour l'utilisateur
             token = test_user.generate_ics_token()
             db.session.commit()
@@ -393,7 +393,7 @@ class TestExportRoutesTokenAuth:
 
     def test_export_leaves_with_token(self, client, test_user, app):
         """Test l'export des congés avec un token valide."""
-        with app.app_context():
+        with test_app.app_context():
             # Générer un token pour l'utilisateur
             token = test_user.generate_ics_token()
             db.session.commit()
@@ -413,7 +413,7 @@ class TestExportRoutesTokenAuth:
 
     def test_token_scope_all_accesses_all_data(self, client, test_user, second_user, test_shift_type, app):
         """Test que scope=all avec un token donne accès à tous les shifts."""
-        with app.app_context():
+        with test_app.app_context():
             # Générer un token pour le premier utilisateur
             token = test_user.generate_ics_token()
             db.session.commit()
@@ -453,7 +453,7 @@ class TestExportRoutesTokenAuth:
 
     def test_token_scope_my_accesses_only_own_data(self, client, test_user, second_user, test_shift_type, app):
         """Test que scope=my avec un token ne donne accès qu'aux données de l'utilisateur."""
-        with app.app_context():
+        with test_app.app_context():
             # Générer un token pour le premier utilisateur
             token = test_user.generate_ics_token()
             db.session.commit()
