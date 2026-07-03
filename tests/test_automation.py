@@ -405,7 +405,7 @@ class TestFullScheduleGeneration:
 class TestEdgeCases:
     """Tests pour les cas particuliers."""
     
-    def test_generate_oncall_no_eligible_users(self, app):
+    def test_generate_oncall_no_eligible_users(self, test_app):
         """Test la génération d'astreintes sans utilisateurs éligibles."""
         with test_app.app_context():
             # Créer un groupe sans is_part_of_oncall
@@ -423,7 +423,7 @@ class TestEdgeCases:
             assert len(oncalls) == 0
             assert any("Aucun utilisateur éligible" in msg for msg in messages)
     
-    def test_generate_shift_no_eligible_users(self, app):
+    def test_generate_shift_no_eligible_users(self, test_app):
         """Test la génération de shifts sans utilisateurs éligibles."""
         with test_app.app_context():
             # Créer un groupe sans is_part_of_schedule
