@@ -4,6 +4,7 @@ from app import db
 from app.models import User, Group
 from config_oidc import OIDCConfig
 from app.auth.oidc_auth import oidc_auth
+from app.auth.decorators import admin_required, role_required
 
 # Create blueprint
 auth_bp = Blueprint("auth", __name__)
@@ -109,3 +110,85 @@ def logout():
     logout_user()
     flash("Vous avez été déconnecté.", "success")
     return redirect(url_for("auth.login"))
+
+
+@auth_bp.route("/profile")
+@login_required
+def profile():
+    """Page de profil utilisateur."""
+    return render_template("auth/profile.html", user=current_user)
+
+
+@auth_bp.route("/profile/update", methods=["GET", "POST"])
+@login_required
+def update_profile():
+    """Mise à jour du profil utilisateur."""
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip()
+        current_password = request.form.get("current_password", "")
+        new_password = request.form.get("new_password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        # Vérifier que le nom et l'email ne sont pas vides
+        if not name or not email:
+            flash("Le nom et l'email sont obligatoires.", "danger")
+            return redirect(url_for("auth.update_profile"))
+
+        # Vérifier si l'email a changé
+        if email != current_user.email:
+            # Vérifier que l'email n'est pas déjà utilisé
+            existing_user = User.query.filter_by(email=email).first()
+            if existing_user and existing_user.id != current_user.id:
+                flash("Cet email est déjà utilisé par un autre utilisateur.", "danger")
+                return redirect(url_for("auth.update_profile"))
+            current_user.email = email
+
+        # Mettre à jour le nom
+        current_user.name = name
+
+        # Mettre à jour le mot de passe si fourni
+        if new_password:
+            if not current_password:
+                flash("Le mot de passe actuel est obligatoire pour changer de mot de passe.", "danger")
+                return redirect(url_for("auth.update_profile"))
+            
+            if not current_user.check_password(current_password):
+                flash("Le mot de passe actuel est incorrect.", "danger")
+                return redirect(url_for("auth.update_profile"))
+            
+            if new_password != confirm_password:
+                flash("Les nouveaux mots de passe ne correspondent pas.", "danger")
+                return redirect(url_for("auth.update_profile"))
+            
+            current_user.set_password(new_password)
+
+        db.session.commit()
+        flash("Votre profil a été mis à jour avec succès !", "success")
+        return redirect(url_for("auth.profile"))
+
+    return render_template("auth/profile_update.html", user=current_user)
+
+
+@auth_bp.route("/profile/ics-token", methods=["GET", "POST"])
+@login_required
+def generate_ics_token():
+    """Génère ou régénère le token ICS pour l'export du calendrier."""
+    if request.method == "POST":
+        # Régénérer le token
+        token = current_user.generate_ics_token()
+        try:
+            db.session.commit()
+            flash("Token ICS régénéré avec succès !", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erreur : {str(e)}", "danger")
+    
+    # Afficher la page avec le token actuel
+    token = current_user.ics_token
+    
+    return render_template(
+        "auth/ics_token.html",
+        user=current_user,
+        token=token
+    )

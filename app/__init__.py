@@ -94,12 +94,6 @@ def create_app(config_object: Optional[str] = None):
     from config_oidc import OIDCConfig
     OIDCConfig.load_config()
     
-    # Configurer login_manager.login_view dynamiquement
-    if OIDCConfig.ENABLED and OIDCConfig.is_configured() and OIDCConfig.DISABLE_BASIC_AUTH:
-        login_manager.login_view = "auth.login"
-    else:
-        login_manager.login_view = "auth.login"
-    
     # Configuration du User Loader
     from app.models import User
     
@@ -137,6 +131,13 @@ def create_app(config_object: Optional[str] = None):
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(export_bp)
+    
+    # Configurer login_manager.login_view APRES l'enregistrement des blueprints
+    # Cela permet à Flask-Login de trouver la route auth.login
+    if OIDCConfig.ENABLED and OIDCConfig.is_configured() and OIDCConfig.DISABLE_BASIC_AUTH:
+        login_manager.login_view = "auth.oidc_login"
+    else:
+        login_manager.login_view = "auth.login"
     
     # Stocker l'instance globale pour la compatibilité
     _app = app

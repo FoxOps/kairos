@@ -1,72 +1,83 @@
 """
 Configuration des tests pour Leviia Schedule.
 
-Cette version utilise l'instance globale de l'application et la reconfigure
-pour chaque test. La fixture logged_in_client utilise Flask-Login pour connecter
-l'utilisateur correctement.
+Cette version utilise create_app() pour créer une nouvelle instance de l'application
+pour les tests, ce qui permet de désactiver Talisman avant son initialisation.
+
+Mise à jour pour Flask 3.x et Flask-Login 0.6.3.
 """
 
 import pytest
 import warnings
+import os
 from datetime import datetime, timedelta
 
 # Filtrer les warnings de dépréciation de datetime.utcnow()
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="flask_login")
 
-# Importer l'instance globale de l'application
-from app import app as flask_app, db
+# Importer les modules nécessaires
+from app import db, login_manager, limiter
 from app.models import User, Group, Shift, OnCall, Leave, ShiftType
 from werkzeug.security import generate_password_hash
 from flask_login import login_user, logout_user
 
+# Variable pour stocker l'application de test
+_test_app = None
 
-@pytest.fixture(scope="function")
+
+@pytest.fixture(scope="session")
 def test_app():
     """
-    Fixture qui configure l'instance globale de l'application pour les tests.
+    Fixture qui crée une nouvelle instance de l'application pour les tests.
+    Désactive Talisman et OIDC avant l'initialisation.
     """
-    # Sauvegarder la configuration originale
-    original_testing = flask_app.config.get("TESTING")
-    original_db_uri = flask_app.config.get("SQLALCHEMY_DATABASE_URI")
-    original_csrf = flask_app.config.get("WTF_CSRF_ENABLED")
-    original_secret = flask_app.config.get("SECRET_KEY")
-    original_rate_limit = flask_app.config.get("RATE_LIMIT_ENABLED")
+    global _test_app
     
-    # Configurer pour les tests
-    flask_app.config["TESTING"] = True
-    flask_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-    flask_app.config["WTF_CSRF_ENABLED"] = False
-    flask_app.config["SECRET_KEY"] = "test-secret-key"
-    flask_app.config["RATE_LIMIT_ENABLED"] = False
+    # Sauvegarder et désactiver OIDC pour les tests
+    original_oidc_enabled = os.environ.get("OIDC_ENABLED")
+    original_oidc_disable_basic = os.environ.get("OIDC_DISABLE_BASIC_AUTH")
+    os.environ["OIDC_ENABLED"] = "False"
+    os.environ["OIDC_DISABLE_BASIC_AUTH"] = "False"
+    
+    # Recharger la configuration OIDC
+    from config_oidc import OIDCConfig
+    OIDCConfig.ENABLED = False
+    OIDCConfig.DISABLE_BASIC_AUTH = False
+    
+    # Créer une nouvelle instance de l'application avec une configuration de test
+    from app import create_app
+    _test_app = create_app('app.config.TestingConfig')
+    
+    # Désactiver Talisman pour les tests (déjà fait via TestingConfig)
+    # Désactiver le rate limiter
+    limiter.enabled = False
     
     # Désactiver le cache pour les tests
     from app.utils.cache import CacheConfig
-    original_cache_enabled = CacheConfig.CACHE_ENABLED
     CacheConfig.CACHE_ENABLED = False
     
-    # Désactiver le rate limiter pour les tests
-    from app import limiter
-    original_limiter_enabled = limiter.enabled
-    limiter.enabled = False
-    
     # Créer un contexte d'application
-    with flask_app.app_context():
+    with _test_app.app_context():
         # Re-créer les tables pour le test
         db.drop_all()
         db.create_all()
-        yield flask_app
-        # Nettoyer après le test
+        yield _test_app
+        # Nettoyer après tous les tests
         db.session.rollback()
         db.drop_all()
     
-    # Restaurer la configuration originale
-    flask_app.config["TESTING"] = original_testing
-    flask_app.config["SQLALCHEMY_DATABASE_URI"] = original_db_uri
-    flask_app.config["WTF_CSRF_ENABLED"] = original_csrf
-    flask_app.config["SECRET_KEY"] = original_secret
-    flask_app.config["RATE_LIMIT_ENABLED"] = original_rate_limit
-    CacheConfig.CACHE_ENABLED = original_cache_enabled
-    limiter.enabled = original_limiter_enabled
+    # Restaurer OIDC
+    if original_oidc_enabled is not None:
+        os.environ["OIDC_ENABLED"] = original_oidc_enabled
+    else:
+        os.environ.pop("OIDC_ENABLED", None)
+    if original_oidc_disable_basic is not None:
+        os.environ["OIDC_DISABLE_BASIC_AUTH"] = original_oidc_disable_basic
+    else:
+        os.environ.pop("OIDC_DISABLE_BASIC_AUTH", None)
+    OIDCConfig.load_config()
+    
+    _test_app = None
 
 
 @pytest.fixture
@@ -117,17 +128,16 @@ def admin_user(test_app, test_group):
 
 @pytest.fixture
 def logged_in_client(client):
-    """Client de test Flask avec un utilisateur connecté."""
-    from app.models import Group
-    from flask import session
+    """Client de test Flask avec un utilisateur connecté.
     
+    Crée un utilisateur et se connecte via POST /login.
+    """
+    # Créer un groupe et un utilisateur dans le contexte du client
     with client.application.app_context():
-        # Créer un groupe
-        group = Group(name="Test Group Login")
+        group = Group(name="Test Group Login", is_part_of_schedule=True, is_part_of_oncall=True)
         db.session.add(group)
         db.session.commit()
         
-        # Créer un utilisateur
         user = User(
             email="login@example.com",
             name="Login User",
@@ -137,19 +147,23 @@ def logged_in_client(client):
         )
         db.session.add(user)
         db.session.commit()
-        
-        # Connecter l'utilisateur en utilisant login_user
-        # Il faut un contexte de requête valide
-        with flask_app.test_request_context('/'):
-            login_user(user)
-            # Copier la session vers le client
-            client.cookie_jar._cookies.update(flask_app.test_client().cookie_jar._cookies)
+    
+    # Se connecter via POST /login
+    response = client.post(
+        '/login',
+        data={'email': 'login@example.com', 'password': 'loginpassword'},
+        follow_redirects=True
+    )
+    # On devrait être sur la page d'accueil
+    assert response.status_code == 200, f"Login failed with status {response.status_code}"
     
     yield client
     
     # Se déconnecter
-    with client.application.app_context():
-        logout_user()
+    try:
+        client.get('/logout', follow_redirects=True)
+    except Exception:
+        pass
 
 
 @pytest.fixture

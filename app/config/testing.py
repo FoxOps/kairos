@@ -57,3 +57,7 @@ class TestingConfig(Config):
     
     # Disable templates auto-reload for tests
     TEMPLATES_AUTO_RELOAD: bool = False
+    
+    # Disable Talisman for tests (to avoid HTTPS redirects in test environment)
+    TALISMAN_FORCE_HTTPS: bool = False
+    TALISMAN_STRICT_TRANSPORT_SECURITY: bool = False
