@@ -430,7 +430,7 @@ def delete_all_shifts():
     except Exception as e:
         db.session.rollback()
         flash(f"❌ Erreur : {str(e)}", "danger")
-    return redirect(url_for("schedule"))
+    return redirect(url_for("main.schedule"))
 
 
 @main_bp.route("/shift/delete-all-for-user/<int:user_id>", methods=["POST"])
@@ -446,7 +446,7 @@ def delete_all_shifts_for_user(user_id):
         
         if count == 0:
             flash(f"⚠️ Aucun shift trouvé pour {user.name}.", "warning")
-            return redirect(url_for("schedule"))
+            return redirect(url_for("main.schedule"))
         
         # Supprimer directement sans charger tous les objets
         Shift.query.filter_by(user_id=user_id).delete(synchronize_session=False)
@@ -455,7 +455,7 @@ def delete_all_shifts_for_user(user_id):
     except Exception as e:
         db.session.rollback()
         flash(f"❌ Erreur : {str(e)}", "danger")
-    return redirect(url_for("schedule"))
+    return redirect(url_for("main.schedule"))
 
 @main_bp.route("/shift/delete-day/<date_str>", methods=["POST"])
 @login_required
@@ -469,7 +469,7 @@ def delete_all_shifts_for_day(date_str):
         
         if count == 0:
             flash(f"⚠️ Aucun shift trouvé pour le {date_obj.strftime('%d/%m/%Y')}.", "warning")
-            return redirect(url_for("schedule"))
+            return redirect(url_for("main.schedule"))
         
         # Supprimer directement sans charger tous les objets
         Shift.query.filter_by(date=date_obj).delete(synchronize_session=False)
@@ -480,7 +480,7 @@ def delete_all_shifts_for_day(date_str):
     except Exception as e:
         db.session.rollback()
         flash(f"❌ Erreur : {str(e)}", "danger")
-    return redirect(url_for("schedule"))
+    return redirect(url_for("main.schedule"))
 
 
 @main_bp.route("/shift/delete-week/<date_str>", methods=["POST"])
@@ -513,7 +513,7 @@ def delete_all_shifts_for_week(date_str):
     except Exception as e:
         db.session.rollback()
         flash(f"❌ Erreur : {str(e)}", "danger")
-    return redirect(url_for("schedule"))
+    return redirect(url_for("main.schedule"))
 
 
 
@@ -628,7 +628,7 @@ def add_shift():
                     "Aucun shift ajoute (periode invalide ou jours non ouvres).",
                     "danger",
                 )
-            return redirect(url_for("schedule"))
+            return redirect(url_for("main.schedule"))
         except ValueError as e:
             db.session.rollback()
             flash(
@@ -660,7 +660,7 @@ def delete_shift(shift_id):
     except Exception as e:
         db.session.rollback()
         flash(f"Erreur : {str(e)}", "danger")
-    return redirect(url_for("schedule"))
+    return redirect(url_for("main.schedule"))
 
 
 # ========== API ENDPOINTS POUR DRAG & DROP ====================

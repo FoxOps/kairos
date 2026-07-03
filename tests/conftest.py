@@ -146,6 +146,22 @@ def second_user(test_app, test_group):
 
 
 @pytest.fixture
+def test_shift(test_app, test_user):
+    """Crée un shift de test."""
+    from datetime import date, datetime, time
+    shift = Shift(
+        date=date.today(),
+        start_time=datetime.combine(date.today(), datetime.min.time()),
+        end_time=datetime.combine(date.today(), datetime.max.time()),
+        user_id=test_user.id,
+        shift_type_id=1,
+    )
+    db.session.add(shift)
+    db.session.commit()
+    return shift
+
+
+@pytest.fixture
 def logged_in_client(client):
     """Client de test Flask avec un utilisateur connecté.
     
