@@ -121,7 +121,7 @@ class TestShiftTypeByHours:
             assert shift_type.start_hour == 7
             assert shift_type.end_hour == 15
 
-    def test_get_shift_type_by_hours_new(self, app):
+    def test_get_shift_type_by_hours_new(self, test_app):
         """Test la création d'un nouveau type de shift."""
         with test_app.app_context():
             # S'assurer qu'aucun type 13-21 n'existe
@@ -236,7 +236,7 @@ class TestHandleTwoUsersCase:
 class TestGenerateDailyShifts:
     """Tests pour la génération quotidienne des shifts."""
 
-    def test_generate_daily_shifts_weekend(self, app):
+    def test_generate_daily_shifts_weekend(self, test_app):
         """Test qu'aucun shift n'est généré le week-end."""
         with test_app.app_context():
             saturday = date(2023, 12, 2)  # samedi
