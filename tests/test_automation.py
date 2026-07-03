@@ -6,6 +6,7 @@ import pytest
 from datetime import datetime, date, timedelta
 from app.models import User, Group, Shift, OnCall, Leave, ShiftType
 from app.utils.automation import (
+    AdvancedShiftAutomation,
     OnCallAutomation,
     ShiftAutomation,
     BusinessRules,
