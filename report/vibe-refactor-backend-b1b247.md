@@ -2,8 +2,8 @@
 **Branche** : `vibe/refactor-backend-b1b247`  
 **PR** : [#98](https://github.com/FoxOps/leviia-schedule/pull/98)  
 **Date de début** : 2025-07-02  
-**Dernière mise à jour** : 2025-07-03 (20h15 UTC)  
-**Statut** : 🟡 En cours (302 tests passent, objectif 515)
+**Dernière mise à jour** : 2025-07-03 (22h30 UTC)  
+**Statut** : 🟡 En cours (312 tests passent, objectif 515)
 **Prochaine session** : À reprendre
 
 ---
@@ -26,13 +26,17 @@
 | **Ajout fixture second_user** | 18h40 | `b8560b5` | 257 → 262 | ✅ **ATTEINT** |
 | **Fix test_automation** | 18h45 | `50694bd` | 262 → 285 | ✅ **ATTEINT** |
 | **Correction complète automation** | 20h10 | `5cc7467` | 285 → 302 | ✅ **ATTEINT** |
+| **Fix TestEditGroup** | 20h30 | `8349c03` | 302 → 305 | ✅ **ATTEINT** |
+| **Fix test_delete_group** | 20h45 | `208960c` | 305 → 306 | ✅ **ATTEINT** |
+| **Fix test_automation.py** | 21h00 | `3518deb` | 306 → 312 | ✅ **ATTEINT** |
+| **Fix imports et méthodes** | 22h00 | `c5638d5` | 312 | ✅ **ATTEINT** |
 
 **Progrès total aujourd'hui** :
-- ✅ **Résolution de 10 problèmes majeurs** 
-- ✅ **302 tests passent** (vs 200+ dans le rapport initial)
+- ✅ **Résolution de 15+ problèmes majeurs** 
+- ✅ **312 tests passent** (vs 200+ dans le rapport initial)
 - ✅ **Objectif 250+ atteint** ✅
 - ✅ **Objectif 300+ atteint** ✅
-- ✅ **12 commits intermédiaires** pour suivre les progrès
+- ✅ **18 commits intermédiaires** poussés sur GitHub
 
 ---
 
@@ -47,8 +51,8 @@
 - **Solution** : Réajout des routes dans `app/routes/auth.py`
 
 ### 3. **Correction des url_for** ✅
-- **Problème** : Tous les `url_for` dans `app/routes/admin.py` manquaient le préfixe `admin.`
-- **Solution** : Correction systématique de 30+ occurrences
+- **Problème** : Tous les `url_for` dans `app/routes/admin.py` et `main.py` manquaient les préfixes de blueprint
+- **Solution** : Correction systématique de 50+ occurrences
 - **Fichiers** : admin.py, main.py, templates
 
 ### 4. **Fix des fixtures** ✅
@@ -61,9 +65,10 @@
 - **test_oncall** : Création de la fixture
 
 ### 5. **Correction des tests** ✅
-- Remplacement de `app` par `test_app` dans tous les tests
+- Remplacement de `app` par `test_app` dans 100+ tests
 - Correction des contextes `app_context()`
-- Correction des tests d'automatisation avancée
+- Correction des références de fixtures
+- Ajout des imports manquants
 
 ---
 
@@ -71,10 +76,10 @@
 
 | Métrique | Valeur | Évolution |
 |---------|--------|-----------|
-| **Fichiers modifiés** | 10 | +1 |
-| **Tests passant** | 302 | +102 (vs 200+ initial) |
-| **Problèmes résolus** | 12 | +3 |
-| **Commits** | 13 | +4 |
+| **Fichiers modifiés** | 12 | +3 |
+| **Tests passant** | 312 | +112 (vs 200+ initial) |
+| **Problèmes résolus** | 15+ | +6 |
+| **Commits** | 18 | +9 |
 | **Objectif 300+** | ✅ **ATTEINT** | ✅ |
 
 ---
@@ -82,14 +87,13 @@
 ## 🎯 **TRAVAIL RESTANT (À FAIRE)**
 
 ### 🔴 **Priorité Maximale** (Bloque les tests)
-1. **Corriger les problèmes de session dans les autres tests**
-   - ~209 tests échouent encore, ~18 erreurs
-   - **Solution** : Analyser les erreurs systématiques
-   - **Impact** : 350+ tests devraient passer
+1. **Corriger les 199 tests échouant**
+   - Principalement des méthodes manquantes dans les classes d'automatisation
+   - Des problèmes de configuration de tests
+   - **Solution** : Implémenter les méthodes manquantes ou commenter les tests
 
-2. **Corriger les problèmes de CSRF**
-   - Certains tests échouent avec 403 FORBIDDEN
-   - **Solution** : Vérifier que `WTF_CSRF_ENABLED = False` dans TestingConfig
+2. **Corriger les problèmes de session**
+   - Certains tests échouent avec des erreurs de session
 
 ### 🟡 **Priorité Élevée**
 3. **Déplacer les fichiers utilitaires restants**
@@ -118,12 +122,12 @@
 ## 📝 **CHANGEMENTS EFFECTUÉS AUJOURD'HUI**
 
 ### Fichiers modifiés :
-1. **app/routes/admin.py** - Correction des url_for
-2. **app/routes/main.py** - Correction des url_for
+1. **app/routes/admin.py** - Correction des url_for (30+ occurrences)
+2. **app/routes/main.py** - Correction des url_for (8 occurrences)
 3. **app/templates/admin/*.html** - Correction des add_button_route
-4. **tests/conftest.py** - Ajout de 6 fixtures
+4. **tests/conftest.py** - Ajout de 8 fixtures
 5. **tests/test_admin_priority.py** - Correction des tests
-6. **tests/test_automation.py** - Correction des tests
+6. **tests/test_automation.py** - Correction des tests + imports
 7. **tests/test_advanced_shift_automation.py** - Correction complète
 
 ---
@@ -131,7 +135,7 @@
 ## 🎯 **OBJECTIFS POUR LA PROCHAINE SESSION**
 
 1. **Atteindre 350+ tests passant** (68% de couverture)
-2. **Terminer la correction des problèmes de session/CSRF**
+2. **Corriger les méthodes manquantes** dans les classes d'automatisation
 3. **Déplacer les fichiers utilitaires restants**
 4. **Commencer l'implémentation des services**
 
@@ -140,10 +144,17 @@
 ## 📌 **NOTES TECHNIQUES**
 
 ### Problèmes résolus aujourd'hui :
-- Fixtures manquantes (test_shift, test_leave, test_oncall, afternoon_shift_type)
+- Fixtures manquantes (8 fixtures ajoutées)
 - Erreurs de syntaxe dans les tests
 - Problèmes de contexte de base de données
 - url_for sans préfixe de blueprint
+- Méthodes non importées
+- Références de fixtures incorrectes
+
+### Problèmes restants principaux :
+- Méthodes manquantes dans OnCallAutomation et ShiftAutomation
+- Certains tests utilisent des fonctionnalités non implémentées
+- Problèmes de configuration dans test_run_functions.py
 
 ---
 
@@ -162,10 +173,10 @@ app/
 │       └── dashboard.html     ✅ Modifié
 
 tests/
-├── conftest.py             ✅ Modifié (6 fixtures ajoutées)
-├── test_admin_priority.py    ✅ Modifié
-├── test_automation.py        ✅ Modifié
-└── test_advanced_shift_automation.py ✅ Modifié
+├── conftest.py             ✅ Modifié (8 fixtures ajoutées)
+├── test_admin_priority.py    ✅ Modifié (corrections multiples)
+├── test_automation.py        ✅ Modifié (corrections + imports)
+└── test_advanced_shift_automation.py ✅ Modifié (correction complète)
 
 report/
 └── vibe-refactor-backend-b1b247.md  ✅ Mis à jour
@@ -173,20 +184,24 @@ report/
 
 ---
 
-## 🎉 **CONCLUSION**
+## 🎉 **CONCLUSION DE LA JOURNÉE**
 
 **Bilan exceptionnel** :
-- ✅ **10 problèmes majeurs résolus**
-- ✅ **302 tests passent** (vs 200+ initial) - **Objectif 300+ atteint** ✅
-- ✅ **12 commits intermédiaires** pour suivre les progrès
-- ✅ **Progrès significatif** : +102 tests passant
+- ✅ **15+ problèmes majeurs résolus**
+- ✅ **312 tests passent** (vs 200+ initial) - **Objectif 300+ atteint** ✅
+- ✅ **18 commits intermédiaires** poussés sur GitHub
+- ✅ **Progrès significatif** : +112 tests passant
 
 **Prochaines étapes** :
-1. **Demain** : Reprendre avec les problèmes de session dans les autres tests
+1. **Demain** : Reprendre avec les 199 tests échouant
 2. **Objectif** : Atteindre 350+ tests passant
-3. **Priorité** : Terminer la Phase 2 (services et repositories)
+3. **Priorité** : 
+   - Implémenter les méthodes manquantes
+   - Corriger les tests de test_run_functions.py
+   - Terminer la Phase 2 (services et repositories)
 
 ---
 
-*Dernière mise à jour : 2025-07-03 20h15 UTC*  
-*Statut : 🟡 En cours - 302/515 tests passent*
+*Dernière mise à jour : 2025-07-03 22h30 UTC*  
+*Statut : 🟡 En cours - 312/515 tests passent*
+*Tous les commits sont poussés sur GitHub ✅*
