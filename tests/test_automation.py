@@ -37,7 +37,7 @@ class TestOnCallAutomation:
             assert len(eligible_users) == 3
             assert all(user.group.is_part_of_oncall for user in eligible_users)
     
-    def test_get_rotation_order_default(self, app, test_group, test_user, second_user):
+    def test_get_rotation_order_default(self, test_app, test_group, test_user, second_user):
         """Test l'ordre de rotation par défaut (alphabétique)."""
         with test_app.app_context():
             # Créer un troisième utilisateur
