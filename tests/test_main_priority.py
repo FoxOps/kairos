@@ -171,7 +171,7 @@ class TestCalendarFunctions:
         events = _build_calendar_events([], [], [])
         assert events == []
 
-    def test_build_calendar_events_with_data(self, app, test_user, test_shift_type):
+    def test_build_calendar_events_with_data(self, test_app, test_user, test_shift_type):
         """Test _build_calendar_events avec des données."""
         from app.routes.main import _build_calendar_events
         
