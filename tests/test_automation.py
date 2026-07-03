@@ -58,7 +58,7 @@ class TestOnCallAutomation:
             names = [u.name for u in rotation_order]
             assert names == sorted(names)
     
-    def test_get_rotation_order_custom(self, app, test_group, test_user, second_user):
+    def test_get_rotation_order_custom(self, test_app, test_group, test_user, second_user):
         """Test l'ordre de rotation personnalisé."""
         with test_app.app_context():
             # Créer un troisième utilisateur
@@ -81,7 +81,7 @@ class TestOnCallAutomation:
             assert rotation_order[1].id == user3.id
             assert rotation_order[2].id == test_user.id
     
-    def test_find_next_available_user(self, app, test_group, test_user, second_user):
+    def test_find_next_available_user(self, test_app, test_group, test_user, second_user):
         """Test la recherche du prochain utilisateur disponible."""
         with test_app.app_context():
             # Créer un troisième utilisateur
@@ -118,7 +118,7 @@ class TestOnCallAutomation:
             db.session.delete(oncall)
             db.session.commit()
     
-    def test_generate_oncall_schedule_dry_run(self, app, test_group, test_user, second_user):
+    def test_generate_oncall_schedule_dry_run(self, test_app, test_group, test_user, second_user):
         """Test la génération des astreintes en mode dry run."""
         with test_app.app_context():
             # Créer un troisième utilisateur
@@ -147,7 +147,7 @@ class TestOnCallAutomation:
             for i in range(1, len(oncalls)):
                 assert oncalls[i].start_time == oncalls[i-1].start_time + timedelta(days=7)
     
-    def test_generate_oncall_schedule_with_rotation(self, app, test_group, test_user, second_user):
+    def test_generate_oncall_schedule_with_rotation(self, test_app, test_group, test_user, second_user):
         """Test la génération avec un ordre de rotation personnalisé."""
         with test_app.app_context():
             # Créer un troisième utilisateur
@@ -199,13 +199,13 @@ class TestShiftAutomation:
             # Tous les utilisateurs du groupe sont éligibles (is_part_of_schedule=True)
             assert len(eligible_users) == 3
     
-    def test_get_shift_types(self, app, test_shift_type, afternoon_shift_type):
+    def test_get_shift_types(self, test_app, test_shift_type, afternoon_shift_type):
         """Test la récupération des types de shifts."""
         with test_app.app_context():
             shift_types = ShiftAutomation.get_shift_types()
             assert len(shift_types) == 2
     
-    def test_can_assign_shift(self, app, test_user, test_shift_type):
+    def test_can_assign_shift(self, test_app, test_user, test_shift_type):
         """Test la vérification de l'assignation d'un shift."""
         with test_app.app_context():
             # Test avec une date valide (lundi)
@@ -224,7 +224,7 @@ class TestShiftAutomation:
             assert can_assign is False
             assert "lundi au vendredi" in message
     
-    def test_can_assign_shift_with_conflict(self, app, test_user, test_shift_type):
+    def test_can_assign_shift_with_conflict(self, test_app, test_user, test_shift_type):
         """Test la vérification avec un conflit existant."""
         with test_app.app_context():
             test_date = date(2024, 1, 8)  # Lundi
@@ -253,7 +253,7 @@ class TestShiftAutomation:
             db.session.delete(existing_shift)
             db.session.commit()
     
-    def test_find_replacement_user(self, app, test_group, test_user, second_user):
+    def test_find_replacement_user(self, test_app, test_group, test_user, second_user):
         """Test la recherche d'un utilisateur de remplacement."""
         with test_app.app_context():
             # Créer un troisième utilisateur
@@ -279,7 +279,7 @@ class TestShiftAutomation:
             assert replacement is not None
             assert replacement.id == user3.id
     
-    def test_generate_shift_schedule_dry_run(self, app, test_group, test_user, second_user, test_shift_type):
+    def test_generate_shift_schedule_dry_run(self, test_app, test_group, test_user, second_user, test_shift_type):
         """Test la génération des shifts en mode dry run."""
         with test_app.app_context():
             # Créer un troisième utilisateur
@@ -345,7 +345,7 @@ class TestBusinessRules:
 class TestFullScheduleGeneration:
     """Tests pour la génération complète du schedule."""
     
-    def test_generate_full_schedule_dry_run(self, app, test_group, test_user, second_user, test_shift_type):
+    def test_generate_full_schedule_dry_run(self, test_app, test_group, test_user, second_user, test_shift_type):
         """Test la génération complète en mode dry run."""
         with test_app.app_context():
             # Créer un troisième utilisateur
@@ -375,7 +375,7 @@ class TestFullScheduleGeneration:
             # Devrait générer des shifts (selon les règles par défaut)
             assert len(result['shift']['generated']) > 0
     
-    def test_get_automation_status(self, app, test_group, test_user, second_user):
+    def test_get_automation_status(self, test_app, test_group, test_user, second_user):
         """Test la récupération de l'état de l'automatisation."""
         with test_app.app_context():
             # Créer un troisième utilisateur
@@ -441,7 +441,7 @@ class TestEdgeCases:
             assert len(shifts) == 0
             assert any("Aucun utilisateur éligible" in msg for msg in messages)
     
-    def test_generate_oncall_with_leave_conflict(self, app, test_group, test_user, second_user):
+    def test_generate_oncall_with_leave_conflict(self, test_app, test_group, test_user, second_user):
         """Test la génération d'astreintes avec un conflit de congé."""
         with test_app.app_context():
             # Créer un troisième utilisateur
