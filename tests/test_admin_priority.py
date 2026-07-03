@@ -93,7 +93,7 @@ class TestDeleteGroup:
         """Test la suppression d'un groupe sans utilisateurs."""
         initial_count = Group.query.count()
         response = logged_in_client.post(
-            f"/admin/groups/delete/{test_group.id}",
+            f"/admin/groups/delete/{group_not_in_schedule.id}",
             follow_redirects=True,
         )
         assert response.status_code == 200
