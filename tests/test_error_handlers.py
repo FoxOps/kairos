@@ -33,7 +33,7 @@ class TestErrorHandlers:
 
     def test_error_handlers_are_registered(self, app):
         """Test que les gestionnaires d'erreurs sont enregistrés."""
-        with app.app_context():
+        with test_app.app_context():
             # Vérifier que les handlers sont enregistrés
             assert hasattr(app, "errorhandler")
             assert callable(app.errorhandler)
@@ -44,7 +44,7 @@ class TestCustomErrorPages:
 
     def test_400_template_exists(self, app):
         """Test que le template 400.html existe."""
-        with app.app_context():
+        with test_app.app_context():
             from flask import render_template
             try:
                 html = render_template("400.html")
@@ -54,7 +54,7 @@ class TestCustomErrorPages:
 
     def test_401_template_exists(self, app):
         """Test que le template 401.html existe."""
-        with app.app_context():
+        with test_app.app_context():
             from flask import render_template
             try:
                 html = render_template("401.html")
@@ -64,7 +64,7 @@ class TestCustomErrorPages:
 
     def test_403_template_exists(self, app):
         """Test que le template 403.html existe."""
-        with app.app_context():
+        with test_app.app_context():
             from flask import render_template
             try:
                 html = render_template("403.html")
@@ -74,7 +74,7 @@ class TestCustomErrorPages:
 
     def test_404_template_exists(self, app):
         """Test que le template 404.html existe."""
-        with app.app_context():
+        with test_app.app_context():
             from flask import render_template
             try:
                 html = render_template("404.html")
@@ -84,7 +84,7 @@ class TestCustomErrorPages:
 
     def test_405_template_exists(self, app):
         """Test que le template 405.html existe."""
-        with app.app_context():
+        with test_app.app_context():
             from flask import render_template
             try:
                 html = render_template("405.html")
@@ -94,7 +94,7 @@ class TestCustomErrorPages:
 
     def test_500_template_exists(self, app):
         """Test que le template 500.html existe."""
-        with app.app_context():
+        with test_app.app_context():
             from flask import render_template
             try:
                 html = render_template("500.html")
@@ -104,7 +104,7 @@ class TestCustomErrorPages:
 
     def test_502_template_exists(self, app):
         """Test que le template 502.html existe."""
-        with app.app_context():
+        with test_app.app_context():
             from flask import render_template
             try:
                 html = render_template("502.html")
@@ -114,7 +114,7 @@ class TestCustomErrorPages:
 
     def test_503_template_exists(self, app):
         """Test que le template 503.html existe."""
-        with app.app_context():
+        with test_app.app_context():
             from flask import render_template
             try:
                 html = render_template("503.html")
@@ -124,7 +124,7 @@ class TestCustomErrorPages:
 
     def test_504_template_exists(self, app):
         """Test que le template 504.html existe."""
-        with app.app_context():
+        with test_app.app_context():
             from flask import render_template
             try:
                 html = render_template("504.html")
@@ -134,7 +134,7 @@ class TestCustomErrorPages:
 
     def test_400_template_content(self, app):
         """Test le contenu du template 400.html."""
-        with app.app_context():
+        with test_app.app_context():
             from flask import render_template
             html = render_template("400.html")
             # Vérifier que le template contient des éléments de base
@@ -142,14 +142,14 @@ class TestCustomErrorPages:
 
     def test_401_template_content(self, app):
         """Test le contenu du template 401.html."""
-        with app.app_context():
+        with test_app.app_context():
             from flask import render_template
             html = render_template("401.html")
             assert b"401" in html.encode() or b"Unauthorized" in html.encode() or b"Non autorise" in html.encode()
 
     def test_403_template_content(self, app):
         """Test le contenu du template 403.html."""
-        with app.app_context():
+        with test_app.app_context():
             from flask import render_template
             html = render_template("403.html")
             # Vérifier que le template contient des éléments de base
@@ -157,42 +157,42 @@ class TestCustomErrorPages:
 
     def test_404_template_content(self, app):
         """Test le contenu du template 404.html."""
-        with app.app_context():
+        with test_app.app_context():
             from flask import render_template
             html = render_template("404.html")
             assert b"404" in html.encode() or b"Not Found" in html.encode() or b"Page non trouvee" in html.encode()
 
     def test_405_template_content(self, app):
         """Test le contenu du template 405.html."""
-        with app.app_context():
+        with test_app.app_context():
             from flask import render_template
             html = render_template("405.html")
             assert b"405" in html.encode() or b"Method Not Allowed" in html.encode() or b"Methode non autorisee" in html.encode()
 
     def test_500_template_content(self, app):
         """Test le contenu du template 500.html."""
-        with app.app_context():
+        with test_app.app_context():
             from flask import render_template
             html = render_template("500.html")
             assert b"500" in html.encode() or b"Internal Server Error" in html.encode() or b"Erreur interne" in html.encode()
 
     def test_502_template_content(self, app):
         """Test le contenu du template 502.html."""
-        with app.app_context():
+        with test_app.app_context():
             from flask import render_template
             html = render_template("502.html")
             assert b"502" in html.encode() or b"Bad Gateway" in html.encode() or b"Service temporairement indisponible" in html.encode()
 
     def test_503_template_content(self, app):
         """Test le contenu du template 503.html."""
-        with app.app_context():
+        with test_app.app_context():
             from flask import render_template
             html = render_template("503.html")
             assert b"503" in html.encode() or b"Service Unavailable" in html.encode() or b"Service indisponible" in html.encode()
 
     def test_504_template_content(self, app):
         """Test le contenu du template 504.html."""
-        with app.app_context():
+        with test_app.app_context():
             from flask import render_template
             html = render_template("504.html")
             assert b"504" in html.encode() or b"Gateway Timeout" in html.encode() or b"Temps d'attente depasse" in html.encode()
@@ -201,9 +201,9 @@ class TestCustomErrorPages:
 class TestErrorHandlerFunctions:
     """Tests pour les fonctions utilitaires de gestion des erreurs."""
 
-    def test_log_http_error(self, app, caplog):
+    def test_log_http_error(self, test_app, caplog):
         """Test la fonction log_http_error."""
-        with app.app_context():
+        with test_app.app_context():
             from app import log_http_error
             import logging
             
@@ -225,7 +225,7 @@ class TestErrorHandlerFunctions:
 
     def test_get_error_template_data(self, app):
         """Test la fonction get_error_template_data."""
-        with app.app_context():
+        with test_app.app_context():
             from app import get_error_template_data
             
             data = get_error_template_data(404, "Page not found")
@@ -262,9 +262,9 @@ class TestErrorHandlerRoutes:
 class TestDatabaseErrorHandler:
     """Tests pour le gestionnaire d'erreurs de base de données."""
 
-    def test_database_error_handler(self, app, client):
+    def test_database_error_handler(self, test_app, client):
         """Test le gestionnaire d'erreurs SQLite."""
-        with app.app_context():
+        with test_app.app_context():
             # Simuler une erreur de base de données
             from app import handle_database_error
             
@@ -288,9 +288,9 @@ class TestDatabaseErrorHandler:
 class TestExceptionHandlers:
     """Tests pour les gestionnaires d'exceptions."""
 
-    def test_value_error_handler(self, app, client):
+    def test_value_error_handler(self, test_app, client):
         """Test le gestionnaire d'erreurs ValueError."""
-        with app.app_context():
+        with test_app.app_context():
             from app import handle_value_error
             
             error = ValueError("Invalid value")
@@ -303,9 +303,9 @@ class TestExceptionHandlers:
                 else:
                     assert result.status_code == 400
 
-    def test_type_error_handler(self, app, client):
+    def test_type_error_handler(self, test_app, client):
         """Test le gestionnaire d'erreurs TypeError."""
-        with app.app_context():
+        with test_app.app_context():
             from app import handle_type_error
             
             error = TypeError("Invalid type")
@@ -318,9 +318,9 @@ class TestExceptionHandlers:
                 else:
                     assert result.status_code == 400
 
-    def test_generic_exception_handler(self, app, client):
+    def test_generic_exception_handler(self, test_app, client):
         """Test le gestionnaire d'exceptions générique."""
-        with app.app_context():
+        with test_app.app_context():
             from app import handle_exception
             
             error = Exception("Generic error")
@@ -339,7 +339,7 @@ class TestLoggingConfiguration:
 
     def test_logging_setup(self, app):
         """Test que le logging est correctement configuré."""
-        with app.app_context():
+        with test_app.app_context():
             import os
             import logging
             
@@ -360,7 +360,7 @@ class TestLoggingConfiguration:
 
     def test_app_logger_has_multiple_handlers(self, app):
         """Test que le logger principal a plusieurs handlers."""
-        with app.app_context():
+        with test_app.app_context():
             # Le logger principal devrait avoir plusieurs handlers
             # (fichier, erreur, debug, audit, console)
             assert len(app.logger.handlers) >= 4
@@ -378,7 +378,7 @@ class TestSensitiveDataFilter:
 
     def test_filter_masks_password(self, app):
         """Test que le filtre masque les mots de passe."""
-        with app.app_context():
+        with test_app.app_context():
             from app import SensitiveDataFilter
             import logging
             
@@ -401,7 +401,7 @@ class TestSensitiveDataFilter:
 
     def test_filter_masks_token(self, app):
         """Test que le filtre masque les tokens."""
-        with app.app_context():
+        with test_app.app_context():
             from app import SensitiveDataFilter
             import logging
             
@@ -423,7 +423,7 @@ class TestSensitiveDataFilter:
 
     def test_filter_masks_api_key(self, app):
         """Test que le filtre masque les clés API."""
-        with app.app_context():
+        with test_app.app_context():
             from app import SensitiveDataFilter
             import logging
             
@@ -445,7 +445,7 @@ class TestSensitiveDataFilter:
 
     def test_filter_masks_in_args(self, app):
         """Test que le filtre masque les données sensibles dans les args."""
-        with app.app_context():
+        with test_app.app_context():
             from app import SensitiveDataFilter
             import logging
             
@@ -467,7 +467,7 @@ class TestSensitiveDataFilter:
 
     def test_filter_case_insensitive(self, app):
         """Test que le filtre est insensible à la casse."""
-        with app.app_context():
+        with test_app.app_context():
             from app import SensitiveDataFilter
             import logging
             
@@ -489,7 +489,7 @@ class TestSensitiveDataFilter:
 
     def test_filter_preserves_non_sensitive_data(self, app):
         """Test que le filtre préserve les données non sensibles."""
-        with app.app_context():
+        with test_app.app_context():
             from app import SensitiveDataFilter
             import logging
             
@@ -515,7 +515,7 @@ class TestAuditLogging:
 
     def test_log_audit_action_success(self, app):
         """Test que l'audit logging fonctionne pour les actions réussies."""
-        with app.app_context():
+        with test_app.app_context():
             from app import log_audit_action
             import logging
             
@@ -538,7 +538,7 @@ class TestAuditLogging:
 
     def test_log_audit_action_failure(self, app):
         """Test que l'audit logging fonctionne pour les actions échouées."""
-        with app.app_context():
+        with test_app.app_context():
             from app import log_audit_action
             
             class MockUser:
@@ -558,7 +558,7 @@ class TestAuditLogging:
 
     def test_log_audit_action_anonymous_user(self, app):
         """Test que l'audit logging fonctionne avec un utilisateur anonyme."""
-        with app.app_context():
+        with test_app.app_context():
             from app import log_audit_action
             
             # Logger une action avec utilisateur None
@@ -578,7 +578,7 @@ class TestGetLogger:
 
     def test_get_logger_creates_new_logger(self, app):
         """Test que get_logger crée un nouveau logger."""
-        with app.app_context():
+        with test_app.app_context():
             from app import get_logger
             
             # Obtenir un logger personnalisé
@@ -589,7 +589,7 @@ class TestGetLogger:
 
     def test_get_logger_returns_existing_logger(self, app):
         """Test que get_logger retourne un logger existant."""
-        with app.app_context():
+        with test_app.app_context():
             from app import get_logger
             
             # Obtenir le même logger deux fois
@@ -601,7 +601,7 @@ class TestGetLogger:
 
     def test_get_logger_has_handlers(self, app):
         """Test que les loggers créés ont des handlers."""
-        with app.app_context():
+        with test_app.app_context():
             from app import get_logger
             
             custom_logger = get_logger('test_module_handlers')
