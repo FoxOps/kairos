@@ -162,6 +162,50 @@ def test_shift(test_app, test_user):
 
 
 @pytest.fixture
+def afternoon_shift_type(test_app):
+    """Crée un type de shift pour l'après-midi."""
+    from datetime import time
+    shift_type = ShiftType(
+        name="Afternoon",
+        start_hour=14,
+        end_hour=18,
+    )
+    db.session.add(shift_type)
+    db.session.commit()
+    return shift_type
+
+
+@pytest.fixture
+def test_leave(test_app, test_user):
+    """Crée un congé de test."""
+    from datetime import date, timedelta
+    leave = Leave(
+        user_id=test_user.id,
+        start_date=date.today(),
+        end_date=date.today() + timedelta(days=5),
+        reason="Test leave",
+        status="approved",
+    )
+    db.session.add(leave)
+    db.session.commit()
+    return leave
+
+
+@pytest.fixture
+def test_oncall(test_app, test_user):
+    """Crée une astreinte de test."""
+    from datetime import datetime, timedelta
+    oncall = OnCall(
+        user_id=test_user.id,
+        start_time=datetime.now(),
+        end_time=datetime.now() + timedelta(days=7),
+    )
+    db.session.add(oncall)
+    db.session.commit()
+    return oncall
+
+
+@pytest.fixture
 def logged_in_client(client):
     """Client de test Flask avec un utilisateur connecté.
     
