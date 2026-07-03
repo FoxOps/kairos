@@ -167,6 +167,7 @@ def afternoon_shift_type(test_app):
     from datetime import time
     shift_type = ShiftType(
         name="Afternoon",
+        label="PM",
         start_hour=14,
         end_hour=18,
     )
