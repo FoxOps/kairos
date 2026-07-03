@@ -2,8 +2,8 @@
 Configuration des tests pour Leviia Schedule.
 
 Cette version utilise l'instance globale de l'application et la reconfigure
-pour chaque test. La fixture logged_in_client utilise maintenant une approche
-plus robuste pour gérer la session.
+pour chaque test. La fixture logged_in_client utilise Flask-Login pour connecter
+l'utilisateur correctement.
 """
 
 import pytest
@@ -17,15 +17,13 @@ warnings.filterwarnings("ignore", category=DeprecationWarning, module="flask_log
 from app import app as flask_app, db
 from app.models import User, Group, Shift, OnCall, Leave, ShiftType
 from werkzeug.security import generate_password_hash
+from flask_login import login_user, logout_user
 
 
 @pytest.fixture(scope="function")
 def test_app():
     """
     Fixture qui configure l'instance globale de l'application pour les tests.
-    
-    Note: On utilise l'instance globale existante et on modifie sa configuration
-    pour les tests. Cela évite les problèmes de circular import.
     """
     # Sauvegarder la configuration originale
     original_testing = flask_app.config.get("TESTING")
@@ -74,7 +72,6 @@ def test_app():
 @pytest.fixture
 def client(test_app):
     """Client de test Flask avec cookies et session activés."""
-    # Utiliser l'instance globale avec use_cookies=True
     with test_app.test_client(use_cookies=True) as client:
         yield client
 
@@ -122,7 +119,7 @@ def admin_user(test_app, test_group):
 def logged_in_client(client):
     """Client de test Flask avec un utilisateur connecté."""
     from app.models import Group
-    from flask_login import login_user
+    from flask import session
     
     with client.application.app_context():
         # Créer un groupe
@@ -141,18 +138,18 @@ def logged_in_client(client):
         db.session.add(user)
         db.session.commit()
         
-        # Connecter l'utilisateur manuellement via Flask-Login
-        # Il faut utiliser request context
-        with client.session_transaction() as sess:
-            # Stocker l'ID utilisateur dans la session manuellement
-            sess['_user_id'] = user.id
-            sess['_fresh'] = True
+        # Connecter l'utilisateur en utilisant login_user
+        # Il faut un contexte de requête valide
+        with flask_app.test_request_context('/'):
+            login_user(user)
+            # Copier la session vers le client
+            client.cookie_jar._cookies.update(flask_app.test_client().cookie_jar._cookies)
     
     yield client
     
     # Se déconnecter
-    with client.session_transaction() as sess:
-        sess.clear()
+    with client.application.app_context():
+        logout_user()
 
 
 @pytest.fixture
