@@ -183,8 +183,6 @@ def test_leave(test_app, test_user):
         user_id=test_user.id,
         start_date=date.today(),
         end_date=date.today() + timedelta(days=5),
-        reason="Test leave",
-        status="approved",
     )
     db.session.add(leave)
     db.session.commit()
