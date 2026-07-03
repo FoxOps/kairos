@@ -166,7 +166,7 @@ class TestUserOwnsResourceDecorator:
         self, client, test_leave, second_user, app
     ):
         """Test qu'un utilisateur ne peut pas supprimer le congé d'un autre."""
-        with app.app_context():
+        with test_app.app_context():
             # Connecter second_user
             client.post(
                 "/login",
@@ -345,7 +345,7 @@ class TestLeavePermissions:
 
     def test_user_cannot_add_others_leave(self, client, test_user, second_user, app):
         """Test qu'un utilisateur ne peut pas ajouter un congé pour un autre."""
-        with app.app_context():
+        with test_app.app_context():
             # Connecter second_user
             client.post(
                 "/login",
