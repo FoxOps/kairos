@@ -24,7 +24,7 @@ class TestEditGroup:
             follow_redirects=True,
         )
         assert response.status_code == 200
-        updated_group = db.session.get(Group, group_not_in_schedule.id)
+        updated_group = db.session.get(Group, test_group.id)
         assert updated_group.name == "Updated Group"
 
     def test_edit_group_post_empty_name(self, logged_in_client, group_not_in_schedule):
@@ -93,7 +93,7 @@ class TestDeleteGroup:
         """Test la suppression d'un groupe sans utilisateurs."""
         initial_count = Group.query.count()
         response = logged_in_client.post(
-            f"/admin/groups/delete/{group_not_in_schedule.id}",
+            f"/admin/groups/delete/{test_group.id}",
             follow_redirects=True,
         )
         assert response.status_code == 200
@@ -102,12 +102,12 @@ class TestDeleteGroup:
     def test_delete_group_with_users(self, logged_in_client, test_group, test_user):
         """Test que la suppression d'un groupe avec des utilisateurs est bloquée."""
         response = logged_in_client.post(
-            f"/admin/groups/delete/{group_not_in_schedule.id}",
+            f"/admin/groups/delete/{test_group.id}",
             follow_redirects=True,
         )
         assert response.status_code == 200
         assert b"Impossible" in response.data
-        assert db.session.get(Group, group_not_in_schedule.id) is not None
+        assert db.session.get(Group, test_group.id) is not None
 
 
 class TestDeleteUser:
