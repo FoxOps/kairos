@@ -89,6 +89,13 @@ def test_group(test_app):
     group = Group(name="Test Group", is_part_of_schedule=True, is_part_of_oncall=True)
     db.session.add(group)
     db.session.commit()
+
+@pytest.fixture
+def group_not_in_schedule(test_app):
+    """Crée un groupe de test qui ne fait pas partie du planning."""
+    group = Group(name="Group Not In Schedule", is_part_of_schedule=False, is_part_of_oncall=False)
+    db.session.add(group)
+    db.session.commit()
     return group
 
 

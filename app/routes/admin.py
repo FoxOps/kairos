@@ -70,11 +70,11 @@ def add_group():
 
         if not name:
             flash("❌ Le nom du groupe est obligatoire.", "danger")
-            return redirect(url_for("add_group"))
+            return redirect(url_for("admin.add_group"))
 
         if Group.query.filter_by(name=name).first():
             flash("❌ Un groupe avec ce nom existe déjà.", "danger")
-            return redirect(url_for("add_group"))
+            return redirect(url_for("admin.add_group"))
 
         try:
             new_group = Group(
@@ -85,7 +85,7 @@ def add_group():
             db.session.add(new_group)
             db.session.commit()
             flash("✅ Groupe ajouté avec succès !", "success")
-            return redirect(url_for("list_groups"))
+            return redirect(url_for("admin.list_groups"))
         except Exception as e:
             db.session.rollback()
             flash(f"❌ Erreur : {str(e)}", "danger")
@@ -105,14 +105,14 @@ def edit_group(group_id):
 
         if not name:
             flash("❌ Le nom du groupe est obligatoire.", "danger")
-            return redirect(url_for("edit_group", group_id=group_id))
+            return redirect(url_for("admin.edit_group", group_id=group_id))
 
         existing_group = Group.query.filter(
             Group.name == name, Group.id != group_id
         ).first()
         if existing_group:
             flash("❌ Un groupe avec ce nom existe déjà.", "danger")
-            return redirect(url_for("edit_group", group_id=group_id))
+            return redirect(url_for("admin.edit_group", group_id=group_id))
 
         try:
             group.name = name
@@ -120,7 +120,7 @@ def edit_group(group_id):
             group.is_part_of_oncall = is_part_of_oncall
             db.session.commit()
             flash("✅ Groupe modifié avec succès !", "success")
-            return redirect(url_for("list_groups"))
+            return redirect(url_for("admin.list_groups"))
         except Exception as e:
             db.session.rollback()
             flash(f"❌ Erreur : {str(e)}", "danger")
@@ -138,7 +138,7 @@ def delete_group(group_id):
             "❌ Impossible de supprimer ce groupe : des utilisateurs y sont associés.",
             "danger",
         )
-        return redirect(url_for("list_groups"))
+        return redirect(url_for("admin.list_groups"))
 
     try:
         db.session.delete(group)
@@ -148,7 +148,7 @@ def delete_group(group_id):
         db.session.rollback()
         flash(f"❌ Erreur : {str(e)}", "danger")
 
-    return redirect(url_for("list_groups"))
+    return redirect(url_for("admin.list_groups"))
 
 
 # ==================== GESTION DES UTILISATEURS ====================
@@ -201,7 +201,7 @@ def add_user():
             db.session.add(new_user)
             db.session.commit()
             flash("✅ Utilisateur ajouté avec succès !", "success")
-            return redirect(url_for("list_users"))
+            return redirect(url_for("admin.list_users"))
         except Exception as e:
             db.session.rollback()
             flash(f"❌ Erreur : {str(e)}", "danger")
@@ -242,7 +242,7 @@ def edit_user(user_id):
                 user.set_password(password)
             db.session.commit()
             flash("✅ Utilisateur modifié avec succès !", "success")
-            return redirect(url_for("list_users"))
+            return redirect(url_for("admin.list_users"))
         except Exception as e:
             db.session.rollback()
             flash(f"❌ Erreur : {str(e)}", "danger")
@@ -264,7 +264,7 @@ def delete_user(user_id):
             "❌ Impossible de supprimer cet utilisateur : il a des shifts, astreintes ou congés associés.",
             "danger",
         )
-        return redirect(url_for("list_users"))
+        return redirect(url_for("admin.list_users"))
 
     try:
         db.session.delete(user)
@@ -274,7 +274,7 @@ def delete_user(user_id):
         db.session.rollback()
         flash(f"❌ Erreur : {str(e)}", "danger")
 
-    return redirect(url_for("list_users"))
+    return redirect(url_for("admin.list_users"))
 
 
 # ==================== GESTION DES TYPES DE SHIFTS ====================
@@ -299,24 +299,24 @@ def add_shift_type():
 
         if not all([name, label, start_hour, end_hour]):
             flash("❌ Tous les champs sont obligatoires.", "danger")
-            return redirect(url_for("add_shift_type"))
+            return redirect(url_for("admin.add_shift_type"))
 
         if ShiftType.query.filter_by(name=name).first():
             flash("❌ Un type de shift avec ce nom existe déjà.", "danger")
-            return redirect(url_for("add_shift_type"))
+            return redirect(url_for("admin.add_shift_type"))
 
         try:
             start_hour = int(start_hour)
             end_hour = int(end_hour)
             if not (0 <= start_hour < 24) or not (0 <= end_hour < 24):
                 flash("❌ Les heures doivent être comprises entre 0 et 23.", "danger")
-                return redirect(url_for("add_shift_type"))
+                return redirect(url_for("admin.add_shift_type"))
             if start_hour >= end_hour:
                 flash(
                     "❌ L'heure de début doit être antérieure à l'heure de fin.",
                     "danger",
                 )
-                return redirect(url_for("add_shift_type"))
+                return redirect(url_for("admin.add_shift_type"))
 
             new_shift_type = ShiftType(
                 name=name,
@@ -327,11 +327,11 @@ def add_shift_type():
             db.session.add(new_shift_type)
             db.session.commit()
             flash("✅ Type de shift ajouté avec succès !", "success")
-            return redirect(url_for("list_shift_types"))
+            return redirect(url_for("admin.list_shift_types"))
         except ValueError:
             db.session.rollback()
             flash("❌ Les heures doivent être des nombres entiers.", "danger")
-            return redirect(url_for("add_shift_type"))
+            return redirect(url_for("admin.add_shift_type"))
         except Exception as e:
             db.session.rollback()
             flash(f"❌ Erreur : {str(e)}", "danger")
@@ -352,27 +352,27 @@ def edit_shift_type(shift_type_id):
 
         if not all([name, label, start_hour, end_hour]):
             flash("❌ Tous les champs sont obligatoires.", "danger")
-            return redirect(url_for("edit_shift_type", shift_type_id=shift_type_id))
+            return redirect(url_for("admin.edit_shift_type", shift_type_id=shift_type_id))
 
         existing_shift_type = ShiftType.query.filter(
             ShiftType.name == name, ShiftType.id != shift_type_id
         ).first()
         if existing_shift_type:
             flash("❌ Un type de shift avec ce nom existe déjà.", "danger")
-            return redirect(url_for("edit_shift_type", shift_type_id=shift_type_id))
+            return redirect(url_for("admin.edit_shift_type", shift_type_id=shift_type_id))
 
         try:
             start_hour = int(start_hour)
             end_hour = int(end_hour)
             if not (0 <= start_hour < 24) or not (0 <= end_hour < 24):
                 flash("❌ Les heures doivent être comprises entre 0 et 23.", "danger")
-                return redirect(url_for("edit_shift_type", shift_type_id=shift_type_id))
+                return redirect(url_for("admin.edit_shift_type", shift_type_id=shift_type_id))
             if start_hour >= end_hour:
                 flash(
                     "❌ L'heure de début doit être antérieure à l'heure de fin.",
                     "danger",
                 )
-                return redirect(url_for("edit_shift_type", shift_type_id=shift_type_id))
+                return redirect(url_for("admin.edit_shift_type", shift_type_id=shift_type_id))
 
             shift_type.name = name
             shift_type.label = label
@@ -380,11 +380,11 @@ def edit_shift_type(shift_type_id):
             shift_type.end_hour = end_hour
             db.session.commit()
             flash("✅ Type de shift modifié avec succès !", "success")
-            return redirect(url_for("list_shift_types"))
+            return redirect(url_for("admin.list_shift_types"))
         except ValueError:
             db.session.rollback()
             flash("❌ Les heures doivent être des nombres entiers.", "danger")
-            return redirect(url_for("edit_shift_type", shift_type_id=shift_type_id))
+            return redirect(url_for("admin.edit_shift_type", shift_type_id=shift_type_id))
         except Exception as e:
             db.session.rollback()
             flash(f"❌ Erreur : {str(e)}", "danger")
@@ -403,7 +403,7 @@ def delete_shift_type(shift_type_id):
             "❌ Impossible de supprimer ce type de shift : il est utilisé dans des shifts existants.",
             "danger",
         )
-        return redirect(url_for("list_shift_types"))
+        return redirect(url_for("admin.list_shift_types"))
 
     try:
         db.session.delete(shift_type)
@@ -413,7 +413,7 @@ def delete_shift_type(shift_type_id):
         db.session.rollback()
         flash(f"❌ Erreur : {str(e)}", "danger")
 
-    return redirect(url_for("list_shift_types"))
+    return redirect(url_for("admin.list_shift_types"))
 
 # ============================================================================
 # AUTOMATISATION - ASTREINTES ET SHIFTS
@@ -486,7 +486,7 @@ def automation_shifts():
                 for msg in messages:
                     flash(msg, "success" if "✅" in msg or "🎉" in msg else "warning" if "⚠️" in msg else "danger")
                 
-                return redirect(url_for("automation_shifts"))
+                return redirect(url_for("admin.automation_shifts"))
                 
             except ValueError as e:
                 flash(f"❌ Format de date invalide : {str(e)}", "danger")
@@ -587,7 +587,7 @@ def automation_full():
                 except Exception as e:
                     db.session.rollback()
                     flash(f"❌ Erreur lors de la sauvegarde de l'ordre : {str(e)}", "danger")
-                return redirect(url_for("automation_full"))
+                return redirect(url_for("admin.automation_full"))
             
             try:
                 start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
@@ -650,7 +650,7 @@ def automation_full():
                         flash(msg, "success" if "✅" in msg or "🎉" in msg else "warning" if "⚠️" in msg else "info")
                     
                     flash(f"🔄 Régénération complète terminée pour la période du {start_date.strftime('%d/%m/%Y')} au {end_date.strftime('%d/%m/%Y')}", "success")
-                    return redirect(url_for("automation_full"))
+                    return redirect(url_for("admin.automation_full"))
                 
             except ValueError as e:
                 flash(f"❌ Format de date invalide : {str(e)}", "danger")
@@ -727,7 +727,7 @@ def refresh_shifts():
                 flash(msg, "success" if "✅" in msg or "🎉" in msg else "warning" if "⚠️" in msg else "info")
             
             flash(f"🔄 {len(shifts)} shifts régénérés avec succès !", "success")
-            return redirect(url_for("refresh_shifts"))
+            return redirect(url_for("admin.refresh_shifts"))
             
         except ValueError as e:
             flash(f"❌ Format de date invalide : {str(e)}", "danger")
