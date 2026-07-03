@@ -15,6 +15,25 @@ def is_basic_auth_disabled():
     return OIDCConfig.ENABLED and OIDCConfig.DISABLE_BASIC_AUTH
 
 
+@auth_bp.route("/register", methods=["GET", "POST"])
+def register():
+    """Page d'inscription (désactivée par défaut, seule l'admin peut créer des utilisateurs)."""
+    # Vérifier si l'inscription est autorisée (par exemple, via une variable de config)
+    # Pour l'instant, on désactive l'inscription publique
+    
+    # Si OIDC est activé et que l'authentification basique est désactivée,
+    # rediriger vers la connexion OIDC
+    if is_basic_auth_disabled():
+        flash("L'inscription publique est désactivée. Utilisez l'authentification OIDC.", "danger")
+        return redirect(url_for("auth.oidc_login"))
+    
+    flash(
+        "L'inscription publique est désactivée. Contactez l'administrateur.",
+        "danger",
+    )
+    return redirect(url_for("auth.login"))
+
+
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     """Page de connexion."""

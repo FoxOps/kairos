@@ -21,18 +21,14 @@ from app.models import User, Group, Shift, OnCall, Leave, ShiftType
 from werkzeug.security import generate_password_hash
 from flask_login import login_user, logout_user
 
-# Variable pour stocker l'application de test
-_test_app = None
 
-
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def test_app():
     """
     Fixture qui crée une nouvelle instance de l'application pour les tests.
     Désactive Talisman et OIDC avant l'initialisation.
+    Scope: function pour éviter les conflits entre tests.
     """
-    global _test_app
-    
     # Sauvegarder et désactiver OIDC pour les tests
     original_oidc_enabled = os.environ.get("OIDC_ENABLED")
     original_oidc_disable_basic = os.environ.get("OIDC_DISABLE_BASIC_AUTH")
@@ -46,9 +42,8 @@ def test_app():
     
     # Créer une nouvelle instance de l'application avec une configuration de test
     from app import create_app
-    _test_app = create_app('app.config.TestingConfig')
+    app = create_app('app.config.TestingConfig')
     
-    # Désactiver Talisman pour les tests (déjà fait via TestingConfig)
     # Désactiver le rate limiter
     limiter.enabled = False
     
@@ -57,12 +52,12 @@ def test_app():
     CacheConfig.CACHE_ENABLED = False
     
     # Créer un contexte d'application
-    with _test_app.app_context():
+    with app.app_context():
         # Re-créer les tables pour le test
         db.drop_all()
         db.create_all()
-        yield _test_app
-        # Nettoyer après tous les tests
+        yield app
+        # Nettoyer après le test
         db.session.rollback()
         db.drop_all()
     
@@ -76,13 +71,14 @@ def test_app():
     else:
         os.environ.pop("OIDC_DISABLE_BASIC_AUTH", None)
     OIDCConfig.load_config()
-    
-    _test_app = None
 
 
 @pytest.fixture
 def client(test_app):
-    """Client de test Flask avec cookies et session activés."""
+    """Client de test Flask avec cookies et session activés.
+    
+    NE CRÉE PAS d'utilisateur par défaut pour éviter les conflits entre tests.
+    """
     with test_app.test_client(use_cookies=True) as client:
         yield client
 
