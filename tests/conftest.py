@@ -89,6 +89,7 @@ def test_group(test_app):
     group = Group(name="Test Group", is_part_of_schedule=True, is_part_of_oncall=True)
     db.session.add(group)
     db.session.commit()
+    return group
 
 @pytest.fixture
 def group_not_in_schedule(test_app):
