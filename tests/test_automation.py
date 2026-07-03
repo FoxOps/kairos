@@ -362,7 +362,7 @@ class TestFullScheduleGeneration:
             start_date = date(2024, 1, 5)  # Vendredi
             end_date = date(2024, 1, 19)  # 2 semaines plus tard
             
-            result = generate_full_schedule(
+            result = AdvancedShiftAutomation.generate_full_schedule(
                 start_date, end_date, dry_run=True
             )
             
