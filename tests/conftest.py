@@ -2,14 +2,15 @@
 Configuration des tests pour Leviia Schedule.
 
 Cette version utilise l'instance globale de l'application et la reconfigure
-pour chaque test.
+pour chaque test. La fixture logged_in_client utilise maintenant une approche
+plus robuste pour gérer la session.
 """
 
 import pytest
 import warnings
 from datetime import datetime, timedelta
 
-# Filtrer les warnings de dprciation de datetime.utcnow()
+# Filtrer les warnings de dépréciation de datetime.utcnow()
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="flask_login")
 
 # Importer l'instance globale de l'application
@@ -24,7 +25,7 @@ def test_app():
     Fixture qui configure l'instance globale de l'application pour les tests.
     
     Note: On utilise l'instance globale existante et on modifie sa configuration
-    pour les tests. Cela vite les problmes de circular import.
+    pour les tests. Cela évite les problèmes de circular import.
     """
     # Sauvegarder la configuration originale
     original_testing = flask_app.config.get("TESTING")
@@ -40,23 +41,23 @@ def test_app():
     flask_app.config["SECRET_KEY"] = "test-secret-key"
     flask_app.config["RATE_LIMIT_ENABLED"] = False
     
-    # Dsactiver le cache pour les tests
+    # Désactiver le cache pour les tests
     from app.utils.cache import CacheConfig
     original_cache_enabled = CacheConfig.CACHE_ENABLED
     CacheConfig.CACHE_ENABLED = False
     
-    # Dsactiver le rate limiter pour les tests
+    # Désactiver le rate limiter pour les tests
     from app import limiter
     original_limiter_enabled = limiter.enabled
     limiter.enabled = False
     
-    # Crer un contexte d'application
+    # Créer un contexte d'application
     with flask_app.app_context():
-        # Re-crer les tables pour le test
+        # Re-créer les tables pour le test
         db.drop_all()
         db.create_all()
         yield flask_app
-        # Nettoyer aprs le test
+        # Nettoyer après le test
         db.session.rollback()
         db.drop_all()
     
@@ -73,14 +74,14 @@ def test_app():
 @pytest.fixture
 def client(test_app):
     """Client de test Flask avec cookies et session activés."""
-    # Utiliser use_cookies=True pour sauvegarder les cookies de session
+    # Utiliser l'instance globale avec use_cookies=True
     with test_app.test_client(use_cookies=True) as client:
         yield client
 
 
 @pytest.fixture
 def test_group(test_app):
-    """Cre un groupe de test."""
+    """Crée un groupe de test."""
     group = Group(name="Test Group", is_part_of_schedule=True, is_part_of_oncall=True)
     db.session.add(group)
     db.session.commit()
@@ -89,7 +90,7 @@ def test_group(test_app):
 
 @pytest.fixture
 def test_user(test_app, test_group):
-    """Cre un utilisateur normal."""
+    """Crée un utilisateur normal."""
     user = User(
         name="Test User",
         email="test@test.com",
@@ -104,7 +105,7 @@ def test_user(test_app, test_group):
 
 @pytest.fixture
 def admin_user(test_app, test_group):
-    """Cre un utilisateur administrateur."""
+    """Crée un utilisateur administrateur."""
     user = User(
         name="Admin User",
         email="admin@test.com",
@@ -119,17 +120,17 @@ def admin_user(test_app, test_group):
 
 @pytest.fixture
 def logged_in_client(client):
-    """Client de test Flask avec un utilisateur connect."""
+    """Client de test Flask avec un utilisateur connecté."""
     from app.models import Group
+    from flask_login import login_user
     
-    # Crer un groupe et un utilisateur dans le contexte du client
     with client.application.app_context():
-        # Crer un groupe
+        # Créer un groupe
         group = Group(name="Test Group Login")
         db.session.add(group)
         db.session.commit()
         
-        # Crer un utilisateur
+        # Créer un utilisateur
         user = User(
             email="login@example.com",
             name="Login User",
@@ -139,22 +140,24 @@ def logged_in_client(client):
         )
         db.session.add(user)
         db.session.commit()
-    
-    # Se connecter - le client sauvegarde automatiquement les cookies avec use_cookies=True
-    client.post('/login', data={
-        'email': 'login@example.com',
-        'password': 'loginpassword'
-    }, follow_redirects=True)
+        
+        # Connecter l'utilisateur manuellement via Flask-Login
+        # Il faut utiliser request context
+        with client.session_transaction() as sess:
+            # Stocker l'ID utilisateur dans la session manuellement
+            sess['_user_id'] = user.id
+            sess['_fresh'] = True
     
     yield client
     
-    # Se dconnecter
-    client.get('/logout', follow_redirects=True)
+    # Se déconnecter
+    with client.session_transaction() as sess:
+        sess.clear()
 
 
 @pytest.fixture
 def test_shift_type(test_app):
-    """Cre un type de shift de test."""
+    """Crée un type de shift de test."""
     from app.models import ShiftType
     shift_type = ShiftType(
         name='morning',
@@ -167,5 +170,5 @@ def test_shift_type(test_app):
     return shift_type
 
 
-# Alias pour la compatibilit avec les tests existants
+# Alias pour la compatibilité avec les tests existants
 app = test_app
