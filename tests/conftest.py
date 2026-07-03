@@ -91,6 +91,14 @@ def test_group(test_app):
     db.session.commit()
     return group
 
+@pytest.fixture
+def group_not_in_schedule(test_app):
+    """Crée un groupe de test qui ne fait pas partie du planning."""
+    group = Group(name="Group Not In Schedule", is_part_of_schedule=False, is_part_of_oncall=False)
+    db.session.add(group)
+    db.session.commit()
+    return group
+
 
 @pytest.fixture
 def test_user(test_app, test_group):
@@ -115,6 +123,21 @@ def admin_user(test_app, test_group):
         email="admin@test.com",
         password_hash=generate_password_hash("admin123"),
         is_admin=True,
+        group_id=test_group.id,
+    )
+    db.session.add(user)
+    db.session.commit()
+    return user
+
+
+@pytest.fixture
+def second_user(test_app, test_group):
+    """Crée un deuxième utilisateur normal."""
+    user = User(
+        name="Second User",
+        email="second@test.com",
+        password_hash=generate_password_hash("test123"),
+        is_admin=False,
         group_id=test_group.id,
     )
     db.session.add(user)

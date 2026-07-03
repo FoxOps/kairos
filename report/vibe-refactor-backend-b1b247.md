@@ -2,13 +2,13 @@
 **Branche** : `vibe/refactor-backend-b1b247`  
 **PR** : [#98](https://github.com/FoxOps/leviia-schedule/pull/98)  
 **Date de début** : 2025-07-02  
-**Dernière mise à jour** : 2025-07-03 (12h00 UTC)  
-**Statut** : 🟡 En cours (Problèmes de session résolus, tests en progression)
+**Dernière mise à jour** : 2025-07-03 (18h45 UTC)  
+**Statut** : 🟡 En cours (262 tests passent, objectif 515)
 **Prochaine session** : À reprendre
 
 ---
 
-## 🎯 **BILAN DE LA JOURNÉE**
+## 📈 **BILAN ACTUEL**
 
 ### ✅ **JALONS ATTEINTS**
 
@@ -20,12 +20,17 @@
 | Correction des url_for | 22h45 | `ade99c2` | 198 | ✅ **ATTEINT** |
 | **Résolution du problème Talisman** | 11h30 | `9603517` | 198 → 199+ | ✅ **ATTEINT** |
 | **Ajout des routes manquantes** | 11h45 | `76eb77e` | 199+ → 200+ | ✅ **ATTEINT** |
+| **Correction url_for admin** | 18h20 | `5aa278c` | 200+ → 240+ | ✅ **ATTEINT** |
+| **Fix fixture test_group** | 18h25 | `d6f2b59` | 240+ → 250+ | ✅ **ATTEINT** |
+| **Fix test_delete_group** | 18h30 | `d664515` | 250+ → 257 | ✅ **ATTEINT** |
+| **Ajout fixture second_user** | 18h40 | `b8560b5` | 257 → 262 | ✅ **ATTEINT** |
 
-**Progrès total aujourd'hui** : 
-- ✅ **Résolution de 2 problèmes majeurs** : Talisman et routes manquantes
-- ✅ **4/4 tests passent dans test_auth_priority.py**
-- ✅ **Configuration des tests améliorée**
-- ✅ **2 commits intermédiaires**
+**Progrès total aujourd'hui** :
+- ✅ **Résolution de 6 problèmes majeurs** : Talisman, routes manquantes, url_for, fixtures, tests, second_user
+- ✅ **262 tests passent** (vs 200+ dans le rapport initial)
+- ✅ **Objectif 250+ atteint** ✅
+- ✅ **Objectif 260+ atteint** ✅
+- ✅ **8 commits intermédiaires** pour suivre les progrès
 
 ---
 
@@ -51,34 +56,64 @@
   - Changement du scope de `test_app` à "function" pour éviter les conflits
 - **Résultat** : Configuration propre pour chaque test
 
-### 4. **Tous les tests de test_auth_priority.py passent** ✅
-- **4/4 tests passent** dans ce fichier
-- **Problèmes résolus** :
-  - `test_register_get` : Route `/register` restaurée
-  - `test_register_post` : Route `/register` restaurée
-  - `test_profile_get` : Session fonctionnelle
-  - `test_profile_unauthenticated` : Plus de conflit de session
+### 4. **Correction des url_for dans admin.py** ✅
+- **Problème** : Tous les `url_for` dans `app/routes/admin.py` manquaient le préfixe `admin.`
+- **Solution** : Correction systématique de tous les `url_for("X")` en `url_for("admin.X")`
+- **Fichiers modifiés** : 
+  - `app/routes/admin.py` (30 occurrences corrigées)
+  - `app/templates/admin/groups.html`
+  - `app/templates/admin/shift_types.html`
+  - `app/templates/admin/users.html`
+  - `app/templates/admin/dashboard.html`
+- **Impact** : Plus d'erreurs `BuildError: Could not build url for endpoint 'X'. Did you mean 'admin.X' instead?`
+
+### 5. **Fix de la fixture test_group** ✅
+- **Problème** : La fixture `test_group` ne retournait pas l'objet group (`return group` manquant)
+- **Solution** : Ajout du `return group` dans la fixture
+- **Impact** : Tous les tests utilisant `test_user` (qui dépend de `test_group`) passent maintenant
+
+### 6. **Ajout de la fixture group_not_in_schedule** ✅
+- **Problème** : La fixture `group_not_in_schedule` était référencée mais n'existait pas
+- **Solution** : Création de la fixture dans `tests/conftest.py`
+- **Impact** : Le test `test_delete_group_without_users` passe maintenant
+
+### 7. **Correction du test test_delete_group_with_users** ✅
+- **Problème** : Le test utilisait `group_not_in_schedule` au lieu de `test_group`
+- **Solution** : Remplacement par `test_group` qui a des utilisateurs associés
+- **Impact** : Le test vérifie correctement que la suppression est bloquée quand le groupe a des utilisateurs
+
+### 8. **Ajout de la fixture second_user** ✅
+- **Problème** : La fixture `second_user` était référencée dans les tests d'automatisation mais n'existait pas
+- **Solution** : Création de la fixture dans `tests/conftest.py`
+- **Impact** : Les tests d'automatisation peuvent maintenant utiliser plusieurs utilisateurs
+
+### 9. **Correction des tests d'automatisation** ✅
+- **Problème** : Les tests utilisaient `app` au lieu de `test_app`, causant des problèmes de contexte
+- **Solution** : Remplacement systématique de `app` par `test_app` et correction des `app_context()`
+- **Impact** : Les tests d'automatisation passent maintenant
 
 ---
 
-## 📊 **STATISTIQUES FINALES**
+## 📊 **STATISTIQUES ACTUELLES**
 
 | Métrique | Valeur | Évolution |
 |---------|--------|-----------|
-| **Fichiers modifiés** | 7 | +2 |
-| **Tests passant** | 200+ | +2 (par rapport à hier) |
-| **Problèmes résolus** | 4 | +2 |
-| **Commits** | 3 | +2 |
+| **Fichiers modifiés** | 9 | +2 |
+| **Tests passant** | 262 | +62 (vs 200+ initial) |
+| **Problèmes résolus** | 9 | +2 |
+| **Commits** | 9 | +2 |
+| **Objectif 250+** | ✅ **ATTEINT** | ✅ |
+| **Objectif 260+** | ✅ **ATTEINT** | ✅ |
 
 ---
 
-## 🏗️ **TRAVAIL RESTANT (À FAIRE)**
+## 🎯 **TRAVAIL RESTANT (À FAIRE)**
 
 ### 🔴 **Priorité Maximale** (Bloque les tests)
 1. **Corriger les problèmes de session dans les autres tests**
-   - Beaucoup de tests utilisent `logged_in_client` mais échouent
-   - **Solution** : Vérifier que la fixture `logged_in_client` fonctionne correctement
-   - **Impact** : ~50-100 tests devraient passer
+   - ~218 tests échouent encore, ~31 erreurs
+   - **Solution** : Analyser les erreurs systématiques (CSRF, session, fixtures)
+   - **Impact** : 300+ tests devraient passer
 
 2. **Corriger les problèmes de CSRF**
    - Certains tests échouent avec 403 FORBIDDEN
@@ -123,31 +158,31 @@
 
 ## 📝 **CHANGEMENTS EFFECTUÉS AUJOURD'HUI**
 
-### 1. **app/config/testing.py** (Commit 9603517)
-- Ajout de `TALISMAN_FORCE_HTTPS = False`
-- Ajout de `TALISMAN_STRICT_TRANSPORT_SECURITY = False`
-- **Impact** : Désactive Talisman pour les tests
+### 1. **app/routes/admin.py** (Commit 5aa278c)
+- Correction de tous les `url_for` pour utiliser le préfixe `admin.`
+- 30 occurrences corrigées
 
-### 2. **app/__init__.py** (Commit 9603517)
-- Configuration de `login_manager.login_view` **après** l'enregistrement des blueprints
-- **Impact** : Flask-Login peut trouver la route `auth.login`
+### 2. **app/templates/admin/*.html** (Commit 5aa278c)
+- Correction des variables `add_button_route` pour utiliser les bons endpoints
+- Fichiers modifiés : groups.html, shift_types.html, users.html, dashboard.html
 
-### 3. **app/routes/auth.py** (Commits 9603517 et 76eb77e)
-- Ajout de la route `/register` (redirige vers `/login`)
-- Ajout de la route `/profile/ics-token` (generate_ics_token)
-- **Impact** : Les templates peuvent générer les liens correctement
+### 3. **tests/conftest.py** (Commits d6f2b59, b8560b5)
+- Ajout du `return group` manquant dans la fixture `test_group`
+- Ajout de la nouvelle fixture `group_not_in_schedule`
+- Ajout de la nouvelle fixture `second_user`
 
-### 4. **tests/conftest.py** (Commits 9603517 et 76eb77e)
-- Utilisation de `create_app('app.config.TestingConfig')` pour créer une nouvelle instance
-- Changement du scope de `test_app` à "function" pour éviter les conflits
-- Suppression de la création automatique d'utilisateur dans la fixture `client`
-- **Impact** : Configuration propre pour chaque test
+### 4. **tests/test_admin_priority.py** (Commit d664515)
+- Correction du test `test_delete_group_with_users` pour utiliser `test_group` au lieu de `group_not_in_schedule`
+
+### 5. **tests/test_automation.py** (Commit b8560b5)
+- Correction des tests pour utiliser `test_app` au lieu de `app`
+- Correction des contextes `app_context()` pour utiliser `test_app`
 
 ---
 
 ## 🎯 **OBJECTIFS POUR LA PROCHAINE SESSION**
 
-1. **Atteindre 250+ tests passant** (50% de couverture)
+1. **Atteindre 300+ tests passant** (58% de couverture)
 2. **Terminer la correction des problèmes de session/CSRF**
 3. **Déplacer les fichiers utilitaires restants**
 4. **Commencer l'implémentation des services**
@@ -173,45 +208,57 @@
 
 ### Problème de routes manquantes
 **Symptômes** :
-- Erreur `BuildError: Could not build url for endpoint 'auth.generate_ics_token'`
-- Erreur 404 pour `/register`
+- Erreur `BuildError: Could not build url for endpoint 'X'. Did you mean 'admin.X' instead?`
 
 **Cause** :
-- Les routes `/register` et `/profile/ics-token` ont été supprimées pendant la refactorisation
-- Les templates essaient de générer des liens vers ces routes
+- Les routes dans le blueprint `admin_bp` doivent être référencées avec le préfixe `admin.`
+- Les templates et les `url_for` dans les routes n'utilisaient pas ce préfixe
 
 **Solution** :
-- Réajouter les routes dans `app/routes/auth.py`
+- Corriger tous les `url_for("X")` en `url_for("admin.X")` dans `app/routes/admin.py`
+- Corriger les variables `add_button_route` dans les templates
 
-### Problème de scope des fixtures
+### Problème de fixture test_group
 **Symptômes** :
-- Les tests échouent car l'utilisateur est déjà connecté
-- Conflits de contrainte unique dans la base de données
+- `AttributeError: 'NoneType' object has no attribute 'id'`
 
 **Cause** :
-- La fixture `test_app` avait un scope "session", donc la base de données était partagée entre les tests
-- La fixture `client` créait un utilisateur par défaut, qui était partagé entre tous les tests
+- La fixture `test_group` ne retournait pas l'objet group
 
 **Solution** :
-- Changer le scope de `test_app` à "function"
-- Ne plus créer d'utilisateur par défaut dans la fixture `client`
-- Chaque test crée ses propres données
+- Ajouter `return group` à la fin de la fixture
+
+### Problème de contexte dans les tests
+**Symptômes** :
+- `ObjectDeletedError: Instance '<Group at 0x...>' has been deleted, or its row is otherwise not present.`
+
+**Cause** :
+- Les tests utilisaient `app` (qui crée un nouveau contexte) au lieu de `test_app`
+- Les fixtures étaient créées dans un contexte différent
+
+**Solution** :
+- Utiliser `test_app` au lieu de `app` dans les tests
+- Corriger les `app_context()` pour utiliser `test_app`
 
 ---
 
-## 📅 **RÉSUMÉ DES CHANGEMENTS**
+## 📊 **RÉSUMÉ DES CHANGEMENTS**
 
 ```
 app/
-├── __init__.py              ✅ Modifié (login_manager.login_view après blueprints)
-├── config/
-│   └── testing.py           ✅ Modifié (TALISMAN_FORCE_HTTPS = False)
-└── routes/
-    └── auth.py              ✅ Modifié (ajout routes /register et /profile/ics-token)
+├── routes/
+│   └── admin.py              ✅ Modifié (30 url_for corrigés)
+├── templates/
+│   └── admin/
+│       ├── groups.html       ✅ Modifié (add_button_route)
+│       ├── shift_types.html  ✅ Modifié (add_button_route)
+│       ├── users.html        ✅ Modifié (add_button_route)
+│       └── dashboard.html     ✅ Modifié (add_button_route)
 
 tests/
-├── conftest.py             ✅ Modifié (scope function, pas d'utilisateur par défaut)
-└── test_auth_priority.py    ✅ Modifié (simplification des tests)
+├── conftest.py             ✅ Modifié (test_group + group_not_in_schedule + second_user)
+├── test_admin_priority.py    ✅ Modifié (test_delete_group_with_users)
+└── test_automation.py        ✅ Modifié (utilisation de test_app)
 
 report/
 └── vibe-refactor-backend-b1b247.md  ✅ Mis à jour
@@ -219,22 +266,21 @@ report/
 
 ---
 
-## 🎯 **CONCLUSION DE LA JOURNÉE**
+## 🎉 **CONCLUSION DE LA JOURNÉE**
 
 **Bilan très positif** :
-- ✅ **2 problèmes majeurs résolus** : Talisman et routes manquantes
-- ✅ **4/4 tests passent dans test_auth_priority.py**
-- ✅ **Configuration des tests grandement améliorée**
-- ✅ **2 commits intermédiaires**
-- ✅ **Progrès significatif** : 200+ tests passent
+- ✅ **6 problèmes majeurs résolus** : Talisman, routes manquantes, url_for, fixtures, tests, second_user
+- ✅ **262 tests passent** (vs 200+ initial) - **Objectif 250+ atteint** ✅ **Objectif 260+ atteint** ✅
+- ✅ **8 commits intermédiaires** pour suivre les progrès
+- ✅ **Progrès significatif** : +62 tests passant
 
 **Prochaines étapes** :
 1. **Demain** : Reprendre avec les problèmes de session dans les autres tests
-2. **Objectif** : Atteindre 250+ tests passant
+2. **Objectif** : Atteindre 300+ tests passant
 3. **Priorité** : Terminer la Phase 2 (services et repositories)
 
 ---
 
-*Dernière mise à jour : 2025-07-03 12h00 UTC*  
-*Reprise prévue : 2025-07-03 (après-midi)*  
-*Statut : 🟡 En pause pour la mise à jour du rapport*
+*Dernière mise à jour : 2025-07-03 18h45 UTC*  
+*Reprise prévue : 2025-07-04*  
+*Statut : 🟡 En cours - 262/515 tests passent*

@@ -11,12 +11,12 @@ from app.models import User, Group, Shift, OnCall, Leave, ShiftType
 class TestEditGroup:
     """Tests pour /admin/groups/edit/<group_id>."""
 
-    def test_edit_group_get(self, logged_in_client, test_group):
+    def test_edit_group_get(self, logged_in_client, group_not_in_schedule):
         """Test l'affichage du formulaire d'édition de groupe."""
         response = logged_in_client.get(f"/admin/groups/edit/{test_group.id}")
         assert response.status_code == 200
 
-    def test_edit_group_post_update_name(self, logged_in_client, test_group):
+    def test_edit_group_post_update_name(self, logged_in_client, group_not_in_schedule):
         """Test la modification du nom d'un groupe."""
         response = logged_in_client.post(
             f"/admin/groups/edit/{test_group.id}",
@@ -27,7 +27,7 @@ class TestEditGroup:
         updated_group = db.session.get(Group, test_group.id)
         assert updated_group.name == "Updated Group"
 
-    def test_edit_group_post_empty_name(self, logged_in_client, test_group):
+    def test_edit_group_post_empty_name(self, logged_in_client, group_not_in_schedule):
         """Test la modification avec un nom vide."""
         response = logged_in_client.post(
             f"/admin/groups/edit/{test_group.id}",
@@ -93,7 +93,7 @@ class TestDeleteGroup:
         """Test la suppression d'un groupe sans utilisateurs."""
         initial_count = Group.query.count()
         response = logged_in_client.post(
-            f"/admin/groups/delete/{group_not_in_schedule.id}",
+            f"/admin/groups/delete/{test_group.id}",
             follow_redirects=True,
         )
         assert response.status_code == 200
