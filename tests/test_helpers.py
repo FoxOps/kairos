@@ -144,7 +144,7 @@ class TestCanAddShift:
         """Test qu'un shift peut être ajouté sur une date valide."""
         with test_app.app_context():
             shift_date = datetime(2023, 12, 1).date()  # Lundi
-            can_add, message = can_add_shift(test_user.id, shift_date, "morning")
+            can_add, message = can_add_shift(test_user, shift_date, "morning")
             assert can_add is True
             assert message == ""
 
@@ -152,7 +152,7 @@ class TestCanAddShift:
         """Test qu'un shift ne peut pas être ajouté un samedi."""
         with test_app.app_context():
             shift_date = datetime(2023, 12, 2).date()  # Samedi
-            can_add, message = can_add_shift(test_user.id, shift_date, "morning")
+            can_add, message = can_add_shift(test_user, shift_date, "morning")
             assert can_add is False
             assert (
                 "les shifts ne peuvent être ajoutés que du lundi au vendredi" in message
@@ -162,7 +162,7 @@ class TestCanAddShift:
         """Test qu'un shift ne peut pas être ajouté un dimanche."""
         with test_app.app_context():
             shift_date = datetime(2023, 12, 3).date()  # Dimanche
-            can_add, message = can_add_shift(test_user.id, shift_date, "morning")
+            can_add, message = can_add_shift(test_user, shift_date, "morning")
             assert can_add is False
             assert (
                 "les shifts ne peuvent être ajoutés que du lundi au vendredi" in message
@@ -181,7 +181,7 @@ class TestCanAddShift:
             db.session.commit()
 
             shift_date = leave.start_date  # Date de début du congé
-            can_add, message = can_add_shift(test_user.id, shift_date, "morning")
+            can_add, message = can_add_shift(test_user, shift_date, "morning")
             assert can_add is False
             assert "l'utilisateur est en congé" in message
 
@@ -204,7 +204,7 @@ class TestCanAddShift:
             db.session.commit()
 
             shift_date = shift.date
-            can_add, message = can_add_shift(test_user.id, shift_date, "morning")
+            can_add, message = can_add_shift(test_user, shift_date, "morning")
             assert can_add is False
             assert "l'utilisateur a déjà un shift" in message
 
@@ -214,7 +214,7 @@ class TestCanAddShift:
             shift_date = datetime(2023, 12, 1).date()  # Lundi
 
             # Ajouter un shift pour le premier utilisateur
-            can_add1, _ = can_add_shift(test_user.id, shift_date, "morning")
+            can_add1, _ = can_add_shift(test_user, shift_date, "morning")
             assert can_add1 is True
 
             # Ajouter un shift pour le deuxième utilisateur le même jour
@@ -230,7 +230,7 @@ class TestCanAddOnCall:
         with test_app.app_context():
             start_time = datetime(2023, 12, 1, 21, 0)  # Vendredi 21h
             end_time = start_time + timedelta(days=7, hours=-14)
-            can_add, message = can_add_oncall(test_user.id, start_time, end_time)
+            can_add, message = can_add_oncall(test_user, start_time, end_time)
             assert can_add is True
             assert message == ""
 
@@ -239,7 +239,7 @@ class TestCanAddOnCall:
         with test_app.app_context():
             start_time = datetime(2023, 12, 2, 21, 0)  # Samedi 21h
             end_time = start_time + timedelta(days=7, hours=-14)
-            can_add, message = can_add_oncall(test_user.id, start_time, end_time)
+            can_add, message = can_add_oncall(test_user, start_time, end_time)
             assert can_add is False
             assert "L'astreinte doit commencer un vendredi à 21h" in message
 
@@ -248,7 +248,7 @@ class TestCanAddOnCall:
         with test_app.app_context():
             start_time = datetime(2023, 12, 4, 21, 0)  # Lundi 21h
             end_time = start_time + timedelta(days=7, hours=-14)
-            can_add, message = can_add_oncall(test_user.id, start_time, end_time)
+            can_add, message = can_add_oncall(test_user, start_time, end_time)
             assert can_add is False
             assert "L'astreinte doit commencer un vendredi à 21h" in message
 
@@ -257,7 +257,7 @@ class TestCanAddOnCall:
         with test_app.app_context():
             start_time = datetime(2023, 12, 1, 20, 0)  # Vendredi 20h
             end_time = start_time + timedelta(days=7, hours=-14)
-            can_add, message = can_add_oncall(test_user.id, start_time, end_time)
+            can_add, message = can_add_oncall(test_user, start_time, end_time)
             assert can_add is False
             assert "L'astreinte doit commencer un vendredi à 21h" in message
 
@@ -266,7 +266,7 @@ class TestCanAddOnCall:
         with test_app.app_context():
             start_time = datetime(2023, 12, 1, 22, 0)  # Vendredi 22h
             end_time = start_time + timedelta(days=7, hours=-14)
-            can_add, message = can_add_oncall(test_user.id, start_time, end_time)
+            can_add, message = can_add_oncall(test_user, start_time, end_time)
             assert can_add is False
             assert "L'astreinte doit commencer un vendredi à 21h" in message
 
@@ -285,7 +285,7 @@ class TestCanAddOnCall:
             # Créer une astreinte qui chevauche le congé
             start_time = datetime(2023, 12, 8, 21, 0)  # Vendredi avant le congé
             end_time = start_time + timedelta(days=7, hours=-14)  # Chevauche le congé
-            can_add, message = can_add_oncall(test_user.id, start_time, end_time)
+            can_add, message = can_add_oncall(test_user, start_time, end_time)
             assert can_add is False
             assert "l'utilisateur est en congé" in message
 
@@ -319,7 +319,7 @@ class TestCanAddOnCall:
             end_time = start_time + timedelta(days=7, hours=-14)
 
             # Ajouter une astreinte pour le premier utilisateur
-            can_add1, _ = can_add_oncall(test_user.id, start_time, end_time)
+            can_add1, _ = can_add_oncall(test_user, start_time, end_time)
             assert can_add1 is True
 
             # Ajouter une astreinte pour le deuxième utilisateur à la même période
@@ -335,7 +335,7 @@ class TestCanAddLeave:
         with test_app.app_context():
             start_date = datetime(2023, 12, 20).date()
             end_date = datetime(2023, 12, 25).date()
-            can_add, message = can_add_leave(test_user.id, start_date, end_date)
+            can_add, message = can_add_leave(test_user, start_date, end_date)
             assert can_add is True
             assert message == ""
 
@@ -346,7 +346,7 @@ class TestCanAddLeave:
             end_date = datetime(
                 2023, 12, 20
             ).date()  # Date de fin avant la date de début
-            can_add, message = can_add_leave(test_user.id, start_date, end_date)
+            can_add, message = can_add_leave(test_user, start_date, end_date)
             assert can_add is False
             assert "La date de début doit être antérieure à la date de fin" in message
 
@@ -355,7 +355,7 @@ class TestCanAddLeave:
         with test_app.app_context():
             start_date = datetime(2023, 12, 20).date()
             end_date = datetime(2023, 12, 20).date()
-            can_add, message = can_add_leave(test_user.id, start_date, end_date)
+            can_add, message = can_add_leave(test_user, start_date, end_date)
             assert can_add is True
             assert message == ""
 
@@ -371,7 +371,7 @@ class TestCanAddLeave:
             db.session.add(leave)
             db.session.commit()
 
-            can_add, message = can_add_leave(test_user.id, start_date, end_date)
+            can_add, message = can_add_leave(test_user, start_date, end_date)
             assert can_add is False
             assert "un congé existe déjà sur cette période" in message
 
@@ -393,7 +393,7 @@ class TestCanAddLeave:
 
             start_date = shift.date
             end_date = shift.date + timedelta(days=1)
-            can_add, message = can_add_leave(test_user.id, start_date, end_date)
+            can_add, message = can_add_leave(test_user, start_date, end_date)
             # Les congés sont prioritaires, donc cela doit être autorisé
             assert can_add is True
             assert message == ""
@@ -412,7 +412,7 @@ class TestCanAddLeave:
 
             start_date = oncall.start_time.date()
             end_date = oncall.end_time.date()
-            can_add, message = can_add_leave(test_user.id, start_date, end_date)
+            can_add, message = can_add_leave(test_user, start_date, end_date)
             # Les congés sont prioritaires, donc cela doit être autorisé
             assert can_add is True
             assert message == ""
@@ -426,7 +426,7 @@ class TestCanAddLeave:
             end_date = datetime(2023, 12, 25).date()
 
             # Ajouter un congé pour le premier utilisateur
-            can_add1, _ = can_add_leave(test_user.id, start_date, end_date)
+            can_add1, _ = can_add_leave(test_user, start_date, end_date)
             assert can_add1 is True
 
             # Ajouter un congé pour le deuxième utilisateur à la même période
