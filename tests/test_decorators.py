@@ -55,7 +55,7 @@ class TestDecoratorImports:
 class TestDecoratorProperties:
     """Tests pour les propriétés des décorateurs."""
 
-    def test_decorator_preserves_function_name(self, app):
+    def test_decorator_preserves_function_name(self, test_app):
         """Test que le décorateur préserve le nom de la fonction."""
         from app.utils.decorators import admin_required
 
@@ -65,7 +65,7 @@ class TestDecoratorProperties:
 
         assert test_function.__name__ == "test_function"
 
-    def test_decorator_preserves_function_docstring(self, app):
+    def test_decorator_preserves_function_docstring(self, test_app):
         """Test que le décorateur préserve le docstring de la fonction."""
         from app.utils.decorators import admin_required
 
@@ -76,7 +76,7 @@ class TestDecoratorProperties:
 
         assert test_function.__doc__ == "This is a test function."
 
-    def test_admin_required_is_callable(self, app):
+    def test_admin_required_is_callable(self, test_app):
         """Test que admin_required est callable."""
         from app.utils.decorators import admin_required
 
@@ -86,14 +86,14 @@ class TestDecoratorProperties:
 
         assert callable(dummy)
 
-    def test_role_required_is_callable(self, app):
+    def test_role_required_is_callable(self, test_app):
         """Test que role_required est callable."""
         from app.utils.decorators import role_required
 
         decorated_func = role_required("admin")
         assert callable(decorated_func)
 
-    def test_user_owns_resource_is_callable(self, app):
+    def test_user_owns_resource_is_callable(self, test_app):
         """Test que user_owns_resource est callable."""
         from app.utils.decorators import user_owns_resource
         from app.models import Leave
