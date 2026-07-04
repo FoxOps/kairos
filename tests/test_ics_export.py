@@ -135,7 +135,7 @@ class TestICSExport:
             assert ics_content.count("BEGIN:VEVENT") == 2
             assert ics_content.count("END:VEVENT") == 2
 
-    def test_generate_ics_empty_lists(self, app):
+    def test_generate_ics_empty_lists(self, test_app):
         """Test l'export avec des listes vides."""
         with test_app.app_context():
             # Shifts vides

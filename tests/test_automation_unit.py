@@ -17,7 +17,7 @@ from app.utils.automation import (
 class TestBusinessRules:
     """Tests pour BusinessRules."""
 
-    def test_get_shift_rules_structure(self, app):
+    def test_get_shift_rules_structure(self, test_app):
         """Test que get_shift_rules retourne la structure attendue."""
         with test_app.app_context():
             rules = BusinessRules.get_shift_rules()
@@ -27,7 +27,7 @@ class TestBusinessRules:
             assert 'min_shifts_per_user_per_week' in rules
             assert isinstance(rules['daily_requirements'], dict)
 
-    def test_get_oncall_rules_structure(self, app):
+    def test_get_oncall_rules_structure(self, test_app):
         """Test que get_oncall_rules retourne la structure attendue."""
         with test_app.app_context():
             rules = BusinessRules.get_oncall_rules()
@@ -41,7 +41,7 @@ class TestBusinessRules:
 class TestOnCallAutomationGetEligibleUsers:
     """Tests pour OnCallAutomation.get_eligible_users."""
 
-    def test_returns_list(self, app):
+    def test_returns_list(self, test_app):
         """Test que get_eligible_users retourne une liste."""
         with test_app.app_context():
             users = OnCallAutomation.get_eligible_users()
@@ -61,13 +61,13 @@ class TestOnCallAutomationGetEligibleUsers:
 class TestOnCallAutomationGetRotationOrder:
     """Tests pour OnCallAutomation.get_rotation_order."""
 
-    def test_returns_list(self, app):
+    def test_returns_list(self, test_app):
         """Test que get_rotation_order retourne une liste."""
         with test_app.app_context():
             rotation = OnCallAutomation.get_rotation_order()
             assert isinstance(rotation, list)
 
-    def test_empty_when_no_eligible_users(self, app):
+    def test_empty_when_no_eligible_users(self, test_app):
         """Test que get_rotation_order retourne une liste vide sans utilisateurs éligibles."""
         with test_app.app_context():
             # Désactiver tous les groupes pour les astreintes
@@ -127,7 +127,7 @@ class TestOnCallAutomationCheckConstraint:
 class TestOnCallAutomationFindNextAvailable:
     """Tests pour OnCallAutomation.find_next_available_user."""
 
-    def test_returns_none_empty_list(self, app):
+    def test_returns_none_empty_list(self, test_app):
         """Test que find_next_available_user retourne None avec une liste vide."""
         with test_app.app_context():
             result = OnCallAutomation.find_next_available_user(
@@ -150,7 +150,7 @@ class TestOnCallAutomationFindNextAvailable:
 class TestOnCallAutomationGenerateSchedule:
     """Tests pour OnCallAutomation.generate_oncall_schedule."""
 
-    def test_returns_tuple(self, app):
+    def test_returns_tuple(self, test_app):
         """Test que generate_oncall_schedule retourne un tuple."""
         with test_app.app_context():
             start_date = date.today()
@@ -187,7 +187,7 @@ class TestOnCallAutomationGenerateSchedule:
 class TestShiftAutomationGetEligibleUsers:
     """Tests pour ShiftAutomation.get_eligible_users."""
 
-    def test_returns_list(self, app):
+    def test_returns_list(self, test_app):
         """Test que get_eligible_users retourne une liste."""
         with test_app.app_context():
             users = ShiftAutomation.get_eligible_users()
@@ -207,7 +207,7 @@ class TestShiftAutomationGetEligibleUsers:
 class TestShiftAutomationGetShiftTypes:
     """Tests pour ShiftAutomation.get_shift_types."""
 
-    def test_returns_list(self, app):
+    def test_returns_list(self, test_app):
         """Test que get_shift_types retourne une liste."""
         with test_app.app_context():
             shift_types = ShiftAutomation.get_shift_types()
@@ -263,7 +263,7 @@ class TestShiftAutomationFindReplacement:
 class TestShiftAutomationGenerateSchedule:
     """Tests pour ShiftAutomation.generate_shift_schedule."""
 
-    def test_returns_tuple(self, app):
+    def test_returns_tuple(self, test_app):
         """Test que generate_shift_schedule retourne un tuple."""
         with test_app.app_context():
             start_date = date.today()
@@ -274,7 +274,7 @@ class TestShiftAutomationGenerateSchedule:
             assert isinstance(result, tuple)
             assert len(result) == 2
 
-    def test_dry_run_does_not_save(self, app):
+    def test_dry_run_does_not_save(self, test_app):
         """Test que dry_run=True ne sauvegarde pas en base."""
         with test_app.app_context():
             start_date = date.today()

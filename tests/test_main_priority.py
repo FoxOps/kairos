@@ -149,7 +149,7 @@ class TestDeleteAllOnCallsForUser:
 class TestCalendarFunctions:
     """Tests pour les fonctions utilitaires du calendrier."""
 
-    def test_calendar_window(self, app):
+    def test_calendar_window(self, test_app):
         """Test _calendar_window."""
         from app.routes.main import _calendar_window, CALENDAR_WINDOW_DAYS
         
@@ -164,7 +164,7 @@ class TestCalendarFunctions:
         assert abs((start - expected_start).total_seconds()) < 10
         assert abs((end - expected_end).total_seconds()) < 10
 
-    def test_build_calendar_events_empty(self, app):
+    def test_build_calendar_events_empty(self, test_app):
         """Test _build_calendar_events avec des listes vides."""
         from app.routes.main import _build_calendar_events
         
