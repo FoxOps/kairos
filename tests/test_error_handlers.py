@@ -44,7 +44,7 @@ class TestCustomErrorPages:
 
     def test_400_template_exists(self, test_app):
         """Test que le template 400.html existe."""
-        with test_app.app_context():
+        with test_app.test_request_context():
             from flask import render_template
             try:
                 html = render_template("400.html")
@@ -54,7 +54,7 @@ class TestCustomErrorPages:
 
     def test_401_template_exists(self, test_app):
         """Test que le template 401.html existe."""
-        with test_app.app_context():
+        with test_app.test_request_context():
             from flask import render_template
             try:
                 html = render_template("401.html")
@@ -64,7 +64,7 @@ class TestCustomErrorPages:
 
     def test_403_template_exists(self, test_app):
         """Test que le template 403.html existe."""
-        with test_app.app_context():
+        with test_app.test_request_context():
             from flask import render_template
             try:
                 html = render_template("403.html")
@@ -74,7 +74,7 @@ class TestCustomErrorPages:
 
     def test_404_template_exists(self, test_app):
         """Test que le template 404.html existe."""
-        with test_app.app_context():
+        with test_app.test_request_context():
             from flask import render_template
             try:
                 html = render_template("404.html")
@@ -84,7 +84,7 @@ class TestCustomErrorPages:
 
     def test_405_template_exists(self, test_app):
         """Test que le template 405.html existe."""
-        with test_app.app_context():
+        with test_app.test_request_context():
             from flask import render_template
             try:
                 html = render_template("405.html")
@@ -94,7 +94,7 @@ class TestCustomErrorPages:
 
     def test_500_template_exists(self, test_app):
         """Test que le template 500.html existe."""
-        with test_app.app_context():
+        with test_app.test_request_context():
             from flask import render_template
             try:
                 html = render_template("500.html")
@@ -104,7 +104,7 @@ class TestCustomErrorPages:
 
     def test_502_template_exists(self, test_app):
         """Test que le template 502.html existe."""
-        with test_app.app_context():
+        with test_app.test_request_context():
             from flask import render_template
             try:
                 html = render_template("502.html")
@@ -114,7 +114,7 @@ class TestCustomErrorPages:
 
     def test_503_template_exists(self, test_app):
         """Test que le template 503.html existe."""
-        with test_app.app_context():
+        with test_app.test_request_context():
             from flask import render_template
             try:
                 html = render_template("503.html")
@@ -124,7 +124,7 @@ class TestCustomErrorPages:
 
     def test_504_template_exists(self, test_app):
         """Test que le template 504.html existe."""
-        with test_app.app_context():
+        with test_app.test_request_context():
             from flask import render_template
             try:
                 html = render_template("504.html")
@@ -134,7 +134,7 @@ class TestCustomErrorPages:
 
     def test_400_template_content(self, test_app):
         """Test le contenu du template 400.html."""
-        with test_app.app_context():
+        with test_app.test_request_context():
             from flask import render_template
             html = render_template("400.html")
             # Vérifier que le template contient des éléments de base
@@ -142,14 +142,14 @@ class TestCustomErrorPages:
 
     def test_401_template_content(self, test_app):
         """Test le contenu du template 401.html."""
-        with test_app.app_context():
+        with test_app.test_request_context():
             from flask import render_template
             html = render_template("401.html")
             assert b"401" in html.encode() or b"Unauthorized" in html.encode() or b"Non autorise" in html.encode()
 
     def test_403_template_content(self, test_app):
         """Test le contenu du template 403.html."""
-        with test_app.app_context():
+        with test_app.test_request_context():
             from flask import render_template
             html = render_template("403.html")
             # Vérifier que le template contient des éléments de base
@@ -157,42 +157,42 @@ class TestCustomErrorPages:
 
     def test_404_template_content(self, test_app):
         """Test le contenu du template 404.html."""
-        with test_app.app_context():
+        with test_app.test_request_context():
             from flask import render_template
             html = render_template("404.html")
             assert b"404" in html.encode() or b"Not Found" in html.encode() or b"Page non trouvee" in html.encode()
 
     def test_405_template_content(self, test_app):
         """Test le contenu du template 405.html."""
-        with test_app.app_context():
+        with test_app.test_request_context():
             from flask import render_template
             html = render_template("405.html")
             assert b"405" in html.encode() or b"Method Not Allowed" in html.encode() or b"Methode non autorisee" in html.encode()
 
     def test_500_template_content(self, test_app):
         """Test le contenu du template 500.html."""
-        with test_app.app_context():
+        with test_app.test_request_context():
             from flask import render_template
             html = render_template("500.html")
             assert b"500" in html.encode() or b"Internal Server Error" in html.encode() or b"Erreur interne" in html.encode()
 
     def test_502_template_content(self, test_app):
         """Test le contenu du template 502.html."""
-        with test_app.app_context():
+        with test_app.test_request_context():
             from flask import render_template
             html = render_template("502.html")
             assert b"502" in html.encode() or b"Bad Gateway" in html.encode() or b"Service temporairement indisponible" in html.encode()
 
     def test_503_template_content(self, test_app):
         """Test le contenu du template 503.html."""
-        with test_app.app_context():
+        with test_app.test_request_context():
             from flask import render_template
             html = render_template("503.html")
             assert b"503" in html.encode() or b"Service Unavailable" in html.encode() or b"Service indisponible" in html.encode()
 
     def test_504_template_content(self, test_app):
         """Test le contenu du template 504.html."""
-        with test_app.app_context():
+        with test_app.test_request_context():
             from flask import render_template
             html = render_template("504.html")
             assert b"504" in html.encode() or b"Gateway Timeout" in html.encode() or b"Temps d'attente depasse" in html.encode()
