@@ -185,7 +185,7 @@ class TestCanAddShift:
             assert "l'utilisateur est en congé" in message
 
     def test_can_add_shift_user_already_has_shift(
-        self, app, test_user, test_shift_type
+        self, test_app, test_user, test_shift_type
     ):
         """Test qu'un shift ne peut pas être ajouté si l'utilisateur en a déjà un."""
         with test_app.app_context():
