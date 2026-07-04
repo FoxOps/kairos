@@ -11,43 +11,43 @@ class TestDecoratorImports:
 
     def test_admin_required_import(self):
         """Test que le décorateur admin_required peut être importé."""
-        from app.utils.decorators import admin_required
+        from app.auth.decorators import admin_required
 
         assert callable(admin_required)
 
     def test_role_required_import(self):
         """Test que le décorateur role_required peut être importé."""
-        from app.utils.decorators import role_required
+        from app.auth.decorators import role_required
 
         assert callable(role_required)
 
     def test_user_can_edit_import(self):
         """Test que le décorateur user_can_edit peut être importé."""
-        from app.utils.decorators import user_can_edit
+        from app.auth.decorators import user_can_edit
 
         assert callable(user_can_edit)
 
     def test_user_can_delete_import(self):
         """Test que le décorateur user_can_delete peut être importé."""
-        from app.utils.decorators import user_can_delete
+        from app.auth.decorators import user_can_delete
 
         assert callable(user_can_delete)
 
     def test_user_owns_resource_import(self):
         """Test que le décorateur user_owns_resource peut être importé."""
-        from app.utils.decorators import user_owns_resource
+        from app.auth.decorators import user_owns_resource
 
         assert callable(user_owns_resource)
 
     def test_user_can_edit_resource_import(self):
         """Test que le décorateur user_can_edit_resource peut être importé."""
-        from app.utils.decorators import user_can_edit_resource
+        from app.auth.decorators import user_can_edit_resource
 
         assert callable(user_can_edit_resource)
 
     def test_user_can_delete_resource_import(self):
         """Test que le décorateur user_can_delete_resource peut être importé."""
-        from app.utils.decorators import user_can_delete_resource
+        from app.auth.decorators import user_can_delete_resource
 
         assert callable(user_can_delete_resource)
 
@@ -57,7 +57,7 @@ class TestDecoratorProperties:
 
     def test_decorator_preserves_function_name(self, test_app):
         """Test que le décorateur préserve le nom de la fonction."""
-        from app.utils.decorators import admin_required
+        from app.auth.decorators import admin_required
 
         @admin_required
         def test_function():
@@ -67,7 +67,7 @@ class TestDecoratorProperties:
 
     def test_decorator_preserves_function_docstring(self, test_app):
         """Test que le décorateur préserve le docstring de la fonction."""
-        from app.utils.decorators import admin_required
+        from app.auth.decorators import admin_required
 
         @admin_required
         def test_function():
@@ -78,7 +78,7 @@ class TestDecoratorProperties:
 
     def test_admin_required_is_callable(self, test_app):
         """Test que admin_required est callable."""
-        from app.utils.decorators import admin_required
+        from app.auth.decorators import admin_required
 
         @admin_required
         def dummy():
@@ -88,14 +88,14 @@ class TestDecoratorProperties:
 
     def test_role_required_is_callable(self, test_app):
         """Test que role_required est callable."""
-        from app.utils.decorators import role_required
+        from app.auth.decorators import role_required
 
         decorated_func = role_required("admin")
         assert callable(decorated_func)
 
     def test_user_owns_resource_is_callable(self, test_app):
         """Test que user_owns_resource est callable."""
-        from app.utils.decorators import user_owns_resource
+        from app.auth.decorators import user_owns_resource
         from app.models import Leave
 
         decorated_func = user_owns_resource(Leave, "leave_id")
