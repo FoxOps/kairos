@@ -35,8 +35,8 @@ class TestErrorHandlers:
         """Test que les gestionnaires d'erreurs sont enregistrés."""
         with test_app.app_context():
             # Vérifier que les handlers sont enregistrés
-            assert hasattr(app, "errorhandler")
-            assert callable(app.errorhandler)
+            assert hasattr(test_app, "errorhandler")
+            assert callable(test_app.errorhandler)
 
 
 class TestCustomErrorPages:
