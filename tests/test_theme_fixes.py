@@ -14,12 +14,12 @@ import pytest
 class TestNoDuplicateStyles:
     """Tests pour vérifier l'absence de styles dupliqués."""
 
-    def test_skip_link_not_duplicated(self, app):
+    def test_skip_link_not_duplicated(self, test_app):
         """Test que skip-link n'est défini qu'une seule fois (dans base-styles.css)."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             # Vérifier que skip-link est dans base-styles.css
             base_styles_path = os.path.join(
                 current_app.static_folder, 
@@ -45,12 +45,12 @@ class TestNoDuplicateStyles:
             assert '<style>' not in base_template_content or '.skip-link' not in base_template_content, \
                 "Les styles skip-link ne doivent plus être inline dans base.html"
 
-    def test_fullcalendar_styles_not_duplicated(self, app):
+    def test_fullcalendar_styles_not_duplicated(self, test_app):
         """Test que les styles FullCalendar ne sont pas dupliqués."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             # Vérifier que fullcalendar-styles.css existe
             fc_styles_path = os.path.join(
                 current_app.static_folder, 
@@ -83,12 +83,12 @@ class TestNoDuplicateStyles:
 class TestCentralizedJavaScript:
     """Tests pour vérifier que le JavaScript a été centralisé."""
 
-    def test_script_js_exists(self, app):
+    def test_script_js_exists(self, test_app):
         """Test que script.js existe et contient le ThemeManager."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             script_path = os.path.join(
                 current_app.static_folder, 
                 'js', 
@@ -105,12 +105,12 @@ class TestCentralizedJavaScript:
             assert 'getSystemTheme' in script_content
             assert 'getCurrentTheme' in script_content
 
-    def test_no_inline_js_in_base(self, app):
+    def test_no_inline_js_in_base(self, test_app):
         """Test qu'il n'y a plus de JavaScript inline dans base.html."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             base_template_path = os.path.join(
                 current_app.template_folder, 
                 'base.html'
@@ -131,12 +131,12 @@ class TestCentralizedJavaScript:
 class TestCSSVariables:
     """Tests pour vérifier que les variables CSS manquantes ont été ajoutées."""
 
-    def test_bulma_grey_variables_added(self, app):
+    def test_bulma_grey_variables_added(self, test_app):
         """Test que les variables --bulma-grey* ont été ajoutées."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             dark_theme_path = os.path.join(
                 current_app.static_folder, 
                 'css', 
@@ -150,12 +150,12 @@ class TestCSSVariables:
             assert '--bulma-grey-light:' in dark_theme_content
             assert '--bulma-grey-dark:' in dark_theme_content
 
-    def test_base_styles_has_utility_classes(self, app):
+    def test_base_styles_has_utility_classes(self, test_app):
         """Test que base-styles.css contient les classes utilitaires."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             base_styles_path = os.path.join(
                 current_app.static_folder, 
                 'css', 
@@ -176,12 +176,12 @@ class TestCSSVariables:
 class TestInlineStylesReplacement:
     """Tests pour vérifier que les styles inline ont été remplacés."""
 
-    def test_no_inline_styles_in_base(self, app):
+    def test_no_inline_styles_in_base(self, test_app):
         """Test qu'il n'y a plus de styles inline dans base.html."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             base_template_path = os.path.join(
                 current_app.template_folder, 
                 'base.html'
@@ -200,12 +200,12 @@ class TestInlineStylesReplacement:
                     if '{% block' not in style_content and '{% endblock' not in style_content:
                         assert False, f"Style inline trouvé dans base.html: {style_content[:100]}"
 
-    def test_dashboard_uses_type_tag_classes(self, app):
+    def test_dashboard_uses_type_tag_classes(self, test_app):
         """Test que dashboard.html utilise les classes type-tag au lieu des styles inline."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             dashboard_template_path = os.path.join(
                 current_app.template_folder, 
                 'dashboard.html'
@@ -220,12 +220,12 @@ class TestInlineStylesReplacement:
             # Vérifier qu'il n'y a plus de var(--bulma-grey)
             assert 'var(--bulma-grey)' not in dashboard_content
 
-    def test_index_uses_min_w_classes(self, app):
+    def test_index_uses_min_w_classes(self, test_app):
         """Test que index.html utilise les classes min-w-* au lieu des styles inline."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             index_template_path = os.path.join(
                 current_app.template_folder, 
                 'index.html'
@@ -244,12 +244,12 @@ class TestInlineStylesReplacement:
 class TestFileStructure:
     """Tests pour vérifier la structure des fichiers."""
 
-    def test_required_files_exist(self, app):
+    def test_required_files_exist(self, test_app):
         """Test que tous les fichiers requis existent."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             static_folder = current_app.static_folder
             template_folder = current_app.template_folder
             

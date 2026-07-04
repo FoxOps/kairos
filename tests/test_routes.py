@@ -47,7 +47,7 @@ class TestAuthRoutes:
 
     def test_login_post_valid(self, client, test_user, app):
         """Test la connexion avec des identifiants valides."""
-        with app.app_context():
+        with test_app.app_context():
             response = client.post(
                 "/login",
                 data={"email": test_user.email, "password": "test123"},
@@ -361,7 +361,7 @@ class TestLeaveRoutes:
 
     def test_delete_leave_unauthorized(self, client, test_leave, second_user, app):
         """Test qu'un utilisateur ne peut pas supprimer le conge d'un autre."""
-        with app.app_context():
+        with test_app.app_context():
             client.post(
                 "/login",
                 data={"email": second_user.email, "password": "second123"},
