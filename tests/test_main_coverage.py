@@ -10,7 +10,7 @@ from app.models import User, Group, Shift, OnCall, Leave, ShiftType
 class TestCalendarWindow:
     """Tests pour la fonction _calendar_window."""
 
-    def test_calendar_window_returns_tuple(self, app):
+    def test_calendar_window_returns_tuple(self, test_app):
         """Test que _calendar_window retourne un tuple de 2 dates."""
         with test_app.app_context():
             from app.routes.main import _calendar_window
@@ -19,7 +19,7 @@ class TestCalendarWindow:
             assert isinstance(end, datetime)
             assert end > start
 
-    def test_calendar_window_180_days(self, app):
+    def test_calendar_window_180_days(self, test_app):
         """Test que la fenêtre du calendrier est de 180 jours."""
         with test_app.app_context():
             from app.routes.main import _calendar_window, CALENDAR_WINDOW_DAYS
@@ -35,7 +35,7 @@ class TestCalendarWindow:
 class TestBuildCalendarEvents:
     """Tests pour la fonction _build_calendar_events."""
 
-    def test_build_calendar_events_empty(self, app):
+    def test_build_calendar_events_empty(self, test_app):
         """Test que _build_calendar_events retourne une liste vide avec des entrées vides."""
         with test_app.app_context():
             from app.routes.main import _build_calendar_events
