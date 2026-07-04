@@ -16,12 +16,12 @@ import pytest
 class TestDarkThemeCSS:
     """Tests pour le fichier CSS du thème sombre."""
 
-    def test_dark_theme_css_exists(self, app):
+    def test_dark_theme_css_exists(self, test_app):
         """Test que le fichier CSS du thème sombre existe."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             css_path = os.path.join(
                 current_app.static_folder, 
                 'css', 
@@ -29,12 +29,12 @@ class TestDarkThemeCSS:
             )
             assert os.path.exists(css_path), f"Le fichier {css_path} n'existe pas"
 
-    def test_dark_theme_css_content(self, app):
+    def test_dark_theme_css_content(self, test_app):
         """Test que le fichier CSS contient les sélecteurs et variables nécessaires."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             css_path = os.path.join(
                 current_app.static_folder, 
                 'css', 
@@ -72,12 +72,12 @@ class TestDarkThemeCSS:
             # Vérifier le support de prefers-color-scheme
             assert 'prefers-color-scheme: dark' in content
 
-    def test_bulma_variable_mapping(self, app):
+    def test_bulma_variable_mapping(self, test_app):
         """Test que les variables Leviia sont correctement mappées vers Bulma."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             css_path = os.path.join(
                 current_app.static_folder, 
                 'css', 
@@ -105,12 +105,12 @@ class TestDarkThemeCSS:
             assert '--bg-primary: var(--bulma-background);' in content
             assert '--text-primary: var(--bulma-text);' in content
 
-    def test_utility_classes_present(self, app):
+    def test_utility_classes_present(self, test_app):
         """Test que les classes utilitaires sont présentes."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             css_path = os.path.join(
                 current_app.static_folder, 
                 'css', 
@@ -129,12 +129,12 @@ class TestDarkThemeCSS:
             assert '.min-w-140' in content
             assert '.min-w-150' in content
 
-    def test_fullcalendar_styles_present(self, app):
+    def test_fullcalendar_styles_present(self, test_app):
         """Test que les styles spécifiques pour FullCalendar sont présents."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             css_path = os.path.join(
                 current_app.static_folder, 
                 'css', 
@@ -154,12 +154,12 @@ class TestDarkThemeCSS:
             assert '[data-theme="dark"] .fc' in content
             assert 'background-color: var(--bulma-background)' in content
 
-    def test_contrast_fixes_present(self, app):
+    def test_contrast_fixes_present(self, test_app):
         """Test que les corrections de contraste pour les boutons warning sont présentes."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             css_path = os.path.join(
                 current_app.static_folder, 
                 'css', 
@@ -176,12 +176,12 @@ class TestDarkThemeCSS:
             # Vérifier les corrections pour les tags warning
             assert '[data-theme="dark"] .tag.is-warning' in content
 
-    def test_skip_link_styles_present(self, app):
+    def test_skip_link_styles_present(self, test_app):
         """Test que les styles pour le skip link sont présents."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             css_path = os.path.join(
                 current_app.static_folder, 
                 'css', 
@@ -196,12 +196,12 @@ class TestDarkThemeCSS:
             assert 'position: absolute' in content
             assert 'top: -40px' in content
 
-    def test_required_field_indicator_present(self, app):
+    def test_required_field_indicator_present(self, test_app):
         """Test que l'indicateur de champ obligatoire est présent."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             css_path = os.path.join(
                 current_app.static_folder, 
                 'css', 
@@ -216,12 +216,12 @@ class TestDarkThemeCSS:
             assert 'content: " *"' in content
             assert 'color: var(--color-danger)' in content
 
-    def test_sr_only_class_present(self, app):
+    def test_sr_only_class_present(self, test_app):
         """Test que la classe .is-sr-only pour l'accessibilité est présente."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             css_path = os.path.join(
                 current_app.static_folder, 
                 'css', 
@@ -237,12 +237,12 @@ class TestDarkThemeCSS:
             assert 'width: 1px' in content
             assert 'height: 1px' in content
 
-    def test_focus_visible_styles_present(self, app):
+    def test_focus_visible_styles_present(self, test_app):
         """Test que les styles pour focus-visible sont présents."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             css_path = os.path.join(
                 current_app.static_folder, 
                 'css', 
@@ -343,12 +343,12 @@ class TestDarkThemeAccessibility:
 class TestDarkThemeVariables:
     """Tests pour les variables CSS du thème sombre."""
 
-    def test_bulma_variables_used(self, app):
+    def test_bulma_variables_used(self, test_app):
         """Test que les variables Bulma sont utilisées dans le CSS."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             css_path = os.path.join(
                 current_app.static_folder, 
                 'css', 
@@ -373,12 +373,12 @@ class TestDarkThemeVariables:
             for var in bulma_variables:
                 assert var in content, f"Variable Bulma {var} non trouvée dans le CSS"
 
-    def test_dark_theme_uses_data_attribute(self, app):
+    def test_dark_theme_uses_data_attribute(self, test_app):
         """Test que le thème sombre utilise l'attribut data-theme."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             css_path = os.path.join(
                 current_app.static_folder, 
                 'css', 
@@ -398,12 +398,12 @@ class TestDarkThemeVariables:
 class TestDarkThemeWCAGCompliance:
     """Tests pour la conformité WCAG du thème sombre."""
 
-    def test_contrast_fixes_for_warning_elements(self, app):
+    def test_contrast_fixes_for_warning_elements(self, test_app):
         """Test que les corrections de contraste pour les éléments warning sont présentes."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             css_path = os.path.join(
                 current_app.static_folder, 
                 'css', 
@@ -422,12 +422,12 @@ class TestDarkThemeWCAGCompliance:
             assert '.button.is-warning' in dark_section
             assert '.tag.is-warning' in dark_section
 
-    def test_focus_styles_present(self, app):
+    def test_focus_styles_present(self, test_app):
         """Test que les styles de focus pour l'accessibilité sont présents."""
         import os
         from flask import current_app
         
-        with app.app_context():
+        with test_app.app_context():
             css_path = os.path.join(
                 current_app.static_folder, 
                 'css', 
