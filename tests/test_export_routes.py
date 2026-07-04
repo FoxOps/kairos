@@ -11,7 +11,7 @@ from app.models import Leave, OnCall, Shift, User
 class TestExportRoutes:
     """Tests pour les routes d'export."""
 
-    def test_export_shifts_route(self, logged_in_client, test_user, test_shift_type, app):
+    def test_export_shifts_route(self, logged_in_client, test_user, test_shift_type, test_app):
         """Test l'export des shifts."""
         with test_app.app_context():
             # Créer un shift pour l'utilisateur
@@ -35,7 +35,7 @@ class TestExportRoutes:
         assert "BEGIN:VEVENT" in response.data.decode("utf-8")
         assert "Shift" in response.data.decode("utf-8")
 
-    def test_export_shifts_scope_all(self, logged_in_client, test_user, test_shift_type, app):
+    def test_export_shifts_scope_all(self, logged_in_client, test_user, test_shift_type, test_app):
         """Test l'export de tous les shifts (scope=all)."""
         with test_app.app_context():
             # Créer un shift
@@ -58,7 +58,7 @@ class TestExportRoutes:
         assert "BEGIN:VCALENDAR" in content
         assert "shifts_all.ics" in response.headers["Content-Disposition"]
 
-    def test_export_shifts_scope_my(self, logged_in_client, test_user, test_shift_type, app):
+    def test_export_shifts_scope_my(self, logged_in_client, test_user, test_shift_type, test_app):
         """Test l'export des shifts de l'utilisateur connecté (scope=my)."""
         with test_app.app_context():
             # Créer un shift pour l'utilisateur connecté
@@ -81,7 +81,7 @@ class TestExportRoutes:
         assert "BEGIN:VCALENDAR" in content
         assert "shifts_my.ics" in response.headers["Content-Disposition"]
 
-    def test_export_oncall_route(self, logged_in_client, test_user, app):
+    def test_export_oncall_route(self, logged_in_client, test_user, test_app):
         """Test l'export des astreintes."""
         with test_app.app_context():
             # Créer une astreinte
@@ -98,7 +98,7 @@ class TestExportRoutes:
         assert "BEGIN:VCALENDAR" in content
         assert "Astreinte" in content
 
-    def test_export_oncall_scope_all(self, logged_in_client, test_user, app):
+    def test_export_oncall_scope_all(self, logged_in_client, test_user, test_app):
         """Test l'export de toutes les astreintes (scope=all)."""
         with test_app.app_context():
             # Créer une astreinte
@@ -112,7 +112,7 @@ class TestExportRoutes:
         assert response.status_code == 200
         assert "oncall_all.ics" in response.headers["Content-Disposition"]
 
-    def test_export_oncall_scope_my(self, logged_in_client, test_user, app):
+    def test_export_oncall_scope_my(self, logged_in_client, test_user, test_app):
         """Test l'export des astreintes de l'utilisateur connecté (scope=my)."""
         with test_app.app_context():
             # Créer une astreinte pour l'utilisateur connecté
@@ -126,7 +126,7 @@ class TestExportRoutes:
         assert response.status_code == 200
         assert "oncall_my.ics" in response.headers["Content-Disposition"]
 
-    def test_export_leaves_route(self, logged_in_client, test_user, app):
+    def test_export_leaves_route(self, logged_in_client, test_user, test_app):
         """Test l'export des congés."""
         with test_app.app_context():
             # Créer un congé
@@ -143,7 +143,7 @@ class TestExportRoutes:
         assert "BEGIN:VCALENDAR" in content
         assert "Conge" in content or "Cong" in content
 
-    def test_export_leaves_scope_all(self, logged_in_client, test_user, app):
+    def test_export_leaves_scope_all(self, logged_in_client, test_user, test_app):
         """Test l'export de tous les congés (scope=all)."""
         with test_app.app_context():
             # Créer un congé
@@ -157,7 +157,7 @@ class TestExportRoutes:
         assert response.status_code == 200
         assert "leaves_all.ics" in response.headers["Content-Disposition"]
 
-    def test_export_leaves_scope_my(self, logged_in_client, test_user, app):
+    def test_export_leaves_scope_my(self, logged_in_client, test_user, test_app):
         """Test l'export des congés de l'utilisateur connecté (scope=my)."""
         with test_app.app_context():
             # Créer un congé pour l'utilisateur connecté
@@ -223,7 +223,7 @@ class TestExportRoutes:
         # Doit utiliser le scope par défaut (all)
         assert "BEGIN:VCALENDAR" in response.data.decode("utf-8")
 
-    def test_export_content_disposition_header(self, logged_in_client, test_user, test_shift_type, app):
+    def test_export_content_disposition_header(self, logged_in_client, test_user, test_shift_type, test_app):
         """Test que le header Content-Disposition est correct."""
         with test_app.app_context():
             # Créer un shift
@@ -249,7 +249,7 @@ class TestExportRoutes:
 class TestExportRoutesAdminScope:
     """Tests pour vérifier que les admins peuvent exporter tous les données."""
 
-    def test_admin_export_all_shifts(self, logged_in_client, test_user, second_user, test_shift_type, app):
+    def test_admin_export_all_shifts(self, logged_in_client, test_user, second_user, test_shift_type, test_app):
         """Test qu'un admin peut exporter les shifts de tous les utilisateurs."""
         with test_app.app_context():
             # Créer des shifts pour deux utilisateurs différents
@@ -281,7 +281,7 @@ class TestExportRoutesAdminScope:
         # Doit contenir les shifts des deux utilisateurs
         assert content.count("BEGIN:VEVENT") == 2
 
-    def test_admin_export_all_oncalls(self, logged_in_client, test_user, second_user, app):
+    def test_admin_export_all_oncalls(self, logged_in_client, test_user, second_user, test_app):
         """Test qu'un admin peut exporter les astreintes de tous les utilisateurs."""
         with test_app.app_context():
             # Créer des astreintes pour deux utilisateurs différents
@@ -302,7 +302,7 @@ class TestExportRoutesAdminScope:
         content = response.data.decode("utf-8")
         assert content.count("BEGIN:VEVENT") == 2
 
-    def test_admin_export_all_leaves(self, logged_in_client, test_user, second_user, app):
+    def test_admin_export_all_leaves(self, logged_in_client, test_user, second_user, test_app):
         """Test qu'un admin peut exporter les congés de tous les utilisateurs."""
         with test_app.app_context():
             # Créer des congés pour deux utilisateurs différents
@@ -329,7 +329,7 @@ class TestExportRoutesAdminScope:
 class TestExportRoutesTokenAuth:
     """Tests pour l'authentification par token pour les exports ICS."""
 
-    def test_export_shifts_with_token(self, client, test_user, test_shift_type, app):
+    def test_export_shifts_with_token(self, client, test_user, test_shift_type, test_app):
         """Test l'export des shifts avec un token valide."""
         with test_app.app_context():
             # Générer un token pour l'utilisateur
@@ -371,7 +371,7 @@ class TestExportRoutesTokenAuth:
         # Doit retourner 401, 200 ou rediriger vers login (302)
         assert response.status_code in [401, 200, 302]
 
-    def test_export_oncall_with_token(self, client, test_user, app):
+    def test_export_oncall_with_token(self, client, test_user, test_app):
         """Test l'export des astreintes avec un token valide."""
         with test_app.app_context():
             # Générer un token pour l'utilisateur
@@ -391,7 +391,7 @@ class TestExportRoutesTokenAuth:
         assert "BEGIN:VCALENDAR" in content
         assert "Astreinte" in content
 
-    def test_export_leaves_with_token(self, client, test_user, app):
+    def test_export_leaves_with_token(self, client, test_user, test_app):
         """Test l'export des congés avec un token valide."""
         with test_app.app_context():
             # Générer un token pour l'utilisateur
@@ -411,7 +411,7 @@ class TestExportRoutesTokenAuth:
         assert "BEGIN:VCALENDAR" in content
         assert "Conge" in content or "Cong" in content
 
-    def test_token_scope_all_accesses_all_data(self, client, test_user, second_user, test_shift_type, app):
+    def test_token_scope_all_accesses_all_data(self, client, test_user, second_user, test_shift_type, test_app):
         """Test que scope=all avec un token donne accès à tous les shifts."""
         with test_app.app_context():
             # Générer un token pour le premier utilisateur
@@ -451,7 +451,7 @@ class TestExportRoutesTokenAuth:
         assert test_user.name in content
         assert second_user.name in content
 
-    def test_token_scope_my_accesses_only_own_data(self, client, test_user, second_user, test_shift_type, app):
+    def test_token_scope_my_accesses_only_own_data(self, client, test_user, second_user, test_shift_type, test_app):
         """Test que scope=my avec un token ne donne accès qu'aux données de l'utilisateur."""
         with test_app.app_context():
             # Générer un token pour le premier utilisateur

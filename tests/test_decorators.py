@@ -189,7 +189,7 @@ class TestUserOwnsResourceDecorator:
             leave = db.session.get(Leave, test_leave.id)
             assert leave is not None
 
-    def test_admin_can_delete_any_leave(self, logged_in_client, test_leave, app):
+    def test_admin_can_delete_any_leave(self, logged_in_client, test_leave, test_app):
         """Test qu'un admin peut supprimer n'importe quel congé."""
         response = logged_in_client.get(
             f"/leave/delete/{test_leave.id}", follow_redirects=True
@@ -343,7 +343,7 @@ class TestLeavePermissions:
         assert response.status_code == 200
         assert b"Conge ajoute" in response.data or b"succes" in response.data
 
-    def test_user_cannot_add_others_leave(self, client, test_user, second_user, app):
+    def test_user_cannot_add_others_leave(self, client, test_user, second_user, test_app):
         """Test qu'un utilisateur ne peut pas ajouter un congé pour un autre."""
         with test_app.app_context():
             # Connecter second_user
