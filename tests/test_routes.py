@@ -45,7 +45,7 @@ class TestAuthRoutes:
         assert response.status_code == 200
         assert b"email" in response.data
 
-    def test_login_post_valid(self, client, test_user, app):
+    def test_login_post_valid(self, client, test_user, test_app):
         """Test la connexion avec des identifiants valides."""
         with test_app.app_context():
             response = client.post(
@@ -103,7 +103,7 @@ class TestAuthRoutes:
         response = logged_in_client.get("/profile/update")
         assert response.status_code == 200
 
-    def test_profile_update_post_valid(self, logged_in_client, test_user, app):
+    def test_profile_update_post_valid(self, logged_in_client, test_user, test_app):
         """Test la mise a jour du profil avec des donnees valides."""
         response = logged_in_client.post(
             "/profile/update",
@@ -359,7 +359,7 @@ class TestLeaveRoutes:
         leave = db.session.get(Leave, test_leave.id)
         assert leave is None
 
-    def test_delete_leave_unauthorized(self, client, test_leave, second_user, app):
+    def test_delete_leave_unauthorized(self, client, test_leave, second_user, test_app):
         """Test qu'un utilisateur ne peut pas supprimer le conge d'un autre."""
         with test_app.app_context():
             client.post(
