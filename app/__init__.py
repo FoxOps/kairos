@@ -18,7 +18,7 @@ import os
 import secrets
 from typing import Optional
 
-from flask import Flask
+from flask import Flask, render_template
 from flask_login import LoginManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -37,6 +37,52 @@ limiter = Limiter(key_func=get_remote_address)
 
 # Variable pour maintenir la compatibilité avec le code existant
 _app = None
+
+# Importé après la définition de `db` : app.utils.helpers fait `from app import db`
+# et créerait un import circulaire si ce module était importé plus tôt.
+from app.utils.logging.logger import (
+    get_error_template_data,
+    log_audit_action,
+    log_http_error,
+    get_logger,
+    SensitiveDataFilter,
+)
+
+
+# ---------------------------------------------------------------------------
+# Gestionnaires d'erreurs
+# ---------------------------------------------------------------------------
+
+def handle_database_error(error):
+    """Gestionnaire pour les erreurs de base de données (SQLite/SQLAlchemy)."""
+    log_http_error(500, str(error))
+    return render_template("500.html"), 500
+
+
+def handle_value_error(error):
+    """Gestionnaire pour les ValueError non interceptées par les routes."""
+    log_http_error(400, str(error))
+    return render_template("400.html"), 400
+
+
+def handle_type_error(error):
+    """Gestionnaire pour les TypeError non interceptées par les routes."""
+    log_http_error(400, str(error))
+    return render_template("400.html"), 400
+
+
+def handle_exception(error):
+    """Gestionnaire générique pour les exceptions non interceptées."""
+    log_http_error(500, str(error))
+    return render_template("500.html"), 500
+
+
+def _make_http_error_handler(code: int):
+    def _handler(error):
+        log_http_error(code, getattr(error, "description", str(error)))
+        return render_template(f"{code}.html"), code
+
+    return _handler
 
 
 def create_app(config_object: Optional[str] = None):
@@ -150,7 +196,15 @@ def create_app(config_object: Optional[str] = None):
     if app.config.get('PROMETHEUS_ENABLED', False):
         from app.utils.prometheus_metrics import init_prometheus
         init_prometheus(app)
-    
+
+    # Gestionnaires d'erreurs HTTP (pages personnalisées + logging)
+    for error_code in (400, 401, 403, 404, 405, 500, 502, 503, 504):
+        app.register_error_handler(error_code, _make_http_error_handler(error_code))
+
+    # Gestionnaires d'exceptions applicatives
+    app.register_error_handler(ValueError, handle_value_error)
+    app.register_error_handler(TypeError, handle_type_error)
+
     return app
 
 
@@ -163,4 +217,9 @@ app = create_app()
 # ---------------------------------------------------------------------------
 # Exports
 # ---------------------------------------------------------------------------
-__all__ = ['app', 'create_app', 'db', 'login_manager', 'limiter']
+__all__ = [
+    'app', 'create_app', 'db', 'login_manager', 'limiter',
+    'get_logger', 'get_error_template_data', 'log_audit_action', 'log_http_error',
+    'SensitiveDataFilter',
+    'handle_database_error', 'handle_value_error', 'handle_type_error', 'handle_exception',
+]

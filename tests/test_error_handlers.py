@@ -5,11 +5,13 @@ Tests pour les gestionnaires d'erreurs personnalisés.
 import pytest
 import logging
 from werkzeug.exceptions import (
-    BadRequest, Unauthorized, Forbidden, NotFound, 
-    MethodNotAllowed, InternalServerError, 
+    BadRequest, Unauthorized, Forbidden, NotFound,
+    MethodNotAllowed, InternalServerError,
     BadGateway, ServiceUnavailable, GatewayTimeout
 )
 import sqlite3
+
+from app import app
 
 
 class TestErrorHandlers:
