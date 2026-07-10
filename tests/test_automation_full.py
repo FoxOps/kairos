@@ -295,8 +295,10 @@ class TestShiftAutomationCanAssignFull:
     def test_false_existing_shift(self, test_app, test_user, test_shift_type):
         """Test que can_assign_shift retourne False si shift existant."""
         with test_app.app_context():
-            today = date.today()
-            
+            # Un jour ouvré garanti (lundi si le jour du test tombe un week-end)
+            weekday = date.today().weekday()
+            today = date.today() + timedelta(days=(7 - weekday) % 7 if weekday >= 5 else 0)
+
             # Créer un shift existant
             existing_shift = Shift(
                 user_id=test_user.id,
@@ -318,8 +320,10 @@ class TestShiftAutomationCanAssignFull:
     def test_false_on_leave(self, test_app, test_user, test_shift_type):
         """Test que can_assign_shift retourne False si en congé."""
         with test_app.app_context():
-            today = date.today()
-            
+            # Un jour ouvré garanti (lundi si le jour du test tombe un week-end)
+            weekday = date.today().weekday()
+            today = date.today() + timedelta(days=(7 - weekday) % 7 if weekday >= 5 else 0)
+
             # Créer un congé
             leave = Leave(
                 user_id=test_user.id,
@@ -339,8 +343,10 @@ class TestShiftAutomationCanAssignFull:
     def test_false_on_oncall(self, test_app, test_user, test_shift_type):
         """Test que can_assign_shift retourne False si en astreinte."""
         with test_app.app_context():
-            today = date.today()
-            
+            # Un jour ouvré garanti (lundi si le jour du test tombe un week-end)
+            weekday = date.today().weekday()
+            today = date.today() + timedelta(days=(7 - weekday) % 7 if weekday >= 5 else 0)
+
             # Créer une astreinte
             oncall = OnCall(
                 user_id=test_user.id,

@@ -362,19 +362,21 @@ class TestFullScheduleGeneration:
             
             start_date = date(2024, 1, 5)  # Vendredi
             end_date = date(2024, 1, 19)  # 2 semaines plus tard
-            
-            result = AdvancedShiftAutomation.generate_full_schedule(
+
+            # AdvancedShiftAutomation.generate_full_schedule ne génère que des shifts
+            # (jours ouvrés) ; les astreintes sont générées séparément par
+            # OnCallAutomation.generate_oncall_schedule.
+            shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
                 start_date, end_date, dry_run=True
             )
-            
-            assert 'oncall' in result
-            assert 'shift' in result
-            assert 'summary' in result
-            
-            # Devrait générer des astreintes
-            assert len(result['oncall']['generated']) == 2
-            # Devrait générer des shifts (selon les règles par défaut)
-            assert len(result['shift']['generated']) > 0
+
+            assert len(shifts) > 0
+            assert len(messages) > 0
+
+            oncalls, oncall_messages = OnCallAutomation.generate_oncall_schedule(
+                start_date, end_date, dry_run=True
+            )
+            assert len(oncalls) == 2
     
     def test_get_automation_status(self, test_app, test_group, test_user, second_user):
         """Test la récupération de l'état de l'automatisation."""
