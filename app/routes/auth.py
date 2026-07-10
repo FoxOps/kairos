@@ -186,7 +186,7 @@ def update_profile():
         flash("Votre profil a été mis à jour avec succès !", "success")
         return redirect(url_for("auth.profile"))
 
-    return render_template("auth/profile_update.html", user=current_user)
+    return render_template("auth/update_profile.html", user=current_user)
 
 
 @auth_bp.route("/profile/ics-token", methods=["GET", "POST"])

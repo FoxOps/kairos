@@ -13,7 +13,7 @@ class TestRolePermissions:
 
     def test_decorators_import(self):
         """Test que les decorateurs peuvent etre importes."""
-        from app.utils.decorators import admin_required, role_required
+        from app.auth.decorators import admin_required, role_required
 
         assert callable(admin_required)
         assert callable(role_required)
@@ -364,7 +364,7 @@ class TestLeaveRoutes:
         with test_app.app_context():
             client.post(
                 "/login",
-                data={"email": second_user.email, "password": "second123"},
+                data={"email": second_user.email, "password": "test123"},
                 follow_redirects=True,
             )
 

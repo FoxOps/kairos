@@ -146,7 +146,7 @@ def second_user(test_app, test_group):
 
 
 @pytest.fixture
-def test_shift(test_app, test_user):
+def test_shift(test_app, test_user, test_shift_type):
     """Crée un shift de test."""
     from datetime import date, datetime, time
     shift = Shift(
@@ -154,7 +154,7 @@ def test_shift(test_app, test_user):
         start_time=datetime.combine(date.today(), datetime.min.time()),
         end_time=datetime.combine(date.today(), datetime.max.time()),
         user_id=test_user.id,
-        shift_type_id=1,
+        shift_type_id=test_shift_type.id,
     )
     db.session.add(shift)
     db.session.commit()
