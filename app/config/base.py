@@ -179,7 +179,12 @@ class Config:
     PERMANENT_SESSION_LIFETIME: timedelta = timedelta(
         days=get_int_from_env("PERMANENT_SESSION_LIFETIME_DAYS", 30)
     )
-    
+
+    # Flask-Login Configuration
+    LOGIN_DISABLED: bool = get_bool_from_env("LOGIN_DISABLED", False)
+    REMEMBER_COOKIE_DURATION: int = get_int_from_env("REMEMBER_COOKIE_DURATION", 86400)
+    SESSION_PROTECTION: str = os.environ.get("SESSION_PROTECTION") or "strong"
+
     # Security Configuration
     SECURITY_PASSWORD_SALT: str = os.environ.get("SECURITY_PASSWORD_SALT") or secrets.token_urlsafe(16)
     

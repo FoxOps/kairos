@@ -100,7 +100,12 @@ class Config:
     # SQLite reste la base de données par défaut
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL") or "sqlite:///app.db"
     SQLALCHEMY_TRACK_MODIFICATIONS = get_bool_from_env("SQLALCHEMY_TRACK_MODIFICATIONS", False)
-    
+
+    # Configuration Flask-Login / session
+    LOGIN_DISABLED = get_bool_from_env("LOGIN_DISABLED", False)
+    REMEMBER_COOKIE_DURATION = get_int_from_env("REMEMBER_COOKIE_DURATION", 86400)
+    SESSION_PROTECTION = get_str_from_env("SESSION_PROTECTION", "strong")
+
     # ✅ Configuration pour que Flask écoute sur 0.0.0.0:5000
     HOST = os.environ.get("FLASK_HOST") or "0.0.0.0"
     PORT = int(os.environ.get("FLASK_PORT") or 5000)
