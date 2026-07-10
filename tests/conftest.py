@@ -236,8 +236,30 @@ def logged_in_client(client):
     assert response.status_code == 200, f"Login failed with status {response.status_code}"
     
     yield client
-    
+
     # Se déconnecter
+    try:
+        client.get('/logout', follow_redirects=True)
+    except Exception:
+        pass
+
+
+@pytest.fixture
+def non_admin_client(client, test_user):
+    """Client de test Flask connecté avec un utilisateur non-admin (test_user).
+
+    Utile pour vérifier qu'une route protégée par @admin_required rejette
+    bien un utilisateur normal (logged_in_client est un admin).
+    """
+    response = client.post(
+        '/login',
+        data={'email': test_user.email, 'password': 'test123'},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200, f"Login failed with status {response.status_code}"
+
+    yield client
+
     try:
         client.get('/logout', follow_redirects=True)
     except Exception:

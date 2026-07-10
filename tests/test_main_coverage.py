@@ -180,9 +180,9 @@ class TestAddLeaveRoute:
 class TestAddOnCallRoute:
     """Tests pour la route add_oncall."""
 
-    def test_add_oncall_get_requires_admin(self, logged_in_client):
+    def test_add_oncall_get_requires_admin(self, non_admin_client):
         """Test que add_oncall GET nécessite admin."""
-        response = logged_in_client.get('/oncall/add')
+        response = non_admin_client.get('/oncall/add')
         # 302 = redirection vers login (car non admin)
         assert response.status_code in [302, 403]
 
@@ -205,9 +205,9 @@ class TestAddOnCallRoute:
 class TestAddShiftRoute:
     """Tests pour la route add_shift."""
 
-    def test_add_shift_get_requires_admin(self, logged_in_client):
+    def test_add_shift_get_requires_admin(self, non_admin_client):
         """Test que add_shift GET nécessite admin."""
-        response = logged_in_client.get('/schedule/add')
+        response = non_admin_client.get('/schedule/add')
         # 302 = redirection vers login (car non admin)
         assert response.status_code in [302, 403]
 
@@ -262,20 +262,20 @@ class TestAPIEndpoints:
         assert response.status_code == 200
         assert response.content_type == 'application/json'
 
-    def test_api_create_shift_requires_admin(self, logged_in_client):
+    def test_api_create_shift_requires_admin(self, non_admin_client):
         """Test que POST /api/shifts nécessite admin."""
-        response = logged_in_client.post('/api/shifts', json={})
+        response = non_admin_client.post('/api/shifts', json={})
         # 302 = redirection vers login (car non admin)
         assert response.status_code in [302, 403]
 
-    def test_api_update_shift_requires_admin(self, logged_in_client):
+    def test_api_update_shift_requires_admin(self, non_admin_client):
         """Test que PATCH /api/shifts/<id> nécessite admin."""
-        response = logged_in_client.patch('/api/shifts/1', json={})
+        response = non_admin_client.patch('/api/shifts/1', json={})
         # 302 = redirection vers login (car non admin)
         assert response.status_code in [302, 403]
 
-    def test_api_delete_shift_requires_admin(self, logged_in_client):
+    def test_api_delete_shift_requires_admin(self, non_admin_client):
         """Test que DELETE /api/shifts/<id> nécessite admin."""
-        response = logged_in_client.delete('/api/shifts/1')
+        response = non_admin_client.delete('/api/shifts/1')
         # 302 = redirection vers login (car non admin)
         assert response.status_code in [302, 403]
