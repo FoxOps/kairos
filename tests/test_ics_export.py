@@ -155,7 +155,7 @@ class TestICSExport:
             assert ics_content.count("BEGIN:VEVENT") == 0
 
     def test_generate_ics_standard_with_mixed_events(
-        self, app, test_user, test_shift_type
+        self, test_app, test_user, test_shift_type
     ):
         """Test la fonction générique avec différents types d'événements."""
         with test_app.app_context():
