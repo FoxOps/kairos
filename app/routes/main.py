@@ -179,7 +179,7 @@ def add_leave():
 
         if not all([user_id, start_date_str, end_date_str]):
             flash("Tous les champs obligatoires doivent être remplis.", "danger")
-            return redirect(url_for("add_leave"))
+            return redirect(url_for("main.add_leave"))
 
         try:
             user_id = int(user_id)
@@ -189,15 +189,18 @@ def add_leave():
                 flash(
                     "❌ Vous ne pouvez ajouter des congés que pour vous-même.", "danger"
                 )
-                return redirect(url_for("leave"))
+                return redirect(url_for("main.leave"))
 
             start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
             end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
 
-            can_add, error_message = can_add_leave(user_id, start_date, end_date)
-            if not can_add:
-                flash(error_message, "danger")
-                return redirect(url_for("add_leave"))
+            target_user = db.session.get(User, user_id)
+            if not target_user or not can_add_leave(target_user, start_date, end_date):
+                flash(
+                    "Impossible d'ajouter ce congé (dates invalides ou congé existant sur cette période).",
+                    "danger",
+                )
+                return redirect(url_for("main.add_leave"))
 
             new_leave = Leave(
                 user_id=user_id,
@@ -219,11 +222,11 @@ def add_leave():
                 flash(f"⚠️ Rééquilibrage automatique des shifts échoué : {str(e)}", "warning")
             
             flash("Conge ajoute avec succes !", "success")
-            return redirect(url_for("leave"))
+            return redirect(url_for("main.leave"))
         except ValueError:
             db.session.rollback()
             flash("Format de date invalide. Utilisez le format AAAA-MM-JJ.", "danger")
-            return redirect(url_for("add_leave"))
+            return redirect(url_for("main.add_leave"))
         except Exception as e:
             db.session.rollback()
             flash(f"Erreur : {str(e)}", "danger")
@@ -261,7 +264,7 @@ def delete_leave(leave_id):
     except Exception as e:
         db.session.rollback()
         flash(f"Erreur : {str(e)}", "danger")
-    return redirect(url_for("leave"))
+    return redirect(url_for("main.leave"))
 
 
 # ========== ROUTES POUR LES ASTREINTES ==========
@@ -305,7 +308,7 @@ def add_oncall():
 
         if not all([user_id, start_date_str]):
             flash("Tous les champs sont obligatoires.", "danger")
-            return redirect(url_for("add_oncall"))
+            return redirect(url_for("main.add_oncall"))
 
         try:
             user_id = int(user_id)
@@ -313,17 +316,20 @@ def add_oncall():
             start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
             if start_date.weekday() != 4:
                 flash("L'astreinte doit commencer un vendredi.", "danger")
-                return redirect(url_for("add_oncall"))
+                return redirect(url_for("main.add_oncall"))
 
             start_time = datetime.combine(start_date, datetime.min.time()).replace(
                 hour=21
             )
             end_time = start_time + timedelta(days=7, hours=-14)
 
-            can_add, error_message = can_add_oncall(user_id, start_time, end_time)
-            if not can_add:
-                flash(error_message, "danger")
-                return redirect(url_for("add_oncall"))
+            target_user = db.session.get(User, user_id)
+            if not target_user or not can_add_oncall(target_user, start_time, end_time):
+                flash(
+                    "Impossible d'ajouter cette astreinte (période déjà couverte ou congé sur la période).",
+                    "danger",
+                )
+                return redirect(url_for("main.add_oncall"))
 
             new_oncall = OnCall(
                 user_id=user_id,
@@ -336,11 +342,11 @@ def add_oncall():
                 "Astreinte ajoutee avec succes ! (Du vendredi 21h au vendredi suivant 07h)",
                 "success",
             )
-            return redirect(url_for("oncall"))
+            return redirect(url_for("main.oncall"))
         except ValueError:
             db.session.rollback()
             flash("Format de date invalide. Utilisez le format AAAA-MM-JJ.", "danger")
-            return redirect(url_for("add_oncall"))
+            return redirect(url_for("main.add_oncall"))
         except Exception as e:
             db.session.rollback()
             flash(f"Erreur : {str(e)}", "danger")
@@ -363,7 +369,7 @@ def delete_oncall(oncall_id):
     except Exception as e:
         db.session.rollback()
         flash(f"Erreur : {str(e)}", "danger")
-    return redirect(url_for("oncall"))
+    return redirect(url_for("main.oncall"))
 
 
 @main_bp.route("/oncall/delete-all", methods=["POST"])
@@ -383,7 +389,7 @@ def delete_all_oncalls():
     except Exception as e:
         db.session.rollback()
         flash(f"❌ Erreur : {str(e)}", "danger")
-    return redirect(url_for("oncall"))
+    return redirect(url_for("main.oncall"))
 
 
 @main_bp.route("/oncall/delete-all-for-user/<int:user_id>", methods=["POST"])
@@ -399,7 +405,7 @@ def delete_all_oncalls_for_user(user_id):
         
         if count == 0:
             flash(f"⚠️ Aucun astreinte trouvée pour {user.name}.", "warning")
-            return redirect(url_for("oncall"))
+            return redirect(url_for("main.oncall"))
         
         # Supprimer directement sans charger tous les objets
         OnCall.query.filter_by(user_id=user_id).delete(synchronize_session=False)
@@ -408,7 +414,7 @@ def delete_all_oncalls_for_user(user_id):
     except Exception as e:
         db.session.rollback()
         flash(f"❌ Erreur : {str(e)}", "danger")
-    return redirect(url_for("oncall"))
+    return redirect(url_for("main.oncall"))
 
 
 # ========== ROUTES POUR LES SHIFTS ====================
@@ -562,15 +568,19 @@ def add_shift():
 
         if not all([user_id, shift_type_id, start_date_str, end_date_str]):
             flash("Tous les champs sont obligatoires.", "danger")
-            return redirect(url_for("add_shift"))
+            return redirect(url_for("main.add_shift"))
 
         try:
             shift_type = db.session.get(ShiftType, int(shift_type_id))
             if not shift_type:
                 flash("Type de shift invalide.", "danger")
-                return redirect(url_for("add_shift"))
+                return redirect(url_for("main.add_shift"))
 
             user_id = int(user_id)
+            target_user = db.session.get(User, user_id)
+            if not target_user:
+                flash("Utilisateur invalide.", "danger")
+                return redirect(url_for("main.add_shift"))
 
             start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
             end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
@@ -579,7 +589,7 @@ def add_shift():
                 flash(
                     "La date de debut doit etre anterieure a la date de fin.", "danger"
                 )
-                return redirect(url_for("add_shift"))
+                return redirect(url_for("main.add_shift"))
 
             current_date = start_date
             shifts_added = []
@@ -589,15 +599,12 @@ def add_shift():
                     current_date += timedelta(days=1)
                     continue
 
-                can_add, error_message = can_add_shift(
-                    user_id, current_date, shift_type.name
-                )
-                if not can_add:
+                if not can_add_shift(target_user, current_date, shift_type.name):
                     flash(
-                        f"{error_message} (le {current_date.strftime('%d/%m/%Y')})",
+                        f"Impossible d'ajouter ce shift (le {current_date.strftime('%d/%m/%Y')}).",
                         "danger",
                     )
-                    return redirect(url_for("add_shift"))
+                    return redirect(url_for("main.add_shift"))
 
                 start_time = datetime.combine(
                     current_date, datetime.min.time()
@@ -635,11 +642,11 @@ def add_shift():
                 f"Format de date invalide : {str(e)}. Utilisez le format AAAA-MM-JJ.",
                 "danger",
             )
-            return redirect(url_for("add_shift"))
+            return redirect(url_for("main.add_shift"))
         except Exception as e:
             db.session.rollback()
             flash(f"Erreur : {str(e)}", "danger")
-            return redirect(url_for("add_shift"))
+            return redirect(url_for("main.add_shift"))
 
     # Seuls les administrateurs peuvent voir cette page
     users = User.query.join(Group).filter(Group.is_part_of_schedule == True).all()
@@ -952,9 +959,8 @@ def api_create_shift():
             }), 400
         
         # Vérifier qu'il n'y a pas de conflit
-        can_add, error_message = can_add_shift(user_id, date, shift_type.name)
-        if not can_add:
-            return jsonify({"success": False, "error": error_message}), 400
+        if not can_add_shift(user, date, shift_type.name):
+            return jsonify({"success": False, "error": "Conflit détecté pour ce shift"}), 400
         
         # Créer le nouveau shift
         new_shift = Shift(

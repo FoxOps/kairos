@@ -163,14 +163,14 @@ class TestUserOwnsResourceDecorator:
         assert leave is None
 
     def test_user_cannot_delete_others_leave(
-        self, client, test_leave, second_user, app
+        self, client, test_leave, second_user, test_app
     ):
         """Test qu'un utilisateur ne peut pas supprimer le congé d'un autre."""
         with test_app.app_context():
             # Connecter second_user
             client.post(
                 "/login",
-                data={"email": second_user.email, "password": "second123"},
+                data={"email": second_user.email, "password": "test123"},
                 follow_redirects=True,
             )
 
@@ -349,7 +349,7 @@ class TestLeavePermissions:
             # Connecter second_user
             client.post(
                 "/login",
-                data={"email": second_user.email, "password": "second123"},
+                data={"email": second_user.email, "password": "test123"},
                 follow_redirects=True,
             )
 

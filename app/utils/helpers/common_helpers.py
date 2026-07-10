@@ -169,14 +169,17 @@ def can_add_shift(user=None, date=None, shift_type_id=None):
     
     if not user or not user.is_authenticated:
         return False
-    
+
+    # Les shifts ne peuvent être ajoutés que du lundi au vendredi
+    if date.weekday() >= 5:
+        return False
+
+    # L'utilisateur ne peut pas avoir de shift s'il est en congé
+    if is_user_on_leave(user.id, date):
+        return False
+
     # Check if user already has a shift on this date
-    existing_shift = Shift.query.filter(
-        Shift.user_id == user.id,
-        Shift.date == date
-    ).first()
-    
-    return existing_shift is None
+    return not is_user_on_shift(user.id, date)
 
 
 def can_add_leave(user=None, start_date=None, end_date=None):
@@ -199,14 +202,18 @@ def can_add_leave(user=None, start_date=None, end_date=None):
     
     if not user or not user.is_authenticated:
         return False
-    
+
+    # La date de début doit être antérieure (ou égale) à la date de fin
+    if start_date > end_date:
+        return False
+
     # Check if user already has a leave overlapping with this period
     overlapping_leave = Leave.query.filter(
         Leave.user_id == user.id,
         Leave.start_date <= end_date,
         Leave.end_date >= start_date
     ).first()
-    
+
     return overlapping_leave is None
 
 
@@ -230,7 +237,15 @@ def can_add_oncall(user=None, start_time=None, end_time=None):
     
     if not user or not user.is_authenticated:
         return False
-    
+
+    # L'astreinte doit commencer un vendredi à 21h
+    if start_time.weekday() != 4 or start_time.hour != 21:
+        return False
+
+    # L'utilisateur ne peut pas avoir d'astreinte s'il est en congé sur la période
+    if _get_overlapping_leave(user.id, start_time.date(), end_time.date()):
+        return False
+
     # Check if user already has an on-call overlapping with this period
     overlapping_oncall = OnCall.query.filter(
         OnCall.user_id == user.id,

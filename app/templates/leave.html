@@ -27,7 +27,7 @@
         <!-- Pagination en haut + sélecteur -->
         {% if leaves.has_prev or leaves.has_next or leaves.total > 0 %}
         {% set pagination = leaves %}
-        {% set route = 'leave' %}
+        {% set route = 'main.leave' %}
         {% set pagination_total_name = 'congés' %}
         {% include "_pagination.html" %}
         {% endif %}
@@ -76,7 +76,7 @@
         <!-- Pagination en bas -->
         {% if leaves.has_prev or leaves.has_next or leaves.total > 0 %}
         {% set pagination = leaves %}
-        {% set route = 'leave' %}
+        {% set route = 'main.leave' %}
         {% set pagination_total_name = 'congés' %}
         {% include "_pagination.html" %}
         {% endif %}

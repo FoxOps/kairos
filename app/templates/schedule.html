@@ -38,7 +38,7 @@
             <!-- Pagination en haut + sélecteur -->
             {% if shifts.has_prev or shifts.has_next or shifts.total > 0 %}
             {% set pagination = shifts %}
-            {% set route = 'schedule' %}
+            {% set route = 'main.schedule' %}
             {% set pagination_total_name = 'shifts' %}
             {% include "_pagination.html" %}
             {% endif %}
@@ -150,7 +150,7 @@
             <!-- Pagination en bas -->
             {% if shifts.has_prev or shifts.has_next or shifts.total > 0 %}
             {% set pagination = shifts %}
-            {% set route = 'schedule' %}
+            {% set route = 'main.schedule' %}
             {% set pagination_total_name = 'shifts' %}
             {% include "_pagination.html" %}
             {% endif %}

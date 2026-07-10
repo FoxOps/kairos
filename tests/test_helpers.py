@@ -152,20 +152,14 @@ class TestCanAddShift:
         with test_app.app_context():
             shift_date = datetime(2023, 12, 2).date()  # Samedi
             can_add = can_add_shift(test_user, shift_date, "morning")
-            assert not can_add  # TODO: Fonction ne gère pas encore les congés et les shifts existants
-            assert (
-                "les shifts ne peuvent être ajoutés que du lundi au vendredi" in message
-            )
+            assert not can_add
 
     def test_can_add_shift_weekend_sunday(self, test_app, test_user):
         """Test qu'un shift ne peut pas être ajouté un dimanche."""
         with test_app.app_context():
             shift_date = datetime(2023, 12, 3).date()  # Dimanche
             can_add = can_add_shift(test_user, shift_date, "morning")
-            assert not can_add  # TODO: Fonction ne gère pas encore les congés et les shifts existants
-            assert (
-                "les shifts ne peuvent être ajoutés que du lundi au vendredi" in message
-            )
+            assert not can_add
 
     def test_can_add_shift_user_on_leave(self, test_app, test_user):
         """Test qu'un shift ne peut pas être ajouté si l'utilisateur est en congé."""
@@ -181,8 +175,7 @@ class TestCanAddShift:
 
             shift_date = leave.start_date  # Date de début du congé
             can_add = can_add_shift(test_user, shift_date, "morning")
-            assert not can_add  # TODO: Fonction ne gère pas encore les congés et les shifts existants
-            assert "l'utilisateur est en congé" in message
+            assert not can_add
 
     def test_can_add_shift_user_already_has_shift(
         self, test_app, test_user, test_shift_type
@@ -204,8 +197,7 @@ class TestCanAddShift:
 
             shift_date = shift.date
             can_add = can_add_shift(test_user, shift_date, "morning")
-            assert not can_add  # TODO: Fonction ne gère pas encore les congés et les shifts existants
-            assert "l'utilisateur a déjà un shift" in message
+            assert not can_add
 
     def test_can_add_shift_multiple_users_same_day(self, test_app, test_user, second_user):
         """Test que plusieurs utilisateurs peuvent avoir des shifts le même jour."""
@@ -213,11 +205,11 @@ class TestCanAddShift:
             shift_date = datetime(2023, 12, 1).date()  # Lundi
 
             # Ajouter un shift pour le premier utilisateur
-            can_add1, _ = can_add_shift(test_user, shift_date, "morning")
+            can_add1 = can_add_shift(test_user, shift_date, "morning")
             assert can_add1 is True
 
             # Ajouter un shift pour le deuxième utilisateur le même jour
-            can_add2, _ = can_add_shift(second_user.id, shift_date, "morning")
+            can_add2 = can_add_shift(second_user, shift_date, "morning")
             assert can_add2 is True
 
 
@@ -238,8 +230,7 @@ class TestCanAddOnCall:
             start_time = datetime(2023, 12, 2, 21, 0)  # Samedi 21h
             end_time = start_time + timedelta(days=7, hours=-14)
             can_add = can_add_oncall(test_user, start_time, end_time)
-            assert not can_add  # TODO: Fonction ne gère pas encore les congés et les shifts existants
-            assert "L'astreinte doit commencer un vendredi à 21h" in message
+            assert not can_add
 
     def test_can_add_oncall_wrong_day_monday(self, test_app, test_user):
         """Test qu'une astreinte ne peut pas être ajoutée un lundi."""
@@ -247,8 +238,7 @@ class TestCanAddOnCall:
             start_time = datetime(2023, 12, 4, 21, 0)  # Lundi 21h
             end_time = start_time + timedelta(days=7, hours=-14)
             can_add = can_add_oncall(test_user, start_time, end_time)
-            assert not can_add  # TODO: Fonction ne gère pas encore les congés et les shifts existants
-            assert "L'astreinte doit commencer un vendredi à 21h" in message
+            assert not can_add
 
     def test_can_add_oncall_wrong_hour_20h(self, test_app, test_user):
         """Test qu'une astreinte ne peut pas être ajoutée à 20h."""
@@ -256,8 +246,7 @@ class TestCanAddOnCall:
             start_time = datetime(2023, 12, 1, 20, 0)  # Vendredi 20h
             end_time = start_time + timedelta(days=7, hours=-14)
             can_add = can_add_oncall(test_user, start_time, end_time)
-            assert not can_add  # TODO: Fonction ne gère pas encore les congés et les shifts existants
-            assert "L'astreinte doit commencer un vendredi à 21h" in message
+            assert not can_add
 
     def test_can_add_oncall_wrong_hour_22h(self, test_app, test_user):
         """Test qu'une astreinte ne peut pas être ajoutée à 22h."""
@@ -265,8 +254,7 @@ class TestCanAddOnCall:
             start_time = datetime(2023, 12, 1, 22, 0)  # Vendredi 22h
             end_time = start_time + timedelta(days=7, hours=-14)
             can_add = can_add_oncall(test_user, start_time, end_time)
-            assert not can_add  # TODO: Fonction ne gère pas encore les congés et les shifts existants
-            assert "L'astreinte doit commencer un vendredi à 21h" in message
+            assert not can_add
 
     def test_can_add_oncall_user_on_leave(self, test_app, test_user):
         """Test qu'une astreinte ne peut pas être ajoutée si l'utilisateur est en congé."""
@@ -284,8 +272,7 @@ class TestCanAddOnCall:
             start_time = datetime(2023, 12, 8, 21, 0)  # Vendredi avant le congé
             end_time = start_time + timedelta(days=7, hours=-14)  # Chevauche le congé
             can_add = can_add_oncall(test_user, start_time, end_time)
-            assert not can_add  # TODO: Fonction ne gère pas encore les congés et les shifts existants
-            assert "l'utilisateur est en congé" in message
+            assert not can_add
 
     def test_can_add_oncall_overlapping(self, test_app, test_user):
         """Test qu'une astreinte ne peut pas être ajoutée si elle chevauche une autre."""
@@ -302,14 +289,11 @@ class TestCanAddOnCall:
             # Essayer d'ajouter une astreinte qui chevauche
             new_start_time = datetime(2023, 12, 1, 21, 0)  # Même date
             new_end_time = new_start_time + timedelta(days=7, hours=-14)
-            can_add, message = can_add_oncall(
-                test_user.id, new_start_time, new_end_time
-            )
-            assert not can_add  # TODO: Fonction ne gère pas encore les congés et les shifts existants
-            assert "l'utilisateur a déjà une astreinte sur cette période" in message
+            can_add = can_add_oncall(test_user, new_start_time, new_end_time)
+            assert not can_add
 
     def test_can_add_oncall_different_users_same_period(
-        self, app, test_user, second_user
+        self, test_app, test_user, second_user
     ):
         """Test que différents utilisateurs peuvent avoir des astreintes à la même période."""
         with test_app.app_context():
@@ -317,11 +301,11 @@ class TestCanAddOnCall:
             end_time = start_time + timedelta(days=7, hours=-14)
 
             # Ajouter une astreinte pour le premier utilisateur
-            can_add1, _ = can_add_oncall(test_user, start_time, end_time)
+            can_add1 = can_add_oncall(test_user, start_time, end_time)
             assert can_add1 is True
 
             # Ajouter une astreinte pour le deuxième utilisateur à la même période
-            can_add2, _ = can_add_oncall(second_user.id, start_time, end_time)
+            can_add2 = can_add_oncall(second_user, start_time, end_time)
             assert can_add2 is True
 
 
@@ -344,8 +328,7 @@ class TestCanAddLeave:
                 2023, 12, 20
             ).date()  # Date de fin avant la date de début
             can_add = can_add_leave(test_user, start_date, end_date)
-            assert not can_add  # TODO: Fonction ne gère pas encore les congés et les shifts existants
-            assert "La date de début doit être antérieure à la date de fin" in message
+            assert not can_add
 
     def test_can_add_leave_same_day(self, test_app, test_user):
         """Test qu'un congé peut être ajouté pour un seul jour."""
@@ -368,8 +351,7 @@ class TestCanAddLeave:
             db.session.commit()
 
             can_add = can_add_leave(test_user, start_date, end_date)
-            assert not can_add  # TODO: Fonction ne gère pas encore les congés et les shifts existants
-            assert "un congé existe déjà sur cette période" in message
+            assert not can_add
 
     def test_can_add_leave_user_has_shift(self, test_app, test_user, test_shift_type):
         """Test qu'un congé peut être ajouté même si l'utilisateur a un shift (les congés sont prioritaires)."""
@@ -412,7 +394,7 @@ class TestCanAddLeave:
             assert can_add is True
 
     def test_can_add_leave_different_users_overlapping(
-        self, app, test_user, second_user
+        self, test_app, test_user, second_user
     ):
         """Test que différents utilisateurs peuvent avoir des congés qui se chevauchent."""
         with test_app.app_context():
@@ -420,9 +402,9 @@ class TestCanAddLeave:
             end_date = datetime(2023, 12, 25).date()
 
             # Ajouter un congé pour le premier utilisateur
-            can_add1, _ = can_add_leave(test_user, start_date, end_date)
+            can_add1 = can_add_leave(test_user, start_date, end_date)
             assert can_add1 is True
 
             # Ajouter un congé pour le deuxième utilisateur à la même période
-            can_add2, _ = can_add_leave(second_user.id, start_date, end_date)
+            can_add2 = can_add_leave(second_user, start_date, end_date)
             assert can_add2 is True
