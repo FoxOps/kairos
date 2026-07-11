@@ -53,11 +53,23 @@ test-coverage-json: ## Exécute les tests avec couverture et génère un rapport
 # Tests spécifiques
 test-main: ## Exécute les tests pour les routes principales
 	@echo "$(YELLOW)Exécution des tests pour main.py...$(NC)"
-	python -m pytest tests/test_main_coverage.py -v
+	python -m pytest tests/integration/test_main_coverage.py -v
 
 test-dark-theme: ## Exécute les tests pour le thème sombre
 	@echo "$(YELLOW)Exécution des tests pour le thème sombre...$(NC)"
-	python -m pytest tests/test_dark_theme.py -v
+	python -m pytest tests/integration/test_dark_theme.py -v
+
+test-unit: ## Exécute uniquement les tests unitaires
+	@echo "$(YELLOW)Exécution des tests unitaires...$(NC)"
+	python -m pytest tests/unit/ -v --tb=short
+
+test-integration: ## Exécute uniquement les tests d'intégration
+	@echo "$(YELLOW)Exécution des tests d'intégration...$(NC)"
+	python -m pytest tests/integration/ -v --tb=short
+
+test-e2e: ## Exécute uniquement les tests E2E (parcours multi-requêtes)
+	@echo "$(YELLOW)Exécution des tests E2E...$(NC)"
+	python -m pytest tests/e2e/ -v --tb=short
 
 # Linting
 lint: ## Exécute Ruff et mypy pour vérifier la qualité du code
