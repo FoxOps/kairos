@@ -108,7 +108,12 @@ def oidc_callback():
 def logout():
     """Déconnexion."""
     logout_user()
-    flash("Vous avez été déconnecté.", "success")
+    if not is_basic_auth_disabled():
+        # Message pertinent uniquement pour l'auth basique : en mode OIDC,
+        # /logout redirige immédiatement vers le fournisseur OIDC (via
+        # auth.login), donc ce flash n'apparaîtrait qu'après la reconnexion,
+        # comme si la déconnexion venait de se reproduire.
+        flash("Vous avez été déconnecté.", "success")
     return redirect(url_for("auth.login"))
 
 
