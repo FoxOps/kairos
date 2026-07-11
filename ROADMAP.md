@@ -71,16 +71,16 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 | **Infrastructure** | Scripts de backup | ✅ | backup_database.py, backup_config.py |
 | **Documentation** | README.md | ✅ | Complète et à jour |
 | **Documentation** | ROADMAP.md | ✅ | Feuille de route détaillée |
-| **Documentation** | TESTING_SUMMARY.md | ❌ | À créer |
-| **Documentation** | docs/ARCHITECTURE.md | ✅ | Architecture technique complète |
-| **Documentation** | docs/API.md | ✅ | Documentation API REST |
-| **Documentation** | docs/ADMIN_GUIDE.md | ✅ | Guide administrateur |
-| **Documentation** | docs/USER_GUIDE.md | ✅ | Guide utilisateur |
-| **Documentation** | docs/QUICK_START.md | ✅ | Guide de démarrage rapide |
-| **Documentation** | docs/ERROR_HANDLING.md | ✅ | Gestion des erreurs |
-| **Documentation** | docs/PERFORMANCE_OPTIMIZATION.md | ✅ | Optimisations |
-| **Documentation** | docs/BACKUP_GUIDE.md | ✅ | Guide de sauvegarde |
-| **Documentation** | docs/ENVIRONMENT_VARIABLES.md | ✅ | Variables d'environnement |
+| **Documentation** | Docs/architecture/ARCHITECTURE.md | ✅ | Architecture technique + diagrammes Mermaid |
+| **Documentation** | Docs/api/API.md + openapi.yaml | ✅ | Documentation API + spec OpenAPI |
+| **Documentation** | Docs/guides/ADMIN_GUIDE.md | ✅ | Guide administrateur |
+| **Documentation** | Docs/guides/USER_GUIDE.md | ✅ | Guide utilisateur |
+| **Documentation** | Docs/guides/QUICK_START.md | ✅ | Guide de démarrage rapide |
+| **Documentation** | Docs/guides/FAQ.md | ✅ | Foire aux questions |
+| **Documentation** | Docs/reference/ERROR_HANDLING.md | ✅ | Gestion des erreurs |
+| **Documentation** | Docs/reference/PERFORMANCE_OPTIMIZATION.md | ✅ | Optimisations |
+| **Documentation** | Docs/deployment/BACKUP_GUIDE.md | ✅ | Guide de sauvegarde |
+| **Documentation** | Docs/reference/ENVIRONMENT_VARIABLES.md | ✅ | Variables d'environnement |
 | **UI/UX** | Thème sombre | ✅ | CSS complet + accessibilité |
 | **UI/UX** | Templates Jinja2 | ✅ | 30+ templates |
 | **UI/UX** | Skip link | ✅ | Accessibilité WCAG |
@@ -162,8 +162,8 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 | **Dockerisation** | ❌ | **Haute** | v0.6 | Conteneurs pour déploiement facile |
 | **CI/CD Pipeline** | ❌ | **Haute** | v0.6 | GitHub Actions pour tests et déploiement |
 | **Configuration via environnement** | ✅ | Haute | v0.5 | Variables d'environnement complètes (ENVIRONMENT_VARIABLES.md) |
-| **Documentation technique** | ✅ | Moyenne | v0.6 | docs/ARCHITECTURE.md, docs/API.md |
-| **Documentation utilisateur** | ✅ | Moyenne | v0.6 | docs/USER_GUIDE.md, docs/ADMIN_GUIDE.md |
+| **Documentation technique** | ✅ | Moyenne | v0.6 | Docs/architecture/, Docs/api/ |
+| **Documentation utilisateur** | ✅ | Moyenne | v0.6 | Docs/guides/USER_GUIDE.md, Docs/guides/ADMIN_GUIDE.md |
 | **Optimisation des performances** | ⚠️ | Moyenne | v0.6 | Cache, pagination, lazy loading (implémentés) |
 | **Audit de sécurité** | ✅ | **Haute** | v0.5 | SECURITY_AUDIT_REPORT.md complet |
 | **Backup automatique** | ✅ | Moyenne | v0.6 | Scripts backup_database.py et backup_config.py |
@@ -481,7 +481,8 @@ make all
 
 ## 🤝 Contribution
 
-Les contributions sont les bienvenues ! Consultez le [guide de contribution](CONTRIBUTING.md) pour :
+Les contributions sont les bienvenues ! Consultez la section
+[Contribution](README.md#-contribution) du README pour :
 
 - Signaler un bug
 - Proposer une nouvelle fonctionnalité

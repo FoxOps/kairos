@@ -16,12 +16,21 @@ python -m venv venv
 source venv/bin/activate  # Linux/macOS
 # venv\Scripts\activate  # Windows
 pip install -r requirements.txt
+python scripts/download_vendor_assets.py
+
+# Copier la configuration par défaut
+cp .env.example .env
 
 # Démarrer
 python run.py
 ```
 
 **Accès** : http://localhost:5000
+
+> ⚠️ **L'étape `cp .env.example .env` est indispensable** : sans elle,
+> `DEFAULT_ADMIN_PASSWORD` n'est pas défini et l'application génère un
+> mot de passe admin aléatoire au premier démarrage (jamais affiché nulle
+> part) au lieu du `admin123` par défaut ci-dessous.
 
 ---
 
@@ -158,8 +167,10 @@ make all
 ## 📚 Documentation Complète
 
 - [📖 Guide Utilisateur Complet](USER_GUIDE.md)
-- [🗺️ Feuille de Route](ROADMAP.md)
-- [📋 README Technique](../README.md)
+- [🛡️ Guide Administrateur](ADMIN_GUIDE.md)
+- [❓ FAQ](FAQ.md)
+- [🗺️ Feuille de Route](../../ROADMAP.md)
+- [📋 README Technique](../../README.md)
 
 ---
 

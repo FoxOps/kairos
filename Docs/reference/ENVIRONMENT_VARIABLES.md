@@ -17,12 +17,7 @@
 - [📤 Configuration de l'Export ICS](#-configuration-de-lexport-ics)
 - [📧 Configuration des Notifications](#-configuration-des-notifications)
 - [🧹 Configuration du Nettoyage Automatique](#-configuration-du-nettoyage-automatique)
-- [⚡ Configuration des Performances](#-configuration-des-performances)
-  - [Cache](#cache)
-  - [Pagination](#pagination)
-  - [Lazy Loading](#lazy-loading)
-  - [Optimisation des Requêtes](#optimisation-des-requêtes)
-  - [Monitoring des Performances](#monitoring-des-performances)
+- [⚡ Configuration du Cache](#-configuration-du-cache)
 - [🎯 Configuration par Environnement](#-configuration-par-environnement)
 - [📝 Exemples de Configuration](#-exemples-de-configuration)
 - [⚠️ Bonnes Pratiques](#️-bonnes-pratiques)
@@ -90,6 +85,25 @@ DATABASE_URL=sqlite:///:memory:
 | `SESSION_COOKIE_SAMESITE` | string | `Lax` | Politique SameSite pour les cookies. Valeurs possibles : `Lax`, `Strict`, `None` | ❌ Non |
 | `REMEMBER_COOKIE_SECURE` | booléen | `false` | Active le flag Secure pour le cookie "se souvenir de moi" | ❌ Non |
 | `PREFERRED_URL_SCHEME` | string | `http` | Schéma URL préféré. Valeurs possibles : `http`, `https` | ❌ Non |
+
+### SSO/OIDC (optionnel)
+
+| Variable | Description | Obligatoire |
+|----------|-------------|-------------|
+| `OIDC_ENABLED` | Active l'authentification OIDC (`true`/`false`) | ❌ Non |
+| `OIDC_ISSUER` | URL du fournisseur OIDC (ex. Keycloak realm) | ✅ Si `OIDC_ENABLED=true` |
+| `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | Identifiants du client OIDC | ✅ Si `OIDC_ENABLED=true` |
+| `OIDC_REDIRECT_URI` | URL de callback, doit être enregistrée côté fournisseur | ✅ Si `OIDC_ENABLED=true` |
+| `OIDC_POST_LOGOUT_REDIRECT_URI` | URL de redirection après déconnexion RP-initiated | ❌ Non |
+| `OIDC_DISABLE_BASIC_AUTH` | Masque le formulaire email/mot de passe (`true`/`false`) | ❌ Non |
+| `OIDC_EMAIL_CLAIM` / `OIDC_NAME_CLAIM` / `OIDC_USERNAME_CLAIM` | Mapping des claims du token (défauts : `email`, `name`, `preferred_username`) | ❌ Non |
+| `OIDC_GROUPS_CLAIM` / `OIDC_ROLES_CLAIM` | Synchronisation optionnelle des groupes/rôles locaux | ❌ Non |
+| `OIDC_SIGNATURE_ALGORITHMS` | Algorithme de signature du token (défaut `RS256`) | ❌ Non |
+| `OIDC_SCOPE` | Scope demandé (défaut `openid profile email`) | ❌ Non |
+| `OIDC_INTERNAL_ISSUER` | URL de l'issuer joignable par le conteneur, si différente de `OIDC_ISSUER` (déploiement Docker avec IdP sur le même réseau) | ❌ Non |
+
+Guide de configuration complet :
+[`guides/ADMIN_GUIDE.md`](../guides/ADMIN_GUIDE.md#configuration-ssooidc).
 
 ---
 
@@ -221,68 +235,34 @@ DATA_CLEANUP_SCHEDULE="0 0 1 * *"
 
 ---
 
-## ⚡ Configuration des Performances
-
-### Cache
+## ⚡ Configuration du Cache
 
 | Variable | Type | Défaut | Description | Obligatoire |
 |----------|------|--------|-------------|-------------|
-| `CACHE_TYPE` | string | `simple` | Type de cache. Valeurs possibles : `simple` (en mémoire), `redis`, `memcached` | ❌ Non |
-| `CACHE_ENABLED` | booléen | `true` | Active/désactive le cache globalement | ❌ Non |
+| `CACHE_TYPE` | string | `simple` | Type de cache. Valeurs possibles : `simple` (en mémoire), `redis`, `memcached` — lu par `app/config/base.py`, appliqué dans `cache_manager.init_cache()` | ❌ Non |
 | `CACHE_DEFAULT_TIMEOUT` | entier | `300` | Durée de vie par défaut des entrées de cache (en secondes) | ❌ Non |
-| `CACHE_MAX_ENTRIES` | entier | `1000` | Nombre maximal d'entrées pour SimpleCache | ❌ Non |
-| `CACHE_THRESHOLD` | float | `0.75` | Seuil pour déclencher le nettoyage automatique du cache (0.0 à 1.0) | ❌ Non |
-| `CACHE_KEY_PREFIX` | string | `leviia:` | Préfixe pour toutes les clés de cache | ❌ Non |
-| `CACHE_REDIS_URL` | string | `None` | URL Redis au format `redis://hote:port/db`. Exemple : `redis://localhost:6379/0` | ❌ Non |
-| `CACHE_REDIS_PASSWORD` | string | `None` | Mot de passe Redis | ❌ Non |
-| `CACHE_REDIS_DB` | entier | `0` | Numéro de base de données Redis | ❌ Non |
-| `CACHE_REDIS_SOCKET_TIMEOUT` | entier | `5` | Délai d'attente pour les opérations socket Redis (en secondes) | ❌ Non |
-| `CACHE_REDIS_CONNECT_TIMEOUT` | entier | `5` | Délai d'attente pour la connexion Redis (en secondes) | ❌ Non |
-| `CACHE_MEMCACHED_SERVERS` | JSON | `[]` | Liste des serveurs Memcached au format JSON. Exemple : `[['localhost', 11211]]` | ❌ Non |
-| `CACHE_MEMCACHED_USERNAME` | string | `None` | Nom d'utilisateur Memcached | ❌ Non |
-| `CACHE_MEMCACHED_PASSWORD` | string | `None` | Mot de passe Memcached | ❌ Non |
+| `CACHE_REDIS_URL` | string | `redis://localhost:6379/0` | URL Redis, utilisée si `CACHE_TYPE=redis` | ❌ Non |
+| `CACHE_ENABLED` | booléen | `true` | Lu par `CacheConfig` (`app/utils/cache/config.py`) mais plus consommé nulle part dans le code actuel depuis la suppression des décorateurs `cached_route`/`cache_result` en Phase 4 — actuellement sans effet | ❌ Non |
 
-### Pagination
+> Si `flask-caching` n'est pas installé (dépendance optionnelle), le cache
+> retombe automatiquement sur une implémentation dictionnaire en mémoire
+> (`SimpleDictCache`) — visible dans les logs au démarrage
+> (`Flask-Caching not available, using simple dictionary cache`).
 
-| Variable | Type | Défaut | Description | Obligatoire |
-|----------|------|--------|-------------|-------------|
-| `PAGINATION_ENABLED` | booléen | `true` | Active/désactive la pagination | ❌ Non |
-| `PAGINATION_DEFAULT_PER_PAGE` | entier | `20` | Nombre d'éléments par page par défaut | ❌ Non |
-| `PAGINATION_MAX_PER_PAGE` | entier | `100` | Nombre maximal d'éléments par page | ❌ Non |
-| `PAGINATION_PER_PAGE_OPTIONS` | JSON | `[5, 10, 20, 50, 100]` | Options disponibles pour le nombre d'éléments par page | ❌ Non |
-| `PAGINATION_STYLE` | string | `bulma` | Style des liens de pagination. Valeurs possibles : `bulma`, `simple`, `none` | ❌ Non |
-| `PAGINATION_WINDOW` | entier | `2` | Nombre de pages à afficher autour de la page courante | ❌ Non |
-| `PAGINATION_CURSOR_PAGE_SIZE` | entier | `20` | Taille de page pour la pagination par curseur | ❌ Non |
+### Variables supprimées (code mort retiré en Phase 4)
 
-### Lazy Loading
-
-| Variable | Type | Défaut | Description | Obligatoire |
-|----------|------|--------|-------------|-------------|
-| `LAZY_LOADING_ENABLED` | booléen | `true` | Active/désactive le lazy loading | ❌ Non |
-| `LAZY_LOAD_DEFAULT_BATCH_SIZE` | entier | `20` | Taille des batches par défaut pour le lazy loading | ❌ Non |
-| `LAZY_LOAD_SCROLL_THRESHOLD` | entier | `100` | Seuil en pixels pour déclencher le chargement lors du scroll | ❌ Non |
-| `LAZY_LOAD_DEBOUNCE_DELAY` | entier | `300` | Délai de debounce en millisecondes pour éviter les chargements multiples | ❌ Non |
-| `LAZY_LOAD_LOG_OPERATIONS` | booléen | `false` | Active le logging des opérations de lazy loading | ❌ Non |
-
-### Optimisation des Requêtes
-
-| Variable | Type | Défaut | Description | Obligatoire |
-|----------|------|--------|-------------|-------------|
-| `QUERY_OPTIMIZATION_USE_JOINEDLOAD` | booléen | `true` | Utilise joinedload pour éviter le problème N+1 | ❌ Non |
-| `QUERY_OPTIMIZATION_USE_SELECTINLOAD` | booléen | `true` | Utilise selectinload pour les collections | ❌ Non |
-
-### Monitoring des Performances
-
-| Variable | Type | Défaut | Description | Obligatoire |
-|----------|------|--------|-------------|-------------|
-| `PERFORMANCE_MONITORING_ENABLED` | booléen | `false` | Active le monitoring des performances | ❌ Non |
-| `SLOW_QUERY_THRESHOLD` | float | `1.0` | Seuil en secondes pour considérer une requête comme lente | ❌ Non |
-| `PERFORMANCE_WARNING_THRESHOLD` | float | `0.5` | Seuil en secondes pour les avertissements de performance | ❌ Non |
-| `PERFORMANCE_MAX_REQUESTS_STORED` | entier | `1000` | Nombre maximal de requêtes stockées en mémoire pour le monitoring | ❌ Non |
-| `PERFORMANCE_STATS_RETENTION` | entier | `3600` | Durée de conservation des statistiques (en secondes) | ❌ Non |
-| `PERFORMANCE_LOG_SLOW_QUERIES` | booléen | `true` | Active le logging des requêtes lentes | ❌ Non |
-| `PERFORMANCE_LOG_STATISTICS` | booléen | `true` | Active le logging des statistiques de performance | ❌ Non |
-| `PERFORMANCE_STATS_LOG_INTERVAL` | entier | `60` | Intervalle de logging des statistiques (en secondes) | ❌ Non |
+Les versions précédentes de ce document listaient des sections
+**Pagination**, **Lazy Loading**, **Optimisation des Requêtes** et
+**Monitoring des Performances** (`PAGINATION_*`, `LAZY_LOAD*`,
+`QUERY_OPTIMIZATION_*`, `PERFORMANCE_MONITORING_ENABLED`,
+`SLOW_QUERY_THRESHOLD`, etc.). Ces variables sont **retirées de cette
+documentation** : elles sont lues par `config_performance.py`, un module
+qui n'est importé **nulle part** dans `app/` ou `run.py` (vérifié par
+recherche exhaustive) — les fonctionnalités qu'elles configuraient
+(`app/utils/pagination/`, `app/utils/lazy_loading.py`, un module de
+monitoring de performance) ont été supprimées comme code mort en
+Phase 4 (voir `report/Phase 4: AMÉLIORATION DES TESTS.md`). Les définir
+dans `.env` n'a aujourd'hui **aucun effet**.
 
 ---
 
@@ -352,11 +332,9 @@ SESSION_COOKIE_SAMESITE=Lax
 CORS_ENABLED=false
 DEBUG_ERRORS=false
 
-# Performances
+# Cache
 CACHE_TYPE=redis
 CACHE_REDIS_URL=redis://localhost:6379/0
-CACHE_ENABLED=true
-PERFORMANCE_MONITORING_ENABLED=true
 
 # Nettoyage automatique (optionnel)
 DATA_CLEANUP_ENABLED=true
@@ -407,29 +385,12 @@ LOG_LEVEL=DEBUG
 DEBUG_ERRORS=true
 ```
 
-### Configuration avec Redis et Cache
+### Configuration avec Redis
 
 ```bash
-# Cache Redis
 CACHE_TYPE=redis
 CACHE_REDIS_URL=redis://localhost:6379/0
-CACHE_REDIS_PASSWORD=votre_motdepasse_redis
-CACHE_REDIS_DB=0
 CACHE_DEFAULT_TIMEOUT=300
-CACHE_ENABLED=true
-
-# Pagination
-PAGINATION_ENABLED=true
-PAGINATION_DEFAULT_PER_PAGE=20
-PAGINATION_MAX_PER_PAGE=100
-
-# Lazy Loading
-LAZY_LOADING_ENABLED=true
-LAZY_LOAD_DEFAULT_BATCH_SIZE=20
-
-# Monitoring
-PERFORMANCE_MONITORING_ENABLED=true
-SLOW_QUERY_THRESHOLD=1.0
 ```
 
 ---
@@ -514,10 +475,10 @@ Les variables booléennes acceptent les valeurs suivantes (insensibles à la cas
 - [Documentation Flask](https://flask.palletsprojects.com/)
 - [Documentation SQLAlchemy](https://www.sqlalchemy.org/)
 - [Documentation python-dotenv](https://saurabh-kumar.com/python-dotenv/)
-- [Configuration des performances](config_performance.py)
-- [Configuration principale](config.py)
+- [`app/config/`](../../app/config/) — configuration active, chargée par `create_app()`
+- [`.env.example`](../../.env.example) — référence canonique, toujours à jour
 
 ---
 
-*Dernière mise à jour : 2024*
-*Ce fichier documente toutes les variables d'environnement disponibles dans Leviia Schedule.*
+*Dernière mise à jour : 2026-07 (Phase 5)*
+*Ce fichier documente les variables d'environnement effectivement lues par l'application. En cas de doute, `.env.example` fait foi.*

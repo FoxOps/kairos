@@ -9,18 +9,18 @@
 
 ## 📚 Documentation
 
-**La documentation complète est disponible dans [docs/](docs/)**
+**La documentation complète est disponible dans [Docs/](Docs/)**
 
 ### 🎯 **Par où commencer ?**
 
 | Rôle | Document Recommandé | Description |
 |------|---------------------|-------------|
-| **👥 Utilisateur** | [docs/QUICK_START.md](docs/QUICK_START.md) | Guide de démarrage rapide (5 min) |
-| **🛡️ Administrateur** | [docs/ADMIN_GUIDE.md](docs/ADMIN_GUIDE.md) | Configuration, sécurité, maintenance |
-| **💻 Développeur** | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture technique, API |
-| **📖 Tous** | [docs/README.md](docs/README.md) | **Index complet** de toute la documentation |
+| **👥 Utilisateur** | [Docs/guides/QUICK_START.md](Docs/guides/QUICK_START.md) | Guide de démarrage rapide (5 min) |
+| **🛡️ Administrateur** | [Docs/guides/ADMIN_GUIDE.md](Docs/guides/ADMIN_GUIDE.md) | Configuration, sécurité, maintenance |
+| **💻 Développeur** | [Docs/architecture/ARCHITECTURE.md](Docs/architecture/ARCHITECTURE.md) | Architecture technique, diagrammes |
+| **📖 Tous** | [Docs/README.md](Docs/README.md) | **Index complet** de toute la documentation |
 
-> **💡 Pour une prise en main rapide, consultez le [Guide de Démarrage Rapide](docs/QUICK_START.md)**
+> **💡 Pour une prise en main rapide, consultez le [Guide de Démarrage Rapide](Docs/guides/QUICK_START.md)**
 
 ---
 
@@ -51,8 +51,8 @@ Elle permet de gérer les horaires de travail, les rotations d'astreinte et les 
 | **Framework Web** | Flask | 3.1.3 |
 | **ORM** | SQLAlchemy | 2.0.51 |
 | **Base de données** | SQLite (par défaut), PostgreSQL | - |
-| **Authentification** | Flask-Login, Authlib (OIDC) | 0.6.3, 1.3.0 |
-| **Export ICS** | icalendar | 7.1.3 |
+| **Authentification** | Flask-Login, Authlib (OIDC) | 0.6.3, 1.7.2 |
+| **Export ICS** | icalendar | 7.2.0 |
 
 ---
 
@@ -99,7 +99,7 @@ python run.py
 
 L'application sera accessible à l'adresse : **http://localhost:5000**
 
-> **📖 Documentation détaillée** : [docs/QUICK_START.md](docs/QUICK_START.md)
+> **📖 Documentation détaillée** : [Docs/guides/QUICK_START.md](Docs/guides/QUICK_START.md)
 
 ---
 
@@ -114,8 +114,8 @@ L'application sera accessible à l'adresse : **http://localhost:5000**
 2. **⚠️ Changez immédiatement le mot de passe** après la première connexion via le menu Profil.
 
 > **📖 Documentation complète** :
-> - [Guide Utilisateur](docs/USER_GUIDE.md) - Pour l'utilisation quotidienne
-> - [Guide Administrateur](docs/ADMIN_GUIDE.md) - Pour la configuration et la gestion
+> - [Guide Utilisateur](Docs/guides/USER_GUIDE.md) - Pour l'utilisation quotidienne
+> - [Guide Administrateur](Docs/guides/ADMIN_GUIDE.md) - Pour la configuration et la gestion
 
 ---
 
@@ -124,32 +124,33 @@ L'application sera accessible à l'adresse : **http://localhost:5000**
 ```
 leviia-schedule/
 ├── app/                    # Code source de l'application
-│   ├── __init__.py         # Initialisation Flask
-│   ├── models.py           # Modèles de la base de données
-│   ├── routes/             # Routes de l'application
-│   └── utils/              # Fonctions utilitaires
-├── config.py               # Configuration de l'application
-├── run.py                  # Point d'entrée
-├── requirements.txt        # Dépendances Python
-├── docs/                   # 📚 Documentation complète
-│   ├── README.md          # Index de la documentation (ce fichier)
-│   ├── QUICK_START.md     # Guide de démarrage rapide
-│   ├── USER_GUIDE.md      # Guide utilisateur complet
-│   ├── ADMIN_GUIDE.md     # Guide administrateur
-│   ├── ARCHITECTURE.md    # Architecture technique
-│   ├── API.md             # Documentation API REST
-│   ├── ERROR_HANDLING.md  # Gestion des erreurs
-│   └── SUMMARY.md         # Résumé technique
-└── tests/                  # Tests unitaires (522 tests)
+│   ├── __init__.py         # Initialisation Flask (factory create_app)
+│   ├── models/              # Modèles de la base de données (package)
+│   ├── repositories/        # Accès aux données
+│   ├── services/             # Logique métier
+│   ├── routes/              # Routes / blueprints Flask
+│   └── utils/               # Fonctions utilitaires (par sous-package)
+├── app/config/              # Configuration active (base/dev/prod/testing)
+├── config.py                # Configuration legacy (voir CLAUDE.md)
+├── run.py                   # Point d'entrée
+├── requirements.txt         # Dépendances Python
+├── Docs/                    # 📚 Documentation complète
+│   ├── README.md            # Index de la documentation
+│   ├── architecture/        # Architecture, ERD, diagrammes de séquence
+│   ├── api/                 # Documentation API + spec OpenAPI
+│   ├── guides/               # Guides utilisateur/admin/démarrage/FAQ
+│   ├── deployment/           # Déploiement, Docker, sauvegardes
+│   └── reference/             # Variables d'env, erreurs, performance
+└── tests/                    # Tests (unit/integration/e2e/fixtures)
 ```
 
-> **📖 Documentation technique** : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+> **📖 Documentation technique** : [Docs/architecture/ARCHITECTURE.md](Docs/architecture/ARCHITECTURE.md)
 
 ---
 
 ## 🧪 Tests et Qualité de Code
 
-> **⚠️ Statut** : **522 tests** - 515 passent, 2 échouent, 7 ignorés - Couverture : ~66%
+> **⚠️ Statut** : **768 tests**, tous passent - Couverture : ~81%
 
 ### Exécuter les tests
 
@@ -177,7 +178,7 @@ mypy app/ tests/ --ignore-missing-imports --allow-untyped-decorators
 black --check . --exclude=".git|__pycache__|instance|venv"
 ```
 
-> **📖 Documentation des tests** : [TESTING_SUMMARY.md](TESTING_SUMMARY.md)
+> **📖 Documentation des tests** : [report/Phase 4: AMÉLIORATION DES TESTS.md](report/Phase%204%3A%20AM%C3%89LIORATION%20DES%20TESTS.md)
 
 ---
 
@@ -191,7 +192,7 @@ Les contributions sont les bienvenues !
 4. Pousser vers la branche (`git push origin feature/ma-fonctionnalité`)
 5. Ouvrir une **Pull Request**
 
-> **📖 Guide de contribution** : [docs/README.md - Contribuer à la Documentation](docs/README.md#-contribuer-à-la-documentation)
+> **📖 Guide de contribution** : [Docs/README.md - Contribuer à la documentation](Docs/README.md#contribuer-à-la-documentation)
 
 ---
 
@@ -228,8 +229,8 @@ Pour toute question ou suggestion, n'hésitez pas à ouvrir une **Issue** ou une
 - **Statut** : Développement actif
 - **Stabilité** : Non recommandé pour la production
 - **Fonctionnalités** : Toutes les fonctionnalités de base sont implémentées
-- **Tests** : 522 tests unitaires (515 passent, 2 échouent, 7 ignorés)
-- **Couverture** : ~66%
+- **Tests** : 768 tests (tous passent)
+- **Couverture** : ~81%
 
 > **📖 Feuille de route** : [ROADMAP.md](ROADMAP.md)
 
