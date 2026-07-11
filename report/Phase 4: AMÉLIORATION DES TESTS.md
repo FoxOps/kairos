@@ -79,9 +79,10 @@ dans `CLAUDE.md` sans qu'une suppression n'ait été demandée jusqu'ici).
 - [x] `unit/test_services.py` + `unit/test_repositories.py` : tests réels
       pour la couche métier créée en Phase 2, jusqu'ici quasi intestée
       directement (107 tests, repositories 100%, services 90%+)
-- [x] Couverture augmentée sur les couches ciblées (repositories/services) ;
-      objectif 80% brut jugé non pertinent tel quel (voir distorsion par
-      code mort ci-dessus), pas poursuivi aveuglément
+- [x] Couverture à 80%+ : **81%** atteint (71% → 81% via suppression de
+      code mort supplémentaire + tests ciblés services/repositories/
+      routes, voir Journal). OIDC (`oidc_auth.py`/`user_manager.py`)
+      resté hors périmètre par choix explicite.
 - [x] Tests de performance (temps de réponse + détection N+1 sur
       `/schedule`)
 - [x] Tests de sécurité — **a débouché sur deux vrais correctifs, pas
@@ -282,6 +283,66 @@ Bilan de la phase :
 
 641 tests passent, 0 échec.
 
+### 2026-07-12 — Objectif 80%+ atteint (81%)
+
+Suite à la demande explicite de repasser sous 80%, exécution du plan en
+3 étapes (Step 0/1/2 discutées avec l'utilisateur avant exécution).
+
+**Étape 0 — code mort supplémentaire** (zéro appelant vérifié dans
+`app/models`, `app/auth`, `app/routes`, `app/services` + `tests/` avant
+suppression) :
+- `app/utils/security/encryption.py` (26 lignes) et `token_manager.py`
+  (16 lignes). Le classifier auto a bloqué la première tentative de
+  suppression de `token_manager.py`, `CLAUDE.md` le documentant comme
+  "ICS export tokens" — vérification approfondie montrant que
+  `User.generate_ics_token()` utilise `secrets.token_urlsafe()` en
+  direct (`app/models/user.py:137`), zéro import de `token_manager`
+  nulle part : `CLAUDE.md` était obsolète sur ce point précis. Confirmé
+  explicitement avec l'utilisateur avant de réessayer la suppression.
+- `app/utils/automation/shift_automation.py` (32 lignes, le module
+  legacy pré-`AdvancedShiftAutomation`) — `generate_shifts`,
+  `generate_oncall_rotations`, `check_shift_conflicts`,
+  `check_oncall_conflicts` sans appelant réel.
+- `security/__init__.py` et `automation/__init__.py` trimmés en
+  conséquence (sinon `ImportError` au démarrage).
+
+**Étape 1 — deux bugs réels trouvés en écrivant les tests, pas des
+artefacts** :
+1. `prometheus_metrics.py` : `after_request` utilisait `request.method`/
+   `request.path` sans jamais importer `request` au niveau du module —
+   `NameError` sur **chaque requête** dès que `PROMETHEUS_ENABLED=True`.
+   Comme ce flag n'a jamais été testé, personne ne l'avait remarqué.
+   Corrigé (import ajouté).
+2. `health.py` : `check_database()` faisait
+   `db.session.execute('SELECT 1')` — chaîne SQL brute, rejetée par
+   SQLAlchemy 2.x (`ObjectNotExecutableError`), silencieusement avalée
+   par le `except Exception` large qui l'entoure. Résultat : `/ready`
+   répondait **en permanence** `database: False` / 503, sans aucun flag
+   pour le désactiver — un vrai bug de prod, actif depuis toujours, pas
+   caché derrière une fonctionnalité optionnelle. Si ce endpoint sert de
+   readiness probe Kubernetes, le pod ne serait jamais passé "ready".
+   Corrigé avec `text('SELECT 1')`.
+
+Nouveaux tests : `test_cache_manager.py` (branches de `init_cache`,
+`SimpleDictCache`), `test_health.py`, `test_prometheus_metrics.py`
+(app dédiée avec `PROMETHEUS_ENABLED=True`, même pattern que `secure_app`
+pour CSRF en Phase 4 précédente), complément à `test_helpers.py`
+(`get_bool`/`get_int`/`format_*`/`parse_*`/`get_days_in_month` + les deux
+helpers de chevauchement jamais appelés dans les tests existants).
+
+**Étape 2 — edge cases de routes** (branches d'erreur/validation/
+exceptions non couvertes par les suites existantes, mocks
+`unittest.mock.patch` pour simuler les échecs de service) :
+`test_shift_routes_coverage.py` (29 tests), `test_leave_routes_coverage.py`
+(17), `test_oncall_routes_coverage.py` (19), `test_auth_routes_coverage.py`
+(10 — branches non-OIDC uniquement ; OIDC nécessiterait de mocker le
+client Authlib, chantier à part, hors scope).
+
+**Résultat : 768 tests passent, couverture 71% → 81%.** Objectif du
+plan atteint sans toucher `oidc_auth.py`/`user_manager.py` (236+43
+lignes non couvertes, laissées de côté comme prévu — nécessitent de
+mocker un flux OIDC complet).
+
 ---
 
-*Dernière mise à jour : 2026-07-11*
+*Dernière mise à jour : 2026-07-12*
