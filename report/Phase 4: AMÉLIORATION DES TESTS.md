@@ -236,19 +236,32 @@ un anonyme).
 
 ### 2026-07-11 — Bilan de fin de phase
 
-Couverture finale mesurée : **57%** brut (app/ + config.py), quasiment
-inchangé depuis la baseline (56%) malgré 130 tests ajoutés — le poids du
-code mort confirmé (`monitoring/` 344 lignes, `pagination/` 248,
-`prometheus_metrics.py` 86, `env_helpers.py` 47, `cache_helpers.py` 40 =
-765 lignes à 0%, jamais appelées) écrase la moyenne globale. En excluant
-ces cinq modules du calcul : **≈68%** sur le code effectivement vivant -
-chiffre plus honnête, toujours en-dessous de 80% mais sur un périmètre
-réel. L'écart restant vient surtout des routes (`auth.py` 61%,
+Couverture mesurée juste après les tests services/repositories/e2e/
+performance/sécurité : **57%** brut, quasiment inchangé depuis la
+baseline (56%) malgré 130 tests ajoutés — le poids du code mort confirmé
+(`monitoring/` 344 lignes, `pagination/` 248, `env_helpers.py` 47,
+`cache_helpers.py` 40, plus `lazy_loading.py` 785 lignes et 13 décorateurs
+morts dans `optimizations/__init__.py` découverts en creusant, tous à 0%,
+jamais appelés) écrasait la moyenne globale.
+
+**Suite à la demande "nettoie le code mort"** : les 5 modules confirmés
+supprimés (git rm, chaque référence vérifiée à zéro ailleurs dans `app/`
+avant suppression) + `optimizations/__init__.py` réduit de 14 décorateurs
+à 1 (`eager_load`, le seul réellement utilisé). `.coveragerc` nettoyé au
+passage (ses règles `omit` pointaient vers d'anciens chemins de fichiers
+plats disparus depuis la réorganisation Phase 2, elles ne matchaient plus
+rien). **Résultat : couverture globale 57% → 71%**, sans écrire un seul
+test supplémentaire - juste en retirant ~1450 lignes qui n'étaient jamais
+exécutées du dénominateur. `prometheus_metrics.py` (86 lignes, 0%) gardé
+tel quel : pas mort, juste conditionnel (`PROMETHEUS_ENABLED`) et non
+exercé par la suite de tests actuelle.
+
+L'écart restant vers 80% vient des routes (`auth.py` 61%,
 `leave_routes.py` 57%, `oncall_routes.py` 63%, `shift_routes.py` 64%,
 `dashboard_routes.py` 57%) et de `automation_admin_service.py`/
-`oncall_service.py`, non touchés par cette phase - ce serait la suite
-logique d'un futur passage de couverture, mais sortirait du périmètre de
-cette Phase 4 telle que définie.
+`oncall_service.py`, non touchés par cette phase - suite logique d'un
+futur passage de couverture, hors périmètre de cette Phase 4 telle que
+définie.
 
 Bilan de la phase :
 - Restructuration complète `unit/`/`integration/`/`e2e/`/`fixtures/`
@@ -262,6 +275,8 @@ Bilan de la phase :
   CSRF totalement absent de l'application (19 templates + 5 appels
   fetch() corrigés, vérifié en conditions réelles), fuite potentielle de
   `password_hash`/`ics_token` via `User.to_dict()`
+- ~1450 lignes de code mort confirmé supprimées (5 modules + 13
+  décorateurs inutilisés), couverture 57% → 71% sans nouveau test
 - E2E scopé en accord avec l'utilisateur (client de test Flask, pas de
   navigateur headless - infra indisponible dans cet environnement)
 
