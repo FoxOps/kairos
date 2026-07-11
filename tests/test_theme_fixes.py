@@ -63,18 +63,26 @@ class TestCentralizedJavaScript:
     """Tests pour vérifier que le JavaScript a été centralisé."""
 
     def test_script_js_exists(self, test_app):
-        """Test que script.js existe et contient le ThemeManager."""
+        """Test que main.js existe et charge le ThemeManager."""
         with test_app.app_context():
-            script_path = os.path.join(current_app.static_folder, 'js', 'script.js')
-            assert os.path.exists(script_path), f"Le fichier {script_path} n'existe pas"
+            main_path = os.path.join(current_app.static_folder, 'js', 'main.js')
+            assert os.path.exists(main_path), f"Le fichier {main_path} n'existe pas"
 
-            with open(script_path, 'r') as f:
-                script_content = f.read()
+            with open(main_path, 'r') as f:
+                main_content = f.read()
 
-            assert 'class ThemeManager' in script_content
-            assert 'applyTheme' in script_content
-            assert 'getSystemTheme' in script_content
-            assert 'getCurrentTheme' in script_content
+            assert 'ThemeManager' in main_content
+
+            theme_manager_path = os.path.join(current_app.static_folder, 'js', 'theme', 'theme-manager.js')
+            assert os.path.exists(theme_manager_path), f"Le fichier {theme_manager_path} n'existe pas"
+
+            with open(theme_manager_path, 'r') as f:
+                theme_manager_content = f.read()
+
+            assert 'class ThemeManager' in theme_manager_content
+            assert 'applyTheme' in theme_manager_content
+            assert 'getSystemTheme' in theme_manager_content
+            assert 'getCurrentTheme' in theme_manager_content
 
     def test_no_inline_js_in_base(self, test_app):
         """Test qu'il n'y a plus de JavaScript inline dans base.html."""
@@ -88,7 +96,8 @@ class TestCentralizedJavaScript:
             assert 'function getSystemTheme' not in base_template_content
             assert 'function getCurrentTheme' not in base_template_content
 
-            assert 'script.js' in base_template_content
+            assert 'js/main.js' in base_template_content
+            assert 'type="module"' in base_template_content
 
 
 class TestCSSVariables:
@@ -180,7 +189,14 @@ class TestFileStructure:
                 css_path = os.path.join(static_folder, css_file)
                 assert os.path.exists(css_path), f"Le fichier {css_path} n'existe pas"
 
-            required_js = ['js/script.js']
+            required_js = [
+                'js/main.js',
+                'js/theme/theme-manager.js',
+                'js/utils/dom.js',
+                'js/utils/date.js',
+                'js/utils/accessibility.js',
+                'js/notifications/toast.js',
+            ]
             for js_file in required_js:
                 js_path = os.path.join(static_folder, js_file)
                 assert os.path.exists(js_path), f"Le fichier {js_path} n'existe pas"
@@ -204,9 +220,10 @@ class TestFileStructure:
         assert 'vendor/fullcalendar-overrides.css' in html_content
 
     def test_js_file_included_in_base_template(self, logged_in_client):
-        """Test que script.js est inclus dans le template de base."""
+        """Test que main.js est inclus dans le template de base en tant que module."""
         response = logged_in_client.get('/')
         assert response.status_code == 200
         html_content = response.data.decode('utf-8')
 
-        assert 'script.js' in html_content
+        assert 'js/main.js' in html_content
+        assert 'type="module"' in html_content

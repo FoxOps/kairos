@@ -194,8 +194,8 @@ class TestDarkThemeTemplate:
         assert response.status_code == 200
         html_content = response.data.decode('utf-8')
 
-        assert 'script.js' in html_content
-        assert 'src="{{ url_for(\'static\', filename=\'js/script.js\') }}"' in html_content or '/static/js/script.js' in html_content
+        assert 'js/main.js' in html_content
+        assert 'type="module"' in html_content
 
         assert 'function applyTheme' not in html_content
 

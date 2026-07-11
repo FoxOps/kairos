@@ -122,8 +122,8 @@
         </div>
     </footer>
     
-    <!-- JavaScript centralise -->
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <!-- JavaScript centralise (modules ES6) -->
+    <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
     
     {% block extra_js %}{% endblock %}
 </body>

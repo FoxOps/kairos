@@ -49,15 +49,21 @@ WCAG 2.1 AA — mise de côté, cause trop de problèmes UI/UX actuellement.
 - [ ] Minification en production
 
 ### 3.2 JavaScript
-- [ ] `main.js` : point d'entrée
-- [ ] `theme/theme-manager.js`
-- [ ] `calendar/` : fullcalendar-config.js, event-handlers.js
-- [ ] `forms/` : validation.js, submission.js
-- [ ] `notifications/toast.js`
-- [ ] `utils/` : dom.js, date.js, api.js
-- [ ] Modules ES6 (import/export)
-- [ ] JSDoc
-- [ ] Tests unitaires (Jest ou Vitest) — à évaluer selon temps disponible
+- [x] `main.js` : point d'entrée
+- [x] `theme/theme-manager.js`
+- [ ] ~~`calendar/` : fullcalendar-config.js, event-handlers.js~~ — n'existe pas
+      en tant que module séparé, cf. note ci-dessous
+- [ ] ~~`forms/` : validation.js, submission.js~~ — idem, hors scope pour
+      l'instant (validation de formulaire déjà couverte par
+      `validateFormAccessible` dans `utils/accessibility.js`)
+- [x] `notifications/toast.js`
+- [x] `utils/` : dom.js, date.js, accessibility.js (pas de api.js —
+      aucun appel fetch/API centralisé n'existait dans script.js)
+- [x] Modules ES6 (import/export)
+- [x] JSDoc (conservé depuis script.js, pas de format supplémentaire ajouté)
+- [ ] Tests unitaires (Jest ou Vitest) — pas de setup JS existant dans le
+      projet (aucun package.json/node_modules pour du tooling front), non
+      fait faute de temps
 
 ### 3.3 Templates
 - [ ] Macros Jinja2 réutilisables (`_macros/forms.html`, etc.)
@@ -130,7 +136,57 @@ réelles (serveur Flask dev, login, dashboard, page shifts) : les 14
 fichiers CSS se chargent tous en 200, thème sombre et FullCalendar
 inchangés visuellement.
 
-Prochaine étape : 3.2 découpe de `script.js` (673 lignes) en modules ES6.
+### 2026-07-11 — 3.2 JavaScript terminé (périmètre réel)
+
+`app/static/js/script.js` (673 lignes) supprimé, remplacé par :
+
+```
+js/
+├── main.js                    (point d'entrée, expose window.Leviia)
+├── theme/theme-manager.js     (classe ThemeManager)
+├── utils/
+│   ├── dom.js                 (toggle/show/hide/addClass/removeClass/toggleClass)
+│   ├── date.js                (formatDate/formatTime/formatDateTime)
+│   └── accessibility.js       (annonces lecteur d'écran, focus, navigation
+│                                clavier, validation de formulaire, modale
+│                                de confirmation accessible)
+└── notifications/toast.js     (showNotification, confirmAction)
+```
+
+`base.html` charge `main.js` en `<script type="module">` au lieu du
+`<script>` classique.
+
+**Correction par rapport au plan initial (comme pour l'estimation de
+lignes)** : le plan prévoyait un dossier `calendar/` (config FullCalendar,
+handlers d'événements) et un dossier `forms/`. Ça n'existe pas dans
+`script.js` — la config FullCalendar (~576 lignes) est un `<script>` inline
+dans `index.html`, fortement templaté Jinja2 (URLs `{{ url_for(...) }}`,
+CSRF token, données utilisateur injectées côté serveur). L'extraire en
+module statique demanderait de faire transiter ces données via des
+attributs `data-*` ou un blob JSON — un chantier séparé et plus risqué,
+volontairement laissé de côté ici plutôt que bâclé. `utils/api.js` n'a pas
+été créé non plus : `script.js` ne contenait aucun appel `fetch` centralisé
+à extraire.
+
+**Vérification d'innocuité avant conversion en module** : les 35 usages de
+`Leviia.*` dans les templates (`onclick="Leviia.confirmActionAccessible(...)"`
+etc.) sont soit des attributs `onclick` (exécutés seulement au clic
+utilisateur, bien après le chargement complet de la page), soit des
+callbacks FullCalendar asynchrones dans `index.html` — aucun appel
+synchrone pendant le parsing du HTML. Un `<script type="module">` est
+différé (comme `defer`) : ça ne casse donc aucun de ces appels.
+
+Vérifié : tous les fichiers JS renvoient `Content-Type: text/javascript`
+(requis pour que le navigateur accepte les modules ES6), la chaîne
+d'imports résout correctement (`main.js` → `theme-manager.js` →
+`accessibility.js`, etc.), `node --check` ne remonte aucune erreur de
+syntaxe sur les 6 fichiers. `tests/manual_test_theme.py` mis à jour en
+parallèle des tests pytest (mêmes anciens chemins en dur).
+
+Suite complète : **511 tests passent, 0 échec**.
+
+Prochaine étape : 3.3 templates (macros Jinja2, structure HTML, SEO,
+optimisation du chargement des ressources).
 
 ---
 

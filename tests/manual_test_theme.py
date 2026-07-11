@@ -48,20 +48,29 @@ def test_file_structure():
     
     # Vérifier les fichiers CSS
     css_files = [
-        'css/dark-theme.css',
-        'css/base-styles.css',
-        'css/fullcalendar-styles.css'
+        'css/variables.css',
+        'css/base.css',
+        'css/utilities.css',
+        'css/themes/dark.css',
+        'css/vendor/fullcalendar-overrides.css',
     ]
-    
+
     print_section("Fichiers CSS")
     for css_file in css_files:
         css_path = os.path.join(static_folder, css_file)
         exists = os.path.exists(css_path)
         print_result(f"{css_file} existe", exists, f"Taille: {os.path.getsize(css_path)} octets" if exists else "")
-    
+
     # Vérifier les fichiers JS
     print_section("Fichiers JavaScript")
-    js_files = ['js/script.js']
+    js_files = [
+        'js/main.js',
+        'js/theme/theme-manager.js',
+        'js/utils/dom.js',
+        'js/utils/date.js',
+        'js/utils/accessibility.js',
+        'js/notifications/toast.js',
+    ]
     for js_file in js_files:
         js_path = os.path.join(static_folder, js_file)
         exists = os.path.exists(js_path)
@@ -83,51 +92,57 @@ def test_css_content():
     
     static_folder = os.path.join(os.path.dirname(__file__), '..', 'app', 'static')
     
-    # Vérifier base-styles.css
-    print_section("base-styles.css")
-    base_styles_path = os.path.join(static_folder, 'css', 'base-styles.css')
-    with open(base_styles_path, 'r') as f:
-        content = f.read()
-    
+    # Vérifier base.css / utilities.css / components/buttons.css
+    print_section("base.css / utilities.css / components/buttons.css")
+    with open(os.path.join(static_folder, 'css', 'base.css'), 'r') as f:
+        base_content = f.read()
+    with open(os.path.join(static_folder, 'css', 'utilities.css'), 'r') as f:
+        utilities_content = f.read()
+    with open(os.path.join(static_folder, 'css', 'components', 'buttons.css'), 'r') as f:
+        buttons_content = f.read()
+
     checks = [
-        ('.skip-link', "Classe skip-link présente"),
-        ('.min-w-180', "Classe min-w-180 présente"),
-        ('.gap-2', "Classe gap-2 présente"),
-        ('.d-none', "Classe d-none présente"),
-        ('.type-tag', "Classe type-tag présente"),
+        ('.skip-link' in base_content, "Classe skip-link présente (base.css)"),
+        ('.min-w-180' in utilities_content, "Classe min-w-180 présente (utilities.css)"),
+        ('.gap-2' in utilities_content, "Classe gap-2 présente (utilities.css)"),
+        ('.d-none' in utilities_content, "Classe d-none présente (utilities.css)"),
+        ('.type-tag' in buttons_content, "Classe type-tag présente (components/buttons.css)"),
     ]
-    
-    for selector, description in checks:
-        print_result(description, selector in content)
-    
-    # Vérifier fullcalendar-styles.css
-    print_section("fullcalendar-styles.css")
-    fc_styles_path = os.path.join(static_folder, 'css', 'fullcalendar-styles.css')
+
+    for passed, description in checks:
+        print_result(description, passed)
+
+    # Vérifier vendor/fullcalendar-overrides.css et themes/dark.css
+    print_section("vendor/fullcalendar-overrides.css / themes/dark.css")
+    fc_styles_path = os.path.join(static_folder, 'css', 'vendor', 'fullcalendar-overrides.css')
     with open(fc_styles_path, 'r') as f:
-        content = f.read()
-    
-    checks = [
-        ('.fc-event-shift', "Style fc-event-shift présent"),
-        ('.fc-event-oncall', "Style fc-event-oncall présent"),
-        ('.fc-event-leave', "Style fc-event-leave présent"),
-        ('[data-theme="dark"]', "Sélecteurs dark theme présents"),
-    ]
-    
-    for selector, description in checks:
-        print_result(description, selector in content)
-    
-    # Vérifier dark-theme.css
-    print_section("dark-theme.css")
-    dark_theme_path = os.path.join(static_folder, 'css', 'dark-theme.css')
+        fc_content = f.read()
+    dark_theme_path = os.path.join(static_folder, 'css', 'themes', 'dark.css')
     with open(dark_theme_path, 'r') as f:
+        dark_content = f.read()
+
+    checks = [
+        ('.fc-event-shift' in fc_content, "Style fc-event-shift présent"),
+        ('.fc-event-oncall' in fc_content, "Style fc-event-oncall présent"),
+        ('.fc-event-leave' in fc_content, "Style fc-event-leave présent"),
+        ('[data-theme="dark"]' in dark_content, "Sélecteurs dark theme présents"),
+    ]
+
+    for passed, description in checks:
+        print_result(description, passed)
+
+    # Vérifier variables.css
+    print_section("variables.css")
+    variables_path = os.path.join(static_folder, 'css', 'variables.css')
+    with open(variables_path, 'r') as f:
         content = f.read()
-    
+
     checks = [
         ('--bulma-grey:', "Variable --bulma-grey présente"),
         ('--bulma-grey-light:', "Variable --bulma-grey-light présente"),
         ('--bulma-grey-dark:', "Variable --bulma-grey-dark présente"),
     ]
-    
+
     for variable, description in checks:
         print_result(description, variable in content)
 
@@ -136,12 +151,12 @@ def test_js_content():
     print_header("⚡ TEST DU CONTENU JAVASCRIPT")
     
     static_folder = os.path.join(os.path.dirname(__file__), '..', 'app', 'static')
-    script_path = os.path.join(static_folder, 'js', 'script.js')
-    
-    with open(script_path, 'r') as f:
+    theme_manager_path = os.path.join(static_folder, 'js', 'theme', 'theme-manager.js')
+
+    with open(theme_manager_path, 'r') as f:
         content = f.read()
-    
-    print_section("script.js")
+
+    print_section("js/theme/theme-manager.js")
     checks = [
         ('class ThemeManager', "Classe ThemeManager présente"),
         ('applyTheme', "Fonction applyTheme présente"),
@@ -150,7 +165,7 @@ def test_js_content():
         ('localStorage', "Utilisation de localStorage présente"),
         ('prefers-color-scheme', "Support des préférences système présent"),
     ]
-    
+
     for check, description in checks:
         print_result(description, check in content)
 
@@ -167,9 +182,10 @@ def test_template_content():
         content = f.read()
     
     checks = [
-        ('base-styles.css', "base-styles.css inclus"),
-        ('dark-theme.css', "dark-theme.css inclus"),
-        ('script.js', "script.js inclus"),
+        ('css/base.css', "base.css inclus"),
+        ('themes/dark.css', "themes/dark.css inclus"),
+        ('js/main.js', "main.js inclus"),
+        ('type="module"' in content, "main.js chargé en module ES6"),
         ('function applyTheme' not in content, "Pas de fonction applyTheme inline"),
     ]
     
@@ -186,7 +202,7 @@ def test_template_content():
         content = f.read()
     
     checks = [
-        ('fullcalendar-styles.css', "fullcalendar-styles.css inclus"),
+        ('vendor/fullcalendar-overrides.css', "vendor/fullcalendar-overrides.css inclus"),
         ('min-w-180', "Classe min-w-180 utilisée"),
         ('style="min-width: 180px"' not in content, "Pas de style inline min-width"),
     ]
@@ -224,34 +240,34 @@ def test_duplicate_detection():
     
     print_section("Vérification des duplications CSS")
     
-    # Vérifier que skip-link n'est que dans base-styles.css
-    base_styles_path = os.path.join(static_folder, 'css', 'base-styles.css')
+    # Vérifier que skip-link n'est que dans base.css
+    base_styles_path = os.path.join(static_folder, 'css', 'base.css')
     base_template_path = os.path.join(template_folder, 'base.html')
-    
+
     with open(base_styles_path, 'r') as f:
         base_styles_content = f.read()
     with open(base_template_path, 'r') as f:
         base_template_content = f.read()
-    
+
     has_skip_link_in_css = '.skip-link' in base_styles_content
     has_skip_link_inline = '<style>' in base_template_content and '.skip-link' in base_template_content
-    
-    print_result("skip-link dans base-styles.css", has_skip_link_in_css)
+
+    print_result("skip-link dans base.css", has_skip_link_in_css)
     print_result("skip-link N'EST PAS inline dans base.html", not has_skip_link_inline)
-    
-    # Vérifier que FullCalendar n'est que dans fullcalendar-styles.css
-    fc_styles_path = os.path.join(static_folder, 'css', 'fullcalendar-styles.css')
+
+    # Vérifier que FullCalendar n'est que dans vendor/fullcalendar-overrides.css
+    fc_styles_path = os.path.join(static_folder, 'css', 'vendor', 'fullcalendar-overrides.css')
     index_template_path = os.path.join(template_folder, 'index.html')
-    
+
     with open(fc_styles_path, 'r') as f:
         fc_styles_content = f.read()
     with open(index_template_path, 'r') as f:
         index_template_content = f.read()
-    
+
     has_fc_in_css = '.fc-event-shift' in fc_styles_content
     has_fc_inline = '<style>' in index_template_content and '.fc-event-shift' in index_template_content
-    
-    print_result("FullCalendar dans fullcalendar-styles.css", has_fc_in_css)
+
+    print_result("FullCalendar dans vendor/fullcalendar-overrides.css", has_fc_in_css)
     print_result("FullCalendar N'EST PAS inline dans index.html", not has_fc_inline)
 
 def run_all_tests():
