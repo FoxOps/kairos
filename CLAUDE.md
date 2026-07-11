@@ -69,37 +69,43 @@ touching auth flows.
 - `config_oidc.py` (`OIDCConfig`) and `config_performance.py` are additional standalone config
   modules loaded directly by `app/__init__.py` and `app/auth/oidc_auth.py`.
 
-### Models: package shadows a legacy file
+### Models
 
 `app/models/` is a package (`base.py` defines the shared `BaseModel` with `id`/`created_at`/
 `updated_at` and CRUD helpers like `.save()`/`.update()`/`.to_dict()`; `user.py`, `shift.py`,
 `oncall.py`, `leave.py`, `automation_config.py` hold the domain models, all subclassing
-`BaseModel`). There is also a flat `app/models.py` with duplicate class definitions —
-it is **shadowed** by the `app/models/` package on every `from app.models import ...` and is dead
-code. Don't edit `app/models.py` expecting it to take effect; edit the file under `app/models/`.
+`BaseModel`).
 
 Core entities: `Group` → `User` (1:N) → `Shift` / `OnCall` / `Leave` (each 1:N from User),
 `ShiftType` → `Shift` (1:N). Composite indexes exist on `Shift(user_id, date)`,
 `Shift(date, start_time)`, `OnCall(user_id, start_time, end_time)`, and
 `Leave(user_id, start_date, end_date)` — preserve these if you touch query patterns.
 
-### Scaffolded but unused: repositories/ and services/
+### Layered architecture: repositories/ and services/
 
-`app/repositories/__init__.py` and `app/services/__init__.py` import from submodules
-(`user_repository`, `shift_service`, etc.) that **do not exist yet** — these are placeholders for
-an in-progress layered-architecture refactor (current branch: `vibe/refactor-backend-*`). Routes
-currently talk to models/utils directly, not through these layers. Importing `app.repositories`
-or `app.services` as-is will raise `ImportError`; either implement the missing submodules or treat
-these packages as not-yet-wired-up.
+`app/repositories/` (data access — `UserRepository`, `GroupRepository`, `ShiftRepository`,
+`ShiftTypeRepository`, `OnCallRepository`, `LeaveRepository`) and `app/services/` (business logic —
+`UserService`, `GroupService`, `ShiftService`, `ShiftTypeService`, `OnCallService`, `LeaveService`,
+`ExportService`, `ScheduleService`, `AutomationAdminService`) are implemented and wired up. Routes
+in `app/routes/` (both the `main` and `admin` blueprints, split across multiple files — e.g.
+`shift_routes.py`, `admin_user_routes.py` — that all register onto the same blueprint object
+defined in `main.py`/`admin.py`) parse the request, call a service, and turn the result into a
+flash/redirect/JSON response; services call repositories for data access and encapsulate
+validation (e.g. `can_add_shift`) and cross-cutting effects (e.g. shift rebalance after a leave
+change). `app/utils/automation/` (`OnCallAutomation`, `ShiftAutomation`, `AdvancedShiftAutomation`)
+is a pre-existing business-logic layer used directly by services rather than being duplicated.
 
 ### utils/ layout
 
 `app/utils/` is organized by concern, each a subpackage: `automation/` (shift/on-call
 auto-assignment and business rules — `advanced_shift_automation.py` is the biggest piece),
-`cache/`, `export/` (`ics_exporter.py`), `security/` (`token_manager.py` — ICS export tokens),
-`logging/` (multi-handler setup: app/error/http/audit/sql/auth log files, optional syslog,
-sensitive-data filtering), plus flatter single-purpose modules (`encryption.py`,
-`health.py` — k8s health endpoints, `prometheus_metrics.py`, `pagination.py`).
+`cache/`, `export/` (`ics_exporter.py`), `security/` (`token_manager.py` — ICS export tokens;
+`encryption.py` — unused), `logging/` (multi-handler setup: app/error/http/audit/sql/auth log
+files, optional syslog, sensitive-data filtering), `optimizations/` (`eager_load`, `cached_route`,
+etc. — actively used by routes), `helpers/` (`common_helpers.py` — actively used; `env_helpers.py`
+— unused, not exported from the package `__init__.py` since it redefines `get_bool`/`get_int`
+already provided by `common_helpers.py`), `monitoring/` and `pagination/` (both unused), plus
+`health.py` (k8s health endpoints) and `prometheus_metrics.py`.
 
 ### Auth
 
