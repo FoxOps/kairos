@@ -13,8 +13,8 @@ class TestCalendarWindow:
     def test_calendar_window_returns_tuple(self, test_app):
         """Test que _calendar_window retourne un tuple de 2 dates."""
         with test_app.app_context():
-            from app.routes.main import _calendar_window
-            start, end = _calendar_window()
+            from app.services.schedule_service import ScheduleService
+            start, end = ScheduleService.calendar_window()
             assert isinstance(start, datetime)
             assert isinstance(end, datetime)
             assert end > start
@@ -22,8 +22,8 @@ class TestCalendarWindow:
     def test_calendar_window_180_days(self, test_app):
         """Test que la fenêtre du calendrier est de 180 jours."""
         with test_app.app_context():
-            from app.routes.main import _calendar_window, CALENDAR_WINDOW_DAYS
-            start, end = _calendar_window()
+            from app.services.schedule_service import ScheduleService, CALENDAR_WINDOW_DAYS
+            start, end = ScheduleService.calendar_window()
             now = datetime.now()
             expected_start = now - timedelta(days=CALENDAR_WINDOW_DAYS)
             expected_end = now + timedelta(days=CALENDAR_WINDOW_DAYS)
@@ -38,14 +38,14 @@ class TestBuildCalendarEvents:
     def test_build_calendar_events_empty(self, test_app):
         """Test que _build_calendar_events retourne une liste vide avec des entrées vides."""
         with test_app.app_context():
-            from app.routes.main import _build_calendar_events
-            events = _build_calendar_events([], [], [])
+            from app.services.schedule_service import ScheduleService
+            events = ScheduleService.build_calendar_events([], [], [])
             assert events == []
 
     def test_build_calendar_events_with_shift(self, test_app, test_user, test_shift_type):
         """Test que _build_calendar_events crée des événements pour les shifts."""
         with test_app.app_context():
-            from app.routes.main import _build_calendar_events
+            from app.services.schedule_service import ScheduleService
             now = datetime.now()
             shift = Shift(
                 user_id=test_user.id,
@@ -56,7 +56,7 @@ class TestBuildCalendarEvents:
                 user=test_user,
                 shift_type=test_shift_type
             )
-            events = _build_calendar_events([shift], [], [])
+            events = ScheduleService.build_calendar_events([shift], [], [])
             assert len(events) == 1
             assert events[0]['className'] == 'fc-event-shift'
             assert test_user.name in events[0]['title']
@@ -64,7 +64,7 @@ class TestBuildCalendarEvents:
     def test_build_calendar_events_with_oncall(self, test_app, test_user):
         """Test que _build_calendar_events crée des événements pour les astreintes."""
         with test_app.app_context():
-            from app.routes.main import _build_calendar_events
+            from app.services.schedule_service import ScheduleService
             now = datetime.now()
             oncall = OnCall(
                 user_id=test_user.id,
@@ -72,7 +72,7 @@ class TestBuildCalendarEvents:
                 end_time=now + timedelta(days=8),
                 user=test_user
             )
-            events = _build_calendar_events([], [oncall], [])
+            events = ScheduleService.build_calendar_events([], [oncall], [])
             assert len(events) == 1
             assert events[0]['className'] == 'fc-event-oncall'
             assert 'Astreinte' in events[0]['title']
@@ -80,14 +80,14 @@ class TestBuildCalendarEvents:
     def test_build_calendar_events_with_leave(self, test_app, test_user):
         """Test que _build_calendar_events crée des événements pour les congés."""
         with test_app.app_context():
-            from app.routes.main import _build_calendar_events
+            from app.services.schedule_service import ScheduleService
             leave = Leave(
                 user_id=test_user.id,
                 start_date=date.today() + timedelta(days=1),
                 end_date=date.today() + timedelta(days=5),
                 user=test_user
             )
-            events = _build_calendar_events([], [], [leave])
+            events = ScheduleService.build_calendar_events([], [], [leave])
             assert len(events) == 1
             assert events[0]['className'] == 'fc-event-leave'
             assert events[0]['allDay'] is True

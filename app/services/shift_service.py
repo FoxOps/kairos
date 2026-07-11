@@ -11,7 +11,7 @@ from typing import List, Optional, Tuple
 
 from app import db
 from app.models import Shift, ShiftType, User
-from app.repositories.shift_repository import ShiftRepository, ShiftTypeRepository
+from app.repositories.shift_repository import ShiftRepository
 from app.utils.helpers import can_add_shift
 
 

@@ -151,9 +151,9 @@ class TestCalendarFunctions:
 
     def test_calendar_window(self, test_app):
         """Test _calendar_window."""
-        from app.routes.main import _calendar_window, CALENDAR_WINDOW_DAYS
+        from app.services.schedule_service import ScheduleService, CALENDAR_WINDOW_DAYS
         
-        start, end = _calendar_window()
+        start, end = ScheduleService.calendar_window()
         assert isinstance(start, datetime)
         assert isinstance(end, datetime)
         
@@ -166,14 +166,14 @@ class TestCalendarFunctions:
 
     def test_build_calendar_events_empty(self, test_app):
         """Test _build_calendar_events avec des listes vides."""
-        from app.routes.main import _build_calendar_events
+        from app.services.schedule_service import ScheduleService
         
-        events = _build_calendar_events([], [], [])
+        events = ScheduleService.build_calendar_events([], [], [])
         assert events == []
 
     def test_build_calendar_events_with_data(self, test_app, test_user, test_shift_type):
         """Test _build_calendar_events avec des données."""
-        from app.routes.main import _build_calendar_events
+        from app.services.schedule_service import ScheduleService
         
         start_time = datetime.now() + timedelta(days=1)
         shift = Shift(
@@ -186,6 +186,6 @@ class TestCalendarFunctions:
             shift_type=test_shift_type,
         )
         
-        events = _build_calendar_events([shift], [], [])
+        events = ScheduleService.build_calendar_events([shift], [], [])
         assert len(events) == 1
         assert events[0]["title"] == f"{test_user.name} - {test_shift_type.label}"

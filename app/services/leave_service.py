@@ -7,7 +7,7 @@ thin: they parse the request, call this service, and turn the result
 into a flash message / redirect / JSON response.
 """
 
-from datetime import date, datetime
+from datetime import date
 from typing import List, Optional, Tuple
 
 from app import db
