@@ -83,21 +83,31 @@ venv\Scripts\activate
 
 ```bash
 pip install -r requirements.txt
+python scripts/download_vendor_assets.py
 ```
 
 #### 4. Configurer l'application
 
-Créer un fichier `.env` à la racine du projet :
+Copiez le fichier d'exemple, qui contient déjà des valeurs de
+développement fonctionnelles (dont `DEFAULT_ADMIN_PASSWORD=admin123`,
+sans quoi un mot de passe admin aléatoire non affiché serait généré) :
+
+```bash
+cp .env.example .env
+```
+
+Variables à connaître pour une première installation (toutes déjà
+présentes dans `.env.example`, à ajuster si besoin) :
 
 ```bash
 # Clé secrète (générer une nouvelle pour chaque installation)
 SECRET_KEY=votre-cle-secrete-ici
 
 # Configuration de la base de données (SQLite par défaut)
-SQLALCHEMY_DATABASE_URI='sqlite:///app.db'
+DATABASE_URL=sqlite:///app.db
 
 # Désactiver l'authentification (UNIQUEMENT pour le développement)
-# LOGIN_DISABLED=True
+LOGIN_DISABLED=false
 ```
 
 Pour générer une clé secrète sécurisée :
@@ -106,24 +116,22 @@ Pour générer une clé secrète sécurisée :
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-#### 5. Initialiser la base de données
+Liste complète des variables : voir
+[`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md).
+
+#### 5. Démarrer l'application
 
 ```bash
 python run.py
 ```
 
-> **Note** : La première exécution créera automatiquement :
+> **Note** : La première exécution créera automatiquement (voir
+> `run.py::create_default_data`) :
 > - Un utilisateur administrateur par défaut
-> - Email : `admin@leviia.local`
-> - Mot de passe : `admin123`
+>   (email `DEFAULT_ADMIN_EMAIL`, mot de passe `DEFAULT_ADMIN_PASSWORD` —
+>   `admin@leviia.local` / `admin123` avec les valeurs de `.env.example`)
 > - Un groupe par défaut
 > - Les types de shifts par défaut (matin, après-midi, soirée)
-
-#### 6. Démarrer l'application
-
-```bash
-python run.py
-```
 
 L'application sera accessible à l'adresse : **http://localhost:5000**
 
@@ -138,9 +146,9 @@ L'application sera accessible à l'adresse : **http://localhost:5000**
    sudo -u postgres createuser leviia_user
    ```
 
-2. Modifiez la configuration :
+2. Modifiez la configuration dans `.env` :
    ```bash
-   SQLALCHEMY_DATABASE_URI='postgresql://leviia_user:password@localhost/leviia'
+   DATABASE_URL=postgresql://leviia_user:password@localhost/leviia
    ```
 
 3. Installez le driver PostgreSQL :
@@ -148,14 +156,19 @@ L'application sera accessible à l'adresse : **http://localhost:5000**
    pip install psycopg2-binary
    ```
 
+Voir aussi [`deployment/DEPLOYMENT_ADVANCED.md`](../deployment/DEPLOYMENT_ADVANCED.md)
+pour une configuration PostgreSQL de production complète.
+
 #### Variables d'environnement
 
 | Variable | Description | Valeur par défaut |
 |----------|-------------|------------------|
-| `SECRET_KEY` | Clé secrète pour la sécurité | Générée aléatoirement |
-| `SQLALCHEMY_DATABASE_URI` | URI de la base de données | `sqlite:///app.db` |
-| `LOGIN_DISABLED` | Désactive l'authentification | `False` |
+| `SECRET_KEY` | Clé secrète pour la sécurité | Générée aléatoirement si absente |
+| `DATABASE_URL` | URI de la base de données | `sqlite:///app.db` |
+| `LOGIN_DISABLED` | Désactive l'authentification (dev uniquement) | `false` |
 | `LOG_LEVEL` | Niveau de journalisation | `INFO` |
+
+Liste complète : [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md).
 
 ---
 
@@ -457,7 +470,16 @@ Un shift représente une période de travail attribuée à un utilisateur pour u
 
 ### Modifier un shift
 
-> ⚠️ **Fonctionnalité non implémentée directement** : Pour modifier un shift, supprimez-le et créez-en un nouveau.
+**Administrateur uniquement.** Sur le calendrier de la page d'accueil,
+activez le **mode édition** puis glissez-déposez le shift vers sa
+nouvelle date/heure, ou redimensionnez-le pour changer sa durée. Le
+changement est enregistré immédiatement (pas de bouton "Enregistrer"
+séparé).
+
+Il n'existe pas de formulaire de modification dédié (pas de page
+"Modifier ce shift") — seul le glisser-déposer sur le calendrier permet
+une modification directe. Sinon, supprimez le shift et créez-en un
+nouveau via **Planning > Ajouter un shift**.
 
 ### Supprimer un shift
 
@@ -535,7 +557,10 @@ Une astreinte (on-call) est une période pendant laquelle un utilisateur est res
 
 ### Modifier une astreinte
 
-> ⚠️ **Fonctionnalité non implémentée directement** : Pour modifier une astreinte, supprimez-la et créez-en une nouvelle.
+**Administrateur uniquement.** Comme pour les shifts : activez le mode
+édition sur le calendrier de la page d'accueil, puis glissez-déposez
+l'astreinte. Pas de formulaire de modification dédié — sinon, supprimez
+et recréez-la via **Astreintes > Ajouter une astreinte**.
 
 ### Supprimer une astreinte
 
@@ -613,15 +638,26 @@ Un congé représente une période d'absence d'un utilisateur. Il peut s'agir de
 
 L'application vérifie automatiquement :
 - ✅ La date de début doit être antérieure ou égale à la date de fin
-- ✅ Les dates doivent être dans le futur ou aujourd'hui
-- ❌ Impossible d'ajouter un congé qui chevauche un shift existant
-- ❌ Impossible d'ajouter un congé qui chevauche une astreinte existante
+- ❌ Impossible d'ajouter un congé qui chevauche un **autre congé existant**
+  du même utilisateur
 
-> 💡 **Astuce** : Si vous devez ajouter un congé qui chevauche un shift, supprimez d'abord le shift concerné.
+Aucune autre restriction n'est appliquée par l'application : les congés
+dans le passé sont acceptés, et un congé peut tout à fait chevaucher un
+shift ou une astreinte déjà planifiés.
+
+> 💡 **Important** : si un congé chevauche des shifts existants,
+> l'application **rééquilibre automatiquement le planning** (les shifts
+> concernés sont recalculés/réassignés) plutôt que de bloquer la
+> création du congé. Un message indique le nombre de shifts recalculés
+> après l'ajout.
 
 ### Modifier un congé
 
-> ⚠️ **Fonctionnalité non implémentée directement** : Pour modifier un congé, supprimez-le et créez-en un nouveau.
+Le glisser-déposer sur le calendrier (mode édition) n'est activé que
+pour les administrateurs, y compris pour les congés d'un utilisateur
+normal. Il n'y a pas de formulaire de modification dédié : pour changer
+les dates d'un congé, supprimez-le et créez-en un nouveau via
+**Congés > Ajouter un congé**.
 
 ### Supprimer un congé
 
@@ -899,77 +935,8 @@ Depuis le tableau de bord, vous pouvez accéder rapidement à :
 
 ## ❓ FAQ et Dépannage
 
-### Questions Fréquentes
-
-#### Q: Comment réinitialiser mon mot de passe ?
-**R:** Contactez votre administrateur. La fonctionnalité de réinitialisation automatique n'est pas encore implémentée.
-
-#### Q: Je ne vois pas mes shifts dans le calendrier
-**R:** Vérifiez que :
-1. Vous êtes connecté avec le bon compte
-2. Vos shifts sont bien attribués à votre utilisateur
-3. La période sélectionnée dans le calendrier couvre vos shifts
-
-#### Q: Je ne peux pas ajouter un shift pour un utilisateur
-**R:** Vérifiez que :
-1. L'utilisateur appartient à un groupe qui participe au planning
-2. Vous êtes administrateur (seuls les admins peuvent ajouter des shifts)
-3. Le type de shift existe bien
-
-#### Q: Je ne peux pas ajouter un congé
-**R:** Vérifiez que :
-1. Vous êtes administrateur OU vous essayez d'ajouter un congé pour vous-même
-2. Les dates sont valides (début ≤ fin)
-3. Le congé ne chevauche pas un shift ou une astreinte existante
-
-#### Q: L'export ICS ne fonctionne pas
-**R:** Vérifiez que :
-1. Votre token ICS est valide (régénérez-le si nécessaire)
-2. L'URL est correcte (scope=my pour votre planning, scope=all pour tous)
-3. Votre application de calendrier supporte les abonnements ICS
-
-#### Q: Je veux modifier un shift existant
-**R:** Actuellement, vous devez supprimer le shift et en créer un nouveau. La modification directe sera implémentée dans une future version.
-
-#### Q: Comment désactiver l'authentification pour le développement ?
-**R:** Dans le fichier `config.py`, ajoutez :
-```python
-LOGIN_DISABLED = True
-```
-> ⚠️ **Ne jamais utiliser cette option en production !**
-
-### Problèmes Techniques
-
-#### Erreur 404 (Page non trouvée)
-- Vérifiez que l'URL est correcte
-- Vérifiez que vous êtes connecté
-- Vérifiez que vous avez les permissions nécessaires
-
-#### Erreur 500 (Erreur serveur)
-- Vérifiez les logs de l'application
-- Contactez l'administrateur
-- Signalez le bug sur GitHub avec les étapes de reproduction
-
-#### La base de données ne se crée pas
-- Vérifiez que le dossier `instance/` existe et est accessible en écriture
-- Vérifiez que SQLite est installé
-- Essayez de créer manuellement le dossier : `mkdir -p instance`
-
-#### Les modifications ne sont pas enregistrées
-- Vérifiez que vous avez cliqué sur **"Enregistrer"** ou **"Valider"**
-- Vérifiez que vous avez les permissions nécessaires
-- Vérifiez qu'il n'y a pas d'erreur de validation (champs obligatoires, formats invalides)
-
-### Messages d'erreur courants
-
-| Message | Cause | Solution |
-|---------|-------|----------|
-| "Tous les champs sont obligatoires" | Un champ requis est vide | Remplissez tous les champs marqués comme obligatoires |
-| "Format de date invalide" | La date n'est pas au format AAAA-MM-JJ | Utilisez le format `2026-06-15` |
-| "L'astreinte doit commencer un vendredi" | La date de début n'est pas un vendredi | Sélectionnez un vendredi |
-| "Impossible de supprimer... des données sont associées" | L'élément a des dépendances | Supprimez d'abord les données associées |
-| "Email ou mot de passe incorrect" | Identifiants invalides | Vérifiez votre email et mot de passe |
-| "Vous ne pouvez ajouter des congés que pour vous-même" | Tentative d'ajout de congé pour un autre utilisateur | Connectez-vous en tant qu'admin ou ajoutez le congé pour vous-même |
+Déplacé dans un document dédié : [`FAQ.md`](FAQ.md) (questions
+fréquentes, messages d'erreur courants, problèmes techniques).
 
 ---
 
@@ -999,26 +966,24 @@ Pour signaler un bug :
 
 Pour demander une nouvelle fonctionnalité :
 
-1. **Vérifiez qu'elle n'est pas déjà prévue** : Consultez la [Feuille de Route](ROADMAP.md)
+1. **Vérifiez qu'elle n'est pas déjà prévue** : Consultez la [Feuille de Route](../../ROADMAP.md)
 2. **Ouvrez une Discussion** : [Créer une nouvelle Discussion](https://github.com/FoxOps/leviia-schedule/discussions/new)
 3. **Décrivez votre besoin** : Expliquez en détail la fonctionnalité souhaitée et son utilité
 
 ### Contribuer au projet
 
-Les contributions sont les bienvenues ! Consultez le [Guide de Contribution](CONTRIBUTING.md) pour :
-- Signaler un bug
-- Proposer une fonctionnalité
-- Soumettre une Pull Request
-- Participer aux discussions
+Les contributions sont les bienvenues ! Voir la section "Contribution" du
+[README](../../README.md#-contribution) pour la marche à suivre (fork,
+branche, commit, Pull Request).
 
 ---
 
 ## 📚 Ressources Additionnelles
 
-- [README.md](../README.md) - Documentation technique et installation
-- [ROADMAP.md](../ROADMAP.md) - Feuille de route du développement
-- [TESTING_SUMMARY.md](../TESTING_SUMMARY.md) - Résumé des tests
-- [LICENSE](../LICENSE) - Licence CeCILL v2.1
+- [README.md](../../README.md) - Documentation technique et installation
+- [ROADMAP.md](../../ROADMAP.md) - Feuille de route du développement
+- [Rapport Phase 4 : Amélioration des tests](../../report/Phase%204%3A%20AM%C3%89LIORATION%20DES%20TESTS.md) - État des tests et de la couverture
+- [LICENSE](../../LICENSE) - Licence CeCILL v2.1
 - [Dépôt GitHub](https://github.com/FoxOps/leviia-schedule) - Code source et issues
 
 ---
