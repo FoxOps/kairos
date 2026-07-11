@@ -26,6 +26,7 @@ from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
 from flask_talisman import Talisman
 from flask_cors import CORS
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Flask-Limiter avertit à chaque init sans backend partagé (redis/memcached).
 # Choix assumé : stockage en mémoire (mono-process), cf. discussion équipe.
@@ -129,7 +130,15 @@ def create_app(config_object: Optional[str] = None):
     config_class = getattr(config_module, class_name)
     
     app.config.from_object(config_class)
-    
+
+    # Faire confiance aux en-têtes X-Forwarded-* d'un unique reverse proxy
+    # (nginx/caddy en prod). Sans ça, Talisman/force_https ne voit jamais
+    # une requête comme "sécurisée" même quand le TLS est terminé en amont,
+    # et boucle sur des redirections https. Sans proxy devant l'app
+    # (dev/test), ces en-têtes ne sont simplement jamais présents et ce
+    # middleware ne change rien.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
     # Configurer le logging via un module dédié
     from app.utils.logging import configure_logging
     configure_logging(app)

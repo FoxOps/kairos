@@ -187,7 +187,19 @@ class Config:
 
     # Security Configuration
     SECURITY_PASSWORD_SALT: str = os.environ.get("SECURITY_PASSWORD_SALT") or secrets.token_urlsafe(16)
-    
+
+    # Talisman (en-têtes de sécurité HTTP). force_https redirige vers https://
+    # à chaque requête : à activer uniquement derrière un reverse proxy qui
+    # termine le TLS (sinon boucle sur une redirection que rien ne sert).
+    # Note: create_app() charge cette classe de base par défaut, quel que
+    # soit FLASK_ENV - ces clés doivent donc être lues ici, pas seulement
+    # dans ProductionConfig/TestingConfig, pour que la variable d'env ait un
+    # effet réel en déploiement.
+    TALISMAN_FORCE_HTTPS: bool = get_bool_from_env("TALISMAN_FORCE_HTTPS", False)
+    TALISMAN_STRICT_TRANSPORT_SECURITY: bool = get_bool_from_env(
+        "TALISMAN_STRICT_TRANSPORT_SECURITY", False
+    )
+
     # Cache Configuration
     CACHE_TYPE: str = os.environ.get("CACHE_TYPE") or "simple"
     CACHE_DEFAULT_TIMEOUT: int = get_int_from_env("CACHE_DEFAULT_TIMEOUT", 300)
