@@ -3,7 +3,7 @@ Tests pour les fonctions helpers (validation des conflits).
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from app.utils.helpers import (
     can_add_shift,
     can_add_oncall,
@@ -14,6 +14,16 @@ from app.utils.helpers import (
     _get_overlapping_leave,
     _get_overlapping_shift,
     _get_overlapping_oncall,
+    get_bool,
+    get_int,
+    format_date,
+    format_datetime,
+    format_time,
+    parse_date,
+    parse_datetime,
+    get_current_year,
+    get_current_month,
+    get_days_in_month,
 )
 from app.models import Shift, OnCall, Leave, Group, User, ShiftType
 from app import db
@@ -408,3 +418,133 @@ class TestCanAddLeave:
             # Ajouter un congé pour le deuxième utilisateur à la même période
             can_add2 = can_add_leave(second_user, start_date, end_date)
             assert can_add2 is True
+
+
+class TestGetBool:
+    def test_true_variants(self, monkeypatch):
+        for v in ("true", "1", "yes", "y", "on", "TRUE", "On"):
+            monkeypatch.setenv("TEST_BOOL", v)
+            assert get_bool("TEST_BOOL") is True
+
+    def test_false_variants(self, monkeypatch):
+        for v in ("false", "0", "no", "n", "off", "FALSE"):
+            monkeypatch.setenv("TEST_BOOL", v)
+            assert get_bool("TEST_BOOL") is False
+
+    def test_missing_var_returns_default(self, monkeypatch):
+        monkeypatch.delenv("TEST_BOOL_MISSING", raising=False)
+        assert get_bool("TEST_BOOL_MISSING", default=True) is True
+        assert get_bool("TEST_BOOL_MISSING", default=False) is False
+
+    def test_unrecognized_value_returns_default(self, monkeypatch):
+        monkeypatch.setenv("TEST_BOOL", "bogus")
+        assert get_bool("TEST_BOOL", default=True) is True
+
+
+class TestGetInt:
+    def test_valid_int(self, monkeypatch):
+        monkeypatch.setenv("TEST_INT", "42")
+        assert get_int("TEST_INT") == 42
+
+    def test_missing_var_returns_default(self, monkeypatch):
+        monkeypatch.delenv("TEST_INT_MISSING", raising=False)
+        assert get_int("TEST_INT_MISSING", default=7) == 7
+
+    def test_invalid_value_returns_default(self, monkeypatch):
+        monkeypatch.setenv("TEST_INT", "not-a-number")
+        assert get_int("TEST_INT", default=99) == 99
+
+
+class TestFormatFunctions:
+    def test_format_date(self):
+        assert format_date(date(2026, 7, 12)) == "2026-07-12"
+
+    def test_format_date_none(self):
+        assert format_date(None) == ""
+
+    def test_format_datetime(self):
+        assert format_datetime(datetime(2026, 7, 12, 9, 30, 0)) == "2026-07-12 09:30:00"
+
+    def test_format_datetime_none(self):
+        assert format_datetime(None) == ""
+
+    def test_format_time(self):
+        assert format_time(time(9, 30)) == "09:30"
+
+    def test_format_time_none(self):
+        assert format_time(None) == ""
+
+
+class TestParseFunctions:
+    def test_parse_date_valid(self):
+        assert parse_date("2026-07-12") == date(2026, 7, 12)
+
+    def test_parse_date_invalid(self):
+        assert parse_date("not-a-date") is None
+
+    def test_parse_date_none(self):
+        assert parse_date(None) is None
+
+    def test_parse_datetime_valid(self):
+        assert parse_datetime("2026-07-12 09:30:00") == datetime(2026, 7, 12, 9, 30, 0)
+
+    def test_parse_datetime_invalid(self):
+        assert parse_datetime("not-a-datetime") is None
+
+
+class TestDateHelpers:
+    def test_get_current_year(self):
+        assert get_current_year() == datetime.now().year
+
+    def test_get_current_month(self):
+        assert get_current_month() == datetime.now().month
+
+    def test_get_days_in_month_regular(self):
+        assert get_days_in_month(2026, 4) == 30
+
+    def test_get_days_in_month_december(self):
+        assert get_days_in_month(2026, 12) == 31
+
+    def test_get_days_in_month_leap_february(self):
+        assert get_days_in_month(2024, 2) == 29
+
+
+class TestOverlappingShiftAndOnCallHelpers:
+    def test_get_overlapping_shift_found(self, test_app, test_user, test_shift_type):
+        with test_app.app_context():
+            shift_date = date(2026, 7, 13)
+            shift = Shift(
+                user_id=test_user.id,
+                shift_type_id=test_shift_type.id,
+                start_time=datetime.combine(shift_date, datetime.min.time()),
+                end_time=datetime.combine(shift_date, datetime.max.time()),
+                date=shift_date,
+            )
+            db.session.add(shift)
+            db.session.commit()
+
+            result = _get_overlapping_shift(test_user.id, date(2026, 7, 10), date(2026, 7, 15))
+            assert result is not None
+            assert result.id == shift.id
+
+    def test_get_overlapping_shift_none(self, test_app, test_user):
+        with test_app.app_context():
+            result = _get_overlapping_shift(test_user.id, date(2026, 7, 10), date(2026, 7, 15))
+            assert result is None
+
+    def test_get_overlapping_oncall_found(self, test_app, test_user):
+        with test_app.app_context():
+            start = datetime(2026, 7, 10, 21, 0)
+            end = start + timedelta(days=7, hours=-14)
+            oncall = OnCall(user_id=test_user.id, start_time=start, end_time=end)
+            db.session.add(oncall)
+            db.session.commit()
+
+            result = _get_overlapping_oncall(test_user.id, date(2026, 7, 9), date(2026, 7, 16))
+            assert result is not None
+            assert result.id == oncall.id
+
+    def test_get_overlapping_oncall_none(self, test_app, test_user):
+        with test_app.app_context():
+            result = _get_overlapping_oncall(test_user.id, date(2026, 7, 9), date(2026, 7, 16))
+            assert result is None
