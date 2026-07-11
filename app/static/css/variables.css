@@ -1,0 +1,54 @@
+/* ============================================
+   LEVIIA SCHEDULE - VARIABLES CSS GLOBALES
+   ============================================
+
+   Mappe les variables Bulma vers des noms d'application stables. Bulma
+   gère déjà le changement clair/sombre des `--bulma-*` sous-jacentes
+   (via [data-theme=dark] / prefers-color-scheme) : ce fichier n'a donc
+   besoin d'être défini qu'une fois, sans variante par thème.
+   ============================================ */
+
+:root {
+    --color-primary: var(--bulma-primary);
+    --color-primary-light: var(--bulma-primary-light);
+    --color-primary-dark: var(--bulma-primary-dark);
+
+    --color-info: var(--bulma-info);
+    --color-info-light: var(--bulma-info-light);
+    --color-info-dark: var(--bulma-info-dark);
+
+    --color-success: var(--bulma-success);
+    --color-success-light: var(--bulma-success-light);
+    --color-success-dark: var(--bulma-success-dark);
+
+    --color-warning: var(--bulma-warning);
+    --color-warning-light: var(--bulma-warning-light);
+    --color-warning-dark: var(--bulma-warning-dark);
+
+    --color-danger: var(--bulma-danger);
+    --color-danger-light: var(--bulma-danger-light);
+    --color-danger-dark: var(--bulma-danger-dark);
+
+    /* Fond et texte */
+    --bg-primary: var(--bulma-background);
+    --bg-secondary: var(--bulma-background-bis);
+    --bg-tertiary: var(--bulma-background-ter);
+
+    --text-primary: var(--bulma-text);
+    --text-secondary: var(--bulma-text-weak);
+    --text-tertiary: var(--bulma-text-strong);
+
+    /* Bordures */
+    --border-primary: var(--bulma-border);
+    --border-secondary: var(--bulma-border-weak);
+
+    /* Ombres */
+    --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.1);
+
+    /* Alias de compatibilité */
+    --bulma-grey: var(--bulma-background-bis);
+    --bulma-grey-light: var(--bulma-background-ter);
+    --bulma-grey-dark: var(--bulma-border);
+}

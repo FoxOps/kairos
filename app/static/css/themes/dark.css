@@ -1,116 +1,24 @@
 /* ============================================
    LEVIIA SCHEDULE - THÈME SOMBRE
    ============================================
-
-   Ce fichier contient UNIQUEMENT les styles spécifiques à Leviia
-   qui ne sont pas gérés par Bulma.
-
-   Bulma gère déjà le dark mode via :
-   - @media (prefers-color-scheme: dark) pour le mode système
-   - [data-theme=dark] ou .theme-dark pour le mode manuel
-
-   Nous utilisons [data-theme="dark"] pour activer le thème sombre
-   via le toggle dans la navbar.
-
+   Styles actifs uniquement en mode sombre ([data-theme="dark"] ou
+   .dark-mode, posé sur <html> par le toggle de thème). Bulma gère le
+   reste (variables --bulma-*) automatiquement.
    ============================================ */
 
-/* ============================================
-   MAPPAGE DES VARIABLES DE COULEUR
-   (pour la compatibilité avec les templates existants)
-   ============================================ */
-:root {
-    /* Mapper nos variables vers les variables Bulma */
-    --color-primary: var(--bulma-primary);
-    --color-primary-light: var(--bulma-primary-light);
-    --color-primary-dark: var(--bulma-primary-dark);
-    
-    --color-info: var(--bulma-info);
-    --color-info-light: var(--bulma-info-light);
-    --color-info-dark: var(--bulma-info-dark);
-    
-    --color-success: var(--bulma-success);
-    --color-success-light: var(--bulma-success-light);
-    --color-success-dark: var(--bulma-success-dark);
-    
-    --color-warning: var(--bulma-warning);
-    --color-warning-light: var(--bulma-warning-light);
-    --color-warning-dark: var(--bulma-warning-dark);
-    
-    --color-danger: var(--bulma-danger);
-    --color-danger-light: var(--bulma-danger-light);
-    --color-danger-dark: var(--bulma-danger-dark);
-    
-    /* Variables de fond et texte */
-    --bg-primary: var(--bulma-background);
-    --bg-secondary: var(--bulma-background-bis);
-    --bg-tertiary: var(--bulma-background-ter);
-    
-    --text-primary: var(--bulma-text);
-    --text-secondary: var(--bulma-text-weak);
-    --text-tertiary: var(--bulma-text-strong);
-    
-    /* Variables de bordure */
-    --border-primary: var(--bulma-border);
-    --border-secondary: var(--bulma-border-weak);
-    
-    /* Variables d'ombre */
-    --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.1);
-    
-    /* Variables supplémentaires pour la compatibilité */
-    --bulma-grey: var(--bulma-background-bis);
-    --bulma-grey-light: var(--bulma-background-ter);
-    --bulma-grey-dark: var(--bulma-border);
-}
-
-/* ============================================
-   INDICATION VISUELLE POUR LES CHAMPS OBLIGATOIRES
-   ============================================ */
-.label.required::after {
-    content: " *";
-    color: var(--color-danger);
-}
-
-/* ============================================
-   SKIP LINK
-   ============================================ */
-.skip-link {
-    position: absolute;
-    top: -40px;
-    left: 0;
-    background: var(--color-primary);
-    color: white;
-    padding: 8px 16px;
-    z-index: 100;
-    text-decoration: none;
-    font-weight: bold;
-    border-radius: 0 0 4px 0;
-}
-
-.skip-link:focus {
-    top: 0;
-    outline: 3px solid var(--color-primary-dark);
-    outline-offset: 2px;
-}
-
-/* ============================================
-   CORRECTION DU CONTRASTE POUR LES BOUTONS .is-warning
-   (Bulma utilise du texte blanc sur fond jaune, ce qui a un mauvais contraste)
-   ============================================ */
+/* Correction du contraste des boutons/tags .is-warning (Bulma utilise
+   du texte blanc sur fond jaune par défaut) */
 [data-theme="dark"] .button.is-warning,
 .dark-mode .button.is-warning {
-    color: #000 !important; /* Noir pur pour un contraste suffisant */
+    color: #000 !important;
 }
 
 [data-theme="dark"] .tag.is-warning,
 .dark-mode .tag.is-warning {
-    color: #000 !important; /* Noir pur pour un contraste suffisant */
+    color: #000 !important;
 }
 
-/* ============================================
-   NOTIFICATIONS ACCESSIBLES
-   ============================================ */
+/* Notifications accessibles */
 [data-theme="dark"] .notification[role="alert"],
 .dark-mode .notification[role="alert"] {
     border: 2px solid var(--color-danger) !important;
@@ -125,11 +33,7 @@
     color: var(--bulma-info-dark) !important;
 }
 
-/* ============================================
-   FULLCALENDAR - STYLES SPÉCIFIQUES POUR LE THÈME SOMBRE
-   ============================================ */
-
-/* Couleurs des événements dans le calendrier */
+/* FullCalendar en mode sombre */
 [data-theme="dark"] .fc-event-shift,
 .dark-mode .fc-event-shift {
     background-color: var(--color-primary) !important;
@@ -151,7 +55,6 @@
     color: #fff !important;
 }
 
-/* Arrière-plan et texte du calendrier */
 [data-theme="dark"] .fc,
 .dark-mode .fc {
     background-color: var(--bulma-background) !important;
@@ -204,25 +107,38 @@
     background-color: var(--bulma-background) !important;
 }
 
-/* ============================================
-   CLASSE POUR MASQUER VISUELLEMENT
-   (mais accessible aux lecteurs d'écran)
-   ============================================ */
-.is-sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+[data-theme="dark"] #calendar,
+.dark-mode #calendar {
+    background-color: var(--bulma-background);
+    color: var(--bulma-text);
 }
 
-/* ============================================
-   ACCESSIBILITÉ - FOCUS VISIBLE
-   ============================================ */
+[data-theme="dark"] .external-event-container,
+.dark-mode .external-event-container {
+    background: var(--bulma-background-bis);
+}
+
+[data-theme="dark"] .external-event,
+.dark-mode .external-event {
+    background: var(--color-primary);
+}
+
+[data-theme="dark"] .external-event.oncall,
+.dark-mode .external-event.oncall {
+    background: var(--color-info);
+}
+
+[data-theme="dark"] .external-event.leave,
+.dark-mode .external-event.leave {
+    background: var(--color-danger);
+}
+
+[data-theme="dark"] .fc-event-selected,
+.dark-mode .fc-event-selected {
+    box-shadow: 0 0 0 2px var(--color-warning) !important;
+}
+
+/* Focus visible */
 [data-theme="dark"] a:focus-visible,
 .dark-mode a:focus-visible,
 [data-theme="dark"] button:focus-visible,
@@ -239,9 +155,7 @@
     outline-offset: 2px !important;
 }
 
-/* ============================================
-   ACCESSIBILITÉ - RÉDUCTION DES MOUVEMENTS
-   ============================================ */
+/* Réduction des mouvements */
 @media (prefers-reduced-motion: reduce) {
     [data-theme="dark"] *,
     .dark-mode *,
@@ -256,11 +170,7 @@
     }
 }
 
-/* ============================================
-   ACCESSIBILITÉ - CONTRASTE DES COULEURS
-   ============================================ */
-
-/* Assurer un contraste suffisant pour les liens dans le texte en mode sombre */
+/* Contraste des liens dans le texte */
 [data-theme="dark"] .content a,
 .dark-mode .content a {
     color: var(--color-primary-light);
@@ -275,25 +185,21 @@
     text-decoration: none;
 }
 
-/* Supprimer le soulignement des liens dans les boutons et menus en mode sombre */
+/* Suppression du soulignement des liens dans boutons/menus */
 [data-theme="dark"] .button a,
 [data-theme="dark"] .navbar-item a,
 [data-theme="dark"] .navbar-link a,
 [data-theme="dark"] .navbar-brand a,
-[data-theme="dark"] .dropdown-item a,
-[data-theme="dark"] .menu-item a,
 [data-theme="dark"] .pagination-link a,
 .dark-mode .button a,
 .dark-mode .navbar-item a,
 .dark-mode .navbar-link a,
 .dark-mode .navbar-brand a,
-.dark-mode .dropdown-item a,
-.dark-mode .menu-item a,
 .dark-mode .pagination-link a {
     text-decoration: none !important;
 }
 
-/* Assurer un contraste suffisant pour les boutons en mode sombre */
+/* Contraste des boutons primaires */
 [data-theme="dark"] .button.is-primary,
 .dark-mode .button.is-primary {
     background-color: var(--color-primary) !important;
@@ -306,7 +212,7 @@
     color: #fff !important;
 }
 
-/* Assurer un contraste suffisant pour les messages d'erreur */
+/* Contraste des messages d'erreur */
 [data-theme="dark"] .message.is-danger,
 .dark-mode .message.is-danger {
     background-color: var(--bulma-danger-light) !important;
@@ -314,7 +220,7 @@
     border-color: var(--color-danger) !important;
 }
 
-/* Assurer un contraste suffisant pour les notifications */
+/* Contraste des notifications */
 [data-theme="dark"] .notification.is-danger,
 .dark-mode .notification.is-danger {
     background-color: var(--bulma-danger-light) !important;
@@ -326,12 +232,3 @@
     background-color: var(--bulma-warning-light) !important;
     color: #000 !important;
 }
-
-/* Classes utilitaires (dupliquées depuis base-styles.css pour que ce
-   fichier reste utilisable indépendamment) */
-.gap-0 { gap: 0; }
-.gap-1 { gap: 0.25rem; }
-.gap-2 { gap: 0.5rem; }
-
-.min-w-140 { min-width: 140px; }
-.min-w-150 { min-width: 150px; }

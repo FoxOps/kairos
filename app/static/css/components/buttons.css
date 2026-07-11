@@ -1,0 +1,89 @@
+/* ============================================
+   COMPOSANT - BOUTONS / TAGS
+   ============================================ */
+
+.button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.button:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.button:focus-visible {
+    outline: 3px solid var(--color-primary-dark);
+    outline-offset: 2px;
+}
+
+.button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.icon {
+    vertical-align: middle;
+}
+
+.button .icon {
+    min-width: 24px;
+    min-height: 24px;
+    margin-right: 0.25rem;
+}
+
+.button a,
+.pagination-link a {
+    text-decoration: none !important;
+}
+
+.tag {
+    transition: all 0.2s ease-in-out;
+}
+
+.tag.in-table {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Tags de type d'événement (dashboard, listes) */
+.type-tag {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.type-tag.is-primary {
+    background-color: var(--color-primary);
+    color: white;
+}
+
+.type-tag.is-light {
+    background-color: var(--bulma-background-bis);
+    color: var(--bulma-text);
+    border: 1px solid var(--bulma-border);
+}
+
+.type-tag.is-info {
+    background-color: var(--color-info);
+    color: white;
+}
+
+.type-tag.is-success {
+    background-color: var(--color-success);
+    color: white;
+}
+
+.type-tag.is-warning {
+    background-color: var(--color-warning);
+    color: #000;
+}
+
+.type-tag.is-danger {
+    background-color: var(--color-danger);
+    color: white;
+}
