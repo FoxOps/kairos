@@ -192,7 +192,7 @@ Les contributions sont les bienvenues !
 4. Pousser vers la branche (`git push origin feature/ma-fonctionnalité`)
 5. Ouvrir une **Pull Request**
 
-> **📖 Guide de contribution** : [Docs/README.md - Contribuer à la Documentation](Docs/README.md#-contribuer-à-la-documentation)
+> **📖 Guide de contribution** : [Docs/README.md - Contribuer à la documentation](Docs/README.md#contribuer-à-la-documentation)
 
 ---
 

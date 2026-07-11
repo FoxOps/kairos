@@ -481,7 +481,8 @@ make all
 
 ## 🤝 Contribution
 
-Les contributions sont les bienvenues ! Consultez le [guide de contribution](CONTRIBUTING.md) pour :
+Les contributions sont les bienvenues ! Consultez la section
+[Contribution](README.md#-contribution) du README pour :
 
 - Signaler un bug
 - Proposer une nouvelle fonctionnalité
