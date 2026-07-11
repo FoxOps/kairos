@@ -1,8 +1,8 @@
 # 📋 Rapport de Refactorisation - Phase 4: Amélioration des Tests
 **Branche** : `refacto/phase4`
-**PR** : à créer
+**PR** : [#100](https://github.com/FoxOps/leviia-schedule/pull/100)
 **Date de début** : 2026-07-11
-**Statut** : 🟡 En cours
+**Statut** : 🟢 Terminée
 **Base** : `main` (inclut Phases 1 + 2 + 3, PR #99 mergée)
 
 ---
@@ -233,6 +233,39 @@ ajout de shift, suppression de shift - tous 302/403 pour un non-admin ou
 un anonyme).
 
 641 tests passent.
+
+### 2026-07-11 — Bilan de fin de phase
+
+Couverture finale mesurée : **57%** brut (app/ + config.py), quasiment
+inchangé depuis la baseline (56%) malgré 130 tests ajoutés — le poids du
+code mort confirmé (`monitoring/` 344 lignes, `pagination/` 248,
+`prometheus_metrics.py` 86, `env_helpers.py` 47, `cache_helpers.py` 40 =
+765 lignes à 0%, jamais appelées) écrase la moyenne globale. En excluant
+ces cinq modules du calcul : **≈68%** sur le code effectivement vivant -
+chiffre plus honnête, toujours en-dessous de 80% mais sur un périmètre
+réel. L'écart restant vient surtout des routes (`auth.py` 61%,
+`leave_routes.py` 57%, `oncall_routes.py` 63%, `shift_routes.py` 64%,
+`dashboard_routes.py` 57%) et de `automation_admin_service.py`/
+`oncall_service.py`, non touchés par cette phase - ce serait la suite
+logique d'un futur passage de couverture, mais sortirait du périmètre de
+cette Phase 4 telle que définie.
+
+Bilan de la phase :
+- Restructuration complète `unit/`/`integration/`/`e2e/`/`fixtures/`
+  (26 fichiers déplacés, historique préservé)
+- 130 tests ajoutés (107 services/repositories + 6 E2E + 4 performance +
+  13 sécurité) : repositories 100%, services 90%+
+- 3 bugs réels attrapés et corrigés avant commit (alias `app` pris pour
+  du code mort, fixture week-end faussant un test, collision d'emails
+  dans le seeding de perf)
+- 2 vraies vulnérabilités trouvées et corrigées (pas juste documentées) :
+  CSRF totalement absent de l'application (19 templates + 5 appels
+  fetch() corrigés, vérifié en conditions réelles), fuite potentielle de
+  `password_hash`/`ics_token` via `User.to_dict()`
+- E2E scopé en accord avec l'utilisateur (client de test Flask, pas de
+  navigateur headless - infra indisponible dans cet environnement)
+
+641 tests passent, 0 échec.
 
 ---
 
