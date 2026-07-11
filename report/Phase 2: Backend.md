@@ -3,8 +3,8 @@
 **PR** : [#98](https://github.com/FoxOps/leviia-schedule/pull/98)
 **Date de début** : 2025-07-02
 **Dernière mise à jour** : 2026-07-11
-**Statut** : 🟢 Suite de tests au vert (504 tests passent, 7 skip intentionnels, **0 échec**)
-**Prochaine session** : Voir "TRAVAIL RESTANT" (services/repositories, nettoyage utils/, suppression app/models.py legacy)
+**Statut** : 🟢 Suite de tests au vert (504 tests passent, 7 skip intentionnels, **0 échec**) + architecture services/repositories en place
+**Prochaine session** : Voir "TRAVAIL RESTANT" (nettoyage utils/, suppression app/models.py legacy, éventuellement découper admin.py sur le même modèle)
 
 ---
 
@@ -85,34 +85,81 @@ Tous les problèmes listés dans "Travail restant" de la session précédente on
    `dark-theme.css` (existaient seulement dans `base-styles.css`), accent
    manquant dans l'`aria-label` du bouton de bascule de thème.
 
+9. **Boucle de redirection HTTPS en prod** : `create_app()` charge toujours
+   `app.config.Config` (jamais `ProductionConfig`) quel que soit `FLASK_ENV`,
+   or seule `ProductionConfig` lisait `TALISMAN_FORCE_HTTPS` depuis
+   l'environnement → variable ignorée en déploiement réel, Talisman forçait
+   une redirection `https://` alors qu'aucun reverse proxy ne termine le TLS.
+   Déplacé dans `Config` (classe réellement chargée), défaut `False`. Ajout
+   de `ProxyFix` pour la détection correcte du scheme derrière un vrai
+   reverse proxy TLS.
+
+10. **Docker** : `entrypoint.sh` tentait `chown` en tournant déjà en UID
+    non-root (`user: "1000:1000"` dans `docker-compose.yml`) → échec
+    systématique, conteneur mort avant même de démarrer flask/gunicorn.
+    `DATABASE_URL=sqlite:///app.db` (relatif) résolvait dans
+    `app.instance_path` et non dans `/app/data` (le volume monté) → DB
+    jamais persistée sur l'hôte.
+
+11. **OIDC** : `app/routes/auth.py` appelait des méthodes inexistantes sur
+    `OIDCAuthLib` (API Authlib générique au lieu de l'API interne réellement
+    implémentée) → tout login OIDC plantait avec `AttributeError`. Ajout de
+    `OIDC_INTERNAL_ISSUER` pour le cas où le fournisseur OIDC n'est
+    joignable par le conteneur qu'en interne (ex: même docker-compose) mais
+    doit rester joignable par le navigateur via une autre adresse.
+
+---
+
+## ✅ **Découpage services/repositories réalisé** (suite de session)
+
+`app/services/` et `app/repositories/` étaient un scaffolding vide
+(`import app.services`/`app.repositories` levait `ImportError`) et
+`app/routes/main.py` (1287 lignes) n'avait jamais été découpé comme prévu
+au plan Phase 2 initial. Fait :
+
+- **`app/repositories/`** : `UserRepository`, `GroupRepository`,
+  `ShiftRepository`, `ShiftTypeRepository`, `OnCallRepository`,
+  `LeaveRepository` - accès aux données pur (requêtes SQLAlchemy)
+- **`app/services/`** : `UserService`, `ShiftService`, `OnCallService`,
+  `LeaveService`, `ExportService`, + `ScheduleService` (nouveau, agrégation
+  calendrier) - logique métier (validations `can_add_*`, rééquilibrage
+  automatique après congé), s'appuient sur les repositories
+- **`app/routes/main.py`** découpé en `dashboard_routes.py`,
+  `shift_routes.py`, `oncall_routes.py`, `leave_routes.py` : chaque fichier
+  importe `main_bp` depuis `main.py` et enregistre ses routes dessus - le
+  blueprint reste nommé `"main"` partout, donc aucune des ~300 références
+  `url_for("main.xxx")` (templates + tests) n'a dû changer. Les routes ne
+  font plus que parser la requête, appeler le service, et transformer le
+  résultat en flash/redirect/JSON
+
+Vérifié : suite complète toujours à 504/504, carte des routes Flask
+identique avant/après, conteneur Docker reconstruit et testé en conditions
+réelles (login, toutes les pages, API JSON, cycle complet
+ajout/suppression shift + astreinte + congé avec rééquilibrage automatique
+déclenché).
+
 ---
 
 ## 🎯 **TRAVAIL RESTANT (À FAIRE)**
 
-Le blocage "tests en échec" (priorité maximale de la session précédente) est
-résolu. Il reste les points de la Phase 2 qui ne concernent pas les tests :
-
 ### 🟡 **Priorité Élevée**
-1. **Implémenter les Services** (`app/services/`) — actuellement un
-   `__init__.py` qui importe des sous-modules inexistants
-   (`user_service.py`, `shift_service.py`, `oncall_service.py`,
-   `leave_service.py`, `export_service.py`) : `import app.services` lève
-   `ImportError` en l'état.
-2. **Implémenter les Repositories** (`app/repositories/`) — même situation.
-3. **Déplacer les fichiers utilitaires restants** vers des sous-packages
+1. **Déplacer les fichiers utilitaires restants** vers des sous-packages
    dédiés (cf. plan Phase 2 initial) :
    - `app/utils/optimizations.py` → `app/utils/optimizations/`
    - `app/utils/pagination.py` → `app/utils/pagination/`
    - `app/utils/performance_monitor.py` → `app/utils/monitoring/`
    - `app/utils/encryption.py` → `app/utils/security/`
    - `app/utils/env_helpers.py` → `app/utils/helpers/`
+2. **`app/routes/admin.py` (747 lignes)** : même traitement que main.py
+   (découpage en fichiers par domaine + extraction vers services/repositories)
+   n'a pas été fait - parle encore directement aux modèles.
+3. **`app/routes/export.py`** ne passe pas encore par `ExportService`
+   (créé mais pas encore branché sur les routes d'export existantes).
 
 ### 🟢 **Priorité Moyenne**
 4. **Supprimer l'ancien `app/models.py`** (fichier plat, shadowé par le
    package `app/models/` sur tout `from app.models import ...` — mort mais
    toujours présent, cf. CLAUDE.md).
-5. Continuer le nettoyage du code une fois services/repositories en place
-   (actuellement les routes parlent directement aux modèles/utils).
 
 ---
 
@@ -133,5 +180,5 @@ résolu. Il reste les points de la Phase 2 qui ne concernent pas les tests :
 ---
 
 *Dernière mise à jour : 2026-07-11*
-*Statut : 🟢 504/511 tests passent (7 skip intentionnels), 0 échec*
+*Statut : 🟢 504/511 tests passent (7 skip intentionnels), 0 échec - services/repositories en place, main.py découpé*
 *Tous les commits sont poussés sur GitHub ✅*
