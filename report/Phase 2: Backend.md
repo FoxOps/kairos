@@ -3,8 +3,8 @@
 **PR** : [#98](https://github.com/FoxOps/leviia-schedule/pull/98)
 **Date de début** : 2025-07-02
 **Dernière mise à jour** : 2026-07-11
-**Statut** : 🟢 Suite de tests au vert (504 tests passent, 7 skip intentionnels, **0 échec**) + architecture services/repositories en place
-**Prochaine session** : Voir "TRAVAIL RESTANT" (nettoyage utils/, suppression app/models.py legacy, éventuellement découper admin.py sur le même modèle)
+**Statut** : 🟢🎉 **Phase 2 terminée** — suite de tests au vert (504 tests passent, 7 skip intentionnels, **0 échec**), architecture services/repositories en place et branchée sur toutes les routes (main + admin + export), utils/ réorganisé, app/models.py legacy supprimé
+**Prochaine session** : Phase 3 (frontend CSS/JS modulaire) — voir plan de refactorisation initial
 
 ---
 
@@ -140,26 +140,37 @@ déclenché).
 
 ---
 
-## 🎯 **TRAVAIL RESTANT (À FAIRE)**
+## ✅ **Découpage admin.py + export.py + réorganisation utils/ + suppression app/models.py**
+(suite de session, tout le "TRAVAIL RESTANT" ci-dessus traité)
 
-### 🟡 **Priorité Élevée**
-1. **Déplacer les fichiers utilitaires restants** vers des sous-packages
-   dédiés (cf. plan Phase 2 initial) :
-   - `app/utils/optimizations.py` → `app/utils/optimizations/`
-   - `app/utils/pagination.py` → `app/utils/pagination/`
-   - `app/utils/performance_monitor.py` → `app/utils/monitoring/`
-   - `app/utils/encryption.py` → `app/utils/security/`
-   - `app/utils/env_helpers.py` → `app/utils/helpers/`
-2. **`app/routes/admin.py` (747 lignes)** : même traitement que main.py
-   (découpage en fichiers par domaine + extraction vers services/repositories)
-   n'a pas été fait - parle encore directement aux modèles.
-3. **`app/routes/export.py`** ne passe pas encore par `ExportService`
-   (créé mais pas encore branché sur les routes d'export existantes).
+- **`app/routes/admin.py`** (747 lignes) découpé comme main.py : reste la
+  définition de `admin_bp` + la route `/admin` (dashboard), le reste dans
+  `admin_group_routes.py`, `admin_user_routes.py`, `admin_shift_type_routes.py`,
+  `admin_automation_routes.py`. Nouveaux services `GroupService`,
+  `ShiftTypeService`, `AutomationAdminService` (+ `UserService` étendu avec
+  le CRUD admin) ; repositories étendus (vérification d'unicité nom/email,
+  existence de données associées, suppression sur plage de dates).
+  `app/utils/automation/` (déjà une couche métier) réutilisé tel quel pour
+  la génération elle-même, pas dupliqué.
+- **`app/routes/export.py`** branché sur `ExportService` (résolution
+  utilisateur session/token ICS, scope all/my filtré en SQL, génération ICS).
+- **`app/utils/`** réorganisé : `optimizations.py` → `optimizations/`,
+  `pagination.py` → `pagination/`, `performance_monitor.py` → `monitoring/`,
+  `encryption.py` → `security/encryption.py`, `env_helpers.py` →
+  `helpers/env_helpers.py`. 4 des 5 fichiers se sont révélés être du code
+  mort (0 import ailleurs) — déplacés tels quels sur demande explicite
+  plutôt que supprimés. Bug réel trouvé au passage : décorateur
+  `bulk_operation` retournait une variable non définie (`wrapped` au lieu
+  de `wrapper`) — `NameError` garanti si jamais appelé. Corrigé.
+- **`app/models.py`** legacy supprimé (confirmé mort : `app.models.__file__`
+  résout toujours vers `app/models/__init__.py`, jamais vers ce fichier).
+  `CLAUDE.md` mis à jour en conséquence (architecture en couches réelle au
+  lieu de "scaffolding vide").
 
-### 🟢 **Priorité Moyenne**
-4. **Supprimer l'ancien `app/models.py`** (fichier plat, shadowé par le
-   package `app/models/` sur tout `from app.models import ...` — mort mais
-   toujours présent, cf. CLAUDE.md).
+Vérifié à chaque étape : suite complète 504/504, carte des routes
+identique avant/après, conteneur Docker reconstruit et testé en conditions
+réelles (CRUD groupe/utilisateur/type de shift, dry-run automation,
+export ICS all/my, toutes les pages).
 
 ---
 
@@ -180,5 +191,5 @@ déclenché).
 ---
 
 *Dernière mise à jour : 2026-07-11*
-*Statut : 🟢 504/511 tests passent (7 skip intentionnels), 0 échec - services/repositories en place, main.py découpé*
+*Statut : 🟢🎉 Phase 2 terminée - 504/511 tests passent (7 skip intentionnels), 0 échec*
 *Tous les commits sont poussés sur GitHub ✅*
