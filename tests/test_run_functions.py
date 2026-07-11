@@ -4,7 +4,7 @@ Tests unitaires pour les fonctions dans run.py
 
 import pytest
 from datetime import datetime, timedelta
-from app import create_app, db
+from app import db
 from app.models import User, Group, Shift, OnCall, Leave, ShiftType
 from run import (
     check_database_integrity,
@@ -12,25 +12,6 @@ from run import (
     create_default_data,
     DEFAULT_SHIFT_TYPES,
 )
-
-
-@pytest.fixture(scope="function")
-def app():
-    """Crée une instance de l'application Flask pour les tests."""
-    app = create_app()
-    app.config["TESTING"] = True
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-    app.config["SECRET_KEY"] = "test-secret-key"
-
-    # Importer les routes
-    from app.routes import main, admin, export, auth
-
-    with test_app.app_context():
-        db.drop_all()
-        db.create_all()
-        yield app
-        db.session.rollback()
-        db.drop_all()
 
 
 class TestDefaultShiftTypes:
@@ -98,7 +79,6 @@ class TestDatabaseIntegrity:
             assert result is False
 
 
-@pytest.mark.skip(reason="Fonctions non implémentées")
 class TestInitializeDatabase:
     """Tests pour initialize_database."""
 
@@ -106,7 +86,7 @@ class TestInitializeDatabase:
         """Test que l'initialisation crée toutes les tables."""
         with test_app.app_context():
             db.drop_all()
-            
+            setup_database()
             create_default_data()
             
             # Vérifier que les tables existent
@@ -125,7 +105,7 @@ class TestInitializeDatabase:
         """Test que l'initialisation crée les types de shifts par défaut."""
         with test_app.app_context():
             db.drop_all()
-            
+            setup_database()
             create_default_data()
             
             # Vérifier que les types de shifts par défaut existent
@@ -140,7 +120,6 @@ class TestInitializeDatabase:
                 assert shift_type.end_hour == shift_type_data["end_hour"]
 
 
-@pytest.mark.skip(reason="Fonctions non implémentées")
 class TestCreateDefaultData:
     """Tests pour create_default_data."""
 
@@ -180,8 +159,12 @@ class TestCreateDefaultData:
     def test_create_default_data_does_not_duplicate(self, test_app):
         """Test que create_default_data ne duplique pas les données."""
         with test_app.app_context():
-            # Créer un groupe et un utilisateur
-            group = Group(name="Test Group", is_part_of_schedule=True, is_part_of_oncall=True)
+            # Créer un groupe et un utilisateur - le nom du groupe doit
+            # correspondre à celui que create_default_data() recherche
+            # ("Defaut" par défaut), sinon le test ne vérifie rien : il
+            # créerait juste un second groupe sans jamais exercer la
+            # logique de non-duplication.
+            group = Group(name="Defaut", is_part_of_schedule=True, is_part_of_oncall=True)
             db.session.add(group)
             db.session.commit()
             
@@ -206,6 +189,7 @@ class TestCreateDefaultData:
             assert User.query.count() == initial_user_count
 
 
+class TestSetupDatabase:
     """Tests pour setup_database."""
 
     def test_setup_database_empty(self, test_app):
