@@ -794,10 +794,10 @@ def bulk_operation(model_class: Type,
                         db.session.delete(item)
                 db.session.commit()
                 return result
-            
+
             return result
-        
-        return wrapped
+
+        return wrapper
     
     return decorator
 
