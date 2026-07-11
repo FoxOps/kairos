@@ -1,0 +1,179 @@
+"""
+User and Group models for Leviia Schedule.
+
+This module contains the User and Group models for user management
+and authentication.
+"""
+
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
+import secrets
+from datetime import datetime
+from app import db
+from app.models.base import BaseModel
+
+
+class Group(BaseModel):
+    """
+    Group model for organizing users.
+    
+    Attributes:
+        name: Unique name of the group
+        is_part_of_schedule: Whether group members are included in shift scheduling
+        is_part_of_oncall: Whether group members are included in on-call rotations
+        users: Relationship to User model
+    """
+    
+    __tablename__ = "groups"
+    
+    name = db.Column(db.String(80), nullable=False, unique=True)
+    is_part_of_schedule = db.Column(db.Boolean, default=False)
+    is_part_of_oncall = db.Column(db.Boolean, default=False)
+    
+    # Relationships
+    users = db.relationship(
+        "User",
+        backref="group",
+        lazy=True,
+        cascade="all, delete-orphan"
+    )
+    
+    def __repr__(self) -> str:
+        return f"<Group {self.name} (id={self.id})>"
+
+
+class User(BaseModel, UserMixin):
+    """
+    User model for authentication and user management.
+    
+    Attributes:
+        name: User's full name
+        email: Unique email address
+        password_hash: Hashed password
+        is_admin: Whether the user has administrator privileges
+        group_id: Foreign key to Group
+        ics_token: Unique token for ICS export
+        shifts: Relationship to Shift model
+        on_calls: Relationship to OnCall model
+        leaves: Relationship to Leave model
+    """
+    
+    __tablename__ = "user"
+    
+    name = db.Column(db.String(80), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128))
+    is_admin = db.Column(db.Boolean, default=False)
+    group_id = db.Column(
+        db.Integer,
+        db.ForeignKey("groups.id"),
+        nullable=False,
+        default=1,
+        index=True
+    )
+    ics_token = db.Column(db.String(64), unique=True, nullable=True)
+    
+    # Relationships
+    shifts = db.relationship(
+        "Shift",
+        backref="user",
+        lazy=True,
+        cascade="all, delete-orphan",
+        foreign_keys="Shift.user_id"
+    )
+    on_calls = db.relationship(
+        "OnCall",
+        backref="user",
+        lazy=True,
+        cascade="all, delete-orphan",
+        foreign_keys="OnCall.user_id"
+    )
+    leaves = db.relationship(
+        "Leave",
+        backref="user",
+        lazy=True,
+        cascade="all, delete-orphan",
+        foreign_keys="Leave.user_id"
+    )
+    
+    def set_password(self, password: str) -> None:
+        """Set the user's password (hashed).
+        
+        Args:
+            password: Plain text password to hash and store
+        """
+        self.password_hash = generate_password_hash(password)
+    
+    def check_password(self, password: str) -> bool:
+        """Check if the provided password matches the stored hash.
+        
+        Args:
+            password: Plain text password to check
+            
+        Returns:
+            True if the password matches, False otherwise
+        """
+        return check_password_hash(self.password_hash, password)
+    
+    def generate_ics_token(self) -> str:
+        """Generate a unique token for ICS export.
+        
+        Returns:
+            The generated token
+        """
+        self.ics_token = secrets.token_urlsafe(32)
+        return self.ics_token
+    
+    def get_ics_export_url(self, export_type: str = "shifts", scope: str = "all") -> str:
+        """Get the ICS export URL with the user's token.
+        
+        Args:
+            export_type: Type of export - "shifts", "oncall", or "leaves"
+            scope: Scope of export - "all" or "my"
+            
+        Returns:
+            The ICS export URL or None if no token is set
+        """
+        if not self.ics_token:
+            return None
+        return f"/export/{export_type}?scope={scope}&token={self.ics_token}"
+    
+    @property
+    def total_shifts(self) -> int:
+        """Get the total number of shifts for this user."""
+        from app.models.shift import Shift
+        return Shift.query.filter_by(user_id=self.id).count()
+    
+    @property
+    def total_oncalls(self) -> int:
+        """Get the total number of on-call assignments for this user."""
+        from app.models.oncall import OnCall
+        return OnCall.query.filter_by(user_id=self.id).count()
+    
+    @property
+    def total_leaves(self) -> int:
+        """Get the total number of leave requests for this user."""
+        from app.models.leave import Leave
+        return Leave.query.filter_by(user_id=self.id).count()
+    
+    @property
+    def next_shift(self):
+        """Get the user's next upcoming shift."""
+        from app.models.shift import Shift
+        return Shift.query.filter(
+            Shift.user_id == self.id,
+            Shift.start_time > datetime.now()
+        ).order_by(Shift.start_time).first()
+    
+    @property
+    def current_oncall(self):
+        """Get the user's current on-call assignment."""
+        from app.models.oncall import OnCall
+        return OnCall.query.filter(
+            OnCall.user_id == self.id,
+            OnCall.start_time <= datetime.now(),
+            OnCall.end_time >= datetime.now()
+        ).first()
+    
+    def __repr__(self) -> str:
+        return f"<User {self.name} ({self.email})>"

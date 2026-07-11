@@ -1,20 +1,130 @@
 services:
   leviia-schedule:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    container_name: leviia-web
-    restart: unless-stopped
+    image: leviia-schedule:dev
+    container_name: leviia-schedule
     ports:
       - "5000:5000"
-    env_file:
-      - ../.env
-    environment:
-      - FLASK_ENV=${FLASK_ENV:-development}
-      - SECRET_KEY=${SECRET_KEY:-changez-moi}
-      - DATABASE_URL=${DATABASE_URL:-sqlite:////app/data/app.db}
-      - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-admin123}
-    volumes:
-      - ../data:/app/data
-      - ../logs:/app/logs
     user: "1000:1000"
+    env_file:
+      - ./.env
+    environment:
+      # .env / .env.example définissent DATABASE_URL=sqlite:///app.db (chemin
+      # relatif) qui résout dans app.instance_path (/app/instance), pas dans
+      # /app/data qui est le volume monté ici. Sans cette surcharge, la DB
+      # n'est jamais persistée sur l'hôte et est recréée à chaque redémarrage.
+      - DATABASE_URL=sqlite:////app/data/app.db
+      # Pas de reverse proxy TLS dans cette stack : forcer HTTPS ferait
+      # boucler chaque requête sur une redirection https:// que rien ne sert.
+      # À mettre à true (ou retirer, c'est déjà le défaut en prod) une fois
+      # un reverse proxy TLS placé devant ce service.
+      - TALISMAN_FORCE_HTTPS=false
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - leviia-network
+    depends_on:
+      oidc-mock:
+        condition: service_healthy
+
+  oidc-mock:
+    container_name: oidc-mock
+    image: ghcr.io/soluto/oidc-server-mock:latest
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/.well-known/openid-configuration"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      SERVER_OPTIONS_INLINE: |
+        {
+          "AccessTokenJwtType": "JWT",
+          "Discovery": { "ShowKeySet": true },
+          "Authentication": {
+            "CookieSameSiteMode": "Lax",
+            "CheckSessionCookieSameSiteMode": "Lax"
+          },
+          "KeyManagement": {
+            "Enabled": false
+          }
+        }
+      LOGIN_OPTIONS_INLINE: |-
+        { "AllowRememberLogin": true }
+      LOGOUT_OPTIONS_INLINE: |-
+        { "AutomaticRedirectAfterSignOut": true }
+      USERS_CONFIGURATION_INLINE: |
+        [
+          {
+            "SubjectId": "1",
+            "Username": "admin",
+            "Password": "admin123",
+            "Claims": [
+              {"Type": "name", "Value": "Admin User", "ValueType": "string"},
+              {"Type": "email", "Value": "admin@leviia.local", "ValueType": "string"},
+              {"Type": "role", "Value": "user", "ValueType": "string"}
+            ]
+          },
+          {
+            "SubjectId": "2",
+            "Username": "benjamin",
+            "Password": "admin123",
+            "Claims": [
+              {"Type": "name", "Value": "Benjamin", "ValueType": "string"},
+              {"Type": "email", "Value": "benjamin@leviia.local", "ValueType": "string"},
+            ]
+          },
+          {
+            "SubjectId": "3",
+            "Username": "morgan",
+            "Password": "admin123",
+            "Claims": [
+              {"Type": "name", "Value": "Morgan", "ValueType": "string"},
+              {"Type": "email", "Value": "morgan@leviia.local", "ValueType": "string"},
+            ]
+          },
+          {
+            "SubjectId": "4",
+            "Username": "pierre",
+            "Password": "admin123",
+            "Claims": [
+              {"Type": "name", "Value": "Pierre", "ValueType": "string"},
+              {"Type": "email", "Value": "pierre@leviia.local", "ValueType": "string"},
+            ]
+          },
+          {
+            "SubjectId": "5",
+            "Username": "julien",
+            "Password": "admin123",
+            "Claims": [
+              {"Type": "name", "Value": "Julien", "ValueType": "string"},
+              {"Type": "email", "Value": "julien@leviia.local", "ValueType": "string"},
+            ]
+          }
+        ]
+      CLIENTS_CONFIGURATION_INLINE: |
+        [
+          {
+            "ClientId": "leviia-app",
+            "ClientSecrets": ["leviia-secret"],
+            "AllowedGrantTypes": ["authorization_code"],
+            "RequirePkce": false,
+            "AllowAccessTokensViaBrowser": true,
+            "RedirectUris": ["http://localhost:5000/oidc/callback"],
+            "PostLogoutRedirectUris": ["http://localhost:5000"],
+            "AllowedScopes": ["openid", "profile", "email"]
+          }
+        ]
+      IDENTITY_SERVER_OPTIONS_INLINE: |
+        {
+          "IssuerUri": "http://192.168.1.169:8080"
+        }
+    networks:
+      - leviia-network
+
+networks:
+  leviia-network:
+    driver: bridge

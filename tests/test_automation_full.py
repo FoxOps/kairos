@@ -16,9 +16,9 @@ from app.utils.automation import (
 class TestOnCallAutomationGenerateScheduleFull:
     """Tests complets pour OnCallAutomation.generate_oncall_schedule."""
 
-    def test_generates_multiple_oncalls(self, app, test_user, test_group):
+    def test_generates_multiple_oncalls(self, test_app, test_user, test_group):
         """Test que generate_oncall_schedule génère plusieurs astreintes."""
-        with app.app_context():
+        with test_app.app_context():
             # S'assurer que test_user est éligible
             test_group.is_part_of_oncall = True
             db.session.commit()
@@ -52,9 +52,9 @@ class TestOnCallAutomationGenerateScheduleFull:
             # 35 jours = 5 semaines, donc 5 vendredis -> 5 astreintes
             assert len(oncalls) == 5
 
-    def test_respects_start_date(self, app, test_user, test_group):
+    def test_respects_start_date(self, test_app, test_user, test_group):
         """Test que generate_oncall_schedule respecte la date de début."""
-        with app.app_context():
+        with test_app.app_context():
             test_group.is_part_of_oncall = True
             db.session.commit()
             
@@ -72,9 +72,9 @@ class TestOnCallAutomationGenerateScheduleFull:
                 first_oncall = oncalls[0]
                 assert first_oncall.start_time.date() >= start_date
 
-    def test_skips_unavailable_users(self, app, test_user, test_group):
+    def test_skips_unavailable_users(self, test_app, test_user, test_group):
         """Test que generate_oncall_schedule ignore les utilisateurs non disponibles."""
-        with app.app_context():
+        with test_app.app_context():
             test_group.is_part_of_oncall = True
             db.session.commit()
             
@@ -109,9 +109,9 @@ class TestOnCallAutomationGenerateScheduleFull:
 class TestShiftAutomationGenerateScheduleFull:
     """Tests complets pour ShiftAutomation.generate_shift_schedule."""
 
-    def test_generates_shifts_for_week(self, app, test_user, test_group, test_shift_type):
+    def test_generates_shifts_for_week(self, test_app, test_user, test_group, test_shift_type):
         """Test que generate_shift_schedule génère des shifts pour une semaine."""
-        with app.app_context():
+        with test_app.app_context():
             test_group.is_part_of_schedule = True
             db.session.commit()
             
@@ -143,9 +143,9 @@ class TestShiftAutomationGenerateScheduleFull:
             # Devrait générer des shifts
             assert len(shifts) >= 0  # Peut être 0 si pas d'utilisateurs éligibles
 
-    def test_skips_weekends(self, app, test_user, test_group, test_shift_type):
+    def test_skips_weekends(self, test_app, test_user, test_group, test_shift_type):
         """Test que generate_shift_schedule ignore les week-ends."""
-        with app.app_context():
+        with test_app.app_context():
             test_group.is_part_of_schedule = True
             db.session.commit()
             
@@ -171,9 +171,9 @@ class TestShiftAutomationGenerateScheduleFull:
             # Ne devrait pas générer de shifts pour le week-end
             assert len(shifts) == 0
 
-    def test_handles_missing_shift_type(self, app, test_user, test_group):
+    def test_handles_missing_shift_type(self, test_app, test_user, test_group):
         """Test que generate_shift_schedule gère les types de shifts manquants."""
-        with app.app_context():
+        with test_app.app_context():
             test_group.is_part_of_schedule = True
             db.session.commit()
             
@@ -202,9 +202,9 @@ class TestShiftAutomationGenerateScheduleFull:
 class TestOnCallAutomationFindNextAvailableFull:
     """Tests complets pour OnCallAutomation.find_next_available_user."""
 
-    def test_skips_user_with_oncall_conflict(self, app, test_user):
+    def test_skips_user_with_oncall_conflict(self, test_app, test_user):
         """Test que find_next_available_user ignore les utilisateurs avec conflit d'astreinte."""
-        with app.app_context():
+        with test_app.app_context():
             now = datetime.now()
             
             # Créer une astreinte existante
@@ -227,9 +227,9 @@ class TestOnCallAutomationFindNextAvailableFull:
             # Devrait ignorer test_user
             assert result is None
 
-    def test_skips_user_with_leave_conflict(self, app, test_user):
+    def test_skips_user_with_leave_conflict(self, test_app, test_user):
         """Test que find_next_available_user ignore les utilisateurs avec conflit de congé."""
-        with app.app_context():
+        with test_app.app_context():
             now = datetime.now()
             
             # Créer un congé
@@ -252,9 +252,9 @@ class TestOnCallAutomationFindNextAvailableFull:
             # Devrait ignorer test_user
             assert result is None
 
-    def test_skips_user_with_legal_constraint(self, app, test_user):
+    def test_skips_user_with_legal_constraint(self, test_app, test_user):
         """Test que find_next_available_user ignore les utilisateurs avec contrainte légale."""
-        with app.app_context():
+        with test_app.app_context():
             now = datetime.now()
             
             # Créer une astreinte précédente qui se termine il y a 13 jours
@@ -292,11 +292,13 @@ class TestOnCallAutomationFindNextAvailableFull:
 class TestShiftAutomationCanAssignFull:
     """Tests complets pour ShiftAutomation.can_assign_shift."""
 
-    def test_false_existing_shift(self, app, test_user, test_shift_type):
+    def test_false_existing_shift(self, test_app, test_user, test_shift_type):
         """Test que can_assign_shift retourne False si shift existant."""
-        with app.app_context():
-            today = date.today()
-            
+        with test_app.app_context():
+            # Un jour ouvré garanti (lundi si le jour du test tombe un week-end)
+            weekday = date.today().weekday()
+            today = date.today() + timedelta(days=(7 - weekday) % 7 if weekday >= 5 else 0)
+
             # Créer un shift existant
             existing_shift = Shift(
                 user_id=test_user.id,
@@ -315,11 +317,13 @@ class TestShiftAutomationCanAssignFull:
             assert can_assign is False
             assert 'déjà un shift' in message
 
-    def test_false_on_leave(self, app, test_user, test_shift_type):
+    def test_false_on_leave(self, test_app, test_user, test_shift_type):
         """Test que can_assign_shift retourne False si en congé."""
-        with app.app_context():
-            today = date.today()
-            
+        with test_app.app_context():
+            # Un jour ouvré garanti (lundi si le jour du test tombe un week-end)
+            weekday = date.today().weekday()
+            today = date.today() + timedelta(days=(7 - weekday) % 7 if weekday >= 5 else 0)
+
             # Créer un congé
             leave = Leave(
                 user_id=test_user.id,
@@ -336,11 +340,13 @@ class TestShiftAutomationCanAssignFull:
             assert can_assign is False
             assert 'en congé' in message
 
-    def test_false_on_oncall(self, app, test_user, test_shift_type):
+    def test_false_on_oncall(self, test_app, test_user, test_shift_type):
         """Test que can_assign_shift retourne False si en astreinte."""
-        with app.app_context():
-            today = date.today()
-            
+        with test_app.app_context():
+            # Un jour ouvré garanti (lundi si le jour du test tombe un week-end)
+            weekday = date.today().weekday()
+            today = date.today() + timedelta(days=(7 - weekday) % 7 if weekday >= 5 else 0)
+
             # Créer une astreinte
             oncall = OnCall(
                 user_id=test_user.id,

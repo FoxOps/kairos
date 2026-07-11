@@ -22,22 +22,22 @@
             <div class="buttons" role="group" aria-label="Actions rapides">
                 {% if current_user.is_admin %}
                     <!-- Actions pour les administrateurs -->
-                    <a class="button is-primary" href="{{ url_for('add_shift') }}" aria-label="Ajouter un shift">
+                    <a class="button is-primary" href="{{ url_for('main.add_shift') }}" aria-label="Ajouter un shift">
                         <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un shift
                     </a>
-                    <a class="button is-primary" href="{{ url_for('add_oncall') }}" aria-label="Ajouter une astreinte">
+                    <a class="button is-primary" href="{{ url_for('main.add_oncall') }}" aria-label="Ajouter une astreinte">
                         <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter une astreinte
                     </a>
-                    <a class="button is-primary" href="{{ url_for('add_leave') }}" aria-label="Ajouter un congé">
+                    <a class="button is-primary" href="{{ url_for('main.add_leave') }}" aria-label="Ajouter un congé">
                         <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un congé
                     </a>
-                    <a class="button is-primary" href="{{ url_for('list_users') }}" aria-label="Gérer les utilisateurs">
+                    <a class="button is-primary" href="{{ url_for('admin.list_users') }}" aria-label="Gérer les utilisateurs">
                         <i class="fas fa-users" aria-hidden="true"></i>&nbsp; Gérer les utilisateurs
                     </a>
-                    <a class="button is-primary" href="{{ url_for('list_groups') }}" aria-label="Gérer les groupes">
+                    <a class="button is-primary" href="{{ url_for('admin.list_groups') }}" aria-label="Gérer les groupes">
                         <i class="fas fa-user-friends" aria-hidden="true"></i>&nbsp; Gérer les groupes
                     </a>
-                    <a class="button is-light" href="{{ url_for('admin_dashboard') }}" aria-label="Tableau de bord administrateur">
+                    <a class="button is-light" href="{{ url_for('admin.admin_dashboard') }}" aria-label="Tableau de bord administrateur">
                         <i class="fas fa-cog" aria-hidden="true"></i>&nbsp; Admin
                     </a>
                 {% else %}

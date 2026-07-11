@@ -12,7 +12,7 @@
         <!-- Boutons pour ajouter, exporter et supprimer -->
         <div class="buttons" role="group" aria-label="Actions principales">
             {% if current_user.is_admin %}
-            <a class="button is-primary" href="{{ url_for('add_oncall') }}" 
+            <a class="button is-primary" href="{{ url_for('main.add_oncall') }}" 
                aria-label="Ajouter une astreinte" title="Ajouter une astreinte">
                 <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter une astreinte
             </a>
@@ -24,7 +24,7 @@
             {% include "_ics_export_buttons.html" %}
             
             {% if current_user.is_admin %}
-            <form method="POST" action="{{ url_for('delete_all_oncalls') }}" class="ml-2">
+            <form method="POST" action="{{ url_for('main.delete_all_oncalls') }}" class="ml-2">
                 <button type="submit" class="button is-danger" 
                         onclick="return Leviia.confirmActionAccessible('Êtes-vous SÛR de vouloir supprimer TOUTES les astreintes ? Cette action est irréversible !', function() { this.form.submit(); }, function() {}); return false;"
                         aria-label="Supprimer toutes les astreintes" title="Supprimer toutes les astreintes">
@@ -37,7 +37,7 @@
         <!-- Pagination en haut + sélecteur -->
         {% if on_calls.has_prev or on_calls.has_next or on_calls.total > 0 %}
         {% set pagination = on_calls %}
-        {% set route = 'oncall' %}
+        {% set route = 'main.oncall' %}
         {% set pagination_total_name = 'astreintes' %}
         {% include "_pagination.html" %}
         {% endif %}
@@ -66,7 +66,7 @@
                             {% if current_user.is_admin %}
                             <div class="is-flex is-flex-wrap-nowrap gap-2 is-align-items-center" role="group" aria-label="Actions pour cette astreinte">
                                 <a class="button is-danger is-small" 
-                                   href="{{ url_for('delete_oncall', oncall_id=oncall.id) }}"
+                                   href="{{ url_for('main.delete_oncall', oncall_id=oncall.id) }}"
                                    onclick="return Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer cette astreinte ?', function() { return true; }, function() { return false; });"
                                    aria-label="Supprimer l'astreinte" title="Supprimer cette astreinte">
                                     <i class="fas fa-trash" aria-hidden="true"></i>
@@ -75,7 +75,7 @@
                                 <!-- Afficher seulement pour la première occurrence de chaque utilisateur -->
                                 {% set is_first_user = namespace(value=(oncall.user.id not in seen_users)) %}
                                 {% if is_first_user.value %}
-                                <form method="POST" action="{{ url_for('delete_all_oncalls_for_user', user_id=oncall.user.id) }}" class="mb-0">
+                                <form method="POST" action="{{ url_for('main.delete_all_oncalls_for_user', user_id=oncall.user.id) }}" class="mb-0">
                                     <button type="submit" class="button is-warning is-small"
                                             onclick="return Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer TOUTES les astreintes de {{ oncall.user.name }} ?', function() { this.form.submit(); }, function() {}); return false;"
                                             aria-label="Supprimer toutes les astreintes de cet utilisateur"
@@ -106,7 +106,7 @@
         <!-- Pagination en bas -->
         {% if on_calls.has_prev or on_calls.has_next or on_calls.total > 0 %}
         {% set pagination = on_calls %}
-        {% set route = 'oncall' %}
+        {% set route = 'main.oncall' %}
         {% set pagination_total_name = 'astreintes' %}
         {% include "_pagination.html" %}
         {% endif %}

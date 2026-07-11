@@ -9,7 +9,7 @@
             <i class="fas fa-plus" aria-hidden="true"></i> Ajouter un groupe
         </h1>
         
-        <form method="POST" action="{{ url_for('add_group') }}">
+        <form method="POST" action="{{ url_for('admin.add_group') }}">
             <div class="box">
                 <div class="field">
                     <label class="label required">Nom du groupe</label>
@@ -41,7 +41,7 @@
                         <button class="button is-primary" type="submit">
                             <i class="fas fa-save" aria-hidden="true"></i>&nbsp; Enregistrer
                         </button>
-                        <a class="button is-light" href="{{ url_for('list_groups') }}">Annuler</a>
+                        <a class="button is-light" href="{{ url_for('admin.list_groups') }}">Annuler</a>
                     </div>
                 </div>
             </div>

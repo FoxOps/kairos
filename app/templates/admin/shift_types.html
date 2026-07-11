@@ -10,7 +10,7 @@
         </h1>
         
         <div class="buttons" role="group" aria-label="Actions types de shifts">
-            {% set add_button_route = 'add_shift_type' %}
+            {% set add_button_route = 'admin.add_shift_type' %}
             {% set add_button_label = 'Ajouter un type de shift' %}
             {% set add_button_icon = 'plus' %}
             {% set add_button_resource_name = 'Ajouter un nouveau type de shift' %}
@@ -39,11 +39,11 @@
                         <td>{{ "%02d"|format(shift_type.end_hour) }}h</td>
                         <td>
                             <div class="is-flex gap-2" role="group" aria-label="Actions pour le type de shift {{ shift_type.name }}">
-                                <a class="button is-small is-info" href="{{ url_for('edit_shift_type', shift_type_id=shift_type.id) }}" 
+                                <a class="button is-small is-info" href="{{ url_for('admin.edit_shift_type', shift_type_id=shift_type.id) }}" 
                                    aria-label="Modifier le type de shift {{ shift_type.name }}" title="Modifier le type de shift">
                                     <i class="fas fa-edit" aria-hidden="true"></i>
                                 </a>
-                                <a class="button is-small is-danger" href="{{ url_for('delete_shift_type', shift_type_id=shift_type.id) }}"
+                                <a class="button is-small is-danger" href="{{ url_for('admin.delete_shift_type', shift_type_id=shift_type.id) }}"
                                    onclick="return Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer le type de shift {{ shift_type.name }} ?', function() { return true; }, function() { return false; });"
                                    aria-label="Supprimer le type de shift {{ shift_type.name }}" title="Supprimer le type de shift">
                                     <i class="fas fa-trash" aria-hidden="true"></i>

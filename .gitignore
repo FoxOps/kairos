@@ -1,3 +1,6 @@
+# Leviia-schedule files and foolders
+app.db
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -62,15 +65,9 @@ db.sqlite3
 db.sqlite3-journal
 
 # Flask stuff:
-instance/
 .webassets-cache
-app.db
-
-# Vendor assets (locally served static files)
-app/static/vendor/
 
 # Logs
-logs/
 *.log
 
 # Scrapy stuff:

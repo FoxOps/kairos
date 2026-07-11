@@ -85,7 +85,7 @@
         <div class="box">
             <h2 class="subtitle"><i class="fas fa-cog" aria-hidden="true"></i> Configuration des règles métiers</h2>
             
-            <form method="POST" action="{{ url_for('automation_shifts') }}">
+            <form method="POST" action="{{ url_for('admin.automation_shifts') }}">
                 <input type="hidden" name="action" value="generate">
                 
                 <div class="notification is-info is-light">
@@ -156,7 +156,7 @@
                         </button>
                     </div>
                     <div class="control">
-                        <a class="button is-light" href="{{ url_for('automation_dashboard') }}">
+                        <a class="button is-light" href="{{ url_for('admin.automation_dashboard') }}">
                             <i class="fas fa-arrow-left"></i>&nbsp; Retour
                         </a>
                     </div>
@@ -193,13 +193,13 @@
                 <li>Des types de shifts sont définis</li>
             </ul>
             <div class="buttons mt-3">
-                <a class="button is-info" href="{{ url_for('list_groups') }}">
+                <a class="button is-info" href="{{ url_for('admin.list_groups') }}">
                     <i class="fas fa-users-cog"></i>&nbsp; Gérer les groupes
                 </a>
-                <a class="button is-info" href="{{ url_for('list_users') }}">
+                <a class="button is-info" href="{{ url_for('admin.list_users') }}">
                     <i class="fas fa-user-plus"></i>&nbsp; Gérer les utilisateurs
                 </a>
-                <a class="button is-info" href="{{ url_for('list_shift_types') }}">
+                <a class="button is-info" href="{{ url_for('admin.list_shift_types') }}">
                     <i class="fas fa-cog"></i>&nbsp; Gérer les types de shifts
                 </a>
             </div>

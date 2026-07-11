@@ -10,20 +10,20 @@ from app.models import User, Group, Shift, OnCall, Leave, ShiftType
 class TestCalendarWindow:
     """Tests pour la fonction _calendar_window."""
 
-    def test_calendar_window_returns_tuple(self, app):
+    def test_calendar_window_returns_tuple(self, test_app):
         """Test que _calendar_window retourne un tuple de 2 dates."""
-        with app.app_context():
-            from app.routes.main import _calendar_window
-            start, end = _calendar_window()
+        with test_app.app_context():
+            from app.services.schedule_service import ScheduleService
+            start, end = ScheduleService.calendar_window()
             assert isinstance(start, datetime)
             assert isinstance(end, datetime)
             assert end > start
 
-    def test_calendar_window_180_days(self, app):
+    def test_calendar_window_180_days(self, test_app):
         """Test que la fenêtre du calendrier est de 180 jours."""
-        with app.app_context():
-            from app.routes.main import _calendar_window, CALENDAR_WINDOW_DAYS
-            start, end = _calendar_window()
+        with test_app.app_context():
+            from app.services.schedule_service import ScheduleService, CALENDAR_WINDOW_DAYS
+            start, end = ScheduleService.calendar_window()
             now = datetime.now()
             expected_start = now - timedelta(days=CALENDAR_WINDOW_DAYS)
             expected_end = now + timedelta(days=CALENDAR_WINDOW_DAYS)
@@ -35,17 +35,17 @@ class TestCalendarWindow:
 class TestBuildCalendarEvents:
     """Tests pour la fonction _build_calendar_events."""
 
-    def test_build_calendar_events_empty(self, app):
+    def test_build_calendar_events_empty(self, test_app):
         """Test que _build_calendar_events retourne une liste vide avec des entrées vides."""
-        with app.app_context():
-            from app.routes.main import _build_calendar_events
-            events = _build_calendar_events([], [], [])
+        with test_app.app_context():
+            from app.services.schedule_service import ScheduleService
+            events = ScheduleService.build_calendar_events([], [], [])
             assert events == []
 
-    def test_build_calendar_events_with_shift(self, app, test_user, test_shift_type):
+    def test_build_calendar_events_with_shift(self, test_app, test_user, test_shift_type):
         """Test que _build_calendar_events crée des événements pour les shifts."""
-        with app.app_context():
-            from app.routes.main import _build_calendar_events
+        with test_app.app_context():
+            from app.services.schedule_service import ScheduleService
             now = datetime.now()
             shift = Shift(
                 user_id=test_user.id,
@@ -56,15 +56,15 @@ class TestBuildCalendarEvents:
                 user=test_user,
                 shift_type=test_shift_type
             )
-            events = _build_calendar_events([shift], [], [])
+            events = ScheduleService.build_calendar_events([shift], [], [])
             assert len(events) == 1
             assert events[0]['className'] == 'fc-event-shift'
             assert test_user.name in events[0]['title']
 
-    def test_build_calendar_events_with_oncall(self, app, test_user):
+    def test_build_calendar_events_with_oncall(self, test_app, test_user):
         """Test que _build_calendar_events crée des événements pour les astreintes."""
-        with app.app_context():
-            from app.routes.main import _build_calendar_events
+        with test_app.app_context():
+            from app.services.schedule_service import ScheduleService
             now = datetime.now()
             oncall = OnCall(
                 user_id=test_user.id,
@@ -72,22 +72,22 @@ class TestBuildCalendarEvents:
                 end_time=now + timedelta(days=8),
                 user=test_user
             )
-            events = _build_calendar_events([], [oncall], [])
+            events = ScheduleService.build_calendar_events([], [oncall], [])
             assert len(events) == 1
             assert events[0]['className'] == 'fc-event-oncall'
             assert 'Astreinte' in events[0]['title']
 
-    def test_build_calendar_events_with_leave(self, app, test_user):
+    def test_build_calendar_events_with_leave(self, test_app, test_user):
         """Test que _build_calendar_events crée des événements pour les congés."""
-        with app.app_context():
-            from app.routes.main import _build_calendar_events
+        with test_app.app_context():
+            from app.services.schedule_service import ScheduleService
             leave = Leave(
                 user_id=test_user.id,
                 start_date=date.today() + timedelta(days=1),
                 end_date=date.today() + timedelta(days=5),
                 user=test_user
             )
-            events = _build_calendar_events([], [], [leave])
+            events = ScheduleService.build_calendar_events([], [], [leave])
             assert len(events) == 1
             assert events[0]['className'] == 'fc-event-leave'
             assert events[0]['allDay'] is True
@@ -180,21 +180,21 @@ class TestAddLeaveRoute:
 class TestAddOnCallRoute:
     """Tests pour la route add_oncall."""
 
-    def test_add_oncall_get_requires_admin(self, logged_in_client):
+    def test_add_oncall_get_requires_admin(self, non_admin_client):
         """Test que add_oncall GET nécessite admin."""
-        response = logged_in_client.get('/oncall/add')
+        response = non_admin_client.get('/oncall/add')
         # 302 = redirection vers login (car non admin)
         assert response.status_code in [302, 403]
 
-    def test_add_oncall_post_missing_fields(self, logged_in_admin_client):
+    def test_add_oncall_post_missing_fields(self, logged_in_client):
         """Test que add_oncall POST échoue avec des champs manquants."""
-        response = logged_in_admin_client.post('/oncall/add', data={})
+        response = logged_in_client.post('/oncall/add', data={})
         # 302 = redirection avec flash message
         assert response.status_code == 302
 
-    def test_add_oncall_post_invalid_date(self, logged_in_admin_client):
+    def test_add_oncall_post_invalid_date(self, logged_in_client):
         """Test que add_oncall POST échoue avec une date invalide."""
-        response = logged_in_admin_client.post('/oncall/add', data={
+        response = logged_in_client.post('/oncall/add', data={
             'user_id': 1,
             'start_date': 'invalid-date'
         })
@@ -205,15 +205,15 @@ class TestAddOnCallRoute:
 class TestAddShiftRoute:
     """Tests pour la route add_shift."""
 
-    def test_add_shift_get_requires_admin(self, logged_in_client):
+    def test_add_shift_get_requires_admin(self, non_admin_client):
         """Test que add_shift GET nécessite admin."""
-        response = logged_in_client.get('/schedule/add')
+        response = non_admin_client.get('/schedule/add')
         # 302 = redirection vers login (car non admin)
         assert response.status_code in [302, 403]
 
-    def test_add_shift_post_missing_fields(self, logged_in_admin_client):
+    def test_add_shift_post_missing_fields(self, logged_in_client):
         """Test que add_shift POST échoue avec des champs manquants."""
-        response = logged_in_admin_client.post('/schedule/add', data={})
+        response = logged_in_client.post('/schedule/add', data={})
         # 302 = redirection avec flash message
         assert response.status_code == 302
 
@@ -262,20 +262,20 @@ class TestAPIEndpoints:
         assert response.status_code == 200
         assert response.content_type == 'application/json'
 
-    def test_api_create_shift_requires_admin(self, logged_in_client):
+    def test_api_create_shift_requires_admin(self, non_admin_client):
         """Test que POST /api/shifts nécessite admin."""
-        response = logged_in_client.post('/api/shifts', json={})
+        response = non_admin_client.post('/api/shifts', json={})
         # 302 = redirection vers login (car non admin)
         assert response.status_code in [302, 403]
 
-    def test_api_update_shift_requires_admin(self, logged_in_client):
+    def test_api_update_shift_requires_admin(self, non_admin_client):
         """Test que PATCH /api/shifts/<id> nécessite admin."""
-        response = logged_in_client.patch('/api/shifts/1', json={})
+        response = non_admin_client.patch('/api/shifts/1', json={})
         # 302 = redirection vers login (car non admin)
         assert response.status_code in [302, 403]
 
-    def test_api_delete_shift_requires_admin(self, logged_in_client):
+    def test_api_delete_shift_requires_admin(self, non_admin_client):
         """Test que DELETE /api/shifts/<id> nécessite admin."""
-        response = logged_in_client.delete('/api/shifts/1')
+        response = non_admin_client.delete('/api/shifts/1')
         # 302 = redirection vers login (car non admin)
         assert response.status_code in [302, 403]

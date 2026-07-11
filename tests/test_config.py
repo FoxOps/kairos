@@ -50,8 +50,9 @@ class TestConfig:
 
         from config import Config
         config = Config()
-        # Note: This is the default value from config.py, not a real secret
-        assert config.SECRET_KEY == "ta-cle-secrete-ici"  # noqa: S105
+        # SECRET_KEY sans env var: généré aléatoirement (secrets.token_urlsafe), pas de valeur statique
+        assert isinstance(config.SECRET_KEY, str)
+        assert len(config.SECRET_KEY) > 0
 
     def test_config_sqlalchemy_database_uri(self):
         """Test que SQLALCHEMY_DATABASE_URI est configuré."""
@@ -135,36 +136,36 @@ class TestConfig:
 class TestConfigInApp:
     """Tests pour vérifier que la configuration est correctement appliquée à l'application."""
 
-    def test_app_uses_config(self, app):
+    def test_app_uses_config(self, test_app):
         """Test que l'application utilise la configuration Config."""
-        with app.app_context():
-            assert app.config["SECRET_KEY"] is not None
-            assert "SQLALCHEMY_DATABASE_URI" in app.config
-            assert "SQLALCHEMY_TRACK_MODIFICATIONS" in app.config
+        with test_app.app_context():
+            assert test_app.config["SECRET_KEY"] is not None
+            assert "SQLALCHEMY_DATABASE_URI" in test_app.config
+            assert "SQLALCHEMY_TRACK_MODIFICATIONS" in test_app.config
 
-    def test_app_config_testing_mode(self, app):
+    def test_app_config_testing_mode(self, test_app):
         """Test que le mode TESTING est activé dans les tests."""
-        with app.app_context():
-            assert app.config["TESTING"] is True
+        with test_app.app_context():
+            assert test_app.config["TESTING"] is True
 
-    def test_app_config_secret_key_in_tests(self, app):
+    def test_app_config_secret_key_in_tests(self, test_app):
         """Test que SECRET_KEY est défini dans les tests."""
-        with app.app_context():
+        with test_app.app_context():
             # This is a test value, not a real secret
-            assert app.config["SECRET_KEY"] == "test-secret-key"  # noqa: S105
+            assert test_app.config["SECRET_KEY"] == "test-secret-key"  # noqa: S105
 
-    def test_app_config_database_uri_in_tests(self, app):
+    def test_app_config_database_uri_in_tests(self, test_app):
         """Test que la base de données en mémoire est utilisée dans les tests."""
-        with app.app_context():
-            assert app.config["SQLALCHEMY_DATABASE_URI"] == "sqlite:///:memory:"
+        with test_app.app_context():
+            assert test_app.config["SQLALCHEMY_DATABASE_URI"] == "sqlite:///:memory:"
 
 
 class TestConfigEnvironmentVariables:
     """Tests pour les variables d'environnement."""
 
-    def test_all_config_values_accessible(self, app):
+    def test_all_config_values_accessible(self, test_app):
         """Test que toutes les valeurs de configuration sont accessibles."""
-        with app.app_context():
+        with test_app.app_context():
             config_keys = [
                 "SECRET_KEY",
                 "SQLALCHEMY_DATABASE_URI",
@@ -176,4 +177,4 @@ class TestConfigEnvironmentVariables:
             ]
 
             for key in config_keys:
-                assert key in app.config, f"Clé de configuration manquante: {key}"
+                assert key in test_app.config, f"Clé de configuration manquante: {key}"

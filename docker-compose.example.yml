@@ -1,0 +1,27 @@
+# Exemple de configuration Docker Compose pour Leviia Schedule avec OIDC-Mock
+# Ce fichier montre comment configurer Leviia Schedule avec un fournisseur OIDC mock
+# pour le développement et les tests.
+#
+# Pour l'utiliser:
+# 1. Copiez ce fichier en docker-compose.yml
+# 2. Créez un fichier .env avec les variables d'environnement nécessaires
+# 3. Lancez avec: docker-compose up -d
+
+services:
+  leviia-schedule:
+    image: leviia-schedule:optimized
+    container_name: leviia-schedule
+    ports:
+      - "5000:5000"
+    user: "1000:1000"
+    env_file:
+      - ./.env
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - leviia-network
+
+networks:
+  leviia-network:
+    driver: bridge

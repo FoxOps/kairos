@@ -15,7 +15,7 @@
                     <h2 class="subtitle"><i class="fas fa-cogs" aria-hidden="true"></i> Génération complète</h2>
                     <p>Générer les astreintes. Les shifts seront automatiquement générés selon les nouvelles règles métiers.</p>
                     <div class="buttons mt-3">
-                        <a class="button is-success is-small" href="{{ url_for('automation_full') }}">
+                        <a class="button is-success is-small" href="{{ url_for('admin.automation_full') }}">
                             <i class="fas fa-play"></i>&nbsp; Lancer
                         </a>
                     </div>
@@ -27,7 +27,7 @@
                     <h2 class="subtitle"><i class="fas fa-sync-alt" aria-hidden="true"></i> Rafraîchir Shifts</h2>
                     <p>Recalculer les shifts en tenant compte des astreintes actuelles (même modifiées manuellement).</p>
                     <div class="buttons mt-3">
-                        <a class="button is-warning is-small" href="{{ url_for('refresh_shifts') }}">
+                        <a class="button is-warning is-small" href="{{ url_for('admin.refresh_shifts') }}">
                             <i class="fas fa-sync"></i>&nbsp; Rafraîchir
                         </a>
                     </div>

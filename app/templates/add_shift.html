@@ -9,7 +9,7 @@
             <i class="fas fa-plus" aria-hidden="true"></i> Ajouter un shift
         </h1>
         
-        <form method="POST" action="{{ url_for('add_shift') }}" aria-labelledby="form-title">
+        <form method="POST" action="{{ url_for('main.add_shift') }}" aria-labelledby="form-title">
             <div class="box">
                 <div class="field">
                     <label class="label required" for="user_id">Utilisateur</label>
@@ -64,7 +64,7 @@
                             <button class="button is-primary" type="submit" aria-label="Enregistrer le shift" title="Enregistrer le shift">
                                 <i class="fas fa-save" aria-hidden="true"></i>&nbsp; Enregistrer
                             </button>
-                            <a class="button is-light" href="{{ url_for('schedule') }}" aria-label="Annuler et retourner à la liste" title="Annuler">
+                            <a class="button is-light" href="{{ url_for('main.schedule') }}" aria-label="Annuler et retourner à la liste" title="Annuler">
                                 Annuler
                             </a>
                         </div>

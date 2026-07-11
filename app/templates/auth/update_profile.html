@@ -10,7 +10,7 @@
                 <div class="box">
                     <h1 class="title is-4 has-text-centered">Modifier mon profil</h1>
                     
-                    <form method="POST" action="{{ url_for('update_profile') }}">
+                    <form method="POST" action="{{ url_for('auth.update_profile') }}">
                         <div class="field is-horizontal">
                             <div class="field-label is-normal">
                                 <label class="label required" for="name">Nom</label>
@@ -94,7 +94,7 @@
                                 </button>
                             </div>
                             <div class="control">
-                                <a href="{{ url_for('profile') }}" class="button is-light">
+                                <a href="{{ url_for('auth.profile') }}" class="button is-light">
                                     Annuler
                                 </a>
                             </div>

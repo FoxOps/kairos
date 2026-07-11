@@ -69,19 +69,19 @@
                     </div>
                     
                     <div class="buttons is-centered mt-5">
-                        <a href="{{ url_for('update_profile') }}" class="button is-primary" aria-label="Modifier le profil">
+                        <a href="{{ url_for('auth.update_profile') }}" class="button is-primary" aria-label="Modifier le profil">
                             <span class="icon">
                                 <i class="fas fa-edit" aria-hidden="true"></i>
                             </span>
                             <span>Modifier le profil</span>
                         </a>
-                        <a href="{{ url_for('generate_ics_token') }}" class="button is-info" aria-label="Générer un token ICS">
+                        <a href="{{ url_for('auth.generate_ics_token') }}" class="button is-info" aria-label="Générer un token ICS">
                             <span class="icon">
                                 <i class="fas fa-calendar-alt" aria-hidden="true"></i>
                             </span>
                             <span>Token ICS</span>
                         </a>
-                        <a href="{{ url_for('index') }}" class="button is-light" aria-label="Retour à l'accueil">
+                        <a href="{{ url_for("main.index") }}" class="button is-light" aria-label="Retour à l'accueil">
                             Retour
                         </a>
                     </div>

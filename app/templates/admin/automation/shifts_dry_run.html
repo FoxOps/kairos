@@ -67,7 +67,7 @@
 
         <div class="field is-grouped mt-5">
             <div class="control">
-                <form method="POST" action="{{ url_for('automation_shifts') }}">
+                <form method="POST" action="{{ url_for('admin.automation_shifts') }}">
                     <input type="hidden" name="action" value="generate">
                     <input type="hidden" name="start_date" value="{{ start_date.strftime('%Y-%m-%d') }}">
                     <input type="hidden" name="end_date" value="{{ end_date.strftime('%Y-%m-%d') }}">
@@ -83,7 +83,7 @@
                 </form>
             </div>
             <div class="control">
-                <a class="button is-light" href="{{ url_for('automation_shifts') }}">
+                <a class="button is-light" href="{{ url_for('admin.automation_shifts') }}">
                     <i class="fas fa-arrow-left"></i>&nbsp; Retour à la configuration
                 </a>
             </div>

@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             {% endif %}
             
-            <form method="POST" action="{{ url_for('automation_full') }}">
+            <form method="POST" action="{{ url_for('admin.automation_full') }}">
                 <input type="hidden" name="action" value="generate">
                 
                 <div class="field">
@@ -300,7 +300,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </button>
                     </div>
                     <div class="control">
-                        <a class="button is-light" href="{{ url_for('automation_dashboard') }}">
+                        <a class="button is-light" href="{{ url_for('admin.automation_dashboard') }}">
                             <i class="fas fa-arrow-left"></i>&nbsp; Retour
                         </a>
                     </div>
@@ -313,15 +313,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 <p>Vérifiez que :</p>
                 <ul>
                     <li>Des utilisateurs existent</li>
-                    <li>Les utilisateurs appartiennent à un groupe configuré dans <a href="{{ url_for('automation_dashboard') }}">la configuration</a></li>
+                    <li>Les utilisateurs appartiennent à un groupe configuré dans <a href="{{ url_for('admin.automation_dashboard') }}">la configuration</a></li>
                 </ul>
-                <a class="button is-info mt-3" href="{{ url_for('list_groups') }}">
+                <a class="button is-info mt-3" href="{{ url_for('admin.list_groups') }}">
                     <i class="fas fa-users-cog"></i>&nbsp; Gérer les groupes
                 </a>
-                <a class="button is-info mt-3" href="{{ url_for('list_users') }}">
+                <a class="button is-info mt-3" href="{{ url_for('admin.list_users') }}">
                     <i class="fas fa-user-plus"></i>&nbsp; Gérer les utilisateurs
                 </a>
-                <a class="button is-info mt-3" href="{{ url_for('automation_dashboard') }}">
+                <a class="button is-info mt-3" href="{{ url_for('admin.automation_dashboard') }}">
                     <i class="fas fa-cog"></i>&nbsp; Configurer les groupes éligibles
                 </a>
             </div>

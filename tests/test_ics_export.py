@@ -4,7 +4,7 @@ Tests pour l'export ICS.
 
 import pytest
 from datetime import datetime, timedelta
-from app.utils.ics_exporter import (
+from app.utils.export import (
     generate_ics_shifts,
     generate_ics_oncall,
     generate_ics_leaves,
@@ -67,7 +67,7 @@ class TestICSExport:
         assert "DTSTART" in ics_content
         assert "DTEND" in ics_content
 
-    def test_generate_ics_leaves_all_day(self, app, test_user):
+    def test_generate_ics_leaves_all_day(self, test_app, test_user):
         """Test que les congés sont exportés comme événements toute la journée."""
         start_date = datetime(2023, 12, 10).date()
         end_date = datetime(2023, 12, 15).date()
@@ -82,9 +82,9 @@ class TestICSExport:
         assert "DTEND" in ics_content
         assert "Europe/Paris" in ics_content
 
-    def test_generate_ics_multiple_shifts(self, app, test_user, test_shift_type):
+    def test_generate_ics_multiple_shifts(self, test_app, test_user, test_shift_type):
         """Test l'export de plusieurs shifts."""
-        with app.app_context():
+        with test_app.app_context():
             # Créer plusieurs shifts
             shifts = []
             for i in range(3):
@@ -110,9 +110,9 @@ class TestICSExport:
             assert ics_content.count("BEGIN:VEVENT") == 3
             assert ics_content.count("END:VEVENT") == 3
 
-    def test_generate_ics_multiple_oncalls(self, app, test_user):
+    def test_generate_ics_multiple_oncalls(self, test_app, test_user):
         """Test l'export de plusieurs astreintes."""
-        with app.app_context():
+        with test_app.app_context():
             # Créer plusieurs astreintes
             on_calls = []
             for i in range(2):
@@ -135,9 +135,9 @@ class TestICSExport:
             assert ics_content.count("BEGIN:VEVENT") == 2
             assert ics_content.count("END:VEVENT") == 2
 
-    def test_generate_ics_empty_lists(self, app):
+    def test_generate_ics_empty_lists(self, test_app):
         """Test l'export avec des listes vides."""
-        with app.app_context():
+        with test_app.app_context():
             # Shifts vides
             ics_content = generate_ics_shifts([])
             assert "BEGIN:VCALENDAR" in ics_content
@@ -155,10 +155,10 @@ class TestICSExport:
             assert ics_content.count("BEGIN:VEVENT") == 0
 
     def test_generate_ics_standard_with_mixed_events(
-        self, app, test_user, test_shift_type
+        self, test_app, test_user, test_shift_type
     ):
         """Test la fonction générique avec différents types d'événements."""
-        with app.app_context():
+        with test_app.app_context():
             # Créer un shift
             shift_date = datetime(2023, 12, 1).date()
             start_time = datetime.combine(shift_date, datetime.min.time()).replace(
@@ -202,9 +202,9 @@ class TestICSExport:
             assert "Astreinte" in ics_content
             assert "Test Calendar" in ics_content
 
-    def test_generate_ics_shift_with_user_info(self, app, test_user, test_shift_type):
+    def test_generate_ics_shift_with_user_info(self, test_app, test_user, test_shift_type):
         """Test que les informations de l'utilisateur sont incluses dans l'export."""
-        with app.app_context():
+        with test_app.app_context():
             shift_date = datetime(2023, 12, 1).date()
             start_time = datetime.combine(shift_date, datetime.min.time()).replace(
                 hour=7
@@ -225,9 +225,9 @@ class TestICSExport:
             # Vérifier que le nom de l'utilisateur est présent
             assert test_user.name in ics_content
 
-    def test_generate_ics_leave_without_reason(self, app, test_user):
+    def test_generate_ics_leave_without_reason(self, test_app, test_user):
         """Test que l'export des congés fonctionne sans raison."""
-        with app.app_context():
+        with test_app.app_context():
             leave_start = datetime(2023, 12, 10).date()
             leave_end = datetime(2023, 12, 15).date()
             leave = Leave(

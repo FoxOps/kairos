@@ -9,7 +9,7 @@
             <i class="fas fa-plus" aria-hidden="true"></i> Ajouter un type de shift
         </h1>
         
-        <form method="POST" action="{{ url_for('add_shift_type') }}">
+        <form method="POST" action="{{ url_for('admin.add_shift_type') }}">
             <div class="box">
                 <div class="field">
                     <label class="label required">Nom *</label>
@@ -48,7 +48,7 @@
                         <button class="button is-primary" type="submit">
                             <i class="fas fa-save" aria-hidden="true"></i>&nbsp; Enregistrer
                         </button>
-                        <a class="button is-light" href="{{ url_for('list_shift_types') }}">Annuler</a>
+                        <a class="button is-light" href="{{ url_for('admin.list_shift_types') }}">Annuler</a>
                     </div>
                 </div>
             </div>

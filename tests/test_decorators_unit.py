@@ -4,7 +4,7 @@ Tests unitaires pour les décorateurs sans contexte Flask.
 
 import pytest
 from unittest.mock import Mock, MagicMock, patch
-from app.utils.decorators import (
+from app.auth.decorators import (
     admin_required,
     role_required,
     user_owns_resource,

@@ -20,7 +20,7 @@
                         {% if oidc_enabled %}
                         <div class="field mb-4">
                             <div class="control">
-                                <a href="{{ url_for('oidc_login') }}" class="button is-info is-fullwidth" aria-label="Se connecter avec OIDC">
+                                <a href="{{ url_for('auth.oidc_login') }}" class="button is-info is-fullwidth" aria-label="Se connecter avec OIDC">
                                     <span class="icon">
                                         <i class="fas fa-key" aria-hidden="true"></i>
                                     </span>
@@ -34,7 +34,7 @@
                         </div>
                         {% endif %}
                         
-                        <form method="POST" action="{{ url_for('login') }}" aria-labelledby="login-title">
+                        <form method="POST" action="{{ url_for('auth.login') }}" aria-labelledby="login-title">
                             <div class="field">
                                 <label class="label required" for="email">Adresse email</label>
                                 <div class="control has-icons-left">
@@ -82,7 +82,7 @@
                         
                         <div class="has-text-centered mt-4">
                             <p class="is-size-7">
-                                <a href="{{ url_for('index') }}" aria-label="Retour à la page d'accueil">Retour à l'accueil</a>
+                                <a href="{{ url_for("main.index") }}" aria-label="Retour à la page d'accueil">Retour à l'accueil</a>
                             </p>
                         </div>
                     </div>

@@ -11,12 +11,12 @@ from app.models import User, Group, Shift, OnCall, Leave, ShiftType
 class TestDeleteAllShifts:
     """Tests pour /shift/delete-all."""
 
-    def test_delete_all_shifts(self, logged_in_admin_client, test_shift):
+    def test_delete_all_shifts(self, logged_in_client, test_shift):
         """Test la suppression de tous les shifts."""
         initial_count = Shift.query.count()
         assert initial_count > 0
         
-        response = logged_in_admin_client.post("/shift/delete-all", follow_redirects=True)
+        response = logged_in_client.post("/shift/delete-all", follow_redirects=True)
         assert response.status_code == 200
         assert Shift.query.count() == 0
 
@@ -24,7 +24,7 @@ class TestDeleteAllShifts:
 class TestDeleteAllShiftsForUser:
     """Tests pour /shift/delete-all-for-user/<user_id>."""
 
-    def test_delete_all_shifts_for_user(self, logged_in_admin_client, test_user, test_shift_type):
+    def test_delete_all_shifts_for_user(self, logged_in_client, test_user, test_shift_type):
         """Test la suppression de tous les shifts d'un utilisateur."""
         # Créer des shifts
         for i in range(3):
@@ -39,7 +39,7 @@ class TestDeleteAllShiftsForUser:
             db.session.add(shift)
         db.session.commit()
         
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             f"/shift/delete-all-for-user/{test_user.id}",
             follow_redirects=True,
         )
@@ -50,7 +50,7 @@ class TestDeleteAllShiftsForUser:
 class TestDeleteAllShiftsForDay:
     """Tests pour /shift/delete-day/<date_str>."""
 
-    def test_delete_all_shifts_for_day(self, logged_in_admin_client, test_user, test_shift_type):
+    def test_delete_all_shifts_for_day(self, logged_in_client, test_user, test_shift_type):
         """Test la suppression de tous les shifts pour un jour."""
         today = datetime.now().date()
         # Créer des shifts pour aujourd'hui
@@ -66,7 +66,7 @@ class TestDeleteAllShiftsForDay:
             db.session.add(shift)
         db.session.commit()
         
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             f"/shift/delete-day/{today.strftime('%Y-%m-%d')}",
             follow_redirects=True,
         )
@@ -77,7 +77,7 @@ class TestDeleteAllShiftsForDay:
 class TestDeleteAllShiftsForWeek:
     """Tests pour /shift/delete-week/<date_str>."""
 
-    def test_delete_all_shifts_for_week(self, logged_in_admin_client, test_user, test_shift_type):
+    def test_delete_all_shifts_for_week(self, logged_in_client, test_user, test_shift_type):
         """Test la suppression de tous les shifts pour une semaine."""
         today = datetime.now().date()
         monday = today - timedelta(days=today.weekday())
@@ -96,7 +96,7 @@ class TestDeleteAllShiftsForWeek:
             db.session.add(shift)
         db.session.commit()
         
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             f"/shift/delete-week/{monday.strftime('%Y-%m-%d')}",
             follow_redirects=True,
         )
@@ -110,12 +110,12 @@ class TestDeleteAllShiftsForWeek:
 class TestDeleteAllOnCalls:
     """Tests pour /oncall/delete-all."""
 
-    def test_delete_all_oncalls(self, logged_in_admin_client, test_oncall):
+    def test_delete_all_oncalls(self, logged_in_client, test_oncall):
         """Test la suppression de toutes les astreintes."""
         initial_count = OnCall.query.count()
         assert initial_count > 0
         
-        response = logged_in_admin_client.post("/oncall/delete-all", follow_redirects=True)
+        response = logged_in_client.post("/oncall/delete-all", follow_redirects=True)
         assert response.status_code == 200
         assert OnCall.query.count() == 0
 
@@ -123,7 +123,7 @@ class TestDeleteAllOnCalls:
 class TestDeleteAllOnCallsForUser:
     """Tests pour /oncall/delete-all-for-user/<user_id>."""
 
-    def test_delete_all_oncalls_for_user(self, logged_in_admin_client, test_user):
+    def test_delete_all_oncalls_for_user(self, logged_in_client, test_user):
         """Test la suppression de toutes les astreintes d'un utilisateur."""
         # Créer des astreintes
         for i in range(3):
@@ -138,7 +138,7 @@ class TestDeleteAllOnCallsForUser:
             db.session.add(oncall)
         db.session.commit()
         
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             f"/oncall/delete-all-for-user/{test_user.id}",
             follow_redirects=True,
         )
@@ -149,11 +149,11 @@ class TestDeleteAllOnCallsForUser:
 class TestCalendarFunctions:
     """Tests pour les fonctions utilitaires du calendrier."""
 
-    def test_calendar_window(self, app):
+    def test_calendar_window(self, test_app):
         """Test _calendar_window."""
-        from app.routes.main import _calendar_window, CALENDAR_WINDOW_DAYS
+        from app.services.schedule_service import ScheduleService, CALENDAR_WINDOW_DAYS
         
-        start, end = _calendar_window()
+        start, end = ScheduleService.calendar_window()
         assert isinstance(start, datetime)
         assert isinstance(end, datetime)
         
@@ -164,16 +164,16 @@ class TestCalendarFunctions:
         assert abs((start - expected_start).total_seconds()) < 10
         assert abs((end - expected_end).total_seconds()) < 10
 
-    def test_build_calendar_events_empty(self, app):
+    def test_build_calendar_events_empty(self, test_app):
         """Test _build_calendar_events avec des listes vides."""
-        from app.routes.main import _build_calendar_events
+        from app.services.schedule_service import ScheduleService
         
-        events = _build_calendar_events([], [], [])
+        events = ScheduleService.build_calendar_events([], [], [])
         assert events == []
 
-    def test_build_calendar_events_with_data(self, app, test_user, test_shift_type):
+    def test_build_calendar_events_with_data(self, test_app, test_user, test_shift_type):
         """Test _build_calendar_events avec des données."""
-        from app.routes.main import _build_calendar_events
+        from app.services.schedule_service import ScheduleService
         
         start_time = datetime.now() + timedelta(days=1)
         shift = Shift(
@@ -186,6 +186,6 @@ class TestCalendarFunctions:
             shift_type=test_shift_type,
         )
         
-        events = _build_calendar_events([shift], [], [])
+        events = ScheduleService.build_calendar_events([shift], [], [])
         assert len(events) == 1
         assert events[0]["title"] == f"{test_user.name} - {test_shift_type.label}"

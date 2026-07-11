@@ -4,7 +4,7 @@ Tests unitaires pour les fonctions dans run.py
 
 import pytest
 from datetime import datetime, timedelta
-from app import create_app, db
+from app import db
 from app.models import User, Group, Shift, OnCall, Leave, ShiftType
 from run import (
     check_database_integrity,
@@ -12,25 +12,6 @@ from run import (
     create_default_data,
     DEFAULT_SHIFT_TYPES,
 )
-
-
-@pytest.fixture(scope="function")
-def app():
-    """Crée une instance de l'application Flask pour les tests."""
-    app = create_app()
-    app.config["TESTING"] = True
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-    app.config["SECRET_KEY"] = "test-secret-key"
-
-    # Importer les routes
-    from app.routes import main, admin, export, auth
-
-    with app.app_context():
-        db.drop_all()
-        db.create_all()
-        yield app
-        db.session.rollback()
-        db.drop_all()
 
 
 class TestDefaultShiftTypes:
@@ -68,9 +49,9 @@ class TestDefaultShiftTypes:
 class TestDatabaseIntegrity:
     """Tests pour check_database_integrity."""
 
-    def test_check_database_integrity_valid(self, app):
+    def test_check_database_integrity_valid(self, test_app):
         """Test avec une base de données valide."""
-        with app.app_context():
+        with test_app.app_context():
             # Créer toutes les tables nécessaires
             db.create_all()
             
@@ -88,9 +69,9 @@ class TestDatabaseIntegrity:
             result = check_database_integrity()
             assert result is True
 
-    def test_check_database_integrity_missing_table(self, app):
+    def test_check_database_integrity_missing_table(self, test_app):
         """Test avec une table manquante."""
-        with app.app_context():
+        with test_app.app_context():
             # Ne créer aucune table
             db.drop_all()
             
@@ -101,11 +82,11 @@ class TestDatabaseIntegrity:
 class TestInitializeDatabase:
     """Tests pour initialize_database."""
 
-    def test_initialize_database_creates_tables(self, app):
+    def test_initialize_database_creates_tables(self, test_app):
         """Test que l'initialisation crée toutes les tables."""
-        with app.app_context():
+        with test_app.app_context():
             db.drop_all()
-            
+            setup_database()
             create_default_data()
             
             # Vérifier que les tables existent
@@ -120,11 +101,11 @@ class TestInitializeDatabase:
             assert "on_call" in tables
             assert "leave" in tables
 
-    def test_initialize_database_creates_default_shift_types(self, app):
+    def test_initialize_database_creates_default_shift_types(self, test_app):
         """Test que l'initialisation crée les types de shifts par défaut."""
-        with app.app_context():
+        with test_app.app_context():
             db.drop_all()
-            
+            setup_database()
             create_default_data()
             
             # Vérifier que les types de shifts par défaut existent
@@ -142,9 +123,9 @@ class TestInitializeDatabase:
 class TestCreateDefaultData:
     """Tests pour create_default_data."""
 
-    def test_create_default_data_creates_group(self, app):
+    def test_create_default_data_creates_group(self, test_app):
         """Test que create_default_data crée un groupe par défaut."""
-        with app.app_context():
+        with test_app.app_context():
             # S'assurer qu'aucun groupe n'existe
             Group.query.delete()
             db.session.commit()
@@ -157,9 +138,9 @@ class TestCreateDefaultData:
             assert group.is_part_of_schedule is True
             assert group.is_part_of_oncall is True
 
-    def test_create_default_data_creates_admin_user(self, app):
+    def test_create_default_data_creates_admin_user(self, test_app):
         """Test que create_default_data crée un utilisateur admin."""
-        with app.app_context():
+        with test_app.app_context():
             # S'assurer qu'aucun utilisateur n'existe
             User.query.delete()
             Group.query.delete()
@@ -175,11 +156,15 @@ class TestCreateDefaultData:
             
             # Vérifier que le mot de passe est correct
 
-    def test_create_default_data_does_not_duplicate(self, app):
+    def test_create_default_data_does_not_duplicate(self, test_app):
         """Test que create_default_data ne duplique pas les données."""
-        with app.app_context():
-            # Créer un groupe et un utilisateur
-            group = Group(name="Test Group", is_part_of_schedule=True, is_part_of_oncall=True)
+        with test_app.app_context():
+            # Créer un groupe et un utilisateur - le nom du groupe doit
+            # correspondre à celui que create_default_data() recherche
+            # ("Defaut" par défaut), sinon le test ne vérifie rien : il
+            # créerait juste un second groupe sans jamais exercer la
+            # logique de non-duplication.
+            group = Group(name="Defaut", is_part_of_schedule=True, is_part_of_oncall=True)
             db.session.add(group)
             db.session.commit()
             
@@ -204,11 +189,12 @@ class TestCreateDefaultData:
             assert User.query.count() == initial_user_count
 
 
+class TestSetupDatabase:
     """Tests pour setup_database."""
 
-    def test_setup_database_empty(self, app):
+    def test_setup_database_empty(self, test_app):
         """Test setup_database avec une base vide."""
-        with app.app_context():
+        with test_app.app_context():
             db.drop_all()
             
             setup_database()
@@ -221,9 +207,9 @@ class TestCreateDefaultData:
             assert "groups" in tables
             assert "user" in tables
 
-    def test_setup_database_with_valid_structure(self, app):
+    def test_setup_database_with_valid_structure(self, test_app):
         """Test setup_database avec une structure valide."""
-        with app.app_context():
+        with test_app.app_context():
             db.create_all()
             
             # setup_database ne devrait rien faire

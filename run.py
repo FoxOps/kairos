@@ -36,64 +36,74 @@ def check_database_integrity():
 
 
 def setup_database():
-    """Configure la base de données."""
-    with app.app_context():
-        # Créer les tables si elles n'existent pas
+    """Configure la base de données.
+
+    Nécessite un contexte d'application actif (l'appelant doit déjà être
+    dans un `with app.app_context():`, ou équivalent pour les tests).
+    """
+    # Créer les tables si elles n'existent pas
+    db.create_all()
+
+    # Vérifier l'intégrité de la base de données
+    if not check_database_integrity():
+        # Si les tables n'existent pas, les recréer
+        db.drop_all()
         db.create_all()
-        
-        # Vérifier l'intégrité de la base de données
-        if not check_database_integrity():
-            # Si les tables n'existent pas, les recréer
-            db.drop_all()
-            db.create_all()
 
 
 def create_default_data():
-    """Crée les données par défaut si elles n'existent pas."""
+    """Crée les données par défaut si elles n'existent pas.
+
+    Nécessite un contexte d'application actif (l'appelant doit déjà être
+    dans un `with app.app_context():`, ou équivalent pour les tests).
+    """
     import os
     from werkzeug.security import generate_password_hash
-    
-    with app.app_context():
-        # Créer le groupe par défaut
-        default_group_name = os.environ.get("DEFAULT_GROUP_NAME") or "Defaut"
-        default_group = Group.query.filter_by(name=default_group_name).first()
-        if not default_group:
-            default_group = Group(name=default_group_name)
-            db.session.add(default_group)
-            db.session.commit()
-        
-        # Créer l'utilisateur admin par défaut
-        default_admin_email = os.environ.get("DEFAULT_ADMIN_EMAIL") or "admin@leviia.local"
-        default_admin_password = os.environ.get("DEFAULT_ADMIN_PASSWORD") or secrets.token_urlsafe(16)
-        
-        admin_user = User.query.filter_by(email=default_admin_email).first()
-        if not admin_user:
-            # ✅ CORRIGÉ: Le modèle User n'a pas de champ 'username', utiliser 'name' à la place
-            admin_user = User(
-                email=default_admin_email,
-                name="Administrateur",  # Utiliser 'name' au lieu de 'username'
-                password_hash=generate_password_hash(default_admin_password),
-                is_admin=True,
-                group_id=default_group.id
-            )
-            db.session.add(admin_user)
-            db.session.commit()
-            print(f"✅ Utilisateur admin créé: {default_admin_email}")
-        else:
-            print(f"✅ Utilisateur admin existe déjà: {default_admin_email}")
-        
-        # Créer les types de shifts par défaut
-        for shift_type_data in DEFAULT_SHIFT_TYPES:
-            shift_type = ShiftType.query.filter_by(name=shift_type_data["name"]).first()
-            if not shift_type:
-                shift_type = ShiftType(
-                    name=shift_type_data["name"],
-                    label=shift_type_data["label"],
-                    start_hour=shift_type_data["start_hour"],
-                    end_hour=shift_type_data["end_hour"]
-                )
-                db.session.add(shift_type)
+
+    # Créer le groupe par défaut
+    default_group_name = os.environ.get("DEFAULT_GROUP_NAME") or "Defaut"
+    default_group = Group.query.filter_by(name=default_group_name).first()
+    if not default_group:
+        default_group = Group(
+            name=default_group_name,
+            is_part_of_schedule=os.environ.get("DEFAULT_GROUP_IN_SCHEDULE", "true").lower() != "false",
+            is_part_of_oncall=os.environ.get("DEFAULT_GROUP_IN_ONCALL", "true").lower() != "false",
+        )
+        db.session.add(default_group)
         db.session.commit()
+
+    # Créer l'utilisateur admin par défaut
+    default_admin_email = os.environ.get("DEFAULT_ADMIN_EMAIL") or "admin@leviia.local"
+    default_admin_password = os.environ.get("DEFAULT_ADMIN_PASSWORD") or secrets.token_urlsafe(16)
+
+    admin_user = User.query.filter_by(email=default_admin_email).first()
+    if not admin_user:
+        # ✅ CORRIGÉ: Le modèle User n'a pas de champ 'username', utiliser 'name' à la place
+        admin_user = User(
+            email=default_admin_email,
+            name="Administrateur",  # Utiliser 'name' au lieu de 'username'
+            password_hash=generate_password_hash(default_admin_password),
+            is_admin=True,
+            group_id=default_group.id
+        )
+        db.session.add(admin_user)
+        db.session.commit()
+        print(f"✅ Utilisateur admin créé: {default_admin_email}")
+    else:
+        print(f"✅ Utilisateur admin existe déjà: {default_admin_email}")
+
+    # Créer les types de shifts par défaut
+    for shift_type_data in DEFAULT_SHIFT_TYPES:
+        shift_type = ShiftType.query.filter_by(name=shift_type_data["name"]).first()
+        if not shift_type:
+            shift_type = ShiftType(
+                name=shift_type_data["name"],
+                label=shift_type_data["label"],
+                start_hour=shift_type_data["start_hour"],
+                end_hour=shift_type_data["end_hour"]
+            )
+            db.session.add(shift_type)
+    db.session.commit()
 
 
 if __name__ == "__main__":

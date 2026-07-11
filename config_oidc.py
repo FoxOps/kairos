@@ -42,9 +42,11 @@ class OIDCConfig:
     # Variables de classe initialisées à None
     ENABLED = None
     ISSUER = None
+    INTERNAL_ISSUER = None
     CLIENT_ID = None
     CLIENT_SECRET = None
     REDIRECT_URI = None
+    POST_LOGOUT_REDIRECT_URI = None
     EMAIL_CLAIM = None
     NAME_CLAIM = None
     USERNAME_CLAIM = None
@@ -63,9 +65,22 @@ class OIDCConfig:
         """
         cls.ENABLED = get_bool_from_env("OIDC_ENABLED", False)
         cls.ISSUER = os.environ.get("OIDC_ISSUER") or ""
+        # Hôte utilisé par le conteneur pour les appels serveur-à-serveur
+        # (token_endpoint, userinfo_endpoint, end_session_endpoint) une fois
+        # l'issuer découvert. Utile quand OIDC_ISSUER pointe vers une adresse
+        # joignable par le navigateur (LAN/domaine public) mais pas par le
+        # conteneur (ex: fournisseur OIDC dans le même docker-compose,
+        # joignable en interne via son nom de service). Vide par défaut :
+        # les endpoints du document de découverte sont utilisés tels quels.
+        cls.INTERNAL_ISSUER = os.environ.get("OIDC_INTERNAL_ISSUER") or ""
         cls.CLIENT_ID = os.environ.get("OIDC_CLIENT_ID") or ""
         cls.CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET") or ""
         cls.REDIRECT_URI = os.environ.get("OIDC_REDIRECT_URI") or ""
+        # URL vers laquelle le fournisseur OIDC redirige après une
+        # déconnexion RP-initiated (doit être enregistrée côté fournisseur,
+        # ex: PostLogoutRedirectUris). Vide par défaut : le paramètre
+        # post_logout_redirect_uri est simplement omis.
+        cls.POST_LOGOUT_REDIRECT_URI = os.environ.get("OIDC_POST_LOGOUT_REDIRECT_URI") or ""
         cls.EMAIL_CLAIM = os.environ.get("OIDC_EMAIL_CLAIM") or "email"
         cls.NAME_CLAIM = os.environ.get("OIDC_NAME_CLAIM") or "name"
         cls.USERNAME_CLAIM = os.environ.get("OIDC_USERNAME_CLAIM") or "preferred_username"

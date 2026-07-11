@@ -11,43 +11,43 @@ class TestDecoratorImports:
 
     def test_admin_required_import(self):
         """Test que le décorateur admin_required peut être importé."""
-        from app.utils.decorators import admin_required
+        from app.auth.decorators import admin_required
 
         assert callable(admin_required)
 
     def test_role_required_import(self):
         """Test que le décorateur role_required peut être importé."""
-        from app.utils.decorators import role_required
+        from app.auth.decorators import role_required
 
         assert callable(role_required)
 
     def test_user_can_edit_import(self):
         """Test que le décorateur user_can_edit peut être importé."""
-        from app.utils.decorators import user_can_edit
+        from app.auth.decorators import user_can_edit
 
         assert callable(user_can_edit)
 
     def test_user_can_delete_import(self):
         """Test que le décorateur user_can_delete peut être importé."""
-        from app.utils.decorators import user_can_delete
+        from app.auth.decorators import user_can_delete
 
         assert callable(user_can_delete)
 
     def test_user_owns_resource_import(self):
         """Test que le décorateur user_owns_resource peut être importé."""
-        from app.utils.decorators import user_owns_resource
+        from app.auth.decorators import user_owns_resource
 
         assert callable(user_owns_resource)
 
     def test_user_can_edit_resource_import(self):
         """Test que le décorateur user_can_edit_resource peut être importé."""
-        from app.utils.decorators import user_can_edit_resource
+        from app.auth.decorators import user_can_edit_resource
 
         assert callable(user_can_edit_resource)
 
     def test_user_can_delete_resource_import(self):
         """Test que le décorateur user_can_delete_resource peut être importé."""
-        from app.utils.decorators import user_can_delete_resource
+        from app.auth.decorators import user_can_delete_resource
 
         assert callable(user_can_delete_resource)
 
@@ -55,9 +55,9 @@ class TestDecoratorImports:
 class TestDecoratorProperties:
     """Tests pour les propriétés des décorateurs."""
 
-    def test_decorator_preserves_function_name(self, app):
+    def test_decorator_preserves_function_name(self, test_app):
         """Test que le décorateur préserve le nom de la fonction."""
-        from app.utils.decorators import admin_required
+        from app.auth.decorators import admin_required
 
         @admin_required
         def test_function():
@@ -65,9 +65,9 @@ class TestDecoratorProperties:
 
         assert test_function.__name__ == "test_function"
 
-    def test_decorator_preserves_function_docstring(self, app):
+    def test_decorator_preserves_function_docstring(self, test_app):
         """Test que le décorateur préserve le docstring de la fonction."""
-        from app.utils.decorators import admin_required
+        from app.auth.decorators import admin_required
 
         @admin_required
         def test_function():
@@ -76,9 +76,9 @@ class TestDecoratorProperties:
 
         assert test_function.__doc__ == "This is a test function."
 
-    def test_admin_required_is_callable(self, app):
+    def test_admin_required_is_callable(self, test_app):
         """Test que admin_required est callable."""
-        from app.utils.decorators import admin_required
+        from app.auth.decorators import admin_required
 
         @admin_required
         def dummy():
@@ -86,16 +86,16 @@ class TestDecoratorProperties:
 
         assert callable(dummy)
 
-    def test_role_required_is_callable(self, app):
+    def test_role_required_is_callable(self, test_app):
         """Test que role_required est callable."""
-        from app.utils.decorators import role_required
+        from app.auth.decorators import role_required
 
         decorated_func = role_required("admin")
         assert callable(decorated_func)
 
-    def test_user_owns_resource_is_callable(self, app):
+    def test_user_owns_resource_is_callable(self, test_app):
         """Test que user_owns_resource est callable."""
-        from app.utils.decorators import user_owns_resource
+        from app.auth.decorators import user_owns_resource
         from app.models import Leave
 
         decorated_func = user_owns_resource(Leave, "leave_id")
@@ -105,9 +105,9 @@ class TestDecoratorProperties:
 class TestAdminRequiredDecorator:
     """Tests pour le décorateur admin_required."""
 
-    def test_admin_required_allows_admin(self, logged_in_admin_client):
+    def test_admin_required_allows_admin(self, logged_in_client):
         """Test qu'un admin peut accéder aux routes admin."""
-        response = logged_in_admin_client.get("/admin")
+        response = logged_in_client.get("/admin")
         assert response.status_code == 200
         assert b"Dashboard" in response.data or b"admin" in response.data.lower()
 
@@ -134,9 +134,9 @@ class TestRoleRequiredDecorator:
         response = logged_in_client.get("/")
         assert response.status_code == 200
 
-    def test_role_required_allows_admin(self, logged_in_admin_client):
+    def test_role_required_allows_admin(self, logged_in_client):
         """Test qu'un admin peut accéder aux routes user."""
-        response = logged_in_admin_client.get("/")
+        response = logged_in_client.get("/")
         assert response.status_code == 200
 
 
@@ -163,14 +163,14 @@ class TestUserOwnsResourceDecorator:
         assert leave is None
 
     def test_user_cannot_delete_others_leave(
-        self, client, test_leave, second_user, app
+        self, client, test_leave, second_user, test_app
     ):
         """Test qu'un utilisateur ne peut pas supprimer le congé d'un autre."""
-        with app.app_context():
+        with test_app.app_context():
             # Connecter second_user
             client.post(
                 "/login",
-                data={"email": second_user.email, "password": "second123"},
+                data={"email": second_user.email, "password": "test123"},
                 follow_redirects=True,
             )
 
@@ -189,9 +189,9 @@ class TestUserOwnsResourceDecorator:
             leave = db.session.get(Leave, test_leave.id)
             assert leave is not None
 
-    def test_admin_can_delete_any_leave(self, logged_in_admin_client, test_leave, app):
+    def test_admin_can_delete_any_leave(self, logged_in_client, test_leave, test_app):
         """Test qu'un admin peut supprimer n'importe quel congé."""
-        response = logged_in_admin_client.get(
+        response = logged_in_client.get(
             f"/leave/delete/{test_leave.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -209,7 +209,7 @@ class TestShiftPermissions:
     """Tests pour les permissions sur les shifts."""
 
     def test_admin_can_add_shift(
-        self, logged_in_admin_client, test_user, test_shift_type
+        self, logged_in_client, test_user, test_shift_type
     ):
         """Test qu'un admin peut ajouter un shift."""
         data = {
@@ -218,7 +218,7 @@ class TestShiftPermissions:
             "start_date": "2025-12-01",
             "end_date": "2025-12-01",
         }
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             "/schedule/add", data=data, follow_redirects=True
         )
         assert response.status_code == 200
@@ -245,9 +245,9 @@ class TestShiftPermissions:
             or b"Seuls les administrateurs" in response.data
         )
 
-    def test_admin_can_delete_shift(self, logged_in_admin_client, test_shift):
+    def test_admin_can_delete_shift(self, logged_in_client, test_shift):
         """Test qu'un admin peut supprimer un shift."""
-        response = logged_in_admin_client.get(
+        response = logged_in_client.get(
             f"/schedule/delete/{test_shift.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -275,7 +275,7 @@ class TestShiftPermissions:
 class TestOnCallPermissions:
     """Tests pour les permissions sur les astreintes."""
 
-    def test_admin_can_add_oncall(self, logged_in_admin_client, test_user):
+    def test_admin_can_add_oncall(self, logged_in_client, test_user):
         """Test qu'un admin peut ajouter une astreinte."""
         # Trouver un vendredi dans le futur
         now = datetime.now()
@@ -283,7 +283,7 @@ class TestOnCallPermissions:
         friday_date = (now + timedelta(days=days_until_friday + 7)).strftime("%Y-%m-%d")
 
         data = {"user_id": test_user.id, "start_date": friday_date}
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             "/oncall/add", data=data, follow_redirects=True
         )
         assert response.status_code == 200
@@ -302,9 +302,9 @@ class TestOnCallPermissions:
             or b"Seuls les administrateurs" in response.data
         )
 
-    def test_admin_can_delete_oncall(self, logged_in_admin_client, test_oncall):
+    def test_admin_can_delete_oncall(self, logged_in_client, test_oncall):
         """Test qu'un admin peut supprimer une astreinte."""
-        response = logged_in_admin_client.get(
+        response = logged_in_client.get(
             f"/oncall/delete/{test_oncall.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -343,13 +343,13 @@ class TestLeavePermissions:
         assert response.status_code == 200
         assert b"Conge ajoute" in response.data or b"succes" in response.data
 
-    def test_user_cannot_add_others_leave(self, client, test_user, second_user, app):
+    def test_user_cannot_add_others_leave(self, client, test_user, second_user, test_app):
         """Test qu'un utilisateur ne peut pas ajouter un congé pour un autre."""
-        with app.app_context():
+        with test_app.app_context():
             # Connecter second_user
             client.post(
                 "/login",
-                data={"email": second_user.email, "password": "second123"},
+                data={"email": second_user.email, "password": "test123"},
                 follow_redirects=True,
             )
 
@@ -370,14 +370,14 @@ class TestLeavePermissions:
                 or b"Seuls" in response.data
             )
 
-    def test_admin_can_add_leave_for_anyone(self, logged_in_admin_client, test_user):
+    def test_admin_can_add_leave_for_anyone(self, logged_in_client, test_user):
         """Test qu'un admin peut ajouter un congé pour n'importe qui."""
         data = {
             "user_id": test_user.id,
             "start_date": "2025-12-20",
             "end_date": "2025-12-25",
         }
-        response = logged_in_admin_client.post(
+        response = logged_in_client.post(
             "/leave/add", data=data, follow_redirects=True
         )
         assert response.status_code == 200

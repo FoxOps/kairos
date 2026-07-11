@@ -26,13 +26,13 @@
                             {% endif %}
                         </div>
                         <div class="mt-5">
-                            <a href="{{ url_for('login') }}" class="button is-primary" aria-label="Se connecter">
+                            <a href="{{ url_for('auth.login') }}" class="button is-primary" aria-label="Se connecter">
                                 <span class="icon">
                                     <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
                                 </span>
                                 <span>Se connecter</span>
                             </a>
-                            <a href="{{ url_for('index') }}" class="button is-light ml-3" aria-label="Retour à l'accueil">
+                            <a href="{{ url_for("main.index") }}" class="button is-light ml-3" aria-label="Retour à l'accueil">
                                 <span class="icon">
                                     <i class="fas fa-home" aria-hidden="true"></i>
                                 </span>
