@@ -151,7 +151,7 @@ build_docs:
   script:
     - echo "Building documentation..."
     - mkdir -p public/docs
-    - cp -r docs/* public/docs/
+    - cp -r Docs/* public/docs/
   artifacts:
     paths:
       - public/
