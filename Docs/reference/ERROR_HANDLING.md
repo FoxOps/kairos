@@ -50,9 +50,9 @@ L'application utilise une approche multi-couches pour la gestion des erreurs :
   - `503.html` - Service indisponible
   - `504.html` - Délai d'attente dépassé
 
-- **Configuration** : `config.py`
-  - Paramètres de gestion des erreurs
-  - Configuration du logging
+- **Configuration** : `app/config/` (paramètres actifs) — voir
+  [`reference/ENVIRONMENT_VARIABLES.md`](ENVIRONMENT_VARIABLES.md)
+  pour les variables de gestion des erreurs et de logging
 
 ---
 
@@ -120,6 +120,12 @@ Tous les templates d'erreur étendent `base.html` et suivent cette structure :
 ---
 
 ## 🛡️ Gestionnaires d'Erreurs HTTP
+
+> **Ajout Phase 4** : toute requête POST/PUT/PATCH/DELETE sans jeton
+> CSRF valide (`Flask-WTF` `CSRFProtect`, actif app-wide) reçoit un
+> `400 Bad Request` avant même d'atteindre la vue — géré par Flask-WTF,
+> pas par les gestionnaires `@app.errorhandler` ci-dessous. Voir
+> [`api/API.md`](../api/API.md#authentification).
 
 ### Gestionnaires Implémentés
 
@@ -280,11 +286,15 @@ def handle_type_error(error):
 
 ## 📝 Système de Logging
 
-Le système de logging a été complètement repensé pour offrir une gestion plus granulaire, sécurisée et extensible. Il est configuré dans `app/__init__.py` avec la fonction `setup_logging()`.
+Le système de logging offre une gestion granulaire, sécurisée et
+extensible. Défini dans `app/utils/logging/logger.py`
+(fonction `configure_logging()`), appelé depuis `app/__init__.py` lors
+de la création de l'application.
 
 ### Configuration du Logging
 
-La configuration centrale se trouve dans `config.py` avec les paramètres suivants :
+Les valeurs par défaut sont lues depuis les variables d'environnement
+(voir [`reference/ENVIRONMENT_VARIABLES.md`](ENVIRONMENT_VARIABLES.md)) :
 
 ```python
 # Niveau de log principal
@@ -537,7 +547,7 @@ def get_logger(name):
 
 ### Paramètres de Configuration
 
-Dans `config.py`, plusieurs paramètres sont disponibles pour configurer la gestion des erreurs :
+Via variables d'environnement (`app/config/`), plusieurs paramètres sont disponibles pour configurer la gestion des erreurs :
 
 ```python
 # Configuration de la gestion des erreurs
@@ -1005,7 +1015,7 @@ pytest tests/test_error_handlers.py::TestLoggingConfiguration::test_logging_setu
 - Ajout des pages d'erreur personnalisées pour tous les codes HTTP principaux
 - Implémentation du système de logging avec rotation des fichiers
 - Ajout des gestionnaires d'erreurs HTTP et d'exceptions
-- Configuration centralisée dans `config.py`
+- Configuration centralisée dans `app/config/`
 - Tests complets pour tous les gestionnaires d'erreurs
 
 ---
