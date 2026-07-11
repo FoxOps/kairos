@@ -146,6 +146,7 @@
         <div class="field is-grouped mt-5">
             <div class="control">
                 <form method="POST" action="{{ url_for('admin.automation_full') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="action" value="generate">
                     <input type="hidden" name="start_date" value="{{ start_date.strftime('%Y-%m-%d') }}">
                     <input type="hidden" name="end_date" value="{{ end_date.strftime('%Y-%m-%d') }}">

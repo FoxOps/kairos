@@ -10,6 +10,7 @@
         </h1>
         
         <form method="POST" action="{{ url_for('admin.add_group') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="box">
                 <div class="field">
                     <label class="label required">Nom du groupe</label>

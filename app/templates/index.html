@@ -123,6 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const isAdmin = {{ current_user.is_admin|tojson }};
     const events = {{ events|tojson }};
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 
     // Lire l'état du mode édition depuis l'URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -269,7 +270,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
                 },
                 credentials: 'same-origin',
                 body: JSON.stringify({
@@ -330,7 +332,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
                 },
                 credentials: 'same-origin',
                 body: JSON.stringify({
@@ -412,7 +415,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             method: 'DELETE',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest'
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRFToken': csrfToken
                             },
                             credentials: 'same-origin'
                         })
@@ -584,7 +588,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrfToken
                     },
                     credentials: 'same-origin',
                     body: JSON.stringify({
@@ -655,7 +660,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             method: 'DELETE',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest'
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRFToken': csrfToken
                             },
                             credentials: 'same-origin'
                         })

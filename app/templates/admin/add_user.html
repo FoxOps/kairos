@@ -22,6 +22,7 @@
             {% endif %}
 
             <form method="POST" action="{{ url_for('admin.add_user') }}" aria-labelledby="add-user-title">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="box" role="region" aria-labelledby="form-title">
                     <h2 id="form-title" class="is-sr-only">Formulaire d'ajout d'utilisateur</h2>
                     

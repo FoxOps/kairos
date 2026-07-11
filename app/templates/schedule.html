@@ -26,6 +26,7 @@
                 
                 {% if current_user.is_admin %}
                 <form method="POST" action="{{ url_for('main.delete_all_shifts') }}" class="ml-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="button is-danger" 
                             onclick="return Leviia.confirmActionAccessible('Êtes-vous SÛR de vouloir supprimer TOUS les shifts ? Cette action est irréversible !', function() { this.form.submit(); }, function() {}); return false;"
                             aria-label="Supprimer tous les shifts" title="Supprimer tous les shifts">
@@ -95,6 +96,7 @@
                                     <!-- Bouton pour supprimer tous les shifts de cet utilisateur (1ère occurrence) -->
                                     {% if is_first_user.value %}
                                     <form method="POST" action="{{ url_for('main.delete_all_shifts_for_user', user_id=shift.user.id) }}" class="mb-0">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="button is-warning is-small"
                                                 onclick="return Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer TOUS les shifts de {{ shift.user.name }} ?', function() { this.form.submit(); }, function() {}); return false;"
                                                 aria-label="Supprimer tous les shifts de {{ shift.user.name }}"
@@ -107,6 +109,7 @@
                                     <!-- Bouton pour supprimer tous les shifts de la semaine (uniquement le lundi, 1ère occurrence) -->
                                     {% if is_monday.value and is_first_date.value %}
                                     <form method="POST" action="{{ url_for('main.delete_all_shifts_for_week', date_str=shift.date.strftime('%Y-%m-%d')) }}" class="mb-0">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="button is-primary is-small"
                                                 onclick="return Leviia.confirmActionAccessible('Êtes-vous SÛR de vouloir supprimer TOUS les shifts de la SEMAINE du {{ shift.date.strftime('%d/%m/%Y') }} ?', function() { this.form.submit(); }, function() {}); return false;"
                                                 aria-label="Supprimer tous les shifts de la semaine du {{ shift.date.strftime('%d/%m/%Y') }}"
@@ -119,6 +122,7 @@
                                     <!-- Bouton pour supprimer tous les shifts de la journée (1ère occurrence) -->
                                     {% if is_first_date.value %}
                                     <form method="POST" action="{{ url_for('main.delete_all_shifts_for_day', date_str=shift.date.strftime('%Y-%m-%d')) }}" class="mb-0">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="button is-info is-small"
                                                 onclick="return Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer TOUS les shifts du {{ shift.date.strftime('%d/%m/%Y') }} ?', function() { this.form.submit(); }, function() {}); return false;"
                                                 aria-label="Supprimer tous les shifts de la journée du {{ shift.date.strftime('%d/%m/%Y') }}"

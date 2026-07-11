@@ -96,6 +96,19 @@ class User(BaseModel, UserMixin):
         foreign_keys="Leave.user_id"
     )
     
+    def to_dict(self) -> dict:
+        """Convert to dict, excluding password_hash and ics_token.
+
+        BaseModel.to_dict() dumps every column verbatim - overridden here
+        because password_hash and ics_token are secrets (ics_token is a
+        bearer credential for the anonymous ICS feed), not just any other
+        piece of user data.
+        """
+        data = super().to_dict()
+        data.pop("password_hash", None)
+        data.pop("ics_token", None)
+        return data
+
     def set_password(self, password: str) -> None:
         """Set the user's password (hashed).
         

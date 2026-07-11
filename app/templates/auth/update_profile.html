@@ -11,6 +11,7 @@
                     <h1 class="title is-4 has-text-centered">Modifier mon profil</h1>
                     
                     <form method="POST" action="{{ url_for('auth.update_profile') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="field is-horizontal">
                             <div class="field-label is-normal">
                                 <label class="label required" for="name">Nom</label>

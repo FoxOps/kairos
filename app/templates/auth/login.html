@@ -35,6 +35,7 @@
                         {% endif %}
                         
                         <form method="POST" action="{{ url_for('auth.login') }}" aria-labelledby="login-title">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <div class="field">
                                 <label class="label required" for="email">Adresse email</label>
                                 <div class="control has-icons-left">

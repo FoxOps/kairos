@@ -25,6 +25,7 @@
             
             {% if current_user.is_admin %}
             <form method="POST" action="{{ url_for('main.delete_all_oncalls') }}" class="ml-2">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="button is-danger" 
                         onclick="return Leviia.confirmActionAccessible('Êtes-vous SÛR de vouloir supprimer TOUTES les astreintes ? Cette action est irréversible !', function() { this.form.submit(); }, function() {}); return false;"
                         aria-label="Supprimer toutes les astreintes" title="Supprimer toutes les astreintes">
@@ -76,6 +77,7 @@
                                 {% set is_first_user = namespace(value=(oncall.user.id not in seen_users)) %}
                                 {% if is_first_user.value %}
                                 <form method="POST" action="{{ url_for('main.delete_all_oncalls_for_user', user_id=oncall.user.id) }}" class="mb-0">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="button is-warning is-small"
                                             onclick="return Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer TOUTES les astreintes de {{ oncall.user.name }} ?', function() { this.form.submit(); }, function() {}); return false;"
                                             aria-label="Supprimer toutes les astreintes de cet utilisateur"
