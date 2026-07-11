@@ -78,15 +78,16 @@ class OIDCAuthLib:
 
                 if OIDCConfig.INTERNAL_ISSUER:
                     # Le document de découverte a été récupéré via l'adresse
-                    # interne, donc tous ses endpoints (y compris
-                    # authorization_endpoint) la reflètent - certains
-                    # fournisseurs OIDC génèrent ces URLs relativement à
-                    # l'hôte de la requête plutôt qu'à leur issuer configuré.
-                    # token/userinfo/end_session sont appelés par ce
+                    # interne, donc tous ses endpoints en reflètent l'hôte -
+                    # certains fournisseurs OIDC génèrent ces URLs
+                    # relativement à l'hôte de la requête plutôt qu'à leur
+                    # issuer configuré. token/userinfo sont appelés par ce
                     # conteneur : ils restent tels quels (déjà internes).
-                    # authorization_endpoint est contacté par le navigateur :
-                    # on le fait pointer vers l'issuer public.
+                    # authorization_endpoint et end_session_endpoint sont
+                    # tous deux contactés par le navigateur (redirections) :
+                    # on les fait pointer vers l'issuer public.
                     self.authorization_endpoint = self._rehost(self.authorization_endpoint, issuer_url)
+                    self.end_session_endpoint = self._rehost(self.end_session_endpoint, issuer_url)
 
                 logger.info(f"Authorization endpoint: {self.authorization_endpoint}")
                 logger.info(f"Token endpoint: {self.token_endpoint}")
@@ -413,6 +414,42 @@ class OIDCAuthLib:
         else:
             logger.error(f"Impossible de synchroniser l'utilisateur OIDC: {user_data}")
             return None
+
+    def build_logout_url(self, post_logout_redirect_uri=None):
+        """
+        Construit l'URL de déconnexion RP-initiated (end_session_endpoint).
+
+        Sans ça, /logout ne fait que déconnecter la session locale : la
+        session côté fournisseur OIDC reste active, donc la prochaine
+        redirection vers l'écran de connexion ré-authentifie
+        silencieusement l'utilisateur via SSO (la déconnexion semble ne
+        rien faire).
+
+        Args:
+            post_logout_redirect_uri: URL vers laquelle le fournisseur
+                redirige après déconnexion (doit être enregistrée côté
+                fournisseur, ex: PostLogoutRedirectUris)
+
+        Returns:
+            L'URL de déconnexion du fournisseur, ou None si l'endpoint
+            n'est pas disponible (le fournisseur ne le propose pas).
+        """
+        if not self.end_session_endpoint:
+            return None
+
+        from urllib.parse import urlencode
+
+        params = {}
+        id_token = session.pop('oidc_id_token', None)
+        if id_token:
+            params['id_token_hint'] = id_token
+        if post_logout_redirect_uri:
+            params['post_logout_redirect_uri'] = post_logout_redirect_uri
+
+        if not params:
+            return self.end_session_endpoint
+
+        return f"{self.end_session_endpoint}?{urlencode(params)}"
 
 
 # Instance globale

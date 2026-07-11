@@ -107,13 +107,21 @@ def oidc_callback():
 @login_required
 def logout():
     """Déconnexion."""
+    is_oidc_mode = is_basic_auth_disabled()
     logout_user()
-    if not is_basic_auth_disabled():
-        # Message pertinent uniquement pour l'auth basique : en mode OIDC,
-        # /logout redirige immédiatement vers le fournisseur OIDC (via
-        # auth.login), donc ce flash n'apparaîtrait qu'après la reconnexion,
-        # comme si la déconnexion venait de se reproduire.
-        flash("Vous avez été déconnecté.", "success")
+
+    if is_oidc_mode:
+        # Déconnexion locale seulement : la session côté fournisseur OIDC
+        # reste active, donc la prochaine redirection vers l'écran de
+        # connexion ré-authentifie silencieusement l'utilisateur via SSO
+        # (la déconnexion semble ne rien faire). Utiliser la déconnexion
+        # RP-initiated si le fournisseur l'expose (end_session_endpoint).
+        logout_url = oidc_auth.build_logout_url(OIDCConfig.POST_LOGOUT_REDIRECT_URI or None)
+        if logout_url:
+            return redirect(logout_url)
+        return redirect(url_for("auth.login"))
+
+    flash("Vous avez été déconnecté.", "success")
     return redirect(url_for("auth.login"))
 
 
