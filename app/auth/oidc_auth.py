@@ -53,32 +53,51 @@ class OIDCAuthLib:
         
         try:
             issuer_url = OIDCConfig.ISSUER.rstrip('/')
-            server_metadata_url = f"{issuer_url}/.well-known/openid-configuration"
-            
+            # OIDC_ISSUER doit rester joignable par le navigateur (redirections).
+            # Si le fournisseur OIDC n'est pas joignable par le conteneur à cette
+            # même adresse (ex: fournisseur dans le même docker-compose,
+            # joignable en interne via son nom de service), OIDC_INTERNAL_ISSUER
+            # permet de préciser l'adresse à utiliser pour les appels
+            # serveur-à-serveur (découverte, token, userinfo).
+            internal_issuer_url = (OIDCConfig.INTERNAL_ISSUER or OIDCConfig.ISSUER).rstrip('/')
+            server_metadata_url = f"{internal_issuer_url}/.well-known/openid-configuration"
+
             logger.info(f"Tentative de configuration OIDC avec issuer: {issuer_url}")
-            logger.info(f"URL de découverte: {server_metadata_url}")
-            
+            logger.info(f"URL de découverte (interne): {server_metadata_url}")
+
             import requests
             try:
                 response = requests.get(server_metadata_url, timeout=5)
                 response.raise_for_status()
                 discovery_doc = response.json()
-                
+
                 self.authorization_endpoint = discovery_doc.get('authorization_endpoint')
                 self.token_endpoint = discovery_doc.get('token_endpoint')
                 self.userinfo_endpoint = discovery_doc.get('userinfo_endpoint')
                 self.end_session_endpoint = discovery_doc.get('end_session_endpoint')  # ✅ Ajouter l'endpoint de fin de session
-                
+
+                if OIDCConfig.INTERNAL_ISSUER:
+                    # Le document de découverte a été récupéré via l'adresse
+                    # interne, donc tous ses endpoints (y compris
+                    # authorization_endpoint) la reflètent - certains
+                    # fournisseurs OIDC génèrent ces URLs relativement à
+                    # l'hôte de la requête plutôt qu'à leur issuer configuré.
+                    # token/userinfo/end_session sont appelés par ce
+                    # conteneur : ils restent tels quels (déjà internes).
+                    # authorization_endpoint est contacté par le navigateur :
+                    # on le fait pointer vers l'issuer public.
+                    self.authorization_endpoint = self._rehost(self.authorization_endpoint, issuer_url)
+
                 logger.info(f"Authorization endpoint: {self.authorization_endpoint}")
                 logger.info(f"Token endpoint: {self.token_endpoint}")
                 logger.info(f"Userinfo endpoint: {self.userinfo_endpoint}")
                 logger.info(f"End session endpoint: {self.end_session_endpoint}")
-                
+
                 logger.info("Document de découverte OIDC accessible")
             except requests.RequestException as e:
                 logger.error(f"Impossible d'accéder au document de découverte OIDC: {e}")
-                logger.error(f"Vérifiez que OIDC_ISSUER={issuer_url} est correct et accessible depuis ce conteneur")
-                logger.error("Si vous utilisez Docker, assurez-vous que le service oidc-mock est démarré et accessible via le nom de service Docker")
+                logger.error(f"Vérifiez que {server_metadata_url} est correct et accessible depuis ce conteneur")
+                logger.error("Si vous utilisez Docker, assurez-vous que le service OIDC est démarré et accessible (nom de service Docker ou OIDC_INTERNAL_ISSUER)")
                 return
 
             self.oidc_client = self.oauth.register(
@@ -101,7 +120,17 @@ class OIDCAuthLib:
         except Exception as e:
             logger.error(f"Erreur lors de la configuration OAuth: {e}")
             self.oidc_client = None
-    
+
+    @staticmethod
+    def _rehost(url, new_base_url):
+        """Remplace le schéma+hôte d'une URL en conservant le chemin/query."""
+        if not url:
+            return url
+        from urllib.parse import urlsplit, urlunsplit
+        new_parts = urlsplit(new_base_url)
+        parts = urlsplit(url)
+        return urlunsplit((new_parts.scheme, new_parts.netloc, parts.path, parts.query, parts.fragment))
+
     def get_authorization_url(self, state=None, nonce=None):
         """Génère l'URL d'autorisation OIDC."""
         if not self.oidc_client:
