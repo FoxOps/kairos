@@ -1,8 +1,8 @@
 # 📋 Rapport de Refactorisation - Phase 3: Frontend
 **Branche** : `refacto/phase3`
-**PR** : à créer
+**PR** : [#99](https://github.com/FoxOps/leviia-schedule/pull/99)
 **Date de début** : 2026-07-11
-**Statut** : 🟡 En cours
+**Statut** : 🟢 Terminée
 **Base** : `main` (inclut Phase 1 + Phase 2, PR #98 mergée)
 
 ---
@@ -66,10 +66,14 @@ WCAG 2.1 AA — mise de côté, cause trop de problèmes UI/UX actuellement.
       fait faute de temps
 
 ### 3.3 Templates
-- [ ] Macros Jinja2 réutilisables (`_macros/forms.html`, etc.)
-- [ ] Structure HTML standardisée
-- [ ] Meta tags SEO
-- [ ] Optimisation du chargement des ressources
+- [x] Macros Jinja2 réutilisables (`macros/errors.html` — 9 pages d'erreur
+      400/401/403/404/405/500/502/503/504 dédupliquées)
+- [x] Structure HTML standardisée (405.html alignée sur le même squelette
+      `<main role="main">` + attributs aria que les 8 autres pages d'erreur)
+- [x] Meta tags SEO (description + robots noindex, app interne pas
+      destinée à être indexée)
+- [x] Optimisation du chargement des ressources (cf. note ci-dessous —
+      périmètre limité, honnêtement documenté)
 - ~~Accessibilité WCAG 2.1 AA~~ — hors scope (cf. ci-dessus)
 
 ---
@@ -185,8 +189,60 @@ parallèle des tests pytest (mêmes anciens chemins en dur).
 
 Suite complète : **511 tests passent, 0 échec**.
 
-Prochaine étape : 3.3 templates (macros Jinja2, structure HTML, SEO,
-optimisation du chargement des ressources).
+### 2026-07-11 — 3.3 Templates terminé (sans WCAG, comme demandé)
+
+**Macros Jinja2** : les 9 pages d'erreur (`400.html` à `504.html`) étaient
+quasi-identiques (même squelette `<main>`/`box`/titre/sous-titre/boutons,
+~50-70 lignes chacune, ~450 lignes cumulées de duplication réelle).
+Extraites dans `app/templates/macros/errors.html` — une macro `error_page`
+paramétrée (code, titre, sous-titre, couleur, bouton principal, boutons
+secondaires optionnels, toggle connexion) avec un bloc `{% call %}` pour le
+contenu spécifique à chaque page. Chaque page passe de ~50-70 lignes à
+~10-20 lignes.
+
+**Structure HTML standardisée** : `405.html` était la seule page d'erreur
+à ne pas suivre le même squelette (`<div>` nu au lieu de
+`<main role="main">`, pas d'attributs `aria-labelledby`/`aria-describedby`,
+boutons sans `aria-label`). En la faisant passer par la macro commune,
+elle a maintenant la même structure que les 8 autres — pas un audit WCAG,
+juste la cohérence inter-pages demandée par ce ticket.
+
+**Bug réel attrapé par les tests avant commit** : les macros importées via
+`{% from "macros/errors.html" import error_page %}` n'ont PAS accès au
+contexte du template appelant par défaut en Jinja2 (comportement standard,
+pas un bug Flask) — `current_user` était `undefined` dans la macro alors
+qu'il est injecté par Flask-Login dans le contexte de rendu. Corrigé avec
+`{% from "macros/errors.html" import error_page with context %}` sur les 9
+pages. Sans `tests/test_error_handlers.py` (qui rend chaque template
+directement), ce bug serait passé inaperçu jusqu'à ce qu'une vraie page
+d'erreur soit servie en prod.
+
+**Meta tags SEO** : `base.html` avait un `<head>` minimal (charset,
+viewport, title, favicon) sans aucune balise `<meta name="description">`
+ni directive robots. Ajout d'un bloc `meta_description` surchargeable
+(valeur par défaut générique) et de `<meta name="robots" content="noindex,
+nofollow">` — c'est une app de planning interne à une équipe, pas destinée
+à apparaître dans un moteur de recherche.
+
+**Optimisation du chargement des ressources — périmètre honnête** : pas de
+pipeline de build (webpack/vite) dans ce projet, donc pas de bundling/
+minification possible sans l'ajouter (already flagged comme non fait dans
+le point Minification de 3.1). La vraie optimisation faisable sans outillage
+supplémentaire — vendor assets déjà servis localement (acquis Phase 1),
+scripts déjà placés en fin de `<body>`, `main.js` déjà chargé en module
+différé — était déjà en place avant cette étape. Le découpage CSS/JS des
+étapes 3.1/3.2 a mécaniquement augmenté le nombre de requêtes (12 CSS + 6
+JS au lieu de 3 CSS + 1 JS) ; HTTP/2 (déjà utilisé en prod selon la config
+Talisman existante) multiplexe ces requêtes sur une seule connexion, donc
+impact réel probablement négligeable, mais pas mesuré ici faute d'outil de
+profiling en place. Documenté plutôt que laissé sous silence.
+
+Suite complète : **511 tests passent, 0 échec**. Vérifié en conditions
+réelles (serveur Flask dev) : page 404 réelle rendue correctement avec la
+macro.
+
+Phase 3 terminée : 3.1 CSS, 3.2 JavaScript, 3.3 Templates — tous faits,
+WCAG 2.1 AA exclu comme validé en amont.
 
 ---
 
