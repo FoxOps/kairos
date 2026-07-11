@@ -16,6 +16,7 @@ Nouvelle structure:
 import logging
 import os
 import secrets
+import warnings
 from typing import Optional
 
 from flask import Flask, render_template
@@ -25,6 +26,15 @@ from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
 from flask_talisman import Talisman
 from flask_cors import CORS
+
+# Flask-Limiter avertit à chaque init sans backend partagé (redis/memcached).
+# Choix assumé : stockage en mémoire (mono-process), cf. discussion équipe.
+warnings.filterwarnings(
+    "ignore",
+    message="Using the in-memory storage",
+    category=UserWarning,
+    module="flask_limiter",
+)
 
 # ---------------------------------------------------------------------------
 # Initialisation des extensions
