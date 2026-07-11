@@ -62,14 +62,18 @@ dans `CLAUDE.md` sans qu'une suppression n'ait été demandée jusqu'ici).
 ## 🎯 Plan de travail
 
 ### 4.1 Restructuration des tests
-- [ ] `tests/unit/` : tests sans client HTTP (models, services, repositories,
+- [x] `tests/unit/` : 12 fichiers déplacés (sans client HTTP - models,
       automation, config, helpers...)
-- [ ] `tests/integration/` : tests passant par le client de test Flask
-      (routes, auth, export...)
-- [ ] `tests/e2e/` : parcours multi-requêtes (voir décision ci-dessus)
-- [ ] `tests/fixtures/` : extraction des fixtures de modèles hors de
-      `conftest.py`
-- [ ] `Makefile` : mise à jour des chemins (`test-main`, `test-dark-theme`)
+- [x] `tests/integration/` : 14 fichiers déplacés (passent par le client
+      de test Flask - routes, auth, export...)
+- [x] `tests/e2e/` : créé, rempli à l'étape suivante (parcours
+      multi-requêtes, voir décision ci-dessus)
+- [x] `tests/fixtures/` : `user_fixtures.py`, `shift_fixtures.py`,
+      `leave_fixtures.py`, `oncall_fixtures.py` — extraits de `conftest.py`
+      (qui ne garde que `test_app`/`client`), enregistrés via
+      `pytest_plugins`
+- [x] `Makefile` : chemins mis à jour (`test-main`, `test-dark-theme`) +
+      nouvelles cibles `test-unit`/`test-integration`/`test-e2e`
 
 ### 4.2 Améliorations
 - [ ] `unit/test_services.py` + `unit/test_repositories.py` : tests réels
@@ -92,6 +96,30 @@ dans `CLAUDE.md` sans qu'une suppression n'ait été demandée jusqu'ici).
 ## 📝 Journal
 
 *(mis à jour à chaque étape)*
+
+### 2026-07-11 — 4.1 Restructuration terminée
+
+Déplacement mécanique (`git mv`, historique préservé) des 26 fichiers de
+tests existants vers `tests/unit/` (12, pas de client HTTP) et
+`tests/integration/` (14, passent par le client de test Flask).
+`tests/e2e/` et `tests/fixtures/` créés.
+
+`conftest.py` réduit à `test_app`/`client` ; les fixtures de modèles
+(`test_group`, `test_user`, `admin_user`, `test_shift`, `test_leave`,
+`test_oncall`, etc.) extraites vers `tests/fixtures/*.py`, rattachées via
+`pytest_plugins` pour rester visibles partout sans import explicite.
+
+**Bug réel attrapé par les tests avant commit** : j'ai d'abord supprimé
+l'alias `app = test_app` en bas de `conftest.py` en le prenant pour du
+code mort (grep ne montrait aucun test demandant une fixture nommée
+`app`). En réalité `pytest-flask` s'appuie dessus via sa fixture autouse
+`_configure_application`, qui cherche littéralement une fixture `app` —
+sans lui, 2 tests plantaient au setup (`fixture 'app' not found`). Alias
+restauré avec un commentaire expliquant pourquoi il existe, pour ne pas
+retomber dans le même piège plus tard.
+
+511 tests passent toujours (197 unit + 314 integration après la
+restructuration).
 
 ---
 
