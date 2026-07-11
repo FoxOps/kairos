@@ -53,10 +53,13 @@ En tant qu'administrateur Leviia Schedule, vous êtes responsable de :
 #### Mot de passe par défaut
 
 **⚠️ CRITIQUE** : Le compte administrateur par défaut a les identifiants :
-- Email : `admin@leviia.local`
-- Mot de passe : `admin123`
+- Email : `DEFAULT_ADMIN_EMAIL` (`.env`), `admin@leviia.local` par défaut
+- Mot de passe : `DEFAULT_ADMIN_PASSWORD` (`.env`), `admin123` par défaut
 
 **Action immédiate** : Changez ce mot de passe dès la première connexion.
+En production, définissez `DEFAULT_ADMIN_PASSWORD` à une valeur forte
+avant le tout premier démarrage plutôt que de compter sur le
+changement post-installation.
 
 #### Politique de mots de passe
 
@@ -100,7 +103,7 @@ Pour réinitialiser le mot de passe d'un utilisateur :
 | Variable | Sensibilité | Recommandation |
 |----------|-------------|----------------|
 | `SECRET_KEY` | ⭐⭐⭐⭐⭐ CRITIQUE | Générer une clé aléatoire de 32 octets |
-| `SQLALCHEMY_DATABASE_URI` | ⭐⭐⭐⭐ Élevée | Utiliser des identifiants DB sécurisés |
+| `DATABASE_URL` | ⭐⭐⭐⭐ Élevée | Utiliser des identifiants DB sécurisés |
 | `LOGIN_DISABLED` | ⭐⭐⭐ Moyenne | Ne JAMAIS activer en production |
 
 #### Générer une clé secrète sécurisée
@@ -115,21 +118,117 @@ openssl rand -hex 32
 
 #### Désactiver l'authentification (DÉVELOPPEMENT UNIQUEMENT)
 
-Dans `config.py` :
-```python
-LOGIN_DISABLED = True
+Dans `.env` (pas `config.py` — voir
+[Configuration Technique](#-configuration-technique) pour la distinction
+entre `app/config/` et le `config.py` legacy) :
+```bash
+LOGIN_DISABLED=true
 ```
 
 > ⚠️ **DANGER** : Ne jamais utiliser cette option en production !
+
+#### Protection CSRF
+
+Active sur toute l'application depuis la Phase 4 (`Flask-WTF`
+`CSRFProtect`) — rien à configurer côté admin, mais bon à savoir si vous
+scriptez des appels vers l'application (import en masse, intégration
+tierce) : toute requête POST/PUT/PATCH/DELETE sans jeton CSRF valide est
+rejetée avec `400 Bad Request`. Voir
+[`api/API.md`](../api/API.md#authentification) pour la marche à suivre
+côté script.
+
+#### En-têtes de sécurité HTTP (Talisman)
+
+`Flask-Talisman` (X-Content-Type-Options, X-Frame-Options, etc.) n'est
+activé que si `TALISMAN_FORCE_HTTPS=true` dans `.env` — pertinent
+uniquement derrière un reverse proxy TLS (voir
+[`deployment/DEPLOYMENT_GUIDE.md`](../deployment/DEPLOYMENT_GUIDE.md)).
+Laissé désactivé par défaut pour ne pas casser un accès HTTP simple en
+développement.
+
+### Configuration SSO/OIDC
+
+Leviia Schedule supporte l'authentification via un fournisseur OIDC
+(Keycloak, Okta, Auth0, ou tout fournisseur OpenID Connect standard),
+en complément ou à la place de l'authentification par mot de passe.
+
+#### Activer OIDC
+
+Dans `.env` :
+
+```bash
+OIDC_ENABLED=true
+OIDC_ISSUER=https://votre-fournisseur.com/realms/votre-realm
+OIDC_CLIENT_ID=votre-client-id
+OIDC_CLIENT_SECRET=votre-client-secret
+OIDC_REDIRECT_URI=http://localhost:5000/oidc/callback
+```
+
+Côté fournisseur OIDC, enregistrez `OIDC_REDIRECT_URI` comme URL de
+callback autorisée pour le client.
+
+#### Désactiver l'authentification par mot de passe
+
+Pour forcer tous les utilisateurs à passer par SSO (masque le
+formulaire email/mot de passe, `/login` redirige directement vers
+`/oidc/login`) :
+
+```bash
+OIDC_DISABLE_BASIC_AUTH=true
+```
+
+> ⚠️ Assurez-vous que la connexion OIDC fonctionne avant d'activer cette
+> option — sans authentification basique de secours, un problème de
+> configuration OIDC bloquerait tous les accès, y compris le vôtre.
+
+#### Déconnexion complète (RP-initiated logout)
+
+Sans configuration supplémentaire, `/logout` ne termine que la session
+locale : la session côté fournisseur OIDC reste active, donc la
+prochaine visite de `/login` ré-authentifie silencieusement via SSO.
+Pour une déconnexion complète, enregistrez une URL de redirection
+post-déconnexion côté fournisseur (ex. `PostLogoutRedirectUris` sur
+Keycloak) puis :
+
+```bash
+OIDC_POST_LOGOUT_REDIRECT_URI=http://localhost:5000
+```
+
+#### Mapper les claims du token
+
+Si les noms de claims de votre fournisseur diffèrent des noms standards :
+
+```bash
+OIDC_EMAIL_CLAIM=email
+OIDC_NAME_CLAIM=name
+OIDC_USERNAME_CLAIM=preferred_username
+OIDC_GROUPS_CLAIM=          # optionnel, synchronise les groupes locaux
+OIDC_ROLES_CLAIM=           # optionnel, synchronise is_admin
+```
+
+#### Déploiement Docker : issuer interne vs. externe
+
+Si le fournisseur OIDC et l'application tournent tous deux dans Docker
+(ex. Keycloak sur le même réseau que le conteneur Leviia Schedule),
+l'URL joignable par le conteneur (`http://keycloak:8080/realms/...`)
+diffère souvent de l'URL joignable par le navigateur de l'utilisateur
+(`https://auth.exemple.com/realms/...`). Dans ce cas, définissez
+`OIDC_INTERNAL_ISSUER` avec l'URL joignable par le conteneur ;
+`OIDC_ISSUER` reste l'URL publique utilisée pour les redirections
+navigateur (authorization/logout endpoints).
+
+Liste complète des variables OIDC :
+[`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md).
+Détail du flux de connexion :
+[`architecture/SEQUENCE_DIAGRAMS.md`](../architecture/SEQUENCE_DIAGRAMS.md#connexion-oidcsso).
 
 ### Audit et Journalisation
 
 #### Activer le logging avancé
 
-Dans `config.py` :
-```python
-import logging
-LOG_LEVEL = logging.DEBUG
+Dans `.env` :
+```bash
+LOG_LEVEL=DEBUG
 ```
 
 #### Fichiers de log
@@ -469,52 +568,72 @@ Vous pouvez personnaliser les règles dans le fichier de configuration ou via l'
 
 ### Fichier de Configuration
 
-Le fichier `config.py` contient la configuration principale :
+La configuration active vit dans `app/config/` (`base.py`,
+`development.py`, `production.py`, `testing.py`), lue à partir des
+variables d'environnement (`.env`). Il existe aussi un `config.py`
+legacy à la racine du dépôt, utilisé uniquement par
+`scripts/validate_config.py` et ses tests — ne le confondez pas avec
+`app/config/`, qui est la configuration réellement chargée par
+l'application (`create_app()`).
 
 ```python
+# app/config/base.py (extrait)
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'ta-cle-secrete-ici'
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///app.db'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or secrets.token_urlsafe(32)
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///app.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    LOGIN_DISABLED = False
+    LOGIN_DISABLED = get_bool_from_env('LOGIN_DISABLED', False)
 ```
 
 ### Variables d'Environnement
 
 | Variable | Description | Valeur par défaut | Recommandation |
 |----------|-------------|------------------|----------------|
-| `SECRET_KEY` | Clé secrète pour la sécurité | Aléatoire | ⭐⭐⭐⭐⭐ Générer une clé forte |
-| `SQLALCHEMY_DATABASE_URI` | URI de la base de données | `sqlite:///app.db` | Utiliser PostgreSQL en production |
-| `LOGIN_DISABLED` | Désactive l'authentification | `False` | ❌ Ne JAMAIS activer en production |
+| `SECRET_KEY` | Clé secrète pour la sécurité | Aléatoire si absente | ⭐⭐⭐⭐⭐ Générer une clé forte et la fixer explicitement |
+| `DATABASE_URL` | URI de la base de données | `sqlite:///app.db` | Utiliser PostgreSQL ou MariaDB en production |
+| `LOGIN_DISABLED` | Désactive l'authentification | `false` | ❌ Ne JAMAIS activer en production |
 | `LOG_LEVEL` | Niveau de journalisation | `INFO` | `DEBUG` pour le développement |
+
+Liste complète : [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md).
 
 ### Configuration de la Base de Données
 
-#### SQLite (Par défaut)
+Toutes les variantes se configurent via `DATABASE_URL` dans `.env` — pas
+de fichier Python à modifier.
 
-```python
-SQLALCHEMY_DATABASE_URI = 'sqlite:///app.db'
+#### SQLite (par défaut)
+
+```bash
+DATABASE_URL=sqlite:///app.db
 ```
 
 - **Avantages** : Simple, pas de serveur requis
 - **Inconvénients** : Pas adapté pour la production, pas de concurrency
 
-#### PostgreSQL (Recommandé pour la production)
+#### PostgreSQL (recommandé pour la production)
 
-```python
-SQLALCHEMY_DATABASE_URI = 'postgresql://user:password@localhost/leviia'
+```bash
+DATABASE_URL=postgresql://user:password@localhost/leviia
 ```
+
+Nécessite `pip install psycopg2-binary`. Voir
+[`deployment/DEPLOYMENT_ADVANCED.md`](../deployment/DEPLOYMENT_ADVANCED.md)
+pour une configuration complète.
 
 - **Avantages** : Robuste, scalable, support de la concurrency
 - **Inconvénients** : Requiert un serveur PostgreSQL
 
-#### MySQL/MariaDB
+#### MariaDB / MySQL
 
-```python
-SQLALCHEMY_DATABASE_URI = 'mysql://user:password@localhost/leviia'
+```bash
+DATABASE_URL=mariadb://user:password@localhost:3306/leviia
+# ou : DATABASE_URL=mysql://user:password@localhost:3306/leviia
 ```
 
-- **À venir** : Support complet dans une future version
+Déjà supporté (SQLAlchemy gère le choix du backend via l'URI) —
+nécessite d'installer le driver correspondant (non inclus dans
+`requirements.txt` par défaut, ex. `pip install pymysql` ou
+`mysqlclient`).
 
 ### Configuration du Serveur
 
@@ -569,10 +688,11 @@ L'export ICS est disponible via l'URL :
 
 #### Générer un token ICS
 
-1. **Admin** > **Utilisateurs** > Sélectionnez un utilisateur
-2. **Profil** > **Token ICS**
-3. **Générer un nouveau token**
-4. Copiez le token
+La génération de token est **en libre-service** — chaque utilisateur
+génère le sien depuis son propre profil (**Profil > Token ICS >
+Générer un nouveau token**, route `POST /profile/ics-token`). Il n'y a
+pas de workflow admin permettant de générer le token d'un autre
+utilisateur depuis l'écran **Admin > Utilisateurs**.
 
 #### Intégration avec Google Calendar
 
@@ -653,9 +773,16 @@ Remplacez les fichiers dans `app/templates/` :
 ### Personnalisation des Règles Métiers
 
 Vous pouvez personnaliser les règles métiers dans :
-- `app/utils/automation.py` : Règles d'automatisation
-- `app/utils/helpers.py` : Fonctions de validation
-- `app/utils/decorators.py` : Décorateurs personnalisés
+- `app/utils/automation/` : règles d'automatisation
+  (`advanced_shift_automation.py`, `oncall_automation.py`,
+  `business_rules.py`)
+- `app/utils/helpers/common_helpers.py` : fonctions de validation
+  (`can_add_shift`, `can_add_leave`, `can_add_oncall`)
+- `app/auth/decorators.py` : décorateurs de garde de route
+  (`@admin_required`, `@user_owns_resource`, etc.)
+
+Voir [`architecture/ARCHITECTURE.md`](../architecture/ARCHITECTURE.md)
+pour la structure complète.
 
 ---
 
@@ -711,7 +838,8 @@ Puis ajoutez une tâche cron :
 ### Mise à Jour de l'Application
 
 1. Sauvegardez la base de données
-2. Sauvegardez le fichier `config.py`
+2. Sauvegardez votre fichier `.env` (contient `SECRET_KEY` et les autres
+   secrets, non versionné)
 3. Mettez à jour le code :
    ```bash
    git pull origin main
@@ -818,8 +946,11 @@ python run.py
 
 - [📖 Guide Utilisateur Complet](USER_GUIDE.md)
 - [🚀 Guide de Démarrage Rapide](QUICK_START.md)
-- [🗺️ Feuille de Route](ROADMAP.md)
-- [📋 README Technique](../README.md)
+- [❓ FAQ](FAQ.md)
+- [🏗️ Architecture Technique](../architecture/ARCHITECTURE.md)
+- [🚀 Guide de Déploiement](../deployment/DEPLOYMENT_GUIDE.md)
+- [🗺️ Feuille de Route](../../ROADMAP.md)
+- [📋 README Technique](../../README.md)
 
 ### Outils
 
