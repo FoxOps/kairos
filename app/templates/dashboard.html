@@ -2,6 +2,10 @@
 
 {% block title %}Tableau de bord - Leviia{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/dashboard.css') }}">
+{% endblock %}
+
 {% block content %}
 <main role="main" aria-labelledby="dashboard-title">
     <section class="section">

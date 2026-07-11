@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{% block meta_description %}Leviia Schedule - Gestion des plannings, astreintes et congés d'équipe.{% endblock %}">
+    <meta name="robots" content="noindex, nofollow">
     <title>{% block title %}Leviia{% endblock %}</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
     <!-- Bulma CSS - servi localement -->
@@ -11,8 +13,18 @@
     <!-- Font Awesome - servi localement -->
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/font-awesome/all.min.css') }}">
     
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-theme.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base-styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/variables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/utilities.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/buttons.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/cards.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/modals.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout/header.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout/footer.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout/grid.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/themes/dark.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -112,8 +124,8 @@
         </div>
     </footer>
     
-    <!-- JavaScript centralise -->
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <!-- JavaScript centralise (modules ES6) -->
+    <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
     
     {% block extra_js %}{% endblock %}
 </body>

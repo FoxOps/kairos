@@ -1,0 +1,73 @@
+/* ============================================
+   SURCHARGES FULLCALENDAR (thème clair / par défaut)
+   ============================================
+   FullCalendar (vendor, cf. scripts/download_vendor_assets.py) n'a pas
+   de fichier CSS séparé - son style est inclus dans son JS. Ce fichier
+   contient uniquement NOS surcharges pour l'intégrer à l'app. Les
+   surcharges spécifiques au thème sombre sont dans themes/dark.css.
+   ============================================ */
+
+#calendar {
+    width: 100%;
+    max-width: 100%;
+}
+
+.fc-event-shift {
+    background-color: var(--color-primary, #00D1B2);
+    border-color: var(--color-primary, #00D1B2);
+    color: white;
+}
+
+.fc-event-oncall {
+    background-color: var(--color-info, #3E8ED0);
+    border-color: var(--color-info, #3E8ED0);
+    color: white;
+}
+
+.fc-event-leave {
+    background-color: var(--color-danger, #F14668);
+    border-color: var(--color-danger, #F14668);
+    color: white;
+}
+
+/* Drag & drop */
+.fc-event-draggable,
+.fc-event-resizable {
+    cursor: move;
+}
+
+.fc-event-mirror {
+    opacity: 0.75;
+    z-index: 10000;
+}
+
+.fc-event-selected {
+    box-shadow: 0 0 0 2px var(--color-warning, #ffeb3b);
+}
+
+/* Conteneur d'événements externes (glisser-déposer depuis l'extérieur) */
+.external-event-container {
+    padding: 10px;
+    background: var(--bg-secondary, #f5f5f5);
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.external-event {
+    padding: 8px 12px;
+    margin: 4px;
+    background: var(--color-primary, #00D1B2);
+    color: white;
+    border-radius: 4px;
+    cursor: move;
+    display: inline-block;
+    font-size: 14px;
+}
+
+.external-event.oncall {
+    background: var(--color-info, #3E8ED0);
+}
+
+.external-event.leave {
+    background: var(--color-danger, #F14668);
+}

@@ -1,0 +1,31 @@
+/* ============================================
+   COMPOSANT - MODALES
+   ============================================ */
+
+.modal {
+    z-index: 1000;
+}
+
+.modal-background {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-card {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.modal-card-head {
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
+}
+
+.modal-card-body {
+    padding: 1.5rem;
+}
+
+.modal-card-foot {
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-primary);
+    justify-content: flex-end;
+}

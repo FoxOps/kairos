@@ -1,51 +1,12 @@
 {% extends "base.html" %}
+{% from "macros/errors.html" import error_page with context %}
 
 {% block title %}Accès interdit - Leviia{% endblock %}
 
 {% block content %}
-<main role="main" aria-labelledby="error-title">
-    <div class="section">
-        <div class="container">
-            <div class="columns is-centered">
-                <div class="column is-6">
-                    <div class="box has-text-centered" role="region" aria-labelledby="error-title" aria-describedby="error-description">
-                        <h1 id="error-title" class="title is-1 has-text-danger">403</h1>
-                        <h2 id="error-description" class="title is-3">Accès interdit</h2>
-                        <p class="subtitle is-5">
-                            Vous n'avez pas la permission d'accéder à cette page.
-                        </p>
-                        <div class="content">
-                            <p role="alert" aria-live="assertive">
-                                Si vous pensez que c'est une erreur, veuillez contacter l'administrateur.
-                            </p>
-                        </div>
-                        <div class="mt-5">
-                            <a href="{{ url_for("main.index") }}" class="button is-primary" aria-label="Retour à l'accueil">
-                                <span class="icon">
-                                    <i class="fas fa-home" aria-hidden="true"></i>
-                                </span>
-                                <span>Retour à l'accueil</span>
-                            </a>
-                            {% if current_user.is_authenticated %}
-                                <a href="{{ url_for('auth.logout') }}" class="button is-light ml-3" aria-label="Se déconnecter">
-                                    <span class="icon">
-                                        <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
-                                    </span>
-                                    <span>Se déconnecter</span>
-                                </a>
-                            {% else %}
-                                <a href="{{ url_for('auth.login') }}" class="button is-light ml-3" aria-label="Se connecter">
-                                    <span class="icon">
-                                        <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
-                                    </span>
-                                    <span>Se connecter</span>
-                                </a>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</main>
+{% call error_page(code=403, title="Accès interdit", subtitle="Vous n'avez pas la permission d'accéder à cette page.", color="has-text-danger") %}
+<p role="alert" aria-live="assertive">
+    Si vous pensez que c'est une erreur, veuillez contacter l'administrateur.
+</p>
+{% endcall %}
 {% endblock %}

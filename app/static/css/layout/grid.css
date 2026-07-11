@@ -1,0 +1,25 @@
+/* ============================================
+   LAYOUT - GRILLE / NIVEAUX / PAGINATION
+   ============================================ */
+
+.columns {
+    margin: 0 -0.75rem;
+}
+
+.column {
+    padding: 0 0.75rem;
+}
+
+.level {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.level-item {
+    flex: none;
+}
+
+.pagination {
+    margin: 1rem 0;
+}
