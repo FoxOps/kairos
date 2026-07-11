@@ -10,6 +10,7 @@
         </h1>
         
         <form method="POST" action="{{ url_for('admin.edit_group', group_id=group.id) }}" aria-labelledby="form-title">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="box">
                 <div class="field">
                     <label class="label required" for="name">Nom du groupe</label>

@@ -26,6 +26,7 @@ from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
 from flask_talisman import Talisman
 from flask_cors import CORS
+from flask_wtf import CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Flask-Limiter avertit à chaque init sans backend partagé (redis/memcached).
@@ -45,6 +46,7 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 login_manager.login_message_category = "danger"
 limiter = Limiter(key_func=get_remote_address)
+csrf = CSRFProtect()
 
 # Variable pour maintenir la compatibilité avec le code existant
 _app = None
@@ -147,6 +149,7 @@ def create_app(config_object: Optional[str] = None):
     db.init_app(app)
     login_manager.init_app(app)
     limiter.init_app(app)
+    csrf.init_app(app)
     
     # Configurer le rate limiting si activé
     if app.config.get('RATE_LIMIT_ENABLED', True):

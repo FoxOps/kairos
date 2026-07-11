@@ -181,6 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
             {% endif %}
             
             <form method="POST" action="{{ url_for('admin.automation_full') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="action" value="generate">
                 
                 <div class="field">

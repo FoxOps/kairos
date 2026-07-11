@@ -226,6 +226,7 @@
                         <!-- Boutons d'action - TOUJOURS dans le content -->
                         <div class="buttons is-centered mt-5">
                             <form method="POST" action="{{ url_for('auth.generate_ics_token') }}" class="control">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="button is-primary no-hover-transform">
                                     <span class="icon">
                                         <i class="fas fa-sync-alt"></i>

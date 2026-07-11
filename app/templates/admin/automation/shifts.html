@@ -86,6 +86,7 @@
             <h2 class="subtitle"><i class="fas fa-cog" aria-hidden="true"></i> Configuration des règles métiers</h2>
             
             <form method="POST" action="{{ url_for('admin.automation_shifts') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="action" value="generate">
                 
                 <div class="notification is-info is-light">

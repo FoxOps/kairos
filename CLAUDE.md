@@ -101,11 +101,17 @@ is a pre-existing business-logic layer used directly by services rather than bei
 auto-assignment and business rules — `advanced_shift_automation.py` is the biggest piece),
 `cache/`, `export/` (`ics_exporter.py`), `security/` (`token_manager.py` — ICS export tokens;
 `encryption.py` — unused), `logging/` (multi-handler setup: app/error/http/audit/sql/auth log
-files, optional syslog, sensitive-data filtering), `optimizations/` (`eager_load`, `cached_route`,
-etc. — actively used by routes), `helpers/` (`common_helpers.py` — actively used; `env_helpers.py`
-— unused, not exported from the package `__init__.py` since it redefines `get_bool`/`get_int`
-already provided by `common_helpers.py`), `monitoring/` and `pagination/` (both unused), plus
-`health.py` (k8s health endpoints) and `prometheus_metrics.py`.
+files, optional syslog, sensitive-data filtering), `optimizations/` (single decorator `eager_load`,
+actively used by admin/dashboard routes), `helpers/` (`common_helpers.py` — actively used), plus
+`health.py` (k8s health endpoints) and `prometheus_metrics.py` (gated by `PROMETHEUS_ENABLED`).
+
+Dead code found and removed in Phase 4 (confirmed zero references anywhere before deletion):
+`monitoring/`, `pagination/`, `lazy_loading.py` (785 lines, already excluded from coverage via a
+stale `.coveragerc` entry pointing at pre-Phase-2 flat-file paths), `helpers/env_helpers.py`, and
+`cache/cache_helpers.py`. `optimizations/__init__.py` was trimmed from 14 decorators to just
+`eager_load` — the other 13 (`cached_route`, `paginated_route`, `lazy_route`, `measure_time`, etc.)
+were never imported outside that file; `measure_time` even imported a module
+(`app.utils.performance_monitor`) that didn't exist, confirming it had never actually run.
 
 ### Auth
 

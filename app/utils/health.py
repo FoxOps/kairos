@@ -7,6 +7,7 @@ liveness/readiness probes.
 
 from flask import Flask, jsonify
 from datetime import datetime
+from sqlalchemy import text
 import os
 
 
@@ -101,7 +102,7 @@ def check_database(app: Flask) -> bool:
     try:
         from app import db
         # Try a simple query to check connection
-        db.session.execute('SELECT 1')
+        db.session.execute(text('SELECT 1'))
         return True
     except Exception as e:
         app.logger.error(f"Database check failed: {e}")

@@ -5,7 +5,7 @@ Ce module expose des métriques pour le monitoring de l'application
 via l'endpoint /metrics.
 """
 
-from flask import Blueprint, current_app, jsonify
+from flask import Blueprint, current_app, jsonify, request
 from prometheus_client import (
     Counter,
     Gauge,
@@ -154,8 +154,6 @@ def metrics():
     
     Retourne les métriques au format Prometheus.
     """
-    from flask import request
-    
     # Mettre à jour les métriques métier
     _update_business_metrics()
     
