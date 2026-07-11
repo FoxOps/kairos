@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, current_user, login_required
 from app import db
 from app.models import User, Group
@@ -72,10 +72,15 @@ def login():
 @auth_bp.route("/oidc/login")
 def oidc_login():
     """Redirige vers le fournisseur OIDC pour l'authentification."""
-    if is_basic_auth_disabled():
-        return oidc_auth.authorize_redirect(request)
-    else:
+    if not is_basic_auth_disabled():
         return redirect(url_for("auth.login"))
+
+    auth_url = oidc_auth.get_authorization_url()
+    if not auth_url:
+        flash("La connexion OIDC n'est pas disponible pour le moment.", "danger")
+        return redirect(url_for("auth.login"))
+
+    return redirect(auth_url)
 
 
 @auth_bp.route("/oidc/callback")
@@ -83,43 +88,19 @@ def oidc_callback():
     """Callback pour l'authentification OIDC."""
     if not is_basic_auth_disabled():
         return redirect(url_for("auth.login"))
-    
-    try:
-        token = oidc_auth.authorize_access_token(request)
-        userinfo = token.parse_id_token(request, None)
-        
-        # Récupérer les informations de l'utilisateur depuis les claims OIDC
-        email = userinfo.get(OIDCConfig.EMAIL_CLAIM, '')
-        name = userinfo.get(OIDCConfig.NAME_CLAIM, '')
-        username = userinfo.get(OIDCConfig.USERNAME_CLAIM, '')
-        
-        if not email:
-            flash("Impossible de déterminer l'email depuis la réponse OIDC.", "danger")
-            return redirect(url_for("auth.login"))
-        
-        # Trouver l'utilisateur existant par email
-        user = User.query.filter_by(email=email).first()
-        
-        if not user:
-            # Créer un nouvel utilisateur
-            user = User(
-                name=name or username or email,
-                email=email,
-                is_admin=False,
-                group_id=1  # Groupe par défaut
-            )
-            db.session.add(user)
-            db.session.commit()
-        
-        login_user(user, remember=True)
-        flash("Connexion OIDC réussie !", "success")
-        
-        return redirect(url_for("main.index"))
-        
-    except Exception as e:
-        current_app.logger.error(f"Erreur de callback OIDC : {e}")
+
+    user_data = oidc_auth.handle_oauth_callback(request)
+    if not user_data:
+        # handle_oauth_callback affiche déjà un message d'erreur (flash)
+        return redirect(url_for("auth.login"))
+
+    user = oidc_auth.login_user(user_data)
+    if not user:
         flash("La connexion OIDC a échoué. Veuillez réessayer.", "danger")
         return redirect(url_for("auth.login"))
+
+    flash("Connexion OIDC réussie !", "success")
+    return redirect(url_for("main.index"))
 
 
 @auth_bp.route("/logout")
