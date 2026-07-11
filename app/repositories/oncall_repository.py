@@ -22,6 +22,14 @@ class OnCallRepository:
         return db.session.get(OnCall, oncall_id)
 
     @staticmethod
+    def list_all_with_user() -> List[OnCall]:
+        return (
+            OnCall.query.options(joinedload(OnCall.user))
+            .order_by(OnCall.start_time)
+            .all()
+        )
+
+    @staticmethod
     def list_paginated(page: int, per_page: int):
         return (
             OnCall.query.options(joinedload(OnCall.user))

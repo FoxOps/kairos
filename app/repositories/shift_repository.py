@@ -51,6 +51,14 @@ class ShiftRepository:
         return db.session.get(Shift, shift_id)
 
     @staticmethod
+    def list_all_with_user() -> List[Shift]:
+        return (
+            Shift.query.options(joinedload(Shift.user))
+            .order_by(Shift.start_time)
+            .all()
+        )
+
+    @staticmethod
     def list_paginated(page: int, per_page: int):
         return (
             Shift.query.options(joinedload(Shift.user), joinedload(Shift.shift_type))

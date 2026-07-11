@@ -22,6 +22,14 @@ class LeaveRepository:
         return db.session.get(Leave, leave_id)
 
     @staticmethod
+    def list_all_with_user() -> List[Leave]:
+        return (
+            Leave.query.options(joinedload(Leave.user))
+            .order_by(Leave.start_date)
+            .all()
+        )
+
+    @staticmethod
     def list_paginated(page: int, per_page: int):
         return (
             Leave.query.options(joinedload(Leave.user))

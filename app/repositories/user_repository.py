@@ -23,6 +23,10 @@ class UserRepository:
         return User.query.filter_by(email=email).first()
 
     @staticmethod
+    def get_by_ics_token(token: str) -> Optional[User]:
+        return User.query.filter_by(ics_token=token).first()
+
+    @staticmethod
     def get_all() -> List[User]:
         return User.query.order_by(User.name).all()
 
