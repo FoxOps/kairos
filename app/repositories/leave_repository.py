@@ -67,6 +67,10 @@ class LeaveRepository:
         return Leave.query.filter_by(user_id=user_id).count()
 
     @staticmethod
+    def exists_for_user(user_id: int) -> bool:
+        return Leave.query.filter_by(user_id=user_id).first() is not None
+
+    @staticmethod
     def create(user_id: int, start_date: date, end_date: date) -> Leave:
         leave = Leave(user_id=user_id, start_date=start_date, end_date=end_date)
         db.session.add(leave)

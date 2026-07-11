@@ -25,6 +25,23 @@ class ShiftTypeRepository:
     def get_all() -> List[ShiftType]:
         return ShiftType.query.order_by(ShiftType.name).all()
 
+    @staticmethod
+    def name_taken(name: str, exclude_id: Optional[int] = None) -> bool:
+        query = ShiftType.query.filter(ShiftType.name == name)
+        if exclude_id is not None:
+            query = query.filter(ShiftType.id != exclude_id)
+        return query.first() is not None
+
+    @staticmethod
+    def create(name: str, label: str, start_hour: int, end_hour: int) -> ShiftType:
+        shift_type = ShiftType(name=name, label=label, start_hour=start_hour, end_hour=end_hour)
+        db.session.add(shift_type)
+        return shift_type
+
+    @staticmethod
+    def delete(shift_type: ShiftType) -> None:
+        db.session.delete(shift_type)
+
 
 class ShiftRepository:
     """Data access for the Shift model."""
@@ -84,6 +101,25 @@ class ShiftRepository:
     @staticmethod
     def count_for_dates(dates: List[date]) -> int:
         return Shift.query.filter(Shift.date.in_(dates)).count()
+
+    @staticmethod
+    def exists_for_user(user_id: int) -> bool:
+        return Shift.query.filter_by(user_id=user_id).first() is not None
+
+    @staticmethod
+    def exists_for_shift_type(shift_type_id: int) -> bool:
+        return Shift.query.filter_by(shift_type_id=shift_type_id).first() is not None
+
+    @staticmethod
+    def list_in_date_range(start_date: date, end_date: date) -> List[Shift]:
+        return Shift.query.filter(Shift.date >= start_date, Shift.date <= end_date).all()
+
+    @staticmethod
+    def delete_in_date_range(start_date: date, end_date: date) -> int:
+        shifts = ShiftRepository.list_in_date_range(start_date, end_date)
+        for shift in shifts:
+            db.session.delete(shift)
+        return len(shifts)
 
     @staticmethod
     def create(user_id: int, shift_type_id: int, start_time: datetime, end_time: datetime, on_date: date) -> Shift:

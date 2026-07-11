@@ -71,6 +71,27 @@ class OnCallRepository:
         return OnCall.query.filter_by(user_id=user_id).count()
 
     @staticmethod
+    def exists_for_user(user_id: int) -> bool:
+        return OnCall.query.filter_by(user_id=user_id).first() is not None
+
+    @staticmethod
+    def list_overlapping_range(start_date, end_date) -> List[OnCall]:
+        """Astreintes chevauchant [start_date, end_date] (dates, pas datetimes)."""
+        from datetime import datetime, timedelta
+
+        return OnCall.query.filter(
+            OnCall.start_time < datetime.combine(end_date + timedelta(days=1), datetime.min.time()),
+            OnCall.end_time > datetime.combine(start_date, datetime.min.time()),
+        ).all()
+
+    @staticmethod
+    def delete_overlapping_range(start_date, end_date) -> int:
+        oncalls = OnCallRepository.list_overlapping_range(start_date, end_date)
+        for oncall in oncalls:
+            db.session.delete(oncall)
+        return len(oncalls)
+
+    @staticmethod
     def create(user_id: int, start_time: datetime, end_time: datetime) -> OnCall:
         oncall = OnCall(user_id=user_id, start_time=start_time, end_time=end_time)
         db.session.add(oncall)

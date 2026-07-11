@@ -2,12 +2,17 @@
 User service for Leviia Schedule.
 
 Business logic around which users a given viewer is allowed to see/pick
-from (admins see everyone relevant, regular users only see themselves).
+from (admins see everyone relevant, regular users only see themselves),
+plus admin CRUD on users.
 """
 
-from typing import List
+from typing import List, Optional, Tuple
 
+from app import db
 from app.models import User
+from app.repositories.leave_repository import LeaveRepository
+from app.repositories.oncall_repository import OnCallRepository
+from app.repositories.shift_repository import ShiftRepository
 from app.repositories.user_repository import UserRepository
 
 
@@ -39,3 +44,50 @@ class UserService:
         if current_user.is_admin:
             return UserRepository.get_for_schedule_group()
         return [current_user]
+
+    @staticmethod
+    def create(name: str, email: str, group_id: int, password: str = "") -> Tuple[Optional[User], Optional[str]]:
+        if UserRepository.email_taken(email):
+            return None, "Un utilisateur avec cet email existe déjà."
+
+        user = UserRepository.create(name, email, group_id)
+        user.set_password(password or "password123")
+        db.session.commit()
+        return user, None
+
+    @staticmethod
+    def update(
+        user_id: int, name: str, email: str, group_id: int, is_admin: bool, password: str = ""
+    ) -> Tuple[Optional[User], Optional[str]]:
+        user = UserRepository.get_by_id(user_id)
+        if not user:
+            return None, None
+
+        if UserRepository.email_taken(email, exclude_id=user_id):
+            return None, "Un utilisateur avec cet email existe déjà."
+
+        user.name = name
+        user.email = email
+        user.group_id = group_id
+        user.is_admin = is_admin
+        if password:
+            user.set_password(password)
+        db.session.commit()
+        return user, None
+
+    @staticmethod
+    def delete(user_id: int) -> Tuple[bool, Optional[str]]:
+        user = UserRepository.get_by_id(user_id)
+        if not user:
+            return False, None
+
+        if (
+            ShiftRepository.exists_for_user(user_id)
+            or OnCallRepository.exists_for_user(user_id)
+            or LeaveRepository.exists_for_user(user_id)
+        ):
+            return False, "Impossible de supprimer cet utilisateur : il a des shifts, astreintes ou congés associés."
+
+        UserRepository.delete(user)
+        db.session.commit()
+        return True, None
