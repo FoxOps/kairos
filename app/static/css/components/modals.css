@@ -12,7 +12,11 @@
 
 .modal-card {
     max-width: 600px;
+    width: calc(100% - 2rem);
     margin: 0 auto;
+    border-radius: var(--bulma-radius-large);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
 }
 
 .modal-card-head {
@@ -28,4 +32,11 @@
     background-color: var(--bg-secondary);
     border-top: 1px solid var(--border-primary);
     justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+@media (max-width: 480px) {
+    .modal-card-body {
+        padding: 1rem;
+    }
 }

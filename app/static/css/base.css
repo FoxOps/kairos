@@ -75,7 +75,8 @@ figcaption {
    ============================================ */
 .notification {
     margin-bottom: 1rem;
-    border-radius: 4px;
+    border-radius: var(--bulma-radius-small);
+    box-shadow: var(--shadow-sm);
 }
 
 .notification[role="alert"],
@@ -96,7 +97,7 @@ figcaption {
     z-index: 100;
     text-decoration: none;
     font-weight: bold;
-    border-radius: 0 0 4px 0;
+    border-radius: 0 0 var(--bulma-radius-small) 0;
 }
 
 .skip-link:focus {

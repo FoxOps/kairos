@@ -23,7 +23,11 @@
 .textarea:focus-visible {
     outline: 3px solid var(--color-primary);
     outline-offset: 0;
-    box-shadow: 0 0 0 3px rgba(0, 209, 178, 0.2);
+    /* rgb(79, 70, 229) = indigo de variables.css (--bulma-primary-h/-s/-l :
+       243deg 75% 58%) - avant : rgba(0, 209, 178, ...), le turquoise par
+       défaut de Bulma, resté en dur ici et devenu incohérent avec la
+       nouvelle palette. */
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
 }
 
 .select {
@@ -58,7 +62,7 @@
 }
 
 .message {
-    border-radius: 4px;
+    border-radius: var(--bulma-radius);
 }
 
 .message-header {
