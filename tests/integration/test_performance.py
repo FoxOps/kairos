@@ -41,7 +41,9 @@ def count_queries():
 
 
 def _seed_shifts(group, count, offset=0):
-    shift_type = ShiftType(name=f"perf-{offset}-{count}", label="Perf", start_hour=7, end_hour=15)
+    shift_type = ShiftType(
+        name=f"perf-{offset}-{count}", label="Perf", start_hour=7, end_hour=15
+    )
     db.session.add(shift_type)
     db.session.flush()
 
@@ -60,7 +62,8 @@ def _seed_shifts(group, count, offset=0):
             Shift(
                 date=on_date,
                 start_time=datetime.combine(on_date, datetime.min.time()),
-                end_time=datetime.combine(on_date, datetime.min.time()) + timedelta(hours=8),
+                end_time=datetime.combine(on_date, datetime.min.time())
+                + timedelta(hours=8),
                 user_id=user.id,
                 shift_type_id=shift_type.id,
             )
@@ -71,7 +74,9 @@ def _seed_shifts(group, count, offset=0):
 class TestResponseTime:
     """Seuils larges - attrape une régression grossière, pas un micro-benchmark."""
 
-    def test_schedule_route_responds_quickly(self, test_app, test_group, logged_in_client):
+    def test_schedule_route_responds_quickly(
+        self, test_app, test_group, logged_in_client
+    ):
         with logged_in_client.application.app_context():
             _seed_shifts(test_group, 30)
 
@@ -133,7 +138,9 @@ class TestNPlusOneQueries:
     nombre d'enregistrements listés (sinon le joinedload() ne fait plus
     son travail)."""
 
-    def test_schedule_query_count_stable_across_dataset_size(self, test_app, test_group, logged_in_client):
+    def test_schedule_query_count_stable_across_dataset_size(
+        self, test_app, test_group, logged_in_client
+    ):
         with logged_in_client.application.app_context():
             _seed_shifts(test_group, 5)
         with count_queries() as small_queries:
@@ -156,7 +163,9 @@ class TestNPlusOneQueries:
             "suspicion de N+1 (joinedload cassé ?)"
         )
 
-    def test_shift_repository_list_paginated_uses_eager_load(self, test_app, test_group):
+    def test_shift_repository_list_paginated_uses_eager_load(
+        self, test_app, test_group
+    ):
         _seed_shifts(test_group, 10)
 
         from app.repositories.shift_repository import ShiftRepository

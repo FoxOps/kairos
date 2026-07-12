@@ -24,11 +24,11 @@ logs: ## Voir les logs
 	docker compose -f docker/docker-compose.yml logs -f
 
 shell: ## Ouvrir un shell dans le conteneur
-	docker compose -f docker/docker-compose.yml exec web sh
+	docker compose -f docker/docker-compose.yml exec leviia-schedule sh
 
 # Production (avec Gunicorn)
 up-prod: ## Démarrer en production
-	docker compose -f docker/docker-compose.yml up -d -e FLASK_ENV=production
+	FLASK_ENV=production docker compose -f docker/docker-compose.yml up -d
 
 down-prod: ## Arrêter la production
 	docker compose -f docker/docker-compose.yml down

@@ -1,0 +1,129 @@
+{
+  "title": "Leviia Schedule",
+  "uid": "leviia-schedule",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "timezone": "browser",
+  "time": { "from": "now-6h", "to": "now" },
+  "refresh": "30s",
+  "tags": ["leviia-schedule"],
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Requêtes HTTP / seconde",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (endpoint, http_status) (rate(leviia_requests_total[5m]))",
+          "legendFormat": "{{endpoint}} [{{http_status}}]"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Erreurs / seconde",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (error_type) (rate(leviia_errors_total[5m]))",
+          "legendFormat": "{{error_type}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Latence requêtes - p95 par endpoint",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, endpoint) (rate(leviia_request_latency_seconds_bucket[5m])))",
+          "legendFormat": "{{endpoint}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Temps requêtes SQL - p95",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(leviia_db_query_time_seconds_bucket[5m])))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Utilisateurs / sessions actifs",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        { "expr": "leviia_active_users", "legendFormat": "Utilisateurs actifs" },
+        { "expr": "leviia_active_sessions", "legendFormat": "Sessions actives" }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Volumétrie métier",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "targets": [
+        { "expr": "leviia_shifts_total", "legendFormat": "Shifts" },
+        { "expr": "leviia_oncalls_total", "legendFormat": "Astreintes" },
+        { "expr": "leviia_leaves_total", "legendFormat": "Congés" },
+        { "expr": "leviia_users_total", "legendFormat": "Utilisateurs" },
+        { "expr": "leviia_groups_total", "legendFormat": "Groupes" }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "CPU (%)",
+      "type": "gauge",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 24 },
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
+      "targets": [{ "expr": "leviia_cpu_usage_percent" }]
+    },
+    {
+      "id": 8,
+      "title": "Mémoire",
+      "type": "gauge",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 24 },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [{ "expr": "leviia_memory_usage_bytes" }]
+    },
+    {
+      "id": 9,
+      "title": "Disque",
+      "type": "gauge",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 24 },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [{ "expr": "leviia_disk_usage_bytes" }]
+    }
+  ]
+}

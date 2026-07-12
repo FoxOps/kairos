@@ -22,10 +22,14 @@ spec:
       labels:
         app: leviia-schedule
         version: v1
-      annotations:
-        # Recharger le pod si le configmap ou le secret change
-        checksum/config: "{{ include (print `k8s/configmap.yaml`) | sha256sum }}"
-        checksum/secret: "{{ include (print `k8s/secret.yaml`) | sha256sum }}"
+      # Pas d'annotations checksum/config-secret ici : ce manifest est
+      # appliqué tel quel via `kubectl apply -f k8s/` (voir .gitlab-ci.yml,
+      # job deploy_production), pas via Helm - la syntaxe `{{ include ... }}`
+      # qui existait avant n'était jamais interprétée, c'était du texte
+      # littéral dans l'annotation, donc le rolling restart automatique sur
+      # changement de ConfigMap/Secret ne s'est jamais produit. Si besoin,
+      # déclencher `kubectl rollout restart deployment/leviia-schedule -n
+      # leviia-schedule` explicitement en CI après un changement de config.
     spec:
       securityContext:
         runAsNonRoot: true
@@ -33,6 +37,10 @@ spec:
         fsGroup: 1000
       containers:
       - name: leviia-schedule
+        # Placeholder remplacé en CI (voir .gitlab-ci.yml, job
+        # deploy_production) par $CI_REGISTRY_IMAGE:latest avant `kubectl
+        # apply` - l'image réellement poussée par build_docker. Pour un
+        # apply manuel hors CI, remplacer par le registre réel avant usage.
         image: your-registry/leviia-schedule:latest
         imagePullPolicy: Always
         ports:

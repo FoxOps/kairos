@@ -1,5 +1,8 @@
 services:
   leviia-schedule:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     image: leviia-schedule:dev
     container_name: leviia-schedule
     ports:
@@ -8,6 +11,13 @@ services:
     env_file:
       - ./.env
     environment:
+      # Reprend la variable d'environnement FLASK_ENV de l'hôte (ex: `make
+      # -f docker/Makefile up-prod` fait FLASK_ENV=production docker compose
+      # ...) sinon garde le défaut "development" de l'image (voir
+      # entrypoint.sh : bascule Flask dev server / Gunicorn selon cette
+      # valeur). Sans cette ligne, FLASK_ENV=production côté shell n'était
+      # jamais transmis au conteneur.
+      - FLASK_ENV=${FLASK_ENV:-development}
       # .env / .env.example définissent DATABASE_URL=sqlite:///app.db (chemin
       # relatif) qui résout dans app.instance_path (/app/instance), pas dans
       # /app/data qui est le volume monté ici. Sans cette surcharge, la DB
