@@ -8,6 +8,7 @@
  */
 
 import { ThemeManager } from './theme/theme-manager.js';
+import { NavbarMenu } from './navbar/navbar-menu.js';
 import { formatDate, formatTime, formatDateTime } from './utils/date.js';
 import {
     toggleVisibility,
@@ -29,8 +30,10 @@ import {
 import { showNotification, confirmAction } from './notifications/toast.js';
 
 let themeManager;
+let navbarMenu;
 document.addEventListener('DOMContentLoaded', () => {
     themeManager = new ThemeManager();
+    navbarMenu = new NavbarMenu();
 });
 
 // Exporter les fonctions pour les templates (onclick inline, callbacks FullCalendar)
