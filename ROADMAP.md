@@ -1,11 +1,11 @@
 # 🗺️ Feuille de Route - Leviia Schedule
 
-> **Version** : 5.1.0 - Refonte UI/UX en cours (PR #103, branche `feature/ui-ux-refonte`)
+> **Version** : 5.1.0 - Refonte UI/UX terminée et mergée (PR #103)
 > **Version app** : 0.7.0 (`/version`) - items Haute priorité de la
 > Version 0.7 (Refonte UI/UX, Calendrier interactif) terminés
 > **Dernière mise à jour** : Juillet 2026
 > **Statut** : Développement actif - **781 tests passent** ✅ - couverture ~82%
-> **Commit actuel** : 5aea4ef (branche `feature/ui-ux-refonte`, PR #103 non mergée)
+> **Commit actuel** : b881b3d (Merge PR #103 - Refonte UI/UX : Design moderne et responsive)
 >
 > ℹ️ Ne pas confondre avec les « Phases » de refonte (`report/Phase 1` à
 > `report/Phase 6`, un chantier qualité/infra achevé) et les « Phases » de
@@ -516,7 +516,7 @@ Pour toute question concernant la feuille de route :
 
 | Version | Date | Auteur | Changements |
 |---------|------|--------|-------------|
-| 5.1.0 | Juillet 2026 | Claude Code | Refonte UI/UX (PR #103, en cours) : burger mobile (bug bloquant corrigé), palette teal/vert douce, composants rafraîchis, bug graphique dashboard corrigé, 2 pages cassées par la CSP Phase 6 trouvées et corrigées (copie ICS, drag&drop rotation), audit responsive. Version app bump 0.6.0 -> 0.7.0. 781 tests |
+| 5.1.0 | Juillet 2026 | Claude Code | Refonte UI/UX terminée et mergée (PR #103) : burger mobile (bug bloquant corrigé), palette teal/vert douce, composants rafraîchis, bug graphique dashboard corrigé, 3 bugs CSP trouvés et corrigés (2 pages avec script inline cassées - copie ICS, drag&drop rotation - + icônes calendrier invisibles, font-src manquant, trouvé via vérification réelle en navigateur/Playwright), audit responsive. Version app 0.6.0 -> 0.7.0. 781 tests |
 | 5.0.0 | Juillet 2026 | Claude Code | Refonte Phases 1-6 terminée (report/) : architecture repositories/services, 773 tests (couverture ~82%), CSP stricte + Talisman toujours actif, compression Gzip/Brotli/Zstd, Docker multi-stage réparé et promu, CI/CD GitLab corrigée, k8s ready, dashboard Grafana. Commit 6e25cc2 (PR #102) |
 | 4.0.0 | Juin 2026 | Vibe Code | Mise à jour après PR #85 : 522 tests (515 passent, 2 échouent, 7 ignorés), correction des assets statiques, commit 0adf3cc |
 | 3.0.0 | Juin 2026 | Vibe Code | Analyse complète du dépôt, mise à jour des statistiques, ajout des détails techniques |
@@ -536,8 +536,9 @@ Pour toute question concernant la feuille de route :
 ### À moyen terme (1 mois)
 1. **Implémenter les notifications par email**
 2. **Ajouter la répétition des shifts**
-3. **Améliorer l'accessibilité WCAG**
-4. **Commencer la refonte UI/UX**
+3. **Améliorer l'accessibilité WCAG** (partiellement fait : skip link,
+   focus-visible, aria - refonte UI/UX terminée mais audit WCAG complet
+   pas encore fait)
 
 ### À long terme (3-6 mois)
 1. **Intégration Google Calendar API**
@@ -561,4 +562,4 @@ Pour toute question concernant la feuille de route :
 ---
 
 *Document généré après analyse complète du dépôt - Dernière synchronisation : Juillet 2026*
-*Branche analysée : `feature/ui-ux-refonte`, commit 5aea4ef (PR #103, non mergée)*
+*Commit analysé : b881b3da87f3336208a37ad8a278d0f63d1c5eb8 (Merge PR #103 - Refonte UI/UX)*
