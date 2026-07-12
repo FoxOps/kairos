@@ -60,6 +60,12 @@ CSP_POLICY = {
     "script-src": "'self'",
     "script-src-attr": "'unsafe-inline'",
     "style-src": "'self' 'unsafe-inline'",
+    # FullCalendar embarque sa police d'icônes (flèches précédent/suivant du
+    # calendrier) en @font-face data: URI dans son propre CSS (bundlé dans
+    # le JS vendor) - sans font-src, default-src 'self' bloque le data:,
+    # les icônes de navigation du calendrier restent invisibles (repéré en
+    # inspectant la console d'un vrai navigateur, pas juste le HTML rendu).
+    "font-src": "'self' data:",
 }
 
 # Variable pour maintenir la compatibilité avec le code existant
