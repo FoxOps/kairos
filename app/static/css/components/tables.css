@@ -17,7 +17,7 @@
 }
 
 .table.is-striped tbody tr:hover {
-    background-color: var(--bulma-primary-05, rgba(79, 70, 229, 0.05));
+    background-color: var(--bulma-primary-05, rgba(32, 182, 152, 0.05));
 }
 
 .table .button {

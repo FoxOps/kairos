@@ -12,11 +12,13 @@
     /* Palette de marque - Bulma 1.x dérive automatiquement toutes les
        nuances (00 à 100, invert, etc.) à partir de ces 3 variables HSL,
        donc il suffit de les redéfinir ici plutôt que chaque teinte
-       individuellement. Indigo moderne à la place du turquoise par
-       défaut de Bulma (--bulma-primary-h: 171deg d'origine). */
-    --bulma-primary-h: 243deg;
-    --bulma-primary-s: 75%;
-    --bulma-primary-l: 58%;
+       individuellement. Indigo (243deg) testé puis jugé trop agressif
+       aux yeux - retour à un vert/teal proche de l'original Bulma
+       (171deg, 100%, 41%) mais désaturé pour rester doux (168deg,
+       70%, 42% au lieu de 100% de saturation). */
+    --bulma-primary-h: 168deg;
+    --bulma-primary-s: 70%;
+    --bulma-primary-l: 42%;
 
     /* Rayons de bordure plus doux/arrondis que les valeurs par défaut
        de Bulma (0.25 / 0.375 / 0.75rem) pour un rendu plus moderne. */
