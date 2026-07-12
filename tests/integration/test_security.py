@@ -1,8 +1,8 @@
 """
 Tests de sécurité pour Leviia Schedule.
 
-TestingConfig désactive Talisman (TALISMAN_FORCE_HTTPS=False -> Talisman
-n'est même pas instancié, voir app/__init__.py) et CSRF
+TestingConfig désactive Talisman (TESTING=True -> create_app() saute
+l'initialisation de Talisman, voir app/__init__.py) et CSRF
 (WTF_CSRF_ENABLED=False) pour simplifier les tests fonctionnels. Les tests
 qui vérifient ces deux protections construisent donc leur propre instance
 d'application avec ces options réactivées, plutôt que d'utiliser le
@@ -11,7 +11,7 @@ fixture test_app standard qui les désactive.
 
 import pytest
 
-from app import create_app, db
+from app import CSP_POLICY, create_app, db
 from app.models import User
 
 
@@ -24,7 +24,7 @@ def secure_app():
     app.config["TALISMAN_FORCE_HTTPS"] = True
 
     from flask_talisman import Talisman
-    Talisman(app, force_https=False, strict_transport_security=False)
+    Talisman(app, force_https=False, strict_transport_security=False, content_security_policy=CSP_POLICY)
 
     with app.app_context():
         db.drop_all()
@@ -74,6 +74,57 @@ class TestTalismanSecurityHeaders:
         resp = client.get("/login")
         assert resp.headers.get("X-Content-Type-Options") == "nosniff"
         assert resp.headers.get("X-Frame-Options") is not None
+
+    def test_security_headers_applied_even_without_force_https(self, test_app):
+        """Bug réel corrigé en Phase 6 : les en-têtes de sécurité (CSP,
+        X-Content-Type-Options, etc.) étaient entièrement gated derrière
+        TALISMAN_FORCE_HTTPS - un déploiement avec TLS terminé par un
+        reverse proxy (donc TALISMAN_FORCE_HTTPS=false côté app, comme
+        docker/docker-compose.yml) n'avait alors AUCUN en-tête de sécurité.
+        Talisman est maintenant toujours initialisé (sauf en test) ;
+        force_https ne contrôle plus que la redirection HTTP->HTTPS."""
+        app = create_app("app.config.Config")
+        app.config["TALISMAN_FORCE_HTTPS"] = False
+        with app.app_context():
+            db.drop_all()
+            db.create_all()
+        client = app.test_client()
+        resp = client.get("/login")
+        assert resp.headers.get("X-Content-Type-Options") == "nosniff"
+        assert resp.headers.get("Content-Security-Policy") is not None
+        with app.app_context():
+            db.drop_all()
+
+    def test_csp_blocks_inline_script_but_allows_onclick_and_inline_style(self, secure_app):
+        """CSP réelle appliquée par l'app (CSP_POLICY) : script-src 'self'
+        (bloque tout <script> injecté), script-src-attr 'unsafe-inline'
+        (les attributs onclick="" restants dans les templates sont du
+        contenu statique, pas des données utilisateur), style-src avec
+        'unsafe-inline' (un seul style dynamique dans dashboard.html)."""
+        client = secure_app.test_client()
+        resp = client.get("/login")
+        csp = resp.headers.get("Content-Security-Policy")
+        assert "script-src 'self'" in csp
+        assert "script-src-attr 'unsafe-inline'" in csp
+        assert "style-src 'self' 'unsafe-inline'" in csp
+        assert "object-src 'none'" in csp
+
+    def test_calendar_page_has_no_inline_script_block(self, test_app, logged_in_client):
+        """Régression Phase 6 : index.html avait un <script> inline de
+        ~576 lignes (config FullCalendar), externalisé vers
+        static/js/calendar/fullcalendar-config.js pour permettre un
+        script-src strict sans nonce ni unsafe-inline."""
+        resp = logged_in_client.get("/")
+        assert resp.status_code == 200
+        html = resp.data.decode("utf-8")
+        assert "<script type=\"module\"" in html
+        assert 'src="/static/js/calendar/fullcalendar-config.js"' in html
+        # Le seul <script> sans src doit être le bloc JSON de données
+        # (type="application/json", pas exécutable, hors scope de la CSP).
+        import re
+        inline_script_blocks = re.findall(r'<script(?![^>]*\bsrc=)[^>]*>', html)
+        for tag in inline_script_blocks:
+            assert 'type="application/json"' in tag, f"Script inline exécutable trouvé : {tag}"
 
 
 class TestCSRFProtection:

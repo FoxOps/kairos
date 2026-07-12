@@ -48,6 +48,18 @@ login_manager.login_message_category = "danger"
 limiter = Limiter(key_func=get_remote_address)
 csrf = CSRFProtect()
 
+# Policy Content-Security-Policy appliquée par Talisman - voir le
+# commentaire dans create_app() pour le détail de chaque directive.
+# Exposée en constante de module (plutôt qu'inline) pour que les tests
+# puissent vérifier la policy réelle sans la dupliquer.
+CSP_POLICY = {
+    'default-src': "'self'",
+    'object-src': "'none'",
+    'script-src': "'self'",
+    'script-src-attr': "'unsafe-inline'",
+    'style-src': "'self' 'unsafe-inline'",
+}
+
 # Variable pour maintenir la compatibilité avec le code existant
 _app = None
 
@@ -178,12 +190,31 @@ def create_app(config_object: Optional[str] = None):
     from app.utils.cache import init_cache
     init_cache(app)
     
-    # Initialiser Talisman pour la sécurité HTTP
-    if app.config.get('TALISMAN_FORCE_HTTPS', True):
+    # Initialiser Talisman pour la sécurité HTTP (en-têtes + CSP).
+    # Toujours actif : force_https ne contrôle que la redirection HTTP->HTTPS
+    # et HSTS, pas les autres en-têtes (CSP, X-Content-Type-Options,
+    # X-Frame-Options...) - avant ce correctif, tout était gated derrière
+    # TALISMAN_FORCE_HTTPS, donc un déploiement avec TLS terminé en amont
+    # (reverse proxy) et TALISMAN_FORCE_HTTPS=false n'avait AUCUN en-tête
+    # de sécurité du tout.
+    #
+    # CSP : script-src 'self' bloque tout <script> injecté (le vecteur XSS
+    # le plus dangereux) - les scripts de l'app sont tous dans des fichiers
+    # externes servis localement (Phase 3/6). script-src-attr autorise
+    # 'unsafe-inline' spécifiquement pour les attributs onclick="" encore
+    # utilisés dans certains templates (contenu statique écrit par les
+    # développeurs, jamais de données utilisateur) - script-src-attr est une
+    # directive distincte de script-src depuis CSP niveau 3, les nonces ne
+    # couvrent pas les attributs d'événements. style-src autorise
+    # 'unsafe-inline' pour un seul style dynamique (largeur de barre de
+    # graphique) dans dashboard.html - CSS injecté est un vecteur bien
+    # moins dangereux qu'un script injecté.
+    if not app.config.get('TESTING', False):
         Talisman(
             app,
             force_https=app.config.get('TALISMAN_FORCE_HTTPS', True),
-            strict_transport_security=app.config.get('TALISMAN_STRICT_TRANSPORT_SECURITY', True)
+            strict_transport_security=app.config.get('TALISMAN_STRICT_TRANSPORT_SECURITY', True),
+            content_security_policy=CSP_POLICY
         )
     
     # Initialiser CORS
