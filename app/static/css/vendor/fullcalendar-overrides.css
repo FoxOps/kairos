@@ -13,8 +13,8 @@
 }
 
 .fc-event-shift {
-    background-color: var(--color-primary, #00D1B2);
-    border-color: var(--color-primary, #00D1B2);
+    background-color: var(--color-primary, #20B698);
+    border-color: var(--color-primary, #20B698);
     color: white;
 }
 
@@ -49,16 +49,16 @@
 .external-event-container {
     padding: 10px;
     background: var(--bg-secondary, #f5f5f5);
-    border-radius: 4px;
+    border-radius: var(--bulma-radius-small);
     margin-bottom: 20px;
 }
 
 .external-event {
     padding: 8px 12px;
     margin: 4px;
-    background: var(--color-primary, #00D1B2);
+    background: var(--color-primary, #20B698);
     color: white;
-    border-radius: 4px;
+    border-radius: var(--bulma-radius-small);
     cursor: move;
     display: inline-block;
     font-size: 14px;
