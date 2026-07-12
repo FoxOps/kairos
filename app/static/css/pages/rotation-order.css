@@ -1,0 +1,68 @@
+/* ============================================
+   PAGE - ORDRE DE ROTATION (admin/automation/full.html)
+   ============================================
+   Externalisé depuis un <style> inline (cohérence avec le reste de
+   l'app, et rayons alignés sur l'échelle globale plutôt que 4px en dur).
+   ============================================ */
+
+.sortable-list {
+    list-style: none;
+    padding: 0;
+}
+
+.sortable-item {
+    background: var(--bg-secondary, #f5f5f5);
+    border: 1px solid var(--border-primary, #ddd);
+    border-radius: var(--bulma-radius-small);
+    padding: 12px 15px;
+    margin-bottom: 8px;
+    cursor: move;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s;
+}
+
+.sortable-item:hover {
+    background: var(--bg-tertiary, #e9e9e9);
+}
+
+.sortable-item.dragging {
+    opacity: 0.5;
+    background: var(--color-success-light, #d4edda);
+}
+
+.sortable-item .drag-handle {
+    cursor: move;
+    padding: 0 10px;
+    color: var(--text-tertiary, #666);
+}
+
+.sortable-item .user-info {
+    flex: 1;
+}
+
+.sortable-item .include-checkbox {
+    margin-left: 15px;
+}
+
+.rotation-order-info {
+    background: var(--bg-secondary, #f8f9fa);
+    padding: 15px;
+    border-radius: var(--bulma-radius-small);
+    margin-bottom: 15px;
+    border-left: 4px solid var(--color-primary, #20b698);
+}
+
+/* Fix pour les boutons qui débordent */
+.field.is-grouped {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.field.is-grouped .control {
+    flex-shrink: 0;
+}
+
+.field.is-grouped .button {
+    min-width: 140px;
+}

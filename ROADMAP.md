@@ -1,9 +1,11 @@
 # 🗺️ Feuille de Route - Leviia Schedule
 
-> **Version** : 5.0.0 - Mise à jour après la refonte Phases 1-6 (architecture, tests, docs, optimisations)
+> **Version** : 5.1.0 - Refonte UI/UX en cours (PR #103, branche `feature/ui-ux-refonte`)
+> **Version app** : 0.7.0 (`/version`) - items Haute priorité de la
+> Version 0.7 (Refonte UI/UX, Calendrier interactif) terminés
 > **Dernière mise à jour** : Juillet 2026
-> **Statut** : Développement actif - **773 tests passent** ✅ - couverture ~82%
-> **Commit actuel** : 6e25cc2 (Merge PR #102 - Phase 6 : Optimisations supplémentaires)
+> **Statut** : Développement actif - **781 tests passent** ✅ - couverture ~82%
+> **Commit actuel** : 5aea4ef (branche `feature/ui-ux-refonte`, PR #103 non mergée)
 >
 > ℹ️ Ne pas confondre avec les « Phases » de refonte (`report/Phase 1` à
 > `report/Phase 6`, un chantier qualité/infra achevé) et les « Phases » de
@@ -196,9 +198,9 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 
 | Élément | Statut | Priorité | Livraison estimée | Détails |
 |---------|--------|----------|-------------------|---------|
-| **Refonte de l'UI/UX** | ❌ | Haute | v0.7 | Design moderne et responsive |
-| **Calendrier interactif** | ❌ | Haute | v0.7 | Drag & drop pour les shifts |
-| **Tableau de bord utilisateur** | ❌ | Moyenne | v0.7 | Vue d'ensemble personnalisée |
+| **Refonte de l'UI/UX** | ✅ | Haute | v0.7 | Design moderne et responsive (PR #103) : palette, burger mobile, composants, audit responsive |
+| **Calendrier interactif** | ✅ | Haute | v0.7 | Drag & drop pour les shifts (FullCalendar, Phase 6) |
+| **Tableau de bord utilisateur** | ✅ | Moyenne | v0.7 | Existe déjà (dashboard.html), rafraîchi visuellement en PR #103 |
 | **Thème sombre/clair** | ✅ | Basse | v0.5 | **Déjà implémenté** (dark-theme.css) |
 | **Accessibilité (WCAG)** | ⚠️ | Moyenne | v0.8 | Partiellement implémenté (skip link) |
 
@@ -273,11 +275,11 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 - ✅ 773 tests passent, couverture ~82%
 - ⚠️ Support PostgreSQL (configuration possible, tests CI à ajouter)
 
-### Version 0.7 (Fonctionnalités avancées)
+### Version 0.7 (Fonctionnalités avancées - **items Haute priorité terminés**)
+- ✅ Refonte UI/UX (PR #103 : palette, burger mobile, composants, dashboard, audit responsive)
+- ✅ Calendrier interactif (drag & drop, FullCalendar)
 - ❌ Notifications par email
 - ❌ Répétition des shifts
-- ❌ Refonte UI/UX
-- ❌ Calendrier interactif (drag & drop)
 - ❌ Multi-langues (i18n)
 
 ### Version 0.8 (Intégrations)
@@ -514,6 +516,7 @@ Pour toute question concernant la feuille de route :
 
 | Version | Date | Auteur | Changements |
 |---------|------|--------|-------------|
+| 5.1.0 | Juillet 2026 | Claude Code | Refonte UI/UX (PR #103, en cours) : burger mobile (bug bloquant corrigé), palette teal/vert douce, composants rafraîchis, bug graphique dashboard corrigé, 2 pages cassées par la CSP Phase 6 trouvées et corrigées (copie ICS, drag&drop rotation), audit responsive. Version app bump 0.6.0 -> 0.7.0. 781 tests |
 | 5.0.0 | Juillet 2026 | Claude Code | Refonte Phases 1-6 terminée (report/) : architecture repositories/services, 773 tests (couverture ~82%), CSP stricte + Talisman toujours actif, compression Gzip/Brotli/Zstd, Docker multi-stage réparé et promu, CI/CD GitLab corrigée, k8s ready, dashboard Grafana. Commit 6e25cc2 (PR #102) |
 | 4.0.0 | Juin 2026 | Vibe Code | Mise à jour après PR #85 : 522 tests (515 passent, 2 échouent, 7 ignorés), correction des assets statiques, commit 0adf3cc |
 | 3.0.0 | Juin 2026 | Vibe Code | Analyse complète du dépôt, mise à jour des statistiques, ajout des détails techniques |
@@ -558,4 +561,4 @@ Pour toute question concernant la feuille de route :
 ---
 
 *Document généré après analyse complète du dépôt - Dernière synchronisation : Juillet 2026*
-*Commit analysé : 6e25cc23bc10b2a5d584ed41b457ba2d7d13ff00 (Merge PR #102 - Phase 6)*
+*Branche analysée : `feature/ui-ux-refonte`, commit 5aea4ef (PR #103, non mergée)*

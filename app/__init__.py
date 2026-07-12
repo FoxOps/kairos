@@ -60,6 +60,12 @@ CSP_POLICY = {
     "script-src": "'self'",
     "script-src-attr": "'unsafe-inline'",
     "style-src": "'self' 'unsafe-inline'",
+    # FullCalendar embarque sa police d'icônes (flèches précédent/suivant du
+    # calendrier) en @font-face data: URI dans son propre CSS (bundlé dans
+    # le JS vendor) - sans font-src, default-src 'self' bloque le data:,
+    # les icônes de navigation du calendrier restent invisibles (repéré en
+    # inspectant la console d'un vrai navigateur, pas juste le HTML rendu).
+    "font-src": "'self' data:",
 }
 
 # Variable pour maintenir la compatibilité avec le code existant
@@ -270,12 +276,15 @@ def create_app(config_object: Optional[str] = None):
     register_health_endpoints(app)
 
     # Version de l'app disponible dans tous les templates (footer, etc.) -
-    # même source que l'endpoint /version (app/utils/health.py), pour éviter
-    # deux valeurs qui divergent (le footer avait "0.5" en dur avant, jamais
-    # mis à jour depuis).
+    # même source que l'endpoint /version (APP_VERSION_DEFAULT importée
+    # depuis app/utils/health.py, pas redéfinie ici) pour éviter deux
+    # valeurs qui divergent (déjà arrivé deux fois : "0.5" en dur, puis
+    # "0.6.0" oublié ici après un bump fait uniquement dans health.py).
+    from app.utils.health import APP_VERSION_DEFAULT
+
     @app.context_processor
     def inject_app_version():
-        return {"app_version": os.environ.get("APP_VERSION", "0.6.0")}
+        return {"app_version": os.environ.get("APP_VERSION", APP_VERSION_DEFAULT)}
 
     # Configuration des métriques Prometheus si activé
     if app.config.get("PROMETHEUS_ENABLED", False):

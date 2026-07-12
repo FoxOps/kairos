@@ -4,10 +4,20 @@
 
 .table-container {
     overflow-x: auto;
+    border-radius: var(--bulma-radius);
 }
 
 .table {
     width: 100%;
+}
+
+.table td,
+.table th {
+    padding: 0.65em 0.85em;
+}
+
+.table.is-striped tbody tr:hover {
+    background-color: var(--bulma-primary-05, rgba(32, 182, 152, 0.05));
 }
 
 .table .button {

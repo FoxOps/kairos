@@ -1,6 +1,6 @@
 """
-Routes pour l'accueil (calendrier), le tableau de bord utilisateur et la
-page d'accessibilité. Enregistrées sur main_bp (cf. app/routes/main.py).
+Routes pour l'accueil (calendrier) et le tableau de bord utilisateur.
+Enregistrées sur main_bp (cf. app/routes/main.py).
 """
 
 from datetime import date, datetime
@@ -124,10 +124,3 @@ def user_dashboard():
         oncalls_this_month=oncalls_this_month,
         user=current_user
     )
-
-
-@main_bp.route("/accessibility-statement")
-@login_required
-def accessibility_statement():
-    """Page de déclaration d'accessibilité."""
-    return render_template("accessibility_statement.html")

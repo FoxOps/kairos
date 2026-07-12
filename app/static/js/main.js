@@ -8,6 +8,7 @@
  */
 
 import { ThemeManager } from './theme/theme-manager.js';
+import { NavbarMenu } from './navbar/navbar-menu.js';
 import { formatDate, formatTime, formatDateTime } from './utils/date.js';
 import {
     toggleVisibility,
@@ -27,10 +28,22 @@ import {
     confirmActionAccessible,
 } from './utils/accessibility.js';
 import { showNotification, confirmAction } from './notifications/toast.js';
+import {
+    copyToken,
+    copyUrlShiftsAll,
+    copyUrlShiftsMy,
+    copyUrlOncallAll,
+    copyUrlOncallMy,
+    copyUrlLeavesAll,
+    copyUrlLeavesMy,
+} from './clipboard/copy-token.js';
+import { saveRotationOrder } from './automation/rotation-order.js';
 
 let themeManager;
+let navbarMenu;
 document.addEventListener('DOMContentLoaded', () => {
     themeManager = new ThemeManager();
+    navbarMenu = new NavbarMenu();
 });
 
 // Exporter les fonctions pour les templates (onclick inline, callbacks FullCalendar)
@@ -54,6 +67,14 @@ window.Leviia = {
     displayFormErrorsAccessible,
     validateFormAccessible,
     makeTableAccessible,
+    copyToken,
+    copyUrlShiftsAll,
+    copyUrlShiftsMy,
+    copyUrlOncallAll,
+    copyUrlOncallMy,
+    copyUrlLeavesAll,
+    copyUrlLeavesMy,
+    saveRotationOrder,
     // Instance du ThemeManager (initialisée au chargement)
     get themeManager() {
         return themeManager;

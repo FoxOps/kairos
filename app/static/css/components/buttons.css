@@ -6,11 +6,27 @@
     min-height: 44px;
     min-width: 44px;
     padding: 0.5rem 1rem;
-    transition: all 0.2s ease-in-out;
+    font-weight: 500;
+    transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 
 .button:hover:not(:disabled) {
     transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.button:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+/* Désactive l'animation de lift au survol - utilisé par les boutons
+   "Copier" (ics_token.html) où le mouvement gêne plus qu'il n'aide sur
+   une action répétée rapidement. Anciennement dupliqué en <style>
+   inline dans le template, déplacé ici (règle générique, pas
+   spécifique à une page). */
+.no-hover-transform:hover {
+    transform: none !important;
 }
 
 .button:focus-visible {
@@ -51,7 +67,7 @@
 /* Tags de type d'événement (dashboard, listes) */
 .type-tag {
     padding: 0.25rem 0.5rem;
-    border-radius: 4px;
+    border-radius: var(--bulma-radius-small);
     font-size: 0.85rem;
     font-weight: 500;
     display: inline-block;

@@ -10,6 +10,12 @@ from datetime import datetime
 from sqlalchemy import text
 import os
 
+# Version par défaut si APP_VERSION n'est pas définie dans l'environnement.
+# Source unique : importée par app/__init__.py (context_processor du footer)
+# pour éviter que /version et le footer affichent deux valeurs différentes
+# (déjà arrivé : le footer était resté bloqué sur "0.6.0" après un bump ici).
+APP_VERSION_DEFAULT = "0.7.0"
+
 
 def register_health_endpoints(app: Flask) -> None:
     """
@@ -83,7 +89,7 @@ def register_health_endpoints(app: Flask) -> None:
         """
         return jsonify({
             'application': 'Leviia Schedule',
-            'version': os.environ.get('APP_VERSION', '0.6.0'),
+            'version': os.environ.get('APP_VERSION', APP_VERSION_DEFAULT),
             'environment': os.environ.get('FLASK_ENV', 'development'),
             'timestamp': datetime.utcnow().isoformat()
         }), 200

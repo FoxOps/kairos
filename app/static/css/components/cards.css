@@ -3,9 +3,11 @@
    ============================================ */
 
 .box {
+    border-radius: var(--bulma-radius-large);
+    box-shadow: var(--shadow-sm);
     transition: box-shadow 0.2s ease-in-out;
 }
 
 .box:hover {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
 }

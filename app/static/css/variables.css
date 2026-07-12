@@ -9,6 +9,23 @@
    ============================================ */
 
 :root {
+    /* Palette de marque - Bulma 1.x dérive automatiquement toutes les
+       nuances (00 à 100, invert, etc.) à partir de ces 3 variables HSL,
+       donc il suffit de les redéfinir ici plutôt que chaque teinte
+       individuellement. Indigo (243deg) testé puis jugé trop agressif
+       aux yeux - retour à un vert/teal proche de l'original Bulma
+       (171deg, 100%, 41%) mais désaturé pour rester doux (168deg,
+       70%, 42% au lieu de 100% de saturation). */
+    --bulma-primary-h: 168deg;
+    --bulma-primary-s: 70%;
+    --bulma-primary-l: 42%;
+
+    /* Rayons de bordure plus doux/arrondis que les valeurs par défaut
+       de Bulma (0.25 / 0.375 / 0.75rem) pour un rendu plus moderne. */
+    --bulma-radius-small: 0.375rem;
+    --bulma-radius: 0.5rem;
+    --bulma-radius-large: 1rem;
+
     --color-primary: var(--bulma-primary);
     --color-primary-light: var(--bulma-primary-light);
     --color-primary-dark: var(--bulma-primary-dark);
@@ -42,10 +59,11 @@
     --border-primary: var(--bulma-border);
     --border-secondary: var(--bulma-border-weak);
 
-    /* Ombres */
-    --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.1);
+    /* Ombres - douces et diffuses (plusieurs couches) plutôt qu'une
+       ombre unique dure, pour un rendu plus moderne. */
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
+    --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.05);
+    --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12), 0 4px 8px rgba(15, 23, 42, 0.06);
 
     /* Alias de compatibilité */
     --bulma-grey: var(--bulma-background-bis);

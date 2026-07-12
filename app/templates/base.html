@@ -36,8 +36,13 @@
         <nav class="navbar is-primary is-fixed-top" role="navigation" aria-label="Navigation principale">
             <div class="navbar-brand">
                 <a class="navbar-item" href="{{ url_for("main.index") }}" aria-label="Accueil - Leviia"><strong>Leviia</strong></a>
+                <a role="button" class="navbar-burger" id="navbar-burger" aria-label="Menu" aria-expanded="false" aria-controls="navbar-menu">
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                </a>
             </div>
-            <div class="navbar-menu">
+            <div class="navbar-menu" id="navbar-menu">
                 <div class="navbar-start">
                     <a class="navbar-item" href="{{ url_for("main.user_dashboard") }}" aria-label="Tableau de bord">
                         <i class="fas fa-tachometer-alt" aria-hidden="true"></i>&nbsp; Tableau de bord
@@ -118,9 +123,6 @@
                 <strong>Leviia Schedule</strong> - Application de gestion des plannings et des astreintes pour les equipes et organisations.
                 <br>
                 Version {{ app_version }} | (c) 2026 Leviia
-            </p>
-            <p>
-                <a href="{{ url_for('main.accessibility_statement') }}" aria-label="Declaration d'accessibilite">Declaration d'accessibilite</a>
             </p>
         </div>
     </footer>

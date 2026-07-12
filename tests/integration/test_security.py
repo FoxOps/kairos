@@ -109,7 +109,42 @@ class TestTalismanSecurityHeaders:
         assert "style-src 'self' 'unsafe-inline'" in csp
         assert "object-src 'none'" in csp
 
-    def test_calendar_page_has_no_inline_script_block(self, test_app, logged_in_client):
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/",
+            "/dashboard",
+            "/schedule",
+            "/oncall",
+            "/leave",
+            "/profile/ics-token",
+            "/admin",
+            "/admin/automation/full",
+        ],
+    )
+    def test_page_has_no_inline_executable_script(self, test_app, logged_in_client, path):
+        """Régression Phase 6 : script-src 'self' strict (pas de
+        unsafe-inline, pas de nonce) bloque silencieusement tout <script>
+        inline exécutable - le navigateur ne le signale pas comme une
+        erreur HTTP, juste une erreur console, donc ça passe inaperçu sans
+        ce test. Trois pages avaient un <script> inline (index.html,
+        auth/ics_token.html, admin/automation/full.html) - seule la
+        première avait été vérifiée à l'origine (Phase 6), les deux autres
+        sont restées cassées jusqu'à cet audit. Balayage sur plusieurs
+        pages représentatives plutôt qu'une seule pour éviter que ça se
+        reproduise ailleurs sans être détecté."""
+        resp = logged_in_client.get(path)
+        assert resp.status_code == 200, f"{path} : statut {resp.status_code}"
+        html = resp.data.decode("utf-8")
+        import re
+        inline_script_blocks = re.findall(r'<script(?![^>]*\bsrc=)[^>]*>', html)
+        for tag in inline_script_blocks:
+            assert 'type="application/json"' in tag, (
+                f"{path} : script inline exécutable trouvé ({tag}) - "
+                "bloqué silencieusement par script-src 'self'"
+            )
+
+    def test_calendar_page_uses_external_module(self, test_app, logged_in_client):
         """Régression Phase 6 : index.html avait un <script> inline de
         ~576 lignes (config FullCalendar), externalisé vers
         static/js/calendar/fullcalendar-config.js pour permettre un
@@ -119,12 +154,6 @@ class TestTalismanSecurityHeaders:
         html = resp.data.decode("utf-8")
         assert "<script type=\"module\"" in html
         assert 'src="/static/js/calendar/fullcalendar-config.js"' in html
-        # Le seul <script> sans src doit être le bloc JSON de données
-        # (type="application/json", pas exécutable, hors scope de la CSP).
-        import re
-        inline_script_blocks = re.findall(r'<script(?![^>]*\bsrc=)[^>]*>', html)
-        for tag in inline_script_blocks:
-            assert 'type="application/json"' in tag, f"Script inline exécutable trouvé : {tag}"
 
 
 class TestCSRFProtection:

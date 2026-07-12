@@ -7,7 +7,11 @@
 }
 
 .column {
-    padding: 0 0.75rem;
+    /* padding vertical inclus (pas seulement horizontal) - sinon les
+       lignes de colonnes qui wrappent (.columns.is-multiline avec plus
+       de colonnes que ne peut en tenir une ligne, ex: 7 cards
+       is-one-fifth sur /admin) n'ont aucun espace entre les lignes. */
+    padding: 0.75rem;
 }
 
 .level {
