@@ -45,7 +45,7 @@
 .empty-state i {
     font-size: 2rem;
     opacity: 0.5;
-    display: block;
+    display: inline-block;
     margin-bottom: 0.5rem;
 }
 
