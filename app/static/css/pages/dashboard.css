@@ -8,12 +8,13 @@
 
 .dashboard-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
 }
 
 .stat-number {
     font-size: 2.5rem;
-    font-weight: bold;
+    font-weight: 700;
+    line-height: 1.2;
 }
 
 .stat-label {
@@ -25,21 +26,52 @@
 
 .upcoming-item {
     border-left: 3px solid var(--color-primary);
-    padding-left: 1rem;
-    margin-bottom: 0.75rem;
+    padding: 0.5rem 0 0.5rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0 var(--bulma-radius-small) var(--bulma-radius-small) 0;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.upcoming-item:hover {
+    background-color: var(--bulma-primary-05, rgba(32, 182, 152, 0.05));
 }
 
 .empty-state {
     text-align: center;
-    padding: 2rem;
+    padding: 2.5rem 1rem;
     color: var(--text-secondary);
 }
 
-/* Mini graphique à barres */
+.empty-state i {
+    font-size: 2rem;
+    opacity: 0.5;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+/* Mini graphique à barres - .chart-container n'avait aucune règle CSS :
+   sans display:flex + une hauteur fixe sur le parent, le flex:1 de
+   .chart-item ne servait à rien (les barres s'empilaient verticalement
+   en pleine largeur au lieu de former un graphique côte à côte) et le
+   height:X% inline de .chart-bar ne pouvait rien résoudre (pourcentage
+   de hauteur sans hauteur de référence définie sur le parent direct).
+   align-items reste "stretch" (valeur par défaut) pour que chaque
+   .chart-item hérite de la hauteur fixe du conteneur - c'est ce qui
+   permet au height:X% du bar de se résoudre correctement. */
+.chart-container {
+    display: flex;
+    gap: 0.5rem;
+    height: 140px;
+    padding-top: 2rem;
+    overflow-x: auto;
+}
+
 .chart-item {
     flex: 1;
+    min-width: 3rem;
     display: flex;
     flex-direction: column;
+    justify-content: flex-end;
     align-items: center;
 }
 
@@ -47,8 +79,9 @@
     width: 100%;
     margin: 0 0.25rem;
     background-color: var(--color-primary);
-    border-radius: 4px 4px 0 0;
+    border-radius: var(--bulma-radius-small) var(--bulma-radius-small) 0 0;
     position: relative;
+    min-height: 4px;
     transition: height 0.3s ease-in-out;
 }
 
