@@ -269,6 +269,14 @@ def create_app(config_object: Optional[str] = None):
 
     register_health_endpoints(app)
 
+    # Version de l'app disponible dans tous les templates (footer, etc.) -
+    # même source que l'endpoint /version (app/utils/health.py), pour éviter
+    # deux valeurs qui divergent (le footer avait "0.5" en dur avant, jamais
+    # mis à jour depuis).
+    @app.context_processor
+    def inject_app_version():
+        return {"app_version": os.environ.get("APP_VERSION", "0.6.0")}
+
     # Configuration des métriques Prometheus si activé
     if app.config.get("PROMETHEUS_ENABLED", False):
         from app.utils.prometheus_metrics import init_prometheus
