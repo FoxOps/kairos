@@ -3,7 +3,7 @@
 **Branche** : `feature/ui-ux-refonte`
 **PR** : [#103](https://github.com/FoxOps/leviia-schedule/pull/103) (draft)
 **Date de début** : 2026-07-12
-**Statut** : 🟡 En cours
+**Statut** : 🟢 Plan terminé - vérification visuelle manuelle requise avant merge (voir Limite de vérification)
 **Base** : `main` (post refonte Phases 1-6, commit `ae1c091`)
 
 ---
@@ -60,18 +60,22 @@ zéro résultat.
 
 ## 📐 Plan
 
-1. Corriger le burger menu mobile (bug bloquant, priorité 1)
-2. Nouvelle palette de marque (HSL override du primary Bulma - indigo
-   moderne plutôt que le turquoise par défaut), échelle de rayons plus
+1. [x] Corriger le burger menu mobile (bug bloquant, priorité 1)
+2. [x] Nouvelle palette de marque (HSL override du primary Bulma -
+   révisée en vert/teal doux après feedback), échelle de rayons plus
    arrondie
-3. Rafraîchir les composants : boutons, cards, formulaires, tables,
+3. [x] Rafraîchir les composants : boutons, cards, formulaires, tables,
    modales (ombres, rayons, espacements cohérents avec la nouvelle
    palette)
-4. Vérifier la cohérence du thème sombre avec la nouvelle palette
-5. Audit responsive complet (tables sur mobile, dashboard, formulaires,
-   calendrier) sur les pages principales (index, schedule, oncall,
-   leave, admin)
-6. Polish layout (header, footer, spacing global)
+4. [x] Vérifier la cohérence du thème sombre avec la nouvelle palette -
+   Bulma dérive les nuances dark-mode depuis les mêmes variables HSL de
+   base, aucun changement supplémentaire requis
+5. [x] Audit responsive complet (tables sur mobile, dashboard,
+   formulaires, calendrier) sur les pages principales (index, schedule,
+   oncall, leave, admin) - a débouché sur la découverte des 2 pages
+   cassées par la CSP Phase 6 (voir Journal)
+6. [x] Polish layout (header, footer, spacing global, fallbacks de
+   couleur obsolètes dans fullcalendar-overrides.css)
 
 ## ⚠️ Limite de vérification
 
@@ -156,7 +160,23 @@ Vérifié avec CSP réellement active (Talisman, pas juste TestingConfig).
 
 ---
 
-*Dernière mise à jour : 2026-07-12 — burger mobile, palette, composants,
-dashboard, et l'audit CSP qui a trouvé 2 pages cassées en prod (fixées).
-Reste : audit responsive plus large (schedule/oncall/leave/admin en
-détail), vérification manuelle en navigateur avant merge.*
+### Audit calendrier + fallbacks obsolètes (commit `b49d56b`)
+
+Audit schedule/oncall/leave/admin : tables déjà dans `.table-container`
+(overflow-x:auto), `.field.is-horizontal` déjà géré nativement par
+Bulma (stack mobile sous 769px), `.level.is-mobile` correct,
+`.column.is-one-fifth` (dashboard admin) stack déjà en pleine largeur
+sous 769px. Aucun bug bloquant supplémentaire trouvé - la navbar et le
+graphique dashboard étaient les deux vrais problèmes structurels de
+l'app. `fullcalendar-overrides.css` avait les mêmes fallbacks de
+couleur obsolètes (`#00D1B2`) et rayons 4px en dur que le reste de
+l'app avant cette passe - corrigés pour cohérence.
+
+---
+
+*Dernière mise à jour : 2026-07-12 — plan terminé (9 commits) : burger
+mobile, palette (révisée après feedback), composants, dashboard, audit
+CSP (2 pages cassées trouvées et fixées), audit responsive complet.
+Reste : vérification visuelle manuelle dans un navigateur avant merge
+(voir Limite de vérification en haut du rapport - aucun outil de rendu
+visuel disponible dans cet environnement).*
