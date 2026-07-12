@@ -3,7 +3,7 @@
 **Branche** : `feature/ui-ux-refonte`
 **PR** : [#103](https://github.com/FoxOps/leviia-schedule/pull/103) (draft)
 **Date de début** : 2026-07-12
-**Statut** : 🟢 Plan terminé - vérification visuelle manuelle requise avant merge (voir Limite de vérification)
+**Statut** : 🟢 Plan terminé + vérification visuelle réelle faite (Playwright/Chromium, voir Journal)
 **Base** : `main` (post refonte Phases 1-6, commit `ae1c091`)
 
 ---
@@ -172,11 +172,56 @@ l'app. `fullcalendar-overrides.css` avait les mêmes fallbacks de
 couleur obsolètes (`#00D1B2`) et rayons 4px en dur que le reste de
 l'app avant cette passe - corrigés pour cohérence.
 
+### Corrections post-feedback utilisateur (commits `5aea4ef`, `3d3fc63`)
+
+Retours visuels directs de l'utilisateur, deux bugs réels confirmés :
+1. Icône `.empty-state i` décalée à gauche au lieu d'être centrée -
+   régression de mon propre commit `36c418d` (`display: block` empêche
+   le `text-align: center` du parent de s'appliquer). Corrigé en
+   `inline-block`.
+2. `/admin` : aucun espace entre les lignes de boxs qui wrappent
+   (7 cards `is-one-fifth` sur 2 lignes). `grid.css` mettait
+   `padding: 0 0.75rem` sur `.column` (horizontal seulement), écrasant
+   le padding vertical par défaut de Bulma. Restauré.
+
+Version app synchronisée avec l'avancement (0.6.0 -> 0.7.0, les deux
+items Haute priorité de la Version 0.7 du ROADMAP - Refonte UI/UX et
+Calendrier interactif - sont maintenant faits). Bug annexe trouvé au
+passage : deux défauts `APP_VERSION` dupliqués (`health.py` et
+`__init__.py`), seul le premier avait été bumpé, le footer restait
+figé sur l'ancienne valeur - unifié en une seule constante.
+
+### Vérification visuelle réelle (Playwright/Chromium, commit `6fd3de1`)
+
+Sur demande explicite de l'utilisateur : installation d'un
+environnement Playwright + Chromium isolé (venv jetable dans le
+scratchpad, ne touche pas les dépendances du projet), lancement d'un
+vrai serveur de dev, connexion admin réelle, captures d'écran desktop
+et mobile de `/`, `/dashboard`, `/admin`, plus vérification de la
+console navigateur (pas seulement le HTML rendu).
+
+**3e bug CSP trouvé** - indétectable par le balayage textuel utilisé
+jusqu'ici (`<script>` inline) car il s'agit de `font-src`, pas de
+`script-src` : FullCalendar embarque sa police d'icônes (flèches
+précédent/suivant) en `@font-face` `data:` URI dans son propre CSS.
+Sans directive `font-src` explicite, CSP retombe sur
+`default-src 'self'`, qui bloque le `data:` - confirmé par l'erreur
+console exacte. Les boutons de navigation du calendrier étaient rendus
+comme des rectangles vides, sans chevron. Corrigé (`font-src 'self'
+data:` ajouté à `CSP_POLICY`), reconfirmé visuellement après fix (0
+erreur console, chevrons visibles).
+
+Screenshots confirment aussi visuellement : palette teal/verte douce
+correcte, footer à jour (0.7.0), empty-state centré, espacement /admin
+correct, calendrier fonctionnel.
+
+Environnement Playwright entièrement supprimé après usage (pas une
+dépendance du projet - `.venv/`, `requirements.txt` non touchés).
+
 ---
 
-*Dernière mise à jour : 2026-07-12 — plan terminé (9 commits) : burger
+*Dernière mise à jour : 2026-07-12 — plan terminé (13 commits) : burger
 mobile, palette (révisée après feedback), composants, dashboard, audit
-CSP (2 pages cassées trouvées et fixées), audit responsive complet.
-Reste : vérification visuelle manuelle dans un navigateur avant merge
-(voir Limite de vérification en haut du rapport - aucun outil de rendu
-visuel disponible dans cet environnement).*
+CSP (3 pages/éléments cassés trouvés et fixés au total, dont 1 via
+vérification visuelle réelle en navigateur), audit responsive complet,
+version app synchronisée. Prêt pour revue humaine finale avant merge.*
