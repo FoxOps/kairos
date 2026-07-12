@@ -1,7 +1,7 @@
 # 📋 Rapport - Refonte UI/UX : Design moderne et responsive
 
 **Branche** : `feature/ui-ux-refonte`
-**PR** : à créer
+**PR** : [#103](https://github.com/FoxOps/leviia-schedule/pull/103) (draft)
 **Date de début** : 2026-07-12
 **Statut** : 🟡 En cours
 **Base** : `main` (post refonte Phases 1-6, commit `ae1c091`)
@@ -86,8 +86,77 @@ un navigateur avant merge.
 
 ## 📝 Journal
 
-*(mis à jour à chaque étape)*
+### Menu mobile navbar (commit `6ffbdd5`)
+
+Bouton `.navbar-burger` ajouté + module `NavbarMenu`
+(`app/static/js/navbar/navbar-menu.js`) qui toggle `is-active`/
+`aria-expanded`, ferme au clic sur un lien et à Escape. Vérifié en réel
+(HTML rendu contient burger + id `navbar-menu` reliés, JS chargé 200).
+
+### Palette de marque (commit `043f9f7`, révisée en `7700a10`)
+
+Première passe : indigo (243deg 75% 58%). **Feedback utilisateur : trop
+agressif aux yeux.** Retour dans la famille verte/teal de l'original
+Bulma (171deg 100% 41%) mais désaturé pour rester doux : **168deg 70%
+42%**. RGB dérivé (32, 182, 152) répercuté partout où la couleur était
+dupliquée en dur (focus-ring, survol de tableau, fallback CSS).
+Rayons de bordure adoucis (0.375/0.5/1rem), ombres passées à des ombres
+diffuses en plusieurs couches (`--shadow-sm/md/lg`).
+
+### Composants (commit `dd2f6e9`)
+
+Boutons, cards, formulaires, tables, modales : rayons/ombres cohérents
+avec `variables.css`. Bugs trouvés en cours de route : focus-ring des
+inputs avait le RGB de l'ancien turquoise en dur (incohérent avec la
+nouvelle palette) ; `.modal-card` sans largeur responsive sous 600px ni
+`overflow: hidden` (les fonds carrés de head/foot dépassaient du bord
+arrondi de la card).
+
+### Dashboard + header/footer (commit `36c418d`)
+
+**Bug réel trouvé** : `.chart-container` (graphique "Répartition par
+type de shift") n'avait **aucune règle CSS**. `.chart-item` avait
+`flex: 1` mais sans `display: flex` sur le parent ça ne servait à
+rien - les barres s'empilaient verticalement en pleine largeur au lieu
+de former un graphique côte à côte, et le `height: X%` inline de
+`.chart-bar` ne pouvait rien résoudre sans hauteur de référence sur le
+parent direct. Corrigé (hauteur fixe + `align-items: stretch` par
+défaut + `overflow-x: auto` si trop de types). Audit `.level` (Bulma) :
+l'override du projet ne touche pas `flex-direction`, le stacking mobile
+natif de Bulma reste donc intact - pas de bug. Aucune largeur fixe
+dangereuse trouvée ailleurs (grep systématique).
+
+### Audit large : 2 pages cassées en prod par la CSP Phase 6 (commit `a6fadf8`)
+
+**Découverte majeure en auditant le responsive** : la CSP `script-src
+'self'` stricte (Phase 6) bloque silencieusement (erreur console,
+**pas** d'erreur HTTP) tout `<script>` inline exécutable. Le test de
+régression de Phase 6 n'avait vérifié qu'`index.html`. Balayage statique
+(regex sur tous les templates) : **2 autres pages avaient encore un
+`<script>` inline**, cassées en production sans que rien ne le
+signale :
+
+- `auth/ics_token.html` : tous les boutons "Copier" (token + 6 URLs
+  d'export ICS) étaient no-op silencieux. Externalisé vers
+  `static/js/clipboard/copy-token.js` (7 fonctions dédupliquées en un
+  helper `copyInputValue`), exposé via `window.Leviia`.
+- `admin/automation/full.html` : glisser-déposer de l'ordre de rotation
+  d'astreinte entièrement cassé. Bonus : `saveRotationOrder()` était
+  définie à l'intérieur du listener `DOMContentLoaded`, donc
+  `onclick="saveRotationOrder()"` était **déjà cassé avant même la
+  CSP** (portée de fonction incorrecte). Externalisé vers
+  `static/js/automation/rotation-order.js`, corrige les deux bugs d'un
+  coup.
+
+Test de régression étendu : balayage paramétré sur 8 pages
+représentatives (`test_page_has_no_inline_executable_script`) au lieu
+d'une seule, pour empêcher ce type de régression de repasser inaperçu.
+Vérifié avec CSP réellement active (Talisman, pas juste TestingConfig).
+781 tests passent (8 nouveaux).
 
 ---
 
-*Dernière mise à jour : 2026-07-12*
+*Dernière mise à jour : 2026-07-12 — burger mobile, palette, composants,
+dashboard, et l'audit CSP qui a trouvé 2 pages cassées en prod (fixées).
+Reste : audit responsive plus large (schedule/oncall/leave/admin en
+détail), vérification manuelle en navigateur avant merge.*
