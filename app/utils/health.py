@@ -83,7 +83,7 @@ def register_health_endpoints(app: Flask) -> None:
         """
         return jsonify({
             'application': 'Leviia Schedule',
-            'version': os.environ.get('APP_VERSION', '0.6.0'),
+            'version': os.environ.get('APP_VERSION', '0.7.0'),
             'environment': os.environ.get('FLASK_ENV', 'development'),
             'timestamp': datetime.utcnow().isoformat()
         }), 200
