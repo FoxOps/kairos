@@ -20,6 +20,15 @@
     box-shadow: none;
 }
 
+/* Désactive l'animation de lift au survol - utilisé par les boutons
+   "Copier" (ics_token.html) où le mouvement gêne plus qu'il n'aide sur
+   une action répétée rapidement. Anciennement dupliqué en <style>
+   inline dans le template, déplacé ici (règle générique, pas
+   spécifique à une page). */
+.no-hover-transform:hover {
+    transform: none !important;
+}
+
 .button:focus-visible {
     outline: 3px solid var(--color-primary-dark);
     outline-offset: 2px;
