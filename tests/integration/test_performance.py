@@ -20,7 +20,7 @@ from datetime import date, datetime, timedelta
 
 from sqlalchemy import event
 
-from app import db
+from app import compress, create_app, db
 from app.models import Shift, ShiftType, User
 
 
@@ -41,7 +41,9 @@ def count_queries():
 
 
 def _seed_shifts(group, count, offset=0):
-    shift_type = ShiftType(name=f"perf-{offset}-{count}", label="Perf", start_hour=7, end_hour=15)
+    shift_type = ShiftType(
+        name=f"perf-{offset}-{count}", label="Perf", start_hour=7, end_hour=15
+    )
     db.session.add(shift_type)
     db.session.flush()
 
@@ -60,7 +62,8 @@ def _seed_shifts(group, count, offset=0):
             Shift(
                 date=on_date,
                 start_time=datetime.combine(on_date, datetime.min.time()),
-                end_time=datetime.combine(on_date, datetime.min.time()) + timedelta(hours=8),
+                end_time=datetime.combine(on_date, datetime.min.time())
+                + timedelta(hours=8),
                 user_id=user.id,
                 shift_type_id=shift_type.id,
             )
@@ -71,7 +74,9 @@ def _seed_shifts(group, count, offset=0):
 class TestResponseTime:
     """Seuils larges - attrape une régression grossière, pas un micro-benchmark."""
 
-    def test_schedule_route_responds_quickly(self, test_app, test_group, logged_in_client):
+    def test_schedule_route_responds_quickly(
+        self, test_app, test_group, logged_in_client
+    ):
         with logged_in_client.application.app_context():
             _seed_shifts(test_group, 30)
 
@@ -91,12 +96,51 @@ class TestResponseTime:
         assert elapsed < 2.0, f"/dashboard a mis {elapsed:.2f}s (seuil 2s)"
 
 
+class TestCompression:
+    """Bug réel corrigé en Phase 6 : flask-compress était une dépendance
+    déclarée (COMPRESS_REGISTER/COMPRESS_MIMETYPES dans ProductionConfig)
+    mais Compress(app) n'était jamais appelé nulle part - la compression ne
+    faisait donc jamais rien en pratique. Compress est maintenant initialisé
+    dans create_app() (sauf en TESTING, car le client de test ne décode pas
+    Content-Encoding et resp.data doit rester du texte brut pour les autres
+    tests) - ces deux tests construisent donc leur propre app avec Compress
+    réactivé manuellement, comme le fait déjà secure_app pour Talisman."""
+
+    def test_response_is_gzip_compressed_when_accepted(self):
+        app = create_app("app.config.TestingConfig")
+        compress.init_app(app)
+        with app.app_context():
+            db.drop_all()
+            db.create_all()
+        client = app.test_client()
+        resp = client.get("/login", headers={"Accept-Encoding": "gzip"})
+        assert resp.status_code == 200
+        assert resp.headers.get("Content-Encoding") == "gzip"
+        with app.app_context():
+            db.drop_all()
+
+    def test_response_not_compressed_without_accept_encoding(self):
+        app = create_app("app.config.TestingConfig")
+        compress.init_app(app)
+        with app.app_context():
+            db.drop_all()
+            db.create_all()
+        client = app.test_client()
+        resp = client.get("/login", headers={"Accept-Encoding": "identity"})
+        assert resp.status_code == 200
+        assert "Content-Encoding" not in resp.headers
+        with app.app_context():
+            db.drop_all()
+
+
 class TestNPlusOneQueries:
     """Le nombre de requêtes SQL ne doit pas grandir linéairement avec le
     nombre d'enregistrements listés (sinon le joinedload() ne fait plus
     son travail)."""
 
-    def test_schedule_query_count_stable_across_dataset_size(self, test_app, test_group, logged_in_client):
+    def test_schedule_query_count_stable_across_dataset_size(
+        self, test_app, test_group, logged_in_client
+    ):
         with logged_in_client.application.app_context():
             _seed_shifts(test_group, 5)
         with count_queries() as small_queries:
@@ -119,7 +163,9 @@ class TestNPlusOneQueries:
             "suspicion de N+1 (joinedload cassé ?)"
         )
 
-    def test_shift_repository_list_paginated_uses_eager_load(self, test_app, test_group):
+    def test_shift_repository_list_paginated_uses_eager_load(
+        self, test_app, test_group
+    ):
         _seed_shifts(test_group, 10)
 
         from app.repositories.shift_repository import ShiftRepository

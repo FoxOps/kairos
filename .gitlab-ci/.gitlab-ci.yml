@@ -27,11 +27,9 @@ cache:
   image: python:$PYTHON_VERSION-slim
   before_script:
     - python -V
-    - pip install --upgrade pip
-    - pip install -r requirements.txt
-    - pip install -r docker/requirements.txt
     - python -m venv .venv
     - source .venv/bin/activate
+    - pip install --upgrade pip
     - pip install -r requirements.txt
     - pip install -r docker/requirements.txt
 
@@ -41,13 +39,13 @@ run_tests:
   stage: test
   script:
     - echo "Running pytest..."
-    - pytest tests/ -v --tb=short -x
+    - pytest tests/ -v --tb=short --junitxml=junit.xml --cov=app --cov=config --cov-report=term-missing
   artifacts:
     when: always
     reports:
       junit: junit.xml
     paths:
-      - test-results/
+      - junit.xml
   coverage: '/^TOTAL.*\s+(\d+%)$/'
 
 # Job: Linting avec Ruff
@@ -68,6 +66,13 @@ run_linting:
       - mypy-report/
 
 # Job: Analyse de sécurité
+# Tourne sur chaque pipeline (push/MR) déjà via `workflow.rules` plus bas,
+# ce qui couvre l'essentiel. Pour un audit vraiment régulier indépendant des
+# commits (dépendances qui deviennent vulnérables sans changement de code),
+# créer un Scheduled Pipeline dans GitLab (CI/CD > Schedules, ex: quotidien)
+# - $CI_PIPELINE_SOURCE == "schedule" est alors dispo pour cibler ce job
+# seul si besoin. Pas configurable depuis ce fichier YAML (propriété du
+# projet GitLab, pas du repo).
 run_security:
   extends: .python-template
   stage: security
@@ -114,31 +119,19 @@ deploy_production:
     - kubectl cluster-info
   script:
     - echo "Deploying to production..."
+    # k8s/deployment.yaml a un placeholder d'image (your-registry/...) - le
+    # remplacer par l'image réellement construite et poussée par le job
+    # build_docker, sinon ce déploiement ignorerait silencieusement le
+    # build qui vient de se faire et redéploierait toujours le placeholder.
+    - sed -i "s#your-registry/leviia-schedule:latest#$CI_REGISTRY_IMAGE:latest#" k8s/deployment.yaml
     - kubectl apply -f k8s/
-    - kubectl rollout status deployment/leviia-schedule -n production --timeout=60s
+    # Tous les manifests k8s/ ciblent le namespace leviia-schedule (voir
+    # metadata.namespace dans chaque fichier, k8s/namespace.yaml le crée) -
+    # "-n production" ici visait un namespace qui n'existe nulle part dans
+    # les manifests, la commande aurait échoué avec "not found".
+    - kubectl rollout status deployment/leviia-schedule -n leviia-schedule --timeout=60s
   environment:
     name: production
-    url: https://schedule.yourdomain.com
-  only:
-    - main
-  when: manual
-
-# Job: Déploiement (exemple pour Docker Swarm)
-deploy_swarm:
-  stage: deploy
-  image: docker:24.0.7
-  services:
-    - docker:24.0.7-dind
-  variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
-  before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-  script:
-    - echo "Deploying to swarm..."
-    - docker stack deploy -c docker-compose.prod.yml leviia-schedule
-  environment:
-    name: swarm
     url: https://schedule.yourdomain.com
   only:
     - main

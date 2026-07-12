@@ -3,6 +3,12 @@
 
 set -e
 
+# Se placer dans docker/ quel que soit le répertoire d'appel : le reste du
+# script est écrit en chemins relatifs à docker/ (data/, logs/, .env), pour
+# matcher les volumes relatifs de docker-compose.yml (résolus par rapport
+# à son propre emplacement, donc docker/data et docker/logs).
+cd "$(dirname "$0")"
+
 echo "🔧 Préparation de l'environnement Docker pour Leviia Schedule"
 
 # Créer les répertoires nécessaires
@@ -16,7 +22,7 @@ sudo chmod -R 755 data logs
 # Créer un fichier .env si inexistant
 if [ ! -f ".env" ]; then
     echo "📝 Création du fichier .env"
-    cp .env.example .env
+    cp ../.env.example .env
     
     # Générer une clé secrète
     SECRET_KEY=$(python -c "import secrets; print(secrets.token_hex(32))" 2>/dev/null || echo "changez-moi")
