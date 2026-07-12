@@ -27,6 +27,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_talisman import Talisman
 from flask_cors import CORS
 from flask_wtf import CSRFProtect
+from flask_compress import Compress
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Flask-Limiter avertit à chaque init sans backend partagé (redis/memcached).
@@ -47,6 +48,7 @@ login_manager = LoginManager()
 login_manager.login_message_category = "danger"
 limiter = Limiter(key_func=get_remote_address)
 csrf = CSRFProtect()
+compress = Compress()
 
 # Policy Content-Security-Policy appliquée par Talisman - voir le
 # commentaire dans create_app() pour le détail de chaque directive.
@@ -217,6 +219,15 @@ def create_app(config_object: Optional[str] = None):
             content_security_policy=CSP_POLICY
         )
     
+    # Compression Gzip/Brotli des réponses (flask-compress était une
+    # dépendance déclarée avec sa config dans ProductionConfig mais jamais
+    # initialisée : Compress(app) n'était appelé nulle part, donc
+    # COMPRESS_REGISTER/COMPRESS_MIMETYPES ne faisaient rien). Désactivée en
+    # test car le client de test ne décode pas Content-Encoding : les
+    # assertions sur resp.data (texte) casseraient sur des réponses gzippées.
+    if not app.config.get('TESTING', False):
+        compress.init_app(app)
+
     # Initialiser CORS
     CORS(app)
     

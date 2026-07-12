@@ -20,7 +20,7 @@ from datetime import date, datetime, timedelta
 
 from sqlalchemy import event
 
-from app import db
+from app import compress, create_app, db
 from app.models import Shift, ShiftType, User
 
 
@@ -89,6 +89,43 @@ class TestResponseTime:
 
         assert resp.status_code == 200
         assert elapsed < 2.0, f"/dashboard a mis {elapsed:.2f}s (seuil 2s)"
+
+
+class TestCompression:
+    """Bug réel corrigé en Phase 6 : flask-compress était une dépendance
+    déclarée (COMPRESS_REGISTER/COMPRESS_MIMETYPES dans ProductionConfig)
+    mais Compress(app) n'était jamais appelé nulle part - la compression ne
+    faisait donc jamais rien en pratique. Compress est maintenant initialisé
+    dans create_app() (sauf en TESTING, car le client de test ne décode pas
+    Content-Encoding et resp.data doit rester du texte brut pour les autres
+    tests) - ces deux tests construisent donc leur propre app avec Compress
+    réactivé manuellement, comme le fait déjà secure_app pour Talisman."""
+
+    def test_response_is_gzip_compressed_when_accepted(self):
+        app = create_app("app.config.TestingConfig")
+        compress.init_app(app)
+        with app.app_context():
+            db.drop_all()
+            db.create_all()
+        client = app.test_client()
+        resp = client.get("/login", headers={"Accept-Encoding": "gzip"})
+        assert resp.status_code == 200
+        assert resp.headers.get("Content-Encoding") == "gzip"
+        with app.app_context():
+            db.drop_all()
+
+    def test_response_not_compressed_without_accept_encoding(self):
+        app = create_app("app.config.TestingConfig")
+        compress.init_app(app)
+        with app.app_context():
+            db.drop_all()
+            db.create_all()
+        client = app.test_client()
+        resp = client.get("/login", headers={"Accept-Encoding": "identity"})
+        assert resp.status_code == 200
+        assert "Content-Encoding" not in resp.headers
+        with app.app_context():
+            db.drop_all()
 
 
 class TestNPlusOneQueries:
