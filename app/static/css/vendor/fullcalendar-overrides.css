@@ -49,7 +49,7 @@
 .external-event-container {
     padding: 10px;
     background: var(--bg-secondary, #f5f5f5);
-    border-radius: var(--bulma-radius-small);
+    border-radius: var(--app-radius-small);
     margin-bottom: 20px;
 }
 
@@ -58,7 +58,7 @@
     margin: 4px;
     background: var(--app-color-primary, #20B698);
     color: white;
-    border-radius: var(--bulma-radius-small);
+    border-radius: var(--app-radius-small);
     cursor: move;
     display: inline-block;
     font-size: 14px;

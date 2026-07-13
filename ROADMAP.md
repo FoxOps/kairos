@@ -1,13 +1,12 @@
 # 🗺️ Feuille de Route - Leviia Schedule
 
-> **Version** : 5.5.0 - Refonte du système de sauvegarde (PR #107)
-> **Version app** : 0.7.4 (`/version`) - sauvegardes locale/S3 pilotées
-> par variables d'environnement (opt-in), interface d'administration
-> (`/admin/backups`), alertes email réutilisant le système de
-> notifications, intégration Docker (crond conditionnel)
+> **Version** : 5.6.0 - Refonte UI/UX Tailwind CSS 4 + daisyUI 5 (PR #108)
+> **Version app** : 0.7.5 (`/version`) - Bulma entièrement retiré, interface
+> reconstruite en Tailwind/daisyUI (CDN cdnjs, zéro build), Font Awesome en
+> mode SVG+JS, FullCalendar reste en 6.1.21 (bug bloquant confirmé sur la 7.0.0)
 > **Dernière mise à jour** : Juillet 2026
-> **Statut** : Développement actif - **916 tests passent** ✅ (dont 27 E2E navigateur réel)
-> **Commit actuel** : branche feature/backup-system-refonte (PR #107)
+> **Statut** : Développement actif - **931 tests passent** ✅ (dont 27 E2E navigateur réel)
+> **Commit actuel** : branche feature/ui-tailwind-daisyui (PR #108)
 >
 > ℹ️ Ne pas confondre avec les « Phases » de refonte (`report/Phase 1` à
 > `report/Phase 6`, un chantier qualité/infra achevé) et les « Phases » de

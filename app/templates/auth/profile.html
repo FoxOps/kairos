@@ -3,88 +3,52 @@
 {% block title %}Mon profil - Leviia{% endblock %}
 
 {% block content %}
-<div class="section">
-    <div class="container">
-        <div class="columns is-centered">
-            <div class="column is-6">
-                <div class="box">
-                    <h1 class="title is-4 has-text-centered">Mon profil</h1>
-                    
-                    <div class="content">
-                        <div class="field is-horizontal">
-                            <div class="field-label is-normal">
-                                <label class="label">Nom</label>
-                            </div>
-                            <div class="field-body">
-                                <div class="field">
-                                    <p class="control">
-                                        <span class="has-text-weight-semibold">{{ user.name }}</span>
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="field is-horizontal">
-                            <div class="field-label is-normal">
-                                <label class="label">Email</label>
-                            </div>
-                            <div class="field-body">
-                                <div class="field">
-                                    <p class="control">
-                                        <span class="has-text-weight-semibold">{{ user.email }}</span>
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="field is-horizontal">
-                            <div class="field-label is-normal">
-                                <label class="label">Groupe</label>
-                            </div>
-                            <div class="field-body">
-                                <div class="field">
-                                    <p class="control">
-                                        <span class="tag is-info">{{ user.group.name if user.group else 'Aucun' }}</span>
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="field is-horizontal">
-                            <div class="field-label is-normal">
-                                <label class="label">Rôle</label>
-                            </div>
-                            <div class="field-body">
-                                <div class="field">
-                                    <p class="control">
-                                        {% if user.is_admin %}
-                                            <span class="tag is-danger">Administrateur</span>
-                                        {% else %}
-                                            <span class="tag is-success">Utilisateur</span>
-                                        {% endif %}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
+<div class="flex justify-center px-4 py-12">
+    <div class="w-full max-w-xl">
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body">
+                <h1 class="text-2xl font-bold text-center mb-4">Mon profil</h1>
+
+                <div class="flex flex-col gap-3">
+                    <div class="grid grid-cols-3 items-center gap-2">
+                        <label class="label">Nom</label>
+                        <span class="col-span-2 font-semibold">{{ user.name }}</span>
                     </div>
-                    
-                    <div class="buttons is-centered mt-5">
-                        <a href="{{ url_for('auth.update_profile') }}" class="button is-primary" aria-label="Modifier le profil">
-                            <span class="icon">
-                                <i class="fas fa-edit" aria-hidden="true"></i>
-                            </span>
-                            <span>Modifier le profil</span>
-                        </a>
-                        <a href="{{ url_for('auth.generate_ics_token') }}" class="button is-info" aria-label="Générer un token ICS">
-                            <span class="icon">
-                                <i class="fas fa-calendar-alt" aria-hidden="true"></i>
-                            </span>
-                            <span>Token ICS</span>
-                        </a>
-                        <a href="{{ url_for("main.index") }}" class="button is-light" aria-label="Retour à l'accueil">
-                            Retour
-                        </a>
+
+                    <div class="grid grid-cols-3 items-center gap-2">
+                        <label class="label">Email</label>
+                        <span class="col-span-2 font-semibold">{{ user.email }}</span>
                     </div>
+
+                    <div class="grid grid-cols-3 items-center gap-2">
+                        <label class="label">Groupe</label>
+                        <span class="col-span-2"><span class="badge badge-info">{{ user.group.name if user.group else 'Aucun' }}</span></span>
+                    </div>
+
+                    <div class="grid grid-cols-3 items-center gap-2">
+                        <label class="label">Rôle</label>
+                        <span class="col-span-2">
+                            {% if user.is_admin %}
+                                <span class="badge badge-error">Administrateur</span>
+                            {% else %}
+                                <span class="badge badge-success">Utilisateur</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap justify-center gap-2 mt-5">
+                    <a href="{{ url_for('auth.update_profile') }}" class="btn btn-primary" aria-label="Modifier le profil">
+                        <i class="fas fa-edit" aria-hidden="true"></i>
+                        <span>Modifier le profil</span>
+                    </a>
+                    <a href="{{ url_for('auth.generate_ics_token') }}" class="btn btn-info" aria-label="Générer un token ICS">
+                        <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                        <span>Token ICS</span>
+                    </a>
+                    <a href="{{ url_for("main.index") }}" class="btn btn-ghost" aria-label="Retour à l'accueil">
+                        Retour
+                    </a>
                 </div>
             </div>
         </div>

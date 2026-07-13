@@ -9,12 +9,6 @@
     <title>{% block title %}Leviia{% endblock %}</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
 
-    <!-- Bulma CSS - encore servi localement pour les pages pas encore
-         migrées vers Tailwind/daisyUI (retiré en fin de refonte, voir
-         ROADMAP.md). Importé dans un @layer nommé "bulma" - voir
-         vendor-layers.css pour le détail. -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor-layers.css') }}">
-
     <!-- Font Awesome 7.2.0 - via CDN cdnjs (7.3.0 pas encore publié), mode
          SVG+JS plutôt que la police web habituelle : les 4 fichiers
          .woff2 hébergés par cdnjs pour cette version sont chacun tronqués
@@ -42,10 +36,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/cards.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/forms.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/modals.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout/header.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout/footer.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout/grid.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/themes/dark.css') }}">
     {% block extra_css %}{% endblock %}
 </head>

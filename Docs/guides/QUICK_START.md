@@ -16,7 +16,6 @@ python -m venv venv
 source venv/bin/activate  # Linux/macOS
 # venv\Scripts\activate  # Windows
 pip install -r requirements.txt
-python scripts/download_vendor_assets.py
 
 # Copier la configuration par défaut
 cp .env.example .env

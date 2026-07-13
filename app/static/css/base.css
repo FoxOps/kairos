@@ -1,44 +1,18 @@
 /* ============================================
    LEVIIA SCHEDULE - STYLES DE BASE
    ============================================
-   Reset léger, structure de page, typographie de base, et règles
-   d'accessibilité partagées entre tous les thèmes/pages.
+   Reset léger, typographie de base, et règles d'accessibilité
+   génériques (indépendantes du framework CSS) partagées entre toutes
+   les pages. Depuis la refonte Tailwind/daisyUI (Phase 7) : plus de
+   classes Bulma (.section/.title/.notification/...) ni de .skip-link/
+   .is-sr-only maison (remplacées par les utilitaires Tailwind sr-only/
+   focus:not-sr-only directement dans les templates), plus de padding-top
+   fixe non plus (l'en-tête est "sticky", pas "fixed", donc reste dans le
+   flux normal du document). Tailwind reset déjà les marges par défaut de
+   p/ul/ol/li (preflight) - ce fichier ne fait que redonner une
+   typographie de base pour le texte qui n'utilise pas de classes
+   utilitaires explicites (pages d'erreur, aide, etc.).
    ============================================ */
-
-body {
-    padding-top: 3.25rem;
-}
-
-.main-content {
-    min-height: calc(100vh - 3.25rem - 2rem - 2rem);
-}
-
-.section {
-    padding: 1.5rem 0;
-}
-
-.title {
-    margin-bottom: 1rem;
-}
-
-.subtitle {
-    margin-bottom: 1.5rem;
-    color: var(--text-secondary);
-}
-
-.content {
-    line-height: 1.6;
-}
-
-.content a {
-    color: var(--app-color-primary);
-    text-decoration: underline;
-}
-
-.content a:hover,
-.content a:focus-visible {
-    color: var(--app-color-primary-dark);
-}
 
 p {
     margin-bottom: 1rem;
@@ -68,55 +42,6 @@ figcaption {
     color: var(--text-secondary);
     margin-top: 0.5rem;
     text-align: center;
-}
-
-/* ============================================
-   NOTIFICATIONS / MESSAGES FLASH
-   ============================================ */
-.notification {
-    margin-bottom: 1rem;
-    border-radius: var(--bulma-radius-small);
-    box-shadow: var(--shadow-sm);
-}
-
-.notification[role="alert"],
-.notification[role="status"] {
-    border: none;
-}
-
-/* ============================================
-   SKIP LINK
-   ============================================ */
-.skip-link {
-    position: absolute;
-    top: -40px;
-    left: 0;
-    background: var(--app-color-primary);
-    color: white;
-    padding: 8px 16px;
-    z-index: 100;
-    text-decoration: none;
-    font-weight: bold;
-    border-radius: 0 0 var(--bulma-radius-small) 0;
-}
-
-.skip-link:focus {
-    top: 0;
-    outline: 3px solid var(--app-color-primary-dark);
-    outline-offset: 2px;
-}
-
-/* Masqué visuellement mais accessible aux lecteurs d'écran */
-.is-sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
 }
 
 /* ============================================

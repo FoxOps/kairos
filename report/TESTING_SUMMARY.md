@@ -236,3 +236,20 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
   (`/admin/backups` : liste, création, nettoyage, téléchargement avec
   protection contre la traversée de chemin), intégration Docker (crond
   conditionnel partagé avec les notifications).
+- **13 juillet 2026 (suite)** : 931 tests (0 échec). Refonte UI/UX complète
+  Bulma → Tailwind CSS 4 + daisyUI 5 via CDN cdnjs (PR #108) : suppression
+  du vendoring local (`app/static/vendor/`, `scripts/download_vendor_assets.py`,
+  `tests/unit/test_vendor_assets.py`), Font Awesome en mode SVG+JS (les
+  `.woff2` cdnjs de la 7.2.0 sont corrompus, rejetés par le sanitizer de
+  police de Chromium), FullCalendar maintenu en 6.1.21 via jsDelivr (la
+  7.0.0 lève une erreur d'exécution réelle dans son propre code Preact
+  compilé, confirmée via trois stratégies CDN différentes - bug amont, pas
+  un problème d'hébergement). Baisse nette du nombre de tests par rapport à
+  l'entrée précédente : suppression de `test_vendor_assets.py` et des tests
+  spécifiques aux variables/classes Bulma désormais obsolètes, compensée
+  partiellement par de nouveaux tests de thème (`test_dark_theme.py`
+  réécrit). Suite complète (unit + integration + e2e navigateur réel) verte,
+  y compris un bug JS réel trouvé en test manuel (pas par la suite
+  automatisée) : le bascule de thème plantait après la conversion Font
+  Awesome SVG+JS (`querySelector('i')` ne matchait plus), corrigé en ciblant
+  par classe (`.fa-moon, .fa-sun`) plutôt que par balise.

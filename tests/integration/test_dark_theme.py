@@ -6,15 +6,20 @@ Ces tests vérifient que :
 2. Le bouton de toggle est présent pour les utilisateurs authentifiés
 3. Le JavaScript du thème sombre est présent
 4. Les bonnes pratiques d'accessibilité sont respectées
-5. Les variables CSS sont correctement mappées vers Bulma
+5. Les variables CSS sont correctement mappées vers daisyUI
 6. Les styles spécifiques pour FullCalendar sont présents
 
-Depuis la Phase 3 (restructuration frontend), ce qui vivait dans un seul
-fichier `dark-theme.css` est réparti entre `variables.css` (variables de
-couleur), `base.css` (skip-link, focus-visible générique, .is-sr-only),
-`components/forms.css` (indicateur de champ requis),
-`vendor/fullcalendar-overrides.css` (styles FullCalendar par défaut) et
-`themes/dark.css` (règles [data-theme="dark"]/.dark-mode uniquement).
+Depuis la refonte Tailwind/daisyUI (Phase 7 - retrait de Bulma) :
+daisyUI gère lui-même la bascule clair/sombre de ses propres composants
+via ses variables --color-* et [data-theme] - variables.css ne fait que
+mapper ces variables vers des noms d'application stables (utilisés par
+dashboard.css/rotation-order.css/fullcalendar-overrides.css),
+`themes/dark.css` ne contient plus que les surcharges FullCalendar (lib
+externe non-daisyUI-aware) et des réglages d'accessibilité génériques -
+plus de correctifs de contraste Bulma (.button.is-warning, etc.),
+devenus inutiles puisque daisyUI gère déjà son propre contraste. Le
+mécanisme de bascule n'utilise plus que l'attribut data-theme (la classe
+.dark-mode, redondante, a été retirée de theme-manager.js).
 """
 
 import os
@@ -48,10 +53,9 @@ class TestDarkThemeCSS:
             dark = read_css("themes", "dark.css")
 
             # Variables CSS dans :root (variables.css) - primary/info/
-            # success/warning préfixées "app-" depuis la refonte Tailwind/
-            # daisyUI (collision avec les variables --color-* réservées de
-            # daisyUI sinon, danger/error ne collisionnait pas donc reste
-            # tel quel).
+            # success/warning préfixées "app-" (collision avec les
+            # variables --color-* réservées de daisyUI sinon,
+            # danger/error ne collisionnait pas donc reste tel quel).
             assert ":root" in variables
             assert "--app-color-primary" in variables
             assert "--app-color-info" in variables
@@ -59,54 +63,50 @@ class TestDarkThemeCSS:
             assert "--app-color-warning" in variables
             assert "--color-danger" in variables
 
-            # Mappage vers les variables Bulma
-            assert "var(--bulma-primary)" in variables
-            assert "var(--bulma-info)" in variables
-            assert "var(--bulma-success)" in variables
-            assert "var(--bulma-warning)" in variables
-            assert "var(--bulma-danger)" in variables
+            # Mappage vers les variables daisyUI
+            assert "var(--color-primary)" in variables
+            assert "var(--color-info)" in variables
+            assert "var(--color-success)" in variables
+            assert "var(--color-warning)" in variables
+            assert "var(--color-error)" in variables
 
             # Variables de fond et texte
             assert "--bg-primary" in variables
             assert "--text-primary" in variables
-            assert "var(--bulma-background)" in variables
-            assert "var(--bulma-text)" in variables
+            assert "var(--color-base-100)" in variables
+            assert "var(--color-base-content)" in variables
 
-            # Sélecteurs pour le thème sombre
+            # Sélecteur pour le thème sombre
             assert '[data-theme="dark"]' in dark
-            assert ".dark-mode" in dark
 
-    def test_bulma_variable_mapping(self, test_app):
-        """Test que les variables Leviia sont correctement mappées vers Bulma."""
+    def test_daisyui_variable_mapping(self, test_app):
+        """Test que les variables Leviia sont correctement mappées vers daisyUI."""
         with test_app.app_context():
             content = read_css("variables.css")
 
-            assert "--app-color-primary: var(--bulma-primary);" in content
-            assert "--app-color-info: var(--bulma-info);" in content
-            assert "--app-color-success: var(--bulma-success);" in content
-            assert "--app-color-warning: var(--bulma-warning);" in content
-            assert "--color-danger: var(--bulma-danger);" in content
+            assert "--app-color-primary: var(--color-primary);" in content
+            assert "--app-color-info: var(--color-info);" in content
+            assert "--app-color-success: var(--color-success);" in content
+            assert "--app-color-warning: var(--color-warning);" in content
+            assert "--color-danger: var(--color-error);" in content
 
-            assert "--app-color-primary-light: var(--bulma-primary-light);" in content
-            assert "--app-color-info-light: var(--bulma-info-light);" in content
-            assert "--app-color-success-light: var(--bulma-success-light);" in content
-            assert "--app-color-warning-light: var(--bulma-warning-light);" in content
-            assert "--color-danger-light: var(--bulma-danger-light);" in content
-
-            assert "--bg-primary: var(--bulma-background);" in content
-            assert "--text-primary: var(--bulma-text);" in content
+            assert "--bg-primary: var(--color-base-100);" in content
+            assert "--text-primary: var(--color-base-content);" in content
 
     def test_utility_classes_present(self, test_app):
-        """Test que les classes utilitaires sont présentes."""
+        """Test que les classes utilitaires min-w-* sont présentes (les
+        classes d'espacement/affichage mt-*/mb-*/gap-*/d-* ont été
+        retirées en Phase 7 - Tailwind (JIT) génère déjà des classes du
+        même nom, garder une définition maison en doublon, non-layer,
+        gagnait toujours sur les utilitaires Tailwind avec des valeurs
+        parfois différentes - bug réel découvert et corrigé)."""
         with test_app.app_context():
             content = read_css("utilities.css")
 
-            assert ".gap-0" in content
-            assert ".gap-1" in content
-            assert ".gap-2" in content
-
             assert ".min-w-140" in content
             assert ".min-w-150" in content
+            assert ".min-w-180" in content
+            assert ".min-w-200" in content
 
     def test_fullcalendar_styles_present(self, test_app):
         """Test que les styles spécifiques pour FullCalendar sont présents."""
@@ -119,44 +119,7 @@ class TestDarkThemeCSS:
             assert ".fc-event-leave" in overrides
 
             assert '[data-theme="dark"] .fc' in dark
-            assert "background-color: var(--bulma-background)" in dark
-
-    def test_contrast_fixes_present(self, test_app):
-        """Test que les corrections de contraste pour les boutons warning sont présentes."""
-        with test_app.app_context():
-            content = read_css("themes", "dark.css")
-
-            assert '[data-theme="dark"] .button.is-warning' in content
-            assert "color: #000 !important;" in content
-            assert '[data-theme="dark"] .tag.is-warning' in content
-
-    def test_skip_link_styles_present(self, test_app):
-        """Test que les styles pour le skip link sont présents."""
-        with test_app.app_context():
-            content = read_css("base.css")
-
-            assert ".skip-link" in content
-            assert "position: absolute" in content
-            assert "top: -40px" in content
-
-    def test_required_field_indicator_present(self, test_app):
-        """Test que l'indicateur de champ obligatoire est présent."""
-        with test_app.app_context():
-            content = read_css("components", "forms.css")
-
-            assert ".label.required::after" in content
-            assert 'content: " *"' in content
-            assert "color: var(--color-danger)" in content
-
-    def test_sr_only_class_present(self, test_app):
-        """Test que la classe .is-sr-only pour l'accessibilité est présente."""
-        with test_app.app_context():
-            content = read_css("base.css")
-
-            assert ".is-sr-only" in content
-            assert "position: absolute" in content
-            assert "width: 1px" in content
-            assert "height: 1px" in content
+            assert "background-color: var(--bg-primary)" in dark
 
     def test_focus_visible_styles_present(self, test_app):
         """Test que les styles pour focus-visible sont présents (thème sombre)."""
@@ -251,26 +214,25 @@ class TestDarkThemeAccessibility:
 class TestDarkThemeVariables:
     """Tests pour les variables CSS du thème sombre."""
 
-    def test_bulma_variables_used(self, test_app):
-        """Test que les variables Bulma sont utilisées dans variables.css."""
+    def test_daisyui_variables_used(self, test_app):
+        """Test que les variables daisyUI sont utilisées dans variables.css."""
         with test_app.app_context():
             content = read_css("variables.css")
 
-            bulma_variables = [
-                "var(--bulma-primary)",
-                "var(--bulma-info)",
-                "var(--bulma-success)",
-                "var(--bulma-warning)",
-                "var(--bulma-danger)",
-                "var(--bulma-background)",
-                "var(--bulma-text)",
-                "var(--bulma-border)",
+            daisyui_variables = [
+                "var(--color-primary)",
+                "var(--color-info)",
+                "var(--color-success)",
+                "var(--color-warning)",
+                "var(--color-error)",
+                "var(--color-base-100)",
+                "var(--color-base-content)",
             ]
 
-            for var in bulma_variables:
+            for var in daisyui_variables:
                 assert (
                     var in content
-                ), f"Variable Bulma {var} non trouvée dans variables.css"
+                ), f"Variable daisyUI {var} non trouvée dans variables.css"
 
     def test_dark_theme_uses_data_attribute(self, test_app):
         """Test que le thème sombre utilise l'attribut data-theme."""
@@ -278,23 +240,10 @@ class TestDarkThemeVariables:
             content = read_css("themes", "dark.css")
 
             assert '[data-theme="dark"]' in content
-            assert ".dark-mode" in content
 
 
 class TestDarkThemeWCAGCompliance:
     """Tests pour la conformité WCAG du thème sombre."""
-
-    def test_contrast_fixes_for_warning_elements(self, test_app):
-        """Test que les corrections de contraste pour les éléments warning sont présentes."""
-        with test_app.app_context():
-            content = read_css("themes", "dark.css")
-
-            # Le jaune #ffdd57 a besoin de texte noir pour un ratio de 7.5:1
-            assert "color: #000 !important;" in content
-
-            dark_section = content[content.find('[data-theme="dark"]') :]
-            assert ".button.is-warning" in dark_section
-            assert ".tag.is-warning" in dark_section
 
     def test_focus_styles_present(self, test_app):
         """Test que les styles de focus pour l'accessibilité sont présents."""

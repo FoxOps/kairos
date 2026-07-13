@@ -64,7 +64,7 @@ CSP_POLICY = {
     # cdnjs.cloudflare.com : Font Awesome, daisyUI, tailwindcss-browser
     # (compilateur Tailwind CSS 4 en JIT navigateur) sont chargés depuis
     # ce CDN plutôt que vendorisés localement - voir
-    # scripts/download_vendor_assets.py et Docs/architecture/ARCHITECTURE.md.
+    # Docs/architecture/ARCHITECTURE.md.
     # cdn.jsdelivr.net : FullCalendar uniquement (voir commentaire ci-dessus).
     "script-src": f"'self' {CDNJS_HOST} {JSDELIVR_HOST}",
     "script-src-attr": "'unsafe-inline'",

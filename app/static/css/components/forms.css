@@ -1,14 +1,13 @@
 /* ============================================
    COMPOSANT - FORMULAIRES
+   ============================================
+   Augmente les classes .input/.select/.label/.checkbox de daisyUI
+   (mêmes noms que Bulma avant la refonte Tailwind/daisyUI, réutilisés
+   par daisyUI - ces règles s'appliquent donc toujours) avec un anneau
+   de focus plus visible. .control/.textarea/.radio/.message/
+   .form-group/.label.required (Bulma) ne sont plus utilisés dans les
+   templates, retirés en Phase 7.
    ============================================ */
-
-.form-group {
-    margin-bottom: 1rem;
-}
-
-.control {
-    width: 100%;
-}
 
 .input {
     transition: border-color 0.2s ease-in-out;
@@ -19,12 +18,10 @@
 }
 
 .input:focus-visible,
-.select:focus-visible,
-.textarea:focus-visible {
+.select:focus-visible {
     outline: 3px solid var(--app-color-primary);
     outline-offset: 0;
-    /* rgb(32, 182, 152) = teal/vert doux de variables.css
-       (--bulma-primary-h/-s/-l : 168deg 70% 42%). */
+    /* rgb(32, 182, 152) = teal/vert doux de la marque. */
     box-shadow: 0 0 0 3px rgba(32, 182, 152, 0.2);
 }
 
@@ -32,13 +29,7 @@
     width: 100%;
 }
 
-.textarea {
-    width: 100%;
-    resize: vertical;
-}
-
-.checkbox,
-.radio {
+.checkbox {
     margin-bottom: 0.5rem;
 }
 
@@ -48,25 +39,8 @@
     display: block;
 }
 
-.label.required::after {
-    content: " *";
-    color: var(--color-danger);
-}
-
 .help {
     font-size: 0.85rem;
     color: var(--text-secondary);
     margin-top: 0.25rem;
-}
-
-.message {
-    border-radius: var(--bulma-radius);
-}
-
-.message-header {
-    font-weight: 600;
-}
-
-.message-body {
-    padding: 1rem;
 }

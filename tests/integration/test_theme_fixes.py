@@ -30,19 +30,21 @@ class TestNoDuplicateStyles:
     """Tests pour vérifier l'absence de styles dupliqués."""
 
     def test_skip_link_not_duplicated(self, test_app):
-        """Test que skip-link n'est défini qu'une seule fois (dans base.css)."""
+        """Test que le skip link n'est stylé qu'à un seul endroit. Depuis
+        la refonte Tailwind/daisyUI (Phase 7), plus de classe .skip-link
+        maison dans base.css - le style (masqué sauf au focus) est porté
+        directement par les utilitaires Tailwind sr-only/focus:not-sr-only
+        sur le lien lui-même dans base.html, donc rien à dupliquer."""
         with test_app.app_context():
             base_css_content = read_css("base.css")
-            assert ".skip-link" in base_css_content, "skip-link doit être dans base.css"
+            assert ".skip-link {" not in base_css_content
 
             base_template_path = os.path.join(current_app.template_folder, "base.html")
             with open(base_template_path) as f:
                 base_template_content = f.read()
 
-            assert (
-                "<style>" not in base_template_content
-                or ".skip-link" not in base_template_content
-            ), "Les styles skip-link ne doivent plus être inline dans base.html"
+            assert "<style>" not in base_template_content
+            assert "sr-only" in base_template_content
 
     def test_fullcalendar_styles_not_duplicated(self, test_app):
         """Test que les styles FullCalendar ne sont pas dupliqués."""
@@ -113,28 +115,27 @@ class TestCentralizedJavaScript:
 class TestCSSVariables:
     """Tests pour vérifier que les variables CSS manquantes ont été ajoutées."""
 
-    def test_bulma_grey_variables_added(self, test_app):
-        """Test que les variables --bulma-grey* ont été ajoutées."""
-        with test_app.app_context():
-            content = read_css("variables.css")
-
-            assert "--bulma-grey:" in content
-            assert "--bulma-grey-light:" in content
-            assert "--bulma-grey-dark:" in content
-
     def test_base_styles_has_utility_classes(self, test_app):
-        """Test que utilities.css contient les classes utilitaires."""
+        """Test que utilities.css contient les classes utilitaires min-w-*.
+        Depuis la refonte Tailwind/daisyUI (Phase 7), les classes
+        d'espacement/affichage maison (gap-*, d-none, ...) et .type-tag
+        (buttons.css) ont été retirées : Tailwind (JIT) génère déjà des
+        classes du même nom que gap-*/d-*, et daisyUI fournit .badge à la
+        place de .type-tag - garder les définitions maison en plus était
+        redondant et, pour gap-*/mt-*/mb-*, silencieusement incorrect
+        (valeurs différentes de celles de Tailwind, toujours prioritaires
+        car hors de tout @layer)."""
         with test_app.app_context():
             utilities_content = read_css("utilities.css")
 
             assert ".min-w-140" in utilities_content
             assert ".min-w-180" in utilities_content
             assert ".min-w-200" in utilities_content
-            assert ".gap-2" in utilities_content
-            assert ".d-none" in utilities_content
+            assert ".gap-2 {" not in utilities_content
+            assert ".d-none {" not in utilities_content
 
             buttons_content = read_css("components", "buttons.css")
-            assert ".type-tag" in buttons_content
+            assert ".type-tag {" not in buttons_content
 
 
 class TestInlineStylesReplacement:

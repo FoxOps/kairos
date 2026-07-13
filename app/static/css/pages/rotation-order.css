@@ -13,7 +13,7 @@
 .sortable-item {
     background: var(--bg-secondary, #f5f5f5);
     border: 1px solid var(--border-primary, #ddd);
-    border-radius: var(--bulma-radius-small);
+    border-radius: var(--app-radius-small);
     padding: 12px 15px;
     margin-bottom: 8px;
     cursor: move;
@@ -48,7 +48,7 @@
 .rotation-order-info {
     background: var(--bg-secondary, #f8f9fa);
     padding: 15px;
-    border-radius: var(--bulma-radius-small);
+    border-radius: var(--app-radius-small);
     margin-bottom: 15px;
     border-left: 4px solid var(--app-color-primary, #20b698);
 }

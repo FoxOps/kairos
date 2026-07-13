@@ -13,7 +13,7 @@ not production-hardened.
 ```bash
 # Setup
 pip install -r requirements.txt
-python scripts/download_vendor_assets.py   # or: make install
+# (no more local vendor download - see Frontend section below)
 
 # Run the app (creates SQLite db + default admin on first run)
 python run.py                              # http://localhost:5000
@@ -133,6 +133,43 @@ were never imported outside that file; `measure_time` even imported a module
 `app/auth/` holds `decorators.py` (route guards), `user_manager.py`, and `oidc_auth.py`
 (Authlib-based SSO for Keycloak/Okta/Auth0-style providers, gated by `OIDCConfig.ENABLED` and
 `is_configured()`).
+
+### Frontend
+
+Tailwind CSS 4 + daisyUI 5, both loaded via `cdnjs.cloudflare.com` — no build step: Tailwind runs
+as `tailwindcss-browser` (the official JIT-in-browser compiler), scanning class names at runtime
+instead of being precompiled. There is no `package.json`/npm anywhere in this project; keep it that
+way — the CDN-JIT approach was chosen specifically to avoid introducing a Node toolchain. Bulma was
+fully removed (PR #108); no vendor directory, no `download_vendor_assets.py` — Font Awesome
+(7.2.0, SVG+JS mode, see below) and daisyUI/Tailwind are 100% CDN. `app/static/css/variables.css`
+bridges daisyUI's own `--color-*` custom properties to app-level names (`--app-color-primary`,
+`--bg-primary`, etc.) consumed by the handful of remaining custom CSS files
+(`pages/dashboard.css`, `pages/rotation-order.css`, `vendor/fullcalendar-overrides.css`,
+`themes/dark.css`) — don't reintroduce a `--bulma-*`-style remap; daisyUI already handles
+light/dark itself via `[data-theme]`, `themes/dark.css` only needs to cover things daisyUI can't
+know about (FullCalendar's own DOM) plus a couple of framework-agnostic accessibility rules
+(focus-visible, reduced-motion).
+
+Font Awesome is loaded in **SVG+JS mode** (`js/all.min.js`, not the CSS+webfont mode) —
+deliberately: cdnjs's `.woff2` files for 7.2.0 are each truncated by exactly one byte (confirmed
+against the previously-vendored copies), which Chromium's font sanitizer rejects outright
+("OTS parsing error"), leaving every icon invisible. SVG+JS sidesteps the corrupt fonts by
+rendering icons as inline `<svg>` at runtime — but it also means any JS that touches an icon's
+DOM node must not assume it stays an `<i>` (Font Awesome replaces it with `<svg>` after load,
+preserving the original classes) — see `theme-manager.js`'s icon-swap logic for the pattern
+(`querySelector('.fa-moon, .fa-sun')`, not `querySelector('i')`).
+
+FullCalendar stayed on **6.1.21** (not upgraded to 7.0.0 as originally planned) — loaded from
+`cdn.jsdelivr.net`, the one deliberate exception to "everything via cdnjs" (cdnjs doesn't host
+this package's locale files for any version tested). 7.0.0 was attempted three ways (cdnjs, plain
+jsDelivr ESM imports, esm.sh's auto-bundled imports) and hit a real runtime bug in FullCalendar's
+own compiled Preact rendering code every time ("Class constructor ... cannot be invoked without
+'new'") — not a hosting or import-resolution issue, so not something fixable from this side.
+Revisit if a later 7.x patch lands.
+
+CSP (`app/__init__.py`'s `CSP_POLICY`) allows `cdnjs.cloudflare.com` (script/style/font) and
+`cdn.jsdelivr.net` (script, FullCalendar only) plus `data:` for `img-src` (daisyUI's noise-texture
+SVG background on some components).
 
 ### Email notifications
 
