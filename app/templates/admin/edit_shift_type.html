@@ -3,61 +3,49 @@
 {% block title %}Modifier un type de shift - Administration{% endblock %}
 
 {% block admin_content %}
-<section class="section">
-    <div class="container">
-        <h1 class="title">
-            <i class="fas fa-edit" aria-hidden="true"></i> Modifier un type de shift
-        </h1>
-        
-        <form method="POST" action="{{ url_for('admin.edit_shift_type', shift_type_id=shift_type.id) }}" aria-labelledby="form-title">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="box">
-                <div class="field">
-                    <label class="label required" for="name">Nom *</label>
-                    <div class="control">
-                        <input class="input" type="text" id="name" name="name" value="{{ shift_type.name }}" placeholder="Ex: morning" required aria-required="true" aria-describedby="name-help">
-                    </div>
-                    <p class="help" id="name-help">Nom technique du type de shift (utilisé dans le code)</p>
+<section class="p-4 md:p-6 max-w-2xl mx-auto">
+    <h1 class="text-2xl font-bold mb-4">
+        <i class="fas fa-edit" aria-hidden="true"></i> Modifier un type de shift
+    </h1>
+
+    <form method="POST" action="{{ url_for('admin.edit_shift_type', shift_type_id=shift_type.id) }}" aria-labelledby="form-title">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <div>
+                    <label class="label" for="name">Nom *</label>
+                    <input class="input w-full" type="text" id="name" name="name" value="{{ shift_type.name }}" placeholder="Ex: morning" required aria-required="true" aria-describedby="name-help">
+                    <p class="text-sm text-base-content/60" id="name-help">Nom technique du type de shift (utilisé dans le code)</p>
                 </div>
-                
-                <div class="field">
-                    <label class="label required" for="label">Libellé *</label>
-                    <div class="control">
-                        <input class="input" type="text" id="label" name="label" value="{{ shift_type.label }}" placeholder="Ex: 07h-15h" required aria-required="true" aria-describedby="label-help">
-                    </div>
-                    <p class="help" id="label-help">Libellé affiché aux utilisateurs</p>
+
+                <div>
+                    <label class="label" for="label">Libellé *</label>
+                    <input class="input w-full" type="text" id="label" name="label" value="{{ shift_type.label }}" placeholder="Ex: 07h-15h" required aria-required="true" aria-describedby="label-help">
+                    <p class="text-sm text-base-content/60" id="label-help">Libellé affiché aux utilisateurs</p>
                 </div>
-                
-                <div class="field">
-                    <label class="label required" for="start_hour">Heure de début *</label>
-                    <div class="control">
-                        <input class="input" type="number" id="start_hour" name="start_hour" min="0" max="23" value="{{ shift_type.start_hour }}" placeholder="Ex: 7" required aria-required="true" aria-describedby="start-hour-help">
-                    </div>
-                    <p class="help" id="start-hour-help">Heure de début du shift (0-23)</p>
+
+                <div>
+                    <label class="label" for="start_hour">Heure de début *</label>
+                    <input class="input w-full" type="number" id="start_hour" name="start_hour" min="0" max="23" value="{{ shift_type.start_hour }}" placeholder="Ex: 7" required aria-required="true" aria-describedby="start-hour-help">
+                    <p class="text-sm text-base-content/60" id="start-hour-help">Heure de début du shift (0-23)</p>
                 </div>
-                
-                <div class="field">
-                    <label class="label required" for="end_hour">Heure de fin *</label>
-                    <div class="control">
-                        <input class="input" type="number" id="end_hour" name="end_hour" min="0" max="23" value="{{ shift_type.end_hour }}" placeholder="Ex: 15" required aria-required="true" aria-describedby="end-hour-help">
-                    </div>
-                    <p class="help" id="end-hour-help">Heure de fin du shift (0-23)</p>
+
+                <div>
+                    <label class="label" for="end_hour">Heure de fin *</label>
+                    <input class="input w-full" type="number" id="end_hour" name="end_hour" min="0" max="23" value="{{ shift_type.end_hour }}" placeholder="Ex: 15" required aria-required="true" aria-describedby="end-hour-help">
+                    <p class="text-sm text-base-content/60" id="end-hour-help">Heure de fin du shift (0-23)</p>
                 </div>
-                
-                <div class="field">
-                    <div class="control">
-                        <div class="buttons" role="group" aria-label="Actions du formulaire">
-                            <button class="button is-primary" type="submit" aria-label="Enregistrer les modifications" title="Enregistrer les modifications">
-                                <i class="fas fa-save" aria-hidden="true"></i>&nbsp; Enregistrer
-                            </button>
-                            <a class="button is-light" href="{{ url_for('admin.list_shift_types') }}" aria-label="Annuler et retourner à la liste" title="Annuler">
-                                Annuler
-                            </a>
-                        </div>
-                    </div>
+
+                <div class="flex gap-2" role="group" aria-label="Actions du formulaire">
+                    <button class="btn btn-primary" type="submit" aria-label="Enregistrer les modifications" title="Enregistrer les modifications">
+                        <i class="fas fa-save" aria-hidden="true"></i> Enregistrer
+                    </button>
+                    <a class="btn btn-ghost" href="{{ url_for('admin.list_shift_types') }}" aria-label="Annuler et retourner à la liste" title="Annuler">
+                        Annuler
+                    </a>
                 </div>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 </section>
 {% endblock %}

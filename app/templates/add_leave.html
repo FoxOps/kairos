@@ -3,60 +3,48 @@
 {% block title %}Ajouter un congé - Leviia Schedule{% endblock %}
 
 {% block content %}
-<section class="section">
-    <div class="container">
-        <h1 class="title">
-            <i class="fas fa-plus" aria-hidden="true"></i> Ajouter un congé
-        </h1>
-        
-        <form method="POST" action="{{ url_for('main.add_leave') }}" aria-labelledby="form-title">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="box">
-                <div class="field">
-                    <label class="label required" for="user_id">Utilisateur</label>
-                    <div class="control">
-                        <div class="select is-fullwidth">
-                            <select id="user_id" name="user_id" required aria-required="true" aria-describedby="user-help">
-                                <option value="" disabled selected>Sélectionnez un utilisateur</option>
-                                {% for user in users %}
-                                <option value="{{ user.id }}">{{ user.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <p class="help" id="user-help">Sélectionnez l'utilisateur pour ce congé</p>
-                    </div>
+<section class="p-4 md:p-6 max-w-2xl mx-auto">
+    <h1 class="text-2xl font-bold mb-4">
+        <i class="fas fa-plus" aria-hidden="true"></i> Ajouter un congé
+    </h1>
+
+    <form method="POST" action="{{ url_for('main.add_leave') }}" aria-labelledby="form-title">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <div>
+                    <label class="label" for="user_id">Utilisateur <span class="text-error">*</span></label>
+                    <select class="select w-full" id="user_id" name="user_id" required aria-required="true" aria-describedby="user-help">
+                        <option value="" disabled selected>Sélectionnez un utilisateur</option>
+                        {% for user in users %}
+                        <option value="{{ user.id }}">{{ user.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-sm text-base-content/60" id="user-help">Sélectionnez l'utilisateur pour ce congé</p>
                 </div>
-                
-                <div class="field">
-                    <label class="label required" for="start_date">Date de début</label>
-                    <div class="control">
-                        <input class="input" type="date" id="start_date" name="start_date" required aria-required="true" aria-describedby="start-date-help">
-                    </div>
-                    <p class="help" id="start-date-help">Date de début du congé</p>
+
+                <div>
+                    <label class="label" for="start_date">Date de début <span class="text-error">*</span></label>
+                    <input class="input w-full" type="date" id="start_date" name="start_date" required aria-required="true" aria-describedby="start-date-help">
+                    <p class="text-sm text-base-content/60" id="start-date-help">Date de début du congé</p>
                 </div>
-                
-                <div class="field">
-                    <label class="label required" for="end_date">Date de fin</label>
-                    <div class="control">
-                        <input class="input" type="date" id="end_date" name="end_date" required aria-required="true" aria-describedby="end-date-help">
-                    </div>
-                    <p class="help" id="end-date-help">Date de fin du congé</p>
+
+                <div>
+                    <label class="label" for="end_date">Date de fin <span class="text-error">*</span></label>
+                    <input class="input w-full" type="date" id="end_date" name="end_date" required aria-required="true" aria-describedby="end-date-help">
+                    <p class="text-sm text-base-content/60" id="end-date-help">Date de fin du congé</p>
                 </div>
-                
-                <div class="field">
-                    <div class="control">
-                        <div class="buttons" role="group" aria-label="Actions du formulaire">
-                            <button class="button is-primary" type="submit" aria-label="Enregistrer le congé" title="Enregistrer le congé">
-                                <i class="fas fa-save" aria-hidden="true"></i>&nbsp; Enregistrer
-                            </button>
-                            <a class="button is-light" href="{{ url_for('main.leave') }}" aria-label="Annuler et retourner à la liste" title="Annuler">
-                                Annuler
-                            </a>
-                        </div>
-                    </div>
+
+                <div class="flex gap-2" role="group" aria-label="Actions du formulaire">
+                    <button class="btn btn-primary" type="submit" aria-label="Enregistrer le congé" title="Enregistrer le congé">
+                        <i class="fas fa-save" aria-hidden="true"></i> Enregistrer
+                    </button>
+                    <a class="btn btn-ghost" href="{{ url_for('main.leave') }}" aria-label="Annuler et retourner à la liste" title="Annuler">
+                        Annuler
+                    </a>
                 </div>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 </section>
 {% endblock %}
