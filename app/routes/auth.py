@@ -20,13 +20,16 @@ def register():
     """Page d'inscription (désactivée par défaut, seule l'admin peut créer des utilisateurs)."""
     # Vérifier si l'inscription est autorisée (par exemple, via une variable de config)
     # Pour l'instant, on désactive l'inscription publique
-    
+
     # Si OIDC est activé et que l'authentification basique est désactivée,
     # rediriger vers la connexion OIDC
     if is_basic_auth_disabled():
-        flash("L'inscription publique est désactivée. Utilisez l'authentification OIDC.", "danger")
+        flash(
+            "L'inscription publique est désactivée. Utilisez l'authentification OIDC.",
+            "danger",
+        )
         return redirect(url_for("auth.oidc_login"))
-    
+
     flash(
         "L'inscription publique est désactivée. Contactez l'administrateur.",
         "danger",
@@ -41,7 +44,16 @@ def login():
         return redirect(url_for("main.index"))
 
     # Vérifier si l'authentification basique est désactivée
-    if is_basic_auth_disabled():
+    #
+    # oidc_error=1 casse volontairement ce renvoi automatique : sans lui,
+    # tout échec OIDC (fournisseur injoignable, mauvaise config,
+    # synchronisation utilisateur qui échoue...) redirige vers /login,
+    # qui ici redirige aussitôt vers /oidc/login, qui échoue à nouveau et
+    # redirige vers /login - boucle de redirection infinie
+    # (ERR_TOO_MANY_REDIRECTS côté navigateur), application totalement
+    # inaccessible tant que le SSO ne fonctionne pas. Bug réel trouvé en
+    # écrivant les tests OIDC (voir tests/integration/test_oidc_routes.py).
+    if is_basic_auth_disabled() and not request.args.get("oidc_error"):
         # Rediriger vers la connexion OIDC
         return redirect(url_for("auth.oidc_login"))
 
@@ -78,7 +90,7 @@ def oidc_login():
     auth_url = oidc_auth.get_authorization_url()
     if not auth_url:
         flash("La connexion OIDC n'est pas disponible pour le moment.", "danger")
-        return redirect(url_for("auth.login"))
+        return redirect(url_for("auth.login", oidc_error=1))
 
     return redirect(auth_url)
 
@@ -92,12 +104,12 @@ def oidc_callback():
     user_data = oidc_auth.handle_oauth_callback(request)
     if not user_data:
         # handle_oauth_callback affiche déjà un message d'erreur (flash)
-        return redirect(url_for("auth.login"))
+        return redirect(url_for("auth.login", oidc_error=1))
 
     user = oidc_auth.login_user(user_data)
     if not user:
         flash("La connexion OIDC a échoué. Veuillez réessayer.", "danger")
-        return redirect(url_for("auth.login"))
+        return redirect(url_for("auth.login", oidc_error=1))
 
     flash("Connexion OIDC réussie !", "success")
     return redirect(url_for("main.index"))
@@ -116,7 +128,9 @@ def logout():
         # connexion ré-authentifie silencieusement l'utilisateur via SSO
         # (la déconnexion semble ne rien faire). Utiliser la déconnexion
         # RP-initiated si le fournisseur l'expose (end_session_endpoint).
-        logout_url = oidc_auth.build_logout_url(OIDCConfig.POST_LOGOUT_REDIRECT_URI or None)
+        logout_url = oidc_auth.build_logout_url(
+            OIDCConfig.POST_LOGOUT_REDIRECT_URI or None
+        )
         if logout_url:
             return redirect(logout_url)
         return redirect(url_for("auth.login"))
@@ -163,17 +177,20 @@ def update_profile():
         # Mettre à jour le mot de passe si fourni
         if new_password:
             if not current_password:
-                flash("Le mot de passe actuel est obligatoire pour changer de mot de passe.", "danger")
+                flash(
+                    "Le mot de passe actuel est obligatoire pour changer de mot de passe.",
+                    "danger",
+                )
                 return redirect(url_for("auth.update_profile"))
-            
+
             if not current_user.check_password(current_password):
                 flash("Le mot de passe actuel est incorrect.", "danger")
                 return redirect(url_for("auth.update_profile"))
-            
+
             if new_password != confirm_password:
                 flash("Les nouveaux mots de passe ne correspondent pas.", "danger")
                 return redirect(url_for("auth.update_profile"))
-            
+
             current_user.set_password(new_password)
 
         db.session.commit()
@@ -196,12 +213,8 @@ def generate_ics_token():
         except Exception as e:
             db.session.rollback()
             flash(f"Erreur : {str(e)}", "danger")
-    
+
     # Afficher la page avec le token actuel
     token = current_user.ics_token
-    
-    return render_template(
-        "auth/ics_token.html",
-        user=current_user,
-        token=token
-    )
+
+    return render_template("auth/ics_token.html", user=current_user, token=token)
