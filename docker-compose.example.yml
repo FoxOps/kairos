@@ -1,18 +1,22 @@
-# Exemple de configuration Docker Compose pour Leviia Schedule.
+# Exemple de configuration Docker Compose pour Leviia Schedule - méthode
+# recommandée, image déjà construite sur le registry (pas de clone du
+# dépôt, pas de build local).
 #
 # Pour l'utiliser:
 # 1. Copiez ce fichier en docker-compose.yml
 # 2. Copiez .env.example en .env et modifiez-le selon vos besoins
-#    (voir la section CONFIGURATION OIDC/SSO de .env.example pour activer
+#    (LEVIIA_IMAGE, SECRET_KEY, DEFAULT_ADMIN_PASSWORD au minimum - voir
+#    la section CONFIGURATION OIDC/SSO de .env.example pour activer
 #    l'authentification OIDC - désactivée par défaut)
 # 3. Lancez avec: docker compose up -d
 #
-# Pour un environnement de dev complet avec un faux fournisseur OIDC
-# (oidc-mock) déjà câblé, voir docker/docker-compose.yml à la place.
+# Pour un environnement de dev complet (build local, faux fournisseur
+# OIDC optionnel pour tester le flux SSO) voir docker/docker-compose.yml
+# à la place, dans un clone du dépôt.
 
 services:
   leviia-schedule:
-    image: leviia-schedule:optimized
+    image: ${LEVIIA_IMAGE:-harbor.leviia.com/<HARBOR_PROJECT>/leviia-schedule:latest}
     container_name: leviia-schedule
     ports:
       - "5000:5000"

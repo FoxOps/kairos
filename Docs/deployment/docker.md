@@ -1,62 +1,48 @@
 # Dockerisation de Leviia Schedule (Version Simplifiée)
 
-> **Méthode recommandée** : `docker compose`, avec l'image déjà
-> construite sur le registry (pas de build local). C'est la façon
-> principale de lancer l'application. Construire l'image soi-même
-> (`docker build`/`docker compose build`) est une alternative réservée
-> au développement ou à des cas particuliers (contribution au code,
-> modification du `Dockerfile`, pas d'accès au registry) - voir plus bas.
-
-## 📋 Structure Ultra-Simple
-
-Chemins relatifs (`.env`, `data/`, `logs/`) résolus par rapport à
-`docker/docker-compose.yml`, donc tous sous `docker/` :
-
-```
-leviia-schedule/
-└── docker/
-    ├── Dockerfile          # Image Docker ultra-légère
-    ├── entrypoint.sh       # Script de démarrage (serveur web + crond conditionnel)
-    ├── crontabs/appuser    # Planification des rappels email et sauvegardes (crond)
-    ├── docker-compose.yml  # Service applicatif + mock OIDC optionnel (profil)
-    ├── .env                # Variables d'environnement (à créer, non committé)
-    ├── data/                # Données SQLite persistantes
-    └── logs/                # Logs
-```
-
-**Taille de l'image** : ~150 Mo (avec Alpine Linux)
+> **Méthode recommandée** : deux fichiers à récupérer
+> (`docker-compose.example.yml` + `.env.example`, à la racine du dépôt),
+> une image déjà construite sur le registry - pas de clone du dépôt, pas
+> de build local, pas de mock OIDC (dev only). Construire l'image
+> soi-même ou cloner le dépôt pour un environnement de dev complet
+> (`docker/`) sont des alternatives réservées au développement ou à des
+> cas particuliers - voir plus bas.
 
 ---
 
-## 🚀 Démarrage rapide (méthode recommandée) : image du registry via Compose
+## 🚀 Démarrage rapide (méthode recommandée)
 
 L'image est construite et publiée automatiquement par la CI sur chaque
 commit de la branche par défaut (job `build_docker`, voir
-`.gitlab-ci/.gitlab-ci.yml`), sur un registry Harbor auto-hébergé. C'est
-la source à utiliser en priorité pour lancer l'application - pas besoin
-d'outil de build local.
+`.gitlab-ci/.gitlab-ci.yml`), sur un registry Harbor auto-hébergé.
 
-Toutes les commandes ci-dessous s'exécutent **depuis le dossier `docker/`**.
+### 1️⃣ Récupérer les deux fichiers nécessaires
 
-### 1️⃣ Configurer l'environnement
+Pas besoin de cloner le dépôt entier - seuls deux fichiers, à la racine
+du dépôt, sont nécessaires :
 
 ```bash
-git clone https://github.com/FoxOps/leviia-schedule.git
-cd leviia-schedule/docker
-cp ../.env.example .env
+mkdir leviia-schedule && cd leviia-schedule
+
+curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker-compose.example.yml
+curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/.env.example
+```
+
+### 2️⃣ Configurer
+
+```bash
 nano .env
 ```
 
-**Variables minimales dans `docker/.env` :**
+**Variables minimales :**
 ```env
-SECRET_KEY=votre_clé_secrète
-DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe
-
-# Image à utiliser (registry Harbor) - remplace le tag de build local
-# par défaut de docker-compose.yml. Remplacez <HARBOR_PROJECT> par le
+# Image à tirer du registry Harbor - remplacez <HARBOR_PROJECT> par le
 # nom du projet Harbor réel (voir la variable CI/CD CI_REGISTRY_IMAGE,
 # configurée pour pointer vers Harbor plutôt que le registry GitLab).
 LEVIIA_IMAGE=harbor.leviia.com/<HARBOR_PROJECT>/leviia-schedule:latest
+
+SECRET_KEY=votre_clé_secrète
+DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe
 ```
 
 **Variables à adapter pour Docker** (valeurs différentes de celles par
@@ -73,23 +59,19 @@ DATABASE_URL=sqlite:////app/data/app.db
 TALISMAN_FORCE_HTTPS=false
 ```
 
-### 2️⃣ Tirer l'image et démarrer
+### 3️⃣ Démarrer
 
 ```bash
-docker compose pull leviia-schedule
-docker compose up -d --no-build
+docker compose up -d
 ```
 
-`--no-build` garantit qu'aucune construction locale n'est déclenchée -
-seule l'image `LEVIIA_IMAGE` tirée du registry est utilisée. Mode
-développement (Flask avec reloader) ou production (Gunicorn) selon
-`FLASK_ENV` dans `.env` (`development` par défaut).
+`docker-compose.yml` (issu de `docker-compose.example.yml`) n'a pas de
+section `build:` - il ne peut que tirer l'image du registry, jamais la
+construire localement. Mode développement (Flask avec reloader) ou
+production (Gunicorn) selon `FLASK_ENV` dans `.env` (`development` par
+défaut).
 
-> Le service `oidc-mock` (fournisseur OIDC de test) ne démarre pas avec
-> cette commande - il est optionnel, réservé au développement (voir
-> Alternatives ci-dessous).
-
-### 3️⃣ Accéder à l'application
+### 4️⃣ Accéder à l'application
 
 Ouvrez votre navigateur : [http://localhost:5000](http://localhost:5000)
 
@@ -100,8 +82,8 @@ Ouvrez votre navigateur : [http://localhost:5000](http://localhost:5000)
 ### Mettre à jour
 
 ```bash
-docker compose pull leviia-schedule
-docker compose up -d --no-build
+docker compose pull
+docker compose up -d
 ```
 
 ---
@@ -110,8 +92,40 @@ docker compose up -d --no-build
 
 Réservé aux cas où l'image du registry ne suffit pas : contribuer au
 code, tester une modification du `Dockerfile`, exercer le flux SSO/OIDC
-en local (mock optionnel, voir plus bas), ou absence d'accès au
-registry Harbor. Toujours depuis le dossier `docker/`.
+en local (mock optionnel). Nécessite de cloner le dépôt entier :
+
+```bash
+git clone https://github.com/FoxOps/leviia-schedule.git
+cd leviia-schedule/docker
+```
+
+Structure de `docker/` (chemins relatifs `.env`/`data`/`logs` résolus
+par rapport à `docker/docker-compose.yml`, donc tous sous `docker/`) :
+
+```
+leviia-schedule/
+└── docker/
+    ├── Dockerfile          # Image Docker ultra-légère
+    ├── entrypoint.sh       # Script de démarrage (serveur web + crond conditionnel)
+    ├── crontabs/appuser    # Planification des rappels email et sauvegardes (crond)
+    ├── docker-compose.yml  # Service applicatif (build local ou registry) + mock OIDC optionnel (profil)
+    ├── .env                # Variables d'environnement (à créer, non committé)
+    ├── data/                # Données SQLite persistantes
+    └── logs/                # Logs
+```
+
+Toutes les commandes ci-dessous s'exécutent **depuis le dossier `docker/`**.
+
+### Configurer l'environnement
+
+```bash
+cp ../.env.example .env
+nano .env
+```
+
+Mêmes variables que la méthode recommandée ci-dessus (`SECRET_KEY`,
+`DEFAULT_ADMIN_PASSWORD`, `DATABASE_URL`, `TALISMAN_FORCE_HTTPS`).
+`LEVIIA_IMAGE` reste utilisable ici aussi (voir plus bas).
 
 ### Construire l'image soi-même (`docker build` de base, sans Compose)
 
@@ -125,7 +139,7 @@ racine.
 
 ### Construire et démarrer via Compose
 
-Sans `LEVIIA_IMAGE` dans `.env` (ou en le retirant), `docker-compose.yml`
+Sans `LEVIIA_IMAGE` dans `.env` (ou en le retirant), `docker/docker-compose.yml`
 retombe sur son tag de build local par défaut (`leviia-schedule:dev`) :
 
 ```bash
@@ -133,9 +147,14 @@ docker compose build
 docker compose up -d
 ```
 
+Avec `LEVIIA_IMAGE` défini, `docker compose pull leviia-schedule` puis
+`docker compose up -d --no-build` utilise l'image du registry sans
+jamais déclencher de build local - utile pour tester la stack de dev
+(mock OIDC compris) contre une image déjà publiée.
+
 ### Tester le flux SSO/OIDC en local (mock)
 
-`docker-compose.yml` inclut un fournisseur OIDC de test
+`docker/docker-compose.yml` inclut un fournisseur OIDC de test
 (`ghcr.io/soluto/oidc-server-mock`), démarré uniquement via son profil
 Compose dédié - jamais par un `docker compose up -d` normal :
 
@@ -154,7 +173,7 @@ défaut identiques à la section recommandée ci-dessus).
 
 | Variable | Description | Défaut | Requis |
 |----------|-------------|--------|--------|
-| `LEVIIA_IMAGE` | Image à utiliser par `docker-compose.yml` (registry) | `leviia-schedule:dev` (build local) | ❌ (✅ pour la méthode recommandée) |
+| `LEVIIA_IMAGE` | Image à utiliser (registry) | requis dans `docker-compose.example.yml` ; `leviia-schedule:dev` (build local) dans `docker/docker-compose.yml` | ✅ / ❌ selon le fichier |
 | `FLASK_ENV` | Mode (development/production) | development | ❌ |
 | `SECRET_KEY` | Clé secrète Flask | requis | ✅ |
 | `DATABASE_URL` | URL de la base de données (voir note ci-dessous) | sqlite:////app/data/app.db | ❌ |
@@ -165,11 +184,10 @@ défaut identiques à la section recommandée ci-dessus).
 > pas trois - c'est un chemin absolu (`/app/data/app.db`) résolu sur le
 > volume monté, pas un chemin relatif.
 
-### Exemple de `docker/.env` complet
+### Exemple de `.env` complet
 
 ```env
-# Image du registry (méthode recommandée) - retirez cette ligne pour
-# revenir à un build local (voir Alternatives)
+# Image du registry - obligatoire avec docker-compose.example.yml
 LEVIIA_IMAGE=harbor.leviia.com/<HARBOR_PROJECT>/leviia-schedule:latest
 
 # Configuration de base
@@ -190,7 +208,16 @@ DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe_sécurisé
 
 ## 📦 Fichiers Expliqués
 
-### Dockerfile
+### docker-compose.example.yml (racine du dépôt)
+- **Méthode recommandée** : un seul service, pas de `build:` - tire
+  toujours `LEVIIA_IMAGE` depuis le registry. À copier en
+  `docker-compose.yml` dans le dossier où vous déployez (voir
+  Démarrage rapide).
+- **Volumes** : `./data:/app/data`, `./logs:/app/logs` (créés
+  automatiquement par Docker au premier démarrage si absents)
+- **Port** : 5000 exposé
+
+### docker/Dockerfile
 - **Base** : Python 3.11 Alpine (ultra-léger)
 - **Dépendances** : Installe `requirements.txt` + Gunicorn
 - **Utilisateur** : `appuser` (non-root) pour la sécurité
@@ -201,7 +228,7 @@ DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe_sécurisé
   commande `docker build` est lancée depuis `docker/`. Non pertinent si
   vous utilisez l'image du registry (méthode recommandée).
 
-### entrypoint.sh
+### docker/entrypoint.sh
 - **Initialisation** : Crée la base de données SQLite si elle n'existe pas
 - **Données par défaut** : Crée les types de shifts, le groupe et l'admin
 - **Notifications par email et sauvegardes** : si `NOTIFICATIONS_ENABLED=true`
@@ -217,12 +244,12 @@ DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe_sécurisé
   - `development` → `python run.py` (avec reloader)
   - `production` → `gunicorn` (1 worker pour SQLite)
 
-### docker-compose.yml
+### docker/docker-compose.yml (environnement de dev, clone requis)
 - **Service applicatif** (`leviia-schedule`) : `image: ${LEVIIA_IMAGE:-leviia-schedule:dev}`
-  - image du registry si `LEVIIA_IMAGE` est défini dans `.env` (méthode
-    recommandée, `--no-build`), sinon tag de build local par défaut. Et,
-    si activé, les rappels par email et/ou les sauvegardes - même
-    conteneur, voir ci-dessus - voir
+  - build local par défaut (`build: context: ..`), ou image du registry
+    sans build si `LEVIIA_IMAGE` est défini et `--no-build` passé - voir
+    ci-dessus. Et, si activé, les rappels par email et/ou les
+    sauvegardes - même conteneur, voir ci-dessus - voir
     [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-configuration-des-notifications)
     pour la configuration SMTP et
     [`deployment/BACKUP_GUIDE.md`](BACKUP_GUIDE.md) pour les sauvegardes
@@ -236,17 +263,17 @@ DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe_sécurisé
 
 ## 🎯 Commandes
 
-### Recommandé (image du registry, depuis `docker/`)
+### Recommandé (deux fichiers récupérés, sans clone)
 
 | Commande | Description |
 |----------|-------------|
-| `docker compose pull leviia-schedule` | Tirer la dernière image (`LEVIIA_IMAGE` dans `.env`) |
-| `docker compose up -d --no-build` | Démarrer sans construction locale |
+| `docker compose up -d` | Tirer l'image et démarrer |
+| `docker compose pull` | Mettre à jour l'image |
 | `docker compose logs -f leviia-schedule` | Voir les logs |
 | `docker compose exec leviia-schedule sh` | Shell dans le conteneur |
 | `docker compose down` | Arrêter |
 
-### Alternatives dev (depuis `docker/`)
+### Alternatives dev (clone requis, depuis `docker/`)
 
 | Commande | Description |
 |----------|-------------|
@@ -279,11 +306,10 @@ echo ".env" >> .gitignore
 
 ### 4. En production
 
-- Mettre `FLASK_ENV=production` dans `docker/.env`, puis (depuis
-  `docker/`) `docker compose up -d --no-build`
+- Mettre `FLASK_ENV=production` dans `.env`, puis `docker compose up -d`
 - Changer `SECRET_KEY` et `DEFAULT_ADMIN_PASSWORD`
 - Configurer un reverse proxy (Nginx, Traefik) pour HTTPS, puis repasser
-  `TALISMAN_FORCE_HTTPS=true` (ou retirer la ligne) dans `docker/.env`
+  `TALISMAN_FORCE_HTTPS=true` (ou retirer la ligne) dans `.env`
 
 ---
 
@@ -309,8 +335,6 @@ Ce guide explique comment étendre cette configuration pour utiliser :
 
 ## 🐛 Dépannage
 
-Toutes les commandes ci-dessous s'exécutent depuis `docker/`.
-
 ### Problème : Le conteneur ne démarre pas
 
 **Vérifier les logs :**
@@ -318,10 +342,9 @@ Toutes les commandes ci-dessous s'exécutent depuis `docker/`.
 docker compose logs leviia-schedule
 ```
 
-**Vérifier l'image / le build :**
+**Vérifier l'image :**
 ```bash
-docker compose pull leviia-schedule
-# ou, en dev (build local) : docker compose build --no-cache
+docker compose pull
 ```
 
 ### Problème : Erreur de permissions
@@ -344,7 +367,7 @@ chmod -R 755 data logs
 rm -f data/app.db
 
 # Redémarrer le conteneur
-docker compose down && docker compose up -d --no-build
+docker compose down && docker compose up -d
 ```
 
 ### Problème : Port 5000 déjà utilisé
@@ -362,46 +385,18 @@ kill <PID>
 
 ---
 
-## 🔄 Mises à jour
-
-Toutes les commandes ci-dessous s'exécutent depuis `docker/`.
-
-### Mettre à jour l'application (image du registry)
-
-```bash
-docker compose pull leviia-schedule
-docker compose up -d --no-build
-```
-
-### Mettre à jour les dépendances (dev, build local)
-
-```bash
-# Dans le conteneur
-docker compose exec leviia-schedule sh
-
-# Mettre à jour requirements.txt (depuis la racine du dépôt)
-pip freeze > ../docker/requirements.txt
-
-# Reconstruire
-docker compose build --no-cache
-docker compose up -d
-```
-
----
-
 ## 📚 Exemples
 
-### Déploiement rapide (registry)
+### Déploiement rapide (registry, sans clone)
 
 ```bash
-git clone https://github.com/FoxOps/leviia-schedule.git
-cd leviia-schedule/docker
+mkdir leviia-schedule && cd leviia-schedule
+curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker-compose.example.yml
+curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/.env.example
 
-cp ../.env.example .env
 nano .env  # LEVIIA_IMAGE, SECRET_KEY, DEFAULT_ADMIN_PASSWORD, DATABASE_URL, TALISMAN_FORCE_HTTPS
 
-docker compose pull leviia-schedule
-docker compose up -d --no-build
+docker compose up -d
 
 # Accéder à l'application
 # http://localhost:5000
@@ -410,14 +405,15 @@ docker compose up -d --no-build
 ### Déploiement en production simple
 
 ```bash
-cd docker
-cp ../.env.example .env
+mkdir leviia-schedule && cd leviia-schedule
+curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker-compose.example.yml
+curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/.env.example
+
 nano .env  # LEVIIA_IMAGE, SECRET_KEY, DEFAULT_ADMIN_PASSWORD, DATABASE_URL, FLASK_ENV=production
 
 # Le mode production - Gunicorn - est piloté par FLASK_ENV dans .env,
 # pas par une commande séparée
-docker compose pull leviia-schedule
-docker compose up -d --no-build
+docker compose up -d
 
 # Accéder à l'application
 # http://localhost:5000
@@ -431,8 +427,8 @@ Pour des configurations avancées (PostgreSQL, Redis, etc.), consultez :
 - [Guide Avancé : PostgreSQL et Redis](DEPLOYMENT_ADVANCED.md)
 
 Pour des problèmes spécifiques, vérifiez :
-1. Les logs avec `docker compose logs` (depuis `docker/`)
-2. La configuration dans `docker/.env`
+1. Les logs avec `docker compose logs`
+2. La configuration dans `.env`
 3. Les permissions des fichiers
 
 ---
