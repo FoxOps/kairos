@@ -3,72 +3,69 @@
 {% block title %}Rafraîchir les Shifts - Automatisation{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h1 class="title">
+<div class="p-4 md:p-6 max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold mb-4">
         <i class="fas fa-sync-alt" aria-hidden="true"></i> Rafraîchir les Shifts
     </h1>
-    
-    <div class="notification is-info is-light">
-        <p>
-            <i class="fas fa-info-circle"></i> 
-            Cette page permet de recalculer tous les shifts pour une période donnée 
-            en tenant compte des <strong>astreintes actuelles</strong> (même modifiées manuellement).
-        </p>
-        <p>
-            Les nouvelles règles métiers seront appliquées :
-        </p>
-        <ul>
-            <li>Créneau 13h-21h pour la personne d'astreinte (si elle fait partie d'un groupe schedule)</li>
-            <li>Rotation : 13h-21h → 07h-15h la semaine suivante</li>
-            <li>09h-17h par défaut pour les autres</li>
-            <li>Cas spécial avec 2 personnes : la non-astreinte passe en 07h-15h</li>
-            <li>Contrainte légale : 2 semaines minimum entre deux astreintes</li>
-        </ul>
+
+    <div class="alert alert-info mb-4">
+        <div>
+            <p>
+                <i class="fas fa-info-circle"></i>
+                Cette page permet de recalculer tous les shifts pour une période donnée
+                en tenant compte des <strong>astreintes actuelles</strong> (même modifiées manuellement).
+            </p>
+            <p>
+                Les nouvelles règles métiers seront appliquées :
+            </p>
+            <ul class="list-disc list-inside">
+                <li>Créneau 13h-21h pour la personne d'astreinte (si elle fait partie d'un groupe schedule)</li>
+                <li>Rotation : 13h-21h → 07h-15h la semaine suivante</li>
+                <li>09h-17h par défaut pour les autres</li>
+                <li>Cas spécial avec 2 personnes : la non-astreinte passe en 07h-15h</li>
+                <li>Contrainte légale : 2 semaines minimum entre deux astreintes</li>
+            </ul>
+        </div>
     </div>
-    
-    <form method="POST" class="box">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="field">
-            <label class="label">Période</label>
-            <div class="control">
-                <div class="field-body">
-                    <div class="field">
-                        <p class="control is-expanded">
-                            <label class="label">Date de début</label>
-                            <input class="input" type="date" name="start_date" 
-                                   value="{{ start_date_default.strftime('%Y-%m-%d') }}" required>
-                        </p>
+
+    <form method="POST" class="card bg-base-100 shadow-md">
+        <div class="card-body gap-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div>
+                <label class="label">Période</label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="label">Date de début</label>
+                        <input class="input w-full" type="date" name="start_date"
+                               value="{{ start_date_default.strftime('%Y-%m-%d') }}" required>
                     </div>
-                    <div class="field">
-                        <p class="control is-expanded">
-                            <label class="label">Date de fin</label>
-                            <input class="input" type="date" name="end_date" 
-                                   value="{{ end_date_default.strftime('%Y-%m-%d') }}" required>
-                        </p>
+                    <div>
+                        <label class="label">Date de fin</label>
+                        <input class="input w-full" type="date" name="end_date"
+                               value="{{ end_date_default.strftime('%Y-%m-%d') }}" required>
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <div class="field">
-            <div class="control">
-                <button type="submit" class="button is-primary">
-                    <i class="fas fa-sync-alt" aria-hidden="true"></i>&nbsp; 
+
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-sync-alt" aria-hidden="true"></i>
                     Rafraîchir les Shifts
                 </button>
-                <a class="button is-outlined" href="{{ url_for('admin.automation_dashboard') }}">
-                    <i class="fas fa-arrow-left" aria-hidden="true"></i>&nbsp; 
+                <a class="btn btn-outline" href="{{ url_for('admin.automation_dashboard') }}">
+                    <i class="fas fa-arrow-left" aria-hidden="true"></i>
                     Retour au tableau de bord
                 </a>
             </div>
         </div>
     </form>
-    
+
+    {% set flash_category_map = {'danger': 'error', 'success': 'success', 'warning': 'warning', 'info': 'info'} %}
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-        <div class="mt-4">
+        <div class="mt-4 flex flex-col gap-2">
             {% for category, message in messages %}
-            <div class="notification is-{{ category }}">
+            <div class="alert alert-{{ flash_category_map.get(category, category) }}">
                 {{ message | safe }}
             </div>
             {% endfor %}

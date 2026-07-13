@@ -1,62 +1,54 @@
 {% extends "admin/base_admin.html" %}
 
 {% block admin_content %}
-<section class="section">
-    <div class="container">
-        <h1 class="title"><i class="fas fa-chart-line" aria-hidden="true"></i> État de l'automatisation</h1>
-        
-        <div class="box">
-            <h2 class="subtitle"><i class="fas fa-info-circle" aria-hidden="true"></i> Statistiques actuelles</h2>
-            
-            <div class="columns">
-                <div class="column is-one-quarter">
-                    <div class="notification is-primary">
-                        <p><strong>Astreintes existantes</strong></p>
-                        <p class="is-size-4">{{ status.oncall_count }}</p>
-                    </div>
+<section class="p-4 md:p-6 max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold mb-4"><i class="fas fa-chart-line" aria-hidden="true"></i> État de l'automatisation</h1>
+
+    <div class="card bg-base-100 shadow-md mb-6">
+        <div class="card-body">
+            <h2 class="text-lg font-semibold"><i class="fas fa-info-circle" aria-hidden="true"></i> Statistiques actuelles</h2>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="alert alert-primary flex-col items-start">
+                    <p><strong>Astreintes existantes</strong></p>
+                    <p class="text-2xl font-bold">{{ status.oncall_count }}</p>
                 </div>
-                <div class="column is-one-quarter">
-                    <div class="notification is-info">
-                        <p><strong>Shifts existants</strong></p>
-                        <p class="is-size-4">{{ status.shift_count }}</p>
-                    </div>
+                <div class="alert alert-info flex-col items-start">
+                    <p><strong>Shifts existants</strong></p>
+                    <p class="text-2xl font-bold">{{ status.shift_count }}</p>
                 </div>
-                <div class="column is-one-quarter">
-                    <div class="notification is-success">
-                        <p><strong>Utilisateurs éligibles (astreintes)</strong></p>
-                        <p class="is-size-4">{{ status.oncall_eligible_users }}</p>
-                    </div>
+                <div class="alert alert-success flex-col items-start">
+                    <p><strong>Utilisateurs éligibles (astreintes)</strong></p>
+                    <p class="text-2xl font-bold">{{ status.oncall_eligible_users }}</p>
                 </div>
-                <div class="column is-one-quarter">
-                    <div class="notification is-warning">
-                        <p><strong>Utilisateurs éligibles (shifts)</strong></p>
-                        <p class="is-size-4">{{ status.shift_eligible_users }}</p>
-                    </div>
+                <div class="alert alert-warning flex-col items-start">
+                    <p><strong>Utilisateurs éligibles (shifts)</strong></p>
+                    <p class="text-2xl font-bold">{{ status.shift_eligible_users }}</p>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="box">
-            <h2 class="subtitle"><i class="fas fa-calendar-alt" aria-hidden="true"></i> Prochaine astreinte disponible</h2>
-            
+    <div class="card bg-base-100 shadow-md mb-6">
+        <div class="card-body">
+            <h2 class="text-lg font-semibold"><i class="fas fa-calendar-alt" aria-hidden="true"></i> Prochaine astreinte disponible</h2>
+
             {% if status.next_available_oncall_date %}
-            <div class="notification is-success">
+            <div class="alert alert-success">
                 <p>La prochaine astreinte peut être générée à partir du <strong>{{ status.next_available_oncall_date }}</strong>.</p>
             </div>
             {% else %}
-            <div class="notification is-warning">
+            <div class="alert alert-warning">
                 <p>Aucune date disponible trouvée.</p>
             </div>
             {% endif %}
         </div>
+    </div>
 
-        <div class="field is-grouped mt-5">
-            <div class="control">
-                <a class="button is-primary" href="{{ url_for('admin.automation_dashboard') }}">
-                    <i class="fas fa-arrow-left"></i>&nbsp; Retour au tableau de bord
-                </a>
-            </div>
-        </div>
+    <div class="flex gap-2 mt-5">
+        <a class="btn btn-primary" href="{{ url_for('admin.automation_dashboard') }}">
+            <i class="fas fa-arrow-left"></i> Retour au tableau de bord
+        </a>
     </div>
 </section>
 {% endblock %}
