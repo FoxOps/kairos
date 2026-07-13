@@ -4,6 +4,12 @@
 
 {% block admin_content %}
 <section class="p-4 md:p-6 max-w-6xl mx-auto">
+    <div class="breadcrumbs text-sm mb-2" aria-label="Fil d'Ariane">
+        <ul>
+            <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
+            <li>Types de shifts</li>
+        </ul>
+    </div>
     <h1 class="text-2xl font-bold mb-4">
         <i class="fas fa-cogs" aria-hidden="true"></i> Gestion des types de shifts
     </h1>
@@ -38,15 +44,19 @@
                     <td>{{ "%02d"|format(shift_type.end_hour) }}h</td>
                     <td>
                         <div class="flex gap-2" role="group" aria-label="Actions pour le type de shift {{ shift_type.name }}">
-                            <a class="btn btn-info btn-sm" href="{{ url_for('admin.edit_shift_type', shift_type_id=shift_type.id) }}"
-                               aria-label="Modifier le type de shift {{ shift_type.name }}" title="Modifier le type de shift">
-                                <i class="fas fa-edit" aria-hidden="true"></i>
-                            </a>
-                            <a class="btn btn-error btn-sm" href="{{ url_for('admin.delete_shift_type', shift_type_id=shift_type.id) }}"
-                               onclick="event.preventDefault(); const href = this.href; Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer le type de shift {{ shift_type.name }} ?', function() { window.location.href = href; });"
-                               aria-label="Supprimer le type de shift {{ shift_type.name }}" title="Supprimer le type de shift">
-                                <i class="fas fa-trash" aria-hidden="true"></i>
-                            </a>
+                            <div class="tooltip" data-tip="Modifier le type de shift">
+                                <a class="btn btn-info btn-sm" href="{{ url_for('admin.edit_shift_type', shift_type_id=shift_type.id) }}"
+                                   aria-label="Modifier le type de shift {{ shift_type.name }}" title="Modifier le type de shift">
+                                    <i class="fas fa-edit" aria-hidden="true"></i>
+                                </a>
+                            </div>
+                            <div class="tooltip" data-tip="Supprimer le type de shift">
+                                <a class="btn btn-error btn-sm" href="{{ url_for('admin.delete_shift_type', shift_type_id=shift_type.id) }}"
+                                   onclick="event.preventDefault(); const href = this.href; Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer le type de shift {{ shift_type.name }} ?', function() { window.location.href = href; });"
+                                   aria-label="Supprimer le type de shift {{ shift_type.name }}" title="Supprimer le type de shift">
+                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                </a>
+                            </div>
                         </div>
                     </td>
                 </tr>

@@ -4,6 +4,12 @@
 
 {% block admin_content %}
 <section class="p-4 md:p-6 max-w-6xl mx-auto">
+    <div class="breadcrumbs text-sm mb-2" aria-label="Fil d'Ariane">
+        <ul>
+            <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
+            <li>Utilisateurs</li>
+        </ul>
+    </div>
     <h1 class="text-2xl font-bold mb-4">
         <i class="fas fa-users" aria-hidden="true"></i> Gestion des utilisateurs
     </h1>
@@ -27,6 +33,7 @@
             <caption class="sr-only">Liste des utilisateurs</caption>
             <thead>
                 <tr>
+                    <th scope="col"></th>
                     <th scope="col">ID</th>
                     <th scope="col">Nom</th>
                     <th scope="col">Email</th>
@@ -38,6 +45,13 @@
             <tbody>
                 {% for user in users %}
                 <tr>
+                    <td>
+                        <div class="avatar avatar-placeholder">
+                            <div class="bg-neutral text-neutral-content w-8 h-8 rounded-full text-xs">
+                                <span aria-hidden="true">{{ user.name[:1] | upper }}</span>
+                            </div>
+                        </div>
+                    </td>
                     <td>{{ user.id }}</td>
                     <td>{{ user.name }}</td>
                     <td>{{ user.email }}</td>
@@ -51,15 +65,19 @@
                     </td>
                     <td>
                         <div class="flex gap-2" role="group" aria-label="Actions pour l'utilisateur {{ user.name }}">
-                            <a class="btn btn-warning btn-sm" href="{{ url_for('admin.edit_user', user_id=user.id) }}"
-                               aria-label="Modifier l'utilisateur {{ user.name }}" title="Modifier l'utilisateur">
-                                <i class="fas fa-edit" aria-hidden="true"></i>
-                            </a>
-                            <a class="btn btn-error btn-sm" href="{{ url_for('admin.delete_user', user_id=user.id) }}"
-                               onclick="event.preventDefault(); const href = this.href; Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer l\'utilisateur {{ user.name }} ?', function() { window.location.href = href; });"
-                               aria-label="Supprimer l'utilisateur {{ user.name }}" title="Supprimer l'utilisateur">
-                                <i class="fas fa-trash" aria-hidden="true"></i>
-                            </a>
+                            <div class="tooltip" data-tip="Modifier l'utilisateur">
+                                <a class="btn btn-warning btn-sm" href="{{ url_for('admin.edit_user', user_id=user.id) }}"
+                                   aria-label="Modifier l'utilisateur {{ user.name }}" title="Modifier l'utilisateur">
+                                    <i class="fas fa-edit" aria-hidden="true"></i>
+                                </a>
+                            </div>
+                            <div class="tooltip" data-tip="Supprimer l'utilisateur">
+                                <a class="btn btn-error btn-sm" href="{{ url_for('admin.delete_user', user_id=user.id) }}"
+                                   onclick="event.preventDefault(); const href = this.href; Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer l\'utilisateur {{ user.name }} ?', function() { window.location.href = href; });"
+                                   aria-label="Supprimer l'utilisateur {{ user.name }}" title="Supprimer l'utilisateur">
+                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                </a>
+                            </div>
                         </div>
                     </td>
                 </tr>
