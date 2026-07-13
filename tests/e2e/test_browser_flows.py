@@ -151,3 +151,58 @@ class TestIcsTokenCopyButton:
         page.wait_for_timeout(100)
 
         assert "Copié" in copy_button.inner_text()
+
+
+class TestDeleteConfirmationModal:
+    """Régression : onclick="return Leviia.confirmActionAccessible(...)"
+    appelait une modale async (ouverte, jamais bloquante) et retournait
+    donc undefined - la navigation/soumission par défaut du lien/formulaire
+    partait immédiatement, avant même que l'utilisateur clique sur
+    Confirmer/Annuler dans la modale. Invisible pour le client de test
+    Flask (n'exécute jamais de JS) - seul un vrai navigateur peut le
+    détecter, d'où ce test dans la couche E2E navigateur réel."""
+
+    def _add_leave(self, page, live_server_url, start_date, end_date):
+        page.goto(f"{live_server_url}/leave/add")
+        page.wait_for_load_state("networkidle")
+        page.select_option("select[name='user_id']", label="E2E Admin")
+        page.fill('input[name="start_date"]', start_date)
+        page.fill('input[name="end_date"]', end_date)
+        page.click('button[type="submit"]')
+        page.wait_for_load_state("networkidle")
+
+    def test_cancel_in_modal_does_not_delete(self, logged_in_page, live_server_url):
+        # Week-end : contourne la règle 6 (effectif minimum), hors sujet
+        # ici - seul un utilisateur existe dans ce serveur E2E.
+        page = logged_in_page
+        self._add_leave(page, live_server_url, "2031-03-01", "2031-03-02")
+
+        page.goto(f"{live_server_url}/leave")
+        page.wait_for_load_state("networkidle")
+        row = page.locator("tr", has_text="01/03/2031")
+        assert row.count() > 0
+
+        row.locator("a.is-danger").first.click()
+        page.wait_for_selector(".modal.is-active")
+        page.click(".modal.is-active button:has-text('Annuler')")
+        page.wait_for_timeout(200)
+
+        # Toujours sur /leave (pas de navigation déclenchée), congé toujours présent.
+        assert "/leave" in page.url
+        assert page.locator("tr", has_text="01/03/2031").count() > 0
+
+    def test_confirm_in_modal_deletes(self, logged_in_page, live_server_url):
+        page = logged_in_page
+        self._add_leave(page, live_server_url, "2031-04-05", "2031-04-06")
+
+        page.goto(f"{live_server_url}/leave")
+        page.wait_for_load_state("networkidle")
+        row = page.locator("tr", has_text="05/04/2031")
+        assert row.count() > 0
+
+        row.locator("a.is-danger").first.click()
+        page.wait_for_selector(".modal.is-active")
+        page.click(".modal.is-active button:has-text('Confirmer')")
+        page.wait_for_load_state("networkidle")
+
+        assert page.locator("tr", has_text="05/04/2031").count() == 0

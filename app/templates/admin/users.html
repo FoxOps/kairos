@@ -53,7 +53,7 @@
                                     <i class="fas fa-edit" aria-hidden="true"></i>
                                 </a>
                                 <a class="button is-small is-danger" href="{{ url_for('admin.delete_user', user_id=user.id) }}"
-                                   onclick="return Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer l\'utilisateur {{ user.name }} ?', function() { return true; }, function() { return false; });"
+                                   onclick="event.preventDefault(); const href = this.href; Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer l\'utilisateur {{ user.name }} ?', function() { window.location.href = href; });"
                                    aria-label="Supprimer l'utilisateur {{ user.name }}" title="Supprimer l'utilisateur">
                                     <i class="fas fa-trash" aria-hidden="true"></i>
                                 </a>
