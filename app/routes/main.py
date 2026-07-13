@@ -16,6 +16,7 @@ main_bp = Blueprint("main", __name__)
 # création de main_bp ci-dessus.
 from app.routes import (  # noqa: E402
     dashboard_routes,  # noqa: F401
+    dev_routes,  # noqa: F401
     leave_routes,  # noqa: F401
     oncall_routes,  # noqa: F401
     shift_routes,  # noqa: F401

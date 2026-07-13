@@ -1,20 +1,84 @@
 /* ============================================
-   TEINTE DE MARQUE - THÈMES DAISYUI "light"/"dark"
+   PALETTE DE MARQUE - DRACULA (dark) / ALUCARD (light)
    ============================================
    tailwindcss-browser (compilateur JIT, voir base.html) ne supporte pas
    les directives @plugin/@config ("does not support plugins or config
    files", testé en navigateur réel) - impossible de redéfinir un thème
    daisyUI complet via @plugin "daisyui/theme" comme documenté pour un
    usage avec build. On garde donc les thèmes "light"/"dark" intégrés de
-   daisyUI (chargés par le <link> daisyui.css dans base.html) et on ne
-   surcharge que la teinte de marque - ce fichier n'étant pas dans un
-   @layer, il gagne sur les définitions [data-theme=...] layered de
-   daisyUI quel que soit l'ordre de chargement. */
+   daisyUI (chargés par le <link> daisyui.css dans base.html) et on
+   surcharge directement les variables --color-* sous chaque
+   [data-theme=...] - ce fichier n'étant pas dans un @layer, il gagne
+   sur les définitions [data-theme=...] layered de daisyUI quel que soit
+   l'ordre de chargement.
+
+   Valeurs 100% issues de la spec officielle draculatheme.com/spec
+   (Dracula pour [data-theme="dark"], Alucard - variante claire officielle
+   - pour [data-theme="light"]), aucune teinte inventée ni dérivée par
+   calcul : Background/Current Line (opaque)/Selection donnent
+   directement les 3 niveaux de surface base-100/200/300. */
+
 [data-theme="light"] {
-    --color-primary: oklch(56% 0.1 176);
-    --color-primary-content: oklch(98% 0.01 176);
+    /* Alucard */
+    --color-base-100: #fffbeb;       /* Background */
+    --color-base-200: #e2decf;       /* Current Line (opaque) */
+    --color-base-300: #cfcfde;       /* Selection */
+    --color-base-content: #1f1f1f;   /* Foreground */
+
+    --color-primary: #644ac9;        /* Purple */
+    --color-primary-content: #fffbeb;
+    --color-secondary: #a3144d;      /* Pink */
+    --color-secondary-content: #fffbeb;
+    --color-accent: #036a96;         /* Cyan */
+    --color-accent-content: #fffbeb;
+    --color-neutral: #6c664b;        /* Comment */
+    --color-neutral-content: #fffbeb;
+
+    --color-info: #036a96;           /* Cyan */
+    --color-info-content: #fffbeb;
+    --color-success: #14710a;        /* Green */
+    --color-success-content: #fffbeb;
+    --color-warning: #a34d14;        /* Orange */
+    --color-warning-content: #fffbeb;
+    --color-error: #cb3a2a;          /* Red */
+    --color-error-content: #fffbeb;
 }
+
 [data-theme="dark"] {
-    --color-primary: oklch(70% 0.11 176);
-    --color-primary-content: oklch(15% 0.02 176);
+    /* Dracula */
+    --color-base-100: #282a36;       /* Background */
+    --color-base-200: #353747;       /* Current Line (opaque) */
+    --color-base-300: #44475a;       /* Selection */
+    --color-base-content: #f8f8f2;   /* Foreground */
+
+    --color-primary: #bd93f9;        /* Purple */
+    --color-primary-content: #282a36;
+    --color-secondary: #ff79c6;      /* Pink */
+    --color-secondary-content: #282a36;
+    --color-accent: #8be9fd;         /* Cyan */
+    --color-accent-content: #282a36;
+    --color-neutral: #6272a4;        /* Comment */
+    --color-neutral-content: #f8f8f2;
+
+    --color-info: #8be9fd;           /* Cyan */
+    --color-info-content: #282a36;
+    --color-success: #50fa7b;        /* Green */
+    --color-success-content: #282a36;
+    --color-warning: #ffb86c;        /* Orange */
+    --color-warning-content: #282a36;
+    --color-error: #ff5555;          /* Red */
+    --color-error-content: #282a36;
+}
+
+/* ============================================
+   FORME / PROFONDEUR
+   ============================================
+   Mêmes tokens pour les deux thèmes (pas de raison de varier la forme
+   par thème) - esthétique Dracula plutôt nette/plate, depth discret. */
+:root {
+    --radius-box: 1rem;
+    --radius-field: 0.75rem;
+    --radius-selector: 1rem;
+    --depth: 1;
+    --noise: 0;
 }
