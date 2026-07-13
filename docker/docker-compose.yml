@@ -3,7 +3,11 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    image: leviia-schedule:dev
+    # LEVIIA_IMAGE (dans docker/.env) pointe vers l'image du registry pour
+    # `docker compose up -d --no-build` (méthode recommandée, voir
+    # Docs/deployment/docker.md) ; par défaut, tag local utilisé par
+    # `docker compose build` (alternative dev, construction locale).
+    image: ${LEVIIA_IMAGE:-leviia-schedule:dev}
     container_name: leviia-schedule
     ports:
       - "5000:5000"
@@ -18,11 +22,14 @@ services:
       - ./logs:/app/logs
     networks:
       - leviia-network
-    depends_on:
-      oidc-mock:
-        condition: service_healthy
 
+  # Fournisseur OIDC de test, optionnel - démarré uniquement avec
+  # `docker compose --profile oidc-mock up -d` (dev/test du flux SSO en
+  # local, voir Docs/deployment/docker.md). Pas de dépendance depuis
+  # leviia-schedule : un `docker compose up -d` normal ne le démarre pas.
   oidc-mock:
+    profiles:
+      - oidc-mock
     container_name: oidc-mock
     image: ghcr.io/soluto/oidc-server-mock:latest
     ports:

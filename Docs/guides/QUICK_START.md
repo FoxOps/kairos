@@ -6,18 +6,17 @@
 
 ## 🎯 En 5 Minutes
 
-### 1️⃣ Installation (méthode recommandée : Docker)
+### 1️⃣ Installation (méthode recommandée : Docker Compose)
 
 ```bash
-docker pull harbor.leviia.com/<HARBOR_PROJECT>/leviia-schedule:latest
-mkdir -p leviia-schedule/data leviia-schedule/logs && cd leviia-schedule
+git clone https://github.com/FoxOps/leviia-schedule.git
+cd leviia-schedule/docker
 
-curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/.env.example
-nano .env  # SECRET_KEY, DEFAULT_ADMIN_PASSWORD au minimum
+cp ../.env.example .env
+nano .env  # LEVIIA_IMAGE=harbor.leviia.com/<HARBOR_PROJECT>/leviia-schedule:latest, SECRET_KEY, DEFAULT_ADMIN_PASSWORD
 
-docker run -d --name leviia-schedule -p 5000:5000 --env-file .env \
-  -v "$(pwd)/data:/app/data" -v "$(pwd)/logs:/app/logs" \
-  harbor.leviia.com/<HARBOR_PROJECT>/leviia-schedule:latest
+docker compose pull leviia-schedule
+docker compose up -d --no-build
 ```
 
 **Accès** : http://localhost:5000
