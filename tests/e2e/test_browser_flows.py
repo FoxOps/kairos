@@ -45,12 +45,14 @@ class TestLoginFlow:
 
 
 class TestNavbarBurgerMenu:
-    """Comportement JS pur (toggle hidden/aria-expanded) - jamais
-    exécuté par le client de test Flask, donc jamais vérifié avant
-    cette suite. Bug réel trouvé et corrigé en PR #103 : le burger
-    n'existait même pas. Depuis la refonte Tailwind/daisyUI, #navbar-menu
-    est le panneau mobile uniquement (masqué via la classe utilitaire
-    Tailwind "hidden", retirée/remise par navbar-menu.js) - la nav
+    """Comportement JS pur (toggle du drawer daisyUI/aria-expanded) -
+    jamais exécuté par le client de test Flask, donc jamais vérifié
+    avant cette suite. Bug réel trouvé et corrigé en PR #103 : le burger
+    n'existait même pas. Depuis la refonte visuelle Dracula/Alucard,
+    #navbar-menu (le <ul> à l'intérieur de .drawer-side) est piloté par
+    la case à cocher #mobile-drawer (mécanisme CSS natif de daisyUI) -
+    navbar-menu.js ne fait que synchroniser son état "checked" et
+    aria-expanded, pas de classe "hidden" togglée manuellement. La nav
     desktop vit dans un élément séparé, #navbar-menu-desktop (toujours
     visible à partir du breakpoint md, jamais touché par le burger)."""
 
@@ -59,20 +61,66 @@ class TestNavbarBurgerMenu:
         page.set_viewport_size({"width": 390, "height": 844})
 
         burger = page.locator("#navbar-burger")
-        menu = page.locator("#navbar-menu")
+        drawer_toggle = page.locator("#mobile-drawer")
 
         assert burger.is_visible()
-        assert "hidden" in (menu.get_attribute("class") or "").split()
+        assert not drawer_toggle.is_checked()
         assert burger.get_attribute("aria-expanded") == "false"
 
         burger.click()
         page.wait_for_timeout(200)
-        assert "hidden" not in (menu.get_attribute("class") or "").split()
+        assert drawer_toggle.is_checked()
         assert burger.get_attribute("aria-expanded") == "true"
+
+        # Le panneau ouvert (.drawer-side, z-50, position fixed) recouvre
+        # délibérément le burger à l'écran (comportement daisyUI standard,
+        # pas un bug) - le geste réaliste pour refermer à la souris est de
+        # cliquer l'overlay généré par daisyUI (<label for="mobile-drawer">),
+        # pas de recliquer le burger au même pixel. Position explicite dans
+        # la zone assombrie (hors du panneau w-72) : le centre géométrique
+        # par défaut de l'overlay (qui couvre tout le viewport) tombe sous
+        # le <ul> du menu, qui intercepterait le clic. Vérifie au passage
+        # que navbar-menu.js resynchronise bien aria-expanded même quand la
+        # case est décochée par autre chose que le clic direct sur le burger.
+        page.locator(".drawer-overlay").click(position={"x": 350, "y": 400})
+        page.wait_for_timeout(200)
+        assert not drawer_toggle.is_checked()
+        assert burger.get_attribute("aria-expanded") == "false"
+
+    def test_burger_toggles_via_keyboard(self, logged_in_page):
+        page = logged_in_page
+        page.set_viewport_size({"width": 390, "height": 844})
+
+        burger = page.locator("#navbar-burger")
+        drawer_toggle = page.locator("#mobile-drawer")
+
+        burger.focus()
+        page.keyboard.press("Enter")
+        page.wait_for_timeout(200)
+        assert drawer_toggle.is_checked()
+        assert burger.get_attribute("aria-expanded") == "true"
+
+        page.keyboard.press("Enter")
+        page.wait_for_timeout(200)
+        assert not drawer_toggle.is_checked()
+        assert burger.get_attribute("aria-expanded") == "false"
+
+    def test_escape_closes_menu_and_refocuses_burger(self, logged_in_page):
+        page = logged_in_page
+        page.set_viewport_size({"width": 390, "height": 844})
+
+        burger = page.locator("#navbar-burger")
+        drawer_toggle = page.locator("#mobile-drawer")
 
         burger.click()
         page.wait_for_timeout(200)
-        assert "hidden" in (menu.get_attribute("class") or "").split()
+        assert drawer_toggle.is_checked()
+
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(200)
+        assert not drawer_toggle.is_checked()
+        assert burger.get_attribute("aria-expanded") == "false"
+        assert page.evaluate("document.activeElement.id") == "navbar-burger"
 
     def test_burger_hidden_on_desktop_viewport(self, logged_in_page):
         page = logged_in_page

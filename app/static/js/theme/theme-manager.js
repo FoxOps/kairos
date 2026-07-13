@@ -94,27 +94,20 @@ export class ThemeManager {
     }
 
     /**
-     * Met à jour le bouton toggle.
+     * Met à jour le bouton toggle (icône soleil/lune daisyUI `swap`).
      * @param {boolean} isDark - True si le thème sombre est actif
      */
     updateToggleButton(isDark) {
         if (!this.toggleBtn) return;
 
-        // Font Awesome (mode SVG+JS, voir base.html) remplace le <i>
-        // d'origine par un <svg> une fois converti - il en conserve
-        // toutefois les classes (fa-moon/fa-sun), donc cibler par classe
-        // plutôt que par balise fonctionne avant et après conversion.
-        const icon = this.toggleBtn.querySelector('.fa-moon, .fa-sun');
         this.toggleBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
-        if (!icon) return;
 
-        if (isDark) {
-            icon.classList.remove('fa-moon');
-            icon.classList.add('fa-sun');
-        } else {
-            icon.classList.remove('fa-sun');
-            icon.classList.add('fa-moon');
-        }
+        // `.swap` daisyUI sans <input> (bouton, pas une case à cocher) -
+        // piloté par la classe `swap-active` plutôt qu'un état :checked.
+        // Les icônes elles-même (.swap-on/.swap-off) gardent leurs classes
+        // après conversion Font Awesome SVG+JS (voir base.html), seul le
+        // conteneur .swap a besoin d'être manipulé ici.
+        this.toggleBtn.classList.toggle('swap-active', isDark);
     }
 
     /**
