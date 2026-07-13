@@ -4,6 +4,13 @@
 
 {% block content %}
 <div class="p-4 md:p-6 max-w-4xl mx-auto">
+    <div class="breadcrumbs text-sm mb-2" aria-label="Fil d'Ariane">
+        <ul>
+            <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
+            <li><a href="{{ url_for('admin.automation_dashboard') }}">Automatisation</a></li>
+            <li>Rafraîchir les shifts</li>
+        </ul>
+    </div>
     <h1 class="text-2xl font-bold mb-4">
         <i class="fas fa-sync-alt" aria-hidden="true"></i> Rafraîchir les Shifts
     </h1>
