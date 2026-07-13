@@ -68,6 +68,16 @@ class TestAutomationFull:
             follow_redirects=True,
         )
         assert response.status_code == 200
+        # Régression bug 1 : le dry-run rendait auparavant un template
+        # inexistant (oncall_dry_run.html), silencieusement remplacé par
+        # un flash d'erreur générique. Vérifie que la vraie page de
+        # prévisualisation (astreintes + shifts) s'affiche.
+        assert b"Pr\xc3\xa9visualisation" in response.data
+        assert b"Astreintes" in response.data
+        assert b"Shifts" in response.data
+        # Le bouton de confirmation doit porter l'ordre de rotation soumis
+        # (bug annexe : il était perdu au moment de confirmer).
+        assert f'name="rotation_order_{test_user.id}"'.encode() in response.data
 
     def test_automation_full_post_invalid_date(self, logged_in_client, test_user):
         """Test l'automatisation complète avec des dates invalides."""

@@ -150,6 +150,10 @@
                     <input type="hidden" name="action" value="generate">
                     <input type="hidden" name="start_date" value="{{ start_date.strftime('%Y-%m-%d') }}">
                     <input type="hidden" name="end_date" value="{{ end_date.strftime('%Y-%m-%d') }}">
+                    {% for user_id in rotation_order_ids %}
+                    <input type="hidden" name="rotation_order_{{ user_id }}" value="{{ loop.index }}">
+                    <input type="hidden" name="include_{{ user_id }}" value="1">
+                    {% endfor %}
                     <button type="submit" class="button is-primary">
                         <i class="fas fa-save"></i>&nbsp; Confirmer et sauvegarder tout
                     </button>

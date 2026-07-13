@@ -3,12 +3,13 @@ Tests pour le module d'automatisation avancée des shifts.
 """
 
 from datetime import date, datetime, timedelta
+from unittest.mock import patch
 
 from werkzeug.security import generate_password_hash
 
 from app import db
-from app.models import Group, Leave, OnCall, Shift, ShiftType, User
-from app.utils.automation import AdvancedShiftAutomation
+from app.models import AutomationConfig, Group, Leave, OnCall, Shift, ShiftType, User
+from app.utils.automation import AdvancedShiftAutomation, OnCallAutomation
 
 
 class TestAdvancedShiftAutomationBasics:
@@ -213,6 +214,44 @@ class TestDetermineShiftForUser:
             )
 
             assert shift_hours == AdvancedShiftAutomation.SHIFT_09_17
+
+    def test_determine_shift_uses_passed_in_oncall_data_without_requerying(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Régression bug 6 : quand oncall_today/oncall_user_last_week sont
+        fournis par l'appelant, determine_shift_for_user ne doit pas
+        re-requêter OnCall lui-même. On le vérifie en passant des valeurs
+        délibérément fausses (incohérentes avec l'état réel en base) et en
+        constatant qu'elles sont bien celles utilisées pour la décision."""
+        with test_app.app_context():
+            test_date = date(2023, 12, 15)  # vendredi, aucune astreinte réelle
+
+            # oncall_today mock : test_user est "d'astreinte" ce jour selon
+            # la valeur fournie, alors qu'il n'y a aucune astreinte réelle
+            # en base pour cette date.
+            fake_oncall = OnCall(
+                user_id=test_user.id,
+                start_time=datetime.combine(test_date, datetime.min.time()),
+                end_time=datetime.combine(test_date, datetime.min.time())
+                + timedelta(hours=7),
+            )
+            # Vendredi -> règle 1 retombe toujours sur SHIFT_09_17 (premier/
+            # dernier jour d'astreinte), donc on vérifie plutôt un mardi.
+            tuesday = date(2023, 12, 12)
+            fake_oncall.start_time = datetime.combine(tuesday, datetime.min.time())
+            fake_oncall.end_time = fake_oncall.start_time + timedelta(hours=7)
+
+            shift_hours = AdvancedShiftAutomation.determine_shift_for_user(
+                test_user,
+                tuesday,
+                oncall_today=fake_oncall,
+                oncall_user_last_week=None,
+            )
+
+            # Si la méthode ignorait l'argument et re-requêtait la base
+            # (où aucune astreinte n'existe), elle retomberait sur
+            # SHIFT_09_17 (règle 3) au lieu de SHIFT_13_21 (règle 1).
+            assert shift_hours == AdvancedShiftAutomation.SHIFT_13_21
 
 
 class TestHandleTwoUsersCase:
@@ -526,6 +565,42 @@ class TestRebalanceAfterLeave:
                 for msg in messages
             )
 
+    def test_rebalance_after_leave_uses_configured_rotation_order(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Le rééquilibrage doit respecter l'ordre de rotation configuré
+        (AutomationConfig) plutôt que de retomber sur l'ordre alphabétique
+        (rotation_order_ids=None en dur - bug corrigé)."""
+        with test_app.app_context():
+            AutomationConfig.set_rotation_order([second_user.id, test_user.id])
+
+            friday = date(2023, 12, 15)
+            start_time = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+            end_time = start_time + timedelta(days=7, hours=-14)
+            oncall = OnCall(
+                user_id=test_user.id, start_time=start_time, end_time=end_time
+            )
+            db.session.add(oncall)
+
+            leave = Leave(
+                user_id=test_user.id,
+                start_date=date(2023, 12, 16),
+                end_date=date(2023, 12, 18),
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            with patch(
+                "app.utils.automation.OnCallAutomation.generate_oncall_schedule",
+                wraps=OnCallAutomation.generate_oncall_schedule,
+            ) as mocked_generate:
+                AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
+
+            assert mocked_generate.call_args.kwargs["rotation_order_ids"] == [
+                second_user.id,
+                test_user.id,
+            ]
+
     def test_rebalance_after_leave_no_overlap(self, test_app, test_group, test_user):
         """Test le rééquilibrage avec un congé qui ne chevauche rien."""
         with test_app.app_context():
@@ -544,63 +619,3 @@ class TestRebalanceAfterLeave:
 
             # Doit générer des messages mais pas de suppression
             assert len(messages) > 0
-
-
-class TestOnCallConstraint:
-    """Tests pour la contrainte légale des astreintes."""
-
-    def test_check_oncall_constraint_first_oncall(self, test_app, test_user):
-        """Test qu'un utilisateur sans astreinte précédente passe la vérification."""
-        with test_app.app_context():
-            test_date = date(2023, 12, 15)
-            result = AdvancedShiftAutomation.check_oncall_constraint(
-                test_user, test_date
-            )
-
-            assert result is True
-
-    def test_check_oncall_constraint_sufficient_gap(self, test_app, test_user):
-        """Test qu'un utilisateur avec un écart suffisant passe la vérification."""
-        with test_app.app_context():
-            # Créer une astreinte il y a 3 semaines
-            old_friday = date(2023, 11, 24)  # vendredi
-            start_time = datetime.combine(old_friday, datetime.min.time()).replace(
-                hour=21
-            )
-            end_time = start_time + timedelta(days=7, hours=-14)
-            oncall = OnCall(
-                user_id=test_user.id, start_time=start_time, end_time=end_time
-            )
-            db.session.add(oncall)
-            db.session.commit()
-
-            # Vérifier pour une nouvelle astreinte
-            test_date = date(2023, 12, 15)  # 3 semaines plus tard
-            result = AdvancedShiftAutomation.check_oncall_constraint(
-                test_user, test_date
-            )
-
-            assert result is True
-
-    def test_check_oncall_constraint_insufficient_gap(self, test_app, test_user):
-        """Test qu'un utilisateur avec un écart insuffisant échoue la vérification."""
-        with test_app.app_context():
-            # Créer une astreinte la semaine dernière
-            last_friday = date(2023, 12, 8)  # vendredi
-            start_time = datetime.combine(last_friday, datetime.min.time()).replace(
-                hour=21
-            )
-            end_time = start_time + timedelta(days=7, hours=-14)
-            oncall = OnCall(
-                user_id=test_user.id, start_time=start_time, end_time=end_time
-            )
-            db.session.add(oncall)
-            db.session.commit()
-
-            # Vérifier pour une nouvelle astreinte (seulement 1 semaine d'écart)
-            test_date = date(2023, 12, 15)  # 1 semaine plus tard
-            result = AdvancedShiftAutomation.check_oncall_constraint(
-                test_user, test_date
-            )
-
-            assert result is False

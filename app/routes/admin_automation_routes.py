@@ -99,12 +99,31 @@ def automation_full():
                 )
 
                 if dry_run:
+                    # Note : la prévisualisation des shifts se base sur les
+                    # astreintes déjà en base pour la période (le dry_run
+                    # des astreintes ci-dessus ne sauvegarde rien) - elle
+                    # peut donc différer du résultat final si aucune
+                    # astreinte n'existe encore pour cette période.
+                    shifts, shift_messages = (
+                        AdvancedShiftAutomation.generate_full_schedule(
+                            start_date, end_date, dry_run=True
+                        )
+                    )
                     return render_template(
-                        "admin/automation/oncall_dry_run.html",
-                        oncalls=oncalls,
-                        messages=oncall_messages,
+                        "admin/automation/full_dry_run.html",
+                        result={
+                            "oncall": {
+                                "generated": oncalls,
+                                "messages": oncall_messages,
+                            },
+                            "shift": {
+                                "generated": shifts,
+                                "messages": shift_messages,
+                            },
+                        },
                         start_date=start_date,
                         end_date=end_date,
+                        rotation_order_ids=rotation_order_ids,
                     )
                 else:
                     shifts, shift_messages = (

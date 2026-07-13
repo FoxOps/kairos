@@ -14,6 +14,9 @@ from app.models import Leave, User
 from app.repositories.leave_repository import LeaveRepository
 from app.utils.automation.advanced_shift_automation import AdvancedShiftAutomation
 from app.utils.helpers import can_add_leave
+from app.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class LeaveService:
@@ -66,14 +69,20 @@ class LeaveService:
     @staticmethod
     def api_update(
         leave_id: int, new_start_date: date, new_end_date: date
-    ) -> tuple[Leave | None, str | None]:
-        """Met à jour un congé depuis l'API drag & drop. Returns (leave, error_message)."""
+    ) -> tuple[Leave | None, str | None, bool]:
+        """Met à jour un congé depuis l'API drag & drop.
+
+        Returns:
+            (leave, error_message, rebalance_failed). rebalance_failed est
+            True si le congé a bien été mis à jour mais que le
+            rééquilibrage automatique des shifts a échoué.
+        """
         leave = LeaveRepository.get_by_id(leave_id)
         if not leave:
-            return None, "Congé non trouvé"
+            return None, "Congé non trouvé", False
 
         if new_end_date < new_start_date:
-            return None, "La date de fin doit être après la date de début"
+            return None, "La date de fin doit être après la date de début", False
 
         conflict = LeaveRepository.find_conflict(
             leave.user_id, new_start_date, new_end_date, exclude_id=leave_id
@@ -82,24 +91,26 @@ class LeaveService:
             return (
                 None,
                 f"Un congé existe déjà pour {leave.user.name} pendant cette période",
+                False,
             )
 
         leave.start_date = new_start_date
         leave.end_date = new_end_date
         db.session.commit()
 
-        LeaveService._rebalance_after_leave(leave)
-        return leave, None
+        regenerated_shifts = LeaveService._rebalance_after_leave(leave)
+        return leave, None, regenerated_shifts is None
 
     @staticmethod
-    def api_delete(leave_id: int) -> bool:
+    def api_delete(leave_id: int) -> tuple[bool, bool]:
+        """Returns (deleted, rebalance_failed)."""
         leave = LeaveRepository.get_by_id(leave_id)
         if not leave:
-            return False
+            return False, False
         LeaveRepository.delete(leave)
         db.session.commit()
-        LeaveService._rebalance_after_leave(leave)
-        return True
+        regenerated_shifts = LeaveService._rebalance_after_leave(leave)
+        return True, regenerated_shifts is None
 
     @staticmethod
     def _rebalance_after_leave(leave: Leave) -> list | None:
@@ -110,4 +121,8 @@ class LeaveService:
             )
             return regenerated_shifts
         except Exception:
+            logger.exception(
+                "Échec du rééquilibrage automatique des shifts après congé id=%s",
+                leave.id,
+            )
             return None

@@ -15,6 +15,13 @@ if TYPE_CHECKING:
     # outil qui les résout (mypy, typing.get_type_hints()).
     from app.models import Leave, OnCall, ShiftType, User
 
+# Sentinel distinct de None : None est une valeur valide (aucune astreinte
+# ce jour-là) pour oncall_today/oncall_user_last_week dans
+# determine_shift_for_user - il faut donc un marqueur séparé pour détecter
+# "argument non fourni, calcule-le toi-même" (comportement historique,
+# préservé pour les appelants qui invoquent la méthode isolément).
+_UNSET: "object" = object()
+
 
 class AdvancedShiftAutomation:
     """
@@ -125,41 +132,12 @@ class AdvancedShiftAutomation:
         return oncall.user if oncall else None
 
     @staticmethod
-    def check_oncall_constraint(user: "User", date: "date") -> bool:
-        """
-        Vérifie la contrainte légale : pas 2 astreintes de suite.
-        Il doit y avoir au moins 2 semaines sans astreinte entre deux astreintes.
-        """
-        from datetime import datetime, timedelta
-
-        from app import db
-        from app.models import OnCall
-
-        # Optimisation : utiliser une requête avec limit(1) et order_by pour éviter de charger tous les résultats
-        last_oncall = (
-            db.session.query(OnCall)
-            .filter_by(user_id=user.id)
-            .order_by(OnCall.start_time.desc())
-            .first()
-        )
-
-        if not last_oncall:
-            return True
-
-        last_end = last_oncall.end_time
-
-        # Trouver le vendredi de la semaine de la date
-        friday_date = date
-        while friday_date.weekday() != 4:
-            friday_date += timedelta(days=1)
-
-        new_start = datetime.combine(friday_date, datetime.min.time()).replace(hour=21)
-
-        weeks_between = (new_start - last_end).days / 7
-        return weeks_between >= 2
-
-    @staticmethod
-    def determine_shift_for_user(user: "User", date: "date") -> "tuple[int, int]":
+    def determine_shift_for_user(
+        user: "User",
+        date: "date",
+        oncall_today: "OnCall | None | object" = _UNSET,
+        oncall_user_last_week: "User | None | object" = _UNSET,
+    ) -> "tuple[int, int]":
         """
         Détermine le créneau de shift pour un utilisateur à une date donnée.
 
@@ -170,11 +148,20 @@ class AdvancedShiftAutomation:
            - Le vendredi (dernier jour de l'astreinte) -> 09h-17h (par défaut)
         2. Si l'utilisateur était d'astreinte la semaine précédente (et pas cette semaine) -> 07h-15h (rotation)
         3. Sinon -> 09h-17h
+
+        `oncall_today`/`oncall_user_last_week` : passés par l'appelant (une
+        seule requête par jour dans generate_daily_shifts) au lieu d'être
+        requêtés une fois par utilisateur - ils restent optionnels pour les
+        appelants qui invoquent cette méthode isolément (tests notamment).
         """
         from datetime import timedelta
+        from typing import cast
 
         # Règle 1 : Vérifier si l'utilisateur est d'astreinte cette semaine
-        oncall = AdvancedShiftAutomation.get_oncall_for_date(date)
+        if oncall_today is _UNSET:
+            oncall = AdvancedShiftAutomation.get_oncall_for_date(date)
+        else:
+            oncall = cast("OnCall | None", oncall_today)
         if oncall and oncall.user_id == user.id:
             # Vérifier si c'est le premier jour ouvré de l'astreinte (lundi)
             # ou le dernier jour (vendredi, fin de l'astreinte à 07h)
@@ -196,10 +183,13 @@ class AdvancedShiftAutomation:
                 return AdvancedShiftAutomation.SHIFT_13_21
 
         # Règle 2 : Vérifier si l'utilisateur était d'astreinte la semaine précédente
-        previous_week_date = date - timedelta(days=7)
-        previous_oncall_user = AdvancedShiftAutomation.get_oncall_user_for_date(
-            previous_week_date
-        )
+        if oncall_user_last_week is _UNSET:
+            previous_week_date = date - timedelta(days=7)
+            previous_oncall_user = AdvancedShiftAutomation.get_oncall_user_for_date(
+                previous_week_date
+            )
+        else:
+            previous_oncall_user = cast("User | None", oncall_user_last_week)
         if previous_oncall_user and previous_oncall_user.id == user.id:
             return AdvancedShiftAutomation.SHIFT_07_15
 
@@ -235,7 +225,7 @@ class AdvancedShiftAutomation:
         date: "date", dry_run: bool = False
     ) -> "tuple[list, list]":
         """Génère les shifts pour une journée selon les nouvelles règles."""
-        from datetime import datetime
+        from datetime import datetime, timedelta
 
         from app import db
         from app.models import Shift
@@ -297,12 +287,21 @@ class AdvancedShiftAutomation:
         available_user_ids = {user.id for user in available_users}
         schedule_users = AdvancedShiftAutomation.get_users_in_schedule_groups()
 
+        # Récupérées une seule fois pour la journée (au lieu d'une requête
+        # OnCall par utilisateur dans determine_shift_for_user - l'astreinte
+        # du jour ne dépend pas de l'utilisateur itéré).
+        oncall_today = AdvancedShiftAutomation.get_oncall_for_date(date)
+        previous_week_date = date - timedelta(days=7)
+        oncall_user_last_week = AdvancedShiftAutomation.get_oncall_user_for_date(
+            previous_week_date
+        )
+
         for user in schedule_users:
             if user.id not in available_user_ids:
                 continue
 
             start_hour, end_hour = AdvancedShiftAutomation.determine_shift_for_user(
-                user, date
+                user, date, oncall_today, oncall_user_last_week
             )
             shift_type = AdvancedShiftAutomation.get_shift_type_by_hours(
                 start_hour, end_hour
@@ -482,12 +481,13 @@ class AdvancedShiftAutomation:
         if oncall_periods_to_regenerate and not dry_run:
             try:
                 # Utiliser la même période que pour les shifts
+                from app.models import AutomationConfig
                 from app.utils.automation import OnCallAutomation
 
                 oncalls, oncall_messages = OnCallAutomation.generate_oncall_schedule(
                     shift_period_start,
                     shift_period_end,
-                    rotation_order_ids=None,
+                    rotation_order_ids=AutomationConfig.get_rotation_order(),
                     dry_run=False,
                 )
                 regenerated_oncalls.extend(oncalls)
