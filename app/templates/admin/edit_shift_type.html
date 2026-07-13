@@ -3,14 +3,14 @@
 {% block title %}Modifier un type de shift - Administration{% endblock %}
 
 {% block admin_content %}
-<section class="p-4 md:p-6 max-w-2xl mx-auto">
+<section class="p-3 md:p-4 max-w-2xl mx-auto">
     <h1 class="text-2xl font-bold mb-4">
         <i class="fas fa-edit" aria-hidden="true"></i> Modifier un type de shift
     </h1>
 
     <form method="POST" action="{{ url_for('admin.edit_shift_type', shift_type_id=shift_type.id) }}" aria-labelledby="form-title">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="card bg-base-100 shadow-md">
+        <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body gap-4">
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">Nom *</legend>

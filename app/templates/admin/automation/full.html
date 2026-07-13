@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block admin_content %}
-<section class="p-4 md:p-6 max-w-4xl mx-auto">
+<section class="p-3 md:p-4 max-w-4xl mx-auto">
     <div class="breadcrumbs text-sm mb-2" aria-label="Fil d'Ariane">
         <ul>
             <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
@@ -19,7 +19,7 @@
         <p><i class="fas fa-info-circle"></i> Configurez l'ordre de rotation et générez automatiquement les astreintes. Les shifts seront générés automatiquement après selon les nouvelles règles métiers.</p>
     </div>
 
-    <div class="card bg-base-100 shadow-md mb-6">
+    <div class="card card-sm bg-base-100 shadow-md mb-4">
         <div class="card-body">
             <h2 class="text-lg font-semibold"><i class="fas fa-users" aria-hidden="true"></i> Utilisateurs éligibles pour les astreintes</h2>
 
@@ -121,7 +121,7 @@
                     </ol>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                     <div>
                         <label class="label">Date de début</label>
                         <input class="input w-full" type="date" name="start_date"
@@ -178,7 +178,7 @@
         </div>
     </div>
 
-    <div class="card bg-base-100 shadow-md">
+    <div class="card card-sm bg-base-100 shadow-md">
         <div class="card-body">
             <h2 class="text-lg font-semibold"><i class="fas fa-question-circle" aria-hidden="true"></i> Comment ça marche ?</h2>
             <ol class="list-decimal list-inside flex flex-col gap-1">

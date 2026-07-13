@@ -1,11 +1,11 @@
 {% extends "admin/base_admin.html" %}
 
 {% block admin_content %}
-<section class="p-4 md:p-6 max-w-6xl mx-auto">
+<section class="p-3 md:p-4 max-w-6xl mx-auto">
     <h1 class="text-2xl font-bold mb-4"><i class="fas fa-tachometer-alt" aria-hidden="true"></i> Tableau de bord Admin</h1>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <div class="card bg-base-100 shadow-md">
+        <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
                 <h2 class="font-semibold"><i class="fas fa-users" aria-hidden="true"></i> Utilisateurs</h2>
                 <p>Nombre total : {{ users_count }}</p>
@@ -16,7 +16,7 @@
             </div>
         </div>
 
-        <div class="card bg-base-100 shadow-md">
+        <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
                 <h2 class="font-semibold"><i class="fas fa-user-friends" aria-hidden="true"></i> Groupes</h2>
                 <p>Nombre total : {{ groups_count }}</p>
@@ -27,7 +27,7 @@
             </div>
         </div>
 
-        <div class="card bg-base-100 shadow-md">
+        <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
                 <h2 class="font-semibold"><i class="fas fa-calendar-alt" aria-hidden="true"></i> Shifts</h2>
                 <p>Nombre total : {{ shifts_count }}</p>
@@ -38,7 +38,7 @@
             </div>
         </div>
 
-        <div class="card bg-base-100 shadow-md">
+        <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
                 <h2 class="font-semibold"><i class="fas fa-cogs" aria-hidden="true"></i> Types de shifts</h2>
                 <p>Gérer les types</p>
@@ -49,7 +49,7 @@
             </div>
         </div>
 
-        <div class="card bg-base-100 shadow-md">
+        <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
                 <h2 class="font-semibold"><i class="fas fa-moon" aria-hidden="true"></i> Astreintes</h2>
                 <p>Nombre total : {{ on_calls_count }}</p>
@@ -60,7 +60,7 @@
             </div>
         </div>
 
-        <div class="card bg-base-100 shadow-md">
+        <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
                 <h2 class="font-semibold"><i class="fas fa-umbrella-beach" aria-hidden="true"></i> Congés</h2>
                 <p>Nombre total : {{ leaves_count }}</p>
@@ -71,7 +71,7 @@
             </div>
         </div>
 
-        <div class="card bg-base-100 shadow-md">
+        <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
                 <h2 class="font-semibold"><i class="fas fa-robot" aria-hidden="true"></i> Automatisation</h2>
                 <p>Génération automatique</p>
@@ -82,7 +82,7 @@
             </div>
         </div>
 
-        <div class="card bg-base-100 shadow-md">
+        <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
                 <h2 class="font-semibold"><i class="fas fa-database" aria-hidden="true"></i> Sauvegardes</h2>
                 <p>Local &amp; S3</p>
@@ -94,7 +94,7 @@
         </div>
     </div>
 
-    <div class="card bg-base-100 shadow-md">
+    <div class="card card-sm bg-base-100 shadow-md">
         <div class="card-body">
             <h2 class="font-semibold"><i class="fas fa-bolt" aria-hidden="true"></i> Actions rapides</h2>
             <div class="flex flex-wrap gap-2" role="group" aria-label="Actions rapides administrateur">

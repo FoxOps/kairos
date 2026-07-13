@@ -1,7 +1,7 @@
 {% extends "admin/base_admin.html" %}
 
 {% block admin_content %}
-<section class="p-4 md:p-6 max-w-6xl mx-auto">
+<section class="p-3 md:p-4 max-w-6xl mx-auto">
     <div class="breadcrumbs text-sm mb-2" aria-label="Fil d'Ariane">
         <ul>
             <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
@@ -21,8 +21,8 @@
         <p><i class="fas fa-info-circle"></i> Ce module permet de générer automatiquement les astreintes. Les shifts sont générés automatiquement après les astreintes selon les règles métiers.</p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div class="card bg-base-100 shadow-md">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+        <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
                 <h2 class="text-lg font-semibold"><i class="fas fa-cogs" aria-hidden="true"></i> Génération complète</h2>
                 <p>Générer les astreintes. Les shifts seront automatiquement générés selon les règles métiers.</p>
@@ -34,7 +34,7 @@
             </div>
         </div>
 
-        <div class="card bg-base-100 shadow-md">
+        <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
                 <h2 class="text-lg font-semibold"><i class="fas fa-sync-alt" aria-hidden="true"></i> Rafraîchir Shifts</h2>
                 <p>Recalculer les shifts en tenant compte des astreintes actuelles (même modifiées manuellement).</p>

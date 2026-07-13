@@ -1,7 +1,7 @@
 {% extends "admin/base_admin.html" %}
 
 {% block admin_content %}
-<section class="p-4 md:p-6 max-w-6xl mx-auto">
+<section class="p-3 md:p-4 max-w-6xl mx-auto">
     <div class="breadcrumbs text-sm mb-2" aria-label="Fil d'Ariane">
         <ul>
             <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
@@ -23,10 +23,10 @@
     </div>
     {% endif %}
 
-    <div class="card bg-base-100 shadow-md mb-6">
+    <div class="card card-sm bg-base-100 shadow-md mb-4">
         <div class="card-body">
             <h2 class="text-lg font-semibold"><i class="fas fa-info-circle" aria-hidden="true"></i> Configuration</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div>
                     <p><strong>Sauvegardes automatiques</strong></p>
                     <p>{{ "Activées" if config.enabled else "Désactivées" }}</p>
@@ -63,7 +63,7 @@
         </div>
     </div>
 
-    <div class="card bg-base-100 shadow-md mb-6">
+    <div class="card card-sm bg-base-100 shadow-md mb-4">
         <div class="card-body">
             <h2 class="text-lg font-semibold"><i class="fas fa-hdd" aria-hidden="true"></i> Sauvegardes locales</h2>
             {% if local_backups %}
@@ -100,7 +100,7 @@
         </div>
     </div>
 
-    <div class="card bg-base-100 shadow-md">
+    <div class="card card-sm bg-base-100 shadow-md">
         <div class="card-body">
             <h2 class="text-lg font-semibold"><i class="fas fa-cloud" aria-hidden="true"></i> Sauvegardes S3</h2>
             {% if s3_backups %}
