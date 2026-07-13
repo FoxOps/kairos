@@ -40,17 +40,25 @@ class TestUserRepository:
         names = [u.name for u in UserRepository.get_all()]
         assert names == sorted(names)
 
-    def test_get_for_schedule_group_excludes_other_groups(self, test_app, test_group, group_not_in_schedule):
+    def test_get_for_schedule_group_excludes_other_groups(
+        self, test_app, test_group, group_not_in_schedule
+    ):
         UserRepository.create("In Schedule", "in@test.com", test_group.id)
-        UserRepository.create("Not In Schedule", "out@test.com", group_not_in_schedule.id)
+        UserRepository.create(
+            "Not In Schedule", "out@test.com", group_not_in_schedule.id
+        )
         db.session.commit()
         emails = [u.email for u in UserRepository.get_for_schedule_group()]
         assert "in@test.com" in emails
         assert "out@test.com" not in emails
 
-    def test_get_for_oncall_group_excludes_other_groups(self, test_app, test_group, group_not_in_schedule):
+    def test_get_for_oncall_group_excludes_other_groups(
+        self, test_app, test_group, group_not_in_schedule
+    ):
         UserRepository.create("In Oncall", "in-oc@test.com", test_group.id)
-        UserRepository.create("Not In Oncall", "out-oc@test.com", group_not_in_schedule.id)
+        UserRepository.create(
+            "Not In Oncall", "out-oc@test.com", group_not_in_schedule.id
+        )
         db.session.commit()
         emails = [u.email for u in UserRepository.get_for_oncall_group()]
         assert "in-oc@test.com" in emails
@@ -61,7 +69,10 @@ class TestUserRepository:
         assert UserRepository.email_taken("free@test.com") is False
 
     def test_email_taken_excludes_own_id(self, test_app, test_user):
-        assert UserRepository.email_taken(test_user.email, exclude_id=test_user.id) is False
+        assert (
+            UserRepository.email_taken(test_user.email, exclude_id=test_user.id)
+            is False
+        )
 
     def test_exists_for_group(self, test_app, test_group, group_not_in_schedule):
         assert UserRepository.exists_for_group(test_group.id) is False
@@ -97,7 +108,10 @@ class TestGroupRepository:
         assert GroupRepository.name_taken("Unused Name") is False
 
     def test_name_taken_excludes_own_id(self, test_app, test_group):
-        assert GroupRepository.name_taken(test_group.name, exclude_id=test_group.id) is False
+        assert (
+            GroupRepository.name_taken(test_group.name, exclude_id=test_group.id)
+            is False
+        )
 
     def test_create_and_delete(self, test_app):
         group = GroupRepository.create("Temp Group", False, True)
@@ -146,10 +160,14 @@ class TestShiftRepository:
         assert conflict.id == test_shift.id
 
     def test_find_conflict_excludes_own_id(self, test_app, test_user, test_shift):
-        conflict = ShiftRepository.find_conflict(test_user.id, test_shift.date, exclude_id=test_shift.id)
+        conflict = ShiftRepository.find_conflict(
+            test_user.id, test_shift.date, exclude_id=test_shift.id
+        )
         assert conflict is None
 
-    def test_find_conflict_none_on_different_date(self, test_app, test_user, test_shift):
+    def test_find_conflict_none_on_different_date(
+        self, test_app, test_user, test_shift
+    ):
         other_date = test_shift.date + timedelta(days=1)
         assert ShiftRepository.find_conflict(test_user.id, other_date) is None
 
@@ -161,11 +179,15 @@ class TestShiftRepository:
         assert ShiftRepository.exists_for_user(test_user.id) is True
         assert ShiftRepository.exists_for_user(second_user.id) is False
 
-    def test_exists_for_shift_type(self, test_app, test_shift_type, afternoon_shift_type, test_shift):
+    def test_exists_for_shift_type(
+        self, test_app, test_shift_type, afternoon_shift_type, test_shift
+    ):
         assert ShiftRepository.exists_for_shift_type(test_shift_type.id) is True
         assert ShiftRepository.exists_for_shift_type(afternoon_shift_type.id) is False
 
-    def test_delete_in_date_range(self, test_app, test_user, test_shift_type, test_shift):
+    def test_delete_in_date_range(
+        self, test_app, test_user, test_shift_type, test_shift
+    ):
         deleted = ShiftRepository.delete_in_date_range(test_shift.date, test_shift.date)
         db.session.commit()
         assert deleted == 1
@@ -184,7 +206,9 @@ class TestShiftRepository:
     def test_create(self, test_app, test_user, test_shift_type):
         start = datetime.combine(date.today(), datetime.min.time())
         end = start + timedelta(hours=8)
-        shift = ShiftRepository.create(test_user.id, test_shift_type.id, start, end, date.today())
+        shift = ShiftRepository.create(
+            test_user.id, test_shift_type.id, start, end, date.today()
+        )
         db.session.commit()
         assert ShiftRepository.get_by_id(shift.id) is not None
 
@@ -207,7 +231,10 @@ class TestLeaveRepository:
 
     def test_find_conflict_excludes_own_id(self, test_app, test_user, test_leave):
         conflict = LeaveRepository.find_conflict(
-            test_user.id, test_leave.start_date, test_leave.end_date, exclude_id=test_leave.id
+            test_user.id,
+            test_leave.start_date,
+            test_leave.end_date,
+            exclude_id=test_leave.id,
         )
         assert conflict is None
 
@@ -216,13 +243,17 @@ class TestLeaveRepository:
         conflict = LeaveRepository.find_conflict(test_user.id, far_future, far_future)
         assert conflict is None
 
-    def test_count_and_exists_for_user(self, test_app, test_user, second_user, test_leave):
+    def test_count_and_exists_for_user(
+        self, test_app, test_user, second_user, test_leave
+    ):
         assert LeaveRepository.count_for_user(test_user.id) == 1
         assert LeaveRepository.exists_for_user(test_user.id) is True
         assert LeaveRepository.exists_for_user(second_user.id) is False
 
     def test_create_and_delete(self, test_app, test_user):
-        leave = LeaveRepository.create(test_user.id, date.today(), date.today() + timedelta(days=2))
+        leave = LeaveRepository.create(
+            test_user.id, date.today(), date.today() + timedelta(days=2)
+        )
         db.session.commit()
         assert LeaveRepository.get_by_id(leave.id) is not None
 
@@ -249,11 +280,16 @@ class TestOnCallRepository:
 
     def test_find_conflict_excludes_own_id(self, test_app, test_user, test_oncall):
         conflict = OnCallRepository.find_conflict(
-            test_user.id, test_oncall.start_time, test_oncall.end_time, exclude_id=test_oncall.id
+            test_user.id,
+            test_oncall.start_time,
+            test_oncall.end_time,
+            exclude_id=test_oncall.id,
         )
         assert conflict is None
 
-    def test_count_and_exists_for_user(self, test_app, test_user, second_user, test_oncall):
+    def test_count_and_exists_for_user(
+        self, test_app, test_user, second_user, test_oncall
+    ):
         assert OnCallRepository.count_all() == 1
         assert OnCallRepository.count_for_user(test_user.id) == 1
         assert OnCallRepository.exists_for_user(test_user.id) is True

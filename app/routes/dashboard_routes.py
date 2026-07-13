@@ -17,9 +17,9 @@ from app.utils.optimizations import eager_load
 
 @main_bp.route("/")
 @login_required
-@eager_load(Shift, ['user', 'shift_type'])
-@eager_load(OnCall, ['user'])
-@eager_load(Leave, ['user'])
+@eager_load(Shift, ["user", "shift_type"])
+@eager_load(OnCall, ["user"])
+@eager_load(Leave, ["user"])
 def index():
     """Page d'accueil - accessible uniquement aux utilisateurs connectés."""
     events = ScheduleService.get_calendar_events()
@@ -47,21 +47,14 @@ def user_dashboard():
     now = datetime.now()
     upcoming_shifts = (
         Shift.query.options(joinedload(Shift.shift_type))
-        .filter(
-            Shift.user_id == user_id,
-            Shift.start_time >= now
-        )
+        .filter(Shift.user_id == user_id, Shift.start_time >= now)
         .order_by(Shift.start_time)
         .limit(5)
         .all()
     )
 
     upcoming_oncalls = (
-        OnCall.query
-        .filter(
-            OnCall.user_id == user_id,
-            OnCall.start_time >= now
-        )
+        OnCall.query.filter(OnCall.user_id == user_id, OnCall.start_time >= now)
         .order_by(OnCall.start_time)
         .limit(5)
         .all()
@@ -69,11 +62,7 @@ def user_dashboard():
 
     today = date.today()
     upcoming_leaves = (
-        Leave.query
-        .filter(
-            Leave.user_id == user_id,
-            Leave.start_date >= today
-        )
+        Leave.query.filter(Leave.user_id == user_id, Leave.start_date >= today)
         .order_by(Leave.start_date)
         .limit(5)
         .all()
@@ -81,10 +70,7 @@ def user_dashboard():
 
     recent_shifts = (
         Shift.query.options(joinedload(Shift.shift_type))
-        .filter(
-            Shift.user_id == user_id,
-            Shift.end_time <= now
-        )
+        .filter(Shift.user_id == user_id, Shift.end_time <= now)
         .order_by(Shift.end_time.desc())
         .limit(5)
         .all()
@@ -94,21 +80,18 @@ def user_dashboard():
     shift_types = ShiftType.query.all()
     for shift_type in shift_types:
         count = Shift.query.filter_by(
-            user_id=user_id,
-            shift_type_id=shift_type.id
+            user_id=user_id, shift_type_id=shift_type.id
         ).count()
         if count > 0:
-            shift_types_stats.append({
-                'name': shift_type.name,
-                'label': shift_type.label,
-                'count': count
-            })
+            shift_types_stats.append(
+                {"name": shift_type.name, "label": shift_type.label, "count": count}
+            )
 
     first_day_of_month = date(today.year, today.month, 1)
     oncalls_this_month = OnCall.query.filter(
         OnCall.user_id == user_id,
         OnCall.start_time >= datetime.combine(first_day_of_month, datetime.min.time()),
-        OnCall.end_time <= datetime.combine(today, datetime.max.time())
+        OnCall.end_time <= datetime.combine(today, datetime.max.time()),
     ).count()
 
     return render_template(
@@ -122,5 +105,5 @@ def user_dashboard():
         recent_shifts=recent_shifts,
         shift_types_stats=shift_types_stats,
         oncalls_this_month=oncalls_this_month,
-        user=current_user
+        user=current_user,
     )

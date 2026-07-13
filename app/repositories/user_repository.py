@@ -5,53 +5,51 @@ Data access layer for User and Group models - no business logic, no
 Flask request/response handling, just queries.
 """
 
-from typing import List, Optional
-
 from app import db
-from app.models import User, Group
+from app.models import Group, User
 
 
 class UserRepository:
     """Data access for the User model."""
 
     @staticmethod
-    def get_by_id(user_id: int) -> Optional[User]:
+    def get_by_id(user_id: int) -> User | None:
         return db.session.get(User, user_id)
 
     @staticmethod
-    def get_by_email(email: str) -> Optional[User]:
+    def get_by_email(email: str) -> User | None:
         return User.query.filter_by(email=email).first()
 
     @staticmethod
-    def get_by_ics_token(token: str) -> Optional[User]:
+    def get_by_ics_token(token: str) -> User | None:
         return User.query.filter_by(ics_token=token).first()
 
     @staticmethod
-    def get_all() -> List[User]:
+    def get_all() -> list[User]:
         return User.query.order_by(User.name).all()
 
     @staticmethod
-    def get_for_schedule_group() -> List[User]:
+    def get_for_schedule_group() -> list[User]:
         """Utilisateurs appartenant à un groupe participant au planning."""
         return (
             User.query.join(Group)
-            .filter(Group.is_part_of_schedule == True)
+            .filter(Group.is_part_of_schedule.is_(True))
             .order_by(User.name)
             .all()
         )
 
     @staticmethod
-    def get_for_oncall_group() -> List[User]:
+    def get_for_oncall_group() -> list[User]:
         """Utilisateurs appartenant à un groupe participant aux astreintes."""
         return (
             User.query.join(Group)
-            .filter(Group.is_part_of_oncall == True)
+            .filter(Group.is_part_of_oncall.is_(True))
             .order_by(User.name)
             .all()
         )
 
     @staticmethod
-    def email_taken(email: str, exclude_id: Optional[int] = None) -> bool:
+    def email_taken(email: str, exclude_id: int | None = None) -> bool:
         query = User.query.filter(User.email == email)
         if exclude_id is not None:
             query = query.filter(User.id != exclude_id)
@@ -76,15 +74,15 @@ class GroupRepository:
     """Data access for the Group model."""
 
     @staticmethod
-    def get_by_id(group_id: int) -> Optional[Group]:
+    def get_by_id(group_id: int) -> Group | None:
         return db.session.get(Group, group_id)
 
     @staticmethod
-    def get_all() -> List[Group]:
+    def get_all() -> list[Group]:
         return Group.query.order_by(Group.name).all()
 
     @staticmethod
-    def name_taken(name: str, exclude_id: Optional[int] = None) -> bool:
+    def name_taken(name: str, exclude_id: int | None = None) -> bool:
         query = Group.query.filter(Group.name == name)
         if exclude_id is not None:
             query = query.filter(Group.id != exclude_id)

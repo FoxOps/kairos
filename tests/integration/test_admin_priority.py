@@ -2,10 +2,10 @@
 Tests prioritaires pour admin.py - utilisant correctement les fixtures du conftest.
 """
 
-import pytest
 from datetime import datetime, timedelta
+
 from app import db
-from app.models import User, Group, Shift, OnCall, Leave, ShiftType
+from app.models import Group, Shift, ShiftType, User
 
 
 class TestEditGroup:
@@ -13,14 +13,20 @@ class TestEditGroup:
 
     def test_edit_group_get(self, logged_in_client, group_not_in_schedule):
         """Test l'affichage du formulaire d'édition de groupe."""
-        response = logged_in_client.get(f"/admin/groups/edit/{group_not_in_schedule.id}")
+        response = logged_in_client.get(
+            f"/admin/groups/edit/{group_not_in_schedule.id}"
+        )
         assert response.status_code == 200
 
     def test_edit_group_post_update_name(self, logged_in_client, group_not_in_schedule):
         """Test la modification du nom d'un groupe."""
         response = logged_in_client.post(
             f"/admin/groups/edit/{group_not_in_schedule.id}",
-            data={"name": "Updated Group", "is_part_of_schedule": "on", "is_part_of_oncall": "on"},
+            data={
+                "name": "Updated Group",
+                "is_part_of_schedule": "on",
+                "is_part_of_oncall": "on",
+            },
             follow_redirects=True,
         )
         assert response.status_code == 200
@@ -77,7 +83,12 @@ class TestEditShiftType:
         """Test la modification d'un type de shift."""
         response = logged_in_client.post(
             f"/admin/shift-types/edit/{test_shift_type.id}",
-            data={"name": "morning", "label": "Updated Label", "start_hour": "8", "end_hour": "16"},
+            data={
+                "name": "morning",
+                "label": "Updated Label",
+                "start_hour": "8",
+                "end_hour": "16",
+            },
             follow_redirects=True,
         )
         assert response.status_code == 200
@@ -123,7 +134,9 @@ class TestDeleteUser:
         assert response.status_code == 200
         assert User.query.count() == initial_count - 1
 
-    def test_delete_user_with_shifts(self, logged_in_client, test_user, test_shift_type):
+    def test_delete_user_with_shifts(
+        self, logged_in_client, test_user, test_shift_type
+    ):
         """Test que la suppression d'un utilisateur avec des shifts est bloquée."""
         # Créer un shift
         start_time = datetime.now() + timedelta(days=1)
@@ -136,7 +149,7 @@ class TestDeleteUser:
         )
         db.session.add(shift)
         db.session.commit()
-        
+
         response = logged_in_client.post(
             f"/admin/users/delete/{test_user.id}",
             follow_redirects=True,
@@ -159,7 +172,9 @@ class TestDeleteShiftType:
         assert response.status_code == 200
         assert ShiftType.query.count() == initial_count - 1
 
-    def test_delete_shift_type_in_use(self, logged_in_client, test_shift_type, test_user):
+    def test_delete_shift_type_in_use(
+        self, logged_in_client, test_shift_type, test_user
+    ):
         """Test que la suppression d'un type de shift utilisé est bloquée."""
         # Créer un shift avec ce type
         start_time = datetime.now() + timedelta(days=1)
@@ -172,7 +187,7 @@ class TestDeleteShiftType:
         )
         db.session.add(shift)
         db.session.commit()
-        
+
         response = logged_in_client.post(
             f"/admin/shift-types/delete/{test_shift_type.id}",
             follow_redirects=True,

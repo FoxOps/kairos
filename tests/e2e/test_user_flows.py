@@ -13,8 +13,6 @@ lui (voir report/E2E Playwright - Tests navigateur réel.md).
 
 from datetime import date, timedelta
 
-from werkzeug.security import generate_password_hash
-
 from app import db
 from app.models import Group, ShiftType, User
 
@@ -91,9 +89,7 @@ class TestAdminCreatesUserAndAssignsShift:
             follow_redirects=True,
         )
         assert resp.status_code == 200
-        assert (
-            b"Shifts ajoutes avec succes" in resp.data or "ajout".encode() in resp.data
-        )
+        assert b"Shifts ajoutes avec succes" in resp.data or b"ajout" in resp.data
 
         # 4. Se déconnecter de l'admin, se connecter en tant qu'employé
         client.get("/logout", follow_redirects=True)

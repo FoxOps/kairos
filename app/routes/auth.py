@@ -1,10 +1,10 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from flask_login import login_user, logout_user, current_user, login_required
+from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required, login_user, logout_user
+
 from app import db
-from app.models import User, Group
-from config_oidc import OIDCConfig
 from app.auth.oidc_auth import oidc_auth
-from app.auth.decorators import admin_required, role_required
+from app.models import User
+from config_oidc import OIDCConfig
 
 # Create blueprint
 auth_bp = Blueprint("auth", __name__)

@@ -3,14 +3,13 @@ Tests pour la configuration de l'application.
 """
 
 
-
-
 class TestConfig:
     """Tests pour la classe Config."""
 
     def test_config_import(self):
         """Test que le module config peut être importé."""
         from config import Config
+
         assert Config is not None
 
     def test_config_has_secret_key(self):
@@ -34,6 +33,7 @@ class TestConfig:
             del sys.modules["config"]
 
         from config import Config
+
         config = Config()
         assert config.SECRET_KEY == test_key
 
@@ -49,6 +49,7 @@ class TestConfig:
             del sys.modules["config"]
 
         from config import Config
+
         config = Config()
         # SECRET_KEY sans env var: généré aléatoirement (secrets.token_urlsafe), pas de valeur statique
         assert isinstance(config.SECRET_KEY, str)
@@ -71,14 +72,6 @@ class TestConfig:
         assert hasattr(config, "SQLALCHEMY_TRACK_MODIFICATIONS")
         assert config.SQLALCHEMY_TRACK_MODIFICATIONS is False
 
-    def test_config_login_disabled_default(self):
-        """Test que LOGIN_DISABLED est False par défaut."""
-        from config import Config
-
-        config = Config()
-        assert hasattr(config, "LOGIN_DISABLED")
-        assert config.LOGIN_DISABLED is False
-
     def test_config_login_disabled_from_env(self, monkeypatch):
         """Test que LOGIN_DISABLED peut être lu depuis les variables d'environnement."""
         import sys
@@ -93,6 +86,7 @@ class TestConfig:
             del sys.modules["config"]
 
         from config import Config
+
         config = Config()
         # Maintenant LOGIN_DISABLED est bien lu depuis les variables d'environnement
         # via la fonction get_bool_from_env
@@ -113,6 +107,7 @@ class TestConfig:
             del sys.modules["config"]
 
         from config import Config
+
         config = Config()
         assert config.LOGIN_DISABLED is False
 

@@ -1,10 +1,10 @@
 """Fixtures liées aux utilisateurs, groupes et clients de test authentifiés."""
 
 import pytest
+from werkzeug.security import generate_password_hash
 
 from app import db
 from app.models import Group, User
-from werkzeug.security import generate_password_hash
 
 
 @pytest.fixture
@@ -19,7 +19,9 @@ def test_group(test_app):
 @pytest.fixture
 def group_not_in_schedule(test_app):
     """Crée un groupe de test qui ne fait pas partie du planning."""
-    group = Group(name="Group Not In Schedule", is_part_of_schedule=False, is_part_of_oncall=False)
+    group = Group(
+        name="Group Not In Schedule", is_part_of_schedule=False, is_part_of_oncall=False
+    )
     db.session.add(group)
     db.session.commit()
     return group
@@ -78,7 +80,9 @@ def logged_in_client(client):
     """
     # Créer un groupe et un utilisateur dans le contexte du client
     with client.application.app_context():
-        group = Group(name="Test Group Login", is_part_of_schedule=True, is_part_of_oncall=True)
+        group = Group(
+            name="Test Group Login", is_part_of_schedule=True, is_part_of_oncall=True
+        )
         db.session.add(group)
         db.session.commit()
 
@@ -87,25 +91,27 @@ def logged_in_client(client):
             name="Login User",
             password_hash=generate_password_hash("loginpassword"),
             is_admin=True,
-            group_id=group.id
+            group_id=group.id,
         )
         db.session.add(user)
         db.session.commit()
 
     # Se connecter via POST /login
     response = client.post(
-        '/login',
-        data={'email': 'login@example.com', 'password': 'loginpassword'},
-        follow_redirects=True
+        "/login",
+        data={"email": "login@example.com", "password": "loginpassword"},
+        follow_redirects=True,
     )
     # On devrait être sur la page d'accueil
-    assert response.status_code == 200, f"Login failed with status {response.status_code}"
+    assert (
+        response.status_code == 200
+    ), f"Login failed with status {response.status_code}"
 
     yield client
 
     # Se déconnecter
     try:
-        client.get('/logout', follow_redirects=True)
+        client.get("/logout", follow_redirects=True)
     except Exception:
         pass
 
@@ -118,15 +124,17 @@ def non_admin_client(client, test_user):
     bien un utilisateur normal (logged_in_client est un admin).
     """
     response = client.post(
-        '/login',
-        data={'email': test_user.email, 'password': 'test123'},
+        "/login",
+        data={"email": test_user.email, "password": "test123"},
         follow_redirects=True,
     )
-    assert response.status_code == 200, f"Login failed with status {response.status_code}"
+    assert (
+        response.status_code == 200
+    ), f"Login failed with status {response.status_code}"
 
     yield client
 
     try:
-        client.get('/logout', follow_redirects=True)
+        client.get("/logout", follow_redirects=True)
     except Exception:
         pass

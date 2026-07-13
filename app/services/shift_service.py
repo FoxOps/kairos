@@ -7,7 +7,6 @@ flash message / redirect / JSON response.
 """
 
 from datetime import date, datetime, timedelta
-from typing import List, Optional, Tuple
 
 from app import db
 from app.models import Shift, ShiftType, User
@@ -23,13 +22,13 @@ class ShiftService:
         return ShiftRepository.list_paginated(page, per_page)
 
     @staticmethod
-    def list_in_window(window_start: datetime, window_end: datetime) -> List[Shift]:
+    def list_in_window(window_start: datetime, window_end: datetime) -> list[Shift]:
         return ShiftRepository.list_in_window(window_start, window_end)
 
     @staticmethod
     def add_shifts_for_range(
         user: User, shift_type: ShiftType, start_date: date, end_date: date
-    ) -> Tuple[List[str], Optional[date]]:
+    ) -> tuple[list[str], date | None]:
         """
         Crée un shift par jour ouvré entre start_date et end_date (inclus)
         pour l'utilisateur donné.
@@ -57,7 +56,9 @@ class ShiftService:
             end_time = datetime.combine(current_date, datetime.min.time()).replace(
                 hour=shift_type.end_hour
             )
-            ShiftRepository.create(user.id, shift_type.id, start_time, end_time, current_date)
+            ShiftRepository.create(
+                user.id, shift_type.id, start_time, end_time, current_date
+            )
             shifts_added.append(current_date.strftime("%d/%m/%Y"))
             current_date += timedelta(days=1)
 
@@ -65,7 +66,7 @@ class ShiftService:
         return shifts_added, None
 
     @staticmethod
-    def delete_shift(shift_id: int) -> Optional[Shift]:
+    def delete_shift(shift_id: int) -> Shift | None:
         shift = ShiftRepository.get_by_id(shift_id)
         if not shift:
             return None
@@ -107,7 +108,9 @@ class ShiftService:
         return count
 
     @staticmethod
-    def api_create(user: User, shift_type: ShiftType, start_time: datetime, end_time: datetime) -> Tuple[Optional[Shift], Optional[str]]:
+    def api_create(
+        user: User, shift_type: ShiftType, start_time: datetime, end_time: datetime
+    ) -> tuple[Shift | None, str | None]:
         """Crée un shift depuis l'API drag & drop. Returns (shift, error_message)."""
         on_date = start_time.date()
         if on_date.weekday() >= 5:
@@ -116,12 +119,16 @@ class ShiftService:
         if not can_add_shift(user, on_date, shift_type.name):
             return None, "Conflit détecté pour ce shift"
 
-        shift = ShiftRepository.create(user.id, shift_type.id, start_time, end_time, on_date)
+        shift = ShiftRepository.create(
+            user.id, shift_type.id, start_time, end_time, on_date
+        )
         db.session.commit()
         return shift, None
 
     @staticmethod
-    def api_update(shift_id: int, new_start: datetime, new_end: datetime) -> Tuple[Optional[Shift], Optional[str]]:
+    def api_update(
+        shift_id: int, new_start: datetime, new_end: datetime
+    ) -> tuple[Shift | None, str | None]:
         """Met à jour un shift depuis l'API drag & drop. Returns (shift, error_message)."""
         shift = ShiftRepository.get_by_id(shift_id)
         if not shift:
@@ -131,9 +138,14 @@ class ShiftService:
         if new_date.weekday() >= 5:
             return None, "Impossible de déplacer vers un week-end (samedi/dimanche)"
 
-        conflict = ShiftRepository.find_conflict(shift.user_id, new_date, exclude_id=shift_id)
+        conflict = ShiftRepository.find_conflict(
+            shift.user_id, new_date, exclude_id=shift_id
+        )
         if conflict:
-            return None, f"Un shift existe déjà pour {shift.user.name} le {new_date.strftime('%d/%m/%Y')}"
+            return (
+                None,
+                f"Un shift existe déjà pour {shift.user.name} le {new_date.strftime('%d/%m/%Y')}",
+            )
 
         shift.start_time = new_start
         shift.end_time = new_end

@@ -67,6 +67,13 @@ db.sqlite3-journal
 # Flask stuff:
 .webassets-cache
 
+# Artefacts générés par `make security`/`make lint` (bandit, ruff, mypy)
+bandit-results.json
+bandit-report.json
+ruff-report.txt
+mypy-report/
+safety-report.json
+
 # Logs
 *.log
 

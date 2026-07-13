@@ -2,31 +2,31 @@
 Tests pour les fonctions helpers (validation des conflits).
 """
 
-import pytest
 from datetime import date, datetime, time, timedelta
+
+from app import db
+from app.models import Leave, OnCall, Shift
 from app.utils.helpers import (
-    can_add_shift,
-    can_add_oncall,
-    can_add_leave,
-    is_user_on_shift,
-    is_user_on_leave,
-    _has_overlapping_oncall,
     _get_overlapping_leave,
-    _get_overlapping_shift,
     _get_overlapping_oncall,
-    get_bool,
-    get_int,
+    _get_overlapping_shift,
+    _has_overlapping_oncall,
+    can_add_leave,
+    can_add_oncall,
+    can_add_shift,
     format_date,
     format_datetime,
     format_time,
+    get_bool,
+    get_current_month,
+    get_current_year,
+    get_days_in_month,
+    get_int,
+    is_user_on_leave,
+    is_user_on_shift,
     parse_date,
     parse_datetime,
-    get_current_year,
-    get_current_month,
-    get_days_in_month,
 )
-from app.models import Shift, OnCall, Leave, Group, User, ShiftType
-from app import db
 
 
 class TestHelperFunctions:
@@ -209,7 +209,9 @@ class TestCanAddShift:
             can_add = can_add_shift(test_user, shift_date, "morning")
             assert not can_add
 
-    def test_can_add_shift_multiple_users_same_day(self, test_app, test_user, second_user):
+    def test_can_add_shift_multiple_users_same_day(
+        self, test_app, test_user, second_user
+    ):
         """Test que plusieurs utilisateurs peuvent avoir des shifts le même jour."""
         with test_app.app_context():
             shift_date = datetime(2023, 12, 1).date()  # Lundi
@@ -523,13 +525,17 @@ class TestOverlappingShiftAndOnCallHelpers:
             db.session.add(shift)
             db.session.commit()
 
-            result = _get_overlapping_shift(test_user.id, date(2026, 7, 10), date(2026, 7, 15))
+            result = _get_overlapping_shift(
+                test_user.id, date(2026, 7, 10), date(2026, 7, 15)
+            )
             assert result is not None
             assert result.id == shift.id
 
     def test_get_overlapping_shift_none(self, test_app, test_user):
         with test_app.app_context():
-            result = _get_overlapping_shift(test_user.id, date(2026, 7, 10), date(2026, 7, 15))
+            result = _get_overlapping_shift(
+                test_user.id, date(2026, 7, 10), date(2026, 7, 15)
+            )
             assert result is None
 
     def test_get_overlapping_oncall_found(self, test_app, test_user):
@@ -540,11 +546,15 @@ class TestOverlappingShiftAndOnCallHelpers:
             db.session.add(oncall)
             db.session.commit()
 
-            result = _get_overlapping_oncall(test_user.id, date(2026, 7, 9), date(2026, 7, 16))
+            result = _get_overlapping_oncall(
+                test_user.id, date(2026, 7, 9), date(2026, 7, 16)
+            )
             assert result is not None
             assert result.id == oncall.id
 
     def test_get_overlapping_oncall_none(self, test_app, test_user):
         with test_app.app_context():
-            result = _get_overlapping_oncall(test_user.id, date(2026, 7, 9), date(2026, 7, 16))
+            result = _get_overlapping_oncall(
+                test_user.id, date(2026, 7, 9), date(2026, 7, 16)
+            )
             assert result is None

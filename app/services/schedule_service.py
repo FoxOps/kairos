@@ -6,7 +6,6 @@ the FullCalendar-based views (index page, /api/shifts).
 """
 
 from datetime import datetime, timedelta
-from typing import Dict, List, Tuple
 
 from app.repositories.leave_repository import LeaveRepository
 from app.repositories.oncall_repository import OnCallRepository
@@ -19,7 +18,7 @@ class ScheduleService:
     """Agrège shifts/astreintes/congés en événements de calendrier."""
 
     @staticmethod
-    def calendar_window() -> Tuple[datetime, datetime]:
+    def calendar_window() -> tuple[datetime, datetime]:
         """Fenêtre de ±6 mois autour d'aujourd'hui pour le calendrier."""
         now = datetime.now()
         return (
@@ -28,7 +27,7 @@ class ScheduleService:
         )
 
     @staticmethod
-    def get_calendar_events() -> List[Dict]:
+    def get_calendar_events() -> list[dict]:
         """Récupère shifts/astreintes/congés dans la fenêtre du calendrier
         et les convertit en événements FullCalendar."""
         window_start, window_end = ScheduleService.calendar_window()
@@ -40,7 +39,7 @@ class ScheduleService:
         return ScheduleService.build_calendar_events(shifts, on_calls, leaves)
 
     @staticmethod
-    def build_calendar_events(shifts, on_calls, leaves) -> List[Dict]:
+    def build_calendar_events(shifts, on_calls, leaves) -> list[dict]:
         events = []
 
         for shift in shifts:

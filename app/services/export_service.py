@@ -7,8 +7,6 @@ content. Routes stay thin: they parse the request, call this service,
 and turn the result into an HTTP response.
 """
 
-from typing import List, Optional
-
 from flask_login import current_user
 
 from app.models import User
@@ -25,11 +23,11 @@ class ExportService:
     """Logique métier pour l'export ICS."""
 
     @staticmethod
-    def normalize_scope(scope: Optional[str]) -> str:
+    def normalize_scope(scope: str | None) -> str:
         return scope if scope in VALID_SCOPES else "all"
 
     @staticmethod
-    def resolve_user(token: Optional[str]) -> Optional[User]:
+    def resolve_user(token: str | None) -> User | None:
         """Utilisateur pour l'export : session authentifiée en priorité,
         sinon token ICS."""
         if current_user.is_authenticated:
@@ -40,19 +38,37 @@ class ExportService:
 
     @staticmethod
     def export_shifts(scope: str, user: User) -> str:
-        shifts = ShiftRepository.list_for_user(user.id) if scope == "my" else ShiftRepository.list_all_with_user()
-        return export_to_ics(shifts, f"Leviia Schedule - Shifts ({'All' if scope == 'all' else 'My'})")
+        shifts = (
+            ShiftRepository.list_for_user(user.id)
+            if scope == "my"
+            else ShiftRepository.list_all_with_user()
+        )
+        return export_to_ics(
+            shifts, f"Leviia Schedule - Shifts ({'All' if scope == 'all' else 'My'})"
+        )
 
     @staticmethod
     def export_oncall(scope: str, user: User) -> str:
-        on_calls = OnCallRepository.list_for_user(user.id) if scope == "my" else OnCallRepository.list_all_with_user()
-        return export_to_ics(on_calls, f"Leviia Schedule - OnCall ({'All' if scope == 'all' else 'My'})")
+        on_calls = (
+            OnCallRepository.list_for_user(user.id)
+            if scope == "my"
+            else OnCallRepository.list_all_with_user()
+        )
+        return export_to_ics(
+            on_calls, f"Leviia Schedule - OnCall ({'All' if scope == 'all' else 'My'})"
+        )
 
     @staticmethod
     def export_leaves(scope: str, user: User) -> str:
-        leaves = LeaveRepository.list_for_user(user.id) if scope == "my" else LeaveRepository.list_all_with_user()
-        return export_to_ics(leaves, f"Leviia Schedule - Leaves ({'All' if scope == 'all' else 'My'})")
+        leaves = (
+            LeaveRepository.list_for_user(user.id)
+            if scope == "my"
+            else LeaveRepository.list_all_with_user()
+        )
+        return export_to_ics(
+            leaves, f"Leviia Schedule - Leaves ({'All' if scope == 'all' else 'My'})"
+        )
 
     @staticmethod
-    def generate_ics(events: List, calendar_name: str = "Leviia Schedule") -> bytes:
+    def generate_ics(events: list, calendar_name: str = "Leviia Schedule") -> bytes:
         return generate_ics_calendar(events, calendar_name=calendar_name)

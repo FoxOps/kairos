@@ -11,16 +11,16 @@ Repositories:
 - leave_repository: Leave data access
 """
 
-from app.repositories.user_repository import UserRepository, GroupRepository
-from app.repositories.shift_repository import ShiftRepository, ShiftTypeRepository
-from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.leave_repository import LeaveRepository
+from app.repositories.oncall_repository import OnCallRepository
+from app.repositories.shift_repository import ShiftRepository, ShiftTypeRepository
+from app.repositories.user_repository import GroupRepository, UserRepository
 
 __all__ = [
-    'UserRepository',
-    'GroupRepository',
-    'ShiftRepository',
-    'ShiftTypeRepository',
-    'OnCallRepository',
-    'LeaveRepository'
+    "UserRepository",
+    "GroupRepository",
+    "ShiftRepository",
+    "ShiftTypeRepository",
+    "OnCallRepository",
+    "LeaveRepository",
 ]

@@ -3,10 +3,10 @@ Tests unitaires pour app/utils/automation.py
 Couvre les fonctions et classes non testées précédemment.
 """
 
-import pytest
-from datetime import datetime, timedelta, date
+from datetime import date, datetime, timedelta
+
 from app import db
-from app.models import User, Group, Shift, OnCall, Leave, ShiftType
+from app.models import Group, OnCall, Shift
 from app.utils.automation import (
     BusinessRules,
     OnCallAutomation,
@@ -21,21 +21,21 @@ class TestBusinessRules:
         """Test que get_shift_rules retourne la structure attendue."""
         with test_app.app_context():
             rules = BusinessRules.get_shift_rules()
-            assert 'weekly_patterns' in rules
-            assert 'daily_requirements' in rules
-            assert 'max_shifts_per_user_per_week' in rules
-            assert 'min_shifts_per_user_per_week' in rules
-            assert isinstance(rules['daily_requirements'], dict)
+            assert "weekly_patterns" in rules
+            assert "daily_requirements" in rules
+            assert "max_shifts_per_user_per_week" in rules
+            assert "min_shifts_per_user_per_week" in rules
+            assert isinstance(rules["daily_requirements"], dict)
 
     def test_get_oncall_rules_structure(self, test_app):
         """Test que get_oncall_rules retourne la structure attendue."""
         with test_app.app_context():
             rules = BusinessRules.get_oncall_rules()
-            assert 'rotation_order' in rules
-            assert 'start_day' in rules
-            assert 'start_hour' in rules
-            assert 'duration_days' in rules
-            assert 'end_hour' in rules
+            assert "rotation_order" in rules
+            assert "start_day" in rules
+            assert "start_hour" in rules
+            assert "duration_days" in rules
+            assert "end_hour" in rules
 
 
 class TestOnCallAutomationGetEligibleUsers:
@@ -71,7 +71,7 @@ class TestOnCallAutomationGetRotationOrder:
         """Test que get_rotation_order retourne une liste vide sans utilisateurs éligibles."""
         with test_app.app_context():
             # Désactiver tous les groupes pour les astreintes
-            Group.query.update({'is_part_of_oncall': False})
+            Group.query.update({"is_part_of_oncall": False})
             db.session.commit()
             rotation = OnCallAutomation.get_rotation_order()
             assert rotation == []
@@ -95,11 +95,11 @@ class TestOnCallAutomationCheckConstraint:
             previous_oncall = OnCall(
                 user_id=test_user.id,
                 start_time=now - timedelta(days=20),
-                end_time=now - timedelta(days=13)
+                end_time=now - timedelta(days=13),
             )
             db.session.add(previous_oncall)
             db.session.commit()
-            
+
             # Tester avec une date trop proche (moins de 2 semaines après)
             start_time = now - timedelta(days=12)
             result = OnCallAutomation.check_oncall_constraint(test_user, start_time)
@@ -113,11 +113,11 @@ class TestOnCallAutomationCheckConstraint:
             previous_oncall = OnCall(
                 user_id=test_user.id,
                 start_time=now - timedelta(days=30),
-                end_time=now - timedelta(days=23)
+                end_time=now - timedelta(days=23),
             )
             db.session.add(previous_oncall)
             db.session.commit()
-            
+
             # Tester avec une date suffisamment éloignée
             start_time = now + timedelta(days=15)
             result = OnCallAutomation.check_oncall_constraint(test_user, start_time)
@@ -167,18 +167,18 @@ class TestOnCallAutomationGenerateSchedule:
             # S'assurer que test_user est éligible
             test_group.is_part_of_oncall = True
             db.session.commit()
-            
+
             start_date = date.today()
             end_date = start_date + timedelta(days=7)
-            
+
             # Compter avant
             count_before = OnCall.query.count()
-            
+
             # Générer en dry_run
             OnCallAutomation.generate_oncall_schedule(
                 start_date, end_date, dry_run=True
             )
-            
+
             # Vérifier que rien n'a été sauvegardé
             count_after = OnCall.query.count()
             assert count_after == count_before
@@ -225,7 +225,7 @@ class TestShiftAutomationCanAssign:
                 test_user.id, saturday, test_shift_type
             )
             assert can_assign is False
-            assert 'lundi au vendredi' in message
+            assert "lundi au vendredi" in message
 
     def test_returns_true_valid_day(self, test_app, test_user, test_shift_type):
         """Test que can_assign_shift retourne True pour un jour valide."""
@@ -279,15 +279,13 @@ class TestShiftAutomationGenerateSchedule:
         with test_app.app_context():
             start_date = date.today()
             end_date = start_date + timedelta(days=7)
-            
+
             # Compter avant
             count_before = Shift.query.count()
-            
+
             # Générer en dry_run
-            ShiftAutomation.generate_shift_schedule(
-                start_date, end_date, dry_run=True
-            )
-            
+            ShiftAutomation.generate_shift_schedule(start_date, end_date, dry_run=True)
+
             # Vérifier que rien n'a été sauvegardé
             count_after = Shift.query.count()
             assert count_after == count_before

@@ -13,15 +13,17 @@ Utilisation :
         return User.query.get(user_id)
 """
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, List, Optional, Type
 
 from sqlalchemy.orm import Query, joinedload, selectinload
 
 
-def eager_load(model_class: Type,
-              relationships: Optional[List[str]] = None,
-              strategy: str = 'joinedload'):
+def eager_load(
+    model_class: type,
+    relationships: list[str] | None = None,
+    strategy: str = "joinedload",
+):
     """
     Décorateur pour charger les relations de manière eager (éviter le N+1).
 
@@ -35,6 +37,7 @@ def eager_load(model_class: Type,
         def get_user(user_id):
             return User.query.get(user_id)
     """
+
     def decorator(f: Callable) -> Callable:
         @wraps(f)
         def wrapped(*args, **kwargs):
@@ -45,10 +48,14 @@ def eager_load(model_class: Type,
             if isinstance(result, Query):
                 if relationships:
                     for rel in relationships:
-                        if strategy == 'selectinload':
-                            result = result.options(selectinload(getattr(model_class, rel)))
+                        if strategy == "selectinload":
+                            result = result.options(
+                                selectinload(getattr(model_class, rel))
+                            )
                         else:
-                            result = result.options(joinedload(getattr(model_class, rel)))
+                            result = result.options(
+                                joinedload(getattr(model_class, rel))
+                            )
                 return result
 
             # Si c'est un objet modèle, charger les relations
@@ -65,4 +72,4 @@ def eager_load(model_class: Type,
     return decorator
 
 
-__all__ = ['eager_load']
+__all__ = ["eager_load"]

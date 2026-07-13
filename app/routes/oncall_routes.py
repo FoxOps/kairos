@@ -19,8 +19,8 @@ from app.services import OnCallService, UserService
 @main_bp.route("/oncall")
 @login_required
 def oncall():
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 20, type=int)
 
     per_page_options = [5, 10, 25, 50, 100]
 
@@ -32,7 +32,12 @@ def oncall():
 
     on_calls_paginated = OnCallService.list_paginated(page, per_page)
 
-    return render_template("oncall.html", on_calls=on_calls_paginated, per_page=per_page, per_page_options=per_page_options)
+    return render_template(
+        "oncall.html",
+        on_calls=on_calls_paginated,
+        per_page=per_page,
+        per_page_options=per_page_options,
+    )
 
 
 @main_bp.route("/oncall/add", methods=["GET", "POST"])
@@ -103,7 +108,10 @@ def delete_all_oncalls():
     try:
         count = OnCallService.delete_all()
         if count > 0:
-            flash(f"✅ Toutes les {count} astreintes ont été supprimées avec succès !", "success")
+            flash(
+                f"✅ Toutes les {count} astreintes ont été supprimées avec succès !",
+                "success",
+            )
         else:
             flash("⚠️ Aucune astreinte à supprimer.", "warning")
     except Exception as e:
@@ -124,7 +132,10 @@ def delete_all_oncalls_for_user(user_id):
         if count == 0:
             flash(f"⚠️ Aucun astreinte trouvée pour {user.name}.", "warning")
         else:
-            flash(f"✅ Toutes les {count} astreintes de {user.name} ont été supprimées avec succès !", "success")
+            flash(
+                f"✅ Toutes les {count} astreintes de {user.name} ont été supprimées avec succès !",
+                "success",
+            )
     except Exception as e:
         db.session.rollback()
         flash(f"❌ Erreur : {str(e)}", "danger")
@@ -167,10 +178,10 @@ def api_update_oncall(oncall_id):
         if not new_start_str:
             return jsonify({"success": False, "error": "Date de début manquante"}), 400
 
-        new_start = datetime.fromisoformat(new_start_str.replace('Z', '+00:00'))
+        new_start = datetime.fromisoformat(new_start_str.replace("Z", "+00:00"))
 
         if new_end_str:
-            new_end = datetime.fromisoformat(new_end_str.replace('Z', '+00:00'))
+            new_end = datetime.fromisoformat(new_end_str.replace("Z", "+00:00"))
         else:
             duration = oncall_obj.end_time - oncall_obj.start_time
             new_end = new_start + duration
@@ -179,19 +190,24 @@ def api_update_oncall(oncall_id):
         if error:
             return jsonify({"success": False, "error": error}), 400
 
-        return jsonify({
-            "success": True,
-            "message": "Astreinte mise à jour avec succès",
-            "oncall": {
-                "id": updated_oncall.id,
-                "start": updated_oncall.start_time.isoformat(),
-                "end": updated_oncall.end_time.isoformat()
+        return jsonify(
+            {
+                "success": True,
+                "message": "Astreinte mise à jour avec succès",
+                "oncall": {
+                    "id": updated_oncall.id,
+                    "start": updated_oncall.start_time.isoformat(),
+                    "end": updated_oncall.end_time.isoformat(),
+                },
             }
-        })
+        )
 
     except ValueError as e:
         db.session.rollback()
-        return jsonify({"success": False, "error": f"Format de date invalide: {str(e)}"}), 400
+        return (
+            jsonify({"success": False, "error": f"Format de date invalide: {str(e)}"}),
+            400,
+        )
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500

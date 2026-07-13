@@ -18,24 +18,24 @@ Services:
   parsing, period clearing, rotation order persistence)
 """
 
-from app.services.user_service import UserService
+from app.services.automation_admin_service import AutomationAdminService
+from app.services.export_service import ExportService
 from app.services.group_service import GroupService
+from app.services.leave_service import LeaveService
+from app.services.oncall_service import OnCallService
+from app.services.schedule_service import ScheduleService
 from app.services.shift_service import ShiftService
 from app.services.shift_type_service import ShiftTypeService
-from app.services.oncall_service import OnCallService
-from app.services.leave_service import LeaveService
-from app.services.export_service import ExportService
-from app.services.schedule_service import ScheduleService
-from app.services.automation_admin_service import AutomationAdminService
+from app.services.user_service import UserService
 
 __all__ = [
-    'UserService',
-    'GroupService',
-    'ShiftService',
-    'ShiftTypeService',
-    'OnCallService',
-    'LeaveService',
-    'ExportService',
-    'ScheduleService',
-    'AutomationAdminService',
+    "UserService",
+    "GroupService",
+    "ShiftService",
+    "ShiftTypeService",
+    "OnCallService",
+    "LeaveService",
+    "ExportService",
+    "ScheduleService",
+    "AutomationAdminService",
 ]

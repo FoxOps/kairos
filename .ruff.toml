@@ -1,3 +1,16 @@
+# Line length (match black default)
+line-length = 88
+
+# Exclude files
+exclude = [
+    ".git",
+    "__pycache__",
+    "instance",
+    "venv",
+    "migrations",
+]
+
+[lint]
 # Enable Pyflakes, pycodestyle, isort, and more
 select = [
     "E",   # pycodestyle errors
@@ -17,24 +30,29 @@ ignore = [
     "E501",  # line too long (handled by black)
     "S101",  # assert used (common in tests)
     "B008",  # do not perform function calls in argument defaults
+    # 0.0.0.0 default bind (app/config/base.py, config.py, run.py): needed
+    # for the dev server to be reachable from outside its container/host -
+    # an intentional, project-wide default, not a per-file exception.
+    "S104",
 ]
 
-# Line length (match black default)
-line-length = 88
-
-# Exclude files
-exclude = [
-    ".git",
-    "__pycache__",
-    "instance",
-    "venv",
-    "migrations",
-]
-
-[isort]
+[lint.isort]
 known-first-party = ["app", "tests"]
 
-[per-file-ignores]
-"tests/*" = ["S101", "S105"]  # Allow assert + fake test tokens/secrets in tests
+[lint.per-file-ignores]
+# S101/S105/S106: assert + fake test tokens/secrets/password args, inherent to
+# how tests construct fixtures. S110/B017/B011: broad except/assert patterns
+# that are normal/acceptable in test setup and negative-path assertions.
+"tests/*" = ["S101", "S105", "S106", "S110", "B017", "B011"]
 "run.py" = ["T201"]  # Allow print in run.py
 "app/routes/*" = ["B008"]  # Allow function calls in defaults for routes
+# CLI dev tools: print() is the actual output mechanism, not debug cruft.
+# S310 (find_duplicates.py): urlretrieve from hardcoded vendor CDN URLs at
+# dev-setup time, not user input. S324 (find_duplicates.py): MD5 used for
+# duplicate-code detection, not a security context. S110 (find_duplicates.py):
+# best-effort skip on a per-file parse error while scanning the whole repo.
+"scripts/*" = ["T201", "S310", "S324", "S110"]
+"docker/init_database.py" = ["T201"]
+# Script manuel (`python tests/manual_test_theme.py`), pas collecté par
+# pytest (nom ne matche pas test_*.py) - print() est voulu.
+"tests/manual_test_theme.py" = ["T201"]

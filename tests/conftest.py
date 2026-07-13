@@ -7,15 +7,18 @@ pour les tests, ce qui permet de désactiver Talisman avant son initialisation.
 Mise à jour pour Flask 3.x et Flask-Login 0.6.3.
 """
 
-import pytest
-import warnings
 import os
+import warnings
+
+import pytest
 
 # Filtrer les warnings de dépréciation de datetime.utcnow()
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="flask_login")
 
-# Importer les modules nécessaires
-from app import db, limiter
+# Importer les modules nécessaires - après warnings.filterwarnings() ci-dessus
+# volontairement : importer `app` déclenche flask_limiter, dont le warning
+# doit déjà être filtré à ce moment-là.
+from app import db, limiter  # noqa: E402
 
 # Fixtures de modèles (user/group, shift/shift_type, leave, oncall) extraites
 # dans tests/fixtures/ - déclarées ici pour rester visibles dans tous les
@@ -43,18 +46,21 @@ def test_app():
 
     # Recharger la configuration OIDC
     from config_oidc import OIDCConfig
+
     OIDCConfig.ENABLED = False
     OIDCConfig.DISABLE_BASIC_AUTH = False
 
     # Créer une nouvelle instance de l'application avec une configuration de test
     from app import create_app
-    app = create_app('app.config.TestingConfig')
+
+    app = create_app("app.config.TestingConfig")
 
     # Désactiver le rate limiter
     limiter.enabled = False
 
     # Désactiver le cache pour les tests
     from app.utils.cache import CacheConfig
+
     CacheConfig.CACHE_ENABLED = False
 
     # Créer un contexte d'application

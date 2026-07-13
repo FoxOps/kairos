@@ -7,16 +7,16 @@ from flask import abort, flash, redirect, render_template, request, url_for
 
 from app import db
 from app.auth.decorators import admin_required
+from app.models import Group
 from app.repositories.user_repository import GroupRepository
 from app.routes.admin import admin_bp
 from app.services import GroupService
 from app.utils.optimizations import eager_load
-from app.models import Group
 
 
 @admin_bp.route("/admin/groups")
 @admin_required
-@eager_load(Group, ['users'])
+@eager_load(Group, ["users"])
 def list_groups():
     groups = GroupService.list_all()
     return render_template("admin/groups.html", groups=groups)
@@ -35,7 +35,9 @@ def add_group():
             return redirect(url_for("admin.add_group"))
 
         try:
-            group, error = GroupService.create(name, is_part_of_schedule, is_part_of_oncall)
+            group, error = GroupService.create(
+                name, is_part_of_schedule, is_part_of_oncall
+            )
             if error:
                 flash(f"❌ {error}", "danger")
                 return redirect(url_for("admin.add_group"))
@@ -64,7 +66,9 @@ def edit_group(group_id):
             return redirect(url_for("admin.edit_group", group_id=group_id))
 
         try:
-            updated_group, error = GroupService.update(group_id, name, is_part_of_schedule, is_part_of_oncall)
+            updated_group, error = GroupService.update(
+                group_id, name, is_part_of_schedule, is_part_of_oncall
+            )
             if error:
                 flash(f"❌ {error}", "danger")
                 return redirect(url_for("admin.edit_group", group_id=group_id))

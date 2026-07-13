@@ -2,7 +2,6 @@
 Tests pour les décorateurs de permissions.
 """
 
-import pytest
 from datetime import datetime, timedelta
 
 
@@ -156,8 +155,8 @@ class TestUserOwnsResourceDecorator:
         assert b"Conge supprime" in response.data or b"succes" in response.data
 
         # Vérifier que le congé a été supprimé
-        from app.models import Leave
         from app import db
+        from app.models import Leave
 
         leave = db.session.get(Leave, test_leave.id)
         assert leave is None
@@ -183,8 +182,8 @@ class TestUserOwnsResourceDecorator:
             assert b"Acces refuse" in response.data or b"vos propres" in response.data
 
             # Vérifier que le congé n'a pas été supprimé
-            from app.models import Leave
             from app import db
+            from app.models import Leave
 
             leave = db.session.get(Leave, test_leave.id)
             assert leave is not None
@@ -198,8 +197,8 @@ class TestUserOwnsResourceDecorator:
         assert b"Conge supprime" in response.data or b"succes" in response.data
 
         # Vérifier que le congé a été supprimé
-        from app.models import Leave
         from app import db
+        from app.models import Leave
 
         leave = db.session.get(Leave, test_leave.id)
         assert leave is None
@@ -208,9 +207,7 @@ class TestUserOwnsResourceDecorator:
 class TestShiftPermissions:
     """Tests pour les permissions sur les shifts."""
 
-    def test_admin_can_add_shift(
-        self, logged_in_client, test_user, test_shift_type
-    ):
+    def test_admin_can_add_shift(self, logged_in_client, test_user, test_shift_type):
         """Test qu'un admin peut ajouter un shift."""
         data = {
             "user_id": test_user.id,
@@ -253,8 +250,8 @@ class TestShiftPermissions:
         assert response.status_code == 200
         assert b"Shift supprime" in response.data or b"succes" in response.data
 
-        from app.models import Shift
         from app import db
+        from app.models import Shift
 
         shift = db.session.get(Shift, test_shift.id)
         assert shift is None
@@ -310,8 +307,8 @@ class TestOnCallPermissions:
         assert response.status_code == 200
         assert b"Astreinte supprimee" in response.data or b"succes" in response.data
 
-        from app.models import OnCall
         from app import db
+        from app.models import OnCall
 
         oncall = db.session.get(OnCall, test_oncall.id)
         assert oncall is None
@@ -343,7 +340,9 @@ class TestLeavePermissions:
         assert response.status_code == 200
         assert b"Conge ajoute" in response.data or b"succes" in response.data
 
-    def test_user_cannot_add_others_leave(self, client, test_user, second_user, test_app):
+    def test_user_cannot_add_others_leave(
+        self, client, test_user, second_user, test_app
+    ):
         """Test qu'un utilisateur ne peut pas ajouter un congé pour un autre."""
         with test_app.app_context():
             # Connecter second_user
@@ -377,8 +376,6 @@ class TestLeavePermissions:
             "start_date": "2025-12-20",
             "end_date": "2025-12-25",
         }
-        response = logged_in_client.post(
-            "/leave/add", data=data, follow_redirects=True
-        )
+        response = logged_in_client.post("/leave/add", data=data, follow_redirects=True)
         assert response.status_code == 200
         assert b"Conge ajoute" in response.data or b"succes" in response.data

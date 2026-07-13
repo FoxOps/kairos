@@ -7,9 +7,9 @@ Ce module contient les fonctionnalités d'authentification, y compris:
 - Décorateurs pour les permissions
 """
 
+from app.auth.decorators import admin_required, user_owns_resource
 from app.auth.oidc_auth import OIDCAuthLib as OIDCAuth
 from app.auth.user_manager import UserManager
-from app.auth.decorators import admin_required, user_owns_resource
 
 # Exporter les classes et fonctions principales
-__all__ = ['OIDCAuth', 'UserManager', 'admin_required', 'user_owns_resource']
+__all__ = ["OIDCAuth", "UserManager", "admin_required", "user_owns_resource"]

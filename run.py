@@ -1,11 +1,11 @@
-from app import app, db
 import secrets
 
+from app import app, db
+
 # Importer les modèles pour enregistrer les tables avec SQLAlchemy
-from app.models import Group, User, ShiftType, Shift, OnCall, Leave
+from app.models import Group, ShiftType, User
 
 # Importer les routes pour qu'elles soient enregistrées
-from app.routes import main, admin, export, auth
 
 # Types de shifts par défaut
 DEFAULT_SHIFT_TYPES = [
@@ -18,18 +18,18 @@ DEFAULT_SHIFT_TYPES = [
 def check_database_integrity():
     """Vérifie l'intégrité de la base de données et retourne True si elle est valide."""
     from sqlalchemy import inspect
-    
+
     try:
         # Vérifier que toutes les tables existent
         inspector = inspect(db.engine)
         tables = inspector.get_table_names()
-        
-        required_tables = ['user', 'groups', 'shift_types', 'shift', 'on_call', 'leave']
-        
+
+        required_tables = ["user", "groups", "shift_types", "shift", "on_call", "leave"]
+
         for table in required_tables:
             if table not in tables:
                 return False
-        
+
         return True
     except Exception:
         return False
@@ -58,6 +58,7 @@ def create_default_data():
     dans un `with app.app_context():`, ou équivalent pour les tests).
     """
     import os
+
     from werkzeug.security import generate_password_hash
 
     # Créer le groupe par défaut
@@ -66,15 +67,21 @@ def create_default_data():
     if not default_group:
         default_group = Group(
             name=default_group_name,
-            is_part_of_schedule=os.environ.get("DEFAULT_GROUP_IN_SCHEDULE", "true").lower() != "false",
-            is_part_of_oncall=os.environ.get("DEFAULT_GROUP_IN_ONCALL", "true").lower() != "false",
+            is_part_of_schedule=os.environ.get(
+                "DEFAULT_GROUP_IN_SCHEDULE", "true"
+            ).lower()
+            != "false",
+            is_part_of_oncall=os.environ.get("DEFAULT_GROUP_IN_ONCALL", "true").lower()
+            != "false",
         )
         db.session.add(default_group)
         db.session.commit()
 
     # Créer l'utilisateur admin par défaut
     default_admin_email = os.environ.get("DEFAULT_ADMIN_EMAIL") or "admin@leviia.local"
-    default_admin_password = os.environ.get("DEFAULT_ADMIN_PASSWORD") or secrets.token_urlsafe(16)
+    default_admin_password = os.environ.get(
+        "DEFAULT_ADMIN_PASSWORD"
+    ) or secrets.token_urlsafe(16)
 
     admin_user = User.query.filter_by(email=default_admin_email).first()
     if not admin_user:
@@ -84,7 +91,7 @@ def create_default_data():
             name="Administrateur",  # Utiliser 'name' au lieu de 'username'
             password_hash=generate_password_hash(default_admin_password),
             is_admin=True,
-            group_id=default_group.id
+            group_id=default_group.id,
         )
         db.session.add(admin_user)
         db.session.commit()
@@ -100,7 +107,7 @@ def create_default_data():
                 name=shift_type_data["name"],
                 label=shift_type_data["label"],
                 start_hour=shift_type_data["start_hour"],
-                end_hour=shift_type_data["end_hour"]
+                end_hour=shift_type_data["end_hour"],
             )
             db.session.add(shift_type)
     db.session.commit()
@@ -108,18 +115,18 @@ def create_default_data():
 
 if __name__ == "__main__":
     import os
-    
+
     with app.app_context():
         # Configurer la base de données (une seule fois)
         setup_database()
-        
+
         # Créer les données par défaut
         create_default_data()
 
     # ✅ Écouter sur 0.0.0.0:5000 pour permettre les connexions externes
     host = os.environ.get("FLASK_HOST") or "0.0.0.0"
     port = int(os.environ.get("FLASK_PORT") or 5000)
-    
+
     # Désactiver le reloader pour éviter les problèmes de "database is locked" avec SQLite
     # Le reloader crée un nouveau processus qui peut verrouiller la base de données
     app.run(host=host, port=port, debug=True, use_reloader=False)

@@ -13,21 +13,18 @@ Nouvelle structure:
 - Routes organisées en blueprints dans app/routes/
 """
 
-import logging
 import os
-import secrets
 import warnings
-from typing import Optional
 
 from flask import Flask, render_template
-from flask_login import LoginManager
+from flask_compress import Compress
+from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from flask_talisman import Talisman
-from flask_cors import CORS
 from flask_wtf import CSRFProtect
-from flask_compress import Compress
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Flask-Limiter avertit à chaque init sans backend partagé (redis/memcached).
@@ -73,12 +70,12 @@ _app = None
 
 # Importé après la définition de `db` : app.utils.helpers fait `from app import db`
 # et créerait un import circulaire si ce module était importé plus tôt.
-from app.utils.logging.logger import (
+from app.utils.logging.logger import (  # noqa: E402
+    SensitiveDataFilter,
     get_error_template_data,
+    get_logger,
     log_audit_action,
     log_http_error,
-    get_logger,
-    SensitiveDataFilter,
 )
 
 # ---------------------------------------------------------------------------
@@ -118,7 +115,7 @@ def _make_http_error_handler(code: int):
     return _handler
 
 
-def create_app(config_object: Optional[str] = None):
+def create_app(config_object: str | None = None):
     """
     Factory function pour créer et configurer l'application Flask.
 
@@ -159,7 +156,10 @@ def create_app(config_object: Optional[str] = None):
     # et boucle sur des redirections https. Sans proxy devant l'app
     # (dev/test), ces en-têtes ne sont simplement jamais présents et ce
     # middleware ne change rien.
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+    # Pattern standard Werkzeug pour appliquer un middleware WSGI - mypy
+    # confond l'attribut d'instance avec la méthode Flask.wsgi_app héritée
+    # (100% valide et documenté à l'exécution).
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)  # type: ignore[method-assign]
 
     # Configurer le logging via un module dédié
     from app.utils.logging import configure_logging
@@ -246,10 +246,10 @@ def create_app(config_object: Optional[str] = None):
     CORS(app)
 
     # Importer et enregistrer les blueprints
-    from app.routes.auth import auth_bp
-    from app.routes.main import main_bp
     from app.routes.admin import admin_bp
+    from app.routes.auth import auth_bp
     from app.routes.export import export_bp
+    from app.routes.main import main_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)

@@ -2,8 +2,7 @@
 Tests pour les routes list_* dans admin.py.
 """
 
-import pytest
-from app.models import User, Group, Shift, OnCall, Leave, ShiftType
+from app.models import Group, ShiftType, User
 
 
 class TestListGroups:
@@ -64,12 +63,16 @@ class TestAddGroup:
         initial_count = Group.query.count()
         response = logged_in_client.post(
             "/admin/groups/add",
-            data={"name": "New Group", "is_part_of_schedule": "on", "is_part_of_oncall": "on"},
+            data={
+                "name": "New Group",
+                "is_part_of_schedule": "on",
+                "is_part_of_oncall": "on",
+            },
             follow_redirects=True,
         )
         assert response.status_code == 200
         assert Group.query.count() == initial_count + 1
-        
+
         # Vérifier que le groupe a été créé
         new_group = Group.query.filter_by(name="New Group").first()
         assert new_group is not None
@@ -90,7 +93,11 @@ class TestAddGroup:
         """Test l'ajout d'un groupe avec un nom déjà utilisé."""
         response = logged_in_client.post(
             "/admin/groups/add",
-            data={"name": test_group.name, "is_part_of_schedule": "on", "is_part_of_oncall": "on"},
+            data={
+                "name": test_group.name,
+                "is_part_of_schedule": "on",
+                "is_part_of_oncall": "on",
+            },
             follow_redirects=True,
         )
         assert response.status_code == 200
@@ -120,7 +127,7 @@ class TestAddUser:
         )
         assert response.status_code == 200
         assert User.query.count() == initial_count + 1
-        
+
         # Vérifier que l'utilisateur a été créé
         new_user = User.query.filter_by(email="newuser@test.com").first()
         assert new_user is not None
@@ -166,12 +173,17 @@ class TestAddShiftType:
         initial_count = ShiftType.query.count()
         response = logged_in_client.post(
             "/admin/shift-types/add",
-            data={"name": "night", "label": "Nuit", "start_hour": "22", "end_hour": "23"},
+            data={
+                "name": "night",
+                "label": "Nuit",
+                "start_hour": "22",
+                "end_hour": "23",
+            },
             follow_redirects=True,
         )
         assert response.status_code == 200
         assert ShiftType.query.count() == initial_count + 1
-        
+
         # Vérifier que le type de shift a été créé
         new_shift_type = ShiftType.query.filter_by(name="night").first()
         assert new_shift_type is not None
@@ -189,7 +201,9 @@ class TestAddShiftType:
         assert response.status_code == 200
         assert b"obligatoires" in response.data
 
-    def test_add_shift_type_post_duplicate_name(self, logged_in_client, test_shift_type):
+    def test_add_shift_type_post_duplicate_name(
+        self, logged_in_client, test_shift_type
+    ):
         """Test l'ajout d'un type de shift avec un nom déjà utilisé."""
         response = logged_in_client.post(
             "/admin/shift-types/add",

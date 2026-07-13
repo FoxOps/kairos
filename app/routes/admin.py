@@ -39,7 +39,9 @@ def admin_dashboard():
 # (chaque module fait `from app.routes.admin import admin_bp` puis décore
 # ses fonctions avec @admin_bp.route(...)). Doivent rester après la
 # création de admin_bp ci-dessus.
-from app.routes import admin_group_routes  # noqa: E402,F401
-from app.routes import admin_user_routes  # noqa: E402,F401
-from app.routes import admin_shift_type_routes  # noqa: E402,F401
-from app.routes import admin_automation_routes  # noqa: E402,F401
+from app.routes import (  # noqa: E402
+    admin_automation_routes,  # noqa: F401
+    admin_group_routes,  # noqa: F401
+    admin_shift_type_routes,  # noqa: F401
+    admin_user_routes,  # noqa: F401
+)
