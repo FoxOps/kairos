@@ -4,16 +4,16 @@
    - add_button_label: le texte du bouton (ex: 'Ajouter un utilisateur')
    - add_button_icon: la classe Font Awesome (ex: 'plus')
    - add_button_resource_name: nom de la ressource pour aria-label (optionnel, défaut: add_button_label)
-   - add_button_class: classes supplémentaires (optionnel, ex: 'is-small')
+   - add_button_class: classes supplémentaires (optionnel, ex: 'btn-sm')
 #}
 
 {% set resource_name = add_button_resource_name|default(add_button_label) %}
-{% set button_class = 'button is-primary' %}
+{% set button_class = 'btn btn-primary' %}
 {% if add_button_class %}
 {% set button_class = button_class + ' ' + add_button_class %}
 {% endif %}
 
-<a class="{{ button_class }}" href="{{ url_for(add_button_route) }}" 
+<a class="{{ button_class }}" href="{{ url_for(add_button_route) }}"
    aria-label="{{ resource_name }}" title="{{ resource_name }}">
-    <i class="fas fa-{{ add_button_icon }}" aria-hidden="true"></i>&nbsp; {{ add_button_label }}
+    <i class="fas fa-{{ add_button_icon }}" aria-hidden="true"></i> {{ add_button_label }}
 </a>

@@ -45,10 +45,14 @@ class TestLoginFlow:
 
 
 class TestNavbarBurgerMenu:
-    """Comportement JS pur (toggle is-active/aria-expanded) - jamais
+    """Comportement JS pur (toggle hidden/aria-expanded) - jamais
     exécuté par le client de test Flask, donc jamais vérifié avant
     cette suite. Bug réel trouvé et corrigé en PR #103 : le burger
-    n'existait même pas."""
+    n'existait même pas. Depuis la refonte Tailwind/daisyUI, #navbar-menu
+    est le panneau mobile uniquement (masqué via la classe utilitaire
+    Tailwind "hidden", retirée/remise par navbar-menu.js) - la nav
+    desktop vit dans un élément séparé, #navbar-menu-desktop (toujours
+    visible à partir du breakpoint md, jamais touché par le burger)."""
 
     def test_burger_toggles_menu_on_mobile_viewport(self, logged_in_page):
         page = logged_in_page
@@ -58,24 +62,25 @@ class TestNavbarBurgerMenu:
         menu = page.locator("#navbar-menu")
 
         assert burger.is_visible()
-        assert "is-active" not in (menu.get_attribute("class") or "")
+        assert "hidden" in (menu.get_attribute("class") or "").split()
         assert burger.get_attribute("aria-expanded") == "false"
 
         burger.click()
         page.wait_for_timeout(200)
-        assert "is-active" in menu.get_attribute("class")
+        assert "hidden" not in (menu.get_attribute("class") or "").split()
         assert burger.get_attribute("aria-expanded") == "true"
 
         burger.click()
         page.wait_for_timeout(200)
-        assert "is-active" not in menu.get_attribute("class")
+        assert "hidden" in (menu.get_attribute("class") or "").split()
 
     def test_burger_hidden_on_desktop_viewport(self, logged_in_page):
         page = logged_in_page
         page.set_viewport_size({"width": 1280, "height": 900})
 
         assert not page.locator("#navbar-burger").is_visible()
-        assert page.locator("#navbar-menu").is_visible()
+        assert not page.locator("#navbar-menu").is_visible()
+        assert page.locator("#navbar-menu-desktop").is_visible()
 
 
 class TestDarkThemeToggle:
@@ -182,9 +187,9 @@ class TestDeleteConfirmationModal:
         row = page.locator("tr", has_text="01/03/2031")
         assert row.count() > 0
 
-        row.locator("a.is-danger").first.click()
-        page.wait_for_selector(".modal.is-active")
-        page.click(".modal.is-active button:has-text('Annuler')")
+        row.locator("a.btn-error").first.click()
+        page.wait_for_selector(".modal.modal-open")
+        page.click(".modal.modal-open button:has-text('Annuler')")
         page.wait_for_timeout(200)
 
         # Toujours sur /leave (pas de navigation déclenchée), congé toujours présent.
@@ -200,9 +205,9 @@ class TestDeleteConfirmationModal:
         row = page.locator("tr", has_text="05/04/2031")
         assert row.count() > 0
 
-        row.locator("a.is-danger").first.click()
-        page.wait_for_selector(".modal.is-active")
-        page.click(".modal.is-active button:has-text('Confirmer')")
+        row.locator("a.btn-error").first.click()
+        page.wait_for_selector(".modal.modal-open")
+        page.click(".modal.modal-open button:has-text('Confirmer')")
         page.wait_for_load_state("networkidle")
 
         assert page.locator("tr", has_text="05/04/2031").count() == 0

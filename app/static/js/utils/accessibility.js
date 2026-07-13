@@ -229,35 +229,33 @@ export function makeTableAccessible(tableSelector) {
 export function confirmActionAccessible(message, onConfirm, onCancel) {
     // Créer une modale accessible
     const modal = document.createElement('div');
-    modal.className = 'modal is-active';
+    modal.className = 'modal modal-open';
     modal.setAttribute('role', 'dialog');
     modal.setAttribute('aria-modal', 'true');
     modal.setAttribute('aria-labelledby', 'confirmation-title');
 
     modal.innerHTML = `
-        <div class="modal-background" role="button" tabindex="0" aria-label="Fermer"></div>
-        <div class="modal-card">
-            <header class="modal-card-head">
-                <h2 id="confirmation-title" class="modal-card-title">Confirmation</h2>
-                <button class="delete" aria-label="Fermer" role="button"></button>
-            </header>
-            <section class="modal-card-body">
-                <p>${message}</p>
-            </section>
-            <footer class="modal-card-foot">
-                <button class="button is-light" aria-label="Annuler" role="button">Annuler</button>
-                <button class="button is-primary" aria-label="Confirmer" role="button">Confirmer</button>
-            </footer>
+        <div class="modal-box">
+            <div class="flex items-start justify-between">
+                <h2 id="confirmation-title" class="text-lg font-bold">Confirmation</h2>
+                <button class="btn btn-sm btn-circle btn-ghost" aria-label="Fermer" role="button">&times;</button>
+            </div>
+            <p class="py-4">${message}</p>
+            <div class="modal-action">
+                <button class="btn" aria-label="Annuler" role="button">Annuler</button>
+                <button class="btn btn-primary" aria-label="Confirmer" role="button">Confirmer</button>
+            </div>
         </div>
+        <div class="modal-backdrop" role="button" tabindex="0" aria-label="Fermer"></div>
     `;
 
     document.body.appendChild(modal);
 
     // Mettre le focus sur le bouton Confirmer
-    const confirmBtn = modal.querySelector('.button.is-primary');
-    const cancelBtn = modal.querySelector('.button.is-light');
-    const closeBtn = modal.querySelector('.delete');
-    const background = modal.querySelector('.modal-background');
+    const confirmBtn = modal.querySelector('.btn-primary');
+    const cancelBtn = modal.querySelector('.modal-action .btn:not(.btn-primary)');
+    const closeBtn = modal.querySelector('.btn-circle');
+    const background = modal.querySelector('.modal-backdrop');
 
     focusElement(confirmBtn);
 

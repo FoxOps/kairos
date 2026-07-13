@@ -12,7 +12,7 @@
 
 {% if current_user.is_authenticated and current_user.ics_token %}
     {% if show_all %}
-    <a class="button is-success" 
+    <a class="btn btn-success"
        href="{{ request.host_url ~ current_user.get_ics_export_url(resource_type, 'all') }}" 
        aria-label="Exporter tous les {{ resource_name }} au format iCalendar"
        title="Exporter tous les {{ resource_name }}">
@@ -21,7 +21,7 @@
     {% endif %}
     
     {% if show_my %}
-    <a class="button is-success" 
+    <a class="btn btn-success"
        href="{{ request.host_url ~ current_user.get_ics_export_url(resource_type, 'my') }}" 
        aria-label="Exporter mes {{ resource_name }} au format iCalendar"
        title="Exporter mes {{ resource_name }}">

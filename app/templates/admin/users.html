@@ -3,78 +3,76 @@
 {% block title %}Gestion des utilisateurs - Leviia Schedule{% endblock %}
 
 {% block admin_content %}
-<section class="section">
-    <div class="container">
-        <h1 class="title">
-            <i class="fas fa-users" aria-hidden="true"></i> Gestion des utilisateurs
-        </h1>
-        
-        <!-- Bouton pour ajouter un utilisateur -->
-        <div class="buttons" role="group" aria-label="Actions utilisateurs">
-            {% set add_button_route = 'admin.add_user' %}
-            {% set add_button_label = 'Ajouter un utilisateur' %}
-            {% set add_button_icon = 'plus' %}
-            {% set add_button_resource_name = 'Ajouter un nouvel utilisateur' %}
-            {% include "_add_button.html" %}
-            <a class="button is-light" href="{{ url_for('admin.admin_dashboard') }}"
-               aria-label="Retour à l'administration" title="Retour à l'admin">
-                Retour à l'admin
-            </a>
-        </div>
-        
-        <!-- Tableau des utilisateurs -->
-        <div class="table-container" role="region" aria-labelledby="users-title">
-            <table class="table is-fullwidth is-striped" aria-describedby="users-title">
-                <caption class="is-sr-only">Liste des utilisateurs</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">ID</th>
-                        <th scope="col">Nom</th>
-                        <th scope="col">Email</th>
-                        <th scope="col">Groupe</th>
-                        <th scope="col">Administrateur</th>
-                        <th scope="col">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for user in users %}
-                    <tr>
-                        <td>{{ user.id }}</td>
-                        <td>{{ user.name }}</td>
-                        <td>{{ user.email }}</td>
-                        <td>{{ user.group.name if user.group else 'Aucun' }}</td>
-                        <td>
-                            {% if user.is_admin %}
-                                <span class="icon has-text-success"><i class="fas fa-check" aria-hidden="true"></i></span>
-                            {% else %}
-                                <span class="icon has-text-danger"><i class="fas fa-times" aria-hidden="true"></i></span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="is-flex gap-2" role="group" aria-label="Actions pour l'utilisateur {{ user.name }}">
-                                <a class="button is-small is-warning" href="{{ url_for('admin.edit_user', user_id=user.id) }}" 
-                                   aria-label="Modifier l'utilisateur {{ user.name }}" title="Modifier l'utilisateur">
-                                    <i class="fas fa-edit" aria-hidden="true"></i>
-                                </a>
-                                <a class="button is-small is-danger" href="{{ url_for('admin.delete_user', user_id=user.id) }}"
-                                   onclick="event.preventDefault(); const href = this.href; Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer l\'utilisateur {{ user.name }} ?', function() { window.location.href = href; });"
-                                   aria-label="Supprimer l'utilisateur {{ user.name }}" title="Supprimer l'utilisateur">
-                                    <i class="fas fa-trash" aria-hidden="true"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- Légende des actions -->
-        {% set action_items = [
-            {'class': 'is-warning is-small', 'icon': 'edit', 'label': 'Modifier', 'description': 'Modifier l\'utilisateur'},
-            {'class': 'is-danger is-small', 'icon': 'trash', 'label': 'Supprimer', 'description': 'Supprimer l\'utilisateur'}
-        ] %}
-        {% include "_action_legend.html" %}
+<section class="p-4 md:p-6 max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold mb-4">
+        <i class="fas fa-users" aria-hidden="true"></i> Gestion des utilisateurs
+    </h1>
+
+    <!-- Bouton pour ajouter un utilisateur -->
+    <div class="flex gap-2 mb-4" role="group" aria-label="Actions utilisateurs">
+        {% set add_button_route = 'admin.add_user' %}
+        {% set add_button_label = 'Ajouter un utilisateur' %}
+        {% set add_button_icon = 'plus' %}
+        {% set add_button_resource_name = 'Ajouter un nouvel utilisateur' %}
+        {% include "_add_button.html" %}
+        <a class="btn btn-ghost" href="{{ url_for('admin.admin_dashboard') }}"
+           aria-label="Retour à l'administration" title="Retour à l'admin">
+            Retour à l'admin
+        </a>
     </div>
+
+    <!-- Tableau des utilisateurs -->
+    <div class="overflow-x-auto" role="region" aria-labelledby="users-title">
+        <table class="table table-zebra" aria-describedby="users-title">
+            <caption class="sr-only">Liste des utilisateurs</caption>
+            <thead>
+                <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Nom</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Groupe</th>
+                    <th scope="col">Administrateur</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.group.name if user.group else 'Aucun' }}</td>
+                    <td>
+                        {% if user.is_admin %}
+                            <i class="fas fa-check text-success" aria-hidden="true"></i>
+                        {% else %}
+                            <i class="fas fa-times text-error" aria-hidden="true"></i>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="flex gap-2" role="group" aria-label="Actions pour l'utilisateur {{ user.name }}">
+                            <a class="btn btn-warning btn-sm" href="{{ url_for('admin.edit_user', user_id=user.id) }}"
+                               aria-label="Modifier l'utilisateur {{ user.name }}" title="Modifier l'utilisateur">
+                                <i class="fas fa-edit" aria-hidden="true"></i>
+                            </a>
+                            <a class="btn btn-error btn-sm" href="{{ url_for('admin.delete_user', user_id=user.id) }}"
+                               onclick="event.preventDefault(); const href = this.href; Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer l\'utilisateur {{ user.name }} ?', function() { window.location.href = href; });"
+                               aria-label="Supprimer l'utilisateur {{ user.name }}" title="Supprimer l'utilisateur">
+                                <i class="fas fa-trash" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Légende des actions -->
+    {% set action_items = [
+        {'class': 'btn-warning btn-sm', 'icon': 'edit', 'label': 'Modifier', 'description': 'Modifier l\'utilisateur'},
+        {'class': 'btn-error btn-sm', 'icon': 'trash', 'label': 'Supprimer', 'description': 'Supprimer l\'utilisateur'}
+    ] %}
+    {% include "_action_legend.html" %}
 </section>
 {% endblock %}
