@@ -14,7 +14,9 @@ main_bp = Blueprint("main", __name__)
 # (chaque module fait `from app.routes.main import main_bp` puis décore
 # ses fonctions avec @main_bp.route(...)). Doivent rester après la
 # création de main_bp ci-dessus.
-from app.routes import dashboard_routes  # noqa: E402,F401
-from app.routes import shift_routes  # noqa: E402,F401
-from app.routes import oncall_routes  # noqa: E402,F401
-from app.routes import leave_routes  # noqa: E402,F401
+from app.routes import (  # noqa: E402
+    dashboard_routes,  # noqa: F401
+    leave_routes,  # noqa: F401
+    oncall_routes,  # noqa: F401
+    shift_routes,  # noqa: F401
+)

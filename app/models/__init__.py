@@ -10,20 +10,20 @@ organized by domain:
 - Base: BaseModel (common fields and methods)
 """
 
-from app.models.base import BaseModel
-from app.models.user import User, Group
-from app.models.shift import Shift, ShiftType
-from app.models.oncall import OnCall
-from app.models.leave import Leave
 from app.models.automation_config import AutomationConfig
+from app.models.base import BaseModel
+from app.models.leave import Leave
+from app.models.oncall import OnCall
+from app.models.shift import Shift, ShiftType
+from app.models.user import Group, User
 
 __all__ = [
-    'BaseModel',
-    'User',
-    'Group',
-    'Shift',
-    'ShiftType',
-    'OnCall',
-    'Leave',
-    'AutomationConfig'
+    "BaseModel",
+    "User",
+    "Group",
+    "Shift",
+    "ShiftType",
+    "OnCall",
+    "Leave",
+    "AutomationConfig",
 ]

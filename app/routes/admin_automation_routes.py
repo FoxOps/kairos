@@ -144,28 +144,44 @@ def automation_full():
             start_date_str = request.form.get("start_date")
             end_date_str = request.form.get("end_date")
 
-            rotation_order_ids = AutomationAdminService.parse_rotation_order_from_form(request.form)
+            rotation_order_ids = AutomationAdminService.parse_rotation_order_from_form(
+                request.form
+            )
 
             if action == "save_order":
                 error = AutomationAdminService.save_rotation_order(rotation_order_ids)
                 if error:
-                    flash(f"❌ Erreur lors de la sauvegarde de l'ordre : {error}", "danger")
+                    flash(
+                        f"❌ Erreur lors de la sauvegarde de l'ordre : {error}",
+                        "danger",
+                    )
                 else:
-                    flash("✅ Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour appliquer.", "success")
+                    flash(
+                        "✅ Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour appliquer.",
+                        "success",
+                    )
                 return redirect(url_for("admin.automation_full"))
 
             try:
                 start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
                 end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
 
-                dry_run = (action == "dry_run")
+                dry_run = action == "dry_run"
 
                 if not dry_run:
-                    oncalls_deleted, shifts_deleted = AutomationAdminService.clear_period(start_date, end_date)
+                    oncalls_deleted, shifts_deleted = (
+                        AutomationAdminService.clear_period(start_date, end_date)
+                    )
                     if oncalls_deleted:
-                        flash(f"🗑️ {oncalls_deleted} astreintes existantes supprimées pour la période", "info")
+                        flash(
+                            f"🗑️ {oncalls_deleted} astreintes existantes supprimées pour la période",
+                            "info",
+                        )
                     if shifts_deleted:
-                        flash(f"🗑️ {shifts_deleted} shifts existants supprimés pour la période", "info")
+                        flash(
+                            f"🗑️ {shifts_deleted} shifts existants supprimés pour la période",
+                            "info",
+                        )
 
                 oncalls, oncall_messages = OnCallAutomation.generate_oncall_schedule(
                     start_date, end_date, rotation_order_ids, dry_run=dry_run
@@ -180,14 +196,21 @@ def automation_full():
                         end_date=end_date,
                     )
                 else:
-                    shifts, shift_messages = AdvancedShiftAutomation.generate_full_schedule(
-                        start_date, end_date, dry_run=False
+                    shifts, shift_messages = (
+                        AdvancedShiftAutomation.generate_full_schedule(
+                            start_date, end_date, dry_run=False
+                        )
                     )
 
-                    _flash_automation_messages(oncall_messages, default_category="danger")
+                    _flash_automation_messages(
+                        oncall_messages, default_category="danger"
+                    )
                     _flash_automation_messages(shift_messages, default_category="info")
 
-                    flash(f"🔄 Régénération complète terminée pour la période du {start_date.strftime('%d/%m/%Y')} au {end_date.strftime('%d/%m/%Y')}", "success")
+                    flash(
+                        f"🔄 Régénération complète terminée pour la période du {start_date.strftime('%d/%m/%Y')} au {end_date.strftime('%d/%m/%Y')}",
+                        "success",
+                    )
                     return redirect(url_for("admin.automation_full"))
 
             except ValueError as e:
@@ -244,7 +267,9 @@ def refresh_shifts():
             deleted = ShiftRepository.delete_in_date_range(start_date, end_date)
             if deleted:
                 db.session.commit()
-                flash(f"🗑️ {deleted} shifts existants supprimés pour la période", "info")
+                flash(
+                    f"🗑️ {deleted} shifts existants supprimés pour la période", "info"
+                )
 
             shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
                 start_date, end_date, dry_run=False

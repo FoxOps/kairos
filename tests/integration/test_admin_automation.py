@@ -2,9 +2,7 @@
 Tests pour les routes d'automatisation dans admin.py.
 """
 
-import pytest
 from datetime import date, timedelta
-from app.models import User, Group, Shift, OnCall, ShiftType
 
 
 class TestAutomationDashboard:
@@ -29,13 +27,18 @@ class TestAutomationShifts:
         """Test l'affichage de la page de configuration des shifts automatiques."""
         response = logged_in_client.get("/admin/automation/shifts")
         assert response.status_code == 200
-        assert b"shifts" in response.data.lower() or b"automatisation" in response.data.lower()
+        assert (
+            b"shifts" in response.data.lower()
+            or b"automatisation" in response.data.lower()
+        )
 
-    def test_automation_shifts_post_generate(self, logged_in_client, test_user, test_group):
+    def test_automation_shifts_post_generate(
+        self, logged_in_client, test_user, test_group
+    ):
         """Test la génération de shifts automatiques."""
         today = date.today()
         end_date = today + timedelta(days=7)
-        
+
         response = logged_in_client.post(
             "/admin/automation/shifts",
             data={
@@ -53,7 +56,7 @@ class TestAutomationShifts:
         """Test le dry run de la génération de shifts."""
         today = date.today()
         end_date = today + timedelta(days=7)
-        
+
         response = logged_in_client.post(
             "/admin/automation/shifts",
             data={
@@ -79,7 +82,11 @@ class TestAutomationShifts:
         )
         assert response.status_code == 200
         # Should show error message
-        assert b"invalide" in response.data or b"invalid" in response.data or b"Erreur" in response.data
+        assert (
+            b"invalide" in response.data
+            or b"invalid" in response.data
+            or b"Erreur" in response.data
+        )
 
 
 class TestAutomationFull:
@@ -89,7 +96,11 @@ class TestAutomationFull:
         """Test l'affichage de la page d'automatisation complète."""
         response = logged_in_client.get("/admin/automation/full")
         assert response.status_code == 200
-        assert b"astreintes" in response.data.lower() or b"oncall" in response.data.lower() or b"Automatisation" in response.data
+        assert (
+            b"astreintes" in response.data.lower()
+            or b"oncall" in response.data.lower()
+            or b"Automatisation" in response.data
+        )
 
     def test_automation_full_post_save_order(self, logged_in_client, test_user):
         """Test la sauvegarde de l'ordre de rotation."""
@@ -113,7 +124,7 @@ class TestAutomationFull:
         while start_date.weekday() != 4:  # Friday
             start_date += timedelta(days=1)
         end_date = start_date + timedelta(days=7)
-        
+
         response = logged_in_client.post(
             "/admin/automation/full",
             data={
@@ -141,7 +152,11 @@ class TestAutomationFull:
             follow_redirects=True,
         )
         assert response.status_code == 200
-        assert b"invalide" in response.data or b"invalid" in response.data or b"Erreur" in response.data
+        assert (
+            b"invalide" in response.data
+            or b"invalid" in response.data
+            or b"Erreur" in response.data
+        )
 
 
 class TestAutomationStatus:
@@ -167,13 +182,17 @@ class TestRefreshShifts:
         """Test l'affichage de la page de rafraîchissement des shifts."""
         response = logged_in_client.get("/admin/automation/refresh-shifts")
         assert response.status_code == 200
-        assert b"rafra" in response.data.lower() or b"refresh" in response.data.lower() or b"shifts" in response.data.lower()
+        assert (
+            b"rafra" in response.data.lower()
+            or b"refresh" in response.data.lower()
+            or b"shifts" in response.data.lower()
+        )
 
     def test_refresh_shifts_post(self, logged_in_client):
         """Test le rafraîchissement des shifts."""
         today = date.today()
         end_date = today + timedelta(days=7)
-        
+
         response = logged_in_client.post(
             "/admin/automation/refresh-shifts",
             data={
@@ -195,7 +214,11 @@ class TestRefreshShifts:
             follow_redirects=True,
         )
         assert response.status_code == 200
-        assert b"invalide" in response.data or b"invalid" in response.data or b"Erreur" in response.data
+        assert (
+            b"invalide" in response.data
+            or b"invalid" in response.data
+            or b"Erreur" in response.data
+        )
 
     def test_refresh_shifts_unauthenticated(self, client):
         """Test que la page de rafraîchissement nécessite une authentification."""

@@ -20,9 +20,13 @@ python run.py                              # http://localhost:5000
 
 # Tests
 python -m pytest tests/ -v --tb=short              # all tests (make test)
-python -m pytest tests/test_models.py -v           # one file
-python -m pytest tests/test_models.py::TestUserModel::test_user_creation -v  # one test
+python -m pytest tests/unit/test_models.py -v      # one file
+python -m pytest tests/unit/test_models.py::TestUserModel::test_user_creation -v  # one test
 python -m pytest tests/ --cov=app --cov=config --cov-report=term-missing    # coverage
+
+# Real-browser E2E tests (optional, not in requirements.txt - skipped cleanly if absent)
+pip install -r requirements-e2e.txt && playwright install chromium
+python -m pytest tests/e2e/test_browser_flows.py -v --tb=short
 
 # Lint / type-check / format
 ruff check . --config=.ruff.toml
@@ -64,7 +68,7 @@ touching auth flows.
   app actually uses — `create_app()` defaults to `"app.config.Config"`, and tests use
   `create_app('app.config.TestingConfig')`.
 - Root-level `config.py` is a separate, mostly-legacy module only exercised by
-  `tests/test_config.py` and `scripts/validate_config.py`. Don't confuse the two when changing
+  `tests/unit/test_config.py` and `scripts/validate_config.py`. Don't confuse the two when changing
   configuration — check which one a given caller actually imports (`app.config.X` vs `config`).
 - `config_oidc.py` (`OIDCConfig`) and `config_performance.py` are additional standalone config
   modules loaded directly by `app/__init__.py` and `app/auth/oidc_auth.py`.
@@ -127,3 +131,25 @@ Talisman/OIDC/rate-limiting/cache), `client` wraps its test client, and `logged_
 an admin user via a real POST to `/login`. Model fixtures (`test_user`, `admin_user`, `test_shift`,
 `test_leave`, `test_oncall`, `test_shift_type`, etc.) build on `test_app`/`test_group`. Reuse these
 fixtures rather than constructing app instances manually in new tests.
+
+`tests/e2e/` has two layers, deliberately kept separate (see `report/E2E Playwright - Tests
+navigateur réel.md`): `test_user_flows.py` uses the Flask test client (no browser, fast, good for
+permissions/redirects/data) and `test_browser_flows.py` drives real Chromium via Playwright
+(`tests/e2e/conftest.py`'s `live_server_url` fixture runs the app in a thread with Talisman/CSP
+*actually* active — not `TestingConfig`'s Talisman-skip). The browser layer exists specifically to
+catch CSP/JS/CSS regressions the test client structurally cannot see (it never executes JS or
+applies CSS) — `TestNoConsoleErrors` asserts zero browser console errors across key pages, which is
+how 3 real CSP bugs were found in production before this suite existed (PR #103). Requires
+`requirements-e2e.txt` + `playwright install chromium`; skips cleanly via `pytest.importorskip` if
+absent, so `make test`/CI never breaks for contributors without a browser installed.
+
+OIDC/SSO has three test layers (`tests/unit/test_oidc_config.py`, `test_oidc_auth.py`,
+`test_user_manager_oidc_sync.py`; `tests/integration/test_oidc_routes.py`; `tests/e2e/test_oidc_browser_flow.py`
++ `tests/e2e/oidc_mock_provider.py`, a real minimal Flask OIDC provider run in a thread, not a
+Docker container and not Python-level mocks — exercises the real discovery/token/userinfo HTTP
+calls). Found and fixed a real bug: with `OIDC_DISABLE_BASIC_AUTH=true`, any OIDC failure path
+redirected to `/login`, which redirected straight back to `/oidc/login`, infinite-looping — see
+`app/routes/auth.py`'s `oidc_error` query param workaround.
+
+`report/TESTING_SUMMARY.md` tracks aggregate test counts/coverage/structure — update it after any
+change that shifts those numbers materially (new test file, new layer, coverage swing).

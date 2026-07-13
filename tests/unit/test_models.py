@@ -2,11 +2,12 @@
 Tests pour les modèles de la base de données.
 """
 
-import pytest
 from datetime import datetime, timedelta
-from werkzeug.security import check_password_hash
-from app.models import User, Group, Shift, OnCall, Leave, ShiftType
+
+import pytest
+
 from app import db
+from app.models import Group, Leave, OnCall, Shift, ShiftType, User
 
 
 class TestGroupModel:

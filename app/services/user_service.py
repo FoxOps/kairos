@@ -6,8 +6,6 @@ from (admins see everyone relevant, regular users only see themselves),
 plus admin CRUD on users.
 """
 
-from typing import List, Optional, Tuple
-
 from app import db
 from app.models import User
 from app.repositories.leave_repository import LeaveRepository
@@ -20,33 +18,35 @@ class UserService:
     """Logique métier pour les utilisateurs."""
 
     @staticmethod
-    def list_all() -> List[User]:
+    def list_all() -> list[User]:
         return UserRepository.get_all()
 
     @staticmethod
-    def list_for_schedule() -> List[User]:
+    def list_for_schedule() -> list[User]:
         return UserRepository.get_for_schedule_group()
 
     @staticmethod
-    def list_for_oncall() -> List[User]:
+    def list_for_oncall() -> list[User]:
         return UserRepository.get_for_oncall_group()
 
     @staticmethod
-    def visible_users_for_leave(current_user: User) -> List[User]:
+    def visible_users_for_leave(current_user: User) -> list[User]:
         """Un admin voit tout le monde, un utilisateur normal ne se voit que lui-même."""
         if current_user.is_admin:
             return UserRepository.get_all()
         return [current_user]
 
     @staticmethod
-    def visible_users_for_schedule(current_user: User) -> List[User]:
+    def visible_users_for_schedule(current_user: User) -> list[User]:
         """Un admin voit les utilisateurs du planning, un utilisateur normal ne se voit que lui-même."""
         if current_user.is_admin:
             return UserRepository.get_for_schedule_group()
         return [current_user]
 
     @staticmethod
-    def create(name: str, email: str, group_id: int, password: str = "") -> Tuple[Optional[User], Optional[str]]:
+    def create(
+        name: str, email: str, group_id: int, password: str = ""
+    ) -> tuple[User | None, str | None]:
         if UserRepository.email_taken(email):
             return None, "Un utilisateur avec cet email existe déjà."
 
@@ -57,8 +57,13 @@ class UserService:
 
     @staticmethod
     def update(
-        user_id: int, name: str, email: str, group_id: int, is_admin: bool, password: str = ""
-    ) -> Tuple[Optional[User], Optional[str]]:
+        user_id: int,
+        name: str,
+        email: str,
+        group_id: int,
+        is_admin: bool,
+        password: str = "",
+    ) -> tuple[User | None, str | None]:
         user = UserRepository.get_by_id(user_id)
         if not user:
             return None, None
@@ -76,7 +81,7 @@ class UserService:
         return user, None
 
     @staticmethod
-    def delete(user_id: int) -> Tuple[bool, Optional[str]]:
+    def delete(user_id: int) -> tuple[bool, str | None]:
         user = UserRepository.get_by_id(user_id)
         if not user:
             return False, None
@@ -86,7 +91,10 @@ class UserService:
             or OnCallRepository.exists_for_user(user_id)
             or LeaveRepository.exists_for_user(user_id)
         ):
-            return False, "Impossible de supprimer cet utilisateur : il a des shifts, astreintes ou congés associés."
+            return (
+                False,
+                "Impossible de supprimer cet utilisateur : il a des shifts, astreintes ou congés associés.",
+            )
 
         UserRepository.delete(user)
         db.session.commit()

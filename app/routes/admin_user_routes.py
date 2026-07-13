@@ -17,7 +17,7 @@ from app.utils.optimizations import eager_load
 
 @admin_bp.route("/admin/users")
 @admin_required
-@eager_load(User, ['group', 'shifts', 'on_calls', 'leaves'])
+@eager_load(User, ["group", "shifts", "on_calls", "leaves"])
 def list_users():
     users = (
         User.query.options(
@@ -81,7 +81,9 @@ def edit_user(user_id):
             return render_template("admin/edit_user.html", user=user, groups=groups)
 
         try:
-            updated_user, error = UserService.update(user_id, name, email, int(group_id), is_admin, password)
+            updated_user, error = UserService.update(
+                user_id, name, email, int(group_id), is_admin, password
+            )
             if error:
                 flash(f"❌ {error}", "danger")
                 return render_template("admin/edit_user.html", user=user, groups=groups)

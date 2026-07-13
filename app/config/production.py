@@ -8,56 +8,62 @@ This configuration is used in production and includes:
 """
 
 import os
-from app.config.base import Config, get_bool_from_env, get_int_from_env
+from datetime import timedelta
+
+from app.config.base import Config, get_bool_from_env
 
 
 class ProductionConfig(Config):
     """
     Production-specific configuration.
-    
+
     Extends the base Config class with production-specific settings.
     """
-    
+
     # Disable debug mode
     DEBUG: bool = False
     TESTING: bool = False
     DEVELOPMENT: bool = False
-    
+
     # Production database (should be set via DATABASE_URL)
-    SQLALCHEMY_DATABASE_URI: str = os.environ.get("DATABASE_URL") or "postgresql:///leviia"
+    SQLALCHEMY_DATABASE_URI: str = (
+        os.environ.get("DATABASE_URL") or "postgresql:///leviia"
+    )
     SQLALCHEMY_ECHO: bool = False
     SQLALCHEMY_RECORD_QUERIES: bool = False
-    
+
     # Security settings for production
     SESSION_COOKIE_SECURE: bool = True
     SESSION_COOKIE_HTTPONLY: bool = True
     SESSION_COOKIE_SAMESITE: str = "Lax"
-    
+
     # Rate limiting (strict in production)
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_DEFAULT: str = "200 per day, 50 per hour"
-    
+
     # Cache settings for production
     CACHE_TYPE: str = os.environ.get("CACHE_TYPE") or "redis"
     CACHE_DEFAULT_TIMEOUT: int = 300  # 5 minutes
-    CACHE_REDIS_URL: str = os.environ.get("CACHE_REDIS_URL") or "redis://localhost:6379/0"
-    
+    CACHE_REDIS_URL: str = (
+        os.environ.get("CACHE_REDIS_URL") or "redis://localhost:6379/0"
+    )
+
     # Logging configuration
     LOG_LEVEL: str = os.environ.get("LOG_LEVEL") or "INFO"
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    
+
     # Production-specific settings
-    PERMANENT_SESSION_LIFETIME: int = 3600  # 1 hour in seconds
-    
+    PERMANENT_SESSION_LIFETIME: timedelta = timedelta(hours=1)
+
     # Security headers
     TALISMAN_FORCE_HTTPS: bool = get_bool_from_env("TALISMAN_FORCE_HTTPS", True)
     TALISMAN_STRICT_TRANSPORT_SECURITY: bool = get_bool_from_env(
         "TALISMAN_STRICT_TRANSPORT_SECURITY", True
     )
-    
+
     # CORS settings
     CORS_ORIGINS: list = os.environ.get("CORS_ORIGINS", "*").split(",")
-    
+
     # Compression settings
     COMPRESS_REGISTER: bool = get_bool_from_env("COMPRESS_REGISTER", True)
     COMPRESS_MIMETYPES: list = [
@@ -65,5 +71,5 @@ class ProductionConfig(Config):
         "text/css",
         "text/xml",
         "application/json",
-        "application/javascript"
+        "application/javascript",
     ]

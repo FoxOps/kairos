@@ -28,7 +28,8 @@ Utilisation:
 """
 
 from functools import wraps
-from flask import abort, flash, redirect, url_for
+
+from flask import flash, redirect, url_for
 from flask_login import current_user, login_required
 
 
@@ -133,6 +134,7 @@ def user_owns_resource(model, resource_id_param, user_id_attr="user_id"):
 
             # Récupérer la ressource depuis la base de données
             from app import db
+
             resource = db.session.get(model, resource_id)
 
             # Si la ressource n'existe pas, on laisse passer (la route va gérer le 404)

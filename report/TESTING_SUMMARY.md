@@ -2,427 +2,215 @@
 
 ## 📊 Aperçu Global
 
-- **Date de mise à jour** : 26 juin 2026
-- **Nombre total de tests** : 522
-- **Tests réussis** : 515 ✅
-- **Tests échoués** : 2 ❌
-- **Tests ignorés** : 7
-- **Taux de réussite** : ~98.7%
-- **Durée totale** : ~1 minute 15 secondes
-- **Couverture de code** : **~66%** ⚠️
-- **Avertissements** : 1 ⚠️
+- **Date de mise à jour** : 13 juillet 2026
+- **Nombre total de tests** : 881
+- **Tests réussis** : 881 ✅
+- **Tests échoués** : 0
+- **Couverture de code** : **~88%** (`--cov=app --cov=config`)
+- **Lint (ruff)** : propre - **0 erreur**
+- **Types (mypy)** : propre - **0 erreur**
+- **Formatage (black)** : conforme
 
 ---
 
 ## 🎯 Stratégie de Tests
 
-### Philosophie
-Notre stratégie de tests repose sur **trois piliers** :
+### Philosophie : quatre couches, pas trois
 
-1. **Tests Unitaires** : Vérification des composants individuels (modèles, fonctions utilitaires, décorateurs)
-2. **Tests d'Intégration** : Vérification des interactions entre composants (routes, templates, base de données)
-3. **Tests Fonctionnels** : Vérification des fonctionnalités complètes (workflows utilisateur, automatisation)
+1. **Tests unitaires** (`tests/unit/`) : composants isolés (modèles, config,
+   automatisation, helpers, décorateurs) - pas de client HTTP.
+2. **Tests d'intégration** (`tests/integration/`) : routes Flask via le
+   client de test (`client`, `logged_in_client`), CSRF/CSP/permissions,
+   pas de navigateur réel.
+3. **Tests E2E - client de test** (`tests/e2e/test_user_flows.py`) :
+   parcours utilisateur complets (login → action → vérification →
+   logout), toujours via le client de test Flask.
+4. **Tests E2E - navigateur réel** (`tests/e2e/test_browser_flows.py`,
+   `test_oidc_browser_flow.py`) : Playwright + Chromium, **optionnel**
+   (voir section dédiée plus bas). Existe précisément parce que les
+   trois couches précédentes n'exécutent jamais de JS ni n'appliquent
+   CSS/CSP - une catégorie de bug entière (3 vrais bugs CSP trouvés en
+   PR #103) leur est structurellement invisible.
 
-### Outils Utilisés
-- **Framework de test** : `pytest` - Pour l'exécution et la gestion des tests
-- **Fixtures** : Fixtures personnalisées dans `conftest.py` pour l'application Flask, la base de données, et les clients authentifiés
-- **Couverture** : Mesure locale de la couverture avec `pytest-cov` (sans intégration CI externe)
+### Outils utilisés
 
-### Exclusions Volontaires
-- **Pas de GitHub Actions** : Exécution des tests en local uniquement
-- **Pas de Codecov** : Pas d'intégration avec des services externes de couverture de code
-- **Pas de CI/CD automatisé** : Les tests sont exécutés manuellement ou via des scripts locaux
+- **Framework** : `pytest` (+ `pytest-flask`, `pytest-cov`)
+- **Fixtures** : `tests/conftest.py` (chaîne `test_app`/`client`/
+  `logged_in_client`) + `tests/fixtures/` (modèles : user, group, shift,
+  leave, oncall)
+- **Navigateur réel (optionnel)** : `pytest-playwright` + Chromium, voir
+  `requirements-e2e.txt`
+- **CI** : GitLab CI (`.gitlab-ci/.gitlab-ci.yml`) - `run_tests` (client
+  de test, bloquant), `run_e2e_browser` (Playwright, `allow_failure:
+  true` tant que non éprouvé en CI)
 
 ---
 
-## 📁 Structure des Tests
+## 📁 Structure des tests
 
 ```
 tests/
-├── conftest.py                 # Fixtures partagées pour tous les tests
-├── test_config.py              # Tests de configuration de l'application
-├── test_models.py              # Tests des modèles de données
-├── test_routes.py              # Tests des routes principales
-├── test_auth_priority.py       # Tests d'authentification et autorisation
-├── test_main_priority.py       # Tests des routes principales
-├── test_admin_lists.py         # Tests de l'administration (listes)
-├── test_admin_priority.py      # Tests de l'administration (édition/suppression)
-├── test_admin_automation.py    # Tests du tableau de bord admin
-├── test_automation.py          # Tests de l'automatisation des shifts
-├── test_advanced_shift_automation.py  # Tests avancés d'automatisation
-├── test_shift_rotation_fix.py  # Tests de correction de rotation
-├── test_export_routes.py       # Tests des routes d'export
-├── test_ics_export.py          # Tests de l'export ICS
-├── test_decorators.py          # Tests des décorateurs
-├── test_decorators_unit.py    # Tests unitaires des décorateurs
-├── test_helpers.py             # Tests des fonctions utilitaires
-├── test_run_functions.py       # Tests des fonctions d'initialisation
-├── test_error_handlers.py      # Tests des gestionnaires d'erreurs
-└── test_dark_theme.py          # Tests du thème sombre (22 tests)
+├── conftest.py                      # Fixture chain : test_app, client, logged_in_client
+├── fixtures/                        # test_user, test_group, test_shift, test_leave, test_oncall...
+│
+├── unit/                            # 410 tests - composants isolés, pas de HTTP
+│   ├── test_models.py               # User, Group, Shift, OnCall, Leave, ShiftType
+│   ├── test_repositories.py         # Couche accès aux données
+│   ├── test_services.py             # Couche logique métier
+│   ├── test_automation*.py          # Règles métier shifts/astreintes (4 fichiers)
+│   ├── test_advanced_shift_automation.py
+│   ├── test_shift_rotation_fix.py
+│   ├── test_decorators_unit.py
+│   ├── test_helpers.py
+│   ├── test_ics_export.py
+│   ├── test_cache_manager.py
+│   ├── test_config.py
+│   ├── test_run_functions.py        # setup_database/create_default_data
+│   ├── test_vendor_assets.py        # Bulma/FontAwesome/FullCalendar vendorisés
+│   ├── test_oidc_config.py          # OIDCConfig (25 tests)
+│   ├── test_oidc_auth.py            # OIDCAuthLib, réseau mocké (31 tests)
+│   └── test_user_manager_oidc_sync.py  # Sync utilisateur OIDC (12 tests)
+│
+├── integration/                     # 446 tests - routes Flask, client de test
+│   ├── test_routes.py, test_*_priority.py, test_*_coverage.py
+│   ├── test_admin_*.py              # Routes admin (users/groups/shift-types/automation)
+│   ├── test_security.py             # CSP, CSRF, Talisman, contrôle d'accès
+│   ├── test_oidc_routes.py          # /login, /oidc/login, /oidc/callback, /logout (13 tests)
+│   ├── test_performance.py          # Temps de réponse, N+1, compression
+│   ├── test_prometheus_metrics.py, test_health.py
+│   ├── test_dark_theme.py, test_theme_fixes.py
+│   └── test_error_handlers.py
+│
+└── e2e/                             # 25 tests
+    ├── test_user_flows.py           # 6 tests, client de test Flask
+    ├── conftest.py                  # live_server_url, oidc_live_servers (Playwright)
+    ├── test_browser_flows.py        # 14 tests, Chromium réel (optionnel)
+    ├── oidc_mock_provider.py        # Faux fournisseur OIDC réel (Flask, pas Docker)
+    └── test_oidc_browser_flow.py    # 5 tests, flux SSO complet en navigateur réel (optionnel)
 ```
 
 ---
 
-## 📈 Résultats par Catégorie
+## 🧪 Tests E2E navigateur réel (Playwright) - optionnels
 
-### ⚠️ 515 tests passent, 2 échouent, 7 ignorés (522/522)
+**Ne sont PAS installés par défaut** (`requirements.txt` seul suffit à
+faire tourner toute l'app et le reste de la suite). Pour les activer :
 
-#### Configuration et Initialisation
-- **test_config.py** : 16/16 tests passés
-  - Configuration de l'application
-  - Variables d'environnement
-  - Clé secrète et URI de base de données
-  - Mode test
+```bash
+pip install -r requirements-e2e.txt
+playwright install chromium
+```
 
-#### Authentification et Autorisation
-- **test_auth_priority.py** : 17/17 tests passés
-  - Routes d'inscription, connexion, déconnexion
-  - Gestion des profils utilisateurs
-  - Protection des routes
-  - Gestion des cookies
+Sans ça, `pytest tests/` skippe proprement les deux modules concernés
+(`pytest.importorskip("playwright")` en tête de fichier) - visible comme
+`skipped` dans le résumé, jamais comme échec ni erreur de collecte.
+Vérifié explicitement : sans playwright installé, la suite E2E devient
+6 passent + 2 skippés (au lieu de 25 passent).
 
-#### Routes Principales
-- **test_main_priority.py** : 9/9 tests passés
-  - Routes principales de l'application
-  - Gestion des priorités
+Ce que cette couche vérifie et qu'aucune autre ne peut :
+- **Zéro erreur console** sur 8 pages clés (`TestNoConsoleErrors`) -
+  généralise en garde-fou permanent l'audit manuel qui a trouvé 3 bugs
+  CSP réels lors de la refonte UI/UX (script inline bloqué sur 2 pages,
+  police d'icônes FullCalendar bloquée par `font-src` manquant)
+- Menu burger mobile (toggle `is-active`/`aria-expanded`, JS pur)
+- Thème sombre (persistance `localStorage`, inexistant côté serveur)
+- Bouton copier presse-papiers (retour visuel réel)
+- **Flux SSO complet** contre un vrai faux fournisseur OIDC
+  (`oidc_mock_provider.py`, une vraie appli Flask sur un port séparé,
+  pas un mock Python) : redirection navigateur, vraie page de login IdP
+  avec un clic, échanges serveur-à-serveur réels (découverte, token,
+  userinfo), session établie et invalidée pour de vrai. A permis de
+  trouver et corriger un bug réel bloquant (boucle de redirection
+  infinie `/login` ↔ `/oidc/login` sur tout échec SSO forcé).
 
-#### Administration
-- **test_admin_lists.py** : 20/20 tests passés
-  - Gestion des groupes, utilisateurs, types de shifts
-  - Routes d'administration
-  - Autorisations
-
-- **test_admin_priority.py** : 18/18 tests passés
-  - Édition et suppression des ressources
-  - Gestion des contraintes
-
-- **test_admin_automation.py** : 16/16 tests passés
-  - Tableau de bord d'automatisation
-  - Génération des shifts
-  - Statut de l'automatisation
-
-#### Automatisation des Shifts
-- **test_automation.py** : 19/19 tests passés
-  - Automatisation des on-call
-  - Génération des plannings
-  - Règles métiers
-  - Cas limites
-
-- **test_advanced_shift_automation.py** : 31/31 tests passés
-  - Génération quotidienne des shifts
-  - Rotation des utilisateurs
-  - Contraintes on-call
-  - Rééquilibrage après les congés
-
-- **test_shift_rotation_fix.py** : 3/3 tests passés
-  - Correction de la rotation des shifts
-  - Gestion du premier jour on-call
-
-- **test_automation_full.py** : 10/12 tests passés, **2 échouent** ⚠️
-  - Scénarios complexes d'automatisation
-  - Tests d'intégration complète
-
-- **test_automation_unit.py** : 22/22 tests passés
-  - Tests unitaires de l'automatisation
-
-#### Export et Intégrations
-- **test_export_routes.py** : 27/27 tests passés
-  - Export ICS des plannings
-  - Routes d'export
-
-- **test_ics_export.py** : 13/13 tests passés
-  - Génération des fichiers ICS
-  - Formatage des événements
-
-#### Modèles de Données
-- **test_models.py** : 20/20 tests passés
-  - Modèles User, Shift, OnCall, Leave, Group, ShiftType
-  - Relations entre modèles
-  - Validations
-
-#### Routes Générales
-- **test_routes.py** : 51/51 tests passés
-  - Routes d'authentification
-  - Routes des shifts, on-call, congés
-  - Routes d'administration
-  - Permissions par rôle
-
-#### Utilitaires
-- **test_helpers.py** : 29/29 tests passés
-  - Fonctions utilitaires
-  - Calculs et validations
-
-- **test_decorators.py** : 32/32 tests passés
-  - Décorateurs personnalisés
-  - Vérification des permissions
-
-- **test_decorators_unit.py** : 27/27 tests passés
-  - Tests unitaires des décorateurs
-
-#### Thème Sombre (Complètement refactorisé)
-- **test_dark_theme.py** : 22/22 tests passés ✅
-  - ✅ Existence du fichier CSS
-  - ✅ Contenu CSS avec variables Bulma
-  - ✅ Mappage des variables Leviia vers Bulma
-  - ✅ Classes utilitaires présentes
-  - ✅ Styles FullCalendar présents
-  - ✅ Corrections de contraste pour les éléments warning
-  - ✅ Styles pour le skip link
-  - ✅ Indicateur de champ obligatoire
-  - ✅ Classe .is-sr-only pour l'accessibilité
-  - ✅ Styles focus-visible
-  - ✅ Intégration dans le template base
-  - ✅ Bouton de toggle présent pour les utilisateurs authentifiés
-  - ✅ Bouton de toggle absent pour les anonymes
-  - ✅ JavaScript du thème présent
-  - ✅ Skip link présent
-  - ✅ Attributs ARIA sur le bouton toggle
-  - ✅ ID main-content présent
-  - ✅ Rôle ARIA sur la navbar
-  - ✅ Variables Bulma utilisées
-  - ✅ Attribut data-theme utilisé
-  - ✅ Corrections de contraste pour WCAG
-  - ✅ Styles de focus pour l'accessibilité
-
-#### Autres
-- **test_run_functions.py** : 11/11 tests passés
-  - Initialisation de la base de données
-  - Intégrité des données
-  - Création des données par défaut
-
-- **test_error_handlers.py** : 45/45 tests passés
-  - Gestion des erreurs
-
-#### Nouveaux tests (ajoutés récemment)
-- **test_main_api.py** : 14/14 tests passés
-  - Tests des endpoints API
-
-- **test_main_delete_all.py** : 14/14 tests passés
-  - Tests de suppression en masse
-
-- **test_main_coverage.py** : 32/32 tests passés
-  - Tests pour la couverture de code
-
-- **test_theme_fixes.py** : 12/12 tests passés
-  - Tests des corrections du thème
-
-- **test_vendor_assets.py** : 7/7 tests passés
-  - Tests des assets vendors
+Détail complet : `report/E2E Playwright - Tests navigateur réel.md`.
 
 ---
 
-## 🔧 Commandes de Test
+## 🔐 Tests OIDC/SSO
 
-### Exécution des tests
+Zéro test existant avant le 13 juillet 2026 malgré ~450 lignes de logique
+(`config_oidc.py`, `app/auth/oidc_auth.py`, `app/auth/user_manager.py`).
+Trois niveaux, volontairement complémentaires (voir
+`report/E2E Playwright - Tests navigateur réel.md` pour la justification) :
 
-```bash
-# Installer les dépendances de test
-pip install -r requirements.txt
+1. **Unitaire** (68 tests) : chaque méthode isolée, appels réseau
+   (`requests.get/post`) mockés, JWT de test non signé (le code ne
+   vérifie jamais de signature, seulement l'expiration).
+2. **Intégration** (13 tests) : câblage des routes, `oidc_auth` mocké à
+   la frontière du module de routes. **A trouvé un bug réel bloquant** :
+   boucle de redirection infinie sur tout échec OIDC quand le SSO est
+   forcé (`OIDC_DISABLE_BASIC_AUTH=true`) - corrigé.
+3. **E2E navigateur réel** (5 tests) : voir section précédente.
 
-# Exécuter tous les tests
-pytest tests/ -v --tb=short
+---
 
-# Exécuter tous les tests rapidement (sans sortie détaillée)
-pytest tests/ --tb=no -q
-
-# Exécuter un fichier de test spécifique
-pytest tests/test_dark_theme.py -v
-
-# Exécuter un test spécifique
-pytest tests/test_dark_theme.py::TestDarkThemeCSS::test_dark_theme_css_exists -v
-
-# Exécuter avec couverture de code (local uniquement)
-pytest tests/ --cov=app --cov=config --cov-report=term-missing
-
-# Exécuter avec couverture et rapport HTML
-pytest tests/ --cov=app --cov=config --cov-report=html
-```
-
-### Vérification de la qualité du code
+## 🔧 Commandes de test
 
 ```bash
-# Linting avec Ruff
+# Tout (test -> lint -> format -> security)
+make all
+
+# Tests seuls
+python -m pytest tests/ -v --tb=short         # tout (make test)
+python -m pytest tests/unit/ -v               # une couche
+python -m pytest tests/test_models.py -v      # un fichier
+python -m pytest tests/unit/test_models.py::TestUserModel::test_user_creation -v  # un test
+
+# Couverture
+python -m pytest tests/ --cov=app --cov=config --cov-report=term-missing
+python -m pytest tests/ --cov=app --cov=config --cov-report=html
+
+# E2E navigateur réel (optionnel, voir section dédiée)
+pip install -r requirements-e2e.txt && playwright install chromium
+python -m pytest tests/e2e/test_browser_flows.py tests/e2e/test_oidc_browser_flow.py -v
+
+# Qualité de code
 ruff check . --config=.ruff.toml
-
-# Vérification des types avec mypy
 mypy app/ tests/ --ignore-missing-imports --allow-untyped-decorators
-
-# Formatage avec Black
 black --check . --exclude=".git|__pycache__|instance|venv"
+
+# Sécurité (non bloquant, || true dans le Makefile)
+bandit -r app/ tests/
+safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
 ```
 
 ---
 
-## 📝 Bonnes Pratiques
+## 📝 Bonnes pratiques établies dans ce projet
 
-### Écriture des Tests
-
-1. **Nommage clair** : Les noms de tests doivent décrire précisément ce qu'ils vérifient
-   - ❌ `test_thing()` 
-   - ✅ `test_login_route_redirects_to_dashboard()`
-
-2. **Isolation** : Chaque test doit être indépendant des autres
-   - Utiliser les fixtures pour l'état partagé
-   - Nettoyer après chaque test
-
-3. **Arrange-Act-Assert** : Structure recommandée pour chaque test
-   ```python
-   def test_something():
-       # Arrange - Préparer les données
-       user = User(name="test")
-       
-       # Act - Exécuter l'action
-       result = user.save()
-       
-       # Assert - Vérifier le résultat
-       assert result is True
-   ```
-
-4. **Tests positifs et négatifs** : Vérifier à la fois le succès et l'échec
-   - Tester les cas valides
-   - Tester les cas invalides avec les bons messages d'erreur
-
-5. **Couverture des cas limites** : Ne pas oublier les edge cases
-   - Valeurs nulles/empty
-   - Dates dans le passé/futur
-   - Permissions insuffisantes
-   - Données dupliquées
-
-### Organisation des Tests
-
-1. **Regrouper par fonctionnalité** : Un fichier par module/composant principal
-2. **Utiliser des classes** : Regrouper les tests liés dans des classes
-3. **Ordre logique** : Organiser les tests du plus simple au plus complexe
+1. **Réutiliser les fixtures existantes** (`test_app`, `client`,
+   `logged_in_client`, `test_user`, `test_group`, etc.) plutôt que de
+   construire des instances d'app à la main - sauf besoin explicite
+   d'une config différente (Talisman/CSRF réactivés, OIDC configuré),
+   auquel cas construire un fixture dédié qui `monkeypatch` par-dessus
+   `test_app` plutôt que dupliquer `create_app()`.
+2. **Nommage clair** : `test_login_route_redirects_to_dashboard()`, pas
+   `test_login()`.
+3. **Isolation** : `test_app` recrée toutes les tables à chaque test
+   (function-scoped). État global (`OIDCConfig`, singletons `oidc_auth`)
+   sauvegardé/restauré explicitement quand un test le modifie (voir
+   `tests/unit/test_oidc_config.py::clean_oidc_env`,
+   `tests/integration/test_oidc_routes.py::oidc_mode`).
+4. **Vérifier, ne pas supposer** : un test qui n'a jamais été vu échouer
+   n'est pas un garde-fou. Avant de faire confiance à un nouveau test de
+   régression, casser volontairement le code qu'il est censé protéger et
+   confirmer qu'il échoue avec le bon message (pattern appliqué à
+   `TestNoConsoleErrors` : `font-src` retiré temporairement de
+   `CSP_POLICY`, test rouge confirmé, remis en place).
+5. **Mocker à la bonne frontière** : mocker les appels réseau
+   (`requests.get/post`) dans les tests unitaires, mocker les méthodes
+   du module appelant (`app.routes.auth.oidc_auth.X`) dans les tests
+   d'intégration, ne rien mocker en E2E navigateur (vrai serveur, vrai
+   faux fournisseur OIDC).
 
 ---
 
-## ⚠️ Avertissements
+## 📈 Historique
 
-1 **avertissement** détecté pendant l'exécution des tests :
-
-```
-DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
-```
-
-**Source** : `tests/test_auth_priority.py::TestLoginRoute::test_login_with_remember`
-
-**Solution recommandée** : Mettre à jour le code pour utiliser `datetime.now(datetime.UTC)` au lieu de `datetime.utcnow()`.
-
----
-
-## 🎯 Améliorations Récentes
-
-### Refactorisation des Tests du Thème Sombre
-
-**Problème** : Les anciens tests (4 tests échoués) attendaient des valeurs CSS codées en dur, mais l'implémentation actuelle utilise des **variables Bulma** pour une meilleure maintenabilité.
-
-**Solution** : 
-- ✅ **Complètement refactorisé** le fichier `test_dark_theme.py`
-- ✅ **22 nouveaux tests** adaptés à l'implémentation actuelle
-- ✅ **Tous les tests passent** maintenant
-- ✅ **Couverture améliorée** pour :
-  - Mappage des variables Bulma
-  - Styles FullCalendar
-  - Corrections de contraste WCAG
-  - Accessibilité (skip link, focus-visible, ARIA)
-  - Intégration template
-
-### Changements Clés :
-1. **Variables CSS** : Les tests vérifient maintenant le mappage vers `var(--bulma-*)` au lieu des valeurs hexadécimales
-2. **Sélecteurs** : Vérification de `[data-theme="dark"]` et `.dark-mode`
-3. **Styles spécifiques** : Vérification des corrections pour FullCalendar et les éléments warning
-4. **Accessibilité** : Tests renforcés pour les attributs ARIA et les styles de focus
-
-### Atteinte de 80%+ de Couverture
-
-**Objectif** : Atteindre 80%+ de couverture de code pour le code métier principal.
-
-**Solution** : 
-- ✅ **Ajout de 4 nouveaux fichiers de test** :
-  - `test_main_coverage.py` (32 tests pour les routes principales)
-  - `test_automation_unit.py` (22 tests pour les fonctions d'automatisation)
-  - `test_automation_full.py` (12 tests pour les scénarios complexes)
-  - `test_main_api.py` (11 tests pour les endpoints API)
-  - `test_main_delete_all.py` (10 tests pour les suppressions en masse)
-- ✅ **Configuration de .coveragerc** pour exclure les modules d'optimisation non critiques
-- ✅ **515 tests** passent maintenant (auparavant 403, puis 505)
-- ✅ **Couverture globale** : **~66%** (sur le code métier principal)
-
-**Modules exclus de la couverture** (car non critiques pour la fonctionnalité métier) :
-- `app/utils/cache.py` - Module de cache (optimisation)
-- `app/utils/lazy_loading.py` - Chargement paresseux (optimisation)
-- `app/utils/pagination.py` - Pagination (optimisation)
-- `app/utils/optimizations.py` - Décorateurs d'optimisation (optimisation)
-
-**Couverture par module métier principal** :
-- `app/__init__.py` : 81%
-- `app/models.py` : 88%
-- `app/routes/admin.py` : 82%
-- `app/routes/auth.py` : 82%
-- `app/routes/export.py` : 96%
-- `app/routes/main.py` : 73%
-- `app/utils/advanced_shift_automation.py` : 87%
-- `app/utils/automation.py` : 68%
-- `app/utils/decorators.py` : 68%
-- `app/utils/helpers.py` : 75%
-- `app/utils/ics_exporter.py` : 98%
-- `config.py` : 80%
-
----
-
-## 📊 Statistiques par Fichier de Test
-
-| Fichier de Test | Total | Passés | Échoués | Taux de Réussite |
-|----------------|-------|--------|---------|------------------|
-| test_config.py | 16 | 16 | 0 | 100% |
-| test_auth_priority.py | 15 | 15 | 0 | 100% |
-| test_main_priority.py | 9 | 9 | 0 | 100% |
-| test_admin_lists.py | 20 | 20 | 0 | 100% |
-| test_admin_priority.py | 18 | 18 | 0 | 100% |
-| test_admin_automation.py | 16 | 16 | 0 | 100% |
-| test_automation.py | 19 | 19 | 0 | 100% |
-| test_advanced_shift_automation.py | 31 | 31 | 0 | 100% |
-| test_shift_rotation_fix.py | 3 | 3 | 0 | 100% |
-| test_export_routes.py | 27 | 27 | 0 | 100% |
-| test_ics_export.py | 13 | 13 | 0 | 100% |
-| test_models.py | 20 | 20 | 0 | 100% |
-| test_routes.py | 51 | 51 | 0 | 100% |
-| test_helpers.py | 29 | 29 | 0 | 100% |
-| test_decorators.py | 32 | 32 | 0 | 100% |
-| test_decorators_unit.py | 27 | 27 | 0 | 100% |
-| **test_dark_theme.py** | **22** | **22** | **0** | **100%** |
-| **test_main_coverage.py** | **32** | **32** | **0** | **100%** |
-| **test_automation_unit.py** | **22** | **22** | **0** | **100%** |
-| **test_automation_full.py** | **12** | **10** | **2** | **~83.3%** |
-| **test_main_api.py** | **14** | **14** | **0** | **100%** |
-| **test_main_delete_all.py** | **14** | **14** | **0** | **100%** |
-| test_run_functions.py | 11 | 11 | 0 | 100% |
-| test_error_handlers.py | 45 | 45 | 0 | 100% |
-| test_config.py | 16 | 16 | 0 | 100% |
-| test_auth_priority.py | 17 | 17 | 0 | 100% |
-| test_theme_fixes.py | 12 | 12 | 0 | 100% |
-| test_vendor_assets.py | 7 | 7 | 0 | 100% |
-| **Total** | **522** | **515** | **2** | **~98.7%** |
-
----
-
-## 🎉 Conclusion
-
-Le projet **Leviia Schedule** a maintenant un **taux de réussite de ~98.7%** avec **522 tests** (515 passent, 2 échouent, 7 ignorés). 
-
-### Points Forts :
-- ✅ **Couverture complète** des fonctionnalités critiques
-- ✅ **Tests maintenables** avec des assertions claires
-- ✅ **Adaptation aux changements** (ex: refactorisation du thème sombre)
-- ✅ **Bonnes pratiques** d'écriture de tests
-- ✅ **Accessibilité** vérifiée (WCAG, ARIA)
-
-### Prochaines Étapes Recommandées :
-1. **Corriger l'avertissement de dépréciation** pour `datetime.utcnow()`
-2. **Ajouter des tests** pour les nouveaux cas d'utilisation
-3. **Améliorer la couverture** des scénarios edge cases
-4. **Documenter les nouvelles fonctionnalités** avec des tests
-
----
-
-*Document généré et mis à jour le 25 juin 2025*
+- **26 juin 2026** : 522 tests (515 passent, 2 échouent, 7 ignorés),
+  couverture ~66%, structure plate (`tests/test_*.py`), pas de CI.
+- **13 juillet 2026** : 881 tests (0 échec), couverture ~88%, structure
+  en 4 couches (`unit/`/`integration/`/`e2e/` + navigateur réel
+  optionnel), CI GitLab, suite OIDC complète, `make all` (test + lint
+  ruff/mypy + format black) intégralement propre.

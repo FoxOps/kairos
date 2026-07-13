@@ -888,15 +888,15 @@ log_audit_action(
 
 ```bash
 # Exécuter tous les tests des gestionnaires d'erreurs
-pytest tests/test_error_handlers.py -v
+pytest tests/integration/test_error_handlers.py -v
 
 # Exécuter un test spécifique
-pytest tests/test_error_handlers.py::TestCustomErrorPages::test_500_template_exists -v
+pytest tests/integration/test_error_handlers.py::TestCustomErrorPages::test_500_template_exists -v
 ```
 
 ### Structure des Tests
 
-Les tests sont organisés dans `tests/test_error_handlers.py` :
+Les tests sont organisés dans `tests/integration/test_error_handlers.py` :
 
 - **TestErrorHandlers** : Tests des gestionnaires d'erreurs HTTP
 - **TestCustomErrorPages** : Tests des templates d'erreur
@@ -986,16 +986,16 @@ def test_audit_logging(self, app):
 
 ```bash
 # Exécuter tous les tests de logging
-pytest tests/test_error_handlers.py::TestLoggingConfiguration -v
+pytest tests/integration/test_error_handlers.py::TestLoggingConfiguration -v
 
 # Exécuter les tests du filtre de données sensibles
-pytest tests/test_error_handlers.py::TestSensitiveDataFilter -v
+pytest tests/integration/test_error_handlers.py::TestSensitiveDataFilter -v
 
 # Exécuter les tests d'audit
-pytest tests/test_error_handlers.py::TestAuditLogging -v
+pytest tests/integration/test_error_handlers.py::TestAuditLogging -v
 
 # Exécuter un test spécifique
-pytest tests/test_error_handlers.py::TestLoggingConfiguration::test_logging_setup -v
+pytest tests/integration/test_error_handlers.py::TestLoggingConfiguration::test_logging_setup -v
 ```
 
 ---

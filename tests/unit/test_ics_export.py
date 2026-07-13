@@ -2,16 +2,16 @@
 Tests pour l'export ICS.
 """
 
-import pytest
 from datetime import datetime, timedelta
+
+from app import db
+from app.models import Leave, OnCall, Shift
 from app.utils.export import (
-    generate_ics_shifts,
-    generate_ics_oncall,
     generate_ics_leaves,
+    generate_ics_oncall,
+    generate_ics_shifts,
     generate_ics_standard,
 )
-from app.models import Shift, OnCall, Leave
-from app import db
 
 
 class TestICSExport:
@@ -202,7 +202,9 @@ class TestICSExport:
             assert "Astreinte" in ics_content
             assert "Test Calendar" in ics_content
 
-    def test_generate_ics_shift_with_user_info(self, test_app, test_user, test_shift_type):
+    def test_generate_ics_shift_with_user_info(
+        self, test_app, test_user, test_shift_type
+    ):
         """Test que les informations de l'utilisateur sont incluses dans l'export."""
         with test_app.app_context():
             shift_date = datetime(2023, 12, 1).date()

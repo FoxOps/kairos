@@ -2,10 +2,8 @@
 Tests pour les routes Flask.
 """
 
-import pytest
-from datetime import datetime, timedelta
 from app import db
-from app.models import Shift, OnCall, Leave, User, Group, ShiftType
+from app.models import Group, Leave, OnCall, Shift, ShiftType, User
 
 
 class TestRolePermissions:
@@ -166,9 +164,7 @@ class TestShiftRoutes:
         assert response.status_code == 200
         assert b"Ajouter un shift" in response.data or b"Add Shift" in response.data
 
-    def test_add_shift_post_valid(
-        self, logged_in_client, test_user, test_shift_type
-    ):
+    def test_add_shift_post_valid(self, logged_in_client, test_user, test_shift_type):
         """Test l'ajout d'un shift valide."""
         data = {
             "user_id": test_user.id,
@@ -444,9 +440,7 @@ class TestAdminRoutes:
             or b"succes" in response.data
         )
 
-    def test_delete_group_with_users(
-        self, logged_in_client, test_group, test_user
-    ):
+    def test_delete_group_with_users(self, logged_in_client, test_group, test_user):
         """Test qu'un groupe avec des utilisateurs ne peut pas etre supprime."""
         response = logged_in_client.post(
             f"/admin/groups/delete/{test_group.id}", follow_redirects=True
@@ -506,9 +500,7 @@ class TestAdminRoutes:
             or b"succes" in response.data
         )
 
-    def test_delete_user_with_resources(
-        self, logged_in_client, test_shift, test_user
-    ):
+    def test_delete_user_with_resources(self, logged_in_client, test_shift, test_user):
         """Test qu'un utilisateur avec des ressources ne peut pas etre supprime."""
         # test_shift est déjà associé à test_user via la fixture
         response = logged_in_client.post(

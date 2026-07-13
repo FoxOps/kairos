@@ -1,17 +1,17 @@
 """
 Tests E2E - parcours utilisateur complets via le client de test Flask.
 
-Pas de navigateur headless réel (pas de Selenium/Playwright disponible
-dans cet environnement de dev - pas de chromedriver/geckodriver, pas de
-sudo). Ces tests enchaînent plusieurs requêtes HTTP successives pour
-simuler un parcours utilisateur de bout en bout (login -> action ->
+Pas de navigateur réel ici (voir test_browser_flows.py pour ça, avec
+Playwright) - ces tests enchaînent plusieurs requêtes HTTP successives
+pour simuler un parcours utilisateur de bout en bout (login -> action ->
 vérification -> logout), avec assertions sur le contenu réellement rendu
-à chaque étape plutôt que sur des appels de service isolés.
+à chaque étape plutôt que sur des appels de service isolés. Rapides,
+zéro dépendance lourde, bons pour vérifier permissions/redirections/
+données - complémentaires de test_browser_flows.py, pas remplacés par
+lui (voir report/E2E Playwright - Tests navigateur réel.md).
 """
 
 from datetime import date, timedelta
-
-from werkzeug.security import generate_password_hash
 
 from app import db
 from app.models import Group, ShiftType, User
@@ -35,7 +35,11 @@ class TestAdminCreatesUserAndAssignsShift:
         # 1. Créer un groupe participant au planning
         resp = client.post(
             "/admin/groups/add",
-            data={"name": "Support E2E", "is_part_of_schedule": "on", "is_part_of_oncall": "on"},
+            data={
+                "name": "Support E2E",
+                "is_part_of_schedule": "on",
+                "is_part_of_oncall": "on",
+            },
             follow_redirects=True,
         )
         assert resp.status_code == 200
@@ -65,7 +69,9 @@ class TestAdminCreatesUserAndAssignsShift:
 
             shift_type = ShiftType.query.first()
             if not shift_type:
-                shift_type = ShiftType(name="e2e-morning", label="Matin E2E", start_hour=7, end_hour=15)
+                shift_type = ShiftType(
+                    name="e2e-morning", label="Matin E2E", start_hour=7, end_hour=15
+                )
                 db.session.add(shift_type)
                 db.session.commit()
             shift_type_id = shift_type.id
@@ -83,7 +89,7 @@ class TestAdminCreatesUserAndAssignsShift:
             follow_redirects=True,
         )
         assert resp.status_code == 200
-        assert b"Shifts ajoutes avec succes" in resp.data or "ajout".encode() in resp.data
+        assert b"Shifts ajoutes avec succes" in resp.data or b"ajout" in resp.data
 
         # 4. Se déconnecter de l'admin, se connecter en tant qu'employé
         client.get("/logout", follow_redirects=True)
@@ -131,7 +137,9 @@ class TestUserRequestsLeave:
 
         client.get("/logout", follow_redirects=True)
 
-    def test_user_cannot_request_leave_for_someone_else(self, test_app, test_user, second_user, client):
+    def test_user_cannot_request_leave_for_someone_else(
+        self, test_app, test_user, second_user, client
+    ):
         client.post(
             "/login",
             data={"email": test_user.email, "password": "test123"},
@@ -154,6 +162,7 @@ class TestUserRequestsLeave:
 
         with client.application.app_context():
             from app.models import Leave
+
             assert Leave.query.filter_by(user_id=second_user.id).first() is None
 
         client.get("/logout", follow_redirects=True)
@@ -170,7 +179,10 @@ class TestLoginLogoutFlow:
             follow_redirects=True,
         )
         assert resp.status_code == 200
-        assert b"incorrect" in resp.data.lower() or b"Email ou mot de passe incorrect" in resp.data
+        assert (
+            b"incorrect" in resp.data.lower()
+            or b"Email ou mot de passe incorrect" in resp.data
+        )
 
         resp = client.get("/schedule", follow_redirects=False)
         assert resp.status_code in (302, 401)

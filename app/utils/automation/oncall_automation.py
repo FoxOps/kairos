@@ -5,71 +5,72 @@ This module provides automation functionality for on-call duties.
 """
 
 from datetime import datetime, timedelta
-from typing import List, Optional
-from app.models import User, Group, OnCall, Leave
+
+from app.models import Group, Leave, OnCall, User
 
 
 class OnCallAutomation:
     """
     Classe pour gérer l'automatisation des astreintes (On-Call).
-    
+
     Fonctionnalités :
     - Génération automatique des astreintes avec rotation
     - Gestion des remplacements en cas de conflit
     - Configuration de l'ordre de rotation
     """
-    
+
     @staticmethod
-    def get_eligible_users() -> List[User]:
+    def get_eligible_users() -> list[User]:
         """
         Récupère la liste des utilisateurs éligibles pour les astreintes.
         Un utilisateur est éligible s'il appartient à un groupe participant aux astreintes.
         """
         return (
-            User.query
-            .join(Group)
-            .filter(Group.is_part_of_oncall == True)
+            User.query.join(Group)
+            .filter(Group.is_part_of_oncall.is_(True))
             .order_by(User.name)
             .all()
         )
-    
+
     @staticmethod
-    def get_rotation_order(rotation_order_ids: Optional[List[int]] = None) -> List[User]:
+    def get_rotation_order(rotation_order_ids: list[int] | None = None) -> list[User]:
         """
         Récupère l'ordre de rotation des utilisateurs.
-        
+
         Args:
             rotation_order_ids: Liste optionnelle d'IDs d'utilisateurs dans l'ordre souhaité.
                               Si None, utilise l'ordre alphabétique.
-        
+
         Returns:
             Liste des utilisateurs dans l'ordre de rotation.
         """
         eligible_users = OnCallAutomation.get_eligible_users()
-        
+
         if not eligible_users:
             return []
-        
+
         # Si un ordre personnalisé est fourni
         if rotation_order_ids:
             # Créer un mapping id -> user pour un accès rapide
             user_map = {user.id: user for user in eligible_users}
-            
+
             # Construire la liste dans l'ordre spécifié
             ordered_users = []
             for user_id in rotation_order_ids:
                 if user_id in user_map:
                     ordered_users.append(user_map[user_id])
-            
+
             # Ajouter les utilisateurs restants (qui n'étaient pas dans rotation_order_ids)
-            remaining_users = [u for u in eligible_users if u.id not in rotation_order_ids]
+            remaining_users = [
+                u for u in eligible_users if u.id not in rotation_order_ids
+            ]
             ordered_users.extend(remaining_users)
-            
+
             return ordered_users
-        
+
         # Sinon, retourner dans l'ordre alphabétique
         return eligible_users
-    
+
     @staticmethod
     def check_oncall_constraint(user: User, start_time: datetime) -> bool:
         """
@@ -96,8 +97,8 @@ class OnCallAutomation:
 
     @staticmethod
     def find_next_available_user(
-        users: List[User], start_time: datetime, end_time: datetime
-    ) -> Optional[User]:
+        users: list[User], start_time: datetime, end_time: datetime
+    ) -> User | None:
         """
         Trouve le premier utilisateur de la liste disponible pour la période donnée
         (pas de congé, pas d'astreinte chevauchante, contrainte légale respectée).
@@ -141,7 +142,12 @@ class OnCallAutomation:
         return None
 
     @staticmethod
-    def generate_oncall_schedule(start_date, end_date, rotation_order_ids: Optional[List[int]] = None, dry_run: bool = True):
+    def generate_oncall_schedule(
+        start_date,
+        end_date,
+        rotation_order_ids: list[int] | None = None,
+        dry_run: bool = True,
+    ):
         """
         Génère un planning d'astreintes pour une période donnée.
 
@@ -179,10 +185,14 @@ class OnCallAutomation:
         rotation_index = 0
 
         while current_friday < end_date:
-            start_time = datetime.combine(current_friday, datetime.min.time()).replace(hour=21)
+            start_time = datetime.combine(current_friday, datetime.min.time()).replace(
+                hour=21
+            )
             end_time = start_time + timedelta(days=7, hours=-14)
 
-            ordered_candidates = rotation_order[rotation_index:] + rotation_order[:rotation_index]
+            ordered_candidates = (
+                rotation_order[rotation_index:] + rotation_order[:rotation_index]
+            )
             assigned_user = OnCallAutomation.find_next_available_user(
                 ordered_candidates, start_time, end_time
             )
@@ -230,7 +240,9 @@ class OnCallAutomation:
             if not dry_run:
                 db.session.add(oncall)
 
-            rotation_index = (rotation_order.index(assigned_user) + 1) % len(rotation_order)
+            rotation_index = (rotation_order.index(assigned_user) + 1) % len(
+                rotation_order
+            )
             current_friday += timedelta(days=7)
 
         if not dry_run and oncalls:

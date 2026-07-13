@@ -24,7 +24,6 @@ Variables d'environnement disponibles:
 """
 
 import os
-from typing import Optional
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -32,97 +31,100 @@ from datetime import datetime
 @dataclass
 class BackupConfig:
     """Configuration complète pour les sauvegardes de la base de données."""
-    
+
     # Activation générale
     enabled: bool = True
-    
+
     # Sauvegarde locale
     local_enabled: bool = True
     local_dir: str = "backups"
-    
+
     # Sauvegarde S3
     s3_enabled: bool = False
-    s3_bucket: Optional[str] = None
-    s3_endpoint: Optional[str] = None  # None pour AWS S3, URL pour MinIO/etc
-    s3_region: Optional[str] = None
-    s3_access_key: Optional[str] = None
-    s3_secret_key: Optional[str] = None
+    s3_bucket: str | None = None
+    s3_endpoint: str | None = None  # None pour AWS S3, URL pour MinIO/etc
+    s3_region: str | None = None
+    s3_access_key: str | None = None
+    s3_secret_key: str | None = None
     s3_prefix: str = "leviia-schedule"
     s3_use_ssl: bool = True
-    
+
     # Rétention
     retention_days: int = 30
     max_backups: int = 30
-    
+
     # Format et compression
     compress: bool = True
     encrypt: bool = False
-    encryption_key: Optional[str] = None
-    
+    encryption_key: str | None = None
+
     # Fréquence (pour la rotation)
     frequency: str = "daily"  # daily, weekly, monthly
-    
+
     # Timestamps
     include_timestamp: bool = True
     timestamp_format: str = "%Y%m%d_%H%M%S"
-    
+
     # Nom du fichier
     backup_prefix: str = "leviia_backup"
-    
+
     # Base de données
-    db_path: Optional[str] = None  # Chemin vers le fichier SQLite
-    db_uri: Optional[str] = None  # URI de la base de données
-    
+    db_path: str | None = None  # Chemin vers le fichier SQLite
+    db_uri: str | None = None  # URI de la base de données
+
     # Notifications (optionnel, à implémenter)
     notify_on_success: bool = False
     notify_on_failure: bool = True
-    notification_email: Optional[str] = None
-    
+    notification_email: str | None = None
+
     # Logging
     log_level: str = "INFO"
-    log_file: Optional[str] = None
-    
+    log_file: str | None = None
+
     # Exclusions
     exclude_tables: list = field(default_factory=list)
-    
+
     # Vérification
     verify_backup: bool = True
-    
+
     def __post_init__(self):
         """Initialisation après création de l'objet."""
         # Créer le dossier local s'il n'existe pas
         if self.local_enabled and self.local_dir:
             os.makedirs(self.local_dir, exist_ok=True)
-    
+
     @classmethod
     def from_env(cls) -> "BackupConfig":
         """Charge la configuration depuis les variables d'environnement."""
+
         def get_bool(env_var: str, default: bool = False) -> bool:
             value = os.environ.get(env_var, "").lower()
             return value in ("true", "1", "yes", "y") if value else default
-        
+
         def get_int(env_var: str, default: int = 0) -> int:
             try:
                 return int(os.environ.get(env_var, default))
             except ValueError:
                 return default
-        
-        def get_str(env_var: str, default: Optional[str] = None) -> Optional[str]:
+
+        def get_str(env_var: str, default: str | None = None) -> str | None:
             value = os.environ.get(env_var)
             return value if value else default
-        
+
         # Détecter le chemin de la base de données
         db_uri = get_str("DATABASE_URL") or get_str("SQLALCHEMY_DATABASE_URI")
         db_path = None
-        
+
         if db_uri and db_uri.startswith("sqlite:///"):
             # Extraire le chemin du fichier SQLite
             db_path = db_uri.replace("sqlite:///", "")
             if not os.path.isabs(db_path):
                 # Chemin relatif à la racine du projet
-                project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                project_root = os.path.dirname(
+                    os.path.dirname(os.path.abspath(__file__))
+                )
                 db_path = os.path.join(project_root, db_path)
-        
+
         return cls(
             enabled=get_bool("BACKUP_ENABLED", True),
             local_enabled=get_bool("BACKUP_LOCAL_ENABLED", True),
@@ -153,41 +155,43 @@ class BackupConfig:
             log_file=get_str("BACKUP_LOG_FILE"),
             verify_backup=get_bool("BACKUP_VERIFY", True),
         )
-    
-    def get_backup_filename(self, timestamp: Optional[datetime] = None) -> str:
+
+    def get_backup_filename(self, timestamp: datetime | None = None) -> str:
         """Génère le nom du fichier de sauvegarde."""
         if timestamp is None:
             timestamp = datetime.now()
-        
-        timestamp_str = timestamp.strftime(self.timestamp_format) if self.include_timestamp else ""
-        
+
+        timestamp_str = (
+            timestamp.strftime(self.timestamp_format) if self.include_timestamp else ""
+        )
+
         if timestamp_str:
             filename = f"{self.backup_prefix}_{timestamp_str}"
         else:
             filename = self.backup_prefix
-        
+
         # Ajouter l'extension
         if self.db_path and self.db_path.endswith(".db"):
             filename += ".db"
         else:
             filename += ".sqlite"
-        
+
         # Ajouter la compression
         if self.compress:
             filename += ".gz"
-        
+
         # Ajouter le chiffrement
         if self.encrypt:
             filename += ".enc"
-        
+
         return filename
-    
-    def get_local_backup_path(self, timestamp: Optional[datetime] = None) -> str:
+
+    def get_local_backup_path(self, timestamp: datetime | None = None) -> str:
         """Retourne le chemin complet pour la sauvegarde locale."""
         filename = self.get_backup_filename(timestamp)
         return os.path.join(self.local_dir, filename)
-    
-    def get_s3_key(self, timestamp: Optional[datetime] = None) -> str:
+
+    def get_s3_key(self, timestamp: datetime | None = None) -> str:
         """Retourne la clé S3 pour la sauvegarde."""
         filename = self.get_backup_filename(timestamp)
         if self.s3_prefix:

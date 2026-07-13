@@ -1,4 +1,5 @@
-from flask import Blueprint, make_response, request, redirect, url_for
+from flask import Blueprint, make_response, redirect, request, url_for
+
 from app.services import ExportService
 
 # Create blueprint
@@ -27,7 +28,10 @@ def _ics_response(ics_content: str, filename: str):
 
 
 def _unauthorized_response():
-    if request.accept_mimetypes.accept_json or 'text/calendar' in request.accept_mimetypes:
+    if (
+        request.accept_mimetypes.accept_json
+        or "text/calendar" in request.accept_mimetypes
+    ):
         return "Unauthorized", 401
     return redirect(url_for("auth.login"))
 

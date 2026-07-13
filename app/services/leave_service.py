@@ -8,7 +8,6 @@ into a flash message / redirect / JSON response.
 """
 
 from datetime import date
-from typing import List, Optional, Tuple
 
 from app import db
 from app.models import Leave, User
@@ -25,11 +24,13 @@ class LeaveService:
         return LeaveRepository.list_paginated(page, per_page)
 
     @staticmethod
-    def list_in_window(window_start: date, window_end: date) -> List[Leave]:
+    def list_in_window(window_start: date, window_end: date) -> list[Leave]:
         return LeaveRepository.list_in_window(window_start, window_end)
 
     @staticmethod
-    def add_leave(user: User, start_date: date, end_date: date) -> Tuple[Optional[Leave], Optional[List]]:
+    def add_leave(
+        user: User, start_date: date, end_date: date
+    ) -> tuple[Leave | None, list | None]:
         """
         Crée un congé pour l'utilisateur donné, puis rééquilibre
         automatiquement les shifts affectés.
@@ -50,7 +51,7 @@ class LeaveService:
         return leave, regenerated_shifts
 
     @staticmethod
-    def delete_leave(leave_id: int) -> Tuple[Optional[Leave], Optional[List]]:
+    def delete_leave(leave_id: int) -> tuple[Leave | None, list | None]:
         """Returns (leave_supprime, regenerated_shifts)."""
         leave = LeaveRepository.get_by_id(leave_id)
         if not leave:
@@ -63,7 +64,9 @@ class LeaveService:
         return leave, regenerated_shifts
 
     @staticmethod
-    def api_update(leave_id: int, new_start_date: date, new_end_date: date) -> Tuple[Optional[Leave], Optional[str]]:
+    def api_update(
+        leave_id: int, new_start_date: date, new_end_date: date
+    ) -> tuple[Leave | None, str | None]:
         """Met à jour un congé depuis l'API drag & drop. Returns (leave, error_message)."""
         leave = LeaveRepository.get_by_id(leave_id)
         if not leave:
@@ -76,7 +79,10 @@ class LeaveService:
             leave.user_id, new_start_date, new_end_date, exclude_id=leave_id
         )
         if conflict:
-            return None, f"Un congé existe déjà pour {leave.user.name} pendant cette période"
+            return (
+                None,
+                f"Un congé existe déjà pour {leave.user.name} pendant cette période",
+            )
 
         leave.start_date = new_start_date
         leave.end_date = new_end_date
@@ -96,11 +102,11 @@ class LeaveService:
         return True
 
     @staticmethod
-    def _rebalance_after_leave(leave: Leave) -> Optional[List]:
+    def _rebalance_after_leave(leave: Leave) -> list | None:
         """Rééquilibre les shifts affectés par un congé. None si échec."""
         try:
-            regenerated_shifts, _messages = AdvancedShiftAutomation.rebalance_after_leave(
-                leave, dry_run=False
+            regenerated_shifts, _messages = (
+                AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
             )
             return regenerated_shifts
         except Exception:

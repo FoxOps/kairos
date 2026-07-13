@@ -24,7 +24,13 @@ def secure_app():
     app.config["TALISMAN_FORCE_HTTPS"] = True
 
     from flask_talisman import Talisman
-    Talisman(app, force_https=False, strict_transport_security=False, content_security_policy=CSP_POLICY)
+
+    Talisman(
+        app,
+        force_https=False,
+        strict_transport_security=False,
+        content_security_policy=CSP_POLICY,
+    )
 
     with app.app_context():
         db.drop_all()
@@ -95,7 +101,9 @@ class TestTalismanSecurityHeaders:
         with app.app_context():
             db.drop_all()
 
-    def test_csp_blocks_inline_script_but_allows_onclick_and_inline_style(self, secure_app):
+    def test_csp_blocks_inline_script_but_allows_onclick_and_inline_style(
+        self, secure_app
+    ):
         """CSP réelle appliquée par l'app (CSP_POLICY) : script-src 'self'
         (bloque tout <script> injecté), script-src-attr 'unsafe-inline'
         (les attributs onclick="" restants dans les templates sont du
@@ -122,7 +130,9 @@ class TestTalismanSecurityHeaders:
             "/admin/automation/full",
         ],
     )
-    def test_page_has_no_inline_executable_script(self, test_app, logged_in_client, path):
+    def test_page_has_no_inline_executable_script(
+        self, test_app, logged_in_client, path
+    ):
         """Régression Phase 6 : script-src 'self' strict (pas de
         unsafe-inline, pas de nonce) bloque silencieusement tout <script>
         inline exécutable - le navigateur ne le signale pas comme une
@@ -137,7 +147,8 @@ class TestTalismanSecurityHeaders:
         assert resp.status_code == 200, f"{path} : statut {resp.status_code}"
         html = resp.data.decode("utf-8")
         import re
-        inline_script_blocks = re.findall(r'<script(?![^>]*\bsrc=)[^>]*>', html)
+
+        inline_script_blocks = re.findall(r"<script(?![^>]*\bsrc=)[^>]*>", html)
         for tag in inline_script_blocks:
             assert 'type="application/json"' in tag, (
                 f"{path} : script inline exécutable trouvé ({tag}) - "
@@ -152,7 +163,7 @@ class TestTalismanSecurityHeaders:
         resp = logged_in_client.get("/")
         assert resp.status_code == 200
         html = resp.data.decode("utf-8")
-        assert "<script type=\"module\"" in html
+        assert '<script type="module"' in html
         assert 'src="/static/js/calendar/fullcalendar-config.js"' in html
 
 
@@ -170,10 +181,15 @@ class TestCSRFProtection:
     def test_post_with_valid_csrf_token_succeeds(self, secure_app):
         with secure_app.app_context():
             from app.models import Group
-            group = Group(name="Secure Group", is_part_of_schedule=True, is_part_of_oncall=True)
+
+            group = Group(
+                name="Secure Group", is_part_of_schedule=True, is_part_of_oncall=True
+            )
             db.session.add(group)
             db.session.commit()
-            user = User(name="Secure User", email="secure-login@test.com", group_id=group.id)
+            user = User(
+                name="Secure User", email="secure-login@test.com", group_id=group.id
+            )
             user.set_password("correct-password")
             db.session.add(user)
             db.session.commit()
@@ -184,13 +200,18 @@ class TestCSRFProtection:
         login_page = client.get("/login")
         html = login_page.data.decode("utf-8")
         import re
+
         match = re.search(r'name="csrf_token" value="([^"]+)"', html)
         assert match, "Aucun champ csrf_token trouvé dans le formulaire de login"
         token = match.group(1)
 
         resp = client.post(
             "/login",
-            data={"email": "secure-login@test.com", "password": "correct-password", "csrf_token": token},
+            data={
+                "email": "secure-login@test.com",
+                "password": "correct-password",
+                "csrf_token": token,
+            },
             follow_redirects=True,
         )
         assert resp.status_code == 200
@@ -209,19 +230,28 @@ class TestAccessControl:
         resp = non_admin_client.get("/admin/users", follow_redirects=False)
         assert resp.status_code in (302, 403)
 
-    def test_non_admin_cannot_add_shift(self, test_app, non_admin_client, test_shift_type, test_user):
+    def test_non_admin_cannot_add_shift(
+        self, test_app, non_admin_client, test_shift_type, test_user
+    ):
         resp = non_admin_client.get("/schedule/add", follow_redirects=False)
         assert resp.status_code in (302, 403)
 
-    def test_non_admin_cannot_delete_other_users_shift(self, test_app, non_admin_client, test_shift):
+    def test_non_admin_cannot_delete_other_users_shift(
+        self, test_app, non_admin_client, test_shift
+    ):
         # test_shift appartient à test_user, non_admin_client est connecté
         # en tant que test_user lui-même ici (fixture), donc on vérifie
         # plutôt qu'un utilisateur non-admin ne peut pas utiliser la route
         # de suppression réservée aux admins, même pour son propre shift.
-        resp = non_admin_client.get(f"/schedule/delete/{test_shift.id}", follow_redirects=False)
+        resp = non_admin_client.get(
+            f"/schedule/delete/{test_shift.id}", follow_redirects=False
+        )
         assert resp.status_code in (302, 403)
 
     def test_anonymous_cannot_access_protected_routes(self, test_app, client):
         for path in ("/schedule", "/oncall", "/leave", "/dashboard", "/admin"):
             resp = client.get(path, follow_redirects=False)
-            assert resp.status_code in (302, 401), f"{path} accessible sans authentification"
+            assert resp.status_code in (
+                302,
+                401,
+            ), f"{path} accessible sans authentification"

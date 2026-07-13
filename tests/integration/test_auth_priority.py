@@ -2,10 +2,10 @@
 Tests prioritaires pour auth.py.
 """
 
-import pytest
-from app import db
-from app.models import User, Group
 from werkzeug.security import generate_password_hash
+
+from app import db
+from app.models import Group, User
 
 
 class TestRegisterRoute:
@@ -21,7 +21,11 @@ class TestRegisterRoute:
         """Test l'inscription (désactivée)."""
         response = client.post(
             "/register",
-            data={"name": "New User", "email": "new@test.com", "password": "password123"},
+            data={
+                "name": "New User",
+                "email": "new@test.com",
+                "password": "password123",
+            },
             follow_redirects=True,
         )
         assert response.status_code == 200
@@ -36,28 +40,32 @@ class TestProfileRoute:
         """Test l'affichage du profil."""
         # Créer un groupe et un utilisateur
         with client.application.app_context():
-            group = Group(name="Test Group Profile", is_part_of_schedule=True, is_part_of_oncall=True)
+            group = Group(
+                name="Test Group Profile",
+                is_part_of_schedule=True,
+                is_part_of_oncall=True,
+            )
             db.session.add(group)
             db.session.commit()
-            
+
             user = User(
                 email="profile@example.com",
                 name="Profile User",
                 password_hash=generate_password_hash("profilepassword"),
                 is_admin=True,
-                group_id=group.id
+                group_id=group.id,
             )
             db.session.add(user)
             db.session.commit()
-        
+
         # Se connecter
         response = client.post(
-            '/login',
-            data={'email': 'profile@example.com', 'password': 'profilepassword'},
-            follow_redirects=True
+            "/login",
+            data={"email": "profile@example.com", "password": "profilepassword"},
+            follow_redirects=True,
         )
         assert response.status_code == 200
-        
+
         # Accéder au profil
         response = client.get("/profile")
         assert response.status_code == 200

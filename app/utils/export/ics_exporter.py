@@ -5,9 +5,10 @@ This module provides functions to export shifts, on-call duties, and leaves
 to ICS format for calendar integration.
 """
 
-from icalendar import Calendar, Event
-from datetime import datetime, timedelta
+from datetime import datetime
+
 import pytz
+from icalendar import Calendar, Event
 
 
 def generate_ics_standard(events, calendar_name="Leviia Schedule"):
@@ -40,7 +41,7 @@ def generate_ics_standard(events, calendar_name="Leviia Schedule"):
 
         # Handle titles, descriptions and dates based on event type
         event_type = event_obj.__class__.__name__
-        
+
         if event_type == "Shift":
             shift_type_label = (
                 event_obj.shift_type.label
@@ -67,7 +68,7 @@ def generate_ics_standard(events, calendar_name="Leviia Schedule"):
         else:
             # Unknown type, skip
             continue
-        
+
         # Set start and end times
         event.add("dtstart", start_time)
         event.add("dtend", end_time)
@@ -76,7 +77,7 @@ def generate_ics_standard(events, calendar_name="Leviia Schedule"):
 
         # Set timezone
         event.add("dtstamp", datetime.now(tz))
-        
+
         cal.add_component(event)
 
     return cal.to_ical().decode("utf-8")
@@ -85,11 +86,11 @@ def generate_ics_standard(events, calendar_name="Leviia Schedule"):
 def export_to_ics(events, calendar_name="Leviia Schedule") -> str:
     """
     Export events to ICS format.
-    
+
     Args:
         events: List of events to export
         calendar_name: Name of the calendar
-        
+
     Returns:
         ICS formatted string
     """
@@ -99,20 +100,21 @@ def export_to_ics(events, calendar_name="Leviia Schedule") -> str:
 def generate_ics_calendar(events, calendar_name="Leviia Schedule") -> bytes:
     """
     Generate a calendar in ICS format as bytes.
-    
+
     Args:
         events: List of events to include
         calendar_name: Name of the calendar
-        
+
     Returns:
         ICS formatted bytes
     """
-    return generate_ics_standard(events, calendar_name).encode('utf-8')
+    return generate_ics_standard(events, calendar_name).encode("utf-8")
 
 
 # ---------------------------------------------------------------------------
 # Convenience functions for specific event types (for backward compatibility)
 # ---------------------------------------------------------------------------
+
 
 def generate_ics_shifts(shifts):
     """Generate an ICS file for shifts."""

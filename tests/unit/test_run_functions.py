@@ -2,15 +2,13 @@
 Tests unitaires pour les fonctions dans run.py
 """
 
-import pytest
-from datetime import datetime, timedelta
 from app import db
-from app.models import User, Group, Shift, OnCall, Leave, ShiftType
+from app.models import Group, ShiftType, User
 from run import (
-    check_database_integrity,
-    setup_database,
-    create_default_data,
     DEFAULT_SHIFT_TYPES,
+    check_database_integrity,
+    create_default_data,
+    setup_database,
 )
 
 
@@ -20,13 +18,13 @@ class TestDefaultShiftTypes:
     def test_default_shift_types_structure(self):
         """Test que DEFAULT_SHIFT_TYPES a la bonne structure."""
         assert len(DEFAULT_SHIFT_TYPES) == 3
-        
+
         for shift_type in DEFAULT_SHIFT_TYPES:
             assert "name" in shift_type
             assert "label" in shift_type
             assert "start_hour" in shift_type
             assert "end_hour" in shift_type
-            
+
             assert isinstance(shift_type["name"], str)
             assert isinstance(shift_type["label"], str)
             assert isinstance(shift_type["start_hour"], int)
@@ -38,7 +36,7 @@ class TestDefaultShiftTypes:
         assert "morning" in names
         assert "afternoon" in names
         assert "evening" in names
-        
+
         # Vérifier les heures
         for shift_type in DEFAULT_SHIFT_TYPES:
             assert 0 <= shift_type["start_hour"] < 24
@@ -54,7 +52,7 @@ class TestDatabaseIntegrity:
         with test_app.app_context():
             # Créer toutes les tables nécessaires
             db.create_all()
-            
+
             # Ajouter les types de shifts par défaut
             for shift_type_data in DEFAULT_SHIFT_TYPES:
                 shift_type = ShiftType(
@@ -65,7 +63,7 @@ class TestDatabaseIntegrity:
                 )
                 db.session.add(shift_type)
             db.session.commit()
-            
+
             result = check_database_integrity()
             assert result is True
 
@@ -74,7 +72,7 @@ class TestDatabaseIntegrity:
         with test_app.app_context():
             # Ne créer aucune table
             db.drop_all()
-            
+
             result = check_database_integrity()
             assert result is False
 
@@ -88,12 +86,13 @@ class TestInitializeDatabase:
             db.drop_all()
             setup_database()
             create_default_data()
-            
+
             # Vérifier que les tables existent
             from sqlalchemy import inspect
+
             inspector = inspect(db.engine)
             tables = inspector.get_table_names()
-            
+
             assert "groups" in tables
             assert "user" in tables
             assert "shift_types" in tables
@@ -107,13 +106,15 @@ class TestInitializeDatabase:
             db.drop_all()
             setup_database()
             create_default_data()
-            
+
             # Vérifier que les types de shifts par défaut existent
             shift_types = ShiftType.query.all()
             assert len(shift_types) == len(DEFAULT_SHIFT_TYPES)
-            
+
             for shift_type_data in DEFAULT_SHIFT_TYPES:
-                shift_type = ShiftType.query.filter_by(name=shift_type_data["name"]).first()
+                shift_type = ShiftType.query.filter_by(
+                    name=shift_type_data["name"]
+                ).first()
                 assert shift_type is not None
                 assert shift_type.label == shift_type_data["label"]
                 assert shift_type.start_hour == shift_type_data["start_hour"]
@@ -129,9 +130,9 @@ class TestCreateDefaultData:
             # S'assurer qu'aucun groupe n'existe
             Group.query.delete()
             db.session.commit()
-            
+
             create_default_data()
-            
+
             group = Group.query.first()
             assert group is not None
             assert group.name == "Defaut"
@@ -145,15 +146,15 @@ class TestCreateDefaultData:
             User.query.delete()
             Group.query.delete()
             db.session.commit()
-            
+
             create_default_data()
-            
+
             user = User.query.first()
             assert user is not None
             assert user.name == "Administrateur"
             assert user.email == "admin@leviia.local"
             assert user.is_admin is True
-            
+
             # Vérifier que le mot de passe est correct
 
     def test_create_default_data_does_not_duplicate(self, test_app):
@@ -164,10 +165,12 @@ class TestCreateDefaultData:
             # ("Defaut" par défaut), sinon le test ne vérifie rien : il
             # créerait juste un second groupe sans jamais exercer la
             # logique de non-duplication.
-            group = Group(name="Defaut", is_part_of_schedule=True, is_part_of_oncall=True)
+            group = Group(
+                name="Defaut", is_part_of_schedule=True, is_part_of_oncall=True
+            )
             db.session.add(group)
             db.session.commit()
-            
+
             user = User(
                 name="Admin",
                 email="admin@leviia.local",
@@ -177,13 +180,13 @@ class TestCreateDefaultData:
             user.set_password("admin123")
             db.session.add(user)
             db.session.commit()
-            
+
             initial_group_count = Group.query.count()
             initial_user_count = User.query.count()
-            
+
             # Appeler create_default_data
             create_default_data()
-            
+
             # Vérifier qu'aucun duplicata n'a été créé
             assert Group.query.count() == initial_group_count
             assert User.query.count() == initial_user_count
@@ -196,14 +199,15 @@ class TestSetupDatabase:
         """Test setup_database avec une base vide."""
         with test_app.app_context():
             db.drop_all()
-            
+
             setup_database()
-            
+
             # Vérifier que les tables existent
             from sqlalchemy import inspect
+
             inspector = inspect(db.engine)
             tables = inspector.get_table_names()
-            
+
             assert "groups" in tables
             assert "user" in tables
 
@@ -211,14 +215,15 @@ class TestSetupDatabase:
         """Test setup_database avec une structure valide."""
         with test_app.app_context():
             db.create_all()
-            
+
             # setup_database ne devrait rien faire
             setup_database()
-            
+
             # Vérifier que les tables existent toujours
             from sqlalchemy import inspect
+
             inspector = inspect(db.engine)
             tables = inspector.get_table_names()
-            
+
             assert "groups" in tables
             assert "user" in tables

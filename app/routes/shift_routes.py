@@ -19,8 +19,8 @@ from app.services import ShiftService, UserService
 @main_bp.route("/schedule")
 @login_required
 def schedule():
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 20, type=int)
 
     per_page_options = [5, 10, 25, 50, 100]
 
@@ -32,7 +32,12 @@ def schedule():
 
     shifts_paginated = ShiftService.list_paginated(page, per_page)
 
-    return render_template("schedule.html", shifts=shifts_paginated, per_page=per_page, per_page_options=per_page_options)
+    return render_template(
+        "schedule.html",
+        shifts=shifts_paginated,
+        per_page=per_page,
+        per_page_options=per_page_options,
+    )
 
 
 @main_bp.route("/schedule/add", methods=["GET", "POST"])
@@ -134,7 +139,9 @@ def delete_all_shifts():
     try:
         count = ShiftService.delete_all()
         if count > 0:
-            flash(f"✅ Tous les {count} shifts ont été supprimés avec succès !", "success")
+            flash(
+                f"✅ Tous les {count} shifts ont été supprimés avec succès !", "success"
+            )
         else:
             flash("⚠️ Aucun shift à supprimer.", "warning")
     except Exception as e:
@@ -155,7 +162,10 @@ def delete_all_shifts_for_user(user_id):
         if count == 0:
             flash(f"⚠️ Aucun shift trouvé pour {user.name}.", "warning")
         else:
-            flash(f"✅ Tous les {count} shifts de {user.name} ont été supprimés avec succès !", "success")
+            flash(
+                f"✅ Tous les {count} shifts de {user.name} ont été supprimés avec succès !",
+                "success",
+            )
     except Exception as e:
         db.session.rollback()
         flash(f"❌ Erreur : {str(e)}", "danger")
@@ -172,11 +182,17 @@ def delete_all_shifts_for_day(date_str):
         count = ShiftService.delete_for_day(date_obj)
 
         if count == 0:
-            flash(f"⚠️ Aucun shift trouvé pour le {date_obj.strftime('%d/%m/%Y')}.", "warning")
+            flash(
+                f"⚠️ Aucun shift trouvé pour le {date_obj.strftime('%d/%m/%Y')}.",
+                "warning",
+            )
         else:
-            flash(f"✅ Tous les {count} shifts du {date_obj.strftime('%d/%m/%Y')} ont été supprimés avec succès !", "success")
+            flash(
+                f"✅ Tous les {count} shifts du {date_obj.strftime('%d/%m/%Y')} ont été supprimés avec succès !",
+                "success",
+            )
     except ValueError:
-        flash(f"❌ Format de date invalide.", "danger")
+        flash("❌ Format de date invalide.", "danger")
     except Exception as e:
         db.session.rollback()
         flash(f"❌ Erreur : {str(e)}", "danger")
@@ -195,11 +211,17 @@ def delete_all_shifts_for_week(date_str):
         count = ShiftService.delete_for_week(monday)
 
         if count == 0:
-            flash(f"⚠️ Aucun shift trouvé pour la semaine du {monday.strftime('%d/%m/%Y')}.", "warning")
+            flash(
+                f"⚠️ Aucun shift trouvé pour la semaine du {monday.strftime('%d/%m/%Y')}.",
+                "warning",
+            )
         else:
-            flash(f"✅ Tous les {count} shifts de la semaine du {monday.strftime('%d/%m/%Y')} ont été supprimés avec succès !", "success")
+            flash(
+                f"✅ Tous les {count} shifts de la semaine du {monday.strftime('%d/%m/%Y')} ont été supprimés avec succès !",
+                "success",
+            )
     except ValueError:
-        flash(f"❌ Format de date invalide.", "danger")
+        flash("❌ Format de date invalide.", "danger")
     except Exception as e:
         db.session.rollback()
         flash(f"❌ Erreur : {str(e)}", "danger")
@@ -207,6 +229,7 @@ def delete_all_shifts_for_week(date_str):
 
 
 # ========== API ENDPOINTS POUR DRAG & DROP ====================
+
 
 @main_bp.route("/api/shifts", methods=["POST"])
 @login_required
@@ -237,26 +260,32 @@ def api_create_shift():
         if not shift_type:
             return jsonify({"success": False, "error": "Type de shift non trouvé"}), 404
 
-        start_time = datetime.fromisoformat(start_str.replace('Z', '+00:00'))
-        end_time = datetime.fromisoformat(end_str.replace('Z', '+00:00')) if end_str else start_time
+        start_time = datetime.fromisoformat(start_str.replace("Z", "+00:00"))
+        end_time = (
+            datetime.fromisoformat(end_str.replace("Z", "+00:00"))
+            if end_str
+            else start_time
+        )
 
         shift, error = ShiftService.api_create(user, shift_type, start_time, end_time)
         if error:
             return jsonify({"success": False, "error": error}), 400
 
-        return jsonify({
-            "success": True,
-            "message": "Shift créé avec succès",
-            "shift": {
-                "id": shift.id,
-                "title": f"{user.name} - {shift_type.label}",
-                "start": shift.start_time.isoformat(),
-                "end": shift.end_time.isoformat(),
-                "className": "fc-event-shift",
-                "userId": user_id,
-                "shiftTypeId": shift_type_id
+        return jsonify(
+            {
+                "success": True,
+                "message": "Shift créé avec succès",
+                "shift": {
+                    "id": shift.id,
+                    "title": f"{user.name} - {shift_type.label}",
+                    "start": shift.start_time.isoformat(),
+                    "end": shift.end_time.isoformat(),
+                    "className": "fc-event-shift",
+                    "userId": user_id,
+                    "shiftTypeId": shift_type_id,
+                },
             }
-        })
+        )
 
     except ValueError as e:
         db.session.rollback()
@@ -286,10 +315,10 @@ def api_update_shift(shift_id):
         if not new_start_str:
             return jsonify({"success": False, "error": "Date de début manquante"}), 400
 
-        new_start = datetime.fromisoformat(new_start_str.replace('Z', '+00:00'))
+        new_start = datetime.fromisoformat(new_start_str.replace("Z", "+00:00"))
 
         if new_end_str:
-            new_end = datetime.fromisoformat(new_end_str.replace('Z', '+00:00'))
+            new_end = datetime.fromisoformat(new_end_str.replace("Z", "+00:00"))
         else:
             duration = shift.end_time - shift.start_time
             new_end = new_start + duration
@@ -298,20 +327,25 @@ def api_update_shift(shift_id):
         if error:
             return jsonify({"success": False, "error": error}), 400
 
-        return jsonify({
-            "success": True,
-            "message": "Shift mis à jour avec succès",
-            "shift": {
-                "id": updated_shift.id,
-                "start": updated_shift.start_time.isoformat(),
-                "end": updated_shift.end_time.isoformat(),
-                "date": updated_shift.date.isoformat()
+        return jsonify(
+            {
+                "success": True,
+                "message": "Shift mis à jour avec succès",
+                "shift": {
+                    "id": updated_shift.id,
+                    "start": updated_shift.start_time.isoformat(),
+                    "end": updated_shift.end_time.isoformat(),
+                    "date": updated_shift.date.isoformat(),
+                },
             }
-        })
+        )
 
     except ValueError as e:
         db.session.rollback()
-        return jsonify({"success": False, "error": f"Format de date invalide: {str(e)}"}), 400
+        return (
+            jsonify({"success": False, "error": f"Format de date invalide: {str(e)}"}),
+            400,
+        )
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
@@ -340,12 +374,7 @@ def api_get_users():
     users = UserService.visible_users_for_schedule(current_user)
 
     users_list = [
-        {
-            "id": user.id,
-            "name": user.name,
-            "email": user.email
-        }
-        for user in users
+        {"id": user.id, "name": user.name, "email": user.email} for user in users
     ]
 
     return jsonify(users_list)
@@ -363,7 +392,7 @@ def api_get_shift_types():
             "name": st.name,
             "label": st.label,
             "start_hour": st.start_hour,
-            "end_hour": st.end_hour
+            "end_hour": st.end_hour,
         }
         for st in shift_types
     ]

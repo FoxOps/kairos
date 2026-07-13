@@ -4,42 +4,43 @@ Shift automation class for Leviia Schedule.
 This module provides the ShiftAutomation class for shift management.
 """
 
-from typing import List, Optional, Tuple
-from datetime import datetime, timedelta, date
-from app.models import User, Group, ShiftType, Shift, Leave, OnCall
+from datetime import date, datetime, timedelta
+
+from app.models import Group, Leave, OnCall, Shift, ShiftType, User
 
 
 class ShiftAutomation:
     """
     Classe pour gérer l'automatisation des shifts.
-    
+
     Fonctionnalités :
     - Génération automatique des shifts
     - Gestion des types de shifts
     - Rééquilibrage des shifts après modification
     """
-    
+
     @staticmethod
-    def get_eligible_users() -> List[User]:
+    def get_eligible_users() -> list[User]:
         """
         Récupère la liste des utilisateurs éligibles pour les shifts.
         Un utilisateur est éligible s'il appartient à un groupe participant au schedule.
         """
         return (
-            User.query
-            .join(Group)
-            .filter(Group.is_part_of_schedule == True)
+            User.query.join(Group)
+            .filter(Group.is_part_of_schedule.is_(True))
             .order_by(User.name)
             .all()
         )
-    
+
     @staticmethod
-    def get_shift_types() -> List[ShiftType]:
+    def get_shift_types() -> list[ShiftType]:
         """Récupère la liste des types de shifts."""
         return ShiftType.query.order_by(ShiftType.start_hour).all()
-    
+
     @staticmethod
-    def can_assign_shift(user_id: int, check_date: date, shift_type: ShiftType) -> Tuple[bool, str]:
+    def can_assign_shift(
+        user_id: int, check_date: date, shift_type: ShiftType
+    ) -> tuple[bool, str]:
         """
         Vérifie si un shift peut être assigné à un utilisateur pour une date donnée.
 
@@ -52,7 +53,10 @@ class ShiftAutomation:
             Tuple (autorisé, message d'erreur si refusé sinon chaîne vide).
         """
         if check_date.weekday() >= 5:
-            return False, "Les shifts ne peuvent être assignés que du lundi au vendredi."
+            return (
+                False,
+                "Les shifts ne peuvent être assignés que du lundi au vendredi.",
+            )
 
         existing_shift = Shift.query.filter(
             Shift.user_id == user_id, Shift.date == check_date
@@ -82,8 +86,8 @@ class ShiftAutomation:
 
     @staticmethod
     def find_replacement_user(
-        excluded_user_ids: List[int], check_date: date, shift_type: ShiftType
-    ) -> Optional[User]:
+        excluded_user_ids: list[int], check_date: date, shift_type: ShiftType
+    ) -> User | None:
         """
         Trouve un utilisateur de remplacement disponible pour un shift, en excluant
         certains utilisateurs (par exemple ceux déjà assignés ou indisponibles).
@@ -99,15 +103,20 @@ class ShiftAutomation:
         for user in ShiftAutomation.get_eligible_users():
             if user.id in excluded_user_ids:
                 continue
-            can_assign, _ = ShiftAutomation.can_assign_shift(user.id, check_date, shift_type)
+            can_assign, _ = ShiftAutomation.can_assign_shift(
+                user.id, check_date, shift_type
+            )
             if can_assign:
                 return user
         return None
 
     @staticmethod
     def generate_shift_schedule(
-        start_date: date, end_date: date, rules: Optional[dict] = None, dry_run: bool = True
-    ) -> Tuple[List[Shift], List[str]]:
+        start_date: date,
+        end_date: date,
+        rules: dict | None = None,
+        dry_run: bool = True,
+    ) -> tuple[list[Shift], list[str]]:
         """
         Génère un planning de shifts pour une période donnée, selon des règles de
         couverture journalière (jours ouvrés uniquement).
@@ -136,7 +145,13 @@ class ShiftAutomation:
         shift_types_by_name = {st.name: st for st in ShiftAutomation.get_shift_types()}
 
         weekday_names = [
-            "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday",
         ]
 
         shifts = []
@@ -146,12 +161,16 @@ class ShiftAutomation:
 
         while current_date <= end_date:
             if current_date.weekday() < 5:
-                requirements = daily_requirements.get(weekday_names[current_date.weekday()], {})
+                requirements = daily_requirements.get(
+                    weekday_names[current_date.weekday()], {}
+                )
 
                 for shift_type_name, count in requirements.items():
                     shift_type = shift_types_by_name.get(shift_type_name)
                     if shift_type is None:
-                        messages.append(f"Type de shift '{shift_type_name}' non trouvé.")
+                        messages.append(
+                            f"Type de shift '{shift_type_name}' non trouvé."
+                        )
                         continue
 
                     for _ in range(count):
@@ -175,12 +194,12 @@ class ShiftAutomation:
                         shift = Shift(
                             user_id=assigned_user.id,
                             shift_type_id=shift_type.id,
-                            start_time=datetime.combine(current_date, datetime.min.time()).replace(
-                                hour=shift_type.start_hour
-                            ),
-                            end_time=datetime.combine(current_date, datetime.min.time()).replace(
-                                hour=shift_type.end_hour
-                            ),
+                            start_time=datetime.combine(
+                                current_date, datetime.min.time()
+                            ).replace(hour=shift_type.start_hour),
+                            end_time=datetime.combine(
+                                current_date, datetime.min.time()
+                            ).replace(hour=shift_type.end_hour),
                             date=current_date,
                         )
                         shifts.append(shift)

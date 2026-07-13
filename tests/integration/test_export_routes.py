@@ -5,18 +5,22 @@ Tests pour les routes d'export ICS.
 from datetime import datetime, timedelta
 
 from app import db
-from app.models import Leave, OnCall, Shift, User
+from app.models import Leave, OnCall, Shift
 
 
 class TestExportRoutes:
     """Tests pour les routes d'export."""
 
-    def test_export_shifts_route(self, logged_in_client, test_user, test_shift_type, test_app):
+    def test_export_shifts_route(
+        self, logged_in_client, test_user, test_shift_type, test_app
+    ):
         """Test l'export des shifts."""
         with test_app.app_context():
             # Créer un shift pour l'utilisateur
             shift_date = datetime(2023, 12, 1).date()
-            start_time = datetime.combine(shift_date, datetime.min.time()).replace(hour=7)
+            start_time = datetime.combine(shift_date, datetime.min.time()).replace(
+                hour=7
+            )
             end_time = start_time + timedelta(hours=8)
             shift = Shift(
                 user_id=test_user.id,
@@ -35,12 +39,16 @@ class TestExportRoutes:
         assert "BEGIN:VEVENT" in response.data.decode("utf-8")
         assert "Shift" in response.data.decode("utf-8")
 
-    def test_export_shifts_scope_all(self, logged_in_client, test_user, test_shift_type, test_app):
+    def test_export_shifts_scope_all(
+        self, logged_in_client, test_user, test_shift_type, test_app
+    ):
         """Test l'export de tous les shifts (scope=all)."""
         with test_app.app_context():
             # Créer un shift
             shift_date = datetime(2023, 12, 1).date()
-            start_time = datetime.combine(shift_date, datetime.min.time()).replace(hour=7)
+            start_time = datetime.combine(shift_date, datetime.min.time()).replace(
+                hour=7
+            )
             end_time = start_time + timedelta(hours=8)
             shift = Shift(
                 user_id=test_user.id,
@@ -58,12 +66,16 @@ class TestExportRoutes:
         assert "BEGIN:VCALENDAR" in content
         assert "shifts_all.ics" in response.headers["Content-Disposition"]
 
-    def test_export_shifts_scope_my(self, logged_in_client, test_user, test_shift_type, test_app):
+    def test_export_shifts_scope_my(
+        self, logged_in_client, test_user, test_shift_type, test_app
+    ):
         """Test l'export des shifts de l'utilisateur connecté (scope=my)."""
         with test_app.app_context():
             # Créer un shift pour l'utilisateur connecté
             shift_date = datetime(2023, 12, 1).date()
-            start_time = datetime.combine(shift_date, datetime.min.time()).replace(hour=7)
+            start_time = datetime.combine(shift_date, datetime.min.time()).replace(
+                hour=7
+            )
             end_time = start_time + timedelta(hours=8)
             shift = Shift(
                 user_id=test_user.id,
@@ -87,7 +99,9 @@ class TestExportRoutes:
             # Créer une astreinte
             start_time = datetime(2023, 12, 1, 21, 0)
             end_time = start_time + timedelta(days=7, hours=-14)
-            oncall = OnCall(user_id=test_user.id, start_time=start_time, end_time=end_time)
+            oncall = OnCall(
+                user_id=test_user.id, start_time=start_time, end_time=end_time
+            )
             db.session.add(oncall)
             db.session.commit()
 
@@ -104,7 +118,9 @@ class TestExportRoutes:
             # Créer une astreinte
             start_time = datetime(2023, 12, 1, 21, 0)
             end_time = start_time + timedelta(days=7, hours=-14)
-            oncall = OnCall(user_id=test_user.id, start_time=start_time, end_time=end_time)
+            oncall = OnCall(
+                user_id=test_user.id, start_time=start_time, end_time=end_time
+            )
             db.session.add(oncall)
             db.session.commit()
 
@@ -118,7 +134,9 @@ class TestExportRoutes:
             # Créer une astreinte pour l'utilisateur connecté
             start_time = datetime(2023, 12, 1, 21, 0)
             end_time = start_time + timedelta(days=7, hours=-14)
-            oncall = OnCall(user_id=test_user.id, start_time=start_time, end_time=end_time)
+            oncall = OnCall(
+                user_id=test_user.id, start_time=start_time, end_time=end_time
+            )
             db.session.add(oncall)
             db.session.commit()
 
@@ -132,7 +150,9 @@ class TestExportRoutes:
             # Créer un congé
             start_date = datetime(2023, 12, 10).date()
             end_date = datetime(2023, 12, 15).date()
-            leave = Leave(user_id=test_user.id, start_date=start_date, end_date=end_date)
+            leave = Leave(
+                user_id=test_user.id, start_date=start_date, end_date=end_date
+            )
             db.session.add(leave)
             db.session.commit()
 
@@ -149,7 +169,9 @@ class TestExportRoutes:
             # Créer un congé
             start_date = datetime(2023, 12, 10).date()
             end_date = datetime(2023, 12, 15).date()
-            leave = Leave(user_id=test_user.id, start_date=start_date, end_date=end_date)
+            leave = Leave(
+                user_id=test_user.id, start_date=start_date, end_date=end_date
+            )
             db.session.add(leave)
             db.session.commit()
 
@@ -163,7 +185,9 @@ class TestExportRoutes:
             # Créer un congé pour l'utilisateur connecté
             start_date = datetime(2023, 12, 10).date()
             end_date = datetime(2023, 12, 15).date()
-            leave = Leave(user_id=test_user.id, start_date=start_date, end_date=end_date)
+            leave = Leave(
+                user_id=test_user.id, start_date=start_date, end_date=end_date
+            )
             db.session.add(leave)
             db.session.commit()
 
@@ -223,12 +247,16 @@ class TestExportRoutes:
         # Doit utiliser le scope par défaut (all)
         assert "BEGIN:VCALENDAR" in response.data.decode("utf-8")
 
-    def test_export_content_disposition_header(self, logged_in_client, test_user, test_shift_type, test_app):
+    def test_export_content_disposition_header(
+        self, logged_in_client, test_user, test_shift_type, test_app
+    ):
         """Test que le header Content-Disposition est correct."""
         with test_app.app_context():
             # Créer un shift
             shift_date = datetime(2023, 12, 1).date()
-            start_time = datetime.combine(shift_date, datetime.min.time()).replace(hour=7)
+            start_time = datetime.combine(shift_date, datetime.min.time()).replace(
+                hour=7
+            )
             end_time = start_time + timedelta(hours=8)
             shift = Shift(
                 user_id=test_user.id,
@@ -249,12 +277,16 @@ class TestExportRoutes:
 class TestExportRoutesAdminScope:
     """Tests pour vérifier que les admins peuvent exporter tous les données."""
 
-    def test_admin_export_all_shifts(self, logged_in_client, test_user, second_user, test_shift_type, test_app):
+    def test_admin_export_all_shifts(
+        self, logged_in_client, test_user, second_user, test_shift_type, test_app
+    ):
         """Test qu'un admin peut exporter les shifts de tous les utilisateurs."""
         with test_app.app_context():
             # Créer des shifts pour deux utilisateurs différents
             shift_date = datetime(2023, 12, 1).date()
-            start_time = datetime.combine(shift_date, datetime.min.time()).replace(hour=7)
+            start_time = datetime.combine(shift_date, datetime.min.time()).replace(
+                hour=7
+            )
             end_time = start_time + timedelta(hours=8)
 
             shift1 = Shift(
@@ -281,17 +313,23 @@ class TestExportRoutesAdminScope:
         # Doit contenir les shifts des deux utilisateurs
         assert content.count("BEGIN:VEVENT") == 2
 
-    def test_admin_export_all_oncalls(self, logged_in_client, test_user, second_user, test_app):
+    def test_admin_export_all_oncalls(
+        self, logged_in_client, test_user, second_user, test_app
+    ):
         """Test qu'un admin peut exporter les astreintes de tous les utilisateurs."""
         with test_app.app_context():
             # Créer des astreintes pour deux utilisateurs différents
             start_time1 = datetime(2023, 12, 1, 21, 0)
             end_time1 = start_time1 + timedelta(days=7, hours=-14)
-            oncall1 = OnCall(user_id=test_user.id, start_time=start_time1, end_time=end_time1)
+            oncall1 = OnCall(
+                user_id=test_user.id, start_time=start_time1, end_time=end_time1
+            )
 
             start_time2 = datetime(2023, 12, 8, 21, 0)
             end_time2 = start_time2 + timedelta(days=7, hours=-14)
-            oncall2 = OnCall(user_id=second_user.id, start_time=start_time2, end_time=end_time2)
+            oncall2 = OnCall(
+                user_id=second_user.id, start_time=start_time2, end_time=end_time2
+            )
 
             db.session.add(oncall1)
             db.session.add(oncall2)
@@ -302,7 +340,9 @@ class TestExportRoutesAdminScope:
         content = response.data.decode("utf-8")
         assert content.count("BEGIN:VEVENT") == 2
 
-    def test_admin_export_all_leaves(self, logged_in_client, test_user, second_user, test_app):
+    def test_admin_export_all_leaves(
+        self, logged_in_client, test_user, second_user, test_app
+    ):
         """Test qu'un admin peut exporter les congés de tous les utilisateurs."""
         with test_app.app_context():
             # Créer des congés pour deux utilisateurs différents
@@ -329,7 +369,9 @@ class TestExportRoutesAdminScope:
 class TestExportRoutesTokenAuth:
     """Tests pour l'authentification par token pour les exports ICS."""
 
-    def test_export_shifts_with_token(self, client, test_user, test_shift_type, test_app):
+    def test_export_shifts_with_token(
+        self, client, test_user, test_shift_type, test_app
+    ):
         """Test l'export des shifts avec un token valide."""
         with test_app.app_context():
             # Générer un token pour l'utilisateur
@@ -338,7 +380,9 @@ class TestExportRoutesTokenAuth:
 
             # Créer un shift pour l'utilisateur
             shift_date = datetime(2023, 12, 1).date()
-            start_time = datetime.combine(shift_date, datetime.min.time()).replace(hour=7)
+            start_time = datetime.combine(shift_date, datetime.min.time()).replace(
+                hour=7
+            )
             end_time = start_time + timedelta(hours=8)
             shift = Shift(
                 user_id=test_user.id,
@@ -381,7 +425,9 @@ class TestExportRoutesTokenAuth:
             # Créer une astreinte
             start_time = datetime(2023, 12, 1, 21, 0)
             end_time = start_time + timedelta(days=7, hours=-14)
-            oncall = OnCall(user_id=test_user.id, start_time=start_time, end_time=end_time)
+            oncall = OnCall(
+                user_id=test_user.id, start_time=start_time, end_time=end_time
+            )
             db.session.add(oncall)
             db.session.commit()
 
@@ -401,7 +447,9 @@ class TestExportRoutesTokenAuth:
             # Créer un congé
             start_date = datetime(2023, 12, 10).date()
             end_date = datetime(2023, 12, 15).date()
-            leave = Leave(user_id=test_user.id, start_date=start_date, end_date=end_date)
+            leave = Leave(
+                user_id=test_user.id, start_date=start_date, end_date=end_date
+            )
             db.session.add(leave)
             db.session.commit()
 
@@ -411,7 +459,9 @@ class TestExportRoutesTokenAuth:
         assert "BEGIN:VCALENDAR" in content
         assert "Conge" in content or "Cong" in content
 
-    def test_token_scope_all_accesses_all_data(self, client, test_user, second_user, test_shift_type, test_app):
+    def test_token_scope_all_accesses_all_data(
+        self, client, test_user, second_user, test_shift_type, test_app
+    ):
         """Test que scope=all avec un token donne accès à tous les shifts."""
         with test_app.app_context():
             # Générer un token pour le premier utilisateur
@@ -420,7 +470,9 @@ class TestExportRoutesTokenAuth:
 
             # Créer des shifts pour les deux utilisateurs
             shift_date = datetime(2023, 12, 1).date()
-            start_time = datetime.combine(shift_date, datetime.min.time()).replace(hour=7)
+            start_time = datetime.combine(shift_date, datetime.min.time()).replace(
+                hour=7
+            )
             end_time = start_time + timedelta(hours=8)
 
             shift1 = Shift(
@@ -451,7 +503,9 @@ class TestExportRoutesTokenAuth:
         assert test_user.name in content
         assert second_user.name in content
 
-    def test_token_scope_my_accesses_only_own_data(self, client, test_user, second_user, test_shift_type, test_app):
+    def test_token_scope_my_accesses_only_own_data(
+        self, client, test_user, second_user, test_shift_type, test_app
+    ):
         """Test que scope=my avec un token ne donne accès qu'aux données de l'utilisateur."""
         with test_app.app_context():
             # Générer un token pour le premier utilisateur
@@ -460,7 +514,9 @@ class TestExportRoutesTokenAuth:
 
             # Créer un shift pour le second utilisateur
             shift_date = datetime(2023, 12, 1).date()
-            start_time = datetime.combine(shift_date, datetime.min.time()).replace(hour=7)
+            start_time = datetime.combine(shift_date, datetime.min.time()).replace(
+                hour=7
+            )
             end_time = start_time + timedelta(hours=8)
             shift = Shift(
                 user_id=second_user.id,

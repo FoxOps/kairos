@@ -28,7 +28,7 @@ class TestAddOncallEdgeCases:
             follow_redirects=True,
         )
         assert resp.status_code == 200
-        assert "Utilisateur invalide".encode() in resp.data
+        assert b"Utilisateur invalide" in resp.data
 
     def test_service_error_flashed(self, test_app, logged_in_client, test_user):
         not_friday = date.today()
@@ -40,7 +40,7 @@ class TestAddOncallEdgeCases:
             follow_redirects=True,
         )
         assert resp.status_code == 200
-        assert "vendredi".encode() in resp.data
+        assert b"vendredi" in resp.data
 
     def test_invalid_date_format(self, test_app, logged_in_client, test_user):
         resp = logged_in_client.post(
@@ -49,13 +49,19 @@ class TestAddOncallEdgeCases:
             follow_redirects=True,
         )
         assert resp.status_code == 200
-        assert "Format de date invalide".encode() in resp.data
+        assert b"Format de date invalide" in resp.data
 
     def test_service_exception_handled(self, test_app, logged_in_client, test_user):
-        with patch("app.routes.oncall_routes.OnCallService.add_oncall", side_effect=RuntimeError("boom")):
+        with patch(
+            "app.routes.oncall_routes.OnCallService.add_oncall",
+            side_effect=RuntimeError("boom"),
+        ):
             resp = logged_in_client.post(
                 "/oncall/add",
-                data={"user_id": str(test_user.id), "start_date": _next_friday().isoformat()},
+                data={
+                    "user_id": str(test_user.id),
+                    "start_date": _next_friday().isoformat(),
+                },
                 follow_redirects=True,
             )
         assert resp.status_code == 200
@@ -67,28 +73,45 @@ class TestDeleteOncall:
         assert resp.status_code == 404
 
     def test_delete_exception_handled(self, test_app, logged_in_client, test_oncall):
-        with patch("app.routes.oncall_routes.OnCallService.delete_oncall", side_effect=RuntimeError("boom")):
-            resp = logged_in_client.get(f"/oncall/delete/{test_oncall.id}", follow_redirects=True)
+        with patch(
+            "app.routes.oncall_routes.OnCallService.delete_oncall",
+            side_effect=RuntimeError("boom"),
+        ):
+            resp = logged_in_client.get(
+                f"/oncall/delete/{test_oncall.id}", follow_redirects=True
+            )
         assert resp.status_code == 200
-        assert "Erreur".encode() in resp.data
+        assert b"Erreur" in resp.data
 
 
 class TestBulkDeleteExceptions:
-    def test_delete_all_exception_handled(self, test_app, logged_in_client, test_oncall):
-        with patch("app.routes.oncall_routes.OnCallService.delete_all", side_effect=RuntimeError("boom")):
+    def test_delete_all_exception_handled(
+        self, test_app, logged_in_client, test_oncall
+    ):
+        with patch(
+            "app.routes.oncall_routes.OnCallService.delete_all",
+            side_effect=RuntimeError("boom"),
+        ):
             resp = logged_in_client.post("/oncall/delete-all", follow_redirects=True)
         assert resp.status_code == 200
-        assert "Erreur".encode() in resp.data
+        assert b"Erreur" in resp.data
 
     def test_delete_all_for_user_not_found_404(self, test_app, logged_in_client):
         resp = logged_in_client.post("/oncall/delete-all-for-user/999999")
         assert resp.status_code == 404
 
-    def test_delete_all_for_user_exception_handled(self, test_app, logged_in_client, test_user, test_oncall):
-        with patch("app.routes.oncall_routes.OnCallService.delete_all_for_user", side_effect=RuntimeError("boom")):
-            resp = logged_in_client.post(f"/oncall/delete-all-for-user/{test_user.id}", follow_redirects=True)
+    def test_delete_all_for_user_exception_handled(
+        self, test_app, logged_in_client, test_user, test_oncall
+    ):
+        with patch(
+            "app.routes.oncall_routes.OnCallService.delete_all_for_user",
+            side_effect=RuntimeError("boom"),
+        ):
+            resp = logged_in_client.post(
+                f"/oncall/delete-all-for-user/{test_user.id}", follow_redirects=True
+            )
         assert resp.status_code == 200
-        assert "Erreur".encode() in resp.data
+        assert b"Erreur" in resp.data
 
 
 class TestApiDeleteOncall:
@@ -101,20 +124,29 @@ class TestApiDeleteOncall:
         assert resp.status_code == 200
         assert resp.get_json()["success"] is True
 
-    def test_unexpected_exception_returns_500(self, test_app, logged_in_client, test_oncall):
-        with patch("app.routes.oncall_routes.OnCallService.api_delete", side_effect=RuntimeError("boom")):
+    def test_unexpected_exception_returns_500(
+        self, test_app, logged_in_client, test_oncall
+    ):
+        with patch(
+            "app.routes.oncall_routes.OnCallService.api_delete",
+            side_effect=RuntimeError("boom"),
+        ):
             resp = logged_in_client.delete(f"/api/oncall/{test_oncall.id}")
         assert resp.status_code == 500
 
 
 class TestApiUpdateOncall:
     def test_not_found(self, test_app, logged_in_client):
-        resp = logged_in_client.patch("/api/oncall/999999", json={"start": datetime.now().isoformat()})
+        resp = logged_in_client.patch(
+            "/api/oncall/999999", json={"start": datetime.now().isoformat()}
+        )
         assert resp.status_code == 404
 
     def test_no_json_body(self, test_app, logged_in_client, test_oncall):
         resp = logged_in_client.patch(
-            f"/api/oncall/{test_oncall.id}", data="null", content_type="application/json"
+            f"/api/oncall/{test_oncall.id}",
+            data="null",
+            content_type="application/json",
         )
         assert resp.status_code == 400
 
@@ -122,7 +154,9 @@ class TestApiUpdateOncall:
         resp = logged_in_client.patch(f"/api/oncall/{test_oncall.id}", json={})
         assert resp.status_code == 400
 
-    def test_success_without_end_uses_original_duration(self, test_app, logged_in_client, test_user):
+    def test_success_without_end_uses_original_duration(
+        self, test_app, logged_in_client, test_user
+    ):
         from app import db
         from app.models import OnCall
 
@@ -143,11 +177,18 @@ class TestApiUpdateOncall:
         assert resp.get_json()["success"] is True
 
     def test_invalid_date_format(self, test_app, logged_in_client, test_oncall):
-        resp = logged_in_client.patch(f"/api/oncall/{test_oncall.id}", json={"start": "bogus"})
+        resp = logged_in_client.patch(
+            f"/api/oncall/{test_oncall.id}", json={"start": "bogus"}
+        )
         assert resp.status_code == 400
 
-    def test_unexpected_exception_returns_500(self, test_app, logged_in_client, test_oncall):
-        with patch("app.routes.oncall_routes.OnCallService.api_update", side_effect=RuntimeError("boom")):
+    def test_unexpected_exception_returns_500(
+        self, test_app, logged_in_client, test_oncall
+    ):
+        with patch(
+            "app.routes.oncall_routes.OnCallService.api_update",
+            side_effect=RuntimeError("boom"),
+        ):
             resp = logged_in_client.patch(
                 f"/api/oncall/{test_oncall.id}",
                 json={"start": datetime.now().isoformat()},

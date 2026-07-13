@@ -45,20 +45,28 @@ class TestUserService:
         assert test_user.email in emails
         assert admin_user.email in emails
 
-    def test_visible_users_for_leave_admin_sees_everyone(self, test_app, test_user, admin_user):
+    def test_visible_users_for_leave_admin_sees_everyone(
+        self, test_app, test_user, admin_user
+    ):
         visible = UserService.visible_users_for_leave(admin_user)
         assert len(visible) >= 2
 
-    def test_visible_users_for_leave_regular_sees_only_self(self, test_app, test_user, admin_user):
+    def test_visible_users_for_leave_regular_sees_only_self(
+        self, test_app, test_user, admin_user
+    ):
         visible = UserService.visible_users_for_leave(test_user)
         assert visible == [test_user]
 
-    def test_visible_users_for_schedule_regular_sees_only_self(self, test_app, test_user):
+    def test_visible_users_for_schedule_regular_sees_only_self(
+        self, test_app, test_user
+    ):
         visible = UserService.visible_users_for_schedule(test_user)
         assert visible == [test_user]
 
     def test_create_success(self, test_app, test_group):
-        user, error = UserService.create("New", "new-svc@test.com", test_group.id, "pw123")
+        user, error = UserService.create(
+            "New", "new-svc@test.com", test_group.id, "pw123"
+        )
         assert error is None
         assert user is not None
         assert UserRepository.get_by_email("new-svc@test.com") is not None
@@ -76,7 +84,9 @@ class TestUserService:
         assert updated.name == "Renamed"
         assert updated.is_admin is True
 
-    def test_update_rejects_duplicate_email(self, test_app, test_user, second_user, test_group):
+    def test_update_rejects_duplicate_email(
+        self, test_app, test_user, second_user, test_group
+    ):
         updated, error = UserService.update(
             test_user.id, test_user.name, second_user.email, test_group.id, False
         )
@@ -84,7 +94,9 @@ class TestUserService:
         assert error == "Un utilisateur avec cet email existe déjà."
 
     def test_update_missing_user_returns_none_none(self, test_app, test_group):
-        updated, error = UserService.update(999999, "X", "x@test.com", test_group.id, False)
+        updated, error = UserService.update(
+            999999, "X", "x@test.com", test_group.id, False
+        )
         assert updated is None
         assert error is None
 
@@ -118,7 +130,9 @@ class TestGroupService:
         assert error == "Un groupe avec ce nom existe déjà."
 
     def test_update_success(self, test_app, test_group):
-        updated, error = GroupService.update(test_group.id, "Renamed Group", False, False)
+        updated, error = GroupService.update(
+            test_group.id, "Renamed Group", False, False
+        )
         assert error is None
         assert updated.name == "Renamed Group"
 
@@ -160,7 +174,9 @@ class TestShiftTypeService:
         assert "antérieure" in error
 
     def test_update_success(self, test_app, test_shift_type):
-        updated, error = ShiftTypeService.update(test_shift_type.id, "morning2", "Matin 2", 6, 14)
+        updated, error = ShiftTypeService.update(
+            test_shift_type.id, "morning2", "Matin 2", 6, 14
+        )
         assert error is None
         assert updated.name == "morning2"
 
@@ -174,31 +190,43 @@ class TestShiftTypeService:
         assert ok is True
         assert error is None
 
-    def test_delete_blocked_by_existing_shift(self, test_app, test_shift_type, test_shift):
+    def test_delete_blocked_by_existing_shift(
+        self, test_app, test_shift_type, test_shift
+    ):
         ok, error = ShiftTypeService.delete(test_shift_type.id)
         assert ok is False
         assert "utilisé" in error
 
 
 class TestShiftService:
-    def test_add_shifts_for_range_skips_weekends(self, test_app, test_user, test_shift_type):
+    def test_add_shifts_for_range_skips_weekends(
+        self, test_app, test_user, test_shift_type
+    ):
         monday = date.today()
         while monday.weekday() != 0:
             monday += timedelta(days=1)
         friday = monday + timedelta(days=4)
 
-        added, conflict_date = ShiftService.add_shifts_for_range(test_user, test_shift_type, monday, friday)
+        added, conflict_date = ShiftService.add_shifts_for_range(
+            test_user, test_shift_type, monday, friday
+        )
         assert conflict_date is None
         assert len(added) == 5
         assert ShiftRepository.count_for_user(test_user.id) == 5
 
-    def test_add_shifts_for_range_conflict_rolls_back(self, test_app, test_user, test_shift_type):
+    def test_add_shifts_for_range_conflict_rolls_back(
+        self, test_app, test_user, test_shift_type
+    ):
         weekday = _next_weekday()
         start = datetime.combine(weekday, datetime.min.time())
-        ShiftRepository.create(test_user.id, test_shift_type.id, start, start + timedelta(hours=8), weekday)
+        ShiftRepository.create(
+            test_user.id, test_shift_type.id, start, start + timedelta(hours=8), weekday
+        )
         db.session.commit()
 
-        added, conflict_date = ShiftService.add_shifts_for_range(test_user, test_shift_type, weekday, weekday)
+        added, conflict_date = ShiftService.add_shifts_for_range(
+            test_user, test_shift_type, weekday, weekday
+        )
         assert conflict_date == weekday
         assert added == []
 
@@ -228,14 +256,18 @@ class TestShiftService:
         while saturday.weekday() != 5:
             saturday += timedelta(days=1)
         start = datetime.combine(saturday, datetime.min.time())
-        shift, error = ShiftService.api_create(test_user, test_shift_type, start, start + timedelta(hours=8))
+        shift, error = ShiftService.api_create(
+            test_user, test_shift_type, start, start + timedelta(hours=8)
+        )
         assert shift is None
         assert "week-end" in error
 
     def test_api_create_success(self, test_app, test_user, test_shift_type):
         weekday = _next_weekday()
         start = datetime.combine(weekday, datetime.min.time())
-        shift, error = ShiftService.api_create(test_user, test_shift_type, start, start + timedelta(hours=8))
+        shift, error = ShiftService.api_create(
+            test_user, test_shift_type, start, start + timedelta(hours=8)
+        )
         assert error is None
         assert shift is not None
 
@@ -244,7 +276,9 @@ class TestShiftService:
         while saturday.weekday() != 5:
             saturday += timedelta(days=1)
         new_start = datetime.combine(saturday, datetime.min.time())
-        shift, error = ShiftService.api_update(test_shift.id, new_start, new_start + timedelta(hours=8))
+        shift, error = ShiftService.api_update(
+            test_shift.id, new_start, new_start + timedelta(hours=8)
+        )
         assert shift is None
         assert "week-end" in error
 
@@ -295,7 +329,9 @@ class TestOnCallService:
         while not_friday.weekday() == 4:
             not_friday += timedelta(days=1)
         new_start = datetime.combine(not_friday, datetime.min.time())
-        oncall, error = OnCallService.api_update(test_oncall.id, new_start, new_start + timedelta(days=7))
+        oncall, error = OnCallService.api_update(
+            test_oncall.id, new_start, new_start + timedelta(days=7)
+        )
         assert oncall is None
         assert "vendredi" in error
 
@@ -332,7 +368,9 @@ class TestLeaveService:
 
     def test_api_update_rejects_end_before_start(self, test_app, test_leave):
         leave, error = LeaveService.api_update(
-            test_leave.id, test_leave.start_date, test_leave.start_date - timedelta(days=1)
+            test_leave.id,
+            test_leave.start_date,
+            test_leave.start_date - timedelta(days=1),
         )
         assert leave is None
         assert "après" in error

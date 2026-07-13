@@ -48,6 +48,29 @@ run_tests:
       - junit.xml
   coverage: '/^TOTAL.*\s+(\d+%)$/'
 
+# Job: Tests E2E navigateur réel (Playwright)
+# allow_failure: true tant que ce job est nouveau/pas encore éprouvé en CI -
+# il tourne et remonte ses résultats sans bloquer le pipeline. À retirer une
+# fois la stabilité confirmée sur quelques pipelines. Image officielle
+# Playwright (contient déjà Chromium + toutes les libs système - évite le
+# problème "playwright install --with-deps nécessite sudo" rencontré en dev).
+run_e2e_browser:
+  image: mcr.microsoft.com/playwright/python:v1.61.0-jammy
+  stage: test
+  allow_failure: true
+  before_script:
+    - pip install -r requirements.txt
+    - pip install -r requirements-e2e.txt
+  script:
+    - echo "Running Playwright E2E tests..."
+    - pytest tests/e2e/test_browser_flows.py -v --tb=short --junitxml=junit-e2e.xml
+  artifacts:
+    when: always
+    reports:
+      junit: junit-e2e.xml
+    paths:
+      - junit-e2e.xml
+
 # Job: Linting avec Ruff
 run_linting:
   extends: .python-template

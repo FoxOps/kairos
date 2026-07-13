@@ -7,7 +7,6 @@ flash message / redirect / JSON response.
 """
 
 from datetime import datetime, timedelta
-from typing import List, Optional, Tuple
 
 from app import db
 from app.models import OnCall, User
@@ -23,11 +22,13 @@ class OnCallService:
         return OnCallRepository.list_paginated(page, per_page)
 
     @staticmethod
-    def list_in_window(window_start: datetime, window_end: datetime) -> List[OnCall]:
+    def list_in_window(window_start: datetime, window_end: datetime) -> list[OnCall]:
         return OnCallRepository.list_in_window(window_start, window_end)
 
     @staticmethod
-    def add_oncall(user: User, start_date: datetime) -> Tuple[Optional[OnCall], Optional[str]]:
+    def add_oncall(
+        user: User, start_date: datetime
+    ) -> tuple[OnCall | None, str | None]:
         """
         Crée une astreinte d'une semaine à partir du vendredi 21h donné.
 
@@ -41,14 +42,17 @@ class OnCallService:
         end_time = start_time + timedelta(days=7, hours=-14)
 
         if not can_add_oncall(user, start_time, end_time):
-            return None, "Impossible d'ajouter cette astreinte (période déjà couverte ou congé sur la période)."
+            return (
+                None,
+                "Impossible d'ajouter cette astreinte (période déjà couverte ou congé sur la période).",
+            )
 
         oncall = OnCallRepository.create(user.id, start_time, end_time)
         db.session.commit()
         return oncall, None
 
     @staticmethod
-    def delete_oncall(oncall_id: int) -> Optional[OnCall]:
+    def delete_oncall(oncall_id: int) -> OnCall | None:
         oncall = OnCallRepository.get_by_id(oncall_id)
         if not oncall:
             return None
@@ -82,7 +86,9 @@ class OnCallService:
         return True
 
     @staticmethod
-    def api_update(oncall_id: int, new_start: datetime, new_end: datetime) -> Tuple[Optional[OnCall], Optional[str]]:
+    def api_update(
+        oncall_id: int, new_start: datetime, new_end: datetime
+    ) -> tuple[OnCall | None, str | None]:
         """Met à jour une astreinte depuis l'API drag & drop. Returns (oncall, error_message)."""
         oncall = OnCallRepository.get_by_id(oncall_id)
         if not oncall:
@@ -95,7 +101,10 @@ class OnCallService:
             oncall.user_id, new_start, new_end, exclude_id=oncall_id
         )
         if conflict:
-            return None, f"Une astreinte existe déjà pour {oncall.user.name} pendant cette période"
+            return (
+                None,
+                f"Une astreinte existe déjà pour {oncall.user.name} pendant cette période",
+            )
 
         oncall.start_time = new_start
         oncall.end_time = new_end

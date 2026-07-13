@@ -11,12 +11,7 @@ from app.models import Shift, ShiftType
 @pytest.fixture
 def test_shift_type(test_app):
     """Crée un type de shift de test."""
-    shift_type = ShiftType(
-        name='morning',
-        label='Matin',
-        start_hour=7,
-        end_hour=15
-    )
+    shift_type = ShiftType(name="morning", label="Matin", start_hour=7, end_hour=15)
     db.session.add(shift_type)
     db.session.commit()
     return shift_type

@@ -16,7 +16,7 @@ from app.utils.optimizations import eager_load
 
 @admin_bp.route("/admin/shift-types")
 @admin_required
-@eager_load(ShiftType, ['shifts'])
+@eager_load(ShiftType, ["shifts"])
 def list_shift_types():
     shift_types = ShiftTypeService.list_all()
     return render_template("admin/shift_types.html", shift_types=shift_types)
@@ -36,7 +36,9 @@ def add_shift_type():
             return redirect(url_for("admin.add_shift_type"))
 
         try:
-            shift_type, error = ShiftTypeService.create(name, label, int(start_hour), int(end_hour))
+            shift_type, error = ShiftTypeService.create(
+                name, label, int(start_hour), int(end_hour)
+            )
             if error:
                 flash(f"❌ {error}", "danger")
                 return redirect(url_for("admin.add_shift_type"))
@@ -67,20 +69,28 @@ def edit_shift_type(shift_type_id):
 
         if not all([name, label, start_hour, end_hour]):
             flash("❌ Tous les champs sont obligatoires.", "danger")
-            return redirect(url_for("admin.edit_shift_type", shift_type_id=shift_type_id))
+            return redirect(
+                url_for("admin.edit_shift_type", shift_type_id=shift_type_id)
+            )
 
         try:
-            updated, error = ShiftTypeService.update(shift_type_id, name, label, int(start_hour), int(end_hour))
+            updated, error = ShiftTypeService.update(
+                shift_type_id, name, label, int(start_hour), int(end_hour)
+            )
             if error:
                 flash(f"❌ {error}", "danger")
-                return redirect(url_for("admin.edit_shift_type", shift_type_id=shift_type_id))
+                return redirect(
+                    url_for("admin.edit_shift_type", shift_type_id=shift_type_id)
+                )
 
             flash("✅ Type de shift modifié avec succès !", "success")
             return redirect(url_for("admin.list_shift_types"))
         except ValueError:
             db.session.rollback()
             flash("❌ Les heures doivent être des nombres entiers.", "danger")
-            return redirect(url_for("admin.edit_shift_type", shift_type_id=shift_type_id))
+            return redirect(
+                url_for("admin.edit_shift_type", shift_type_id=shift_type_id)
+            )
         except Exception as e:
             db.session.rollback()
             flash(f"❌ Erreur : {str(e)}", "danger")

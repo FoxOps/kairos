@@ -22,6 +22,7 @@ def prometheus_app():
         db.create_all()
 
         from app.utils.prometheus_metrics import init_prometheus
+
         init_prometheus(app)
 
         yield app
@@ -55,20 +56,27 @@ class TestPrometheusMetricsEndpoint:
 
         resp = client.get("/metrics")
         body = resp.data.decode("utf-8")
-        assert 'leviia_requests_total{endpoint="/login"' in body or "leviia_requests_total" in body
+        assert (
+            'leviia_requests_total{endpoint="/login"' in body
+            or "leviia_requests_total" in body
+        )
 
 
 class TestBusinessMetricsUpdate:
     def test_update_business_metrics_reflects_db_state(self, prometheus_app):
-        from app.utils.prometheus_metrics import _update_business_metrics, USERS_COUNT
         from app.models import Group, User
+        from app.utils.prometheus_metrics import USERS_COUNT, _update_business_metrics
 
         with prometheus_app.app_context():
-            group = Group(name="Metrics Group", is_part_of_schedule=True, is_part_of_oncall=True)
+            group = Group(
+                name="Metrics Group", is_part_of_schedule=True, is_part_of_oncall=True
+            )
             db.session.add(group)
             db.session.commit()
 
-            user = User(name="Metrics User", email="metrics@test.com", group_id=group.id)
+            user = User(
+                name="Metrics User", email="metrics@test.com", group_id=group.id
+            )
             db.session.add(user)
             db.session.commit()
 

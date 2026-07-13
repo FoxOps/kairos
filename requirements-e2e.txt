@@ -1,0 +1,15 @@
+# Dépendance optionnelle pour les tests E2E navigateur réel
+# (tests/e2e/test_browser_flows.py). Pas dans requirements.txt : l'app
+# tourne très bien sans, et playwright + le binaire Chromium (~180 Mo)
+# ne sont nécessaires que pour cette suite de tests spécifique.
+#
+# Installation :
+#   pip install -r requirements-e2e.txt
+#   playwright install chromium
+#
+# Sans navigateur installé, ces tests sont skippés proprement
+# (pytest.importorskip / vérification au lancement du serveur), jamais
+# en échec silencieux.
+
+playwright==1.61.0
+pytest-playwright==0.8.0

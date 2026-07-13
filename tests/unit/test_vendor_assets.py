@@ -10,8 +10,9 @@ Note: Ces tests peuvent être ignorés si les fichiers vendor ne sont pas prése
 Pour télécharger les fichiers: make install ou python scripts/download_vendor_assets.py
 """
 
-import pytest
 import os
+
+import pytest
 from flask import current_app
 
 
@@ -22,10 +23,7 @@ class TestFontAwesome:
         """Test que le fichier CSS de Font Awesome 7.2.0 existe."""
         with test_app.app_context():
             css_path = os.path.join(
-                current_app.static_folder,
-                'vendor',
-                'font-awesome',
-                'all.min.css'
+                current_app.static_folder, "vendor", "font-awesome", "all.min.css"
             )
             # Skip if vendor directory doesn't exist
             if not os.path.exists(os.path.dirname(css_path)):
@@ -36,42 +34,38 @@ class TestFontAwesome:
         """Test que le fichier CSS contient la version 7.2.0."""
         with test_app.app_context():
             css_path = os.path.join(
-                current_app.static_folder,
-                'vendor',
-                'font-awesome',
-                'all.min.css'
+                current_app.static_folder, "vendor", "font-awesome", "all.min.css"
             )
             # Skip if file doesn't exist
             if not os.path.exists(css_path):
                 pytest.skip("Vendor files not downloaded. Run: make install")
-            
-            with open(css_path, 'r') as f:
+
+            with open(css_path) as f:
                 content = f.read()
-            
+
             # Vérifier la présence de la version 7.2.0
-            assert 'Font Awesome Free 7.2.0' in content, "La version 7.2.0 n'est pas trouvée dans le CSS"
+            assert (
+                "Font Awesome Free 7.2.0" in content
+            ), "La version 7.2.0 n'est pas trouvée dans le CSS"
 
     def test_font_awesome_webfonts_exist(self, test_app):
         """Test que les fichiers webfonts de Font Awesome 7.2.0 existent."""
         with test_app.app_context():
             webfonts_dir = os.path.join(
-                current_app.static_folder,
-                'vendor',
-                'font-awesome',
-                'webfonts'
+                current_app.static_folder, "vendor", "font-awesome", "webfonts"
             )
             # Skip if directory doesn't exist
             if not os.path.exists(webfonts_dir):
                 pytest.skip("Vendor files not downloaded. Run: make install")
-            
+
             # Fichiers WOFF2 requis pour Font Awesome 7.2.0
             required_files = [
-                'fa-brands-400.woff2',
-                'fa-regular-400.woff2',
-                'fa-solid-900.woff2',
-                'fa-v4compatibility.woff2'
+                "fa-brands-400.woff2",
+                "fa-regular-400.woff2",
+                "fa-solid-900.woff2",
+                "fa-v4compatibility.woff2",
             ]
-            
+
             for font_file in required_files:
                 font_path = os.path.join(webfonts_dir, font_file)
                 assert os.path.exists(font_path), f"Le fichier {font_path} n'existe pas"
@@ -80,22 +74,25 @@ class TestFontAwesome:
         """Test que le CSS référence correctement les webfonts."""
         with test_app.app_context():
             css_path = os.path.join(
-                current_app.static_folder,
-                'vendor',
-                'font-awesome',
-                'all.min.css'
+                current_app.static_folder, "vendor", "font-awesome", "all.min.css"
             )
             # Skip if file doesn't exist
             if not os.path.exists(css_path):
                 pytest.skip("Vendor files not downloaded. Run: make install")
-            
-            with open(css_path, 'r') as f:
+
+            with open(css_path) as f:
                 content = f.read()
-            
+
             # Vérifier que le CSS référence les polices
-            assert 'url(../webfonts/fa-brands-400.woff2)' in content, "fa-brands-400.woff2 non référencé"
-            assert 'url(../webfonts/fa-regular-400.woff2)' in content, "fa-regular-400.woff2 non référencé"
-            assert 'url(../webfonts/fa-solid-900.woff2)' in content, "fa-solid-900.woff2 non référencé"
+            assert (
+                "url(../webfonts/fa-brands-400.woff2)" in content
+            ), "fa-brands-400.woff2 non référencé"
+            assert (
+                "url(../webfonts/fa-regular-400.woff2)" in content
+            ), "fa-regular-400.woff2 non référencé"
+            assert (
+                "url(../webfonts/fa-solid-900.woff2)" in content
+            ), "fa-solid-900.woff2 non référencé"
 
 
 class TestBulma:
@@ -105,10 +102,7 @@ class TestBulma:
         """Test que le fichier CSS de Bulma existe."""
         with test_app.app_context():
             css_path = os.path.join(
-                current_app.static_folder,
-                'vendor',
-                'bulma',
-                'bulma.css'
+                current_app.static_folder, "vendor", "bulma", "bulma.css"
             )
             # Skip if file doesn't exist
             if not os.path.exists(css_path):
@@ -124,9 +118,9 @@ class TestFullCalendar:
         with test_app.app_context():
             js_path = os.path.join(
                 current_app.static_folder,
-                'vendor',
-                'fullcalendar',
-                'index.global.min.js'
+                "vendor",
+                "fullcalendar",
+                "index.global.min.js",
             )
             # Skip if file doesn't exist
             if not os.path.exists(js_path):
@@ -138,10 +132,10 @@ class TestFullCalendar:
         with test_app.app_context():
             locale_path = os.path.join(
                 current_app.static_folder,
-                'vendor',
-                'fullcalendar',
-                'locales',
-                'fr.global.min.js'
+                "vendor",
+                "fullcalendar",
+                "locales",
+                "fr.global.min.js",
             )
             # Skip if file doesn't exist
             if not os.path.exists(locale_path):

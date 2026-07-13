@@ -19,8 +19,8 @@ from app.services import LeaveService, UserService
 @main_bp.route("/leave")
 @login_required
 def leave():
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 20, type=int)
 
     per_page_options = [5, 10, 25, 50, 100]
 
@@ -32,7 +32,12 @@ def leave():
 
     leaves_paginated = LeaveService.list_paginated(page, per_page)
 
-    return render_template("leave.html", leaves=leaves_paginated, per_page=per_page, per_page_options=per_page_options)
+    return render_template(
+        "leave.html",
+        leaves=leaves_paginated,
+        per_page=per_page,
+        per_page_options=per_page_options,
+    )
 
 
 @main_bp.route("/leave/add", methods=["GET", "POST"])
@@ -65,7 +70,9 @@ def add_leave():
                 flash("Utilisateur invalide.", "danger")
                 return redirect(url_for("main.add_leave"))
 
-            new_leave, regenerated_shifts = LeaveService.add_leave(target_user, start_date, end_date)
+            new_leave, regenerated_shifts = LeaveService.add_leave(
+                target_user, start_date, end_date
+            )
             if not new_leave:
                 flash(
                     "Impossible d'ajouter ce congé (dates invalides ou congé existant sur cette période).",
@@ -76,7 +83,10 @@ def add_leave():
             if regenerated_shifts is None:
                 flash("⚠️ Rééquilibrage automatique des shifts échoué.", "warning")
             elif regenerated_shifts:
-                flash(f"✅ Congé ajouté. {len(regenerated_shifts)} shifts ont été recalculés.", "success")
+                flash(
+                    f"✅ Congé ajouté. {len(regenerated_shifts)} shifts ont été recalculés.",
+                    "success",
+                )
             else:
                 flash("✅ Congé ajouté. Aucun shift à recalculer.", "success")
 
@@ -108,7 +118,10 @@ def delete_leave(leave_id):
         if regenerated_shifts is None:
             flash("⚠️ Rééquilibrage automatique des shifts échoué.", "warning")
         elif regenerated_shifts:
-            flash(f"✅ Congé supprimé. {len(regenerated_shifts)} shifts ont été recalculés.", "success")
+            flash(
+                f"✅ Congé supprimé. {len(regenerated_shifts)} shifts ont été recalculés.",
+                "success",
+            )
         else:
             flash("✅ Congé supprimé. Aucun shift à recalculer.", "success")
 
@@ -129,7 +142,15 @@ def api_delete_leave(leave_id):
 
     # Vérification des permissions : un utilisateur normal ne peut supprimer que ses propres congés
     if not current_user.is_admin and current_user.id != leave_obj.user_id:
-        return jsonify({"success": False, "error": "Vous ne pouvez supprimer que vos propres congés"}), 403
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "Vous ne pouvez supprimer que vos propres congés",
+                }
+            ),
+            403,
+        )
 
     try:
         LeaveService.api_delete(leave_id)
@@ -149,7 +170,15 @@ def api_update_leave(leave_id):
 
     # Vérification des permissions : un utilisateur normal ne peut modifier que ses propres congés
     if not current_user.is_admin and current_user.id != leave_obj.user_id:
-        return jsonify({"success": False, "error": "Vous ne pouvez modifier que vos propres congés"}), 403
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "Vous ne pouvez modifier que vos propres congés",
+                }
+            ),
+            403,
+        )
 
     data = request.get_json()
     if not data:
@@ -162,10 +191,10 @@ def api_update_leave(leave_id):
         if not new_start_str:
             return jsonify({"success": False, "error": "Date de début manquante"}), 400
 
-        new_start = datetime.fromisoformat(new_start_str.replace('Z', '+00:00'))
+        new_start = datetime.fromisoformat(new_start_str.replace("Z", "+00:00"))
 
         if new_end_str:
-            new_end = datetime.fromisoformat(new_end_str.replace('Z', '+00:00'))
+            new_end = datetime.fromisoformat(new_end_str.replace("Z", "+00:00"))
         else:
             duration = leave_obj.end_date - leave_obj.start_date
             new_end = new_start + duration
@@ -173,23 +202,30 @@ def api_update_leave(leave_id):
         new_start_date = new_start.date()
         new_end_date = new_end.date()
 
-        updated_leave, error = LeaveService.api_update(leave_id, new_start_date, new_end_date)
+        updated_leave, error = LeaveService.api_update(
+            leave_id, new_start_date, new_end_date
+        )
         if error:
             return jsonify({"success": False, "error": error}), 400
 
-        return jsonify({
-            "success": True,
-            "message": "Congé mis à jour avec succès",
-            "leave": {
-                "id": updated_leave.id,
-                "start": updated_leave.start_date.isoformat(),
-                "end": updated_leave.end_date.isoformat()
+        return jsonify(
+            {
+                "success": True,
+                "message": "Congé mis à jour avec succès",
+                "leave": {
+                    "id": updated_leave.id,
+                    "start": updated_leave.start_date.isoformat(),
+                    "end": updated_leave.end_date.isoformat(),
+                },
             }
-        })
+        )
 
     except ValueError as e:
         db.session.rollback()
-        return jsonify({"success": False, "error": f"Format de date invalide: {str(e)}"}), 400
+        return (
+            jsonify({"success": False, "error": f"Format de date invalide: {str(e)}"}),
+            400,
+        )
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
