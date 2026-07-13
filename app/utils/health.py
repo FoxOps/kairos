@@ -15,7 +15,7 @@ from sqlalchemy import text
 # Source unique : importée par app/__init__.py (context_processor du footer)
 # pour éviter que /version et le footer affichent deux valeurs différentes
 # (déjà arrivé : le footer était resté bloqué sur "0.6.0" après un bump ici).
-APP_VERSION_DEFAULT = "0.7.3"
+APP_VERSION_DEFAULT = "0.7.4"
 
 
 def register_health_endpoints(app: Flask) -> None:

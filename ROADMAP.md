@@ -1,12 +1,13 @@
 # 🗺️ Feuille de Route - Leviia Schedule
 
-> **Version** : 5.4.0 - Notifications par email (PR #106)
-> **Version app** : 0.7.3 (`/version`) - rappels hebdomadaires par
-> email (shifts le dimanche, astreinte le jeudi), SMTP via variables
-> d'environnement, scripts cron autonomes
+> **Version** : 5.5.0 - Refonte du système de sauvegarde (PR #107)
+> **Version app** : 0.7.4 (`/version`) - sauvegardes locale/S3 pilotées
+> par variables d'environnement (opt-in), interface d'administration
+> (`/admin/backups`), alertes email réutilisant le système de
+> notifications, intégration Docker (crond conditionnel)
 > **Dernière mise à jour** : Juillet 2026
-> **Statut** : Développement actif - **891 tests passent** ✅ (dont 27 E2E navigateur réel)
-> **Commit actuel** : branche feature/email-notifications (PR #106)
+> **Statut** : Développement actif - **916 tests passent** ✅ (dont 27 E2E navigateur réel)
+> **Commit actuel** : branche feature/backup-system-refonte (PR #107)
 >
 > ℹ️ Ne pas confondre avec les « Phases » de refonte (`report/Phase 1` à
 > `report/Phase 6`, un chantier qualité/infra achevé) et les « Phases » de
@@ -508,6 +509,7 @@ Pour toute question concernant la feuille de route :
 
 | Version | Date | Auteur | Changements |
 |---------|------|--------|-------------|
+| 5.5.0 | Juillet 2026 | Claude Code | Refonte du système de sauvegarde (PR #107) : activation/configuration entièrement par variables d'environnement (`BACKUP_ENABLED`, opt-in comme les notifications), retrait de la scaffolding jamais consommée (`encrypt`/`encryption_key`/`frequency`), alertes email de succès/échec réutilisant le système de notifications existant (`BACKUP_NOTIFICATION_EMAIL`, soumis à `NOTIFICATIONS_ENABLED`), `BackupService` + interface d'administration (`/admin/backups` : configuration, liste local/S3, création à la demande, nettoyage, téléchargement avec protection contre la traversée de chemin), intégration Docker (crond conditionnel sur `BACKUP_ENABLED`, planning dans `docker/crontabs/appuser`, même conteneur que l'application - pas de service Docker séparé). Documentation mise à jour (ENVIRONMENT_VARIABLES.md, BACKUP_GUIDE.md, ADMIN_GUIDE.md, docker.md) et références obsolètes à `BACKUP_ENCRYPT`/`BACKUP_ENCRYPTION_KEY` corrigées au passage. Version app 0.7.3 -> 0.7.4. 916 tests |
 | 5.4.0 | Juillet 2026 | Claude Code | Notifications par email (PR #106) : rappel hebdomadaire des shifts (dimanche, 24h avant le lundi) et de l'astreinte (jeudi, 24h avant le vendredi 21h), un email par semaine et par utilisateur (`NotificationLog` anti-doublon), SMTP configurable via variables d'environnement, deux scripts cron autonomes (`send_shift_notifications.py`/`send_oncall_notifications.py`, pattern `backup_database.py`), gabarits HTML + texte. Documentation mise à jour (README, CLAUDE.md, ADMIN_GUIDE.md, ARCHITECTURE.md, ERD.md, ENVIRONMENT_VARIABLES.md) et références obsolètes à `ShiftAutomation`/`business_rules.py`/`security/token_manager.py` (retirés en PR #105) corrigées au passage. Version app 0.7.2 -> 0.7.3. 891 tests |
 | 5.3.0 | Juillet 2026 | Claude Code | Retouches de textes UI (PR #105) : titre calendrier index ("Calendrier interactif" -> "Calendrier"), description footer (l'app ne gère pas les "organisations"), boutons "Retour à l'admin" ajoutés sur /admin/users et /admin/automation (renommés depuis "Retour au tableau de bord" sur /admin/groups pour éviter la confusion avec le tableau de bord utilisateur), occurrences de "nouvelles règles métiers" nettoyées sur /admin/automation. Version app 0.7.1 -> 0.7.2 |
 | 5.2.0 | Juillet 2026 | Claude Code | Amélioration génération automatique shifts/astreintes (PR #105) : retrait du moteur ShiftAutomation mort, dry-run "Génération complète" réparé, ordre de rotation respecté après congé, rééquilibrage après congé rendu atomique, nouvelle règle métier effectif minimum 1 personne, corrections confirmations de suppression (race condition JS), bouton "Sauvegarder l'ordre", astreintes en double sur vendredis adjacents, rechargement complet du calendrier remplacé par un rafraîchissement ciblé. Version app 0.7.0 -> 0.7.1. 862 tests (dont 27 E2E navigateur réel) |
