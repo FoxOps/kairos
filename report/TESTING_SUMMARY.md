@@ -2,9 +2,9 @@
 
 ## 📊 Aperçu Global
 
-- **Date de mise à jour** : 13 juillet 2026 (refonte du système de sauvegarde)
-- **Nombre total de tests** : 944
-- **Tests réussis** : 944 ✅
+- **Date de mise à jour** : 14 juillet 2026 (refonte visuelle Dracula/Alucard)
+- **Nombre total de tests** : 933
+- **Tests réussis** : 933 ✅
 - **Tests échoués** : 0
 - **Couverture de code** : **~88%** (`--cov=app --cov=config`)
 - **Lint (ruff)** : propre - **0 erreur**
@@ -253,3 +253,17 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
   automatisée) : le bascule de thème plantait après la conversion Font
   Awesome SVG+JS (`querySelector('i')` ne matchait plus), corrigé en ciblant
   par classe (`.fa-moon, .fa-sun`) plutôt que par balise.
+- **14 juillet 2026** : 933 tests (0 échec). Refonte visuelle Dracula
+  (thème sombre) / Alucard (thème clair) sur la base Tailwind/daisyUI de
+  PR #108 (PR #110) : palette 100% issue du spec officiel
+  draculatheme.com/spec, menu mobile converti en `drawer` daisyUI natif
+  (remplace le toggle `hidden` maison), modale de création de shift
+  réécrite en `<dialog>` natif (`showModal()`/`close()`) avec échappement
+  HTML ajouté sur les données interpolées, composants daisyUI natifs
+  adoptés là où le CSS était bricolé (`stats`, `list`, `avatar`,
+  `breadcrumbs`, `tooltip`, `collapse`, `hero`, `swap`). Suite E2E
+  navigateur réel mise à jour pour le nouveau mécanisme de menu mobile
+  (case à cocher plutôt que classe `hidden`) et enrichie d'un test de
+  bascule au clavier ; bug réel trouvé en test manuel (composant
+  `avatar-placeholder` de daisyUI qui cible ses styles de centrage sur un
+  `<div>` enfant, pas un `<span>` - corrigé).

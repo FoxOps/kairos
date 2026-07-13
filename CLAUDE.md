@@ -150,14 +150,41 @@ light/dark itself via `[data-theme]`, `themes/dark.css` only needs to cover thin
 know about (FullCalendar's own DOM) plus a couple of framework-agnostic accessibility rules
 (focus-visible, reduced-motion).
 
+**Palette : Dracula (thème sombre) / Alucard (thème clair)** (PR #110) — `app/static/css/theme-colors.css`
+overrides every daisyUI semantic `--color-*` (not just `--color-primary`) per `[data-theme="dark"|"light"]`,
+sourced 1:1 from the official spec at draculatheme.com/spec (no invented or computed hues; the three
+background levels `--color-base-100/200/300` come straight from the spec's Background/Current Line
+(opaque)/Selection colors). This is still the only way to theme daisyUI under `tailwindcss-browser` —
+it doesn't support `@plugin "daisyui/theme"` or `@theme` (confirmed in real-browser testing: "does not
+support plugins or config files"), so a full custom daisyUI theme via daisyUI's own theming system is
+not possible here; CSS-variable overrides on `[data-theme=...]` remain the only route. Same file also
+sets shape/depth tokens (`--radius-box`, `--radius-field`, `--radius-selector`, `--depth`, `--noise`) —
+`--depth`/`--noise` support against the cdnjs-pulled daisyUI build was verified empirically (real
+browser, computed-style diffing), not assumed.
+
 Font Awesome is loaded in **SVG+JS mode** (`js/all.min.js`, not the CSS+webfont mode) —
 deliberately: cdnjs's `.woff2` files for 7.2.0 are each truncated by exactly one byte (confirmed
 against the previously-vendored copies), which Chromium's font sanitizer rejects outright
 ("OTS parsing error"), leaving every icon invisible. SVG+JS sidesteps the corrupt fonts by
 rendering icons as inline `<svg>` at runtime — but it also means any JS that touches an icon's
 DOM node must not assume it stays an `<i>` (Font Awesome replaces it with `<svg>` after load,
-preserving the original classes) — see `theme-manager.js`'s icon-swap logic for the pattern
-(`querySelector('.fa-moon, .fa-sun')`, not `querySelector('i')`).
+preserving the original classes). The theme toggle button no longer swaps `fa-moon`/`fa-sun`
+classes directly (that pattern is gone) — it's a daisyUI `swap swap-rotate` component now, and
+`theme-manager.js` just toggles the `swap-active` class on the button itself; daisyUI's own CSS
+handles which icon shows, so the FA SVG-replacement quirk no longer needs to be worked around here
+specifically (it still applies to any *other* code touching icon DOM nodes — don't assume `<i>`).
+
+Mobile navigation is a real daisyUI `drawer` (checkbox-driven, `#mobile-drawer`) — `navbar-menu.js`
+only syncs the checkbox's checked state with the burger `<button>` (kept as a real button, not a
+`<label for>`, so `aria-expanded`/`aria-controls` stay correct) and closes on Escape; the daisyUI
+overlay's own `<label for="mobile-drawer">` handles click-outside-to-close natively, no JS needed
+for that part. The shift-creation modal (built dynamically in `fullcalendar-config.js`, not a
+template) is a native `<dialog>` + `showModal()`/`close()` — focus trap and Escape-to-close are
+handled by the browser, not hand-rolled; listen on the dialog's `cancel` event (not `close`) if you
+need to distinguish "user dismissed it" from a programmatic `.close()` after a successful save,
+since `close` fires for both. User-supplied strings (names, emails, labels) interpolated into that
+modal's generated HTML go through an `escapeHtml()` helper first — the innerHTML-template-literal
+pattern doesn't escape by default.
 
 FullCalendar stayed on **6.1.21** (not upgraded to 7.0.0 as originally planned) — loaded from
 `cdn.jsdelivr.net`, the one deliberate exception to "everything via cdnjs" (cdnjs doesn't host

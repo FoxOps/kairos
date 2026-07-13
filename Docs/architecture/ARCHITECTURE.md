@@ -144,6 +144,15 @@ compilé de FullCalendar lui-même, pas un problème d'hébergement) sont eux au
 noms d'application stables (`--app-color-primary`, `--bg-primary`...) utilisés par le peu de CSS
 maison restant.
 
+**Identité visuelle** (PR #110) : palette officielle Dracula (thème sombre) / Alucard (thème
+clair), surchargée dans `app/static/css/theme-colors.css` sur chaque couleur sémantique daisyUI
+(`--color-primary/-secondary/-accent/-neutral/-info/-success/-warning/-error` et les trois niveaux
+de surface `base-100/200/300`) - valeurs 100% issues de draculatheme.com/spec, aucune teinte
+inventée. Seule méthode possible sous `tailwindcss-browser` (le compilateur JIT ne supporte pas
+`@plugin "daisyui/theme"`/`@theme`, vérifié en navigateur réel). Navigation mobile en `drawer`
+daisyUI natif, modale de création de shift (générée en JS dans `fullcalendar-config.js`) en
+`<dialog>` natif plutôt qu'un toggle de classe `.modal-open`.
+
 `scripts/` (hors `app/`) contient les points d'entrée cron autonomes -
 `send_shift_notifications.py`/`send_oncall_notifications.py` +
 `notification_config.py` (config SMTP via variables d'environnement) -
