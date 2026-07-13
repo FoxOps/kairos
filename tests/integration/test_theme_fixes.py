@@ -188,8 +188,8 @@ class TestInlineStylesReplacement:
             with open(index_template_path) as f:
                 index_content = f.read()
 
-            assert 'class="tag is-danger min-w-180"' in index_content
-            assert 'class="button is-small is-success min-w-180"' in index_content
+            assert 'class="badge badge-error min-w-180"' in index_content
+            assert 'class="btn btn-success btn-sm min-w-180"' in index_content
 
             assert 'style="min-width: 180px"' not in index_content
 

@@ -52,15 +52,21 @@ compress = Compress()
 # Exposée en constante de module (plutôt qu'inline) pour que les tests
 # puissent vérifier la policy réelle sans la dupliquer.
 CDNJS_HOST = "https://cdnjs.cloudflare.com"
+# FullCalendar spécifiquement : cdnjs n'héberge les locales d'aucune
+# version testée de ce paquet (404 systématiques) - voir le commentaire
+# en tête de app/static/js/calendar/fullcalendar-config.js pour le
+# détail complet - seule exception à "tout via cdnjs" dans cette policy.
+JSDELIVR_HOST = "https://cdn.jsdelivr.net"
 
 CSP_POLICY = {
     "default-src": "'self'",
     "object-src": "'none'",
     # cdnjs.cloudflare.com : Font Awesome, daisyUI, tailwindcss-browser
-    # (compilateur Tailwind CSS 4 en JIT navigateur) et FullCalendar sont
-    # chargés depuis ce CDN plutôt que vendorisés localement - voir
+    # (compilateur Tailwind CSS 4 en JIT navigateur) sont chargés depuis
+    # ce CDN plutôt que vendorisés localement - voir
     # scripts/download_vendor_assets.py et Docs/architecture/ARCHITECTURE.md.
-    "script-src": f"'self' {CDNJS_HOST}",
+    # cdn.jsdelivr.net : FullCalendar uniquement (voir commentaire ci-dessus).
+    "script-src": f"'self' {CDNJS_HOST} {JSDELIVR_HOST}",
     "script-src-attr": "'unsafe-inline'",
     "style-src": f"'self' 'unsafe-inline' {CDNJS_HOST}",
     # FullCalendar embarque sa police d'icônes (flèches précédent/suivant du

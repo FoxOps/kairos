@@ -3,108 +3,116 @@
 {% block title %}Leviia - Accueil{% endblock %}
 
 {% block extra_css %}
-<!-- FullCalendar v6 - Le CSS est inclus dans le JS, pas de fichier CSS séparé -->
+<!-- FullCalendar v7 - Le CSS est inclus dans le JS, pas de fichier CSS séparé -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor/fullcalendar-overrides.css') }}">
 {% endblock %}
 
 {% block content %}
-<section class="section" aria-labelledby="page-title">
-    <div class="container">
-        <h1 id="page-title" class="title">
-            <i class="fas fa-home" aria-hidden="true"></i> Tableau de bord - Leviia
-        </h1>
+<section class="p-4 md:p-6 max-w-6xl mx-auto" aria-labelledby="page-title">
+    <h1 id="page-title" class="text-2xl font-bold mb-4">
+        <i class="fas fa-home" aria-hidden="true"></i> Tableau de bord - Leviia
+    </h1>
 
-        <!-- Actions rapides -->
-        <div class="box" role="region" aria-labelledby="quick-actions-title">
-            <h2 id="quick-actions-title" class="title is-4">
+    <!-- Actions rapides -->
+    <div class="card bg-base-100 shadow-md mb-6" role="region" aria-labelledby="quick-actions-title">
+        <div class="card-body">
+            <h2 id="quick-actions-title" class="text-lg font-semibold">
                 <i class="fas fa-bolt" aria-hidden="true"></i> Actions rapides
             </h2>
-            <div class="buttons" role="group" aria-label="Actions rapides">
+            <div class="flex flex-wrap gap-2" role="group" aria-label="Actions rapides">
                 {% if current_user.is_admin %}
                     <!-- Actions pour les administrateurs -->
-                    <a class="button is-primary" href="{{ url_for('main.add_shift') }}" aria-label="Ajouter un shift">
-                        <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un shift
+                    <a class="btn btn-primary" href="{{ url_for('main.add_shift') }}" aria-label="Ajouter un shift">
+                        <i class="fas fa-plus" aria-hidden="true"></i> Ajouter un shift
                     </a>
-                    <a class="button is-primary" href="{{ url_for('main.add_oncall') }}" aria-label="Ajouter une astreinte">
-                        <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter une astreinte
+                    <a class="btn btn-primary" href="{{ url_for('main.add_oncall') }}" aria-label="Ajouter une astreinte">
+                        <i class="fas fa-plus" aria-hidden="true"></i> Ajouter une astreinte
                     </a>
-                    <a class="button is-primary" href="{{ url_for('main.add_leave') }}" aria-label="Ajouter un congé">
-                        <i class="fas fa-plus" aria-hidden="true"></i>&nbsp; Ajouter un congé
+                    <a class="btn btn-primary" href="{{ url_for('main.add_leave') }}" aria-label="Ajouter un congé">
+                        <i class="fas fa-plus" aria-hidden="true"></i> Ajouter un congé
                     </a>
-                    <a class="button is-primary" href="{{ url_for('admin.list_users') }}" aria-label="Gérer les utilisateurs">
-                        <i class="fas fa-users" aria-hidden="true"></i>&nbsp; Gérer les utilisateurs
+                    <a class="btn btn-primary" href="{{ url_for('admin.list_users') }}" aria-label="Gérer les utilisateurs">
+                        <i class="fas fa-users" aria-hidden="true"></i> Gérer les utilisateurs
                     </a>
-                    <a class="button is-primary" href="{{ url_for('admin.list_groups') }}" aria-label="Gérer les groupes">
-                        <i class="fas fa-user-friends" aria-hidden="true"></i>&nbsp; Gérer les groupes
+                    <a class="btn btn-primary" href="{{ url_for('admin.list_groups') }}" aria-label="Gérer les groupes">
+                        <i class="fas fa-user-friends" aria-hidden="true"></i> Gérer les groupes
                     </a>
-                    <a class="button is-light" href="{{ url_for('admin.admin_dashboard') }}" aria-label="Tableau de bord administrateur">
-                        <i class="fas fa-cog" aria-hidden="true"></i>&nbsp; Admin
+                    <a class="btn btn-ghost" href="{{ url_for('admin.admin_dashboard') }}" aria-label="Tableau de bord administrateur">
+                        <i class="fas fa-cog" aria-hidden="true"></i> Admin
                     </a>
                 {% else %}
                     <!-- Actions pour les utilisateurs normaux - Export de leur calendrier -->
                     {% if current_user.ics_token %}
-                    <a class="button is-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('shifts', 'my') }}" aria-label="Exporter mes shifts">
-                        <i class="fas fa-download" aria-hidden="true"></i>&nbsp; Exporter mes shifts
+                    <a class="btn btn-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('shifts', 'my') }}" aria-label="Exporter mes shifts">
+                        <i class="fas fa-download" aria-hidden="true"></i> Exporter mes shifts
                     </a>
-                    <a class="button is-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('oncall', 'my') }}" aria-label="Exporter mes astreintes">
-                        <i class="fas fa-download" aria-hidden="true"></i>&nbsp; Exporter mes astreintes
+                    <a class="btn btn-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('oncall', 'my') }}" aria-label="Exporter mes astreintes">
+                        <i class="fas fa-download" aria-hidden="true"></i> Exporter mes astreintes
                     </a>
-                    <a class="button is-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('leaves', 'my') }}" aria-label="Exporter mes congés">
-                        <i class="fas fa-download" aria-hidden="true"></i>&nbsp; Exporter mes congés
+                    <a class="btn btn-primary" href="{{ request.host_url ~ current_user.get_ics_export_url('leaves', 'my') }}" aria-label="Exporter mes congés">
+                        <i class="fas fa-download" aria-hidden="true"></i> Exporter mes congés
                     </a>
                     {% endif %}
                 {% endif %}
             </div>
         </div>
+    </div>
 
-        <!-- Calendrier interactif avec Drag & Drop -->
-        <div class="box" role="region" aria-labelledby="calendar-title">
-            <h2 id="calendar-title" class="title is-4">
-                <i class="fas fa-calendar-alt" aria-hidden="true"></i> 
-                Calendrier - Shifts, astreintes et congés
-            </h2>
-            
-            {% if current_user.is_admin %}
-            <div class="is-pulled-right is-flex is-align-items-center gap-2 mb-6" role="group" aria-label="Options du calendrier">
-                <span class="tag is-danger min-w-180" id="edit-mode-status-tag" role="status" aria-live="polite">
-                    <i class="fas fa-edit" aria-hidden="true"></i>&nbsp; Mode édition désactivé
-                </span>
-                <button class="button is-small is-success min-w-180" id="toggle-edit-mode" aria-label="Activer le mode édition">
-                    <i class="fas fa-toggle-on" aria-hidden="true"></i>&nbsp; Activer l'édition
-                </button>
-                <button class="button is-small is-info min-w-180" id="toggle-tips" aria-label="Afficher les conseils">
-                    <i class="fas fa-eye" aria-hidden="true"></i>&nbsp; Afficher conseils
-                </button>
+    <!-- Calendrier interactif avec Drag & Drop -->
+    <div class="card bg-base-100 shadow-md mb-6" role="region" aria-labelledby="calendar-title">
+        <div class="card-body">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <h2 id="calendar-title" class="text-lg font-semibold">
+                    <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                    Calendrier - Shifts, astreintes et congés
+                </h2>
+
+                {% if current_user.is_admin %}
+                <div class="flex items-center gap-2" role="group" aria-label="Options du calendrier">
+                    <span class="badge badge-error min-w-180" id="edit-mode-status-tag" role="status" aria-live="polite">
+                        <i class="fas fa-edit" aria-hidden="true"></i> Mode édition désactivé
+                    </span>
+                    <button class="btn btn-success btn-sm min-w-180" id="toggle-edit-mode" aria-label="Activer le mode édition">
+                        <i class="fas fa-toggle-on" aria-hidden="true"></i> Activer l'édition
+                    </button>
+                    <button class="btn btn-info btn-sm min-w-180" id="toggle-tips" aria-label="Afficher les conseils">
+                        <i class="fas fa-eye" aria-hidden="true"></i> Afficher conseils
+                    </button>
+                </div>
+                {% endif %}
             </div>
-            {% endif %}
-            
+
             <!-- Conteneur pour les événements externes (pour créer de nouveaux shifts) -->
             {% if current_user.is_admin %}
-            <div class="notification is-info is-light mb-4 d-none" id="tips-container" role="status" aria-live="polite" aria-label="Conseils d'utilisation">
-                <p><strong><i class="fas fa-info-circle" aria-hidden="true"></i> Conseils d'utilisation :</strong></p>
-                <ul>
-                    <li><strong>Mode édition activé</strong> : Le drag & drop est activé. Cliquez sur un événement (shift, astreinte, congé) pour le supprimer (avec confirmation).</li>
-                    <li><strong>Déplacer un événement</strong> : Cliquez et faites glisser un événement (shift, astreinte, congé) vers une nouvelle date/heure</li>
-                    <li><strong>Redimensionner un événement</strong> : Passez la souris sur le bord d'un événement et faites glisser pour modifier la durée</li>
-                    <li><strong>Créer un shift</strong> : Sélectionnez une plage horaire vide dans le calendrier</li>
-                    <li><strong>Mode édition désactivé</strong> : Le drag & drop est désactivé. Cliquer sur un événement ne fait rien.</li>
-                    <li><strong>Contraintes</strong> : Les astreintes doivent commencer un vendredi. Les congés et shifts ne peuvent pas être placés sur des week-ends.</li>
-                </ul>
+            <div class="alert alert-info mt-4 hidden" id="tips-container" role="status" aria-live="polite" aria-label="Conseils d'utilisation">
+                <div>
+                    <p><strong><i class="fas fa-info-circle" aria-hidden="true"></i> Conseils d'utilisation :</strong></p>
+                    <ul class="list-disc list-inside">
+                        <li><strong>Mode édition activé</strong> : Le drag & drop est activé. Cliquez sur un événement (shift, astreinte, congé) pour le supprimer (avec confirmation).</li>
+                        <li><strong>Déplacer un événement</strong> : Cliquez et faites glisser un événement (shift, astreinte, congé) vers une nouvelle date/heure</li>
+                        <li><strong>Redimensionner un événement</strong> : Passez la souris sur le bord d'un événement et faites glisser pour modifier la durée</li>
+                        <li><strong>Créer un shift</strong> : Sélectionnez une plage horaire vide dans le calendrier</li>
+                        <li><strong>Mode édition désactivé</strong> : Le drag & drop est désactivé. Cliquer sur un événement ne fait rien.</li>
+                        <li><strong>Contraintes</strong> : Les astreintes doivent commencer un vendredi. Les congés et shifts ne peuvent pas être placés sur des week-ends.</li>
+                    </ul>
+                </div>
             </div>
             {% endif %}
-            
-            <div id="calendar" class="mt-4 is-fullwidth" role="application" aria-label="Calendrier interactif"
+
+            <div id="calendar" class="mt-4 w-full" role="application" aria-label="Calendrier interactif"
                  data-is-admin="{{ current_user.is_admin|tojson }}"></div>
             <script type="application/json" id="calendar-events-data">{{ events|tojson }}</script>
         </div>
+    </div>
 
-        <!-- Légende -->
-        <div class="box" role="region" aria-labelledby="legend-title">
-            <h2 id="legend-title" class="title is-4">Légende</h2>
-            <div class="tags are-medium" role="list" aria-label="Types d'événements">
-                <span class="tag is-primary" role="listitem"><i class="fas fa-calendar-check" aria-hidden="true"></i> Shifts</span>
-                <span class="tag is-info" role="listitem"><i class="fas fa-moon" aria-hidden="true"></i> Astreintes</span>
-                <span class="tag is-danger" role="listitem"><i class="fas fa-umbrella-beach" aria-hidden="true"></i> Congés</span>
+    <!-- Légende -->
+    <div class="card bg-base-100 shadow-md" role="region" aria-labelledby="legend-title">
+        <div class="card-body">
+            <h2 id="legend-title" class="text-lg font-semibold">Légende</h2>
+            <div class="flex gap-2" role="list" aria-label="Types d'événements">
+                <span class="badge badge-primary badge-lg" role="listitem"><i class="fas fa-calendar-check" aria-hidden="true"></i> Shifts</span>
+                <span class="badge badge-info badge-lg" role="listitem"><i class="fas fa-moon" aria-hidden="true"></i> Astreintes</span>
+                <span class="badge badge-error badge-lg" role="listitem"><i class="fas fa-umbrella-beach" aria-hidden="true"></i> Congés</span>
             </div>
         </div>
     </div>
@@ -112,8 +120,11 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- FullCalendar v6.1.21 JS avec plugins (inclut déjà interaction) - servi localement -->
-<script src='{{ url_for("static", filename="vendor/fullcalendar/index.global.min.js") }}'></script>
-<script src='{{ url_for("static", filename="vendor/fullcalendar/locales/fr.global.min.js") }}'></script>
+<!-- FullCalendar 6.1.21 - chargé depuis jsDelivr (cdnjs n'héberge pas
+     les locales de ce paquet ; voir le commentaire en tête de
+     fullcalendar-config.js pour le détail complet, y compris pourquoi
+     la version reste en 6.x). -->
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.21/index.global.min.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.21/locales/fr.global.min.js'></script>
 <script type="module" src="{{ url_for('static', filename='js/calendar/fullcalendar-config.js') }}"></script>
 {% endblock %}
