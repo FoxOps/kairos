@@ -51,18 +51,35 @@ compress = Compress()
 # commentaire dans create_app() pour le détail de chaque directive.
 # Exposée en constante de module (plutôt qu'inline) pour que les tests
 # puissent vérifier la policy réelle sans la dupliquer.
+CDNJS_HOST = "https://cdnjs.cloudflare.com"
+# FullCalendar spécifiquement : cdnjs n'héberge les locales d'aucune
+# version testée de ce paquet (404 systématiques) - voir le commentaire
+# en tête de app/static/js/calendar/fullcalendar-config.js pour le
+# détail complet - seule exception à "tout via cdnjs" dans cette policy.
+JSDELIVR_HOST = "https://cdn.jsdelivr.net"
+
 CSP_POLICY = {
     "default-src": "'self'",
     "object-src": "'none'",
-    "script-src": "'self'",
+    # cdnjs.cloudflare.com : Font Awesome, daisyUI, tailwindcss-browser
+    # (compilateur Tailwind CSS 4 en JIT navigateur) sont chargés depuis
+    # ce CDN plutôt que vendorisés localement - voir
+    # Docs/architecture/ARCHITECTURE.md.
+    # cdn.jsdelivr.net : FullCalendar uniquement (voir commentaire ci-dessus).
+    "script-src": f"'self' {CDNJS_HOST} {JSDELIVR_HOST}",
     "script-src-attr": "'unsafe-inline'",
-    "style-src": "'self' 'unsafe-inline'",
+    "style-src": f"'self' 'unsafe-inline' {CDNJS_HOST}",
     # FullCalendar embarque sa police d'icônes (flèches précédent/suivant du
     # calendrier) en @font-face data: URI dans son propre CSS (bundlé dans
     # le JS vendor) - sans font-src, default-src 'self' bloque le data:,
     # les icônes de navigation du calendrier restent invisibles (repéré en
     # inspectant la console d'un vrai navigateur, pas juste le HTML rendu).
-    "font-src": "'self' data:",
+    # cdnjs.cloudflare.com : polices Font Awesome (webfonts .woff2).
+    "font-src": f"'self' data: {CDNJS_HOST}",
+    # daisyUI utilise un SVG data: (bruit/texture pour l'effet "depth" de
+    # certains composants) en arrière-plan CSS - repéré en console d'un
+    # vrai navigateur (comme font-src ci-dessus), pas dans le HTML rendu.
+    "img-src": "'self' data:",
 }
 
 # Variable pour maintenir la compatibilité avec le code existant

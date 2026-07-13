@@ -13,7 +13,7 @@
 .sortable-item {
     background: var(--bg-secondary, #f5f5f5);
     border: 1px solid var(--border-primary, #ddd);
-    border-radius: var(--bulma-radius-small);
+    border-radius: var(--app-radius-small);
     padding: 12px 15px;
     margin-bottom: 8px;
     cursor: move;
@@ -28,7 +28,7 @@
 
 .sortable-item.dragging {
     opacity: 0.5;
-    background: var(--color-success-light, #d4edda);
+    background: var(--app-color-success-light, #d4edda);
 }
 
 .sortable-item .drag-handle {
@@ -48,9 +48,9 @@
 .rotation-order-info {
     background: var(--bg-secondary, #f8f9fa);
     padding: 15px;
-    border-radius: var(--bulma-radius-small);
+    border-radius: var(--app-radius-small);
     margin-bottom: 15px;
-    border-left: 4px solid var(--color-primary, #20b698);
+    border-left: 4px solid var(--app-color-primary, #20b698);
 }
 
 /* Fix pour les boutons qui débordent */

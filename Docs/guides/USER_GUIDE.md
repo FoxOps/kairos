@@ -83,7 +83,6 @@ venv\Scripts\activate
 
 ```bash
 pip install -r requirements.txt
-python scripts/download_vendor_assets.py
 ```
 
 #### 4. Configurer l'application

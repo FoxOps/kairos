@@ -54,7 +54,6 @@
 | [`ENVIRONMENT_VARIABLES.md`](reference/ENVIRONMENT_VARIABLES.md) | Toutes les variables d'environnement effectivement lues par l'application |
 | [`ERROR_HANDLING.md`](reference/ERROR_HANDLING.md) | Pages d'erreur, gestionnaires HTTP, système de logging |
 | [`PERFORMANCE_OPTIMIZATION.md`](reference/PERFORMANCE_OPTIMIZATION.md) | Cache, `eager_load`, index de base de données |
-| [`vendor-assets.md`](reference/vendor-assets.md) | Bulma/Font Awesome/FullCalendar servis localement |
 
 ## Contribuer à la documentation
 

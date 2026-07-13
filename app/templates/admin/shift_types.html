@@ -3,66 +3,64 @@
 {% block title %}Types de shifts - Administration{% endblock %}
 
 {% block admin_content %}
-<section class="section">
-    <div class="container">
-        <h1 class="title">
-            <i class="fas fa-cogs" aria-hidden="true"></i> Gestion des types de shifts
-        </h1>
-        
-        <div class="buttons" role="group" aria-label="Actions types de shifts">
-            {% set add_button_route = 'admin.add_shift_type' %}
-            {% set add_button_label = 'Ajouter un type de shift' %}
-            {% set add_button_icon = 'plus' %}
-            {% set add_button_resource_name = 'Ajouter un nouveau type de shift' %}
-            {% include "_add_button.html" %}
-        </div>
-        
-        {% if shift_types %}
-        <div class="table-container" role="region" aria-labelledby="shift-types-title">
-            <table class="table is-fullwidth is-striped" aria-describedby="shift-types-title">
-                <caption class="is-sr-only">Liste des types de shifts</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">Nom</th>
-                        <th scope="col">Libellé</th>
-                        <th scope="col">Heure de début</th>
-                        <th scope="col">Heure de fin</th>
-                        <th scope="col">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for shift_type in shift_types %}
-                    <tr>
-                        <td>{{ shift_type.name }}</td>
-                        <td>{{ shift_type.label }}</td>
-                        <td>{{ "%02d"|format(shift_type.start_hour) }}h</td>
-                        <td>{{ "%02d"|format(shift_type.end_hour) }}h</td>
-                        <td>
-                            <div class="is-flex gap-2" role="group" aria-label="Actions pour le type de shift {{ shift_type.name }}">
-                                <a class="button is-small is-info" href="{{ url_for('admin.edit_shift_type', shift_type_id=shift_type.id) }}" 
-                                   aria-label="Modifier le type de shift {{ shift_type.name }}" title="Modifier le type de shift">
-                                    <i class="fas fa-edit" aria-hidden="true"></i>
-                                </a>
-                                <a class="button is-small is-danger" href="{{ url_for('admin.delete_shift_type', shift_type_id=shift_type.id) }}"
-                                   onclick="event.preventDefault(); const href = this.href; Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer le type de shift {{ shift_type.name }} ?', function() { window.location.href = href; });"
-                                   aria-label="Supprimer le type de shift {{ shift_type.name }}" title="Supprimer le type de shift">
-                                    <i class="fas fa-trash" aria-hidden="true"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- Légende des actions -->
-        {% set action_items = [
-            {'class': 'is-info is-small', 'icon': 'edit', 'label': 'Modifier', 'description': 'Modifier le type de shift'},
-            {'class': 'is-danger is-small', 'icon': 'trash', 'label': 'Supprimer', 'description': 'Supprimer le type de shift'}
-        ] %}
-        {% include "_action_legend.html" %}
-        {% endif %}
+<section class="p-4 md:p-6 max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold mb-4">
+        <i class="fas fa-cogs" aria-hidden="true"></i> Gestion des types de shifts
+    </h1>
+
+    <div class="flex gap-2 mb-4" role="group" aria-label="Actions types de shifts">
+        {% set add_button_route = 'admin.add_shift_type' %}
+        {% set add_button_label = 'Ajouter un type de shift' %}
+        {% set add_button_icon = 'plus' %}
+        {% set add_button_resource_name = 'Ajouter un nouveau type de shift' %}
+        {% include "_add_button.html" %}
     </div>
+
+    {% if shift_types %}
+    <div class="overflow-x-auto" role="region" aria-labelledby="shift-types-title">
+        <table class="table table-zebra" aria-describedby="shift-types-title">
+            <caption class="sr-only">Liste des types de shifts</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Nom</th>
+                    <th scope="col">Libellé</th>
+                    <th scope="col">Heure de début</th>
+                    <th scope="col">Heure de fin</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for shift_type in shift_types %}
+                <tr>
+                    <td>{{ shift_type.name }}</td>
+                    <td>{{ shift_type.label }}</td>
+                    <td>{{ "%02d"|format(shift_type.start_hour) }}h</td>
+                    <td>{{ "%02d"|format(shift_type.end_hour) }}h</td>
+                    <td>
+                        <div class="flex gap-2" role="group" aria-label="Actions pour le type de shift {{ shift_type.name }}">
+                            <a class="btn btn-info btn-sm" href="{{ url_for('admin.edit_shift_type', shift_type_id=shift_type.id) }}"
+                               aria-label="Modifier le type de shift {{ shift_type.name }}" title="Modifier le type de shift">
+                                <i class="fas fa-edit" aria-hidden="true"></i>
+                            </a>
+                            <a class="btn btn-error btn-sm" href="{{ url_for('admin.delete_shift_type', shift_type_id=shift_type.id) }}"
+                               onclick="event.preventDefault(); const href = this.href; Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer le type de shift {{ shift_type.name }} ?', function() { window.location.href = href; });"
+                               aria-label="Supprimer le type de shift {{ shift_type.name }}" title="Supprimer le type de shift">
+                                <i class="fas fa-trash" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Légende des actions -->
+    {% set action_items = [
+        {'class': 'btn-info btn-sm', 'icon': 'edit', 'label': 'Modifier', 'description': 'Modifier le type de shift'},
+        {'class': 'btn-error btn-sm', 'icon': 'trash', 'label': 'Supprimer', 'description': 'Supprimer le type de shift'}
+    ] %}
+    {% include "_action_legend.html" %}
+    {% endif %}
 </section>
 {% endblock %}

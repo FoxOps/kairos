@@ -25,15 +25,15 @@
 }
 
 .upcoming-item {
-    border-left: 3px solid var(--color-primary);
+    border-left: 3px solid var(--app-color-primary);
     padding: 0.5rem 0 0.5rem 1rem;
     margin-bottom: 0.5rem;
-    border-radius: 0 var(--bulma-radius-small) var(--bulma-radius-small) 0;
+    border-radius: 0 var(--app-radius-small) var(--app-radius-small) 0;
     transition: background-color 0.15s ease-in-out;
 }
 
 .upcoming-item:hover {
-    background-color: var(--bulma-primary-05, rgba(32, 182, 152, 0.05));
+    background-color: color-mix(in oklab, var(--app-color-primary) 5%, transparent);
 }
 
 .empty-state {
@@ -78,8 +78,8 @@
 .chart-bar {
     width: 100%;
     margin: 0 0.25rem;
-    background-color: var(--color-primary);
-    border-radius: var(--bulma-radius-small) var(--bulma-radius-small) 0 0;
+    background-color: var(--app-color-primary);
+    border-radius: var(--app-radius-small) var(--app-radius-small) 0 0;
     position: relative;
     min-height: 4px;
     transition: height 0.3s ease-in-out;
@@ -99,5 +99,5 @@
     transform: translateX(-50%);
     font-size: 0.85rem;
     font-weight: bold;
-    color: var(--color-primary);
+    color: var(--app-color-primary);
 }

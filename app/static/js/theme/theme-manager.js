@@ -75,29 +75,21 @@ export class ThemeManager {
      * @param {string} theme - 'dark' ou 'light'
      */
     applyTheme(theme) {
-        // Supprimer les classes et attributs existants
-        this.html.classList.remove('dark-mode');
-        this.html.removeAttribute('data-theme');
+        // daisyUI ne lit que l'attribut data-theme (thèmes nommés "light"/
+        // "dark" définis dans base.html) - plus besoin de classe séparée
+        // (.dark-mode dépendait de la dérivation clair/sombre de Bulma).
+        const resolvedTheme = theme === 'dark' ? 'dark' : 'light';
+        this.html.setAttribute('data-theme', resolvedTheme);
+        localStorage.setItem(this.storageKey, resolvedTheme);
 
-        // Appliquer le nouveau thème
-        if (theme === 'dark') {
-            this.html.setAttribute('data-theme', 'dark');
-            this.html.classList.add('dark-mode');
-            localStorage.setItem(this.storageKey, 'dark');
-        } else {
-            this.html.setAttribute('data-theme', 'light');
-            localStorage.setItem(this.storageKey, 'light');
-        }
-
-        this.updateToggleButton(theme === 'dark');
+        this.updateToggleButton(resolvedTheme === 'dark');
     }
 
     /**
      * Toggle entre thème clair et sombre.
      */
     toggle() {
-        const isCurrentlyDark = this.html.getAttribute('data-theme') === 'dark' ||
-                               this.html.classList.contains('dark-mode');
+        const isCurrentlyDark = this.html.getAttribute('data-theme') === 'dark';
         this.applyTheme(isCurrentlyDark ? 'light' : 'dark');
     }
 
@@ -108,8 +100,13 @@ export class ThemeManager {
     updateToggleButton(isDark) {
         if (!this.toggleBtn) return;
 
-        const icon = this.toggleBtn.querySelector('i');
+        // Font Awesome (mode SVG+JS, voir base.html) remplace le <i>
+        // d'origine par un <svg> une fois converti - il en conserve
+        // toutefois les classes (fa-moon/fa-sun), donc cibler par classe
+        // plutôt que par balise fonctionne avant et après conversion.
+        const icon = this.toggleBtn.querySelector('.fa-moon, .fa-sun');
         this.toggleBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+        if (!icon) return;
 
         if (isDark) {
             icon.classList.remove('fa-moon');

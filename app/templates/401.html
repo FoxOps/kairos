@@ -4,13 +4,13 @@
 {% block title %}Non autorisé - Leviia{% endblock %}
 
 {% block content %}
-{% call error_page(code=401, title="Non autorisé", subtitle="Vous devez être authentifié pour accéder à cette page.", color="has-text-danger", primary={"url": url_for("auth.login"), "icon": "fa-sign-in-alt", "label": "Se connecter"}, secondary=[{"url": url_for("main.index"), "icon": "fa-home", "label": "Retour à l'accueil", "class": "is-light"}], auth_toggle=False) %}
+{% call error_page(code=401, title="Non autorisé", subtitle="Vous devez être authentifié pour accéder à cette page.", color="text-error", primary={"url": url_for("auth.login"), "icon": "fa-sign-in-alt", "label": "Se connecter"}, secondary=[{"url": url_for("main.index"), "icon": "fa-home", "label": "Retour à l'accueil", "class": "btn-ghost"}], auth_toggle=False) %}
 <p role="alert" aria-live="assertive">
     Vous n'êtes pas connecté ou votre session a expiré.
     Veuillez vous authentifier pour continuer.
 </p>
 {% if error_message %}
-<div class="notification is-warning mt-4" role="alert" aria-live="assertive">
+<div class="alert alert-warning mt-4" role="alert" aria-live="assertive">
     <p><strong>Détails :</strong> {{ error_message }}</p>
 </div>
 {% endif %}

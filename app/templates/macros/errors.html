@@ -2,68 +2,64 @@
     Macro partagée par les pages d'erreur (400/401/403/404/405/500/502/503/504).
     Usage :
         {% from "macros/errors.html" import error_page %}
-        {% call error_page(code=404, title="Page non trouvée", subtitle="...", color="has-text-warning") %}
+        {% call error_page(code=404, title="Page non trouvée", subtitle="...", color="text-warning") %}
             <p role="alert" aria-live="assertive">Contenu spécifique...</p>
         {% endcall %}
 
-    primary  : dict {url|onclick, icon, label} - bouton is-primary (par défaut : retour accueil)
-    secondary: liste de dict {url|onclick, icon, label, class} - boutons is-info par défaut
+    primary  : dict {url|onclick, icon, label} - bouton btn-primary (par défaut : retour accueil)
+    secondary: liste de dict {url|onclick, icon, label, class} - boutons btn-info par défaut
                 (surchargeable via "class"), avant le toggle connexion
     auth_toggle : affiche "Se déconnecter"/"Se connecter" selon current_user (défaut True)
 #}
 
 {% macro _action_button(item, css_class) %}
     {% if item.onclick %}
-    <button onclick="{{ item.onclick }}" class="button {{ css_class }} ml-3" aria-label="{{ item.label }}">
-        <span class="icon"><i class="fas {{ item.icon }}" aria-hidden="true"></i></span>
+    <button onclick="{{ item.onclick }}" class="btn {{ css_class }} ml-3" aria-label="{{ item.label }}">
+        <i class="fas {{ item.icon }}" aria-hidden="true"></i>
         <span>{{ item.label }}</span>
     </button>
     {% else %}
-    <a href="{{ item.url }}" class="button {{ css_class }} ml-3" aria-label="{{ item.label }}">
-        <span class="icon"><i class="fas {{ item.icon }}" aria-hidden="true"></i></span>
+    <a href="{{ item.url }}" class="btn {{ css_class }} ml-3" aria-label="{{ item.label }}">
+        <i class="fas {{ item.icon }}" aria-hidden="true"></i>
         <span>{{ item.label }}</span>
     </a>
     {% endif %}
 {% endmacro %}
 
-{% macro error_page(code, title, subtitle, color="has-text-danger", primary=none, secondary=[], auth_toggle=True) %}
+{% macro error_page(code, title, subtitle, color="text-error", primary=none, secondary=[], auth_toggle=True) %}
 {% set primary = primary or {"url": url_for("main.index"), "icon": "fa-home", "label": "Retour à l'accueil"} %}
-<main role="main" aria-labelledby="error-title">
-    <div class="section">
-        <div class="container">
-            <div class="columns is-centered">
-                <div class="column is-6">
-                    <div class="box has-text-centered" role="region" aria-labelledby="error-title" aria-describedby="error-description">
-                        <h1 id="error-title" class="title is-1 {{ color }}">{{ code }}</h1>
-                        <h2 id="error-description" class="title is-3">{{ title }}</h2>
-                        <p class="subtitle is-5">{{ subtitle }}</p>
-                        <div class="content">
-                            {{ caller() }}
-                        </div>
-                        <div class="mt-5">
-                            {% if primary.onclick %}
-                            <button onclick="{{ primary.onclick }}" class="button is-primary" aria-label="{{ primary.label }}">
-                                <span class="icon"><i class="fas {{ primary.icon }}" aria-hidden="true"></i></span>
-                                <span>{{ primary.label }}</span>
-                            </button>
-                            {% else %}
-                            <a href="{{ primary.url }}" class="button is-primary" aria-label="{{ primary.label }}">
-                                <span class="icon"><i class="fas {{ primary.icon }}" aria-hidden="true"></i></span>
-                                <span>{{ primary.label }}</span>
-                            </a>
-                            {% endif %}
+<main role="main" aria-labelledby="error-title" class="flex justify-center px-4 py-12">
+    <div class="w-full max-w-2xl">
+        <div class="card bg-base-100 shadow-md text-center" role="region" aria-labelledby="error-title" aria-describedby="error-description">
+            <div class="card-body items-center">
+                <h1 id="error-title" class="text-6xl font-bold {{ color }}">{{ code }}</h1>
+                <h2 id="error-description" class="text-2xl font-semibold">{{ title }}</h2>
+                <p class="text-lg text-base-content/70">{{ subtitle }}</p>
+                <div>
+                    {{ caller() }}
+                </div>
+                <div class="mt-5">
+                    {% if primary.onclick %}
+                    <button onclick="{{ primary.onclick }}" class="btn btn-primary" aria-label="{{ primary.label }}">
+                        <i class="fas {{ primary.icon }}" aria-hidden="true"></i>
+                        <span>{{ primary.label }}</span>
+                    </button>
+                    {% else %}
+                    <a href="{{ primary.url }}" class="btn btn-primary" aria-label="{{ primary.label }}">
+                        <i class="fas {{ primary.icon }}" aria-hidden="true"></i>
+                        <span>{{ primary.label }}</span>
+                    </a>
+                    {% endif %}
 
-                            {% for item in secondary %}{{ _action_button(item, item.class or "is-info") }}{% endfor %}
+                    {% for item in secondary %}{{ _action_button(item, item.class or "btn-info") }}{% endfor %}
 
-                            {% if auth_toggle %}
-                                {% if current_user.is_authenticated %}
-                                    {{ _action_button({"url": url_for("auth.logout"), "icon": "fa-sign-out-alt", "label": "Se déconnecter"}, "is-light") }}
-                                {% else %}
-                                    {{ _action_button({"url": url_for("auth.login"), "icon": "fa-sign-in-alt", "label": "Se connecter"}, "is-light") }}
-                                {% endif %}
-                            {% endif %}
-                        </div>
-                    </div>
+                    {% if auth_toggle %}
+                        {% if current_user.is_authenticated %}
+                            {{ _action_button({"url": url_for("auth.logout"), "icon": "fa-sign-out-alt", "label": "Se déconnecter"}, "btn-ghost") }}
+                        {% else %}
+                            {{ _action_button({"url": url_for("auth.login"), "icon": "fa-sign-in-alt", "label": "Se connecter"}, "btn-ghost") }}
+                        {% endif %}
+                    {% endif %}
                 </div>
             </div>
         </div>

@@ -1,13 +1,14 @@
 /* ============================================
-   COMPOSANT - CARTES (box)
+   COMPOSANT - CARTES
+   ============================================
+   Augmente les cards daisyUI (.card) - la classe Bulma .box n'est plus
+   utilisée dans les templates, retirée en Phase 7.
    ============================================ */
 
-.box {
-    border-radius: var(--bulma-radius-large);
-    box-shadow: var(--shadow-sm);
+.card {
     transition: box-shadow 0.2s ease-in-out;
 }
 
-.box:hover {
+.card:hover {
     box-shadow: var(--shadow-md);
 }

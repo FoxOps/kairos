@@ -252,8 +252,8 @@ def test_template_content():
         content = f.read()
 
     checks = [
-        ('class="type-tag is-primary"', "Classe type-tag is-primary utilisée"),
-        ('class="type-tag is-light"', "Classe type-tag is-light utilisée"),
+        ('class="badge badge-primary"', "Classe badge badge-primary utilisée"),
+        ('class="badge badge-ghost"', "Classe badge badge-ghost utilisée"),
         ("var(--bulma-grey)" not in content, "Pas de var(--bulma-grey)"),
     ]
 

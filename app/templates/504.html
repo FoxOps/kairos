@@ -4,7 +4,7 @@
 {% block title %}Temps d'attente dépassé - Leviia{% endblock %}
 
 {% block content %}
-{% call error_page(code=504, title="Temps d'attente dépassé", subtitle="Le serveur n'a pas répondu à temps.", color="has-text-warning", secondary=[{"onclick": "location.reload()", "icon": "fa-sync-alt", "label": "Actualiser"}]) %}
+{% call error_page(code=504, title="Temps d'attente dépassé", subtitle="Le serveur n'a pas répondu à temps.", color="text-warning", secondary=[{"onclick": "location.reload()", "icon": "fa-sync-alt", "label": "Actualiser"}]) %}
 <p role="alert" aria-live="assertive">
     La requête a pris trop de temps à être traitée.
     Cela peut être dû à une connexion lente ou à une surcharge du serveur.

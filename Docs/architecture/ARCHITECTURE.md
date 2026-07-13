@@ -121,11 +121,28 @@ app/
 │   ├── health.py            # endpoints /health, /ready, /version (k8s probes)
 │   └── prometheus_metrics.py # /metrics, gated par PROMETHEUS_ENABLED
 ├── static/
-│   ├── css/                 # variables/base/utilities/components/layout/themes/vendor
+│   ├── css/                 # variables/base/utilities/components/layout/themes/pages
+│   │                      # (Tailwind CSS 4 + daisyUI 5 via CDN, pas de build - voir
+│   │                      # ci-dessous ; ces fichiers ne font qu'augmenter les
+│   │                      # composants daisyUI, plus de vendoring local)
 │   └── js/                  # main.js (entrée module ES6) + theme/utils/notifications
 └── templates/                # Jinja2, macros/errors.html pour les pages d'erreur,
                               # emails/ pour les gabarits de notification (HTML + texte)
 ```
+
+**Frontend** — Tailwind CSS 4 + daisyUI 5, chargés via `cdnjs.cloudflare.com`, zéro étape de
+build (Tailwind tourne en `tailwindcss-browser`, le compilateur JIT officiel qui scanne les
+classes directement dans le navigateur - pas de `package.json`/npm dans ce projet, choix
+délibéré). Bulma entièrement retiré (PR #108, refonte Tailwind/daisyUI) : plus de dossier
+vendor ni de script de téléchargement, Font Awesome (7.2.0, mode SVG+JS - les `.woff2` de
+cdnjs pour cette version sont corrompus, rejetés par le sanitizer de police de Chromium) et
+FullCalendar (resté en 6.1.21, chargé depuis `cdn.jsdelivr.net` - seule exception à "tout via
+cdnjs", cdnjs n'hébergeant pas ses fichiers de locale ; la version 7.0.0 a été testée via trois
+CDN différents et lève systématiquement une erreur d'exécution réelle dans le rendu Preact
+compilé de FullCalendar lui-même, pas un problème d'hébergement) sont eux aussi 100% CDN.
+`app/static/css/variables.css` fait le pont entre les variables `--color-*` de daisyUI et des
+noms d'application stables (`--app-color-primary`, `--bg-primary`...) utilisés par le peu de CSS
+maison restant.
 
 `scripts/` (hors `app/`) contient les points d'entrée cron autonomes -
 `send_shift_notifications.py`/`send_oncall_notifications.py` +

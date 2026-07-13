@@ -1,234 +1,115 @@
 /* ============================================
    LEVIIA SCHEDULE - THÈME SOMBRE
    ============================================
-   Styles actifs uniquement en mode sombre ([data-theme="dark"] ou
-   .dark-mode, posé sur <html> par le toggle de thème). Bulma gère le
-   reste (variables --bulma-*) automatiquement.
+   Depuis la refonte Tailwind/daisyUI (Phase 7 - retrait de Bulma),
+   daisyUI gère lui-même la bascule clair/sombre de tous ses composants
+   (boutons, alertes, badges, cards...) via ses propres variables
+   --color-* et l'attribut [data-theme] - plus besoin de correctifs de
+   contraste manuels comme du temps de Bulma. Ne reste ici que ce que
+   daisyUI ne peut pas connaître : les surcharges FullCalendar (lib
+   externe, DOM et classes propres à elle) et quelques réglages
+   d'accessibilité génériques indépendants du framework CSS.
    ============================================ */
 
-/* Correction du contraste des boutons/tags .is-warning (Bulma utilise
-   du texte blanc sur fond jaune par défaut) */
-[data-theme="dark"] .button.is-warning,
-.dark-mode .button.is-warning {
-    color: #000 !important;
-}
-
-[data-theme="dark"] .tag.is-warning,
-.dark-mode .tag.is-warning {
-    color: #000 !important;
-}
-
-/* Notifications accessibles */
-[data-theme="dark"] .notification[role="alert"],
-.dark-mode .notification[role="alert"] {
-    border: 2px solid var(--color-danger) !important;
-    background-color: var(--bulma-danger-light) !important;
-    color: var(--bulma-danger-dark) !important;
-}
-
-[data-theme="dark"] .notification[role="status"],
-.dark-mode .notification[role="status"] {
-    border: 2px solid var(--color-info) !important;
-    background-color: var(--bulma-info-light) !important;
-    color: var(--bulma-info-dark) !important;
-}
-
 /* FullCalendar en mode sombre */
-[data-theme="dark"] .fc-event-shift,
-.dark-mode .fc-event-shift {
-    background-color: var(--color-primary) !important;
-    border-color: var(--color-primary) !important;
+[data-theme="dark"] .fc-event-shift {
+    background-color: var(--app-color-primary) !important;
+    border-color: var(--app-color-primary) !important;
     color: #fff !important;
 }
 
-[data-theme="dark"] .fc-event-oncall,
-.dark-mode .fc-event-oncall {
-    background-color: var(--color-info) !important;
-    border-color: var(--color-info) !important;
+[data-theme="dark"] .fc-event-oncall {
+    background-color: var(--app-color-info) !important;
+    border-color: var(--app-color-info) !important;
     color: #fff !important;
 }
 
-[data-theme="dark"] .fc-event-leave,
-.dark-mode .fc-event-leave {
+[data-theme="dark"] .fc-event-leave {
     background-color: var(--color-danger) !important;
     border-color: var(--color-danger) !important;
     color: #fff !important;
 }
 
-[data-theme="dark"] .fc,
-.dark-mode .fc {
-    background-color: var(--bulma-background) !important;
-    color: var(--bulma-text) !important;
+[data-theme="dark"] .fc {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
 }
 
 [data-theme="dark"] .fc-today,
-.dark-mode .fc-today {
-    background-color: var(--bulma-background-hover) !important;
+[data-theme="dark"] .fc-day:hover,
+[data-theme="dark"] .fc-day-today {
+    background-color: var(--bg-secondary) !important;
 }
 
-[data-theme="dark"] .fc-header-toolbar,
-.dark-mode .fc-header-toolbar {
-    background-color: var(--bulma-background) !important;
+[data-theme="dark"] .fc-header-toolbar {
+    background-color: var(--bg-primary) !important;
 }
 
 [data-theme="dark"] .fc-col-header-cell,
-.dark-mode .fc-col-header-cell,
-[data-theme="dark"] .fc-day-header,
-.dark-mode .fc-day-header {
-    background-color: var(--bulma-background-bis) !important;
-    border-color: var(--bulma-border) !important;
-    color: var(--bulma-text) !important;
+[data-theme="dark"] .fc-day-header {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-primary) !important;
+    color: var(--text-primary) !important;
 }
 
-[data-theme="dark"] .fc-day,
-.dark-mode .fc-day {
-    background-color: var(--bulma-background) !important;
-    border-color: var(--bulma-border) !important;
-    color: var(--bulma-text) !important;
+[data-theme="dark"] .fc-day {
+    background-color: var(--bg-primary) !important;
+    border-color: var(--border-primary) !important;
+    color: var(--text-primary) !important;
 }
 
-[data-theme="dark"] .fc-day:hover,
-.dark-mode .fc-day:hover {
-    background-color: var(--bulma-background-hover) !important;
-}
-
-[data-theme="dark"] .fc-day-today,
-.dark-mode .fc-day-today {
-    background-color: var(--bulma-background-hover) !important;
-}
-
-[data-theme="dark"] .fc-event,
-.dark-mode .fc-event {
+[data-theme="dark"] .fc-event {
     border-color: currentColor !important;
 }
 
-[data-theme="dark"] .fc-page,
-.dark-mode .fc-page {
-    background-color: var(--bulma-background) !important;
+[data-theme="dark"] .fc-page {
+    background-color: var(--bg-primary) !important;
 }
 
-[data-theme="dark"] #calendar,
-.dark-mode #calendar {
-    background-color: var(--bulma-background);
-    color: var(--bulma-text);
+[data-theme="dark"] #calendar {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
 }
 
-[data-theme="dark"] .external-event-container,
-.dark-mode .external-event-container {
-    background: var(--bulma-background-bis);
+[data-theme="dark"] .external-event-container {
+    background: var(--bg-secondary);
 }
 
-[data-theme="dark"] .external-event,
-.dark-mode .external-event {
-    background: var(--color-primary);
+[data-theme="dark"] .external-event {
+    background: var(--app-color-primary);
 }
 
-[data-theme="dark"] .external-event.oncall,
-.dark-mode .external-event.oncall {
-    background: var(--color-info);
+[data-theme="dark"] .external-event.oncall {
+    background: var(--app-color-info);
 }
 
-[data-theme="dark"] .external-event.leave,
-.dark-mode .external-event.leave {
+[data-theme="dark"] .external-event.leave {
     background: var(--color-danger);
 }
 
-[data-theme="dark"] .fc-event-selected,
-.dark-mode .fc-event-selected {
-    box-shadow: 0 0 0 2px var(--color-warning) !important;
+[data-theme="dark"] .fc-event-selected {
+    box-shadow: 0 0 0 2px var(--app-color-warning) !important;
 }
 
-/* Focus visible */
+/* Focus visible - générique, indépendant du framework CSS */
 [data-theme="dark"] a:focus-visible,
-.dark-mode a:focus-visible,
 [data-theme="dark"] button:focus-visible,
-.dark-mode button:focus-visible,
 [data-theme="dark"] input:focus-visible,
-.dark-mode input:focus-visible,
 [data-theme="dark"] select:focus-visible,
-.dark-mode select:focus-visible,
 [data-theme="dark"] textarea:focus-visible,
-.dark-mode textarea:focus-visible,
-[data-theme="dark"] [tabindex]:focus-visible,
-.dark-mode [tabindex]:focus-visible {
-    outline: 2px solid var(--color-primary) !important;
+[data-theme="dark"] [tabindex]:focus-visible {
+    outline: 2px solid var(--app-color-primary) !important;
     outline-offset: 2px !important;
 }
 
 /* Réduction des mouvements */
 @media (prefers-reduced-motion: reduce) {
     [data-theme="dark"] *,
-    .dark-mode *,
     [data-theme="dark"] *::before,
-    .dark-mode *::before,
-    [data-theme="dark"] *::after,
-    .dark-mode *::after {
+    [data-theme="dark"] *::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
     }
-}
-
-/* Contraste des liens dans le texte */
-[data-theme="dark"] .content a,
-.dark-mode .content a {
-    color: var(--color-primary-light);
-    text-decoration: underline;
-}
-
-[data-theme="dark"] .content a:hover,
-.dark-mode .content a:hover,
-[data-theme="dark"] .content a:focus-visible,
-.dark-mode .content a:focus-visible {
-    color: var(--color-primary);
-    text-decoration: none;
-}
-
-/* Suppression du soulignement des liens dans boutons/menus */
-[data-theme="dark"] .button a,
-[data-theme="dark"] .navbar-item a,
-[data-theme="dark"] .navbar-link a,
-[data-theme="dark"] .navbar-brand a,
-[data-theme="dark"] .pagination-link a,
-.dark-mode .button a,
-.dark-mode .navbar-item a,
-.dark-mode .navbar-link a,
-.dark-mode .navbar-brand a,
-.dark-mode .pagination-link a {
-    text-decoration: none !important;
-}
-
-/* Contraste des boutons primaires */
-[data-theme="dark"] .button.is-primary,
-.dark-mode .button.is-primary {
-    background-color: var(--color-primary) !important;
-    color: #fff !important;
-}
-
-[data-theme="dark"] .button.is-primary:hover,
-.dark-mode .button.is-primary:hover {
-    background-color: var(--color-primary-dark) !important;
-    color: #fff !important;
-}
-
-/* Contraste des messages d'erreur */
-[data-theme="dark"] .message.is-danger,
-.dark-mode .message.is-danger {
-    background-color: var(--bulma-danger-light) !important;
-    color: var(--bulma-danger-dark) !important;
-    border-color: var(--color-danger) !important;
-}
-
-/* Contraste des notifications */
-[data-theme="dark"] .notification.is-danger,
-.dark-mode .notification.is-danger {
-    background-color: var(--bulma-danger-light) !important;
-    color: var(--bulma-danger-dark) !important;
-}
-
-[data-theme="dark"] .notification.is-warning,
-.dark-mode .notification.is-warning {
-    background-color: var(--bulma-warning-light) !important;
-    color: #000 !important;
 }

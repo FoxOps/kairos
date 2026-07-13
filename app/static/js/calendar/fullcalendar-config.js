@@ -7,8 +7,26 @@
  * serveur (isAdmin, events) transitent désormais par des attributs
  * data-* et une balise <script type="application/json"> plutôt que par
  * de l'interpolation Jinja directement dans du JS.
+ *
+ * FullCalendar : reste en 6.1.21 (pas de bump vers 7.0.0) et chargé
+ * depuis jsDelivr plutôt que cdnjs - deux constats indépendants après
+ * essai en navigateur réel :
+ *   1. cdnjs n'héberge ni les chunks internes ni les locales d'aucune
+ *      version de ce paquet testée (404 systématiques) ;
+ *   2. FullCalendar 7.0.0 lève une erreur d'exécution réelle en dehors
+ *      de son pipeline de build officiel ("Class constructor ... cannot
+ *      be invoked without 'new'", jetée depuis le code compilé de
+ *      FullCalendar lui-même au premier rendu Preact - reproduite à
+ *      l'identique via jsDelivr ET via esm.sh, qui reconstruit pourtant
+ *      normalement les paquets avec leurs dépendances déjà résolues -
+ *      ce n'est donc pas un problème d'hébergement CDN mais un bug de
+ *      ce paquet dans ce mode de consommation, hors de portée d'un
+ *      contournement côté CDN). Reste sur la dernière version 6.x
+ *      stable (celle déjà vendorisée avant cette refonte), chargée en
+ *      CDN au lieu d'être vendorisée localement pour le reste. Tout le
+ *      reste de la refonte (Font Awesome, daisyUI, tailwindcss-browser)
+ *      reste sur cdnjs comme demandé.
  */
-
 import {
     announceToScreenReader,
     confirmActionAccessible,
@@ -55,28 +73,28 @@ document.addEventListener('DOMContentLoaded', function () {
         // Mettre à jour l'UI
         if (editModeStatusTag) {
             if (enabled) {
-                editModeStatusTag.innerHTML = '<i class="fas fa-edit" aria-hidden="true"></i>&nbsp; Mode édition activé';
-                editModeStatusTag.classList.remove('is-danger');
-                editModeStatusTag.classList.add('is-success');
+                editModeStatusTag.innerHTML = '<i class="fas fa-edit" aria-hidden="true"></i> Mode édition activé';
+                editModeStatusTag.classList.remove('badge-error');
+                editModeStatusTag.classList.add('badge-success');
                 editModeStatusTag.setAttribute('aria-label', 'Mode édition activé');
             } else {
-                editModeStatusTag.innerHTML = '<i class="fas fa-edit" aria-hidden="true"></i>&nbsp; Mode édition désactivé';
-                editModeStatusTag.classList.remove('is-success');
-                editModeStatusTag.classList.add('is-danger');
+                editModeStatusTag.innerHTML = '<i class="fas fa-edit" aria-hidden="true"></i> Mode édition désactivé';
+                editModeStatusTag.classList.remove('badge-success');
+                editModeStatusTag.classList.add('badge-error');
                 editModeStatusTag.setAttribute('aria-label', 'Mode édition désactivé');
             }
         }
 
         if (toggleEditModeBtn) {
             if (enabled) {
-                toggleEditModeBtn.innerHTML = '<i class="fas fa-toggle-off" aria-hidden="true"></i>&nbsp; Désactiver l\'édition';
-                toggleEditModeBtn.classList.remove('is-success');
-                toggleEditModeBtn.classList.add('is-danger');
+                toggleEditModeBtn.innerHTML = '<i class="fas fa-toggle-off" aria-hidden="true"></i> Désactiver l\'édition';
+                toggleEditModeBtn.classList.remove('btn-success');
+                toggleEditModeBtn.classList.add('btn-error');
                 toggleEditModeBtn.setAttribute('aria-label', 'Désactiver le mode édition');
             } else {
-                toggleEditModeBtn.innerHTML = '<i class="fas fa-toggle-on" aria-hidden="true"></i>&nbsp; Activer l\'édition';
-                toggleEditModeBtn.classList.remove('is-danger');
-                toggleEditModeBtn.classList.add('is-success');
+                toggleEditModeBtn.innerHTML = '<i class="fas fa-toggle-on" aria-hidden="true"></i> Activer l\'édition';
+                toggleEditModeBtn.classList.remove('btn-error');
+                toggleEditModeBtn.classList.add('btn-success');
                 toggleEditModeBtn.setAttribute('aria-label', 'Activer le mode édition');
             }
         }
@@ -100,16 +118,16 @@ document.addEventListener('DOMContentLoaded', function () {
             tipsVisible = !tipsVisible;
 
             if (tipsVisible) {
-                tipsContainer.style.display = 'block';
-                toggleTipsBtn.innerHTML = '<i class="fas fa-eye-slash" aria-hidden="true"></i>&nbsp; Cacher conseils';
-                toggleTipsBtn.classList.remove('is-info');
-                toggleTipsBtn.classList.add('is-warning');
+                tipsContainer.classList.remove('hidden');
+                toggleTipsBtn.innerHTML = '<i class="fas fa-eye-slash" aria-hidden="true"></i> Cacher conseils';
+                toggleTipsBtn.classList.remove('btn-info');
+                toggleTipsBtn.classList.add('btn-warning');
                 toggleTipsBtn.setAttribute('aria-label', 'Cacher les conseils');
             } else {
-                tipsContainer.style.display = 'none';
-                toggleTipsBtn.innerHTML = '<i class="fas fa-eye" aria-hidden="true"></i>&nbsp; Afficher conseils';
-                toggleTipsBtn.classList.remove('is-warning');
-                toggleTipsBtn.classList.add('is-info');
+                tipsContainer.classList.add('hidden');
+                toggleTipsBtn.innerHTML = '<i class="fas fa-eye" aria-hidden="true"></i> Afficher conseils';
+                toggleTipsBtn.classList.remove('btn-warning');
+                toggleTipsBtn.classList.add('btn-info');
                 toggleTipsBtn.setAttribute('aria-label', 'Afficher les conseils');
             }
         });
@@ -408,61 +426,47 @@ document.addEventListener('DOMContentLoaded', function () {
                 modal.setAttribute('aria-modal', 'true');
                 modal.setAttribute('aria-labelledby', 'create-shift-title');
                 modal.innerHTML = `
-                    <div class="modal-background" role="button" tabindex="0" aria-label="Fermer"></div>
-                    <div class="modal-card">
-                        <header class="modal-card-head">
-                            <h2 id="create-shift-title" class="modal-card-title">
+                    <div class="modal-box">
+                        <div class="flex items-start justify-between">
+                            <h2 id="create-shift-title" class="text-lg font-bold">
                                 <i class="fas fa-plus" aria-hidden="true"></i> Créer un nouveau shift
                             </h2>
-                            <button class="delete close-modal" aria-label="Fermer" role="button"></button>
-                        </header>
-                        <section class="modal-card-body">
-                            <form id="shift-creation-form" aria-labelledby="create-shift-title">
-                                <div class="field">
-                                    <label class="label" for="shift-start">Date et heure de début</label>
-                                    <div class="control">
-                                        <input type="datetime-local" id="shift-start" class="input" value="${formatDateForInput(start)}" required aria-required="true">
-                                    </div>
-                                </div>
-                                <div class="field">
-                                    <label class="label" for="shift-end">Date et heure de fin</label>
-                                    <div class="control">
-                                        <input type="datetime-local" id="shift-end" class="input" value="${formatDateForInput(end)}" required aria-required="true">
-                                    </div>
-                                </div>
-                                <div class="field">
-                                    <label class="label" for="shift-user">Utilisateur</label>
-                                    <div class="control">
-                                        <div class="select is-fullwidth">
-                                            <select id="shift-user" required aria-required="true">
-                                                <option value="">Sélectionnez un utilisateur</option>
-                                                ${users.map(u => `<option value="${u.id}">${u.name} (${u.email})</option>`).join('')}
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="field">
-                                    <label class="label" for="shift-type">Type de shift</label>
-                                    <div class="control">
-                                        <div class="select is-fullwidth">
-                                            <select id="shift-type" required aria-required="true">
-                                                <option value="">Sélectionnez un type de shift</option>
-                                                ${shiftTypes.map(st => `<option value="${st.id}">${st.label} (${st.start_hour}:00 - ${st.end_hour}:00)</option>`).join('')}
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
-                        </section>
-                        <footer class="modal-card-foot">
-                            <button class="button is-primary create-shift-btn" aria-label="Créer le shift">
-                                <i class="fas fa-check" aria-hidden="true"></i> Créer
-                            </button>
-                            <button class="button close-modal" aria-label="Annuler">
+                            <button class="btn btn-sm btn-circle btn-ghost close-modal" aria-label="Fermer" role="button">&times;</button>
+                        </div>
+                        <form id="shift-creation-form" aria-labelledby="create-shift-title" class="flex flex-col gap-4 py-4">
+                            <div>
+                                <label class="label" for="shift-start">Date et heure de début</label>
+                                <input type="datetime-local" id="shift-start" class="input w-full" value="${formatDateForInput(start)}" required aria-required="true">
+                            </div>
+                            <div>
+                                <label class="label" for="shift-end">Date et heure de fin</label>
+                                <input type="datetime-local" id="shift-end" class="input w-full" value="${formatDateForInput(end)}" required aria-required="true">
+                            </div>
+                            <div>
+                                <label class="label" for="shift-user">Utilisateur</label>
+                                <select id="shift-user" class="select w-full" required aria-required="true">
+                                    <option value="">Sélectionnez un utilisateur</option>
+                                    ${users.map(u => `<option value="${u.id}">${u.name} (${u.email})</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="label" for="shift-type">Type de shift</label>
+                                <select id="shift-type" class="select w-full" required aria-required="true">
+                                    <option value="">Sélectionnez un type de shift</option>
+                                    ${shiftTypes.map(st => `<option value="${st.id}">${st.label} (${st.start_hour}:00 - ${st.end_hour}:00)</option>`).join('')}
+                                </select>
+                            </div>
+                        </form>
+                        <div class="modal-action">
+                            <button class="btn close-modal" aria-label="Annuler">
                                 <i class="fas fa-times" aria-hidden="true"></i> Annuler
                             </button>
-                        </footer>
+                            <button class="btn btn-primary create-shift-btn" aria-label="Créer le shift">
+                                <i class="fas fa-check" aria-hidden="true"></i> Créer
+                            </button>
+                        </div>
                     </div>
+                    <div class="modal-backdrop" role="button" tabindex="0" aria-label="Fermer"></div>
                 `;
                 document.body.appendChild(modal);
             } else {
@@ -472,7 +476,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             // Ouvrir le modal
-            modal.classList.add('is-active');
+            modal.classList.add('modal-open');
 
             // Piège de focus dans la modale
             setupKeyboardNavigation(modal, '[tabindex], button, [href], input, select, textarea');
@@ -486,7 +490,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // Gérer les boutons
             modal.querySelectorAll('.close-modal').forEach(btn => {
                 btn.onclick = () => {
-                    modal.classList.remove('is-active');
+                    modal.classList.remove('modal-open');
                     announceToScreenReader('Création de shift annulée.', 'polite');
                 };
             });
@@ -521,7 +525,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            modal.classList.remove('is-active');
+                            modal.classList.remove('modal-open');
                             console.log('Shift créé:', data.message);
                             announceToScreenReader('Shift créé avec succès.', 'polite');
                             // Recharger la page pour synchroniser avec le backend

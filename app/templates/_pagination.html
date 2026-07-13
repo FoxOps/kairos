@@ -8,69 +8,48 @@
 #}
 
 {% if pagination.has_prev or pagination.has_next or pagination.total > 0 %}
-<nav class="pagination is-centered" role="navigation" aria-label="Pagination">
-    {# Boutons Précédent/Suivant #}
-    <a class="pagination-previous {% if not pagination.has_prev %}is-disabled{% endif %}" 
-       href="{{ url_for(route, page=pagination.prev_num, per_page=per_page) if pagination.has_prev else '#' }}" 
-       aria-label="Page précédente"
-       {% if not pagination.has_prev %}aria-disabled="true" tabindex="-1"{% endif %}>
-        <i class="fas fa-chevron-left" aria-hidden="true"></i>
-    </a>
-    <a class="pagination-next {% if not pagination.has_next %}is-disabled{% endif %}" 
-       href="{{ url_for(route, page=pagination.next_num, per_page=per_page) if pagination.has_next else '#' }}" 
-       aria-label="Page suivante"
-       {% if not pagination.has_next %}aria-disabled="true" tabindex="-1"{% endif %}>
-        <i class="fas fa-chevron-right" aria-hidden="true"></i>
-    </a>
-    
-    {# Liste des pages #}
-    <ul class="pagination-list" role="list">
+<nav class="flex justify-center" role="navigation" aria-label="Pagination">
+    <div class="join">
+        <a class="join-item btn {% if not pagination.has_prev %}btn-disabled{% endif %}"
+           href="{{ url_for(route, page=pagination.prev_num, per_page=per_page) if pagination.has_prev else '#' }}"
+           aria-label="Page précédente"
+           {% if not pagination.has_prev %}aria-disabled="true" tabindex="-1"{% endif %}>
+            <i class="fas fa-chevron-left" aria-hidden="true"></i>
+        </a>
+
         {% if pagination.has_prev %}
-        <li role="listitem">
-            <a class="pagination-link" href="{{ url_for(route, page=1, per_page=per_page) }}" aria-label="Première page">1</a>
-        </li>
+        <a class="join-item btn" href="{{ url_for(route, page=1, per_page=per_page) }}" aria-label="Première page">1</a>
         {% endif %}
-        <li role="listitem">
-            <span class="pagination-ellipsis" aria-hidden="true">&hellip;</span>
-        </li>
-        <li role="listitem">
-            <a class="pagination-link is-current" aria-label="Page {{ pagination.page }}" aria-current="page">{{ pagination.page }}</a>
-        </li>
-        <li role="listitem">
-            <span class="pagination-ellipsis" aria-hidden="true">&hellip;</span>
-        </li>
+        <span class="join-item btn btn-disabled" aria-hidden="true">&hellip;</span>
+        <a class="join-item btn btn-active" aria-label="Page {{ pagination.page }}" aria-current="page">{{ pagination.page }}</a>
+        <span class="join-item btn btn-disabled" aria-hidden="true">&hellip;</span>
         {% if pagination.has_next %}
-        <li role="listitem">
-            <a class="pagination-link" href="{{ url_for(route, page=pagination.pages, per_page=per_page) }}" aria-label="Dernière page">{{ pagination.pages }}</a>
-        </li>
+        <a class="join-item btn" href="{{ url_for(route, page=pagination.pages, per_page=per_page) }}" aria-label="Dernière page">{{ pagination.pages }}</a>
         {% endif %}
-    </ul>
+
+        <a class="join-item btn {% if not pagination.has_next %}btn-disabled{% endif %}"
+           href="{{ url_for(route, page=pagination.next_num, per_page=per_page) if pagination.has_next else '#' }}"
+           aria-label="Page suivante"
+           {% if not pagination.has_next %}aria-disabled="true" tabindex="-1"{% endif %}>
+            <i class="fas fa-chevron-right" aria-hidden="true"></i>
+        </a>
+    </div>
 </nav>
 
 {# Sélecteur de nombre d'éléments par page #}
-<div class="level is-mobile mt-2 mb-4">
-    <div class="level-left">
-        <div class="level-item">
-            <form method="get" action="{{ url_for(route) }}" class="is-flex" aria-label="Nombre d'éléments par page">
-                <div class="select is-small">
-                    <select name="per_page" onchange="this.form.submit()" aria-label="Éléments par page">
-                        {% for option in per_page_options %}
-                        <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
-                        {% endfor %}
-                        <option value="0" {% if per_page == 999999 %}selected{% endif %}>Tout</option>
-                    </select>
-                </div>
-                <input type="hidden" name="page" value="1">
-            </form>
-        </div>
-    </div>
-    <div class="level-right">
-        <div class="level-item has-text-right">
-            <small>
-                Afficher {{ pagination.items|length }} sur {{ pagination.total }} 
-                {{ pagination_total_name }}
-            </small>
-        </div>
-    </div>
+<div class="flex justify-between items-center mt-2 mb-4">
+    <form method="get" action="{{ url_for(route) }}" class="flex" aria-label="Nombre d'éléments par page">
+        <select name="per_page" class="select select-sm" onchange="this.form.submit()" aria-label="Éléments par page">
+            {% for option in per_page_options %}
+            <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+            <option value="0" {% if per_page == 999999 %}selected{% endif %}>Tout</option>
+        </select>
+        <input type="hidden" name="page" value="1">
+    </form>
+    <small>
+        Afficher {{ pagination.items|length }} sur {{ pagination.total }}
+        {{ pagination_total_name }}
+    </small>
 </div>
 {% endif %}

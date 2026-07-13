@@ -1,105 +1,36 @@
 /* ============================================
-   COMPOSANT - BOUTONS / TAGS
+   COMPOSANT - BOUTONS
+   ============================================
+   Augmente les boutons daisyUI (.btn) - la classe Bulma .button et ses
+   dérivés (.tag, .type-tag, .icon, .pagination-link) ne sont plus
+   utilisés dans les templates, retirés en Phase 7.
    ============================================ */
 
-.button {
+/* Cible tactile minimale (accessibilité) - btn-sm de daisyUI (~2rem) et
+   même btn par défaut (~2.5rem) sont sous les 44px recommandés. */
+.btn {
     min-height: 44px;
     min-width: 44px;
-    padding: 0.5rem 1rem;
-    font-weight: 500;
-    transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 
-.button:hover:not(:disabled) {
+.btn:hover:not(:disabled) {
     transform: translateY(-1px);
     box-shadow: var(--shadow-sm);
 }
 
-.button:active:not(:disabled) {
+.btn:active:not(:disabled) {
     transform: translateY(0);
     box-shadow: none;
 }
 
 /* Désactive l'animation de lift au survol - utilisé par les boutons
    "Copier" (ics_token.html) où le mouvement gêne plus qu'il n'aide sur
-   une action répétée rapidement. Anciennement dupliqué en <style>
-   inline dans le template, déplacé ici (règle générique, pas
-   spécifique à une page). */
+   une action répétée rapidement. */
 .no-hover-transform:hover {
     transform: none !important;
 }
 
-.button:focus-visible {
-    outline: 3px solid var(--color-primary-dark);
+.btn:focus-visible {
+    outline: 3px solid var(--app-color-primary-dark);
     outline-offset: 2px;
-}
-
-.button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.icon {
-    vertical-align: middle;
-}
-
-.button .icon {
-    min-width: 24px;
-    min-height: 24px;
-    margin-right: 0.25rem;
-}
-
-.button a,
-.pagination-link a {
-    text-decoration: none !important;
-}
-
-.tag {
-    transition: all 0.2s ease-in-out;
-}
-
-.tag.in-table {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Tags de type d'événement (dashboard, listes) */
-.type-tag {
-    padding: 0.25rem 0.5rem;
-    border-radius: var(--bulma-radius-small);
-    font-size: 0.85rem;
-    font-weight: 500;
-    display: inline-block;
-}
-
-.type-tag.is-primary {
-    background-color: var(--color-primary);
-    color: white;
-}
-
-.type-tag.is-light {
-    background-color: var(--bulma-background-bis);
-    color: var(--bulma-text);
-    border: 1px solid var(--bulma-border);
-}
-
-.type-tag.is-info {
-    background-color: var(--color-info);
-    color: white;
-}
-
-.type-tag.is-success {
-    background-color: var(--color-success);
-    color: white;
-}
-
-.type-tag.is-warning {
-    background-color: var(--color-warning);
-    color: #000;
-}
-
-.type-tag.is-danger {
-    background-color: var(--color-danger);
-    color: white;
 }

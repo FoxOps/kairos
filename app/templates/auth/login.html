@@ -3,90 +3,66 @@
 {% block title %}Connexion - Leviia{% endblock %}
 
 {% block content %}
-<main role="main" aria-labelledby="login-title">
-    <div class="section">
-        <div class="container">
-            <div class="columns is-centered">
-                <div class="column is-4">
-                    <div class="box" role="region" aria-labelledby="login-title">
-                        <h1 id="login-title" class="title is-4 has-text-centered">Connexion</h1>
-                        
-                        {% if error %}
-                        <div class="notification is-danger" role="alert" aria-live="assertive">
-                            <p><strong>Erreur :</strong> {{ error }}</p>
-                        </div>
-                        {% endif %}
-                        
-                        {% if oidc_enabled %}
-                        <div class="field mb-4">
-                            <div class="control">
-                                <a href="{{ url_for('auth.oidc_login') }}" class="button is-info is-fullwidth" aria-label="Se connecter avec OIDC">
-                                    <span class="icon">
-                                        <i class="fas fa-key" aria-hidden="true"></i>
-                                    </span>
-                                    <span>Se connecter avec SSO</span>
-                                </a>
-                            </div>
-                        </div>
-                        
-                        <div class="divider has-text-centered mb-4">
-                            <span class="is-size-7 has-text-grey">ou</span>
-                        </div>
-                        {% endif %}
-                        
-                        <form method="POST" action="{{ url_for('auth.login') }}" aria-labelledby="login-title">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <div class="field">
-                                <label class="label required" for="email">Adresse email</label>
-                                <div class="control has-icons-left">
-                                    <input class="input" type="email" id="email" name="email" 
-                                           placeholder="votre@email.com" required autofocus aria-required="true" aria-describedby="email-help">
-                                    <span class="icon is-small is-left">
-                                        <i class="fas fa-envelope" aria-hidden="true"></i>
-                                    </span>
-                                </div>
-                                <p class="help is-hidden" id="email-help">Exemple : votre@email.com</p>
-                            </div>
-                            
-                            <div class="field">
-                                <label class="label required" for="password">Mot de passe</label>
-                                <div class="control has-icons-left">
-                                    <input class="input" type="password" id="password" name="password" 
-                                           placeholder="Votre mot de passe" required aria-required="true" aria-describedby="password-help">
-                                    <span class="icon is-small is-left">
-                                        <i class="fas fa-lock" aria-hidden="true"></i>
-                                    </span>
-                                </div>
-                                <p class="help is-hidden" id="password-help">Votre mot de passe doit contenir au moins 8 caractères.</p>
-                            </div>
-                            
-                            <div class="field">
-                                <div class="control">
-                                    <label class="checkbox" for="remember">
-                                        <input type="checkbox" name="remember" id="remember">
-                                        <span class="ml-2">Se souvenir de moi</span>
-                                    </label>
-                                </div>
-                            </div>
-                            
-                            <div class="field">
-                                <div class="control">
-                                    <button type="submit" class="button is-primary is-fullwidth" aria-label="Se connecter">
-                                        <span class="icon">
-                                            <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
-                                        </span>
-                                        <span>Se connecter</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                        
-                        <div class="has-text-centered mt-4">
-                            <p class="is-size-7">
-                                <a href="{{ url_for("main.index") }}" aria-label="Retour à la page d'accueil">Retour à l'accueil</a>
-                            </p>
-                        </div>
+<main role="main" aria-labelledby="login-title" class="flex justify-center px-4 py-12">
+    <div class="w-full max-w-sm">
+        <div class="card bg-base-100 shadow-md" role="region" aria-labelledby="login-title">
+            <div class="card-body">
+                <h1 id="login-title" class="text-2xl font-bold text-center mb-2">Connexion</h1>
+
+                {% if error %}
+                <div class="alert alert-error mb-4" role="alert" aria-live="assertive">
+                    <p><strong>Erreur :</strong> {{ error }}</p>
+                </div>
+                {% endif %}
+
+                {% if oidc_enabled %}
+                <a href="{{ url_for('auth.oidc_login') }}" class="btn btn-info w-full mb-4" aria-label="Se connecter avec OIDC">
+                    <i class="fas fa-key" aria-hidden="true"></i>
+                    <span>Se connecter avec SSO</span>
+                </a>
+
+                <div class="divider text-sm text-base-content/60">ou</div>
+                {% endif %}
+
+                <form method="POST" action="{{ url_for('auth.login') }}" aria-labelledby="login-title" class="flex flex-col gap-4">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div>
+                        <label class="label" for="email">Adresse email <span class="text-error">*</span></label>
+                        <label class="input w-full">
+                            <i class="fas fa-envelope opacity-60" aria-hidden="true"></i>
+                            <input type="email" id="email" name="email"
+                                   placeholder="votre@email.com" required autofocus aria-required="true" aria-describedby="email-help">
+                        </label>
+                        <p class="hidden" id="email-help">Exemple : votre@email.com</p>
                     </div>
+
+                    <div>
+                        <label class="label" for="password">Mot de passe <span class="text-error">*</span></label>
+                        <label class="input w-full">
+                            <i class="fas fa-lock opacity-60" aria-hidden="true"></i>
+                            <input type="password" id="password" name="password"
+                                   placeholder="Votre mot de passe" required aria-required="true" aria-describedby="password-help">
+                        </label>
+                        <p class="hidden" id="password-help">Votre mot de passe doit contenir au moins 8 caractères.</p>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label cursor-pointer justify-start gap-2" for="remember">
+                            <input type="checkbox" name="remember" id="remember" class="checkbox">
+                            <span>Se souvenir de moi</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-full" aria-label="Se connecter">
+                        <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+                        <span>Se connecter</span>
+                    </button>
+                </form>
+
+                <div class="text-center mt-4">
+                    <p class="text-sm">
+                        <a href="{{ url_for("main.index") }}" aria-label="Retour à la page d'accueil" class="link">Retour à l'accueil</a>
+                    </p>
                 </div>
             </div>
         </div>

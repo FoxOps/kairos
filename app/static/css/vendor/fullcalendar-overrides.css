@@ -13,14 +13,14 @@
 }
 
 .fc-event-shift {
-    background-color: var(--color-primary, #20B698);
-    border-color: var(--color-primary, #20B698);
+    background-color: var(--app-color-primary, #20B698);
+    border-color: var(--app-color-primary, #20B698);
     color: white;
 }
 
 .fc-event-oncall {
-    background-color: var(--color-info, #3E8ED0);
-    border-color: var(--color-info, #3E8ED0);
+    background-color: var(--app-color-info, #3E8ED0);
+    border-color: var(--app-color-info, #3E8ED0);
     color: white;
 }
 
@@ -42,30 +42,30 @@
 }
 
 .fc-event-selected {
-    box-shadow: 0 0 0 2px var(--color-warning, #ffeb3b);
+    box-shadow: 0 0 0 2px var(--app-color-warning, #ffeb3b);
 }
 
 /* Conteneur d'événements externes (glisser-déposer depuis l'extérieur) */
 .external-event-container {
     padding: 10px;
     background: var(--bg-secondary, #f5f5f5);
-    border-radius: var(--bulma-radius-small);
+    border-radius: var(--app-radius-small);
     margin-bottom: 20px;
 }
 
 .external-event {
     padding: 8px 12px;
     margin: 4px;
-    background: var(--color-primary, #20B698);
+    background: var(--app-color-primary, #20B698);
     color: white;
-    border-radius: var(--bulma-radius-small);
+    border-radius: var(--app-radius-small);
     cursor: move;
     display: inline-block;
     font-size: 14px;
 }
 
 .external-event.oncall {
-    background: var(--color-info, #3E8ED0);
+    background: var(--app-color-info, #3E8ED0);
 }
 
 .external-event.leave {

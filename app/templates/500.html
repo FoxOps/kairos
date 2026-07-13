@@ -4,12 +4,12 @@
 {% block title %}Erreur interne du serveur - Leviia{% endblock %}
 
 {% block content %}
-{% call error_page(code=500, title="Erreur interne du serveur", subtitle="Une erreur inattendue est survenue.", color="has-text-danger") %}
+{% call error_page(code=500, title="Erreur interne du serveur", subtitle="Une erreur inattendue est survenue.", color="text-error") %}
 <p role="alert" aria-live="assertive">
     Nous sommes désolés pour ce désagrément. Veuillez réessayer plus tard.
 </p>
 {% if error_message %}
-<div class="notification is-danger mt-4" role="alert" aria-live="assertive">
+<div class="alert alert-error mt-4" role="alert" aria-live="assertive">
     <p><strong>Détails :</strong> {{ error_message }}</p>
 </div>
 {% endif %}

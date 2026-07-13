@@ -1,80 +1,74 @@
 {% extends "admin/base_admin.html" %}
 
 {% block admin_content %}
-<section class="section">
-    <div class="container">
-        <h1 class="title"><i class="fas fa-robot" aria-hidden="true"></i> Automatisation</h1>
+<section class="p-4 md:p-6 max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold mb-4"><i class="fas fa-robot" aria-hidden="true"></i> Automatisation</h1>
 
-        <div class="buttons" role="group" aria-label="Actions automatisation">
-            <a class="button is-light" href="{{ url_for('admin.admin_dashboard') }}"
-               aria-label="Retour à l'administration" title="Retour à l'admin">
-                Retour à l'admin
-            </a>
-        </div>
+    <div class="flex gap-2 mb-4" role="group" aria-label="Actions automatisation">
+        <a class="btn btn-ghost" href="{{ url_for('admin.admin_dashboard') }}"
+           aria-label="Retour à l'administration" title="Retour à l'admin">
+            Retour à l'admin
+        </a>
+    </div>
 
-        <div class="notification is-info is-light">
-            <p><i class="fas fa-info-circle"></i> Ce module permet de générer automatiquement les astreintes. Les shifts sont générés automatiquement après les astreintes selon les règles métiers.</p>
-        </div>
+    <div class="alert alert-info mb-4">
+        <p><i class="fas fa-info-circle"></i> Ce module permet de générer automatiquement les astreintes. Les shifts sont générés automatiquement après les astreintes selon les règles métiers.</p>
+    </div>
 
-        <div class="columns is-multiline">
-            <div class="column is-one-third">
-                <div class="box">
-                    <h2 class="subtitle"><i class="fas fa-cogs" aria-hidden="true"></i> Génération complète</h2>
-                    <p>Générer les astreintes. Les shifts seront automatiquement générés selon les règles métiers.</p>
-                    <div class="buttons mt-3">
-                        <a class="button is-success is-small" href="{{ url_for('admin.automation_full') }}">
-                            <i class="fas fa-play"></i>&nbsp; Lancer
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="column is-one-third">
-                <div class="box">
-                    <h2 class="subtitle"><i class="fas fa-sync-alt" aria-hidden="true"></i> Rafraîchir Shifts</h2>
-                    <p>Recalculer les shifts en tenant compte des astreintes actuelles (même modifiées manuellement).</p>
-                    <div class="buttons mt-3">
-                        <a class="button is-warning is-small" href="{{ url_for('admin.refresh_shifts') }}">
-                            <i class="fas fa-sync"></i>&nbsp; Rafraîchir
-                        </a>
-                    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body">
+                <h2 class="text-lg font-semibold"><i class="fas fa-cogs" aria-hidden="true"></i> Génération complète</h2>
+                <p>Générer les astreintes. Les shifts seront automatiquement générés selon les règles métiers.</p>
+                <div class="mt-3">
+                    <a class="btn btn-success btn-sm" href="{{ url_for('admin.automation_full') }}">
+                        <i class="fas fa-play"></i> Lancer
+                    </a>
                 </div>
             </div>
         </div>
 
-        <div class="box mt-5">
-            <h2 class="subtitle"><i class="fas fa-chart-line" aria-hidden="true"></i> Statistiques</h2>
-            <div class="columns">
-                <div class="column is-one-quarter">
-                    <div class="notification is-primary">
-                        <p><strong>Total astreintes</strong></p>
-                        <p class="is-size-4">{{ status.oncall_count }}</p>
-                    </div>
-                </div>
-                <div class="column is-one-quarter">
-                    <div class="notification is-info">
-                        <p><strong>Total shifts</strong></p>
-                        <p class="is-size-4">{{ status.shift_count }}</p>
-                    </div>
-                </div>
-                <div class="column is-one-quarter">
-                    <div class="notification is-success">
-                        <p><strong>Utilisateurs astreintes</strong></p>
-                        <p class="is-size-4">{{ status.oncall_eligible_users }}</p>
-                    </div>
-                </div>
-                <div class="column is-one-quarter">
-                    <div class="notification is-warning">
-                        <p><strong>Utilisateurs shifts</strong></p>
-                        <p class="is-size-4">{{ status.shift_eligible_users }}</p>
-                    </div>
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body">
+                <h2 class="text-lg font-semibold"><i class="fas fa-sync-alt" aria-hidden="true"></i> Rafraîchir Shifts</h2>
+                <p>Recalculer les shifts en tenant compte des astreintes actuelles (même modifiées manuellement).</p>
+                <div class="mt-3">
+                    <a class="btn btn-warning btn-sm" href="{{ url_for('admin.refresh_shifts') }}">
+                        <i class="fas fa-sync"></i> Rafraîchir
+                    </a>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="box">
-            <h2 class="subtitle"><i class="fas fa-question-circle" aria-hidden="true"></i> Aide</h2>
-            <div class="content">
+    <div class="card bg-base-100 shadow-md mb-6">
+        <div class="card-body">
+            <h2 class="text-lg font-semibold"><i class="fas fa-chart-line" aria-hidden="true"></i> Statistiques</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="alert alert-primary flex-col items-start">
+                    <p><strong>Total astreintes</strong></p>
+                    <p class="text-2xl font-bold">{{ status.oncall_count }}</p>
+                </div>
+                <div class="alert alert-info flex-col items-start">
+                    <p><strong>Total shifts</strong></p>
+                    <p class="text-2xl font-bold">{{ status.shift_count }}</p>
+                </div>
+                <div class="alert alert-success flex-col items-start">
+                    <p><strong>Utilisateurs astreintes</strong></p>
+                    <p class="text-2xl font-bold">{{ status.oncall_eligible_users }}</p>
+                </div>
+                <div class="alert alert-warning flex-col items-start">
+                    <p><strong>Utilisateurs shifts</strong></p>
+                    <p class="text-2xl font-bold">{{ status.shift_eligible_users }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-md">
+        <div class="card-body">
+            <h2 class="text-lg font-semibold"><i class="fas fa-question-circle" aria-hidden="true"></i> Aide</h2>
+            <div class="flex flex-col gap-2">
                 <p><strong>Rotation des astreintes :</strong> Une rotation simple où chaque semaine un membre différent est désigné. Utilisez "Génération complète" pour configurer l'ordre de rotation.</p>
                 <p><strong>Génération automatique des shifts :</strong> Après la génération des astreintes, les shifts sont automatiquement créés selon les règles métiers (13h-21h pour l'astreinte, rotation des créneaux, etc.).</p>
                 <p><strong>Rafraîchissement manuel :</strong> Utilisez "Rafraîchir Shifts" pour recalculer les shifts si vous avez modifié manuellement les astreintes.</p>
