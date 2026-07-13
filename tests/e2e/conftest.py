@@ -11,6 +11,7 @@ les tests qui la demandent (test_browser_flows.py), pas le reste du
 dossier e2e/.
 """
 
+import os
 import socket
 import threading
 import time
@@ -119,3 +120,89 @@ def logged_in_page(live_server_url, page):
     page.click('button[type="submit"]')
     page.wait_for_load_state("networkidle")
     return page
+
+
+@pytest.fixture(scope="module")
+def oidc_live_servers():
+    """Lance un vrai serveur Flask (l'app) ET un faux fournisseur OIDC
+    (tests/e2e/oidc_mock_provider.py), tous deux dans des threads sur des
+    ports libres, pour exercer le flux SSO complet via un vrai navigateur
+    - redirection vers l'IdP, vraie page de login avec un clic, retour
+    avec un code, échanges serveur-à-serveur (découverte, token,
+    userinfo), établissement de la session, tout comme un IdP réel.
+
+    Renvoie (app_base_url, idp_base_url).
+    """
+    pytest.importorskip("playwright")
+
+    from tests.e2e.oidc_mock_provider import create_mock_oidc_provider
+
+    idp_port = _free_port()
+    idp_app = create_mock_oidc_provider(idp_port)
+    idp_thread = threading.Thread(
+        target=lambda: idp_app.run(
+            host="127.0.0.1", port=idp_port, use_reloader=False, debug=False
+        ),
+        daemon=True,
+    )
+    idp_thread.start()
+    _wait_until_up("127.0.0.1", idp_port)
+    idp_base_url = f"http://127.0.0.1:{idp_port}"
+
+    app_port = _free_port()
+    app_base_url = f"http://127.0.0.1:{app_port}"
+
+    oidc_env = {
+        "OIDC_ENABLED": "true",
+        "OIDC_ISSUER": idp_base_url,
+        "OIDC_CLIENT_ID": "e2e-client",
+        "OIDC_CLIENT_SECRET": "e2e-secret",
+        "OIDC_REDIRECT_URI": f"{app_base_url}/oidc/callback",
+        "OIDC_DISABLE_BASIC_AUTH": "true",
+    }
+    original_env = {k: os.environ.get(k) for k in oidc_env}
+    os.environ.update(oidc_env)
+
+    from config_oidc import OIDCConfig
+
+    OIDCConfig.load_config()
+
+    from flask_talisman import Talisman
+
+    from app import CSP_POLICY, create_app, db
+
+    # create_app() lit OIDCConfig (déjà à jour ci-dessus) et, comme
+    # OIDC_ENABLED+is_configured() sont vrais, appelle oidc_auth.init_app()
+    # qui fait une vraie requête HTTP de découverte vers idp_base_url - le
+    # faux fournisseur doit donc déjà tourner à ce stade (fait ci-dessus).
+    app = create_app("app.config.TestingConfig")
+    app.config["WTF_CSRF_ENABLED"] = False
+    app.config["TALISMAN_FORCE_HTTPS"] = True
+    Talisman(
+        app,
+        force_https=False,
+        strict_transport_security=False,
+        content_security_policy=CSP_POLICY,
+    )
+
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
+
+    app_thread = threading.Thread(
+        target=lambda: app.run(
+            host="127.0.0.1", port=app_port, use_reloader=False, debug=False
+        ),
+        daemon=True,
+    )
+    app_thread.start()
+    _wait_until_up("127.0.0.1", app_port)
+
+    yield app_base_url, idp_base_url
+
+    for k, v in original_env.items():
+        if v is None:
+            os.environ.pop(k, None)
+        else:
+            os.environ[k] = v
+    OIDCConfig.load_config()
