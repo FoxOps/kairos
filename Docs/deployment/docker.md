@@ -5,12 +5,11 @@
 ```
 leviia-schedule/
 ├── docker/
-│   ├── Dockerfile                    # Image Docker ultra-légère
-│   ├── entrypoint.sh                 # Script de démarrage (serveur web)
-│   ├── entrypoint-notifications.sh   # Script de démarrage (rappels email, crond)
-│   ├── crontabs/appuser              # Planification des rappels email
-│   ├── docker-compose.yml            # Configuration de base
-│   └── Makefile                      # Commandes simplifiées
+│   ├── Dockerfile          # Image Docker ultra-légère
+│   ├── entrypoint.sh       # Script de démarrage (serveur web + crond conditionnel)
+│   ├── crontabs/appuser    # Planification des rappels email (crond)
+│   ├── docker-compose.yml  # Configuration de base
+│   └── Makefile            # Commandes simplifiées
 │
 ├── .env               # Variables d'environnement
 ├── data/              # Données SQLite persistantes
@@ -103,33 +102,27 @@ DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe_sécurisé
 ### entrypoint.sh
 - **Initialisation** : Crée la base de données SQLite si elle n'existe pas
 - **Données par défaut** : Crée les types de shifts, le groupe et l'admin
+- **Notifications par email** : si `NOTIFICATIONS_ENABLED=true` (voir
+  `.env`), démarre `crond` (busybox, déjà présent dans l'image Alpine,
+  pas de paquet supplémentaire) en arrière-plan avant de lancer le
+  serveur web - planning dans `docker/crontabs/appuser`. Rien de plus à
+  configurer : une seule variable d'environnement, aucun service Docker
+  supplémentaire à gérer.
 - **Sélection serveur** : 
   - `development` → `python run.py` (avec reloader)
   - `production` → `gunicorn` (1 worker pour SQLite)
 
-### entrypoint-notifications.sh
-- **Rôle** : point d'entrée du service `leviia-notifications` (rappels
-  par email des shifts/astreinte) - démarre `crond` (busybox, déjà
-  présent dans l'image Alpine, pas de paquet supplémentaire) au premier
-  plan, en lisant `docker/crontabs/appuser`
-- **Pas d'initialisation de base de données** : le service `leviia-schedule`
-  s'en charge déjà, les deux services partagent le même volume `/app/data`
-- **N'envoie rien** si `NOTIFICATIONS_ENABLED` n'est pas activé dans `.env`
-
 ### docker-compose.yml
-- **Service web** (`leviia-schedule`) : conteneur avec l'application
-- **Service notifications** (`leviia-notifications`) : même image,
-  entrypoint différent (`crond` au lieu de Gunicorn/Flask) - voir
+- **Service web** : conteneur avec l'application (et, si activé, les
+  rappels par email - même conteneur, voir ci-dessus) - voir
   [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-configuration-des-notifications)
   pour la configuration SMTP
-- **Volumes** : Persistance des données et logs (partagés entre les deux services)
-- **Ports** : 5000 exposé (service web uniquement)
+- **Volumes** : Persistance des données et logs
+- **Ports** : 5000 exposé
 
 ### Makefile
 - **Commandes simplifiées** : build, up, down, logs, shell
 - **Mode production** : `up-prod` pour démarrer avec Gunicorn
-- `up`/`down`/`logs` s'appliquent à tous les services du compose file,
-  y compris `leviia-notifications`
 
 ---
 

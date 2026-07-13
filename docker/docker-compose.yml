@@ -37,35 +37,6 @@ services:
       oidc-mock:
         condition: service_healthy
 
-  # Rappels par email (shifts/astreinte) : conteneur séparé du serveur web,
-  # même image, entrypoint différent (crond au lieu de Gunicorn/Flask) -
-  # voir docker/entrypoint-notifications.sh et docker/crontabs/appuser
-  # pour la planification (dimanche pour les shifts, jeudi pour
-  # l'astreinte). N'envoie rien si NOTIFICATIONS_ENABLED n'est pas activé
-  # dans .env (voir .env.example, section CONFIGURATION DES NOTIFICATIONS).
-  leviia-notifications:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    image: leviia-schedule:dev
-    container_name: leviia-notifications
-    entrypoint: ["/app/docker/entrypoint-notifications.sh"]
-    user: "1000:1000"
-    env_file:
-      - ./.env
-    environment:
-      # Même base que leviia-schedule (volume /app/data partagé) - voir
-      # commentaire équivalent ci-dessus.
-      - DATABASE_URL=sqlite:////app/data/app.db
-    volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
-    networks:
-      - leviia-network
-    depends_on:
-      - leviia-schedule
-    restart: unless-stopped
-
   oidc-mock:
     container_name: oidc-mock
     image: ghcr.io/soluto/oidc-server-mock:latest

@@ -1,6 +1,8 @@
-# Crontab pour le service leviia-notifications (voir docker-compose.yml).
-# Lu par busybox crond en tant qu'utilisateur non-root "appuser" (uid 1000) -
-# le nom du fichier doit correspondre exactement au nom d'utilisateur.
+# Planning des rappels par email, démarré par entrypoint.sh (crond, en
+# arrière-plan dans le même conteneur que le serveur web) si
+# NOTIFICATIONS_ENABLED=true. Lu par busybox crond en tant qu'utilisateur
+# non-root "appuser" (uid 1000) - le nom du fichier doit correspondre
+# exactement au nom d'utilisateur.
 #
 # Rappel des shifts de la semaine : dimanche 9h, 24h avant le début des
 # shifts du lundi.
