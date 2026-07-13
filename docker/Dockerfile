@@ -28,6 +28,11 @@ RUN apk add --no-cache --virtual .build-deps \
 # Copier uniquement les fichiers nécessaires pour pip
 COPY docker/requirements.txt /tmp/requirements.txt
 
+# Met à jour pip lui-même avant d'installer les dépendances - la version
+# de pip pré-installée dans l'image de base traîne souvent derrière,
+# meilleur résolveur de dépendances et correctifs de sécurité à jour.
+RUN pip install --no-cache-dir --upgrade pip
+
 # Installer dans /install plutôt qu'avec --user (qui cible /root/.local -
 # illisible par un utilisateur non-root dans le stage runtime, /root reste
 # en mode 700 même si son contenu est chown). /usr/local/lib/python3.11/
