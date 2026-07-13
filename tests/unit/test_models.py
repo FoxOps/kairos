@@ -5,9 +5,10 @@ Tests pour les modèles de la base de données.
 from datetime import datetime, timedelta
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 from app import db
-from app.models import Group, Leave, OnCall, Shift, ShiftType, User
+from app.models import Group, Leave, NotificationLog, OnCall, Shift, ShiftType, User
 
 
 class TestGroupModel:
@@ -316,3 +317,95 @@ class TestLeaveModel:
             db.session.commit()
 
             assert leave.id is not None
+
+
+class TestNotificationLogModel:
+    """Tests pour le modèle NotificationLog."""
+
+    def test_notification_log_creation(self, test_app, test_user):
+        """Test la création d'un log de notification."""
+        with test_app.app_context():
+            period_start = datetime(2026, 7, 13).date()
+            log = NotificationLog(
+                user_id=test_user.id,
+                notification_type="shift_weekly",
+                period_start=period_start,
+            )
+            db.session.add(log)
+            db.session.commit()
+
+            assert log.id is not None
+            assert log.user_id == test_user.id
+            assert log.notification_type == "shift_weekly"
+            assert log.period_start == period_start
+
+    def test_unique_constraint_prevents_duplicate(self, test_app, test_user):
+        """Un même (user, type, période) ne peut être enregistré deux fois."""
+        with test_app.app_context():
+            period_start = datetime(2026, 7, 13).date()
+            db.session.add(
+                NotificationLog(
+                    user_id=test_user.id,
+                    notification_type="shift_weekly",
+                    period_start=period_start,
+                )
+            )
+            db.session.commit()
+
+            db.session.add(
+                NotificationLog(
+                    user_id=test_user.id,
+                    notification_type="shift_weekly",
+                    period_start=period_start,
+                )
+            )
+            with pytest.raises(IntegrityError):
+                db.session.commit()
+            db.session.rollback()
+
+    def test_different_notification_type_is_allowed(self, test_app, test_user):
+        """Même utilisateur/période mais type différent : pas de conflit."""
+        with test_app.app_context():
+            period_start = datetime(2026, 7, 13).date()
+            db.session.add(
+                NotificationLog(
+                    user_id=test_user.id,
+                    notification_type="shift_weekly",
+                    period_start=period_start,
+                )
+            )
+            db.session.add(
+                NotificationLog(
+                    user_id=test_user.id,
+                    notification_type="oncall_weekly",
+                    period_start=period_start,
+                )
+            )
+            db.session.commit()
+
+            assert NotificationLog.query.count() == 2
+
+    def test_already_sent_true_when_logged(self, test_app, test_user):
+        with test_app.app_context():
+            period_start = datetime(2026, 7, 13).date()
+            db.session.add(
+                NotificationLog(
+                    user_id=test_user.id,
+                    notification_type="shift_weekly",
+                    period_start=period_start,
+                )
+            )
+            db.session.commit()
+
+            assert (
+                NotificationLog.already_sent(test_user.id, "shift_weekly", period_start)
+                is True
+            )
+
+    def test_already_sent_false_when_not_logged(self, test_app, test_user):
+        with test_app.app_context():
+            period_start = datetime(2026, 7, 13).date()
+            assert (
+                NotificationLog.already_sent(test_user.id, "shift_weekly", period_start)
+                is False
+            )

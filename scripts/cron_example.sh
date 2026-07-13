@@ -100,3 +100,20 @@ fi
 # 0 */6 * * * /usr/local/bin/leviia-backup
 #
 # ============================================================================
+# NOTIFICATIONS PAR EMAIL (rappels de shifts et d'astreintes)
+# ============================================================================
+#
+# Variables d'environnement : voir scripts/notification_config.py et la
+# section CONFIGURATION DES NOTIFICATIONS PAR EMAIL de .env.example
+# (NOTIFICATIONS_ENABLED, NOTIFICATION_FROM_EMAIL, SMTP_HOST, etc.). Ne
+# font rien si NOTIFICATIONS_ENABLED n'est pas activé.
+#
+# Rappel des shifts : envoyé le dimanche, 24h avant le début des shifts
+# du lundi. Un seul email par semaine et par utilisateur.
+# 0 9 * * 0 cd /chemin/vers/leviia-schedule && /chemin/vers/venv/bin/python scripts/send_shift_notifications.py >> /var/log/leviia-notifications.log 2>&1
+#
+# Rappel d'astreinte : envoyé le jeudi, 24h avant le début de l'astreinte
+# du vendredi 21h.
+# 0 9 * * 4 cd /chemin/vers/leviia-schedule && /chemin/vers/venv/bin/python scripts/send_oncall_notifications.py >> /var/log/leviia-notifications.log 2>&1
+#
+# ============================================================================

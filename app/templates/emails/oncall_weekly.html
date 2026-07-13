@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Votre astreinte de la semaine</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f5f5f5; font-family:Arial, Helvetica, sans-serif; color:#363636;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5; padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:6px; overflow:hidden;">
+          <tr>
+            <td style="background-color:#00b89c; padding:20px 24px;">
+              <h1 style="margin:0; font-size:20px; color:#ffffff;">Leviia Schedule</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px;">
+              <p style="margin-top:0;">Bonjour {{ user_name }},</p>
+              <p>Vous êtes d'astreinte à partir de demain :</p>
+              <p style="font-size:16px; font-weight:bold; background-color:#f0f0f0; padding:12px 16px; border-radius:4px;">
+                Du {{ oncall_start.strftime('%A %d/%m/%Y à %Hh%M')|capitalize }} au {{ oncall_end.strftime('%A %d/%m/%Y à %Hh%M')|capitalize }}
+              </p>
+              {% if app_base_url %}
+              <p>
+                <a href="{{ app_base_url }}/oncall" style="display:inline-block; background-color:#00b89c; color:#ffffff; text-decoration:none; padding:10px 18px; border-radius:4px;">Voir les astreintes</a>
+              </p>
+              {% endif %}
+              <p style="color:#777777; font-size:13px; margin-top:24px;">Ceci est un rappel automatique envoyé chaque jeudi pour l'astreinte du lendemain.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
