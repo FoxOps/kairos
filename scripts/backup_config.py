@@ -6,7 +6,7 @@ Ce module contient la configuration pour les sauvegardes de la base de données.
 Les paramètres peuvent être définis via des variables d'environnement ou modifiés directement.
 
 Variables d'environnement disponibles:
-- BACKUP_ENABLED: Activer/désactiver les sauvegardes (true/false)
+- BACKUP_ENABLED: Activer/désactiver les sauvegardes (true/false, défaut: false)
 - BACKUP_LOCAL_ENABLED: Activer la sauvegarde locale (true/false)
 - BACKUP_S3_ENABLED: Activer la sauvegarde S3 (true/false)
 - BACKUP_LOCAL_DIR: Dossier de sauvegarde local (par défaut: backups/)
@@ -17,10 +17,13 @@ Variables d'environnement disponibles:
 - BACKUP_S3_SECRET_KEY: Clé secrète S3
 - BACKUP_S3_PREFIX: Préfixe pour les fichiers dans le bucket
 - BACKUP_RETENTION_DAYS: Nombre de jours à conserver les sauvegardes
-- BACKUP_FREQUENCY: Fréquence des sauvegardes (daily, weekly, monthly)
 - BACKUP_COMPRESS: Compresser les sauvegardes (true/false)
-- BACKUP_ENCRYPT: Chiffrer les sauvegardes (true/false)
-- BACKUP_ENCRYPTION_KEY: Clé de chiffrement (si BACKUP_ENCRYPT=true)
+- BACKUP_NOTIFY_ON_SUCCESS: Envoyer un email en cas de succès (true/false)
+- BACKUP_NOTIFY_ON_FAILURE: Envoyer un email en cas d'échec (true/false)
+- BACKUP_NOTIFICATION_EMAIL: Adresse email destinataire des alertes de
+  sauvegarde (réutilise la configuration SMTP des notifications - voir
+  scripts/notification_config.py - donc aussi soumis à
+  NOTIFICATIONS_ENABLED)
 """
 
 import os
@@ -32,8 +35,10 @@ from datetime import datetime
 class BackupConfig:
     """Configuration complète pour les sauvegardes de la base de données."""
 
-    # Activation générale
-    enabled: bool = True
+    # Activation générale (opt-in : pas de sauvegarde tant que ce n'est
+    # pas explicitement activé, cohérent avec le pattern des
+    # notifications par email)
+    enabled: bool = False
 
     # Sauvegarde locale
     local_enabled: bool = True
@@ -55,11 +60,6 @@ class BackupConfig:
 
     # Format et compression
     compress: bool = True
-    encrypt: bool = False
-    encryption_key: str | None = None
-
-    # Fréquence (pour la rotation)
-    frequency: str = "daily"  # daily, weekly, monthly
 
     # Timestamps
     include_timestamp: bool = True
@@ -72,7 +72,8 @@ class BackupConfig:
     db_path: str | None = None  # Chemin vers le fichier SQLite
     db_uri: str | None = None  # URI de la base de données
 
-    # Notifications (optionnel, à implémenter)
+    # Notifications par email (branchées sur app.utils.notifications -
+    # même config SMTP que les rappels de shifts/astreinte)
     notify_on_success: bool = False
     notify_on_failure: bool = True
     notification_email: str | None = None
@@ -111,6 +112,10 @@ class BackupConfig:
             value = os.environ.get(env_var)
             return value if value else default
 
+        def get_str_default(env_var: str, default: str) -> str:
+            value = os.environ.get(env_var)
+            return value if value else default
+
         # Détecter le chemin de la base de données
         db_uri = get_str("DATABASE_URL") or get_str("SQLALCHEMY_DATABASE_URI")
         db_path = None
@@ -126,32 +131,31 @@ class BackupConfig:
                 db_path = os.path.join(project_root, db_path)
 
         return cls(
-            enabled=get_bool("BACKUP_ENABLED", True),
+            enabled=get_bool("BACKUP_ENABLED", False),
             local_enabled=get_bool("BACKUP_LOCAL_ENABLED", True),
-            local_dir=get_str("BACKUP_LOCAL_DIR", "backups"),
+            local_dir=get_str_default("BACKUP_LOCAL_DIR", "backups"),
             s3_enabled=get_bool("BACKUP_S3_ENABLED", False),
             s3_bucket=get_str("BACKUP_S3_BUCKET"),
             s3_endpoint=get_str("BACKUP_S3_ENDPOINT"),
             s3_region=get_str("BACKUP_S3_REGION"),
             s3_access_key=get_str("BACKUP_S3_ACCESS_KEY"),
             s3_secret_key=get_str("BACKUP_S3_SECRET_KEY"),
-            s3_prefix=get_str("BACKUP_S3_PREFIX", "leviia-schedule"),
+            s3_prefix=get_str_default("BACKUP_S3_PREFIX", "leviia-schedule"),
             s3_use_ssl=get_bool("BACKUP_S3_USE_SSL", True),
             retention_days=get_int("BACKUP_RETENTION_DAYS", 30),
             max_backups=get_int("BACKUP_MAX_BACKUPS", 30),
             compress=get_bool("BACKUP_COMPRESS", True),
-            encrypt=get_bool("BACKUP_ENCRYPT", False),
-            encryption_key=get_str("BACKUP_ENCRYPTION_KEY"),
-            frequency=get_str("BACKUP_FREQUENCY", "daily"),
             include_timestamp=get_bool("BACKUP_INCLUDE_TIMESTAMP", True),
-            timestamp_format=get_str("BACKUP_TIMESTAMP_FORMAT", "%Y%m%d_%H%M%S"),
-            backup_prefix=get_str("BACKUP_PREFIX", "leviia_backup"),
+            timestamp_format=get_str_default(
+                "BACKUP_TIMESTAMP_FORMAT", "%Y%m%d_%H%M%S"
+            ),
+            backup_prefix=get_str_default("BACKUP_PREFIX", "leviia_backup"),
             db_path=db_path,
             db_uri=db_uri,
             notify_on_success=get_bool("BACKUP_NOTIFY_ON_SUCCESS", False),
             notify_on_failure=get_bool("BACKUP_NOTIFY_ON_FAILURE", True),
             notification_email=get_str("BACKUP_NOTIFICATION_EMAIL"),
-            log_level=get_str("BACKUP_LOG_LEVEL", "INFO"),
+            log_level=get_str_default("BACKUP_LOG_LEVEL", "INFO"),
             log_file=get_str("BACKUP_LOG_FILE"),
             verify_backup=get_bool("BACKUP_VERIFY", True),
         )
@@ -179,10 +183,6 @@ class BackupConfig:
         # Ajouter la compression
         if self.compress:
             filename += ".gz"
-
-        # Ajouter le chiffrement
-        if self.encrypt:
-            filename += ".enc"
 
         return filename
 
