@@ -543,6 +543,25 @@ class AdvancedShiftAutomation:
             if oncall_periods_to_regenerate and not dry_run:
                 # Utiliser la même période que pour les shifts
                 from app.models import AutomationConfig
+                from app.repositories.oncall_repository import OnCallRepository
+
+                # La suppression plus haut ne cible que les astreintes du
+                # congé (leave.user_id) ; la période à régénérer est étendue
+                # de ±7 jours (padding) et peut donc chevaucher des
+                # astreintes d'AUTRES utilisateurs, jamais supprimées.
+                # generate_oncall_schedule créant toujours de nouvelles
+                # astreintes sans vérifier l'existant, il fallait vider tout
+                # le créneau avant de régénérer, sous peine d'astreintes en
+                # double/chevauchantes sur les vendredis adjacents.
+                other_oncalls_deleted = OnCallRepository.delete_overlapping_range(
+                    shift_period_start, shift_period_end
+                )
+                if other_oncalls_deleted:
+                    db.session.flush()
+                    messages.append(
+                        f"🗑️ {other_oncalls_deleted} astreinte(s) supplémentaire(s) "
+                        f"supprimée(s) dans la période étendue avant régénération"
+                    )
 
                 oncalls, oncall_messages = OnCallAutomation.generate_oncall_schedule(
                     shift_period_start,

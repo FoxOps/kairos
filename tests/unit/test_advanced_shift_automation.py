@@ -526,6 +526,62 @@ class TestGenerateFullSchedule:
 class TestRebalanceAfterLeave:
     """Tests pour le rééquilibrage après l'ajout d'un congé."""
 
+    def test_rebalance_after_leave_does_not_duplicate_adjacent_oncalls(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Régression : la période régénérée après un congé est étendue de
+        ±7 jours (padding) autour des vendredis affectés, et peut donc
+        englober des astreintes d'AUTRES vendredis déjà attribuées à
+        d'autres utilisateurs. L'ancien code ne supprimait que les
+        astreintes du congé (leave.user_id) avant de régénérer sur toute la
+        période étendue, créant des astreintes en double sur les vendredis
+        adjacents non concernés par le congé."""
+        with test_app.app_context():
+            user3 = User(
+                name="Third User",
+                email="third@test.com",
+                password_hash=generate_password_hash("third-password"),
+                is_admin=False,
+                group_id=test_group.id,
+            )
+            db.session.add(user3)
+            db.session.commit()
+
+            friday_before = date(2023, 12, 1)
+            friday_leave = date(2023, 12, 8)
+            friday_after = date(2023, 12, 15)
+
+            def make_oncall(user_id, friday):
+                start = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+                end = start + timedelta(days=7, hours=-14)
+                return OnCall(user_id=user_id, start_time=start, end_time=end)
+
+            db.session.add(make_oncall(test_user.id, friday_before))
+            db.session.add(make_oncall(second_user.id, friday_leave))
+            db.session.add(make_oncall(user3.id, friday_after))
+            db.session.commit()
+
+            # second_user part en congé pendant sa propre semaine d'astreinte
+            leave = Leave(
+                user_id=second_user.id,
+                start_date=date(2023, 12, 10),
+                end_date=date(2023, 12, 11),
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
+
+            for friday in (friday_before, friday_leave, friday_after):
+                day_start = datetime.combine(friday, datetime.min.time())
+                count = OnCall.query.filter(
+                    OnCall.start_time == day_start.replace(hour=21)
+                ).count()
+                assert count == 1, (
+                    f"{count} astreintes trouvées pour le vendredi {friday} "
+                    "(doublon attendu absent avec le fix)"
+                )
+
     def test_rebalance_after_leave_dry_run(
         self, test_app, test_group, test_user, test_shift_type
     ):
