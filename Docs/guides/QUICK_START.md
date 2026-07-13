@@ -6,10 +6,36 @@
 
 ## 🎯 En 5 Minutes
 
-### 1️⃣ Installation
+### 1️⃣ Installation (méthode recommandée : Docker Compose)
+
+Pas besoin de cloner le dépôt - deux fichiers suffisent :
 
 ```bash
-# Cloner et installer
+mkdir leviia-schedule && cd leviia-schedule
+curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker-compose.example.yml
+curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/.env.example
+
+nano .env  # LEVIIA_IMAGE=harbor.leviia.com/<HARBOR_PROJECT>/leviia-schedule:latest, SECRET_KEY, DEFAULT_ADMIN_PASSWORD
+
+docker compose up -d
+```
+
+**Accès** : http://localhost:5000
+
+> ⚠️ **L'étape `nano .env`** (au moins `SECRET_KEY`/`DEFAULT_ADMIN_PASSWORD`)
+> est indispensable : sans `DEFAULT_ADMIN_PASSWORD`, l'application génère
+> un mot de passe admin aléatoire au premier démarrage (jamais affiché
+> nulle part) au lieu du `admin123` par défaut ci-dessous.
+
+> **📖 Détail complet** (registry, volumes, variables) :
+> [`deployment/docker.md`](../deployment/docker.md)
+
+### Alternative : installation locale (développement / cas particuliers)
+
+Réservé au développement sur le code ou aux cas où Docker n'est pas
+disponible - l'image Docker ci-dessus reste la méthode principale.
+
+```bash
 git clone https://github.com/FoxOps/leviia-schedule.git
 cd leviia-schedule
 python -m venv venv
