@@ -35,6 +35,6 @@ exclude = [
 known-first-party = ["app", "tests"]
 
 [per-file-ignores]
-"tests/*" = ["S101"]  # Allow assert in tests
+"tests/*" = ["S101", "S105"]  # Allow assert + fake test tokens/secrets in tests
 "run.py" = ["T201"]  # Allow print in run.py
 "app/routes/*" = ["B008"]  # Allow function calls in defaults for routes
