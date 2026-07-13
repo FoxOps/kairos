@@ -75,7 +75,9 @@ def add_leave():
             )
             if not new_leave:
                 flash(
-                    "Impossible d'ajouter ce congé (dates invalides ou congé existant sur cette période).",
+                    "Impossible d'ajouter ce congé (dates invalides, congé existant "
+                    "sur cette période, ou effectif disponible tombant à 0 un jour "
+                    "de cette période).",
                     "danger",
                 )
                 return redirect(url_for("main.add_leave"))

@@ -13,7 +13,7 @@ from app import db
 from app.models import Leave, User
 from app.repositories.leave_repository import LeaveRepository
 from app.utils.automation.advanced_shift_automation import AdvancedShiftAutomation
-from app.utils.helpers import can_add_leave
+from app.utils.helpers import can_add_leave, leave_keeps_minimum_headcount
 from app.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -91,6 +91,15 @@ class LeaveService:
             return (
                 None,
                 f"Un congé existe déjà pour {leave.user.name} pendant cette période",
+                False,
+            )
+
+        if not leave_keeps_minimum_headcount(
+            leave.user, new_start_date, new_end_date, exclude_leave_id=leave_id
+        ):
+            return (
+                None,
+                "Impossible : l'effectif disponible tomberait à 0 sur au moins un jour de cette période",
                 False,
             )
 

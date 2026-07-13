@@ -186,7 +186,7 @@ def can_add_shift(user=None, date=None, shift_type_id=None):
     return not is_user_on_shift(user.id, date)
 
 
-def can_add_leave(user=None, start_date=None, end_date=None):
+def can_add_leave(user=None, start_date=None, end_date=None, exclude_leave_id=None):
     """
     Check if a user can add a leave for a specific period.
 
@@ -194,6 +194,9 @@ def can_add_leave(user=None, start_date=None, end_date=None):
         user: User to check (default: current_user)
         start_date: Start date of leave
         end_date: End date of leave
+        exclude_leave_id: Leave id to ignore when checking the minimum
+            headcount (used when modifying an existing leave's dates,
+            so it doesn't count itself as "someone else on leave")
 
     Returns:
         True if user can add leave, False otherwise
@@ -218,7 +221,52 @@ def can_add_leave(user=None, start_date=None, end_date=None):
         Leave.end_date >= start_date,
     ).first()
 
-    return overlapping_leave is None
+    if overlapping_leave is not None:
+        return False
+
+    # Règle 6 : effectif minimum 1 personne, jamais 0. Un congé ne peut pas
+    # faire tomber l'effectif disponible d'un jour couvert (parmi les
+    # utilisateurs éligibles pour les shifts) à 0.
+    return leave_keeps_minimum_headcount(user, start_date, end_date, exclude_leave_id)
+
+
+def leave_keeps_minimum_headcount(
+    user, start_date: date, end_date: date, exclude_leave_id=None
+) -> bool:
+    """Vérifie que le congé [start_date, end_date] ne fait tomber
+    l'effectif disponible (utilisateurs de groupes schedule, hors congés)
+    à 0 pour aucun jour ouvré couvert. Ne s'applique qu'aux utilisateurs
+    éligibles pour les shifts - le congé de quelqu'un hors de ces groupes
+    n'affecte pas cet effectif."""
+    from app.utils.automation.advanced_shift_automation import AdvancedShiftAutomation
+
+    schedule_users = AdvancedShiftAutomation.get_users_in_schedule_groups()
+    schedule_user_ids = {u.id for u in schedule_users}
+
+    if user.id not in schedule_user_ids:
+        return True
+
+    current_date = start_date
+    while current_date <= end_date:
+        if current_date.weekday() < 5:  # Shifts générés du lundi au vendredi
+            leave_query = Leave.query.filter(
+                Leave.user_id.in_(schedule_user_ids),
+                Leave.user_id != user.id,
+                Leave.start_date <= current_date,
+                Leave.end_date >= current_date,
+            )
+            if exclude_leave_id is not None:
+                leave_query = leave_query.filter(Leave.id != exclude_leave_id)
+            other_users_on_leave = {leave.user_id for leave in leave_query.all()}
+
+            # -1 pour l'utilisateur qui demande ce congé : il quitte
+            # l'effectif disponible ce jour-là.
+            available_after = len(schedule_user_ids) - len(other_users_on_leave) - 1
+            if available_after < 1:
+                return False
+        current_date += timedelta(days=1)
+
+    return True
 
 
 def can_add_oncall(user=None, start_time=None, end_time=None):

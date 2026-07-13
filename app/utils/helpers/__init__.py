@@ -22,6 +22,7 @@ from app.utils.helpers.common_helpers import (
     get_int,
     is_user_on_leave,
     is_user_on_shift,
+    leave_keeps_minimum_headcount,
     parse_date,
     parse_datetime,
 )
@@ -42,6 +43,7 @@ __all__ = [
     "can_add_oncall",
     "is_user_on_shift",
     "is_user_on_leave",
+    "leave_keeps_minimum_headcount",
     "_has_overlapping_oncall",
     "_get_overlapping_leave",
     "_get_overlapping_shift",

@@ -245,6 +245,45 @@ class AdvancedShiftAutomation:
                 f"⚠️ Aucun utilisateur disponible pour le {date.strftime('%d/%m/%Y')}"
             ]
 
+        # Règle 6 : effectif minimum 1 personne. Quand une seule personne est
+        # disponible (cas limite, en dessous du cas à 2 personnes ci-dessous),
+        # elle est placée directement en 09h-17h sans passer par
+        # determine_shift_for_user/handle_two_users_case.
+        if len(available_users) == 1:
+            sole_user = available_users[0]
+            start_hour, end_hour = AdvancedShiftAutomation.SHIFT_09_17
+            shift_type = AdvancedShiftAutomation.get_shift_type_by_hours(
+                start_hour, end_hour
+            )
+            start_time = datetime.combine(date, datetime.min.time()).replace(
+                hour=start_hour
+            )
+            end_time = datetime.combine(date, datetime.min.time()).replace(
+                hour=end_hour
+            )
+            shift = Shift(
+                user_id=sole_user.id,
+                shift_type_id=shift_type.id,
+                start_time=start_time,
+                end_time=end_time,
+                date=date,
+            )
+            generated_shifts.append(shift)
+
+            if not dry_run:
+                try:
+                    db.session.add_all(generated_shifts)
+                    db.session.commit()
+                except Exception as e:
+                    db.session.rollback()
+                    messages.append(f"❌ Erreur : {str(e)}")
+                    return [], messages
+
+            messages.append(
+                f"✅ 1 shift généré pour le {date.strftime('%d/%m/%Y')} (effectif minimum : {sole_user.name})"
+            )
+            return generated_shifts, messages
+
         # Cas spécial : seulement 2 personnes disponibles
         if len(available_users) == 2:
             assignments = AdvancedShiftAutomation.handle_two_users_case(

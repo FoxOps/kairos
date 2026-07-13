@@ -356,6 +356,30 @@ class TestGenerateDailyShifts:
             assert len(shifts) == 0
             assert any("disponible" in msg.lower() for msg in messages)
 
+    def test_generate_daily_shifts_with_one_user(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Régression règle 6 : avec une seule personne disponible (l'autre
+        en congé), cette personne doit être placée directement en 09h-17h."""
+        with test_app.app_context():
+            test_date = date(2023, 12, 15)
+            leave = Leave(
+                user_id=second_user.id,
+                start_date=test_date,
+                end_date=test_date,
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(
+                test_date, dry_run=True
+            )
+
+            assert len(shifts) == 1
+            assert shifts[0].user_id == test_user.id
+            assert shifts[0].start_time.hour == 9
+            assert shifts[0].end_time.hour == 17
+
     def test_generate_daily_shifts_with_two_users(
         self, test_app, test_group, test_user, second_user, test_shift_type
     ):
