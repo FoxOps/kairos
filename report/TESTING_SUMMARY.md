@@ -1,0 +1,216 @@
+# TESTING_SUMMARY.md - Stratégie de Tests Leviia Schedule
+
+## 📊 Aperçu Global
+
+- **Date de mise à jour** : 13 juillet 2026
+- **Nombre total de tests** : 881
+- **Tests réussis** : 881 ✅
+- **Tests échoués** : 0
+- **Couverture de code** : **~88%** (`--cov=app --cov=config`)
+- **Lint (ruff)** : propre - **0 erreur**
+- **Types (mypy)** : propre - **0 erreur**
+- **Formatage (black)** : conforme
+
+---
+
+## 🎯 Stratégie de Tests
+
+### Philosophie : quatre couches, pas trois
+
+1. **Tests unitaires** (`tests/unit/`) : composants isolés (modèles, config,
+   automatisation, helpers, décorateurs) - pas de client HTTP.
+2. **Tests d'intégration** (`tests/integration/`) : routes Flask via le
+   client de test (`client`, `logged_in_client`), CSRF/CSP/permissions,
+   pas de navigateur réel.
+3. **Tests E2E - client de test** (`tests/e2e/test_user_flows.py`) :
+   parcours utilisateur complets (login → action → vérification →
+   logout), toujours via le client de test Flask.
+4. **Tests E2E - navigateur réel** (`tests/e2e/test_browser_flows.py`,
+   `test_oidc_browser_flow.py`) : Playwright + Chromium, **optionnel**
+   (voir section dédiée plus bas). Existe précisément parce que les
+   trois couches précédentes n'exécutent jamais de JS ni n'appliquent
+   CSS/CSP - une catégorie de bug entière (3 vrais bugs CSP trouvés en
+   PR #103) leur est structurellement invisible.
+
+### Outils utilisés
+
+- **Framework** : `pytest` (+ `pytest-flask`, `pytest-cov`)
+- **Fixtures** : `tests/conftest.py` (chaîne `test_app`/`client`/
+  `logged_in_client`) + `tests/fixtures/` (modèles : user, group, shift,
+  leave, oncall)
+- **Navigateur réel (optionnel)** : `pytest-playwright` + Chromium, voir
+  `requirements-e2e.txt`
+- **CI** : GitLab CI (`.gitlab-ci/.gitlab-ci.yml`) - `run_tests` (client
+  de test, bloquant), `run_e2e_browser` (Playwright, `allow_failure:
+  true` tant que non éprouvé en CI)
+
+---
+
+## 📁 Structure des tests
+
+```
+tests/
+├── conftest.py                      # Fixture chain : test_app, client, logged_in_client
+├── fixtures/                        # test_user, test_group, test_shift, test_leave, test_oncall...
+│
+├── unit/                            # 410 tests - composants isolés, pas de HTTP
+│   ├── test_models.py               # User, Group, Shift, OnCall, Leave, ShiftType
+│   ├── test_repositories.py         # Couche accès aux données
+│   ├── test_services.py             # Couche logique métier
+│   ├── test_automation*.py          # Règles métier shifts/astreintes (4 fichiers)
+│   ├── test_advanced_shift_automation.py
+│   ├── test_shift_rotation_fix.py
+│   ├── test_decorators_unit.py
+│   ├── test_helpers.py
+│   ├── test_ics_export.py
+│   ├── test_cache_manager.py
+│   ├── test_config.py
+│   ├── test_run_functions.py        # setup_database/create_default_data
+│   ├── test_vendor_assets.py        # Bulma/FontAwesome/FullCalendar vendorisés
+│   ├── test_oidc_config.py          # OIDCConfig (25 tests)
+│   ├── test_oidc_auth.py            # OIDCAuthLib, réseau mocké (31 tests)
+│   └── test_user_manager_oidc_sync.py  # Sync utilisateur OIDC (12 tests)
+│
+├── integration/                     # 446 tests - routes Flask, client de test
+│   ├── test_routes.py, test_*_priority.py, test_*_coverage.py
+│   ├── test_admin_*.py              # Routes admin (users/groups/shift-types/automation)
+│   ├── test_security.py             # CSP, CSRF, Talisman, contrôle d'accès
+│   ├── test_oidc_routes.py          # /login, /oidc/login, /oidc/callback, /logout (13 tests)
+│   ├── test_performance.py          # Temps de réponse, N+1, compression
+│   ├── test_prometheus_metrics.py, test_health.py
+│   ├── test_dark_theme.py, test_theme_fixes.py
+│   └── test_error_handlers.py
+│
+└── e2e/                             # 25 tests
+    ├── test_user_flows.py           # 6 tests, client de test Flask
+    ├── conftest.py                  # live_server_url, oidc_live_servers (Playwright)
+    ├── test_browser_flows.py        # 14 tests, Chromium réel (optionnel)
+    ├── oidc_mock_provider.py        # Faux fournisseur OIDC réel (Flask, pas Docker)
+    └── test_oidc_browser_flow.py    # 5 tests, flux SSO complet en navigateur réel (optionnel)
+```
+
+---
+
+## 🧪 Tests E2E navigateur réel (Playwright) - optionnels
+
+**Ne sont PAS installés par défaut** (`requirements.txt` seul suffit à
+faire tourner toute l'app et le reste de la suite). Pour les activer :
+
+```bash
+pip install -r requirements-e2e.txt
+playwright install chromium
+```
+
+Sans ça, `pytest tests/` skippe proprement les deux modules concernés
+(`pytest.importorskip("playwright")` en tête de fichier) - visible comme
+`skipped` dans le résumé, jamais comme échec ni erreur de collecte.
+Vérifié explicitement : sans playwright installé, la suite E2E devient
+6 passent + 2 skippés (au lieu de 25 passent).
+
+Ce que cette couche vérifie et qu'aucune autre ne peut :
+- **Zéro erreur console** sur 8 pages clés (`TestNoConsoleErrors`) -
+  généralise en garde-fou permanent l'audit manuel qui a trouvé 3 bugs
+  CSP réels lors de la refonte UI/UX (script inline bloqué sur 2 pages,
+  police d'icônes FullCalendar bloquée par `font-src` manquant)
+- Menu burger mobile (toggle `is-active`/`aria-expanded`, JS pur)
+- Thème sombre (persistance `localStorage`, inexistant côté serveur)
+- Bouton copier presse-papiers (retour visuel réel)
+- **Flux SSO complet** contre un vrai faux fournisseur OIDC
+  (`oidc_mock_provider.py`, une vraie appli Flask sur un port séparé,
+  pas un mock Python) : redirection navigateur, vraie page de login IdP
+  avec un clic, échanges serveur-à-serveur réels (découverte, token,
+  userinfo), session établie et invalidée pour de vrai. A permis de
+  trouver et corriger un bug réel bloquant (boucle de redirection
+  infinie `/login` ↔ `/oidc/login` sur tout échec SSO forcé).
+
+Détail complet : `report/E2E Playwright - Tests navigateur réel.md`.
+
+---
+
+## 🔐 Tests OIDC/SSO
+
+Zéro test existant avant le 13 juillet 2026 malgré ~450 lignes de logique
+(`config_oidc.py`, `app/auth/oidc_auth.py`, `app/auth/user_manager.py`).
+Trois niveaux, volontairement complémentaires (voir
+`report/E2E Playwright - Tests navigateur réel.md` pour la justification) :
+
+1. **Unitaire** (68 tests) : chaque méthode isolée, appels réseau
+   (`requests.get/post`) mockés, JWT de test non signé (le code ne
+   vérifie jamais de signature, seulement l'expiration).
+2. **Intégration** (13 tests) : câblage des routes, `oidc_auth` mocké à
+   la frontière du module de routes. **A trouvé un bug réel bloquant** :
+   boucle de redirection infinie sur tout échec OIDC quand le SSO est
+   forcé (`OIDC_DISABLE_BASIC_AUTH=true`) - corrigé.
+3. **E2E navigateur réel** (5 tests) : voir section précédente.
+
+---
+
+## 🔧 Commandes de test
+
+```bash
+# Tout (test -> lint -> format -> security)
+make all
+
+# Tests seuls
+python -m pytest tests/ -v --tb=short         # tout (make test)
+python -m pytest tests/unit/ -v               # une couche
+python -m pytest tests/test_models.py -v      # un fichier
+python -m pytest tests/unit/test_models.py::TestUserModel::test_user_creation -v  # un test
+
+# Couverture
+python -m pytest tests/ --cov=app --cov=config --cov-report=term-missing
+python -m pytest tests/ --cov=app --cov=config --cov-report=html
+
+# E2E navigateur réel (optionnel, voir section dédiée)
+pip install -r requirements-e2e.txt && playwright install chromium
+python -m pytest tests/e2e/test_browser_flows.py tests/e2e/test_oidc_browser_flow.py -v
+
+# Qualité de code
+ruff check . --config=.ruff.toml
+mypy app/ tests/ --ignore-missing-imports --allow-untyped-decorators
+black --check . --exclude=".git|__pycache__|instance|venv"
+
+# Sécurité (non bloquant, || true dans le Makefile)
+bandit -r app/ tests/
+safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
+```
+
+---
+
+## 📝 Bonnes pratiques établies dans ce projet
+
+1. **Réutiliser les fixtures existantes** (`test_app`, `client`,
+   `logged_in_client`, `test_user`, `test_group`, etc.) plutôt que de
+   construire des instances d'app à la main - sauf besoin explicite
+   d'une config différente (Talisman/CSRF réactivés, OIDC configuré),
+   auquel cas construire un fixture dédié qui `monkeypatch` par-dessus
+   `test_app` plutôt que dupliquer `create_app()`.
+2. **Nommage clair** : `test_login_route_redirects_to_dashboard()`, pas
+   `test_login()`.
+3. **Isolation** : `test_app` recrée toutes les tables à chaque test
+   (function-scoped). État global (`OIDCConfig`, singletons `oidc_auth`)
+   sauvegardé/restauré explicitement quand un test le modifie (voir
+   `tests/unit/test_oidc_config.py::clean_oidc_env`,
+   `tests/integration/test_oidc_routes.py::oidc_mode`).
+4. **Vérifier, ne pas supposer** : un test qui n'a jamais été vu échouer
+   n'est pas un garde-fou. Avant de faire confiance à un nouveau test de
+   régression, casser volontairement le code qu'il est censé protéger et
+   confirmer qu'il échoue avec le bon message (pattern appliqué à
+   `TestNoConsoleErrors` : `font-src` retiré temporairement de
+   `CSP_POLICY`, test rouge confirmé, remis en place).
+5. **Mocker à la bonne frontière** : mocker les appels réseau
+   (`requests.get/post`) dans les tests unitaires, mocker les méthodes
+   du module appelant (`app.routes.auth.oidc_auth.X`) dans les tests
+   d'intégration, ne rien mocker en E2E navigateur (vrai serveur, vrai
+   faux fournisseur OIDC).
+
+---
+
+## 📈 Historique
+
+- **26 juin 2026** : 522 tests (515 passent, 2 échouent, 7 ignorés),
+  couverture ~66%, structure plate (`tests/test_*.py`), pas de CI.
+- **13 juillet 2026** : 881 tests (0 échec), couverture ~88%, structure
+  en 4 couches (`unit/`/`integration/`/`e2e/` + navigateur réel
+  optionnel), CI GitLab, suite OIDC complète, `make all` (test + lint
+  ruff/mypy + format black) intégralement propre.
