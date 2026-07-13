@@ -40,7 +40,7 @@
 
 .navbar-item:focus-visible,
 .navbar-link:focus-visible {
-    outline: 3px solid var(--color-primary-dark);
+    outline: 3px solid var(--app-color-primary-dark);
     outline-offset: -2px;
 }
 

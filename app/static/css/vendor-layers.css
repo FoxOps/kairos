@@ -1,0 +1,19 @@
+/* ============================================
+   COUCHES CSS - COEXISTENCE BULMA / TAILWIND+DAISYUI
+   ============================================
+   Bulma (encore utilisé par les pages pas encore migrées vers
+   Tailwind/daisyUI, retiré en fin de refonte - voir ROADMAP.md) est
+   importé dans un @layer nommé "bulma", placé en premier dans l'ordre
+   des layers déclaré ci-dessous.
+
+   Sans ça, du CSS non-layer (comme une feuille de style chargée par
+   <link> classique) gagne TOUJOURS sur du CSS placé dans un @layer,
+   quelle que soit la spécificité ou l'ordre de chargement (règle du
+   spec CSS - "unlayered styles" ont toujours priorité sur tout style
+   layered). Ça cassait silencieusement toutes les classes daisyUI
+   portant le même nom qu'une classe Bulma (.navbar, .button, .footer...)
+   - testé en navigateur réel (fond de navbar resté blanc malgré
+   bg-primary tant que Bulma n'était pas explicitement mis dans un layer
+   de priorité inférieure à celui de daisyUI). */
+@layer bulma, base, utilities;
+@import url("/static/vendor/bulma/bulma.css") layer(bulma);

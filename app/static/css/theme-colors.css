@@ -1,0 +1,20 @@
+/* ============================================
+   TEINTE DE MARQUE - THÈMES DAISYUI "light"/"dark"
+   ============================================
+   tailwindcss-browser (compilateur JIT, voir base.html) ne supporte pas
+   les directives @plugin/@config ("does not support plugins or config
+   files", testé en navigateur réel) - impossible de redéfinir un thème
+   daisyUI complet via @plugin "daisyui/theme" comme documenté pour un
+   usage avec build. On garde donc les thèmes "light"/"dark" intégrés de
+   daisyUI (chargés par le <link> daisyui.css dans base.html) et on ne
+   surcharge que la teinte de marque - ce fichier n'étant pas dans un
+   @layer, il gagne sur les définitions [data-theme=...] layered de
+   daisyUI quel que soit l'ordre de chargement. */
+[data-theme="light"] {
+    --color-primary: oklch(56% 0.1 176);
+    --color-primary-content: oklch(98% 0.01 176);
+}
+[data-theme="dark"] {
+    --color-primary: oklch(70% 0.11 176);
+    --color-primary-content: oklch(15% 0.02 176);
+}

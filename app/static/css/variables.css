@@ -26,21 +26,21 @@
     --bulma-radius: 0.5rem;
     --bulma-radius-large: 1rem;
 
-    --color-primary: var(--bulma-primary);
-    --color-primary-light: var(--bulma-primary-light);
-    --color-primary-dark: var(--bulma-primary-dark);
+    --app-color-primary: var(--bulma-primary);
+    --app-color-primary-light: var(--bulma-primary-light);
+    --app-color-primary-dark: var(--bulma-primary-dark);
 
-    --color-info: var(--bulma-info);
-    --color-info-light: var(--bulma-info-light);
-    --color-info-dark: var(--bulma-info-dark);
+    --app-color-info: var(--bulma-info);
+    --app-color-info-light: var(--bulma-info-light);
+    --app-color-info-dark: var(--bulma-info-dark);
 
-    --color-success: var(--bulma-success);
-    --color-success-light: var(--bulma-success-light);
-    --color-success-dark: var(--bulma-success-dark);
+    --app-color-success: var(--bulma-success);
+    --app-color-success-light: var(--bulma-success-light);
+    --app-color-success-dark: var(--bulma-success-dark);
 
-    --color-warning: var(--bulma-warning);
-    --color-warning-light: var(--bulma-warning-light);
-    --color-warning-dark: var(--bulma-warning-dark);
+    --app-color-warning: var(--bulma-warning);
+    --app-color-warning-light: var(--bulma-warning-light);
+    --app-color-warning-dark: var(--bulma-warning-dark);
 
     --color-danger: var(--bulma-danger);
     --color-danger-light: var(--bulma-danger-light);

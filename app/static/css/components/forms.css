@@ -15,13 +15,13 @@
 }
 
 .input:focus {
-    border-color: var(--color-primary);
+    border-color: var(--app-color-primary);
 }
 
 .input:focus-visible,
 .select:focus-visible,
 .textarea:focus-visible {
-    outline: 3px solid var(--color-primary);
+    outline: 3px solid var(--app-color-primary);
     outline-offset: 0;
     /* rgb(32, 182, 152) = teal/vert doux de variables.css
        (--bulma-primary-h/-s/-l : 168deg 70% 42%). */

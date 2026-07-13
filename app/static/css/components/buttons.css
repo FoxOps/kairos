@@ -30,7 +30,7 @@
 }
 
 .button:focus-visible {
-    outline: 3px solid var(--color-primary-dark);
+    outline: 3px solid var(--app-color-primary-dark);
     outline-offset: 2px;
 }
 
@@ -74,7 +74,7 @@
 }
 
 .type-tag.is-primary {
-    background-color: var(--color-primary);
+    background-color: var(--app-color-primary);
     color: white;
 }
 
@@ -85,17 +85,17 @@
 }
 
 .type-tag.is-info {
-    background-color: var(--color-info);
+    background-color: var(--app-color-info);
     color: white;
 }
 
 .type-tag.is-success {
-    background-color: var(--color-success);
+    background-color: var(--app-color-success);
     color: white;
 }
 
 .type-tag.is-warning {
-    background-color: var(--color-warning);
+    background-color: var(--app-color-warning);
     color: #000;
 }
 

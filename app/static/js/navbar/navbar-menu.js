@@ -1,8 +1,8 @@
 /**
- * Gère le menu de navigation mobile (burger Bulma).
- * Bulma masque .navbar-menu par défaut sous 1024px tant que
- * .navbar-menu.is-active n'est pas appliqué - Bulma ne fournit que le
- * CSS, pas le JS de toggle.
+ * Gère le menu de navigation mobile (burger). #navbar-menu est masqué
+ * par défaut sous le breakpoint `md` via la classe utilitaire Tailwind
+ * `hidden` - ce module ne fait que retirer/remettre cette classe et
+ * gérer le focus/aria, Tailwind ne fournit que le CSS responsive.
  */
 export class NavbarMenu {
     constructor() {
@@ -18,7 +18,7 @@ export class NavbarMenu {
 
         // Fermer le menu après avoir suivi un lien (évite de laisser le
         // menu ouvert par-dessus la page suivante sur mobile).
-        this.menu.querySelectorAll('a.navbar-item, a.navbar-link').forEach((link) => {
+        this.menu.querySelectorAll('a').forEach((link) => {
             link.addEventListener('click', () => this.close());
         });
 
@@ -31,7 +31,7 @@ export class NavbarMenu {
     }
 
     isOpen() {
-        return this.menu.classList.contains('is-active');
+        return !this.menu.classList.contains('hidden');
     }
 
     toggle() {
@@ -39,14 +39,12 @@ export class NavbarMenu {
     }
 
     open() {
-        this.burger.classList.add('is-active');
-        this.menu.classList.add('is-active');
+        this.menu.classList.remove('hidden');
         this.burger.setAttribute('aria-expanded', 'true');
     }
 
     close() {
-        this.burger.classList.remove('is-active');
-        this.menu.classList.remove('is-active');
+        this.menu.classList.add('hidden');
         this.burger.setAttribute('aria-expanded', 'false');
     }
 }

@@ -25,7 +25,7 @@
 }
 
 .upcoming-item {
-    border-left: 3px solid var(--color-primary);
+    border-left: 3px solid var(--app-color-primary);
     padding: 0.5rem 0 0.5rem 1rem;
     margin-bottom: 0.5rem;
     border-radius: 0 var(--bulma-radius-small) var(--bulma-radius-small) 0;
@@ -78,7 +78,7 @@
 .chart-bar {
     width: 100%;
     margin: 0 0.25rem;
-    background-color: var(--color-primary);
+    background-color: var(--app-color-primary);
     border-radius: var(--bulma-radius-small) var(--bulma-radius-small) 0 0;
     position: relative;
     min-height: 4px;
@@ -99,5 +99,5 @@
     transform: translateX(-50%);
     font-size: 0.85rem;
     font-weight: bold;
-    color: var(--color-primary);
+    color: var(--app-color-primary);
 }

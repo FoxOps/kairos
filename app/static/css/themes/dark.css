@@ -28,7 +28,7 @@
 
 [data-theme="dark"] .notification[role="status"],
 .dark-mode .notification[role="status"] {
-    border: 2px solid var(--color-info) !important;
+    border: 2px solid var(--app-color-info) !important;
     background-color: var(--bulma-info-light) !important;
     color: var(--bulma-info-dark) !important;
 }
@@ -36,15 +36,15 @@
 /* FullCalendar en mode sombre */
 [data-theme="dark"] .fc-event-shift,
 .dark-mode .fc-event-shift {
-    background-color: var(--color-primary) !important;
-    border-color: var(--color-primary) !important;
+    background-color: var(--app-color-primary) !important;
+    border-color: var(--app-color-primary) !important;
     color: #fff !important;
 }
 
 [data-theme="dark"] .fc-event-oncall,
 .dark-mode .fc-event-oncall {
-    background-color: var(--color-info) !important;
-    border-color: var(--color-info) !important;
+    background-color: var(--app-color-info) !important;
+    border-color: var(--app-color-info) !important;
     color: #fff !important;
 }
 
@@ -120,12 +120,12 @@
 
 [data-theme="dark"] .external-event,
 .dark-mode .external-event {
-    background: var(--color-primary);
+    background: var(--app-color-primary);
 }
 
 [data-theme="dark"] .external-event.oncall,
 .dark-mode .external-event.oncall {
-    background: var(--color-info);
+    background: var(--app-color-info);
 }
 
 [data-theme="dark"] .external-event.leave,
@@ -135,7 +135,7 @@
 
 [data-theme="dark"] .fc-event-selected,
 .dark-mode .fc-event-selected {
-    box-shadow: 0 0 0 2px var(--color-warning) !important;
+    box-shadow: 0 0 0 2px var(--app-color-warning) !important;
 }
 
 /* Focus visible */
@@ -151,7 +151,7 @@
 .dark-mode textarea:focus-visible,
 [data-theme="dark"] [tabindex]:focus-visible,
 .dark-mode [tabindex]:focus-visible {
-    outline: 2px solid var(--color-primary) !important;
+    outline: 2px solid var(--app-color-primary) !important;
     outline-offset: 2px !important;
 }
 
@@ -173,7 +173,7 @@
 /* Contraste des liens dans le texte */
 [data-theme="dark"] .content a,
 .dark-mode .content a {
-    color: var(--color-primary-light);
+    color: var(--app-color-primary-light);
     text-decoration: underline;
 }
 
@@ -181,7 +181,7 @@
 .dark-mode .content a:hover,
 [data-theme="dark"] .content a:focus-visible,
 .dark-mode .content a:focus-visible {
-    color: var(--color-primary);
+    color: var(--app-color-primary);
     text-decoration: none;
 }
 
@@ -202,13 +202,13 @@
 /* Contraste des boutons primaires */
 [data-theme="dark"] .button.is-primary,
 .dark-mode .button.is-primary {
-    background-color: var(--color-primary) !important;
+    background-color: var(--app-color-primary) !important;
     color: #fff !important;
 }
 
 [data-theme="dark"] .button.is-primary:hover,
 .dark-mode .button.is-primary:hover {
-    background-color: var(--color-primary-dark) !important;
+    background-color: var(--app-color-primary-dark) !important;
     color: #fff !important;
 }
 

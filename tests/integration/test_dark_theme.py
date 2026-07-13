@@ -47,12 +47,16 @@ class TestDarkThemeCSS:
             variables = read_css("variables.css")
             dark = read_css("themes", "dark.css")
 
-            # Variables CSS dans :root (variables.css)
+            # Variables CSS dans :root (variables.css) - primary/info/
+            # success/warning préfixées "app-" depuis la refonte Tailwind/
+            # daisyUI (collision avec les variables --color-* réservées de
+            # daisyUI sinon, danger/error ne collisionnait pas donc reste
+            # tel quel).
             assert ":root" in variables
-            assert "--color-primary" in variables
-            assert "--color-info" in variables
-            assert "--color-success" in variables
-            assert "--color-warning" in variables
+            assert "--app-color-primary" in variables
+            assert "--app-color-info" in variables
+            assert "--app-color-success" in variables
+            assert "--app-color-warning" in variables
             assert "--color-danger" in variables
 
             # Mappage vers les variables Bulma
@@ -77,16 +81,16 @@ class TestDarkThemeCSS:
         with test_app.app_context():
             content = read_css("variables.css")
 
-            assert "--color-primary: var(--bulma-primary);" in content
-            assert "--color-info: var(--bulma-info);" in content
-            assert "--color-success: var(--bulma-success);" in content
-            assert "--color-warning: var(--bulma-warning);" in content
+            assert "--app-color-primary: var(--bulma-primary);" in content
+            assert "--app-color-info: var(--bulma-info);" in content
+            assert "--app-color-success: var(--bulma-success);" in content
+            assert "--app-color-warning: var(--bulma-warning);" in content
             assert "--color-danger: var(--bulma-danger);" in content
 
-            assert "--color-primary-light: var(--bulma-primary-light);" in content
-            assert "--color-info-light: var(--bulma-info-light);" in content
-            assert "--color-success-light: var(--bulma-success-light);" in content
-            assert "--color-warning-light: var(--bulma-warning-light);" in content
+            assert "--app-color-primary-light: var(--bulma-primary-light);" in content
+            assert "--app-color-info-light: var(--bulma-info-light);" in content
+            assert "--app-color-success-light: var(--bulma-success-light);" in content
+            assert "--app-color-warning-light: var(--bulma-warning-light);" in content
             assert "--color-danger-light: var(--bulma-danger-light);" in content
 
             assert "--bg-primary: var(--bulma-background);" in content
@@ -160,7 +164,7 @@ class TestDarkThemeCSS:
             content = read_css("themes", "dark.css")
 
             assert "focus-visible" in content
-            assert "outline: 2px solid var(--color-primary)" in content
+            assert "outline: 2px solid var(--app-color-primary)" in content
             assert "outline-offset: 2px" in content
 
 
@@ -202,12 +206,16 @@ class TestDarkThemeTemplate:
         assert "function applyTheme" not in html_content
 
     def test_skip_link_present(self, client):
-        """Test que le skip link pour l'accessibilité est présent."""
+        """Test que le skip link pour l'accessibilité est présent. Depuis la
+        refonte Tailwind/daisyUI, plus de classe .skip-link dédiée - le
+        comportement (masqué sauf au focus) est porté par les utilitaires
+        Tailwind sr-only/focus:not-sr-only, on vérifie donc le lien lui-même
+        plutôt qu'un nom de classe."""
         response = client.get("/login")
         assert response.status_code == 200
         html_content = response.data.decode("utf-8")
 
-        assert "skip-link" in html_content
+        assert 'href="#main-content"' in html_content
         assert "Sauter la navigation" in html_content
 
 
