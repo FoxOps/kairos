@@ -7,69 +7,69 @@
 {% endblock %}
 
 {% block content %}
-<main role="main" aria-labelledby="dashboard-title">
-    <section class="p-4 md:p-6 max-w-6xl mx-auto">
-        <h1 id="dashboard-title" class="text-2xl font-bold"><i class="fas fa-tachometer-alt" aria-hidden="true"></i> Mon Tableau de bord</h1>
-        <p class="text-base-content/70 mb-6">Bienvenue, {{ user.name }} ! Voici votre vue d'ensemble personnalisée.</p>
+<section class="p-4 md:p-6 max-w-6xl mx-auto" aria-labelledby="page-title">
+    <h1 id="page-title" class="text-2xl font-bold"><i class="fas fa-tachometer-alt" aria-hidden="true"></i> Mon Tableau de bord</h1>
+    <p class="text-base-content/70 mb-6">Bienvenue, {{ user.name }} ! Voici votre vue d'ensemble personnalisée.</p>
 
-        <!-- Statistiques principales -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" role="list" aria-label="Statistiques principales">
-            <div class="card dashboard-card bg-base-100 shadow-md" role="region" aria-labelledby="shifts-total-title">
-                <div class="card-body text-center">
-                    <i class="fas fa-3x fa-calendar-check text-primary" aria-hidden="true"></i>
-                    <p id="shifts-total-title" class="stat-label mt-2">Shifts totaux</p>
-                    <p class="stat-number" aria-label="Nombre total de shifts : {{ total_shifts }}">{{ total_shifts }}</p>
-                </div>
+    <!-- Statistiques principales -->
+    <div class="stats stats-vertical sm:stats-horizontal shadow-md bg-base-100 w-full mb-6" role="list" aria-label="Statistiques principales">
+        <div class="stat" role="region" aria-labelledby="shifts-total-title">
+            <div class="stat-figure text-primary">
+                <i class="fas fa-2x fa-calendar-check" aria-hidden="true"></i>
             </div>
-
-            <div class="card dashboard-card bg-base-100 shadow-md" role="region" aria-labelledby="oncall-total-title">
-                <div class="card-body text-center">
-                    <i class="fas fa-3x fa-moon text-info" aria-hidden="true"></i>
-                    <p id="oncall-total-title" class="stat-label mt-2">Astreintes</p>
-                    <p class="stat-number text-info" aria-label="Nombre total d'astreintes : {{ total_oncalls }}">{{ total_oncalls }}</p>
-                </div>
-            </div>
-
-            <div class="card dashboard-card bg-base-100 shadow-md" role="region" aria-labelledby="leaves-total-title">
-                <div class="card-body text-center">
-                    <i class="fas fa-3x fa-umbrella-beach text-warning" aria-hidden="true"></i>
-                    <p id="leaves-total-title" class="stat-label mt-2">Congés</p>
-                    <p class="stat-number text-warning" aria-label="Nombre total de congés : {{ total_leaves }}">{{ total_leaves }}</p>
-                </div>
-            </div>
+            <div id="shifts-total-title" class="stat-title">Shifts totaux</div>
+            <div class="stat-value text-primary" aria-label="Nombre total de shifts : {{ total_shifts }}">{{ total_shifts }}</div>
         </div>
 
-        <!-- Statistiques par type de shift -->
-        {% if shift_types_stats %}
-        <div class="card bg-base-100 shadow-md mb-6" role="region" aria-labelledby="shift-types-title">
-            <div class="card-body">
-                <h2 id="shift-types-title" class="text-lg font-semibold"><i class="fas fa-chart-bar" aria-hidden="true"></i> Répartition par type de shift</h2>
-                <p class="text-sm text-base-content/60">Nombre de shifts par créneau horaire (ex: 07h-15h, 09h-17h, 13h-21h)</p>
-                <div class="chart-container" role="img" aria-label="Graphique à barres de la répartition des types de shifts">
-                    {% for stat in shift_types_stats %}
-                    {% set max_count = shift_types_stats|map(attribute='count')|max %}
-                    {% set bar_height = (stat.count / max_count * 100)|int if max_count > 0 else 0 %}
-                    <div class="chart-item" role="listitem">
-                        <div class="chart-bar" style="height: {{ bar_height }}%; max-height: 100%;" aria-label="Type {{ stat.label }} : {{ stat.count }} shifts">
-                            <span class="chart-value">{{ stat.count }}</span>
-                        </div>
-                        <div class="chart-bar-label">{{ stat.label }}</div>
+        <div class="stat" role="region" aria-labelledby="oncall-total-title">
+            <div class="stat-figure text-info">
+                <i class="fas fa-2x fa-moon" aria-hidden="true"></i>
+            </div>
+            <div id="oncall-total-title" class="stat-title">Astreintes</div>
+            <div class="stat-value text-info" aria-label="Nombre total d'astreintes : {{ total_oncalls }}">{{ total_oncalls }}</div>
+        </div>
+
+        <div class="stat" role="region" aria-labelledby="leaves-total-title">
+            <div class="stat-figure text-warning">
+                <i class="fas fa-2x fa-umbrella-beach" aria-hidden="true"></i>
+            </div>
+            <div id="leaves-total-title" class="stat-title">Congés</div>
+            <div class="stat-value text-warning" aria-label="Nombre total de congés : {{ total_leaves }}">{{ total_leaves }}</div>
+        </div>
+    </div>
+
+    <!-- Statistiques par type de shift -->
+    {% if shift_types_stats %}
+    <div class="card bg-base-100 shadow-md mb-6" role="region" aria-labelledby="shift-types-title">
+        <div class="card-body">
+            <h2 id="shift-types-title" class="text-lg font-semibold"><i class="fas fa-chart-bar" aria-hidden="true"></i> Répartition par type de shift</h2>
+            <p class="text-sm text-base-content/60">Nombre de shifts par créneau horaire (ex: 07h-15h, 09h-17h, 13h-21h)</p>
+            <div class="chart-container" role="img" aria-label="Graphique à barres de la répartition des types de shifts">
+                {% for stat in shift_types_stats %}
+                {% set max_count = shift_types_stats|map(attribute='count')|max %}
+                {% set bar_height = (stat.count / max_count * 100)|int if max_count > 0 else 0 %}
+                <div class="chart-item" role="listitem">
+                    <div class="chart-bar" style="height: {{ bar_height }}%; max-height: 100%;" aria-label="Type {{ stat.label }} : {{ stat.count }} shifts">
+                        <span class="chart-value">{{ stat.count }}</span>
                     </div>
-                    {% endfor %}
+                    <div class="chart-bar-label">{{ stat.label }}</div>
                 </div>
+                {% endfor %}
             </div>
         </div>
-        {% endif %}
+    </div>
+    {% endif %}
 
-        <!-- Prochains événements -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div class="card bg-base-100 shadow-md" role="region" aria-labelledby="upcoming-shifts-title">
-                <div class="card-body">
-                    <h2 id="upcoming-shifts-title" class="text-lg font-semibold"><i class="fas fa-calendar-alt" aria-hidden="true"></i> Prochains Shifts</h2>
-                    {% if upcoming_shifts %}
-                        <ul role="list" aria-label="Liste des prochains shifts">
-                            {% for shift in upcoming_shifts %}
-                            <li class="upcoming-item" role="listitem">
+    <!-- Prochains événements -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="card bg-base-100 shadow-md" role="region" aria-labelledby="upcoming-shifts-title">
+            <div class="card-body">
+                <h2 id="upcoming-shifts-title" class="text-lg font-semibold"><i class="fas fa-calendar-alt" aria-hidden="true"></i> Prochains Shifts</h2>
+                {% if upcoming_shifts %}
+                    <ul class="list" aria-label="Liste des prochains shifts">
+                        {% for shift in upcoming_shifts %}
+                        <li class="list-row px-0" role="listitem">
+                            <div>
                                 <p>
                                     <strong>{{ shift.start_time.strftime('%a %d/%m') }}</strong>
                                     à {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
@@ -80,52 +80,56 @@
                                     </span>
                                     <span class="text-base-content/60">{{ shift.shift_type.name if shift.shift_type else '' }}</span>
                                 </p>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <div class="empty-state" role="status" aria-live="polite">
-                            <i class="fas fa-calendar-times" aria-hidden="true"></i>
-                            <p>Aucun shift à venir</p>
-                        </div>
-                    {% endif %}
-                </div>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="text-center py-8 text-base-content/50" role="status" aria-live="polite">
+                        <i class="fas fa-calendar-times text-3xl opacity-50 mb-2" aria-hidden="true"></i>
+                        <p>Aucun shift à venir</p>
+                    </div>
+                {% endif %}
             </div>
+        </div>
 
-            <div class="card bg-base-100 shadow-md" role="region" aria-labelledby="upcoming-oncall-title">
-                <div class="card-body">
-                    <h2 id="upcoming-oncall-title" class="text-lg font-semibold"><i class="fas fa-moon" aria-hidden="true"></i> Prochaines Astreintes</h2>
-                    {% if upcoming_oncalls %}
-                        <ul role="list" aria-label="Liste des prochaines astreintes">
-                            {% for oncall in upcoming_oncalls %}
-                            <li class="upcoming-item" role="listitem">
+        <div class="card bg-base-100 shadow-md" role="region" aria-labelledby="upcoming-oncall-title">
+            <div class="card-body">
+                <h2 id="upcoming-oncall-title" class="text-lg font-semibold"><i class="fas fa-moon" aria-hidden="true"></i> Prochaines Astreintes</h2>
+                {% if upcoming_oncalls %}
+                    <ul class="list" aria-label="Liste des prochaines astreintes">
+                        {% for oncall in upcoming_oncalls %}
+                        <li class="list-row px-0" role="listitem">
+                            <div>
                                 <p>
                                     <strong>{{ oncall.start_time.strftime('%a %d/%m') }}</strong>
                                     de {{ oncall.start_time.strftime('%H:%M') }} à {{ oncall.end_time.strftime('%H:%M') }}
                                 </p>
                                 <p class="text-base-content/60">Astreinte programmée</p>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <div class="empty-state" role="status" aria-live="polite">
-                            <i class="fas fa-moon" aria-hidden="true"></i>
-                            <p>Aucune astreinte à venir</p>
-                        </div>
-                    {% endif %}
-                </div>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="text-center py-8 text-base-content/50" role="status" aria-live="polite">
+                        <i class="fas fa-moon text-3xl opacity-50 mb-2" aria-hidden="true"></i>
+                        <p>Aucune astreinte à venir</p>
+                    </div>
+                {% endif %}
             </div>
         </div>
+    </div>
 
-        <!-- Congés à venir -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="card bg-base-100 shadow-md" role="region" aria-labelledby="upcoming-leaves-title">
-                <div class="card-body">
-                    <h2 id="upcoming-leaves-title" class="text-lg font-semibold"><i class="fas fa-umbrella-beach" aria-hidden="true"></i> Prochains Congés</h2>
-                    {% if upcoming_leaves %}
-                        <ul role="list" aria-label="Liste des prochains congés">
-                            {% for leave in upcoming_leaves %}
-                            <li class="upcoming-item" role="listitem">
+    <!-- Congés à venir -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="card bg-base-100 shadow-md" role="region" aria-labelledby="upcoming-leaves-title">
+            <div class="card-body">
+                <h2 id="upcoming-leaves-title" class="text-lg font-semibold"><i class="fas fa-umbrella-beach" aria-hidden="true"></i> Prochains Congés</h2>
+                {% if upcoming_leaves %}
+                    <ul class="list" aria-label="Liste des prochains congés">
+                        {% for leave in upcoming_leaves %}
+                        <li class="list-row px-0" role="listitem">
+                            <div>
                                 <p>
                                     <strong>Du {{ leave.start_date.strftime('%d/%m') }}</strong>
                                     au {{ leave.end_date.strftime('%d/%m/%Y') }}
@@ -133,25 +137,27 @@
                                 <p class="text-base-content/60">
                                     {{ (leave.end_date - leave.start_date).days + 1 }} jour(s)
                                 </p>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <div class="empty-state" role="status" aria-live="polite">
-                            <i class="fas fa-umbrella-beach" aria-hidden="true"></i>
-                            <p>Aucun congé à venir</p>
-                        </div>
-                    {% endif %}
-                </div>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="text-center py-8 text-base-content/50" role="status" aria-live="polite">
+                        <i class="fas fa-umbrella-beach text-3xl opacity-50 mb-2" aria-hidden="true"></i>
+                        <p>Aucun congé à venir</p>
+                    </div>
+                {% endif %}
             </div>
+        </div>
 
-            <div class="card bg-base-100 shadow-md" role="region" aria-labelledby="recent-shifts-title">
-                <div class="card-body">
-                    <h2 id="recent-shifts-title" class="text-lg font-semibold"><i class="fas fa-history" aria-hidden="true"></i> Shifts récents</h2>
-                    {% if recent_shifts %}
-                        <ul role="list" aria-label="Liste des shifts récents">
-                            {% for shift in recent_shifts %}
-                            <li class="upcoming-item" role="listitem">
+        <div class="card bg-base-100 shadow-md" role="region" aria-labelledby="recent-shifts-title">
+            <div class="card-body">
+                <h2 id="recent-shifts-title" class="text-lg font-semibold"><i class="fas fa-history" aria-hidden="true"></i> Shifts récents</h2>
+                {% if recent_shifts %}
+                    <ul class="list" aria-label="Liste des shifts récents">
+                        {% for shift in recent_shifts %}
+                        <li class="list-row px-0" role="listitem">
+                            <div>
                                 <p>
                                     <strong>{{ shift.date.strftime('%a %d/%m') }}</strong>
                                     à {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
@@ -161,18 +167,18 @@
                                         {{ shift.shift_type.label if shift.shift_type else 'N/A' }}
                                     </span>
                                 </p>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <div class="empty-state" role="status" aria-live="polite">
-                            <i class="fas fa-history" aria-hidden="true"></i>
-                            <p>Aucun shift récent</p>
-                        </div>
-                    {% endif %}
-                </div>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="text-center py-8 text-base-content/50" role="status" aria-live="polite">
+                        <i class="fas fa-history text-3xl opacity-50 mb-2" aria-hidden="true"></i>
+                        <p>Aucun shift récent</p>
+                    </div>
+                {% endif %}
             </div>
         </div>
-    </section>
-</main>
+    </div>
+</section>
 {% endblock %}

@@ -1,53 +1,9 @@
 /* ============================================
    PAGE - TABLEAU DE BORD
-   ============================================ */
-
-.dashboard-card {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-}
-
-.dashboard-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-}
-
-.stat-number {
-    font-size: 2.5rem;
-    font-weight: 700;
-    line-height: 1.2;
-}
-
-.stat-label {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.upcoming-item {
-    border-left: 3px solid var(--app-color-primary);
-    padding: 0.5rem 0 0.5rem 1rem;
-    margin-bottom: 0.5rem;
-    border-radius: 0 var(--app-radius-small) var(--app-radius-small) 0;
-    transition: background-color 0.15s ease-in-out;
-}
-
-.upcoming-item:hover {
-    background-color: color-mix(in oklab, var(--app-color-primary) 5%, transparent);
-}
-
-.empty-state {
-    text-align: center;
-    padding: 2.5rem 1rem;
-    color: var(--text-secondary);
-}
-
-.empty-state i {
-    font-size: 2rem;
-    opacity: 0.5;
-    display: inline-block;
-    margin-bottom: 0.5rem;
-}
+   ============================================
+   Les KPI/listes/états vides utilisent désormais les composants daisyUI
+   natifs (stats/list/list-row, utilitaires Tailwind) - seul le mini
+   bar-chart reste custom ci-dessous, daisyUI n'a pas de composant chart. */
 
 /* Mini graphique à barres - .chart-container n'avait aucune règle CSS :
    sans display:flex + une hauteur fixe sur le parent, le flex:1 de
