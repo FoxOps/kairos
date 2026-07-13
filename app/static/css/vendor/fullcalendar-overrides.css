@@ -5,6 +5,9 @@
    de fichier CSS séparé - son style est inclus dans son JS. Ce fichier
    contient uniquement NOS surcharges pour l'intégrer à l'app. Les
    surcharges spécifiques au thème sombre sont dans themes/dark.css.
+   Fallbacks hex = valeurs Alucard (thème clair) de la palette Dracula/
+   Alucard - purement défensif, les variables résolvent toujours en
+   pratique (définies sans condition dans theme-colors.css).
    ============================================ */
 
 #calendar {
@@ -13,21 +16,21 @@
 }
 
 .fc-event-shift {
-    background-color: var(--app-color-primary, #20B698);
-    border-color: var(--app-color-primary, #20B698);
-    color: white;
+    background-color: var(--app-color-primary, #644ac9);
+    border-color: var(--app-color-primary, #644ac9);
+    color: var(--color-primary-content, #fffbeb);
 }
 
 .fc-event-oncall {
-    background-color: var(--app-color-info, #3E8ED0);
-    border-color: var(--app-color-info, #3E8ED0);
-    color: white;
+    background-color: var(--app-color-info, #036a96);
+    border-color: var(--app-color-info, #036a96);
+    color: var(--color-info-content, #fffbeb);
 }
 
 .fc-event-leave {
-    background-color: var(--color-danger, #F14668);
-    border-color: var(--color-danger, #F14668);
-    color: white;
+    background-color: var(--color-danger, #cb3a2a);
+    border-color: var(--color-danger, #cb3a2a);
+    color: var(--color-error-content, #fffbeb);
 }
 
 /* Drag & drop */
@@ -42,13 +45,13 @@
 }
 
 .fc-event-selected {
-    box-shadow: 0 0 0 2px var(--app-color-warning, #ffeb3b);
+    box-shadow: 0 0 0 2px var(--app-color-warning, #a34d14);
 }
 
 /* Conteneur d'événements externes (glisser-déposer depuis l'extérieur) */
 .external-event-container {
     padding: 10px;
-    background: var(--bg-secondary, #f5f5f5);
+    background: var(--bg-secondary, #e2decf);
     border-radius: var(--app-radius-small);
     margin-bottom: 20px;
 }
@@ -56,8 +59,8 @@
 .external-event {
     padding: 8px 12px;
     margin: 4px;
-    background: var(--app-color-primary, #20B698);
-    color: white;
+    background: var(--app-color-primary, #644ac9);
+    color: var(--color-primary-content, #fffbeb);
     border-radius: var(--app-radius-small);
     cursor: move;
     display: inline-block;
@@ -65,9 +68,11 @@
 }
 
 .external-event.oncall {
-    background: var(--app-color-info, #3E8ED0);
+    background: var(--app-color-info, #036a96);
+    color: var(--color-info-content, #fffbeb);
 }
 
 .external-event.leave {
-    background: var(--color-danger, #F14668);
+    background: var(--color-danger, #cb3a2a);
+    color: var(--color-error-content, #fffbeb);
 }

@@ -99,7 +99,11 @@
             </div>
             {% endif %}
 
-            <div id="calendar" class="mt-4 w-full" role="application" aria-label="Calendrier interactif"
+            <div id="calendar-skeleton" class="mt-4 w-full flex flex-col gap-2" aria-hidden="true">
+                <div class="skeleton h-10 w-full"></div>
+                <div class="skeleton h-96 w-full"></div>
+            </div>
+            <div id="calendar" class="mt-4 w-full hidden" role="application" aria-label="Calendrier interactif"
                  data-is-admin="{{ current_user.is_admin|tojson }}"></div>
             <script type="application/json" id="calendar-events-data">{{ events|tojson }}</script>
         </div>

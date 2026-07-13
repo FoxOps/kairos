@@ -15,19 +15,19 @@
 [data-theme="dark"] .fc-event-shift {
     background-color: var(--app-color-primary) !important;
     border-color: var(--app-color-primary) !important;
-    color: #fff !important;
+    color: var(--color-primary-content) !important;
 }
 
 [data-theme="dark"] .fc-event-oncall {
     background-color: var(--app-color-info) !important;
     border-color: var(--app-color-info) !important;
-    color: #fff !important;
+    color: var(--color-info-content) !important;
 }
 
 [data-theme="dark"] .fc-event-leave {
     background-color: var(--color-danger) !important;
     border-color: var(--color-danger) !important;
-    color: #fff !important;
+    color: var(--color-error-content) !important;
 }
 
 [data-theme="dark"] .fc {
