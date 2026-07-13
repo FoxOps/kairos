@@ -24,6 +24,10 @@ python -m pytest tests/test_models.py -v           # one file
 python -m pytest tests/test_models.py::TestUserModel::test_user_creation -v  # one test
 python -m pytest tests/ --cov=app --cov=config --cov-report=term-missing    # coverage
 
+# Real-browser E2E tests (optional, not in requirements.txt - skipped cleanly if absent)
+pip install -r requirements-e2e.txt && playwright install chromium
+python -m pytest tests/e2e/test_browser_flows.py -v --tb=short
+
 # Lint / type-check / format
 ruff check . --config=.ruff.toml
 mypy app/ tests/ --ignore-missing-imports --allow-untyped-decorators
@@ -127,3 +131,14 @@ Talisman/OIDC/rate-limiting/cache), `client` wraps its test client, and `logged_
 an admin user via a real POST to `/login`. Model fixtures (`test_user`, `admin_user`, `test_shift`,
 `test_leave`, `test_oncall`, `test_shift_type`, etc.) build on `test_app`/`test_group`. Reuse these
 fixtures rather than constructing app instances manually in new tests.
+
+`tests/e2e/` has two layers, deliberately kept separate (see `report/E2E Playwright - Tests
+navigateur réel.md`): `test_user_flows.py` uses the Flask test client (no browser, fast, good for
+permissions/redirects/data) and `test_browser_flows.py` drives real Chromium via Playwright
+(`tests/e2e/conftest.py`'s `live_server_url` fixture runs the app in a thread with Talisman/CSP
+*actually* active — not `TestingConfig`'s Talisman-skip). The browser layer exists specifically to
+catch CSP/JS/CSS regressions the test client structurally cannot see (it never executes JS or
+applies CSS) — `TestNoConsoleErrors` asserts zero browser console errors across key pages, which is
+how 3 real CSP bugs were found in production before this suite existed (PR #103). Requires
+`requirements-e2e.txt` + `playwright install chromium`; skips cleanly via `pytest.importorskip` if
+absent, so `make test`/CI never breaks for contributors without a browser installed.
