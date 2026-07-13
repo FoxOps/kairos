@@ -2,9 +2,9 @@
 
 ## 📊 Aperçu Global
 
-- **Date de mise à jour** : 13 juillet 2026 (notifications par email)
-- **Nombre total de tests** : 891
-- **Tests réussis** : 891 ✅
+- **Date de mise à jour** : 13 juillet 2026 (refonte du système de sauvegarde)
+- **Nombre total de tests** : 944
+- **Tests réussis** : 944 ✅
 - **Tests échoués** : 0
 - **Couverture de code** : **~88%** (`--cov=app --cov=config`)
 - **Lint (ruff)** : propre - **0 erreur**
@@ -53,7 +53,7 @@ tests/
 ├── conftest.py                      # Fixture chain : test_app, client, logged_in_client
 ├── fixtures/                        # test_user, test_group, test_shift, test_leave, test_oncall...
 │
-├── unit/                            # 420 tests - composants isolés, pas de HTTP
+├── unit/                            # 463 tests - composants isolés, pas de HTTP
 │   ├── test_models.py               # User, Group, Shift, OnCall, Leave, ShiftType, NotificationLog
 │   ├── test_repositories.py         # Couche accès aux données
 │   ├── test_services.py             # Couche logique métier
@@ -72,11 +72,14 @@ tests/
 │   ├── test_user_manager_oidc_sync.py  # Sync utilisateur OIDC (12 tests)
 │   ├── test_notification_config.py  # NotificationConfig (SMTP via env vars)
 │   ├── test_email_sender.py         # Envoi SMTP bas niveau, mocké
-│   └── test_notification_service.py # Rappels hebdo shifts/astreinte, idempotence
+│   ├── test_notification_service.py # Rappels hebdo shifts/astreinte, idempotence
+│   ├── test_backup_config.py        # BackupConfig (SMTP/S3 via env vars)
+│   ├── test_backup_database.py      # scripts/backup_database.py (indépendant de app/)
+│   └── test_backup_service.py       # BackupService (couche support /admin/backups)
 │
-├── integration/                     # 444 tests - routes Flask, client de test
+├── integration/                     # 454 tests - routes Flask, client de test
 │   ├── test_routes.py, test_*_priority.py, test_*_coverage.py
-│   ├── test_admin_*.py              # Routes admin (users/groups/shift-types/automation)
+│   ├── test_admin_*.py              # Routes admin (users/groups/shift-types/automation/backups)
 │   ├── test_security.py             # CSP, CSRF, Talisman, contrôle d'accès
 │   ├── test_oidc_routes.py          # /login, /oidc/login, /oidc/callback, /logout (13 tests)
 │   ├── test_performance.py          # Temps de réponse, N+1, compression
@@ -225,3 +228,11 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
   notifications par email hebdomadaires (rappels shifts/astreinte,
   `NotificationLog` anti-doublon, SMTP via variables d'environnement,
   scripts cron autonomes).
+- **13 juillet 2026 (suite)** : 944 tests (0 échec). Refonte du système
+  de sauvegarde (PR #107) : retrait de la scaffolding morte
+  (`encrypt`/`encryption_key`/`frequency`), `BACKUP_ENABLED` opt-in
+  (`false` par défaut), alertes email de succès/échec réutilisant le
+  système de notifications, `BackupService` + interface d'administration
+  (`/admin/backups` : liste, création, nettoyage, téléchargement avec
+  protection contre la traversée de chemin), intégration Docker (crond
+  conditionnel partagé avec les notifications).

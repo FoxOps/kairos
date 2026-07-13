@@ -1,8 +1,11 @@
-# Planning des rappels par email, démarré par entrypoint.sh (crond, en
+# Planning des tâches périodiques, démarré par entrypoint.sh (crond, en
 # arrière-plan dans le même conteneur que le serveur web) si
-# NOTIFICATIONS_ENABLED=true. Lu par busybox crond en tant qu'utilisateur
-# non-root "appuser" (uid 1000) - le nom du fichier doit correspondre
-# exactement au nom d'utilisateur.
+# NOTIFICATIONS_ENABLED=true et/ou BACKUP_ENABLED=true. Lu par busybox
+# crond en tant qu'utilisateur non-root "appuser" (uid 1000) - le nom du
+# fichier doit correspondre exactement au nom d'utilisateur. Toutes les
+# entrées ci-dessous sont toujours présentes ; chaque script vérifie
+# lui-même sa propre variable *_ENABLED et ne fait rien si elle est à
+# false (voir scripts/backup_config.py / scripts/notification_config.py).
 #
 # Rappel des shifts de la semaine : dimanche 9h, 24h avant le début des
 # shifts du lundi.
@@ -11,3 +14,8 @@
 # Rappel de l'astreinte à venir : jeudi 9h, 24h avant le début de
 # l'astreinte du vendredi 21h.
 0 9 * * 4 python3 /app/scripts/send_oncall_notifications.py >> /app/logs/notifications.log 2>&1
+
+# Sauvegarde quotidienne de la base de données (locale et/ou S3 selon
+# BACKUP_LOCAL_ENABLED/BACKUP_S3_ENABLED), avec vérification et
+# nettoyage des sauvegardes expirées (BACKUP_RETENTION_DAYS/BACKUP_MAX_BACKUPS).
+0 3 * * * python3 /app/scripts/backup_database.py --local --s3 --verify --cleanup >> /app/logs/backup.log 2>&1

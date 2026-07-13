@@ -1,9 +1,10 @@
 """
 Blueprint admin ("admin"). Les routes sont définies dans des fichiers
 séparés par domaine (admin_group_routes, admin_user_routes,
-admin_shift_type_routes, admin_automation_routes) qui s'enregistrent
-tous sur admin_bp défini ici - le nom du blueprint reste "admin" partout
-(url_for("admin.xxx"), templates), seul le découpage en fichiers change.
+admin_shift_type_routes, admin_automation_routes, admin_backup_routes)
+qui s'enregistrent tous sur admin_bp défini ici - le nom du blueprint
+reste "admin" partout (url_for("admin.xxx"), templates), seul le
+découpage en fichiers change.
 """
 
 from flask import Blueprint, render_template
@@ -41,6 +42,7 @@ def admin_dashboard():
 # création de admin_bp ci-dessus.
 from app.routes import (  # noqa: E402
     admin_automation_routes,  # noqa: F401
+    admin_backup_routes,  # noqa: F401
     admin_group_routes,  # noqa: F401
     admin_shift_type_routes,  # noqa: F401
     admin_user_routes,  # noqa: F401

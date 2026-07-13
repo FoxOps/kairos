@@ -76,9 +76,20 @@
                 <div class="box">
                     <h2><i class="fas fa-robot" aria-hidden="true"></i> Automatisation</h2>
                     <p>Génération automatique</p>
-                    <a class="button is-success is-small mt-2" href="{{ url_for('admin.automation_dashboard') }}" 
+                    <a class="button is-success is-small mt-2" href="{{ url_for('admin.automation_dashboard') }}"
                        aria-label="Configurer l'automatisation" title="Configurer l'automatisation">
                         <i class="fas fa-cog" aria-hidden="true"></i>&nbsp; Configurer
+                    </a>
+                </div>
+            </div>
+
+            <div class="column is-one-fifth">
+                <div class="box">
+                    <h2><i class="fas fa-database" aria-hidden="true"></i> Sauvegardes</h2>
+                    <p>Local &amp; S3</p>
+                    <a class="button is-info is-small mt-2" href="{{ url_for('admin.backups_dashboard') }}"
+                       aria-label="Gérer les sauvegardes" title="Gérer les sauvegardes">
+                        <i class="fas fa-list" aria-hidden="true"></i>&nbsp; Gérer
                     </a>
                 </div>
             </div>

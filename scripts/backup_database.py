@@ -45,6 +45,7 @@ import shutil
 import sys
 import tempfile
 from datetime import datetime, timedelta
+from typing import Any
 
 # Ajouter le dossier parent au path pour importer la configuration
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -409,7 +410,7 @@ def cleanup_local_backups(
             return 0, f"Dossier introuvable: {local_dir}"
 
         # Lister tous les fichiers de sauvegarde
-        backup_files = []
+        backup_files: list[dict[str, Any]] = []
         for filename in os.listdir(local_dir):
             if filename.startswith(config.backup_prefix):
                 filepath = os.path.join(local_dir, filename)
@@ -518,11 +519,101 @@ def cleanup_s3_backups(config: BackupConfig, logger: logging.Logger) -> tuple[in
 
 
 # ============================================================================
+# FONCTIONS DE NOTIFICATION
+# ============================================================================
+
+
+def send_backup_notification(
+    config: BackupConfig, results: dict[str, Any], logger: logging.Logger
+) -> None:
+    """
+    Envoie un email d'alerte de sauvegarde si configuré (succès et/ou
+    échec selon config.notify_on_success/notify_on_failure), en
+    réutilisant la configuration SMTP des notifications par email (voir
+    scripts/notification_config.py - mêmes variables d'environnement,
+    donc aussi soumis à NOTIFICATIONS_ENABLED).
+
+    Implémentation SMTP autonome plutôt qu'un import de
+    app.utils.notifications : ce script doit rester utilisable même si
+    l'application Flask ne démarre pas (justement le scénario le plus
+    probable en reprise après sinistre) - importer le package app
+    déclencherait app/__init__.py (connexion DB, extensions Flask, etc.),
+    cassant cette isolation volontaire.
+    """
+    should_notify = (results["success"] and config.notify_on_success) or (
+        not results["success"] and config.notify_on_failure
+    )
+    if not should_notify or not config.notification_email:
+        return
+
+    from scripts.notification_config import NotificationConfig
+
+    notification_config = NotificationConfig.from_env()
+    if not notification_config.is_configured():
+        logger.debug(
+            "Notification de sauvegarde ignorée (NOTIFICATIONS_ENABLED "
+            "désactivé ou configuration SMTP incomplète)."
+        )
+        return
+
+    assert notification_config.from_email and notification_config.smtp_host
+
+    status_label = "réussie" if results["success"] else "échouée"
+    subject = f"[Leviia Schedule] Sauvegarde {status_label} - {results['timestamp']}"
+
+    lines = [f"Sauvegarde {status_label} le {results['timestamp']}.", ""]
+    if results.get("local"):
+        lines.append(f"Local : {results['local']['message']}")
+    if results.get("s3"):
+        lines.append(f"S3 : {results['s3']['message']}")
+    if results.get("errors"):
+        lines.append("")
+        lines.append("Erreurs :")
+        lines.extend(f"- {error}" for error in results["errors"])
+    text_body = "\n".join(lines)
+    escaped = text_body.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    html_body = f"<pre>{escaped}</pre>"
+
+    import smtplib
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+
+    message = MIMEMultipart("alternative")
+    message["Subject"] = subject
+    message["From"] = notification_config.from_email
+    message["To"] = config.notification_email
+    message.attach(MIMEText(text_body, "plain"))
+    message.attach(MIMEText(html_body, "html"))
+
+    try:
+        with smtplib.SMTP(
+            notification_config.smtp_host,
+            notification_config.smtp_port,
+            timeout=notification_config.smtp_timeout,
+        ) as server:
+            if notification_config.smtp_use_tls:
+                server.starttls()
+            if notification_config.smtp_username and notification_config.smtp_password:
+                server.login(
+                    notification_config.smtp_username,
+                    notification_config.smtp_password,
+                )
+            server.sendmail(
+                notification_config.from_email,
+                [config.notification_email],
+                message.as_string(),
+            )
+        logger.info(f"Email de notification envoyé à {config.notification_email}")
+    except Exception as e:
+        logger.error(f"Échec de l'envoi de l'email de notification : {e}")
+
+
+# ============================================================================
 # FONCTIONS PRINCIPALES
 # ============================================================================
 
 
-def create_backup(config: BackupConfig, logger: logging.Logger) -> dict:
+def create_backup(config: BackupConfig, logger: logging.Logger) -> dict[str, Any]:
     """
     Crée une sauvegarde complète (locale et/ou S3).
 
@@ -533,7 +624,7 @@ def create_backup(config: BackupConfig, logger: logging.Logger) -> dict:
     Returns:
         Dictionnaire avec les résultats
     """
-    results = {
+    results: dict[str, Any] = {
         "success": False,
         "local": None,
         "s3": None,
@@ -688,7 +779,7 @@ def restore_backup(
         return False, f"Erreur lors de la restauration: {str(e)}"
 
 
-def list_backups(config: BackupConfig, logger: logging.Logger) -> dict:
+def list_backups(config: BackupConfig, logger: logging.Logger) -> dict[str, Any]:
     """
     Liste toutes les sauvegardes disponibles.
 
@@ -699,7 +790,7 @@ def list_backups(config: BackupConfig, logger: logging.Logger) -> dict:
     Returns:
         Dictionnaire avec les listes de sauvegardes
     """
-    results = {"local": [], "s3": []}
+    results: dict[str, Any] = {"local": [], "s3": []}
 
     # Sauvegardes locales
     if config.local_enabled and config.local_dir:
@@ -947,6 +1038,8 @@ Variables d'environnement:
     logger.info(f"Configuration: local={config.local_enabled}, s3={config.s3_enabled}")
 
     results = create_backup(config, logger)
+
+    send_backup_notification(config, results, logger)
 
     # Nettoyage
     if args.cleanup:

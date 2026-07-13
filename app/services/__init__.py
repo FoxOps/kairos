@@ -18,9 +18,12 @@ Services:
   parsing, period clearing, rotation order persistence)
 - notification_service: Weekly email reminders (shifts + on-call),
   called by scripts/send_*_notifications.py, not by any Flask route
+- backup_service: Admin UI support for database backups, wraps the
+  pure functions in scripts/backup_database.py
 """
 
 from app.services.automation_admin_service import AutomationAdminService
+from app.services.backup_service import BackupService
 from app.services.export_service import ExportService
 from app.services.group_service import GroupService
 from app.services.leave_service import LeaveService
@@ -42,4 +45,5 @@ __all__ = [
     "ScheduleService",
     "AutomationAdminService",
     "NotificationService",
+    "BackupService",
 ]

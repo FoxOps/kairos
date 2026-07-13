@@ -1,0 +1,130 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title"><i class="fas fa-database" aria-hidden="true"></i> Sauvegardes</h1>
+
+        <div class="buttons" role="group" aria-label="Actions sauvegardes">
+            <a class="button is-light" href="{{ url_for('admin.admin_dashboard') }}"
+               aria-label="Retour à l'administration" title="Retour à l'admin">
+                Retour à l'admin
+            </a>
+        </div>
+
+        {% if not config.enabled %}
+        <div class="notification is-warning is-light">
+            <p><i class="fas fa-exclamation-triangle" aria-hidden="true"></i> Les sauvegardes sont désactivées (<code>BACKUP_ENABLED=false</code>). La création de nouvelles sauvegardes (planifiée ou manuelle) est bloquée ; les sauvegardes déjà existantes restent consultables et téléchargeables ci-dessous.</p>
+        </div>
+        {% endif %}
+
+        <div class="box">
+            <h2 class="subtitle"><i class="fas fa-info-circle" aria-hidden="true"></i> Configuration</h2>
+            <div class="columns is-multiline">
+                <div class="column is-one-quarter">
+                    <p><strong>Sauvegardes automatiques</strong></p>
+                    <p>{{ "Activées" if config.enabled else "Désactivées" }}</p>
+                </div>
+                <div class="column is-one-quarter">
+                    <p><strong>Locale</strong></p>
+                    <p>{{ "Activée (" + config.local_dir + ")" if config.local_enabled else "Désactivée" }}</p>
+                </div>
+                <div class="column is-one-quarter">
+                    <p><strong>S3</strong></p>
+                    <p>{{ "Activée (" + config.s3_bucket + ")" if config.s3_enabled and config.s3_bucket else "Désactivée" }}</p>
+                </div>
+                <div class="column is-one-quarter">
+                    <p><strong>Rétention</strong></p>
+                    <p>{{ config.retention_days }} jours / {{ config.max_backups }} max</p>
+                </div>
+            </div>
+
+            <div class="buttons mt-3">
+                <form method="POST" action="{{ url_for('admin.backups_create') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="button is-success is-small" {{ "disabled" if not config.enabled }}
+                            title="{{ 'Activez BACKUP_ENABLED pour créer une sauvegarde' if not config.enabled else '' }}">
+                        <i class="fas fa-play" aria-hidden="true"></i>&nbsp; Créer une sauvegarde maintenant
+                    </button>
+                </form>
+                <form method="POST" action="{{ url_for('admin.backups_cleanup') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="button is-warning is-small">
+                        <i class="fas fa-broom" aria-hidden="true"></i>&nbsp; Nettoyer les sauvegardes expirées
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="box">
+            <h2 class="subtitle"><i class="fas fa-hdd" aria-hidden="true"></i> Sauvegardes locales</h2>
+            {% if local_backups %}
+            <div class="table-container">
+                <table class="table is-fullwidth is-striped">
+                    <thead>
+                        <tr>
+                            <th>Fichier</th>
+                            <th>Taille</th>
+                            <th>Date</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for backup in local_backups %}
+                        <tr>
+                            <td>{{ backup.filename }}</td>
+                            <td>{{ (backup.size / 1024 / 1024) | round(2) }} Mo</td>
+                            <td>{{ backup.modified }}</td>
+                            <td>
+                                <a class="button is-info is-small" href="{{ url_for('admin.backups_download_local', filename=backup.filename) }}"
+                                   aria-label="Télécharger {{ backup.filename }}" title="Télécharger">
+                                    <i class="fas fa-download" aria-hidden="true"></i>&nbsp; Télécharger
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p>Aucune sauvegarde locale disponible.</p>
+            {% endif %}
+        </div>
+
+        <div class="box">
+            <h2 class="subtitle"><i class="fas fa-cloud" aria-hidden="true"></i> Sauvegardes S3</h2>
+            {% if s3_backups %}
+            <div class="table-container">
+                <table class="table is-fullwidth is-striped">
+                    <thead>
+                        <tr>
+                            <th>Clé</th>
+                            <th>Taille</th>
+                            <th>Date</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for backup in s3_backups %}
+                        <tr>
+                            <td>{{ backup.key }}</td>
+                            <td>{{ (backup.size / 1024 / 1024) | round(2) }} Mo</td>
+                            <td>{{ backup.modified }}</td>
+                            <td>
+                                <a class="button is-info is-small" href="{{ url_for('admin.backups_download_s3', key=backup.key) }}"
+                                   aria-label="Télécharger {{ backup.key }}" title="Télécharger">
+                                    <i class="fas fa-download" aria-hidden="true"></i>&nbsp; Télécharger
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p>Aucune sauvegarde S3 disponible.</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

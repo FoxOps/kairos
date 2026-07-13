@@ -24,9 +24,11 @@ Ce guide explique comment configurer et utiliser le système de sauvegarde autom
    - [Nettoyage](#nettoyage)
 7. [Automatisation avec Cron](#-automatisation-avec-cron)
 8. [Automatisation avec Systemd](#-automatisation-avec-systemd)
-9. [Sécurité](#-sécurité)
-10. [Dépannage](#-dépannage)
-11. [Exemples de configuration](#-exemples-de-configuration)
+9. [Interface d'administration](#️-interface-dadministration)
+10. [Docker](#-docker)
+11. [Sécurité](#-sécurité)
+12. [Dépannage](#-dépannage)
+13. [Exemples de configuration](#-exemples-de-configuration)
 
 ---
 
@@ -109,7 +111,7 @@ Le système de sauvegarde utilise les variables d'environnement suivantes :
 
 | Variable | Description | Valeur par défaut |
 |----------|-------------|-------------------|
-| `BACKUP_ENABLED` | Activer/désactiver les sauvegardes | `true` |
+| `BACKUP_ENABLED` | Activer/désactiver les sauvegardes (opt-in) | `false` |
 | `BACKUP_LOCAL_ENABLED` | Activer la sauvegarde locale | `true` |
 | `BACKUP_S3_ENABLED` | Activer la sauvegarde S3 | `false` |
 | `BACKUP_LOG_LEVEL` | Niveau de logging | `INFO` |
@@ -143,12 +145,17 @@ Le système de sauvegarde utilise les variables d'environnement suivantes :
 | `BACKUP_RETENTION_DAYS` | Nombre de jours à conserver | `30` |
 | `BACKUP_MAX_BACKUPS` | Nombre maximum de sauvegardes | `30` |
 
-#### Chiffrement (optionnel)
+#### Notifications par email
 
 | Variable | Description | Valeur par défaut |
 |----------|-------------|-------------------|
-| `BACKUP_ENCRYPT` | Chiffrer les sauvegardes | `false` |
-| `BACKUP_ENCRYPTION_KEY` | Clé de chiffrement | `None` |
+| `BACKUP_NOTIFY_ON_SUCCESS` | Email en cas de succès | `false` |
+| `BACKUP_NOTIFY_ON_FAILURE` | Email en cas d'échec | `true` |
+| `BACKUP_NOTIFICATION_EMAIL` | Destinataire des alertes | `None` |
+
+Réutilise la configuration SMTP des notifications par email (voir
+[`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-configuration-des-notifications)) -
+donc aussi soumis à `NOTIFICATIONS_ENABLED`.
 
 ### Fichier de configuration JSON
 
@@ -170,7 +177,6 @@ Vous pouvez créer un fichier de configuration JSON au lieu d'utiliser les varia
   "retention_days": 30,
   "max_backups": 30,
   "compress": true,
-  "encrypt": false,
   "verify_backup": true,
   "backup_prefix": "leviia_backup",
   "log_level": "INFO"
@@ -542,6 +548,41 @@ sudo systemctl status leviia-backup.service
 
 ---
 
+## 🖥️ Interface d'administration
+
+En plus du script en ligne de commande, un tableau de bord est
+disponible sous `/admin/backups` (réservé aux comptes admin) :
+
+- Aperçu de la configuration active (activation, dossier local, bucket S3, rétention)
+- Liste des sauvegardes locales et S3 (nom, taille, date)
+- Bouton **Créer une sauvegarde maintenant** (refusé si `BACKUP_ENABLED=false`,
+  même garde-fou que le script cron)
+- Bouton **Nettoyer les sauvegardes expirées** (applique `BACKUP_RETENTION_DAYS`/`BACKUP_MAX_BACKUPS`)
+- Téléchargement d'une sauvegarde : les fichiers locaux sont servis
+  directement, les fichiers S3 sont téléchargés côté serveur vers un
+  fichier temporaire puis diffusés au navigateur (pas d'URL présignée
+  exposée directement)
+
+La lecture (liste/téléchargement) reste possible même si
+`BACKUP_ENABLED=false` - seule la création de nouvelles sauvegardes est
+bloquée par cette variable.
+
+---
+
+## 🐳 Docker
+
+Si vous déployez avec `docker/docker-compose.yml`, réglez
+`BACKUP_ENABLED=true` dans `docker/.env` pour que `crond` (déjà
+utilisé pour les rappels par email) démarre également la tâche de
+sauvegarde quotidienne (planning dans `docker/crontabs/appuser`, 3h du
+matin). Pour que les sauvegardes locales survivent aux recréations du
+conteneur, réglez `BACKUP_LOCAL_DIR=/app/data/backups` (le volume
+`./data:/app/data` est déjà monté - pas de volume supplémentaire à
+ajouter). Voir [`deployment/docker.md`](docker.md) pour le détail de
+l'intégration.
+
+---
+
 ## 🔒 Sécurité
 
 ### Bonnes pratiques de sécurité
@@ -551,22 +592,20 @@ sudo systemctl status leviia-backup.service
    - Utilisez des variables d'environnement ou des fichiers de configuration sécurisés
    - Limitez les permissions IAM au strict minimum
 
-2. **Chiffrez les sauvegardes** (optionnel)
-   - Activez `BACKUP_ENCRYPT=true`
-   - Définissez une clé de chiffrement forte : `BACKUP_ENCRYPTION_KEY`
-
-3. **Limitez l'accès aux sauvegardes**
+2. **Limitez l'accès aux sauvegardes**
    - Stockez les sauvegardes dans un bucket privé
    - Utilisez des politiques de bucket restrictives
+   - Côté interface d'administration, seuls les comptes admin
+     (`@admin_required`) peuvent lister/créer/télécharger des sauvegardes
 
-4. **Utilisez HTTPS**
+3. **Utilisez HTTPS**
    - Activez `BACKUP_S3_USE_SSL=true` (activé par défaut)
 
-5. **Rotation des clés**
+4. **Rotation des clés**
    - Changez régulièrement vos clés d'accès S3
    - Utilisez IAM Roles pour AWS si possible
 
-6. **Sauvegardes locales**
+5. **Sauvegardes locales**
    - Stockez les sauvegardes locales dans un dossier sécurisé
    - Limitez les permissions du dossier : `chmod 700 backups/`
 

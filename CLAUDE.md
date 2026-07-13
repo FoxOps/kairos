@@ -92,17 +92,21 @@ anti-duplicate guard for the weekly email reminders.
 `app/repositories/` (data access — `UserRepository`, `GroupRepository`, `ShiftRepository`,
 `ShiftTypeRepository`, `OnCallRepository`, `LeaveRepository`) and `app/services/` (business logic —
 `UserService`, `GroupService`, `ShiftService`, `ShiftTypeService`, `OnCallService`, `LeaveService`,
-`ExportService`, `ScheduleService`, `AutomationAdminService`, `NotificationService`) are implemented
-and wired up. Routes in `app/routes/` (both the `main` and `admin` blueprints, split across
-multiple files — e.g. `shift_routes.py`, `admin_user_routes.py` — that all register onto the same
-blueprint object defined in `main.py`/`admin.py`) parse the request, call a service, and turn the
-result into a flash/redirect/JSON response; services call repositories for data access and
+`ExportService`, `ScheduleService`, `AutomationAdminService`, `NotificationService`, `BackupService`)
+are implemented and wired up. Routes in `app/routes/` (both the `main` and `admin` blueprints, split
+across multiple files — e.g. `shift_routes.py`, `admin_user_routes.py` — that all register onto the
+same blueprint object defined in `main.py`/`admin.py`) parse the request, call a service, and turn
+the result into a flash/redirect/JSON response; services call repositories for data access and
 encapsulate validation (e.g. `can_add_shift`) and cross-cutting effects (e.g. shift rebalance after
 a leave change). `app/utils/automation/` (`OnCallAutomation`, `AdvancedShiftAutomation` — the
 generic `ShiftAutomation`/`BusinessRules` engine was removed as dead code, PR #105, see
 `report/` for details) is a pre-existing business-logic layer used directly by services rather than
 being duplicated. `NotificationService` is the one service with no route calling it — it's invoked
 by the standalone cron scripts `scripts/send_shift_notifications.py`/`send_oncall_notifications.py`.
+`BackupService` (`app/services/backup_service.py`) is the exception in the other direction — it's
+`app/` code that imports from `scripts/` (`scripts/backup_config.py`/`backup_database.py`), safe
+because that dependency only ever goes one way (`scripts/` never imports `app/`, see "Database
+backups" below).
 
 ### utils/ layout
 
@@ -145,6 +149,29 @@ per-recipient SMTP failures are logged and don't block the rest of the batch); i
 `app/utils/notifications/email_sender.py::send_email()` (stdlib `smtplib`/`email`, no Flask-Mail
 dependency) with Jinja2 templates rendered from `app/templates/emails/`. `NotificationLog` is the
 idempotency guard — re-running a script for an already-processed period is a no-op.
+
+### Database backups
+
+`scripts/backup_database.py` (local + S3/S3-compatible, compression, integrity verification,
+retention/cleanup) is deliberately independent of `app/` — no import of anything under `app.*`,
+verified by a regression test that greps the file's source — so it keeps working even if the Flask
+app can't boot (the disaster-recovery scenario it exists for). Config lives in
+`scripts/backup_config.py::BackupConfig` (same dataclass-from-env pattern as
+`notification_config.py`), gated by `BACKUP_ENABLED` (opt-in, `false` by default). Success/failure
+alerts (`send_backup_notification()`) reuse the notifications SMTP config
+(`scripts/notification_config.py`) via a small self-contained SMTP call rather than importing
+`app.utils.notifications.email_sender` — the same isolation constraint applies in reverse (`app/`
+doesn't import from `scripts/`, except `BackupService`, see above) — so also gated by
+`NOTIFICATIONS_ENABLED`. `app/services/backup_service.py::BackupService` wraps the script's pure
+functions (`create_backup`, `list_backups`, `cleanup_local_backups`/`cleanup_s3_backups`) for
+`app/routes/admin_backup_routes.py` (`/admin/backups`) — local file downloads are path-traversal
+guarded (prefix + resolved-path containment check); S3 downloads go through a server-side temp file
+(`send_file` + `call_on_close` cleanup), not a presigned URL. `BackupService.create_now()` re-checks
+`BACKUP_ENABLED` itself (the script's own `main()` guard doesn't cover this path) so manual creation
+from the admin UI honors the same switch as the cron job; listing/downloading existing backups stays
+available regardless. Docker: `docker/entrypoint.sh` starts `crond` if `NOTIFICATIONS_ENABLED` and/or
+`BACKUP_ENABLED` is true (one shared crond, `docker/crontabs/appuser` always has both scripts'
+entries — each script no-ops internally if its own flag is off).
 
 ## Testing conventions
 

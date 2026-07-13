@@ -99,9 +99,11 @@ app/
 │                          # ShiftTypeService, OnCallService, LeaveService,
 │                          # ExportService, ScheduleService, AutomationAdminService,
 │                          # NotificationService (rappels email, appelé par
-│                          # scripts/send_*_notifications.py, pas par une route)
+│                          # scripts/send_*_notifications.py, pas par une route),
+│                          # BackupService (wrappe scripts/backup_database.py
+│                          # pour /admin/backups)
 ├── routes/                 # auth.py, main.py + {dashboard,shift,oncall,leave}_routes.py,
-│                          # admin.py + admin_{user,group,shift_type,automation}_routes.py,
+│                          # admin.py + admin_{user,group,shift_type,automation,backup}_routes.py,
 │                          # export.py
 ├── utils/
 │   ├── automation/         # AdvancedShiftAutomation (moteur unique de génération
@@ -128,10 +130,17 @@ app/
 `scripts/` (hors `app/`) contient les points d'entrée cron autonomes -
 `send_shift_notifications.py`/`send_oncall_notifications.py` +
 `notification_config.py` (config SMTP via variables d'environnement) -
-suivant le même pattern que `backup_database.py`/`backup_config.py`.
-Pas de scheduler intégré à l'application Flask (pas d'APScheduler) :
-ces scripts sont déclenchés par une tâche cron externe, voir
-`scripts/cron_example.sh`.
+suivant le même pattern que `backup_database.py`/`backup_config.py`
+(sauvegarde locale/S3, indépendant de `app/` par conception - reprise
+après sinistre). Pas de scheduler intégré à l'application Flask (pas
+d'APScheduler) : ces scripts sont déclenchés par une tâche cron externe
+(voir `scripts/cron_example.sh`), ou, en Docker, par `crond` démarré par
+`docker/entrypoint.sh` dans le même conteneur (`NOTIFICATIONS_ENABLED`/
+`BACKUP_ENABLED`, planning dans `docker/crontabs/appuser`).
+`BackupService` (`app/services/`) est la seule exception au sens
+inverse - il importe `scripts/backup_config.py`/`backup_database.py`
+pour l'interface d'administration, sans casser l'isolation puisque
+`scripts/` n'importe jamais `app/`.
 
 ## Modèles de données
 
