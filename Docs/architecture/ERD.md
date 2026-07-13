@@ -10,6 +10,7 @@ erDiagram
     USER ||--o{ SHIFT : "assigné à"
     USER ||--o{ ON_CALL : "assigné à"
     USER ||--o{ LEAVE : "demande"
+    USER ||--o{ NOTIFICATION_LOG : "reçoit"
     SHIFT_TYPE ||--o{ SHIFT : "définit le créneau de"
 
     GROUP {
@@ -79,6 +80,15 @@ erDiagram
         datetime created_at
         datetime updated_at
     }
+
+    NOTIFICATION_LOG {
+        int id PK
+        int user_id FK
+        string notification_type "shift_weekly ou oncall_weekly"
+        date period_start "UK avec user_id+notification_type"
+        datetime created_at
+        datetime updated_at
+    }
 ```
 
 ## Notes
@@ -91,6 +101,10 @@ erDiagram
 - **`Leave` n'a pas de champ `reason`** — l'ancienne documentation API
   décrivait un champ `reason: string` sur les congés qui n'a jamais
   existé dans le modèle.
+- **`NotificationLog`** : contrainte unique sur
+  `(user_id, notification_type, period_start)` - empêche un double
+  envoi si un script de notification (`scripts/send_*_notifications.py`)
+  est relancé pour une période déjà traitée.
 - **Index composites** (au-delà des index simples listés ci-dessus,
   définis dans les classes de modèle) :
   - `Shift(user_id, date)` et `Shift(date, start_time)`

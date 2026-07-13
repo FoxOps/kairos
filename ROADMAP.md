@@ -1,13 +1,12 @@
 # 🗺️ Feuille de Route - Leviia Schedule
 
-> **Version** : 5.3.0 - Amélioration génération automatique shifts/astreintes (PR #105)
-> **Version app** : 0.7.2 (`/version`) - corrections du moteur
-> d'automatisation (astreintes en double, rééquilibrage non-atomique,
-> confirmations de suppression, ordre de rotation) + nouvelle règle
-> métier effectif minimum + retouches de textes (index, footer, admin)
+> **Version** : 5.4.0 - Notifications par email (PR #106)
+> **Version app** : 0.7.3 (`/version`) - rappels hebdomadaires par
+> email (shifts le dimanche, astreinte le jeudi), SMTP via variables
+> d'environnement, scripts cron autonomes
 > **Dernière mise à jour** : Juillet 2026
-> **Statut** : Développement actif - **862 tests passent** ✅ (dont 27 E2E navigateur réel)
-> **Commit actuel** : branche feature/automation-improvements (PR #105)
+> **Statut** : Développement actif - **891 tests passent** ✅ (dont 27 E2E navigateur réel)
+> **Commit actuel** : branche feature/email-notifications (PR #106)
 >
 > ℹ️ Ne pas confondre avec les « Phases » de refonte (`report/Phase 1` à
 > `report/Phase 6`, un chantier qualité/infra achevé) et les « Phases » de
@@ -210,7 +209,7 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 
 | Élément | Statut | Priorité | Livraison estimée | Détails |
 |---------|--------|----------|-------------------|---------|
-| **Notifications par email** | ❌ | **Haute** | v0.7 | Alertes pour les astreintes et shifts |
+| **Notifications par email** | ✅ | **Haute** | v0.7 | Rappels hebdomadaires shifts (dimanche) et astreinte (jeudi), SMTP via variables d'environnement, scripts cron autonomes (PR #106) |
 | **Échanges de shifts entre utilisateurs** | ❌ | Moyenne | v0.8 | Système de demande et validation |
 | **Multi-langues (i18n)** | ❌ | Moyenne | v0.8 | Français, Anglais, Espagnol |
 | **Gestion des fuseaux horaires** | ❌ | Moyenne | v0.8 | Support multi-timezone |
@@ -274,7 +273,7 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 ### Version 0.7 (Fonctionnalités avancées - **items Haute priorité terminés**)
 - ✅ Refonte UI/UX (PR #103 : palette, burger mobile, composants, dashboard, audit responsive)
 - ✅ Calendrier interactif (drag & drop, FullCalendar)
-- ❌ Notifications par email
+- ✅ Notifications par email (PR #106)
 - ❌ Multi-langues (i18n)
 
 ### Version 0.8 (Intégrations)
@@ -509,6 +508,7 @@ Pour toute question concernant la feuille de route :
 
 | Version | Date | Auteur | Changements |
 |---------|------|--------|-------------|
+| 5.4.0 | Juillet 2026 | Claude Code | Notifications par email (PR #106) : rappel hebdomadaire des shifts (dimanche, 24h avant le lundi) et de l'astreinte (jeudi, 24h avant le vendredi 21h), un email par semaine et par utilisateur (`NotificationLog` anti-doublon), SMTP configurable via variables d'environnement, deux scripts cron autonomes (`send_shift_notifications.py`/`send_oncall_notifications.py`, pattern `backup_database.py`), gabarits HTML + texte. Documentation mise à jour (README, CLAUDE.md, ADMIN_GUIDE.md, ARCHITECTURE.md, ERD.md, ENVIRONMENT_VARIABLES.md) et références obsolètes à `ShiftAutomation`/`business_rules.py`/`security/token_manager.py` (retirés en PR #105) corrigées au passage. Version app 0.7.2 -> 0.7.3. 891 tests |
 | 5.3.0 | Juillet 2026 | Claude Code | Retouches de textes UI (PR #105) : titre calendrier index ("Calendrier interactif" -> "Calendrier"), description footer (l'app ne gère pas les "organisations"), boutons "Retour à l'admin" ajoutés sur /admin/users et /admin/automation (renommés depuis "Retour au tableau de bord" sur /admin/groups pour éviter la confusion avec le tableau de bord utilisateur), occurrences de "nouvelles règles métiers" nettoyées sur /admin/automation. Version app 0.7.1 -> 0.7.2 |
 | 5.2.0 | Juillet 2026 | Claude Code | Amélioration génération automatique shifts/astreintes (PR #105) : retrait du moteur ShiftAutomation mort, dry-run "Génération complète" réparé, ordre de rotation respecté après congé, rééquilibrage après congé rendu atomique, nouvelle règle métier effectif minimum 1 personne, corrections confirmations de suppression (race condition JS), bouton "Sauvegarder l'ordre", astreintes en double sur vendredis adjacents, rechargement complet du calendrier remplacé par un rafraîchissement ciblé. Version app 0.7.0 -> 0.7.1. 862 tests (dont 27 E2E navigateur réel) |
 | 5.1.0 | Juillet 2026 | Claude Code | Refonte UI/UX terminée et mergée (PR #103) : burger mobile (bug bloquant corrigé), palette teal/vert douce, composants rafraîchis, bug graphique dashboard corrigé, 3 bugs CSP trouvés et corrigés (2 pages avec script inline cassées - copie ICS, drag&drop rotation - + icônes calendrier invisibles, font-src manquant, trouvé via vérification réelle en navigateur/Playwright), audit responsive. Version app 0.6.0 -> 0.7.0. 781 tests |

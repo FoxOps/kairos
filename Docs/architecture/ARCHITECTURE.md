@@ -92,23 +92,27 @@ app/
 ├── auth/                  # decorators.py (garde-fous de route), user_manager.py,
 │                          # oidc_auth.py (SSO via Authlib)
 ├── models/                 # BaseModel + Group, User, ShiftType, Shift, OnCall,
-│                          # Leave, AutomationConfig
+│                          # Leave, AutomationConfig, NotificationLog
 ├── repositories/           # UserRepository, GroupRepository, ShiftRepository,
 │                          # ShiftTypeRepository, OnCallRepository, LeaveRepository
 ├── services/               # UserService, GroupService, ShiftService,
 │                          # ShiftTypeService, OnCallService, LeaveService,
-│                          # ExportService, ScheduleService, AutomationAdminService
+│                          # ExportService, ScheduleService, AutomationAdminService,
+│                          # NotificationService (rappels email, appelé par
+│                          # scripts/send_*_notifications.py, pas par une route)
 ├── routes/                 # auth.py, main.py + {dashboard,shift,oncall,leave}_routes.py,
 │                          # admin.py + admin_{user,group,shift_type,automation}_routes.py,
 │                          # export.py
 ├── utils/
-│   ├── automation/         # AdvancedShiftAutomation, OnCallAutomation,
-│   │                      # ShiftAutomation, BusinessRules, status
+│   ├── automation/         # AdvancedShiftAutomation (moteur unique de génération
+│   │                      # de shifts), OnCallAutomation, status
 │   ├── cache/              # init_cache, cache_manager (fallback dict cache)
 │   ├── export/              # génération ICS (icalendar)
 │   ├── helpers/             # common_helpers.py (can_add_shift/leave/oncall,
 │   │                      # formatage/parsing de dates)
 │   ├── logging/             # logger multi-handler (app/error/http/audit/sql/auth)
+│   ├── notifications/       # email_sender.py (smtplib/email, stdlib) - appelé
+│   │                      # par NotificationService, pas de route associée
 │   ├── optimizations/       # eager_load (seul décorateur restant, Phase 4)
 │   ├── security/            # (vide depuis Phase 4 — encryption.py et
 │   │                      # token_manager.py supprimés, aucun appelant réel)
@@ -117,8 +121,17 @@ app/
 ├── static/
 │   ├── css/                 # variables/base/utilities/components/layout/themes/vendor
 │   └── js/                  # main.js (entrée module ES6) + theme/utils/notifications
-└── templates/                # Jinja2, macros/errors.html pour les pages d'erreur
+└── templates/                # Jinja2, macros/errors.html pour les pages d'erreur,
+                              # emails/ pour les gabarits de notification (HTML + texte)
 ```
+
+`scripts/` (hors `app/`) contient les points d'entrée cron autonomes -
+`send_shift_notifications.py`/`send_oncall_notifications.py` +
+`notification_config.py` (config SMTP via variables d'environnement) -
+suivant le même pattern que `backup_database.py`/`backup_config.py`.
+Pas de scheduler intégré à l'application Flask (pas d'APScheduler) :
+ces scripts sont déclenchés par une tâche cron externe, voir
+`scripts/cron_example.sh`.
 
 ## Modèles de données
 
@@ -127,7 +140,10 @@ Voir [`ERD.md`](ERD.md) pour le schéma entité-relation complet.
 Résumé : `Group` 1:N `User` 1:N `Shift`/`OnCall`/`Leave` (chacun 1:N
 depuis `User`), `ShiftType` 1:N `Shift`. `AutomationConfig` est une table
 autonome (clé/valeur JSON) sans relation, utilisée pour persister l'ordre
-de rotation des astreintes.
+de rotation des astreintes. `NotificationLog` (user_id, notification_type,
+period_start, contrainte unique sur les trois) enregistre les rappels
+email déjà envoyés, pour empêcher un double envoi si un script cron est
+relancé sur la même période.
 
 ## Authentification
 
