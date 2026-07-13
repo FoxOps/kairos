@@ -829,49 +829,35 @@ pour la structure complète.
 
 ### Sauvegarde de la Base de Données
 
-#### SQLite
+Le système de sauvegarde intégré (`scripts/backup_database.py`) gère la
+sauvegarde locale et/ou S3/S3-compatible, la compression, la
+vérification d'intégrité, la rétention et les alertes email - voir le
+[Guide de Sauvegarde](BACKUP_GUIDE.md) pour le détail complet. Piloté
+entièrement par variables d'environnement (`BACKUP_ENABLED` en premier
+lieu, voir [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-configuration-des-sauvegardes)) -
+désactivé par défaut.
+
+Deux façons de déclencher une sauvegarde :
+
+- **Interface d'administration** (`/admin/backups`) : configuration
+  active, liste des sauvegardes locales/S3, création à la demande,
+  nettoyage, téléchargement. La création manuelle est refusée si
+  `BACKUP_ENABLED=false`.
+- **Cron** (recommandé pour l'automatisation) : voir
+  [Automatisation avec Cron](BACKUP_GUIDE.md#-automatisation-avec-cron)
+  ou, en Docker, `BACKUP_ENABLED=true` suffit (même conteneur que
+  l'application, planning dans `docker/crontabs/appuser`, voir
+  [`deployment/docker.md`](../deployment/docker.md)).
+
+Pour une sauvegarde ponctuelle manuelle sans passer par ce système
+(dépannage, avant une opération risquée) :
 
 ```bash
-# Sauvegarder
+# SQLite
 cp instance/app.db instance/app.db.backup-$(date +%Y%m%d)
 
-# Restaurer
-cp instance/app.db.backup-20260615 instance/app.db
-```
-
-#### PostgreSQL
-
-```bash
-# Sauvegarder
+# PostgreSQL
 pg_dump leviia > leviia-backup-$(date +%Y%m%d).sql
-
-# Restaurer
-psql leviia < leviia-backup-20260615.sql
-```
-
-### Sauvegarde Automatique
-
-Créez un script de sauvegarde automatique :
-
-```bash
-#!/bin/bash
-# backup.sh
-
-BACKUP_DIR="/backups/leviia"
-DATE=$(date +%Y%m%d)
-
-mkdir -p $BACKUP_DIR
-cp instance/app.db $BACKUP_DIR/app.db.backup-$DATE
-
-# Garder seulement les 7 derniers jours
-find $BACKUP_DIR -name "app.db.backup-*" -mtime +7 -delete
-```
-
-Puis ajoutez une tâche cron :
-
-```bash
-# Tous les jours à minuit
-0 0 * * * /chemin/vers/backup.sh
 ```
 
 ### Mise à Jour de l'Application

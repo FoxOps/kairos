@@ -10,7 +10,7 @@ leviia-schedule/
 └── docker/
     ├── Dockerfile          # Image Docker ultra-légère
     ├── entrypoint.sh       # Script de démarrage (serveur web + crond conditionnel)
-    ├── crontabs/appuser    # Planification des rappels email (crond)
+    ├── crontabs/appuser    # Planification des rappels email et sauvegardes (crond)
     ├── docker-compose.yml  # Configuration de base
     ├── Makefile            # Commandes simplifiées
     ├── .env                # Variables d'environnement (à créer, non committé)
@@ -131,21 +131,26 @@ DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe_sécurisé
 ### entrypoint.sh
 - **Initialisation** : Crée la base de données SQLite si elle n'existe pas
 - **Données par défaut** : Crée les types de shifts, le groupe et l'admin
-- **Notifications par email** : si `NOTIFICATIONS_ENABLED=true` (voir
-  `.env`), démarre `crond` (busybox, déjà présent dans l'image Alpine,
-  pas de paquet supplémentaire) en arrière-plan avant de lancer le
-  serveur web - planning dans `docker/crontabs/appuser`. Rien de plus à
-  configurer : une seule variable d'environnement, aucun service Docker
-  supplémentaire à gérer.
+- **Notifications par email et sauvegardes** : si `NOTIFICATIONS_ENABLED=true`
+  et/ou `BACKUP_ENABLED=true` (voir `.env`), démarre `crond` (busybox,
+  déjà présent dans l'image Alpine, pas de paquet supplémentaire) en
+  arrière-plan avant de lancer le serveur web - planning dans
+  `docker/crontabs/appuser`. Rien de plus à configurer : une variable
+  d'environnement par fonctionnalité, aucun service Docker supplémentaire
+  à gérer. Pour que les sauvegardes locales survivent aux recréations du
+  conteneur, réglez `BACKUP_LOCAL_DIR=/app/data/backups` (le volume
+  `./data:/app/data` est déjà monté).
 - **Sélection serveur** : 
   - `development` → `python run.py` (avec reloader)
   - `production` → `gunicorn` (1 worker pour SQLite)
 
 ### docker-compose.yml
 - **Service web** : conteneur avec l'application (et, si activé, les
-  rappels par email - même conteneur, voir ci-dessus) - voir
+  rappels par email et/ou les sauvegardes - même conteneur, voir
+  ci-dessus) - voir
   [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-configuration-des-notifications)
-  pour la configuration SMTP
+  pour la configuration SMTP et
+  [`deployment/BACKUP_GUIDE.md`](BACKUP_GUIDE.md) pour les sauvegardes
 - **Volumes** : Persistance des données et logs
 - **Ports** : 5000 exposé
 

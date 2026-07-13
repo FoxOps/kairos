@@ -43,9 +43,23 @@ class BackupService:
     @staticmethod
     def create_now() -> dict[str, Any]:
         """Crée une sauvegarde immédiate (local et/ou S3 selon la
-        config) et envoie l'alerte email si configurée."""
+        config) et envoie l'alerte email si configurée. Refuse si
+        BACKUP_ENABLED=false - même garde-fou que le script cron, pour
+        que la désactivation soit effective partout (pas seulement pour
+        le planning automatique)."""
         config = BackupService.get_config()
         logger = BackupService._logger()
+
+        if not config.enabled:
+            logger.info("Sauvegarde manuelle refusée (BACKUP_ENABLED=false)")
+            return {
+                "success": False,
+                "local": None,
+                "s3": None,
+                "timestamp": None,
+                "errors": ["Les sauvegardes sont désactivées (BACKUP_ENABLED=false)"],
+            }
+
         results = create_backup(config, logger)
         send_backup_notification(config, results, logger)
         return results

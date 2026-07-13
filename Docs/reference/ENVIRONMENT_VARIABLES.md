@@ -16,6 +16,7 @@
 - [📅 Configuration des Types de Shifts](#-configuration-des-types-de-shifts)
 - [📤 Configuration de l'Export ICS](#-configuration-de-lexport-ics)
 - [📧 Configuration des Notifications](#-configuration-des-notifications)
+- [💾 Configuration des Sauvegardes](#-configuration-des-sauvegardes)
 - [🧹 Configuration du Nettoyage Automatique](#-configuration-du-nettoyage-automatique)
 - [⚡ Configuration du Cache](#-configuration-du-cache)
 - [🎯 Configuration par Environnement](#-configuration-par-environnement)
@@ -223,6 +224,44 @@ empêche les doublons si un script est relancé).
 Si `NOTIFICATIONS_ENABLED=false`, ou si `NOTIFICATION_FROM_EMAIL`/
 `SMTP_HOST` manquent, les deux scripts se terminent silencieusement
 sans rien envoyer (code de sortie 0).
+
+---
+
+## 💾 Configuration des Sauvegardes
+
+Sauvegarde de la base de données (locale et/ou S3/S3-compatible), gérée
+par `scripts/backup_database.py` - à déclencher via cron (voir
+`scripts/cron_example.sh`) ou depuis l'interface d'administration
+(`/admin/backups`). Voir [`deployment/BACKUP_GUIDE.md`](../deployment/BACKUP_GUIDE.md)
+pour le détail.
+
+| Variable | Type | Défaut | Description | Obligatoire |
+|----------|------|--------|-------------|-------------|
+| `BACKUP_ENABLED` | booléen | `false` | Active les sauvegardes (script cron *et* création manuelle depuis l'admin) | ❌ Non |
+| `BACKUP_LOCAL_ENABLED` | booléen | `true` | Active la sauvegarde locale | ❌ Non |
+| `BACKUP_LOCAL_DIR` | string | `backups` | Dossier de sauvegarde locale (en Docker, utilisez un chemin sous `/app/data` pour la persistance) | ❌ Non |
+| `BACKUP_S3_ENABLED` | booléen | `false` | Active la sauvegarde S3/S3-compatible (nécessite `boto3`) | ❌ Non |
+| `BACKUP_S3_BUCKET` | string | `""` | Nom du bucket S3 | ❌ Non (requis si activé) |
+| `BACKUP_S3_ENDPOINT` | string | `""` | Endpoint S3-compatible (MinIO, etc.) - vide pour AWS S3 | ❌ Non |
+| `BACKUP_S3_REGION` | string | `eu-west-1` | Région S3 | ❌ Non |
+| `BACKUP_S3_ACCESS_KEY` | string | `""` | Clé d'accès S3 | ❌ Non |
+| `BACKUP_S3_SECRET_KEY` | string | `""` | Clé secrète S3 | ❌ Non |
+| `BACKUP_S3_PREFIX` | string | `leviia-schedule` | Préfixe des clés S3 | ❌ Non |
+| `BACKUP_S3_USE_SSL` | booléen | `true` | Utiliser SSL pour la connexion S3 | ❌ Non |
+| `BACKUP_RETENTION_DAYS` | entier | `30` | Nombre de jours de rétention | ❌ Non |
+| `BACKUP_MAX_BACKUPS` | entier | `30` | Nombre maximal de sauvegardes conservées | ❌ Non |
+| `BACKUP_COMPRESS` | booléen | `true` | Compresser les sauvegardes locales (gzip) | ❌ Non |
+| `BACKUP_VERIFY` | booléen | `true` | Vérifier l'intégrité après création | ❌ Non |
+| `BACKUP_NOTIFY_ON_SUCCESS` | booléen | `false` | Envoyer un email en cas de succès (réutilise la config SMTP ci-dessus) | ❌ Non |
+| `BACKUP_NOTIFY_ON_FAILURE` | booléen | `true` | Envoyer un email en cas d'échec | ❌ Non |
+| `BACKUP_NOTIFICATION_EMAIL` | string | `""` | Destinataire des alertes de sauvegarde | ❌ Non (requis si notify activé) |
+
+Si `BACKUP_ENABLED=false`, le script cron se termine silencieusement
+(code de sortie 0) et l'interface d'administration refuse la création
+de nouvelles sauvegardes - les sauvegardes déjà existantes restent
+consultables/téléchargeables. Les alertes email réutilisent la
+configuration SMTP de la section Notifications ci-dessus, donc aussi
+soumises à `NOTIFICATIONS_ENABLED`.
 
 ---
 

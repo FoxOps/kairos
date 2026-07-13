@@ -42,6 +42,7 @@ class TestListAllBackups:
         db_path = tmp_path / "source" / "app.db"
         make_sqlite_file(db_path)
         monkeypatch.setenv("DATABASE_URL", f"sqlite:///{db_path}")
+        monkeypatch.setenv("BACKUP_ENABLED", "true")
 
         create_results = BackupService.create_now()
         assert create_results["success"] is True
@@ -55,11 +56,23 @@ class TestCreateNow:
         db_path = tmp_path / "source" / "app.db"
         make_sqlite_file(db_path)
         monkeypatch.setenv("DATABASE_URL", f"sqlite:///{db_path}")
+        monkeypatch.setenv("BACKUP_ENABLED", "true")
 
         results = BackupService.create_now()
 
         assert results["success"] is True
         assert results["local"]["success"] is True
+
+    def test_refuses_when_disabled(self, tmp_path, monkeypatch):
+        db_path = tmp_path / "source" / "app.db"
+        make_sqlite_file(db_path)
+        monkeypatch.setenv("DATABASE_URL", f"sqlite:///{db_path}")
+        monkeypatch.delenv("BACKUP_ENABLED", raising=False)
+
+        results = BackupService.create_now()
+
+        assert results["success"] is False
+        assert "BACKUP_ENABLED" in results["errors"][0]
 
 
 class TestCleanupNow:

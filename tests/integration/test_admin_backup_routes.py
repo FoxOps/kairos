@@ -50,6 +50,7 @@ class TestBackupsCreate:
         db_path = tmp_path / "source" / "app.db"
         make_sqlite_file(db_path)
         monkeypatch.setenv("DATABASE_URL", f"sqlite:///{db_path}")
+        monkeypatch.setenv("BACKUP_ENABLED", "true")
 
         response = logged_in_client.post("/admin/backups/create", follow_redirects=True)
 
