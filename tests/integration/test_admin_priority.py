@@ -205,11 +205,6 @@ class TestAutomationRoutes:
         response = logged_in_client.get("/admin/automation")
         assert response.status_code == 200
 
-    def test_automation_shifts(self, logged_in_client):
-        """Test l'affichage de la page d'automatisation des shifts."""
-        response = logged_in_client.get("/admin/automation/shifts")
-        assert response.status_code == 200
-
     def test_automation_full(self, logged_in_client):
         """Test l'affichage de la page d'automatisation complète."""
         response = logged_in_client.get("/admin/automation/full")

@@ -8,8 +8,8 @@ from datetime import date, datetime, timedelta
 from typing import Any
 
 from app.models import OnCall, Shift
+from app.utils.automation.advanced_shift_automation import AdvancedShiftAutomation
 from app.utils.automation.oncall_automation import OnCallAutomation
-from app.utils.automation.shift_automation_class import ShiftAutomation
 
 
 def get_automation_status() -> dict[str, Any]:
@@ -32,7 +32,7 @@ def get_automation_status() -> dict[str, Any]:
 
     # Compter les utilisateurs éligibles
     oncall_eligible = len(OnCallAutomation.get_eligible_users())
-    shift_eligible = len(ShiftAutomation.get_eligible_users())
+    shift_eligible = len(AdvancedShiftAutomation.get_users_in_schedule_groups())
 
     # Trouver la prochaine date disponible (le premier vendredi dans le futur sans astreinte)
     today = date.today()

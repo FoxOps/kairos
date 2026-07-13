@@ -1,13 +1,12 @@
 """
 Automation admin service for Leviia Schedule.
 
-Business logic supporting the admin automation screens: parsing the
-daily-requirements form into BusinessRules-shaped data, clearing an
-existing period before regeneration, and persisting the rotation order.
+Business logic supporting the admin automation screens: clearing an
+existing period before regeneration and persisting the rotation order.
 The actual schedule generation itself lives in app.utils.automation
-(OnCallAutomation/ShiftAutomation/AdvancedShiftAutomation), which is
-already a business-logic layer - this service wraps the admin-specific
-glue around it rather than duplicating it.
+(OnCallAutomation/AdvancedShiftAutomation), which is already a
+business-logic layer - this service wraps the admin-specific glue
+around it rather than duplicating it.
 """
 
 from datetime import date
@@ -15,33 +14,10 @@ from datetime import date
 from app import db
 from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository
-from app.utils.automation import BusinessRules
-
-WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday"]
-SHIFT_KINDS = ["morning", "afternoon", "evening"]
 
 
 class AutomationAdminService:
     """Logique métier support pour les écrans d'automatisation admin."""
-
-    @staticmethod
-    def parse_shift_rules_from_form(form) -> dict:
-        """Construit les daily_requirements à partir des champs
-        `{day}_{shift_kind}` du formulaire (ex: monday_morning)."""
-        rules = BusinessRules.get_shift_rules()
-
-        for day in WEEKDAYS:
-            for shift_kind in SHIFT_KINDS:
-                count_key = f"{day}_{shift_kind}"
-                if count_key in form:
-                    try:
-                        count = int(form[count_key])
-                        rules["daily_requirements"].setdefault(day, {})
-                        rules["daily_requirements"][day][shift_kind] = count
-                    except ValueError:
-                        pass
-
-        return rules
 
     @staticmethod
     def parse_rotation_order_from_form(form) -> list[int]:
