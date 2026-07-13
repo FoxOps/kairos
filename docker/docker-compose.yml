@@ -8,26 +8,11 @@ services:
     ports:
       - "5000:5000"
     user: "1000:1000"
+    # Tout passe par docker/.env (pas de bloc environment: ici) - voir
+    # Docs/deployment/docker.md pour les valeurs Docker-spécifiques à y
+    # mettre (DATABASE_URL, TALISMAN_FORCE_HTTPS, FLASK_ENV notamment).
     env_file:
       - ./.env
-    environment:
-      # Reprend la variable d'environnement FLASK_ENV de l'hôte (ex: `make
-      # -f docker/Makefile up-prod` fait FLASK_ENV=production docker compose
-      # ...) sinon garde le défaut "development" de l'image (voir
-      # entrypoint.sh : bascule Flask dev server / Gunicorn selon cette
-      # valeur). Sans cette ligne, FLASK_ENV=production côté shell n'était
-      # jamais transmis au conteneur.
-      - FLASK_ENV=${FLASK_ENV:-development}
-      # .env / .env.example définissent DATABASE_URL=sqlite:///app.db (chemin
-      # relatif) qui résout dans app.instance_path (/app/instance), pas dans
-      # /app/data qui est le volume monté ici. Sans cette surcharge, la DB
-      # n'est jamais persistée sur l'hôte et est recréée à chaque redémarrage.
-      - DATABASE_URL=sqlite:////app/data/app.db
-      # Pas de reverse proxy TLS dans cette stack : forcer HTTPS ferait
-      # boucler chaque requête sur une redirection https:// que rien ne sert.
-      # À mettre à true (ou retirer, c'est déjà le défaut en prod) une fois
-      # un reverse proxy TLS placé devant ce service.
-      - TALISMAN_FORCE_HTTPS=false
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs

@@ -26,9 +26,8 @@ logs: ## Voir les logs
 shell: ## Ouvrir un shell dans le conteneur
 	docker compose -f docker/docker-compose.yml exec leviia-schedule sh
 
-# Production (avec Gunicorn)
-up-prod: ## Démarrer en production
-	FLASK_ENV=production docker compose -f docker/docker-compose.yml up -d
-
-down-prod: ## Arrêter la production
-	docker compose -f docker/docker-compose.yml down
+# Mode production (Gunicorn) : pas de cible dédiée - le conteneur n'a
+# plus de bloc environment: dans docker-compose.yml, tout vient de
+# docker/.env. Mettez FLASK_ENV=production dans ce fichier, puis
+# `make -f docker/Makefile up` comme d'habitude (voir
+# Docs/deployment/docker.md).
