@@ -47,6 +47,26 @@ class TestAutomationFull:
         assert response.status_code == 200
         assert b"ordre" in response.data.lower() or b"Order" in response.data
 
+    def test_automation_full_form_has_single_action_field(self, logged_in_client):
+        """Régression : le formulaire avait un champ caché
+        `name="action" value="generate"` statique EN PLUS du bouton
+        "Générer" - deux champs `action` soumis, dont Werkzeug ne retient
+        que le premier (request.form.get renvoie toujours "generate",
+        jamais "save_order" ni "dry_run" quel que soit le bouton cliqué).
+        Vérifie qu'il ne reste qu'un seul champ `action` par bouton, porté
+        directement par le bouton (name="action" value="...") et non par
+        un input caché séparé toujours présent."""
+        response = logged_in_client.get("/admin/automation/full")
+        assert response.status_code == 200
+        html = response.data.decode()
+
+        assert 'name="action" value="generate"' in html
+        assert 'name="action" value="dry_run"' in html
+        # Le seul endroit où "generate" doit apparaître comme valeur de
+        # champ action est le bouton lui-même (pas un input hidden séparé
+        # qui coexisterait avec les boutons dry_run/save_order).
+        assert '<input type="hidden" name="action" value="generate">' not in html
+
     def test_automation_full_post_dry_run(self, logged_in_client, test_user):
         """Test le dry run de l'automatisation complète."""
         today = date.today()
