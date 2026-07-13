@@ -324,7 +324,7 @@ class TestCanAddOnCall:
 class TestCanAddLeave:
     """Tests pour can_add_leave."""
 
-    def test_can_add_leave_valid(self, test_app, test_user):
+    def test_can_add_leave_valid(self, test_app, test_user, second_user):
         """Test qu'un congé peut être ajouté sur une période valide."""
         with test_app.app_context():
             start_date = datetime(2023, 12, 20).date()
@@ -342,7 +342,7 @@ class TestCanAddLeave:
             can_add = can_add_leave(test_user, start_date, end_date)
             assert not can_add
 
-    def test_can_add_leave_same_day(self, test_app, test_user):
+    def test_can_add_leave_same_day(self, test_app, test_user, second_user):
         """Test qu'un congé peut être ajouté pour un seul jour."""
         with test_app.app_context():
             start_date = datetime(2023, 12, 20).date()
@@ -365,7 +365,9 @@ class TestCanAddLeave:
             can_add = can_add_leave(test_user, start_date, end_date)
             assert not can_add
 
-    def test_can_add_leave_user_has_shift(self, test_app, test_user, test_shift_type):
+    def test_can_add_leave_user_has_shift(
+        self, test_app, test_user, second_user, test_shift_type
+    ):
         """Test qu'un congé peut être ajouté même si l'utilisateur a un shift (les congés sont prioritaires)."""
         with test_app.app_context():
             # Créer un shift
@@ -387,7 +389,7 @@ class TestCanAddLeave:
             # Les congés sont prioritaires, donc cela doit être autorisé
             assert can_add is True
 
-    def test_can_add_leave_user_has_oncall(self, test_app, test_user):
+    def test_can_add_leave_user_has_oncall(self, test_app, test_user, second_user):
         """Test qu'un congé peut être ajouté même si l'utilisateur a une astreinte (les congés sont prioritaires)."""
         with test_app.app_context():
             # Créer une astreinte
@@ -404,6 +406,45 @@ class TestCanAddLeave:
             can_add = can_add_leave(test_user, start_date, end_date)
             # Les congés sont prioritaires, donc cela doit être autorisé
             assert can_add is True
+
+    def test_can_add_leave_rejected_when_dropping_headcount_to_zero(
+        self, test_app, test_user
+    ):
+        """Règle 6 : un congé qui ferait tomber l'effectif disponible à 0
+        (seul utilisateur schedule-eligible) doit être refusé."""
+        with test_app.app_context():
+            # Mercredi ouvré, test_user est le seul utilisateur du groupe schedule
+            start_date = date(2023, 12, 20)
+            end_date = date(2023, 12, 20)
+            can_add = can_add_leave(test_user, start_date, end_date)
+            assert can_add is False
+
+    def test_can_add_leave_allowed_when_headcount_stays_above_zero(
+        self, test_app, test_user, second_user
+    ):
+        """Règle 6 : avec un deuxième utilisateur schedule-eligible
+        disponible, le congé du premier reste autorisé."""
+        with test_app.app_context():
+            start_date = date(2023, 12, 20)
+            end_date = date(2023, 12, 20)
+            can_add = can_add_leave(test_user, start_date, end_date)
+            assert can_add is True
+
+    def test_can_add_leave_rejected_when_last_remaining_user_takes_leave(
+        self, test_app, test_user, second_user
+    ):
+        """Règle 6 : si second_user est déjà en congé ce jour, test_user
+        (dernier disponible) ne peut plus partir en congé le même jour."""
+        with test_app.app_context():
+            target_date = date(2023, 12, 20)
+            existing_leave = Leave(
+                user_id=second_user.id, start_date=target_date, end_date=target_date
+            )
+            db.session.add(existing_leave)
+            db.session.commit()
+
+            can_add = can_add_leave(test_user, target_date, target_date)
+            assert can_add is False
 
     def test_can_add_leave_different_users_overlapping(
         self, test_app, test_user, second_user

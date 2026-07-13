@@ -38,8 +38,7 @@
             
             <form method="POST" action="{{ url_for('admin.automation_full') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="action" value="generate">
-                
+
                 <div class="field">
                     <label class="label">Ordre de rotation <i class="fas fa-question-circle" title="Glissez-déposez pour réorganiser, cochez pour inclure dans la rotation"></i></label>
                     <div class="control">
@@ -147,7 +146,7 @@
                         </button>
                     </div>
                     <div class="control">
-                        <button type="submit" class="button is-primary">
+                        <button type="submit" name="action" value="generate" class="button is-primary">
                             <i class="fas fa-play"></i>&nbsp; Générer les astreintes et shifts
                         </button>
                     </div>

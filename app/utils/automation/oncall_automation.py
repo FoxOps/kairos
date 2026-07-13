@@ -147,6 +147,7 @@ class OnCallAutomation:
         end_date,
         rotation_order_ids: list[int] | None = None,
         dry_run: bool = True,
+        commit: bool = True,
     ):
         """
         Génère un planning d'astreintes pour une période donnée.
@@ -163,6 +164,9 @@ class OnCallAutomation:
             end_date: Date de fin
             rotation_order_ids: Ordre de rotation personnalisé
             dry_run: Si True, ne sauvegarde rien en base
+            commit: Si False (utilisé par rebalance_after_leave pour rendre
+                tout le rééquilibrage atomique), flush() au lieu de commit()
+                - laisse l'appelant décider quand committer/rollback.
 
         Returns:
             Tuple: (liste des astreintes générées (objets OnCall), messages de log)
@@ -246,7 +250,10 @@ class OnCallAutomation:
             current_friday += timedelta(days=7)
 
         if not dry_run and oncalls:
-            db.session.commit()
+            if commit:
+                db.session.commit()
+            else:
+                db.session.flush()
 
         messages.append(f"Généré {len(oncalls)} astreintes.")
         return oncalls, messages

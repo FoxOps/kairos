@@ -1,11 +1,13 @@
 # 🗺️ Feuille de Route - Leviia Schedule
 
-> **Version** : 5.1.0 - Refonte UI/UX terminée et mergée (PR #103)
-> **Version app** : 0.7.0 (`/version`) - items Haute priorité de la
-> Version 0.7 (Refonte UI/UX, Calendrier interactif) terminés
+> **Version** : 5.3.0 - Amélioration génération automatique shifts/astreintes (PR #105)
+> **Version app** : 0.7.2 (`/version`) - corrections du moteur
+> d'automatisation (astreintes en double, rééquilibrage non-atomique,
+> confirmations de suppression, ordre de rotation) + nouvelle règle
+> métier effectif minimum + retouches de textes (index, footer, admin)
 > **Dernière mise à jour** : Juillet 2026
-> **Statut** : Développement actif - **781 tests passent** ✅ - couverture ~82%
-> **Commit actuel** : b881b3d (Merge PR #103 - Refonte UI/UX : Design moderne et responsive)
+> **Statut** : Développement actif - **862 tests passent** ✅ (dont 27 E2E navigateur réel)
+> **Commit actuel** : branche feature/automation-improvements (PR #105)
 >
 > ℹ️ Ne pas confondre avec les « Phases » de refonte (`report/Phase 1` à
 > `report/Phase 6`, un chantier qualité/infra achevé) et les « Phases » de
@@ -516,6 +518,8 @@ Pour toute question concernant la feuille de route :
 
 | Version | Date | Auteur | Changements |
 |---------|------|--------|-------------|
+| 5.3.0 | Juillet 2026 | Claude Code | Retouches de textes UI (PR #105) : titre calendrier index ("Calendrier interactif" -> "Calendrier"), description footer (l'app ne gère pas les "organisations"), boutons "Retour à l'admin" ajoutés sur /admin/users et /admin/automation (renommés depuis "Retour au tableau de bord" sur /admin/groups pour éviter la confusion avec le tableau de bord utilisateur), occurrences de "nouvelles règles métiers" nettoyées sur /admin/automation. Version app 0.7.1 -> 0.7.2 |
+| 5.2.0 | Juillet 2026 | Claude Code | Amélioration génération automatique shifts/astreintes (PR #105) : retrait du moteur ShiftAutomation mort, dry-run "Génération complète" réparé, ordre de rotation respecté après congé, rééquilibrage après congé rendu atomique, nouvelle règle métier effectif minimum 1 personne, corrections confirmations de suppression (race condition JS), bouton "Sauvegarder l'ordre", astreintes en double sur vendredis adjacents, rechargement complet du calendrier remplacé par un rafraîchissement ciblé. Version app 0.7.0 -> 0.7.1. 862 tests (dont 27 E2E navigateur réel) |
 | 5.1.0 | Juillet 2026 | Claude Code | Refonte UI/UX terminée et mergée (PR #103) : burger mobile (bug bloquant corrigé), palette teal/vert douce, composants rafraîchis, bug graphique dashboard corrigé, 3 bugs CSP trouvés et corrigés (2 pages avec script inline cassées - copie ICS, drag&drop rotation - + icônes calendrier invisibles, font-src manquant, trouvé via vérification réelle en navigateur/Playwright), audit responsive. Version app 0.6.0 -> 0.7.0. 781 tests |
 | 5.0.0 | Juillet 2026 | Claude Code | Refonte Phases 1-6 terminée (report/) : architecture repositories/services, 773 tests (couverture ~82%), CSP stricte + Talisman toujours actif, compression Gzip/Brotli/Zstd, Docker multi-stage réparé et promu, CI/CD GitLab corrigée, k8s ready, dashboard Grafana. Commit 6e25cc2 (PR #102) |
 | 4.0.0 | Juin 2026 | Vibe Code | Mise à jour après PR #85 : 522 tests (515 passent, 2 échouent, 7 ignorés), correction des assets statiques, commit 0adf3cc |

@@ -14,9 +14,7 @@ from app.routes.admin import admin_bp
 from app.services import AutomationAdminService
 from app.utils.automation import (
     AdvancedShiftAutomation,
-    BusinessRules,
     OnCallAutomation,
-    ShiftAutomation,
     get_automation_status,
 )
 
@@ -40,96 +38,9 @@ def automation_dashboard():
     """Tableau de bord de l'automatisation."""
     status = get_automation_status()
 
-    oncall_users = OnCallAutomation.get_eligible_users()
-    shift_users = ShiftAutomation.get_eligible_users()
-    shift_types = ShiftAutomation.get_shift_types()
-
-    shift_rules = BusinessRules.get_shift_rules()
-    oncall_rules = BusinessRules.get_oncall_rules()
-
     return render_template(
         "admin/automation/dashboard.html",
         status=status,
-        oncall_users=oncall_users,
-        shift_users=shift_users,
-        shift_types=shift_types,
-        shift_rules=shift_rules,
-        oncall_rules=oncall_rules,
-    )
-
-
-@admin_bp.route("/admin/automation/shifts", methods=["GET", "POST"])
-@admin_required
-def automation_shifts():
-    """Configuration et génération des shifts automatiques."""
-    if request.method == "POST":
-        action = request.form.get("action")
-
-        if action == "generate":
-            start_date_str = request.form.get("start_date")
-            end_date_str = request.form.get("end_date")
-
-            rules = AutomationAdminService.parse_shift_rules_from_form(request.form)
-
-            try:
-                start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-                end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-
-                shifts, messages = ShiftAutomation.generate_shift_schedule(
-                    start_date, end_date, rules
-                )
-
-                _flash_automation_messages(messages, default_category="danger")
-
-                return redirect(url_for("admin.automation_shifts"))
-
-            except ValueError as e:
-                flash(f"❌ Format de date invalide : {str(e)}", "danger")
-            except Exception as e:
-                flash(f"❌ Erreur : {str(e)}", "danger")
-
-        elif action == "dry_run":
-            start_date_str = request.form.get("start_date")
-            end_date_str = request.form.get("end_date")
-
-            rules = AutomationAdminService.parse_shift_rules_from_form(request.form)
-
-            try:
-                start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-                end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-
-                shifts, messages = ShiftAutomation.generate_shift_schedule(
-                    start_date, end_date, rules, dry_run=True
-                )
-
-                return render_template(
-                    "admin/automation/shifts_dry_run.html",
-                    shifts=shifts,
-                    messages=messages,
-                    start_date=start_date,
-                    end_date=end_date,
-                )
-
-            except ValueError as e:
-                flash(f"❌ Format de date invalide : {str(e)}", "danger")
-            except Exception as e:
-                flash(f"❌ Erreur : {str(e)}", "danger")
-
-    shift_users = ShiftAutomation.get_eligible_users()
-    shift_types = ShiftAutomation.get_shift_types()
-    shift_rules = BusinessRules.get_shift_rules()
-
-    today = date.today()
-    end_date_default = today + timedelta(days=180)
-    start_date_default = today
-
-    return render_template(
-        "admin/automation/shifts.html",
-        shift_users=shift_users,
-        shift_types=shift_types,
-        shift_rules=shift_rules,
-        start_date_default=start_date_default,
-        end_date_default=end_date_default,
     )
 
 
@@ -188,12 +99,31 @@ def automation_full():
                 )
 
                 if dry_run:
+                    # Note : la prévisualisation des shifts se base sur les
+                    # astreintes déjà en base pour la période (le dry_run
+                    # des astreintes ci-dessus ne sauvegarde rien) - elle
+                    # peut donc différer du résultat final si aucune
+                    # astreinte n'existe encore pour cette période.
+                    shifts, shift_messages = (
+                        AdvancedShiftAutomation.generate_full_schedule(
+                            start_date, end_date, dry_run=True
+                        )
+                    )
                     return render_template(
-                        "admin/automation/oncall_dry_run.html",
-                        oncalls=oncalls,
-                        messages=oncall_messages,
+                        "admin/automation/full_dry_run.html",
+                        result={
+                            "oncall": {
+                                "generated": oncalls,
+                                "messages": oncall_messages,
+                            },
+                            "shift": {
+                                "generated": shifts,
+                                "messages": shift_messages,
+                            },
+                        },
                         start_date=start_date,
                         end_date=end_date,
+                        rotation_order_ids=rotation_order_ids,
                     )
                 else:
                     shifts, shift_messages = (

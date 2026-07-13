@@ -20,75 +20,6 @@ class TestAutomationDashboard:
         assert b"Connexion" in response.data
 
 
-class TestAutomationShifts:
-    """Tests pour /admin/automation/shifts."""
-
-    def test_automation_shifts_get(self, logged_in_client):
-        """Test l'affichage de la page de configuration des shifts automatiques."""
-        response = logged_in_client.get("/admin/automation/shifts")
-        assert response.status_code == 200
-        assert (
-            b"shifts" in response.data.lower()
-            or b"automatisation" in response.data.lower()
-        )
-
-    def test_automation_shifts_post_generate(
-        self, logged_in_client, test_user, test_group
-    ):
-        """Test la génération de shifts automatiques."""
-        today = date.today()
-        end_date = today + timedelta(days=7)
-
-        response = logged_in_client.post(
-            "/admin/automation/shifts",
-            data={
-                "action": "generate",
-                "start_date": today.strftime("%Y-%m-%d"),
-                "end_date": end_date.strftime("%Y-%m-%d"),
-                "monday_morning": "1",
-                "tuesday_morning": "1",
-            },
-            follow_redirects=True,
-        )
-        assert response.status_code == 200
-
-    def test_automation_shifts_post_dry_run(self, logged_in_client):
-        """Test le dry run de la génération de shifts."""
-        today = date.today()
-        end_date = today + timedelta(days=7)
-
-        response = logged_in_client.post(
-            "/admin/automation/shifts",
-            data={
-                "action": "dry_run",
-                "start_date": today.strftime("%Y-%m-%d"),
-                "end_date": end_date.strftime("%Y-%m-%d"),
-                "monday_morning": "1",
-            },
-            follow_redirects=True,
-        )
-        assert response.status_code == 200
-
-    def test_automation_shifts_post_invalid_date(self, logged_in_client):
-        """Test la génération avec des dates invalides."""
-        response = logged_in_client.post(
-            "/admin/automation/shifts",
-            data={
-                "action": "generate",
-                "start_date": "invalid-date",
-                "end_date": "invalid-date",
-            },
-            follow_redirects=True,
-        )
-        assert response.status_code == 200
-        # Should show error message
-        assert (
-            b"invalide" in response.data
-            or b"invalid" in response.data
-            or b"Erreur" in response.data
-        )
-
-
 class TestAutomationFull:
     """Tests pour /admin/automation/full."""
 
@@ -116,6 +47,26 @@ class TestAutomationFull:
         assert response.status_code == 200
         assert b"ordre" in response.data.lower() or b"Order" in response.data
 
+    def test_automation_full_form_has_single_action_field(self, logged_in_client):
+        """Régression : le formulaire avait un champ caché
+        `name="action" value="generate"` statique EN PLUS du bouton
+        "Générer" - deux champs `action` soumis, dont Werkzeug ne retient
+        que le premier (request.form.get renvoie toujours "generate",
+        jamais "save_order" ni "dry_run" quel que soit le bouton cliqué).
+        Vérifie qu'il ne reste qu'un seul champ `action` par bouton, porté
+        directement par le bouton (name="action" value="...") et non par
+        un input caché séparé toujours présent."""
+        response = logged_in_client.get("/admin/automation/full")
+        assert response.status_code == 200
+        html = response.data.decode()
+
+        assert 'name="action" value="generate"' in html
+        assert 'name="action" value="dry_run"' in html
+        # Le seul endroit où "generate" doit apparaître comme valeur de
+        # champ action est le bouton lui-même (pas un input hidden séparé
+        # qui coexisterait avec les boutons dry_run/save_order).
+        assert '<input type="hidden" name="action" value="generate">' not in html
+
     def test_automation_full_post_dry_run(self, logged_in_client, test_user):
         """Test le dry run de l'automatisation complète."""
         today = date.today()
@@ -137,6 +88,16 @@ class TestAutomationFull:
             follow_redirects=True,
         )
         assert response.status_code == 200
+        # Régression bug 1 : le dry-run rendait auparavant un template
+        # inexistant (oncall_dry_run.html), silencieusement remplacé par
+        # un flash d'erreur générique. Vérifie que la vraie page de
+        # prévisualisation (astreintes + shifts) s'affiche.
+        assert b"Pr\xc3\xa9visualisation" in response.data
+        assert b"Astreintes" in response.data
+        assert b"Shifts" in response.data
+        # Le bouton de confirmation doit porter l'ordre de rotation soumis
+        # (bug annexe : il était perdu au moment de confirmer).
+        assert f'name="rotation_order_{test_user.id}"'.encode() in response.data
 
     def test_automation_full_post_invalid_date(self, logged_in_client, test_user):
         """Test l'automatisation complète avec des dates invalides."""

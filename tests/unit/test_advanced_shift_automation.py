@@ -3,12 +3,13 @@ Tests pour le module d'automatisation avancée des shifts.
 """
 
 from datetime import date, datetime, timedelta
+from unittest.mock import patch
 
 from werkzeug.security import generate_password_hash
 
 from app import db
-from app.models import Group, Leave, OnCall, Shift, ShiftType, User
-from app.utils.automation import AdvancedShiftAutomation
+from app.models import AutomationConfig, Group, Leave, OnCall, Shift, ShiftType, User
+from app.utils.automation import AdvancedShiftAutomation, OnCallAutomation
 
 
 class TestAdvancedShiftAutomationBasics:
@@ -214,6 +215,44 @@ class TestDetermineShiftForUser:
 
             assert shift_hours == AdvancedShiftAutomation.SHIFT_09_17
 
+    def test_determine_shift_uses_passed_in_oncall_data_without_requerying(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Régression bug 6 : quand oncall_today/oncall_user_last_week sont
+        fournis par l'appelant, determine_shift_for_user ne doit pas
+        re-requêter OnCall lui-même. On le vérifie en passant des valeurs
+        délibérément fausses (incohérentes avec l'état réel en base) et en
+        constatant qu'elles sont bien celles utilisées pour la décision."""
+        with test_app.app_context():
+            test_date = date(2023, 12, 15)  # vendredi, aucune astreinte réelle
+
+            # oncall_today mock : test_user est "d'astreinte" ce jour selon
+            # la valeur fournie, alors qu'il n'y a aucune astreinte réelle
+            # en base pour cette date.
+            fake_oncall = OnCall(
+                user_id=test_user.id,
+                start_time=datetime.combine(test_date, datetime.min.time()),
+                end_time=datetime.combine(test_date, datetime.min.time())
+                + timedelta(hours=7),
+            )
+            # Vendredi -> règle 1 retombe toujours sur SHIFT_09_17 (premier/
+            # dernier jour d'astreinte), donc on vérifie plutôt un mardi.
+            tuesday = date(2023, 12, 12)
+            fake_oncall.start_time = datetime.combine(tuesday, datetime.min.time())
+            fake_oncall.end_time = fake_oncall.start_time + timedelta(hours=7)
+
+            shift_hours = AdvancedShiftAutomation.determine_shift_for_user(
+                test_user,
+                tuesday,
+                oncall_today=fake_oncall,
+                oncall_user_last_week=None,
+            )
+
+            # Si la méthode ignorait l'argument et re-requêtait la base
+            # (où aucune astreinte n'existe), elle retomberait sur
+            # SHIFT_09_17 (règle 3) au lieu de SHIFT_13_21 (règle 1).
+            assert shift_hours == AdvancedShiftAutomation.SHIFT_13_21
+
 
 class TestHandleTwoUsersCase:
     """Tests pour le cas spécial avec 2 utilisateurs disponibles."""
@@ -316,6 +355,30 @@ class TestGenerateDailyShifts:
 
             assert len(shifts) == 0
             assert any("disponible" in msg.lower() for msg in messages)
+
+    def test_generate_daily_shifts_with_one_user(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Régression règle 6 : avec une seule personne disponible (l'autre
+        en congé), cette personne doit être placée directement en 09h-17h."""
+        with test_app.app_context():
+            test_date = date(2023, 12, 15)
+            leave = Leave(
+                user_id=second_user.id,
+                start_date=test_date,
+                end_date=test_date,
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(
+                test_date, dry_run=True
+            )
+
+            assert len(shifts) == 1
+            assert shifts[0].user_id == test_user.id
+            assert shifts[0].start_time.hour == 9
+            assert shifts[0].end_time.hour == 17
 
     def test_generate_daily_shifts_with_two_users(
         self, test_app, test_group, test_user, second_user, test_shift_type
@@ -463,6 +526,62 @@ class TestGenerateFullSchedule:
 class TestRebalanceAfterLeave:
     """Tests pour le rééquilibrage après l'ajout d'un congé."""
 
+    def test_rebalance_after_leave_does_not_duplicate_adjacent_oncalls(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Régression : la période régénérée après un congé est étendue de
+        ±7 jours (padding) autour des vendredis affectés, et peut donc
+        englober des astreintes d'AUTRES vendredis déjà attribuées à
+        d'autres utilisateurs. L'ancien code ne supprimait que les
+        astreintes du congé (leave.user_id) avant de régénérer sur toute la
+        période étendue, créant des astreintes en double sur les vendredis
+        adjacents non concernés par le congé."""
+        with test_app.app_context():
+            user3 = User(
+                name="Third User",
+                email="third@test.com",
+                password_hash=generate_password_hash("third-password"),
+                is_admin=False,
+                group_id=test_group.id,
+            )
+            db.session.add(user3)
+            db.session.commit()
+
+            friday_before = date(2023, 12, 1)
+            friday_leave = date(2023, 12, 8)
+            friday_after = date(2023, 12, 15)
+
+            def make_oncall(user_id, friday):
+                start = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+                end = start + timedelta(days=7, hours=-14)
+                return OnCall(user_id=user_id, start_time=start, end_time=end)
+
+            db.session.add(make_oncall(test_user.id, friday_before))
+            db.session.add(make_oncall(second_user.id, friday_leave))
+            db.session.add(make_oncall(user3.id, friday_after))
+            db.session.commit()
+
+            # second_user part en congé pendant sa propre semaine d'astreinte
+            leave = Leave(
+                user_id=second_user.id,
+                start_date=date(2023, 12, 10),
+                end_date=date(2023, 12, 11),
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
+
+            for friday in (friday_before, friday_leave, friday_after):
+                day_start = datetime.combine(friday, datetime.min.time())
+                count = OnCall.query.filter(
+                    OnCall.start_time == day_start.replace(hour=21)
+                ).count()
+                assert count == 1, (
+                    f"{count} astreintes trouvées pour le vendredi {friday} "
+                    "(doublon attendu absent avec le fix)"
+                )
+
     def test_rebalance_after_leave_dry_run(
         self, test_app, test_group, test_user, test_shift_type
     ):
@@ -526,6 +645,42 @@ class TestRebalanceAfterLeave:
                 for msg in messages
             )
 
+    def test_rebalance_after_leave_uses_configured_rotation_order(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Le rééquilibrage doit respecter l'ordre de rotation configuré
+        (AutomationConfig) plutôt que de retomber sur l'ordre alphabétique
+        (rotation_order_ids=None en dur - bug corrigé)."""
+        with test_app.app_context():
+            AutomationConfig.set_rotation_order([second_user.id, test_user.id])
+
+            friday = date(2023, 12, 15)
+            start_time = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+            end_time = start_time + timedelta(days=7, hours=-14)
+            oncall = OnCall(
+                user_id=test_user.id, start_time=start_time, end_time=end_time
+            )
+            db.session.add(oncall)
+
+            leave = Leave(
+                user_id=test_user.id,
+                start_date=date(2023, 12, 16),
+                end_date=date(2023, 12, 18),
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            with patch(
+                "app.utils.automation.OnCallAutomation.generate_oncall_schedule",
+                wraps=OnCallAutomation.generate_oncall_schedule,
+            ) as mocked_generate:
+                AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
+
+            assert mocked_generate.call_args.kwargs["rotation_order_ids"] == [
+                second_user.id,
+                test_user.id,
+            ]
+
     def test_rebalance_after_leave_no_overlap(self, test_app, test_group, test_user):
         """Test le rééquilibrage avec un congé qui ne chevauche rien."""
         with test_app.app_context():
@@ -545,62 +700,88 @@ class TestRebalanceAfterLeave:
             # Doit générer des messages mais pas de suppression
             assert len(messages) > 0
 
-
-class TestOnCallConstraint:
-    """Tests pour la contrainte légale des astreintes."""
-
-    def test_check_oncall_constraint_first_oncall(self, test_app, test_user):
-        """Test qu'un utilisateur sans astreinte précédente passe la vérification."""
+    def test_rebalance_after_leave_rolls_back_fully_on_failure(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Régression Phase 3 : si la régénération des astreintes échoue en
+        fin de rééquilibrage, l'astreinte déjà supprimée (flush, pas commit)
+        et les shifts déjà régénérés doivent être annulés - pas de planning
+        partiellement modifié."""
         with test_app.app_context():
-            test_date = date(2023, 12, 15)
-            result = AdvancedShiftAutomation.check_oncall_constraint(
-                test_user, test_date
-            )
-
-            assert result is True
-
-    def test_check_oncall_constraint_sufficient_gap(self, test_app, test_user):
-        """Test qu'un utilisateur avec un écart suffisant passe la vérification."""
-        with test_app.app_context():
-            # Créer une astreinte il y a 3 semaines
-            old_friday = date(2023, 11, 24)  # vendredi
-            start_time = datetime.combine(old_friday, datetime.min.time()).replace(
-                hour=21
-            )
+            friday = date(2023, 12, 15)
+            start_time = datetime.combine(friday, datetime.min.time()).replace(hour=21)
             end_time = start_time + timedelta(days=7, hours=-14)
             oncall = OnCall(
                 user_id=test_user.id, start_time=start_time, end_time=end_time
             )
             db.session.add(oncall)
+
+            leave = Leave(
+                user_id=test_user.id,
+                start_date=date(2023, 12, 16),
+                end_date=date(2023, 12, 18),
+            )
+            db.session.add(leave)
             db.session.commit()
 
-            # Vérifier pour une nouvelle astreinte
-            test_date = date(2023, 12, 15)  # 3 semaines plus tard
-            result = AdvancedShiftAutomation.check_oncall_constraint(
-                test_user, test_date
-            )
+            oncall_count_before = OnCall.query.count()
+            shift_count_before = Shift.query.count()
 
-            assert result is True
+            with patch(
+                "app.utils.automation.OnCallAutomation.generate_oncall_schedule",
+                side_effect=RuntimeError("boom"),
+            ):
+                raised = False
+                try:
+                    AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
+                except RuntimeError:
+                    raised = True
 
-    def test_check_oncall_constraint_insufficient_gap(self, test_app, test_user):
-        """Test qu'un utilisateur avec un écart insuffisant échoue la vérification."""
+            assert raised is True
+            # Rollback complet : l'astreinte supprimée (via flush) doit être
+            # revenue, et aucun shift regénéré ne doit avoir survécu.
+            assert OnCall.query.count() == oncall_count_before
+            assert Shift.query.count() == shift_count_before
+
+    def test_rebalance_after_leave_commits_once_on_success(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Phase 3 : un rééquilibrage réussi (dry_run=False) doit
+        effectivement persister astreintes et shifts régénérés (un seul
+        commit final, pas de commits intermédiaires perdus)."""
         with test_app.app_context():
-            # Créer une astreinte la semaine dernière
-            last_friday = date(2023, 12, 8)  # vendredi
-            start_time = datetime.combine(last_friday, datetime.min.time()).replace(
-                hour=21
-            )
+            friday = date(2023, 12, 15)
+            start_time = datetime.combine(friday, datetime.min.time()).replace(hour=21)
             end_time = start_time + timedelta(days=7, hours=-14)
             oncall = OnCall(
                 user_id=test_user.id, start_time=start_time, end_time=end_time
             )
             db.session.add(oncall)
+
+            leave = Leave(
+                user_id=test_user.id,
+                start_date=date(2023, 12, 16),
+                end_date=date(2023, 12, 18),
+            )
+            db.session.add(leave)
             db.session.commit()
 
-            # Vérifier pour une nouvelle astreinte (seulement 1 semaine d'écart)
-            test_date = date(2023, 12, 15)  # 1 semaine plus tard
-            result = AdvancedShiftAutomation.check_oncall_constraint(
-                test_user, test_date
+            regenerated_shifts, messages = (
+                AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
             )
 
-            assert result is False
+            # L'ancienne astreinte de test_user pour cette période a bien été
+            # supprimée et la suppression persistée (pas juste flush() puis
+            # perdue faute de commit). On vérifie sur (user, start_time)
+            # plutôt que sur l'id : SQLite peut réutiliser un rowid supprimé
+            # pour la nouvelle astreinte régénérée à la même date.
+            assert (
+                OnCall.query.filter_by(
+                    user_id=test_user.id, start_time=start_time
+                ).first()
+                is None
+            )
+            # Les shifts régénérés retournés doivent aussi exister en base.
+            assert len(regenerated_shifts) > 0
+            for shift in regenerated_shifts:
+                assert db.session.get(Shift, shift.id) is not None

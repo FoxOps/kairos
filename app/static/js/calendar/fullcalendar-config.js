@@ -186,8 +186,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 .then(data => {
                     if (data.success) {
                         console.log('Événement mis à jour:', data.message);
-                        // Recharger la page pour synchroniser avec le backend
-                        location.reload();
+                        // Recharge uniquement les événements du calendrier
+                        // (requête AJAX FullCalendar) au lieu de la page
+                        // entière, pour ne pas perdre le contexte de
+                        // l'utilisateur (filtres, scroll, vue courante).
+                        calendar.refetchEvents();
+                        if (data.rebalance_warning) {
+                            announceToScreenReader(
+                                'Événement mis à jour, mais le rééquilibrage automatique des shifts a échoué.',
+                                'assertive'
+                            );
+                        }
                     } else {
                         // Revert le changement en cas d'erreur
                         info.revert();
@@ -248,8 +257,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 .then(data => {
                     if (data.success) {
                         console.log('Événement redimensionné:', data.message);
-                        // Recharger la page pour synchroniser avec le backend
-                        location.reload();
+                        // Recharge uniquement les événements du calendrier,
+                        // pas la page entière (cf. eventDrop ci-dessus).
+                        calendar.refetchEvents();
+                        if (data.rebalance_warning) {
+                            announceToScreenReader(
+                                'Événement mis à jour, mais le rééquilibrage automatique des shifts a échoué.',
+                                'assertive'
+                            );
+                        }
                     } else {
                         info.revert();
                         announceToScreenReader('Erreur: ' + data.error, 'assertive');

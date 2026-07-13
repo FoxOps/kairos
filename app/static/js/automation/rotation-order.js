@@ -83,11 +83,18 @@ export function saveRotationOrder() {
         }
     });
 
-    const actionInput = document.createElement('input');
-    actionInput.type = 'hidden';
-    actionInput.name = 'action';
+    // Réutilise un champ action existant s'il y en a un, au lieu d'en
+    // ajouter un second - deux champs same-name soumis au serveur font que
+    // request.form.get("action") renvoie le premier (Werkzeug), pas
+    // celui-ci, et l'action réellement voulue est silencieusement ignorée.
+    let actionInput = form.querySelector('input[name="action"]');
+    if (!actionInput) {
+        actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        form.appendChild(actionInput);
+    }
     actionInput.value = 'save_order';
-    form.appendChild(actionInput);
 
     form.submit();
 }

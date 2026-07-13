@@ -119,6 +119,21 @@ class TestApiDeleteLeave:
             resp = logged_in_client.delete(f"/api/leave/{test_leave.id}")
         assert resp.status_code == 500
 
+    def test_rebalance_failure_surfaces_warning(
+        self, test_app, logged_in_client, test_leave
+    ):
+        """Régression : api_delete_leave doit signaler un échec de
+        rééquilibrage au lieu de l'avaler silencieusement (bug 3)."""
+        with patch(
+            "app.routes.leave_routes.LeaveService.api_delete",
+            return_value=(True, True),
+        ):
+            resp = logged_in_client.delete(f"/api/leave/{test_leave.id}")
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["success"] is True
+        assert data["rebalance_warning"] is True
+
 
 class TestApiUpdateLeave:
     def test_not_found(self, test_app, logged_in_client):
@@ -194,3 +209,21 @@ class TestApiUpdateLeave:
                 json={"start": date.today().isoformat()},
             )
         assert resp.status_code == 500
+
+    def test_rebalance_failure_surfaces_warning(
+        self, test_app, logged_in_client, test_leave
+    ):
+        """Régression : api_update_leave doit signaler un échec de
+        rééquilibrage au lieu de l'avaler silencieusement (bug 3)."""
+        with patch(
+            "app.routes.leave_routes.LeaveService.api_update",
+            return_value=(test_leave, None, True),
+        ):
+            resp = logged_in_client.patch(
+                f"/api/leave/{test_leave.id}",
+                json={"start": date.today().isoformat()},
+            )
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["success"] is True
+        assert data["rebalance_warning"] is True

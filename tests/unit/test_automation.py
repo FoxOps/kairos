@@ -5,12 +5,10 @@ Tests pour le module d'automatisation des astreintes et des shifts.
 from datetime import date, datetime, timedelta
 
 from app import db
-from app.models import Group, Leave, OnCall, Shift, ShiftType, User
+from app.models import Group, Leave, OnCall, User
 from app.utils.automation import (
     AdvancedShiftAutomation,
-    BusinessRules,
     OnCallAutomation,
-    ShiftAutomation,
     get_automation_status,
 )
 
@@ -192,172 +190,6 @@ class TestOnCallAutomation:
             assert oncalls[1].user_id == test_user.id
 
 
-class TestShiftAutomation:
-    """Tests pour l'automatisation des shifts."""
-
-    def test_get_eligible_users(self, test_app, test_group, test_user, second_user):
-        """Test la récupération des utilisateurs éligibles pour les shifts."""
-        with test_app.app_context():
-            # Créer un troisième utilisateur
-            user3 = User(
-                name="Third User",
-                email="third@test.com",
-                password_hash="third123",
-                is_admin=False,
-                group_id=test_group.id,
-            )
-            db.session.add(user3)
-            db.session.commit()
-
-            eligible_users = ShiftAutomation.get_eligible_users()
-            # Tous les utilisateurs du groupe sont éligibles (is_part_of_schedule=True)
-            assert len(eligible_users) == 3
-
-    def test_get_shift_types(self, test_app, test_shift_type, afternoon_shift_type):
-        """Test la récupération des types de shifts."""
-        with test_app.app_context():
-            shift_types = ShiftAutomation.get_shift_types()
-            assert len(shift_types) == 2
-
-    def test_can_assign_shift(self, test_app, test_user, test_shift_type):
-        """Test la vérification de l'assignation d'un shift."""
-        with test_app.app_context():
-            # Test avec une date valide (lundi)
-            test_date = date(2024, 1, 8)  # Lundi
-            can_assign, message = ShiftAutomation.can_assign_shift(
-                test_user.id, test_date, test_shift_type
-            )
-            assert can_assign is True
-            assert message == ""
-
-            # Test avec une date invalide (samedi)
-            test_date = date(2024, 1, 6)  # Samedi
-            can_assign, message = ShiftAutomation.can_assign_shift(
-                test_user.id, test_date, test_shift_type
-            )
-            assert can_assign is False
-            assert "lundi au vendredi" in message
-
-    def test_can_assign_shift_with_conflict(self, test_app, test_user, test_shift_type):
-        """Test la vérification avec un conflit existant."""
-        with test_app.app_context():
-            test_date = date(2024, 1, 8)  # Lundi
-
-            # Créer un shift existant pour test_user
-            start_time = datetime(2024, 1, 8, 7, 0)
-            end_time = datetime(2024, 1, 8, 15, 0)
-            existing_shift = Shift(
-                user_id=test_user.id,
-                shift_type_id=test_shift_type.id,
-                start_time=start_time,
-                end_time=end_time,
-                date=test_date,
-            )
-            db.session.add(existing_shift)
-            db.session.commit()
-
-            # Vérifier qu'on ne peut pas assigner un autre shift
-            can_assign, message = ShiftAutomation.can_assign_shift(
-                test_user.id, test_date, test_shift_type
-            )
-            assert can_assign is False
-            assert "déjà un shift" in message
-
-            # Nettoyer
-            db.session.delete(existing_shift)
-            db.session.commit()
-
-    def test_find_replacement_user(self, test_app, test_group, test_user, second_user):
-        """Test la recherche d'un utilisateur de remplacement."""
-        with test_app.app_context():
-            # Créer un troisième utilisateur
-            user3 = User(
-                name="Third User",
-                email="third@test.com",
-                password_hash="third123",
-                is_admin=False,
-                group_id=test_group.id,
-            )
-            db.session.add(user3)
-            db.session.commit()
-
-            test_date = date(2024, 1, 8)  # Lundi
-
-            # Exclure test_user et second_user
-            excluded_ids = [test_user.id, second_user.id]
-
-            replacement = ShiftAutomation.find_replacement_user(
-                excluded_ids, test_date, ShiftType.query.first()
-            )
-
-            assert replacement is not None
-            assert replacement.id == user3.id
-
-    def test_generate_shift_schedule_dry_run(
-        self, test_app, test_group, test_user, second_user, test_shift_type
-    ):
-        """Test la génération des shifts en mode dry run."""
-        with test_app.app_context():
-            # Créer un troisième utilisateur
-            user3 = User(
-                name="Third User",
-                email="third@test.com",
-                password_hash="third123",
-                is_admin=False,
-                group_id=test_group.id,
-            )
-            db.session.add(user3)
-            db.session.commit()
-
-            start_date = date(2024, 1, 8)  # Lundi
-            end_date = date(2024, 1, 12)  # Vendredi
-
-            # Règles : 1 shift de chaque type par jour
-            rules = {
-                "daily_requirements": {
-                    "monday": {"morning": 1},
-                    "tuesday": {"morning": 1},
-                    "wednesday": {"morning": 1},
-                    "thursday": {"morning": 1},
-                    "friday": {"morning": 1},
-                }
-            }
-
-            shifts, messages = ShiftAutomation.generate_shift_schedule(
-                start_date, end_date, rules, dry_run=True
-            )
-
-            # Devrait générer 1 shift par jour * 5 jours = 5 shifts
-            assert len(shifts) == 5
-            assert len(messages) > 0
-
-
-class TestBusinessRules:
-    """Tests pour les règles métiers."""
-
-    def test_get_shift_rules(self):
-        """Test la récupération des règles par défaut pour les shifts."""
-        rules = BusinessRules.get_shift_rules()
-
-        assert "daily_requirements" in rules
-        assert "max_shifts_per_user_per_week" in rules
-        assert "min_shifts_per_user_per_week" in rules
-
-        # Vérifier que les jours de la semaine sont présents
-        for day in ["monday", "tuesday", "wednesday", "thursday", "friday"]:
-            assert day in rules["daily_requirements"]
-
-    def test_get_oncall_rules(self):
-        """Test la récupération des règles par défaut pour les astreintes."""
-        rules = BusinessRules.get_oncall_rules()
-
-        assert "rotation_order" in rules
-        assert "start_day" in rules
-        assert "start_hour" in rules
-        assert rules["start_day"] == "friday"
-        assert rules["start_hour"] == 21
-
-
 class TestFullScheduleGeneration:
     """Tests pour la génération complète du schedule."""
 
@@ -443,26 +275,6 @@ class TestEdgeCases:
             )
 
             assert len(oncalls) == 0
-            assert any("Aucun utilisateur éligible" in msg for msg in messages)
-
-    def test_generate_shift_no_eligible_users(self, test_app):
-        """Test la génération de shifts sans utilisateurs éligibles."""
-        with test_app.app_context():
-            # Créer un groupe sans is_part_of_schedule
-            group = Group(
-                name="No Schedule", is_part_of_schedule=False, is_part_of_oncall=True
-            )
-            db.session.add(group)
-            db.session.commit()
-
-            start_date = date(2024, 1, 8)
-            end_date = date(2024, 1, 12)
-
-            shifts, messages = ShiftAutomation.generate_shift_schedule(
-                start_date, end_date, dry_run=True
-            )
-
-            assert len(shifts) == 0
             assert any("Aucun utilisateur éligible" in msg for msg in messages)
 
     def test_generate_oncall_with_leave_conflict(

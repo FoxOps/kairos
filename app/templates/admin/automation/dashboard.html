@@ -4,16 +4,23 @@
 <section class="section">
     <div class="container">
         <h1 class="title"><i class="fas fa-robot" aria-hidden="true"></i> Automatisation</h1>
-        
+
+        <div class="buttons" role="group" aria-label="Actions automatisation">
+            <a class="button is-light" href="{{ url_for('admin.admin_dashboard') }}"
+               aria-label="Retour à l'administration" title="Retour à l'admin">
+                Retour à l'admin
+            </a>
+        </div>
+
         <div class="notification is-info is-light">
-            <p><i class="fas fa-info-circle"></i> Ce module permet de générer automatiquement les astreintes. Les shifts sont générés automatiquement après les astreintes selon les nouvelles règles métiers.</p>
+            <p><i class="fas fa-info-circle"></i> Ce module permet de générer automatiquement les astreintes. Les shifts sont générés automatiquement après les astreintes selon les règles métiers.</p>
         </div>
 
         <div class="columns is-multiline">
             <div class="column is-one-third">
                 <div class="box">
                     <h2 class="subtitle"><i class="fas fa-cogs" aria-hidden="true"></i> Génération complète</h2>
-                    <p>Générer les astreintes. Les shifts seront automatiquement générés selon les nouvelles règles métiers.</p>
+                    <p>Générer les astreintes. Les shifts seront automatiquement générés selon les règles métiers.</p>
                     <div class="buttons mt-3">
                         <a class="button is-success is-small" href="{{ url_for('admin.automation_full') }}">
                             <i class="fas fa-play"></i>&nbsp; Lancer
@@ -69,7 +76,7 @@
             <h2 class="subtitle"><i class="fas fa-question-circle" aria-hidden="true"></i> Aide</h2>
             <div class="content">
                 <p><strong>Rotation des astreintes :</strong> Une rotation simple où chaque semaine un membre différent est désigné. Utilisez "Génération complète" pour configurer l'ordre de rotation.</p>
-                <p><strong>Génération automatique des shifts :</strong> Après la génération des astreintes, les shifts sont automatiquement créés selon les nouvelles règles métiers (13h-21h pour l'astreinte, rotation des créneaux, etc.).</p>
+                <p><strong>Génération automatique des shifts :</strong> Après la génération des astreintes, les shifts sont automatiquement créés selon les règles métiers (13h-21h pour l'astreinte, rotation des créneaux, etc.).</p>
                 <p><strong>Rafraîchissement manuel :</strong> Utilisez "Rafraîchir Shifts" pour recalculer les shifts si vous avez modifié manuellement les astreintes.</p>
                 <p><strong>Période par défaut :</strong> 6 mois à l'avance.</p>
             </div>

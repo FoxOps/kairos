@@ -342,7 +342,7 @@ class TestOnCallService:
 
 
 class TestLeaveService:
-    def test_add_leave_success(self, test_app, test_user):
+    def test_add_leave_success(self, test_app, test_user, second_user):
         leave, regenerated = LeaveService.add_leave(
             test_user, date.today(), date.today() + timedelta(days=2)
         )
@@ -367,22 +367,45 @@ class TestLeaveService:
         assert regenerated is None
 
     def test_api_update_rejects_end_before_start(self, test_app, test_leave):
-        leave, error = LeaveService.api_update(
+        leave, error, rebalance_failed = LeaveService.api_update(
             test_leave.id,
             test_leave.start_date,
             test_leave.start_date - timedelta(days=1),
         )
         assert leave is None
         assert "après" in error
+        assert rebalance_failed is False
 
     def test_api_update_missing(self, test_app):
-        leave, error = LeaveService.api_update(999999, date.today(), date.today())
+        leave, error, rebalance_failed = LeaveService.api_update(
+            999999, date.today(), date.today()
+        )
         assert leave is None
         assert error == "Congé non trouvé"
+        assert rebalance_failed is False
 
     def test_api_delete(self, test_app, test_leave):
-        assert LeaveService.api_delete(test_leave.id) is True
-        assert LeaveService.api_delete(test_leave.id) is False
+        deleted, rebalance_failed = LeaveService.api_delete(test_leave.id)
+        assert deleted is True
+        assert rebalance_failed is False
+        deleted, rebalance_failed = LeaveService.api_delete(test_leave.id)
+        assert deleted is False
+        assert rebalance_failed is False
+
+    def test_api_update_rejected_when_dropping_headcount_to_zero(
+        self, test_app, test_leave
+    ):
+        """Régression règle 6 : api_update doit aussi refuser un
+        déplacement de congé qui ferait tomber l'effectif à 0 (test_leave
+        appartient au seul utilisateur schedule-eligible dans ce test)."""
+        new_start = date(2023, 12, 20)
+        new_end = date(2023, 12, 20)
+        leave, error, rebalance_failed = LeaveService.api_update(
+            test_leave.id, new_start, new_end
+        )
+        assert leave is None
+        assert "effectif" in error
+        assert rebalance_failed is False
 
 
 class TestExportService:

@@ -53,8 +53,8 @@
                         <td>
                             {% if current_user.is_admin or current_user.id == leave.user.id %}
                             <div class="is-flex is-flex-wrap-nowrap gap-2" role="group" aria-label="Actions pour ce congé">
-                                <a class="button is-danger is-small" href="{{ url_for('main.delete_leave', leave_id=leave.id) }}" 
-                                   onclick="return Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer ce congé ?', function() { return true; }, function() { return false; });"
+                                <a class="button is-danger is-small" href="{{ url_for('main.delete_leave', leave_id=leave.id) }}"
+                                   onclick="event.preventDefault(); const href = this.href; Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer ce congé ?', function() { window.location.href = href; });"
                                    aria-label="Supprimer le congé" title="Supprimer ce congé">
                                     <i class="fas fa-trash" aria-hidden="true"></i>
                                 </a>

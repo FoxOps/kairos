@@ -75,7 +75,9 @@ def add_leave():
             )
             if not new_leave:
                 flash(
-                    "Impossible d'ajouter ce congé (dates invalides ou congé existant sur cette période).",
+                    "Impossible d'ajouter ce congé (dates invalides, congé existant "
+                    "sur cette période, ou effectif disponible tombant à 0 un jour "
+                    "de cette période).",
                     "danger",
                 )
                 return redirect(url_for("main.add_leave"))
@@ -153,8 +155,14 @@ def api_delete_leave(leave_id):
         )
 
     try:
-        LeaveService.api_delete(leave_id)
-        return jsonify({"success": True, "message": "Congé supprimé avec succès"})
+        _deleted, rebalance_failed = LeaveService.api_delete(leave_id)
+        response = {"success": True, "message": "Congé supprimé avec succès"}
+        if rebalance_failed:
+            response["rebalance_warning"] = True
+            response[
+                "message"
+            ] += " (⚠️ le rééquilibrage automatique des shifts a échoué)"
+        return jsonify(response)
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
@@ -202,23 +210,28 @@ def api_update_leave(leave_id):
         new_start_date = new_start.date()
         new_end_date = new_end.date()
 
-        updated_leave, error = LeaveService.api_update(
+        updated_leave, error, rebalance_failed = LeaveService.api_update(
             leave_id, new_start_date, new_end_date
         )
         if error:
             return jsonify({"success": False, "error": error}), 400
 
-        return jsonify(
-            {
-                "success": True,
-                "message": "Congé mis à jour avec succès",
-                "leave": {
-                    "id": updated_leave.id,
-                    "start": updated_leave.start_date.isoformat(),
-                    "end": updated_leave.end_date.isoformat(),
-                },
-            }
-        )
+        message = "Congé mis à jour avec succès"
+        response = {
+            "success": True,
+            "message": message,
+            "leave": {
+                "id": updated_leave.id,
+                "start": updated_leave.start_date.isoformat(),
+                "end": updated_leave.end_date.isoformat(),
+            },
+        }
+        if rebalance_failed:
+            response["rebalance_warning"] = True
+            response[
+                "message"
+            ] += " (⚠️ le rééquilibrage automatique des shifts a échoué)"
+        return jsonify(response)
 
     except ValueError as e:
         db.session.rollback()
