@@ -3,8 +3,8 @@ app.db
 
 # Sauvegardes locales (scripts/backup_database.py, BACKUP_LOCAL_DIR) -
 # contiennent un dump complet de la base de données, jamais à commiter.
-backups/
-docker/backups/
+/backups/
+/docker/backups/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

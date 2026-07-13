@@ -199,11 +199,6 @@ class BackupConfig:
         return filename
 
 
-# Configuration par défaut (peut être écrasée)
 def get_config() -> BackupConfig:
     """Retourne la configuration de sauvegarde."""
     return BackupConfig.from_env()
-
-
-# Instance globale de configuration
-config = get_config()
