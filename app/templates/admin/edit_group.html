@@ -12,11 +12,11 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="card bg-base-100 shadow-md">
             <div class="card-body gap-4">
-                <div>
-                    <label class="label" for="name">Nom du groupe <span class="text-error">*</span></label>
-                    <input class="input w-full" type="text" id="name" name="name" value="{{ group.name }}" required aria-required="true" aria-describedby="name-help">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Nom du groupe <span class="text-error">*</span></legend>
+                    <input class="input w-full validator" type="text" id="name" name="name" value="{{ group.name }}" required aria-required="true" aria-describedby="name-help">
                     <p class="text-sm text-base-content/60" id="name-help">Nom unique du groupe</p>
-                </div>
+                </fieldset>
 
                 <label class="label cursor-pointer justify-start gap-2">
                     <input type="checkbox" class="checkbox" name="is_part_of_schedule" value="True"

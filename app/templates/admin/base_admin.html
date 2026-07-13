@@ -1,11 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<main id="admin-main-content" role="main" aria-label="Espace administrateur">
-    <div class="section">
-        <div class="container">
-            {% block admin_content %}{% endblock %}
-        </div>
-    </div>
-</main>
+<div id="admin-main-content">
+    {% block admin_content %}{% endblock %}
+</div>
 {% endblock %}

@@ -12,29 +12,29 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="card bg-base-100 shadow-md">
             <div class="card-body gap-4">
-                <div>
-                    <label class="label" for="name">Nom *</label>
-                    <input class="input w-full" type="text" id="name" name="name" value="{{ shift_type.name }}" placeholder="Ex: morning" required aria-required="true" aria-describedby="name-help">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Nom *</legend>
+                    <input class="input w-full validator" type="text" id="name" name="name" value="{{ shift_type.name }}" placeholder="Ex: morning" required aria-required="true" aria-describedby="name-help">
                     <p class="text-sm text-base-content/60" id="name-help">Nom technique du type de shift (utilisé dans le code)</p>
-                </div>
+                </fieldset>
 
-                <div>
-                    <label class="label" for="label">Libellé *</label>
-                    <input class="input w-full" type="text" id="label" name="label" value="{{ shift_type.label }}" placeholder="Ex: 07h-15h" required aria-required="true" aria-describedby="label-help">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Libellé *</legend>
+                    <input class="input w-full validator" type="text" id="label" name="label" value="{{ shift_type.label }}" placeholder="Ex: 07h-15h" required aria-required="true" aria-describedby="label-help">
                     <p class="text-sm text-base-content/60" id="label-help">Libellé affiché aux utilisateurs</p>
-                </div>
+                </fieldset>
 
-                <div>
-                    <label class="label" for="start_hour">Heure de début *</label>
-                    <input class="input w-full" type="number" id="start_hour" name="start_hour" min="0" max="23" value="{{ shift_type.start_hour }}" placeholder="Ex: 7" required aria-required="true" aria-describedby="start-hour-help">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Heure de début *</legend>
+                    <input class="input w-full validator" type="number" id="start_hour" name="start_hour" min="0" max="23" value="{{ shift_type.start_hour }}" placeholder="Ex: 7" required aria-required="true" aria-describedby="start-hour-help">
                     <p class="text-sm text-base-content/60" id="start-hour-help">Heure de début du shift (0-23)</p>
-                </div>
+                </fieldset>
 
-                <div>
-                    <label class="label" for="end_hour">Heure de fin *</label>
-                    <input class="input w-full" type="number" id="end_hour" name="end_hour" min="0" max="23" value="{{ shift_type.end_hour }}" placeholder="Ex: 15" required aria-required="true" aria-describedby="end-hour-help">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Heure de fin *</legend>
+                    <input class="input w-full validator" type="number" id="end_hour" name="end_hour" min="0" max="23" value="{{ shift_type.end_hour }}" placeholder="Ex: 15" required aria-required="true" aria-describedby="end-hour-help">
                     <p class="text-sm text-base-content/60" id="end-hour-help">Heure de fin du shift (0-23)</p>
-                </div>
+                </fieldset>
 
                 <div class="flex gap-2" role="group" aria-label="Actions du formulaire">
                     <button class="btn btn-primary" type="submit" aria-label="Enregistrer les modifications" title="Enregistrer les modifications">

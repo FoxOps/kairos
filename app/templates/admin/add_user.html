@@ -3,8 +3,8 @@
 {% block title %}Ajouter un utilisateur - Leviia{% endblock %}
 
 {% block admin_content %}
-<main role="main" aria-labelledby="add-user-title" class="p-4 md:p-6 max-w-2xl mx-auto">
-    <h1 id="add-user-title" class="text-2xl font-bold mb-4">
+<section class="p-4 md:p-6 max-w-2xl mx-auto" aria-labelledby="page-title">
+    <h1 id="page-title" class="text-2xl font-bold mb-4">
         <i class="fas fa-user-plus" aria-hidden="true"></i> Ajouter un utilisateur
     </h1>
 
@@ -21,42 +21,40 @@
     </div>
     {% endif %}
 
-    <form method="POST" action="{{ url_for('admin.add_user') }}" aria-labelledby="add-user-title">
+    <form method="POST" action="{{ url_for('admin.add_user') }}" aria-labelledby="page-title">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="card bg-base-100 shadow-md" role="region" aria-labelledby="form-title">
+        <div class="card bg-base-100 shadow-md">
             <div class="card-body gap-4">
-                <h2 id="form-title" class="sr-only">Formulaire d'ajout d'utilisateur</h2>
-
-                <div>
-                    <label class="label" for="name">Nom complet <span class="text-error">*</span></label>
-                    <input class="input w-full" type="text" id="name" name="name" required aria-required="true" placeholder="Ex: Jean Dupont" aria-describedby="name-help">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Nom complet <span class="text-error">*</span></legend>
+                    <input class="input w-full validator" type="text" id="name" name="name" required aria-required="true" placeholder="Ex: Jean Dupont" aria-describedby="name-help">
                     <p class="hidden" id="name-help">Exemple : Jean Dupont</p>
-                </div>
+                </fieldset>
 
-                <div>
-                    <label class="label" for="email">Adresse email <span class="text-error">*</span></label>
-                    <input class="input w-full" type="email" id="email" name="email" required aria-required="true" placeholder="Ex: jean.dupont@exemple.com" aria-describedby="email-help">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Adresse email <span class="text-error">*</span></legend>
+                    <input class="input w-full validator" type="email" id="email" name="email" required aria-required="true" placeholder="Ex: jean.dupont@exemple.com" aria-describedby="email-help">
                     <p class="hidden" id="email-help">Exemple : jean.dupont@exemple.com</p>
-                </div>
+                </fieldset>
 
-                <div>
-                    <label class="label" for="group_id">Groupe <span class="text-error">*</span></label>
-                    <select class="select w-full" id="group_id" name="group_id" required aria-required="true" aria-describedby="group-help">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Groupe <span class="text-error">*</span></legend>
+                    <select class="select w-full validator" id="group_id" name="group_id" required aria-required="true" aria-describedby="group-help">
                         <option value="" disabled selected>Sélectionner un groupe</option>
                         {% for group in groups %}
                         <option value="{{ group.id }}">{{ group.name }}</option>
                         {% endfor %}
                     </select>
                     <p class="hidden" id="group-help">Sélectionnez le groupe auquel l'utilisateur appartiendra.</p>
-                </div>
+                </fieldset>
 
-                <div>
-                    <label class="label" for="password">Mot de passe</label>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Mot de passe</legend>
                     <input class="input w-full" type="password" id="password" name="password" placeholder="Laisser vide pour un mot de passe par défaut" aria-describedby="password-help">
                     <p class="text-sm text-base-content/60" id="password-help">
                         Si vous ne spécifiez pas de mot de passe, un mot de passe par défaut sera généré (password123).
                     </p>
-                </div>
+                </fieldset>
 
                 <div class="flex gap-2">
                     <button class="btn btn-primary" type="submit" aria-label="Enregistrer l'utilisateur">
@@ -67,5 +65,5 @@
             </div>
         </div>
     </form>
-</main>
+</section>
 {% endblock %}

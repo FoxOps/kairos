@@ -12,21 +12,21 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="card bg-base-100 shadow-md">
             <div class="card-body gap-4">
-                <div>
-                    <label class="label" for="name">Nom <span class="text-error">*</span></label>
-                    <input class="input w-full" type="text" id="name" name="name" value="{{ user.name }}" required aria-required="true" aria-describedby="name-help">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Nom <span class="text-error">*</span></legend>
+                    <input class="input w-full validator" type="text" id="name" name="name" value="{{ user.name }}" required aria-required="true" aria-describedby="name-help">
                     <p class="text-sm text-base-content/60" id="name-help">Nom complet de l'utilisateur</p>
-                </div>
+                </fieldset>
 
-                <div>
-                    <label class="label" for="email">Email <span class="text-error">*</span></label>
-                    <input class="input w-full" type="email" id="email" name="email" value="{{ user.email }}" required aria-required="true" aria-describedby="email-help">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Email <span class="text-error">*</span></legend>
+                    <input class="input w-full validator" type="email" id="email" name="email" value="{{ user.email }}" required aria-required="true" aria-describedby="email-help">
                     <p class="text-sm text-base-content/60" id="email-help">Adresse email de l'utilisateur</p>
-                </div>
+                </fieldset>
 
-                <div>
-                    <label class="label" for="group_id">Groupe <span class="text-error">*</span></label>
-                    <select class="select w-full" id="group_id" name="group_id" required aria-required="true" aria-describedby="group-help">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Groupe <span class="text-error">*</span></legend>
+                    <select class="select w-full validator" id="group_id" name="group_id" required aria-required="true" aria-describedby="group-help">
                         {% for group in groups %}
                         <option value="{{ group.id }}" {% if group.id == user.group_id %}selected{% endif %}>
                             {{ group.name }}
@@ -34,7 +34,7 @@
                         {% endfor %}
                     </select>
                     <p class="text-sm text-base-content/60" id="group-help">Groupe auquel appartient l'utilisateur</p>
-                </div>
+                </fieldset>
 
                 <div>
                     <label class="label cursor-pointer justify-start gap-2" for="is_admin">
@@ -43,13 +43,13 @@
                     </label>
                 </div>
 
-                <div>
-                    <label class="label" for="password">Nouveau mot de passe</label>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Nouveau mot de passe</legend>
                     <input class="input w-full" type="password" id="password" name="password" placeholder="Laisser vide pour ne pas changer" aria-describedby="password-help">
                     <p class="text-sm text-base-content/60" id="password-help">
                         Laisser vide pour conserver le mot de passe actuel.
                     </p>
-                </div>
+                </fieldset>
 
                 <div class="flex gap-2" role="group" aria-label="Actions du formulaire">
                     <button class="btn btn-primary" type="submit" aria-label="Enregistrer les modifications" title="Enregistrer les modifications">

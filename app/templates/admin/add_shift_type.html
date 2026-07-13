@@ -12,29 +12,29 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="card bg-base-100 shadow-md">
             <div class="card-body gap-4">
-                <div>
-                    <label class="label">Nom *</label>
-                    <input class="input w-full" type="text" name="name" placeholder="Ex: morning" required aria-required="true">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Nom *</legend>
+                    <input class="input w-full validator" type="text" name="name" placeholder="Ex: morning" required aria-required="true">
                     <p class="text-sm text-base-content/60">Nom technique du type de shift (utilisé dans le code)</p>
-                </div>
+                </fieldset>
 
-                <div>
-                    <label class="label">Libellé *</label>
-                    <input class="input w-full" type="text" name="label" placeholder="Ex: 07h-15h" required aria-required="true">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Libellé *</legend>
+                    <input class="input w-full validator" type="text" name="label" placeholder="Ex: 07h-15h" required aria-required="true">
                     <p class="text-sm text-base-content/60">Libellé affiché aux utilisateurs</p>
-                </div>
+                </fieldset>
 
-                <div>
-                    <label class="label">Heure de début *</label>
-                    <input class="input w-full" type="number" name="start_hour" min="0" max="23" placeholder="Ex: 7" required aria-required="true">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Heure de début *</legend>
+                    <input class="input w-full validator" type="number" name="start_hour" min="0" max="23" placeholder="Ex: 7" required aria-required="true">
                     <p class="text-sm text-base-content/60">Heure de début du shift (0-23)</p>
-                </div>
+                </fieldset>
 
-                <div>
-                    <label class="label">Heure de fin *</label>
-                    <input class="input w-full" type="number" name="end_hour" min="0" max="23" placeholder="Ex: 15" required aria-required="true">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Heure de fin *</legend>
+                    <input class="input w-full validator" type="number" name="end_hour" min="0" max="23" placeholder="Ex: 15" required aria-required="true">
                     <p class="text-sm text-base-content/60">Heure de fin du shift (0-23)</p>
-                </div>
+                </fieldset>
 
                 <div class="flex gap-2">
                     <button class="btn btn-primary" type="submit">
