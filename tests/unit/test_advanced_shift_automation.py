@@ -643,3 +643,89 @@ class TestRebalanceAfterLeave:
 
             # Doit générer des messages mais pas de suppression
             assert len(messages) > 0
+
+    def test_rebalance_after_leave_rolls_back_fully_on_failure(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Régression Phase 3 : si la régénération des astreintes échoue en
+        fin de rééquilibrage, l'astreinte déjà supprimée (flush, pas commit)
+        et les shifts déjà régénérés doivent être annulés - pas de planning
+        partiellement modifié."""
+        with test_app.app_context():
+            friday = date(2023, 12, 15)
+            start_time = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+            end_time = start_time + timedelta(days=7, hours=-14)
+            oncall = OnCall(
+                user_id=test_user.id, start_time=start_time, end_time=end_time
+            )
+            db.session.add(oncall)
+
+            leave = Leave(
+                user_id=test_user.id,
+                start_date=date(2023, 12, 16),
+                end_date=date(2023, 12, 18),
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            oncall_count_before = OnCall.query.count()
+            shift_count_before = Shift.query.count()
+
+            with patch(
+                "app.utils.automation.OnCallAutomation.generate_oncall_schedule",
+                side_effect=RuntimeError("boom"),
+            ):
+                raised = False
+                try:
+                    AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
+                except RuntimeError:
+                    raised = True
+
+            assert raised is True
+            # Rollback complet : l'astreinte supprimée (via flush) doit être
+            # revenue, et aucun shift regénéré ne doit avoir survécu.
+            assert OnCall.query.count() == oncall_count_before
+            assert Shift.query.count() == shift_count_before
+
+    def test_rebalance_after_leave_commits_once_on_success(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Phase 3 : un rééquilibrage réussi (dry_run=False) doit
+        effectivement persister astreintes et shifts régénérés (un seul
+        commit final, pas de commits intermédiaires perdus)."""
+        with test_app.app_context():
+            friday = date(2023, 12, 15)
+            start_time = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+            end_time = start_time + timedelta(days=7, hours=-14)
+            oncall = OnCall(
+                user_id=test_user.id, start_time=start_time, end_time=end_time
+            )
+            db.session.add(oncall)
+
+            leave = Leave(
+                user_id=test_user.id,
+                start_date=date(2023, 12, 16),
+                end_date=date(2023, 12, 18),
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            regenerated_shifts, messages = (
+                AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
+            )
+
+            # L'ancienne astreinte de test_user pour cette période a bien été
+            # supprimée et la suppression persistée (pas juste flush() puis
+            # perdue faute de commit). On vérifie sur (user, start_time)
+            # plutôt que sur l'id : SQLite peut réutiliser un rowid supprimé
+            # pour la nouvelle astreinte régénérée à la même date.
+            assert (
+                OnCall.query.filter_by(
+                    user_id=test_user.id, start_time=start_time
+                ).first()
+                is None
+            )
+            # Les shifts régénérés retournés doivent aussi exister en base.
+            assert len(regenerated_shifts) > 0
+            for shift in regenerated_shifts:
+                assert db.session.get(Shift, shift.id) is not None
