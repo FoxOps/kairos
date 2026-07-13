@@ -15,8 +15,16 @@
          vendor-layers.css pour le détail. -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor-layers.css') }}">
 
-    <!-- Font Awesome 7.2.0 - via CDN cdnjs (7.3.0 pas encore publié) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.2.0/css/all.min.css">
+    <!-- Font Awesome 7.2.0 - via CDN cdnjs (7.3.0 pas encore publié), mode
+         SVG+JS plutôt que la police web habituelle : les 4 fichiers
+         .woff2 hébergés par cdnjs pour cette version sont chacun tronqués
+         d'exactement 1 octet par rapport à la copie de référence (vérifié
+         en comparant aux fichiers vendorisés localement, identiques sauf
+         ce dernier octet) - rejetés par le sanitizer de police de Chromium
+         ("OTS parsing error"), toutes les icônes restaient invisibles.
+         Le mode SVG+JS (officiellement supporté par Font Awesome) ne
+         charge aucune police, contourne le fichier corrompu. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.2.0/js/all.min.js" crossorigin="anonymous"></script>
 
     <!-- daisyUI 5.1.25 + Tailwind CSS 4 (compilateur JIT navigateur,
          zéro étape de build) - via CDN cdnjs -->

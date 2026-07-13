@@ -163,7 +163,10 @@ class TestInlineStylesReplacement:
                         ), f"Style inline trouvé dans base.html: {style_content[:100]}"
 
     def test_dashboard_uses_type_tag_classes(self, test_app):
-        """Test que dashboard.html utilise les classes type-tag au lieu des styles inline."""
+        """Test que dashboard.html utilise des classes de badge daisyUI
+        (plutôt que des styles inline) - anciennement les classes maison
+        type-tag is-primary/is-light, remplacées par des badges daisyUI
+        lors de la refonte Tailwind/daisyUI."""
         with test_app.app_context():
             dashboard_template_path = os.path.join(
                 current_app.template_folder, "dashboard.html"
@@ -171,8 +174,8 @@ class TestInlineStylesReplacement:
             with open(dashboard_template_path) as f:
                 dashboard_content = f.read()
 
-            assert 'class="type-tag is-primary"' in dashboard_content
-            assert 'class="type-tag is-light"' in dashboard_content
+            assert 'class="badge badge-primary"' in dashboard_content
+            assert 'class="badge badge-ghost"' in dashboard_content
 
             assert "var(--bulma-grey)" not in dashboard_content
 

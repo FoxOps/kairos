@@ -4,7 +4,7 @@
 {% block title %}Service indisponible - Leviia{% endblock %}
 
 {% block content %}
-{% call error_page(code=503, title="Service temporairement indisponible", subtitle="Le serveur est actuellement surchargé ou en maintenance.", color="has-text-warning", secondary=[{"onclick": "location.reload()", "icon": "fa-sync-alt", "label": "Réessayer"}]) %}
+{% call error_page(code=503, title="Service temporairement indisponible", subtitle="Le serveur est actuellement surchargé ou en maintenance.", color="text-warning", secondary=[{"onclick": "location.reload()", "icon": "fa-sync-alt", "label": "Réessayer"}]) %}
 <p role="alert" aria-live="assertive">
     Nous effectuons actuellement une maintenance ou notre serveur est surchargé.
     Veuillez réessayer dans quelques minutes.

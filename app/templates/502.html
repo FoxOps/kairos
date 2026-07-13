@@ -4,7 +4,7 @@
 {% block title %}Service temporairement indisponible - Leviia{% endblock %}
 
 {% block content %}
-{% call error_page(code=502, title="Service temporairement indisponible", subtitle="Le serveur a reçu une réponse invalide du serveur en amont.", color="has-text-warning", secondary=[{"onclick": "location.reload()", "icon": "fa-sync-alt", "label": "Réessayer"}]) %}
+{% call error_page(code=502, title="Service temporairement indisponible", subtitle="Le serveur a reçu une réponse invalide du serveur en amont.", color="text-warning", secondary=[{"onclick": "location.reload()", "icon": "fa-sync-alt", "label": "Réessayer"}]) %}
 <p role="alert" aria-live="assertive">
     Nous rencontrons actuellement des problèmes techniques avec nos services.
     Veuillez réessayer dans quelques instants.

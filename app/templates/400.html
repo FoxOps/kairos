@@ -4,7 +4,7 @@
 {% block title %}Requête incorrecte - Leviia{% endblock %}
 
 {% block content %}
-{% call error_page(code=400, title="Requête incorrecte", subtitle="La requête envoyée est mal formée ou invalide.", color="has-text-warning", secondary=[{"onclick": "history.back()", "icon": "fa-arrow-left", "label": "Retour en arrière"}]) %}
+{% call error_page(code=400, title="Requête incorrecte", subtitle="La requête envoyée est mal formée ou invalide.", color="text-warning", secondary=[{"onclick": "history.back()", "icon": "fa-arrow-left", "label": "Retour en arrière"}]) %}
 <p>
     Le serveur ne peut pas traiter votre requête en raison d'une erreur de syntaxe.
 </p>
