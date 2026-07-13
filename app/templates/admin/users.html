@@ -16,6 +16,10 @@
             {% set add_button_icon = 'plus' %}
             {% set add_button_resource_name = 'Ajouter un nouvel utilisateur' %}
             {% include "_add_button.html" %}
+            <a class="button is-light" href="{{ url_for('admin.admin_dashboard') }}"
+               aria-label="Retour à l'administration" title="Retour à l'admin">
+                Retour à l'admin
+            </a>
         </div>
         
         <!-- Tableau des utilisateurs -->
