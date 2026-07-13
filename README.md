@@ -66,36 +66,35 @@ Elle permet de gérer les horaires de travail, les rotations d'astreinte et les 
 
 ---
 
-## 🚀 Installation
+## 🐳 Installation (méthode recommandée : Docker)
 
-### 1. Cloner le dépôt
+```bash
+docker pull harbor.leviia.com/<HARBOR_PROJECT>/leviia-schedule:latest
+mkdir -p leviia-schedule/data leviia-schedule/logs && cd leviia-schedule
+curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/.env.example
+nano .env  # SECRET_KEY, DEFAULT_ADMIN_PASSWORD au minimum
+
+docker run -d --name leviia-schedule -p 5000:5000 --env-file .env \
+  -v "$(pwd)/data:/app/data" -v "$(pwd)/logs:/app/logs" \
+  harbor.leviia.com/<HARBOR_PROJECT>/leviia-schedule:latest
+```
+
+L'application sera accessible à l'adresse : **http://localhost:5000**
+
+> **📖 Documentation détaillée** : [Docs/deployment/docker.md](Docs/deployment/docker.md)
+
+### Installation locale (développement / cas particuliers)
+
+Réservé au développement sur le code ou aux cas où Docker n'est pas
+disponible - l'image Docker ci-dessus reste la façon principale de
+lancer l'application.
 
 ```bash
 git clone https://github.com/FoxOps/leviia-schedule.git
 cd leviia-schedule
-```
-
-### 2. Créer un environnement virtuel (recommandé)
-
-```bash
-# Sur Linux/macOS
 python -m venv venv
-source venv/bin/activate
-
-# Sur Windows
-python -m venv venv
-venv\Scripts\activate
-```
-
-### 3. Installer les dépendances
-
-```bash
+source venv/bin/activate  # Windows : venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-### 4. Démarrer l'application
-
-```bash
 python run.py
 ```
 

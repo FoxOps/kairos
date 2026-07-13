@@ -42,9 +42,9 @@
 
 | Document | Contenu |
 |---|---|
-| [`DEPLOYMENT_GUIDE.md`](deployment/DEPLOYMENT_GUIDE.md) | Prérequis, Gunicorn/uWSGI, base de données, sécurité en production |
-| [`DEPLOYMENT_ADVANCED.md`](deployment/DEPLOYMENT_ADVANCED.md) | Docker, PostgreSQL, Redis, Nginx |
-| [`docker.md`](deployment/docker.md) | Démarrage rapide avec Docker |
+| [`docker.md`](deployment/docker.md) | **Méthode recommandée** : lancer l'image publiée sur le registry (Docker) |
+| [`DEPLOYMENT_ADVANCED.md`](deployment/DEPLOYMENT_ADVANCED.md) | Docker avancé : PostgreSQL, Redis, Nginx |
+| [`DEPLOYMENT_GUIDE.md`](deployment/DEPLOYMENT_GUIDE.md) | Alternative sans Docker : Gunicorn/uWSGI bare-metal, base de données, sécurité en production |
 | [`BACKUP_GUIDE.md`](deployment/BACKUP_GUIDE.md) | Sauvegarde et restauration de la base de données |
 
 ## reference/ — Référence technique

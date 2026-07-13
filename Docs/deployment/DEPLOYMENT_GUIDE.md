@@ -4,6 +4,12 @@
 > **Derniere mise à jour** : Juin 2026  
 > **Statut** : Documentation pour la production
 
+> ⚠️ **Méthode recommandée : Docker.** Ce guide couvre le déploiement
+> **sans Docker** (Gunicorn/uWSGI bare-metal) - une alternative pour les
+> cas où Docker n'est pas disponible ou pas souhaité. Pour la méthode
+> principale (image publiée sur le registry), voir
+> [`docker.md`](docker.md).
+
 ---
 
 ## 📁 Sommaire
@@ -231,78 +237,15 @@ uwsgi --ini uwsgi.ini
 
 ## 6. 📁 Déploiement avec Docker
 
-### 6.1 Créer un Dockerfile
-```dockerfile
-# Dockerfile
-FROM python:3.11-slim
+**Méthode recommandée pour l'ensemble du projet** (voir l'avertissement
+en tête de ce guide) - le vrai `Dockerfile`/`docker-compose.yml` vivent
+sous `docker/`, avec l'image publiée sur un registry par la CI. Ce guide
+couvre spécifiquement le déploiement bare-metal (Gunicorn/uWSGI), donc
+n'entretient pas de copie séparée de cette configuration ici.
 
-# Définir le répertoire de travail
-WORKDIR /app
-
-# Copier les fichiers
-COPY requirements.txt .
-COPY . .
-
-# Installer les dépendances
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Créer les répertoires nécessaires
-RUN mkdir -p /app/logs /app/instance
-
-# Exposer le port
-EXPOSE 5000
-
-# Commande de démarrage
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "run:app"]
-```
-
-### 6.2 Créer un docker-compose.yml
-```yaml
-# docker-compose.yml
-version: '3.8'
-
-services:
-  web:
-    build: .
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./logs:/app/logs
-      - ./instance:/app/instance
-    environment:
-      - FLASK_ENV=production
-      - SECRET_KEY=${SECRET_KEY}
-      - DATABASE_URL=${DATABASE_URL}
-    restart: unless-stopped
-    
-  # PostgreSQL (optionnel)
-  db:
-    image: postgres:15
-    environment:
-      - POSTGRES_DB=leviia
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
-```
-
-### 6.3 Démarrer avec Docker Compose
-```bash
-# Démarrer les services
-docker-compose up -d
-
-# Arrêter les services
-docker-compose down
-
-# Voir les logs
-docker-compose logs -f web
-```
+👉 Voir [`docker.md`](docker.md) pour le détail complet : tirer l'image
+du registry (méthode recommandée), ou la construire soi-même/passer par
+Docker Compose (alternative dev).
 
 ---
 
