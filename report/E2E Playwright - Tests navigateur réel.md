@@ -110,7 +110,38 @@ skippés (visible dans le résumé pytest comme `skipped`, pas caché).
    nouveau job CI fonctionne réellement, pas juste copié d'un autre
    job par analogie).
 
+### Tests OIDC (commits `a9788f7`, `ae7ddbc`, `8e07a41`)
+
+Extension du périmètre initial (Playwright générique) : ajout de la
+couverture de test pour l'authentification OIDC/SSO
+(`config_oidc.py`, `app/auth/oidc_auth.py`, `app/auth/user_manager.py`),
+jusque-là à zéro test malgré ~450 lignes de logique. Trois niveaux :
+
+1. **Unitaire** (68 tests, `tests/unit/test_oidc_config.py`,
+   `test_oidc_auth.py`, `test_user_manager_oidc_sync.py`) : chaque
+   méthode isolée, appels réseau (`requests.get/post`) mockés, JWT de
+   test non signé (le code ne vérifie jamais de signature).
+2. **Intégration** (13 tests, `tests/integration/test_oidc_routes.py`) :
+   câblage des routes Flask (`/login`, `/oidc/login`, `/oidc/callback`,
+   `/logout`), `oidc_auth` mocké à la frontière du module de routes.
+   **A trouvé un bug réel et bloquant** : boucle de redirection
+   infinie (`/login` ↔ `/oidc/login`) sur tout échec OIDC quand le SSO
+   est forcé (`OIDC_DISABLE_BASIC_AUTH=true`) - l'app devenait
+   totalement inaccessible dès que le fournisseur avait un problème.
+   Corrigé (paramètre `oidc_error=1` qui casse le renvoi automatique).
+3. **E2E navigateur réel** (5 tests, `tests/e2e/test_oidc_browser_flow.py`) :
+   vrai flux HTTP de bout en bout contre un faux fournisseur OIDC
+   minimal mais réel (`tests/e2e/oidc_mock_provider.py`, pas de mocks
+   Python, pas de Docker) - redirection navigateur, vraie page de
+   login avec un clic, échanges serveur-à-serveur réels, session
+   réellement établie et invalidée.
+
+Chaque niveau vérifié en conditions réelles avant commit (voir
+messages de commit pour le détail précis de chaque vérification).
+
 ---
 
-*Dernière mise à jour : 2026-07-13 — implémentation et vérifications
-terminées. PR #104 en draft, prête pour revue.*
+*Dernière mise à jour : 2026-07-13 — implémentation Playwright générique
++ couverture OIDC complète (unitaire/intégration/E2E navigateur), un
+bug réel trouvé et corrigé (boucle de redirection infinie SSO). 881
+tests passent au total. PR #104 en draft, prête pour revue.*
