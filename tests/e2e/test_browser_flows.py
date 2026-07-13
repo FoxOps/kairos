@@ -48,13 +48,15 @@ class TestNavbarBurgerMenu:
     """Comportement JS pur (toggle du drawer daisyUI/aria-expanded) -
     jamais exécuté par le client de test Flask, donc jamais vérifié
     avant cette suite. Bug réel trouvé et corrigé en PR #103 : le burger
-    n'existait même pas. Depuis la refonte visuelle Dracula/Alucard,
-    #navbar-menu (le <ul> à l'intérieur de .drawer-side) est piloté par
-    la case à cocher #mobile-drawer (mécanisme CSS natif de daisyUI) -
-    navbar-menu.js ne fait que synchroniser son état "checked" et
-    aria-expanded, pas de classe "hidden" togglée manuellement. La nav
-    desktop vit dans un élément séparé, #navbar-menu-desktop (toujours
-    visible à partir du breakpoint md, jamais touché par le burger)."""
+    n'existait même pas. Depuis la refonte layout sidebar (un seul menu
+    de navigation vertical, #sidebar-menu, plutôt qu'une nav horizontale
+    + un panneau mobile séparé) : #sidebar-menu est piloté par la case à
+    cocher #mobile-drawer (mécanisme CSS natif de daisyUI, `drawer
+    lg:drawer-open`) - navbar-menu.js ne fait que synchroniser son état
+    "checked" et aria-expanded. Sous le breakpoint lg, #sidebar-menu est
+    un panneau overlay masqué par défaut (case décochée) ; à partir de
+    lg, il reste affiché en permanence comme sidebar (daisyUI ignore
+    l'état de la case à ce breakpoint) et le burger disparaît."""
 
     def test_burger_toggles_menu_on_mobile_viewport(self, logged_in_page):
         page = logged_in_page
@@ -122,13 +124,12 @@ class TestNavbarBurgerMenu:
         assert burger.get_attribute("aria-expanded") == "false"
         assert page.evaluate("document.activeElement.id") == "navbar-burger"
 
-    def test_burger_hidden_on_desktop_viewport(self, logged_in_page):
+    def test_sidebar_permanent_on_desktop_viewport(self, logged_in_page):
         page = logged_in_page
         page.set_viewport_size({"width": 1280, "height": 900})
 
         assert not page.locator("#navbar-burger").is_visible()
-        assert not page.locator("#navbar-menu").is_visible()
-        assert page.locator("#navbar-menu-desktop").is_visible()
+        assert page.locator("#sidebar-menu").is_visible()
 
 
 class TestDarkThemeToggle:
