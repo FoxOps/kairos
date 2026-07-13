@@ -12,7 +12,6 @@ leviia-schedule/
     ├── entrypoint.sh       # Script de démarrage (serveur web + crond conditionnel)
     ├── crontabs/appuser    # Planification des rappels email et sauvegardes (crond)
     ├── docker-compose.yml  # Configuration de base
-    ├── Makefile            # Commandes simplifiées
     ├── .env                # Variables d'environnement (à créer, non committé)
     ├── data/                # Données SQLite persistantes
     └── logs/                # Logs
@@ -22,21 +21,64 @@ leviia-schedule/
 
 ---
 
-## 🚀 Utilisation de Base
+## 📥 Utiliser l'image déjà construite (registry)
+
+L'image est construite et publiée automatiquement par la CI sur chaque
+commit de la branche par défaut (job `build_docker`, voir
+`.gitlab-ci/.gitlab-ci.yml`), sur un registry Harbor auto-hébergé :
+
+```bash
+docker pull harbor.leviia.com/<HARBOR_PROJECT>/leviia-schedule:latest
+# ou une version précise (SHA court du commit) :
+docker pull harbor.leviia.com/<HARBOR_PROJECT>/leviia-schedule:<sha-court>
+```
+
+> Remplacez `<HARBOR_PROJECT>` par le nom du projet Harbor réel (voir la
+> variable CI/CD `CI_REGISTRY_IMAGE`, configurée pour pointer vers Harbor
+> plutôt que vers le registry GitLab par défaut).
+
+C'est équivalent à construire l'image vous-même (section suivante) - à
+utiliser en priorité si vous n'avez pas besoin de modifier le code.
+Ensuite, passez directement à la section [Démarrer](#3️⃣-démarrer) en
+remplaçant `leviia-schedule:dev` par le tag de l'image tirée du registry
+dans `docker/docker-compose.yml` (`image:`), ou lancez-la directement
+avec `docker run` (voir [Configuration](#⚙️-configuration) pour les
+variables d'environnement et volumes nécessaires).
+
+---
+
+## 🚀 Construire l'image soi-même
+
+Pas de wrapper Make : `docker build` en direct, lancé **depuis le
+dossier `docker/`** (le `Dockerfile` a besoin du reste du dépôt comme
+contexte de build - `..` - mais la commande elle-même s'exécute dans
+`docker/`, pas depuis la racine) :
+
+```bash
+cd docker
+docker build -f Dockerfile -t leviia-schedule:dev ..
+```
+
+Ou, si vous préférez orchestrer via Compose (nécessaire pour le service
+`oidc-mock` associé, voir plus bas) :
+
+```bash
+cd docker
+docker compose build
+```
 
 ### 1️⃣ Configurer l'environnement
 
 `docker-compose.yml` n'a pas de bloc `environment:` - tout passe par le
-fichier `.env` (`env_file: ./.env`, chemin résolu relativement à
+fichier `.env` (`env_file: ./.env`, résolu relativement à
 `docker/docker-compose.yml`, donc **placez-le à `docker/.env`**, pas à
 la racine du dépôt).
 
 ```bash
-# Copier l'exemple (depuis la racine du dépôt)
-cp .env.example docker/.env
-
-# Modifier les variables importantes
-nano docker/.env
+# Depuis le dossier docker/
+cd docker
+cp ../.env.example .env
+nano .env
 ```
 
 **Variables minimales dans `docker/.env` :**
@@ -61,19 +103,20 @@ TALISMAN_FORCE_HTTPS=false
 
 ### 2️⃣ Construire l'image
 
-```bash
-make -f docker/Makefile build
-```
+Voir [Construire l'image soi-même](#🚀-construire-limage-soi-même)
+ci-dessus, ou tirez l'image du registry (voir plus haut) pour sauter
+cette étape.
 
 ### 3️⃣ Démarrer
 
 ```bash
-make -f docker/Makefile up
+# Toujours depuis le dossier docker/
+docker compose up -d
 ```
 
 Mode développement (Flask avec reloader) ou production (Gunicorn) selon
-`FLASK_ENV` dans `docker/.env` (`development` par défaut) - pas de
-cible Make séparée, une seule variable à changer.
+`FLASK_ENV` dans `docker/.env` (`development` par défaut) - une seule
+variable à changer, pas de commande séparée.
 
 ### 4️⃣ Accéder à l'application
 
@@ -127,6 +170,10 @@ DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe_sécurisé
 - **Dépendances** : Installe `requirements.txt` + Gunicorn
 - **Utilisateur** : `appuser` (non-root) pour la sécurité
 - **Taille** : Optimisée avec Alpine et nettoyage des dépendances de build
+- **Contexte de build** : `..` (racine du dépôt) - le `Dockerfile` copie
+  `docker/requirements.txt`, `docker/entrypoint.sh` et le code applicatif
+  (`COPY . .`), donc le contexte doit englober tout le dépôt même si la
+  commande `docker build` est lancée depuis `docker/`.
 
 ### entrypoint.sh
 - **Initialisation** : Crée la base de données SQLite si elle n'existe pas
@@ -140,7 +187,7 @@ DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe_sécurisé
   à gérer. Pour que les sauvegardes locales survivent aux recréations du
   conteneur, réglez `BACKUP_LOCAL_DIR=/app/data/backups` (le volume
   `./data:/app/data` est déjà monté).
-- **Sélection serveur** : 
+- **Sélection serveur** :
   - `development` → `python run.py` (avec reloader)
   - `production` → `gunicorn` (1 worker pour SQLite)
 
@@ -154,22 +201,21 @@ DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe_sécurisé
 - **Volumes** : Persistance des données et logs
 - **Ports** : 5000 exposé
 
-### Makefile
-- **Commandes simplifiées** : build, up, down, logs, shell
-- **Mode production** : `FLASK_ENV=production` dans `docker/.env`, puis
-  `up` comme d'habitude (pas de cible séparée)
-
 ---
 
 ## 🎯 Commandes
 
+Toutes les commandes ci-dessous s'exécutent **depuis le dossier
+`docker/`** (`cd docker` au préalable) :
+
 | Commande | Description |
 |----------|-------------|
-| `make -f docker/Makefile build` | Construire l'image |
-| `make -f docker/Makefile up` | Démarrer (dev ou prod selon `FLASK_ENV` dans `docker/.env`) |
-| `make -f docker/Makefile down` | Arrêter |
-| `make -f docker/Makefile logs` | Voir les logs |
-| `make -f docker/Makefile shell` | Shell dans le conteneur |
+| `docker build -f Dockerfile -t leviia-schedule:dev ..` | Construire l'image (docker build de base, sans Compose) |
+| `docker compose build` | Construire l'image via Compose |
+| `docker compose up -d` | Démarrer (dev ou prod selon `FLASK_ENV` dans `.env`) |
+| `docker compose down` | Arrêter |
+| `docker compose logs -f` | Voir les logs |
+| `docker compose exec leviia-schedule sh` | Shell dans le conteneur |
 
 ---
 
@@ -195,7 +241,8 @@ echo ".env" >> .gitignore
 
 ### 4. En production
 
-- Mettre `FLASK_ENV=production` dans `docker/.env`, puis `make -f docker/Makefile up`
+- Mettre `FLASK_ENV=production` dans `docker/.env`, puis (depuis
+  `docker/`) `docker compose up -d`
 - Changer `SECRET_KEY` et `DEFAULT_ADMIN_PASSWORD`
 - Configurer un reverse proxy (Nginx, Traefik) pour HTTPS, puis repasser
   `TALISMAN_FORCE_HTTPS=true` (ou retirer la ligne) dans `docker/.env`
@@ -224,11 +271,13 @@ Ce guide explique comment étendre cette configuration pour utiliser :
 
 ## 🐛 Dépannage
 
+Toutes les commandes ci-dessous s'exécutent depuis `docker/`.
+
 ### Problème : Le conteneur ne démarre pas
 
 **Vérifier les logs :**
 ```bash
-docker compose logs web
+docker compose logs leviia-schedule
 ```
 
 **Vérifier le build :**
@@ -276,6 +325,8 @@ kill <PID>
 
 ## 🔄 Mises à jour
 
+Toutes les commandes ci-dessous s'exécutent depuis `docker/`.
+
 ### Mettre à jour l'application
 
 ```bash
@@ -283,7 +334,7 @@ kill <PID>
 docker compose down
 
 # Mettre à jour le code
-git pull origin main
+git -C .. pull origin main
 
 # Reconstruire et redémarrer
 docker compose build --no-cache
@@ -294,10 +345,10 @@ docker compose up -d
 
 ```bash
 # Dans le conteneur
-make -f docker/Makefile shell
+docker compose exec leviia-schedule sh
 
-# Mettre à jour requirements.txt
-pip freeze > requirements.txt
+# Mettre à jour requirements.txt (depuis la racine du dépôt)
+pip freeze > ../docker/requirements.txt
 
 # Reconstruire
 docker compose build --no-cache
@@ -312,15 +363,16 @@ docker compose build --no-cache
 ```bash
 # Cloner le projet
 git clone https://github.com/FoxOps/leviia-schedule.git
-cd leviia-schedule
+cd leviia-schedule/docker
 
 # Configurer (docker/.env, pas .env à la racine - voir section
 # "Configurer l'environnement" plus haut)
-cp .env.example docker/.env
-nano docker/.env  # Modifier SECRET_KEY, DEFAULT_ADMIN_PASSWORD, DATABASE_URL, TALISMAN_FORCE_HTTPS
+cp ../.env.example .env
+nano .env  # Modifier SECRET_KEY, DEFAULT_ADMIN_PASSWORD, DATABASE_URL, TALISMAN_FORCE_HTTPS
 
-# Démarrer
-make -f docker/Makefile up
+# Construire puis démarrer
+docker compose build
+docker compose up -d
 
 # Accéder à l'application
 # http://localhost:5000
@@ -329,13 +381,14 @@ make -f docker/Makefile up
 ### Déploiement en production simple
 
 ```bash
-# Configurer pour la production
-cp .env.example docker/.env
-nano docker/.env  # Modifier SECRET_KEY, DEFAULT_ADMIN_PASSWORD, DATABASE_URL, FLASK_ENV=production
+cd docker
+cp ../.env.example .env
+nano .env  # Modifier SECRET_KEY, DEFAULT_ADMIN_PASSWORD, DATABASE_URL, FLASK_ENV=production
 
-# Démarrer (le mode production - Gunicorn - est piloté par FLASK_ENV
-# dans docker/.env, pas par une cible Make séparée)
-make -f docker/Makefile up
+# Construire puis démarrer (le mode production - Gunicorn - est piloté
+# par FLASK_ENV dans .env, pas par une commande séparée)
+docker compose build
+docker compose up -d
 
 # Accéder à l'application
 # http://localhost:5000
@@ -349,8 +402,8 @@ Pour des configurations avancées (PostgreSQL, Redis, etc.), consultez :
 - [Guide Avancé : PostgreSQL et Redis](DEPLOYMENT_ADVANCED.md)
 
 Pour des problèmes spécifiques, vérifiez :
-1. Les logs avec `docker compose logs`
-2. La configuration dans `.env`
+1. Les logs avec `docker compose logs` (depuis `docker/`)
+2. La configuration dans `docker/.env`
 3. Les permissions des fichiers
 
 ---

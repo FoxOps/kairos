@@ -470,7 +470,7 @@ docker compose -f docker/docker-compose.yml \
 
 ```bash
 # Dans le conteneur
-make -f docker/Makefile shell
+docker compose -f docker/docker-compose.yml exec leviia-schedule sh
 
 # Mettre à jour requirements.txt
 pip freeze > requirements.txt
