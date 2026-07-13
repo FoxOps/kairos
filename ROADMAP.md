@@ -211,7 +211,6 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 | Élément | Statut | Priorité | Livraison estimée | Détails |
 |---------|--------|----------|-------------------|---------|
 | **Notifications par email** | ❌ | **Haute** | v0.7 | Alertes pour les astreintes et shifts |
-| **Répétition des shifts** | ❌ | Haute | v0.7 | Shifts récurrents (hebdomadaires, mensuels) |
 | **Échanges de shifts entre utilisateurs** | ❌ | Moyenne | v0.8 | Système de demande et validation |
 | **Multi-langues (i18n)** | ❌ | Moyenne | v0.8 | Français, Anglais, Espagnol |
 | **Gestion des fuseaux horaires** | ❌ | Moyenne | v0.8 | Support multi-timezone |
@@ -221,8 +220,6 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 
 | Élément | Statut | Priorité | Livraison estimée | Détails |
 |---------|--------|----------|-------------------|---------|
-| **Google Calendar API** | ❌ | Moyenne | v0.8 | Synchronisation bidirectionnelle |
-| **Microsoft Outlook API** | ❌ | Moyenne | v0.9 | Synchronisation avec Exchange |
 | **Webhooks** | ❌ | Basse | v0.9 | Notifications vers des services externes |
 | **API REST publique** | ❌ | Moyenne | v0.9 | Pour intégrations tierces |
 
@@ -246,11 +243,8 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 | Élément | Statut | Priorité | Livraison estimée | Détails |
 |---------|--------|----------|-------------------|---------|
 | **Application mobile** | ❌ | Basse | v2.0 | React Native ou Flutter |
-| **Synchronisation hors ligne** | ❌ | Basse | v2.0 | PWA avec cache local |
-| **Intelligence artificielle** | ❌ | Très basse | v3.0 | Suggestions de planning optimisé |
 | **Module de reporting** | ❌ | Moyenne | v1.5 | Statistiques et analytics |
 | **API GraphQL** | ❌ | Basse | v1.5 | Alternative à l'API REST |
-| **Plugin WordPress** | ❌ | Très basse | v2.0 | Intégration avec WordPress |
 
 ---
 
@@ -281,12 +275,9 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 - ✅ Refonte UI/UX (PR #103 : palette, burger mobile, composants, dashboard, audit responsive)
 - ✅ Calendrier interactif (drag & drop, FullCalendar)
 - ❌ Notifications par email
-- ❌ Répétition des shifts
 - ❌ Multi-langues (i18n)
 
 ### Version 0.8 (Intégrations)
-- ❌ Google Calendar API
-- ❌ Microsoft Outlook API
 - ❌ Échanges de shifts entre utilisateurs
 - ❌ Accessibilité WCAG complète
 - ❌ API REST publique
@@ -539,16 +530,14 @@ Pour toute question concernant la feuille de route :
 
 ### À moyen terme (1 mois)
 1. **Implémenter les notifications par email**
-2. **Ajouter la répétition des shifts**
-3. **Améliorer l'accessibilité WCAG** (partiellement fait : skip link,
+2. **Améliorer l'accessibilité WCAG** (partiellement fait : skip link,
    focus-visible, aria - refonte UI/UX terminée mais audit WCAG complet
    pas encore fait)
 
 ### À long terme (3-6 mois)
-1. **Intégration Google Calendar API**
-2. **Support multi-langues (i18n)**
-3. **API REST publique**
-4. **Préparation pour la version 1.0 stable**
+1. **Support multi-langues (i18n)**
+2. **API REST publique**
+3. **Préparation pour la version 1.0 stable**
 
 ---
 
