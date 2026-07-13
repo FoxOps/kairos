@@ -16,12 +16,15 @@ Services:
 - schedule_service: Calendar event aggregation (shifts + on-calls + leaves)
 - automation_admin_service: Admin automation screens support (form
   parsing, period clearing, rotation order persistence)
+- notification_service: Weekly email reminders (shifts + on-call),
+  called by scripts/send_*_notifications.py, not by any Flask route
 """
 
 from app.services.automation_admin_service import AutomationAdminService
 from app.services.export_service import ExportService
 from app.services.group_service import GroupService
 from app.services.leave_service import LeaveService
+from app.services.notification_service import NotificationService
 from app.services.oncall_service import OnCallService
 from app.services.schedule_service import ScheduleService
 from app.services.shift_service import ShiftService
@@ -38,4 +41,5 @@ __all__ = [
     "ExportService",
     "ScheduleService",
     "AutomationAdminService",
+    "NotificationService",
 ]

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Vos shifts de la semaine</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f5f5f5; font-family:Arial, Helvetica, sans-serif; color:#363636;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5; padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:6px; overflow:hidden;">
+          <tr>
+            <td style="background-color:#00b89c; padding:20px 24px;">
+              <h1 style="margin:0; font-size:20px; color:#ffffff;">Leviia Schedule</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px;">
+              <p style="margin-top:0;">Bonjour {{ user_name }},</p>
+              <p>Voici vos shifts pour la semaine du {{ week_start.strftime('%d/%m/%Y') }} au {{ week_end.strftime('%d/%m/%Y') }} :</p>
+              <table role="presentation" width="100%" cellpadding="8" cellspacing="0" style="border-collapse:collapse; margin:16px 0;">
+                <thead>
+                  <tr style="background-color:#f0f0f0; text-align:left;">
+                    <th style="padding:8px; border-bottom:1px solid #e0e0e0;">Jour</th>
+                    <th style="padding:8px; border-bottom:1px solid #e0e0e0;">Date</th>
+                    <th style="padding:8px; border-bottom:1px solid #e0e0e0;">Créneau</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for shift in shifts %}
+                  <tr>
+                    <td style="padding:8px; border-bottom:1px solid #f0f0f0;">{{ shift.date.strftime('%A')|capitalize }}</td>
+                    <td style="padding:8px; border-bottom:1px solid #f0f0f0;">{{ shift.date.strftime('%d/%m/%Y') }}</td>
+                    <td style="padding:8px; border-bottom:1px solid #f0f0f0;">{{ shift.start_time.strftime('%Hh%M') }} - {{ shift.end_time.strftime('%Hh%M') }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              {% if app_base_url %}
+              <p>
+                <a href="{{ app_base_url }}/schedule" style="display:inline-block; background-color:#00b89c; color:#ffffff; text-decoration:none; padding:10px 18px; border-radius:4px;">Voir le planning</a>
+              </p>
+              {% endif %}
+              <p style="color:#777777; font-size:13px; margin-top:24px;">Ceci est un rappel automatique envoyé chaque dimanche pour la semaine à venir.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

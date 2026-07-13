@@ -126,6 +126,15 @@ class ShiftRepository:
         ).all()
 
     @staticmethod
+    def list_in_date_range_with_user(start_date: date, end_date: date) -> list[Shift]:
+        return (
+            Shift.query.options(joinedload(Shift.user), joinedload(Shift.shift_type))
+            .filter(Shift.date >= start_date, Shift.date <= end_date)
+            .order_by(Shift.user_id, Shift.start_time)
+            .all()
+        )
+
+    @staticmethod
     def delete_in_date_range(start_date: date, end_date: date) -> int:
         shifts = ShiftRepository.list_in_date_range(start_date, end_date)
         for shift in shifts:

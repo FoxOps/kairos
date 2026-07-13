@@ -1,6 +1,6 @@
 # 🛡️ Guide Administrateur - Leviia Schedule
 
-> **Version** : 1.0.0 | **Dernière mise à jour** : Juin 2026
+> **Version** : 1.1.0 | **Dernière mise à jour** : Juillet 2026
 > **Public** : Administrateurs Leviia Schedule uniquement
 
 ---
@@ -766,16 +766,55 @@ Remplacez les fichiers dans `app/templates/` :
 2. Ajoutez vos styles personnalisés
 3. Le fichier sera automatiquement chargé
 
-### Personnalisation des Emails (À venir)
+### Notifications par Email
 
-> 📌 **Fonctionnalité prévue** : La personnalisation des emails sera disponible dans la version 0.7.
+Leviia Schedule envoie des rappels hebdomadaires par email :
+- Un récapitulatif des shifts de la semaine à venir, envoyé le
+  **dimanche** (24h avant le début des shifts du lundi).
+- Un rappel d'astreinte, envoyé le **jeudi** (24h avant le début de
+  l'astreinte du vendredi 21h).
+
+Ces emails sont envoyés par deux scripts autonomes
+(`scripts/send_shift_notifications.py` et
+`scripts/send_oncall_notifications.py`), déclenchés par une tâche cron
+externe - **pas** par l'application Flask elle-même. Un seul email est
+envoyé par semaine et par utilisateur (garde-fou anti-doublon en base).
+
+#### Activer les notifications
+
+1. Configurez les variables SMTP dans `.env` (voir
+   [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-configuration-des-notifications)) :
+   `NOTIFICATIONS_ENABLED=true`, `NOTIFICATION_FROM_EMAIL`, `SMTP_HOST`,
+   `SMTP_PORT`, `SMTP_USERNAME`/`SMTP_PASSWORD` si votre serveur SMTP
+   requiert une authentification.
+2. Ajoutez les deux entrées crontab (voir `scripts/cron_example.sh`
+   pour un exemple complet) :
+
+```bash
+# Dimanche 9h : rappel des shifts de la semaine
+0 9 * * 0 cd /chemin/vers/leviia-schedule && venv/bin/python scripts/send_shift_notifications.py >> /var/log/leviia-notifications.log 2>&1
+
+# Jeudi 9h : rappel de l'astreinte du vendredi
+0 9 * * 4 cd /chemin/vers/leviia-schedule && venv/bin/python scripts/send_oncall_notifications.py >> /var/log/leviia-notifications.log 2>&1
+```
+
+Si `NOTIFICATIONS_ENABLED` n'est pas activé (ou si la config SMTP est
+incomplète), les scripts se terminent silencieusement sans rien
+envoyer - pas besoin de désactiver le cron pour couper les
+notifications, une seule variable d'environnement suffit.
+
+#### Personnaliser le contenu des emails
+
+Les gabarits (HTML + texte) sont dans `app/templates/emails/` :
+`shift_weekly.html`/`.txt` et `oncall_weekly.html`/`.txt`. Ce sont des
+templates Jinja2 classiques - modifiez-les directement pour changer le
+contenu, la mise en forme ou la marque (logo, couleurs).
 
 ### Personnalisation des Règles Métiers
 
 Vous pouvez personnaliser les règles métiers dans :
 - `app/utils/automation/` : règles d'automatisation
-  (`advanced_shift_automation.py`, `oncall_automation.py`,
-  `business_rules.py`)
+  (`advanced_shift_automation.py`, `oncall_automation.py`)
 - `app/utils/helpers/common_helpers.py` : fonctions de validation
   (`can_add_shift`, `can_add_leave`, `can_add_oncall`)
 - `app/auth/decorators.py` : décorateurs de garde de route

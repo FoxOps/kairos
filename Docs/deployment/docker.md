@@ -2,17 +2,20 @@
 
 ## 📋 Structure Ultra-Simple
 
+Chemins relatifs (`.env`, `data/`, `logs/`) résolus par rapport à
+`docker/docker-compose.yml`, donc tous sous `docker/` :
+
 ```
 leviia-schedule/
-├── docker/
-│   ├── Dockerfile      # Image Docker ultra-légère
-│   ├── entrypoint.sh   # Script de démarrage
-│   ├── docker-compose.yml  # Configuration de base
-│   └── Makefile        # Commandes simplifiées
-│
-├── .env               # Variables d'environnement
-├── data/              # Données SQLite persistantes
-└── logs/              # Logs
+└── docker/
+    ├── Dockerfile          # Image Docker ultra-légère
+    ├── entrypoint.sh       # Script de démarrage (serveur web + crond conditionnel)
+    ├── crontabs/appuser    # Planification des rappels email (crond)
+    ├── docker-compose.yml  # Configuration de base
+    ├── Makefile            # Commandes simplifiées
+    ├── .env                # Variables d'environnement (à créer, non committé)
+    ├── data/                # Données SQLite persistantes
+    └── logs/                # Logs
 ```
 
 **Taille de l'image** : ~150 Mo (avec Alpine Linux)
@@ -23,18 +26,37 @@ leviia-schedule/
 
 ### 1️⃣ Configurer l'environnement
 
+`docker-compose.yml` n'a pas de bloc `environment:` - tout passe par le
+fichier `.env` (`env_file: ./.env`, chemin résolu relativement à
+`docker/docker-compose.yml`, donc **placez-le à `docker/.env`**, pas à
+la racine du dépôt).
+
 ```bash
-# Copier l'exemple
-cp .env.example .env
+# Copier l'exemple (depuis la racine du dépôt)
+cp .env.example docker/.env
 
 # Modifier les variables importantes
-nano .env
+nano docker/.env
 ```
 
-**Variables minimales dans `.env` :**
+**Variables minimales dans `docker/.env` :**
 ```env
 SECRET_KEY=votre_clé_secrète
 DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe
+```
+
+**Variables à adapter pour Docker** (valeurs différentes de celles par
+défaut dans `.env.example`, pensées pour une exécution hors conteneur) :
+```env
+# Chemin absolu dans le conteneur, résolu sur le volume monté
+# (./data:/app/data) - sans ça la base SQLite n'est pas persistée.
+DATABASE_URL=sqlite:////app/data/app.db
+
+# Pas de reverse proxy TLS dans cette stack par défaut : forcer HTTPS
+# ferait boucler chaque requête sur une redirection https:// que rien
+# ne sert. Repassez à true (ou retirez la ligne) une fois un reverse
+# proxy TLS placé devant ce service.
+TALISMAN_FORCE_HTTPS=false
 ```
 
 ### 2️⃣ Construire l'image
@@ -46,12 +68,12 @@ make -f docker/Makefile build
 ### 3️⃣ Démarrer
 
 ```bash
-# Mode développement (Flask avec reloader)
 make -f docker/Makefile up
-
-# Mode production (Gunicorn avec 1 worker)
-make -f docker/Makefile up-prod
 ```
+
+Mode développement (Flask avec reloader) ou production (Gunicorn) selon
+`FLASK_ENV` dans `docker/.env` (`development` par défaut) - pas de
+cible Make séparée, une seule variable à changer.
 
 ### 4️⃣ Accéder à l'application
 
@@ -71,18 +93,26 @@ Ouvrez votre navigateur : [http://localhost:5000](http://localhost:5000)
 |----------|-------------|--------|--------|
 | `FLASK_ENV` | Mode (development/production) | development | ❌ |
 | `SECRET_KEY` | Clé secrète Flask | requis | ✅ |
-| `DATABASE_URL` | URL de la base de données | sqlite:///app/data/app.db | ❌ |
+| `DATABASE_URL` | URL de la base de données (voir note ci-dessous) | sqlite:////app/data/app.db | ❌ |
+| `TALISMAN_FORCE_HTTPS` | Forcer HTTPS - `false` sans reverse proxy TLS | `false` (dev/tests), `true` (prod) | ❌ |
 | `DEFAULT_ADMIN_PASSWORD` | Mot de passe admin | admin123 | ✅ |
 
-### Exemple de `.env` complet
+> **Note `DATABASE_URL`** : quatre slashs (`sqlite:////app/data/app.db`),
+> pas trois - c'est un chemin absolu (`/app/data/app.db`) résolu sur le
+> volume monté, pas un chemin relatif.
+
+### Exemple de `docker/.env` complet
 
 ```env
 # Configuration de base
 FLASK_ENV=development
 SECRET_KEY=votre_clé_secrète_générée
 
-# Base de données (SQLite par défaut)
-DATABASE_URL=sqlite:///app/data/app.db
+# Base de données - chemin absolu sur le volume monté (./data:/app/data)
+DATABASE_URL=sqlite:////app/data/app.db
+
+# Pas de reverse proxy TLS devant ce service par défaut
+TALISMAN_FORCE_HTTPS=false
 
 # Mot de passe admin
 DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe_sécurisé
@@ -101,18 +131,28 @@ DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe_sécurisé
 ### entrypoint.sh
 - **Initialisation** : Crée la base de données SQLite si elle n'existe pas
 - **Données par défaut** : Crée les types de shifts, le groupe et l'admin
+- **Notifications par email** : si `NOTIFICATIONS_ENABLED=true` (voir
+  `.env`), démarre `crond` (busybox, déjà présent dans l'image Alpine,
+  pas de paquet supplémentaire) en arrière-plan avant de lancer le
+  serveur web - planning dans `docker/crontabs/appuser`. Rien de plus à
+  configurer : une seule variable d'environnement, aucun service Docker
+  supplémentaire à gérer.
 - **Sélection serveur** : 
   - `development` → `python run.py` (avec reloader)
   - `production` → `gunicorn` (1 worker pour SQLite)
 
 ### docker-compose.yml
-- **Service web** : Conteneur avec l'application
+- **Service web** : conteneur avec l'application (et, si activé, les
+  rappels par email - même conteneur, voir ci-dessus) - voir
+  [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-configuration-des-notifications)
+  pour la configuration SMTP
 - **Volumes** : Persistance des données et logs
 - **Ports** : 5000 exposé
 
 ### Makefile
 - **Commandes simplifiées** : build, up, down, logs, shell
-- **Mode production** : `up-prod` pour démarrer avec Gunicorn
+- **Mode production** : `FLASK_ENV=production` dans `docker/.env`, puis
+  `up` comme d'habitude (pas de cible séparée)
 
 ---
 
@@ -121,8 +161,7 @@ DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe_sécurisé
 | Commande | Description |
 |----------|-------------|
 | `make -f docker/Makefile build` | Construire l'image |
-| `make -f docker/Makefile up` | Démarrer (dev) |
-| `make -f docker/Makefile up-prod` | Démarrer (prod) |
+| `make -f docker/Makefile up` | Démarrer (dev ou prod selon `FLASK_ENV` dans `docker/.env`) |
 | `make -f docker/Makefile down` | Arrêter |
 | `make -f docker/Makefile logs` | Voir les logs |
 | `make -f docker/Makefile shell` | Shell dans le conteneur |
@@ -151,9 +190,10 @@ echo ".env" >> .gitignore
 
 ### 4. En production
 
-- Utiliser `make -f docker/Makefile up-prod`
+- Mettre `FLASK_ENV=production` dans `docker/.env`, puis `make -f docker/Makefile up`
 - Changer `SECRET_KEY` et `DEFAULT_ADMIN_PASSWORD`
-- Configurer un reverse proxy (Nginx, Traefik) pour HTTPS
+- Configurer un reverse proxy (Nginx, Traefik) pour HTTPS, puis repasser
+  `TALISMAN_FORCE_HTTPS=true` (ou retirer la ligne) dans `docker/.env`
 
 ---
 
@@ -269,9 +309,10 @@ docker compose build --no-cache
 git clone https://github.com/FoxOps/leviia-schedule.git
 cd leviia-schedule
 
-# Configurer
-cp .env.example .env
-nano .env  # Modifier SECRET_KEY et DEFAULT_ADMIN_PASSWORD
+# Configurer (docker/.env, pas .env à la racine - voir section
+# "Configurer l'environnement" plus haut)
+cp .env.example docker/.env
+nano docker/.env  # Modifier SECRET_KEY, DEFAULT_ADMIN_PASSWORD, DATABASE_URL, TALISMAN_FORCE_HTTPS
 
 # Démarrer
 make -f docker/Makefile up
@@ -284,11 +325,12 @@ make -f docker/Makefile up
 
 ```bash
 # Configurer pour la production
-cp .env.example .env
-nano .env  # Modifier SECRET_KEY, DEFAULT_ADMIN_PASSWORD, FLASK_ENV=production
+cp .env.example docker/.env
+nano docker/.env  # Modifier SECRET_KEY, DEFAULT_ADMIN_PASSWORD, DATABASE_URL, FLASK_ENV=production
 
-# Démarrer en production
-make -f docker/Makefile up-prod
+# Démarrer (le mode production - Gunicorn - est piloté par FLASK_ENV
+# dans docker/.env, pas par une cible Make séparée)
+make -f docker/Makefile up
 
 # Accéder à l'application
 # http://localhost:5000

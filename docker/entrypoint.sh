@@ -44,6 +44,22 @@ else
     echo "ℹ️ Base de données déjà existante (app.db)"
 fi
 
+# --- Notifications par email (rappels shifts/astreinte) ---
+# Purement piloté par variable d'environnement (NOTIFICATIONS_ENABLED,
+# voir .env.example) - pas de service Docker séparé à gérer. crond
+# (busybox, déjà dans l'image Alpine) tourne en arrière-plan dans ce
+# même conteneur ; le serveur web reste le process principal (PID 1,
+# via exec plus bas). Planning : docker/crontabs/appuser.
+case "$(echo "${NOTIFICATIONS_ENABLED:-false}" | tr '[:upper:]' '[:lower:]')" in
+    true|1|yes|y)
+        echo "📧 Notifications par email activées - démarrage de crond en arrière-plan"
+        crond -l 2 -c /app/docker/crontabs
+        ;;
+    *)
+        echo "📧 Notifications par email désactivées (NOTIFICATIONS_ENABLED)"
+        ;;
+esac
+
 # --- Démarrage du serveur ---
 if [ "$FLASK_ENV" = "production" ]; then
     echo "🌤️ Mode PRODUCTION détecté - Démarrage de Gunicorn"

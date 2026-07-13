@@ -77,37 +77,44 @@ touching auth flows.
 
 `app/models/` is a package (`base.py` defines the shared `BaseModel` with `id`/`created_at`/
 `updated_at` and CRUD helpers like `.save()`/`.update()`/`.to_dict()`; `user.py`, `shift.py`,
-`oncall.py`, `leave.py`, `automation_config.py` hold the domain models, all subclassing
-`BaseModel`).
+`oncall.py`, `leave.py`, `automation_config.py`, `notification_log.py` hold the domain models, all
+subclassing `BaseModel`).
 
-Core entities: `Group` → `User` (1:N) → `Shift` / `OnCall` / `Leave` (each 1:N from User),
-`ShiftType` → `Shift` (1:N). Composite indexes exist on `Shift(user_id, date)`,
+Core entities: `Group` → `User` (1:N) → `Shift` / `OnCall` / `Leave` / `NotificationLog` (each 1:N
+from User), `ShiftType` → `Shift` (1:N). Composite indexes exist on `Shift(user_id, date)`,
 `Shift(date, start_time)`, `OnCall(user_id, start_time, end_time)`, and
 `Leave(user_id, start_date, end_date)` — preserve these if you touch query patterns.
+`NotificationLog` has a unique constraint on `(user_id, notification_type, period_start)` — the
+anti-duplicate guard for the weekly email reminders.
 
 ### Layered architecture: repositories/ and services/
 
 `app/repositories/` (data access — `UserRepository`, `GroupRepository`, `ShiftRepository`,
 `ShiftTypeRepository`, `OnCallRepository`, `LeaveRepository`) and `app/services/` (business logic —
 `UserService`, `GroupService`, `ShiftService`, `ShiftTypeService`, `OnCallService`, `LeaveService`,
-`ExportService`, `ScheduleService`, `AutomationAdminService`) are implemented and wired up. Routes
-in `app/routes/` (both the `main` and `admin` blueprints, split across multiple files — e.g.
-`shift_routes.py`, `admin_user_routes.py` — that all register onto the same blueprint object
-defined in `main.py`/`admin.py`) parse the request, call a service, and turn the result into a
-flash/redirect/JSON response; services call repositories for data access and encapsulate
-validation (e.g. `can_add_shift`) and cross-cutting effects (e.g. shift rebalance after a leave
-change). `app/utils/automation/` (`OnCallAutomation`, `ShiftAutomation`, `AdvancedShiftAutomation`)
-is a pre-existing business-logic layer used directly by services rather than being duplicated.
+`ExportService`, `ScheduleService`, `AutomationAdminService`, `NotificationService`) are implemented
+and wired up. Routes in `app/routes/` (both the `main` and `admin` blueprints, split across
+multiple files — e.g. `shift_routes.py`, `admin_user_routes.py` — that all register onto the same
+blueprint object defined in `main.py`/`admin.py`) parse the request, call a service, and turn the
+result into a flash/redirect/JSON response; services call repositories for data access and
+encapsulate validation (e.g. `can_add_shift`) and cross-cutting effects (e.g. shift rebalance after
+a leave change). `app/utils/automation/` (`OnCallAutomation`, `AdvancedShiftAutomation` — the
+generic `ShiftAutomation`/`BusinessRules` engine was removed as dead code, PR #105, see
+`report/` for details) is a pre-existing business-logic layer used directly by services rather than
+being duplicated. `NotificationService` is the one service with no route calling it — it's invoked
+by the standalone cron scripts `scripts/send_shift_notifications.py`/`send_oncall_notifications.py`.
 
 ### utils/ layout
 
 `app/utils/` is organized by concern, each a subpackage: `automation/` (shift/on-call
 auto-assignment and business rules — `advanced_shift_automation.py` is the biggest piece),
-`cache/`, `export/` (`ics_exporter.py`), `security/` (`token_manager.py` — ICS export tokens;
-`encryption.py` — unused), `logging/` (multi-handler setup: app/error/http/audit/sql/auth log
-files, optional syslog, sensitive-data filtering), `optimizations/` (single decorator `eager_load`,
-actively used by admin/dashboard routes), `helpers/` (`common_helpers.py` — actively used), plus
-`health.py` (k8s health endpoints) and `prometheus_metrics.py` (gated by `PROMETHEUS_ENABLED`).
+`cache/`, `export/` (`ics_exporter.py`), `notifications/` (`email_sender.py` — smtplib/email
+stdlib wrapper for the weekly reminder emails, no Flask-Mail dependency), `security/` (empty since
+Phase 4 — `token_manager.py`/`encryption.py` removed, no real callers), `logging/` (multi-handler
+setup: app/error/http/audit/sql/auth log files, optional syslog, sensitive-data filtering),
+`optimizations/` (single decorator `eager_load`, actively used by admin/dashboard routes),
+`helpers/` (`common_helpers.py` — actively used), plus `health.py` (k8s health endpoints) and
+`prometheus_metrics.py` (gated by `PROMETHEUS_ENABLED`).
 
 Dead code found and removed in Phase 4 (confirmed zero references anywhere before deletion):
 `monitoring/`, `pagination/`, `lazy_loading.py` (785 lines, already excluded from coverage via a
@@ -122,6 +129,22 @@ were never imported outside that file; `measure_time` even imported a module
 `app/auth/` holds `decorators.py` (route guards), `user_manager.py`, and `oidc_auth.py`
 (Authlib-based SSO for Keycloak/Okta/Auth0-style providers, gated by `OIDCConfig.ENABLED` and
 `is_configured()`).
+
+### Email notifications
+
+Weekly reminder emails (shifts + on-call) are sent by two standalone scripts —
+`scripts/send_shift_notifications.py` (Sunday, 24h before Monday's shifts) and
+`scripts/send_oncall_notifications.py` (Thursday, 24h before Friday 21h on-call start) — triggered
+by external cron, not by the Flask app (no APScheduler; same pattern as
+`scripts/backup_database.py`/`backup_config.py`). Config lives in `scripts/notification_config.py`
+(dataclass, env-var driven — `NOTIFICATIONS_ENABLED`, `SMTP_HOST`, etc., see `.env.example`); both
+scripts no-op silently (exit 0) if notifications aren't enabled or SMTP config is incomplete.
+`app/services/notification_service.py::NotificationService` does the actual work (date math via
+`next_monday()`/`next_friday()`, always strictly future even if run on the target weekday itself;
+per-recipient SMTP failures are logged and don't block the rest of the batch); it calls
+`app/utils/notifications/email_sender.py::send_email()` (stdlib `smtplib`/`email`, no Flask-Mail
+dependency) with Jinja2 templates rendered from `app/templates/emails/`. `NotificationLog` is the
+idempotency guard — re-running a script for an already-processed period is a no-op.
 
 ## Testing conventions
 

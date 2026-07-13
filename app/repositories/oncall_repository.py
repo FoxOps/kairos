@@ -85,6 +85,16 @@ class OnCallRepository:
         return OnCall.query.filter_by(user_id=user_id).first() is not None
 
     @staticmethod
+    def get_starting_at(start_time: datetime) -> OnCall | None:
+        """Astreinte qui commence exactement à cet instant (utilisé pour
+        trouver l'astreinte du vendredi 21h à venir, notifications)."""
+        return (
+            OnCall.query.options(joinedload(OnCall.user))
+            .filter(OnCall.start_time == start_time)
+            .first()
+        )
+
+    @staticmethod
     def list_overlapping_range(start_date, end_date) -> list[OnCall]:
         """Astreintes chevauchant [start_date, end_date] (dates, pas datetimes)."""
         from datetime import datetime, timedelta

@@ -28,6 +28,11 @@ RUN apk add --no-cache --virtual .build-deps \
 # Copier uniquement les fichiers nécessaires pour pip
 COPY docker/requirements.txt /tmp/requirements.txt
 
+# Met à jour pip lui-même avant d'installer les dépendances - la version
+# de pip pré-installée dans l'image de base traîne souvent derrière,
+# meilleur résolveur de dépendances et correctifs de sécurité à jour.
+RUN pip install --no-cache-dir --upgrade pip
+
 # Installer dans /install plutôt qu'avec --user (qui cible /root/.local -
 # illisible par un utilisateur non-root dans le stage runtime, /root reste
 # en mode 700 même si son contenu est chown). /usr/local/lib/python3.11/
@@ -46,7 +51,14 @@ ENV PYTHONFAULTHANDLER=1 \
     PYTHONHASHSEED=random \
     PIP_NO_CACHE_DIR=1 \
     FLASK_ENV=development \
-    PORT=5000
+    PORT=5000 \
+    TZ=Europe/Paris
+
+# tzdata : sans ce paquet, Alpine tourne toujours en UTC quel que soit TZ -
+# crond (notifications par email, entrypoint.sh) a besoin du fuseau
+# horaire réel pour que "dimanche 9h"/"jeudi 9h" tombent effectivement
+# le bon jour/heure en heure de Paris, pas en UTC.
+RUN apk add --no-cache tzdata
 
 # Créer l'utilisateur non-root avec un UID/GID fixe
 RUN adduser -D -u 1000 -g 1000 appuser
@@ -69,6 +81,14 @@ COPY --chown=1000:1000 . .
 # Copier le script d'entrée
 COPY --chown=1000:1000 docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+
+# Planning des notifications par email (crond, démarré conditionnellement
+# par entrypoint.sh selon NOTIFICATIONS_ENABLED) - déjà copié avec le
+# reste du dépôt via `COPY . .` ci-dessus. crond (busybox) exige que le
+# fichier crontab appartienne à l'utilisateur qui l'exécute et ne soit
+# pas accessible en écriture par d'autres, sans quoi il l'ignore
+# silencieusement.
+RUN chmod 600 /app/docker/crontabs/appuser
 
 # Passer à l'utilisateur non-root
 USER appuser

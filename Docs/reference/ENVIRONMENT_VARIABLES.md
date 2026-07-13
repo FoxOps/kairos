@@ -199,15 +199,30 @@ Guide de configuration complet :
 
 ## 📧 Configuration des Notifications
 
+Rappels hebdomadaires par email (shifts + astreintes), envoyés par les
+scripts autonomes `scripts/send_shift_notifications.py` (dimanche, 24h
+avant le début des shifts du lundi) et
+`scripts/send_oncall_notifications.py` (jeudi, 24h avant le début de
+l'astreinte du vendredi 21h) - à déclencher via cron, pas par
+l'application Flask elle-même (voir `scripts/cron_example.sh`). Un seul
+email par semaine et par utilisateur (table `notification_log` en base,
+empêche les doublons si un script est relancé).
+
 | Variable | Type | Défaut | Description | Obligatoire |
 |----------|------|--------|-------------|-------------|
-| `NOTIFICATIONS_ENABLED` | booléen | `false` | Active les notifications par email (non implémenté actuellement) | ❌ Non |
-| `NOTIFICATION_FROM_EMAIL` | string | `""` | Adresse email de l'expéditeur | ❌ Non |
-| `SMTP_HOST` | string | `""` | Serveur SMTP | ❌ Non |
+| `NOTIFICATIONS_ENABLED` | booléen | `false` | Active l'envoi des notifications par email | ❌ Non |
+| `NOTIFICATION_FROM_EMAIL` | string | `""` | Adresse email de l'expéditeur | ❌ Non (requis si activé) |
+| `SMTP_HOST` | string | `""` | Serveur SMTP | ❌ Non (requis si activé) |
 | `SMTP_PORT` | entier | `587` | Port SMTP | ❌ Non |
 | `SMTP_USERNAME` | string | `""` | Nom d'utilisateur SMTP | ❌ Non |
 | `SMTP_PASSWORD` | string | `""` | Mot de passe SMTP | ❌ Non |
 | `SMTP_USE_TLS` | booléen | `true` | Utiliser TLS pour la connexion SMTP | ❌ Non |
+| `SMTP_TIMEOUT` | entier | `10` | Délai d'attente de connexion SMTP en secondes | ❌ Non |
+| `NOTIFICATION_APP_BASE_URL` | string | `""` | URL de base de l'app, pour le lien "voir le planning"/"voir les astreintes" dans les emails (omis si vide) | ❌ Non |
+
+Si `NOTIFICATIONS_ENABLED=false`, ou si `NOTIFICATION_FROM_EMAIL`/
+`SMTP_HOST` manquent, les deux scripts se terminent silencieusement
+sans rien envoyer (code de sortie 0).
 
 ---
 

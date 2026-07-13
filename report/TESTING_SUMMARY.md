@@ -2,9 +2,9 @@
 
 ## 📊 Aperçu Global
 
-- **Date de mise à jour** : 13 juillet 2026
-- **Nombre total de tests** : 881
-- **Tests réussis** : 881 ✅
+- **Date de mise à jour** : 13 juillet 2026 (notifications par email)
+- **Nombre total de tests** : 891
+- **Tests réussis** : 891 ✅
 - **Tests échoués** : 0
 - **Couverture de code** : **~88%** (`--cov=app --cov=config`)
 - **Lint (ruff)** : propre - **0 erreur**
@@ -53,11 +53,11 @@ tests/
 ├── conftest.py                      # Fixture chain : test_app, client, logged_in_client
 ├── fixtures/                        # test_user, test_group, test_shift, test_leave, test_oncall...
 │
-├── unit/                            # 410 tests - composants isolés, pas de HTTP
-│   ├── test_models.py               # User, Group, Shift, OnCall, Leave, ShiftType
+├── unit/                            # 420 tests - composants isolés, pas de HTTP
+│   ├── test_models.py               # User, Group, Shift, OnCall, Leave, ShiftType, NotificationLog
 │   ├── test_repositories.py         # Couche accès aux données
 │   ├── test_services.py             # Couche logique métier
-│   ├── test_automation*.py          # Règles métier shifts/astreintes (4 fichiers)
+│   ├── test_automation*.py          # Règles métier shifts/astreintes (3 fichiers)
 │   ├── test_advanced_shift_automation.py
 │   ├── test_shift_rotation_fix.py
 │   ├── test_decorators_unit.py
@@ -69,9 +69,12 @@ tests/
 │   ├── test_vendor_assets.py        # Bulma/FontAwesome/FullCalendar vendorisés
 │   ├── test_oidc_config.py          # OIDCConfig (25 tests)
 │   ├── test_oidc_auth.py            # OIDCAuthLib, réseau mocké (31 tests)
-│   └── test_user_manager_oidc_sync.py  # Sync utilisateur OIDC (12 tests)
+│   ├── test_user_manager_oidc_sync.py  # Sync utilisateur OIDC (12 tests)
+│   ├── test_notification_config.py  # NotificationConfig (SMTP via env vars)
+│   ├── test_email_sender.py         # Envoi SMTP bas niveau, mocké
+│   └── test_notification_service.py # Rappels hebdo shifts/astreinte, idempotence
 │
-├── integration/                     # 446 tests - routes Flask, client de test
+├── integration/                     # 444 tests - routes Flask, client de test
 │   ├── test_routes.py, test_*_priority.py, test_*_coverage.py
 │   ├── test_admin_*.py              # Routes admin (users/groups/shift-types/automation)
 │   ├── test_security.py             # CSP, CSRF, Talisman, contrôle d'accès
@@ -81,10 +84,10 @@ tests/
 │   ├── test_dark_theme.py, test_theme_fixes.py
 │   └── test_error_handlers.py
 │
-└── e2e/                             # 25 tests
+└── e2e/                             # 27 tests
     ├── test_user_flows.py           # 6 tests, client de test Flask
     ├── conftest.py                  # live_server_url, oidc_live_servers (Playwright)
-    ├── test_browser_flows.py        # 14 tests, Chromium réel (optionnel)
+    ├── test_browser_flows.py        # 16 tests, Chromium réel (optionnel)
     ├── oidc_mock_provider.py        # Faux fournisseur OIDC réel (Flask, pas Docker)
     └── test_oidc_browser_flow.py    # 5 tests, flux SSO complet en navigateur réel (optionnel)
 ```
@@ -214,3 +217,11 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
   en 4 couches (`unit/`/`integration/`/`e2e/` + navigateur réel
   optionnel), CI GitLab, suite OIDC complète, `make all` (test + lint
   ruff/mypy + format black) intégralement propre.
+- **13 juillet 2026 (suite)** : 891 tests (0 échec). Amélioration du
+  moteur d'automatisation shifts/astreintes (PR #105 : retrait du moteur
+  générique mort, dry-run réparé, rééquilibrage atomique, nouvelle règle
+  effectif minimum, correctifs confirmations de suppression/astreintes
+  en double/rechargement calendrier) puis mise en place des
+  notifications par email hebdomadaires (rappels shifts/astreinte,
+  `NotificationLog` anti-doublon, SMTP via variables d'environnement,
+  scripts cron autonomes).

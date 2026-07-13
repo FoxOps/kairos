@@ -26,7 +26,7 @@
 
 ## 📋 Description
 
-**Leviia Schedule** est une application web de gestion des plannings et des astreintes conçue pour les équipes et organisations.
+**Leviia Schedule** est une application web de gestion des plannings, astreintes et congés d'équipe.
 Elle permet de gérer les horaires de travail, les rotations d'astreinte et les congés des membres d'une équipe.
 
 ### Fonctionnalités principales
@@ -36,6 +36,8 @@ Elle permet de gérer les horaires de travail, les rotations d'astreinte et les 
 - ✅ **Planning des shifts** avec visualisation jour/semaine/mois
 - ✅ **Gestion des astreintes (On-Call)** avec rotations automatiques
 - ✅ **Gestion des congés** avec visualisation dans le planning
+- ✅ **Notifications par email** : rappels hebdomadaires des shifts et
+  de l'astreinte à venir (SMTP configurable, scripts cron autonomes)
 - ✅ **Export ICS** pour intégration avec Google Calendar, Outlook, etc.
 - ✅ **Authentification sécurisée** (Flask-Login)
 - ✅ **Authentification SSO/OIDC** (Keycloak, Okta, Auth0, etc.)
