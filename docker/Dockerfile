@@ -46,7 +46,14 @@ ENV PYTHONFAULTHANDLER=1 \
     PYTHONHASHSEED=random \
     PIP_NO_CACHE_DIR=1 \
     FLASK_ENV=development \
-    PORT=5000
+    PORT=5000 \
+    TZ=Europe/Paris
+
+# tzdata : sans ce paquet, Alpine tourne toujours en UTC quel que soit TZ -
+# le service de notifications (docker/entrypoint-notifications.sh, crond)
+# a besoin du fuseau horaire réel pour que "dimanche 9h"/"jeudi 9h" tombent
+# effectivement le bon jour/heure en heure de Paris, pas en UTC.
+RUN apk add --no-cache tzdata
 
 # Créer l'utilisateur non-root avec un UID/GID fixe
 RUN adduser -D -u 1000 -g 1000 appuser
@@ -69,6 +76,15 @@ COPY --chown=1000:1000 . .
 # Copier le script d'entrée
 COPY --chown=1000:1000 docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+
+# Script d'entrée alternatif pour le service de notifications par email
+# (voir docker/docker-compose.yml, service leviia-notifications) - déjà
+# copié avec le reste du dépôt via `COPY . .` ci-dessus, on le rend juste
+# exécutable. crond (busybox) exige que le fichier crontab appartienne à
+# l'utilisateur qui l'exécute et ne soit pas accessible en écriture par
+# d'autres, sans quoi il l'ignore silencieusement.
+RUN chmod +x /app/docker/entrypoint-notifications.sh && \
+    chmod 600 /app/docker/crontabs/appuser
 
 # Passer à l'utilisateur non-root
 USER appuser

@@ -1,0 +1,11 @@
+# Crontab pour le service leviia-notifications (voir docker-compose.yml).
+# Lu par busybox crond en tant qu'utilisateur non-root "appuser" (uid 1000) -
+# le nom du fichier doit correspondre exactement au nom d'utilisateur.
+#
+# Rappel des shifts de la semaine : dimanche 9h, 24h avant le début des
+# shifts du lundi.
+0 9 * * 0 python3 /app/scripts/send_shift_notifications.py >> /app/logs/notifications.log 2>&1
+
+# Rappel de l'astreinte à venir : jeudi 9h, 24h avant le début de
+# l'astreinte du vendredi 21h.
+0 9 * * 4 python3 /app/scripts/send_oncall_notifications.py >> /app/logs/notifications.log 2>&1

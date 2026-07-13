@@ -22,6 +22,25 @@ services:
     networks:
       - leviia-network
 
+  # Rappels par email (shifts/astreinte), voir Docs/deployment/docker.md.
+  # Même image, entrypoint différent (crond) - n'envoie rien si
+  # NOTIFICATIONS_ENABLED n'est pas activé dans .env.
+  leviia-notifications:
+    image: leviia-schedule:optimized
+    container_name: leviia-notifications
+    entrypoint: ["/app/docker/entrypoint-notifications.sh"]
+    user: "1000:1000"
+    env_file:
+      - ./.env
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - leviia-network
+    depends_on:
+      - leviia-schedule
+    restart: unless-stopped
+
 networks:
   leviia-network:
     driver: bridge
