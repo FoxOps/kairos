@@ -204,7 +204,7 @@ class TestShiftRoutes:
 
     def test_delete_shift_post(self, logged_in_client, test_shift):
         """Test la suppression d'un shift."""
-        response = logged_in_client.get(
+        response = logged_in_client.post(
             f"/schedule/delete/{test_shift.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -215,7 +215,7 @@ class TestShiftRoutes:
 
     def test_delete_shift_unauthorized(self, logged_in_client, test_shift):
         """Test qu'un utilisateur normal ne peut pas supprimer un shift."""
-        response = logged_in_client.get(
+        response = logged_in_client.post(
             f"/schedule/delete/{test_shift.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -274,7 +274,7 @@ class TestOnCallRoutes:
 
     def test_delete_oncall_post(self, logged_in_client, test_oncall):
         """Test la suppression d'une astreinte."""
-        response = logged_in_client.get(
+        response = logged_in_client.post(
             f"/oncall/delete/{test_oncall.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -285,7 +285,7 @@ class TestOnCallRoutes:
 
     def test_delete_oncall_unauthorized(self, logged_in_client, test_oncall):
         """Test qu'un utilisateur normal ne peut pas supprimer une astreinte."""
-        response = logged_in_client.get(
+        response = logged_in_client.post(
             f"/oncall/delete/{test_oncall.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -346,7 +346,7 @@ class TestLeaveRoutes:
 
     def test_delete_leave_post(self, logged_in_client, test_leave):
         """Test la suppression d'un conge."""
-        response = logged_in_client.get(
+        response = logged_in_client.post(
             f"/leave/delete/{test_leave.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -364,7 +364,7 @@ class TestLeaveRoutes:
                 follow_redirects=True,
             )
 
-            response = client.get(
+            response = client.post(
                 f"/leave/delete/{test_leave.id}", follow_redirects=True
             )
             assert response.status_code == 200

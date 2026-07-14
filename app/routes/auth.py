@@ -1,3 +1,5 @@
+from urllib.parse import urljoin, urlparse
+
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
@@ -13,6 +15,21 @@ auth_bp = Blueprint("auth", __name__)
 def is_basic_auth_disabled():
     """Vérifie si l'authentification basique est désactivée."""
     return OIDCConfig.ENABLED and OIDCConfig.DISABLE_BASIC_AUTH
+
+
+def _is_safe_next_url(target: str) -> bool:
+    """Rejette les URLs de redirection post-login pointant hors de ce site.
+
+    Sans ça, ?next=https://phishing.example passe tel quel à redirect() :
+    un attaquant envoie un lien de login légitime avec ce paramètre, la
+    victime s'authentifie normalement puis atterrit sur un site externe
+    (CWE-601, open redirect classique utilisé pour du phishing).
+    """
+    if not target:
+        return False
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ("http", "https") and ref_url.netloc == test_url.netloc
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])
@@ -74,7 +91,9 @@ def login():
 
             # Rediriger vers la page demandée ou vers l'index
             next_page = request.args.get("next")
-            return redirect(next_page or url_for("main.index"))
+            if next_page and _is_safe_next_url(next_page):
+                return redirect(next_page)
+            return redirect(url_for("main.index"))
         else:
             flash("Email ou mot de passe incorrect.", "danger")
 

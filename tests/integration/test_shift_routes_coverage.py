@@ -139,7 +139,7 @@ class TestAddShiftValidation:
 
 class TestDeleteShift:
     def test_delete_nonexistent_shift_404(self, test_app, logged_in_client):
-        resp = logged_in_client.get("/schedule/delete/999999")
+        resp = logged_in_client.post("/schedule/delete/999999")
         assert resp.status_code == 404
 
     def test_delete_shift_exception_handled(
@@ -149,7 +149,7 @@ class TestDeleteShift:
             "app.routes.shift_routes.ShiftService.delete_shift",
             side_effect=RuntimeError("boom"),
         ):
-            resp = logged_in_client.get(
+            resp = logged_in_client.post(
                 f"/schedule/delete/{test_shift.id}", follow_redirects=True
             )
         assert resp.status_code == 200

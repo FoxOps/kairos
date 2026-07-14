@@ -26,6 +26,7 @@ import {
     validateFormAccessible,
     makeTableAccessible,
     confirmActionAccessible,
+    initConfirmDeleteActions,
 } from './utils/accessibility.js';
 import { showNotification, confirmAction } from './notifications/toast.js';
 import { initFlashMessages } from './notifications/flash-messages.js';
@@ -46,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     themeManager = new ThemeManager();
     navbarMenu = new NavbarMenu();
     initFlashMessages();
+    initConfirmDeleteActions();
 });
 
 // Exporter les fonctions pour les templates (onclick inline, callbacks FullCalendar)

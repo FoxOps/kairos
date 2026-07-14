@@ -84,7 +84,7 @@ def add_oncall():
     return render_template("add_oncall.html", users=users)
 
 
-@main_bp.route("/oncall/delete/<int:oncall_id>")
+@main_bp.route("/oncall/delete/<int:oncall_id>", methods=["POST"])
 @login_required
 @admin_required
 def delete_oncall(oncall_id):

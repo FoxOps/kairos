@@ -243,7 +243,7 @@ class TestAccessControl:
         # en tant que test_user lui-même ici (fixture), donc on vérifie
         # plutôt qu'un utilisateur non-admin ne peut pas utiliser la route
         # de suppression réservée aux admins, même pour son propre shift.
-        resp = non_admin_client.get(
+        resp = non_admin_client.post(
             f"/schedule/delete/{test_shift.id}", follow_redirects=False
         )
         assert resp.status_code in (302, 403)

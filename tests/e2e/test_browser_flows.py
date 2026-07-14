@@ -243,7 +243,7 @@ class TestDeleteConfirmationModal:
         row = page.locator("tr", has_text="01/03/2031")
         assert row.count() > 0
 
-        row.locator("a.btn-error").first.click()
+        row.locator(".js-confirm-delete").first.click()
         page.wait_for_selector(".modal.modal-open")
         page.click(".modal.modal-open button:has-text('Annuler')")
         page.wait_for_timeout(200)
@@ -261,7 +261,7 @@ class TestDeleteConfirmationModal:
         row = page.locator("tr", has_text="05/04/2031")
         assert row.count() > 0
 
-        row.locator("a.btn-error").first.click()
+        row.locator(".js-confirm-delete").first.click()
         page.wait_for_selector(".modal.modal-open")
         page.click(".modal.modal-open button:has-text('Confirmer')")
         page.wait_for_load_state("networkidle")

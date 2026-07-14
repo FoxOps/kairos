@@ -107,7 +107,7 @@ def add_leave():
     return render_template("add_leave.html", users=users)
 
 
-@main_bp.route("/leave/delete/<int:leave_id>")
+@main_bp.route("/leave/delete/<int:leave_id>", methods=["POST"])
 @login_required
 @user_owns_resource(Leave, "leave_id")
 def delete_leave(leave_id):

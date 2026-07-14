@@ -148,7 +148,7 @@ class TestUserOwnsResourceDecorator:
         """Test qu'un utilisateur peut supprimer son propre congé."""
         # test_leave est déjà associé à test_user via la fixture
         # test_user est déjà connecté via logged_in_client
-        response = logged_in_client.get(
+        response = logged_in_client.post(
             f"/leave/delete/{test_leave.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -174,7 +174,7 @@ class TestUserOwnsResourceDecorator:
             )
 
             # Essayer de supprimer le congé de test_user (qui appartient à test_leave)
-            response = client.get(
+            response = client.post(
                 f"/leave/delete/{test_leave.id}", follow_redirects=True
             )
             assert response.status_code == 200
@@ -190,7 +190,7 @@ class TestUserOwnsResourceDecorator:
 
     def test_admin_can_delete_any_leave(self, logged_in_client, test_leave, test_app):
         """Test qu'un admin peut supprimer n'importe quel congé."""
-        response = logged_in_client.get(
+        response = logged_in_client.post(
             f"/leave/delete/{test_leave.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -244,7 +244,7 @@ class TestShiftPermissions:
 
     def test_admin_can_delete_shift(self, logged_in_client, test_shift):
         """Test qu'un admin peut supprimer un shift."""
-        response = logged_in_client.get(
+        response = logged_in_client.post(
             f"/schedule/delete/{test_shift.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -258,7 +258,7 @@ class TestShiftPermissions:
 
     def test_non_admin_cannot_delete_shift(self, logged_in_client, test_shift):
         """Test qu'un utilisateur normal ne peut pas supprimer un shift."""
-        response = logged_in_client.get(
+        response = logged_in_client.post(
             f"/schedule/delete/{test_shift.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -301,7 +301,7 @@ class TestOnCallPermissions:
 
     def test_admin_can_delete_oncall(self, logged_in_client, test_oncall):
         """Test qu'un admin peut supprimer une astreinte."""
-        response = logged_in_client.get(
+        response = logged_in_client.post(
             f"/oncall/delete/{test_oncall.id}", follow_redirects=True
         )
         assert response.status_code == 200
@@ -315,7 +315,7 @@ class TestOnCallPermissions:
 
     def test_non_admin_cannot_delete_oncall(self, logged_in_client, test_oncall):
         """Test qu'un utilisateur normal ne peut pas supprimer une astreinte."""
-        response = logged_in_client.get(
+        response = logged_in_client.post(
             f"/oncall/delete/{test_oncall.id}", follow_redirects=True
         )
         assert response.status_code == 200

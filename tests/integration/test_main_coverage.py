@@ -236,7 +236,7 @@ class TestDeleteRoutes:
 
     def test_delete_shift_requires_admin(self, logged_in_client, test_shift):
         """Test que delete_shift nécessite admin."""
-        response = logged_in_client.get(f"/schedule/delete/{test_shift.id}")
+        response = logged_in_client.post(f"/schedule/delete/{test_shift.id}")
         # 302 = redirection vers login (car non admin)
         assert response.status_code in [302, 403]
 
@@ -245,13 +245,13 @@ class TestDeleteRoutes:
     ):
         """Test que delete_leave vérifie la propriété."""
         # test_leave appartient à test_user, logged_in_client est test_user
-        response = logged_in_client.get(f"/leave/delete/{test_leave.id}")
+        response = logged_in_client.post(f"/leave/delete/{test_leave.id}")
         # 302 = redirection après suppression
         assert response.status_code == 302
 
     def test_delete_oncall_requires_admin(self, logged_in_client, test_oncall):
         """Test que delete_oncall nécessite admin."""
-        response = logged_in_client.get(f"/oncall/delete/{test_oncall.id}")
+        response = logged_in_client.post(f"/oncall/delete/{test_oncall.id}")
         # 302 = redirection vers login (car non admin)
         assert response.status_code in [302, 403]
 

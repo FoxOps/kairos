@@ -72,8 +72,8 @@
                                 </a>
                             </div>
                             <div class="tooltip" data-tip="Supprimer l'utilisateur">
-                                <a class="btn btn-error btn-sm" href="{{ url_for('admin.delete_user', user_id=user.id) }}"
-                                   onclick="event.preventDefault(); const href = this.href; Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer l\'utilisateur {{ user.name }} ?', function() { window.location.href = href; });"
+                                <a class="btn btn-error btn-sm js-confirm-delete" href="{{ url_for('admin.delete_user', user_id=user.id) }}"
+                                   data-confirm-message="Êtes-vous sûr de vouloir supprimer l'utilisateur {{ user.name }} ?"
                                    aria-label="Supprimer l'utilisateur {{ user.name }}" title="Supprimer l'utilisateur">
                                     <i class="fas fa-trash" aria-hidden="true"></i>
                                 </a>

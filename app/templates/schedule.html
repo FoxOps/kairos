@@ -26,8 +26,8 @@
             {% if current_user.is_admin %}
             <form method="POST" action="{{ url_for('main.delete_all_shifts') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-error"
-                        onclick="event.preventDefault(); const f = this.form; Leviia.confirmActionAccessible('Êtes-vous SÛR de vouloir supprimer TOUS les shifts ? Cette action est irréversible !', function() { f.submit(); });"
+                <button type="submit" class="btn btn-error js-confirm-delete"
+                        data-confirm-message="Êtes-vous SÛR de vouloir supprimer TOUS les shifts ? Cette action est irréversible !"
                         aria-label="Supprimer tous les shifts" title="Supprimer tous les shifts">
                     <i class="fas fa-trash-alt" aria-hidden="true"></i> Supprimer TOUS les shifts
                 </button>
@@ -85,19 +85,22 @@
                             {% if current_user.is_admin %}
                             <div class="flex flex-wrap gap-2" role="group" aria-label="Actions pour ce shift">
                                 <!-- Bouton pour supprimer ce shift -->
-                                <a class="btn btn-error btn-sm" href="{{ url_for('main.delete_shift', shift_id=shift.id) }}"
-                                   onclick="event.preventDefault(); const href = this.href; Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer ce shift ?', function() { window.location.href = href; });"
-                                   aria-label="Supprimer le shift du {{ shift.date.strftime('%d/%m/%Y') }}"
-                                   title="Supprimer ce shift">
-                                    <i class="fas fa-trash" aria-hidden="true"></i>
-                                </a>
+                                <form method="POST" action="{{ url_for('main.delete_shift', shift_id=shift.id) }}" class="mb-0">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-error btn-sm js-confirm-delete"
+                                            data-confirm-message="Êtes-vous sûr de vouloir supprimer ce shift ?"
+                                            aria-label="Supprimer le shift du {{ shift.date.strftime('%d/%m/%Y') }}"
+                                            title="Supprimer ce shift">
+                                        <i class="fas fa-trash" aria-hidden="true"></i>
+                                    </button>
+                                </form>
 
                                 <!-- Bouton pour supprimer tous les shifts de cet utilisateur (1ère occurrence) -->
                                 {% if is_first_user.value %}
                                 <form method="POST" action="{{ url_for('main.delete_all_shifts_for_user', user_id=shift.user.id) }}" class="mb-0">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-warning btn-sm"
-                                            onclick="event.preventDefault(); const f = this.form; Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer TOUS les shifts de {{ shift.user.name }} ?', function() { f.submit(); });"
+                                    <button type="submit" class="btn btn-warning btn-sm js-confirm-delete"
+                                            data-confirm-message="Êtes-vous sûr de vouloir supprimer TOUS les shifts de {{ shift.user.name }} ?"
                                             aria-label="Supprimer tous les shifts de {{ shift.user.name }}"
                                             title="Supprimer TOUS les shifts de {{ shift.user.name }}">
                                         <i class="fas fa-user-times" aria-hidden="true"></i>
@@ -109,8 +112,8 @@
                                 {% if is_monday.value and is_first_date.value %}
                                 <form method="POST" action="{{ url_for('main.delete_all_shifts_for_week', date_str=shift.date.strftime('%Y-%m-%d')) }}" class="mb-0">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-primary btn-sm"
-                                            onclick="event.preventDefault(); const f = this.form; Leviia.confirmActionAccessible('Êtes-vous SÛR de vouloir supprimer TOUS les shifts de la SEMAINE du {{ shift.date.strftime('%d/%m/%Y') }} ?', function() { f.submit(); });"
+                                    <button type="submit" class="btn btn-primary btn-sm js-confirm-delete"
+                                            data-confirm-message="Êtes-vous SÛR de vouloir supprimer TOUS les shifts de la SEMAINE du {{ shift.date.strftime('%d/%m/%Y') }} ?"
                                             aria-label="Supprimer tous les shifts de la semaine du {{ shift.date.strftime('%d/%m/%Y') }}"
                                             title="Supprimer TOUS les shifts de la semaine">
                                         <i class="fas fa-calendar-week" aria-hidden="true"></i>
@@ -122,8 +125,8 @@
                                 {% if is_first_date.value %}
                                 <form method="POST" action="{{ url_for('main.delete_all_shifts_for_day', date_str=shift.date.strftime('%Y-%m-%d')) }}" class="mb-0">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-info btn-sm"
-                                            onclick="event.preventDefault(); const f = this.form; Leviia.confirmActionAccessible('Êtes-vous sûr de vouloir supprimer TOUS les shifts du {{ shift.date.strftime('%d/%m/%Y') }} ?', function() { f.submit(); });"
+                                    <button type="submit" class="btn btn-info btn-sm js-confirm-delete"
+                                            data-confirm-message="Êtes-vous sûr de vouloir supprimer TOUS les shifts du {{ shift.date.strftime('%d/%m/%Y') }} ?"
                                             aria-label="Supprimer tous les shifts de la journée du {{ shift.date.strftime('%d/%m/%Y') }}"
                                             title="Supprimer TOUS les shifts du {{ shift.date.strftime('%d/%m/%Y') }}">
                                         <i class="fas fa-calendar-day" aria-hidden="true"></i>

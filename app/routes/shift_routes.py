@@ -115,7 +115,7 @@ def add_shift():
     return render_template("add_shift.html", users=users, shift_types=shift_types)
 
 
-@main_bp.route("/schedule/delete/<int:shift_id>")
+@main_bp.route("/schedule/delete/<int:shift_id>", methods=["POST"])
 @login_required
 @admin_required
 def delete_shift(shift_id):

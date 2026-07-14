@@ -64,7 +64,7 @@ class TestAddLeaveEdgeCases:
 
 class TestDeleteLeave:
     def test_delete_nonexistent_leave_404(self, test_app, logged_in_client):
-        resp = logged_in_client.get("/leave/delete/999999")
+        resp = logged_in_client.post("/leave/delete/999999")
         assert resp.status_code == 404
 
     def test_delete_leave_exception_handled(
@@ -74,7 +74,7 @@ class TestDeleteLeave:
             "app.routes.leave_routes.LeaveService.delete_leave",
             side_effect=RuntimeError("boom"),
         ):
-            resp = logged_in_client.get(
+            resp = logged_in_client.post(
                 f"/leave/delete/{test_leave.id}", follow_redirects=True
             )
         assert resp.status_code == 200

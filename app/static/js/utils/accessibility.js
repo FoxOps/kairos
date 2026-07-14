@@ -234,13 +234,17 @@ export function confirmActionAccessible(message, onConfirm, onCancel) {
     modal.setAttribute('aria-modal', 'true');
     modal.setAttribute('aria-labelledby', 'confirmation-title');
 
+    // Structure statique uniquement dans innerHTML : le message (potentiellement
+    // dérivé de données utilisateur comme un nom) est injecté ensuite via
+    // textContent, jamais interpolé directement dans le HTML (protection XSS -
+    // un nom contenant du HTML/JS ne doit jamais pouvoir s'exécuter ici).
     modal.innerHTML = `
         <div class="modal-box">
             <div class="flex items-start justify-between">
                 <h2 id="confirmation-title" class="text-lg font-bold">Confirmation</h2>
                 <button class="btn btn-sm btn-circle btn-ghost" aria-label="Fermer" role="button">&times;</button>
             </div>
-            <p class="py-4">${message}</p>
+            <p class="py-4"></p>
             <div class="modal-action">
                 <button class="btn" aria-label="Annuler" role="button">Annuler</button>
                 <button class="btn btn-primary" aria-label="Confirmer" role="button">Confirmer</button>
@@ -248,6 +252,7 @@ export function confirmActionAccessible(message, onConfirm, onCancel) {
         </div>
         <div class="modal-backdrop" role="button" tabindex="0" aria-label="Fermer"></div>
     `;
+    modal.querySelector('p.py-4').textContent = message;
 
     document.body.appendChild(modal);
 
@@ -321,6 +326,38 @@ export function confirmActionAccessible(message, onConfirm, onCancel) {
                 e.preventDefault();
                 focusElement(firstElement);
             }
+        }
+    });
+}
+
+/**
+ * Câble la confirmation accessible pour tous les boutons/liens de suppression
+ * marqués `.js-confirm-delete`, via un seul listener délégué (plutôt que des
+ * attributs onclick inline par élément).
+ *
+ * Le message vient de l'attribut `data-confirm-message`, jamais interpolé
+ * directement dans du HTML/JS exécutable côté template - il transite par le
+ * DOM (attribut HTML échappé par Jinja, lu via `.dataset`), pas par une
+ * chaîne JS construite côté serveur. Combiné à confirmActionAccessible()
+ * (qui insère le message via textContent), une valeur utilisateur comme un
+ * nom ne peut jamais casser hors de son contexte de données pour s'exécuter.
+ */
+export function initConfirmDeleteActions() {
+    document.addEventListener('click', (event) => {
+        const trigger = event.target.closest('.js-confirm-delete');
+        if (!trigger) return;
+
+        event.preventDefault();
+        const message = trigger.dataset.confirmMessage || 'Êtes-vous sûr ?';
+
+        if (trigger.tagName === 'BUTTON') {
+            const form = trigger.form;
+            confirmActionAccessible(message, () => form.submit());
+        } else {
+            const href = trigger.href;
+            confirmActionAccessible(message, () => {
+                window.location.href = href;
+            });
         }
     });
 }
