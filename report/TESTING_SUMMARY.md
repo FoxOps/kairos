@@ -2,9 +2,9 @@
 
 ## 📊 Aperçu Global
 
-- **Date de mise à jour** : 14 juillet 2026 (refonte visuelle Dracula/Alucard)
-- **Nombre total de tests** : 933
-- **Tests réussis** : 933 ✅
+- **Date de mise à jour** : 14 juillet 2026 (purge notifications/échanges, corrections UI)
+- **Nombre total de tests** : 1006
+- **Tests réussis** : 1006 ✅
 - **Tests échoués** : 0
 - **Couverture de code** : **~88%** (`--cov=app --cov=config`)
 - **Lint (ruff)** : propre - **0 erreur**
@@ -37,7 +37,7 @@
 - **Framework** : `pytest` (+ `pytest-flask`, `pytest-cov`)
 - **Fixtures** : `tests/conftest.py` (chaîne `test_app`/`client`/
   `logged_in_client`) + `tests/fixtures/` (modèles : user, group, shift,
-  leave, oncall)
+  leave, oncall, swap)
 - **Navigateur réel (optionnel)** : `pytest-playwright` + Chromium, voir
   `requirements-e2e.txt`
 - **CI** : GitLab CI (`.gitlab-ci/.gitlab-ci.yml`) - `run_tests` (client
@@ -209,6 +209,35 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
    du module appelant (`app.routes.auth.oidc_auth.X`) dans les tests
    d'intégration, ne rien mocker en E2E navigateur (vrai serveur, vrai
    faux fournisseur OIDC).
+6. **Un seul client HTTP authentifié par test** : combiner
+   `logged_in_client` et `non_admin_client` (ou simplement deux
+   `test_app.test_client()`) dans le même test fait finir par partager
+   leur cookiejar - un client jamais connecté hérite silencieusement de
+   la session du premier login effectué dans le test (artefact du
+   harnais de test, pas un bug applicatif). Pour tester une permission
+   après une action admin, préparer l'état voulu directement via le
+   service (ex: `SwapService.approve_swap(...)` en `app_context()`)
+   plutôt que via une seconde requête HTTP authentifiée différemment.
+7. **Ne jamais imbriquer `with test_app.app_context():` quand un test
+   mute puis re-vérifie un objet de fixture via une requête fraîche** :
+   `test_app` a déjà un contexte actif pour toute la durée du test (voir
+   `tests/conftest.py`). En pousser un second fait résoudre `db.session`
+   vers une **session SQLAlchemy différente** de celle utilisée par les
+   fixtures - confirmé via l'erreur SQLAlchemy elle-même : `"Object ...
+   is already attached to session 'N' (this is 'M')"`. Un objet créé par
+   une fixture (attaché à la session N) mute normalement en mémoire dans
+   le bloc imbriqué (session M), mais `db.session.commit()` dans ce bloc
+   ne committe RIEN pour cet objet - il reste invisible même en SQL brut
+   après coup. Inoffensif tant qu'un test ne vérifie que l'attribut
+   Python en mémoire (`objet.champ == valeur`, la quasi-totalité des
+   tests de ce fichier) ; silencieusement faux dès qu'on vérifie l'état
+   réellement persisté (`Model.query.count()` après un bulk `.delete()`,
+   par exemple - voir `TestPurgeSwaps` dans `test_swap_service.py`, où
+   ça a fait échouer un test de façon 100% reproductible malgré un code
+   applicatif correct). Un objet **créé** à l'intérieur du bloc imbriqué
+   (pas depuis une fixture) n'est pas concerné, puisqu'il est ajouté
+   directement à la session M. L'app réelle n'est jamais affectée : une
+   requête HTTP a un unique contexte, jamais imbriqué.
 
 ---
 
@@ -267,3 +296,67 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
   bascule au clavier ; bug réel trouvé en test manuel (composant
   `avatar-placeholder` de daisyUI qui cible ses styles de centrage sur un
   `<div>` enfant, pas un `<span>` - corrigé).
+- **14 juillet 2026** : 975 tests (0 échec, +42). Échange de shifts entre
+  utilisateurs (`SwapRequest` : demande, don simple ou réciproque,
+  validation/rejet admin) - nouvelle couche modèle/repository/service/
+  routes (user + admin) sans précédent d'approbation dans ce repo (les
+  congés n'en ont pas, et le restent). Nouveaux tests : modèle
+  (`TestSwapRequestModel`), service (`TestRequestSwap`/`TestCancelSwap`/
+  `TestApproveSwap`/`TestRejectSwap` - couvre notamment la revalidation
+  métier à l'approbation, pas seulement à la création), routes
+  utilisateur et admin (`tests/integration/test_swap_routes.py`,
+  permissions admin vs non-admin incluses). Complété le même jour par
+  `revert_swap` (annulation d'un échange *après* approbation par
+  l'admin, statut `REVERTED` distinct de `CANCELLED` qui reste réservé à
+  l'auto-annulation par le demandeur avant validation) - `/admin/swaps`
+  affiche maintenant aussi les échanges déjà approuvés, pas seulement en
+  attente (`TestRevertSwap`, tests routes associés). Piège de test
+  découvert au passage : combiner `logged_in_client` et
+  `non_admin_client` (ou deux `test_app.test_client()`) dans un même
+  test fait finir par partager leur cookiejar - artefact du harnais de
+  test, pas un bug applicatif ; toujours isoler un seul client HTTP
+  authentifié par test (préparer l'état "déjà approuvé" via le service
+  directement si besoin, pas via une seconde requête HTTP admin).
+- **14 juillet 2026** : 994 tests (0 échec, +19). Notifications internes
+  à l'app (bell icon sidebar, badge non-lu) : `AppNotification` -
+  distinct de `NotificationLog` qui reste réservé aux rappels email
+  hebdo et n'est jamais affiché. `AppNotificationService` déclenché
+  synchroniquement par `SwapService` (nouvelle demande -> tous les
+  admins ; approbation/annulation -> demandeur + destinataire ; rejet ->
+  demandeur seul). Bug réel trouvé et corrigé *avant* qu'il ne casse la
+  prod : le nouveau `context_processor` (badge non-lu) accédait à
+  `current_user.is_authenticated` sans vérifier `has_request_context()`
+  - `NotificationService` (emails hebdo) rend ses templates via un
+  simple `app_context()` (scripts cron, jamais de requête HTTP), où
+  `current_user` résout à `None` plutôt que de lever une exception ;
+  résultat : `'NoneType' object has no attribute 'is_authenticated'` sur
+  **chaque** email de rappel, silencieusement avalé dans
+  `NotificationBatchResult.failed`. Détecté par la suite existante
+  (`tests/unit/test_notification_service.py`, 5 tests rouges) en
+  relançant la suite complète après la feature - pas par un test écrit
+  pour ce bug précis. Rappel qu'un `context_processor` s'exécute pour
+  *tout* rendu de template de l'app, y compris hors requête HTTP.
+- **14 juillet 2026** : 1006 tests (0 échec, +12). Corrections retours
+  utilisateur sur l'échange de shifts + notifications : badge de statut
+  `REVERTED` simplifié en "Annulée" (au lieu de "Annulée après
+  approbation") côté page utilisateur ; flash "Échange rejeté." passé de
+  `success` (vert) à `warning` (orange), un rejet n'étant pas un succès
+  côté demandeur. Purge ajoutée des deux côtés : notifications lues
+  (`AppNotificationService.purge_read`, garde les non-lues) et demandes
+  d'échange terminées/non-pending (`SwapService.purge_resolved_for_user`
+  côté utilisateur - matché comme demandeur *ou* destinataire, donc peut
+  faire disparaître une ligne encore visible pour l'autre partie, un seul
+  enregistrement historique partagé ; `purge_all_resolved` côté admin,
+  tous utilisateurs). Découverte majeure au passage, documentée en detail
+  dans "Bonnes pratiques" ci-dessous (point 7) : imbriquer
+  `with test_app.app_context():` dans un test dont `test_app` a déjà un
+  contexte actif fait résoudre `db.session` vers une session SQLAlchemy
+  différente de celle des fixtures - un commit dans le bloc imbriqué ne
+  persiste alors rien pour un objet de fixture, silencieusement, tant
+  qu'on ne vérifie pas l'état via une requête fraîche. A fait échouer un
+  nouveau test de purge de façon 100% reproductible en isolation malgré
+  un code applicatif correct (confirmé via les tests de routes HTTP
+  équivalents, eux non affectés) - probablement latent et invisible dans
+  le reste de la suite jusqu'ici car la quasi-totalité des tests
+  existants ne vérifient que l'attribut Python en mémoire après une
+  action, jamais un état fraîchement requêté.

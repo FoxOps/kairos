@@ -12,16 +12,21 @@ Services:
 - shift_type_service: Shift type management (admin CRUD)
 - oncall_service: On-call management
 - leave_service: Leave management
+- swap_service: Shift exchange requests between users (admin validation)
 - export_service: Export functionality (ICS, etc.)
 - schedule_service: Calendar event aggregation (shifts + on-calls + leaves)
 - automation_admin_service: Admin automation screens support (form
   parsing, period clearing, rotation order persistence)
 - notification_service: Weekly email reminders (shifts + on-call),
   called by scripts/send_*_notifications.py, not by any Flask route
+- app_notification_service: In-app notifications (bell icon), created
+  synchronously by other services on domain events - not to be confused
+  with notification_service above (emails, cron-only)
 - backup_service: Admin UI support for database backups, wraps the
   pure functions in scripts/backup_database.py
 """
 
+from app.services.app_notification_service import AppNotificationService
 from app.services.automation_admin_service import AutomationAdminService
 from app.services.backup_service import BackupService
 from app.services.export_service import ExportService
@@ -32,6 +37,7 @@ from app.services.oncall_service import OnCallService
 from app.services.schedule_service import ScheduleService
 from app.services.shift_service import ShiftService
 from app.services.shift_type_service import ShiftTypeService
+from app.services.swap_service import SwapService
 from app.services.user_service import UserService
 
 __all__ = [
@@ -41,9 +47,11 @@ __all__ = [
     "ShiftTypeService",
     "OnCallService",
     "LeaveService",
+    "SwapService",
     "ExportService",
     "ScheduleService",
     "AutomationAdminService",
     "NotificationService",
+    "AppNotificationService",
     "BackupService",
 ]

@@ -12,7 +12,7 @@ from sqlalchemy import func
 
 from app import db
 from app.auth.decorators import admin_required
-from app.models import Group, Leave, OnCall, Shift, User
+from app.models import Group, Leave, OnCall, Shift, SwapRequest, User
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -25,6 +25,11 @@ def admin_dashboard():
     on_calls_count = db.session.query(func.count(OnCall.id)).scalar()
     leaves_count = db.session.query(func.count(Leave.id)).scalar()
     groups_count = db.session.query(func.count(Group.id)).scalar()
+    pending_swaps_count = (
+        db.session.query(func.count(SwapRequest.id))
+        .filter(SwapRequest.status == SwapRequest.PENDING)
+        .scalar()
+    )
 
     return render_template(
         "admin/dashboard.html",
@@ -33,6 +38,7 @@ def admin_dashboard():
         on_calls_count=on_calls_count,
         leaves_count=leaves_count,
         groups_count=groups_count,
+        pending_swaps_count=pending_swaps_count,
     )
 
 
@@ -45,5 +51,6 @@ from app.routes import (  # noqa: E402
     admin_backup_routes,  # noqa: F401
     admin_group_routes,  # noqa: F401
     admin_shift_type_routes,  # noqa: F401
+    admin_swap_routes,  # noqa: F401
     admin_user_routes,  # noqa: F401
 )

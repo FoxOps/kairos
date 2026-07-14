@@ -63,6 +63,7 @@
         (url_for('main.schedule'), 'fa-calendar-alt', 'Shifts'),
         (url_for('main.oncall'), 'fa-moon', 'Astreintes'),
         (url_for('main.leave'), 'fa-umbrella-beach', 'Congés'),
+        (url_for('main.swaps'), 'fa-right-left', 'Échanges'),
     ] %}
 
     {% macro theme_toggle() %}
@@ -174,6 +175,16 @@
                     {% for href, icon, label in nav_links %}
                     <li><a href="{{ href }}" aria-label="{{ label }}" class="{{ 'menu-active' if request.path == href else '' }}"><i class="fas {{ icon }}" aria-hidden="true"></i> {{ label }}</a></li>
                     {% endfor %}
+                    {% if current_user.is_authenticated %}
+                    <li>
+                        <a href="{{ url_for('main.notifications') }}" aria-label="Notifications{{ ' (%d non lues)'|format(unread_notifications_count) if unread_notifications_count else '' }}" class="{{ 'menu-active' if request.path == url_for('main.notifications') else '' }}">
+                            <i class="fas fa-bell" aria-hidden="true"></i> Notifications
+                            {% if unread_notifications_count %}
+                            <span class="badge badge-error badge-sm ml-auto">{{ unread_notifications_count }}</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                    {% endif %}
                     {% if current_user.is_authenticated and current_user.is_admin %}
                     <li class="menu-title mt-3">Administration</li>
                     <li><a href="{{ url_for('admin.list_users') }}" aria-label="Utilisateurs" class="{{ 'menu-active' if request.path == url_for('admin.list_users') else '' }}"><i class="fas fa-users" aria-hidden="true"></i> Utilisateurs</a></li>

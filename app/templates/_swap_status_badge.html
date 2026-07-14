@@ -1,0 +1,13 @@
+{# Template partiel : badge de statut pour une demande d'échange (swap).
+   Variable requise : swap (instance de SwapRequest, statut dans swap.status) #}
+{% if swap.status == 'pending' %}
+<span class="badge badge-warning">En attente</span>
+{% elif swap.status == 'approved' %}
+<span class="badge badge-success">Approuvée</span>
+{% elif swap.status == 'rejected' %}
+<span class="badge badge-error">Rejetée</span>
+{% elif swap.status == 'cancelled' %}
+<span class="badge badge-ghost">Annulée</span>
+{% elif swap.status == 'reverted' %}
+<span class="badge badge-ghost">Annulée</span>
+{% endif %}

@@ -312,6 +312,32 @@ def create_app(config_object: str | None = None):
         base_url = app.config.get("PUBLIC_BASE_URL")
         return {"public_base_url": base_url.rstrip("/") if base_url else None}
 
+    # Badge de notifications non lues dans la sidebar (voir "Notifications"
+    # dans nav_links, base.html) - requête légère (COUNT), acceptable à
+    # chaque page vue vu l'échelle de cette app.
+    #
+    # has_request_context() est nécessaire : les emails de rappel hebdo
+    # (NotificationService, scripts/send_*_notifications.py) appellent
+    # render_template() depuis un simple app_context() (cron, pas de
+    # requête HTTP) - current_user y résout à None (pas une exception),
+    # donc current_user.is_authenticated plantait ("'NoneType' object has
+    # no attribute 'is_authenticated'") et cassait l'envoi de TOUS les
+    # emails de rappel dès qu'un utilisateur avait un shift/astreinte.
+    @app.context_processor
+    def inject_unread_notifications_count():
+        from flask import has_request_context
+        from flask_login import current_user
+
+        if not has_request_context() or not current_user.is_authenticated:
+            return {"unread_notifications_count": 0}
+        from app.services import AppNotificationService
+
+        return {
+            "unread_notifications_count": AppNotificationService.count_unread(
+                current_user.id
+            )
+        }
+
     # Configuration des métriques Prometheus si activé
     if app.config.get("PROMETHEUS_ENABLED", False):
         from app.utils.prometheus_metrics import init_prometheus

@@ -1,14 +1,17 @@
 # 🗺️ Feuille de Route - Leviia Schedule
 
 > **Version** : 5.7.0 - Refonte visuelle Dracula/Alucard (PR #110)
-> **Version app** : 0.7.6 (`/version`) - Identité visuelle complète sur la
-> base Tailwind/daisyUI (PR #108) : palette officielle Dracula (thème
-> sombre) / Alucard (thème clair), drawer mobile natif, composants daisyUI
-> (stats, breadcrumbs, avatar, tooltip, collapse, hero, swap), modale de
-> création de shift en `<dialog>` natif
+> **Version app** : 0.7.7 (`/version`) - Échange de shifts entre
+> utilisateurs (demande, don simple ou réciproque, validation/annulation
+> admin, modèle `SwapRequest`) + notifications internes à l'app (bell
+> icon, modèle `AppNotification`). Hérite de la refonte visuelle Tailwind/daisyUI
+> (PR #108, #110) : palette officielle Dracula (thème sombre) / Alucard
+> (thème clair), drawer mobile natif, composants daisyUI (stats,
+> breadcrumbs, avatar, tooltip, collapse, hero, swap), modale de création
+> de shift en `<dialog>` natif
 > **Dernière mise à jour** : Juillet 2026
-> **Statut** : Développement actif - **933 tests passent** ✅ (dont 23 E2E navigateur réel)
-> **Commit actuel** : branche feature/dracula-redesign (PR #110)
+> **Statut** : Développement actif - **1006 tests passent** ✅ (dont 23 E2E navigateur réel)
+> **Commit actuel** : branche feature/shift-swap
 >
 > ℹ️ Ne pas confondre avec les « Phases » de refonte (`report/Phase 1` à
 > `report/Phase 6`, un chantier qualité/infra achevé) et les « Phases » de
@@ -212,7 +215,7 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 | Élément | Statut | Priorité | Livraison estimée | Détails |
 |---------|--------|----------|-------------------|---------|
 | **Notifications par email** | ✅ | **Haute** | v0.7 | Rappels hebdomadaires shifts (dimanche) et astreinte (jeudi), SMTP via variables d'environnement, scripts cron autonomes (PR #106) |
-| **Échanges de shifts entre utilisateurs** | ❌ | Moyenne | v0.8 | Système de demande et validation |
+| **Échanges de shifts entre utilisateurs** | ✅ | Moyenne | v0.7 | Demande (don simple ou réciproque) + validation admin, modèle `SwapRequest` |
 | **Multi-langues (i18n)** | ❌ | Moyenne | v0.8 | Français, Anglais, Espagnol |
 | **Gestion des fuseaux horaires** | ❌ | Moyenne | v0.8 | Support multi-timezone |
 | **Historique des modifications** | ❌ | Basse | v0.9 | Audit trail des changements |
@@ -276,10 +279,10 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 - ✅ Refonte UI/UX (PR #103 : palette, burger mobile, composants, dashboard, audit responsive)
 - ✅ Calendrier interactif (drag & drop, FullCalendar)
 - ✅ Notifications par email (PR #106)
+- ✅ Échanges de shifts entre utilisateurs (demande + validation admin)
 - ❌ Multi-langues (i18n)
 
 ### Version 0.8 (Intégrations)
-- ❌ Échanges de shifts entre utilisateurs
 - ❌ Accessibilité WCAG complète
 - ❌ API REST publique
 

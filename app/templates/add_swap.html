@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Proposer un échange - Leviia Schedule{% endblock %}
+
+{% block content %}
+<section class="p-3 md:p-4 max-w-2xl mx-auto">
+    <h1 class="text-2xl font-bold mb-4">
+        <i class="fas fa-right-left" aria-hidden="true"></i> Proposer un échange de shift
+    </h1>
+
+    <form method="POST" action="{{ url_for('main.add_swap') }}" aria-labelledby="form-title" id="swap-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Mon shift à céder <span class="text-error">*</span></legend>
+                    <select class="select w-full validator" id="shift_id" name="shift_id" required aria-required="true" aria-describedby="shift-help">
+                        <option value="" disabled selected>Sélectionnez un de vos shifts à venir</option>
+                        {% for shift in my_shifts %}
+                        <option value="{{ shift.id }}">{{ shift.date.strftime('%d/%m/%Y') }} - {{ shift.shift_type.label }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-sm text-base-content/60" id="shift-help">Seuls vos shifts à venir sont proposables</p>
+                </fieldset>
+
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Proposer à <span class="text-error">*</span></legend>
+                    <select class="select w-full validator" id="target_user_id" name="target_user_id" required aria-required="true" aria-describedby="target-user-help">
+                        <option value="" disabled selected>Sélectionnez un collègue</option>
+                        {% for user in other_users %}
+                        <option value="{{ user.id }}">{{ user.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-sm text-base-content/60" id="target-user-help">L'utilisateur à qui proposer l'échange</p>
+                </fieldset>
+
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Shift demandé en retour (optionnel)</legend>
+                    <select class="select w-full" id="target_shift_id" name="target_shift_id" aria-describedby="target-shift-help" disabled>
+                        <option value="">Aucun (don simple)</option>
+                    </select>
+                    <p class="text-sm text-base-content/60" id="target-shift-help">
+                        Choisissez d'abord un collègue - laissez vide pour un don simple de votre shift
+                    </p>
+                </fieldset>
+
+                <div class="flex gap-2" role="group" aria-label="Actions du formulaire">
+                    <button class="btn btn-primary" type="submit" aria-label="Envoyer la demande" title="Envoyer la demande">
+                        <i class="fas fa-paper-plane" aria-hidden="true"></i> Envoyer la demande
+                    </button>
+                    <a class="btn btn-ghost" href="{{ url_for('main.swaps') }}" aria-label="Annuler et retourner à la liste" title="Annuler">
+                        Annuler
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script type="module" src="{{ url_for('static', filename='js/swaps/swap-form.js') }}"></script>
+{% endblock %}

@@ -83,28 +83,37 @@ touching auth flows.
 
 `app/models/` is a package (`base.py` defines the shared `BaseModel` with `id`/`created_at`/
 `updated_at` and CRUD helpers like `.save()`/`.update()`/`.to_dict()`; `user.py`, `shift.py`,
-`oncall.py`, `leave.py`, `automation_config.py`, `notification_log.py` hold the domain models, all
-subclassing `BaseModel`).
+`oncall.py`, `leave.py`, `automation_config.py`, `notification_log.py`, `swap_request.py` hold the
+domain models, all subclassing `BaseModel`).
 
 Core entities: `Group` → `User` (1:N) → `Shift` / `OnCall` / `Leave` / `NotificationLog` (each 1:N
 from User), `ShiftType` → `Shift` (1:N). Composite indexes exist on `Shift(user_id, date)`,
 `Shift(date, start_time)`, `OnCall(user_id, start_time, end_time)`, and
 `Leave(user_id, start_date, end_date)` — preserve these if you touch query patterns.
 `NotificationLog` has a unique constraint on `(user_id, notification_type, period_start)` — the
-anti-duplicate guard for the weekly email reminders.
+anti-duplicate guard for the weekly email reminders. `SwapRequest` has 3 FKs to `User`
+(requester/target_user/reviewer) + 2 to `Shift` (shift/target_shift) — the first model in this repo
+with more than one FK to the same table. It deliberately has **no** `db.relationship()` declarations:
+SQLAlchemy 2.0's own stubs type a bare `relationship()` call as `RelationshipProperty[Any]` on both
+declaration and instance access without the (unconfigured, see `mypy.ini`/Makefile) SQLAlchemy mypy
+plugin, so `requester`/`target_user`/`reviewer`/`shift`/`target_shift` are plain `@property` lookups
+via `db.session.get(...)` instead — same pattern as `User.next_shift`/`User.current_oncall`
+(`app/models/user.py`). Consequence: `SwapRequestRepository` cannot `joinedload()` these (one extra
+query per access) — acceptable at this app's scale.
 
 ### Layered architecture: repositories/ and services/
 
 `app/repositories/` (data access — `UserRepository`, `GroupRepository`, `ShiftRepository`,
-`ShiftTypeRepository`, `OnCallRepository`, `LeaveRepository`) and `app/services/` (business logic —
-`UserService`, `GroupService`, `ShiftService`, `ShiftTypeService`, `OnCallService`, `LeaveService`,
-`ExportService`, `ScheduleService`, `AutomationAdminService`, `NotificationService`, `BackupService`)
-are implemented and wired up. Routes in `app/routes/` (both the `main` and `admin` blueprints, split
-across multiple files — e.g. `shift_routes.py`, `admin_user_routes.py` — that all register onto the
-same blueprint object defined in `main.py`/`admin.py`) parse the request, call a service, and turn
-the result into a flash/redirect/JSON response; services call repositories for data access and
-encapsulate validation (e.g. `can_add_shift`) and cross-cutting effects (e.g. shift rebalance after
-a leave change). `app/utils/automation/` (`OnCallAutomation`, `AdvancedShiftAutomation` — the
+`ShiftTypeRepository`, `OnCallRepository`, `LeaveRepository`, `SwapRequestRepository`) and
+`app/services/` (business logic — `UserService`, `GroupService`, `ShiftService`, `ShiftTypeService`,
+`OnCallService`, `LeaveService`, `SwapService`, `ExportService`, `ScheduleService`,
+`AutomationAdminService`, `NotificationService`, `BackupService`) are implemented and wired up.
+Routes in `app/routes/` (both the `main` and `admin` blueprints, split across multiple files — e.g.
+`shift_routes.py`, `admin_user_routes.py` — that all register onto the same blueprint object defined
+in `main.py`/`admin.py`) parse the request, call a service, and turn the result into a
+flash/redirect/JSON response; services call repositories for data access and encapsulate validation
+(e.g. `can_add_shift`) and cross-cutting effects (e.g. shift rebalance after a leave change).
+`app/utils/automation/` (`OnCallAutomation`, `AdvancedShiftAutomation` — the
 generic `ShiftAutomation`/`BusinessRules` engine was removed as dead code, PR #105, see
 `report/` for details) is a pre-existing business-logic layer used directly by services rather than
 being duplicated. `NotificationService` is the one service with no route calling it — it's invoked
@@ -146,6 +155,52 @@ were never imported outside that file; `measure_time` even imported a module
 `app/auth/` holds `decorators.py` (route guards), `user_manager.py`, and `oidc_auth.py`
 (Authlib-based SSO for Keycloak/Okta/Auth0-style providers, gated by `OIDCConfig.ENABLED` and
 `is_configured()`).
+
+### Shift swaps
+
+Users request to give up one of their shifts to another user (`app/routes/swap_routes.py`:
+`/swaps`, `/swaps/add`, `/swaps/<id>/cancel`), optionally in exchange for one of the target's shifts
+(reciprocal swap) — leave `target_shift_id` unset for a one-way give-away. An admin must approve
+before anything changes (`app/routes/admin_swap_routes.py`: `/admin/swaps`,
+`/admin/swaps/<id>/approve`, `/admin/swaps/<id>/reject`, `/admin/swaps/<id>/revert`) — this is the
+**only** approval workflow in the app; `Leave` (congés) has none by design (see "Models" above) and
+stays that way, don't add one there by analogy. `SwapService` (`app/services/swap_service.py`)
+re-validates the same business rules at both request time and approval time (`_validation_error`:
+shift still owned by requester, target not on leave / doesn't already have another shift that day,
+no duplicate pending request per shift) since state can drift between the two — approval doesn't
+blindly trust the original request. `approve_swap` reassigns `Shift.user_id` directly (swap, not
+delete+recreate) then commits; reject/cancel only touch `SwapRequest.status`, shifts stay untouched.
+`/admin/swaps` lists both pending and already-approved requests — an admin can `revert_swap` an
+approved exchange after the fact, which reassigns `Shift.user_id` back to the original owners and
+sets status to `REVERTED` (distinct from `CANCELLED`, which is only for the requester backing out
+*before* approval). `revert_swap` deliberately skips `_validation_error` (the swap back to the prior
+owners was valid by definition) but does check each shift is still owned by whoever the approval put
+it with — if either shift was reassigned again since (another swap, manual edit), it refuses rather
+than silently overwriting an unrelated change. `/api/swaps/target-shifts` is a small JSON endpoint
+backing `app/static/js/swaps/swap-form.js`, which populates the optional "shift requested back"
+dropdown once a target user is chosen on `add_swap.html`. `SwapService.purge_resolved_for_user`/
+`purge_all_resolved` hard-delete non-`PENDING` requests (`/swaps/purge` for a user's own history —
+matched as requester *or* target, so a purge can remove a row the other party can still see, since
+it's one shared historical record, not a per-user view; `/admin/swaps/purge` for everyone's) — no
+age threshold, "old" here means "no longer actionable", not time-based.
+
+### In-app notifications
+
+`AppNotification` (`app/models/app_notification.py`) is the bell-icon notification shown in the
+sidebar (unread count badge via `inject_unread_notifications_count` context processor in
+`app/__init__.py`) — **not** the same thing as `NotificationLog`
+(`app/models/notification_log.py`), which is purely an idempotency guard for the weekly *email*
+reminders and is never rendered anywhere; don't confuse the two when searching for "notification" in
+this codebase. `AppNotificationService` (`app/services/app_notification_service.py`) is created
+synchronously by other services on domain events, not by a cron script — currently the only caller is
+`SwapService`: a new request notifies every admin (`UserRepository.list_admins()`) with a link to
+`/admin/swaps`; an approve/reject/revert decision notifies the requester (and also the target user
+for approve/revert, since those two actually change their shifts — reject changes nothing, so only
+the requester is told). Routes live in `app/routes/notification_routes.py` (`/notifications`,
+`/notifications/<id>/read`, `/notifications/read-all`), all on `main_bp`. If you add a notification
+trigger to another service, follow the same pattern: call `AppNotificationService` after the
+triggering action's own `db.session.commit()`, not before — a notification that fires ahead of a
+failed/rolled-back action would be wrong.
 
 ### Frontend
 
@@ -249,6 +304,16 @@ from the admin UI honors the same switch as the cron job; listing/downloading ex
 available regardless. Docker: `docker/entrypoint.sh` starts `crond` if `NOTIFICATIONS_ENABLED` and/or
 `BACKUP_ENABLED` is true (one shared crond, `docker/crontabs/appuser` always has both scripts'
 entries — each script no-ops internally if its own flag is off).
+
+`docker/entrypoint.sh` always runs `docker/init_database.py` (`db.create_all()`) on container start,
+even when `/app/data/app.db` already exists — this is the *only* schema-migration mechanism in
+production (no Alembic/Flask-Migrate, see "Layered architecture" above): `create_all()` only adds
+tables that don't exist yet, so it's safe to run unconditionally, but it's also the only thing that
+will ever create a table added by a later release (e.g. `swap_request`) on an already-deployed
+volume — skipping it when the DB file exists (the earlier behavior) left upgraded deployments with
+"no such table" errors on the new feature's first request. The plain `python run.py` path doesn't
+have this gap: `setup_database()` runs unconditionally on every start there already (see
+`check_database_integrity()`/`setup_database()` in `run.py`).
 
 ## Testing conventions
 
