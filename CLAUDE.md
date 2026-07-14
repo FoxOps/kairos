@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Language
+
+Respond to the user in French. Code, identifiers, and commit messages follow the conventions
+described below (commit history is French-language; code/comments in English unless stated
+otherwise).
+
 ## Project
 
 Leviia Schedule is a Flask web app for team shift scheduling, on-call rotations, and leave
