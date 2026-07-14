@@ -32,6 +32,7 @@ def check_database_integrity():
             "on_call",
             "leave",
             "swap_request",
+            "app_notification",
         ]
 
         for table in required_tables:

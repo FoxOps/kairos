@@ -8,9 +8,11 @@ organized by domain:
 - OnCall: OnCall
 - Leave: Leave
 - SwapRequest: SwapRequest (shift exchange between users, admin validation)
+- AppNotification: AppNotification (in-app notification, not the email-dedup NotificationLog)
 - Base: BaseModel (common fields and methods)
 """
 
+from app.models.app_notification import AppNotification
 from app.models.automation_config import AutomationConfig
 from app.models.base import BaseModel
 from app.models.leave import Leave
@@ -31,4 +33,5 @@ __all__ = [
     "AutomationConfig",
     "NotificationLog",
     "SwapRequest",
+    "AppNotification",
 ]

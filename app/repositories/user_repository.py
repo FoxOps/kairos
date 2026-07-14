@@ -49,6 +49,10 @@ class UserRepository:
         )
 
     @staticmethod
+    def list_admins() -> list[User]:
+        return User.query.filter_by(is_admin=True).order_by(User.name).all()
+
+    @staticmethod
     def email_taken(email: str, exclude_id: int | None = None) -> bool:
         query = User.query.filter(User.email == email)
         if exclude_id is not None:

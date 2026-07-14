@@ -12,6 +12,7 @@ into a flash message / redirect / JSON response.
 from app import db
 from app.models import Shift, SwapRequest, User
 from app.repositories.swap_request_repository import SwapRequestRepository
+from app.services.app_notification_service import AppNotificationService
 from app.utils.helpers import is_user_on_leave
 from app.utils.logging import get_logger
 
@@ -107,6 +108,7 @@ class SwapService:
             target_shift_id=target_shift.id if target_shift else None,
         )
         db.session.commit()
+        AppNotificationService.notify_admins_new_swap_request(swap_request)
         return swap_request, None
 
     @staticmethod
@@ -142,6 +144,7 @@ class SwapService:
 
         swap_request.mark_reviewed(admin.id, SwapRequest.APPROVED)
         db.session.commit()
+        AppNotificationService.notify_swap_decision(swap_request, SwapRequest.APPROVED)
         logger.info(
             "Échange de shift id=%s approuvé par admin id=%s", swap_request.id, admin.id
         )
@@ -177,6 +180,7 @@ class SwapService:
 
         swap_request.mark_reviewed(admin.id, SwapRequest.REVERTED)
         db.session.commit()
+        AppNotificationService.notify_swap_decision(swap_request, SwapRequest.REVERTED)
         logger.info(
             "Échange de shift id=%s annulé après approbation par admin id=%s",
             swap_request.id,
@@ -194,4 +198,5 @@ class SwapService:
 
         swap_request.mark_reviewed(admin.id, SwapRequest.REJECTED, comment=reason)
         db.session.commit()
+        AppNotificationService.notify_swap_decision(swap_request, SwapRequest.REJECTED)
         return None

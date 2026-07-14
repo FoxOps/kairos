@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app import db
 from app.models import (
+    AppNotification,
     Group,
     Leave,
     NotificationLog,
@@ -464,3 +465,37 @@ class TestSwapRequestModel:
             assert test_swap_request.reviewed_by_id == second_user.id
             assert test_swap_request.reviewed_at is not None
             assert test_swap_request.admin_comment == "Conflit de planning"
+
+
+class TestAppNotificationModel:
+    """Tests pour le modèle AppNotification."""
+
+    def test_creation_defaults_to_unread(self, test_app, test_user):
+        with test_app.app_context():
+            notification = AppNotification(
+                user_id=test_user.id,
+                notification_type="swap_request_created",
+                message="Test",
+            )
+            db.session.add(notification)
+            db.session.commit()
+
+            assert notification.id is not None
+            assert notification.read_at is None
+            assert notification.is_unread() is True
+            assert notification.link is None
+
+    def test_mark_read(self, test_app, test_user):
+        with test_app.app_context():
+            notification = AppNotification(
+                user_id=test_user.id,
+                notification_type="swap_approved",
+                message="Test",
+                link="/swaps",
+            )
+            db.session.add(notification)
+            db.session.commit()
+
+            notification.mark_read()
+            assert notification.read_at is not None
+            assert notification.is_unread() is False

@@ -19,10 +19,14 @@ Services:
   parsing, period clearing, rotation order persistence)
 - notification_service: Weekly email reminders (shifts + on-call),
   called by scripts/send_*_notifications.py, not by any Flask route
+- app_notification_service: In-app notifications (bell icon), created
+  synchronously by other services on domain events - not to be confused
+  with notification_service above (emails, cron-only)
 - backup_service: Admin UI support for database backups, wraps the
   pure functions in scripts/backup_database.py
 """
 
+from app.services.app_notification_service import AppNotificationService
 from app.services.automation_admin_service import AutomationAdminService
 from app.services.backup_service import BackupService
 from app.services.export_service import ExportService
@@ -48,5 +52,6 @@ __all__ = [
     "ScheduleService",
     "AutomationAdminService",
     "NotificationService",
+    "AppNotificationService",
     "BackupService",
 ]

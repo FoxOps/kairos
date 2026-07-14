@@ -2,9 +2,9 @@
 
 ## 📊 Aperçu Global
 
-- **Date de mise à jour** : 14 juillet 2026 (échange de shifts entre utilisateurs + annulation post-approbation)
-- **Nombre total de tests** : 975
-- **Tests réussis** : 975 ✅
+- **Date de mise à jour** : 14 juillet 2026 (notifications internes à l'app)
+- **Nombre total de tests** : 994
+- **Tests réussis** : 994 ✅
 - **Tests échoués** : 0
 - **Couverture de code** : **~88%** (`--cov=app --cov=config`)
 - **Lint (ruff)** : propre - **0 erreur**
@@ -297,3 +297,22 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
   test, pas un bug applicatif ; toujours isoler un seul client HTTP
   authentifié par test (préparer l'état "déjà approuvé" via le service
   directement si besoin, pas via une seconde requête HTTP admin).
+- **14 juillet 2026** : 994 tests (0 échec, +19). Notifications internes
+  à l'app (bell icon sidebar, badge non-lu) : `AppNotification` -
+  distinct de `NotificationLog` qui reste réservé aux rappels email
+  hebdo et n'est jamais affiché. `AppNotificationService` déclenché
+  synchroniquement par `SwapService` (nouvelle demande -> tous les
+  admins ; approbation/annulation -> demandeur + destinataire ; rejet ->
+  demandeur seul). Bug réel trouvé et corrigé *avant* qu'il ne casse la
+  prod : le nouveau `context_processor` (badge non-lu) accédait à
+  `current_user.is_authenticated` sans vérifier `has_request_context()`
+  - `NotificationService` (emails hebdo) rend ses templates via un
+  simple `app_context()` (scripts cron, jamais de requête HTTP), où
+  `current_user` résout à `None` plutôt que de lever une exception ;
+  résultat : `'NoneType' object has no attribute 'is_authenticated'` sur
+  **chaque** email de rappel, silencieusement avalé dans
+  `NotificationBatchResult.failed`. Détecté par la suite existante
+  (`tests/unit/test_notification_service.py`, 5 tests rouges) en
+  relançant la suite complète après la feature - pas par un test écrit
+  pour ce bug précis. Rappel qu'un `context_processor` s'exécute pour
+  *tout* rendu de template de l'app, y compris hors requête HTTP.

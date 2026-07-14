@@ -180,6 +180,24 @@ than silently overwriting an unrelated change. `/api/swaps/target-shifts` is a s
 backing `app/static/js/swaps/swap-form.js`, which populates the optional "shift requested back"
 dropdown once a target user is chosen on `add_swap.html`.
 
+### In-app notifications
+
+`AppNotification` (`app/models/app_notification.py`) is the bell-icon notification shown in the
+sidebar (unread count badge via `inject_unread_notifications_count` context processor in
+`app/__init__.py`) — **not** the same thing as `NotificationLog`
+(`app/models/notification_log.py`), which is purely an idempotency guard for the weekly *email*
+reminders and is never rendered anywhere; don't confuse the two when searching for "notification" in
+this codebase. `AppNotificationService` (`app/services/app_notification_service.py`) is created
+synchronously by other services on domain events, not by a cron script — currently the only caller is
+`SwapService`: a new request notifies every admin (`UserRepository.list_admins()`) with a link to
+`/admin/swaps`; an approve/reject/revert decision notifies the requester (and also the target user
+for approve/revert, since those two actually change their shifts — reject changes nothing, so only
+the requester is told). Routes live in `app/routes/notification_routes.py` (`/notifications`,
+`/notifications/<id>/read`, `/notifications/read-all`), all on `main_bp`. If you add a notification
+trigger to another service, follow the same pattern: call `AppNotificationService` after the
+triggering action's own `db.session.commit()`, not before — a notification that fires ahead of a
+failed/rolled-back action would be wrong.
+
 ### Frontend
 
 Tailwind CSS 4 + daisyUI 5, both loaded via `cdnjs.cloudflare.com` — no build step: Tailwind runs
