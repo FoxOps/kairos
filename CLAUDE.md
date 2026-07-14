@@ -178,7 +178,11 @@ owners was valid by definition) but does check each shift is still owned by whoe
 it with — if either shift was reassigned again since (another swap, manual edit), it refuses rather
 than silently overwriting an unrelated change. `/api/swaps/target-shifts` is a small JSON endpoint
 backing `app/static/js/swaps/swap-form.js`, which populates the optional "shift requested back"
-dropdown once a target user is chosen on `add_swap.html`.
+dropdown once a target user is chosen on `add_swap.html`. `SwapService.purge_resolved_for_user`/
+`purge_all_resolved` hard-delete non-`PENDING` requests (`/swaps/purge` for a user's own history —
+matched as requester *or* target, so a purge can remove a row the other party can still see, since
+it's one shared historical record, not a per-user view; `/admin/swaps/purge` for everyone's) — no
+age threshold, "old" here means "no longer actionable", not time-based.
 
 ### In-app notifications
 

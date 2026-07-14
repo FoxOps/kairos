@@ -86,6 +86,16 @@ def cancel_swap(swap_request_id):
     return redirect(url_for("main.swaps"))
 
 
+@main_bp.route("/swaps/purge", methods=["POST"])
+@login_required
+def purge_swaps():
+    count = SwapService.purge_resolved_for_user(current_user)
+    flash(
+        f"{count} demande(s) terminée(s) supprimée(s) de votre historique.", "success"
+    )
+    return redirect(url_for("main.swaps"))
+
+
 @main_bp.route("/api/swaps/target-shifts")
 @login_required
 def api_target_shifts():

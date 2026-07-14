@@ -84,3 +84,26 @@ class SwapRequestRepository:
     @staticmethod
     def delete(swap_request: SwapRequest) -> None:
         db.session.delete(swap_request)
+
+    @staticmethod
+    def purge_resolved_for_user(user_id: int) -> int:
+        """Supprime les demandes terminées (non pending) impliquant
+        user_id (comme demandeur ou destinataire). Retourne le nombre
+        supprimé. Une même ligne peut donc disparaître aussi de l'autre
+        partie impliquée - c'est un seul enregistrement historique
+        partagé, pas une vue par utilisateur."""
+        return SwapRequest.query.filter(
+            or_(
+                SwapRequest.requester_id == user_id,
+                SwapRequest.target_user_id == user_id,
+            ),
+            SwapRequest.status != SwapRequest.PENDING,
+        ).delete(synchronize_session=False)
+
+    @staticmethod
+    def purge_all_resolved() -> int:
+        """Supprime toutes les demandes terminées (non pending), tous
+        utilisateurs confondus. Retourne le nombre supprimé."""
+        return SwapRequest.query.filter(
+            SwapRequest.status != SwapRequest.PENDING
+        ).delete(synchronize_session=False)

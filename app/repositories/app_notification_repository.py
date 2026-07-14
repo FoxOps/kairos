@@ -49,3 +49,11 @@ class AppNotificationRepository:
         AppNotification.query.filter_by(user_id=user_id, read_at=None).update(
             {"read_at": datetime.utcnow()}
         )
+
+    @staticmethod
+    def purge_read_for_user(user_id: int) -> int:
+        """Supprime les notifications déjà lues de user_id. Retourne le nombre supprimé."""
+        return AppNotification.query.filter(
+            AppNotification.user_id == user_id,
+            AppNotification.read_at.isnot(None),
+        ).delete()

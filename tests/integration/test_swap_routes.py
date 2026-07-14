@@ -218,3 +218,43 @@ class TestAdminSwapRoutes:
     def test_revert_nonexistent_404(self, test_app, logged_in_client):
         resp = logged_in_client.post("/admin/swaps/999999/revert")
         assert resp.status_code == 404
+
+    def test_purge_requires_admin(
+        self, test_app, non_admin_client, test_swap_request, admin_user
+    ):
+        with test_app.app_context():
+            SwapService.reject_swap(test_swap_request, admin_user)
+        resp = non_admin_client.post("/admin/swaps/purge", follow_redirects=False)
+        assert resp.status_code == 302
+        with test_app.app_context():
+            assert SwapRequest.query.count() == 1
+
+    def test_purge_deletes_all_resolved(
+        self, test_app, logged_in_client, test_swap_request, admin_user
+    ):
+        with test_app.app_context():
+            SwapService.reject_swap(test_swap_request, admin_user)
+
+        resp = logged_in_client.post("/admin/swaps/purge", follow_redirects=True)
+        assert resp.status_code == 200
+        with test_app.app_context():
+            assert SwapRequest.query.count() == 0
+
+
+class TestUserPurgeSwaps:
+    def test_purge_deletes_own_resolved(
+        self, test_app, non_admin_client, test_swap_request, admin_user
+    ):
+        with test_app.app_context():
+            SwapService.reject_swap(test_swap_request, admin_user)
+
+        resp = non_admin_client.post("/swaps/purge", follow_redirects=True)
+        assert resp.status_code == 200
+        with test_app.app_context():
+            assert SwapRequest.query.count() == 0
+
+    def test_purge_keeps_pending(self, test_app, non_admin_client, test_swap_request):
+        resp = non_admin_client.post("/swaps/purge", follow_redirects=True)
+        assert resp.status_code == 200
+        with test_app.app_context():
+            assert SwapRequest.query.count() == 1

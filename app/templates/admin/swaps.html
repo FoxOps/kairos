@@ -14,6 +14,17 @@
         <i class="fas fa-right-left" aria-hidden="true"></i> Échanges de shifts
     </h1>
 
+    <div class="flex flex-wrap gap-2 mb-4" role="group" aria-label="Actions globales">
+        <form method="POST" action="{{ url_for('admin.purge_swaps') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-ghost btn-sm" type="submit"
+                    aria-label="Purger l'historique complet des échanges terminés" title="Purger l'historique complet des échanges terminés"
+                    onclick="return confirm('Supprimer définitivement toutes les demandes terminées (approuvées, rejetées ou annulées), tous utilisateurs confondus ?');">
+                <i class="fas fa-broom" aria-hidden="true"></i> Purger l'historique (tous utilisateurs)
+            </button>
+        </form>
+    </div>
+
     <h2 class="text-xl font-semibold mb-2" id="swaps-title">En attente</h2>
     {% if pending %}
     <div class="overflow-x-auto mb-6" role="region" aria-labelledby="swaps-title">

@@ -2,9 +2,9 @@
 
 ## 📊 Aperçu Global
 
-- **Date de mise à jour** : 14 juillet 2026 (notifications internes à l'app)
-- **Nombre total de tests** : 994
-- **Tests réussis** : 994 ✅
+- **Date de mise à jour** : 14 juillet 2026 (purge notifications/échanges, corrections UI)
+- **Nombre total de tests** : 1006
+- **Tests réussis** : 1006 ✅
 - **Tests échoués** : 0
 - **Couverture de code** : **~88%** (`--cov=app --cov=config`)
 - **Lint (ruff)** : propre - **0 erreur**
@@ -218,6 +218,26 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
    après une action admin, préparer l'état voulu directement via le
    service (ex: `SwapService.approve_swap(...)` en `app_context()`)
    plutôt que via une seconde requête HTTP authentifiée différemment.
+7. **Ne jamais imbriquer `with test_app.app_context():` quand un test
+   mute puis re-vérifie un objet de fixture via une requête fraîche** :
+   `test_app` a déjà un contexte actif pour toute la durée du test (voir
+   `tests/conftest.py`). En pousser un second fait résoudre `db.session`
+   vers une **session SQLAlchemy différente** de celle utilisée par les
+   fixtures - confirmé via l'erreur SQLAlchemy elle-même : `"Object ...
+   is already attached to session 'N' (this is 'M')"`. Un objet créé par
+   une fixture (attaché à la session N) mute normalement en mémoire dans
+   le bloc imbriqué (session M), mais `db.session.commit()` dans ce bloc
+   ne committe RIEN pour cet objet - il reste invisible même en SQL brut
+   après coup. Inoffensif tant qu'un test ne vérifie que l'attribut
+   Python en mémoire (`objet.champ == valeur`, la quasi-totalité des
+   tests de ce fichier) ; silencieusement faux dès qu'on vérifie l'état
+   réellement persisté (`Model.query.count()` après un bulk `.delete()`,
+   par exemple - voir `TestPurgeSwaps` dans `test_swap_service.py`, où
+   ça a fait échouer un test de façon 100% reproductible malgré un code
+   applicatif correct). Un objet **créé** à l'intérieur du bloc imbriqué
+   (pas depuis une fixture) n'est pas concerné, puisqu'il est ajouté
+   directement à la session M. L'app réelle n'est jamais affectée : une
+   requête HTTP a un unique contexte, jamais imbriqué.
 
 ---
 
@@ -316,3 +336,27 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
   relançant la suite complète après la feature - pas par un test écrit
   pour ce bug précis. Rappel qu'un `context_processor` s'exécute pour
   *tout* rendu de template de l'app, y compris hors requête HTTP.
+- **14 juillet 2026** : 1006 tests (0 échec, +12). Corrections retours
+  utilisateur sur l'échange de shifts + notifications : badge de statut
+  `REVERTED` simplifié en "Annulée" (au lieu de "Annulée après
+  approbation") côté page utilisateur ; flash "Échange rejeté." passé de
+  `success` (vert) à `warning` (orange), un rejet n'étant pas un succès
+  côté demandeur. Purge ajoutée des deux côtés : notifications lues
+  (`AppNotificationService.purge_read`, garde les non-lues) et demandes
+  d'échange terminées/non-pending (`SwapService.purge_resolved_for_user`
+  côté utilisateur - matché comme demandeur *ou* destinataire, donc peut
+  faire disparaître une ligne encore visible pour l'autre partie, un seul
+  enregistrement historique partagé ; `purge_all_resolved` côté admin,
+  tous utilisateurs). Découverte majeure au passage, documentée en detail
+  dans "Bonnes pratiques" ci-dessous (point 7) : imbriquer
+  `with test_app.app_context():` dans un test dont `test_app` a déjà un
+  contexte actif fait résoudre `db.session` vers une session SQLAlchemy
+  différente de celle des fixtures - un commit dans le bloc imbriqué ne
+  persiste alors rien pour un objet de fixture, silencieusement, tant
+  qu'on ne vérifie pas l'état via une requête fraîche. A fait échouer un
+  nouveau test de purge de façon 100% reproductible en isolation malgré
+  un code applicatif correct (confirmé via les tests de routes HTTP
+  équivalents, eux non affectés) - probablement latent et invisible dans
+  le reste de la suite jusqu'ici car la quasi-totalité des tests
+  existants ne vérifient que l'attribut Python en mémoire après une
+  action, jamais un état fraîchement requêté.

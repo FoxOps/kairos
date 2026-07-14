@@ -10,7 +10,7 @@
 > breadcrumbs, avatar, tooltip, collapse, hero, swap), modale de création
 > de shift en `<dialog>` natif
 > **Dernière mise à jour** : Juillet 2026
-> **Statut** : Développement actif - **994 tests passent** ✅ (dont 23 E2E navigateur réel)
+> **Statut** : Développement actif - **1006 tests passent** ✅ (dont 23 E2E navigateur réel)
 > **Commit actuel** : branche feature/shift-swap
 >
 > ℹ️ Ne pas confondre avec les « Phases » de refonte (`report/Phase 1` à

@@ -41,6 +41,13 @@ class AppNotificationService:
         db.session.commit()
 
     @staticmethod
+    def purge_read(user: User) -> int:
+        """Supprime les notifications déjà lues de l'utilisateur. Retourne le nombre supprimé."""
+        count = AppNotificationRepository.purge_read_for_user(user.id)
+        db.session.commit()
+        return count
+
+    @staticmethod
     def _notify(user_id: int, notification_type: str, message: str, link: str) -> None:
         AppNotificationRepository.create(
             user_id=user_id,

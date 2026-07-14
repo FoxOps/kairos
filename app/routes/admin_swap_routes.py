@@ -66,5 +66,15 @@ def reject_swap(swap_request_id):
     if error:
         flash(f"❌ {error}", "danger")
     else:
-        flash("Échange rejeté.", "success")
+        flash("Échange rejeté.", "warning")
+    return redirect(url_for("admin.list_swaps"))
+
+
+@admin_bp.route("/admin/swaps/purge", methods=["POST"])
+@admin_required
+def purge_swaps():
+    count = SwapService.purge_all_resolved()
+    flash(
+        f"{count} demande(s) terminée(s) supprimée(s) (tous utilisateurs).", "success"
+    )
     return redirect(url_for("admin.list_swaps"))

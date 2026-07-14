@@ -91,3 +91,23 @@ class TestMarkAllNotificationsRead:
             from app.services import AppNotificationService
 
             assert AppNotificationService.count_unread(test_user.id) == 0
+
+
+class TestPurgeNotifications:
+    def test_purge_deletes_read_only(self, test_app, non_admin_client, test_user):
+        with test_app.app_context():
+            read_notif = AppNotificationRepository.create(
+                test_user.id, "swap_approved", "Lue"
+            )
+            AppNotificationRepository.create(test_user.id, "swap_approved", "Non lue")
+            db.session.commit()
+            read_notif.mark_read()
+            db.session.commit()
+
+        resp = non_admin_client.post("/notifications/purge", follow_redirects=True)
+        assert resp.status_code == 200
+
+        with test_app.app_context():
+            from app.models import AppNotification
+
+            assert AppNotification.query.filter_by(user_id=test_user.id).count() == 1

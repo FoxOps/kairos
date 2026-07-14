@@ -3,7 +3,7 @@ Routes pour les notifications internes à l'app (bell icon). Enregistrées
 sur main_bp (cf. app/routes/main.py).
 """
 
-from flask import abort, redirect, render_template, url_for
+from flask import abort, flash, redirect, render_template, url_for
 from flask_login import current_user, login_required
 
 from app.repositories.app_notification_repository import AppNotificationRepository
@@ -37,4 +37,12 @@ def mark_notification_read(notification_id):
 @login_required
 def mark_all_notifications_read():
     AppNotificationService.mark_all_read(current_user)
+    return redirect(url_for("main.notifications"))
+
+
+@main_bp.route("/notifications/purge", methods=["POST"])
+@login_required
+def purge_notifications():
+    count = AppNotificationService.purge_read(current_user)
+    flash(f"{count} notification(s) lue(s) supprimée(s).", "success")
     return redirect(url_for("main.notifications"))

@@ -141,3 +141,33 @@ class TestReadState:
 
             AppNotificationService.mark_all_read(test_user)
             assert AppNotificationService.count_unread(test_user.id) == 0
+
+
+class TestPurgeRead:
+    def test_purge_deletes_only_read(self, test_app, test_user):
+        with test_app.app_context():
+            read_notif = AppNotificationRepository.create(
+                test_user.id, "swap_approved", "Lue"
+            )
+            AppNotificationRepository.create(test_user.id, "swap_approved", "Non lue")
+            db.session.commit()
+            read_notif.mark_read()
+            db.session.commit()
+
+            count = AppNotificationService.purge_read(test_user)
+            assert count == 1
+            assert AppNotification.query.filter_by(user_id=test_user.id).count() == 1
+            assert AppNotificationService.count_unread(test_user.id) == 1
+
+    def test_purge_ignores_other_users(self, test_app, test_user, second_user):
+        with test_app.app_context():
+            notif = AppNotificationRepository.create(
+                second_user.id, "swap_approved", "Lue"
+            )
+            db.session.commit()
+            notif.mark_read()
+            db.session.commit()
+
+            count = AppNotificationService.purge_read(test_user)
+            assert count == 0
+            assert AppNotification.query.filter_by(user_id=second_user.id).count() == 1

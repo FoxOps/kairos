@@ -200,3 +200,19 @@ class SwapService:
         db.session.commit()
         AppNotificationService.notify_swap_decision(swap_request, SwapRequest.REJECTED)
         return None
+
+    @staticmethod
+    def purge_resolved_for_user(user: User) -> int:
+        """Supprime les demandes terminées (non pending) de l'utilisateur
+        (comme demandeur ou destinataire). Retourne le nombre supprimé."""
+        count = SwapRequestRepository.purge_resolved_for_user(user.id)
+        db.session.commit()
+        return count
+
+    @staticmethod
+    def purge_all_resolved() -> int:
+        """Supprime toutes les demandes terminées (non pending), admin
+        uniquement (contrôle fait par la route). Retourne le nombre supprimé."""
+        count = SwapRequestRepository.purge_all_resolved()
+        db.session.commit()
+        return count

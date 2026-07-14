@@ -266,3 +266,68 @@ class TestRevertSwap:
             error = SwapService.revert_swap(test_swap_request, admin_user)
             assert error is not None
             assert test_swap_request.status == SwapRequest.APPROVED
+
+
+class TestPurgeSwaps:
+    """Note : le statut "déjà résolu" est fixé directement sur l'objet
+    (pas via reject_swap/approve_swap) pour isoler la logique de purge de
+    celle des transitions de statut, déjà couvertes par TestRejectSwap/
+    TestApproveSwap/TestRevertSwap.
+
+    Pas de `with test_app.app_context():` ici, volontairement, contrairement
+    au reste du fichier : `test_app` a déjà un contexte actif pour toute la
+    durée du test (voir tests/conftest.py). En imbriquer un second fait
+    résoudre `db.session` vers une session SQLAlchemy différente de celle
+    utilisée par les fixtures (confirmé via
+    "Object ... is already attached to session 'N' (this is 'M')") - les
+    objets de fixture (`test_swap_request`) restent alors invisibles pour
+    les commits faits dans le bloc imbriqué. Inoffensif pour les tests qui
+    ne vérifient que l'attribut Python en mémoire (le reste de ce fichier),
+    mais silencieusement faux dès qu'on vérifie l'état réellement persisté
+    (`SwapRequest.query.count()` après un DELETE en masse, ici). L'app
+    réelle n'est pas concernée : chaque requête HTTP a son propre contexte,
+    jamais imbriqué (voir test_swap_routes.py::TestAdminSwapRoutes/
+    TestUserPurgeSwaps, même comportement couvert via de vraies requêtes)."""
+
+    def test_purge_resolved_for_user_deletes_non_pending(
+        self, test_app, test_swap_request, test_user
+    ):
+        test_swap_request.status = SwapRequest.REJECTED
+        db.session.commit()
+
+        count = SwapService.purge_resolved_for_user(test_user)
+        assert count == 1
+        assert SwapRequest.query.count() == 0
+
+    def test_purge_resolved_for_user_keeps_pending(
+        self, test_app, test_swap_request, test_user
+    ):
+        count = SwapService.purge_resolved_for_user(test_user)
+        assert count == 0
+        assert SwapRequest.query.count() == 1
+
+    def test_purge_resolved_for_user_ignores_others(
+        self, test_app, test_swap_request, admin_user
+    ):
+        """admin_user n'est ni demandeur ni destinataire de
+        test_swap_request - un tiers étranger à la demande ne doit pas
+        pouvoir la purger."""
+        test_swap_request.status = SwapRequest.REJECTED
+        db.session.commit()
+
+        count = SwapService.purge_resolved_for_user(admin_user)
+        assert count == 0
+        assert SwapRequest.query.count() == 1
+
+    def test_purge_all_resolved_deletes_any_user(self, test_app, test_swap_request):
+        test_swap_request.status = SwapRequest.REJECTED
+        db.session.commit()
+
+        count = SwapService.purge_all_resolved()
+        assert count == 1
+        assert SwapRequest.query.count() == 0
+
+    def test_purge_all_resolved_keeps_pending(self, test_app, test_swap_request):
+        count = SwapService.purge_all_resolved()
+        assert count == 0
+        assert SwapRequest.query.count() == 1

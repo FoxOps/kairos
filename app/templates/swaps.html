@@ -13,6 +13,14 @@
            aria-label="Proposer un échange" title="Proposer un échange">
             <i class="fas fa-plus" aria-hidden="true"></i> Proposer un échange
         </a>
+        <form method="POST" action="{{ url_for('main.purge_swaps') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-ghost" type="submit"
+                    aria-label="Purger mon historique d'échanges terminés" title="Purger mon historique d'échanges terminés"
+                    onclick="return confirm('Supprimer définitivement toutes vos demandes terminées (approuvées, rejetées ou annulées) ?');">
+                <i class="fas fa-broom" aria-hidden="true"></i> Purger l'historique
+            </button>
+        </form>
     </div>
 
     <h2 class="text-xl font-semibold mb-2" id="sent-title">Demandes envoyées</h2>
