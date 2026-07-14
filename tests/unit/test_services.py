@@ -10,6 +10,7 @@ directement, sans passer par le client de test Flask.
 from datetime import date, datetime, timedelta
 
 from app import db
+from app.models import Leave
 from app.repositories.leave_repository import LeaveRepository
 from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository
@@ -287,6 +288,23 @@ class TestShiftService:
         assert shift is None
         assert error == "Shift non trouvé"
 
+    def test_api_update_rejects_move_onto_leave(self, test_app, test_user, test_shift):
+        """Régression : contrairement à api_create, api_update (drag & drop)
+        ne revalidait pas les congés et pouvait déposer un shift sur un
+        jour où l'utilisateur est en congé."""
+        target_day = _next_weekday()
+        db.session.add(
+            Leave(user_id=test_user.id, start_date=target_day, end_date=target_day)
+        )
+        db.session.commit()
+
+        new_start = datetime.combine(target_day, datetime.min.time())
+        shift, error = ShiftService.api_update(
+            test_shift.id, new_start, new_start + timedelta(hours=8)
+        )
+        assert shift is None
+        assert "congé" in error
+
     def test_api_delete(self, test_app, test_shift):
         assert ShiftService.api_delete(test_shift.id) is True
         assert ShiftService.api_delete(test_shift.id) is False
@@ -339,6 +357,25 @@ class TestOnCallService:
         oncall, error = OnCallService.api_update(999999, datetime.now(), datetime.now())
         assert oncall is None
         assert error == "Astreinte non trouvée"
+
+    def test_api_update_rejects_move_onto_leave(self, test_app, test_user, test_oncall):
+        """Régression : même bug que ShiftService.api_update, côté
+        astreintes - le drag & drop ne revalidait pas les congés."""
+        friday = _next_friday()
+        new_start = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+        new_end = new_start + timedelta(days=7, hours=-14)
+        db.session.add(
+            Leave(
+                user_id=test_user.id,
+                start_date=new_start.date(),
+                end_date=new_end.date(),
+            )
+        )
+        db.session.commit()
+
+        oncall, error = OnCallService.api_update(test_oncall.id, new_start, new_end)
+        assert oncall is None
+        assert "congé" in error
 
 
 class TestLeaveService:

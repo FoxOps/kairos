@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from app import db
 from app.models import OnCall, User
 from app.repositories.oncall_repository import OnCallRepository
-from app.utils.helpers import can_add_oncall
+from app.utils.helpers import _get_overlapping_leave, can_add_oncall
 
 
 class OnCallService:
@@ -104,6 +104,16 @@ class OnCallService:
             return (
                 None,
                 f"Une astreinte existe déjà pour {oncall.user.name} pendant cette période",
+            )
+
+        # Revalidation manquante à l'origine (même bug que ShiftService.api_update) :
+        # le chemin de création (add_oncall) passe par can_add_oncall(), qui
+        # vérifie aussi les congés sur la période - le drag & drop ne le
+        # faisait pas.
+        if _get_overlapping_leave(oncall.user_id, new_start.date(), new_end.date()):
+            return (
+                None,
+                f"{oncall.user.name} est en congé pendant cette période",
             )
 
         oncall.start_time = new_start

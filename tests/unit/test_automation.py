@@ -183,7 +183,8 @@ class TestOnCallAutomation:
                 start_date, end_date, rotation_order, dry_run=True
             )
 
-            assert len(oncalls) == 2
+            # end_date inclusif : 3 vendredis (05/01, 12/01, 19/01).
+            assert len(oncalls) == 3
             # La première astreinte devrait être pour second_user
             assert oncalls[0].user_id == second_user.id
             # La deuxième astreinte devrait être pour test_user
@@ -225,7 +226,8 @@ class TestFullScheduleGeneration:
             oncalls, oncall_messages = OnCallAutomation.generate_oncall_schedule(
                 start_date, end_date, dry_run=True
             )
-            assert len(oncalls) == 2
+            # end_date inclusif : 3 vendredis (05/01, 12/01, 19/01).
+            assert len(oncalls) == 3
 
     def test_get_automation_status(self, test_app, test_group, test_user, second_user):
         """Test la récupération de l'état de l'automatisation."""
@@ -309,8 +311,9 @@ class TestEdgeCases:
                 start_date, end_date, dry_run=True
             )
 
-            # Devrait générer 2 astreintes, mais test_user ne devrait pas être assigné
-            assert len(oncalls) == 2
+            # Devrait générer 3 astreintes (end_date inclusif), mais
+            # test_user ne devrait pas être assigné
+            assert len(oncalls) == 3
             assert all(oncall.user_id != test_user.id for oncall in oncalls)
 
             # Nettoyer

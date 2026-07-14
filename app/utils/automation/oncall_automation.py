@@ -188,7 +188,12 @@ class OnCallAutomation:
         messages = []
         rotation_index = 0
 
-        while current_friday < end_date:
+        # end_date inclusif, comme AdvancedShiftAutomation.generate_full_schedule
+        # (`current_date <= end_date`) - les deux reçoivent la même période
+        # depuis admin_automation_routes.py::automation_full, elles doivent
+        # traiter end_date de la même façon. Avant : `<` ignorait la semaine
+        # dont le vendredi tombait exactement sur end_date.
+        while current_friday <= end_date:
             start_time = datetime.combine(current_friday, datetime.min.time()).replace(
                 hour=21
             )

@@ -34,8 +34,8 @@ class TestOnCallAutomationGenerateScheduleFull:
             today = date.today()
             days_until_friday = (4 - today.weekday()) % 7
             start_date = today + timedelta(days=days_until_friday)
-            # Utiliser 35 jours pour s'assurer d'inclure 4 astreintes complètes
-            # (chaque astreinte dure jusqu'au vendredi suivant à 07h)
+            # Utiliser 35 jours pour s'assurer d'inclure plusieurs astreintes
+            # complètes (chaque astreinte dure jusqu'au vendredi suivant à 07h)
             end_date = start_date + timedelta(days=35)  # 5 semaines
 
             oncalls, messages = OnCallAutomation.generate_oncall_schedule(
@@ -45,9 +45,9 @@ class TestOnCallAutomationGenerateScheduleFull:
                 dry_run=True,
             )
 
-            # Devrait générer 5 astreintes (une par semaine) avec 2 utilisateurs
-            # 35 jours = 5 semaines, donc 5 vendredis -> 5 astreintes
-            assert len(oncalls) == 5
+            # end_date inclusif : 35 jours après un vendredi tombe aussi un
+            # vendredi (35 = 5*7) -> 6 vendredis (+0, +7, +14, +21, +28, +35).
+            assert len(oncalls) == 6
 
     def test_respects_start_date(self, test_app, test_user, test_group):
         """Test que generate_oncall_schedule respecte la date de début."""

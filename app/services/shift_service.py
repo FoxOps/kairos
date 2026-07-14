@@ -11,7 +11,7 @@ from datetime import date, datetime, timedelta
 from app import db
 from app.models import Shift, ShiftType, User
 from app.repositories.shift_repository import ShiftRepository
-from app.utils.helpers import can_add_shift
+from app.utils.helpers import can_add_shift, is_user_on_leave
 
 
 class ShiftService:
@@ -145,6 +145,16 @@ class ShiftService:
             return (
                 None,
                 f"Un shift existe déjà pour {shift.user.name} le {new_date.strftime('%d/%m/%Y')}",
+            )
+
+        # Revalidation manquante à l'origine : le chemin de création
+        # (api_create/add_shifts_for_range) passe par can_add_shift(), qui
+        # vérifie aussi les congés - le drag & drop ne le faisait pas et
+        # pouvait donc déposer un shift sur un jour de congé de l'utilisateur.
+        if is_user_on_leave(shift.user_id, new_date):
+            return (
+                None,
+                f"{shift.user.name} est en congé le {new_date.strftime('%d/%m/%Y')}",
             )
 
         shift.start_time = new_start
