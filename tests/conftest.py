@@ -28,6 +28,7 @@ pytest_plugins = [
     "tests.fixtures.shift_fixtures",
     "tests.fixtures.leave_fixtures",
     "tests.fixtures.oncall_fixtures",
+    "tests.fixtures.swap_fixtures",
 ]
 
 

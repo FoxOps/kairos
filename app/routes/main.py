@@ -19,4 +19,5 @@ from app.routes import (  # noqa: E402
     leave_routes,  # noqa: F401
     oncall_routes,  # noqa: F401
     shift_routes,  # noqa: F401
+    swap_routes,  # noqa: F401
 )

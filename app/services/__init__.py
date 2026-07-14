@@ -12,6 +12,7 @@ Services:
 - shift_type_service: Shift type management (admin CRUD)
 - oncall_service: On-call management
 - leave_service: Leave management
+- swap_service: Shift exchange requests between users (admin validation)
 - export_service: Export functionality (ICS, etc.)
 - schedule_service: Calendar event aggregation (shifts + on-calls + leaves)
 - automation_admin_service: Admin automation screens support (form
@@ -32,6 +33,7 @@ from app.services.oncall_service import OnCallService
 from app.services.schedule_service import ScheduleService
 from app.services.shift_service import ShiftService
 from app.services.shift_type_service import ShiftTypeService
+from app.services.swap_service import SwapService
 from app.services.user_service import UserService
 
 __all__ = [
@@ -41,6 +43,7 @@ __all__ = [
     "ShiftTypeService",
     "OnCallService",
     "LeaveService",
+    "SwapService",
     "ExportService",
     "ScheduleService",
     "AutomationAdminService",

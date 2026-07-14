@@ -83,28 +83,37 @@ touching auth flows.
 
 `app/models/` is a package (`base.py` defines the shared `BaseModel` with `id`/`created_at`/
 `updated_at` and CRUD helpers like `.save()`/`.update()`/`.to_dict()`; `user.py`, `shift.py`,
-`oncall.py`, `leave.py`, `automation_config.py`, `notification_log.py` hold the domain models, all
-subclassing `BaseModel`).
+`oncall.py`, `leave.py`, `automation_config.py`, `notification_log.py`, `swap_request.py` hold the
+domain models, all subclassing `BaseModel`).
 
 Core entities: `Group` → `User` (1:N) → `Shift` / `OnCall` / `Leave` / `NotificationLog` (each 1:N
 from User), `ShiftType` → `Shift` (1:N). Composite indexes exist on `Shift(user_id, date)`,
 `Shift(date, start_time)`, `OnCall(user_id, start_time, end_time)`, and
 `Leave(user_id, start_date, end_date)` — preserve these if you touch query patterns.
 `NotificationLog` has a unique constraint on `(user_id, notification_type, period_start)` — the
-anti-duplicate guard for the weekly email reminders.
+anti-duplicate guard for the weekly email reminders. `SwapRequest` has 3 FKs to `User`
+(requester/target_user/reviewer) + 2 to `Shift` (shift/target_shift) — the first model in this repo
+with more than one FK to the same table. It deliberately has **no** `db.relationship()` declarations:
+SQLAlchemy 2.0's own stubs type a bare `relationship()` call as `RelationshipProperty[Any]` on both
+declaration and instance access without the (unconfigured, see `mypy.ini`/Makefile) SQLAlchemy mypy
+plugin, so `requester`/`target_user`/`reviewer`/`shift`/`target_shift` are plain `@property` lookups
+via `db.session.get(...)` instead — same pattern as `User.next_shift`/`User.current_oncall`
+(`app/models/user.py`). Consequence: `SwapRequestRepository` cannot `joinedload()` these (one extra
+query per access) — acceptable at this app's scale.
 
 ### Layered architecture: repositories/ and services/
 
 `app/repositories/` (data access — `UserRepository`, `GroupRepository`, `ShiftRepository`,
-`ShiftTypeRepository`, `OnCallRepository`, `LeaveRepository`) and `app/services/` (business logic —
-`UserService`, `GroupService`, `ShiftService`, `ShiftTypeService`, `OnCallService`, `LeaveService`,
-`ExportService`, `ScheduleService`, `AutomationAdminService`, `NotificationService`, `BackupService`)
-are implemented and wired up. Routes in `app/routes/` (both the `main` and `admin` blueprints, split
-across multiple files — e.g. `shift_routes.py`, `admin_user_routes.py` — that all register onto the
-same blueprint object defined in `main.py`/`admin.py`) parse the request, call a service, and turn
-the result into a flash/redirect/JSON response; services call repositories for data access and
-encapsulate validation (e.g. `can_add_shift`) and cross-cutting effects (e.g. shift rebalance after
-a leave change). `app/utils/automation/` (`OnCallAutomation`, `AdvancedShiftAutomation` — the
+`ShiftTypeRepository`, `OnCallRepository`, `LeaveRepository`, `SwapRequestRepository`) and
+`app/services/` (business logic — `UserService`, `GroupService`, `ShiftService`, `ShiftTypeService`,
+`OnCallService`, `LeaveService`, `SwapService`, `ExportService`, `ScheduleService`,
+`AutomationAdminService`, `NotificationService`, `BackupService`) are implemented and wired up.
+Routes in `app/routes/` (both the `main` and `admin` blueprints, split across multiple files — e.g.
+`shift_routes.py`, `admin_user_routes.py` — that all register onto the same blueprint object defined
+in `main.py`/`admin.py`) parse the request, call a service, and turn the result into a
+flash/redirect/JSON response; services call repositories for data access and encapsulate validation
+(e.g. `can_add_shift`) and cross-cutting effects (e.g. shift rebalance after a leave change).
+`app/utils/automation/` (`OnCallAutomation`, `AdvancedShiftAutomation` — the
 generic `ShiftAutomation`/`BusinessRules` engine was removed as dead code, PR #105, see
 `report/` for details) is a pre-existing business-logic layer used directly by services rather than
 being duplicated. `NotificationService` is the one service with no route calling it — it's invoked
@@ -146,6 +155,23 @@ were never imported outside that file; `measure_time` even imported a module
 `app/auth/` holds `decorators.py` (route guards), `user_manager.py`, and `oidc_auth.py`
 (Authlib-based SSO for Keycloak/Okta/Auth0-style providers, gated by `OIDCConfig.ENABLED` and
 `is_configured()`).
+
+### Shift swaps
+
+Users request to give up one of their shifts to another user (`app/routes/swap_routes.py`:
+`/swaps`, `/swaps/add`, `/swaps/<id>/cancel`), optionally in exchange for one of the target's shifts
+(reciprocal swap) — leave `target_shift_id` unset for a one-way give-away. An admin must approve
+before anything changes (`app/routes/admin_swap_routes.py`: `/admin/swaps`,
+`/admin/swaps/<id>/approve`, `/admin/swaps/<id>/reject`) — this is the **only** approval workflow in
+the app; `Leave` (congés) has none by design (see "Models" above) and stays that way, don't add one
+there by analogy. `SwapService` (`app/services/swap_service.py`) re-validates the same business
+rules at both request time and approval time (`_validation_error`: shift still owned by requester,
+target not on leave / doesn't already have another shift that day, no duplicate pending request per
+shift) since state can drift between the two — approval doesn't blindly trust the original request.
+`approve_swap` reassigns `Shift.user_id` directly (swap, not delete+recreate) then commits; reject/
+cancel only touch `SwapRequest.status`, shifts stay untouched. `/api/swaps/target-shifts` is a small
+JSON endpoint backing `app/static/js/swaps/swap-form.js`, which populates the optional
+"shift requested back" dropdown once a target user is chosen on `add_swap.html`.
 
 ### Frontend
 

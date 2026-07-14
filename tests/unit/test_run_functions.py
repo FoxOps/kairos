@@ -99,6 +99,7 @@ class TestInitializeDatabase:
             assert "shift" in tables
             assert "on_call" in tables
             assert "leave" in tables
+            assert "swap_request" in tables
 
     def test_initialize_database_creates_default_shift_types(self, test_app):
         """Test que l'initialisation crée les types de shifts par défaut."""

@@ -7,6 +7,7 @@ organized by domain:
 - Shift: Shift, ShiftType
 - OnCall: OnCall
 - Leave: Leave
+- SwapRequest: SwapRequest (shift exchange between users, admin validation)
 - Base: BaseModel (common fields and methods)
 """
 
@@ -16,6 +17,7 @@ from app.models.leave import Leave
 from app.models.notification_log import NotificationLog
 from app.models.oncall import OnCall
 from app.models.shift import Shift, ShiftType
+from app.models.swap_request import SwapRequest
 from app.models.user import Group, User
 
 __all__ = [
@@ -28,4 +30,5 @@ __all__ = [
     "Leave",
     "AutomationConfig",
     "NotificationLog",
+    "SwapRequest",
 ]

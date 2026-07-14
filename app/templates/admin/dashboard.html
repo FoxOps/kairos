@@ -73,6 +73,17 @@
 
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
+                <h2 class="font-semibold"><i class="fas fa-right-left" aria-hidden="true"></i> Échanges de shifts</h2>
+                <p>En attente : {{ pending_swaps_count }}</p>
+                <a class="btn btn-info btn-sm mt-2" href="{{ url_for('admin.list_swaps') }}"
+                   aria-label="Voir les demandes d'échange" title="Voir les demandes d'échange">
+                    <i class="fas fa-list" aria-hidden="true"></i> Voir la liste
+                </a>
+            </div>
+        </div>
+
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body">
                 <h2 class="font-semibold"><i class="fas fa-robot" aria-hidden="true"></i> Automatisation</h2>
                 <p>Génération automatique</p>
                 <a class="btn btn-success btn-sm mt-2" href="{{ url_for('admin.automation_dashboard') }}"

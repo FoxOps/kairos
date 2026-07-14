@@ -2,9 +2,9 @@
 
 ## 📊 Aperçu Global
 
-- **Date de mise à jour** : 14 juillet 2026 (refonte visuelle Dracula/Alucard)
-- **Nombre total de tests** : 933
-- **Tests réussis** : 933 ✅
+- **Date de mise à jour** : 14 juillet 2026 (échange de shifts entre utilisateurs)
+- **Nombre total de tests** : 965
+- **Tests réussis** : 965 ✅
 - **Tests échoués** : 0
 - **Couverture de code** : **~88%** (`--cov=app --cov=config`)
 - **Lint (ruff)** : propre - **0 erreur**
@@ -37,7 +37,7 @@
 - **Framework** : `pytest` (+ `pytest-flask`, `pytest-cov`)
 - **Fixtures** : `tests/conftest.py` (chaîne `test_app`/`client`/
   `logged_in_client`) + `tests/fixtures/` (modèles : user, group, shift,
-  leave, oncall)
+  leave, oncall, swap)
 - **Navigateur réel (optionnel)** : `pytest-playwright` + Chromium, voir
   `requirements-e2e.txt`
 - **CI** : GitLab CI (`.gitlab-ci/.gitlab-ci.yml`) - `run_tests` (client
@@ -267,3 +267,13 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
   bascule au clavier ; bug réel trouvé en test manuel (composant
   `avatar-placeholder` de daisyUI qui cible ses styles de centrage sur un
   `<div>` enfant, pas un `<span>` - corrigé).
+- **14 juillet 2026** : 965 tests (0 échec, +32). Échange de shifts entre
+  utilisateurs (`SwapRequest` : demande, don simple ou réciproque,
+  validation/rejet admin) - nouvelle couche modèle/repository/service/
+  routes (user + admin) sans précédent d'approbation dans ce repo (les
+  congés n'en ont pas, et le restent). Nouveaux tests : modèle
+  (`TestSwapRequestModel`), service (`TestRequestSwap`/`TestCancelSwap`/
+  `TestApproveSwap`/`TestRejectSwap` - couvre notamment la revalidation
+  métier à l'approbation, pas seulement à la création), routes
+  utilisateur et admin (`tests/integration/test_swap_routes.py`,
+  permissions admin vs non-admin incluses).

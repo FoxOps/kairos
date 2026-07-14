@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Échanges de shifts - Leviia Schedule{% endblock %}
+
+{% block content %}
+<section class="p-3 md:p-4 max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold mb-4">
+        <i class="fas fa-right-left" aria-hidden="true"></i> Échanges de shifts
+    </h1>
+
+    <div class="flex flex-wrap gap-2 mb-4" role="group" aria-label="Actions principales">
+        <a class="btn btn-primary" href="{{ url_for('main.add_swap') }}"
+           aria-label="Proposer un échange" title="Proposer un échange">
+            <i class="fas fa-plus" aria-hidden="true"></i> Proposer un échange
+        </a>
+    </div>
+
+    <h2 class="text-xl font-semibold mb-2" id="sent-title">Demandes envoyées</h2>
+    <div class="overflow-x-auto mb-6" role="region" aria-labelledby="sent-title">
+        <table class="table table-zebra" aria-describedby="sent-title">
+            <caption class="sr-only">Demandes d'échange envoyées</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Mon shift</th>
+                    <th scope="col">Destinataire</th>
+                    <th scope="col">Shift en retour</th>
+                    <th scope="col">Statut</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for swap in sent %}
+                <tr>
+                    <td>{{ swap.shift.date.strftime('%d/%m/%Y') }} - {{ swap.shift.shift_type.label }}</td>
+                    <td>{{ swap.target_user.name }}</td>
+                    <td>
+                        {% if swap.target_shift %}
+                        {{ swap.target_shift.date.strftime('%d/%m/%Y') }} - {{ swap.target_shift.shift_type.label }}
+                        {% else %}
+                        <span class="text-base-content/60">—</span>
+                        {% endif %}
+                    </td>
+                    <td>{% include "_swap_status_badge.html" %}</td>
+                    <td>
+                        {% if swap.is_pending() %}
+                        <form method="POST" action="{{ url_for('main.cancel_swap', swap_request_id=swap.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn btn-error btn-sm" type="submit"
+                                    aria-label="Annuler la demande" title="Annuler la demande"
+                                    onclick="return confirm('Annuler cette demande d\'échange ?');">
+                                <i class="fas fa-times" aria-hidden="true"></i> Annuler
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center text-base-content/60">Aucune demande envoyée</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h2 class="text-xl font-semibold mb-2" id="received-title">Demandes reçues</h2>
+    <div class="overflow-x-auto" role="region" aria-labelledby="received-title">
+        <table class="table table-zebra" aria-describedby="received-title">
+            <caption class="sr-only">Demandes d'échange reçues</caption>
+            <thead>
+                <tr>
+                    <th scope="col">De</th>
+                    <th scope="col">Son shift proposé</th>
+                    <th scope="col">En échange de</th>
+                    <th scope="col">Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for swap in received %}
+                <tr>
+                    <td>{{ swap.requester.name }}</td>
+                    <td>{{ swap.shift.date.strftime('%d/%m/%Y') }} - {{ swap.shift.shift_type.label }}</td>
+                    <td>
+                        {% if swap.target_shift %}
+                        {{ swap.target_shift.date.strftime('%d/%m/%Y') }} - {{ swap.target_shift.shift_type.label }}
+                        {% else %}
+                        <span class="text-base-content/60">Don simple</span>
+                        {% endif %}
+                    </td>
+                    <td>{% include "_swap_status_badge.html" %}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-center text-base-content/60">Aucune demande reçue</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="text-sm text-base-content/60 mt-2">
+        <i class="fas fa-info-circle" aria-hidden="true"></i>
+        Une demande d'échange doit être validée par un administrateur avant d'être appliquée.
+    </p>
+</section>
+{% endblock %}

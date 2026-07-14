@@ -1,0 +1,81 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Échanges de shifts - Administration{% endblock %}
+
+{% block admin_content %}
+<section class="p-3 md:p-4 max-w-6xl mx-auto">
+    <div class="breadcrumbs text-sm mb-2" aria-label="Fil d'Ariane">
+        <ul>
+            <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
+            <li>Échanges de shifts</li>
+        </ul>
+    </div>
+    <h1 class="text-2xl font-bold mb-4">
+        <i class="fas fa-right-left" aria-hidden="true"></i> Demandes d'échange en attente
+    </h1>
+
+    {% if pending %}
+    <div class="overflow-x-auto" role="region" aria-labelledby="swaps-title">
+        <table class="table table-zebra" aria-describedby="swaps-title">
+            <caption class="sr-only">Demandes d'échange en attente de validation</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Demandeur</th>
+                    <th scope="col">Shift proposé</th>
+                    <th scope="col">Destinataire</th>
+                    <th scope="col">Shift demandé en retour</th>
+                    <th scope="col">Demandé le</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for swap in pending %}
+                <tr>
+                    <td>{{ swap.requester.name }}</td>
+                    <td>{{ swap.shift.date.strftime('%d/%m/%Y') }} - {{ swap.shift.shift_type.label }}</td>
+                    <td>{{ swap.target_user.name }}</td>
+                    <td>
+                        {% if swap.target_shift %}
+                        {{ swap.target_shift.date.strftime('%d/%m/%Y') }} - {{ swap.target_shift.shift_type.label }}
+                        {% else %}
+                        <span class="text-base-content/60">Don simple</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ swap.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>
+                        <div class="flex flex-nowrap gap-2" role="group" aria-label="Actions pour la demande de {{ swap.requester.name }}">
+                            <form method="POST" action="{{ url_for('admin.approve_swap', swap_request_id=swap.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button class="btn btn-success btn-sm" type="submit"
+                                        aria-label="Approuver la demande" title="Approuver la demande"
+                                        onclick="return confirm('Approuver cet échange ? Les shifts seront réassignés immédiatement.');">
+                                    <i class="fas fa-check" aria-hidden="true"></i> Approuver
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('admin.reject_swap', swap_request_id=swap.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button class="btn btn-error btn-sm" type="submit"
+                                        aria-label="Rejeter la demande" title="Rejeter la demande"
+                                        onclick="return confirm('Rejeter cette demande d\'échange ?');">
+                                    <i class="fas fa-times" aria-hidden="true"></i> Rejeter
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Légende des actions -->
+    {% set action_items = [
+        {'class': 'btn-success btn-sm', 'icon': 'check', 'label': 'Approuver', 'description': 'Valider l\'échange et réassigner les shifts'},
+        {'class': 'btn-error btn-sm', 'icon': 'times', 'label': 'Rejeter', 'description': 'Refuser la demande d\'échange'}
+    ] %}
+    {% include "_action_legend.html" %}
+    {% else %}
+    <p class="text-base-content/60">Aucune demande d'échange en attente.</p>
+    {% endif %}
+</section>
+{% endblock %}

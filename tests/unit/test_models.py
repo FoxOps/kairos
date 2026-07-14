@@ -8,7 +8,16 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from app import db
-from app.models import Group, Leave, NotificationLog, OnCall, Shift, ShiftType, User
+from app.models import (
+    Group,
+    Leave,
+    NotificationLog,
+    OnCall,
+    Shift,
+    ShiftType,
+    SwapRequest,
+    User,
+)
 
 
 class TestGroupModel:
@@ -409,3 +418,49 @@ class TestNotificationLogModel:
                 NotificationLog.already_sent(test_user.id, "shift_weekly", period_start)
                 is False
             )
+
+
+class TestSwapRequestModel:
+    """Tests pour le modèle SwapRequest."""
+
+    def test_swap_request_creation(
+        self, test_app, test_user, second_user, test_swap_shift
+    ):
+        """Test la création d'une demande d'échange."""
+        with test_app.app_context():
+            swap_request = SwapRequest(
+                requester_id=test_user.id,
+                shift_id=test_swap_shift.id,
+                target_user_id=second_user.id,
+            )
+            db.session.add(swap_request)
+            db.session.commit()
+
+            assert swap_request.id is not None
+            assert swap_request.status == SwapRequest.PENDING
+            assert swap_request.target_shift_id is None
+
+    def test_swap_request_relationships(self, test_app, test_swap_request):
+        """Test les propriétés requester/target_user/shift (pas des relationships ORM)."""
+        with test_app.app_context():
+            assert test_swap_request.requester.id == test_swap_request.requester_id
+            assert test_swap_request.target_user.id == test_swap_request.target_user_id
+            assert test_swap_request.shift.id == test_swap_request.shift_id
+            assert test_swap_request.target_shift is None
+            assert test_swap_request.reviewer is None
+
+    def test_is_pending(self, test_app, test_swap_request):
+        with test_app.app_context():
+            assert test_swap_request.is_pending() is True
+            test_swap_request.status = SwapRequest.APPROVED
+            assert test_swap_request.is_pending() is False
+
+    def test_mark_reviewed(self, test_app, test_swap_request, second_user):
+        with test_app.app_context():
+            test_swap_request.mark_reviewed(
+                second_user.id, SwapRequest.REJECTED, comment="Conflit de planning"
+            )
+            assert test_swap_request.status == SwapRequest.REJECTED
+            assert test_swap_request.reviewed_by_id == second_user.id
+            assert test_swap_request.reviewed_at is not None
+            assert test_swap_request.admin_comment == "Conflit de planning"
