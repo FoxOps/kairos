@@ -1,17 +1,18 @@
 # 🗺️ Feuille de Route - Leviia Schedule
 
 > **Version** : 5.7.0 - Refonte visuelle Dracula/Alucard (PR #110)
-> **Version app** : 0.7.7 (`/version`) - Échange de shifts entre
-> utilisateurs (demande, don simple ou réciproque, validation/annulation
-> admin, modèle `SwapRequest`) + notifications internes à l'app (bell
-> icon, modèle `AppNotification`). Hérite de la refonte visuelle Tailwind/daisyUI
+> **Version app** : 0.7.8 (`/version`) - Corrections diverses (branche
+> fix/misc-issues). Hérite de l'échange de shifts entre utilisateurs
+> (demande, don simple ou réciproque, validation/annulation admin,
+> modèle `SwapRequest`) + notifications internes à l'app (bell icon,
+> modèle `AppNotification`) et de la refonte visuelle Tailwind/daisyUI
 > (PR #108, #110) : palette officielle Dracula (thème sombre) / Alucard
 > (thème clair), drawer mobile natif, composants daisyUI (stats,
 > breadcrumbs, avatar, tooltip, collapse, hero, swap), modale de création
 > de shift en `<dialog>` natif
 > **Dernière mise à jour** : Juillet 2026
 > **Statut** : Développement actif - **1006 tests passent** ✅ (dont 23 E2E navigateur réel)
-> **Commit actuel** : branche feature/shift-swap
+> **Commit actuel** : branche fix/misc-issues
 >
 > ℹ️ Ne pas confondre avec les « Phases » de refonte (`report/Phase 1` à
 > `report/Phase 6`, un chantier qualité/infra achevé) et les « Phases » de
