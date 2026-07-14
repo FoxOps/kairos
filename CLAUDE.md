@@ -276,6 +276,16 @@ available regardless. Docker: `docker/entrypoint.sh` starts `crond` if `NOTIFICA
 `BACKUP_ENABLED` is true (one shared crond, `docker/crontabs/appuser` always has both scripts'
 entries — each script no-ops internally if its own flag is off).
 
+`docker/entrypoint.sh` always runs `docker/init_database.py` (`db.create_all()`) on container start,
+even when `/app/data/app.db` already exists — this is the *only* schema-migration mechanism in
+production (no Alembic/Flask-Migrate, see "Layered architecture" above): `create_all()` only adds
+tables that don't exist yet, so it's safe to run unconditionally, but it's also the only thing that
+will ever create a table added by a later release (e.g. `swap_request`) on an already-deployed
+volume — skipping it when the DB file exists (the earlier behavior) left upgraded deployments with
+"no such table" errors on the new feature's first request. The plain `python run.py` path doesn't
+have this gap: `setup_database()` runs unconditionally on every start there already (see
+`check_database_integrity()`/`setup_database()` in `run.py`).
+
 ## Testing conventions
 
 `tests/conftest.py` defines the fixture chain: `test_app` builds a fresh app via

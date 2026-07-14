@@ -35,14 +35,21 @@ else
     echo "✅ /app/data et /app/logs déjà accessibles en écriture (UID $(id -u))"
 fi
 
-# --- Initialisation de la base de données ---
+# --- Initialisation / mise à jour du schéma de la base de données ---
+# Toujours exécuté, même si app.db existe déjà : db.create_all() ne crée
+# que les tables manquantes (idempotent, ne touche pas aux tables/données
+# existantes) - c'est le seul mécanisme de migration de schéma de ce
+# projet (pas d'Alembic/Flask-Migrate, voir CLAUDE.md "Layered
+# architecture"). Sans ça, une nouvelle table ajoutée par une mise à jour
+# de l'app (ex: swap_request) ne serait jamais créée sur un déploiement
+# existant, et resterait "no such table" au premier accès.
 if [ ! -f "/app/data/app.db" ]; then
     echo "🔧 Initialisation de la base de données SQLite..."
-    python docker/init_database.py || { echo "❌ Erreur: Échec de l'initialisation de la base de données"; exit 1; }
-    echo "✅ Base de données initialisée"
 else
-    echo "ℹ️ Base de données déjà existante (app.db)"
+    echo "ℹ️ Base de données existante (app.db) - vérification du schéma..."
 fi
+python docker/init_database.py || { echo "❌ Erreur: Échec de l'initialisation/mise à jour de la base de données"; exit 1; }
+echo "✅ Base de données prête"
 
 # --- Tâches planifiées (notifications par email, sauvegardes) ---
 # Purement piloté par variables d'environnement (NOTIFICATIONS_ENABLED,
