@@ -9,6 +9,12 @@
     <title>{% block title %}Leviia{% endblock %}</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
 
+    <!-- Pose data-theme avant tout rendu (évite le flash clair/sombre) -
+         script classique synchrone (pas type="module", pas defer/async),
+         tout en haut de <head>, voir le commentaire dans le fichier pour
+         le détail. -->
+    <script src="{{ url_for('static', filename='js/theme/theme-init.js') }}"></script>
+
     <!-- Font Awesome 7.2.0 - via CDN cdnjs (7.3.0 pas encore publié), mode
          SVG+JS plutôt que la police web habituelle : les 4 fichiers
          .woff2 hébergés par cdnjs pour cette version sont chacun tronqués
