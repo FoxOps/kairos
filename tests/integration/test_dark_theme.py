@@ -155,7 +155,7 @@ class TestDarkThemeTemplate:
         assert response.status_code == 200
         html_content = response.data.decode("utf-8")
 
-        assert '<button id="theme-toggle"' not in html_content
+        assert 'id="theme-toggle"' not in html_content
 
     def test_theme_javascript_present(self, logged_in_client):
         """Test que le JavaScript du thème sombre est présent."""
@@ -186,13 +186,17 @@ class TestDarkThemeAccessibility:
     """Tests pour l'accessibilité du thème sombre."""
 
     def test_theme_toggle_has_aria_attributes(self, logged_in_client):
-        """Test que le bouton toggle a les attributs ARIA nécessaires."""
+        """Test que le toggle de thème a les attributs d'accessibilité
+        nécessaires. Depuis le passage au pattern "Theme Controller" de
+        daisyUI (case à cocher réelle, voir base.html/theme-manager.js),
+        plus d'aria-pressed (sémantique bouton, pas pertinente pour une
+        checkbox - le "checked" natif suffit)."""
         response = logged_in_client.get("/")
         assert response.status_code == 200
         html_content = response.data.decode("utf-8")
 
         assert 'aria-label="Basculer entre le thème clair et sombre"' in html_content
-        assert "aria-pressed" in html_content
+        assert 'type="checkbox" id="theme-toggle"' in html_content
 
     def test_main_content_has_id(self, client):
         """Test que le contenu principal a un ID pour le skip link."""

@@ -22,7 +22,10 @@ export class ThemeManager {
 
         if (this.toggleBtn) {
             this.updateToggleButton(currentTheme === 'dark');
-            this.toggleBtn.addEventListener('click', () => this.toggle());
+            // Case à cocher (pattern "Theme Controller" swap de daisyUI,
+            // voir base.html) - "change" est l'événement sémantiquement
+            // correct pour une checkbox, pas "click".
+            this.toggleBtn.addEventListener('change', () => this.toggle());
         }
 
         // Écouter les changements de préférence système
@@ -94,20 +97,19 @@ export class ThemeManager {
     }
 
     /**
-     * Met à jour le bouton toggle (icône soleil/lune daisyUI `swap`).
+     * Met à jour le bouton toggle (icône soleil/lune daisyUI `swap`,
+     * piloté par une vraie case à cocher - voir base.html).
      * @param {boolean} isDark - True si le thème sombre est actif
      */
     updateToggleButton(isDark) {
         if (!this.toggleBtn) return;
 
-        this.toggleBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
-
-        // `.swap` daisyUI sans <input> (bouton, pas une case à cocher) -
-        // piloté par la classe `swap-active` plutôt qu'un état :checked.
-        // Les icônes elles-même (.swap-on/.swap-off) gardent leurs classes
-        // après conversion Font Awesome SVG+JS (voir base.html), seul le
-        // conteneur .swap a besoin d'être manipulé ici.
-        this.toggleBtn.classList.toggle('swap-active', isDark);
+        // Case à cocher réelle : l'état "checked" pilote nativement
+        // .swap-on/.swap-off via le CSS :checked de daisyUI, pas besoin
+        // de classe swap-active togglée à la main. Le "checked" natif
+        // porte aussi la sémantique d'accessibilité (pas besoin
+        // d'aria-pressed, qui est pour les boutons, pas les checkbox).
+        this.toggleBtn.checked = isDark;
     }
 
     /**

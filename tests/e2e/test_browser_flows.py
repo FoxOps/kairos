@@ -141,7 +141,14 @@ class TestDarkThemeToggle:
         html = page.locator("html")
         initial_theme = html.get_attribute("data-theme")
 
-        page.click("#theme-toggle")
+        # #theme-toggle est une checkbox à dimensions nulles (pattern
+        # "Theme Controller" swap de daisyUI, voir base.html) - seule
+        # l'icône (.swap-on/.swap-off) est visible. Le clic réel d'un
+        # utilisateur passe par le <label> englobant (association
+        # native <label><input>...</label>, sans attribut for) ; cliquer
+        # l'input directement échoue même avec force=True ("outside of
+        # the viewport", Playwright a besoin de coordonnées réelles).
+        page.click("label:has(#theme-toggle)")
         page.wait_for_timeout(200)
         toggled_theme = html.get_attribute("data-theme")
         assert toggled_theme != initial_theme

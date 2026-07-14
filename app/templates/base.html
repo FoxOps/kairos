@@ -138,12 +138,24 @@
                             </span>
                             <span class="truncate">{{ current_user.name }}</span>
                         </a>
-                        <button id="theme-toggle" type="button" class="btn btn-ghost btn-sm btn-circle swap swap-rotate shrink-0"
-                                aria-label="Basculer entre le thème clair et sombre"
-                                aria-pressed="false">
+                        <!-- Pattern "Theme Controller" de daisyUI (swap +
+                             checkbox, https://daisyui.com/components/theme-controller/)
+                             SANS la classe theme-controller elle-même :
+                             cette classe pilote le thème via un mécanisme
+                             CSS :has() interne à daisyUI qui ne pose
+                             jamais l'attribut data-theme sur <html>
+                             (vérifié empiriquement) - elle appliquerait
+                             donc le thème "dark" stock de daisyUI en
+                             court-circuitant la palette Dracula/Alucard
+                             (theme-colors.css, branchée sur [data-theme]).
+                             Seule la mécanique visuelle swap-on/off est
+                             reprise ; le thème réel reste géré par
+                             theme-manager.js via l'attribut data-theme. -->
+                        <label class="btn btn-ghost btn-sm btn-circle swap swap-rotate shrink-0" aria-label="Basculer entre le thème clair et sombre">
+                            <input type="checkbox" id="theme-toggle">
                             <i class="fas fa-sun swap-on" aria-hidden="true"></i>
                             <i class="fas fa-moon swap-off" aria-hidden="true"></i>
-                        </button>
+                        </label>
                         <a href="{{ url_for('auth.logout') }}" class="btn btn-ghost btn-sm btn-circle shrink-0" aria-label="Déconnexion" title="Déconnexion">
                             <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
                         </a>
