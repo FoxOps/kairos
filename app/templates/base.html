@@ -138,11 +138,19 @@
             </header>
 
             {% set flash_category_map = {'danger': 'error', 'success': 'success', 'warning': 'warning', 'info': 'info'} %}
+            {% set flash_icon_map = {'error': 'fa-circle-exclamation', 'success': 'fa-circle-check', 'warning': 'fa-triangle-exclamation', 'info': 'fa-circle-info'} %}
             <section class="px-3 md:px-4 pt-3" aria-live="polite" aria-atomic="true">
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         {% for category, message in messages %}
-                            <div class="alert alert-{{ flash_category_map.get(category, category) }} mb-2" role="alert" aria-live="assertive">{{ message }}</div>
+                            {% set flash_type = flash_category_map.get(category, category) %}
+                            <div class="alert alert-{{ flash_type }} mb-2 flash-message" role="alert" aria-live="assertive" data-auto-dismiss="6000">
+                                <i class="fas {{ flash_icon_map.get(flash_type, 'fa-circle-info') }}" aria-hidden="true"></i>
+                                <span>{{ message }}</span>
+                                <button type="button" class="btn btn-ghost btn-xs btn-circle ml-auto flash-message-close" aria-label="Fermer cette notification">
+                                    <i class="fas fa-xmark" aria-hidden="true"></i>
+                                </button>
+                            </div>
                         {% endfor %}
                     {% endif %}
                 {% endwith %}

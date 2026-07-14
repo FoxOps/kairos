@@ -28,6 +28,7 @@ import {
     confirmActionAccessible,
 } from './utils/accessibility.js';
 import { showNotification, confirmAction } from './notifications/toast.js';
+import { initFlashMessages } from './notifications/flash-messages.js';
 import {
     copyToken,
     copyUrlShiftsAll,
@@ -44,6 +45,7 @@ let navbarMenu;
 document.addEventListener('DOMContentLoaded', () => {
     themeManager = new ThemeManager();
     navbarMenu = new NavbarMenu();
+    initFlashMessages();
 });
 
 // Exporter les fonctions pour les templates (onclick inline, callbacks FullCalendar)
