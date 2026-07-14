@@ -15,6 +15,7 @@ from app.utils.helpers import (
     can_add_oncall,
     can_add_shift,
     format_date,
+    format_date_fr,
     format_datetime,
     format_time,
     get_bool,
@@ -26,6 +27,7 @@ from app.utils.helpers import (
     is_user_on_shift,
     parse_date,
     parse_datetime,
+    shift_type_color,
 )
 
 
@@ -516,6 +518,46 @@ class TestFormatFunctions:
 
     def test_format_time_none(self):
         assert format_time(None) == ""
+
+    def test_format_date_fr_weekday_abbreviations(self):
+        # 2026-07-13 est un lundi
+        assert format_date_fr(date(2026, 7, 13)) == "lun. 13/07"
+        assert format_date_fr(date(2026, 7, 14)) == "mar. 14/07"
+        assert format_date_fr(date(2026, 7, 19)) == "dim. 19/07"
+
+    def test_format_date_fr_datetime(self):
+        assert format_date_fr(datetime(2026, 7, 13, 9, 30)) == "lun. 13/07"
+
+    def test_format_date_fr_none(self):
+        assert format_date_fr(None) == ""
+
+    def test_format_date_fr_custom_format(self):
+        assert format_date_fr(date(2026, 7, 13), "%a %d/%m/%Y") == "lun. 13/07/2026"
+
+
+class TestShiftTypeColor:
+    def test_deterministic_and_within_palette(self):
+        from app.utils.helpers.common_helpers import SHIFT_TYPE_COLOR_PALETTE
+
+        assert shift_type_color(1) in SHIFT_TYPE_COLOR_PALETTE
+        assert shift_type_color(1) == shift_type_color(1)
+
+    def test_different_ids_can_differ(self):
+        assert shift_type_color(1) != shift_type_color(2)
+
+    def test_wraps_around_palette(self):
+        from app.utils.helpers.common_helpers import SHIFT_TYPE_COLOR_PALETTE
+
+        n = len(SHIFT_TYPE_COLOR_PALETTE)
+        assert shift_type_color(1) == shift_type_color(1 + n)
+
+    def test_none_returns_neutral(self):
+        assert shift_type_color(None) == "neutral"
+
+    def test_excludes_error_color(self):
+        from app.utils.helpers.common_helpers import SHIFT_TYPE_COLOR_PALETTE
+
+        assert "error" not in SHIFT_TYPE_COLOR_PALETTE
 
 
 class TestParseFunctions:

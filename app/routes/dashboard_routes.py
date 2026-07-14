@@ -84,7 +84,12 @@ def user_dashboard():
         ).count()
         if count > 0:
             shift_types_stats.append(
-                {"name": shift_type.name, "label": shift_type.label, "count": count}
+                {
+                    "id": shift_type.id,
+                    "name": shift_type.name,
+                    "label": shift_type.label,
+                    "count": count,
+                }
             )
 
     first_day_of_month = date(today.year, today.month, 1)

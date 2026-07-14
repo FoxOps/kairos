@@ -13,6 +13,7 @@ from app.utils.helpers.common_helpers import (
     can_add_oncall,
     can_add_shift,
     format_date,
+    format_date_fr,
     format_datetime,
     format_time,
     get_bool,
@@ -25,12 +26,14 @@ from app.utils.helpers.common_helpers import (
     leave_keeps_minimum_headcount,
     parse_date,
     parse_datetime,
+    shift_type_color,
 )
 
 __all__ = [
     "get_bool",
     "get_int",
     "format_date",
+    "format_date_fr",
     "format_datetime",
     "format_time",
     "parse_date",
@@ -44,6 +47,7 @@ __all__ = [
     "is_user_on_shift",
     "is_user_on_leave",
     "leave_keeps_minimum_headcount",
+    "shift_type_color",
     "_has_overlapping_oncall",
     "_get_overlapping_leave",
     "_get_overlapping_shift",

@@ -85,6 +85,60 @@ def format_time(t: time, format_str: str = "%H:%M") -> str:
     return t.strftime(format_str)
 
 
+_FR_WEEKDAYS_ABBR = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."]
+
+
+def format_date_fr(d: date | datetime | None, format_str: str = "%a %d/%m") -> str:
+    """
+    Format a date/datetime with a French weekday abbreviation for %a,
+    independent of the server's OS locale (%a/%A depend on locale.setlocale,
+    fragile/process-global in a WSGI app - defaults to English abbreviations
+    here otherwise).
+
+    Args:
+        d: Date or datetime object to format
+        format_str: Format string, may contain %a (default: "%a %d/%m")
+
+    Returns:
+        Formatted date string, or "" if d is None
+    """
+    if d is None:
+        return ""
+    resolved_format = format_str.replace("%a", _FR_WEEKDAYS_ABBR[d.weekday()])
+    return d.strftime(resolved_format)
+
+
+# Palette de couleurs sémantiques daisyUI (voir app/static/css/theme-colors.css)
+# utilisée pour distinguer visuellement les types de shifts sur le dashboard
+# (graphique + badges) - "error" volontairement exclu (connotation négative
+# trompeuse pour un simple type de shift).
+SHIFT_TYPE_COLOR_PALETTE = [
+    "primary",
+    "secondary",
+    "accent",
+    "info",
+    "success",
+    "warning",
+]
+
+
+def shift_type_color(shift_type_id: int | None) -> str:
+    """
+    Nom de couleur sémantique daisyUI déterministe pour un type de shift,
+    pour qu'un même type ait toujours la même couleur partout sur le
+    dashboard (pas de colonne "couleur" sur ShiftType, calculé à la volée).
+
+    Args:
+        shift_type_id: ID du ShiftType (peut être None)
+
+    Returns:
+        Nom de couleur daisyUI (ex: "primary", "accent")
+    """
+    if shift_type_id is None:
+        return "neutral"
+    return SHIFT_TYPE_COLOR_PALETTE[shift_type_id % len(SHIFT_TYPE_COLOR_PALETTE)]
+
+
 def parse_date(date_str: str, format_str: str = "%Y-%m-%d") -> date | None:
     """
     Parse a string into a date object.
