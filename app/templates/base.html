@@ -23,8 +23,15 @@
          ce dernier octet) - rejetés par le sanitizer de police de Chromium
          ("OTS parsing error"), toutes les icônes restaient invisibles.
          Le mode SVG+JS (officiellement supporté par Font Awesome) ne
-         charge aucune police, contourne le fichier corrompu. -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.2.0/js/all.min.js" crossorigin="anonymous"></script>
+         charge aucune police, contourne le fichier corrompu.
+         `fontawesome.min.js` (moteur, 68 Ko) + `solid.min.js` (jeu
+         d'icônes "solid", 819 Ko) plutôt que `all.min.js` (1,56 Mo,
+         inclut aussi regular/light/thin/duotone/sharp/brands) : seul le
+         style `fas` (solid) est utilisé dans tout le projet (vérifié par
+         grep sur les templates, zéro `far`/`fab`/`fal`/`fad`) - ~43% de
+         payload en moins pour un rendu identique, testé isolément. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.2.0/js/fontawesome.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.2.0/js/solid.min.js" crossorigin="anonymous"></script>
 
     <!-- daisyUI 5.1.25 + Tailwind CSS 4 (compilateur JIT navigateur,
          zéro étape de build) - via CDN cdnjs -->
@@ -51,11 +58,57 @@
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-content">Sauter la navigation</a>
 
     {% set nav_links = [
+        (url_for('main.index'), 'fa-home', 'Accueil'),
         (url_for('main.user_dashboard'), 'fa-tachometer-alt', 'Tableau de bord'),
         (url_for('main.schedule'), 'fa-calendar-alt', 'Shifts'),
         (url_for('main.oncall'), 'fa-moon', 'Astreintes'),
         (url_for('main.leave'), 'fa-umbrella-beach', 'Congés'),
     ] %}
+
+    {% macro theme_toggle() %}
+    <!-- Pattern "Theme Controller" de daisyUI (swap +
+         checkbox, https://daisyui.com/components/theme-controller/)
+         SANS la classe theme-controller elle-même :
+         cette classe pilote le thème via un mécanisme
+         CSS :has() interne à daisyUI qui ne pose
+         jamais l'attribut data-theme sur <html>
+         (vérifié empiriquement) - elle appliquerait
+         donc le thème "dark" stock de daisyUI en
+         court-circuitant la palette Dracula/Alucard
+         (theme-colors.css, branchée sur [data-theme]).
+         Seule la mécanique visuelle swap-on/off est
+         reprise ; le thème réel reste géré par
+         theme-manager.js via l'attribut data-theme.
+         Icônes en SVG inline (tracés exacts de la démo
+         daisyUI) plutôt qu'en Font Awesome : le glyphe
+         fa-sun devient illisible (ressemble à un
+         rouage) à la petite taille imposée par ce
+         bouton de pied de sidebar - constaté visuellement.
+         Le `swap` est sur un <span> séparé du <label>
+         `btn` : `.btn` pose `display:flex`, qui écrase
+         le `display:inline-grid` de `.swap` (même
+         spécificité, `.btn` gagne dans la cascade) et
+         casse le stacking grid qui superpose les deux
+         icônes - sans ça les deux <svg> se poussaient
+         l'un l'autre au lieu de se superposer, donnant
+         un effet de glissement façon switch au clic
+         (constaté en inspectant le computed style).
+         Macro partagée entre utilisateurs connectés et
+         anonymes (visible aussi sur /login) - un seul
+         <input id="theme-toggle"> par page reste garanti
+         car les deux branches du if/else sont exclusives. -->
+    <label class="btn btn-ghost btn-sm btn-circle shrink-0" aria-label="Basculer entre le thème clair et sombre">
+        <span class="swap swap-rotate">
+            <input type="checkbox" id="theme-toggle">
+            <svg class="swap-off w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z" />
+            </svg>
+            <svg class="swap-on w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z" />
+            </svg>
+        </span>
+    </label>
+    {% endmacro %}
 
     <!-- Sidebar permanente à partir du breakpoint lg (drawer lg:drawer-open,
          pattern daisyUI documenté) - même case à cocher/mécanisme que le
@@ -138,24 +191,7 @@
                             </span>
                             <span class="truncate">{{ current_user.name }}</span>
                         </a>
-                        <!-- Pattern "Theme Controller" de daisyUI (swap +
-                             checkbox, https://daisyui.com/components/theme-controller/)
-                             SANS la classe theme-controller elle-même :
-                             cette classe pilote le thème via un mécanisme
-                             CSS :has() interne à daisyUI qui ne pose
-                             jamais l'attribut data-theme sur <html>
-                             (vérifié empiriquement) - elle appliquerait
-                             donc le thème "dark" stock de daisyUI en
-                             court-circuitant la palette Dracula/Alucard
-                             (theme-colors.css, branchée sur [data-theme]).
-                             Seule la mécanique visuelle swap-on/off est
-                             reprise ; le thème réel reste géré par
-                             theme-manager.js via l'attribut data-theme. -->
-                        <label class="btn btn-ghost btn-sm btn-circle swap swap-rotate shrink-0" aria-label="Basculer entre le thème clair et sombre">
-                            <input type="checkbox" id="theme-toggle">
-                            <i class="fas fa-sun swap-on" aria-hidden="true"></i>
-                            <i class="fas fa-moon swap-off" aria-hidden="true"></i>
-                        </label>
+                        {{ theme_toggle() }}
                         <a href="{{ url_for('auth.logout') }}" class="btn btn-ghost btn-sm btn-circle shrink-0" aria-label="Déconnexion" title="Déconnexion">
                             <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
                         </a>
@@ -163,6 +199,7 @@
                         <a class="btn btn-ghost btn-sm flex-1 justify-start" href="{{ url_for('auth.login') }}" aria-label="Connexion">
                             <i class="fas fa-sign-in-alt" aria-hidden="true"></i> Connexion
                         </a>
+                        {{ theme_toggle() }}
                     {% endif %}
                 </div>
             </aside>

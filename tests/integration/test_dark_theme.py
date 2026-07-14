@@ -149,13 +149,13 @@ class TestDarkThemeTemplate:
         assert "theme-toggle" in html_content
         assert 'aria-label="Basculer entre le thème clair et sombre"' in html_content
 
-    def test_theme_toggle_button_not_present_for_anonymous(self, client):
-        """Test que le bouton de toggle n'est PAS présent pour les utilisateurs non authentifiés."""
+    def test_theme_toggle_button_present_for_anonymous(self, client):
+        """Test que le bouton de toggle est présent pour les utilisateurs non authentifiés (page login)."""
         response = client.get("/login")
         assert response.status_code == 200
         html_content = response.data.decode("utf-8")
 
-        assert 'id="theme-toggle"' not in html_content
+        assert 'id="theme-toggle"' in html_content
 
     def test_theme_javascript_present(self, logged_in_client):
         """Test que le JavaScript du thème sombre est présent."""

@@ -8,37 +8,35 @@
 #}
 
 {% if pagination.has_prev or pagination.has_next or pagination.total > 0 %}
-<nav class="flex justify-center" role="navigation" aria-label="Pagination">
-    <div class="join">
-        <a class="join-item btn {% if not pagination.has_prev %}btn-disabled{% endif %}"
+{# Pattern "Extra small buttons" de daisyUI (join à 3 items : prev, label
+   de page, next - https://daisyui.com/components/pagination/#extra-small-buttons),
+   plutôt que la liste de numéros de page précédente : celle-ci affichait
+   "..." en permanence même avec une seule page au total (les deux <span>
+   d'ellipse n'étaient conditionnés à rien), et ne permettait de toute
+   façon d'atteindre que la première/dernière page, pas les pages
+   intermédiaires - un simple libellé "Page X / Y" est à la fois plus
+   correct et plus proche de la densité "outil pro" du reste de la
+   refonte. Icônes fa-chevron gardées (cohérence avec le reste de l'app)
+   plutôt que les caractères « » du modèle daisyUI. #}
+<div class="flex flex-wrap justify-between items-center gap-2 my-2">
+    <nav class="join" role="navigation" aria-label="Pagination">
+        <a class="join-item btn btn-sm {% if not pagination.has_prev %}btn-disabled{% endif %}"
            href="{{ url_for(route, page=pagination.prev_num, per_page=per_page) if pagination.has_prev else '#' }}"
            aria-label="Page précédente"
            {% if not pagination.has_prev %}aria-disabled="true" tabindex="-1"{% endif %}>
             <i class="fas fa-chevron-left" aria-hidden="true"></i>
         </a>
-
-        {% if pagination.has_prev %}
-        <a class="join-item btn" href="{{ url_for(route, page=1, per_page=per_page) }}" aria-label="Première page">1</a>
-        {% endif %}
-        <span class="join-item btn btn-disabled" aria-hidden="true">&hellip;</span>
-        <a class="join-item btn btn-active" aria-label="Page {{ pagination.page }}" aria-current="page">{{ pagination.page }}</a>
-        <span class="join-item btn btn-disabled" aria-hidden="true">&hellip;</span>
-        {% if pagination.has_next %}
-        <a class="join-item btn" href="{{ url_for(route, page=pagination.pages, per_page=per_page) }}" aria-label="Dernière page">{{ pagination.pages }}</a>
-        {% endif %}
-
-        <a class="join-item btn {% if not pagination.has_next %}btn-disabled{% endif %}"
+        <span class="join-item btn btn-sm btn-disabled" aria-current="page">Page {{ pagination.page }} / {{ pagination.pages or 1 }}</span>
+        <a class="join-item btn btn-sm {% if not pagination.has_next %}btn-disabled{% endif %}"
            href="{{ url_for(route, page=pagination.next_num, per_page=per_page) if pagination.has_next else '#' }}"
            aria-label="Page suivante"
            {% if not pagination.has_next %}aria-disabled="true" tabindex="-1"{% endif %}>
             <i class="fas fa-chevron-right" aria-hidden="true"></i>
         </a>
-    </div>
-</nav>
+    </nav>
 
-{# Sélecteur de nombre d'éléments par page #}
-<div class="flex justify-between items-center mt-2 mb-4">
-    <form method="get" action="{{ url_for(route) }}" class="flex" aria-label="Nombre d'éléments par page">
+    {# Sélecteur de nombre d'éléments par page #}
+    <form method="get" action="{{ url_for(route) }}" class="flex items-center gap-2" aria-label="Nombre d'éléments par page">
         <select name="per_page" class="select select-sm" onchange="this.form.submit()" aria-label="Éléments par page">
             {% for option in per_page_options %}
             <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
@@ -46,10 +44,9 @@
             <option value="0" {% if per_page == 999999 %}selected{% endif %}>Tout</option>
         </select>
         <input type="hidden" name="page" value="1">
+        <small class="text-base-content/60 whitespace-nowrap">
+            {{ pagination.items|length }} / {{ pagination.total }} {{ pagination_total_name }}
+        </small>
     </form>
-    <small>
-        Afficher {{ pagination.items|length }} sur {{ pagination.total }}
-        {{ pagination_total_name }}
-    </small>
 </div>
 {% endif %}
