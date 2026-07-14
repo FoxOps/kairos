@@ -99,11 +99,11 @@
                         {% else %}
                             {% if current_user.ics_token %}
                             {% set ics_base = public_base_url or request.host_url.rstrip('/') %}
-                            <a class="btn btn-primary btn-sm justify-start" href="{{ ics_base ~ current_user.get_ics_export_url('shifts', 'my') }}" aria-label="Exporter mes shifts">
-                                <i class="fas fa-download" aria-hidden="true"></i> Exporter mes shifts
-                            </a>
                             <a class="btn btn-primary btn-sm justify-start" href="{{ ics_base ~ current_user.get_ics_export_url('shifts', 'all') }}" aria-label="Exporter le calendrier complet de l'équipe">
                                 <i class="fas fa-calendar-alt" aria-hidden="true"></i> Exporter le calendrier complet
+                            </a>
+                            <a class="btn btn-primary btn-sm justify-start" href="{{ ics_base ~ current_user.get_ics_export_url('shifts', 'my') }}" aria-label="Exporter mes shifts">
+                                <i class="fas fa-download" aria-hidden="true"></i> Exporter mes shifts
                             </a>
                             <a class="btn btn-primary btn-sm justify-start" href="{{ ics_base ~ current_user.get_ics_export_url('oncall', 'my') }}" aria-label="Exporter mes astreintes">
                                 <i class="fas fa-download" aria-hidden="true"></i> Exporter mes astreintes
