@@ -13,7 +13,7 @@
 {% if current_user.is_authenticated and current_user.ics_token %}
     {% if show_all %}
     <a class="btn btn-success"
-       href="{{ request.host_url ~ current_user.get_ics_export_url(resource_type, 'all') }}" 
+       href="{{ (public_base_url or request.host_url.rstrip('/')) ~ current_user.get_ics_export_url(resource_type, 'all') }}" 
        aria-label="Exporter tous les {{ resource_name }} au format iCalendar"
        title="Exporter tous les {{ resource_name }}">
         <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter tous les {{ resource_name }}
@@ -22,7 +22,7 @@
     
     {% if show_my %}
     <a class="btn btn-success"
-       href="{{ request.host_url ~ current_user.get_ics_export_url(resource_type, 'my') }}" 
+       href="{{ (public_base_url or request.host_url.rstrip('/')) ~ current_user.get_ics_export_url(resource_type, 'my') }}" 
        aria-label="Exporter mes {{ resource_name }} au format iCalendar"
        title="Exporter mes {{ resource_name }}">
         <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; Exporter mes {{ resource_name }}

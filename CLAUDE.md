@@ -116,6 +116,13 @@ backups" below).
 
 ### utils/ layout
 
+The absolute ICS subscription links shown on `/profile/ics-token` and the shift/oncall/leave
+export buttons (`_ics_export_buttons.html`) prefer `app.config["PUBLIC_BASE_URL"]` (optional env
+var, injected as `public_base_url` by `inject_public_base_url` in `app/__init__.py`) over
+`request.host_url` — needed behind reverse-proxy topologies where `ProxyFix`'s trusted
+`X-Forwarded-Host` isn't set correctly, which would otherwise leak the backend's internal
+IP/hostname into links users paste into calendar apps.
+
 `app/utils/` is organized by concern, each a subpackage: `automation/` (shift/on-call
 auto-assignment and business rules — `advanced_shift_automation.py` is the biggest piece),
 `cache/`, `export/` (`ics_exporter.py`), `notifications/` (`email_sender.py` — smtplib/email

@@ -163,6 +163,12 @@ class Config:
     HOST: str = os.environ.get("FLASK_HOST") or "0.0.0.0"
     PORT: int = int(os.environ.get("FLASK_PORT") or 5000)
 
+    # URL publique de l'app derrière un reverse proxy (ex: https://schedule.example.com/)
+    # Optionnel : sert de repli quand request.host_url ne reflète pas le bon domaine
+    # (proxy qui ne transmet pas X-Forwarded-Host). Voir app/__init__.py
+    # inject_public_base_url et templates _ics_export_buttons.html / auth/ics_token.html.
+    PUBLIC_BASE_URL: str | None = os.environ.get("PUBLIC_BASE_URL") or None
+
     # Debug Mode (should be False in production)
     DEBUG: bool = get_bool_from_env("FLASK_DEBUG", False)
 

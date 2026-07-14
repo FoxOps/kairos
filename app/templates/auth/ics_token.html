@@ -48,7 +48,7 @@
                     <label class="label">URL Shifts (Tous)</label>
                     <div class="join w-full">
                         <input class="input join-item flex-1" type="text"
-                               value="{{ request.host_url ~ user.get_ics_export_url('shifts', 'all') }}"
+                               value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('shifts', 'all') }}"
                                id="urlShiftsAllInput" readonly>
                         <button class="btn btn-primary join-item no-hover-transform" onclick="Leviia.copyUrlShiftsAll(event)">
                             <i class="fas fa-copy"></i>
@@ -64,7 +64,7 @@
                     <label class="label">URL Shifts (Perso)</label>
                     <div class="join w-full">
                         <input class="input join-item flex-1" type="text"
-                               value="{{ request.host_url ~ user.get_ics_export_url('shifts', 'my') }}"
+                               value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('shifts', 'my') }}"
                                id="urlShiftsMyInput" readonly>
                         <button class="btn btn-primary join-item no-hover-transform" onclick="Leviia.copyUrlShiftsMy(event)">
                             <i class="fas fa-copy"></i>
@@ -81,7 +81,7 @@
                     <label class="label">URL Astreintes (Tous)</label>
                     <div class="join w-full">
                         <input class="input join-item flex-1" type="text"
-                               value="{{ request.host_url ~ user.get_ics_export_url('oncall', 'all') }}"
+                               value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('oncall', 'all') }}"
                                id="urlOncallAllInput" readonly>
                         <button class="btn btn-primary join-item no-hover-transform" onclick="Leviia.copyUrlOncallAll(event)">
                             <i class="fas fa-copy"></i>
@@ -97,7 +97,7 @@
                     <label class="label">URL Astreintes (Perso)</label>
                     <div class="join w-full">
                         <input class="input join-item flex-1" type="text"
-                               value="{{ request.host_url ~ user.get_ics_export_url('oncall', 'my') }}"
+                               value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('oncall', 'my') }}"
                                id="urlOncallMyInput" readonly>
                         <button class="btn btn-primary join-item no-hover-transform" onclick="Leviia.copyUrlOncallMy(event)">
                             <i class="fas fa-copy"></i>
@@ -114,7 +114,7 @@
                     <label class="label">URL Congés (Tous)</label>
                     <div class="join w-full">
                         <input class="input join-item flex-1" type="text"
-                               value="{{ request.host_url ~ user.get_ics_export_url('leaves', 'all') }}"
+                               value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('leaves', 'all') }}"
                                id="urlLeavesAllInput" readonly>
                         <button class="btn btn-primary join-item no-hover-transform" onclick="Leviia.copyUrlLeavesAll(event)">
                             <i class="fas fa-copy"></i>
@@ -130,7 +130,7 @@
                     <label class="label">URL Congés (Perso)</label>
                     <div class="join w-full">
                         <input class="input join-item flex-1" type="text"
-                               value="{{ request.host_url ~ user.get_ics_export_url('leaves', 'my') }}"
+                               value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('leaves', 'my') }}"
                                id="urlLeavesMyInput" readonly>
                         <button class="btn btn-primary join-item no-hover-transform" onclick="Leviia.copyUrlLeavesMy(event)">
                             <i class="fas fa-copy"></i>

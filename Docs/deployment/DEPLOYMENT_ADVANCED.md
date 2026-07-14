@@ -362,6 +362,14 @@ server {
 }
 ```
 
+Ce `proxy_set_header Host $host` suffit en général : l'app fait déjà
+confiance à un unique reverse proxy via `ProxyFix` (voir `app/__init__.py`).
+Si votre topologie ajoute des sauts supplémentaires (ingress Kubernetes,
+load balancer) qui ne transmettent pas correctement le Host/domaine
+d'origine, définissez `PUBLIC_BASE_URL` (ex: `https://leviia.votre-domaine.com`)
+pour forcer le domaine utilisé dans les liens absolus générés par l'app
+(export ICS) — voir [ENVIRONMENT_VARIABLES.md](../reference/ENVIRONMENT_VARIABLES.md).
+
 ### 3. Configurer HTTPS
 
 Utilisez **Let's Encrypt** pour obtenir des certificats SSL gratuits :

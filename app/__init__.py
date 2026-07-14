@@ -303,6 +303,15 @@ def create_app(config_object: str | None = None):
     def inject_app_version():
         return {"app_version": os.environ.get("APP_VERSION", APP_VERSION_DEFAULT)}
 
+    # Repli explicite pour les liens absolus (export ICS) quand le reverse
+    # proxy ne transmet pas X-Forwarded-Host correctement à ProxyFix
+    # ci-dessus - sinon request.host_url expose l'IP/le nom interne du
+    # backend au lieu du domaine public.
+    @app.context_processor
+    def inject_public_base_url():
+        base_url = app.config.get("PUBLIC_BASE_URL")
+        return {"public_base_url": base_url.rstrip("/") if base_url else None}
+
     # Configuration des métriques Prometheus si activé
     if app.config.get("PROMETHEUS_ENABLED", False):
         from app.utils.prometheus_metrics import init_prometheus

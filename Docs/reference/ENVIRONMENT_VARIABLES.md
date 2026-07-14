@@ -32,12 +32,14 @@
 | `SECRET_KEY` | string | `ta-cle-secrete-ici` | Clé secrète pour Flask. **Doit être longue, aléatoire et gardée secrète en production**. Générez avec : `python -c "import secrets; print(secrets.token_hex(32))"` | ✅ Oui |
 | `FLASK_ENV` | string | `development` | Environnement Flask. Valeurs possibles : `development`, `production`, `testing` | ❌ Non |
 | `FLASK_TESTING` | booléen | `false` | Mode test activé. Utilisé pour les tests unitaires | ❌ Non |
+| `PUBLIC_BASE_URL` | string | (vide) | URL publique de l'app derrière un reverse proxy (ex: `https://schedule.example.com`). Sert de repli pour les liens absolus (export ICS) quand le proxy ne transmet pas `X-Forwarded-Host` correctement à `ProxyFix` — sinon ces liens exposent l'IP/le nom interne du backend au lieu du bon domaine. Laisser vide pour utiliser `request.host_url` (comportement par défaut) | ❌ Non |
 
 **Exemple :**
 ```bash
 SECRET_KEY=ma_cle_secrete_generée_avec_python_secrets
 FLASK_ENV=production
 FLASK_TESTING=false
+PUBLIC_BASE_URL=https://schedule.example.com
 ```
 
 ---
@@ -195,6 +197,11 @@ Guide de configuration complet :
 | Variable | Type | Défaut | Description | Obligatoire |
 |----------|------|--------|-------------|-------------|
 | `ICS_TOKEN_EXPIRY_DAYS` | entier | `365` | Durée de validité du token ICS en jours | ❌ Non |
+
+Les URL d'abonnement ICS affichées à l'utilisateur (page `/profile/ics-token`)
+utilisent `PUBLIC_BASE_URL` si définie (voir
+[🔐 Configuration de Base Flask](#-configuration-de-base-flask)), sinon
+`request.host_url` — pertinent derrière un reverse proxy.
 
 ---
 
