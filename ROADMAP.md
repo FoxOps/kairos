@@ -1,11 +1,12 @@
 # 🗺️ Feuille de Route - Leviia Schedule
 
 > **Version** : 5.7.0 - Refonte visuelle Dracula/Alucard (PR #110)
-> **Version app** : 0.7.6 (`/version`) - Identité visuelle complète sur la
-> base Tailwind/daisyUI (PR #108) : palette officielle Dracula (thème
-> sombre) / Alucard (thème clair), drawer mobile natif, composants daisyUI
-> (stats, breadcrumbs, avatar, tooltip, collapse, hero, swap), modale de
-> création de shift en `<dialog>` natif
+> **Version app** : 0.7.7 (`/version`) - Démarrage de l'échange de shifts
+> entre utilisateurs (validation admin). Hérite de la refonte visuelle
+> Tailwind/daisyUI (PR #108) : palette officielle Dracula (thème sombre) /
+> Alucard (thème clair), drawer mobile natif, composants daisyUI (stats,
+> breadcrumbs, avatar, tooltip, collapse, hero, swap), modale de création
+> de shift en `<dialog>` natif
 > **Dernière mise à jour** : Juillet 2026
 > **Statut** : Développement actif - **933 tests passent** ✅ (dont 23 E2E navigateur réel)
 > **Commit actuel** : branche feature/dracula-redesign (PR #110)
