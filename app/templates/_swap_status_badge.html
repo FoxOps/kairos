@@ -8,4 +8,6 @@
 <span class="badge badge-error">Rejetée</span>
 {% elif swap.status == 'cancelled' %}
 <span class="badge badge-ghost">Annulée</span>
+{% elif swap.status == 'reverted' %}
+<span class="badge badge-ghost">Annulée après approbation</span>
 {% endif %}

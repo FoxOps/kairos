@@ -32,7 +32,7 @@ class SwapRequest(BaseModel):
         target_user_id: Foreign key to User - who is being proposed the swap
         target_shift_id: Foreign key to Shift - target's shift offered back
             (nullable - null means a one-way give-away)
-        status: One of PENDING, APPROVED, REJECTED, CANCELLED
+        status: One of PENDING, APPROVED, REJECTED, CANCELLED, REVERTED
         reviewed_by_id: Foreign key to User - admin who reviewed the request
         reviewed_at: Timestamp of the admin decision
         admin_comment: Optional comment left by the admin on decision
@@ -44,6 +44,7 @@ class SwapRequest(BaseModel):
     APPROVED = "approved"
     REJECTED = "rejected"
     CANCELLED = "cancelled"
+    REVERTED = "reverted"
 
     requester_id = db.Column(
         db.Integer, db.ForeignKey("user.id"), nullable=False, index=True
@@ -127,7 +128,7 @@ class SwapRequest(BaseModel):
 
         Args:
             admin_user_id: ID of the admin making the decision
-            status: New status (APPROVED or REJECTED)
+            status: New status (APPROVED, REJECTED, or REVERTED)
             comment: Optional comment explaining the decision
         """
         self.status = status

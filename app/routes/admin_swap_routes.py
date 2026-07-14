@@ -17,7 +17,8 @@ from app.services import SwapService
 @admin_required
 def list_swaps():
     pending = SwapService.list_pending()
-    return render_template("admin/swaps.html", pending=pending)
+    approved = SwapService.list_approved()
+    return render_template("admin/swaps.html", pending=pending, approved=approved)
 
 
 @admin_bp.route("/admin/swaps/<int:swap_request_id>/approve", methods=["POST"])
@@ -32,6 +33,24 @@ def approve_swap(swap_request_id):
         flash(f"❌ {error}", "danger")
     else:
         flash("✅ Échange approuvé, shifts réassignés.", "success")
+    return redirect(url_for("admin.list_swaps"))
+
+
+@admin_bp.route("/admin/swaps/<int:swap_request_id>/revert", methods=["POST"])
+@admin_required
+def revert_swap(swap_request_id):
+    swap_request = SwapRequestRepository.get_by_id(swap_request_id)
+    if not swap_request:
+        abort(404)
+
+    error = SwapService.revert_swap(swap_request, current_user)
+    if error:
+        flash(f"❌ {error}", "danger")
+    else:
+        flash(
+            "✅ Échange annulé, shifts réassignés à leurs propriétaires d'origine.",
+            "success",
+        )
     return redirect(url_for("admin.list_swaps"))
 
 

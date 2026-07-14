@@ -162,16 +162,23 @@ Users request to give up one of their shifts to another user (`app/routes/swap_r
 `/swaps`, `/swaps/add`, `/swaps/<id>/cancel`), optionally in exchange for one of the target's shifts
 (reciprocal swap) — leave `target_shift_id` unset for a one-way give-away. An admin must approve
 before anything changes (`app/routes/admin_swap_routes.py`: `/admin/swaps`,
-`/admin/swaps/<id>/approve`, `/admin/swaps/<id>/reject`) — this is the **only** approval workflow in
-the app; `Leave` (congés) has none by design (see "Models" above) and stays that way, don't add one
-there by analogy. `SwapService` (`app/services/swap_service.py`) re-validates the same business
-rules at both request time and approval time (`_validation_error`: shift still owned by requester,
-target not on leave / doesn't already have another shift that day, no duplicate pending request per
-shift) since state can drift between the two — approval doesn't blindly trust the original request.
-`approve_swap` reassigns `Shift.user_id` directly (swap, not delete+recreate) then commits; reject/
-cancel only touch `SwapRequest.status`, shifts stay untouched. `/api/swaps/target-shifts` is a small
-JSON endpoint backing `app/static/js/swaps/swap-form.js`, which populates the optional
-"shift requested back" dropdown once a target user is chosen on `add_swap.html`.
+`/admin/swaps/<id>/approve`, `/admin/swaps/<id>/reject`, `/admin/swaps/<id>/revert`) — this is the
+**only** approval workflow in the app; `Leave` (congés) has none by design (see "Models" above) and
+stays that way, don't add one there by analogy. `SwapService` (`app/services/swap_service.py`)
+re-validates the same business rules at both request time and approval time (`_validation_error`:
+shift still owned by requester, target not on leave / doesn't already have another shift that day,
+no duplicate pending request per shift) since state can drift between the two — approval doesn't
+blindly trust the original request. `approve_swap` reassigns `Shift.user_id` directly (swap, not
+delete+recreate) then commits; reject/cancel only touch `SwapRequest.status`, shifts stay untouched.
+`/admin/swaps` lists both pending and already-approved requests — an admin can `revert_swap` an
+approved exchange after the fact, which reassigns `Shift.user_id` back to the original owners and
+sets status to `REVERTED` (distinct from `CANCELLED`, which is only for the requester backing out
+*before* approval). `revert_swap` deliberately skips `_validation_error` (the swap back to the prior
+owners was valid by definition) but does check each shift is still owned by whoever the approval put
+it with — if either shift was reassigned again since (another swap, manual edit), it refuses rather
+than silently overwriting an unrelated change. `/api/swaps/target-shifts` is a small JSON endpoint
+backing `app/static/js/swaps/swap-form.js`, which populates the optional "shift requested back"
+dropdown once a target user is chosen on `add_swap.html`.
 
 ### Frontend
 

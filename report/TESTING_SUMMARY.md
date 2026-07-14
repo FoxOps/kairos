@@ -2,9 +2,9 @@
 
 ## 📊 Aperçu Global
 
-- **Date de mise à jour** : 14 juillet 2026 (échange de shifts entre utilisateurs)
-- **Nombre total de tests** : 965
-- **Tests réussis** : 965 ✅
+- **Date de mise à jour** : 14 juillet 2026 (échange de shifts entre utilisateurs + annulation post-approbation)
+- **Nombre total de tests** : 975
+- **Tests réussis** : 975 ✅
 - **Tests échoués** : 0
 - **Couverture de code** : **~88%** (`--cov=app --cov=config`)
 - **Lint (ruff)** : propre - **0 erreur**
@@ -209,6 +209,15 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
    du module appelant (`app.routes.auth.oidc_auth.X`) dans les tests
    d'intégration, ne rien mocker en E2E navigateur (vrai serveur, vrai
    faux fournisseur OIDC).
+6. **Un seul client HTTP authentifié par test** : combiner
+   `logged_in_client` et `non_admin_client` (ou simplement deux
+   `test_app.test_client()`) dans le même test fait finir par partager
+   leur cookiejar - un client jamais connecté hérite silencieusement de
+   la session du premier login effectué dans le test (artefact du
+   harnais de test, pas un bug applicatif). Pour tester une permission
+   après une action admin, préparer l'état voulu directement via le
+   service (ex: `SwapService.approve_swap(...)` en `app_context()`)
+   plutôt que via une seconde requête HTTP authentifiée différemment.
 
 ---
 
@@ -267,7 +276,7 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
   bascule au clavier ; bug réel trouvé en test manuel (composant
   `avatar-placeholder` de daisyUI qui cible ses styles de centrage sur un
   `<div>` enfant, pas un `<span>` - corrigé).
-- **14 juillet 2026** : 965 tests (0 échec, +32). Échange de shifts entre
+- **14 juillet 2026** : 975 tests (0 échec, +42). Échange de shifts entre
   utilisateurs (`SwapRequest` : demande, don simple ou réciproque,
   validation/rejet admin) - nouvelle couche modèle/repository/service/
   routes (user + admin) sans précédent d'approbation dans ce repo (les
@@ -276,4 +285,15 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
   `TestApproveSwap`/`TestRejectSwap` - couvre notamment la revalidation
   métier à l'approbation, pas seulement à la création), routes
   utilisateur et admin (`tests/integration/test_swap_routes.py`,
-  permissions admin vs non-admin incluses).
+  permissions admin vs non-admin incluses). Complété le même jour par
+  `revert_swap` (annulation d'un échange *après* approbation par
+  l'admin, statut `REVERTED` distinct de `CANCELLED` qui reste réservé à
+  l'auto-annulation par le demandeur avant validation) - `/admin/swaps`
+  affiche maintenant aussi les échanges déjà approuvés, pas seulement en
+  attente (`TestRevertSwap`, tests routes associés). Piège de test
+  découvert au passage : combiner `logged_in_client` et
+  `non_admin_client` (ou deux `test_app.test_client()`) dans un même
+  test fait finir par partager leur cookiejar - artefact du harnais de
+  test, pas un bug applicatif ; toujours isoler un seul client HTTP
+  authentifié par test (préparer l'état "déjà approuvé" via le service
+  directement si besoin, pas via une seconde requête HTTP admin).

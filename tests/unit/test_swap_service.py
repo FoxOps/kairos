@@ -188,3 +188,81 @@ class TestRejectSwap:
             # Le shift n'a pas bougé
             unchanged_shift = db.session.get(Shift, test_swap_request.shift_id)
             assert unchanged_shift.user_id == test_swap_request.requester_id
+
+
+class TestRevertSwap:
+    def test_revert_reassigns_shift_back(
+        self, test_app, test_swap_request, admin_user, test_user, second_user
+    ):
+        with test_app.app_context():
+            SwapService.approve_swap(test_swap_request, admin_user)
+
+            error = SwapService.revert_swap(test_swap_request, admin_user)
+            assert error is None
+            assert test_swap_request.status == SwapRequest.REVERTED
+
+            reverted_shift = db.session.get(Shift, test_swap_request.shift_id)
+            assert reverted_shift.user_id == test_user.id
+
+    def test_revert_reciprocal_swap(
+        self,
+        test_app,
+        test_user,
+        second_user,
+        test_swap_shift,
+        test_shift_type,
+        admin_user,
+    ):
+        with test_app.app_context():
+            target_shift = Shift(
+                date=test_swap_shift.date + timedelta(days=1),
+                start_time=datetime.combine(
+                    test_swap_shift.date + timedelta(days=1), datetime.min.time()
+                ),
+                end_time=datetime.combine(
+                    test_swap_shift.date + timedelta(days=1), datetime.max.time()
+                ),
+                user_id=second_user.id,
+                shift_type_id=test_shift_type.id,
+            )
+            db.session.add(target_shift)
+            db.session.commit()
+
+            swap_request, error = SwapService.request_swap(
+                test_user, test_swap_shift, second_user, target_shift
+            )
+            assert error is None
+            SwapService.approve_swap(swap_request, admin_user)
+
+            error = SwapService.revert_swap(swap_request, admin_user)
+            assert error is None
+            assert db.session.get(Shift, test_swap_shift.id).user_id == test_user.id
+            assert db.session.get(Shift, target_shift.id).user_id == second_user.id
+
+    def test_revert_not_approved_fails(self, test_app, test_swap_request, admin_user):
+        with test_app.app_context():
+            error = SwapService.revert_swap(test_swap_request, admin_user)
+            assert error is not None
+
+    def test_revert_twice_fails(
+        self, test_app, test_swap_request, admin_user, test_user
+    ):
+        with test_app.app_context():
+            SwapService.approve_swap(test_swap_request, admin_user)
+            SwapService.revert_swap(test_swap_request, admin_user)
+            error = SwapService.revert_swap(test_swap_request, admin_user)
+            assert error is not None
+
+    def test_revert_shift_reassigned_since_fails(
+        self, test_app, test_swap_request, admin_user, test_user
+    ):
+        with test_app.app_context():
+            SwapService.approve_swap(test_swap_request, admin_user)
+
+            shift = db.session.get(Shift, test_swap_request.shift_id)
+            shift.user_id = test_user.id  # quelqu'un a déjà retouché le shift
+            db.session.commit()
+
+            error = SwapService.revert_swap(test_swap_request, admin_user)
+            assert error is not None
+            assert test_swap_request.status == SwapRequest.APPROVED

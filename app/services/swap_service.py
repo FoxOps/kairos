@@ -26,6 +26,10 @@ class SwapService:
         return SwapRequestRepository.list_pending()
 
     @staticmethod
+    def list_approved() -> list[SwapRequest]:
+        return SwapRequestRepository.list_by_status(SwapRequest.APPROVED)
+
+    @staticmethod
     def list_for_user(user_id: int) -> list[SwapRequest]:
         return SwapRequestRepository.list_for_user(user_id)
 
@@ -140,6 +144,43 @@ class SwapService:
         db.session.commit()
         logger.info(
             "Échange de shift id=%s approuvé par admin id=%s", swap_request.id, admin.id
+        )
+        return None
+
+    @staticmethod
+    def revert_swap(swap_request: SwapRequest, admin: User) -> str | None:
+        """Annule un échange déjà approuvé : réassigne les shifts à leurs
+        propriétaires d'origine. None si succès.
+
+        Contrairement à approve_swap, ne revalide pas les règles métier
+        habituelles (congé, autre shift ce jour) : on remet juste chaque
+        shift à son propriétaire d'avant l'échange, ce qui était par
+        définition une situation valide.
+        """
+        if swap_request.status != SwapRequest.APPROVED:
+            return "Seul un échange approuvé peut être annulé"
+
+        shift = swap_request.shift
+        if shift is None or shift.user_id != swap_request.target_user_id:
+            return "Le shift a changé depuis l'approbation, annulation impossible automatiquement"
+
+        target_shift = swap_request.target_shift
+        if (
+            target_shift is not None
+            and target_shift.user_id != swap_request.requester_id
+        ):
+            return "Le shift retourné a changé depuis l'approbation, annulation impossible automatiquement"
+
+        shift.user_id = swap_request.requester_id
+        if target_shift is not None:
+            target_shift.user_id = swap_request.target_user_id
+
+        swap_request.mark_reviewed(admin.id, SwapRequest.REVERTED)
+        db.session.commit()
+        logger.info(
+            "Échange de shift id=%s annulé après approbation par admin id=%s",
+            swap_request.id,
+            admin.id,
         )
         return None
 
