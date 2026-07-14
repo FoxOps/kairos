@@ -11,10 +11,12 @@ from app.utils.helpers import (
     _get_overlapping_oncall,
     _get_overlapping_shift,
     _has_overlapping_oncall,
+    build_shift_type_color_map,
     can_add_leave,
     can_add_oncall,
     can_add_shift,
     format_date,
+    format_date_fr,
     format_datetime,
     format_time,
     get_bool,
@@ -516,6 +518,64 @@ class TestFormatFunctions:
 
     def test_format_time_none(self):
         assert format_time(None) == ""
+
+    def test_format_date_fr_weekday_abbreviations(self):
+        # 2026-07-13 est un lundi
+        assert format_date_fr(date(2026, 7, 13)) == "lun. 13/07"
+        assert format_date_fr(date(2026, 7, 14)) == "mar. 14/07"
+        assert format_date_fr(date(2026, 7, 19)) == "dim. 19/07"
+
+    def test_format_date_fr_datetime(self):
+        assert format_date_fr(datetime(2026, 7, 13, 9, 30)) == "lun. 13/07"
+
+    def test_format_date_fr_none(self):
+        assert format_date_fr(None) == ""
+
+    def test_format_date_fr_custom_format(self):
+        assert format_date_fr(date(2026, 7, 13), "%a %d/%m/%Y") == "lun. 13/07/2026"
+
+
+class TestBuildShiftTypeColorMap:
+    def test_all_colors_within_palette(self):
+        from app.utils.helpers.common_helpers import SHIFT_TYPE_COLOR_PALETTE
+
+        color_map = build_shift_type_color_map([1, 2, 3])
+        assert all(c in SHIFT_TYPE_COLOR_PALETTE for c in color_map.values())
+
+    def test_distinct_colors_for_non_contiguous_ids(self):
+        """Bug réel : un modulo brut sur l'ID fait collisionner deux types
+        dont les IDs diffèrent d'un multiple de la taille de la palette
+        (ex: 2 et 8 avec une palette de 6) - le mapping par rang évite ça."""
+        from app.utils.helpers.common_helpers import SHIFT_TYPE_COLOR_PALETTE
+
+        n = len(SHIFT_TYPE_COLOR_PALETTE)
+        color_map = build_shift_type_color_map([2, 2 + n])
+        assert color_map[2] != color_map[2 + n]
+
+    def test_deterministic_for_same_input(self):
+        assert build_shift_type_color_map([5, 1, 3]) == build_shift_type_color_map(
+            [1, 3, 5]
+        )
+
+    def test_wraps_around_palette_beyond_capacity(self):
+        from app.utils.helpers.common_helpers import SHIFT_TYPE_COLOR_PALETTE
+
+        n = len(SHIFT_TYPE_COLOR_PALETTE)
+        color_map = build_shift_type_color_map(range(1, n + 2))
+        ids_sorted = list(range(1, n + 2))
+        assert color_map[ids_sorted[0]] == color_map[ids_sorted[-1]]
+
+    def test_ignores_none(self):
+        color_map = build_shift_type_color_map([1, None, 2])
+        assert None not in color_map
+
+    def test_empty_input(self):
+        assert build_shift_type_color_map([]) == {}
+
+    def test_excludes_error_color(self):
+        from app.utils.helpers.common_helpers import SHIFT_TYPE_COLOR_PALETTE
+
+        assert "error" not in SHIFT_TYPE_COLOR_PALETTE
 
 
 class TestParseFunctions:

@@ -21,7 +21,7 @@ from flask_compress import Compress
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_login import LoginManager
+from flask_login import LOGIN_MESSAGE, LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from flask_talisman import Talisman
 from flask_wtf import CSRFProtect
@@ -281,8 +281,24 @@ def create_app(config_object: str | None = None):
         and OIDCConfig.DISABLE_BASIC_AUTH
     ):
         login_manager.login_view = "auth.oidc_login"
+        # auth.oidc_login ne rend jamais de template : il redirige aussitôt
+        # vers le fournisseur OIDC. Le flash "please log in" par défaut de
+        # Flask-Login (déclenché par @login_required avant cette
+        # redirection) n'a donc jamais l'occasion de s'afficher seul - il
+        # traverse tout l'aller-retour vers l'IdP et ressort collé au
+        # flash "Connexion OIDC réussie !" sur la première page rendue
+        # après coup (les deux s'affichent en même temps). Inutile dans ce
+        # mode : désactivé. Reste actif en mode auth.login classique, où
+        # il s'affiche normalement sur le formulaire de connexion.
+        login_manager.login_message = None
     else:
         login_manager.login_view = "auth.login"
+        # login_manager est un singleton module-level réutilisé par tous
+        # les appels à create_app() dans le même process (tests inclus) -
+        # restaurer explicitement le défaut de Flask-Login, sinon un appel
+        # précédent en mode OIDC (branche ci-dessus) laisse login_message
+        # à None ici aussi.
+        login_manager.login_message = LOGIN_MESSAGE
 
     # Stocker l'instance globale pour la compatibilité
     _app = app
@@ -337,6 +353,17 @@ def create_app(config_object: str | None = None):
                 current_user.id
             )
         }
+
+    # Filtre Jinja : dates en français (%a dépend de la locale OS, jamais
+    # fiable dans une app WSGI - voir format_date_fr). La couleur par type
+    # de shift (dashboard) est calculée par vue via build_shift_type_color_map
+    # (rang parmi les types affichés, pas un filtre par ID - voir
+    # app/routes/dashboard_routes.py) : un simple `id % taille_palette`
+    # fait collisionner deux types dès que leurs IDs diffèrent d'un
+    # multiple de la taille de la palette.
+    from app.utils.helpers import format_date_fr
+
+    app.jinja_env.filters["date_fr"] = format_date_fr
 
     # Configuration des métriques Prometheus si activé
     if app.config.get("PROMETHEUS_ENABLED", False):

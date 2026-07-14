@@ -85,6 +85,71 @@ def format_time(t: time, format_str: str = "%H:%M") -> str:
     return t.strftime(format_str)
 
 
+_FR_WEEKDAYS_ABBR = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."]
+
+
+def format_date_fr(d: date | datetime | None, format_str: str = "%a %d/%m") -> str:
+    """
+    Format a date/datetime with a French weekday abbreviation for %a,
+    independent of the server's OS locale (%a/%A depend on locale.setlocale,
+    fragile/process-global in a WSGI app - defaults to English abbreviations
+    here otherwise).
+
+    Args:
+        d: Date or datetime object to format
+        format_str: Format string, may contain %a (default: "%a %d/%m")
+
+    Returns:
+        Formatted date string, or "" if d is None
+    """
+    if d is None:
+        return ""
+    resolved_format = format_str.replace("%a", _FR_WEEKDAYS_ABBR[d.weekday()])
+    return d.strftime(resolved_format)
+
+
+# Palette de couleurs sémantiques daisyUI (voir app/static/css/theme-colors.css)
+# utilisée pour distinguer visuellement les types de shifts sur le dashboard
+# (graphique + badges) - "error" volontairement exclu (connotation négative
+# trompeuse pour un simple type de shift).
+SHIFT_TYPE_COLOR_PALETTE = [
+    "primary",
+    "secondary",
+    "accent",
+    "info",
+    "success",
+    "warning",
+]
+
+
+def build_shift_type_color_map(shift_type_ids) -> dict:
+    """
+    Associe à chaque ShiftType.id une couleur sémantique daisyUI, garantie
+    distincte pour tous les IDs passés tant qu'il y en a au plus
+    len(SHIFT_TYPE_COLOR_PALETTE) (au-delà, la palette boucle).
+
+    Attribue par RANG (ordre trié des IDs), pas par `id % len(palette)` :
+    un modulo sur l'ID brut fait collisionner deux types dès que leurs IDs
+    diffèrent d'un multiple de la taille de la palette (ex: IDs 2 et 8 avec
+    une palette de 6 tombent tous les deux sur l'index 2) - bug réel
+    observé en pratique après suppression/recréation de types de shifts,
+    qui fait grimper les IDs auto-incrémentés sans qu'ils restent
+    contigus à partir de 1.
+
+    Args:
+        shift_type_ids: IDs de ShiftType à mapper (doublons/None tolérés)
+
+    Returns:
+        Dict {shift_type_id: nom_couleur_daisyui}
+    """
+    unique_sorted_ids = sorted({sid for sid in shift_type_ids if sid is not None})
+    palette_size = len(SHIFT_TYPE_COLOR_PALETTE)
+    return {
+        shift_type_id: SHIFT_TYPE_COLOR_PALETTE[index % palette_size]
+        for index, shift_type_id in enumerate(unique_sorted_ids)
+    }
+
+
 def parse_date(date_str: str, format_str: str = "%Y-%m-%d") -> date | None:
     """
     Parse a string into a date object.

@@ -98,14 +98,25 @@
                             </a>
                         {% else %}
                             {% if current_user.ics_token %}
-                            <a class="btn btn-primary btn-sm justify-start" href="{{ request.host_url ~ current_user.get_ics_export_url('shifts', 'my') }}" aria-label="Exporter mes shifts">
+                            {% set ics_base = public_base_url or request.host_url.rstrip('/') %}
+                            <a class="btn btn-primary btn-sm justify-start" href="{{ ics_base ~ current_user.get_ics_export_url('shifts', 'all') }}" aria-label="Exporter le calendrier complet de l'équipe">
+                                <i class="fas fa-calendar-alt" aria-hidden="true"></i> Exporter le calendrier complet
+                            </a>
+                            <a class="btn btn-primary btn-sm justify-start" href="{{ ics_base ~ current_user.get_ics_export_url('shifts', 'my') }}" aria-label="Exporter mes shifts">
                                 <i class="fas fa-download" aria-hidden="true"></i> Exporter mes shifts
                             </a>
-                            <a class="btn btn-primary btn-sm justify-start" href="{{ request.host_url ~ current_user.get_ics_export_url('oncall', 'my') }}" aria-label="Exporter mes astreintes">
+                            <a class="btn btn-primary btn-sm justify-start" href="{{ ics_base ~ current_user.get_ics_export_url('oncall', 'my') }}" aria-label="Exporter mes astreintes">
                                 <i class="fas fa-download" aria-hidden="true"></i> Exporter mes astreintes
                             </a>
-                            <a class="btn btn-primary btn-sm justify-start" href="{{ request.host_url ~ current_user.get_ics_export_url('leaves', 'my') }}" aria-label="Exporter mes congés">
+                            <a class="btn btn-primary btn-sm justify-start" href="{{ ics_base ~ current_user.get_ics_export_url('leaves', 'my') }}" aria-label="Exporter mes congés">
                                 <i class="fas fa-download" aria-hidden="true"></i> Exporter mes congés
+                            </a>
+                            <a class="btn btn-ghost btn-sm justify-start" href="{{ url_for('auth.generate_ics_token') }}" aria-label="Plus d'options d'export ICS">
+                                <i class="fas fa-ellipsis-h" aria-hidden="true"></i> Plus d'options
+                            </a>
+                            {% else %}
+                            <a class="btn btn-primary btn-sm justify-start" href="{{ url_for('auth.generate_ics_token') }}" aria-label="Générer mon export ICS">
+                                <i class="fas fa-download" aria-hidden="true"></i> Générer mon export ICS
                             </a>
                             {% endif %}
                         {% endif %}

@@ -12,6 +12,7 @@ from sqlalchemy.orm import joinedload
 from app.models import Leave, OnCall, Shift, ShiftType
 from app.routes.main import main_bp
 from app.services import ScheduleService
+from app.utils.helpers import build_shift_type_color_map
 from app.utils.optimizations import eager_load
 
 
@@ -84,8 +85,18 @@ def user_dashboard():
         ).count()
         if count > 0:
             shift_types_stats.append(
-                {"name": shift_type.name, "label": shift_type.label, "count": count}
+                {
+                    "id": shift_type.id,
+                    "name": shift_type.name,
+                    "label": shift_type.label,
+                    "count": count,
+                }
             )
+
+    # Par rang parmi les types existants (pas par id % taille_palette),
+    # sinon deux types dont les IDs diffèrent d'un multiple de la taille
+    # de la palette se retrouvent avec la même couleur.
+    shift_type_colors = build_shift_type_color_map(st.id for st in shift_types)
 
     first_day_of_month = date(today.year, today.month, 1)
     oncalls_this_month = OnCall.query.filter(
@@ -104,6 +115,7 @@ def user_dashboard():
         upcoming_leaves=upcoming_leaves,
         recent_shifts=recent_shifts,
         shift_types_stats=shift_types_stats,
+        shift_type_colors=shift_type_colors,
         oncalls_this_month=oncalls_this_month,
         user=current_user,
     )

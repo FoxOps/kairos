@@ -83,10 +83,16 @@ def login():
 
 @auth_bp.route("/oidc/login")
 def oidc_login():
-    """Redirige vers le fournisseur OIDC pour l'authentification."""
-    if not is_basic_auth_disabled():
-        return redirect(url_for("auth.login"))
+    """Redirige vers le fournisseur OIDC pour l'authentification.
 
+    Pas de garde sur is_basic_auth_disabled() ici (il y en avait un avant,
+    bug réel) : cette route doit aussi fonctionner quand OIDC_DISABLE_BASIC_AUTH
+    est false (SSO optionnel, en plus du formulaire classique - voir le
+    bouton "Se connecter avec SSO" sur auth/login.html) et pas seulement
+    quand le SSO est forcé. Le cas "OIDC non configuré" est déjà couvert
+    juste en dessous (get_authorization_url() renvoie None), pas besoin
+    d'un garde en plus ici.
+    """
     auth_url = oidc_auth.get_authorization_url()
     if not auth_url:
         flash("La connexion OIDC n'est pas disponible pour le moment.", "danger")
@@ -97,10 +103,14 @@ def oidc_login():
 
 @auth_bp.route("/oidc/callback")
 def oidc_callback():
-    """Callback pour l'authentification OIDC."""
-    if not is_basic_auth_disabled():
-        return redirect(url_for("auth.login"))
+    """Callback pour l'authentification OIDC.
 
+    Même raison qu'oidc_login() ci-dessus pour l'absence de garde sur
+    is_basic_auth_disabled() : bloquait le retour de l'IdP (code/state
+    perdus, redirection vers /login) dès que le SSO n'était qu'optionnel
+    plutôt que forcé. handle_oauth_callback() gère déjà l'échec
+    proprement (flash + redirect) juste en dessous.
+    """
     user_data = oidc_auth.handle_oauth_callback(request)
     if not user_data:
         # handle_oauth_callback affiche déjà un message d'erreur (flash)
