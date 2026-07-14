@@ -29,6 +29,21 @@ def oidc_mode(test_app, monkeypatch):
     monkeypatch.setattr(OIDCConfig, "POST_LOGOUT_REDIRECT_URI", "")
 
 
+@pytest.fixture
+def oidc_optional_mode(test_app, monkeypatch):
+    """Active OIDC en mode optionnel : SSO disponible EN PLUS du
+    formulaire classique (OIDC_DISABLE_BASIC_AUTH=false) - /login
+    n'auto-redirige pas, affiche les deux, voir bouton "Se connecter
+    avec SSO" sur auth/login.html."""
+    monkeypatch.setattr(OIDCConfig, "ENABLED", True)
+    monkeypatch.setattr(OIDCConfig, "DISABLE_BASIC_AUTH", False)
+    monkeypatch.setattr(OIDCConfig, "ISSUER", "https://idp.example.com")
+    monkeypatch.setattr(OIDCConfig, "CLIENT_ID", "test-client-id")
+    monkeypatch.setattr(OIDCConfig, "CLIENT_SECRET", "test-client-secret")
+    monkeypatch.setattr(OIDCConfig, "REDIRECT_URI", "http://localhost/oidc/callback")
+    monkeypatch.setattr(OIDCConfig, "POST_LOGOUT_REDIRECT_URI", "")
+
+
 class TestLoginRedirectsToOidcWhenBasicAuthDisabled:
     def test_get_login_redirects_to_oidc_login(self, test_app, oidc_mode, client):
         resp = client.get("/login", follow_redirects=False)
@@ -63,10 +78,17 @@ class TestOidcLoginRoute:
         assert resp.status_code == 302
         assert resp.headers["Location"].startswith("https://idp.example.com/authorize")
 
-    def test_redirects_to_local_login_when_oidc_mode_not_active(self, test_app, client):
+    def test_redirects_to_local_login_when_oidc_not_configured(self, test_app, client):
+        """Aucun garde sur is_basic_auth_disabled() ici (il y en avait un
+        avant, bug réel : bloquait aussi le SSO optionnel quand
+        OIDC_DISABLE_BASIC_AUTH=false, voir CHANGELOG/commit) - c'est
+        get_authorization_url() qui renvoie None (OIDC non configuré) qui
+        déclenche cette redirection, avec oidc_error=1 pour éviter la
+        boucle de redirection infinie documentée plus haut dans
+        auth.login()."""
         resp = client.get("/oidc/login", follow_redirects=False)
         assert resp.status_code == 302
-        assert resp.headers["Location"].endswith("/login")
+        assert resp.headers["Location"] == "/login?oidc_error=1"
 
     def test_flashes_error_when_authorization_url_unavailable(
         self, test_app, oidc_mode, client
@@ -81,10 +103,14 @@ class TestOidcLoginRoute:
 
 
 class TestOidcCallbackRoute:
-    def test_redirects_to_local_login_when_oidc_mode_not_active(self, test_app, client):
+    def test_redirects_to_local_login_when_oidc_not_configured(self, test_app, client):
+        """Même raison que TestOidcLoginRoute ci-dessus : plus de garde sur
+        is_basic_auth_disabled() (bloquait le SSO optionnel), c'est
+        handle_oauth_callback() qui échoue (state invalide, OIDC non
+        configuré) et redirige avec oidc_error=1."""
         resp = client.get("/oidc/callback", follow_redirects=False)
         assert resp.status_code == 302
-        assert resp.headers["Location"].endswith("/login")
+        assert resp.headers["Location"] == "/login?oidc_error=1"
 
     def test_callback_failure_redirects_to_login_with_flash(
         self, test_app, oidc_mode, client
@@ -185,3 +211,69 @@ class TestLogoutInOidcMode:
 
         resp = client.get("/schedule", follow_redirects=False)
         assert resp.status_code in (302, 401)
+
+
+class TestOidcOptionalMode:
+    """SSO disponible EN PLUS du formulaire classique (bug réel : un
+    garde sur is_basic_auth_disabled() dans oidc_login()/oidc_callback()
+    bloquait silencieusement tout le flux SSO dès que
+    OIDC_DISABLE_BASIC_AUTH=false - le clic sur "Se connecter avec SSO"
+    ne faisait rien d'observable pour l'utilisateur, juste un aller-retour
+    vers /login)."""
+
+    def test_login_page_does_not_auto_redirect(
+        self, test_app, oidc_optional_mode, client
+    ):
+        resp = client.get("/login", follow_redirects=False)
+        assert resp.status_code == 200
+
+    def test_login_page_shows_both_form_and_sso_button(
+        self, test_app, oidc_optional_mode, client
+    ):
+        resp = client.get("/login")
+        assert b"SSO" in resp.data
+        assert b"password" in resp.data.lower() or b"mot de passe" in resp.data.lower()
+
+    def test_oidc_login_redirects_to_provider(
+        self, test_app, oidc_optional_mode, client
+    ):
+        with patch(
+            "app.routes.auth.oidc_auth.get_authorization_url",
+            return_value="https://idp.example.com/authorize?client_id=test-client-id",
+        ):
+            resp = client.get("/oidc/login", follow_redirects=False)
+
+        assert resp.status_code == 302
+        assert resp.headers["Location"].startswith("https://idp.example.com/authorize")
+
+    def test_oidc_callback_logs_in_successfully(
+        self, test_app, oidc_optional_mode, client, test_group
+    ):
+        from app import db
+        from app.models import User
+
+        oidc_user = User(
+            name="OIDC User", email="oidc-optional@example.com", group_id=test_group.id
+        )
+        db.session.add(oidc_user)
+        db.session.commit()
+
+        with patch(
+            "app.routes.auth.oidc_auth.handle_oauth_callback",
+            return_value={"email": "oidc-optional@example.com", "name": "OIDC User"},
+        ):
+            resp = client.get("/oidc/callback?state=s1&code=abc", follow_redirects=True)
+
+        assert resp.status_code == 200
+        assert resp.request.path == "/"
+
+    def test_basic_auth_login_still_works(
+        self, test_app, oidc_optional_mode, client, test_user
+    ):
+        resp = client.post(
+            "/login",
+            data={"email": test_user.email, "password": "test123"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        assert resp.request.path == "/"
