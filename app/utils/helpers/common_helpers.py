@@ -122,21 +122,32 @@ SHIFT_TYPE_COLOR_PALETTE = [
 ]
 
 
-def shift_type_color(shift_type_id: int | None) -> str:
+def build_shift_type_color_map(shift_type_ids) -> dict:
     """
-    Nom de couleur sémantique daisyUI déterministe pour un type de shift,
-    pour qu'un même type ait toujours la même couleur partout sur le
-    dashboard (pas de colonne "couleur" sur ShiftType, calculé à la volée).
+    Associe à chaque ShiftType.id une couleur sémantique daisyUI, garantie
+    distincte pour tous les IDs passés tant qu'il y en a au plus
+    len(SHIFT_TYPE_COLOR_PALETTE) (au-delà, la palette boucle).
+
+    Attribue par RANG (ordre trié des IDs), pas par `id % len(palette)` :
+    un modulo sur l'ID brut fait collisionner deux types dès que leurs IDs
+    diffèrent d'un multiple de la taille de la palette (ex: IDs 2 et 8 avec
+    une palette de 6 tombent tous les deux sur l'index 2) - bug réel
+    observé en pratique après suppression/recréation de types de shifts,
+    qui fait grimper les IDs auto-incrémentés sans qu'ils restent
+    contigus à partir de 1.
 
     Args:
-        shift_type_id: ID du ShiftType (peut être None)
+        shift_type_ids: IDs de ShiftType à mapper (doublons/None tolérés)
 
     Returns:
-        Nom de couleur daisyUI (ex: "primary", "accent")
+        Dict {shift_type_id: nom_couleur_daisyui}
     """
-    if shift_type_id is None:
-        return "neutral"
-    return SHIFT_TYPE_COLOR_PALETTE[shift_type_id % len(SHIFT_TYPE_COLOR_PALETTE)]
+    unique_sorted_ids = sorted({sid for sid in shift_type_ids if sid is not None})
+    palette_size = len(SHIFT_TYPE_COLOR_PALETTE)
+    return {
+        shift_type_id: SHIFT_TYPE_COLOR_PALETTE[index % palette_size]
+        for index, shift_type_id in enumerate(unique_sorted_ids)
+    }
 
 
 def parse_date(date_str: str, format_str: str = "%Y-%m-%d") -> date | None:

@@ -9,6 +9,7 @@ from app.utils.helpers.common_helpers import (
     _get_overlapping_oncall,
     _get_overlapping_shift,
     _has_overlapping_oncall,
+    build_shift_type_color_map,
     can_add_leave,
     can_add_oncall,
     can_add_shift,
@@ -26,7 +27,6 @@ from app.utils.helpers.common_helpers import (
     leave_keeps_minimum_headcount,
     parse_date,
     parse_datetime,
-    shift_type_color,
 )
 
 __all__ = [
@@ -47,7 +47,7 @@ __all__ = [
     "is_user_on_shift",
     "is_user_on_leave",
     "leave_keeps_minimum_headcount",
-    "shift_type_color",
+    "build_shift_type_color_map",
     "_has_overlapping_oncall",
     "_get_overlapping_leave",
     "_get_overlapping_shift",

@@ -170,10 +170,11 @@ class TestInlineStylesReplacement:
         lors de la refonte Tailwind/daisyUI.
 
         Les badges de type de shift utilisent maintenant une couleur
-        dynamique par type (filtre Jinja shift_color, voir
-        common_helpers.shift_type_color) plutôt qu'une classe fixe -
-        vérifie le pattern (badge daisyUI généré dynamiquement) plutôt
-        qu'une classe littérale précise."""
+        dynamique par type (shift_type_colors, voir
+        common_helpers.build_shift_type_color_map, calculée par rang côté
+        route puis passée au template) plutôt qu'une classe fixe - vérifie
+        le pattern (badge daisyUI généré dynamiquement) plutôt qu'une
+        classe littérale précise."""
         with test_app.app_context():
             dashboard_template_path = os.path.join(
                 current_app.template_folder, "dashboard.html"
@@ -181,9 +182,7 @@ class TestInlineStylesReplacement:
             with open(dashboard_template_path) as f:
                 dashboard_content = f.read()
 
-            assert 'class="badge badge-{{ shift.shift_type.id|shift_color' in (
-                dashboard_content
-            )
+            assert 'class="badge badge-{{ shift_type_colors.get(' in dashboard_content
 
             assert "var(--bulma-grey)" not in dashboard_content
 

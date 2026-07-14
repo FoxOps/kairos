@@ -52,7 +52,7 @@
                     {% for stat in shift_types_stats %}
                     {% set max_count = shift_types_stats|map(attribute='count')|max %}
                     {% set bar_height = (stat.count / max_count * 100)|int if max_count > 0 else 0 %}
-                    {% set bar_color = "var(--color-" ~ (stat.id|shift_color) ~ ")" %}
+                    {% set bar_color = "var(--color-" ~ shift_type_colors.get(stat.id, 'neutral') ~ ")" %}
                     <div class="chart-item" role="listitem">
                         <div class="chart-bar" style="height: {{ bar_height }}%; max-height: 100%; background-color: {{ bar_color }};" aria-label="Type {{ stat.label }} : {{ stat.count }} shifts">
                             <span class="chart-value" style="color: {{ bar_color }};">{{ stat.count }}</span>
@@ -78,7 +78,7 @@
                                     à {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
                                 </p>
                                 <p>
-                                    <span class="badge badge-{{ shift.shift_type.id|shift_color if shift.shift_type else 'neutral' }}">
+                                    <span class="badge badge-{{ shift_type_colors.get(shift.shift_type.id, 'neutral') if shift.shift_type else 'neutral' }}">
                                         {{ shift.shift_type.label if shift.shift_type else 'N/A' }}
                                     </span>
                                 </p>
@@ -162,7 +162,7 @@
                                     à {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}
                                 </p>
                                 <p>
-                                    <span class="badge badge-{{ shift.shift_type.id|shift_color if shift.shift_type else 'neutral' }}">
+                                    <span class="badge badge-{{ shift_type_colors.get(shift.shift_type.id, 'neutral') if shift.shift_type else 'neutral' }}">
                                         {{ shift.shift_type.label if shift.shift_type else 'N/A' }}
                                     </span>
                                 </p>

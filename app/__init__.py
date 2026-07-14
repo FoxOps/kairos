@@ -338,13 +338,16 @@ def create_app(config_object: str | None = None):
             )
         }
 
-    # Filtres Jinja : dates en français (%a dépend de la locale OS, jamais
-    # fiable dans une app WSGI - voir format_date_fr) et couleur déterministe
-    # par type de shift (dashboard - graphique + badges).
-    from app.utils.helpers import format_date_fr, shift_type_color
+    # Filtre Jinja : dates en français (%a dépend de la locale OS, jamais
+    # fiable dans une app WSGI - voir format_date_fr). La couleur par type
+    # de shift (dashboard) est calculée par vue via build_shift_type_color_map
+    # (rang parmi les types affichés, pas un filtre par ID - voir
+    # app/routes/dashboard_routes.py) : un simple `id % taille_palette`
+    # fait collisionner deux types dès que leurs IDs diffèrent d'un
+    # multiple de la taille de la palette.
+    from app.utils.helpers import format_date_fr
 
     app.jinja_env.filters["date_fr"] = format_date_fr
-    app.jinja_env.filters["shift_color"] = shift_type_color
 
     # Configuration des métriques Prometheus si activé
     if app.config.get("PROMETHEUS_ENABLED", False):
