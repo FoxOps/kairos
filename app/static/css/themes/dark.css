@@ -11,23 +11,43 @@
    d'accessibilité génériques indépendants du framework CSS.
    ============================================ */
 
-/* FullCalendar en mode sombre */
+/* FullCalendar en mode sombre - les variables --fc-event-* sont ce que
+   .fc-event-main (le texte réellement affiché, notamment en vues
+   Semaine/Jour) consulte réellement, pas background-color/color
+   classiques sur le conteneur (voir le commentaire détaillé dans
+   vendor/fullcalendar-overrides.css - bug de contraste trouvé en test
+   manuel, texte blanc illisible sur fond clair). */
 [data-theme="dark"] .fc-event-shift {
+    --fc-event-bg-color: var(--app-color-primary) !important;
+    --fc-event-border-color: var(--app-color-primary) !important;
+    --fc-event-text-color: var(--color-primary-content) !important;
     background-color: var(--app-color-primary) !important;
     border-color: var(--app-color-primary) !important;
     color: var(--color-primary-content) !important;
 }
 
 [data-theme="dark"] .fc-event-oncall {
+    --fc-event-bg-color: var(--app-color-info) !important;
+    --fc-event-border-color: var(--app-color-info) !important;
+    --fc-event-text-color: var(--color-info-content) !important;
     background-color: var(--app-color-info) !important;
     border-color: var(--app-color-info) !important;
     color: var(--color-info-content) !important;
 }
 
 [data-theme="dark"] .fc-event-leave {
+    --fc-event-bg-color: var(--color-danger) !important;
+    --fc-event-border-color: var(--color-danger) !important;
+    --fc-event-text-color: var(--color-error-content) !important;
     background-color: var(--color-danger) !important;
     border-color: var(--color-danger) !important;
     color: var(--color-error-content) !important;
+}
+
+[data-theme="dark"] .fc-event-shift .fc-event-main,
+[data-theme="dark"] .fc-event-oncall .fc-event-main,
+[data-theme="dark"] .fc-event-leave .fc-event-main {
+    color: var(--fc-event-text-color) !important;
 }
 
 [data-theme="dark"] .fc {
