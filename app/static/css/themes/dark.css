@@ -55,6 +55,23 @@
     color: var(--text-primary) !important;
 }
 
+/* Variables globales de FullCalendar (consultées par TOUTES ses bordures/
+   fonds internes, y compris les vues Semaine/Jour - grille horaire,
+   colonnes, séparateurs - jamais couvertes par les sélecteurs .fc-day/
+   .fc-col-header-cell ci-dessous, qui ne visent que la vue Mois). Sans
+   ça, les bordures restaient en #ddd (gris clair fixe de FullCalendar),
+   look non adapté/cassé sur fond sombre - bug trouvé en test manuel. */
+[data-theme="dark"] #calendar {
+    --fc-border-color: var(--border-primary);
+    --fc-page-bg-color: var(--bg-primary);
+    --fc-neutral-bg-color: var(--bg-secondary);
+    --fc-list-event-hover-bg-color: var(--bg-secondary);
+    --fc-more-link-bg-color: var(--bg-tertiary);
+    --fc-more-link-text-color: var(--text-primary);
+    --fc-non-business-color: color-mix(in oklab, var(--bg-secondary) 60%, transparent);
+    --fc-today-bg-color: color-mix(in oklab, var(--app-color-primary) 15%, transparent);
+}
+
 [data-theme="dark"] .fc-today,
 [data-theme="dark"] .fc-day:hover,
 [data-theme="dark"] .fc-day-today {
