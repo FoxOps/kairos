@@ -3,11 +3,11 @@
 {% block title %}Connexion - Leviia{% endblock %}
 
 {% block content %}
-<main role="main" aria-labelledby="login-title" class="flex justify-center px-4 py-12">
-    <div class="w-full max-w-sm">
-        <div class="card bg-base-100 shadow-md" role="region" aria-labelledby="login-title">
+<div class="hero flex-1 bg-base-200 py-12">
+    <div class="hero-content flex-col lg:flex-row-reverse gap-12">
+        <div class="card bg-base-100 w-full max-w-sm shrink-0 shadow-2xl" role="region" aria-labelledby="page-title">
             <div class="card-body">
-                <h1 id="login-title" class="text-2xl font-bold text-center mb-2">Connexion</h1>
+                <h1 id="page-title" class="text-2xl font-bold text-center mb-2">Connexion</h1>
 
                 {% if error %}
                 <div class="alert alert-error mb-4" role="alert" aria-live="assertive">
@@ -24,7 +24,7 @@
                 <div class="divider text-sm text-base-content/60">ou</div>
                 {% endif %}
 
-                <form method="POST" action="{{ url_for('auth.login') }}" aria-labelledby="login-title" class="flex flex-col gap-4">
+                <form method="POST" action="{{ url_for('auth.login') }}" aria-labelledby="page-title" class="flex flex-col gap-4">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div>
                         <label class="label" for="email">Adresse email <span class="text-error">*</span></label>
@@ -66,6 +66,19 @@
                 </div>
             </div>
         </div>
+
+        <div class="text-center lg:text-left max-w-md" aria-hidden="true">
+            <h2 class="text-4xl font-extrabold tracking-tight text-primary">Leviia Schedule</h2>
+            <p class="py-4 text-base-content/70">
+                Gestion des plannings, astreintes et congés d'équipe -
+                simple, claire, et disponible où que vous soyez.
+            </p>
+            <div class="flex justify-center lg:justify-start gap-6 text-3xl text-primary mt-2">
+                <i class="fas fa-calendar-alt"></i>
+                <i class="fas fa-moon"></i>
+                <i class="fas fa-umbrella-beach"></i>
+            </div>
+        </div>
     </div>
-</main>
+</div>
 {% endblock %}

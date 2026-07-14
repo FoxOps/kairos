@@ -31,7 +31,6 @@ import {
     announceToScreenReader,
     confirmActionAccessible,
     focusElement,
-    setupKeyboardNavigation,
 } from '../utils/accessibility.js';
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -401,11 +400,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
     calendar.render();
 
+    // Basculer du squelette de chargement (skeleton daisyUI) vers le
+    // calendrier une fois son premier rendu terminé.
+    const calendarSkeleton = document.getElementById('calendar-skeleton');
+    if (calendarSkeleton) {
+        calendarSkeleton.classList.add('hidden');
+    }
+    calendarEl.classList.remove('hidden');
+
     // Rendre le calendrier accessible globalement
     window.calendar = calendar;
 
     // Initialiser l'UI et le calendrier selon l'état du mode édition
     updateEditModeState(editModeEnabled);
+
+    // Échappe une valeur avant interpolation dans le HTML généré ci-dessous
+    // (noms/emails utilisateurs, libellés de type de shift - données serveur,
+    // mais pas de raison de faire confiance à leur contenu côté rendu HTML).
+    function escapeHtml(value) {
+        const div = document.createElement('div');
+        div.textContent = value;
+        return div.innerHTML;
+    }
 
     // Fonction pour ouvrir le modal de création de shift
     function openShiftCreationModal(start, end) {
@@ -414,16 +430,16 @@ document.addEventListener('DOMContentLoaded', function () {
             fetch('/api/users').then(r => r.json()),
             fetch('/api/shift-types').then(r => r.json())
         ]).then(([users, shiftTypes]) => {
-            // Créer le modal
+            // Créer le modal (élément <dialog> natif - focus trap et
+            // fermeture au clavier via Échap gérés nativement par le
+            // navigateur avec showModal(), pas besoin de les recoder).
             const modalId = 'create-shift-modal';
             let modal = document.getElementById(modalId);
 
             if (!modal) {
-                modal = document.createElement('div');
+                modal = document.createElement('dialog');
                 modal.id = modalId;
                 modal.className = 'modal';
-                modal.setAttribute('role', 'dialog');
-                modal.setAttribute('aria-modal', 'true');
                 modal.setAttribute('aria-labelledby', 'create-shift-title');
                 modal.innerHTML = `
                     <div class="modal-box">
@@ -431,7 +447,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             <h2 id="create-shift-title" class="text-lg font-bold">
                                 <i class="fas fa-plus" aria-hidden="true"></i> Créer un nouveau shift
                             </h2>
-                            <button class="btn btn-sm btn-circle btn-ghost close-modal" aria-label="Fermer" role="button">&times;</button>
+                            <button type="button" class="btn btn-sm btn-circle btn-ghost close-modal" aria-label="Fermer">&times;</button>
                         </div>
                         <form id="shift-creation-form" aria-labelledby="create-shift-title" class="flex flex-col gap-4 py-4">
                             <div>
@@ -446,51 +462,63 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <label class="label" for="shift-user">Utilisateur</label>
                                 <select id="shift-user" class="select w-full" required aria-required="true">
                                     <option value="">Sélectionnez un utilisateur</option>
-                                    ${users.map(u => `<option value="${u.id}">${u.name} (${u.email})</option>`).join('')}
+                                    ${users.map(u => `<option value="${u.id}">${escapeHtml(u.name)} (${escapeHtml(u.email)})</option>`).join('')}
                                 </select>
                             </div>
                             <div>
                                 <label class="label" for="shift-type">Type de shift</label>
                                 <select id="shift-type" class="select w-full" required aria-required="true">
                                     <option value="">Sélectionnez un type de shift</option>
-                                    ${shiftTypes.map(st => `<option value="${st.id}">${st.label} (${st.start_hour}:00 - ${st.end_hour}:00)</option>`).join('')}
+                                    ${shiftTypes.map(st => `<option value="${st.id}">${escapeHtml(st.label)} (${st.start_hour}:00 - ${st.end_hour}:00)</option>`).join('')}
                                 </select>
                             </div>
                         </form>
                         <div class="modal-action">
-                            <button class="btn close-modal" aria-label="Annuler">
+                            <button type="button" class="btn close-modal" aria-label="Annuler">
                                 <i class="fas fa-times" aria-hidden="true"></i> Annuler
                             </button>
-                            <button class="btn btn-primary create-shift-btn" aria-label="Créer le shift">
+                            <button type="button" class="btn btn-primary create-shift-btn" aria-label="Créer le shift">
                                 <i class="fas fa-check" aria-hidden="true"></i> Créer
                             </button>
                         </div>
                     </div>
-                    <div class="modal-backdrop" role="button" tabindex="0" aria-label="Fermer"></div>
                 `;
                 document.body.appendChild(modal);
+
+                // Clic sur le fond (en dehors de .modal-box) = fermeture,
+                // équivalent du .modal-backdrop de l'ancien pattern
+                // .modal-open, mais géré nativement par <dialog>.
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.close();
+                        announceToScreenReader('Création de shift annulée.', 'polite');
+                    }
+                });
+
+                // "cancel" (Échap) est distinct de "close" - contrairement à
+                // "close", il ne se déclenche jamais pour un .close()
+                // programmatique déclenché après une création réussie, donc
+                // pas de risque d'annoncer "annulé" juste après "créé".
+                modal.addEventListener('cancel', () => {
+                    announceToScreenReader('Création de shift annulée.', 'polite');
+                });
             } else {
                 // Mettre à jour les valeurs
                 modal.querySelector('#shift-start').value = formatDateForInput(start);
                 modal.querySelector('#shift-end').value = formatDateForInput(end);
             }
 
-            // Ouvrir le modal
-            modal.classList.add('modal-open');
-
-            // Piège de focus dans la modale
-            setupKeyboardNavigation(modal, '[tabindex], button, [href], input, select, textarea');
-
-            // Mettre le focus sur le premier champ du formulaire
-            const firstInput = modal.querySelector('#shift-start');
-            if (firstInput) {
-                focusElement(firstInput);
-            }
+            // Ouvrir le modal (showModal() gère nativement le piège de
+            // focus et Échap - focus explicite ci-dessous en complément,
+            // le focus par défaut du navigateur sur "premier élément
+            // focusable" n'est pas garanti identique sur tous les moteurs).
+            modal.showModal();
+            focusElement(modal.querySelector('#shift-start'));
 
             // Gérer les boutons
             modal.querySelectorAll('.close-modal').forEach(btn => {
                 btn.onclick = () => {
-                    modal.classList.remove('modal-open');
+                    modal.close();
                     announceToScreenReader('Création de shift annulée.', 'polite');
                 };
             });
@@ -525,7 +553,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            modal.classList.remove('modal-open');
+                            modal.close();
                             console.log('Shift créé:', data.message);
                             announceToScreenReader('Shift créé avec succès.', 'polite');
                             // Recharger la page pour synchroniser avec le backend

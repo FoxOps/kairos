@@ -50,19 +50,5 @@
     padding: 15px;
     border-radius: var(--app-radius-small);
     margin-bottom: 15px;
-    border-left: 4px solid var(--app-color-primary, #20b698);
-}
-
-/* Fix pour les boutons qui débordent */
-.field.is-grouped {
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.field.is-grouped .control {
-    flex-shrink: 0;
-}
-
-.field.is-grouped .button {
-    min-width: 140px;
+    border-left: 4px solid var(--app-color-primary, #644ac9);
 }

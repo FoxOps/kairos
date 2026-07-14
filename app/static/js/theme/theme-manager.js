@@ -22,7 +22,10 @@ export class ThemeManager {
 
         if (this.toggleBtn) {
             this.updateToggleButton(currentTheme === 'dark');
-            this.toggleBtn.addEventListener('click', () => this.toggle());
+            // Case à cocher (pattern "Theme Controller" swap de daisyUI,
+            // voir base.html) - "change" est l'événement sémantiquement
+            // correct pour une checkbox, pas "click".
+            this.toggleBtn.addEventListener('change', () => this.toggle());
         }
 
         // Écouter les changements de préférence système
@@ -94,27 +97,19 @@ export class ThemeManager {
     }
 
     /**
-     * Met à jour le bouton toggle.
+     * Met à jour le bouton toggle (icône soleil/lune daisyUI `swap`,
+     * piloté par une vraie case à cocher - voir base.html).
      * @param {boolean} isDark - True si le thème sombre est actif
      */
     updateToggleButton(isDark) {
         if (!this.toggleBtn) return;
 
-        // Font Awesome (mode SVG+JS, voir base.html) remplace le <i>
-        // d'origine par un <svg> une fois converti - il en conserve
-        // toutefois les classes (fa-moon/fa-sun), donc cibler par classe
-        // plutôt que par balise fonctionne avant et après conversion.
-        const icon = this.toggleBtn.querySelector('.fa-moon, .fa-sun');
-        this.toggleBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
-        if (!icon) return;
-
-        if (isDark) {
-            icon.classList.remove('fa-moon');
-            icon.classList.add('fa-sun');
-        } else {
-            icon.classList.remove('fa-sun');
-            icon.classList.add('fa-moon');
-        }
+        // Case à cocher réelle : l'état "checked" pilote nativement
+        // .swap-on/.swap-off via le CSS :checked de daisyUI, pas besoin
+        // de classe swap-active togglée à la main. Le "checked" natif
+        // porte aussi la sémantique d'accessibilité (pas besoin
+        // d'aria-pressed, qui est pour les boutons, pas les checkbox).
+        this.toggleBtn.checked = isDark;
     }
 
     /**

@@ -9,6 +9,12 @@
     <title>{% block title %}Leviia{% endblock %}</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
 
+    <!-- Pose data-theme avant tout rendu (évite le flash clair/sombre) -
+         script classique synchrone (pas type="module", pas defer/async),
+         tout en haut de <head>, voir le commentaire dans le fichier pour
+         le détail. -->
+    <script src="{{ url_for('static', filename='js/theme/theme-init.js') }}"></script>
+
     <!-- Font Awesome 7.2.0 - via CDN cdnjs (7.3.0 pas encore publié), mode
          SVG+JS plutôt que la police web habituelle : les 4 fichiers
          .woff2 hébergés par cdnjs pour cette version sont chacun tronqués
@@ -17,8 +23,15 @@
          ce dernier octet) - rejetés par le sanitizer de police de Chromium
          ("OTS parsing error"), toutes les icônes restaient invisibles.
          Le mode SVG+JS (officiellement supporté par Font Awesome) ne
-         charge aucune police, contourne le fichier corrompu. -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.2.0/js/all.min.js" crossorigin="anonymous"></script>
+         charge aucune police, contourne le fichier corrompu.
+         `fontawesome.min.js` (moteur, 68 Ko) + `solid.min.js` (jeu
+         d'icônes "solid", 819 Ko) plutôt que `all.min.js` (1,56 Mo,
+         inclut aussi regular/light/thin/duotone/sharp/brands) : seul le
+         style `fas` (solid) est utilisé dans tout le projet (vérifié par
+         grep sur les templates, zéro `far`/`fab`/`fal`/`fad`) - ~43% de
+         payload en moins pour un rendu identique, testé isolément. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.2.0/js/fontawesome.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.2.0/js/solid.min.js" crossorigin="anonymous"></script>
 
     <!-- daisyUI 5.1.25 + Tailwind CSS 4 (compilateur JIT navigateur,
          zéro étape de build) - via CDN cdnjs -->
@@ -44,96 +57,154 @@
     <!-- Skip link pour l'accessibilite -->
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-content">Sauter la navigation</a>
 
-    <header class="sticky top-0 z-40">
-        <nav class="navbar bg-primary text-primary-content shadow-md" role="navigation" aria-label="Navigation principale">
-            <div class="navbar-start">
-                <a class="btn btn-ghost text-lg" href="{{ url_for("main.index") }}" aria-label="Accueil - Leviia">Leviia</a>
-            </div>
-            <div class="navbar-end md:hidden">
-                <button type="button" class="btn btn-ghost btn-square" id="navbar-burger" aria-label="Menu" aria-expanded="false" aria-controls="navbar-menu">
-                    <i class="fas fa-bars" aria-hidden="true"></i>
-                </button>
-            </div>
-            <div class="navbar-center hidden md:flex">
-                <ul class="menu menu-horizontal px-1" id="navbar-menu-desktop">
-                    <li><a href="{{ url_for("main.user_dashboard") }}" aria-label="Tableau de bord"><i class="fas fa-tachometer-alt" aria-hidden="true"></i> Tableau de bord</a></li>
-                    <li><a href="{{ url_for('main.schedule') }}" aria-label="Shifts"><i class="fas fa-calendar-alt" aria-hidden="true"></i> Shifts</a></li>
-                    <li><a href="{{ url_for('main.oncall') }}" aria-label="Astreintes"><i class="fas fa-moon" aria-hidden="true"></i> Astreintes</a></li>
-                    <li><a href="{{ url_for('main.leave') }}" aria-label="Congés"><i class="fas fa-umbrella-beach" aria-hidden="true"></i> Congés</a></li>
+    {% set nav_links = [
+        (url_for('main.index'), 'fa-home', 'Accueil'),
+        (url_for('main.user_dashboard'), 'fa-tachometer-alt', 'Tableau de bord'),
+        (url_for('main.schedule'), 'fa-calendar-alt', 'Shifts'),
+        (url_for('main.oncall'), 'fa-moon', 'Astreintes'),
+        (url_for('main.leave'), 'fa-umbrella-beach', 'Congés'),
+    ] %}
+
+    {% macro theme_toggle() %}
+    <!-- Pattern "Theme Controller" de daisyUI (swap +
+         checkbox, https://daisyui.com/components/theme-controller/)
+         SANS la classe theme-controller elle-même :
+         cette classe pilote le thème via un mécanisme
+         CSS :has() interne à daisyUI qui ne pose
+         jamais l'attribut data-theme sur <html>
+         (vérifié empiriquement) - elle appliquerait
+         donc le thème "dark" stock de daisyUI en
+         court-circuitant la palette Dracula/Alucard
+         (theme-colors.css, branchée sur [data-theme]).
+         Seule la mécanique visuelle swap-on/off est
+         reprise ; le thème réel reste géré par
+         theme-manager.js via l'attribut data-theme.
+         Icônes en SVG inline (tracés exacts de la démo
+         daisyUI) plutôt qu'en Font Awesome : le glyphe
+         fa-sun devient illisible (ressemble à un
+         rouage) à la petite taille imposée par ce
+         bouton de pied de sidebar - constaté visuellement.
+         Le `swap` est sur un <span> séparé du <label>
+         `btn` : `.btn` pose `display:flex`, qui écrase
+         le `display:inline-grid` de `.swap` (même
+         spécificité, `.btn` gagne dans la cascade) et
+         casse le stacking grid qui superpose les deux
+         icônes - sans ça les deux <svg> se poussaient
+         l'un l'autre au lieu de se superposer, donnant
+         un effet de glissement façon switch au clic
+         (constaté en inspectant le computed style).
+         Macro partagée entre utilisateurs connectés et
+         anonymes (visible aussi sur /login) - un seul
+         <input id="theme-toggle"> par page reste garanti
+         car les deux branches du if/else sont exclusives. -->
+    <label class="btn btn-ghost btn-sm btn-circle shrink-0" aria-label="Basculer entre le thème clair et sombre">
+        <span class="swap swap-rotate">
+            <input type="checkbox" id="theme-toggle">
+            <svg class="swap-off w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z" />
+            </svg>
+            <svg class="swap-on w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z" />
+            </svg>
+        </span>
+    </label>
+    {% endmacro %}
+
+    <!-- Sidebar permanente à partir du breakpoint lg (drawer lg:drawer-open,
+         pattern daisyUI documenté) - même case à cocher/mécanisme que le
+         panneau mobile, juste rendu inline plutôt qu'en overlay flottant à
+         partir de ce breakpoint. navbar-menu.js n'a besoin d'aucun
+         changement : il ne fait que piloter l'état "checked" de la case,
+         ignoré par daisyUI en mode lg:drawer-open (la sidebar reste
+         affichée quel que soit son état). -->
+    <div class="drawer lg:drawer-open">
+        <input id="mobile-drawer" type="checkbox" class="drawer-toggle" />
+
+        <div class="drawer-content flex flex-col min-h-screen">
+            <!-- Barre du haut : mobile uniquement (burger + marque) - le
+                 reste (thème, compte) vit dans le pied de la sidebar,
+                 accessible en ouvrant le tiroir sur mobile. -->
+            <header class="sticky top-0 z-40 navbar bg-base-100 border-b border-base-300 px-2 lg:hidden">
+                <div class="navbar-start">
+                    <button type="button" class="btn btn-ghost btn-square" id="navbar-burger" aria-label="Menu" aria-expanded="false" aria-controls="sidebar-menu">
+                        <i class="fas fa-bars" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div class="navbar-center">
+                    <a class="text-lg font-extrabold text-primary" href="{{ url_for("main.index") }}" aria-label="Accueil - Leviia">Leviia</a>
+                </div>
+                <div class="navbar-end w-10"></div>
+            </header>
+
+            {% set flash_category_map = {'danger': 'error', 'success': 'success', 'warning': 'warning', 'info': 'info'} %}
+            <section class="px-3 md:px-4 pt-3" aria-live="polite" aria-atomic="true">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ flash_category_map.get(category, category) }} mb-2" role="alert" aria-live="assertive">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </section>
+
+            <main id="main-content" role="main" aria-labelledby="page-title" class="flex-1 px-3 md:px-4 pb-4">
+                {% block content %}{% endblock %}
+            </main>
+
+            <footer class="footer footer-center bg-base-200 text-base-content p-3 text-sm" role="contentinfo">
+                <div>
+                    <p>
+                        <strong>Leviia Schedule</strong> - Gestion des plannings, astreintes et congés d'équipe.
+                        Version {{ app_version }} | (c) 2026 Leviia
+                    </p>
+                </div>
+            </footer>
+        </div>
+
+        <div class="drawer-side z-50">
+            <label for="mobile-drawer" aria-label="Fermer le menu" class="drawer-overlay lg:hidden"></label>
+            <aside class="bg-base-200 text-base-content min-h-full w-64 flex flex-col" role="navigation" aria-label="Navigation principale">
+                <div class="p-4">
+                    <a href="{{ url_for("main.index") }}" class="text-lg font-extrabold text-primary flex items-center gap-2" aria-label="Accueil - Leviia">
+                        <i class="fas fa-calendar-alt" aria-hidden="true"></i> Leviia
+                    </a>
+                </div>
+
+                <ul class="menu menu-sm px-2 gap-1 flex-1" id="sidebar-menu" role="menu">
+                    {% for href, icon, label in nav_links %}
+                    <li><a href="{{ href }}" aria-label="{{ label }}" class="{{ 'menu-active' if request.path == href else '' }}"><i class="fas {{ icon }}" aria-hidden="true"></i> {{ label }}</a></li>
+                    {% endfor %}
                     {% if current_user.is_authenticated and current_user.is_admin %}
-                    <li><a href="{{ url_for('admin.list_users') }}" aria-label="Utilisateurs"><i class="fas fa-users" aria-hidden="true"></i> Utilisateurs</a></li>
-                    <li><a href="{{ url_for('admin.admin_dashboard') }}" aria-label="Admin"><i class="fas fa-cog" aria-hidden="true"></i> Admin</a></li>
+                    <li class="menu-title mt-3">Administration</li>
+                    <li><a href="{{ url_for('admin.list_users') }}" aria-label="Utilisateurs" class="{{ 'menu-active' if request.path == url_for('admin.list_users') else '' }}"><i class="fas fa-users" aria-hidden="true"></i> Utilisateurs</a></li>
+                    <li><a href="{{ url_for('admin.admin_dashboard') }}" aria-label="Admin" class="{{ 'menu-active' if request.path == url_for('admin.admin_dashboard') else '' }}"><i class="fas fa-cog" aria-hidden="true"></i> Admin</a></li>
                     {% endif %}
                 </ul>
-            </div>
-            <div class="navbar-end hidden md:flex gap-2">
-                {% if current_user.is_authenticated %}
-                    <button id="theme-toggle" type="button" class="btn btn-ghost btn-circle btn-sm"
-                            aria-label="Basculer entre le thème clair et sombre"
-                            aria-pressed="false">
-                        <i class="fas fa-moon" aria-hidden="true"></i>
-                    </button>
-                    <div class="dropdown dropdown-end">
-                        <button type="button" tabindex="0" class="btn btn-ghost" aria-label="Menu utilisateur - {{ current_user.name }}" aria-expanded="false" aria-controls="user-dropdown">
-                            <i class="fas fa-user" aria-hidden="true"></i> {{ current_user.name }}
-                        </button>
-                        <ul id="user-dropdown" tabindex="0" class="menu dropdown-content bg-base-100 text-base-content rounded-box z-50 mt-3 w-56 p-2 shadow" role="menu">
-                            <li><a href="{{ url_for('auth.profile') }}" role="menuitem"><i class="fas fa-user-circle" aria-hidden="true"></i> Mon profil</a></li>
-                            <li><hr role="separator"></li>
-                            <li><a href="{{ url_for('auth.logout') }}" role="menuitem"><i class="fas fa-sign-out-alt" aria-hidden="true"></i> Déconnexion</a></li>
-                        </ul>
-                    </div>
-                {% else %}
-                    <a class="btn btn-ghost" href="{{ url_for('auth.login') }}" aria-label="Connexion">
-                        <i class="fas fa-sign-in-alt" aria-hidden="true"></i> Connexion
-                    </a>
-                {% endif %}
-            </div>
-        </nav>
-        <div class="hidden bg-primary text-primary-content px-4 pb-4 md:hidden" id="navbar-menu">
-            <ul class="menu w-full">
-                <li><a href="{{ url_for("main.user_dashboard") }}" aria-label="Tableau de bord"><i class="fas fa-tachometer-alt" aria-hidden="true"></i> Tableau de bord</a></li>
-                <li><a href="{{ url_for('main.schedule') }}" aria-label="Shifts"><i class="fas fa-calendar-alt" aria-hidden="true"></i> Shifts</a></li>
-                <li><a href="{{ url_for('main.oncall') }}" aria-label="Astreintes"><i class="fas fa-moon" aria-hidden="true"></i> Astreintes</a></li>
-                <li><a href="{{ url_for('main.leave') }}" aria-label="Congés"><i class="fas fa-umbrella-beach" aria-hidden="true"></i> Congés</a></li>
-                {% if current_user.is_authenticated and current_user.is_admin %}
-                <li><a href="{{ url_for('admin.list_users') }}" aria-label="Utilisateurs"><i class="fas fa-users" aria-hidden="true"></i> Utilisateurs</a></li>
-                <li><a href="{{ url_for('admin.admin_dashboard') }}" aria-label="Admin"><i class="fas fa-cog" aria-hidden="true"></i> Admin</a></li>
-                {% endif %}
-                {% if current_user.is_authenticated %}
-                <li><a href="{{ url_for('auth.profile') }}"><i class="fas fa-user-circle" aria-hidden="true"></i> Mon profil</a></li>
-                <li><a href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt" aria-hidden="true"></i> Déconnexion</a></li>
-                {% else %}
-                <li><a href="{{ url_for('auth.login') }}"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Connexion</a></li>
-                {% endif %}
-            </ul>
+
+                <div class="p-2 border-t border-base-300 flex items-center gap-1">
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('auth.profile') }}" class="btn btn-ghost btn-sm flex-1 justify-start gap-2 min-w-0" aria-label="Mon profil - {{ current_user.name }}">
+                            <span class="avatar avatar-placeholder shrink-0">
+                                <span class="bg-neutral text-neutral-content w-6 h-6 rounded-full text-xs">
+                                    <span aria-hidden="true">{{ current_user.name[:1] | upper }}</span>
+                                </span>
+                            </span>
+                            <span class="truncate">{{ current_user.name }}</span>
+                        </a>
+                        {{ theme_toggle() }}
+                        <a href="{{ url_for('auth.logout') }}" class="btn btn-ghost btn-sm btn-circle shrink-0" aria-label="Déconnexion" title="Déconnexion">
+                            <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+                        </a>
+                    {% else %}
+                        <a class="btn btn-ghost btn-sm flex-1 justify-start" href="{{ url_for('auth.login') }}" aria-label="Connexion">
+                            <i class="fas fa-sign-in-alt" aria-hidden="true"></i> Connexion
+                        </a>
+                        {{ theme_toggle() }}
+                    {% endif %}
+                </div>
+            </aside>
         </div>
-    </header>
-
-    {% set flash_category_map = {'danger': 'error', 'success': 'success', 'warning': 'warning', 'info': 'info'} %}
-    <section class="container mx-auto px-4 pt-4" aria-live="polite" aria-atomic="true">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ flash_category_map.get(category, category) }} mb-2" role="alert" aria-live="assertive">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-    </section>
-
-    <main id="main-content" role="main" aria-labelledby="page-title" class="flex-1">
-        {% block content %}{% endblock %}
-    </main>
-
-    <footer class="footer footer-center bg-base-200 text-base-content p-6" role="contentinfo">
-        <div>
-            <p>
-                <strong>Leviia Schedule</strong> - Application de gestion des plannings, astreintes et congés d'équipe.
-                <br>
-                Version {{ app_version }} | (c) 2026 Leviia
-            </p>
-        </div>
-    </footer>
+    </div>
 
     <!-- JavaScript centralise (modules ES6) -->
     <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>

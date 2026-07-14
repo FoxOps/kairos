@@ -1,35 +1,36 @@
 {% extends "admin/base_admin.html" %}
 
 {% block admin_content %}
-<section class="p-4 md:p-6 max-w-4xl mx-auto">
+<section class="p-3 md:p-4 max-w-4xl mx-auto">
+    <div class="breadcrumbs text-sm mb-2" aria-label="Fil d'Ariane">
+        <ul>
+            <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
+            <li><a href="{{ url_for('admin.automation_dashboard') }}">Automatisation</a></li>
+            <li>État</li>
+        </ul>
+    </div>
     <h1 class="text-2xl font-bold mb-4"><i class="fas fa-chart-line" aria-hidden="true"></i> État de l'automatisation</h1>
 
-    <div class="card bg-base-100 shadow-md mb-6">
-        <div class="card-body">
-            <h2 class="text-lg font-semibold"><i class="fas fa-info-circle" aria-hidden="true"></i> Statistiques actuelles</h2>
-
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="alert alert-primary flex-col items-start">
-                    <p><strong>Astreintes existantes</strong></p>
-                    <p class="text-2xl font-bold">{{ status.oncall_count }}</p>
-                </div>
-                <div class="alert alert-info flex-col items-start">
-                    <p><strong>Shifts existants</strong></p>
-                    <p class="text-2xl font-bold">{{ status.shift_count }}</p>
-                </div>
-                <div class="alert alert-success flex-col items-start">
-                    <p><strong>Utilisateurs éligibles (astreintes)</strong></p>
-                    <p class="text-2xl font-bold">{{ status.oncall_eligible_users }}</p>
-                </div>
-                <div class="alert alert-warning flex-col items-start">
-                    <p><strong>Utilisateurs éligibles (shifts)</strong></p>
-                    <p class="text-2xl font-bold">{{ status.shift_eligible_users }}</p>
-                </div>
-            </div>
+    <div class="stats stats-vertical sm:stats-horizontal shadow-md bg-base-100 w-full mb-6">
+        <div class="stat">
+            <div class="stat-title">Astreintes existantes</div>
+            <div class="stat-value text-primary">{{ status.oncall_count }}</div>
+        </div>
+        <div class="stat">
+            <div class="stat-title">Shifts existants</div>
+            <div class="stat-value text-info">{{ status.shift_count }}</div>
+        </div>
+        <div class="stat">
+            <div class="stat-title">Utilisateurs éligibles (astreintes)</div>
+            <div class="stat-value text-success">{{ status.oncall_eligible_users }}</div>
+        </div>
+        <div class="stat">
+            <div class="stat-title">Utilisateurs éligibles (shifts)</div>
+            <div class="stat-value text-warning">{{ status.shift_eligible_users }}</div>
         </div>
     </div>
 
-    <div class="card bg-base-100 shadow-md mb-6">
+    <div class="card card-sm bg-base-100 shadow-md mb-4">
         <div class="card-body">
             <h2 class="text-lg font-semibold"><i class="fas fa-calendar-alt" aria-hidden="true"></i> Prochaine astreinte disponible</h2>
 

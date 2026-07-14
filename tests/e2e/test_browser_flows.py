@@ -45,42 +45,91 @@ class TestLoginFlow:
 
 
 class TestNavbarBurgerMenu:
-    """Comportement JS pur (toggle hidden/aria-expanded) - jamais
-    exécuté par le client de test Flask, donc jamais vérifié avant
-    cette suite. Bug réel trouvé et corrigé en PR #103 : le burger
-    n'existait même pas. Depuis la refonte Tailwind/daisyUI, #navbar-menu
-    est le panneau mobile uniquement (masqué via la classe utilitaire
-    Tailwind "hidden", retirée/remise par navbar-menu.js) - la nav
-    desktop vit dans un élément séparé, #navbar-menu-desktop (toujours
-    visible à partir du breakpoint md, jamais touché par le burger)."""
+    """Comportement JS pur (toggle du drawer daisyUI/aria-expanded) -
+    jamais exécuté par le client de test Flask, donc jamais vérifié
+    avant cette suite. Bug réel trouvé et corrigé en PR #103 : le burger
+    n'existait même pas. Depuis la refonte layout sidebar (un seul menu
+    de navigation vertical, #sidebar-menu, plutôt qu'une nav horizontale
+    + un panneau mobile séparé) : #sidebar-menu est piloté par la case à
+    cocher #mobile-drawer (mécanisme CSS natif de daisyUI, `drawer
+    lg:drawer-open`) - navbar-menu.js ne fait que synchroniser son état
+    "checked" et aria-expanded. Sous le breakpoint lg, #sidebar-menu est
+    un panneau overlay masqué par défaut (case décochée) ; à partir de
+    lg, il reste affiché en permanence comme sidebar (daisyUI ignore
+    l'état de la case à ce breakpoint) et le burger disparaît."""
 
     def test_burger_toggles_menu_on_mobile_viewport(self, logged_in_page):
         page = logged_in_page
         page.set_viewport_size({"width": 390, "height": 844})
 
         burger = page.locator("#navbar-burger")
-        menu = page.locator("#navbar-menu")
+        drawer_toggle = page.locator("#mobile-drawer")
 
         assert burger.is_visible()
-        assert "hidden" in (menu.get_attribute("class") or "").split()
+        assert not drawer_toggle.is_checked()
         assert burger.get_attribute("aria-expanded") == "false"
 
         burger.click()
         page.wait_for_timeout(200)
-        assert "hidden" not in (menu.get_attribute("class") or "").split()
+        assert drawer_toggle.is_checked()
         assert burger.get_attribute("aria-expanded") == "true"
+
+        # Le panneau ouvert (.drawer-side, z-50, position fixed) recouvre
+        # délibérément le burger à l'écran (comportement daisyUI standard,
+        # pas un bug) - le geste réaliste pour refermer à la souris est de
+        # cliquer l'overlay généré par daisyUI (<label for="mobile-drawer">),
+        # pas de recliquer le burger au même pixel. Position explicite dans
+        # la zone assombrie (hors du panneau w-72) : le centre géométrique
+        # par défaut de l'overlay (qui couvre tout le viewport) tombe sous
+        # le <ul> du menu, qui intercepterait le clic. Vérifie au passage
+        # que navbar-menu.js resynchronise bien aria-expanded même quand la
+        # case est décochée par autre chose que le clic direct sur le burger.
+        page.locator(".drawer-overlay").click(position={"x": 350, "y": 400})
+        page.wait_for_timeout(200)
+        assert not drawer_toggle.is_checked()
+        assert burger.get_attribute("aria-expanded") == "false"
+
+    def test_burger_toggles_via_keyboard(self, logged_in_page):
+        page = logged_in_page
+        page.set_viewport_size({"width": 390, "height": 844})
+
+        burger = page.locator("#navbar-burger")
+        drawer_toggle = page.locator("#mobile-drawer")
+
+        burger.focus()
+        page.keyboard.press("Enter")
+        page.wait_for_timeout(200)
+        assert drawer_toggle.is_checked()
+        assert burger.get_attribute("aria-expanded") == "true"
+
+        page.keyboard.press("Enter")
+        page.wait_for_timeout(200)
+        assert not drawer_toggle.is_checked()
+        assert burger.get_attribute("aria-expanded") == "false"
+
+    def test_escape_closes_menu_and_refocuses_burger(self, logged_in_page):
+        page = logged_in_page
+        page.set_viewport_size({"width": 390, "height": 844})
+
+        burger = page.locator("#navbar-burger")
+        drawer_toggle = page.locator("#mobile-drawer")
 
         burger.click()
         page.wait_for_timeout(200)
-        assert "hidden" in (menu.get_attribute("class") or "").split()
+        assert drawer_toggle.is_checked()
 
-    def test_burger_hidden_on_desktop_viewport(self, logged_in_page):
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(200)
+        assert not drawer_toggle.is_checked()
+        assert burger.get_attribute("aria-expanded") == "false"
+        assert page.evaluate("document.activeElement.id") == "navbar-burger"
+
+    def test_sidebar_permanent_on_desktop_viewport(self, logged_in_page):
         page = logged_in_page
         page.set_viewport_size({"width": 1280, "height": 900})
 
         assert not page.locator("#navbar-burger").is_visible()
-        assert not page.locator("#navbar-menu").is_visible()
-        assert page.locator("#navbar-menu-desktop").is_visible()
+        assert page.locator("#sidebar-menu").is_visible()
 
 
 class TestDarkThemeToggle:
@@ -92,7 +141,14 @@ class TestDarkThemeToggle:
         html = page.locator("html")
         initial_theme = html.get_attribute("data-theme")
 
-        page.click("#theme-toggle")
+        # #theme-toggle est une checkbox à dimensions nulles (pattern
+        # "Theme Controller" swap de daisyUI, voir base.html) - seule
+        # l'icône (.swap-on/.swap-off) est visible. Le clic réel d'un
+        # utilisateur passe par le <label> englobant (association
+        # native <label><input>...</label>, sans attribut for) ; cliquer
+        # l'input directement échoue même avec force=True ("outside of
+        # the viewport", Playwright a besoin de coordonnées réelles).
+        page.click("label:has(#theme-toggle)")
         page.wait_for_timeout(200)
         toggled_theme = html.get_attribute("data-theme")
         assert toggled_theme != initial_theme

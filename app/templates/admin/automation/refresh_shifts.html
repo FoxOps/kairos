@@ -3,7 +3,14 @@
 {% block title %}Rafraîchir les Shifts - Automatisation{% endblock %}
 
 {% block content %}
-<div class="p-4 md:p-6 max-w-4xl mx-auto">
+<div class="p-3 md:p-4 max-w-4xl mx-auto">
+    <div class="breadcrumbs text-sm mb-2" aria-label="Fil d'Ariane">
+        <ul>
+            <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
+            <li><a href="{{ url_for('admin.automation_dashboard') }}">Automatisation</a></li>
+            <li>Rafraîchir les shifts</li>
+        </ul>
+    </div>
     <h1 class="text-2xl font-bold mb-4">
         <i class="fas fa-sync-alt" aria-hidden="true"></i> Rafraîchir les Shifts
     </h1>
@@ -28,12 +35,12 @@
         </div>
     </div>
 
-    <form method="POST" class="card bg-base-100 shadow-md">
+    <form method="POST" class="card card-sm bg-base-100 shadow-md">
         <div class="card-body gap-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div>
                 <label class="label">Période</label>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                         <label class="label">Date de début</label>
                         <input class="input w-full" type="date" name="start_date"

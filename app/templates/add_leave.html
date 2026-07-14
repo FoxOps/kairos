@@ -3,37 +3,37 @@
 {% block title %}Ajouter un congé - Leviia Schedule{% endblock %}
 
 {% block content %}
-<section class="p-4 md:p-6 max-w-2xl mx-auto">
+<section class="p-3 md:p-4 max-w-2xl mx-auto">
     <h1 class="text-2xl font-bold mb-4">
         <i class="fas fa-plus" aria-hidden="true"></i> Ajouter un congé
     </h1>
 
     <form method="POST" action="{{ url_for('main.add_leave') }}" aria-labelledby="form-title">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="card bg-base-100 shadow-md">
+        <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body gap-4">
-                <div>
-                    <label class="label" for="user_id">Utilisateur <span class="text-error">*</span></label>
-                    <select class="select w-full" id="user_id" name="user_id" required aria-required="true" aria-describedby="user-help">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Utilisateur <span class="text-error">*</span></legend>
+                    <select class="select w-full validator" id="user_id" name="user_id" required aria-required="true" aria-describedby="user-help">
                         <option value="" disabled selected>Sélectionnez un utilisateur</option>
                         {% for user in users %}
                         <option value="{{ user.id }}">{{ user.name }}</option>
                         {% endfor %}
                     </select>
                     <p class="text-sm text-base-content/60" id="user-help">Sélectionnez l'utilisateur pour ce congé</p>
-                </div>
+                </fieldset>
 
-                <div>
-                    <label class="label" for="start_date">Date de début <span class="text-error">*</span></label>
-                    <input class="input w-full" type="date" id="start_date" name="start_date" required aria-required="true" aria-describedby="start-date-help">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Date de début <span class="text-error">*</span></legend>
+                    <input class="input w-full validator" type="date" id="start_date" name="start_date" required aria-required="true" aria-describedby="start-date-help">
                     <p class="text-sm text-base-content/60" id="start-date-help">Date de début du congé</p>
-                </div>
+                </fieldset>
 
-                <div>
-                    <label class="label" for="end_date">Date de fin <span class="text-error">*</span></label>
-                    <input class="input w-full" type="date" id="end_date" name="end_date" required aria-required="true" aria-describedby="end-date-help">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Date de fin <span class="text-error">*</span></legend>
+                    <input class="input w-full validator" type="date" id="end_date" name="end_date" required aria-required="true" aria-describedby="end-date-help">
                     <p class="text-sm text-base-content/60" id="end-date-help">Date de fin du congé</p>
-                </div>
+                </fieldset>
 
                 <div class="flex gap-2" role="group" aria-label="Actions du formulaire">
                     <button class="btn btn-primary" type="submit" aria-label="Enregistrer le congé" title="Enregistrer le congé">

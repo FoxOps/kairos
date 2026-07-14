@@ -1,12 +1,14 @@
 # 🗺️ Feuille de Route - Leviia Schedule
 
-> **Version** : 5.6.0 - Refonte UI/UX Tailwind CSS 4 + daisyUI 5 (PR #108)
-> **Version app** : 0.7.5 (`/version`) - Bulma entièrement retiré, interface
-> reconstruite en Tailwind/daisyUI (CDN cdnjs, zéro build), Font Awesome en
-> mode SVG+JS, FullCalendar reste en 6.1.21 (bug bloquant confirmé sur la 7.0.0)
+> **Version** : 5.7.0 - Refonte visuelle Dracula/Alucard (PR #110)
+> **Version app** : 0.7.6 (`/version`) - Identité visuelle complète sur la
+> base Tailwind/daisyUI (PR #108) : palette officielle Dracula (thème
+> sombre) / Alucard (thème clair), drawer mobile natif, composants daisyUI
+> (stats, breadcrumbs, avatar, tooltip, collapse, hero, swap), modale de
+> création de shift en `<dialog>` natif
 > **Dernière mise à jour** : Juillet 2026
-> **Statut** : Développement actif - **931 tests passent** ✅ (dont 27 E2E navigateur réel)
-> **Commit actuel** : branche feature/ui-tailwind-daisyui (PR #108)
+> **Statut** : Développement actif - **933 tests passent** ✅ (dont 23 E2E navigateur réel)
+> **Commit actuel** : branche feature/dracula-redesign (PR #110)
 >
 > ℹ️ Ne pas confondre avec les « Phases » de refonte (`report/Phase 1` à
 > `report/Phase 6`, un chantier qualité/infra achevé) et les « Phases » de

@@ -1,18 +1,25 @@
 {% extends "admin/base_admin.html" %}
 
 {% block admin_content %}
-<section class="p-4 md:p-6 max-w-6xl mx-auto">
+<section class="p-3 md:p-4 max-w-6xl mx-auto">
+    <div class="breadcrumbs text-sm mb-2" aria-label="Fil d'Ariane">
+        <ul>
+            <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
+            <li><a href="{{ url_for('admin.automation_dashboard') }}">Automatisation</a></li>
+            <li>Prévisualisation</li>
+        </ul>
+    </div>
     <h1 class="text-2xl font-bold mb-4"><i class="fas fa-eye" aria-hidden="true"></i> Prévisualisation - Génération complète</h1>
 
     <div class="alert alert-info mb-4">
         <p><i class="fas fa-info-circle"></i> Ceci est une prévisualisation. Aucune donnée n'a été sauvegardée en base de données.</p>
     </div>
 
-    <div class="card bg-base-100 shadow-md mb-6">
+    <div class="card card-sm bg-base-100 shadow-md mb-4">
         <div class="card-body">
             <h2 class="text-lg font-semibold"><i class="fas fa-calendar-alt" aria-hidden="true"></i> Période : {{ start_date.strftime('%d/%m/%Y') }} au {{ end_date.strftime('%d/%m/%Y') }}</h2>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                     <h3 class="font-semibold mb-2"><i class="fas fa-bell" aria-hidden="true"></i> Astreintes</h3>
 
@@ -90,10 +97,10 @@
         </div>
     </div>
 
-    <div class="card bg-base-100 shadow-md mb-6">
+    <div class="card card-sm bg-base-100 shadow-md mb-4">
         <div class="card-body">
             <h2 class="text-lg font-semibold"><i class="fas fa-chart-line" aria-hidden="true"></i> Résumé</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div class="alert alert-primary flex-col items-start">
                     <p><strong>Total astreintes</strong></p>
                     <p class="text-2xl font-bold">{{ result.oncall.generated|length }}</p>
@@ -110,7 +117,7 @@
         </div>
     </div>
 
-    <div class="card bg-base-100 shadow-md mb-6">
+    <div class="card card-sm bg-base-100 shadow-md mb-4">
         <div class="card-body">
             <h2 class="text-lg font-semibold"><i class="fas fa-comments" aria-hidden="true"></i> Messages de génération</h2>
 

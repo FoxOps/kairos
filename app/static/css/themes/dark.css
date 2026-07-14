@@ -11,28 +11,65 @@
    d'accessibilité génériques indépendants du framework CSS.
    ============================================ */
 
-/* FullCalendar en mode sombre */
+/* FullCalendar en mode sombre - les variables --fc-event-* sont ce que
+   .fc-event-main (le texte réellement affiché, notamment en vues
+   Semaine/Jour) consulte réellement, pas background-color/color
+   classiques sur le conteneur (voir le commentaire détaillé dans
+   vendor/fullcalendar-overrides.css - bug de contraste trouvé en test
+   manuel, texte blanc illisible sur fond clair). */
 [data-theme="dark"] .fc-event-shift {
+    --fc-event-bg-color: var(--app-color-primary) !important;
+    --fc-event-border-color: var(--app-color-primary) !important;
+    --fc-event-text-color: var(--color-primary-content) !important;
     background-color: var(--app-color-primary) !important;
     border-color: var(--app-color-primary) !important;
-    color: #fff !important;
+    color: var(--color-primary-content) !important;
 }
 
 [data-theme="dark"] .fc-event-oncall {
+    --fc-event-bg-color: var(--app-color-info) !important;
+    --fc-event-border-color: var(--app-color-info) !important;
+    --fc-event-text-color: var(--color-info-content) !important;
     background-color: var(--app-color-info) !important;
     border-color: var(--app-color-info) !important;
-    color: #fff !important;
+    color: var(--color-info-content) !important;
 }
 
 [data-theme="dark"] .fc-event-leave {
+    --fc-event-bg-color: var(--color-danger) !important;
+    --fc-event-border-color: var(--color-danger) !important;
+    --fc-event-text-color: var(--color-error-content) !important;
     background-color: var(--color-danger) !important;
     border-color: var(--color-danger) !important;
-    color: #fff !important;
+    color: var(--color-error-content) !important;
+}
+
+[data-theme="dark"] .fc-event-shift .fc-event-main,
+[data-theme="dark"] .fc-event-oncall .fc-event-main,
+[data-theme="dark"] .fc-event-leave .fc-event-main {
+    color: var(--fc-event-text-color) !important;
 }
 
 [data-theme="dark"] .fc {
     background-color: var(--bg-primary) !important;
     color: var(--text-primary) !important;
+}
+
+/* Variables globales de FullCalendar (consultées par TOUTES ses bordures/
+   fonds internes, y compris les vues Semaine/Jour - grille horaire,
+   colonnes, séparateurs - jamais couvertes par les sélecteurs .fc-day/
+   .fc-col-header-cell ci-dessous, qui ne visent que la vue Mois). Sans
+   ça, les bordures restaient en #ddd (gris clair fixe de FullCalendar),
+   look non adapté/cassé sur fond sombre - bug trouvé en test manuel. */
+[data-theme="dark"] #calendar {
+    --fc-border-color: var(--border-primary);
+    --fc-page-bg-color: var(--bg-primary);
+    --fc-neutral-bg-color: var(--bg-secondary);
+    --fc-list-event-hover-bg-color: var(--bg-secondary);
+    --fc-more-link-bg-color: var(--bg-tertiary);
+    --fc-more-link-text-color: var(--text-primary);
+    --fc-non-business-color: color-mix(in oklab, var(--bg-secondary) 60%, transparent);
+    --fc-today-bg-color: color-mix(in oklab, var(--app-color-primary) 15%, transparent);
 }
 
 [data-theme="dark"] .fc-today,
