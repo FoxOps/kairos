@@ -115,3 +115,33 @@ class TestOidcBrowserLogout:
         # donc cette assertion serait toujours vraie même si /logout ne
         # faisait rien.
         assert page.url.startswith(idp_url)
+
+
+class TestOidcBrowserSingleFlashMessage:
+    def test_no_stale_login_required_flash_after_redirect_from_protected_page(
+        self, oidc_live_servers, page
+    ):
+        """Bug réel : visiter une page protégée (login_required) non
+        authentifié déclenche le flash "please log in" par défaut de
+        Flask-Login avant la redirection vers auth.oidc_login - lequel ne
+        rend jamais de template et enchaîne aussitôt vers l'IdP. Ce flash
+        traversait alors tout l'aller-retour SSO sans jamais être
+        consommé, et ressortait collé au flash "Connexion OIDC réussie !"
+        sur la première page rendue après coup (les deux affichés en même
+        temps). Fix : login_manager.login_message désactivé en mode OIDC
+        forcé (app/__init__.py)."""
+        app_url, idp_url = oidc_live_servers
+
+        # Page protégée (pas /login) : déclenche @login_required.
+        page.goto(f"{app_url}/dashboard")
+        page.wait_for_load_state("networkidle")
+        assert page.url.startswith(idp_url)
+
+        page.click("#mock-idp-approve")
+        page.wait_for_load_state("networkidle")
+
+        assert page.url.startswith(app_url)
+        alerts = page.locator(".flash-message")
+        assert alerts.count() == 1
+        assert "Connexion OIDC réussie" in alerts.first.inner_text()
+        assert "log in" not in page.content().lower()
