@@ -1,13 +1,14 @@
 /**
- * Glisser-déposer pour réordonner la liste de rotation d'astreinte
+ * Drag & drop to reorder the on-call rotation list
  * (app/templates/admin/automation/full.html).
  *
- * Externalisé depuis un <script> inline (CSP script-src 'self' stricte
- * bloquait silencieusement tout ce fichier - le drag & drop et le bouton
- * "Sauvegarder l'ordre" étaient cassés en production). saveRotationOrder()
- * était en plus définie à l'intérieur du listener DOMContentLoaded, donc
- * inaccessible à onclick="saveRotationOrder()" même avant la CSP stricte -
- * exposée maintenant via window.Leviia comme les autres callbacks inline.
+ * This file was extracted from an inline <script>: a strict
+ * `script-src 'self'` CSP silently blocked the whole block, breaking the
+ * drag & drop and the "Sauvegarder l'ordre" button in production.
+ * saveRotationOrder() was also originally defined inside the
+ * DOMContentLoaded listener, making it unreachable from
+ * onclick="saveRotationOrder()" even before the strict CSP - it's now
+ * exposed via window.Leviia like the other inline callbacks.
  */
 
 let sortableList;
@@ -58,7 +59,7 @@ function initRotationOrder() {
         e.preventDefault();
     });
 
-    // Mettre à jour les positions cachées avant soumission
+    // Update the hidden position fields before submitting
     document.querySelector('form').addEventListener('submit', () => {
         const items = sortableList.querySelectorAll('.sortable-item');
         items.forEach((item, index) => {
@@ -83,10 +84,11 @@ export function saveRotationOrder() {
         }
     });
 
-    // Réutilise un champ action existant s'il y en a un, au lieu d'en
-    // ajouter un second - deux champs same-name soumis au serveur font que
-    // request.form.get("action") renvoie le premier (Werkzeug), pas
-    // celui-ci, et l'action réellement voulue est silencieusement ignorée.
+    // Reuse an existing action field if there's one, instead of adding a
+    // second - two same-name fields submitted to the server mean Werkzeug's
+    // request.form.get("action") (app/routes/admin_automation_routes.py)
+    // returns the first one, not this one, so the actually intended action
+    // gets silently ignored.
     let actionInput = form.querySelector('input[name="action"]');
     if (!actionInput) {
         actionInput = document.createElement('input');

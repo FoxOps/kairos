@@ -1,31 +1,26 @@
 /**
- * Configuration et interactions du calendrier FullCalendar (page d'accueil).
+ * FullCalendar configuration and interactions (home page).
  *
- * Externalisé depuis un <script> inline de index.html en Phase 6, pour
- * permettre une CSP script-src 'self' stricte (un <script> inline aurait
- * besoin de 'unsafe-inline' ou d'un nonce). Les données injectées par le
- * serveur (isAdmin, events) transitent désormais par des attributs
- * data-* et une balise <script type="application/json"> plutôt que par
- * de l'interpolation Jinja directement dans du JS.
+ * This file was extracted from an inline <script> in index.html so the CSP
+ * can enforce a strict `script-src 'self'` (an inline <script> would need
+ * 'unsafe-inline' or a nonce). Server-injected data (isAdmin, events) is
+ * passed via data-* attributes and a <script type="application/json"> tag
+ * instead of Jinja interpolation directly into JS.
  *
- * FullCalendar : reste en 6.1.21 (pas de bump vers 7.0.0) et chargé
- * depuis jsDelivr plutôt que cdnjs - deux constats indépendants après
- * essai en navigateur réel :
- *   1. cdnjs n'héberge ni les chunks internes ni les locales d'aucune
- *      version de ce paquet testée (404 systématiques) ;
- *   2. FullCalendar 7.0.0 lève une erreur d'exécution réelle en dehors
- *      de son pipeline de build officiel ("Class constructor ... cannot
- *      be invoked without 'new'", jetée depuis le code compilé de
- *      FullCalendar lui-même au premier rendu Preact - reproduite à
- *      l'identique via jsDelivr ET via esm.sh, qui reconstruit pourtant
- *      normalement les paquets avec leurs dépendances déjà résolues -
- *      ce n'est donc pas un problème d'hébergement CDN mais un bug de
- *      ce paquet dans ce mode de consommation, hors de portée d'un
- *      contournement côté CDN). Reste sur la dernière version 6.x
- *      stable (celle déjà vendorisée avant cette refonte), chargée en
- *      CDN au lieu d'être vendorisée localement pour le reste. Tout le
- *      reste de la refonte (Font Awesome, daisyUI, tailwindcss-browser)
- *      reste sur cdnjs comme demandé.
+ * FullCalendar stays on 6.1.21 (no bump to 7.0.0) and is loaded from
+ * jsDelivr rather than cdnjs - two independent findings from real-browser
+ * testing:
+ *   1. cdnjs hosts neither the internal chunks nor the locale files for any
+ *      version of this package that was tried (consistent 404s);
+ *   2. FullCalendar 7.0.0 throws a real runtime error outside its own
+ *      official build pipeline ("Class constructor ... cannot be invoked
+ *      without 'new'", thrown from FullCalendar's own compiled code on the
+ *      first Preact render - reproduced identically via jsDelivr AND via
+ *      esm.sh, which normally rebuilds packages with their dependencies
+ *      already resolved - so this is not a CDN-hosting issue but a bug in
+ *      this package under this consumption mode, outside the reach of any
+ *      CDN-side workaround). Stays on the last stable 6.x release, loaded
+ *      from a CDN instead of being vendored locally like the rest of the app.
  */
 import {
     announceToScreenReader,
@@ -36,7 +31,7 @@ import {
 document.addEventListener('DOMContentLoaded', function () {
     const calendarEl = document.getElementById('calendar');
     if (!calendarEl) {
-        console.error("Élément #calendar introuvable !");
+        console.error("Element #calendar not found!");
         return;
     }
 
@@ -45,22 +40,22 @@ document.addEventListener('DOMContentLoaded', function () {
     const events = eventsDataEl ? JSON.parse(eventsDataEl.textContent) : [];
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 
-    // Lire l'état du mode édition depuis l'URL
+    // Read edit-mode state from the URL
     const urlParams = new URLSearchParams(window.location.search);
     let editModeEnabled = urlParams.get('edit') === 'true';
     let tipsVisible = false;
 
-    // Gestion des boutons de toggle
+    // Toggle button handling
     const toggleEditModeBtn = document.getElementById('toggle-edit-mode');
     const toggleTipsBtn = document.getElementById('toggle-tips');
     const editModeStatusTag = document.getElementById('edit-mode-status-tag');
     const tipsContainer = document.getElementById('tips-container');
 
-    // Fonction pour mettre à jour l'URL et l'état du mode édition
+    // Update the URL and edit-mode state
     function updateEditModeState(enabled) {
         editModeEnabled = enabled;
 
-        // Mettre à jour l'URL sans recharger la page
+        // Update the URL without reloading the page
         const url = new URL(window.location);
         if (enabled) {
             url.searchParams.set('edit', 'true');
@@ -69,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         window.history.pushState({}, '', url);
 
-        // Mettre à jour l'UI
+        // Update the UI
         if (editModeStatusTag) {
             if (enabled) {
                 editModeStatusTag.innerHTML = '<i class="fas fa-edit" aria-hidden="true"></i> Mode édition activé';
@@ -98,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        // Mettre à jour les propriétés du calendrier
+        // Update the calendar's own properties
         if (window.calendar) {
             window.calendar.setOption('editable', enabled && isAdmin);
             window.calendar.setOption('selectable', enabled && isAdmin);
@@ -149,25 +144,25 @@ document.addEventListener('DOMContentLoaded', function () {
         },
         height: 'auto',
 
-        // Activation du Drag & Drop pour les administrateurs
+        // Enable drag & drop for admins
         editable: editModeEnabled && isAdmin,
         selectable: editModeEnabled && isAdmin,
         droppable: editModeEnabled && isAdmin,
 
-        // Configuration du drag & drop
+        // Drag & drop configuration
         eventDrop: function (info) {
-            // Appelé quand un événement est déplacé
+            // Called when an event is dropped
             const event = info.event;
             const eventId = event.id;
             const newStart = event.start;
             const newEnd = event.end;
 
             if (!eventId || eventId === undefined) {
-                // C'est un nouvel événement créé par drop externe
+                // This is a new event created by an external drop
                 return;
             }
 
-            // Déterminer le type d'événement et l'ID de la ressource
+            // Determine the event type and the resource ID
             const extendedProps = event.extendedProps || {};
             const type = extendedProps.type;
             const resourceId = extendedProps.resourceId;
@@ -185,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // Envoyer la mise à jour au serveur
+            // Send the update to the server
             fetch(endpoint, {
                 method: 'PATCH',
                 headers: {
@@ -202,11 +197,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        console.log('Événement mis à jour:', data.message);
-                        // Recharge uniquement les événements du calendrier
-                        // (requête AJAX FullCalendar) au lieu de la page
-                        // entière, pour ne pas perdre le contexte de
-                        // l'utilisateur (filtres, scroll, vue courante).
+                        console.log('Event updated:', data.message);
+                        // Only refetch the calendar's events (FullCalendar
+                        // AJAX request) instead of the whole page, to avoid
+                        // losing the user's context (filters, scroll,
+                        // current view).
                         calendar.refetchEvents();
                         if (data.rebalance_warning) {
                             announceToScreenReader(
@@ -215,20 +210,20 @@ document.addEventListener('DOMContentLoaded', function () {
                             );
                         }
                     } else {
-                        // Revert le changement en cas d'erreur
+                        // Revert the change on error
                         info.revert();
                         announceToScreenReader('Erreur: ' + data.error, 'assertive');
                     }
                 })
                 .catch(error => {
                     info.revert();
-                    console.error('Erreur:', error);
+                    console.error('Error:', error);
                     announceToScreenReader('Une erreur est survenue lors de la mise à jour.', 'assertive');
                 });
         },
 
         eventResize: function (info) {
-            // Appelé quand un événement est redimensionné
+            // Called when an event is resized
             const event = info.event;
             const eventId = event.id;
             const newStart = event.start;
@@ -238,7 +233,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // Déterminer le type d'événement et l'ID de la ressource
+            // Determine the event type and the resource ID
             const extendedProps = event.extendedProps || {};
             const type = extendedProps.type;
             const resourceId = extendedProps.resourceId;
@@ -256,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // Envoyer la mise à jour au serveur
+            // Send the update to the server
             fetch(endpoint, {
                 method: 'PATCH',
                 headers: {
@@ -273,9 +268,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        console.log('Événement redimensionné:', data.message);
-                        // Recharge uniquement les événements du calendrier,
-                        // pas la page entière (cf. eventDrop ci-dessus).
+                        console.log('Event resized:', data.message);
+                        // Only refetch the calendar's events, not the whole
+                        // page (see eventDrop above).
                         calendar.refetchEvents();
                         if (data.rebalance_warning) {
                             announceToScreenReader(
@@ -290,14 +285,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 })
                 .catch(error => {
                     info.revert();
-                    console.error('Erreur:', error);
+                    console.error('Error:', error);
                     announceToScreenReader('Une erreur est survenue lors du redimensionnement.', 'assertive');
                 });
         },
 
         select: function (info) {
-            // Appelé quand une plage horaire est sélectionnée (pour créer un nouveau shift)
-            // Uniquement en mode édition
+            // Called when a time range is selected (to create a new shift)
+            // Edit mode only
             if (!isAdmin || !editModeEnabled) {
                 calendar.unselect();
                 return;
@@ -306,14 +301,14 @@ document.addEventListener('DOMContentLoaded', function () {
             const start = info.start;
             const end = info.end || start;
 
-            // Ouvrir un modal pour sélectionner l'utilisateur et le type de shift
+            // Open a modal to pick the user and the shift type
             openShiftCreationModal(start, end);
 
             calendar.unselect();
         },
 
         eventClick: function (info) {
-            // Appelé quand un événement est cliqué
+            // Called when an event is clicked
             const event = info.event;
             const eventId = event.id;
 
@@ -321,10 +316,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // En mode édition, cliquer sur un événement permet de le supprimer avec confirmation
-            // Hors mode édition, cliquer ne fait rien
+            // In edit mode, clicking an event deletes it (with confirmation)
+            // Outside edit mode, clicking does nothing
             if (editModeEnabled && isAdmin) {
-                // Déterminer le type d'événement et l'ID de la ressource
+                // Determine the event type and the resource ID
                 const extendedProps = event.extendedProps || {};
                 const type = extendedProps.type;
                 const resourceId = extendedProps.resourceId;
@@ -360,16 +355,16 @@ document.addEventListener('DOMContentLoaded', function () {
                             .then(data => {
                                 if (data.success) {
                                     event.remove();
-                                    console.log('Événement supprimé:', data.message);
+                                    console.log('Event deleted:', data.message);
                                     announceToScreenReader('Événement supprimé avec succès.', 'polite');
-                                    // Recharger la page pour synchroniser avec le backend
+                                    // Reload the page to resync with the backend
                                     location.reload();
                                 } else {
                                     announceToScreenReader('Erreur: ' + data.error, 'assertive');
                                 }
                             })
                             .catch(error => {
-                                console.error('Erreur:', error);
+                                console.error('Error:', error);
                                 announceToScreenReader('Une erreur est survenue lors de la suppression.', 'assertive');
                             });
                     },
@@ -381,17 +376,17 @@ document.addEventListener('DOMContentLoaded', function () {
         },
 
         eventDidMount: function (info) {
-            // Ajouter des données personnalisées à l'événement
+            // Attach custom data to the event
             const event = info.event;
             if (event.extendedProps && event.extendedProps.userId) {
                 event.setExtendedProp('userId', event.extendedProps.userId);
             }
         },
 
-        // Désactiver le drag & drop pour les week-ends
+        // Disable drag & drop on weekends
         dateClick: function (info) {
             const date = info.date;
-            if (date.getDay() === 0 || date.getDay() === 6) { // Dimanche (0) ou Samedi (6)
+            if (date.getDay() === 0 || date.getDay() === 6) { // Sunday (0) or Saturday (6)
                 announceToScreenReader('Les shifts ne peuvent pas être créés ou déplacés vers les week-ends (samedi/dimanche).', 'assertive');
                 return false;
             }
@@ -400,39 +395,39 @@ document.addEventListener('DOMContentLoaded', function () {
 
     calendar.render();
 
-    // Basculer du squelette de chargement (skeleton daisyUI) vers le
-    // calendrier une fois son premier rendu terminé.
+    // Swap the loading skeleton (daisyUI skeleton) for the calendar once
+    // its first render is done.
     const calendarSkeleton = document.getElementById('calendar-skeleton');
     if (calendarSkeleton) {
         calendarSkeleton.classList.add('hidden');
     }
     calendarEl.classList.remove('hidden');
 
-    // Rendre le calendrier accessible globalement
+    // Expose the calendar globally
     window.calendar = calendar;
 
-    // Initialiser l'UI et le calendrier selon l'état du mode édition
+    // Initialize the UI and the calendar from the edit-mode state
     updateEditModeState(editModeEnabled);
 
-    // Échappe une valeur avant interpolation dans le HTML généré ci-dessous
-    // (noms/emails utilisateurs, libellés de type de shift - données serveur,
-    // mais pas de raison de faire confiance à leur contenu côté rendu HTML).
+    // Escape a value before interpolating it into the HTML generated below
+    // (user names/emails, shift-type labels - server data, but no reason to
+    // trust its content when rendered as HTML).
     function escapeHtml(value) {
         const div = document.createElement('div');
         div.textContent = value;
         return div.innerHTML;
     }
 
-    // Fonction pour ouvrir le modal de création de shift
+    // Open the shift-creation modal
     function openShiftCreationModal(start, end) {
-        // Charger les utilisateurs et types de shifts
+        // Load the users and shift types
         Promise.all([
             fetch('/api/users').then(r => r.json()),
             fetch('/api/shift-types').then(r => r.json())
         ]).then(([users, shiftTypes]) => {
-            // Créer le modal (élément <dialog> natif - focus trap et
-            // fermeture au clavier via Échap gérés nativement par le
-            // navigateur avec showModal(), pas besoin de les recoder).
+            // Build the modal (native <dialog> element - focus trap and
+            // Escape-to-close are handled natively by the browser via
+            // showModal(), no need to hand-roll them).
             const modalId = 'create-shift-modal';
             let modal = document.getElementById(modalId);
 
@@ -485,9 +480,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 `;
                 document.body.appendChild(modal);
 
-                // Clic sur le fond (en dehors de .modal-box) = fermeture,
-                // équivalent du .modal-backdrop de l'ancien pattern
-                // .modal-open, mais géré nativement par <dialog>.
+                // Clicking the backdrop (outside .modal-box) closes the
+                // modal - equivalent to the old .modal-open/.modal-backdrop
+                // pattern, but handled natively by <dialog>.
                 modal.addEventListener('click', (e) => {
                     if (e.target === modal) {
                         modal.close();
@@ -495,27 +490,27 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 });
 
-                // "cancel" (Échap) est distinct de "close" - contrairement à
-                // "close", il ne se déclenche jamais pour un .close()
-                // programmatique déclenché après une création réussie, donc
-                // pas de risque d'annoncer "annulé" juste après "créé".
+                // "cancel" (Escape) is distinct from "close" - unlike
+                // "close", it never fires for a programmatic .close() after
+                // a successful save, so there's no risk of announcing
+                // "cancelled" right after "created".
                 modal.addEventListener('cancel', () => {
                     announceToScreenReader('Création de shift annulée.', 'polite');
                 });
             } else {
-                // Mettre à jour les valeurs
+                // Update the values
                 modal.querySelector('#shift-start').value = formatDateForInput(start);
                 modal.querySelector('#shift-end').value = formatDateForInput(end);
             }
 
-            // Ouvrir le modal (showModal() gère nativement le piège de
-            // focus et Échap - focus explicite ci-dessous en complément,
-            // le focus par défaut du navigateur sur "premier élément
-            // focusable" n'est pas garanti identique sur tous les moteurs).
+            // Open the modal (showModal() natively handles the focus trap
+            // and Escape - explicit focus below is a complement, since the
+            // browser's default "first focusable element" focus isn't
+            // guaranteed identical across engines).
             modal.showModal();
             focusElement(modal.querySelector('#shift-start'));
 
-            // Gérer les boutons
+            // Wire up the buttons
             modal.querySelectorAll('.close-modal').forEach(btn => {
                 btn.onclick = () => {
                     modal.close();
@@ -534,7 +529,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
-                // Créer le shift via API
+                // Create the shift via the API
                 fetch('/api/shifts', {
                     method: 'POST',
                     headers: {
@@ -554,37 +549,37 @@ document.addEventListener('DOMContentLoaded', function () {
                     .then(data => {
                         if (data.success) {
                             modal.close();
-                            console.log('Shift créé:', data.message);
+                            console.log('Shift created:', data.message);
                             announceToScreenReader('Shift créé avec succès.', 'polite');
-                            // Recharger la page pour synchroniser avec le backend
+                            // Reload the page to resync with the backend
                             location.reload();
                         } else {
                             announceToScreenReader('Erreur: ' + data.error, 'assertive');
                         }
                     })
                     .catch(error => {
-                        console.error('Erreur:', error);
+                        console.error('Error:', error);
                         announceToScreenReader('Une erreur est survenue lors de la création du shift.', 'assertive');
                     });
             };
         }).catch(error => {
-            console.error('Erreur lors du chargement des données:', error);
+            console.error('Error loading data:', error);
             announceToScreenReader('Une erreur est survenue lors du chargement des données.', 'assertive');
         });
     }
 
-    // Fonction pour formater une date pour l'input datetime-local
+    // Format a date for a datetime-local input
     function formatDateForInput(date) {
         const pad = (num) => num.toString().padStart(2, '0');
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
     }
 
-    // Gérer la touche Suppr pour supprimer un événement (uniquement en mode édition)
+    // Handle the Delete key to remove an event (edit mode only)
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Delete' || e.key === 'Suppr') {
             const selectedEvent = window.selectedEvent;
             if (selectedEvent && isAdmin && editModeEnabled) {
-                // Déterminer le type d'événement et l'ID de la ressource
+                // Determine the event type and the resource ID
                 const extendedProps = selectedEvent.extendedProps || {};
                 const type = extendedProps.type;
                 const resourceId = extendedProps.resourceId;
@@ -620,16 +615,16 @@ document.addEventListener('DOMContentLoaded', function () {
                             .then(data => {
                                 if (data.success) {
                                     selectedEvent.remove();
-                                    console.log('Événement supprimé:', data.message);
+                                    console.log('Event deleted:', data.message);
                                     announceToScreenReader('Événement supprimé avec succès.', 'polite');
-                                    // Recharger la page pour synchroniser avec le backend
+                                    // Reload the page to resync with the backend
                                     location.reload();
                                 } else {
                                     announceToScreenReader('Erreur: ' + data.error, 'assertive');
                                 }
                             })
                             .catch(error => {
-                                console.error('Erreur:', error);
+                                console.error('Error:', error);
                                 announceToScreenReader('Une erreur est survenue lors de la suppression.', 'assertive');
                             });
                     },
@@ -641,7 +636,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Stocker l'événement sélectionné
+    // Track the currently selected event
     calendar.on('eventClick', function (info) {
         window.selectedEvent = info.event;
     });

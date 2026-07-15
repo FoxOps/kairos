@@ -1,27 +1,27 @@
 /**
- * Fonctions d'accessibilité partagées (annonces lecteur d'écran, focus,
- * navigation clavier, validation de formulaire, modale de confirmation).
+ * Shared accessibility helpers (screen-reader announcements, focus,
+ * keyboard navigation, form validation, confirmation modal).
  */
 
 /**
- * Annonce un message aux lecteurs d'écran.
- * @param {string} message - Message à annoncer
- * @param {string} politeness - Niveau de politesse ('polite' ou 'assertive')
+ * Announce a message to screen readers.
+ * @param {string} message - Message to announce
+ * @param {string} politeness - Politeness level ('polite' or 'assertive')
  */
 export function announceToScreenReader(message, politeness = 'polite') {
     const liveRegion = document.getElementById('aria-live-region') || createLiveRegion(politeness);
     liveRegion.textContent = message;
 
-    // Réinitialiser après l'annonce pour permettre des annonces répétées
+    // Reset after the announcement so repeated announcements are picked up
     setTimeout(() => {
         liveRegion.textContent = '';
     }, 1000);
 }
 
 /**
- * Crée une région live pour les annonces aux lecteurs d'écran.
- * @param {string} politeness - Niveau de politesse ('polite' ou 'assertive')
- * @returns {HTMLElement} La région live créée
+ * Create a live region for screen-reader announcements.
+ * @param {string} politeness - Politeness level ('polite' or 'assertive')
+ * @returns {HTMLElement} The created live region
  */
 function createLiveRegion(politeness) {
     const liveRegion = document.createElement('div');
@@ -43,23 +43,23 @@ function createLiveRegion(politeness) {
 }
 
 /**
- * Met le focus sur un élément.
- * @param {HTMLElement|string} element - Élément ou sélecteur CSS
+ * Focus an element.
+ * @param {HTMLElement|string} element - Element or CSS selector
  */
 export function focusElement(element) {
     const el = typeof element === 'string' ? document.querySelector(element) : element;
     if (el && el.focus) {
         el.focus();
-        // Ajouter un style de focus visible pour les navigateurs qui ne gèrent pas :focus-visible
+        // Add a visible focus style for browsers that don't support :focus-visible
         el.style.outline = '3px solid #00d1b2';
         el.style.outlineOffset = '2px';
     }
 }
 
 /**
- * Configure la navigation au clavier pour une liste d'éléments.
- * @param {HTMLElement|string} container - Conteneur ou sélecteur CSS
- * @param {string} itemSelector - Sélecteur CSS pour les éléments de la liste
+ * Set up keyboard navigation for a list of elements.
+ * @param {HTMLElement|string} container - Container or CSS selector
+ * @param {string} itemSelector - CSS selector for the list items
  */
 export function setupKeyboardNavigation(container, itemSelector) {
     const cont = typeof container === 'string' ? document.querySelector(container) : container;
@@ -117,18 +117,18 @@ export function setupKeyboardNavigation(container, itemSelector) {
 }
 
 /**
- * Affiche les erreurs de formulaire de manière accessible.
- * @param {Object} errors - Objet contenant les erreurs (ex: { field1: 'Erreur 1', field2: 'Erreur 2' })
+ * Display form errors accessibly.
+ * @param {Object} errors - Object containing the errors (e.g. { field1: 'Error 1', field2: 'Error 2' })
  */
 export function displayFormErrorsAccessible(errors) {
-    // Annoncer le nombre d'erreurs
+    // Announce the error count
     const errorCount = Object.keys(errors).length;
     const errorMessage = errorCount === 1
         ? '1 erreur de formulaire. Veuillez la corriger.'
         : `${errorCount} erreurs de formulaire. Veuillez les corriger.`;
     announceToScreenReader(errorMessage, 'assertive');
 
-    // Mettre le focus sur le premier champ en erreur
+    // Focus the first field in error
     const firstErrorField = document.querySelector(`[name="${Object.keys(errors)[0]}"]`);
     if (firstErrorField) {
         focusElement(firstErrorField);
@@ -136,9 +136,9 @@ export function displayFormErrorsAccessible(errors) {
 }
 
 /**
- * Valide un formulaire de manière accessible.
- * @param {HTMLElement|string} form - Formulaire ou sélecteur CSS
- * @returns {boolean} True si le formulaire est valide
+ * Validate a form accessibly.
+ * @param {HTMLElement|string} form - Form or CSS selector
+ * @returns {boolean} True if the form is valid
  */
 export function validateFormAccessible(form) {
     const formEl = typeof form === 'string' ? document.querySelector(form) : form;
@@ -147,7 +147,7 @@ export function validateFormAccessible(form) {
     let isValid = true;
     const errors = {};
 
-    // Valider les champs requis
+    // Validate the required fields
     const requiredFields = formEl.querySelectorAll('[required]');
     requiredFields.forEach(field => {
         if (!field.value.trim()) {
@@ -158,7 +158,7 @@ export function validateFormAccessible(form) {
                              'Champ non nommé';
             errors[field.name || field.id] = `Le champ ${fieldName} est obligatoire.`;
 
-            // Ajouter un message d'erreur visible
+            // Add a visible error message
             let errorEl = field.nextElementSibling;
             if (!errorEl || !errorEl.classList.contains('error-message')) {
                 errorEl = document.createElement('div');
@@ -168,10 +168,10 @@ export function validateFormAccessible(form) {
             }
             errorEl.textContent = errors[field.name || field.id];
 
-            // Ajouter une classe d'erreur au champ
+            // Add an error class to the field
             field.classList.add('is-danger');
         } else {
-            // Supprimer l'erreur si elle existe
+            // Remove the error if there is one
             const errorEl = field.nextElementSibling;
             if (errorEl && errorEl.classList.contains('error-message')) {
                 errorEl.remove();
@@ -188,14 +188,14 @@ export function validateFormAccessible(form) {
 }
 
 /**
- * Rend un tableau accessible.
- * @param {string} tableSelector - Sélecteur CSS pour le tableau
+ * Make a table accessible.
+ * @param {string} tableSelector - CSS selector for the table
  */
 export function makeTableAccessible(tableSelector) {
     const table = document.querySelector(tableSelector);
     if (!table) return;
 
-    // Ajouter scope aux en-têtes
+    // Add scope to header cells
     const headers = table.querySelectorAll('th');
     headers.forEach(header => {
         if (!header.hasAttribute('scope')) {
@@ -203,7 +203,7 @@ export function makeTableAccessible(tableSelector) {
         }
     });
 
-    // Ajouter scope aux cellules d'en-tête de ligne
+    // Add scope to row-header cells
     const rowHeaders = table.querySelectorAll('td[role="rowheader"]');
     rowHeaders.forEach(header => {
         if (!header.hasAttribute('scope')) {
@@ -211,7 +211,7 @@ export function makeTableAccessible(tableSelector) {
         }
     });
 
-    // Ajouter une légende si elle n'existe pas
+    // Add a caption if there isn't one already
     if (!table.querySelector('caption')) {
         const caption = document.createElement('caption');
         caption.className = 'is-sr-only';
@@ -221,23 +221,24 @@ export function makeTableAccessible(tableSelector) {
 }
 
 /**
- * Confirme une action avec l'utilisateur de manière accessible.
- * @param {string} message - Message de confirmation
- * @param {Function} onConfirm - Fonction à exécuter si l'utilisateur confirme
- * @param {Function} onCancel - Fonction à exécuter si l'utilisateur annule
+ * Confirm an action with the user accessibly.
+ * @param {string} message - Confirmation message
+ * @param {Function} onConfirm - Function to run if the user confirms
+ * @param {Function} onCancel - Function to run if the user cancels
  */
 export function confirmActionAccessible(message, onConfirm, onCancel) {
-    // Créer une modale accessible
+    // Build an accessible modal
     const modal = document.createElement('div');
     modal.className = 'modal modal-open';
     modal.setAttribute('role', 'dialog');
     modal.setAttribute('aria-modal', 'true');
     modal.setAttribute('aria-labelledby', 'confirmation-title');
 
-    // Structure statique uniquement dans innerHTML : le message (potentiellement
-    // dérivé de données utilisateur comme un nom) est injecté ensuite via
-    // textContent, jamais interpolé directement dans le HTML (protection XSS -
-    // un nom contenant du HTML/JS ne doit jamais pouvoir s'exécuter ici).
+    // Only static markup lives in innerHTML: the message (which may be
+    // derived from user data such as a name) is injected afterwards via
+    // textContent, never interpolated directly into the HTML (XSS
+    // protection - a name containing HTML/JS must never be able to
+    // execute here).
     modal.innerHTML = `
         <div class="modal-box">
             <div class="flex items-start justify-between">
@@ -256,7 +257,7 @@ export function confirmActionAccessible(message, onConfirm, onCancel) {
 
     document.body.appendChild(modal);
 
-    // Mettre le focus sur le bouton Confirmer
+    // Focus the Confirm button
     const confirmBtn = modal.querySelector('.btn-primary');
     const cancelBtn = modal.querySelector('.modal-action .btn:not(.btn-primary)');
     const closeBtn = modal.querySelector('.btn-circle');
@@ -264,7 +265,7 @@ export function confirmActionAccessible(message, onConfirm, onCancel) {
 
     focusElement(confirmBtn);
 
-    // Gérer les événements
+    // Wire up event handlers
     const handleConfirm = () => {
         modal.remove();
         if (onConfirm) onConfirm();
@@ -280,7 +281,7 @@ export function confirmActionAccessible(message, onConfirm, onCancel) {
     closeBtn.addEventListener('click', handleCancel);
     background.addEventListener('click', handleCancel);
 
-    // Gérer la navigation au clavier
+    // Handle keyboard navigation
     confirmBtn.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -310,7 +311,7 @@ export function confirmActionAccessible(message, onConfirm, onCancel) {
         }
     });
 
-    // Piège de focus dans la modale
+    // Trap focus within the modal
     modal.addEventListener('keydown', (e) => {
         if (e.key === 'Tab') {
             const focusableElements = modal.querySelectorAll(
@@ -331,16 +332,17 @@ export function confirmActionAccessible(message, onConfirm, onCancel) {
 }
 
 /**
- * Câble la confirmation accessible pour tous les boutons/liens de suppression
- * marqués `.js-confirm-delete`, via un seul listener délégué (plutôt que des
- * attributs onclick inline par élément).
+ * Wire up accessible delete confirmation for every button/link tagged
+ * `.js-confirm-delete`, through a single delegated listener (instead of a
+ * per-element inline onclick attribute).
  *
- * Le message vient de l'attribut `data-confirm-message`, jamais interpolé
- * directement dans du HTML/JS exécutable côté template - il transite par le
- * DOM (attribut HTML échappé par Jinja, lu via `.dataset`), pas par une
- * chaîne JS construite côté serveur. Combiné à confirmActionAccessible()
- * (qui insère le message via textContent), une valeur utilisateur comme un
- * nom ne peut jamais casser hors de son contexte de données pour s'exécuter.
+ * The message comes from the `data-confirm-message` attribute, never
+ * interpolated directly into executable template-side HTML/JS - it goes
+ * through the DOM (an HTML attribute escaped by Jinja, read via
+ * `.dataset`), not a server-built JS string. Combined with
+ * confirmActionAccessible() (which inserts the message via textContent), a
+ * user value such as a name can never break out of its data context to
+ * execute.
  */
 export function initConfirmDeleteActions() {
     document.addEventListener('click', (event) => {

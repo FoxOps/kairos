@@ -1,10 +1,10 @@
 /**
- * Leviia Schedule - Point d'entrée JavaScript
+ * Leviia Schedule - JavaScript entry point
  * =============================================
  *
- * Charge les modules ES6 de l'application et expose `window.Leviia`
- * pour les gestionnaires d'événements inline des templates (onclick=...)
- * et les callbacks FullCalendar.
+ * Loads the app's ES6 modules and exposes `window.Leviia` for the
+ * templates' inline event handlers (onclick=...) and the FullCalendar
+ * callbacks.
  */
 
 import { ThemeManager } from './theme/theme-manager.js';
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initConfirmDeleteActions();
 });
 
-// Exporter les fonctions pour les templates (onclick inline, callbacks FullCalendar)
+// Export functions for the templates (inline onclick, FullCalendar callbacks)
 window.Leviia = {
     ThemeManager,
     formatDate,
@@ -79,7 +79,7 @@ window.Leviia = {
     copyUrlLeavesAll,
     copyUrlLeavesMy,
     saveRotationOrder,
-    // Instance du ThemeManager (initialisée au chargement)
+    // ThemeManager instance (initialized on load)
     get themeManager() {
         return themeManager;
     }
