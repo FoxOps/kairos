@@ -1,4 +1,5 @@
 from urllib.parse import urljoin, urlparse
+from zoneinfo import available_timezones
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
@@ -6,6 +7,8 @@ from flask_login import current_user, login_required, login_user, logout_user
 from app import db
 from app.auth.oidc_auth import oidc_auth
 from app.models import User
+from app.services import SettingsService
+from app.utils.helpers.common_helpers import get_timezone_choices
 from config_oidc import OIDCConfig
 
 # Create blueprint
@@ -180,6 +183,7 @@ def update_profile():
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         email = request.form.get("email", "").strip()
+        timezone = request.form.get("timezone", "").strip()
         current_password = request.form.get("current_password", "")
         new_password = request.form.get("new_password", "")
         confirm_password = request.form.get("confirm_password", "")
@@ -188,6 +192,13 @@ def update_profile():
         if not name or not email:
             flash("Le nom et l'email sont obligatoires.", "danger")
             return redirect(url_for("auth.update_profile"))
+
+        # Empty means "use the org default" (None); anything else must be
+        # a real IANA zone name.
+        if timezone and timezone not in available_timezones():
+            flash("Fuseau horaire invalide.", "danger")
+            return redirect(url_for("auth.update_profile"))
+        current_user.timezone = timezone or None
 
         # Check whether the email changed
         if email != current_user.email:
@@ -224,7 +235,12 @@ def update_profile():
         flash("Votre profil a été mis à jour avec succès !", "success")
         return redirect(url_for("auth.profile"))
 
-    return render_template("auth/update_profile.html", user=current_user)
+    return render_template(
+        "auth/update_profile.html",
+        user=current_user,
+        timezones=get_timezone_choices(),
+        default_timezone=SettingsService.get_default_timezone(),
+    )
 
 
 @auth_bp.route("/profile/ics-token", methods=["GET", "POST"])

@@ -11,6 +11,8 @@ effort, not a simple test addition.
 
 from unittest.mock import patch
 
+from app.models import User
+
 
 class TestLoginRedirectsIfAlreadyAuthenticated:
     def test_get_login_while_authenticated_redirects(self, test_app, logged_in_client):
@@ -99,6 +101,66 @@ class TestUpdateProfile:
         )
         assert resp.status_code == 200
         assert "mis à jour avec succès".encode() in resp.data
+
+    def test_valid_timezone_persists(self, test_app, logged_in_client):
+        resp = logged_in_client.post(
+            "/profile/update",
+            data={
+                "name": "Admin",
+                "email": "login@example.com",
+                "timezone": "America/New_York",
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with test_app.app_context():
+            user = User.query.filter_by(email="login@example.com").first()
+            assert user.timezone == "America/New_York"
+
+    def test_empty_timezone_clears_to_org_default(self, test_app, logged_in_client):
+        """Set then clear through two real requests on the same client -
+        an out-of-band DB write in a separate app_context wouldn't be
+        seen by the request-handling session's identity map (same
+        cross-session staleness documented in test_swap_service.py's
+        TestPurgeSwaps), so this goes through the app's own code path
+        both times instead."""
+        logged_in_client.post(
+            "/profile/update",
+            data={
+                "name": "Admin",
+                "email": "login@example.com",
+                "timezone": "America/New_York",
+            },
+            follow_redirects=True,
+        )
+
+        resp = logged_in_client.post(
+            "/profile/update",
+            data={"name": "Admin", "email": "login@example.com", "timezone": ""},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with test_app.app_context():
+            user = User.query.filter_by(email="login@example.com").first()
+            assert user.timezone is None
+
+    def test_invalid_timezone_rejected_without_mutation(
+        self, test_app, logged_in_client
+    ):
+        resp = logged_in_client.post(
+            "/profile/update",
+            data={
+                "name": "Admin",
+                "email": "login@example.com",
+                "timezone": "Not/A_Real_Zone",
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        assert b"invalide" in resp.data
+        with test_app.app_context():
+            user = User.query.filter_by(email="login@example.com").first()
+            assert user.timezone is None
 
 
 class TestGenerateIcsToken:

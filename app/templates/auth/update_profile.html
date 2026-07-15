@@ -24,6 +24,20 @@
                     </div>
 
                     <div>
+                        <label class="label" for="timezone">Fuseau horaire</label>
+                        <select class="select w-full" id="timezone" name="timezone">
+                            <option value="">Utiliser le fuseau horaire par défaut de l'organisation ({{ default_timezone }})</option>
+                            {% for tz in timezones %}
+                            <option value="{{ tz }}" {% if tz == user.timezone %}selected{% endif %}>{{ tz }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="text-sm text-base-content/60">
+                            Affecte uniquement l'affichage du calendrier dans l'application, jamais l'export ICS
+                            ni l'heure réelle des shifts.
+                        </p>
+                    </div>
+
+                    <div>
                         <label class="label" for="current_password">Mot de passe actuel</label>
                         <input class="input w-full" type="password" id="current_password" name="current_password"
                                placeholder="Obligatoire pour changer le mot de passe">

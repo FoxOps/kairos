@@ -5,13 +5,12 @@ Admin route for the "Paramètres" (Settings) page. Registered on admin_bp
 validation error in one group doesn't affect the others.
 """
 
-from zoneinfo import available_timezones
-
 from flask import flash, redirect, render_template, request, url_for
 
 from app.auth.decorators import admin_required
 from app.routes.admin import admin_bp
 from app.services import SettingsService
+from app.utils.helpers.common_helpers import get_timezone_choices
 from scripts.backup_config import BackupConfig
 
 
@@ -92,7 +91,7 @@ def settings_dashboard():
     return render_template(
         "admin/settings.html",
         default_timezone=SettingsService.get_default_timezone(),
-        timezones=sorted(available_timezones()),
+        timezones=get_timezone_choices(),
         public_base_url=SettingsService.get_public_base_url(),
         items_per_page=SettingsService.get_items_per_page(),
         max_per_page=SettingsService.get_max_per_page(),
