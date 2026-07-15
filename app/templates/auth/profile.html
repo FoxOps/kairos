@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}Mon profil - Leviia{% endblock %}
+{% block title %}{{ _("Mon profil") }} - Leviia{% endblock %}
 
 {% block content %}
 <div class="flex justify-center px-4 py-12">
     <div class="w-full max-w-xl">
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
-                <h1 class="text-2xl font-bold text-center mb-4">Mon profil</h1>
+                <h1 class="text-2xl font-bold text-center mb-4">{{ _("Mon profil") }}</h1>
 
                 <div class="flex flex-col gap-3">
                     <div class="grid grid-cols-3 items-center gap-2">
-                        <label class="label">Nom</label>
+                        <label class="label">{{ _("Nom") }}</label>
                         <span class="col-span-2 font-semibold">{{ user.name }}</span>
                     </div>
 
@@ -21,37 +21,37 @@
                     </div>
 
                     <div class="grid grid-cols-3 items-center gap-2">
-                        <label class="label">Groupe</label>
-                        <span class="col-span-2"><span class="badge badge-info">{{ user.group.name if user.group else 'Aucun' }}</span></span>
+                        <label class="label">{{ _("Groupe") }}</label>
+                        <span class="col-span-2"><span class="badge badge-info">{{ user.group.name if user.group else _('Aucun') }}</span></span>
                     </div>
 
                     <div class="grid grid-cols-3 items-center gap-2">
-                        <label class="label">Rôle</label>
+                        <label class="label">{{ _("Rôle") }}</label>
                         <span class="col-span-2">
                             {% if user.is_admin %}
-                                <span class="badge badge-error">Administrateur</span>
+                                <span class="badge badge-error">{{ _("Administrateur") }}</span>
                             {% else %}
-                                <span class="badge badge-success">Utilisateur</span>
+                                <span class="badge badge-success">{{ _("Utilisateur") }}</span>
                             {% endif %}
                         </span>
                     </div>
                 </div>
 
                 <div class="flex flex-wrap justify-center gap-2 mt-5">
-                    <a href="{{ url_for('auth.update_profile') }}" class="btn btn-primary" aria-label="Modifier le profil">
+                    <a href="{{ url_for('auth.update_profile') }}" class="btn btn-primary" aria-label="{{ _("Modifier le profil") }}">
                         <i class="fas fa-edit" aria-hidden="true"></i>
-                        <span>Modifier le profil</span>
+                        <span>{{ _("Modifier le profil") }}</span>
                     </a>
-                    <a href="{{ url_for('auth.profile_settings') }}" class="btn btn-secondary" aria-label="Mes paramètres">
+                    <a href="{{ url_for('auth.profile_settings') }}" class="btn btn-secondary" aria-label="{{ _("Mes paramètres") }}">
                         <i class="fas fa-sliders" aria-hidden="true"></i>
-                        <span>Mes paramètres</span>
+                        <span>{{ _("Mes paramètres") }}</span>
                     </a>
-                    <a href="{{ url_for('auth.generate_ics_token') }}" class="btn btn-info" aria-label="Générer un token ICS">
+                    <a href="{{ url_for('auth.generate_ics_token') }}" class="btn btn-info" aria-label="{{ _("Générer un token ICS") }}">
                         <i class="fas fa-calendar-alt" aria-hidden="true"></i>
-                        <span>Token ICS</span>
+                        <span>{{ _("Token ICS") }}</span>
                     </a>
-                    <a href="{{ url_for("main.index") }}" class="btn btn-ghost" aria-label="Retour à l'accueil">
-                        Retour
+                    <a href="{{ url_for("main.index") }}" class="btn btn-ghost" aria-label="{{ _("Retour à l'accueil") }}">
+                        {{ _("Retour") }}
                     </a>
                 </div>
             </div>

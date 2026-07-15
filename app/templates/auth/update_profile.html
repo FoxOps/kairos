@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 
-{% block title %}Modifier mon profil - Leviia{% endblock %}
+{% block title %}{{ _("Modifier mon profil") }} - Leviia{% endblock %}
 
 {% block content %}
 <div class="flex justify-center px-4 py-12">
     <div class="w-full max-w-xl">
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
-                <h1 class="text-2xl font-bold text-center mb-4">Modifier mon profil</h1>
+                <h1 class="text-2xl font-bold text-center mb-4">{{ _("Modifier mon profil") }}</h1>
 
                 <form method="POST" action="{{ url_for('auth.update_profile') }}" class="flex flex-col gap-4">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div>
-                        <label class="label" for="name">Nom <span class="text-error">*</span></label>
+                        <label class="label" for="name">{{ _("Nom") }} <span class="text-error">*</span></label>
                         <input class="input w-full" type="text" id="name" name="name"
                                value="{{ user.name }}" required aria-required="true">
                     </div>
@@ -24,33 +24,33 @@
                     </div>
 
                     <div>
-                        <label class="label" for="current_password">Mot de passe actuel</label>
+                        <label class="label" for="current_password">{{ _("Mot de passe actuel") }}</label>
                         <input class="input w-full" type="password" id="current_password" name="current_password"
-                               placeholder="Obligatoire pour changer le mot de passe">
+                               placeholder="{{ _("Obligatoire pour changer le mot de passe") }}">
                         <p class="text-sm text-base-content/60">
-                            Obligatoire si vous souhaitez changer votre mot de passe
+                            {{ _("Obligatoire si vous souhaitez changer votre mot de passe") }}
                         </p>
                     </div>
 
                     <div>
-                        <label class="label" for="new_password">Nouveau mot de passe</label>
+                        <label class="label" for="new_password">{{ _("Nouveau mot de passe") }}</label>
                         <input class="input w-full" type="password" id="new_password" name="new_password"
-                               placeholder="Laisser vide pour ne pas changer">
+                               placeholder="{{ _("Laisser vide pour ne pas changer") }}">
                     </div>
 
                     <div>
-                        <label class="label" for="confirm_password">Confirmer le mot de passe</label>
+                        <label class="label" for="confirm_password">{{ _("Confirmer le mot de passe") }}</label>
                         <input class="input w-full" type="password" id="confirm_password" name="confirm_password"
-                               placeholder="Laisser vide pour ne pas changer">
+                               placeholder="{{ _("Laisser vide pour ne pas changer") }}">
                     </div>
 
                     <div class="flex justify-center gap-2 mt-5">
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save" aria-hidden="true"></i>
-                            <span>Enregistrer les modifications</span>
+                            <span>{{ _("Enregistrer les modifications") }}</span>
                         </button>
                         <a href="{{ url_for('auth.profile') }}" class="btn btn-ghost">
-                            Annuler
+                            {{ _("Annuler") }}
                         </a>
                     </div>
                 </form>

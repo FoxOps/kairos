@@ -1,67 +1,67 @@
 {% extends "base.html" %}
 
-{% block title %}Connexion - Leviia{% endblock %}
+{% block title %}{{ _("Connexion") }} - Leviia{% endblock %}
 
 {% block content %}
 <div class="hero flex-1 bg-base-200 py-12">
     <div class="hero-content flex-col lg:flex-row-reverse gap-12">
         <div class="card bg-base-100 w-full max-w-sm shrink-0 shadow-2xl" role="region" aria-labelledby="page-title">
             <div class="card-body">
-                <h1 id="page-title" class="text-2xl font-bold text-center mb-2">Connexion</h1>
+                <h1 id="page-title" class="text-2xl font-bold text-center mb-2">{{ _("Connexion") }}</h1>
 
                 {% if error %}
                 <div class="alert alert-error mb-4" role="alert" aria-live="assertive">
-                    <p><strong>Erreur :</strong> {{ error }}</p>
+                    <p><strong>{{ _("Erreur :") }}</strong> {{ error }}</p>
                 </div>
                 {% endif %}
 
                 {% if oidc_enabled %}
-                <a href="{{ url_for('auth.oidc_login') }}" class="btn btn-info w-full mb-4" aria-label="Se connecter avec OIDC">
+                <a href="{{ url_for('auth.oidc_login') }}" class="btn btn-info w-full mb-4" aria-label="{{ _("Se connecter avec OIDC") }}">
                     <i class="fas fa-key" aria-hidden="true"></i>
-                    <span>Se connecter avec SSO</span>
+                    <span>{{ _("Se connecter avec SSO") }}</span>
                 </a>
 
-                <div class="divider text-sm text-base-content/60">ou</div>
+                <div class="divider text-sm text-base-content/60">{{ _("ou") }}</div>
                 {% endif %}
 
                 <form method="POST" action="{{ url_for('auth.login') }}" aria-labelledby="page-title" class="flex flex-col gap-4">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div>
-                        <label class="label" for="email">Adresse email <span class="text-error">*</span></label>
+                        <label class="label" for="email">{{ _("Adresse email") }} <span class="text-error">*</span></label>
                         <label class="input w-full">
                             <i class="fas fa-envelope opacity-60" aria-hidden="true"></i>
                             <input type="email" id="email" name="email"
                                    placeholder="votre@email.com" required autofocus aria-required="true" aria-describedby="email-help">
                         </label>
-                        <p class="hidden" id="email-help">Exemple : votre@email.com</p>
+                        <p class="hidden" id="email-help">{{ _("Exemple : votre@email.com") }}</p>
                     </div>
 
                     <div>
-                        <label class="label" for="password">Mot de passe <span class="text-error">*</span></label>
+                        <label class="label" for="password">{{ _("Mot de passe") }} <span class="text-error">*</span></label>
                         <label class="input w-full">
                             <i class="fas fa-lock opacity-60" aria-hidden="true"></i>
                             <input type="password" id="password" name="password"
-                                   placeholder="Votre mot de passe" required aria-required="true" aria-describedby="password-help">
+                                   placeholder="{{ _("Votre mot de passe") }}" required aria-required="true" aria-describedby="password-help">
                         </label>
-                        <p class="hidden" id="password-help">Votre mot de passe doit contenir au moins 8 caractères.</p>
+                        <p class="hidden" id="password-help">{{ _("Votre mot de passe doit contenir au moins 8 caractères.") }}</p>
                     </div>
 
                     <div class="form-control">
                         <label class="label cursor-pointer justify-start gap-2" for="remember">
                             <input type="checkbox" name="remember" id="remember" class="checkbox">
-                            <span>Se souvenir de moi</span>
+                            <span>{{ _("Se souvenir de moi") }}</span>
                         </label>
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-full" aria-label="Se connecter">
+                    <button type="submit" class="btn btn-primary w-full" aria-label="{{ _("Se connecter") }}">
                         <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
-                        <span>Se connecter</span>
+                        <span>{{ _("Se connecter") }}</span>
                     </button>
                 </form>
 
                 <div class="text-center mt-4">
                     <p class="text-sm">
-                        <a href="{{ url_for("main.index") }}" aria-label="Retour à la page d'accueil" class="link">Retour à l'accueil</a>
+                        <a href="{{ url_for("main.index") }}" aria-label="{{ _("Retour à la page d'accueil") }}" class="link">{{ _("Retour à l'accueil") }}</a>
                     </p>
                 </div>
             </div>
@@ -70,8 +70,7 @@
         <div class="text-center lg:text-left max-w-md" aria-hidden="true">
             <h2 class="text-4xl font-extrabold tracking-tight text-primary">Leviia Schedule</h2>
             <p class="py-4 text-base-content/70">
-                Gestion des plannings, astreintes et congés d'équipe -
-                simple, claire, et disponible où que vous soyez.
+                {{ _("Gestion des plannings, astreintes et congés d'équipe - simple, claire, et disponible où que vous soyez.") }}
             </p>
             <div class="flex justify-center lg:justify-start gap-6 text-3xl text-primary mt-2">
                 <i class="fas fa-calendar-alt"></i>

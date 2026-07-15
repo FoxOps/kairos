@@ -1,35 +1,34 @@
 {% extends "base.html" %}
 
-{% block title %}Mes paramètres - Leviia{% endblock %}
+{% block title %}{{ _("Mes paramètres") }} - Leviia{% endblock %}
 
 {% block content %}
 <div class="flex justify-center px-4 py-12">
     <div class="w-full max-w-xl">
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
-                <h1 class="text-2xl font-bold text-center mb-4">Mes paramètres</h1>
+                <h1 class="text-2xl font-bold text-center mb-4">{{ _("Mes paramètres") }}</h1>
 
                 <form method="POST" action="{{ url_for('auth.profile_settings') }}" class="flex flex-col gap-4">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                     <div>
-                        <label class="label" for="timezone">Fuseau horaire</label>
+                        <label class="label" for="timezone">{{ _("Fuseau horaire") }}</label>
                         <select class="select w-full" id="timezone" name="timezone">
-                            <option value="">Utiliser le fuseau horaire par défaut de l'organisation ({{ default_timezone }})</option>
+                            <option value="">{{ _("Utiliser le fuseau horaire par défaut de l'organisation (%(default_timezone)s)", default_timezone=default_timezone) }}</option>
                             {% for tz in timezones %}
                             <option value="{{ tz }}" {% if tz == user.timezone %}selected{% endif %}>{{ tz }}</option>
                             {% endfor %}
                         </select>
                         <p class="text-sm text-base-content/60">
-                            Affecte uniquement l'affichage du calendrier dans l'application, jamais l'export ICS
-                            ni l'heure réelle des shifts.
+                            {{ _("Affecte uniquement l'affichage du calendrier dans l'application, jamais l'export ICS ni l'heure réelle des shifts.") }}
                         </p>
                     </div>
 
                     <div>
-                        <label class="label" for="language">Langue</label>
+                        <label class="label" for="language">{{ _("Langue") }}</label>
                         <select class="select w-full" id="language" name="language">
-                            <option value="">Utiliser la langue par défaut de l'organisation ({{ default_language }})</option>
+                            <option value="">{{ _("Utiliser la langue par défaut de l'organisation (%(default_language)s)", default_language=default_language) }}</option>
                             {% for code, label in languages %}
                             <option value="{{ code }}" {% if code == user.language %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
@@ -37,13 +36,13 @@
                     </div>
 
                     {% if notifications_enabled_org_wide %}
-                    <div class="divider">Notifications par email</div>
+                    <div class="divider">{{ _("Notifications par email") }}</div>
 
                     <div>
                         <label class="label cursor-pointer justify-start gap-2" for="shift_notifications_enabled">
                             <input type="checkbox" class="checkbox" id="shift_notifications_enabled" name="shift_notifications_enabled"
                                    {% if user.shift_notifications_enabled %}checked{% endif %}>
-                            <span>Recevoir le rappel hebdomadaire de mes shifts</span>
+                            <span>{{ _("Recevoir le rappel hebdomadaire de mes shifts") }}</span>
                         </label>
                     </div>
 
@@ -51,23 +50,23 @@
                         <label class="label cursor-pointer justify-start gap-2" for="oncall_notifications_enabled">
                             <input type="checkbox" class="checkbox" id="oncall_notifications_enabled" name="oncall_notifications_enabled"
                                    {% if user.oncall_notifications_enabled %}checked{% endif %}>
-                            <span>Recevoir le rappel hebdomadaire de mes astreintes</span>
+                            <span>{{ _("Recevoir le rappel hebdomadaire de mes astreintes") }}</span>
                         </label>
                     </div>
                     {% else %}
-                    <div class="divider">Notifications par email</div>
+                    <div class="divider">{{ _("Notifications par email") }}</div>
                     <p class="text-sm text-base-content/60">
-                        Les notifications par email sont actuellement désactivées pour toute l'organisation.
+                        {{ _("Les notifications par email sont actuellement désactivées pour toute l'organisation.") }}
                     </p>
                     {% endif %}
 
                     <div class="flex justify-center gap-2 mt-5">
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save" aria-hidden="true"></i>
-                            <span>Enregistrer les modifications</span>
+                            <span>{{ _("Enregistrer les modifications") }}</span>
                         </button>
                         <a href="{{ url_for('auth.profile') }}" class="btn btn-ghost">
-                            Annuler
+                            {{ _("Annuler") }}
                         </a>
                     </div>
                 </form>
