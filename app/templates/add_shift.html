@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Ajouter un shift - Leviia Schedule{% endblock %}
+{% block title %}{{ _("Ajouter un shift") }} - Leviia Schedule{% endblock %}
 
 {% block content %}
 <section class="p-3 md:p-4 max-w-2xl mx-auto">
     <h1 class="text-2xl font-bold mb-4">
-        <i class="fas fa-plus" aria-hidden="true"></i> Ajouter un shift
+        <i class="fas fa-plus" aria-hidden="true"></i> {{ _("Ajouter un shift") }}
     </h1>
 
     <form method="POST" action="{{ url_for('main.add_shift') }}" aria-labelledby="form-title">
@@ -13,46 +13,46 @@
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body gap-4">
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Utilisateur <span class="text-error">*</span></legend>
+                    <legend class="fieldset-legend">{{ _("Utilisateur") }} <span class="text-error">*</span></legend>
                     <select class="select w-full validator" id="user_id" name="user_id" required aria-required="true" aria-describedby="user-help">
-                        <option value="" disabled selected>Sélectionner un utilisateur</option>
+                        <option value="" disabled selected>{{ _("Sélectionner un utilisateur") }}</option>
                         {% for user in users %}
                         <option value="{{ user.id }}">{{ user.name }}</option>
                         {% endfor %}
                     </select>
-                    <p class="text-sm text-base-content/60" id="user-help">Sélectionnez l'utilisateur pour ce shift</p>
+                    <p class="text-sm text-base-content/60" id="user-help">{{ _("Sélectionnez l'utilisateur pour ce shift") }}</p>
                 </fieldset>
 
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Type de shift <span class="text-error">*</span></legend>
+                    <legend class="fieldset-legend">{{ _("Type de shift") }} <span class="text-error">*</span></legend>
                     <select class="select w-full validator" id="shift_type_id" name="shift_type_id" required aria-required="true" aria-describedby="shift-type-help">
-                        <option value="" disabled selected>Sélectionner un type</option>
+                        <option value="" disabled selected>{{ _("Sélectionner un type") }}</option>
                         {% for shift_type in shift_types %}
                         <option value="{{ shift_type.id }}">{{ shift_type.label }} ({{ shift_type.name }})</option>
                         {% endfor %}
                     </select>
-                    <p class="text-sm text-base-content/60" id="shift-type-help">Sélectionnez le type de shift</p>
+                    <p class="text-sm text-base-content/60" id="shift-type-help">{{ _("Sélectionnez le type de shift") }}</p>
                 </fieldset>
 
                 <!-- Date range -->
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Date de début <span class="text-error">*</span></legend>
+                    <legend class="fieldset-legend">{{ _("Date de début") }} <span class="text-error">*</span></legend>
                     <input class="input w-full validator" type="date" id="start_date" name="start_date" required aria-required="true" aria-describedby="start-date-help">
-                    <p class="text-sm text-base-content/60" id="start-date-help">Date de début du shift</p>
+                    <p class="text-sm text-base-content/60" id="start-date-help">{{ _("Date de début du shift") }}</p>
                 </fieldset>
 
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Date de fin <span class="text-error">*</span></legend>
+                    <legend class="fieldset-legend">{{ _("Date de fin") }} <span class="text-error">*</span></legend>
                     <input class="input w-full validator" type="date" id="end_date" name="end_date" required aria-required="true" aria-describedby="end-date-help">
-                    <p class="text-sm text-base-content/60" id="end-date-help">Date de fin du shift</p>
+                    <p class="text-sm text-base-content/60" id="end-date-help">{{ _("Date de fin du shift") }}</p>
                 </fieldset>
 
-                <div class="flex gap-2" role="group" aria-label="Actions du formulaire">
-                    <button class="btn btn-primary" type="submit" aria-label="Enregistrer le shift" title="Enregistrer le shift">
-                        <i class="fas fa-save" aria-hidden="true"></i> Enregistrer
+                <div class="flex gap-2" role="group" aria-label="{{ _("Actions du formulaire") }}">
+                    <button class="btn btn-primary" type="submit" aria-label="{{ _("Enregistrer le shift") }}" title="{{ _("Enregistrer le shift") }}">
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
                     </button>
-                    <a class="btn btn-ghost" href="{{ url_for('main.schedule') }}" aria-label="Annuler et retourner à la liste" title="Annuler">
-                        Annuler
+                    <a class="btn btn-ghost" href="{{ url_for('main.schedule') }}" aria-label="{{ _("Annuler et retourner à la liste") }}" title="{{ _("Annuler") }}">
+                        {{ _("Annuler") }}
                     </a>
                 </div>
             </div>
