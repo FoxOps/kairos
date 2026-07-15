@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 
 
 class SwapService:
-    """Logique métier pour les échanges de shifts entre utilisateurs."""
+    """Business logic for shift exchanges between users."""
 
     @staticmethod
     def list_pending() -> list[SwapRequest]:
@@ -32,7 +32,7 @@ class SwapService:
 
     @staticmethod
     def _other_shift_on_date(user_id: int, target_date, exclude_shift_id) -> bool:
-        """True si user_id a un shift à target_date autre que exclude_shift_id."""
+        """True if user_id has a shift on target_date other than exclude_shift_id."""
         query = Shift.query.filter(Shift.user_id == user_id, Shift.date == target_date)
         if exclude_shift_id is not None:
             query = query.filter(Shift.id != exclude_shift_id)
@@ -45,7 +45,7 @@ class SwapService:
         target_user: User | None,
         target_shift: Shift | None,
     ) -> str | None:
-        """Revalide les règles métier d'un échange. None si valide, sinon message d'erreur."""
+        """Re-validate the business rules for an exchange. None if valid, otherwise an error message."""
         if shift is None:
             return "Shift introuvable"
         if target_user is None:
@@ -83,10 +83,10 @@ class SwapService:
         target_user: User,
         target_shift: Shift | None = None,
     ) -> tuple[SwapRequest | None, str | None]:
-        """Crée une demande d'échange, en attente de validation admin.
+        """Create an exchange request, pending admin approval.
 
         Returns:
-            (swap_request, None) si succès, (None, error_message) sinon.
+            (swap_request, None) on success, (None, error_message) otherwise.
         """
         if SwapRequestRepository.has_pending_for_shift(shift.id):
             return None, "Une demande est déjà en attente pour ce shift"
@@ -109,7 +109,7 @@ class SwapService:
 
     @staticmethod
     def cancel_swap(swap_request: SwapRequest, user: User) -> str | None:
-        """Annule une demande (par son auteur, ou un admin). None si succès."""
+        """Cancel a request (by its author, or an admin). None on success."""
         if not swap_request.is_pending():
             return "Cette demande n'est plus en attente"
         if swap_request.requester_id != user.id and not user.is_admin:
@@ -121,7 +121,7 @@ class SwapService:
 
     @staticmethod
     def approve_swap(swap_request: SwapRequest, admin: User) -> str | None:
-        """Valide une demande : réassigne les shifts, ou None si succès."""
+        """Approve a request: reassigns the shifts. None on success."""
         if not swap_request.is_pending():
             return "Cette demande n'est plus en attente"
 
@@ -148,13 +148,13 @@ class SwapService:
 
     @staticmethod
     def revert_swap(swap_request: SwapRequest, admin: User) -> str | None:
-        """Annule un échange déjà approuvé : réassigne les shifts à leurs
-        propriétaires d'origine. None si succès.
+        """Revert an already-approved exchange: reassigns the shifts back
+        to their original owners. None on success.
 
-        Contrairement à approve_swap, ne revalide pas les règles métier
-        habituelles (congé, autre shift ce jour) : on remet juste chaque
-        shift à son propriétaire d'avant l'échange, ce qui était par
-        définition une situation valide.
+        Unlike approve_swap, this does not re-validate the usual business
+        rules (leave, another shift that day): it just puts each shift
+        back with its pre-exchange owner, which was by definition a valid
+        situation.
         """
         if swap_request.status != SwapRequest.APPROVED:
             return "Seul un échange approuvé peut être annulé"
@@ -188,7 +188,7 @@ class SwapService:
     def reject_swap(
         swap_request: SwapRequest, admin: User, reason: str | None = None
     ) -> str | None:
-        """Rejette une demande. None si succès."""
+        """Reject a request. None on success."""
         if not swap_request.is_pending():
             return "Cette demande n'est plus en attente"
 
@@ -199,16 +199,16 @@ class SwapService:
 
     @staticmethod
     def purge_resolved_for_user(user: User) -> int:
-        """Supprime les demandes terminées (non pending) de l'utilisateur
-        (comme demandeur ou destinataire). Retourne le nombre supprimé."""
+        """Delete the user's resolved (non-pending) requests (as either
+        requester or target). Returns the number deleted."""
         count = SwapRequestRepository.purge_resolved_for_user(user.id)
         db.session.commit()
         return count
 
     @staticmethod
     def purge_all_resolved() -> int:
-        """Supprime toutes les demandes terminées (non pending), admin
-        uniquement (contrôle fait par la route). Retourne le nombre supprimé."""
+        """Delete all resolved (non-pending) requests, admin only (checked
+        by the route). Returns the number deleted."""
         count = SwapRequestRepository.purge_all_resolved()
         db.session.commit()
         return count

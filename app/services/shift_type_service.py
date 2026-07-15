@@ -10,7 +10,7 @@ from app.repositories.shift_repository import ShiftRepository, ShiftTypeReposito
 
 
 class ShiftTypeService:
-    """Logique métier pour les types de shifts."""
+    """Business logic for shift types."""
 
     @staticmethod
     def list_all() -> list[ShiftType]:

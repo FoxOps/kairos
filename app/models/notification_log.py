@@ -46,7 +46,7 @@ class NotificationLog(BaseModel):
     def already_sent(
         cls, user_id: int, notification_type: str, period_start: date
     ) -> bool:
-        """True si cette notification a déjà été enregistrée comme envoyée."""
+        """True if this notification has already been recorded as sent."""
         return (
             cls.query.filter_by(
                 user_id=user_id,

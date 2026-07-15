@@ -10,7 +10,7 @@ from app.repositories.user_repository import GroupRepository, UserRepository
 
 
 class GroupService:
-    """Logique métier pour les groupes."""
+    """Business logic for groups."""
 
     @staticmethod
     def list_all() -> list[Group]:

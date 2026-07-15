@@ -52,7 +52,7 @@ class AppNotificationRepository:
 
     @staticmethod
     def purge_read_for_user(user_id: int) -> int:
-        """Supprime les notifications déjà lues de user_id. Retourne le nombre supprimé."""
+        """Delete user_id's already-read notifications. Returns the number deleted."""
         return AppNotification.query.filter(
             AppNotification.user_id == user_id,
             AppNotification.read_at.isnot(None),

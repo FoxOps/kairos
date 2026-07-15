@@ -20,7 +20,7 @@ VALID_SCOPES = ("all", "my")
 
 
 class ExportService:
-    """Logique métier pour l'export ICS."""
+    """Business logic for ICS export."""
 
     @staticmethod
     def normalize_scope(scope: str | None) -> str:
@@ -28,8 +28,8 @@ class ExportService:
 
     @staticmethod
     def resolve_user(token: str | None) -> User | None:
-        """Utilisateur pour l'export : session authentifiée en priorité,
-        sinon token ICS."""
+        """User for the export: authenticated session takes priority,
+        otherwise the ICS token."""
         if current_user.is_authenticated:
             return current_user
         if token:

@@ -15,7 +15,7 @@ from app.utils.helpers import _get_overlapping_leave, can_add_oncall
 
 
 class OnCallService:
-    """Logique métier pour les astreintes."""
+    """Business logic for on-call duties."""
 
     @staticmethod
     def list_paginated(page: int, per_page: int):
@@ -26,7 +26,7 @@ class OnCallService:
         user: User, start_date: datetime
     ) -> tuple[OnCall | None, str | None]:
         """
-        Crée une astreinte d'une semaine à partir du vendredi 21h donné.
+        Create a one-week on-call starting from the given Friday 9pm.
 
         Returns:
             (oncall, error_message)
@@ -85,7 +85,7 @@ class OnCallService:
     def api_update(
         oncall_id: int, new_start: datetime, new_end: datetime
     ) -> tuple[OnCall | None, str | None]:
-        """Met à jour une astreinte depuis l'API drag & drop. Returns (oncall, error_message)."""
+        """Update an on-call from the drag & drop API. Returns (oncall, error_message)."""
         oncall = OnCallRepository.get_by_id(oncall_id)
         if not oncall:
             return None, "Astreinte non trouvée"
@@ -102,10 +102,9 @@ class OnCallService:
                 f"Une astreinte existe déjà pour {oncall.user.name} pendant cette période",
             )
 
-        # Revalidation manquante à l'origine (même bug que ShiftService.api_update) :
-        # le chemin de création (add_oncall) passe par can_add_oncall(), qui
-        # vérifie aussi les congés sur la période - le drag & drop ne le
-        # faisait pas.
+        # Originally missing: the creation path (add_oncall) goes through
+        # can_add_oncall(), which also checks leave over the period - drag
+        # & drop didn't (same class of bug as ShiftService.api_update).
         if _get_overlapping_leave(oncall.user_id, new_start.date(), new_end.date()):
             return (
                 None,

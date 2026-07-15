@@ -11,16 +11,16 @@ from app import db
 
 
 def _utcnow() -> datetime:
-    """datetime.utcnow() est dépréciée (Python 3.12+) - utilisée comme
-    `default`/`onupdate` de colonne (référence de fonction, pas un appel),
-    donc un simple `datetime.now` ne suffit pas, il faut fixer l'argument
-    `timezone.utc`. Le round-trip SQLite de SQLAlchemy retire le tzinfo à
-    la lecture (vérifié empiriquement) : la valeur stockée reste une heure
-    UTC naïve comme avant, seul l'avertissement de dépréciation disparaît."""
+    """datetime.utcnow() is deprecated (Python 3.12+) - used here as a
+    column `default`/`onupdate` (a function reference, not a call), so a
+    plain `datetime.now` isn't enough; the `timezone.utc` argument must be
+    bound. SQLAlchemy's SQLite round-trip strips tzinfo back out on read:
+    the stored value stays a naive UTC datetime exactly as before, only
+    the deprecation warning goes away."""
     return datetime.now(timezone.utc)
 
 
-class BaseModel(db.Model):  # type: ignore[name-defined]  # limitation connue mypy + Flask-SQLAlchemy sans stubs dédiés
+class BaseModel(db.Model):  # type: ignore[name-defined]  # known mypy + Flask-SQLAlchemy limitation without dedicated stubs
     """
     Abstract base model with common fields and methods.
 

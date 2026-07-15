@@ -15,7 +15,7 @@ from app.repositories.user_repository import UserRepository
 
 
 class UserService:
-    """Logique métier pour les utilisateurs."""
+    """Business logic for users."""
 
     @staticmethod
     def list_all() -> list[User]:
@@ -31,14 +31,14 @@ class UserService:
 
     @staticmethod
     def visible_users_for_leave(current_user: User) -> list[User]:
-        """Un admin voit tout le monde, un utilisateur normal ne se voit que lui-même."""
+        """An admin sees everyone, a regular user only sees themselves."""
         if current_user.is_admin:
             return UserRepository.get_all()
         return [current_user]
 
     @staticmethod
     def visible_users_for_schedule(current_user: User) -> list[User]:
-        """Un admin voit les utilisateurs du planning, un utilisateur normal ne se voit que lui-même."""
+        """An admin sees the schedule's users, a regular user only sees themselves."""
         if current_user.is_admin:
             return UserRepository.get_for_schedule_group()
         return [current_user]

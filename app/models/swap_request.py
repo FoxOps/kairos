@@ -15,9 +15,9 @@ if TYPE_CHECKING:
     from app.models.shift import Shift
     from app.models.user import User
 
-# Sentinel distinguant "jamais préchargé" de "préchargé mais None" (ex:
-# reviewer avant décision admin) - un simple None par défaut ne pourrait
-# pas faire la différence.
+# Sentinel distinguishing "never preloaded" from "preloaded but None"
+# (e.g. reviewer before an admin decision) - a plain None default
+# couldn't tell the two apart.
 _NOT_PRELOADED = object()
 
 
@@ -76,25 +76,25 @@ class SwapRequest(BaseModel):
         db.Index("idx_swap_target_status", "target_user_id", "status"),
     )
 
-    # Pas de db.relationship() ORM ici : ce modèle a 3 FK distinctes vers
-    # User (requester/target_user/reviewer) + 2 vers Shift, un cas inédit
-    # dans ce repo. Les autres modèles (Leave, Shift, OnCall) n'ont qu'une
-    # seule FK vers User et exposent leur relation via un backref déclaré
-    # côté User (voir app/models/user.py) - mypy ne l'analyse alors jamais
-    # statiquement (attribut dynamique invisible). Une db.relationship()
-    # explicite ici serait elle bien vue par mypy, mais typée en dur
-    # RelationshipProperty[Any] par les stubs SQLAlchemy 2.0 sans le
-    # plugin mypy dédié (non installé dans ce projet) - donc de simples
-    # @property qui font un db.session.get() à l'accès.
-    # Cache d'instance rempli par SwapRequestRepository._preload_related()
-    # pour éviter un N+1 sur les listes (admin/swaps.html, swaps.html).
-    # Nécessaire car l'identity map de SQLAlchemy est en références
-    # faibles : un bulk SELECT dont le résultat n'est conservé nulle part
-    # ailleurs peut être ramassé par le GC avant que ces @property y
-    # accèdent, provoquant une requête individuelle malgré le préchargement
-    # (observé empiriquement - comportement non déterministe selon le GC).
-    # Stocker les objets ici, sur l'instance elle-même, garantit une
-    # référence forte tant que la ligne SwapRequest reste vivante.
+    # No ORM db.relationship() here: this model has 3 distinct FKs to User
+    # (requester/target_user/reviewer) + 2 to Shift, a first in this repo.
+    # Other models (Leave, Shift, OnCall) only have a single FK to User and
+    # expose their relation via a backref declared on the User side (see
+    # app/models/user.py) - mypy never statically analyzes that (invisible
+    # dynamic attribute). An explicit db.relationship() here would be seen
+    # by mypy, but hard-typed as RelationshipProperty[Any] by the
+    # SQLAlchemy 2.0 stubs without the dedicated mypy plugin (not installed
+    # in this project) - hence plain @property methods that do a
+    # db.session.get() on access.
+    # Instance-level cache populated by
+    # SwapRequestRepository._preload_related() to avoid an N+1 on list
+    # views (admin/swaps.html, swaps.html). Needed because SQLAlchemy's
+    # identity map holds weak references: a bulk SELECT whose result isn't
+    # kept referenced anywhere else can be garbage-collected before these
+    # @property methods read it, triggering an individual query despite
+    # the preload (non-deterministic, depends on GC timing). Storing the
+    # objects here, on the instance itself, guarantees a strong reference
+    # for as long as the SwapRequest row stays alive.
     _cached_requester: "User | None | object" = _NOT_PRELOADED
     _cached_target_user: "User | None | object" = _NOT_PRELOADED
     _cached_reviewer: "User | None | object" = _NOT_PRELOADED
@@ -107,7 +107,7 @@ class SwapRequest(BaseModel):
             return cast("User", self._cached_requester)
         from app.models.user import User
 
-        # requester_id est NOT NULL - cast documente cette garantie FK.
+        # requester_id is NOT NULL - the cast documents that FK guarantee.
         return cast(User, db.session.get(User, self.requester_id))
 
     @property

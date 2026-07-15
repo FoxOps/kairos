@@ -24,7 +24,7 @@ from app.utils.notifications import send_email
 
 @dataclass
 class NotificationBatchResult:
-    """Résumé d'un envoi en lot, pour logging côté script."""
+    """Summary of a batch send, for logging on the script side."""
 
     sent: list[str] = field(default_factory=list)
     skipped_already_sent: list[str] = field(default_factory=list)
@@ -32,24 +32,24 @@ class NotificationBatchResult:
 
 
 class NotificationService:
-    """Logique métier pour les notifications par email hebdomadaires."""
+    """Business logic for the weekly email notifications."""
 
     SHIFT_WEEKLY = "shift_weekly"
     ONCALL_WEEKLY = "oncall_weekly"
 
     @staticmethod
     def next_monday(reference_date: date | None = None) -> date:
-        """Prochain lundi strictement après reference_date (aujourd'hui par
-        défaut). Toujours dans le futur, même si reference_date est déjà
-        un lundi - évite qu'un lancement manuel un lundi ne cible la
-        semaine en cours plutôt que la suivante."""
+        """Next Monday strictly after reference_date (today by default).
+        Always in the future, even if reference_date is already a Monday -
+        this avoids a manual run on a Monday targeting the current week
+        instead of the next one."""
         today = reference_date or date.today()
         days_ahead = (0 - today.weekday()) % 7
         return today + timedelta(days=days_ahead or 7)
 
     @staticmethod
     def next_friday(reference_date: date | None = None) -> date:
-        """Prochain vendredi strictement après reference_date."""
+        """Next Friday strictly after reference_date."""
         today = reference_date or date.today()
         days_ahead = (4 - today.weekday()) % 7
         return today + timedelta(days=days_ahead or 7)
@@ -61,10 +61,9 @@ class NotificationService:
         reference_date: date | None = None,
     ) -> NotificationBatchResult:
         """
-        Envoie un email récapitulatif à chaque utilisateur ayant au moins
-        un shift la semaine prochaine (lundi-vendredi). Un seul email par
-        utilisateur et par semaine (NotificationLog empêche les doublons
-        si le script est relancé).
+        Send a summary email to each user who has at least one shift next
+        week (Monday-Friday). One email per user per week (NotificationLog
+        prevents duplicates if the script is re-run).
         """
         result = NotificationBatchResult()
 
@@ -134,8 +133,8 @@ class NotificationService:
         reference_date: date | None = None,
     ) -> NotificationBatchResult:
         """
-        Envoie un email à l'utilisateur d'astreinte pour la période
-        démarrant le vendredi 21h à venir.
+        Send an email to the on-call user for the period starting the
+        upcoming Friday at 9pm.
         """
         result = NotificationBatchResult()
 

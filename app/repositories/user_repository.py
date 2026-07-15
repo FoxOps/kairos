@@ -30,7 +30,7 @@ class UserRepository:
 
     @staticmethod
     def get_for_schedule_group() -> list[User]:
-        """Utilisateurs appartenant à un groupe participant au planning."""
+        """Users belonging to a group that participates in the schedule."""
         return (
             User.query.join(Group)
             .filter(Group.is_part_of_schedule.is_(True))
@@ -40,7 +40,7 @@ class UserRepository:
 
     @staticmethod
     def get_for_oncall_group() -> list[User]:
-        """Utilisateurs appartenant à un groupe participant aux astreintes."""
+        """Users belonging to a group that participates in on-call rotation."""
         return (
             User.query.join(Group)
             .filter(Group.is_part_of_oncall.is_(True))
