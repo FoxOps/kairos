@@ -2,12 +2,12 @@ import secrets
 
 from app import app, db
 
-# Importer les modèles pour enregistrer les tables avec SQLAlchemy
+# Import models to register the tables with SQLAlchemy
 from app.models import Group, ShiftType, User
 
-# Importer les routes pour qu'elles soient enregistrées
+# Import routes so they get registered
 
-# Types de shifts par défaut
+# Default shift types
 DEFAULT_SHIFT_TYPES = [
     {"name": "morning", "label": "07h-15h", "start_hour": 7, "end_hour": 15},
     {"name": "afternoon", "label": "09h-17h", "start_hour": 9, "end_hour": 17},
@@ -16,11 +16,11 @@ DEFAULT_SHIFT_TYPES = [
 
 
 def check_database_integrity():
-    """Vérifie l'intégrité de la base de données et retourne True si elle est valide."""
+    """Check the database's integrity and return True if it's valid."""
     from sqlalchemy import inspect
 
     try:
-        # Vérifier que toutes les tables existent
+        # Check that all tables exist
         inspector = inspect(db.engine)
         tables = inspector.get_table_names()
 
@@ -45,32 +45,32 @@ def check_database_integrity():
 
 
 def setup_database():
-    """Configure la base de données.
+    """Set up the database.
 
-    Nécessite un contexte d'application actif (l'appelant doit déjà être
-    dans un `with app.app_context():`, ou équivalent pour les tests).
+    Requires an active application context (the caller must already be
+    inside a `with app.app_context():`, or the test equivalent).
     """
-    # Créer les tables si elles n'existent pas
+    # Create the tables if they don't exist
     db.create_all()
 
-    # Vérifier l'intégrité de la base de données
+    # Check the database's integrity
     if not check_database_integrity():
-        # Si les tables n'existent pas, les recréer
+        # If the tables don't exist, recreate them
         db.drop_all()
         db.create_all()
 
 
 def create_default_data():
-    """Crée les données par défaut si elles n'existent pas.
+    """Create the default data if it doesn't exist.
 
-    Nécessite un contexte d'application actif (l'appelant doit déjà être
-    dans un `with app.app_context():`, ou équivalent pour les tests).
+    Requires an active application context (the caller must already be
+    inside a `with app.app_context():`, or the test equivalent).
     """
     import os
 
     from werkzeug.security import generate_password_hash
 
-    # Créer le groupe par défaut
+    # Create the default group
     default_group_name = os.environ.get("DEFAULT_GROUP_NAME") or "Defaut"
     default_group = Group.query.filter_by(name=default_group_name).first()
     if not default_group:
@@ -86,7 +86,7 @@ def create_default_data():
         db.session.add(default_group)
         db.session.commit()
 
-    # Créer l'utilisateur admin par défaut
+    # Create the default admin user
     default_admin_email = os.environ.get("DEFAULT_ADMIN_EMAIL") or "admin@leviia.local"
     default_admin_password = os.environ.get(
         "DEFAULT_ADMIN_PASSWORD"
@@ -94,21 +94,21 @@ def create_default_data():
 
     admin_user = User.query.filter_by(email=default_admin_email).first()
     if not admin_user:
-        # ✅ CORRIGÉ: Le modèle User n'a pas de champ 'username', utiliser 'name' à la place
+        # The User model has no 'username' field, use 'name' instead
         admin_user = User(
             email=default_admin_email,
-            name="Administrateur",  # Utiliser 'name' au lieu de 'username'
+            name="Administrateur",
             password_hash=generate_password_hash(default_admin_password),
             is_admin=True,
             group_id=default_group.id,
         )
         db.session.add(admin_user)
         db.session.commit()
-        print(f"✅ Utilisateur admin créé: {default_admin_email}")
+        print(f"✅ Admin user created: {default_admin_email}")
     else:
-        print(f"✅ Utilisateur admin existe déjà: {default_admin_email}")
+        print(f"✅ Admin user already exists: {default_admin_email}")
 
-    # Créer les types de shifts par défaut
+    # Create the default shift types
     for shift_type_data in DEFAULT_SHIFT_TYPES:
         shift_type = ShiftType.query.filter_by(name=shift_type_data["name"]).first()
         if not shift_type:
@@ -126,16 +126,16 @@ if __name__ == "__main__":
     import os
 
     with app.app_context():
-        # Configurer la base de données (une seule fois)
+        # Set up the database (once)
         setup_database()
 
-        # Créer les données par défaut
+        # Create the default data
         create_default_data()
 
-    # ✅ Écouter sur 0.0.0.0:5000 pour permettre les connexions externes
+    # Listen on 0.0.0.0:5000 to allow external connections
     host = os.environ.get("FLASK_HOST") or "0.0.0.0"
     port = int(os.environ.get("FLASK_PORT") or 5000)
 
-    # Désactiver le reloader pour éviter les problèmes de "database is locked" avec SQLite
-    # Le reloader crée un nouveau processus qui peut verrouiller la base de données
+    # Disable the reloader to avoid "database is locked" issues with SQLite -
+    # the reloader spawns a new process that can lock the database
     app.run(host=host, port=port, debug=True, use_reloader=False)

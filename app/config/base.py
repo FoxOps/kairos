@@ -163,10 +163,11 @@ class Config:
     HOST: str = os.environ.get("FLASK_HOST") or "0.0.0.0"
     PORT: int = int(os.environ.get("FLASK_PORT") or 5000)
 
-    # URL publique de l'app derrière un reverse proxy (ex: https://schedule.example.com/)
-    # Optionnel : sert de repli quand request.host_url ne reflète pas le bon domaine
-    # (proxy qui ne transmet pas X-Forwarded-Host). Voir app/__init__.py
-    # inject_public_base_url et templates _ics_export_buttons.html / auth/ics_token.html.
+    # Public URL of the app behind a reverse proxy (e.g. https://schedule.example.com/)
+    # Optional: acts as a fallback when request.host_url doesn't reflect
+    # the right domain (proxy not forwarding X-Forwarded-Host). See
+    # app/__init__.py's inject_public_base_url and the
+    # _ics_export_buttons.html / auth/ics_token.html templates.
     PUBLIC_BASE_URL: str | None = os.environ.get("PUBLIC_BASE_URL") or None
 
     # Debug Mode (should be False in production)
@@ -199,13 +200,13 @@ class Config:
         "SECURITY_PASSWORD_SALT"
     ) or secrets.token_urlsafe(16)
 
-    # Talisman (en-têtes de sécurité HTTP). force_https redirige vers https://
-    # à chaque requête : à activer uniquement derrière un reverse proxy qui
-    # termine le TLS (sinon boucle sur une redirection que rien ne sert).
-    # Note: create_app() charge cette classe de base par défaut, quel que
-    # soit FLASK_ENV - ces clés doivent donc être lues ici, pas seulement
-    # dans ProductionConfig/TestingConfig, pour que la variable d'env ait un
-    # effet réel en déploiement.
+    # Talisman (HTTP security headers). force_https redirects to https://
+    # on every request: only enable behind a reverse proxy that
+    # terminates TLS (otherwise it loops on a redirect that serves no
+    # purpose). Note: create_app() loads this base class by default,
+    # regardless of FLASK_ENV - these keys must therefore be read here,
+    # not only in ProductionConfig/TestingConfig, for the env var to
+    # have any real effect in deployment.
     TALISMAN_FORCE_HTTPS: bool = get_bool_from_env("TALISMAN_FORCE_HTTPS", False)
     TALISMAN_STRICT_TRANSPORT_SECURITY: bool = get_bool_from_env(
         "TALISMAN_STRICT_TRANSPORT_SECURITY", False
