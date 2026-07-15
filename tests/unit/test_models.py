@@ -201,6 +201,31 @@ class TestUserModel:
 
             assert test_user.effective_timezone() == "America/New_York"
 
+    def test_effective_language_uses_own_preference_when_set(self, test_app, test_user):
+        with test_app.app_context():
+            test_user.language = "en"
+            db.session.commit()
+
+            assert test_user.effective_language() == "en"
+
+    def test_effective_language_falls_back_to_org_default(self, test_app, test_user):
+        with test_app.app_context():
+            assert test_user.language is None
+            assert test_user.effective_language() == "fr"
+
+    def test_effective_language_reflects_admin_default_change(
+        self, test_app, test_user
+    ):
+        """A user without a personal preference must pick up a change to
+        the org default retroactively - the fallback is resolved at read
+        time, not baked into the column."""
+        with test_app.app_context():
+            from app.services import SettingsService
+
+            SettingsService.set_default_language("en")
+
+            assert test_user.effective_language() == "en"
+
     def test_notification_preferences_default_to_enabled(self, test_app, test_group):
         """No opt-out existed before this preference was added - default
         must be True so existing/new users keep getting the emails they

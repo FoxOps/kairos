@@ -17,6 +17,7 @@ import os
 import warnings
 
 from flask import Flask, render_template
+from flask_babel import Babel
 from flask_compress import Compress
 from flask_cors import CORS
 from flask_limiter import Limiter
@@ -48,6 +49,27 @@ login_manager.login_message_category = "danger"
 limiter = Limiter(key_func=get_remote_address)
 csrf = CSRFProtect()
 compress = Compress()
+babel = Babel()
+
+
+def get_locale() -> str:
+    """Resolution order: the authenticated user's own language
+    preference, else the organization's default_language Setting.
+    Deliberately no Accept-Language sniffing - org/user settings are
+    the single source of truth here, exactly like effective_timezone()
+    never consults browser-provided data. This also keeps rendering
+    deterministic for anonymous pages (login, error pages) regardless
+    of visitor - important for test stability (see
+    SettingsService.FALLBACK_DEFAULT_LANGUAGE)."""
+    from flask_login import current_user
+
+    if current_user.is_authenticated:
+        return current_user.effective_language()
+
+    from app.services import SettingsService
+
+    return SettingsService.get_default_language()
+
 
 # Content-Security-Policy applied by Talisman - see the comment in
 # create_app() for details on each directive. Exposed as a module-level
@@ -190,6 +212,7 @@ def create_app(config_object: str | None = None):
     login_manager.init_app(app)
     limiter.init_app(app)
     csrf.init_app(app)
+    babel.init_app(app, locale_selector=get_locale)
 
     # Configure rate limiting if enabled
     if app.config.get("RATE_LIMIT_ENABLED", True):

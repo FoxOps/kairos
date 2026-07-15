@@ -53,6 +53,8 @@ class User(BaseModel, UserMixin):
         ics_token: Unique token for ICS export
         timezone: Optional personal IANA timezone (e.g. "Europe/Paris"); None
             means "use the organization's default_timezone setting"
+        language: Optional personal UI language ("fr"/"en"); None means
+            "use the organization's default_language setting"
         shift_notifications_enabled: Opt-out for the weekly shift reminder
             email (only takes effect if notifications are enabled org-wide,
             see SettingsService.get_notifications_enabled())
@@ -74,6 +76,7 @@ class User(BaseModel, UserMixin):
     )
     ics_token = db.Column(db.String(64), unique=True, nullable=True)
     timezone = db.Column(db.String(64), nullable=True)
+    language = db.Column(db.String(5), nullable=True)
     shift_notifications_enabled = db.Column(db.Boolean, nullable=False, default=True)
     oncall_notifications_enabled = db.Column(db.Boolean, nullable=False, default=True)
 
@@ -165,6 +168,15 @@ class User(BaseModel, UserMixin):
         from app.services import SettingsService
 
         return SettingsService.get_default_timezone()
+
+    def effective_language(self) -> str:
+        """The UI language to use for this user: their own preference if
+        set, otherwise the organization's default_language setting."""
+        if self.language:
+            return self.language
+        from app.services import SettingsService
+
+        return SettingsService.get_default_language()
 
     def __repr__(self) -> str:
         return f"<User {self.name} ({self.email})>"

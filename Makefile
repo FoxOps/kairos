@@ -1,7 +1,7 @@
 # Makefile pour Leviia Schedule
 # Exécutez `make help` pour voir les commandes disponibles
 
-.PHONY: help install test lint format security all clean backup backup-local backup-s3 backup-list backup-restore
+.PHONY: help install test lint format security all clean backup backup-local backup-s3 backup-list backup-restore babel-extract babel-update babel-compile
 
 # Couleurs pour les messages
 GREEN := \033[0;32m
@@ -191,3 +191,23 @@ bug-hunt-report: ## Génère un rapport complet
 find-duplicates: ## Trouve le code dupliqué
 	@echo "Recherche de code dupliqué..."
 	python scripts/find_duplicates.py --check-imports
+
+# ============================================================================
+# TRADUCTIONS (i18n, Flask-Babel)
+# ============================================================================
+
+babel-extract: ## Extrait les chaînes traduisibles vers messages.pot
+	@echo "$(YELLOW)Extraction des chaînes traduisibles...$(NC)"
+	pybabel extract -F babel.cfg -o app/translations/messages.pot .
+	@echo "$(GREEN)✓ messages.pot généré$(NC)"
+
+babel-update: babel-extract ## Met à jour les catalogues .po (fr/en) depuis messages.pot
+	@echo "$(YELLOW)Mise à jour des catalogues de traduction...$(NC)"
+	pybabel update -i app/translations/messages.pot -d app/translations -l fr
+	pybabel update -i app/translations/messages.pot -d app/translations -l en
+	@echo "$(GREEN)✓ Catalogues fr/en mis à jour$(NC)"
+
+babel-compile: ## Compile les catalogues .po en .mo (requis avant de lancer l'app)
+	@echo "$(YELLOW)Compilation des catalogues de traduction...$(NC)"
+	pybabel compile -d app/translations
+	@echo "$(GREEN)✓ Catalogues compilés (.mo)$(NC)"

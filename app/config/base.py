@@ -222,6 +222,15 @@ class Config:
     ITEMS_PER_PAGE: int = get_int_from_env("ITEMS_PER_PAGE", 20)
     MAX_PER_PAGE: int = get_int_from_env("MAX_PER_PAGE", 100)
 
+    # i18n (Flask-Babel). BABEL_DEFAULT_LOCALE is a defensive fallback,
+    # never actually exercised in practice: app/__init__.py's get_locale()
+    # always returns a value of its own (falls back to
+    # SettingsService.FALLBACK_DEFAULT_LANGUAGE = "fr" when nothing else
+    # applies). BABEL_TRANSLATION_DIRECTORIES matches Flask-Babel's own
+    # default already, spelled out explicitly for discoverability.
+    BABEL_DEFAULT_LOCALE: str = "fr"
+    BABEL_TRANSLATION_DIRECTORIES: str = "translations"
+
     # Logging Configuration
     LOG_LEVEL: str = os.environ.get("LOG_LEVEL") or "INFO"
     LOG_FORMAT: str = (

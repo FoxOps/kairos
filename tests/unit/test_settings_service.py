@@ -26,6 +26,24 @@ class TestDefaultTimezone:
             assert SettingsService.get_default_timezone() == "Europe/Paris"
 
 
+class TestDefaultLanguage:
+    def test_falls_back_to_hardcoded_default_when_unset(self, test_app):
+        with test_app.app_context():
+            assert SettingsService.get_default_language() == "fr"
+
+    def test_db_override_wins(self, test_app):
+        with test_app.app_context():
+            error = SettingsService.set_default_language("en")
+            assert error is None
+            assert SettingsService.get_default_language() == "en"
+
+    def test_rejects_invalid_language(self, test_app):
+        with test_app.app_context():
+            error = SettingsService.set_default_language("de")
+            assert error is not None
+            assert SettingsService.get_default_language() == "fr"
+
+
 class TestPublicBaseUrl:
     def test_falls_back_to_app_config_when_unset(self, test_app):
         with test_app.app_context():
