@@ -1,5 +1,5 @@
 """
-Tests d'intégration pour les routes de notifications internes à l'app
+Integration tests for the in-app notification routes
 (notification_routes.py).
 """
 

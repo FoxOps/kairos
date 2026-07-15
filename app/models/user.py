@@ -6,7 +6,6 @@ and authentication.
 """
 
 import secrets
-from datetime import datetime
 
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -147,51 +146,6 @@ class User(BaseModel, UserMixin):
         if not self.ics_token:
             return None
         return f"/export/{export_type}?scope={scope}&token={self.ics_token}"
-
-    @property
-    def total_shifts(self) -> int:
-        """Get the total number of shifts for this user."""
-        from app.models.shift import Shift
-
-        return Shift.query.filter_by(user_id=self.id).count()
-
-    @property
-    def total_oncalls(self) -> int:
-        """Get the total number of on-call assignments for this user."""
-        from app.models.oncall import OnCall
-
-        return OnCall.query.filter_by(user_id=self.id).count()
-
-    @property
-    def total_leaves(self) -> int:
-        """Get the total number of leave requests for this user."""
-        from app.models.leave import Leave
-
-        return Leave.query.filter_by(user_id=self.id).count()
-
-    @property
-    def next_shift(self):
-        """Get the user's next upcoming shift."""
-        from app.models.shift import Shift
-
-        return (
-            Shift.query.filter(
-                Shift.user_id == self.id, Shift.start_time > datetime.now()
-            )
-            .order_by(Shift.start_time)
-            .first()
-        )
-
-    @property
-    def current_oncall(self):
-        """Get the user's current on-call assignment."""
-        from app.models.oncall import OnCall
-
-        return OnCall.query.filter(
-            OnCall.user_id == self.id,
-            OnCall.start_time <= datetime.now(),
-            OnCall.end_time >= datetime.now(),
-        ).first()
 
     def __repr__(self) -> str:
         return f"<User {self.name} ({self.email})>"

@@ -1,11 +1,11 @@
 /**
- * Notifications éphémères (toasts) et confirmation navigateur simple.
+ * Ephemeral notifications (toasts) and simple browser confirmation.
  */
 
 /**
- * Affiche une notification.
- * @param {string} message - Message à afficher
- * @param {string} type - Type de notification (success, danger, warning, info)
+ * Show a notification.
+ * @param {string} message - Message to display
+ * @param {string} type - Notification type (success, danger, warning, info)
  */
 export function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
@@ -21,7 +21,7 @@ export function showNotification(message, type = 'info') {
 
     document.body.appendChild(notification);
 
-    // Supprimer après 5 secondes
+    // Remove after 5 seconds
     setTimeout(() => {
         notification.classList.add('is-hidden');
         setTimeout(() => notification.remove(), 500);
@@ -29,9 +29,9 @@ export function showNotification(message, type = 'info') {
 }
 
 /**
- * Confirme une action avec l'utilisateur.
- * @param {string} message - Message de confirmation
- * @returns {boolean} True si confirmé
+ * Confirm an action with the user.
+ * @param {string} message - Confirmation message
+ * @returns {boolean} True if confirmed
  */
 export function confirmAction(message) {
     return confirm(message);

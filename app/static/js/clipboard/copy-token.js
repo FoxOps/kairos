@@ -1,10 +1,10 @@
 /**
- * Copie-vers-presse-papiers pour la page de token ICS
+ * Copy-to-clipboard for the ICS token page
  * (app/templates/auth/ics_token.html).
  *
- * Externalisé depuis un <script> inline (Phase 6 a mis en place une CSP
- * script-src 'self' stricte - ce bloc était bloqué silencieusement par le
- * navigateur, cassant tous les boutons "Copier" de cette page).
+ * This file was extracted from an inline <script>: under a strict
+ * `script-src 'self'` CSP, an inline block like this one is silently
+ * blocked by the browser, which broke every "Copy" button on that page.
  */
 
 function copyInputValue(inputId, button) {

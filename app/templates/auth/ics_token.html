@@ -43,7 +43,7 @@
                     </div>
                 </div>
 
-                <!-- Shifts URLs -->
+                <!-- Shift URLs -->
                 <div class="mb-4">
                     <label class="label">URL Shifts (Tous)</label>
                     <div class="join w-full">
@@ -151,7 +151,7 @@
                 </div>
                 {% endif %}
 
-                <!-- Boutons d'action - TOUJOURS dans le content -->
+                <!-- Action buttons - ALWAYS inside the content block -->
                 <div class="flex justify-center gap-2 mt-5">
                     <form method="POST" action="{{ url_for('auth.generate_ics_token') }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

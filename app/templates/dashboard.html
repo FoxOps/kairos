@@ -11,7 +11,7 @@
     <h1 id="page-title" class="text-xl font-bold"><i class="fas fa-tachometer-alt" aria-hidden="true"></i> Mon Tableau de bord</h1>
     <p class="text-base-content/70 mb-3">Bienvenue, {{ user.name }} ! Voici votre vue d'ensemble personnalisée.</p>
 
-    <!-- Statistiques principales -->
+    <!-- Main statistics -->
     <div class="stats stats-vertical sm:stats-horizontal shadow-md bg-base-100 w-full mb-3" role="list" aria-label="Statistiques principales">
         <div class="stat" role="region" aria-labelledby="shifts-total-title">
             <div class="stat-figure text-primary">
@@ -38,10 +38,9 @@
         </div>
     </div>
 
-    <!-- Composition en grille : le graphique occupe toute la largeur sur
-         sa propre ligne, prochains shifts/astreintes/congés se partagent
-         la ligne suivante à égalité, shifts récents ferme en pleine
-         largeur. -->
+    <!-- Grid layout: the chart takes the full width on its own row,
+         upcoming shifts/on-calls/leaves share the next row evenly, and
+         recent shifts closes at full width. -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
         {% if shift_types_stats %}
         <div class="lg:col-span-3 card card-sm bg-base-100 shadow-md" role="region" aria-labelledby="shift-types-title">

@@ -1,8 +1,8 @@
 """
-Module pour l'intégration avec Prometheus.
+Prometheus integration module.
 
-Ce module expose des métriques pour le monitoring de l'application
-via l'endpoint /metrics.
+This module exposes metrics for monitoring the application via the
+/metrics endpoint.
 """
 
 import logging
@@ -19,31 +19,31 @@ from prometheus_client import (
 
 logger = logging.getLogger(__name__)
 
-# Créer un blueprint pour les métriques
+# Create a blueprint for the metrics
 metrics_bp = Blueprint("prometheus_metrics", __name__)
 
 # ============================================
-# Métriques personnalisées
+# Custom metrics
 # ============================================
 
-# Compteurs
+# Counters
 REQUEST_COUNT = Counter(
     "leviia_requests_total",
-    "Nombre total de requêtes HTTP",
+    "Total number of HTTP requests",
     ["method", "endpoint", "http_status"],
 )
 
-ERROR_COUNT = Counter("leviia_errors_total", "Nombre total d'erreurs", ["error_type"])
+ERROR_COUNT = Counter("leviia_errors_total", "Total number of errors", ["error_type"])
 
 # Gauges
-ACTIVE_USERS = Gauge("leviia_active_users", "Nombre d'utilisateurs actifs")
+ACTIVE_USERS = Gauge("leviia_active_users", "Number of active users")
 
-ACTIVE_SESSIONS = Gauge("leviia_active_sessions", "Nombre de sessions actives")
+ACTIVE_SESSIONS = Gauge("leviia_active_sessions", "Number of active sessions")
 
-# Histogrammes
+# Histograms
 REQUEST_LATENCY = Histogram(
     "leviia_request_latency_seconds",
-    "Latence des requêtes en secondes",
+    "Request latency in seconds",
     ["method", "endpoint"],
     buckets=[
         0.005,
@@ -64,37 +64,37 @@ REQUEST_LATENCY = Histogram(
 
 DB_QUERY_TIME = Histogram(
     "leviia_db_query_time_seconds",
-    "Temps d'exécution des requêtes SQLAlchemy",
+    "SQLAlchemy query execution time",
     buckets=[0.001, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 1.0],
 )
 
-# Métriques système
-CPU_USAGE = Gauge("leviia_cpu_usage_percent", "Utilisation CPU en pourcentage")
+# System metrics
+CPU_USAGE = Gauge("leviia_cpu_usage_percent", "CPU usage percentage")
 
-MEMORY_USAGE = Gauge("leviia_memory_usage_bytes", "Utilisation mémoire en octets")
+MEMORY_USAGE = Gauge("leviia_memory_usage_bytes", "Memory usage in bytes")
 
-DISK_USAGE = Gauge("leviia_disk_usage_bytes", "Utilisation disque en octets")
+DISK_USAGE = Gauge("leviia_disk_usage_bytes", "Disk usage in bytes")
 
-# Métriques métier
-SHIFTS_COUNT = Gauge("leviia_shifts_total", "Nombre total de shifts")
+# Business metrics
+SHIFTS_COUNT = Gauge("leviia_shifts_total", "Total number of shifts")
 
-ONCALLS_COUNT = Gauge("leviia_oncalls_total", "Nombre total d'astreintes")
+ONCALLS_COUNT = Gauge("leviia_oncalls_total", "Total number of on-calls")
 
-LEAVES_COUNT = Gauge("leviia_leaves_total", "Nombre total de congés")
+LEAVES_COUNT = Gauge("leviia_leaves_total", "Total number of leaves")
 
-USERS_COUNT = Gauge("leviia_users_total", "Nombre total d'utilisateurs")
+USERS_COUNT = Gauge("leviia_users_total", "Total number of users")
 
-GROUPS_COUNT = Gauge("leviia_groups_total", "Nombre total de groupes")
+GROUPS_COUNT = Gauge("leviia_groups_total", "Total number of groups")
 
 
 # ============================================
-# Middleware pour le tracking des requêtes
+# Request tracking middleware
 # ============================================
 
 
 @metrics_bp.before_app_request
 def before_request():
-    """Début du tracking d'une requête."""
+    """Start tracking a request."""
     if hasattr(current_app, "_prometheus_start_time"):
         return
     current_app._prometheus_start_time = time.time()
@@ -102,7 +102,7 @@ def before_request():
 
 @metrics_bp.after_app_request
 def after_request(response):
-    """Fin du tracking d'une requête."""
+    """End tracking a request."""
     if not hasattr(current_app, "_prometheus_start_time"):
         return response
 
@@ -111,13 +111,13 @@ def after_request(response):
     endpoint = request.path
     status_code = response.status_code
 
-    # Incrémenter les compteurs
+    # Increment counters
     REQUEST_COUNT.labels(
         method=method, endpoint=endpoint, http_status=status_code
     ).inc()
     REQUEST_LATENCY.labels(method=method, endpoint=endpoint).observe(latency)
 
-    # Nettoyer
+    # Clean up
     del current_app._prometheus_start_time
 
     return response
@@ -125,30 +125,30 @@ def after_request(response):
 
 @metrics_bp.app_errorhandler(Exception)
 def handle_exception(error):
-    """Tracking des erreurs."""
+    """Track errors."""
     ERROR_COUNT.labels(error_type=type(error).__name__).inc()
     return error
 
 
 # ============================================
-# Endpoint pour Prometheus
+# Prometheus endpoint
 # ============================================
 
 
 @metrics_bp.route("/metrics")
 def metrics():
     """
-    Endpoint pour Prometheus.
+    Endpoint for Prometheus.
 
-    Retourne les métriques au format Prometheus.
+    Returns the metrics in Prometheus format.
     """
-    # Mettre à jour les métriques métier
+    # Update business metrics
     _update_business_metrics()
 
-    # Mettre à jour les métriques système
+    # Update system metrics
     _update_system_metrics()
 
-    # Générer les métriques
+    # Generate the metrics
     metrics_data = generate_latest()
 
     return metrics_data, 200, {"Content-Type": CONTENT_TYPE_LATEST}
@@ -157,9 +157,9 @@ def metrics():
 @metrics_bp.route("/health")
 def health():
     """
-    Endpoint de santé pour les probes Kubernetes.
+    Health endpoint for Kubernetes probes.
 
-    Retourne un statut 200 si l'application est en bonne santé.
+    Returns a 200 status if the application is healthy.
     """
     return (
         jsonify(
@@ -176,11 +176,11 @@ def health():
 @metrics_bp.route("/ready")
 def ready():
     """
-    Endpoint de prêt pour les probes Kubernetes.
+    Readiness endpoint for Kubernetes probes.
 
-    Retourne un statut 200 si l'application est prête à recevoir du trafic.
+    Returns a 200 status if the application is ready to receive traffic.
     """
-    # Vérifier la connexion à la base de données
+    # Check the database connection
     try:
         from app import db
 
@@ -192,12 +192,12 @@ def ready():
 
 
 # ============================================
-# Fonctions utilitaires
+# Utility functions
 # ============================================
 
 
 def _update_business_metrics():
-    """Mettre à jour les métriques métier."""
+    """Update business metrics."""
     try:
         from app.models import Group, Leave, OnCall, Shift, User
 
@@ -208,46 +208,46 @@ def _update_business_metrics():
         GROUPS_COUNT.set(Group.query.count())
 
     except Exception:
-        # Best-effort : une métrique manquante ne doit pas casser
-        # /metrics, mais l'erreur reste visible dans les logs plutôt
-        # qu'avalée silencieusement.
-        logger.debug("Échec de mise à jour des métriques métier", exc_info=True)
+        # Best-effort: a missing metric shouldn't break /metrics, but the
+        # error stays visible in the logs rather than being silently
+        # swallowed.
+        logger.debug("Failed to update business metrics", exc_info=True)
 
 
 def _update_system_metrics():
-    """Mettre à jour les métriques système."""
+    """Update system metrics."""
     try:
         import psutil
 
         # CPU
         CPU_USAGE.set(psutil.cpu_percent(interval=1))
 
-        # Mémoire
+        # Memory
         mem = psutil.virtual_memory()
         MEMORY_USAGE.set(mem.used)
 
-        # Disque
+        # Disk
         disk = psutil.disk_usage("/")
         DISK_USAGE.set(disk.used)
 
     except ImportError:
-        # psutil n'est pas installé
+        # psutil isn't installed
         pass
     except Exception:
-        logger.debug("Échec de mise à jour des métriques système", exc_info=True)
+        logger.debug("Failed to update system metrics", exc_info=True)
 
 
 def init_prometheus(app):
     """
-    Initialiser Prometheus avec l'application Flask.
+    Initialize Prometheus with the Flask application.
 
     Args:
-        app: L'application Flask
+        app: The Flask application
     """
-    # Enregistrer le blueprint
+    # Register the blueprint
     app.register_blueprint(metrics_bp)
 
-    # Initialiser les métriques de base
+    # Initialize base metrics
     _update_business_metrics()
     _update_system_metrics()
 

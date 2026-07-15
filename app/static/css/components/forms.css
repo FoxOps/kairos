@@ -1,12 +1,11 @@
 /* ============================================
-   COMPOSANT - FORMULAIRES
+   COMPONENT - FORMS
    ============================================
-   Augmente les classes .input/.select/.label/.checkbox de daisyUI
-   (mêmes noms que Bulma avant la refonte Tailwind/daisyUI, réutilisés
-   par daisyUI - ces règles s'appliquent donc toujours) avec un anneau
-   de focus plus visible. .control/.textarea/.radio/.message/
-   .form-group/.label.required (Bulma) ne sont plus utilisés dans les
-   templates, retirés en Phase 7.
+   Augments daisyUI's .input/.select/.label/.checkbox classes (same
+   names Bulma used before daisyUI, reused by daisyUI - so these rules
+   still apply) with a more visible focus ring. Bulma's .control/
+   .textarea/.radio/.message/.form-group/.label.required are no longer
+   used in the templates, and have been removed.
    ============================================ */
 
 .input {
@@ -21,7 +20,7 @@
 .select:focus-visible {
     outline: 3px solid var(--app-color-primary);
     outline-offset: 0;
-    /* rgb(32, 182, 152) = teal/vert doux de la marque. */
+    /* rgb(32, 182, 152) = the brand's soft teal/green. */
     box-shadow: 0 0 0 3px rgba(32, 182, 152, 0.2);
 }
 

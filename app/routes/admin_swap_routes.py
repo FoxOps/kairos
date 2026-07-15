@@ -1,7 +1,7 @@
 """
-Routes admin pour la validation des demandes d'échange de shifts.
-Enregistrées sur admin_bp (cf. app/routes/admin.py). La création des
-demandes côté utilisateur vit dans app/routes/swap_routes.py.
+Admin routes for approving shift exchange requests. Registered on
+admin_bp (see app/routes/admin.py). Request creation on the user side
+lives in app/routes/swap_routes.py.
 """
 
 from flask import abort, flash, redirect, render_template, request, url_for

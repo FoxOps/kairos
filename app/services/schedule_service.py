@@ -15,11 +15,11 @@ CALENDAR_WINDOW_DAYS = 180
 
 
 class ScheduleService:
-    """Agrège shifts/astreintes/congés en événements de calendrier."""
+    """Aggregates shifts/on-calls/leaves into calendar events."""
 
     @staticmethod
     def calendar_window() -> tuple[datetime, datetime]:
-        """Fenêtre de ±6 mois autour d'aujourd'hui pour le calendrier."""
+        """±6-month window around today for the calendar."""
         now = datetime.now()
         return (
             now - timedelta(days=CALENDAR_WINDOW_DAYS),
@@ -28,8 +28,8 @@ class ScheduleService:
 
     @staticmethod
     def get_calendar_events() -> list[dict]:
-        """Récupère shifts/astreintes/congés dans la fenêtre du calendrier
-        et les convertit en événements FullCalendar."""
+        """Fetch shifts/on-calls/leaves within the calendar window and
+        convert them into FullCalendar events."""
         window_start, window_end = ScheduleService.calendar_window()
 
         shifts = ShiftRepository.list_in_window(window_start, window_end)

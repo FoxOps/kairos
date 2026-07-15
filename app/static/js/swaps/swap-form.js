@@ -1,7 +1,7 @@
 /**
- * Formulaire de demande d'échange de shift (add_swap.html) : peuple
- * dynamiquement la liste des shifts à venir de l'utilisateur cible
- * choisi, via GET /api/swaps/target-shifts.
+ * Shift-swap request form (add_swap.html): dynamically populates the
+ * chosen target user's list of upcoming shifts, via GET
+ * /api/swaps/target-shifts.
  */
 
 function resetTargetShiftSelect(select, message) {

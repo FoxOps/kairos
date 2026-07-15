@@ -1,14 +1,14 @@
 """
-Tests pour les endpoints de santé k8s (app/utils/health.py).
+Tests for the k8s health endpoints (app/utils/health.py).
 
-Ces routes sont enregistrées inconditionnellement dans create_app() (pas
-de feature flag), donc testables directement via le client de test
-standard, sans fixture spéciale.
+These routes are registered unconditionally in create_app() (no
+feature flag), so they're testable directly via the standard test
+client, with no special fixture.
 """
 
 from unittest.mock import patch
 
-from app.utils.health import check_cache, check_database
+from app.utils.health import check_database
 
 
 class TestHealthEndpoint:
@@ -22,13 +22,12 @@ class TestHealthEndpoint:
 
 
 class TestReadyEndpoint:
-    def test_ready_returns_ok_when_database_and_cache_healthy(self, test_app, client):
+    def test_ready_returns_ok_when_database_healthy(self, test_app, client):
         resp = client.get("/ready")
         assert resp.status_code == 200
         data = resp.get_json()
         assert data["status"] == "ok"
         assert data["checks"]["database"] is True
-        assert data["checks"]["cache"] is True
 
     def test_ready_returns_503_when_database_unreachable(self, test_app, client):
         with patch("app.utils.health.check_database", return_value=False):
@@ -58,22 +57,3 @@ class TestCheckDatabase:
         with test_app.app_context():
             with patch("app.db.session.execute", side_effect=Exception("boom")):
                 assert check_database(test_app) is False
-
-
-class TestCheckCache:
-    def test_check_cache_simple_type_always_true(self, test_app):
-        with test_app.app_context():
-            test_app.config["CACHE_TYPE"] = "simple"
-            assert check_cache(test_app) is True
-
-    def test_check_cache_unknown_type_defaults_true(self, test_app):
-        with test_app.app_context():
-            test_app.config["CACHE_TYPE"] = "something-else"
-            assert check_cache(test_app) is True
-
-    def test_check_cache_redis_unreachable_returns_false(self, test_app):
-        with test_app.app_context():
-            test_app.config["CACHE_TYPE"] = "redis"
-            test_app.config["CACHE_REDIS_URL"] = "redis://localhost:1/0"
-            # Pas de serveur Redis dans cet environnement : la connexion doit échouer proprement.
-            assert check_cache(test_app) is False

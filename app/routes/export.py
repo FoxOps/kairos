@@ -7,15 +7,15 @@ export_bp = Blueprint("export", __name__)
 
 
 def _get_export_scope():
-    """Récupère le scope de l'export depuis les paramètres de requête."""
+    """Get the export scope from the request parameters."""
     return ExportService.normalize_scope(request.args.get("scope"))
 
 
 def _get_user_for_export():
     """
-    Récupère l'utilisateur pour l'export.
-    Si l'utilisateur est authentifié, utilise current_user.
-    Sinon, vérifie si un token valide est fourni.
+    Get the user for the export.
+    If the user is authenticated, use current_user.
+    Otherwise, check whether a valid token is provided.
     """
     return ExportService.resolve_user(request.args.get("token"))
 
@@ -38,7 +38,7 @@ def _unauthorized_response():
 
 @export_bp.route("/export/shifts")
 def export_shifts():
-    """Export des shifts au format ICS."""
+    """Export shifts in ICS format."""
     user = _get_user_for_export()
     if not user:
         return _unauthorized_response()
@@ -50,7 +50,7 @@ def export_shifts():
 
 @export_bp.route("/export/oncall")
 def export_oncall():
-    """Export des astreintes au format ICS."""
+    """Export on-calls in ICS format."""
     user = _get_user_for_export()
     if not user:
         return _unauthorized_response()
@@ -62,7 +62,7 @@ def export_oncall():
 
 @export_bp.route("/export/leaves")
 def export_leaves():
-    """Export des congés au format ICS."""
+    """Export leaves in ICS format."""
     user = _get_user_for_export()
     if not user:
         return _unauthorized_response()

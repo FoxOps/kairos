@@ -1,9 +1,9 @@
 import { announceToScreenReader } from '../utils/accessibility.js';
 
 /**
- * Gère le thème sombre de l'application.
- * Utilise localStorage pour persister le choix de l'utilisateur.
- * Respecte les préférences système (prefers-color-scheme).
+ * Manages the app's dark theme.
+ * Uses localStorage to persist the user's choice.
+ * Honors the system preference (prefers-color-scheme).
  */
 export class ThemeManager {
     constructor() {
@@ -14,7 +14,7 @@ export class ThemeManager {
     }
 
     /**
-     * Initialise le thème au chargement de la page.
+     * Initialize the theme on page load.
      */
     init() {
         const currentTheme = this.getCurrentTheme();
@@ -22,32 +22,32 @@ export class ThemeManager {
 
         if (this.toggleBtn) {
             this.updateToggleButton(currentTheme === 'dark');
-            // Case à cocher (pattern "Theme Controller" swap de daisyUI,
-            // voir base.html) - "change" est l'événement sémantiquement
-            // correct pour une checkbox, pas "click".
+            // Checkbox (daisyUI's "Theme Controller" swap pattern, see
+            // base.html) - "change" is the semantically correct event for
+            // a checkbox, not "click".
             this.toggleBtn.addEventListener('change', () => this.toggle());
         }
 
-        // Écouter les changements de préférence système
+        // Watch for system-preference changes
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
             if (!localStorage.getItem(this.storageKey)) {
                 this.applyTheme(e.matches ? 'dark' : 'light');
             }
         });
 
-        // Initialiser l'accessibilité
+        // Initialize accessibility
         this.initAccessibility();
     }
 
     /**
-     * Initialise les fonctionnalités d'accessibilité liées au thème.
+     * Initialize theme-related accessibility features.
      */
     initAccessibility() {
-        // Annoncer le thème actuel aux lecteurs d'écran
+        // Announce the current theme to screen readers
         const currentTheme = this.getCurrentTheme();
         this.announceThemeChange(currentTheme);
 
-        // Écouter les changements de thème pour les annoncer
+        // Watch for theme changes to announce them
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
                 if (mutation.attributeName === 'data-theme') {
@@ -63,8 +63,8 @@ export class ThemeManager {
     }
 
     /**
-     * Annonce le changement de thème aux lecteurs d'écran.
-     * @param {string} theme - 'dark' ou 'light'
+     * Announce the theme change to screen readers.
+     * @param {string} theme - 'dark' or 'light'
      */
     announceThemeChange(theme) {
         const message = theme === 'dark'
@@ -74,13 +74,14 @@ export class ThemeManager {
     }
 
     /**
-     * Applique le thème spécifié.
-     * @param {string} theme - 'dark' ou 'light'
+     * Apply the given theme.
+     * @param {string} theme - 'dark' or 'light'
      */
     applyTheme(theme) {
-        // daisyUI ne lit que l'attribut data-theme (thèmes nommés "light"/
-        // "dark" définis dans base.html) - plus besoin de classe séparée
-        // (.dark-mode dépendait de la dérivation clair/sombre de Bulma).
+        // daisyUI only reads the data-theme attribute (themes named
+        // "light"/"dark" defined in base.html) - no separate class needed
+        // anymore (.dark-mode used to depend on Bulma's light/dark
+        // derivation).
         const resolvedTheme = theme === 'dark' ? 'dark' : 'light';
         this.html.setAttribute('data-theme', resolvedTheme);
         localStorage.setItem(this.storageKey, resolvedTheme);
@@ -89,7 +90,7 @@ export class ThemeManager {
     }
 
     /**
-     * Toggle entre thème clair et sombre.
+     * Toggle between light and dark theme.
      */
     toggle() {
         const isCurrentlyDark = this.html.getAttribute('data-theme') === 'dark';
@@ -97,24 +98,24 @@ export class ThemeManager {
     }
 
     /**
-     * Met à jour le bouton toggle (icône soleil/lune daisyUI `swap`,
-     * piloté par une vraie case à cocher - voir base.html).
-     * @param {boolean} isDark - True si le thème sombre est actif
+     * Update the toggle button (daisyUI `swap` sun/moon icon, driven by a
+     * real checkbox - see base.html).
+     * @param {boolean} isDark - True if the dark theme is active
      */
     updateToggleButton(isDark) {
         if (!this.toggleBtn) return;
 
-        // Case à cocher réelle : l'état "checked" pilote nativement
-        // .swap-on/.swap-off via le CSS :checked de daisyUI, pas besoin
-        // de classe swap-active togglée à la main. Le "checked" natif
-        // porte aussi la sémantique d'accessibilité (pas besoin
-        // d'aria-pressed, qui est pour les boutons, pas les checkbox).
+        // Real checkbox: the "checked" state natively drives
+        // .swap-on/.swap-off through daisyUI's own :checked CSS, no need
+        // to toggle a swap-active class by hand. The native "checked" also
+        // carries the accessibility semantics (no need for aria-pressed,
+        // which is for buttons, not checkboxes).
         this.toggleBtn.checked = isDark;
     }
 
     /**
-     * Obtient le thème actuel (localStorage ou système).
-     * @returns {string} 'dark' ou 'light'
+     * Get the current theme (localStorage or system).
+     * @returns {string} 'dark' or 'light'
      */
     getCurrentTheme() {
         const storedTheme = localStorage.getItem(this.storageKey);
@@ -123,8 +124,8 @@ export class ThemeManager {
     }
 
     /**
-     * Obtient la préférence système.
-     * @returns {string} 'dark' ou 'light'
+     * Get the system preference.
+     * @returns {string} 'dark' or 'light'
      */
     getSystemTheme() {
         return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';

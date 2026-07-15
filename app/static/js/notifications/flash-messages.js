@@ -1,6 +1,6 @@
 /**
- * Messages flash (base.html) : fermeture manuelle (bouton) et
- * disparition automatique après un délai (data-auto-dismiss, ms).
+ * Flash messages (base.html): manual dismissal (button) and automatic
+ * dismissal after a delay (data-auto-dismiss, ms).
  */
 
 function dismiss(alertEl) {
@@ -24,7 +24,7 @@ export function initFlashMessages() {
         const delay = parseInt(alertEl.dataset.autoDismiss, 10);
         if (delay > 0) {
             const timer = setTimeout(() => dismiss(alertEl), delay);
-            // Laisse le temps de lire si l'utilisateur survole/focus le message.
+            // Give the user time to read if they're hovering/focusing the message.
             alertEl.addEventListener('mouseenter', () => clearTimeout(timer));
             alertEl.addEventListener('focusin', () => clearTimeout(timer));
         }

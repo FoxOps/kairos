@@ -1,22 +1,19 @@
 """
-Routes admin pour la gestion des groupes. Enregistrées sur admin_bp
-(cf. app/routes/admin.py).
+Admin routes for managing groups. Registered on admin_bp (see
+app/routes/admin.py).
 """
 
 from flask import abort, flash, redirect, render_template, request, url_for
 
 from app import db
 from app.auth.decorators import admin_required
-from app.models import Group
 from app.repositories.user_repository import GroupRepository
 from app.routes.admin import admin_bp
 from app.services import GroupService
-from app.utils.optimizations import eager_load
 
 
 @admin_bp.route("/admin/groups")
 @admin_required
-@eager_load(Group, ["users"])
 def list_groups():
     groups = GroupService.list_all()
     return render_template("admin/groups.html", groups=groups)

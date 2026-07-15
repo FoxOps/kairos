@@ -20,29 +20,25 @@ logger = get_logger(__name__)
 
 
 class LeaveService:
-    """Logique métier pour les congés."""
+    """Business logic for leaves."""
 
     @staticmethod
     def list_paginated(page: int, per_page: int):
         return LeaveRepository.list_paginated(page, per_page)
 
     @staticmethod
-    def list_in_window(window_start: date, window_end: date) -> list[Leave]:
-        return LeaveRepository.list_in_window(window_start, window_end)
-
-    @staticmethod
     def add_leave(
         user: User, start_date: date, end_date: date
     ) -> tuple[Leave | None, list | None]:
         """
-        Crée un congé pour l'utilisateur donné, puis rééquilibre
-        automatiquement les shifts affectés.
+        Create a leave for the given user, then automatically rebalance
+        the affected shifts.
 
         Returns:
-            (leave, regenerated_shifts) si succès, (None, None) sinon.
-            regenerated_shifts peut être une liste vide si le
-            rééquilibrage n'a rien eu à recalculer, ou None si le
-            rééquilibrage lui-même a échoué (le congé est quand même créé).
+            (leave, regenerated_shifts) on success, (None, None) otherwise.
+            regenerated_shifts can be an empty list if the rebalance had
+            nothing to recompute, or None if the rebalance itself failed
+            (the leave is created regardless).
         """
         if not can_add_leave(user, start_date, end_date):
             return None, None
@@ -55,7 +51,7 @@ class LeaveService:
 
     @staticmethod
     def delete_leave(leave_id: int) -> tuple[Leave | None, list | None]:
-        """Returns (leave_supprime, regenerated_shifts)."""
+        """Returns (deleted_leave, regenerated_shifts)."""
         leave = LeaveRepository.get_by_id(leave_id)
         if not leave:
             return None, None
@@ -70,12 +66,12 @@ class LeaveService:
     def api_update(
         leave_id: int, new_start_date: date, new_end_date: date
     ) -> tuple[Leave | None, str | None, bool]:
-        """Met à jour un congé depuis l'API drag & drop.
+        """Update a leave from the drag & drop API.
 
         Returns:
-            (leave, error_message, rebalance_failed). rebalance_failed est
-            True si le congé a bien été mis à jour mais que le
-            rééquilibrage automatique des shifts a échoué.
+            (leave, error_message, rebalance_failed). rebalance_failed is
+            True if the leave was updated successfully but the automatic
+            shift rebalance failed.
         """
         leave = LeaveRepository.get_by_id(leave_id)
         if not leave:
@@ -123,7 +119,7 @@ class LeaveService:
 
     @staticmethod
     def _rebalance_after_leave(leave: Leave) -> list | None:
-        """Rééquilibre les shifts affectés par un congé. None si échec."""
+        """Rebalance the shifts affected by a leave. None on failure."""
         try:
             regenerated_shifts, _messages = (
                 AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)

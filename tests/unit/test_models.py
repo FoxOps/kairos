@@ -1,5 +1,5 @@
 """
-Tests pour les modèles de la base de données.
+Tests for the database models.
 """
 
 from datetime import datetime, timedelta
@@ -22,10 +22,10 @@ from app.models import (
 
 
 class TestGroupModel:
-    """Tests pour le modèle Group."""
+    """Tests for the Group model."""
 
     def test_group_creation(self, test_app):
-        """Test la création d'un groupe."""
+        """Test creating a group."""
         with test_app.app_context():
             group = Group(
                 name="Test Group", is_part_of_schedule=True, is_part_of_oncall=False
@@ -39,7 +39,7 @@ class TestGroupModel:
             assert group.is_part_of_oncall is False
 
     def test_group_unique_name(self, test_app):
-        """Test que le nom du groupe doit être unique."""
+        """Test that the group name must be unique."""
         with test_app.app_context():
             group1 = Group(name="Unique Group", is_part_of_schedule=True)
             db.session.add(group1)
@@ -52,7 +52,7 @@ class TestGroupModel:
                 db.session.commit()
 
     def test_group_default_values(self, test_app):
-        """Test les valeurs par défaut du groupe."""
+        """Test the group's default values."""
         with test_app.app_context():
             group = Group(name="Default Group")
             db.session.add(group)
@@ -62,17 +62,17 @@ class TestGroupModel:
             assert group.is_part_of_oncall is False
 
     def test_group_users_relationship(self, test_app, test_group, test_user):
-        """Test la relation entre Group et User."""
+        """Test the relationship between Group and User."""
         with test_app.app_context():
             assert test_user.group_id == test_group.id
             assert test_user in test_group.users
 
 
 class TestUserModel:
-    """Tests pour le modèle User."""
+    """Tests for the User model."""
 
     def test_user_creation(self, test_app, test_group):
-        """Test la création d'un utilisateur."""
+        """Test creating a user."""
         with test_app.app_context():
             user = User(name="New User", email="new@test.com", group_id=test_group.id)
             db.session.add(user)
@@ -84,7 +84,7 @@ class TestUserModel:
             assert user.is_admin is False
 
     def test_user_unique_email(self, test_app, test_group):
-        """Test que l'email de l'utilisateur doit être unique."""
+        """Test that the user's email must be unique."""
         with test_app.app_context():
             user1 = User(name="User 1", email="unique@test.com", group_id=test_group.id)
             db.session.add(user1)
@@ -97,7 +97,7 @@ class TestUserModel:
                 db.session.commit()
 
     def test_user_password_hashing(self, test_app, test_group):
-        """Test le hachage du mot de passe."""
+        """Test password hashing."""
         with test_app.app_context():
             user = User(
                 name="Password User", email="password@test.com", group_id=test_group.id
@@ -112,7 +112,7 @@ class TestUserModel:
             assert user.check_password("wrongpassword") is False
 
     def test_user_default_values(self, test_app, test_group):
-        """Test les valeurs par défaut de l'utilisateur."""
+        """Test the user's default values."""
         with test_app.app_context():
             user = User(
                 name="Default User", email="default@test.com", group_id=test_group.id
@@ -123,7 +123,7 @@ class TestUserModel:
             assert user.is_admin is False
 
     def test_user_repr(self, test_app, test_group):
-        """Test la représentation string de l'utilisateur."""
+        """Test the user's string representation."""
         with test_app.app_context():
             user = User(name="Repr User", email="repr@test.com", group_id=test_group.id)
             db.session.add(user)
@@ -134,9 +134,9 @@ class TestUserModel:
             assert "repr@test.com" in repr_str
 
     def test_user_relationships(self, test_app, test_user, test_shift_type, test_group):
-        """Test les relations de l'utilisateur."""
+        """Test the user's relationships."""
         with test_app.app_context():
-            # Créer un shift pour l'utilisateur
+            # Create a shift for the user
             shift_date = datetime(2023, 12, 1).date()
             start_time = datetime(2023, 12, 1, 7, 0)
             end_time = datetime(2023, 12, 1, 15, 0)
@@ -149,7 +149,7 @@ class TestUserModel:
             )
             db.session.add(shift)
 
-            # Créer une astreinte pour l'utilisateur
+            # Create an on-call for the user
             oncall_start = datetime(2023, 12, 1, 21, 0)
             oncall_end = oncall_start + timedelta(days=7, hours=-14)
             oncall = OnCall(
@@ -157,7 +157,7 @@ class TestUserModel:
             )
             db.session.add(oncall)
 
-            # Créer un congé pour l'utilisateur
+            # Create a leave for the user
             leave_start = datetime(2023, 12, 10).date()
             leave_end = datetime(2023, 12, 15).date()
             leave = Leave(
@@ -166,7 +166,7 @@ class TestUserModel:
             db.session.add(leave)
             db.session.commit()
 
-            # Vérifier les relations
+            # Check the relationships
             assert len(test_user.shifts) == 1
             assert test_user.shifts[0].id == shift.id
             assert len(test_user.on_calls) == 1
@@ -177,10 +177,10 @@ class TestUserModel:
 
 
 class TestShiftTypeModel:
-    """Tests pour le modèle ShiftType."""
+    """Tests for the ShiftType model."""
 
     def test_shift_type_creation(self, test_app):
-        """Test la création d'un type de shift."""
+        """Test creating a shift type."""
         with test_app.app_context():
             shift_type = ShiftType(
                 name="morning", label="Matin", start_hour=7, end_hour=15
@@ -195,7 +195,7 @@ class TestShiftTypeModel:
             assert shift_type.end_hour == 15
 
     def test_shift_type_unique_name(self, test_app):
-        """Test que le nom du type de shift doit être unique."""
+        """Test that the shift-type name must be unique."""
         with test_app.app_context():
             shift_type1 = ShiftType(
                 name="unique", label="Unique", start_hour=8, end_hour=16
@@ -212,7 +212,7 @@ class TestShiftTypeModel:
                 db.session.commit()
 
     def test_shift_type_shifts_relationship(self, test_app, test_shift_type, test_user):
-        """Test la relation entre ShiftType et Shift."""
+        """Test the relationship between ShiftType and Shift."""
         with test_app.app_context():
             shift_date = datetime(2023, 12, 1).date()
             start_time = datetime(2023, 12, 1, 7, 0)
@@ -232,10 +232,10 @@ class TestShiftTypeModel:
 
 
 class TestShiftModel:
-    """Tests pour le modèle Shift."""
+    """Tests for the Shift model."""
 
     def test_shift_creation(self, test_app, test_user, test_shift_type):
-        """Test la création d'un shift."""
+        """Test creating a shift."""
         with test_app.app_context():
             shift_date = datetime(2023, 12, 1).date()
             start_time = datetime(2023, 12, 1, 7, 0)
@@ -256,7 +256,7 @@ class TestShiftModel:
             assert shift.date == shift_date
 
     def test_shift_relationships(self, test_app, test_shift):
-        """Test les relations du shift."""
+        """Test the shift's relationships."""
         with test_app.app_context():
             assert test_shift.user is not None
             assert test_shift.shift_type is not None
@@ -265,10 +265,10 @@ class TestShiftModel:
 
 
 class TestOnCallModel:
-    """Tests pour le modèle OnCall."""
+    """Tests for the OnCall model."""
 
     def test_oncall_creation(self, test_app, test_user):
-        """Test la création d'une astreinte."""
+        """Test creating an on-call."""
         with test_app.app_context():
             start_time = datetime(2023, 12, 1, 21, 0)
             end_time = start_time + timedelta(days=7, hours=-14)
@@ -284,17 +284,17 @@ class TestOnCallModel:
             assert oncall.end_time == end_time
 
     def test_oncall_relationship(self, test_app, test_oncall):
-        """Test la relation entre OnCall et User."""
+        """Test the relationship between OnCall and User."""
         with test_app.app_context():
             assert test_oncall.user is not None
             assert test_oncall in test_oncall.user.on_calls
 
 
 class TestLeaveModel:
-    """Tests pour le modèle Leave."""
+    """Tests for the Leave model."""
 
     def test_leave_creation(self, test_app, test_user):
-        """Test la création d'un congé."""
+        """Test creating a leave."""
         with test_app.app_context():
             start_date = datetime(2023, 12, 10).date()
             end_date = datetime(2023, 12, 15).date()
@@ -310,13 +310,13 @@ class TestLeaveModel:
             assert leave.end_date == end_date
 
     def test_leave_relationship(self, test_app, test_leave):
-        """Test la relation entre Leave et User."""
+        """Test the relationship between Leave and User."""
         with test_app.app_context():
             assert test_leave.user is not None
             assert test_leave in test_leave.user.leaves
 
     def test_leave_without_reason(self, test_app, test_user):
-        """Test la création d'un congé sans raison."""
+        """Test creating a leave with no reason."""
         with test_app.app_context():
             start_date = datetime(2023, 12, 10).date()
             end_date = datetime(2023, 12, 15).date()
@@ -330,10 +330,10 @@ class TestLeaveModel:
 
 
 class TestNotificationLogModel:
-    """Tests pour le modèle NotificationLog."""
+    """Tests for the NotificationLog model."""
 
     def test_notification_log_creation(self, test_app, test_user):
-        """Test la création d'un log de notification."""
+        """Test creating a notification log."""
         with test_app.app_context():
             period_start = datetime(2026, 7, 13).date()
             log = NotificationLog(
@@ -350,7 +350,7 @@ class TestNotificationLogModel:
             assert log.period_start == period_start
 
     def test_unique_constraint_prevents_duplicate(self, test_app, test_user):
-        """Un même (user, type, période) ne peut être enregistré deux fois."""
+        """The same (user, type, period) can't be recorded twice."""
         with test_app.app_context():
             period_start = datetime(2026, 7, 13).date()
             db.session.add(
@@ -374,7 +374,7 @@ class TestNotificationLogModel:
             db.session.rollback()
 
     def test_different_notification_type_is_allowed(self, test_app, test_user):
-        """Même utilisateur/période mais type différent : pas de conflit."""
+        """Same user/period but different type: no conflict."""
         with test_app.app_context():
             period_start = datetime(2026, 7, 13).date()
             db.session.add(
@@ -422,12 +422,12 @@ class TestNotificationLogModel:
 
 
 class TestSwapRequestModel:
-    """Tests pour le modèle SwapRequest."""
+    """Tests for the SwapRequest model."""
 
     def test_swap_request_creation(
         self, test_app, test_user, second_user, test_swap_shift
     ):
-        """Test la création d'une demande d'échange."""
+        """Test creating a swap request."""
         with test_app.app_context():
             swap_request = SwapRequest(
                 requester_id=test_user.id,
@@ -442,7 +442,7 @@ class TestSwapRequestModel:
             assert swap_request.target_shift_id is None
 
     def test_swap_request_relationships(self, test_app, test_swap_request):
-        """Test les propriétés requester/target_user/shift (pas des relationships ORM)."""
+        """Test the requester/target_user/shift properties (not ORM relationships)."""
         with test_app.app_context():
             assert test_swap_request.requester.id == test_swap_request.requester_id
             assert test_swap_request.target_user.id == test_swap_request.target_user_id
@@ -468,7 +468,7 @@ class TestSwapRequestModel:
 
 
 class TestAppNotificationModel:
-    """Tests pour le modèle AppNotification."""
+    """Tests for the AppNotification model."""
 
     def test_creation_defaults_to_unread(self, test_app, test_user):
         with test_app.app_context():

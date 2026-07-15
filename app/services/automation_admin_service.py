@@ -17,12 +17,12 @@ from app.repositories.shift_repository import ShiftRepository
 
 
 class AutomationAdminService:
-    """Logique métier support pour les écrans d'automatisation admin."""
+    """Supporting business logic for the admin automation screens."""
 
     @staticmethod
     def parse_rotation_order_from_form(form) -> list[int]:
-        """Extrait l'ordre de rotation depuis les champs
-        `rotation_order_{user_id}` (position) / `include_{user_id}`."""
+        """Extract the rotation order from the `rotation_order_{user_id}`
+        (position) / `include_{user_id}` fields."""
         user_data = []
         for key, value in form.items():
             if key.startswith("rotation_order_"):
@@ -38,7 +38,7 @@ class AutomationAdminService:
 
     @staticmethod
     def save_rotation_order(rotation_order_ids: list[int]) -> str | None:
-        """Returns error_message, ou None si succès."""
+        """Returns error_message, or None on success."""
         try:
             from app.models import AutomationConfig
 
@@ -59,8 +59,8 @@ class AutomationAdminService:
 
     @staticmethod
     def clear_period(start_date: date, end_date: date) -> tuple[int, int]:
-        """Supprime les astreintes et shifts existants chevauchant la
-        période. Returns (nb_astreintes_supprimees, nb_shifts_supprimes)."""
+        """Delete existing on-calls and shifts overlapping the period.
+        Returns (oncalls_deleted, shifts_deleted)."""
         oncalls_deleted = OnCallRepository.delete_overlapping_range(
             start_date, end_date
         )

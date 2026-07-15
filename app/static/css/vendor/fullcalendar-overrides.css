@@ -1,24 +1,23 @@
 /* ============================================
-   SURCHARGES FULLCALENDAR (thème clair / par défaut)
+   FULLCALENDAR OVERRIDES (light / default theme)
    ============================================
-   FullCalendar (vendor, cf. scripts/download_vendor_assets.py) n'a pas
-   de fichier CSS séparé - son style est inclus dans son JS. Ce fichier
-   contient uniquement NOS surcharges pour l'intégrer à l'app. Les
-   surcharges spécifiques au thème sombre sont dans themes/dark.css.
-   Fallbacks hex = valeurs Alucard (thème clair) de la palette Dracula/
-   Alucard - purement défensif, les variables résolvent toujours en
-   pratique (définies sans condition dans theme-colors.css).
+   FullCalendar is loaded from a CDN (see CLAUDE.md's Frontend section)
+   and has no separate CSS file - its style is bundled into its JS. This
+   file holds only OUR overrides to fit it into the app. Dark-theme-
+   specific overrides live in themes/dark.css. Hex fallbacks = Alucard
+   (light theme) values from the Dracula/Alucard palette - purely
+   defensive, the variables always resolve in practice (defined
+   unconditionally in theme-colors.css).
    ============================================ */
 
 #calendar {
     width: 100%;
     max-width: 100%;
-    /* Boutons de la barre d'outils (Mois/Semaine/Jour, Aujourd'hui,
-       précédent/suivant) : FullCalendar utilisait sa propre teinte
-       bleu-gris générique par défaut, jamais reliée à la palette de
-       l'app - alignée ici sur --app-color-primary (theme-aware via
-       theme-colors.css, donc correcte dans les deux thèmes sans
-       duplication dans dark.css). */
+    /* Toolbar buttons (Month/Week/Day, Today, prev/next): FullCalendar
+       used its own generic blue-gray by default, never tied to the app's
+       palette - aligned here on --app-color-primary (theme-aware via
+       theme-colors.css, so it's correct in both themes with no
+       duplication in dark.css). */
     --fc-button-text-color: var(--color-primary-content, #fffbeb);
     --fc-button-bg-color: var(--app-color-primary, #644ac9);
     --fc-button-border-color: var(--app-color-primary, #644ac9);
@@ -28,18 +27,17 @@
     --fc-button-active-border-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 70%, black);
 }
 
-/* FullCalendar ne peint pas ses événements avec les propriétés CSS
-   habituelles (background-color/color) sur l'élément .fc-event lui-même
-   - les éléments internes qui affichent réellement le texte
-   (.fc-event-main, notamment en vue Semaine/Jour) lisent leurs propres
-   variables --fc-event-bg-color/--fc-event-border-color/
-   --fc-event-text-color (défaut #fff pour le texte, jamais consultées
-   par une règle `color` classique sur le conteneur). D'où le bug trouvé
-   en test manuel : texte blanc illisible sur fond clair en thème sombre
-   (vues Semaine/Jour) alors que la vue Mois (fond différent, chemin de
-   rendu différent) semblait correcte. Surcharger ces variables plutôt
-   que les propriétés CSS classiques est l'API de thématisation
-   officiellement documentée par FullCalendar. */
+/* FullCalendar doesn't paint its events with the usual CSS properties
+   (background-color/color) on the .fc-event element itself - the inner
+   elements that actually render the text (.fc-event-main, notably in
+   the Week/Day views) read their own --fc-event-bg-color/
+   --fc-event-border-color/--fc-event-text-color variables (default #fff
+   for the text, never read from a plain `color` rule on the container).
+   Hence the bug this caused: unreadable white text on a light background
+   in the dark theme (Week/Day views), while the Month view (different
+   background, different render path) looked fine. Overriding these
+   variables rather than the plain CSS properties is FullCalendar's
+   officially documented theming API. */
 .fc-event-shift {
     --fc-event-bg-color: var(--app-color-primary, #644ac9);
     --fc-event-border-color: var(--app-color-primary, #644ac9);
@@ -67,28 +65,28 @@
     color: var(--color-error-content, #fffbeb);
 }
 
-/* .fc-event-main (le texte réellement affiché) ne lit que les variables
-   ci-dessus, pas `color` - filet de sécurité explicite au cas où une
-   version future de FullCalendar changerait ce comportement. */
+/* .fc-event-main (the text actually rendered) only reads the variables
+   above, not `color` - an explicit safety net in case a future
+   FullCalendar version changes this behavior. */
 .fc-event-shift .fc-event-main,
 .fc-event-oncall .fc-event-main,
 .fc-event-leave .fc-event-main {
     color: var(--fc-event-text-color);
 }
 
-/* FullCalendar force appearance:button sur ses boutons de la barre
-   d'outils (Mois/Semaine/Jour, Aujourd'hui, précédent/suivant) - certains
-   moteurs de rendu peignent alors le widget natif du système par-dessus
-   background-color, qui reste pourtant correct dans le CSS calculé
-   (bug trouvé en test manuel : bouton "actif" rendu clair/natif malgré
-   un --fc-button-active-bg-color sombre correct, texte blanc illisible
-   dessus). appearance:none redonne le contrôle total à background-color. */
+/* FullCalendar forces appearance:button on its toolbar buttons (Month/
+   Week/Day, Today, prev/next) - some rendering engines then paint the
+   native OS widget on top of background-color, even though it's still
+   correct in the computed CSS (this caused the "active" button to
+   render light/native despite a correct dark --fc-button-active-bg-color,
+   with unreadable white text on top). appearance:none hands full control
+   back to background-color. */
 .fc-button {
     appearance: none;
     -webkit-appearance: none;
 }
 
-/* Drag & drop */
+/* Drag and drop */
 .fc-event-draggable,
 .fc-event-resizable {
     cursor: move;
@@ -103,7 +101,7 @@
     box-shadow: 0 0 0 2px var(--app-color-warning, #a34d14);
 }
 
-/* Conteneur d'événements externes (glisser-déposer depuis l'extérieur) */
+/* External events container (drag & drop from outside the calendar) */
 .external-event-container {
     padding: 10px;
     background: var(--bg-secondary, #e2decf);

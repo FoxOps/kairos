@@ -1,15 +1,15 @@
 /* ============================================
-   LEVIIA SCHEDULE - CLASSES UTILITAIRES
+   LEVIIA SCHEDULE - UTILITY CLASSES
    ============================================
-   Depuis la refonte Tailwind/daisyUI (Phase 7) : les utilitaires
-   d'espacement/affichage/alignement (mt-*, mb-*, gap-*, d-*, visible,
-   justify-center, w-80/w-100...) sont retirés - Tailwind (JIT via
-   tailwindcss-browser) génère déjà des classes du même nom, et comme ce
-   fichier est chargé hors de tout @layer, il gagnait TOUJOURS sur les
-   utilitaires Tailwind (@layer utilities) quelle que soit la spécificité
-   - bug réel découvert en Phase 7 (ex: mt-5/mb-5 valait 1.5rem ici vs
-   1.25rem chez Tailwind, silencieusement écrasé). Ne restent que les
-   largeurs minimales, sans équivalent Tailwind par défaut.
+   Under Tailwind/daisyUI, the spacing/display/alignment utilities
+   (mt-*, mb-*, gap-*, d-*, visible, justify-center, w-80/w-100...) were
+   removed: Tailwind (JIT via tailwindcss-browser) already generates
+   classes with the same names, and since this file is loaded outside
+   any @layer, it ALWAYS won against Tailwind's utilities (@layer
+   utilities) regardless of specificity - a real bug this caused: mt-5/
+   mb-5 resolved to 1.5rem here vs. 1.25rem in Tailwind, silently
+   overridden. Only the minimum-width classes remain, since Tailwind has
+   no default equivalent for those.
    ============================================ */
 
 .min-w-80 { min-width: 80px; }

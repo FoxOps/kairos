@@ -1,6 +1,6 @@
 """
-Tests d'intégration pour les routes d'échange de shifts : création/liste/
-annulation côté utilisateur (swap_routes.py) et validation côté admin
+Integration tests for the shift-swap routes: create/list/cancel on the
+user side (swap_routes.py) and approve/reject/revert on the admin side
 (admin_swap_routes.py).
 """
 
@@ -46,9 +46,9 @@ class TestUserSwapRoutes:
     def test_add_swap_not_owner_rejected(
         self, test_app, non_admin_client, second_user, test_swap_shift, test_user
     ):
-        """non_admin_client est test_user, propriétaire réel du shift -
-        on force un autre target pour vérifier le message d'erreur métier
-        plutôt qu'une simple 404/permission HTTP."""
+        """non_admin_client is test_user, the shift's real owner - a
+        different target is forced here to check the business-rule error
+        message rather than a plain HTTP 404/permission error."""
         with test_app.app_context():
             foreign_shift = Shift(
                 date=test_swap_shift.date,
@@ -186,13 +186,13 @@ class TestAdminSwapRoutes:
     def test_revert_swap_requires_admin(
         self, test_app, non_admin_client, test_swap_request, admin_user
     ):
-        # Un seul client HTTP dans ce test (deux test_client() du même
-        # test_app finissent par partager leur cookiejar - artefact de ce
-        # harnais de test, pas un bug appli ; voir logged_in_client/
-        # non_admin_client dans conftest, jamais combinés dans un même
-        # test ailleurs dans ce repo pour la même raison). L'état "déjà
-        # approuvé" est donc préparé directement via le service, pas via
-        # une seconde requête HTTP authentifiée admin.
+        # Only one HTTP client in this test (two test_client() calls off
+        # the same test_app end up sharing a cookiejar - an artifact of
+        # this test harness, not an app bug; see logged_in_client/
+        # non_admin_client in conftest, never combined in a single test
+        # elsewhere in this repo for the same reason). The "already
+        # approved" state is therefore set up directly via the service,
+        # not via a second authenticated admin HTTP request.
         with test_app.app_context():
             SwapService.approve_swap(test_swap_request, admin_user)
 

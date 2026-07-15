@@ -1,13 +1,13 @@
 /**
- * Gère le menu de navigation mobile via le composant `drawer` daisyUI.
- * `#mobile-drawer` (la case à cocher qui pilote le panneau en CSS pur)
- * est manipulée par ce module plutôt que directement par un <label for>
- * afin de garder un vrai <button> avec aria-expanded/aria-controls
- * corrects sur le burger - la case reste le seul mécanisme qui anime le
- * panneau, ce module ne fait que synchroniser son état "checked" avec
- * le clic sur le bouton et la touche Échap (le clic sur l'overlay
- * généré par daisyUI, lui, coche/décoche directement la case via son
- * propre <label for="mobile-drawer">, sans passer par ce module).
+ * Manages the mobile navigation menu via daisyUI's `drawer` component.
+ * `#mobile-drawer` (the checkbox that drives the panel in pure CSS) is
+ * driven by this module rather than directly by a <label for> so the
+ * burger keeps a real <button> with correct aria-expanded/aria-controls -
+ * the checkbox stays the only mechanism that animates the panel, this
+ * module just syncs its "checked" state with the button click and the
+ * Escape key (a click on daisyUI's own generated overlay checks/unchecks
+ * the checkbox directly via its own <label for="mobile-drawer">, without
+ * going through this module).
  */
 export class NavbarMenu {
     constructor() {
@@ -21,9 +21,9 @@ export class NavbarMenu {
 
         this.burger.addEventListener('click', () => this.toggle());
 
-        // L'overlay daisyUI (ou un clic sur un lien du menu, qui déclenche
-        // une navigation complète de toute façon) peut décocher la case
-        // sans passer par le burger - garder aria-expanded synchronisé.
+        // The daisyUI overlay (or a click on a menu link, which triggers a
+        // full navigation anyway) can uncheck the checkbox without going
+        // through the burger - keep aria-expanded in sync.
         this.drawerToggle.addEventListener('change', () => this.syncAria());
 
         document.addEventListener('keydown', (e) => {

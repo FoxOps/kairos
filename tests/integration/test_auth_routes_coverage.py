@@ -1,12 +1,12 @@
 """
-Tests ciblés sur les branches non-OIDC de app/routes/auth.py non couvertes
-par test_auth_priority.py : redirection si déjà connecté, update_profile
-(validation + changement de mot de passe), génération de token ICS.
+Targeted tests for the non-OIDC branches of app/routes/auth.py not
+covered by test_auth_priority.py: redirect when already logged in,
+update_profile (validation + password change), ICS token generation.
 
-Les branches OIDC (oidc_login/oidc_callback/logout en mode OIDC) sont
-délibérément laissées de côté : elles nécessitent de mocker le client
-Authlib (échange de code d'autorisation, userinfo, id_token) - un chantier
-séparé, plus lourd, pas un simple ajout de tests.
+The OIDC branches (oidc_login/oidc_callback/logout in OIDC mode) are
+deliberately left out: they require mocking the Authlib client
+(authorization-code exchange, userinfo, id_token) - a separate, heavier
+effort, not a simple test addition.
 """
 
 from unittest.mock import patch

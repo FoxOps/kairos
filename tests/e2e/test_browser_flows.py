@@ -1,18 +1,17 @@
 """
-Tests E2E avec un vrai navigateur (Playwright + Chromium).
+E2E tests with a real browser (Playwright + Chromium).
 
-Complète tests/e2e/test_user_flows.py (client de test Flask, sans
-navigateur) plutôt que de le remplacer - voir report/E2E Playwright -
-Tests navigateur réel.md pour la justification complète. Le client de
-test Flask n'exécute jamais de JS ni n'applique CSS/CSP : cette suite
-couvre exactement la catégorie de bug que ça laisse passer (3 bugs CSP
-réels trouvés manuellement lors de la refonte UI/UX, PR #103, avant que
-ces tests n'existent).
+Complements tests/e2e/test_user_flows.py (Flask test client, no
+browser) rather than replacing it - see report/E2E Playwright - Tests
+navigateur réel.md for the full justification. The Flask test client
+never executes JS nor applies CSS/CSP: this suite covers exactly the
+category of bug that lets through (3 real CSP bugs were found manually
+during the UI/UX redesign, before these tests existed).
 
-Nécessite `pip install -r requirements-e2e.txt && playwright install
-chromium` - sinon toute la collecte de ce module est skippée
-proprement (voir pytest.importorskip ci-dessous), make test/CI ne
-casse jamais pour qui n'a pas installé de navigateur.
+Requires `pip install -r requirements-e2e.txt && playwright install
+chromium` - otherwise collecting this whole module is cleanly skipped
+(see pytest.importorskip below), so make test/CI never breaks for
+contributors without a browser installed.
 """
 
 import pytest
@@ -45,18 +44,18 @@ class TestLoginFlow:
 
 
 class TestNavbarBurgerMenu:
-    """Comportement JS pur (toggle du drawer daisyUI/aria-expanded) -
-    jamais exécuté par le client de test Flask, donc jamais vérifié
-    avant cette suite. Bug réel trouvé et corrigé en PR #103 : le burger
-    n'existait même pas. Depuis la refonte layout sidebar (un seul menu
-    de navigation vertical, #sidebar-menu, plutôt qu'une nav horizontale
-    + un panneau mobile séparé) : #sidebar-menu est piloté par la case à
-    cocher #mobile-drawer (mécanisme CSS natif de daisyUI, `drawer
-    lg:drawer-open`) - navbar-menu.js ne fait que synchroniser son état
-    "checked" et aria-expanded. Sous le breakpoint lg, #sidebar-menu est
-    un panneau overlay masqué par défaut (case décochée) ; à partir de
-    lg, il reste affiché en permanence comme sidebar (daisyUI ignore
-    l'état de la case à ce breakpoint) et le burger disparaît."""
+    """Pure JS behavior (toggling the daisyUI drawer/aria-expanded) -
+    never executed by the Flask test client, so never checked before
+    this suite. A real bug found and fixed here: the burger didn't even
+    exist. Since the sidebar layout redesign (a single vertical
+    navigation menu, #sidebar-menu, instead of a horizontal nav plus a
+    separate mobile panel): #sidebar-menu is driven by the #mobile-drawer
+    checkbox (daisyUI's native CSS mechanism, `drawer lg:drawer-open`) -
+    navbar-menu.js only syncs its "checked" state and aria-expanded.
+    Below the lg breakpoint, #sidebar-menu is an overlay panel hidden by
+    default (checkbox unchecked); from lg up, it stays permanently shown
+    as a sidebar (daisyUI ignores the checkbox state at that breakpoint)
+    and the burger disappears."""
 
     def test_burger_toggles_menu_on_mobile_viewport(self, logged_in_page):
         page = logged_in_page
@@ -74,16 +73,17 @@ class TestNavbarBurgerMenu:
         assert drawer_toggle.is_checked()
         assert burger.get_attribute("aria-expanded") == "true"
 
-        # Le panneau ouvert (.drawer-side, z-50, position fixed) recouvre
-        # délibérément le burger à l'écran (comportement daisyUI standard,
-        # pas un bug) - le geste réaliste pour refermer à la souris est de
-        # cliquer l'overlay généré par daisyUI (<label for="mobile-drawer">),
-        # pas de recliquer le burger au même pixel. Position explicite dans
-        # la zone assombrie (hors du panneau w-72) : le centre géométrique
-        # par défaut de l'overlay (qui couvre tout le viewport) tombe sous
-        # le <ul> du menu, qui intercepterait le clic. Vérifie au passage
-        # que navbar-menu.js resynchronise bien aria-expanded même quand la
-        # case est décochée par autre chose que le clic direct sur le burger.
+        # The open panel (.drawer-side, z-50, position fixed) deliberately
+        # covers the burger on screen (standard daisyUI behavior, not a
+        # bug) - the realistic mouse gesture to close it is clicking
+        # daisyUI's generated overlay (<label for="mobile-drawer">), not
+        # re-clicking the burger at the same pixel. Explicit position in
+        # the darkened area (outside the w-72 panel): the overlay's
+        # default geometric center (which covers the whole viewport)
+        # falls under the menu's <ul>, which would intercept the click.
+        # This also checks that navbar-menu.js correctly resyncs
+        # aria-expanded even when the checkbox is unchecked by something
+        # other than a direct click on the burger.
         page.locator(".drawer-overlay").click(position={"x": 350, "y": 400})
         page.wait_for_timeout(200)
         assert not drawer_toggle.is_checked()
@@ -133,21 +133,21 @@ class TestNavbarBurgerMenu:
 
 
 class TestDarkThemeToggle:
-    """localStorage + attribut DOM - intestable côté serveur (le client
-    de test Flask n'a pas de localStorage)."""
+    """localStorage + a DOM attribute - untestable server-side (the
+    Flask test client has no localStorage)."""
 
     def test_theme_toggle_persists_after_reload(self, logged_in_page, live_server_url):
         page = logged_in_page
         html = page.locator("html")
         initial_theme = html.get_attribute("data-theme")
 
-        # #theme-toggle est une checkbox à dimensions nulles (pattern
-        # "Theme Controller" swap de daisyUI, voir base.html) - seule
-        # l'icône (.swap-on/.swap-off) est visible. Le clic réel d'un
-        # utilisateur passe par le <label> englobant (association
-        # native <label><input>...</label>, sans attribut for) ; cliquer
-        # l'input directement échoue même avec force=True ("outside of
-        # the viewport", Playwright a besoin de coordonnées réelles).
+        # #theme-toggle is a zero-size checkbox (daisyUI's "Theme
+        # Controller" swap pattern, see base.html) - only the icon
+        # (.swap-on/.swap-off) is visible. A real user's click goes
+        # through the wrapping <label> (native <label><input>...</label>
+        # association, no for attribute); clicking the input directly
+        # fails even with force=True ("outside of the viewport",
+        # Playwright needs real coordinates).
         page.click("label:has(#theme-toggle)")
         page.wait_for_timeout(200)
         toggled_theme = html.get_attribute("data-theme")
@@ -159,13 +159,12 @@ class TestDarkThemeToggle:
 
 
 class TestNoConsoleErrors:
-    """Garde-fou de régression principal de cette suite : généralise la
-    vérification manuelle qui a trouvé 3 bugs CSP réels (PR #103) en
-    balayage automatique sur les pages clés. Une erreur console ici
-    (violation CSP, script cassé, ressource bloquée) est un signal fort
-    qu'une fonctionnalité JS est silencieusement morte en production -
-    exactement ce que ni les tests Flask ni une revue de code ne
-    peuvent attraper."""
+    """This suite's main regression guard: generalizes the manual check
+    that found 3 real CSP bugs into an automated sweep across the key
+    pages. A console error here (CSP violation, broken script, blocked
+    resource) is a strong signal that a JS feature is silently dead in
+    production - exactly what neither the Flask tests nor a code review
+    can catch."""
 
     @pytest.mark.parametrize(
         "path",
@@ -192,14 +191,12 @@ class TestNoConsoleErrors:
         page.goto(f"{live_server_url}{path}")
         page.wait_for_load_state("networkidle")
 
-        assert not errors, f"{path} : erreur(s) console trouvée(s) :\n" + "\n".join(
-            errors
-        )
+        assert not errors, f"{path}: console error(s) found:\n" + "\n".join(errors)
 
 
 class TestIcsTokenCopyButton:
-    """Vérifie le fix PR #103 : le bouton copier était silencieusement
-    mort (script inline bloqué par la CSP) avant l'externalisation vers
+    """Checks the fix for a real bug: the copy button was silently dead
+    (inline script blocked by the CSP) before being extracted to
     static/js/clipboard/copy-token.js."""
 
     def test_copy_button_shows_feedback(self, logged_in_page, live_server_url):
@@ -215,13 +212,13 @@ class TestIcsTokenCopyButton:
 
 
 class TestDeleteConfirmationModal:
-    """Régression : onclick="return Leviia.confirmActionAccessible(...)"
-    appelait une modale async (ouverte, jamais bloquante) et retournait
-    donc undefined - la navigation/soumission par défaut du lien/formulaire
-    partait immédiatement, avant même que l'utilisateur clique sur
-    Confirmer/Annuler dans la modale. Invisible pour le client de test
-    Flask (n'exécute jamais de JS) - seul un vrai navigateur peut le
-    détecter, d'où ce test dans la couche E2E navigateur réel."""
+    """Regression test: onclick="return Leviia.confirmActionAccessible(...)"
+    used to call an async (opened, never blocking) modal and therefore
+    returned undefined - the link/form's default navigation/submission
+    fired immediately, before the user even clicked Confirm/Cancel in
+    the modal. Invisible to the Flask test client (which never executes
+    JS) - only a real browser can detect this, hence this test living in
+    the real-browser E2E layer."""
 
     def _add_leave(self, page, live_server_url, start_date, end_date):
         page.goto(f"{live_server_url}/leave/add")
@@ -233,8 +230,8 @@ class TestDeleteConfirmationModal:
         page.wait_for_load_state("networkidle")
 
     def test_cancel_in_modal_does_not_delete(self, logged_in_page, live_server_url):
-        # Week-end : contourne la règle 6 (effectif minimum), hors sujet
-        # ici - seul un utilisateur existe dans ce serveur E2E.
+        # A weekend: sidesteps rule 6 (minimum headcount), irrelevant
+        # here - only one user exists on this E2E server.
         page = logged_in_page
         self._add_leave(page, live_server_url, "2031-03-01", "2031-03-02")
 
@@ -243,12 +240,12 @@ class TestDeleteConfirmationModal:
         row = page.locator("tr", has_text="01/03/2031")
         assert row.count() > 0
 
-        row.locator("a.btn-error").first.click()
+        row.locator(".js-confirm-delete").first.click()
         page.wait_for_selector(".modal.modal-open")
         page.click(".modal.modal-open button:has-text('Annuler')")
         page.wait_for_timeout(200)
 
-        # Toujours sur /leave (pas de navigation déclenchée), congé toujours présent.
+        # Still on /leave (no navigation triggered), leave still present.
         assert "/leave" in page.url
         assert page.locator("tr", has_text="01/03/2031").count() > 0
 
@@ -261,7 +258,7 @@ class TestDeleteConfirmationModal:
         row = page.locator("tr", has_text="05/04/2031")
         assert row.count() > 0
 
-        row.locator("a.btn-error").first.click()
+        row.locator(".js-confirm-delete").first.click()
         page.wait_for_selector(".modal.modal-open")
         page.click(".modal.modal-open button:has-text('Confirmer')")
         page.wait_for_load_state("networkidle")

@@ -1,7 +1,8 @@
 """
-Tests pour les "Actions rapides" de la page d'accueil (index.html) côté
-utilisateur non-admin : export ICS (my + all + lien "Plus d'options"),
-régression après une refonte où ces liens avaient disparu du panneau.
+Tests for the "Actions rapides" (quick actions) on the home page
+(index.html) for a non-admin user: ICS export (my + all + the "Plus
+d'options" link) - a regression test for a redesign that had made these
+links disappear from the panel.
 """
 
 from app import db
@@ -46,7 +47,7 @@ class TestQuickActionsExportNonAdmin:
 
 class TestQuickActionsAdmin:
     def test_admin_index_still_renders(self, test_app, logged_in_client):
-        """Pas de régression côté admin (panneau admin inchangé)."""
+        """No regression on the admin side (admin panel unchanged)."""
         resp = logged_in_client.get("/")
         assert resp.status_code == 200
         assert b"Ajouter un shift" in resp.data

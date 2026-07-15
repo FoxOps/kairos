@@ -14,33 +14,33 @@ from app.utils.automation.oncall_automation import OnCallAutomation
 
 def get_automation_status() -> dict[str, Any]:
     """
-    Retourne l'état actuel de l'automatisation.
+    Return the current automation status.
 
     Returns:
-        Dictionnaire contenant :
-        - Nombre d'astreintes existantes
-        - Nombre de shifts existants
-        - Nombre d'utilisateurs éligibles pour les astreintes
-        - Nombre d'utilisateurs éligibles pour les shifts
-        - Prochaine date disponible pour la génération
+        Dictionary containing:
+        - Number of existing on-calls
+        - Number of existing shifts
+        - Number of users eligible for on-calls
+        - Number of users eligible for shifts
+        - Next available date for generation
     """
-    # Compter les astreintes existantes
+    # Count existing on-calls
     oncall_count = OnCall.query.count()
 
-    # Compter les shifts existants
+    # Count existing shifts
     shift_count = Shift.query.count()
 
-    # Compter les utilisateurs éligibles
+    # Count eligible users
     oncall_eligible = len(OnCallAutomation.get_eligible_users())
     shift_eligible = len(AdvancedShiftAutomation.get_users_in_schedule_groups())
 
-    # Trouver la prochaine date disponible (le premier vendredi dans le futur sans astreinte)
+    # Find the next available date (the first Friday in the future with no on-call)
     today = date.today()
     current_date = today
-    while current_date.weekday() != 4:  # 4 = vendredi
+    while current_date.weekday() != 4:  # 4 = Friday
         current_date += timedelta(days=1)
 
-    # Vérifier si une astreinte existe déjà pour ce vendredi
+    # Check whether an on-call already exists for this Friday
     next_oncall_date = None
     while next_oncall_date is None:
         start_time = datetime.combine(current_date, datetime.min.time()).replace(

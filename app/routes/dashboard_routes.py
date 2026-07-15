@@ -1,14 +1,16 @@
 """
-Routes pour l'accueil (calendrier) et le tableau de bord utilisateur.
-Enregistrées sur main_bp (cf. app/routes/main.py).
+Routes for the home page (calendar) and the user dashboard. Registered
+on main_bp (see app/routes/main.py).
 """
 
 from datetime import date, datetime
 
 from flask import jsonify, render_template
 from flask_login import current_user, login_required
+from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
+from app import db
 from app.models import Leave, OnCall, Shift, ShiftType
 from app.routes.main import main_bp
 from app.services import ScheduleService
@@ -22,7 +24,7 @@ from app.utils.optimizations import eager_load
 @eager_load(OnCall, ["user"])
 @eager_load(Leave, ["user"])
 def index():
-    """Page d'accueil - accessible uniquement aux utilisateurs connectés."""
+    """Home page - only accessible to logged-in users."""
     events = ScheduleService.get_calendar_events()
     return render_template("index.html", events=events)
 
@@ -30,7 +32,7 @@ def index():
 @main_bp.route("/api/shifts", methods=["GET"])
 @login_required
 def api_get_shifts():
-    """API endpoint pour récupérer les shifts au format JSON pour FullCalendar."""
+    """API endpoint to fetch shifts as JSON for FullCalendar."""
     events = ScheduleService.get_calendar_events()
     return jsonify(events)
 
@@ -38,7 +40,7 @@ def api_get_shifts():
 @main_bp.route("/dashboard")
 @login_required
 def user_dashboard():
-    """Tableau de bord utilisateur - Vue d'ensemble personnalisée."""
+    """User dashboard - personalized overview."""
     user_id = current_user.id
 
     total_shifts = Shift.query.filter_by(user_id=user_id).count()
@@ -77,25 +79,29 @@ def user_dashboard():
         .all()
     )
 
-    shift_types_stats = []
     shift_types = ShiftType.query.all()
-    for shift_type in shift_types:
-        count = Shift.query.filter_by(
-            user_id=user_id, shift_type_id=shift_type.id
-        ).count()
-        if count > 0:
-            shift_types_stats.append(
-                {
-                    "id": shift_type.id,
-                    "name": shift_type.name,
-                    "label": shift_type.label,
-                    "count": count,
-                }
-            )
+    # A .count() per shift type (loop) used to run as many queries as
+    # there were types - replaced with a single GROUP BY.
+    counts_by_type_id = dict(
+        db.session.query(Shift.shift_type_id, func.count(Shift.id))
+        .filter(Shift.user_id == user_id)
+        .group_by(Shift.shift_type_id)
+        .all()
+    )
+    shift_types_stats = [
+        {
+            "id": shift_type.id,
+            "name": shift_type.name,
+            "label": shift_type.label,
+            "count": counts_by_type_id[shift_type.id],
+        }
+        for shift_type in shift_types
+        if counts_by_type_id.get(shift_type.id, 0) > 0
+    ]
 
-    # Par rang parmi les types existants (pas par id % taille_palette),
-    # sinon deux types dont les IDs diffèrent d'un multiple de la taille
-    # de la palette se retrouvent avec la même couleur.
+    # By rank among the existing types (not by id % palette size),
+    # otherwise two types whose IDs differ by a multiple of the palette
+    # size end up with the same color.
     shift_type_colors = build_shift_type_color_map(st.id for st in shift_types)
 
     first_day_of_month = date(today.year, today.month, 1)

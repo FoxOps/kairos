@@ -1,19 +1,18 @@
 /* ============================================
-   PAGE - TABLEAU DE BORD
+   PAGE - DASHBOARD
    ============================================
-   Les KPI/listes/états vides utilisent désormais les composants daisyUI
-   natifs (stats/list/list-row, utilitaires Tailwind) - seul le mini
-   bar-chart reste custom ci-dessous, daisyUI n'a pas de composant chart. */
+   KPIs/lists/empty states now use daisyUI's native components (stats/
+   list/list-row, Tailwind utilities) - only the mini bar chart below
+   stays custom, since daisyUI has no chart component. */
 
-/* Mini graphique à barres - .chart-container n'avait aucune règle CSS :
-   sans display:flex + une hauteur fixe sur le parent, le flex:1 de
-   .chart-item ne servait à rien (les barres s'empilaient verticalement
-   en pleine largeur au lieu de former un graphique côte à côte) et le
-   height:X% inline de .chart-bar ne pouvait rien résoudre (pourcentage
-   de hauteur sans hauteur de référence définie sur le parent direct).
-   align-items reste "stretch" (valeur par défaut) pour que chaque
-   .chart-item hérite de la hauteur fixe du conteneur - c'est ce qui
-   permet au height:X% du bar de se résoudre correctement. */
+/* Mini bar chart - .chart-container had no CSS rules at all: without
+   display:flex plus a fixed height on the parent, .chart-item's flex:1
+   did nothing (the bars stacked vertically at full width instead of
+   forming a side-by-side chart), and .chart-bar's inline height:X% had
+   nothing to resolve against (a height percentage needs a defined
+   reference height on the direct parent). align-items stays "stretch"
+   (the default) so each .chart-item inherits the container's fixed
+   height - that's what lets the bar's height:X% resolve correctly. */
 .chart-container {
     display: flex;
     gap: 0.5rem;

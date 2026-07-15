@@ -1,25 +1,17 @@
 """
-Tests unitaires pour les décorateurs sans contexte Flask.
+Unit tests for the decorators without a Flask context.
 """
 
 from unittest.mock import Mock
 
-from app.auth.decorators import (
-    admin_required,
-    role_required,
-    user_can_delete,
-    user_can_delete_resource,
-    user_can_edit,
-    user_can_edit_resource,
-    user_owns_resource,
-)
+from app.auth.decorators import admin_required, user_owns_resource
 
 
 class TestAdminRequiredDecorator:
-    """Tests unitaires pour admin_required."""
+    """Unit tests for admin_required."""
 
     def test_admin_required_decorator_structure(self):
-        """Test que admin_required est un décorateur valide."""
+        """Test that admin_required is a valid decorator."""
 
         @admin_required
         def test_function():
@@ -30,17 +22,17 @@ class TestAdminRequiredDecorator:
         assert test_function.__name__ == "test_function"
 
     def test_admin_required_preserves_docstring(self):
-        """Test que admin_required préserve le docstring."""
+        """Test that admin_required preserves the docstring."""
 
         @admin_required
         def test_function():
-            """Ceci est un docstring."""
+            """This is a docstring."""
             pass
 
-        assert test_function.__doc__ == "Ceci est un docstring."
+        assert test_function.__doc__ == "This is a docstring."
 
     def test_admin_required_preserves_function_name(self):
-        """Test que admin_required préserve le nom de la fonction."""
+        """Test that admin_required preserves the function name."""
 
         @admin_required
         def my_function():
@@ -49,45 +41,12 @@ class TestAdminRequiredDecorator:
         assert my_function.__name__ == "my_function"
 
 
-class TestRoleRequiredDecorator:
-    """Tests unitaires pour role_required."""
-
-    def test_role_required_decorator_structure(self):
-        """Test que role_required est un décorateur valide."""
-
-        @role_required("user")
-        def test_function():
-            return "test"
-
-        assert callable(test_function)
-
-    def test_role_required_with_multiple_roles(self):
-        """Test role_required avec plusieurs rôles."""
-
-        @role_required("admin", "user")
-        def test_function():
-            return "test"
-
-        assert callable(test_function)
-
-    def test_role_required_preserves_metadata(self):
-        """Test que role_required préserve les métadonnées."""
-
-        @role_required("admin")
-        def test_function():
-            """Test docstring."""
-            pass
-
-        assert test_function.__name__ == "test_function"
-        assert test_function.__doc__ == "Test docstring."
-
-
 class TestUserOwnsResourceDecorator:
-    """Tests unitaires pour user_owns_resource."""
+    """Unit tests for user_owns_resource."""
 
     def test_user_owns_resource_decorator_structure(self):
-        """Test que user_owns_resource est un décorateur valide."""
-        # Créer un mock pour le modèle
+        """Test that user_owns_resource is a valid decorator."""
+        # Create a mock for the model
         MockModel = Mock()
 
         @user_owns_resource(MockModel, "resource_id")
@@ -97,7 +56,7 @@ class TestUserOwnsResourceDecorator:
         assert callable(test_function)
 
     def test_user_owns_resource_preserves_metadata(self):
-        """Test que user_owns_resource préserve les métadonnées."""
+        """Test that user_owns_resource preserves the metadata."""
         MockModel = Mock()
 
         @user_owns_resource(MockModel, "resource_id")
@@ -109,7 +68,7 @@ class TestUserOwnsResourceDecorator:
         assert test_function.__doc__ == "Test docstring."
 
     def test_user_owns_resource_with_custom_attr(self):
-        """Test user_owns_resource avec un attribut personnalisé."""
+        """Test user_owns_resource with a custom attribute."""
         MockModel = Mock()
 
         @user_owns_resource(MockModel, "resource_id", user_id_attr="owner_id")
@@ -119,64 +78,26 @@ class TestUserOwnsResourceDecorator:
         assert callable(test_function)
 
 
-class TestAliasDecorators:
-    """Tests pour les alias de décorateurs."""
-
-    def test_user_can_edit_resource_is_callable(self):
-        """Test que user_can_edit_resource est appelable."""
-        MockModel = Mock()
-        decorator = user_can_edit_resource(MockModel, "resource_id")
-        assert callable(decorator)
-
-    def test_user_can_delete_resource_is_callable(self):
-        """Test que user_can_delete_resource est appelable."""
-        MockModel = Mock()
-        decorator = user_can_delete_resource(MockModel, "resource_id")
-        assert callable(decorator)
-
-
-class TestLegacyDecorators:
-    """Tests pour les décorateurs obsolètes."""
-
-    def test_user_can_edit_decorator_structure(self):
-        """Test que user_can_edit est un décorateur valide."""
-
-        @user_can_edit("user_id")
-        def test_function(user_id):
-            return "test"
-
-        assert callable(test_function)
-
-    def test_user_can_delete_decorator_structure(self):
-        """Test que user_can_delete est un décorateur valide."""
-
-        @user_can_delete("shift")
-        def test_function():
-            return "test"
-
-        assert callable(test_function)
-
-
 class TestDecoratorChaining:
-    """Tests pour l'enchaînement de décorateurs."""
+    """Tests for chaining decorators."""
 
     def test_multiple_decorators_can_be_chained(self):
-        """Test que plusieurs décorateurs peuvent être enchaînés."""
+        """Test that multiple decorators can be chained."""
         MockModel = Mock()
 
         @user_owns_resource(MockModel, "resource_id")
-        @role_required("admin")
+        @admin_required
         def test_function(resource_id):
             return "test"
 
         assert callable(test_function)
 
     def test_decorator_order_preservation(self):
-        """Test que l'ordre des décorateurs est préservé."""
+        """Test that decorator order is preserved."""
         MockModel = Mock()
 
         @user_owns_resource(MockModel, "resource_id")
-        @role_required("admin")
+        @admin_required
         def test_function(resource_id):
             """Test docstring."""
             pass

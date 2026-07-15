@@ -25,7 +25,7 @@ from scripts.backup_database import (
 
 
 class BackupService:
-    """Logique métier pour la gestion des sauvegardes depuis l'admin."""
+    """Business logic for managing backups from the admin UI."""
 
     @staticmethod
     def _logger() -> logging.Logger:
@@ -42,11 +42,11 @@ class BackupService:
 
     @staticmethod
     def create_now() -> dict[str, Any]:
-        """Crée une sauvegarde immédiate (local et/ou S3 selon la
-        config) et envoie l'alerte email si configurée. Refuse si
-        BACKUP_ENABLED=false - même garde-fou que le script cron, pour
-        que la désactivation soit effective partout (pas seulement pour
-        le planning automatique)."""
+        """Create an immediate backup (local and/or S3 depending on
+        config) and send the email alert if configured. Refuses if
+        BACKUP_ENABLED=false - same guard as the cron script, so the
+        disable flag is effective everywhere (not just for the automatic
+        schedule)."""
         config = BackupService.get_config()
         logger = BackupService._logger()
 
@@ -77,10 +77,10 @@ class BackupService:
 
     @staticmethod
     def get_local_backup_path(filename: str) -> str | None:
-        """Chemin absolu d'une sauvegarde locale à partir de son nom de
-        fichier, avec protection contre la traversée de chemin. Retourne
-        None si le fichier n'existe pas, sort du dossier de sauvegarde,
-        ou ne correspond pas au préfixe attendu."""
+        """Absolute path of a local backup from its file name, with
+        path-traversal protection. Returns None if the file doesn't
+        exist, escapes the backup directory, or doesn't match the
+        expected prefix."""
         config = BackupService.get_config()
         if not config.local_dir or not filename.startswith(config.backup_prefix):
             return None
@@ -95,9 +95,8 @@ class BackupService:
 
     @staticmethod
     def download_s3_backup_to_temp(key: str) -> str | None:
-        """Télécharge une sauvegarde S3 vers un fichier temporaire et
-        retourne son chemin (à supprimer par l'appelant après envoi),
-        ou None en cas d'échec."""
+        """Download an S3 backup to a temp file and return its path (to
+        be removed by the caller after sending), or None on failure."""
         config = BackupService.get_config()
         if not config.s3_enabled or not config.s3_bucket:
             return None

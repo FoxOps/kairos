@@ -1,5 +1,5 @@
 """
-Tests prioritaires pour admin.py - utilisant correctement les fixtures du conftest.
+Priority tests for admin.py - correctly using the conftest fixtures.
 """
 
 from datetime import datetime, timedelta
@@ -9,17 +9,17 @@ from app.models import Group, Shift, ShiftType, User
 
 
 class TestEditGroup:
-    """Tests pour /admin/groups/edit/<group_id>."""
+    """Tests for /admin/groups/edit/<group_id>."""
 
     def test_edit_group_get(self, logged_in_client, group_not_in_schedule):
-        """Test l'affichage du formulaire d'édition de groupe."""
+        """Test rendering the group edit form."""
         response = logged_in_client.get(
             f"/admin/groups/edit/{group_not_in_schedule.id}"
         )
         assert response.status_code == 200
 
     def test_edit_group_post_update_name(self, logged_in_client, group_not_in_schedule):
-        """Test la modification du nom d'un groupe."""
+        """Test renaming a group."""
         response = logged_in_client.post(
             f"/admin/groups/edit/{group_not_in_schedule.id}",
             data={
@@ -34,7 +34,7 @@ class TestEditGroup:
         assert updated_group.name == "Updated Group"
 
     def test_edit_group_post_empty_name(self, logged_in_client, group_not_in_schedule):
-        """Test la modification avec un nom vide."""
+        """Test editing with an empty name."""
         response = logged_in_client.post(
             f"/admin/groups/edit/{group_not_in_schedule.id}",
             data={"name": "", "is_part_of_schedule": "on", "is_part_of_oncall": "on"},
@@ -45,15 +45,15 @@ class TestEditGroup:
 
 
 class TestEditUser:
-    """Tests pour /admin/users/edit/<user_id>."""
+    """Tests for /admin/users/edit/<user_id>."""
 
     def test_edit_user_get(self, logged_in_client, test_user):
-        """Test l'affichage du formulaire d'édition d'utilisateur."""
+        """Test rendering the user edit form."""
         response = logged_in_client.get(f"/admin/users/edit/{test_user.id}")
         assert response.status_code == 200
 
     def test_edit_user_post_update(self, logged_in_client, test_user):
-        """Test la modification d'un utilisateur."""
+        """Test editing a user."""
         response = logged_in_client.post(
             f"/admin/users/edit/{test_user.id}",
             data={
@@ -72,15 +72,15 @@ class TestEditUser:
 
 
 class TestEditShiftType:
-    """Tests pour /admin/shift-types/edit/<shift_type_id>."""
+    """Tests for /admin/shift-types/edit/<shift_type_id>."""
 
     def test_edit_shift_type_get(self, logged_in_client, test_shift_type):
-        """Test l'affichage du formulaire d'édition de type de shift."""
+        """Test rendering the shift-type edit form."""
         response = logged_in_client.get(f"/admin/shift-types/edit/{test_shift_type.id}")
         assert response.status_code == 200
 
     def test_edit_shift_type_post_update(self, logged_in_client, test_shift_type):
-        """Test la modification d'un type de shift."""
+        """Test editing a shift type."""
         response = logged_in_client.post(
             f"/admin/shift-types/edit/{test_shift_type.id}",
             data={
@@ -98,10 +98,10 @@ class TestEditShiftType:
 
 
 class TestDeleteGroup:
-    """Tests pour /admin/groups/delete/<group_id>."""
+    """Tests for /admin/groups/delete/<group_id>."""
 
     def test_delete_group_without_users(self, logged_in_client, group_not_in_schedule):
-        """Test la suppression d'un groupe sans utilisateurs."""
+        """Test deleting a group with no users."""
         initial_count = Group.query.count()
         response = logged_in_client.post(
             f"/admin/groups/delete/{group_not_in_schedule.id}",
@@ -111,7 +111,7 @@ class TestDeleteGroup:
         assert Group.query.count() == initial_count - 1
 
     def test_delete_group_with_users(self, logged_in_client, test_group, test_user):
-        """Test que la suppression d'un groupe avec des utilisateurs est bloquée."""
+        """Test that deleting a group with users is blocked."""
         response = logged_in_client.post(
             f"/admin/groups/delete/{test_group.id}",
             follow_redirects=True,
@@ -122,10 +122,10 @@ class TestDeleteGroup:
 
 
 class TestDeleteUser:
-    """Tests pour /admin/users/delete/<user_id>."""
+    """Tests for /admin/users/delete/<user_id>."""
 
     def test_delete_user_without_resources(self, logged_in_client, second_user):
-        """Test la suppression d'un utilisateur sans ressources."""
+        """Test deleting a user with no resources."""
         initial_count = User.query.count()
         response = logged_in_client.post(
             f"/admin/users/delete/{second_user.id}",
@@ -137,8 +137,8 @@ class TestDeleteUser:
     def test_delete_user_with_shifts(
         self, logged_in_client, test_user, test_shift_type
     ):
-        """Test que la suppression d'un utilisateur avec des shifts est bloquée."""
-        # Créer un shift
+        """Test that deleting a user with shifts is blocked."""
+        # Create a shift
         start_time = datetime.now() + timedelta(days=1)
         shift = Shift(
             user_id=test_user.id,
@@ -160,10 +160,10 @@ class TestDeleteUser:
 
 
 class TestDeleteShiftType:
-    """Tests pour /admin/shift-types/delete/<shift_type_id>."""
+    """Tests for /admin/shift-types/delete/<shift_type_id>."""
 
     def test_delete_shift_type_unused(self, logged_in_client, afternoon_shift_type):
-        """Test la suppression d'un type de shift non utilisé."""
+        """Test deleting an unused shift type."""
         initial_count = ShiftType.query.count()
         response = logged_in_client.post(
             f"/admin/shift-types/delete/{afternoon_shift_type.id}",
@@ -175,8 +175,8 @@ class TestDeleteShiftType:
     def test_delete_shift_type_in_use(
         self, logged_in_client, test_shift_type, test_user
     ):
-        """Test que la suppression d'un type de shift utilisé est bloquée."""
-        # Créer un shift avec ce type
+        """Test that deleting a shift type in use is blocked."""
+        # Create a shift with this type
         start_time = datetime.now() + timedelta(days=1)
         shift = Shift(
             user_id=test_user.id,
@@ -198,24 +198,24 @@ class TestDeleteShiftType:
 
 
 class TestAutomationRoutes:
-    """Tests pour les routes d'automatisation."""
+    """Tests for the automation routes."""
 
     def test_automation_dashboard(self, logged_in_client):
-        """Test l'affichage du tableau de bord d'automatisation."""
+        """Test rendering the automation dashboard."""
         response = logged_in_client.get("/admin/automation")
         assert response.status_code == 200
 
     def test_automation_full(self, logged_in_client):
-        """Test l'affichage de la page d'automatisation complète."""
+        """Test rendering the full-automation page."""
         response = logged_in_client.get("/admin/automation/full")
         assert response.status_code == 200
 
     def test_automation_status(self, logged_in_client):
-        """Test l'affichage de la page de statut d'automatisation."""
+        """Test rendering the automation status page."""
         response = logged_in_client.get("/admin/automation/status")
         assert response.status_code == 200
 
     def test_automation_refresh_shifts(self, logged_in_client):
-        """Test l'affichage de la page de rafraîchissement des shifts."""
+        """Test rendering the shift-refresh page."""
         response = logged_in_client.get("/admin/automation/refresh-shifts")
         assert response.status_code == 200

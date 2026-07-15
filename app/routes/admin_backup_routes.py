@@ -1,7 +1,7 @@
 """
-Routes admin pour les sauvegardes de la base de données. Enregistrées
-sur admin_bp (cf. app/routes/admin.py). Logique métier déléguée à
-BackupService, qui wrappe scripts/backup_database.py.
+Admin routes for database backups. Registered on admin_bp (see
+app/routes/admin.py). Business logic delegated to BackupService, which
+wraps scripts/backup_database.py.
 """
 
 import os
@@ -16,7 +16,7 @@ from app.services import BackupService
 @admin_bp.route("/admin/backups")
 @admin_required
 def backups_dashboard():
-    """Tableau de bord des sauvegardes : config, liste locale et S3."""
+    """Backup dashboard: config, local and S3 listing."""
     config = BackupService.get_config()
     backups = BackupService.list_all_backups()
 
@@ -31,7 +31,7 @@ def backups_dashboard():
 @admin_bp.route("/admin/backups/create", methods=["POST"])
 @admin_required
 def backups_create():
-    """Déclenche une sauvegarde immédiate (local et/ou S3 selon la config)."""
+    """Trigger an immediate backup (local and/or S3 depending on config)."""
     results = BackupService.create_now()
 
     if results["success"]:
@@ -46,7 +46,7 @@ def backups_create():
 @admin_bp.route("/admin/backups/cleanup", methods=["POST"])
 @admin_required
 def backups_cleanup():
-    """Nettoie les sauvegardes expirées (local et S3) selon la rétention configurée."""
+    """Clean up expired backups (local and S3) per the configured retention."""
     results = BackupService.cleanup_now()
     local = results["local"]
     s3 = results["s3"]
@@ -63,7 +63,7 @@ def backups_cleanup():
 @admin_bp.route("/admin/backups/download/local/<path:filename>")
 @admin_required
 def backups_download_local(filename):
-    """Télécharge une sauvegarde locale."""
+    """Download a local backup."""
     filepath = BackupService.get_local_backup_path(filename)
     if filepath is None:
         abort(404)
@@ -74,8 +74,8 @@ def backups_download_local(filename):
 @admin_bp.route("/admin/backups/download/s3/<path:key>")
 @admin_required
 def backups_download_s3(key):
-    """Télécharge une sauvegarde S3 (téléchargée côté serveur puis
-    diffusée au navigateur - pas d'URL présignée exposée directement)."""
+    """Download an S3 backup (fetched server-side then streamed to the
+    browser - no presigned URL exposed directly)."""
     tmp_path = BackupService.download_s3_backup_to_temp(key)
     if tmp_path is None:
         abort(404)

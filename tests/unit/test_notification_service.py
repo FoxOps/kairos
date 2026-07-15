@@ -157,7 +157,7 @@ class TestSendWeeklyShiftNotifications:
 
             assert len(result.failed) == 1
             assert len(result.sent) == 1
-            # Le NotificationLog ne doit exister que pour l'envoi réussi.
+            # A NotificationLog row should only exist for the successful send.
             assert NotificationLog.query.count() == 1
 
 

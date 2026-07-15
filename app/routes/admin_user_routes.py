@@ -1,6 +1,6 @@
 """
-Routes admin pour la gestion des utilisateurs. Enregistrées sur admin_bp
-(cf. app/routes/admin.py).
+Admin routes for managing users. Registered on admin_bp (see
+app/routes/admin.py).
 """
 
 from flask import abort, flash, redirect, render_template, request, url_for
@@ -12,23 +12,15 @@ from app.models import User
 from app.repositories.user_repository import GroupRepository, UserRepository
 from app.routes.admin import admin_bp
 from app.services import UserService
-from app.utils.optimizations import eager_load
 
 
 @admin_bp.route("/admin/users")
 @admin_required
-@eager_load(User, ["group", "shifts", "on_calls", "leaves"])
 def list_users():
-    users = (
-        User.query.options(
-            selectinload(User.group),
-            selectinload(User.shifts),
-            selectinload(User.on_calls),
-            selectinload(User.leaves),
-        )
-        .order_by(User.name)
-        .all()
-    )
+    # admin/users.html only displays user.group.name - shifts/on_calls/leaves
+    # are never rendered there, preloading them was just wasting queries
+    # (and growing unbounded with each user's history).
+    users = User.query.options(selectinload(User.group)).order_by(User.name).all()
     groups = GroupRepository.get_all()
     return render_template("admin/users.html", users=users, groups=groups)
 

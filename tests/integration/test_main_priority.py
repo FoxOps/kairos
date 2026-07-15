@@ -1,18 +1,18 @@
 """
-Tests prioritaires pour main.py.
+Priority tests for main.py.
 """
 
 from datetime import datetime, timedelta
 
 from app import db
-from app.models import OnCall, Shift
+from app.models import OnCall, Shift, User
 
 
 class TestDeleteAllShifts:
-    """Tests pour /shift/delete-all."""
+    """Tests for /shift/delete-all."""
 
     def test_delete_all_shifts(self, logged_in_client, test_shift):
-        """Test la suppression de tous les shifts."""
+        """Test deleting all shifts."""
         initial_count = Shift.query.count()
         assert initial_count > 0
 
@@ -22,13 +22,13 @@ class TestDeleteAllShifts:
 
 
 class TestDeleteAllShiftsForUser:
-    """Tests pour /shift/delete-all-for-user/<user_id>."""
+    """Tests for /shift/delete-all-for-user/<user_id>."""
 
     def test_delete_all_shifts_for_user(
         self, logged_in_client, test_user, test_shift_type
     ):
-        """Test la suppression de tous les shifts d'un utilisateur."""
-        # Créer des shifts
+        """Test deleting all shifts for a user."""
+        # Create shifts
         for i in range(3):
             start_time = datetime.now() + timedelta(days=i + 1)
             shift = Shift(
@@ -50,20 +50,34 @@ class TestDeleteAllShiftsForUser:
 
 
 class TestDeleteAllShiftsForDay:
-    """Tests pour /shift/delete-day/<date_str>."""
+    """Tests for /shift/delete-day/<date_str>."""
 
     def test_delete_all_shifts_for_day(
         self, logged_in_client, test_user, test_shift_type
     ):
-        """Test la suppression de tous les shifts pour un jour."""
+        """Test deleting all shifts for a day."""
         today = datetime.now().date()
-        # Créer des shifts pour aujourd'hui
-        for i in range(3):
+        # Create shifts for today, one per user - uq_shift_user_date
+        # allows at most one shift per (user, date), so this needs 3
+        # distinct users rather than 3 shifts for the same one.
+        users = [test_user]
+        for i in range(2):
+            other = User(
+                name=f"Day User {i}",
+                email=f"day-user-{i}@test.com",
+                group_id=test_user.group_id,
+            )
+            other.set_password("pw")
+            db.session.add(other)
+            users.append(other)
+        db.session.commit()
+
+        for i, user in enumerate(users):
             start_time = datetime.combine(today, datetime.min.time()).replace(
                 hour=9 + i * 2
             )
             shift = Shift(
-                user_id=test_user.id,
+                user_id=user.id,
                 shift_type_id=test_shift_type.id,
                 start_time=start_time,
                 end_time=start_time + timedelta(hours=8),
@@ -81,16 +95,16 @@ class TestDeleteAllShiftsForDay:
 
 
 class TestDeleteAllShiftsForWeek:
-    """Tests pour /shift/delete-week/<date_str>."""
+    """Tests for /shift/delete-week/<date_str>."""
 
     def test_delete_all_shifts_for_week(
         self, logged_in_client, test_user, test_shift_type
     ):
-        """Test la suppression de tous les shifts pour une semaine."""
+        """Test deleting all shifts for a week."""
         today = datetime.now().date()
         monday = today - timedelta(days=today.weekday())
 
-        # Créer des shifts pour la semaine
+        # Create shifts for the week
         for day in range(5):
             current_date = monday + timedelta(days=day)
             start_time = datetime.combine(current_date, datetime.min.time()).replace(
@@ -120,10 +134,10 @@ class TestDeleteAllShiftsForWeek:
 
 
 class TestDeleteAllOnCalls:
-    """Tests pour /oncall/delete-all."""
+    """Tests for /oncall/delete-all."""
 
     def test_delete_all_oncalls(self, logged_in_client, test_oncall):
-        """Test la suppression de toutes les astreintes."""
+        """Test deleting all on-calls."""
         initial_count = OnCall.query.count()
         assert initial_count > 0
 
@@ -133,11 +147,11 @@ class TestDeleteAllOnCalls:
 
 
 class TestDeleteAllOnCallsForUser:
-    """Tests pour /oncall/delete-all-for-user/<user_id>."""
+    """Tests for /oncall/delete-all-for-user/<user_id>."""
 
     def test_delete_all_oncalls_for_user(self, logged_in_client, test_user):
-        """Test la suppression de toutes les astreintes d'un utilisateur."""
-        # Créer des astreintes
+        """Test deleting all on-calls for a user."""
+        # Create on-calls
         for i in range(3):
             now = datetime.now()
             days_until_friday = (4 - now.weekday() + i * 7) % 7
@@ -161,7 +175,7 @@ class TestDeleteAllOnCallsForUser:
 
 
 class TestCalendarFunctions:
-    """Tests pour les fonctions utilitaires du calendrier."""
+    """Tests for the calendar utility functions."""
 
     def test_calendar_window(self, test_app):
         """Test _calendar_window."""
@@ -179,7 +193,7 @@ class TestCalendarFunctions:
         assert abs((end - expected_end).total_seconds()) < 10
 
     def test_build_calendar_events_empty(self, test_app):
-        """Test _build_calendar_events avec des listes vides."""
+        """Test _build_calendar_events with empty lists."""
         from app.services.schedule_service import ScheduleService
 
         events = ScheduleService.build_calendar_events([], [], [])
@@ -188,7 +202,7 @@ class TestCalendarFunctions:
     def test_build_calendar_events_with_data(
         self, test_app, test_user, test_shift_type
     ):
-        """Test _build_calendar_events avec des données."""
+        """Test _build_calendar_events with data."""
         from app.services.schedule_service import ScheduleService
 
         start_time = datetime.now() + timedelta(days=1)

@@ -1,7 +1,7 @@
 """
-Routes utilisateur pour les échanges de shifts (demande, liste, annulation).
-Enregistrées sur main_bp (cf. app/routes/main.py). La validation admin vit
-dans app/routes/admin_swap_routes.py.
+User routes for shift exchanges (request, list, cancel). Registered on
+main_bp (see app/routes/main.py). Admin approval lives in
+app/routes/admin_swap_routes.py.
 """
 
 from datetime import date
@@ -99,8 +99,8 @@ def purge_swaps():
 @main_bp.route("/api/swaps/target-shifts")
 @login_required
 def api_target_shifts():
-    """Liste JSON des shifts à venir d'un utilisateur cible, pour le
-    formulaire de demande d'échange (choix optionnel du shift retourné)."""
+    """JSON list of a target user's upcoming shifts, for the exchange
+    request form (optional choice of the shift requested back)."""
     target_user_id = request.args.get("user_id", type=int)
     if not target_user_id:
         return jsonify({"success": False, "error": "user_id manquant"}), 400

@@ -1,10 +1,10 @@
 /**
- * Petits helpers de manipulation du DOM (accepte sélecteur CSS ou élément).
+ * Small DOM manipulation helpers (accept a CSS selector or an element).
  */
 
 /**
- * Toggle la visibilité d'un élément.
- * @param {string|HTMLElement} element - Élément ou sélecteur
+ * Toggle an element's visibility.
+ * @param {string|HTMLElement} element - Element or selector
  */
 export function toggleVisibility(element) {
     const el = typeof element === 'string' ? document.querySelector(element) : element;
@@ -14,8 +14,8 @@ export function toggleVisibility(element) {
 }
 
 /**
- * Affiche un élément.
- * @param {string|HTMLElement} element - Élément ou sélecteur
+ * Show an element.
+ * @param {string|HTMLElement} element - Element or selector
  */
 export function showElement(element) {
     const el = typeof element === 'string' ? document.querySelector(element) : element;
@@ -25,8 +25,8 @@ export function showElement(element) {
 }
 
 /**
- * Masque un élément.
- * @param {string|HTMLElement} element - Élément ou sélecteur
+ * Hide an element.
+ * @param {string|HTMLElement} element - Element or selector
  */
 export function hideElement(element) {
     const el = typeof element === 'string' ? document.querySelector(element) : element;
@@ -36,9 +36,9 @@ export function hideElement(element) {
 }
 
 /**
- * Ajoute une classe à un élément.
- * @param {string|HTMLElement} element - Élément ou sélecteur
- * @param {string} className - Classe à ajouter
+ * Add a class to an element.
+ * @param {string|HTMLElement} element - Element or selector
+ * @param {string} className - Class to add
  */
 export function addClass(element, className) {
     const el = typeof element === 'string' ? document.querySelector(element) : element;
@@ -48,9 +48,9 @@ export function addClass(element, className) {
 }
 
 /**
- * Supprime une classe d'un élément.
- * @param {string|HTMLElement} element - Élément ou sélecteur
- * @param {string} className - Classe à supprimer
+ * Remove a class from an element.
+ * @param {string|HTMLElement} element - Element or selector
+ * @param {string} className - Class to remove
  */
 export function removeClass(element, className) {
     const el = typeof element === 'string' ? document.querySelector(element) : element;
@@ -60,9 +60,9 @@ export function removeClass(element, className) {
 }
 
 /**
- * Toggle une classe sur un élément.
- * @param {string|HTMLElement} element - Élément ou sélecteur
- * @param {string} className - Classe à toggler
+ * Toggle a class on an element.
+ * @param {string|HTMLElement} element - Element or selector
+ * @param {string} className - Class to toggle
  */
 export function toggleClass(element, className) {
     const el = typeof element === 'string' ? document.querySelector(element) : element;

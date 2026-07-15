@@ -36,13 +36,16 @@ else
 fi
 
 # --- Initialisation / mise à jour du schéma de la base de données ---
-# Toujours exécuté, même si app.db existe déjà : db.create_all() ne crée
-# que les tables manquantes (idempotent, ne touche pas aux tables/données
-# existantes) - c'est le seul mécanisme de migration de schéma de ce
-# projet (pas d'Alembic/Flask-Migrate, voir CLAUDE.md "Layered
-# architecture"). Sans ça, une nouvelle table ajoutée par une mise à jour
-# de l'app (ex: swap_request) ne serait jamais créée sur un déploiement
-# existant, et resterait "no such table" au premier accès.
+# Toujours exécuté, même si app.db existe déjà : docker/init_database.py
+# appelle run.py::setup_database(), qui applique les migrations Alembic
+# (migrations/versions/) via `alembic upgrade head` - idempotent, ne
+# touche pas aux tables/données déjà à jour. Sur un déploiement d'avant
+# l'adoption d'Alembic (tables déjà créées par l'ancien db.create_all(),
+# pas de table alembic_version), setup_database() bascule automatiquement
+# sur un stamp de la révision baseline avant d'appliquer les migrations
+# suivantes - aucune commande manuelle requise. Sans cette étape, une
+# nouvelle table ou contrainte ajoutée par une mise à jour de l'app ne
+# serait jamais appliquée sur un déploiement existant.
 if [ ! -f "/app/data/app.db" ]; then
     echo "🔧 Initialisation de la base de données SQLite..."
 else

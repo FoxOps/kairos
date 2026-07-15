@@ -1,22 +1,19 @@
 """
-Routes admin pour la gestion des types de shifts. Enregistrées sur
-admin_bp (cf. app/routes/admin.py).
+Admin routes for managing shift types. Registered on admin_bp (see
+app/routes/admin.py).
 """
 
 from flask import abort, flash, redirect, render_template, request, url_for
 
 from app import db
 from app.auth.decorators import admin_required
-from app.models import ShiftType
 from app.repositories.shift_repository import ShiftTypeRepository
 from app.routes.admin import admin_bp
 from app.services import ShiftTypeService
-from app.utils.optimizations import eager_load
 
 
 @admin_bp.route("/admin/shift-types")
 @admin_required
-@eager_load(ShiftType, ["shifts"])
 def list_shift_types():
     shift_types = ShiftTypeService.list_all()
     return render_template("admin/shift_types.html", shift_types=shift_types)

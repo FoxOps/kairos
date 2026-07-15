@@ -1,16 +1,16 @@
 """
-Initialisation de l'application Flask pour Leviia Schedule.
+Flask application initialization for Leviia Schedule.
 
-Cette version utilise une approche modulaire avec une factory function
-pour créer et configurer l'application. La variable globale _app
-est conservée pour maintenir la compatibilité avec le code existant.
+This version uses a modular approach with a factory function to create
+and configure the application. The global _app variable is kept for
+backward compatibility with existing code.
 
-Nouvelle structure:
-- Configuration modulaire dans app/config/
-- Modèles séparés dans app/models/
-- Services dans app/services/
-- Repositories dans app/repositories/
-- Routes organisées en blueprints dans app/routes/
+New structure:
+- Modular configuration in app/config/
+- Models split out in app/models/
+- Services in app/services/
+- Repositories in app/repositories/
+- Routes organized into blueprints in app/routes/
 """
 
 import os
@@ -22,13 +22,14 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_login import LOGIN_MESSAGE, LoginManager
+from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_talisman import Talisman
 from flask_wtf import CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-# Flask-Limiter avertit à chaque init sans backend partagé (redis/memcached).
-# Choix assumé : stockage en mémoire (mono-process), cf. discussion équipe.
+# Flask-Limiter warns on every init without a shared backend (redis/memcached).
+# Deliberate choice: in-memory storage (single process).
 warnings.filterwarnings(
     "ignore",
     message="Using the in-memory storage",
@@ -37,56 +38,56 @@ warnings.filterwarnings(
 )
 
 # ---------------------------------------------------------------------------
-# Initialisation des extensions
+# Extension initialization
 # ---------------------------------------------------------------------------
 
 db = SQLAlchemy()
+migrate = Migrate()
 login_manager = LoginManager()
 login_manager.login_message_category = "danger"
 limiter = Limiter(key_func=get_remote_address)
 csrf = CSRFProtect()
 compress = Compress()
 
-# Policy Content-Security-Policy appliquée par Talisman - voir le
-# commentaire dans create_app() pour le détail de chaque directive.
-# Exposée en constante de module (plutôt qu'inline) pour que les tests
-# puissent vérifier la policy réelle sans la dupliquer.
+# Content-Security-Policy applied by Talisman - see the comment in
+# create_app() for details on each directive. Exposed as a module-level
+# constant (rather than inline) so tests can check the actual policy
+# without duplicating it.
 CDNJS_HOST = "https://cdnjs.cloudflare.com"
-# FullCalendar spécifiquement : cdnjs n'héberge les locales d'aucune
-# version testée de ce paquet (404 systématiques) - voir le commentaire
-# en tête de app/static/js/calendar/fullcalendar-config.js pour le
-# détail complet - seule exception à "tout via cdnjs" dans cette policy.
+# FullCalendar specifically: cdnjs doesn't host the locale files for any
+# tested version of this package (consistent 404s) - see the comment at
+# the top of app/static/js/calendar/fullcalendar-config.js for the full
+# story - the one exception to "everything via cdnjs" in this policy.
 JSDELIVR_HOST = "https://cdn.jsdelivr.net"
 
 CSP_POLICY = {
     "default-src": "'self'",
     "object-src": "'none'",
-    # cdnjs.cloudflare.com : Font Awesome, daisyUI, tailwindcss-browser
-    # (compilateur Tailwind CSS 4 en JIT navigateur) sont chargés depuis
-    # ce CDN plutôt que vendorisés localement - voir
-    # Docs/architecture/ARCHITECTURE.md.
-    # cdn.jsdelivr.net : FullCalendar uniquement (voir commentaire ci-dessus).
+    # cdnjs.cloudflare.com: Font Awesome, daisyUI, tailwindcss-browser
+    # (Tailwind CSS 4's browser-JIT compiler) are loaded from this CDN
+    # rather than vendored locally.
+    # cdn.jsdelivr.net: FullCalendar only (see comment above).
     "script-src": f"'self' {CDNJS_HOST} {JSDELIVR_HOST}",
     "script-src-attr": "'unsafe-inline'",
     "style-src": f"'self' 'unsafe-inline' {CDNJS_HOST}",
-    # FullCalendar embarque sa police d'icônes (flèches précédent/suivant du
-    # calendrier) en @font-face data: URI dans son propre CSS (bundlé dans
-    # le JS vendor) - sans font-src, default-src 'self' bloque le data:,
-    # les icônes de navigation du calendrier restent invisibles (repéré en
-    # inspectant la console d'un vrai navigateur, pas juste le HTML rendu).
-    # cdnjs.cloudflare.com : polices Font Awesome (webfonts .woff2).
+    # FullCalendar bundles its icon font (calendar prev/next arrows) as a
+    # @font-face data: URI in its own CSS (bundled into the vendor JS) -
+    # without font-src, default-src 'self' blocks the data: URI and the
+    # calendar's navigation icons stay invisible (found by inspecting a
+    # real browser's console, not just the rendered HTML).
+    # cdnjs.cloudflare.com: Font Awesome fonts (.woff2 webfonts).
     "font-src": f"'self' data: {CDNJS_HOST}",
-    # daisyUI utilise un SVG data: (bruit/texture pour l'effet "depth" de
-    # certains composants) en arrière-plan CSS - repéré en console d'un
-    # vrai navigateur (comme font-src ci-dessus), pas dans le HTML rendu.
+    # daisyUI uses a data: SVG (noise/texture for the "depth" effect on
+    # some components) as a CSS background - found via a real browser's
+    # console (like font-src above), not in the rendered HTML.
     "img-src": "'self' data:",
 }
 
-# Variable pour maintenir la compatibilité avec le code existant
+# Variable kept for backward compatibility with existing code
 _app = None
 
-# Importé après la définition de `db` : app.utils.helpers fait `from app import db`
-# et créerait un import circulaire si ce module était importé plus tôt.
+# Imported after `db` is defined: app.utils.helpers does `from app import
+# db` and would cause a circular import if this module were imported earlier.
 from app.utils.logging.logger import (  # noqa: E402
     SensitiveDataFilter,
     get_error_template_data,
@@ -96,30 +97,30 @@ from app.utils.logging.logger import (  # noqa: E402
 )
 
 # ---------------------------------------------------------------------------
-# Gestionnaires d'erreurs
+# Error handlers
 # ---------------------------------------------------------------------------
 
 
 def handle_database_error(error):
-    """Gestionnaire pour les erreurs de base de données (SQLite/SQLAlchemy)."""
+    """Handler for database errors (SQLite/SQLAlchemy)."""
     log_http_error(500, str(error))
     return render_template("500.html"), 500
 
 
 def handle_value_error(error):
-    """Gestionnaire pour les ValueError non interceptées par les routes."""
+    """Handler for ValueError not caught by the routes."""
     log_http_error(400, str(error))
     return render_template("400.html"), 400
 
 
 def handle_type_error(error):
-    """Gestionnaire pour les TypeError non interceptées par les routes."""
+    """Handler for TypeError not caught by the routes."""
     log_http_error(400, str(error))
     return render_template("400.html"), 400
 
 
 def handle_exception(error):
-    """Gestionnaire générique pour les exceptions non interceptées."""
+    """Generic handler for uncaught exceptions."""
     log_http_error(500, str(error))
     return render_template("500.html"), 500
 
@@ -134,62 +135,63 @@ def _make_http_error_handler(code: int):
 
 def create_app(config_object: str | None = None):
     """
-    Factory function pour créer et configurer l'application Flask.
+    Factory function to create and configure the Flask application.
 
-    Cette fonction crée une nouvelle instance de l'application avec la
-    configuration spécifiée.
+    This function creates a new application instance with the given
+    configuration.
 
     Args:
-        config_object: Chemin vers la classe de configuration à utiliser.
-                      Par défaut, utilise 'app.config.Config'.
-                      Exemples: 'app.config.DevelopmentConfig', 'app.config.ProductionConfig'
+        config_object: Path to the configuration class to use.
+                      Defaults to 'app.config.Config'.
+                      Examples: 'app.config.DevelopmentConfig', 'app.config.ProductionConfig'
 
     Returns:
-        Instance de l'application Flask configurée
+        Configured Flask application instance
     """
     global _app
 
-    # Créer l'application Flask
+    # Create the Flask application
     app = Flask(
         __name__,
         template_folder=os.path.join(os.path.dirname(__file__), "templates"),
         static_folder=os.path.join(os.path.dirname(__file__), "static"),
     )
 
-    # Charger la configuration
+    # Load the configuration
     if config_object is None:
         config_object = "app.config.Config"
 
-    # Importer dynamiquement la classe de configuration
+    # Dynamically import the configuration class
     module_path, class_name = config_object.rsplit(".", 1)
     config_module = __import__(module_path, fromlist=[class_name])
     config_class = getattr(config_module, class_name)
 
     app.config.from_object(config_class)
 
-    # Faire confiance aux en-têtes X-Forwarded-* d'un unique reverse proxy
-    # (nginx/caddy en prod). Sans ça, Talisman/force_https ne voit jamais
-    # une requête comme "sécurisée" même quand le TLS est terminé en amont,
-    # et boucle sur des redirections https. Sans proxy devant l'app
-    # (dev/test), ces en-têtes ne sont simplement jamais présents et ce
-    # middleware ne change rien.
-    # Pattern standard Werkzeug pour appliquer un middleware WSGI - mypy
-    # confond l'attribut d'instance avec la méthode Flask.wsgi_app héritée
-    # (100% valide et documenté à l'exécution).
+    # Trust the X-Forwarded-* headers from a single reverse proxy
+    # (nginx/caddy in prod). Without this, Talisman/force_https never
+    # sees a request as "secure" even when TLS is terminated upstream,
+    # and loops on https redirects. With no proxy in front of the app
+    # (dev/test), these headers are simply never present and this
+    # middleware changes nothing.
+    # Standard Werkzeug pattern for applying a WSGI middleware - mypy
+    # confuses the instance attribute with the inherited
+    # Flask.wsgi_app method (100% valid and documented at runtime).
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)  # type: ignore[method-assign]
 
-    # Configurer le logging via un module dédié
+    # Configure logging via a dedicated module
     from app.utils.logging import configure_logging
 
     configure_logging(app)
 
-    # Initialiser les extensions
+    # Initialize the extensions
     db.init_app(app)
+    migrate.init_app(app, db)
     login_manager.init_app(app)
     limiter.init_app(app)
     csrf.init_app(app)
 
-    # Configurer le rate limiting si activé
+    # Configure rate limiting if enabled
     if app.config.get("RATE_LIMIT_ENABLED", True):
         limiter.enabled = True
         app.config["RATELIMIT_DEFAULT"] = app.config.get(
@@ -198,48 +200,45 @@ def create_app(config_object: str | None = None):
     else:
         limiter.enabled = False
 
-    # Configuration OIDC - charger avant de configurer login_manager
+    # OIDC configuration - load before configuring login_manager
     from config_oidc import OIDCConfig
 
     OIDCConfig.load_config()
 
-    # Configuration du User Loader
+    # User loader configuration
     from app.models import User
 
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
+        return db.session.get(User, int(user_id))
 
-    # Initialiser OIDC si configuré
-    if OIDCConfig.ENABLED and OIDCConfig.is_configured():
-        from app.auth.oidc_auth import oidc_auth
+    # Always (re)initialize OIDC, even when disabled/unconfigured: oidc_auth
+    # is a module-level singleton shared across every app instance built by
+    # create_app() in this process (see the comment on
+    # OIDCAuthLib.init_app) - it must be reset here regardless, or a
+    # previous app's real OIDC discovery could leak into this one.
+    from app.auth.oidc_auth import oidc_auth
 
-        oidc_auth.init_app(app)
+    oidc_auth.init_app(app)
 
-    # Initialiser le cache
-    from app.utils.cache import init_cache
-
-    init_cache(app)
-
-    # Initialiser Talisman pour la sécurité HTTP (en-têtes + CSP).
-    # Toujours actif : force_https ne contrôle que la redirection HTTP->HTTPS
-    # et HSTS, pas les autres en-têtes (CSP, X-Content-Type-Options,
-    # X-Frame-Options...) - avant ce correctif, tout était gated derrière
-    # TALISMAN_FORCE_HTTPS, donc un déploiement avec TLS terminé en amont
-    # (reverse proxy) et TALISMAN_FORCE_HTTPS=false n'avait AUCUN en-tête
-    # de sécurité du tout.
+    # Initialize Talisman for HTTP security (headers + CSP).
+    # Always active: force_https only controls the HTTP->HTTPS redirect
+    # and HSTS, not the other headers (CSP, X-Content-Type-Options,
+    # X-Frame-Options...) - before this fix, everything was gated behind
+    # TALISMAN_FORCE_HTTPS, so a deployment with TLS terminated upstream
+    # (reverse proxy) and TALISMAN_FORCE_HTTPS=false had NO security
+    # headers at all.
     #
-    # CSP : script-src 'self' bloque tout <script> injecté (le vecteur XSS
-    # le plus dangereux) - les scripts de l'app sont tous dans des fichiers
-    # externes servis localement (Phase 3/6). script-src-attr autorise
-    # 'unsafe-inline' spécifiquement pour les attributs onclick="" encore
-    # utilisés dans certains templates (contenu statique écrit par les
-    # développeurs, jamais de données utilisateur) - script-src-attr est une
-    # directive distincte de script-src depuis CSP niveau 3, les nonces ne
-    # couvrent pas les attributs d'événements. style-src autorise
-    # 'unsafe-inline' pour un seul style dynamique (largeur de barre de
-    # graphique) dans dashboard.html - CSS injecté est un vecteur bien
-    # moins dangereux qu'un script injecté.
+    # CSP: script-src 'self' blocks any injected <script> (the most
+    # dangerous XSS vector) - the app's scripts all live in external
+    # files served locally. script-src-attr allows 'unsafe-inline'
+    # specifically for the onclick="" attributes still used in some
+    # templates (static content written by developers, never user data)
+    # - script-src-attr is a directive distinct from script-src since
+    # CSP level 3, nonces don't cover event attributes. style-src allows
+    # 'unsafe-inline' for a single dynamic style (chart bar width) in
+    # dashboard.html - injected CSS is a far less dangerous vector than
+    # injected script.
     if not app.config.get("TESTING", False):
         Talisman(
             app,
@@ -250,19 +249,19 @@ def create_app(config_object: str | None = None):
             content_security_policy=CSP_POLICY,
         )
 
-    # Compression Gzip/Brotli des réponses (flask-compress était une
-    # dépendance déclarée avec sa config dans ProductionConfig mais jamais
-    # initialisée : Compress(app) n'était appelé nulle part, donc
-    # COMPRESS_REGISTER/COMPRESS_MIMETYPES ne faisaient rien). Désactivée en
-    # test car le client de test ne décode pas Content-Encoding : les
-    # assertions sur resp.data (texte) casseraient sur des réponses gzippées.
+    # Gzip/Brotli response compression (flask-compress was a declared
+    # dependency with its config in ProductionConfig but never
+    # initialized: Compress(app) was called nowhere, so
+    # COMPRESS_REGISTER/COMPRESS_MIMETYPES did nothing). Disabled in
+    # tests because the test client doesn't decode Content-Encoding:
+    # assertions on resp.data (text) would break on gzipped responses.
     if not app.config.get("TESTING", False):
         compress.init_app(app)
 
-    # Initialiser CORS
+    # Initialize CORS
     CORS(app)
 
-    # Importer et enregistrer les blueprints
+    # Import and register the blueprints
     from app.routes.admin import admin_bp
     from app.routes.auth import auth_bp
     from app.routes.export import export_bp
@@ -273,72 +272,73 @@ def create_app(config_object: str | None = None):
     app.register_blueprint(admin_bp)
     app.register_blueprint(export_bp)
 
-    # Configurer login_manager.login_view APRES l'enregistrement des blueprints
-    # Cela permet à Flask-Login de trouver la route auth.login
+    # Configure login_manager.login_view AFTER registering the blueprints
+    # This lets Flask-Login find the auth.login route
     if (
         OIDCConfig.ENABLED
         and OIDCConfig.is_configured()
         and OIDCConfig.DISABLE_BASIC_AUTH
     ):
         login_manager.login_view = "auth.oidc_login"
-        # auth.oidc_login ne rend jamais de template : il redirige aussitôt
-        # vers le fournisseur OIDC. Le flash "please log in" par défaut de
-        # Flask-Login (déclenché par @login_required avant cette
-        # redirection) n'a donc jamais l'occasion de s'afficher seul - il
-        # traverse tout l'aller-retour vers l'IdP et ressort collé au
-        # flash "Connexion OIDC réussie !" sur la première page rendue
-        # après coup (les deux s'affichent en même temps). Inutile dans ce
-        # mode : désactivé. Reste actif en mode auth.login classique, où
-        # il s'affiche normalement sur le formulaire de connexion.
+        # auth.oidc_login never renders a template: it redirects
+        # straight to the OIDC provider. Flask-Login's default "please
+        # log in" flash (triggered by @login_required before this
+        # redirect) therefore never gets a chance to display on its
+        # own - it rides along through the whole round trip to the IdP
+        # and ends up stuck next to the "OIDC login successful!" flash
+        # on the first page rendered afterward (both shown at once).
+        # Useless in this mode: disabled. Stays active in classic
+        # auth.login mode, where it displays normally on the login form.
         login_manager.login_message = None
     else:
         login_manager.login_view = "auth.login"
-        # login_manager est un singleton module-level réutilisé par tous
-        # les appels à create_app() dans le même process (tests inclus) -
-        # restaurer explicitement le défaut de Flask-Login, sinon un appel
-        # précédent en mode OIDC (branche ci-dessus) laisse login_message
-        # à None ici aussi.
+        # login_manager is a module-level singleton reused by every
+        # create_app() call in the same process (tests included) -
+        # explicitly restore Flask-Login's default, otherwise an
+        # earlier call in OIDC mode (branch above) leaves login_message
+        # at None here too.
         login_manager.login_message = LOGIN_MESSAGE
 
-    # Stocker l'instance globale pour la compatibilité
+    # Store the global instance for backward compatibility
     _app = app
 
-    # Configuration des endpoints de santé pour Kubernetes/Monitoring
+    # Health endpoint configuration for Kubernetes/monitoring
     from app.utils.health import register_health_endpoints
 
     register_health_endpoints(app)
 
-    # Version de l'app disponible dans tous les templates (footer, etc.) -
-    # même source que l'endpoint /version (APP_VERSION_DEFAULT importée
-    # depuis app/utils/health.py, pas redéfinie ici) pour éviter deux
-    # valeurs qui divergent (déjà arrivé deux fois : "0.5" en dur, puis
-    # "0.6.0" oublié ici après un bump fait uniquement dans health.py).
+    # App version available in all templates (footer, etc.) - same
+    # source as the /version endpoint (APP_VERSION_DEFAULT imported from
+    # app/utils/health.py, not redefined here) to avoid two values
+    # drifting apart (already happened twice: hardcoded "0.5", then
+    # "0.6.0" left stale here after a bump made only in health.py).
     from app.utils.health import APP_VERSION_DEFAULT
 
     @app.context_processor
     def inject_app_version():
         return {"app_version": os.environ.get("APP_VERSION", APP_VERSION_DEFAULT)}
 
-    # Repli explicite pour les liens absolus (export ICS) quand le reverse
-    # proxy ne transmet pas X-Forwarded-Host correctement à ProxyFix
-    # ci-dessus - sinon request.host_url expose l'IP/le nom interne du
-    # backend au lieu du domaine public.
+    # Explicit fallback for absolute links (ICS export) when the reverse
+    # proxy doesn't correctly forward X-Forwarded-Host to ProxyFix above
+    # - otherwise request.host_url exposes the backend's internal
+    # IP/hostname instead of the public domain.
     @app.context_processor
     def inject_public_base_url():
         base_url = app.config.get("PUBLIC_BASE_URL")
         return {"public_base_url": base_url.rstrip("/") if base_url else None}
 
-    # Badge de notifications non lues dans la sidebar (voir "Notifications"
-    # dans nav_links, base.html) - requête légère (COUNT), acceptable à
-    # chaque page vue vu l'échelle de cette app.
+    # Unread notifications badge in the sidebar (see "Notifications" in
+    # nav_links, base.html) - lightweight query (COUNT), acceptable on
+    # every page view given this app's scale.
     #
-    # has_request_context() est nécessaire : les emails de rappel hebdo
-    # (NotificationService, scripts/send_*_notifications.py) appellent
-    # render_template() depuis un simple app_context() (cron, pas de
-    # requête HTTP) - current_user y résout à None (pas une exception),
-    # donc current_user.is_authenticated plantait ("'NoneType' object has
-    # no attribute 'is_authenticated'") et cassait l'envoi de TOUS les
-    # emails de rappel dès qu'un utilisateur avait un shift/astreinte.
+    # has_request_context() is necessary: the weekly reminder emails
+    # (NotificationService, scripts/send_*_notifications.py) call
+    # render_template() from a plain app_context() (cron, no HTTP
+    # request) - current_user resolves to None there (not an
+    # exception), so current_user.is_authenticated used to crash
+    # ("'NoneType' object has no attribute 'is_authenticated'") and
+    # broke sending ALL reminder emails as soon as a user had a
+    # shift/on-call.
     @app.context_processor
     def inject_unread_notifications_count():
         from flask import has_request_context
@@ -354,28 +354,28 @@ def create_app(config_object: str | None = None):
             )
         }
 
-    # Filtre Jinja : dates en français (%a dépend de la locale OS, jamais
-    # fiable dans une app WSGI - voir format_date_fr). La couleur par type
-    # de shift (dashboard) est calculée par vue via build_shift_type_color_map
-    # (rang parmi les types affichés, pas un filtre par ID - voir
-    # app/routes/dashboard_routes.py) : un simple `id % taille_palette`
-    # fait collisionner deux types dès que leurs IDs diffèrent d'un
-    # multiple de la taille de la palette.
+    # Jinja filter: dates in French (%a depends on the OS locale, never
+    # reliable in a WSGI app - see format_date_fr). The per-shift-type
+    # color (dashboard) is computed per view via
+    # build_shift_type_color_map (rank among the displayed types, not a
+    # filter by ID - see app/routes/dashboard_routes.py): a plain `id %
+    # palette size` makes two types collide as soon as their IDs differ
+    # by a multiple of the palette size.
     from app.utils.helpers import format_date_fr
 
     app.jinja_env.filters["date_fr"] = format_date_fr
 
-    # Configuration des métriques Prometheus si activé
+    # Prometheus metrics configuration if enabled
     if app.config.get("PROMETHEUS_ENABLED", False):
         from app.utils.prometheus_metrics import init_prometheus
 
         init_prometheus(app)
 
-    # Gestionnaires d'erreurs HTTP (pages personnalisées + logging)
+    # HTTP error handlers (custom pages + logging)
     for error_code in (400, 401, 403, 404, 405, 500, 502, 503, 504):
         app.register_error_handler(error_code, _make_http_error_handler(error_code))
 
-    # Gestionnaires d'exceptions applicatives
+    # Application exception handlers
     app.register_error_handler(ValueError, handle_value_error)
     app.register_error_handler(TypeError, handle_type_error)
 
@@ -383,9 +383,9 @@ def create_app(config_object: str | None = None):
 
 
 # ---------------------------------------------------------------------------
-# Instance globale par défaut (pour la compatibilité ascendante)
+# Default global instance (for backward compatibility)
 # ---------------------------------------------------------------------------
-# Créer l'instance globale pour maintenir la compatibilité
+# Create the global instance to maintain backward compatibility
 app = create_app()
 
 # ---------------------------------------------------------------------------

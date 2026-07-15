@@ -1,10 +1,10 @@
 /* ============================================
-   COMPOSANT - TABLEAUX
+   COMPONENT - TABLES
    ============================================
-   Augmente les tableaux daisyUI (.table) - .table-container/.is-striped/
-   .table .button/.table .is-flex (Bulma) ne sont plus utilisés dans les
-   templates (.overflow-x-auto et .table-zebra de daisyUI les
-   remplacent), retirés en Phase 7.
+   Augments daisyUI's tables (.table) - Bulma's .table-container/
+   .is-striped/.table .button/.table .is-flex are no longer used in the
+   templates (daisyUI's .overflow-x-auto and .table-zebra replace them),
+   and have been removed.
    ============================================ */
 
 .table td,

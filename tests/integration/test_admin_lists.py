@@ -1,65 +1,65 @@
 """
-Tests pour les routes list_* dans admin.py.
+Tests for the list_* routes in admin.py.
 """
 
 from app.models import Group, ShiftType, User
 
 
 class TestListGroups:
-    """Tests pour /admin/groups."""
+    """Tests for /admin/groups."""
 
     def test_list_groups(self, logged_in_client, test_group):
-        """Test l'affichage de la liste des groupes."""
+        """Test rendering the group list."""
         response = logged_in_client.get("/admin/groups")
         assert response.status_code == 200
         assert b"Test Group" in response.data or b"Groupes" in response.data
 
     def test_list_groups_unauthenticated(self, client):
-        """Test que la liste des groupes nécessite une authentification."""
+        """Test that the group list requires authentication."""
         response = client.get("/admin/groups", follow_redirects=True)
         assert b"Connexion" in response.data
 
 
 class TestListUsers:
-    """Tests pour /admin/users."""
+    """Tests for /admin/users."""
 
     def test_list_users(self, logged_in_client, test_user):
-        """Test l'affichage de la liste des utilisateurs."""
+        """Test rendering the user list."""
         response = logged_in_client.get("/admin/users")
         assert response.status_code == 200
         assert b"Test User" in response.data or b"Utilisateurs" in response.data
 
     def test_list_users_unauthenticated(self, client):
-        """Test que la liste des utilisateurs nécessite une authentification."""
+        """Test that the user list requires authentication."""
         response = client.get("/admin/users", follow_redirects=True)
         assert b"Connexion" in response.data
 
 
 class TestListShiftTypes:
-    """Tests pour /admin/shift-types."""
+    """Tests for /admin/shift-types."""
 
     def test_list_shift_types(self, logged_in_client, test_shift_type):
-        """Test l'affichage de la liste des types de shifts."""
+        """Test rendering the shift-type list."""
         response = logged_in_client.get("/admin/shift-types")
         assert response.status_code == 200
         assert b"morning" in response.data or b"Types de shifts" in response.data
 
     def test_list_shift_types_unauthenticated(self, client):
-        """Test que la liste des types de shifts nécessite une authentification."""
+        """Test that the shift-type list requires authentication."""
         response = client.get("/admin/shift-types", follow_redirects=True)
         assert b"Connexion" in response.data
 
 
 class TestAddGroup:
-    """Tests pour /admin/groups/add."""
+    """Tests for /admin/groups/add."""
 
     def test_add_group_get(self, logged_in_client):
-        """Test l'affichage du formulaire d'ajout de groupe."""
+        """Test rendering the add-group form."""
         response = logged_in_client.get("/admin/groups/add")
         assert response.status_code == 200
 
     def test_add_group_post_valid(self, logged_in_client):
-        """Test l'ajout d'un groupe avec des données valides."""
+        """Test adding a group with valid data."""
         initial_count = Group.query.count()
         response = logged_in_client.post(
             "/admin/groups/add",
@@ -73,14 +73,14 @@ class TestAddGroup:
         assert response.status_code == 200
         assert Group.query.count() == initial_count + 1
 
-        # Vérifier que le groupe a été créé
+        # Check that the group was created
         new_group = Group.query.filter_by(name="New Group").first()
         assert new_group is not None
         assert new_group.is_part_of_schedule is True
         assert new_group.is_part_of_oncall is True
 
     def test_add_group_post_empty_name(self, logged_in_client):
-        """Test l'ajout d'un groupe avec un nom vide."""
+        """Test adding a group with an empty name."""
         response = logged_in_client.post(
             "/admin/groups/add",
             data={"name": "", "is_part_of_schedule": "on", "is_part_of_oncall": "on"},
@@ -90,7 +90,7 @@ class TestAddGroup:
         assert b"obligatoire" in response.data
 
     def test_add_group_post_duplicate_name(self, logged_in_client, test_group):
-        """Test l'ajout d'un groupe avec un nom déjà utilisé."""
+        """Test adding a group with an already-used name."""
         response = logged_in_client.post(
             "/admin/groups/add",
             data={
@@ -105,15 +105,15 @@ class TestAddGroup:
 
 
 class TestAddUser:
-    """Tests pour /admin/users/add."""
+    """Tests for /admin/users/add."""
 
     def test_add_user_get(self, logged_in_client):
-        """Test l'affichage du formulaire d'ajout d'utilisateur."""
+        """Test rendering the add-user form."""
         response = logged_in_client.get("/admin/users/add")
         assert response.status_code == 200
 
     def test_add_user_post_valid(self, logged_in_client, test_group):
-        """Test l'ajout d'un utilisateur avec des données valides."""
+        """Test adding a user with valid data."""
         initial_count = User.query.count()
         response = logged_in_client.post(
             "/admin/users/add",
@@ -128,14 +128,14 @@ class TestAddUser:
         assert response.status_code == 200
         assert User.query.count() == initial_count + 1
 
-        # Vérifier que l'utilisateur a été créé
+        # Check that the user was created
         new_user = User.query.filter_by(email="newuser@test.com").first()
         assert new_user is not None
         assert new_user.name == "New User"
         assert new_user.group_id == test_group.id
 
     def test_add_user_post_empty_fields(self, logged_in_client):
-        """Test l'ajout d'un utilisateur avec des champs vides."""
+        """Test adding a user with empty fields."""
         response = logged_in_client.post(
             "/admin/users/add",
             data={"name": "", "email": "", "group_id": "", "password": ""},
@@ -145,7 +145,7 @@ class TestAddUser:
         assert b"obligatoires" in response.data
 
     def test_add_user_post_duplicate_email(self, logged_in_client, test_user):
-        """Test l'ajout d'un utilisateur avec un email déjà utilisé."""
+        """Test adding a user with an already-used email."""
         response = logged_in_client.post(
             "/admin/users/add",
             data={
@@ -161,15 +161,15 @@ class TestAddUser:
 
 
 class TestAddShiftType:
-    """Tests pour /admin/shift-types/add."""
+    """Tests for /admin/shift-types/add."""
 
     def test_add_shift_type_get(self, logged_in_client):
-        """Test l'affichage du formulaire d'ajout de type de shift."""
+        """Test rendering the add-shift-type form."""
         response = logged_in_client.get("/admin/shift-types/add")
         assert response.status_code == 200
 
     def test_add_shift_type_post_valid(self, logged_in_client):
-        """Test l'ajout d'un type de shift avec des données valides."""
+        """Test adding a shift type with valid data."""
         initial_count = ShiftType.query.count()
         response = logged_in_client.post(
             "/admin/shift-types/add",
@@ -184,7 +184,7 @@ class TestAddShiftType:
         assert response.status_code == 200
         assert ShiftType.query.count() == initial_count + 1
 
-        # Vérifier que le type de shift a été créé
+        # Check that the shift type was created
         new_shift_type = ShiftType.query.filter_by(name="night").first()
         assert new_shift_type is not None
         assert new_shift_type.label == "Nuit"
@@ -192,7 +192,7 @@ class TestAddShiftType:
         assert new_shift_type.end_hour == 23
 
     def test_add_shift_type_post_empty_fields(self, logged_in_client):
-        """Test l'ajout d'un type de shift avec des champs vides."""
+        """Test adding a shift type with empty fields."""
         response = logged_in_client.post(
             "/admin/shift-types/add",
             data={"name": "", "label": "", "start_hour": "", "end_hour": ""},
@@ -204,7 +204,7 @@ class TestAddShiftType:
     def test_add_shift_type_post_duplicate_name(
         self, logged_in_client, test_shift_type
     ):
-        """Test l'ajout d'un type de shift avec un nom déjà utilisé."""
+        """Test adding a shift type with an already-used name."""
         response = logged_in_client.post(
             "/admin/shift-types/add",
             data={
@@ -220,14 +220,14 @@ class TestAddShiftType:
 
 
 class TestAdminDashboard:
-    """Tests pour /admin."""
+    """Tests for /admin."""
 
     def test_admin_dashboard(self, logged_in_client):
-        """Test l'affichage du tableau de bord admin."""
+        """Test rendering the admin dashboard."""
         response = logged_in_client.get("/admin")
         assert response.status_code == 200
 
     def test_admin_dashboard_unauthenticated(self, client):
-        """Test que le tableau de bord admin nécessite une authentification."""
+        """Test that the admin dashboard requires authentication."""
         response = client.get("/admin", follow_redirects=True)
         assert b"Connexion" in response.data

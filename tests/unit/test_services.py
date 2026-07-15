@@ -1,15 +1,16 @@
 """
-Tests unitaires pour app/services/.
+Unit tests for app/services/.
 
-Couche métier créée en Phase 2, jusqu'ici uniquement exercée indirectement
-via les tests de routes HTTP (tests/integration/) - seule ScheduleService
-avait quelques tests directs. Ces tests appellent les services
-directement, sans passer par le client de test Flask.
+The business layer, until now only exercised indirectly through the
+HTTP route tests (tests/integration/) - only ScheduleService had a few
+direct tests. These tests call the services directly, without going
+through the Flask test client.
 """
 
 from datetime import date, datetime, timedelta
 
 from app import db
+from app.models import Leave
 from app.repositories.leave_repository import LeaveRepository
 from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository
@@ -31,7 +32,7 @@ def _next_friday(from_date=None):
 
 
 def _next_weekday(from_date=None):
-    """Prochain jour ouvré (lundi-vendredi) strictement après from_date."""
+    """Next business day (Monday-Friday) strictly after from_date."""
     d = (from_date or date.today()) + timedelta(days=1)
     while d.weekday() >= 5:
         d += timedelta(days=1)
@@ -287,6 +288,23 @@ class TestShiftService:
         assert shift is None
         assert error == "Shift non trouvé"
 
+    def test_api_update_rejects_move_onto_leave(self, test_app, test_user, test_shift):
+        """Regression test: unlike api_create, api_update (drag & drop)
+        used to skip leave revalidation and could drop a shift on a day
+        the user is on leave."""
+        target_day = _next_weekday()
+        db.session.add(
+            Leave(user_id=test_user.id, start_date=target_day, end_date=target_day)
+        )
+        db.session.commit()
+
+        new_start = datetime.combine(target_day, datetime.min.time())
+        shift, error = ShiftService.api_update(
+            test_shift.id, new_start, new_start + timedelta(hours=8)
+        )
+        assert shift is None
+        assert "congé" in error
+
     def test_api_delete(self, test_app, test_shift):
         assert ShiftService.api_delete(test_shift.id) is True
         assert ShiftService.api_delete(test_shift.id) is False
@@ -339,6 +357,25 @@ class TestOnCallService:
         oncall, error = OnCallService.api_update(999999, datetime.now(), datetime.now())
         assert oncall is None
         assert error == "Astreinte non trouvée"
+
+    def test_api_update_rejects_move_onto_leave(self, test_app, test_user, test_oncall):
+        """Regression test: same bug as ShiftService.api_update, on the
+        on-call side - drag & drop used to skip leave revalidation."""
+        friday = _next_friday()
+        new_start = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+        new_end = new_start + timedelta(days=7, hours=-14)
+        db.session.add(
+            Leave(
+                user_id=test_user.id,
+                start_date=new_start.date(),
+                end_date=new_end.date(),
+            )
+        )
+        db.session.commit()
+
+        oncall, error = OnCallService.api_update(test_oncall.id, new_start, new_end)
+        assert oncall is None
+        assert "congé" in error
 
 
 class TestLeaveService:
@@ -395,9 +432,9 @@ class TestLeaveService:
     def test_api_update_rejected_when_dropping_headcount_to_zero(
         self, test_app, test_leave
     ):
-        """Régression règle 6 : api_update doit aussi refuser un
-        déplacement de congé qui ferait tomber l'effectif à 0 (test_leave
-        appartient au seul utilisateur schedule-eligible dans ce test)."""
+        """Regression test: api_update must also reject a leave move that
+        would drop the headcount to 0 (test_leave belongs to the only
+        schedule-eligible user in this test)."""
         new_start = date(2023, 12, 20)
         new_end = date(2023, 12, 20)
         leave, error, rebalance_failed = LeaveService.api_update(

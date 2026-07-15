@@ -1,10 +1,10 @@
 """
-Tests pour scripts/backup_database.py.
+Tests for scripts/backup_database.py.
 
-Ce script est délibérément indépendant du package app/ (doit rester
-utilisable même si l'application Flask ne démarre pas - le scénario le
-plus probable en reprise après sinistre). Les tests ci-dessous
-n'importent jamais app/ non plus.
+This script is deliberately independent of the app/ package (it must
+stay usable even if the Flask app can't boot - the most likely
+scenario in a disaster-recovery situation). The tests below never
+import app/ either.
 """
 
 import gzip
@@ -37,8 +37,8 @@ def _isolate_cwd(tmp_path, monkeypatch):
 
 
 def make_sqlite_file(path):
-    """Crée un faux fichier SQLite valide (juste la signature suffit
-    pour verify_backup)."""
+    """Create a fake but valid SQLite file (just the signature is enough
+    for verify_backup)."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(b"SQLite format 3\x00" + b"\x00" * 100)
 
@@ -55,9 +55,9 @@ class TestSendBackupNotification:
             monkeypatch.setenv(key, value)
 
     def test_no_import_of_app_package(self):
-        """Régression : ce module ne doit jamais importer app/ (voir
-        docstring du module) - vérifié en s'assurant que 'app' n'apparaît
-        dans aucun import top-level du fichier source."""
+        """Regression test: this module must never import app/ (see the
+        module docstring) - checked by making sure 'app' doesn't appear
+        in any top-level import in the source file."""
         import scripts.backup_database as mod
 
         source = open(mod.__file__).read()
@@ -237,15 +237,15 @@ class TestDetectDbPath:
         assert detect_db_path(config) == str(db_path)
 
     def test_returns_none_when_nothing_found(self, tmp_path, monkeypatch):
-        # detect_db_path cherche relativement au fichier backup_database.py
-        # (racine du projet réel), pas au tmp_path isolé - on vérifie
-        # seulement qu'un chemin invalide/inconnu ne fait pas planter.
+        # detect_db_path searches relative to backup_database.py's own
+        # location (the real project root), not the isolated tmp_path -
+        # this only checks that an invalid/unknown path doesn't crash.
         config = BackupConfig(local_enabled=False)
         config.db_path = str(tmp_path / "does-not-exist.db")
         config.db_uri = None
         result = detect_db_path(config)
-        # Peut retourner un chemin trouvé dans le vrai projet (instance/app.db
-        # etc.) ou None - le point du test est l'absence d'exception.
+        # May return a path found in the real project (instance/app.db
+        # etc.) or None - the point of this test is the absence of an exception.
         assert result is None or isinstance(result, str)
 
 

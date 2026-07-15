@@ -1,17 +1,17 @@
 """
-Tests de performance pour Leviia Schedule.
+Performance tests for Leviia Schedule.
 
-Deux angles, volontairement modestes (pas de vrai outil de profiling/
-benchmark en place) :
-1. Temps de réponse : seuils larges pour attraper une régression grossière
-   (une route qui se met à prendre 10x plus longtemps), pas un micro-
-   benchmark précis - inutile sur une machine de dev partagée.
-2. Nombre de requêtes SQL : les repositories utilisent joinedload() pour
-   éviter le N+1 (ex: ShiftRepository.list_paginated charge user +
-   shift_type en une requête). Ces tests vérifient que le nombre de
-   requêtes ne grandit pas linéairement avec le nombre d'enregistrements -
-   c'est ce qui attraperait une vraie régression de performance ici,
-   contrairement à un chrono qui varie trop selon la machine.
+Two deliberately modest angles (no real profiling/benchmarking tool in
+place):
+1. Response time: wide thresholds to catch a gross regression (a route
+   that suddenly takes 10x longer), not a precise micro-benchmark -
+   pointless on a shared dev machine.
+2. SQL query count: the repositories use joinedload() to avoid N+1
+   (e.g. ShiftRepository.list_paginated loads user + shift_type in one
+   query). These tests check that the query count doesn't grow linearly
+   with the number of records - that's what would actually catch a real
+   performance regression here, unlike a wall-clock timer that varies
+   too much depending on the machine.
 """
 
 import time
@@ -21,12 +21,12 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import event
 
 from app import compress, create_app, db
-from app.models import Shift, ShiftType, User
+from app.models import Shift, ShiftType, SwapRequest, User
 
 
 @contextmanager
 def count_queries():
-    """Compte les requêtes SQL exécutées dans le bloc `with`."""
+    """Count the SQL queries executed inside the `with` block."""
     queries = []
 
     def _on_execute(conn, cursor, statement, parameters, context, executemany):
@@ -72,7 +72,7 @@ def _seed_shifts(group, count, offset=0):
 
 
 class TestResponseTime:
-    """Seuils larges - attrape une régression grossière, pas un micro-benchmark."""
+    """Wide thresholds - catches a gross regression, not a micro-benchmark."""
 
     def test_schedule_route_responds_quickly(
         self, test_app, test_group, logged_in_client
@@ -85,7 +85,7 @@ class TestResponseTime:
         elapsed = time.monotonic() - start
 
         assert resp.status_code == 200
-        assert elapsed < 2.0, f"/schedule a mis {elapsed:.2f}s (seuil 2s)"
+        assert elapsed < 2.0, f"/schedule took {elapsed:.2f}s (2s threshold)"
 
     def test_dashboard_route_responds_quickly(self, test_app, logged_in_client):
         start = time.monotonic()
@@ -93,18 +93,19 @@ class TestResponseTime:
         elapsed = time.monotonic() - start
 
         assert resp.status_code == 200
-        assert elapsed < 2.0, f"/dashboard a mis {elapsed:.2f}s (seuil 2s)"
+        assert elapsed < 2.0, f"/dashboard took {elapsed:.2f}s (2s threshold)"
 
 
 class TestCompression:
-    """Bug réel corrigé en Phase 6 : flask-compress était une dépendance
-    déclarée (COMPRESS_REGISTER/COMPRESS_MIMETYPES dans ProductionConfig)
-    mais Compress(app) n'était jamais appelé nulle part - la compression ne
-    faisait donc jamais rien en pratique. Compress est maintenant initialisé
-    dans create_app() (sauf en TESTING, car le client de test ne décode pas
-    Content-Encoding et resp.data doit rester du texte brut pour les autres
-    tests) - ces deux tests construisent donc leur propre app avec Compress
-    réactivé manuellement, comme le fait déjà secure_app pour Talisman."""
+    """Regression test: flask-compress was a declared dependency
+    (COMPRESS_REGISTER/COMPRESS_MIMETYPES in ProductionConfig) but
+    Compress(app) was never actually called anywhere - so compression
+    never did anything in practice. Compress is now initialized in
+    create_app() (except in TESTING, since the test client doesn't
+    decode Content-Encoding and resp.data must stay plain text for the
+    other tests) - these two tests therefore build their own app with
+    Compress manually re-enabled, the same way secure_app already does
+    for Talisman."""
 
     def test_response_is_gzip_compressed_when_accepted(self):
         app = create_app("app.config.TestingConfig")
@@ -134,9 +135,8 @@ class TestCompression:
 
 
 class TestNPlusOneQueries:
-    """Le nombre de requêtes SQL ne doit pas grandir linéairement avec le
-    nombre d'enregistrements listés (sinon le joinedload() ne fait plus
-    son travail)."""
+    """The SQL query count must not grow linearly with the number of
+    listed records (otherwise joinedload() isn't doing its job anymore)."""
 
     def test_schedule_query_count_stable_across_dataset_size(
         self, test_app, test_group, logged_in_client
@@ -153,14 +153,14 @@ class TestNPlusOneQueries:
             resp_big = logged_in_client.get("/schedule?per_page=50")
         assert resp_big.status_code == 200
 
-        # Une régression N+1 ferait croître le nombre de requêtes à peu
-        # près proportionnellement au nombre de shifts affichés (30 ici).
-        # Avec joinedload(), l'écart doit rester faible (marge de 5 pour
-        # les requêtes de pagination/comptage annexes).
+        # An N+1 regression would grow the query count roughly
+        # proportionally to the number of shifts shown (30 here). With
+        # joinedload(), the gap must stay small (a margin of 5 for
+        # incidental pagination/count queries).
         assert len(big_queries) <= len(small_queries) + 5, (
-            f"{len(small_queries)} requêtes pour 5 shifts, "
-            f"{len(big_queries)} pour 25 shifts supplémentaires - "
-            "suspicion de N+1 (joinedload cassé ?)"
+            f"{len(small_queries)} queries for 5 shifts, "
+            f"{len(big_queries)} for 25 additional shifts - "
+            "possible N+1 (broken joinedload?)"
         )
 
     def test_shift_repository_list_paginated_uses_eager_load(
@@ -172,13 +172,136 @@ class TestNPlusOneQueries:
 
         with count_queries() as queries:
             paginated = ShiftRepository.list_paginated(1, 50)
-            # Accéder aux relations ne doit déclencher AUCUNE requête
-            # supplémentaire si le joinedload a fonctionné.
+            # Accessing the relationships must trigger NO additional
+            # query if the joinedload worked.
             for shift in paginated.items:
                 _ = shift.user.name
                 _ = shift.shift_type.label
 
         assert len(queries) <= 3, (
-            f"{len(queries)} requêtes pour lister 10 shifts avec leurs "
-            "relations - le joinedload ne semble pas efficace"
+            f"{len(queries)} queries to list 10 shifts with their "
+            "relationships - joinedload doesn't seem to be working"
+        )
+
+    def _seed_swap_requests(self, group, shift_type, count, offset=0):
+        """Create `count` SwapRequest rows, each with its own
+        requester/target_user/shift - no sharing across rows, so the
+        bulk preload is genuinely put to the test."""
+        on_date = date.today() + timedelta(days=3)
+        while on_date.weekday() >= 5:
+            on_date += timedelta(days=1)
+
+        for i in range(offset, offset + count):
+            requester = User(
+                name=f"Swap Requester {i}",
+                email=f"swap-req-{i}@test.com",
+                group_id=group.id,
+            )
+            requester.set_password("pw")
+            target = User(
+                name=f"Swap Target {i}",
+                email=f"swap-target-{i}@test.com",
+                group_id=group.id,
+            )
+            target.set_password("pw")
+            db.session.add_all([requester, target])
+            db.session.flush()
+
+            shift = Shift(
+                date=on_date,
+                start_time=datetime.combine(on_date, datetime.min.time()),
+                end_time=datetime.combine(on_date, datetime.min.time())
+                + timedelta(hours=8),
+                user_id=requester.id,
+                shift_type_id=shift_type.id,
+            )
+            db.session.add(shift)
+            db.session.flush()
+
+            db.session.add(
+                SwapRequest(
+                    requester_id=requester.id,
+                    shift_id=shift.id,
+                    target_user_id=target.id,
+                    status=SwapRequest.PENDING,
+                )
+            )
+        db.session.commit()
+
+    def test_swap_request_repository_preloads_related_rows(self, test_app, test_group):
+        """Regression test: SwapRequest has no db.relationship() (see
+        app/models/swap_request.py) - without SwapRequestRepository's
+        bulk preload (_preload_related), accessing
+        requester/target_user/shift on each row would cost 3 extra
+        queries per row, making the total grow proportionally to the
+        number of listed requests."""
+        shift_type = ShiftType(
+            name="swap-perf", label="Perf", start_hour=7, end_hour=15
+        )
+        db.session.add(shift_type)
+        db.session.flush()
+
+        self._seed_swap_requests(test_group, shift_type, 3)
+        with count_queries() as small_queries:
+            from app.repositories.swap_request_repository import (
+                SwapRequestRepository,
+            )
+
+            pending = SwapRequestRepository.list_pending()
+            for sr in pending:
+                _ = sr.requester.name
+                _ = sr.target_user.name
+                _ = sr.shift.date
+
+        self._seed_swap_requests(test_group, shift_type, 15, offset=100)
+        with count_queries() as big_queries:
+            from app.repositories.swap_request_repository import (
+                SwapRequestRepository,
+            )
+
+            pending = SwapRequestRepository.list_pending()
+            for sr in pending:
+                _ = sr.requester.name
+                _ = sr.target_user.name
+                _ = sr.shift.date
+
+        # 18 more requests (15 vs 3) should only add a handful of bulk
+        # queries, not ~54 individual queries (3 per row).
+        assert len(big_queries) <= len(small_queries) + 5, (
+            f"{len(small_queries)} queries for 3 requests, "
+            f"{len(big_queries)} for 18 additional requests - "
+            "possible N+1 (broken preload?)"
+        )
+
+    def test_generate_oncall_schedule_query_count_stable_across_period_length(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Regression test: before AvailabilityIndex (see
+        app/utils/automation/oncall_automation.py), find_next_available_user
+        and check_oncall_constraint queried the database for every
+        candidate tested for every week (up to 3 queries/candidate) - a
+        several-month generation climbed to 1500+ queries."""
+        from app.utils.automation import OnCallAutomation
+
+        start_date = date(2024, 1, 5)  # Friday
+
+        with count_queries() as short_queries:
+            oncalls_short, _ = OnCallAutomation.generate_oncall_schedule(
+                start_date, start_date + timedelta(days=28), dry_run=True
+            )
+        assert len(oncalls_short) > 0
+
+        with count_queries() as long_queries:
+            oncalls_long, _ = OnCallAutomation.generate_oncall_schedule(
+                start_date, start_date + timedelta(days=180), dry_run=True
+            )
+        assert len(oncalls_long) > len(oncalls_short)
+
+        # ~26 more weeks (180 vs 28 days) shouldn't add queries
+        # proportional to the number of weeks - just the bulk preload
+        # (bounded by the number of eligible users).
+        assert len(long_queries) <= len(short_queries) + 5, (
+            f"{len(short_queries)} queries for {len(oncalls_short)} on-calls, "
+            f"{len(long_queries)} for {len(oncalls_long)} on-calls - "
+            "possible N+1 (broken AvailabilityIndex?)"
         )

@@ -86,8 +86,8 @@ class OnCallRepository:
 
     @staticmethod
     def get_starting_at(start_time: datetime) -> OnCall | None:
-        """Astreinte qui commence exactement à cet instant (utilisé pour
-        trouver l'astreinte du vendredi 21h à venir, notifications)."""
+        """On-call that starts at exactly this instant (used to find the
+        upcoming Friday 9pm on-call for notifications)."""
         return (
             OnCall.query.options(joinedload(OnCall.user))
             .filter(OnCall.start_time == start_time)
@@ -96,7 +96,7 @@ class OnCallRepository:
 
     @staticmethod
     def list_overlapping_range(start_date, end_date) -> list[OnCall]:
-        """Astreintes chevauchant [start_date, end_date] (dates, pas datetimes)."""
+        """On-calls overlapping [start_date, end_date] (dates, not datetimes)."""
         from datetime import datetime, timedelta
 
         return OnCall.query.filter(

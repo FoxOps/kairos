@@ -1,30 +1,30 @@
 """
-Tests pour les routes d'automatisation dans admin.py.
+Tests for the automation routes in admin.py.
 """
 
 from datetime import date, timedelta
 
 
 class TestAutomationDashboard:
-    """Tests pour /admin/automation."""
+    """Tests for /admin/automation."""
 
     def test_automation_dashboard_get(self, logged_in_client):
-        """Test l'affichage du tableau de bord d'automatisation."""
+        """Test rendering the automation dashboard."""
         response = logged_in_client.get("/admin/automation")
         assert response.status_code == 200
         assert b"Automatisation" in response.data or b"Automation" in response.data
 
     def test_automation_dashboard_unauthenticated(self, client):
-        """Test que le dashboard d'automatisation nécessite une authentification."""
+        """Test that the automation dashboard requires authentication."""
         response = client.get("/admin/automation", follow_redirects=True)
         assert b"Connexion" in response.data
 
 
 class TestAutomationFull:
-    """Tests pour /admin/automation/full."""
+    """Tests for /admin/automation/full."""
 
     def test_automation_full_get(self, logged_in_client):
-        """Test l'affichage de la page d'automatisation complète."""
+        """Test rendering the full-automation page."""
         response = logged_in_client.get("/admin/automation/full")
         assert response.status_code == 200
         assert (
@@ -34,7 +34,7 @@ class TestAutomationFull:
         )
 
     def test_automation_full_post_save_order(self, logged_in_client, test_user):
-        """Test la sauvegarde de l'ordre de rotation."""
+        """Test saving the rotation order."""
         response = logged_in_client.post(
             "/admin/automation/full",
             data={
@@ -48,27 +48,28 @@ class TestAutomationFull:
         assert b"ordre" in response.data.lower() or b"Order" in response.data
 
     def test_automation_full_form_has_single_action_field(self, logged_in_client):
-        """Régression : le formulaire avait un champ caché
-        `name="action" value="generate"` statique EN PLUS du bouton
-        "Générer" - deux champs `action` soumis, dont Werkzeug ne retient
-        que le premier (request.form.get renvoie toujours "generate",
-        jamais "save_order" ni "dry_run" quel que soit le bouton cliqué).
-        Vérifie qu'il ne reste qu'un seul champ `action` par bouton, porté
-        directement par le bouton (name="action" value="...") et non par
-        un input caché séparé toujours présent."""
+        """Regression test: the form used to also have a static hidden
+        field `name="action" value="generate"` alongside the "Generer"
+        button - with two `action` fields submitted, Werkzeug only keeps
+        the first one (request.form.get always returned "generate",
+        never "save_order" or "dry_run" no matter which button was
+        clicked). This checks that there is only one `action` field per
+        button, carried directly by the button itself
+        (name="action" value="...") rather than by a separate
+        always-present hidden input."""
         response = logged_in_client.get("/admin/automation/full")
         assert response.status_code == 200
         html = response.data.decode()
 
         assert 'name="action" value="generate"' in html
         assert 'name="action" value="dry_run"' in html
-        # Le seul endroit où "generate" doit apparaître comme valeur de
-        # champ action est le bouton lui-même (pas un input hidden séparé
-        # qui coexisterait avec les boutons dry_run/save_order).
+        # The only place "generate" should appear as an action field
+        # value is the button itself (not a separate hidden input that
+        # would coexist with the dry_run/save_order buttons).
         assert '<input type="hidden" name="action" value="generate">' not in html
 
     def test_automation_full_post_dry_run(self, logged_in_client, test_user):
-        """Test le dry run de l'automatisation complète."""
+        """Test the dry run of the full automation."""
         today = date.today()
         # Find next Friday
         start_date = today
@@ -88,19 +89,19 @@ class TestAutomationFull:
             follow_redirects=True,
         )
         assert response.status_code == 200
-        # Régression bug 1 : le dry-run rendait auparavant un template
-        # inexistant (oncall_dry_run.html), silencieusement remplacé par
-        # un flash d'erreur générique. Vérifie que la vraie page de
-        # prévisualisation (astreintes + shifts) s'affiche.
+        # Regression test: the dry run used to render a nonexistent
+        # template (oncall_dry_run.html), silently replaced by a generic
+        # error flash. Checks that the real preview page (on-calls +
+        # shifts) is actually rendered.
         assert b"Pr\xc3\xa9visualisation" in response.data
         assert b"Astreintes" in response.data
         assert b"Shifts" in response.data
-        # Le bouton de confirmation doit porter l'ordre de rotation soumis
-        # (bug annexe : il était perdu au moment de confirmer).
+        # The confirm button must carry the submitted rotation order
+        # (a related bug: it used to get lost at confirmation time).
         assert f'name="rotation_order_{test_user.id}"'.encode() in response.data
 
     def test_automation_full_post_invalid_date(self, logged_in_client, test_user):
-        """Test l'automatisation complète avec des dates invalides."""
+        """Test the full automation with invalid dates."""
         response = logged_in_client.post(
             "/admin/automation/full",
             data={
@@ -121,26 +122,26 @@ class TestAutomationFull:
 
 
 class TestAutomationStatus:
-    """Tests pour /admin/automation/status."""
+    """Tests for /admin/automation/status."""
 
     def test_automation_status_get(self, logged_in_client):
-        """Test l'affichage de l'état de l'automatisation."""
+        """Test rendering the automation status."""
         response = logged_in_client.get("/admin/automation/status")
         assert response.status_code == 200
         # Just check that the page loads successfully
         assert b"<!DOCTYPE" in response.data or b"<html" in response.data
 
     def test_automation_status_unauthenticated(self, client):
-        """Test que la page de statut nécessite une authentification."""
+        """Test that the status page requires authentication."""
         response = client.get("/admin/automation/status", follow_redirects=True)
         assert b"Connexion" in response.data
 
 
 class TestRefreshShifts:
-    """Tests pour /admin/automation/refresh-shifts."""
+    """Tests for /admin/automation/refresh-shifts."""
 
     def test_refresh_shifts_get(self, logged_in_client):
-        """Test l'affichage de la page de rafraîchissement des shifts."""
+        """Test rendering the shift-refresh page."""
         response = logged_in_client.get("/admin/automation/refresh-shifts")
         assert response.status_code == 200
         assert (
@@ -150,7 +151,7 @@ class TestRefreshShifts:
         )
 
     def test_refresh_shifts_post(self, logged_in_client):
-        """Test le rafraîchissement des shifts."""
+        """Test refreshing shifts."""
         today = date.today()
         end_date = today + timedelta(days=7)
 
@@ -165,7 +166,7 @@ class TestRefreshShifts:
         assert response.status_code == 200
 
     def test_refresh_shifts_post_invalid_date(self, logged_in_client):
-        """Test le rafraîchissement avec des dates invalides."""
+        """Test refreshing shifts with invalid dates."""
         response = logged_in_client.post(
             "/admin/automation/refresh-shifts",
             data={
@@ -182,6 +183,6 @@ class TestRefreshShifts:
         )
 
     def test_refresh_shifts_unauthenticated(self, client):
-        """Test que la page de rafraîchissement nécessite une authentification."""
+        """Test that the refresh page requires authentication."""
         response = client.get("/admin/automation/refresh-shifts", follow_redirects=True)
         assert b"Connexion" in response.data

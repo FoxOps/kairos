@@ -1,18 +1,18 @@
 """
-Faux fournisseur OIDC minimal pour les tests E2E navigateur réel
+Minimal fake OIDC provider for the real-browser E2E tests
 (test_oidc_browser_flow.py).
 
-But : exercer le vrai flux HTTP/navigateur (redirection vers l'IdP,
-page de login réelle avec un clic, retour avec un code, échanges
-serveur-à-serveur token/userinfo) sans dépendre de Docker (le projet a
-déjà un service `oidc-mock` dans docker/docker-compose.yml, mais le
-faire tourner ici ajouterait une dépendance Docker + réseau lourde pour
-un test). Volontairement non conforme à la spec OIDC sur les points qui
-n'affectent pas le code testé (pas de vérification stricte du code
-d'autorisation, pas de signature JWT - app/auth/oidc_auth.py ne
-vérifie jamais la signature d'un id_token, seulement son expiration).
+Purpose: exercise the real HTTP/browser flow (redirect to the IdP, a
+real login page with a click, return with a code, server-to-server
+token/userinfo exchanges) without depending on Docker (the project
+already has an `oidc-mock` service in docker/docker-compose.yml, but
+running it here would add a heavy Docker + network dependency for a
+test). Deliberately non-compliant with the OIDC spec on points that
+don't affect the code under test (no strict authorization-code check,
+no JWT signature - app/auth/oidc_auth.py never verifies an id_token's
+signature, only its expiration).
 
-Un seul utilisateur de test, en dur : voir MOCK_USER_EMAIL/MOCK_USER_NAME.
+A single hardcoded test user: see MOCK_USER_EMAIL/MOCK_USER_NAME.
 """
 
 import base64
@@ -22,14 +22,14 @@ from urllib.parse import urlencode
 
 from flask import Flask, redirect, request
 
-MOCK_AUTH_CODE = "mock-auth-code-123"  # noqa: S105 - code de test, pas un secret
+MOCK_AUTH_CODE = "mock-auth-code-123"  # noqa: S105 - test code, not a secret
 MOCK_USER_EMAIL = "oidc-e2e-user@example.com"
 MOCK_USER_NAME = "OIDC E2E User"
 
 
 def _fake_jwt(payload: dict) -> str:
-    """JWT non signé - oidc_auth.py décode le payload manuellement sans
-    jamais vérifier de signature (voir extract_user_info_from_token)."""
+    """An unsigned JWT - oidc_auth.py decodes the payload manually
+    without ever checking a signature (see extract_user_info_from_token)."""
     header = (
         base64.urlsafe_b64encode(b'{"alg":"none","typ":"JWT"}').rstrip(b"=").decode()
     )
@@ -38,7 +38,7 @@ def _fake_jwt(payload: dict) -> str:
 
 
 def create_mock_oidc_provider(port: int) -> Flask:
-    """Crée le faux fournisseur OIDC, prêt à être lancé sur `port`."""
+    """Create the fake OIDC provider, ready to run on `port`."""
     app = Flask(__name__)
     base_url = f"http://127.0.0.1:{port}"
 
@@ -58,21 +58,21 @@ def create_mock_oidc_provider(port: int) -> Flask:
 
     @app.route("/authorize")
     def authorize():
-        """Page de "login" minimale - un vrai clic navigateur (Playwright),
-        pas une redirection serveur directe, pour exercer un vrai
-        aller-retour utilisateur comme un IdP réel le ferait."""
+        """A minimal "login" page - a real browser click (Playwright),
+        not a direct server redirect, to exercise a real user round
+        trip the way a real IdP would."""
         redirect_uri = request.args.get("redirect_uri", "")
         state = request.args.get("state", "")
         return f"""
         <!doctype html>
         <html lang="fr">
         <body>
-            <h1>Faux fournisseur OIDC (test)</h1>
-            <p>Utilisateur : {MOCK_USER_EMAIL}</p>
+            <h1>Fake OIDC Provider (test)</h1>
+            <p>User: {MOCK_USER_EMAIL}</p>
             <form method="POST" action="/authorize/approve">
                 <input type="hidden" name="redirect_uri" value="{redirect_uri}">
                 <input type="hidden" name="state" value="{state}">
-                <button type="submit" id="mock-idp-approve">Se connecter</button>
+                <button type="submit" id="mock-idp-approve">Log in</button>
             </form>
         </body>
         </html>
@@ -117,6 +117,6 @@ def create_mock_oidc_provider(port: int) -> Flask:
         post_logout = request.args.get("post_logout_redirect_uri")
         if post_logout:
             return redirect(post_logout)
-        return "Déconnecté (mock IdP)"
+        return "Logged out (mock IdP)"
 
     return app

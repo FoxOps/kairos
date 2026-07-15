@@ -1,6 +1,6 @@
 """
-Tests ciblés sur les branches d'erreur/edge-case de app/routes/oncall_routes.py
-non couvertes par les suites existantes.
+Targeted tests for the error/edge-case branches of
+app/routes/oncall_routes.py not covered by the existing suites.
 """
 
 from datetime import date, datetime, timedelta
@@ -69,7 +69,7 @@ class TestAddOncallEdgeCases:
 
 class TestDeleteOncall:
     def test_delete_nonexistent_404(self, test_app, logged_in_client):
-        resp = logged_in_client.get("/oncall/delete/999999")
+        resp = logged_in_client.post("/oncall/delete/999999")
         assert resp.status_code == 404
 
     def test_delete_exception_handled(self, test_app, logged_in_client, test_oncall):
@@ -77,7 +77,7 @@ class TestDeleteOncall:
             "app.routes.oncall_routes.OnCallService.delete_oncall",
             side_effect=RuntimeError("boom"),
         ):
-            resp = logged_in_client.get(
+            resp = logged_in_client.post(
                 f"/oncall/delete/{test_oncall.id}", follow_redirects=True
             )
         assert resp.status_code == 200

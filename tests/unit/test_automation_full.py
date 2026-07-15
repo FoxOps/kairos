@@ -1,6 +1,6 @@
 """
-Tests complets pour app/utils/automation.py
-Couvre les fonctions de génération et les cas complexes.
+Full tests for app/utils/automation.py
+Covers the generation functions and complex cases.
 """
 
 from datetime import date, datetime, timedelta
@@ -8,19 +8,20 @@ from datetime import date, datetime, timedelta
 from app import db
 from app.models import Leave, OnCall
 from app.utils.automation import OnCallAutomation
+from app.utils.automation.oncall_automation import AvailabilityIndex
 
 
 class TestOnCallAutomationGenerateScheduleFull:
-    """Tests complets pour OnCallAutomation.generate_oncall_schedule."""
+    """Full tests for OnCallAutomation.generate_oncall_schedule."""
 
     def test_generates_multiple_oncalls(self, test_app, test_user, test_group):
-        """Test que generate_oncall_schedule génère plusieurs astreintes."""
+        """Test that generate_oncall_schedule generates several on-calls."""
         with test_app.app_context():
-            # S'assurer que test_user est éligible
+            # Make sure test_user is eligible
             test_group.is_part_of_oncall = True
             db.session.commit()
 
-            # Créer un deuxième utilisateur pour la rotation
+            # Create a second user for the rotation
             from app.models import User as UserModel
 
             test_user2 = UserModel(
@@ -30,13 +31,13 @@ class TestOnCallAutomationGenerateScheduleFull:
             db.session.add(test_user2)
             db.session.commit()
 
-            # Trouver le prochain vendredi
+            # Find the next Friday
             today = date.today()
             days_until_friday = (4 - today.weekday()) % 7
             start_date = today + timedelta(days=days_until_friday)
-            # Utiliser 35 jours pour s'assurer d'inclure 4 astreintes complètes
-            # (chaque astreinte dure jusqu'au vendredi suivant à 07h)
-            end_date = start_date + timedelta(days=35)  # 5 semaines
+            # Use 35 days to make sure several full on-calls are included
+            # (each on-call lasts until the following Friday at 07h)
+            end_date = start_date + timedelta(days=35)  # 5 weeks
 
             oncalls, messages = OnCallAutomation.generate_oncall_schedule(
                 start_date,
@@ -45,12 +46,12 @@ class TestOnCallAutomationGenerateScheduleFull:
                 dry_run=True,
             )
 
-            # Devrait générer 5 astreintes (une par semaine) avec 2 utilisateurs
-            # 35 jours = 5 semaines, donc 5 vendredis -> 5 astreintes
-            assert len(oncalls) == 5
+            # end_date inclusive: 35 days after a Friday also falls on a
+            # Friday (35 = 5*7) -> 6 Fridays (+0, +7, +14, +21, +28, +35).
+            assert len(oncalls) == 6
 
     def test_respects_start_date(self, test_app, test_user, test_group):
-        """Test que generate_oncall_schedule respecte la date de début."""
+        """Test that generate_oncall_schedule respects the start date."""
         with test_app.app_context():
             test_group.is_part_of_oncall = True
             db.session.commit()
@@ -63,17 +64,17 @@ class TestOnCallAutomationGenerateScheduleFull:
             )
 
             if oncalls:
-                # La première astreinte devrait commencer un vendredi
+                # The first on-call should start on a Friday
                 first_oncall = oncalls[0]
                 assert first_oncall.start_time.date() >= start_date
 
     def test_skips_unavailable_users(self, test_app, test_user, test_group):
-        """Test que generate_oncall_schedule ignore les utilisateurs non disponibles."""
+        """Test that generate_oncall_schedule skips unavailable users."""
         with test_app.app_context():
             test_group.is_part_of_oncall = True
             db.session.commit()
 
-            # Créer un congé pour test_user
+            # Create a leave for test_user
             now = datetime.now()
             leave = Leave(
                 user_id=test_user.id,
@@ -83,7 +84,7 @@ class TestOnCallAutomationGenerateScheduleFull:
             db.session.add(leave)
             db.session.commit()
 
-            # Trouver le prochain vendredi
+            # Find the next Friday
             today = date.today()
             days_until_friday = (4 - today.weekday()) % 7
             start_date = today + timedelta(days=days_until_friday)
@@ -93,9 +94,10 @@ class TestOnCallAutomationGenerateScheduleFull:
                 start_date, end_date, rotation_order_ids=[test_user.id], dry_run=True
             )
 
-            # Devrait générer des messages sur les utilisateurs non disponibles
-            # Le message peut être soit "Utilisateur avec contrainte légale seulement" (fallback avec contrainte)
-            # soit "Aucun utilisateur disponible" (fallback sans contrainte)
+            # Should generate messages about unavailable users. The
+            # message can either be "Utilisateur avec contrainte legale
+            # seulement" (fallback with constraint) or "Aucun
+            # utilisateur disponible" (fallback with no constraint).
             assert any(
                 "Utilisateur avec contrainte légale seulement" in msg
                 or "Aucun utilisateur disponible" in msg
@@ -105,14 +107,14 @@ class TestOnCallAutomationGenerateScheduleFull:
 
 
 class TestOnCallAutomationFindNextAvailableFull:
-    """Tests complets pour OnCallAutomation.find_next_available_user."""
+    """Full tests for OnCallAutomation.find_next_available_user."""
 
     def test_skips_user_with_oncall_conflict(self, test_app, test_user):
-        """Test que find_next_available_user ignore les utilisateurs avec conflit d'astreinte."""
+        """Test that find_next_available_user skips users with an on-call conflict."""
         with test_app.app_context():
             now = datetime.now()
 
-            # Créer une astreinte existante
+            # Create an existing on-call
             existing_oncall = OnCall(
                 user_id=test_user.id,
                 start_time=now + timedelta(days=1),
@@ -121,23 +123,24 @@ class TestOnCallAutomationFindNextAvailableFull:
             db.session.add(existing_oncall)
             db.session.commit()
 
-            # Tester avec une période qui chevauche
+            # Test with an overlapping period
             start_time = now + timedelta(days=2)
             end_time = now + timedelta(days=5)
 
+            index = AvailabilityIndex([test_user.id])
             result = OnCallAutomation.find_next_available_user(
-                [test_user], start_time, end_time
+                [test_user], start_time, end_time, index
             )
 
-            # Devrait ignorer test_user
+            # Should skip test_user
             assert result is None
 
     def test_skips_user_with_leave_conflict(self, test_app, test_user):
-        """Test que find_next_available_user ignore les utilisateurs avec conflit de congé."""
+        """Test that find_next_available_user skips users with a leave conflict."""
         with test_app.app_context():
             now = datetime.now()
 
-            # Créer un congé
+            # Create a leave
             leave = Leave(
                 user_id=test_user.id,
                 start_date=now.date() + timedelta(days=2),
@@ -146,49 +149,51 @@ class TestOnCallAutomationFindNextAvailableFull:
             db.session.add(leave)
             db.session.commit()
 
-            # Tester avec une période qui chevauche
+            # Test with an overlapping period
             start_time = now + timedelta(days=3)
             end_time = now + timedelta(days=4)
 
+            index = AvailabilityIndex([test_user.id])
             result = OnCallAutomation.find_next_available_user(
-                [test_user], start_time, end_time
+                [test_user], start_time, end_time, index
             )
 
-            # Devrait ignorer test_user
+            # Should skip test_user
             assert result is None
 
     def test_skips_user_with_legal_constraint(self, test_app, test_user):
-        """Test que find_next_available_user ignore les utilisateurs avec contrainte légale."""
+        """Test that find_next_available_user skips users with a legal constraint."""
         with test_app.app_context():
             now = datetime.now()
 
-            # Créer une astreinte précédente qui se termine il y a 13 jours
-            # La contrainte est : (start_time - last_oncall.end_time).days / 7 >= 2
-            # Si last_oncall.end_time était il y a 13 jours, et start_time est maintenant + 1 jour
-            # Alors (start_time - last_end).days = (now + 1 day) - (now - 13 days) = 14 days
-            # 14/7 = 2.0 -> passe la contrainte
-            # Pour échouer, il faut que (start_time - last_end).days / 7 < 2
-            # Donc il faut que (start_time - last_end).days < 14
-            # Si last_end était il y a 13 jours, et start_time est maintenant
-            # Alors (now - (now - 13 days)).days = 13 days
-            # 13/7 = 1.857 < 2 -> devrait être ignoré
+            # Create a previous on-call that ended 13 days ago.
+            # The constraint is: (start_time - last_oncall.end_time).days / 7 >= 2
+            # If last_oncall.end_time was 13 days ago, and start_time is now + 1 day,
+            # then (start_time - last_end).days = (now + 1 day) - (now - 13 days) = 14 days
+            # 14/7 = 2.0 -> passes the constraint
+            # To fail, (start_time - last_end).days / 7 must be < 2
+            # So (start_time - last_end).days must be < 14
+            # If last_end was 13 days ago, and start_time is now,
+            # then (now - (now - 13 days)).days = 13 days
+            # 13/7 = 1.857 < 2 -> should be skipped
 
             previous_oncall = OnCall(
                 user_id=test_user.id,
                 start_time=now - timedelta(days=20),
-                end_time=now - timedelta(days=13),  # Se termine il y a 13 jours
+                end_time=now - timedelta(days=13),  # Ended 13 days ago
             )
             db.session.add(previous_oncall)
             db.session.commit()
 
-            # Tester avec start_time = maintenant (pas maintenant + 1 jour)
+            # Test with start_time = now (not now + 1 day)
             start_time = now
             end_time = now + timedelta(days=7)
 
+            index = AvailabilityIndex([test_user.id])
             result = OnCallAutomation.find_next_available_user(
-                [test_user], start_time, end_time
+                [test_user], start_time, end_time, index
             )
 
-            # Devrait ignorer test_user à cause de la contrainte des 2 semaines
+            # Should skip test_user due to the 2-week constraint
             # (now - (now - 13 days)).days / 7 = 13/7 = 1.857 < 2
             assert result is None

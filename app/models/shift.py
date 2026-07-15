@@ -60,10 +60,15 @@ class Shift(BaseModel):
     end_time = db.Column(db.DateTime, nullable=False, index=True)
     date = db.Column(db.Date, nullable=False, index=True)
 
-    # Composite indexes for frequent queries
+    # Composite indexes for frequent queries, plus a unique constraint
+    # closing the can_add_shift() check-then-insert race: the business
+    # rule is exactly one shift per user per day, so two concurrent
+    # requests that both pass the application-level check can no longer
+    # both insert - the DB rejects the second one atomically.
     __table_args__ = (
         db.Index("idx_shift_user_date", "user_id", "date"),
         db.Index("idx_shift_date_start", "date", "start_time"),
+        db.UniqueConstraint("user_id", "date", name="uq_shift_user_date"),
     )
 
     def duration(self) -> int:

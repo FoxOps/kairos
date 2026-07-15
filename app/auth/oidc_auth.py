@@ -1,11 +1,11 @@
 """
-Authentification OIDC/SSO pour Leviia Schedule utilisant Authlib.
+OIDC/SSO authentication for Leviia Schedule using Authlib.
 
-Ce module implémente l'authentification via OpenID Connect avec des fournisseurs
-comme Keycloak, Okta, Auth0, etc. en utilisant la bibliothèque Authlib.
+This module implements authentication via OpenID Connect with providers
+like Keycloak, Okta, Auth0, etc. using the Authlib library.
 
-Authlib est une bibliothèque moderne et maintenue pour l'authentification OIDC,
-remplaçant l'ancienne bibliothèque flask-oidc.
+Authlib is a modern, maintained library for OIDC authentication,
+replacing the older flask-oidc library.
 """
 
 import logging
@@ -20,46 +20,63 @@ logger = logging.getLogger(__name__)
 
 
 class OIDCAuthLib:
-    """Classe pour gérer l'authentification OIDC avec Authlib."""
+    """Class managing OIDC authentication with Authlib."""
 
     def __init__(self, app=None):
-        """Initialise l'authentification OIDC avec Authlib."""
+        """Initialize OIDC authentication with Authlib."""
         self.app = app
         self.oauth = None
         self.oidc_client = None
         self.authorization_endpoint = None
         self.token_endpoint = None
         self.userinfo_endpoint = None
-        self.end_session_endpoint = None  # ✅ Ajouter l'endpoint de fin de session
+        self.end_session_endpoint = None
         if app:
             self.init_app(app)
 
     def init_app(self, app):
-        """Initialise l'application Flask."""
+        """Initialize the Flask application.
+
+        Resets every endpoint/client attribute first: this instance is
+        a module-level singleton (see `oidc_auth` below), shared across
+        every app built by create_app() in the same process (notably in
+        the test suite, where many apps get built back to back). Without
+        this reset, an app with OIDC configured could leave stale
+        endpoints (from a real discovery call) on the singleton, which
+        would then leak into a later, unrelated app that has OIDC
+        disabled.
+        """
         self.app = app
+        self.oauth = None
+        self.oidc_client = None
+        self.authorization_endpoint = None
+        self.token_endpoint = None
+        self.userinfo_endpoint = None
+        self.end_session_endpoint = None
+
         self.oauth = OAuth(app)
         self._configure_oauth()
 
     def _configure_oauth(self):
-        """Configure le client OAuth/OIDC."""
+        """Configure the OAuth/OIDC client."""
         if not self.oauth:
-            logger.warning("OAuth n'est pas initialisé, impossible de configurer OIDC")
+            logger.warning("OAuth is not initialized, cannot configure OIDC")
             return
 
         if not OIDCConfig.is_configured():
             logger.warning(
-                "OIDC n'est pas configuré, saut de la configuration OAuth. Vérifiez que OIDC_ENABLED=true, OIDC_ISSUER, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET et OIDC_REDIRECT_URI sont définis."
+                "OIDC is not configured, skipping OAuth configuration. Check that OIDC_ENABLED=true, OIDC_ISSUER, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET and OIDC_REDIRECT_URI are set."
             )
             return
 
         try:
             issuer_url = OIDCConfig.ISSUER.rstrip("/")
-            # OIDC_ISSUER doit rester joignable par le navigateur (redirections).
-            # Si le fournisseur OIDC n'est pas joignable par le conteneur à cette
-            # même adresse (ex: fournisseur dans le même docker-compose,
-            # joignable en interne via son nom de service), OIDC_INTERNAL_ISSUER
-            # permet de préciser l'adresse à utiliser pour les appels
-            # serveur-à-serveur (découverte, token, userinfo).
+            # OIDC_ISSUER must stay reachable by the browser (redirects).
+            # If the OIDC provider isn't reachable by the container at that
+            # same address (e.g. provider in the same docker-compose,
+            # reachable internally via its service name), OIDC_INTERNAL_ISSUER
+            # lets you specify the address to use for server-to-server calls
+            # (discovery, token, userinfo).
             internal_issuer_url = (
                 OIDCConfig.INTERNAL_ISSUER or OIDCConfig.ISSUER
             ).rstrip("/")
@@ -67,8 +84,8 @@ class OIDCAuthLib:
                 f"{internal_issuer_url}/.well-known/openid-configuration"
             )
 
-            logger.info(f"Tentative de configuration OIDC avec issuer: {issuer_url}")
-            logger.info(f"URL de découverte (interne): {server_metadata_url}")
+            logger.info(f"Attempting OIDC configuration with issuer: {issuer_url}")
+            logger.info(f"Discovery URL (internal): {server_metadata_url}")
 
             import requests
 
@@ -82,20 +99,17 @@ class OIDCAuthLib:
                 )
                 self.token_endpoint = discovery_doc.get("token_endpoint")
                 self.userinfo_endpoint = discovery_doc.get("userinfo_endpoint")
-                self.end_session_endpoint = discovery_doc.get(
-                    "end_session_endpoint"
-                )  # ✅ Ajouter l'endpoint de fin de session
+                self.end_session_endpoint = discovery_doc.get("end_session_endpoint")
 
                 if OIDCConfig.INTERNAL_ISSUER:
-                    # Le document de découverte a été récupéré via l'adresse
-                    # interne, donc tous ses endpoints en reflètent l'hôte -
-                    # certains fournisseurs OIDC génèrent ces URLs
-                    # relativement à l'hôte de la requête plutôt qu'à leur
-                    # issuer configuré. token/userinfo sont appelés par ce
-                    # conteneur : ils restent tels quels (déjà internes).
-                    # authorization_endpoint et end_session_endpoint sont
-                    # tous deux contactés par le navigateur (redirections) :
-                    # on les fait pointer vers l'issuer public.
+                    # The discovery document was fetched via the internal
+                    # address, so all its endpoints reflect that host - some
+                    # OIDC providers generate these URLs relative to the
+                    # request host rather than their configured issuer.
+                    # token/userinfo are called by this container: they stay
+                    # as-is (already internal). authorization_endpoint and
+                    # end_session_endpoint are both contacted by the browser
+                    # (redirects): point them at the public issuer.
                     self.authorization_endpoint = self._rehost(
                         self.authorization_endpoint, issuer_url
                     )
@@ -108,16 +122,14 @@ class OIDCAuthLib:
                 logger.info(f"Userinfo endpoint: {self.userinfo_endpoint}")
                 logger.info(f"End session endpoint: {self.end_session_endpoint}")
 
-                logger.info("Document de découverte OIDC accessible")
+                logger.info("OIDC discovery document reachable")
             except requests.RequestException as e:
+                logger.error(f"Could not reach the OIDC discovery document: {e}")
                 logger.error(
-                    f"Impossible d'accéder au document de découverte OIDC: {e}"
+                    f"Check that {server_metadata_url} is correct and reachable from this container"
                 )
                 logger.error(
-                    f"Vérifiez que {server_metadata_url} est correct et accessible depuis ce conteneur"
-                )
-                logger.error(
-                    "Si vous utilisez Docker, assurez-vous que le service OIDC est démarré et accessible (nom de service Docker ou OIDC_INTERNAL_ISSUER)"
+                    "If using Docker, make sure the OIDC service is running and reachable (Docker service name or OIDC_INTERNAL_ISSUER)"
                 )
                 return
 
@@ -132,19 +144,19 @@ class OIDCAuthLib:
             self.oidc_client.client_id = OIDCConfig.CLIENT_ID
             self.oidc_client.client_secret = OIDCConfig.CLIENT_SECRET
 
-            logger.info("Client OIDC Authlib configuré avec succès")
+            logger.info("Authlib OIDC client configured successfully")
             logger.debug(f"Client ID: {OIDCConfig.CLIENT_ID}")
             logger.debug(f"Issuer: {OIDCConfig.ISSUER}")
             logger.debug(f"Scope: {OIDCConfig.SCOPE}")
             logger.debug(f"Server metadata URL: {server_metadata_url}")
 
         except Exception as e:
-            logger.error(f"Erreur lors de la configuration OAuth: {e}")
+            logger.error(f"Error configuring OAuth: {e}")
             self.oidc_client = None
 
     @staticmethod
     def _rehost(url, new_base_url):
-        """Remplace le schéma+hôte d'une URL en conservant le chemin/query."""
+        """Replace a URL's scheme+host while keeping its path/query."""
         if not url:
             return url
         from urllib.parse import urlsplit, urlunsplit
@@ -162,16 +174,14 @@ class OIDCAuthLib:
         )
 
     def get_authorization_url(self, state=None, nonce=None):
-        """Génère l'URL d'autorisation OIDC."""
+        """Generate the OIDC authorization URL."""
         if not self.oidc_client:
-            logger.error(
-                "Client OIDC non configuré. Vérifiez que la configuration OIDC est correcte."
-            )
+            logger.error("OIDC client not configured. Check the OIDC configuration.")
             return None
 
         try:
             if not self.authorization_endpoint:
-                logger.error("Authorization endpoint non disponible")
+                logger.error("Authorization endpoint not available")
                 return None
 
             if state is None:
@@ -179,15 +189,12 @@ class OIDCAuthLib:
             if nonce is None:
                 nonce = self._generate_nonce()
 
-            # Stocker le state et le nonce dans la session
+            # Store the state and nonce in the session
             session["oidc_state"] = state
             session["oidc_nonce"] = nonce
 
-            # ✅ DEBUG: Afficher le state généré
-            logger.info(f"[DEBUG] State généré: {state}")
-            logger.info(
-                f"[DEBUG] State stocké dans session: {session.get('oidc_state')}"
-            )
+            logger.info(f"Generated state: {state}")
+            logger.info(f"State stored in session: {session.get('oidc_state')}")
 
             from urllib.parse import urlencode
 
@@ -203,36 +210,36 @@ class OIDCAuthLib:
             return f"{self.authorization_endpoint}?{urlencode(params)}"
 
         except Exception as e:
-            logger.error(f"Erreur lors de la génération de l'URL d'autorisation: {e}")
+            logger.error(f"Error generating the authorization URL: {e}")
             return None
 
     def _generate_state(self):
-        """Génère un state aléatoire."""
+        """Generate a random state."""
         import secrets
 
         return secrets.token_urlsafe(32)
 
     def _generate_nonce(self):
-        """Génère un nonce aléatoire."""
+        """Generate a random nonce."""
         import secrets
 
         return secrets.token_urlsafe(32)
 
     def exchange_code_for_token(self, code):
         """
-        Échange le code d'autorisation contre un token OIDC.
+        Exchange the authorization code for an OIDC token.
         """
         if not self.oidc_client:
-            logger.error("Client OIDC non configuré")
+            logger.error("OIDC client not configured")
             return None
 
         try:
-            logger.info("Échange du code contre un token OIDC")
+            logger.info("Exchanging code for an OIDC token")
 
             import requests
 
             if not self.token_endpoint:
-                logger.error("Token endpoint non disponible")
+                logger.error("Token endpoint not available")
                 return None
 
             data = {
@@ -254,30 +261,30 @@ class OIDCAuthLib:
 
             token_data = response.json()
 
-            # ✅ Stocker l'id_token dans la session pour la déconnexion
+            # Store the id_token in the session for logout
             if "id_token" in token_data:
                 session["oidc_id_token"] = token_data["id_token"]
 
-            logger.info("Token OIDC obtenu avec succès")
+            logger.info("OIDC token obtained successfully")
             return token_data
 
         except Exception as e:
-            logger.error(f"Erreur lors de l'échange du code contre un token: {e}")
+            logger.error(f"Error exchanging the code for a token: {e}")
             return None
 
     def get_user_info(self, access_token):
-        """Récupère les informations utilisateur depuis le fournisseur OIDC."""
+        """Fetch user information from the OIDC provider."""
         if not self.oidc_client:
-            logger.error("Client OIDC non configuré")
+            logger.error("OIDC client not configured")
             return None
 
         try:
-            logger.info("Récupération des informations utilisateur OIDC")
+            logger.info("Fetching OIDC user information")
 
             import requests
 
             if not self.userinfo_endpoint:
-                logger.error("Userinfo endpoint non disponible")
+                logger.error("Userinfo endpoint not available")
                 return None
 
             headers = {
@@ -290,18 +297,16 @@ class OIDCAuthLib:
 
             user_info = response.json()
 
-            logger.info("Informations utilisateur OIDC récupérées avec succès")
+            logger.info("OIDC user information fetched successfully")
             logger.debug(f"User info: {user_info}")
             return user_info
 
         except Exception as e:
-            logger.error(
-                f"Erreur lors de la récupération des informations utilisateur: {e}"
-            )
+            logger.error(f"Error fetching user information: {e}")
             return None
 
     def verify_token(self, token_data):
-        """Vérifie la validité du token OIDC."""
+        """Verify the OIDC token's validity."""
         if not token_data:
             return False
 
@@ -310,13 +315,13 @@ class OIDCAuthLib:
             import time
 
             if time.time() > expires_at:
-                logger.warning("Token OIDC expiré")
+                logger.warning("OIDC token expired")
                 return False
 
         return True
 
     def extract_user_info_from_token(self, token_data, user_info=None):
-        """Extrait les informations utilisateur du token OIDC."""
+        """Extract user information from the OIDC token."""
         user_data = {}
 
         if user_info:
@@ -375,106 +380,100 @@ class OIDCAuthLib:
                             user_data["roles"] = token_payload[roles_claim]
 
                 except Exception as e:
-                    logger.error(f"Erreur lors du décodage du token: {e}")
+                    logger.error(f"Error decoding the token: {e}")
 
         return user_data
 
     def handle_oauth_callback(self, request):
-        """Gère le callback OIDC après l'authentification."""
-        # ✅ DEBUG: Afficher tous les paramètres reçus
-        logger.info(f"[DEBUG callback] request.args: {dict(request.args)}")
-        logger.info(f"[DEBUG callback] session: {dict(session)}")
+        """Handle the OIDC callback after authentication."""
+        logger.info(f"[callback] request.args: {dict(request.args)}")
+        logger.info(f"[callback] session: {dict(session)}")
 
-        # Vérifier l'état
+        # Verify the state
         state = request.args.get("state")
         session_state = session.get("oidc_state")
 
-        logger.info(f"[DEBUG callback] state reçu: {state}")
-        logger.info(f"[DEBUG callback] state dans session: {session_state}")
-        logger.info(
-            f"[DEBUG callback] state == session_state: {state == session_state}"
-        )
+        logger.info(f"[callback] state received: {state}")
+        logger.info(f"[callback] state in session: {session_state}")
+        logger.info(f"[callback] state == session_state: {state == session_state}")
 
         if not state or state != session_state:
-            logger.error("State OIDC invalide")
-            flash("Erreur d'authentification: state invalide", "danger")
+            logger.error("Invalid OIDC state")
+            flash("Authentication error: invalid state", "danger")
             return None
 
-        # Vérifier le code
+        # Verify the code
         code = request.args.get("code")
         if not code:
-            error = request.args.get("error", "Code manquant")
+            error = request.args.get("error", "Missing code")
             error_description = request.args.get("error_description", "")
-            logger.error(f"Erreur OIDC: {error} - {error_description}")
-            flash(f"Erreur d'authentification: {error}", "danger")
+            logger.error(f"OIDC error: {error} - {error_description}")
+            flash(f"Authentication error: {error}", "danger")
             return None
 
-        # Échanger le code contre un token
+        # Exchange the code for a token
         token_data = self.exchange_code_for_token(code)
         if not token_data:
-            logger.error("Échec de l'échange du code contre un token")
-            flash("Erreur d'authentification: échec de l'échange du code", "danger")
+            logger.error("Failed to exchange the code for a token")
+            flash("Authentication error: failed to exchange the code", "danger")
             return None
 
-        # Vérifier le token
+        # Verify the token
         if not self.verify_token(token_data):
-            logger.error("Token OIDC invalide")
-            flash("Erreur d'authentification: token invalide", "danger")
+            logger.error("Invalid OIDC token")
+            flash("Authentication error: invalid token", "danger")
             return None
 
-        # Récupérer les informations utilisateur
+        # Fetch user information
         access_token = token_data.get("access_token")
         user_info = None
         if access_token:
             user_info = self.get_user_info(access_token)
 
-        # Extraire les informations utilisateur
+        # Extract user information
         user_data = self.extract_user_info_from_token(token_data, user_info)
 
         if not user_data or "email" not in user_data:
-            logger.error("Impossible d'extraire l'email de l'utilisateur OIDC")
-            flash(
-                "Erreur d'authentification: impossible de récupérer l'email", "danger"
-            )
+            logger.error("Could not extract the OIDC user's email")
+            flash("Authentication error: could not fetch the email", "danger")
             return None
 
         return user_data
 
     def login_user(self, user_data):
-        """Connecte un utilisateur OIDC."""
+        """Log in an OIDC user."""
         from app.auth.user_manager import UserManager
 
         user_manager = UserManager()
 
-        # Synchroniser ou créer l'utilisateur
+        # Sync or create the user
         user = user_manager.sync_user_from_oidc(user_data)
 
         if user:
             login_user(user)
-            logger.info(f"Utilisateur OIDC connecté: {user.email}")
+            logger.info(f"OIDC user logged in: {user.email}")
             return user
         else:
-            logger.error(f"Impossible de synchroniser l'utilisateur OIDC: {user_data}")
+            logger.error(f"Could not sync OIDC user: {user_data}")
             return None
 
     def build_logout_url(self, post_logout_redirect_uri=None):
         """
-        Construit l'URL de déconnexion RP-initiated (end_session_endpoint).
+        Build the RP-initiated logout URL (end_session_endpoint).
 
-        Sans ça, /logout ne fait que déconnecter la session locale : la
-        session côté fournisseur OIDC reste active, donc la prochaine
-        redirection vers l'écran de connexion ré-authentifie
-        silencieusement l'utilisateur via SSO (la déconnexion semble ne
-        rien faire).
+        Without this, /logout only ends the local session: the session on
+        the OIDC provider's side stays active, so the next redirect to the
+        login screen silently re-authenticates the user via SSO (logout
+        appears to do nothing).
 
         Args:
-            post_logout_redirect_uri: URL vers laquelle le fournisseur
-                redirige après déconnexion (doit être enregistrée côté
-                fournisseur, ex: PostLogoutRedirectUris)
+            post_logout_redirect_uri: URL the provider redirects to after
+                logout (must be registered on the provider's side, e.g.
+                PostLogoutRedirectUris)
 
         Returns:
-            L'URL de déconnexion du fournisseur, ou None si l'endpoint
-            n'est pas disponible (le fournisseur ne le propose pas).
+            The provider's logout URL, or None if the endpoint isn't
+            available (the provider doesn't offer it).
         """
         if not self.end_session_endpoint:
             return None
@@ -494,6 +493,6 @@ class OIDCAuthLib:
         return f"{self.end_session_endpoint}?{urlencode(params)}"
 
 
-# Instance globale
+# Global instance
 oidc_auth = OIDCAuthLib()
 OIDCAuth = OIDCAuthLib

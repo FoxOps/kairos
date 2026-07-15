@@ -6,7 +6,7 @@ configuration settings.
 """
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app import db
 from app.models.base import BaseModel
@@ -66,7 +66,7 @@ class AutomationConfig(BaseModel):
             config.config_value = (
                 json.dumps(value) if not isinstance(value, str) else value
             )
-            config.updated_at = datetime.utcnow()
+            config.updated_at = datetime.now(timezone.utc)
         else:
             config = cls(
                 config_key=key,

@@ -11,33 +11,29 @@ from datetime import date, datetime, timedelta
 from app import db
 from app.models import Shift, ShiftType, User
 from app.repositories.shift_repository import ShiftRepository
-from app.utils.helpers import can_add_shift
+from app.utils.helpers import can_add_shift, is_user_on_leave
 
 
 class ShiftService:
-    """Logique métier pour les shifts."""
+    """Business logic for shifts."""
 
     @staticmethod
     def list_paginated(page: int, per_page: int):
         return ShiftRepository.list_paginated(page, per_page)
 
     @staticmethod
-    def list_in_window(window_start: datetime, window_end: datetime) -> list[Shift]:
-        return ShiftRepository.list_in_window(window_start, window_end)
-
-    @staticmethod
     def add_shifts_for_range(
         user: User, shift_type: ShiftType, start_date: date, end_date: date
     ) -> tuple[list[str], date | None]:
         """
-        Crée un shift par jour ouvré entre start_date et end_date (inclus)
-        pour l'utilisateur donné.
+        Create one shift per business day between start_date and end_date
+        (inclusive) for the given user.
 
         Returns:
-            (dates_ajoutees, date_en_conflit) - si une date est en conflit,
-            rien n'est committé (comportement identique à l'original : les
-            objets déjà ajoutés à la session sans commit sont annulés au
-            rollback de fin de requête).
+            (dates_added, conflicting_date) - if a date is in conflict,
+            nothing is committed (same behavior as the original: objects
+            already added to the session without a commit are rolled back
+            at the end of the request).
         """
         current_date = start_date
         shifts_added = []
@@ -111,7 +107,7 @@ class ShiftService:
     def api_create(
         user: User, shift_type: ShiftType, start_time: datetime, end_time: datetime
     ) -> tuple[Shift | None, str | None]:
-        """Crée un shift depuis l'API drag & drop. Returns (shift, error_message)."""
+        """Create a shift from the drag & drop API. Returns (shift, error_message)."""
         on_date = start_time.date()
         if on_date.weekday() >= 5:
             return None, "Impossible de créer un shift pour un week-end"
@@ -129,7 +125,7 @@ class ShiftService:
     def api_update(
         shift_id: int, new_start: datetime, new_end: datetime
     ) -> tuple[Shift | None, str | None]:
-        """Met à jour un shift depuis l'API drag & drop. Returns (shift, error_message)."""
+        """Update a shift from the drag & drop API. Returns (shift, error_message)."""
         shift = ShiftRepository.get_by_id(shift_id)
         if not shift:
             return None, "Shift non trouvé"
@@ -145,6 +141,16 @@ class ShiftService:
             return (
                 None,
                 f"Un shift existe déjà pour {shift.user.name} le {new_date.strftime('%d/%m/%Y')}",
+            )
+
+        # Originally missing: the creation path (api_create/
+        # add_shifts_for_range) goes through can_add_shift(), which also
+        # checks leave - drag & drop didn't, and could drop a shift onto
+        # a day the user is on leave.
+        if is_user_on_leave(shift.user_id, new_date):
+            return (
+                None,
+                f"{shift.user.name} est en congé le {new_date.strftime('%d/%m/%Y')}",
             )
 
         shift.start_time = new_start

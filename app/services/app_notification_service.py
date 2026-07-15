@@ -16,7 +16,7 @@ from app.repositories.user_repository import UserRepository
 
 
 class AppNotificationService:
-    """Logique métier pour les notifications internes à l'app."""
+    """Business logic for in-app notifications."""
 
     @staticmethod
     def list_for_user(user_id: int) -> list[AppNotification]:
@@ -28,7 +28,7 @@ class AppNotificationService:
 
     @staticmethod
     def mark_read(notification: AppNotification, user: User) -> str | None:
-        """Marque une notification comme lue. None si succès."""
+        """Mark a notification as read. None on success."""
         if notification.user_id != user.id:
             return "Cette notification ne vous appartient pas"
         notification.mark_read()
@@ -42,7 +42,7 @@ class AppNotificationService:
 
     @staticmethod
     def purge_read(user: User) -> int:
-        """Supprime les notifications déjà lues de l'utilisateur. Retourne le nombre supprimé."""
+        """Delete the user's already-read notifications. Returns the number deleted."""
         count = AppNotificationRepository.purge_read_for_user(user.id)
         db.session.commit()
         return count
@@ -70,7 +70,7 @@ class AppNotificationService:
 
     @staticmethod
     def notify_swap_decision(swap_request: SwapRequest, decision: str) -> None:
-        """decision: SwapRequest.APPROVED, REJECTED, ou REVERTED."""
+        """decision: SwapRequest.APPROVED, REJECTED, or REVERTED."""
         if decision == SwapRequest.APPROVED:
             requester_message = (
                 f"Votre demande d'échange avec {swap_request.target_user.name} "

@@ -76,8 +76,10 @@ touching auth flows.
 - Root-level `config.py` is a separate, mostly-legacy module only exercised by
   `tests/unit/test_config.py` and `scripts/validate_config.py`. Don't confuse the two when changing
   configuration — check which one a given caller actually imports (`app.config.X` vs `config`).
-- `config_oidc.py` (`OIDCConfig`) and `config_performance.py` are additional standalone config
-  modules loaded directly by `app/__init__.py` and `app/auth/oidc_auth.py`.
+- `config_oidc.py` (`OIDCConfig`) is an additional standalone config module loaded directly by
+  `app/__init__.py` and `app/auth/oidc_auth.py`. A `config_performance.py` used to exist alongside
+  it but was orphaned (loaded nowhere) and removed — don't reintroduce it under that name without
+  actually wiring it into `create_app()`.
 
 ### Models
 
@@ -113,10 +115,10 @@ Routes in `app/routes/` (both the `main` and `admin` blueprints, split across mu
 in `main.py`/`admin.py`) parse the request, call a service, and turn the result into a
 flash/redirect/JSON response; services call repositories for data access and encapsulate validation
 (e.g. `can_add_shift`) and cross-cutting effects (e.g. shift rebalance after a leave change).
-`app/utils/automation/` (`OnCallAutomation`, `AdvancedShiftAutomation` — the
-generic `ShiftAutomation`/`BusinessRules` engine was removed as dead code, PR #105, see
-`report/` for details) is a pre-existing business-logic layer used directly by services rather than
-being duplicated. `NotificationService` is the one service with no route calling it — it's invoked
+`app/utils/automation/` (`OnCallAutomation`, `AdvancedShiftAutomation` — a previous generic
+`ShiftAutomation`/`BusinessRules` engine was removed as dead code after confirming zero real
+callers; see `report/` for the investigation) is a pre-existing business-logic layer used directly
+by services rather than being duplicated. `NotificationService` is the one service with no route calling it — it's invoked
 by the standalone cron scripts `scripts/send_shift_notifications.py`/`send_oncall_notifications.py`.
 `BackupService` (`app/services/backup_service.py`) is the exception in the other direction — it's
 `app/` code that imports from `scripts/` (`scripts/backup_config.py`/`backup_database.py`), safe
@@ -134,18 +136,23 @@ IP/hostname into links users paste into calendar apps.
 
 `app/utils/` is organized by concern, each a subpackage: `automation/` (shift/on-call
 auto-assignment and business rules — `advanced_shift_automation.py` is the biggest piece),
-`cache/`, `export/` (`ics_exporter.py`), `notifications/` (`email_sender.py` — smtplib/email
-stdlib wrapper for the weekly reminder emails, no Flask-Mail dependency), `security/` (empty since
-Phase 4 — `token_manager.py`/`encryption.py` removed, no real callers), `logging/` (multi-handler
+`export/` (`ics_exporter.py`), `notifications/` (`email_sender.py` — smtplib/email
+stdlib wrapper for the weekly reminder emails, no Flask-Mail dependency), `security/` (empty —
+`token_manager.py`/`encryption.py` were removed after confirming zero real callers), `logging/` (multi-handler
 setup: app/error/http/audit/sql/auth log files, optional syslog, sensitive-data filtering),
 `optimizations/` (single decorator `eager_load`, actively used by admin/dashboard routes),
 `helpers/` (`common_helpers.py` — actively used), plus `health.py` (k8s health endpoints) and
 `prometheus_metrics.py` (gated by `PROMETHEUS_ENABLED`).
 
-Dead code found and removed in Phase 4 (confirmed zero references anywhere before deletion):
+Dead code found and removed (confirmed zero references anywhere before deletion):
 `monitoring/`, `pagination/`, `lazy_loading.py` (785 lines, already excluded from coverage via a
-stale `.coveragerc` entry pointing at pre-Phase-2 flat-file paths), `helpers/env_helpers.py`, and
-`cache/cache_helpers.py`. `optimizations/__init__.py` was trimmed from 14 decorators to just
+stale `.coveragerc` entry pointing at paths from an earlier flat-file layout the models package
+replaced), `helpers/env_helpers.py`, and `cache/` in full (`cache_helpers.py` first, then the rest
+of the subpackage — `cache_manager.py`'s `init_cache()` was called at startup but nothing ever read
+from the cache it built: `get_cache()`/`cache_key()`/the `cached_route` decorator were themselves
+already-confirmed-dead removals from an earlier pass, leaving `init_cache()` with no real caller
+either. Caching is handled externally now (reverse proxy / dedicated cache), not by the app).
+`optimizations/__init__.py` was trimmed from 14 decorators to just
 `eager_load` — the other 13 (`cached_route`, `paginated_route`, `lazy_route`, `measure_time`, etc.)
 were never imported outside that file; `measure_time` even imported a module
 (`app.utils.performance_monitor`) that didn't exist, confirming it had never actually run.
@@ -207,8 +214,9 @@ failed/rolled-back action would be wrong.
 Tailwind CSS 4 + daisyUI 5, both loaded via `cdnjs.cloudflare.com` — no build step: Tailwind runs
 as `tailwindcss-browser` (the official JIT-in-browser compiler), scanning class names at runtime
 instead of being precompiled. There is no `package.json`/npm anywhere in this project; keep it that
-way — the CDN-JIT approach was chosen specifically to avoid introducing a Node toolchain. Bulma was
-fully removed (PR #108); no vendor directory, no `download_vendor_assets.py` — Font Awesome
+way — the CDN-JIT approach was chosen specifically to avoid introducing a Node toolchain. Bulma
+(the previous CSS framework) was fully removed; no vendor directory, no `download_vendor_assets.py`
+— Font Awesome
 (7.2.0, SVG+JS mode, see below) and daisyUI/Tailwind are 100% CDN. `app/static/css/variables.css`
 bridges daisyUI's own `--color-*` custom properties to app-level names (`--app-color-primary`,
 `--bg-primary`, etc.) consumed by the handful of remaining custom CSS files
@@ -218,17 +226,17 @@ light/dark itself via `[data-theme]`, `themes/dark.css` only needs to cover thin
 know about (FullCalendar's own DOM) plus a couple of framework-agnostic accessibility rules
 (focus-visible, reduced-motion).
 
-**Palette : Dracula (thème sombre) / Alucard (thème clair)** (PR #110) — `app/static/css/theme-colors.css`
+**Palette: Dracula (dark theme) / Alucard (light theme)** — `app/static/css/theme-colors.css`
 overrides every daisyUI semantic `--color-*` (not just `--color-primary`) per `[data-theme="dark"|"light"]`,
 sourced 1:1 from the official spec at draculatheme.com/spec (no invented or computed hues; the three
 background levels `--color-base-100/200/300` come straight from the spec's Background/Current Line
 (opaque)/Selection colors). This is still the only way to theme daisyUI under `tailwindcss-browser` —
-it doesn't support `@plugin "daisyui/theme"` or `@theme` (confirmed in real-browser testing: "does not
-support plugins or config files"), so a full custom daisyUI theme via daisyUI's own theming system is
+in a real-browser check it raised "does not support plugins or config files" for both `@plugin
+"daisyui/theme"` and `@theme`, so a full custom daisyUI theme via daisyUI's own theming system is
 not possible here; CSS-variable overrides on `[data-theme=...]` remain the only route. Same file also
 sets shape/depth tokens (`--radius-box`, `--radius-field`, `--radius-selector`, `--depth`, `--noise`) —
-`--depth`/`--noise` support against the cdnjs-pulled daisyUI build was verified empirically (real
-browser, computed-style diffing), not assumed.
+a computed-style diff in a real browser confirmed the cdnjs-pulled daisyUI build honors
+`--depth`/`--noise`, so they were kept rather than assumed unsupported and dropped.
 
 Font Awesome is loaded in **SVG+JS mode** (`js/all.min.js`, not the CSS+webfont mode) —
 deliberately: cdnjs's `.woff2` files for 7.2.0 are each truncated by exactly one byte (confirmed
@@ -305,21 +313,26 @@ available regardless. Docker: `docker/entrypoint.sh` starts `crond` if `NOTIFICA
 `BACKUP_ENABLED` is true (one shared crond, `docker/crontabs/appuser` always has both scripts'
 entries — each script no-ops internally if its own flag is off).
 
-`docker/entrypoint.sh` always runs `docker/init_database.py` (`db.create_all()`) on container start,
-even when `/app/data/app.db` already exists — this is the *only* schema-migration mechanism in
-production (no Alembic/Flask-Migrate, see "Layered architecture" above): `create_all()` only adds
-tables that don't exist yet, so it's safe to run unconditionally, but it's also the only thing that
-will ever create a table added by a later release (e.g. `swap_request`) on an already-deployed
-volume — skipping it when the DB file exists (the earlier behavior) left upgraded deployments with
-"no such table" errors on the new feature's first request. The plain `python run.py` path doesn't
-have this gap: `setup_database()` runs unconditionally on every start there already (see
-`check_database_integrity()`/`setup_database()` in `run.py`).
+Schema migrations are handled by Alembic (`migrations/`, via Flask-Migrate). `run.py::setup_database()`
+calls `flask_migrate.upgrade()` unconditionally on every start (both the plain `python run.py` path
+and `docker/entrypoint.sh` → `docker/init_database.py`, which now delegates to `setup_database()`
+instead of calling `db.create_all()` directly) — safe to run every time: on a fully up-to-date
+database it's a no-op. On a database predating Alembic's adoption (tables already created by the old
+`db.create_all()`-only path, no `alembic_version` table yet), `setup_database()` first runs
+`db.create_all()` once more to backfill anything still missing (idempotent), then stamps the
+baseline revision (`run.py::BASELINE_REVISION`, matching `migrations/versions/da2c4dfc1024_*.py`)
+so `upgrade()` only applies what comes after it — no manual `alembic stamp`/`upgrade` step required
+on deploy, on a fresh install or an existing one. `check_database_integrity()` in `run.py` remains a
+separate, simpler table-existence check (used by tests), no longer part of the startup path.
+`TestingConfig` bypasses migrations entirely — `tests/conftest.py`'s `test_app` fixture calls
+`db.drop_all()`/`db.create_all()` directly for speed, since tests don't need to exercise the upgrade
+path itself.
 
 ## Testing conventions
 
 `tests/conftest.py` defines the fixture chain: `test_app` builds a fresh app via
 `create_app('app.config.TestingConfig')` per test function (drops/recreates all tables, disables
-Talisman/OIDC/rate-limiting/cache), `client` wraps its test client, and `logged_in_client` logs in
+Talisman/OIDC/rate-limiting), `client` wraps its test client, and `logged_in_client` logs in
 an admin user via a real POST to `/login`. Model fixtures (`test_user`, `admin_user`, `test_shift`,
 `test_leave`, `test_oncall`, `test_shift_type`, etc.) build on `test_app`/`test_group`. Reuse these
 fixtures rather than constructing app instances manually in new tests.
@@ -330,8 +343,9 @@ permissions/redirects/data) and `test_browser_flows.py` drives real Chromium via
 (`tests/e2e/conftest.py`'s `live_server_url` fixture runs the app in a thread with Talisman/CSP
 *actually* active — not `TestingConfig`'s Talisman-skip). The browser layer exists specifically to
 catch CSP/JS/CSS regressions the test client structurally cannot see (it never executes JS or
-applies CSS) — `TestNoConsoleErrors` asserts zero browser console errors across key pages, which is
-how 3 real CSP bugs were found in production before this suite existed (PR #103). Requires
+applies CSS) — `TestNoConsoleErrors` asserts zero browser console errors across key pages; this
+suite is how 3 real CSP bugs (resources silently blocked by the policy, invisible to the test
+client) were caught before shipping. Requires
 `requirements-e2e.txt` + `playwright install chromium`; skips cleanly via `pytest.importorskip` if
 absent, so `make test`/CI never breaks for contributors without a browser installed.
 

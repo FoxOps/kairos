@@ -5,12 +5,22 @@ This module provides the BaseModel class that contains common fields
 and methods for all models in the application.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app import db
 
 
-class BaseModel(db.Model):  # type: ignore[name-defined]  # limitation connue mypy + Flask-SQLAlchemy sans stubs dédiés
+def _utcnow() -> datetime:
+    """datetime.utcnow() is deprecated (Python 3.12+) - used here as a
+    column `default`/`onupdate` (a function reference, not a call), so a
+    plain `datetime.now` isn't enough; the `timezone.utc` argument must be
+    bound. SQLAlchemy's SQLite round-trip strips tzinfo back out on read:
+    the stored value stays a naive UTC datetime exactly as before, only
+    the deprecation warning goes away."""
+    return datetime.now(timezone.utc)
+
+
+class BaseModel(db.Model):  # type: ignore[name-defined]  # known mypy + Flask-SQLAlchemy limitation without dedicated stubs
     """
     Abstract base model with common fields and methods.
 
@@ -26,81 +36,14 @@ class BaseModel(db.Model):  # type: ignore[name-defined]  # limitation connue my
     __abstract__ = True
 
     id = db.Column(db.Integer, primary_key=True)
-    created_at = db.Column(
-        db.DateTime, nullable=False, default=datetime.utcnow, index=True
-    )
+    created_at = db.Column(db.DateTime, nullable=False, default=_utcnow, index=True)
     updated_at = db.Column(
         db.DateTime,
         nullable=False,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=_utcnow,
+        onupdate=_utcnow,
         index=True,
     )
-
-    def save(self) -> None:
-        """Save the model instance to the database."""
-        db.session.add(self)
-        db.session.commit()
-
-    def delete(self) -> None:
-        """Delete the model instance from the database."""
-        db.session.delete(self)
-        db.session.commit()
-
-    def update(self, **kwargs) -> None:
-        """
-        Update the model instance with the provided keyword arguments.
-
-        Args:
-            **kwargs: Fields to update and their new values
-        """
-        for key, value in kwargs.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
-        db.session.commit()
-
-    @classmethod
-    def get_by_id(cls, id: int):
-        """
-        Get a model instance by its ID.
-
-        Args:
-            id: The ID of the model instance
-
-        Returns:
-            The model instance or None if not found
-        """
-        return cls.query.get(id)
-
-    @classmethod
-    def get_all(cls):
-        """
-        Get all instances of the model.
-
-        Returns:
-            List of all model instances
-        """
-        return cls.query.all()
-
-    @classmethod
-    def get_first(cls):
-        """
-        Get the first instance of the model.
-
-        Returns:
-            The first model instance or None if none exist
-        """
-        return cls.query.first()
-
-    @classmethod
-    def count(cls) -> int:
-        """
-        Count the number of instances of the model.
-
-        Returns:
-            The count of model instances
-        """
-        return cls.query.count()
 
     def to_dict(self) -> dict:
         """

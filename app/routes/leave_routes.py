@@ -1,6 +1,6 @@
 """
-Routes pour les congés (planning, CRUD, API drag & drop). Enregistrées
-sur main_bp (cf. app/routes/main.py).
+Routes for leaves (schedule, CRUD, drag & drop API). Registered on
+main_bp (see app/routes/main.py).
 """
 
 from datetime import datetime
@@ -55,7 +55,7 @@ def add_leave():
         try:
             user_id = int(user_id)
 
-            # Vérification des permissions : un utilisateur normal ne peut ajouter que ses propres congés
+            # Permission check: a regular user may only add their own leave
             if not current_user.is_admin and current_user.id != user_id:
                 flash(
                     "❌ Vous ne pouvez ajouter des congés que pour vous-même.", "danger"
@@ -102,12 +102,12 @@ def add_leave():
             db.session.rollback()
             flash(f"Erreur : {str(e)}", "danger")
 
-    # Un utilisateur normal ne voit que lui-même dans la liste
+    # A regular user only sees themselves in the list
     users = UserService.visible_users_for_leave(current_user)
     return render_template("add_leave.html", users=users)
 
 
-@main_bp.route("/leave/delete/<int:leave_id>")
+@main_bp.route("/leave/delete/<int:leave_id>", methods=["POST"])
 @login_required
 @user_owns_resource(Leave, "leave_id")
 def delete_leave(leave_id):
@@ -137,12 +137,12 @@ def delete_leave(leave_id):
 @main_bp.route("/api/leave/<int:leave_id>", methods=["DELETE"])
 @login_required
 def api_delete_leave(leave_id):
-    """API endpoint pour supprimer un congé."""
+    """API endpoint to delete a leave."""
     leave_obj = LeaveRepository.get_by_id(leave_id)
     if not leave_obj:
         return jsonify({"success": False, "error": "Congé non trouvé"}), 404
 
-    # Vérification des permissions : un utilisateur normal ne peut supprimer que ses propres congés
+    # Permission check: a regular user may only delete their own leave
     if not current_user.is_admin and current_user.id != leave_obj.user_id:
         return (
             jsonify(
@@ -171,12 +171,12 @@ def api_delete_leave(leave_id):
 @main_bp.route("/api/leave/<int:leave_id>", methods=["PATCH", "PUT"])
 @login_required
 def api_update_leave(leave_id):
-    """API endpoint pour mettre à jour un congé via drag & drop."""
+    """API endpoint to update a leave via drag & drop."""
     leave_obj = LeaveRepository.get_by_id(leave_id)
     if not leave_obj:
         return jsonify({"success": False, "error": "Congé non trouvé"}), 404
 
-    # Vérification des permissions : un utilisateur normal ne peut modifier que ses propres congés
+    # Permission check: a regular user may only modify their own leave
     if not current_user.is_admin and current_user.id != leave_obj.user_id:
         return (
             jsonify(

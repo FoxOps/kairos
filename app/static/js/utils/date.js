@@ -1,11 +1,11 @@
 /**
- * Fonctions de formatage de dates (locale fr-FR).
+ * Date formatting helpers (fr-FR locale).
  */
 
 /**
- * Formate une date pour l'affichage.
- * @param {Date|string} date - Date à formater
- * @returns {string} Date formatée
+ * Format a date for display.
+ * @param {Date|string} date - Date to format
+ * @returns {string} Formatted date
  */
 export function formatDate(date) {
     if (!date) return '';
@@ -18,9 +18,9 @@ export function formatDate(date) {
 }
 
 /**
- * Formate une heure pour l'affichage.
- * @param {Date|string} date - Date à formater
- * @returns {string} Heure formatée
+ * Format a time for display.
+ * @param {Date|string} date - Date to format
+ * @returns {string} Formatted time
  */
 export function formatTime(date) {
     if (!date) return '';
@@ -32,9 +32,9 @@ export function formatTime(date) {
 }
 
 /**
- * Formate une date et heure pour l'affichage.
- * @param {Date|string} date - Date à formater
- * @returns {string} Date et heure formatées
+ * Format a date and time for display.
+ * @param {Date|string} date - Date to format
+ * @returns {string} Formatted date and time
  */
 export function formatDateTime(date) {
     if (!date) return '';

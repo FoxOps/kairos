@@ -37,10 +37,6 @@ class TestingConfig(Config):
     # Disable CSRF for tests (can be enabled if needed)
     WTF_CSRF_ENABLED: bool = False
 
-    # Cache settings for tests
-    CACHE_TYPE: str = "simple"
-    CACHE_DEFAULT_TIMEOUT: int = 1  # Very short timeout for tests
-
     # Logging configuration
     LOG_LEVEL: str = "WARNING"
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

@@ -1,5 +1,5 @@
 """
-Tests unitaires pour les fonctions dans run.py
+Unit tests for the functions in run.py
 """
 
 from app import db
@@ -13,10 +13,10 @@ from run import (
 
 
 class TestDefaultShiftTypes:
-    """Tests pour DEFAULT_SHIFT_TYPES."""
+    """Tests for DEFAULT_SHIFT_TYPES."""
 
     def test_default_shift_types_structure(self):
-        """Test que DEFAULT_SHIFT_TYPES a la bonne structure."""
+        """Test that DEFAULT_SHIFT_TYPES has the right structure."""
         assert len(DEFAULT_SHIFT_TYPES) == 3
 
         for shift_type in DEFAULT_SHIFT_TYPES:
@@ -31,13 +31,13 @@ class TestDefaultShiftTypes:
             assert isinstance(shift_type["end_hour"], int)
 
     def test_default_shift_types_values(self):
-        """Test les valeurs spécifiques de DEFAULT_SHIFT_TYPES."""
+        """Test the specific values of DEFAULT_SHIFT_TYPES."""
         names = [st["name"] for st in DEFAULT_SHIFT_TYPES]
         assert "morning" in names
         assert "afternoon" in names
         assert "evening" in names
 
-        # Vérifier les heures
+        # Check the hours
         for shift_type in DEFAULT_SHIFT_TYPES:
             assert 0 <= shift_type["start_hour"] < 24
             assert 0 <= shift_type["end_hour"] < 24
@@ -45,15 +45,15 @@ class TestDefaultShiftTypes:
 
 
 class TestDatabaseIntegrity:
-    """Tests pour check_database_integrity."""
+    """Tests for check_database_integrity."""
 
     def test_check_database_integrity_valid(self, test_app):
-        """Test avec une base de données valide."""
+        """Test with a valid database."""
         with test_app.app_context():
-            # Créer toutes les tables nécessaires
+            # Create every required table
             db.create_all()
 
-            # Ajouter les types de shifts par défaut
+            # Add the default shift types
             for shift_type_data in DEFAULT_SHIFT_TYPES:
                 shift_type = ShiftType(
                     name=shift_type_data["name"],
@@ -68,9 +68,9 @@ class TestDatabaseIntegrity:
             assert result is True
 
     def test_check_database_integrity_missing_table(self, test_app):
-        """Test avec une table manquante."""
+        """Test with a missing table."""
         with test_app.app_context():
-            # Ne créer aucune table
+            # Create no tables at all
             db.drop_all()
 
             result = check_database_integrity()
@@ -78,16 +78,16 @@ class TestDatabaseIntegrity:
 
 
 class TestInitializeDatabase:
-    """Tests pour initialize_database."""
+    """Tests for initialize_database."""
 
     def test_initialize_database_creates_tables(self, test_app):
-        """Test que l'initialisation crée toutes les tables."""
+        """Test that initialization creates every table."""
         with test_app.app_context():
             db.drop_all()
             setup_database()
             create_default_data()
 
-            # Vérifier que les tables existent
+            # Check that the tables exist
             from sqlalchemy import inspect
 
             inspector = inspect(db.engine)
@@ -103,13 +103,13 @@ class TestInitializeDatabase:
             assert "app_notification" in tables
 
     def test_initialize_database_creates_default_shift_types(self, test_app):
-        """Test que l'initialisation crée les types de shifts par défaut."""
+        """Test that initialization creates the default shift types."""
         with test_app.app_context():
             db.drop_all()
             setup_database()
             create_default_data()
 
-            # Vérifier que les types de shifts par défaut existent
+            # Check that the default shift types exist
             shift_types = ShiftType.query.all()
             assert len(shift_types) == len(DEFAULT_SHIFT_TYPES)
 
@@ -124,12 +124,12 @@ class TestInitializeDatabase:
 
 
 class TestCreateDefaultData:
-    """Tests pour create_default_data."""
+    """Tests for create_default_data."""
 
     def test_create_default_data_creates_group(self, test_app):
-        """Test que create_default_data crée un groupe par défaut."""
+        """Test that create_default_data creates a default group."""
         with test_app.app_context():
-            # S'assurer qu'aucun groupe n'existe
+            # Make sure no group exists
             Group.query.delete()
             db.session.commit()
 
@@ -142,9 +142,9 @@ class TestCreateDefaultData:
             assert group.is_part_of_oncall is True
 
     def test_create_default_data_creates_admin_user(self, test_app):
-        """Test que create_default_data crée un utilisateur admin."""
+        """Test that create_default_data creates an admin user."""
         with test_app.app_context():
-            # S'assurer qu'aucun utilisateur n'existe
+            # Make sure no user exists
             User.query.delete()
             Group.query.delete()
             db.session.commit()
@@ -157,16 +157,16 @@ class TestCreateDefaultData:
             assert user.email == "admin@leviia.local"
             assert user.is_admin is True
 
-            # Vérifier que le mot de passe est correct
+            # Check that the password is correct
 
     def test_create_default_data_does_not_duplicate(self, test_app):
-        """Test que create_default_data ne duplique pas les données."""
+        """Test that create_default_data doesn't duplicate data."""
         with test_app.app_context():
-            # Créer un groupe et un utilisateur - le nom du groupe doit
-            # correspondre à celui que create_default_data() recherche
-            # ("Defaut" par défaut), sinon le test ne vérifie rien : il
-            # créerait juste un second groupe sans jamais exercer la
-            # logique de non-duplication.
+            # Create a group and a user - the group name must match the
+            # one create_default_data() looks for ("Defaut" by default),
+            # otherwise this test verifies nothing: it would just create
+            # a second group without ever exercising the
+            # no-duplication logic.
             group = Group(
                 name="Defaut", is_part_of_schedule=True, is_part_of_oncall=True
             )
@@ -186,25 +186,25 @@ class TestCreateDefaultData:
             initial_group_count = Group.query.count()
             initial_user_count = User.query.count()
 
-            # Appeler create_default_data
+            # Call create_default_data
             create_default_data()
 
-            # Vérifier qu'aucun duplicata n'a été créé
+            # Check that no duplicate was created
             assert Group.query.count() == initial_group_count
             assert User.query.count() == initial_user_count
 
 
 class TestSetupDatabase:
-    """Tests pour setup_database."""
+    """Tests for setup_database."""
 
     def test_setup_database_empty(self, test_app):
-        """Test setup_database avec une base vide."""
+        """Test setup_database with an empty database."""
         with test_app.app_context():
             db.drop_all()
 
             setup_database()
 
-            # Vérifier que les tables existent
+            # Check that the tables exist
             from sqlalchemy import inspect
 
             inspector = inspect(db.engine)
@@ -214,14 +214,18 @@ class TestSetupDatabase:
             assert "user" in tables
 
     def test_setup_database_with_valid_structure(self, test_app):
-        """Test setup_database avec une structure valide."""
+        """Test setup_database against a pre-Alembic database (tables
+        already created by db.create_all(), no alembic_version table)."""
         with test_app.app_context():
             db.create_all()
 
-            # setup_database ne devrait rien faire
+            # Stamps the baseline revision and applies anything after
+            # it - a no-op on the schema either way since it already
+            # matches current models, but no longer a literal no-op
+            # call (it does touch the DB to record the stamp).
             setup_database()
 
-            # Vérifier que les tables existent toujours
+            # Check that the tables still exist
             from sqlalchemy import inspect
 
             inspector = inspect(db.engine)

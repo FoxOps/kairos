@@ -1,5 +1,5 @@
 """
-Tests pour le module d'automatisation des astreintes et des shifts.
+Tests for the on-call and shift automation module.
 """
 
 from datetime import date, datetime, timedelta
@@ -11,15 +11,16 @@ from app.utils.automation import (
     OnCallAutomation,
     get_automation_status,
 )
+from app.utils.automation.oncall_automation import AvailabilityIndex
 
 
 class TestOnCallAutomation:
-    """Tests pour l'automatisation des astreintes."""
+    """Tests for the on-call automation."""
 
     def test_get_eligible_users(self, test_app, test_group, test_user, second_user):
-        """Test la récupération des utilisateurs éligibles pour les astreintes."""
+        """Test fetching the users eligible for on-calls."""
         with test_app.app_context():
-            # Créer un troisième utilisateur dans le même groupe
+            # Create a third user in the same group
             user3 = User(
                 name="Third User",
                 email="third@test.com",
@@ -31,18 +32,18 @@ class TestOnCallAutomation:
             db.session.commit()
 
             eligible_users = OnCallAutomation.get_eligible_users()
-            # Tous les utilisateurs du groupe sont éligibles (is_part_of_oncall=True)
+            # Every user in the group is eligible (is_part_of_oncall=True)
             assert len(eligible_users) == 3
             assert all(user.group.is_part_of_oncall for user in eligible_users)
 
     def test_get_rotation_order_default(
         self, test_app, test_group, test_user, second_user
     ):
-        """Test l'ordre de rotation par défaut (alphabétique)."""
+        """Test the default rotation order (alphabetical)."""
         with test_app.app_context():
-            # Créer un troisième utilisateur
+            # Create a third user
             user3 = User(
-                name="Zebra User",  # Z pour être dernier alphabétiquement
+                name="Zebra User",  # Z to be last alphabetically
                 email="zebra@test.com",
                 password_hash="zebra123",
                 is_admin=False,
@@ -53,17 +54,17 @@ class TestOnCallAutomation:
 
             rotation_order = OnCallAutomation.get_rotation_order()
             assert len(rotation_order) == 3
-            # Vérifier que l'ordre est alphabétique
-            # Note: Admin User commence par 'A', Second User par 'S', Zebra User par 'Z'
+            # Check that the order is alphabetical
+            # Note: Admin User starts with 'A', Second User with 'S', Zebra User with 'Z'
             names = [u.name for u in rotation_order]
             assert names == sorted(names)
 
     def test_get_rotation_order_custom(
         self, test_app, test_group, test_user, second_user
     ):
-        """Test l'ordre de rotation personnalisé."""
+        """Test a custom rotation order."""
         with test_app.app_context():
-            # Créer un troisième utilisateur
+            # Create a third user
             user3 = User(
                 name="Third User",
                 email="third@test.com",
@@ -74,7 +75,7 @@ class TestOnCallAutomation:
             db.session.add(user3)
             db.session.commit()
 
-            # Ordre personnalisé : second_user, user3, test_user
+            # Custom order: second_user, user3, test_user
             custom_order = [second_user.id, user3.id, test_user.id]
             rotation_order = OnCallAutomation.get_rotation_order(custom_order)
 
@@ -86,9 +87,9 @@ class TestOnCallAutomation:
     def test_find_next_available_user(
         self, test_app, test_group, test_user, second_user
     ):
-        """Test la recherche du prochain utilisateur disponible."""
+        """Test finding the next available user."""
         with test_app.app_context():
-            # Créer un troisième utilisateur
+            # Create a third user
             user3 = User(
                 name="Third User",
                 email="third@test.com",
@@ -101,8 +102,8 @@ class TestOnCallAutomation:
 
             rotation_order = [test_user, second_user, user3]
 
-            # Créer une astreinte existante pour test_user
-            start_time = datetime(2024, 1, 5, 21, 0)  # Vendredi 5 janvier 2024 à 21h
+            # Create an existing on-call for test_user
+            start_time = datetime(2024, 1, 5, 21, 0)  # Friday, January 5, 2024 at 21h
             end_time = start_time + timedelta(days=7, hours=-14)
 
             oncall = OnCall(
@@ -111,25 +112,26 @@ class TestOnCallAutomation:
             db.session.add(oncall)
             db.session.commit()
 
-            # Trouver un utilisateur disponible pour la même période
+            # Find an available user for the same period
+            index = AvailabilityIndex([test_user.id, second_user.id, user3.id])
             available_user = OnCallAutomation.find_next_available_user(
-                rotation_order, start_time, end_time
+                rotation_order, start_time, end_time, index
             )
 
-            # test_user n'est pas disponible, donc second_user devrait être retourné
+            # test_user isn't available, so second_user should be returned
             assert available_user is not None
             assert available_user.id == second_user.id
 
-            # Nettoyer
+            # Clean up
             db.session.delete(oncall)
             db.session.commit()
 
     def test_generate_oncall_schedule_dry_run(
         self, test_app, test_group, test_user, second_user
     ):
-        """Test la génération des astreintes en mode dry run."""
+        """Test generating on-calls in dry-run mode."""
         with test_app.app_context():
-            # Créer un troisième utilisateur
+            # Create a third user
             user3 = User(
                 name="Third User",
                 email="third@test.com",
@@ -140,18 +142,18 @@ class TestOnCallAutomation:
             db.session.add(user3)
             db.session.commit()
 
-            start_date = date(2024, 1, 5)  # Vendredi
-            end_date = date(2024, 2, 23)  # 8 semaines plus tard
+            start_date = date(2024, 1, 5)  # Friday
+            end_date = date(2024, 2, 23)  # 8 weeks later
 
             oncalls, messages = OnCallAutomation.generate_oncall_schedule(
                 start_date, end_date, dry_run=True
             )
 
-            # Devrait générer 7 ou 8 astreintes selon la date de fin exacte
+            # Should generate 7 or 8 on-calls depending on the exact end date
             assert len(oncalls) >= 7
             assert len(messages) > 0
 
-            # Vérifier que les astreintes sont bien espacées d'une semaine
+            # Check that the on-calls are spaced one week apart
             for i in range(1, len(oncalls)):
                 assert oncalls[i].start_time == oncalls[i - 1].start_time + timedelta(
                     days=7
@@ -160,9 +162,9 @@ class TestOnCallAutomation:
     def test_generate_oncall_schedule_with_rotation(
         self, test_app, test_group, test_user, second_user
     ):
-        """Test la génération avec un ordre de rotation personnalisé."""
+        """Test generation with a custom rotation order."""
         with test_app.app_context():
-            # Créer un troisième utilisateur
+            # Create a third user
             user3 = User(
                 name="Third User",
                 email="third@test.com",
@@ -173,32 +175,33 @@ class TestOnCallAutomation:
             db.session.add(user3)
             db.session.commit()
 
-            start_date = date(2024, 1, 5)  # Vendredi
-            end_date = date(2024, 1, 19)  # 2 semaines plus tard
+            start_date = date(2024, 1, 5)  # Friday
+            end_date = date(2024, 1, 19)  # 2 weeks later
 
-            # Ordre personnalisé : second_user, test_user, user3
+            # Custom order: second_user, test_user, user3
             rotation_order = [second_user.id, test_user.id, user3.id]
 
             oncalls, messages = OnCallAutomation.generate_oncall_schedule(
                 start_date, end_date, rotation_order, dry_run=True
             )
 
-            assert len(oncalls) == 2
-            # La première astreinte devrait être pour second_user
+            # end_date inclusive: 3 Fridays (01/05, 01/12, 01/19).
+            assert len(oncalls) == 3
+            # The first on-call should be for second_user
             assert oncalls[0].user_id == second_user.id
-            # La deuxième astreinte devrait être pour test_user
+            # The second on-call should be for test_user
             assert oncalls[1].user_id == test_user.id
 
 
 class TestFullScheduleGeneration:
-    """Tests pour la génération complète du schedule."""
+    """Tests for the full schedule generation."""
 
     def test_generate_full_schedule_dry_run(
         self, test_app, test_group, test_user, second_user, test_shift_type
     ):
-        """Test la génération complète en mode dry run."""
+        """Test the full generation in dry-run mode."""
         with test_app.app_context():
-            # Créer un troisième utilisateur
+            # Create a third user
             user3 = User(
                 name="Third User",
                 email="third@test.com",
@@ -209,12 +212,12 @@ class TestFullScheduleGeneration:
             db.session.add(user3)
             db.session.commit()
 
-            start_date = date(2024, 1, 5)  # Vendredi
-            end_date = date(2024, 1, 19)  # 2 semaines plus tard
+            start_date = date(2024, 1, 5)  # Friday
+            end_date = date(2024, 1, 19)  # 2 weeks later
 
-            # AdvancedShiftAutomation.generate_full_schedule ne génère que des shifts
-            # (jours ouvrés) ; les astreintes sont générées séparément par
-            # OnCallAutomation.generate_oncall_schedule.
+            # AdvancedShiftAutomation.generate_full_schedule only
+            # generates shifts (business days); on-calls are generated
+            # separately by OnCallAutomation.generate_oncall_schedule.
             shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
                 start_date, end_date, dry_run=True
             )
@@ -225,12 +228,13 @@ class TestFullScheduleGeneration:
             oncalls, oncall_messages = OnCallAutomation.generate_oncall_schedule(
                 start_date, end_date, dry_run=True
             )
-            assert len(oncalls) == 2
+            # end_date inclusive: 3 Fridays (01/05, 01/12, 01/19).
+            assert len(oncalls) == 3
 
     def test_get_automation_status(self, test_app, test_group, test_user, second_user):
-        """Test la récupération de l'état de l'automatisation."""
+        """Test fetching the automation status."""
         with test_app.app_context():
-            # Créer un troisième utilisateur
+            # Create a third user
             user3 = User(
                 name="Third User",
                 email="third@test.com",
@@ -249,18 +253,18 @@ class TestFullScheduleGeneration:
             assert "shift_eligible_users" in status
             assert "next_available_oncall_date" in status
 
-            # Vérifier les valeurs
+            # Check the values
             assert status["oncall_eligible_users"] == 3
             assert status["shift_eligible_users"] == 3
 
 
 class TestEdgeCases:
-    """Tests pour les cas particuliers."""
+    """Tests for edge cases."""
 
     def test_generate_oncall_no_eligible_users(self, test_app):
-        """Test la génération d'astreintes sans utilisateurs éligibles."""
+        """Test generating on-calls with no eligible users."""
         with test_app.app_context():
-            # Créer un groupe sans is_part_of_oncall
+            # Create a group without is_part_of_oncall
             group = Group(
                 name="No OnCall", is_part_of_schedule=True, is_part_of_oncall=False
             )
@@ -280,9 +284,9 @@ class TestEdgeCases:
     def test_generate_oncall_with_leave_conflict(
         self, test_app, test_group, test_user, second_user
     ):
-        """Test la génération d'astreintes avec un conflit de congé."""
+        """Test generating on-calls with a leave conflict."""
         with test_app.app_context():
-            # Créer un troisième utilisateur
+            # Create a third user
             user3 = User(
                 name="Third User",
                 email="third@test.com",
@@ -293,7 +297,7 @@ class TestEdgeCases:
             db.session.add(user3)
             db.session.commit()
 
-            # Créer un congé pour test_user
+            # Create a leave for test_user
             leave = Leave(
                 user_id=test_user.id,
                 start_date=date(2024, 1, 5),
@@ -302,17 +306,23 @@ class TestEdgeCases:
             db.session.add(leave)
             db.session.commit()
 
-            start_date = date(2024, 1, 5)  # Vendredi
-            end_date = date(2024, 1, 19)  # 2 semaines plus tard
+            start_date = date(2024, 1, 5)  # Friday
+            # Bounded to the end of the leave (not 2 weeks after like the
+            # other tests): beyond that, test_user legitimately becomes
+            # assignable again once their leave ends - this test
+            # specifically checks the exclusion DURING the leave, not
+            # beyond it.
+            end_date = date(2024, 1, 12)
 
             oncalls, messages = OnCallAutomation.generate_oncall_schedule(
                 start_date, end_date, dry_run=True
             )
 
-            # Devrait générer 2 astreintes, mais test_user ne devrait pas être assigné
+            # end_date inclusive: 2 Fridays (01/05, 01/12), both covered
+            # by test_user's leave.
             assert len(oncalls) == 2
             assert all(oncall.user_id != test_user.id for oncall in oncalls)
 
-            # Nettoyer
+            # Clean up
             db.session.delete(leave)
             db.session.commit()

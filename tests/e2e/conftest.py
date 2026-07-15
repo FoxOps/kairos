@@ -1,14 +1,13 @@
 """
-Fixtures pour les tests E2E navigateur réel (test_browser_flows.py).
+Fixtures for the real-browser E2E tests (test_browser_flows.py).
 
-Ce module ne doit jamais faire échouer la collecte de tests/e2e/ dans
-son ensemble si playwright n'est pas installé - test_user_flows.py (E2E
-client de test Flask, sans navigateur) doit continuer à tourner
-normalement dans cet environnement. C'est pourquoi l'import de
-playwright n'est pas fait au niveau module ici : chaque fixture qui en
-a besoin fait son propre `pytest.importorskip`, ce qui ne skippe que
-les tests qui la demandent (test_browser_flows.py), pas le reste du
-dossier e2e/.
+This module must never make collecting tests/e2e/ as a whole fail if
+playwright isn't installed - test_user_flows.py (E2E via the Flask test
+client, no browser) must keep running normally in this environment.
+That's why playwright isn't imported at module level here: every
+fixture that needs it does its own `pytest.importorskip`, which only
+skips the tests that request it (test_browser_flows.py), not the rest
+of the e2e/ directory.
 """
 
 import os
@@ -20,14 +19,14 @@ import pytest
 
 
 def _free_port() -> int:
-    """Trouve un port TCP libre sur localhost."""
+    """Find a free TCP port on localhost."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))
         return s.getsockname()[1]
 
 
 def _wait_until_up(host: str, port: int, timeout: float = 10.0) -> None:
-    """Attend qu'un port TCP accepte des connexions, ou lève TimeoutError."""
+    """Wait until a TCP port accepts connections, or raise TimeoutError."""
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         try:
@@ -35,21 +34,23 @@ def _wait_until_up(host: str, port: int, timeout: float = 10.0) -> None:
                 return
         except OSError:
             time.sleep(0.1)
-    raise TimeoutError(f"Serveur non démarré après {timeout}s sur {host}:{port}")
+    raise TimeoutError(f"Server did not start after {timeout}s on {host}:{port}")
 
 
 ADMIN_EMAIL = "e2e-admin@leviia.local"
-ADMIN_PASSWORD = "e2e-password-123"  # noqa: S105 - identifiant de test synthétique, pas un vrai secret
+ADMIN_PASSWORD = (
+    "e2e-password-123"  # noqa: S105 - synthetic test credential, not a real secret
+)
 
 
 @pytest.fixture(scope="module")
 def live_server_url():
-    """Lance un vrai serveur Flask (thread, port libre) avec Talisman
-    réellement actif - pas TestingConfig, qui désactive Talisman et donc
-    la CSP. Sans ça, les bugs CSP resteraient invisibles même avec un
-    vrai navigateur (voir report/E2E Playwright - Tests navigateur
-    réel.md pour le contexte : c'est exactement le point de cette suite
-    de tests).
+    """Launch a real Flask server (thread, free port) with Talisman
+    actually active - not TestingConfig, which disables Talisman and
+    therefore the CSP. Without this, CSP bugs would stay invisible even
+    with a real browser (see report/E2E Playwright - Tests navigateur
+    réel.md for the context: that's exactly the point of this test
+    suite).
     """
     pytest.importorskip("playwright")
 
@@ -59,8 +60,8 @@ def live_server_url():
     from app.models import Group, User
 
     app = create_app("app.config.TestingConfig")
-    # CSRF désactivé ici : on teste le rendu/comportement navigateur
-    # (JS, CSS, CSP), pas la protection CSRF - déjà couverte par
+    # CSRF disabled here: this tests browser rendering/behavior (JS,
+    # CSS, CSP), not CSRF protection - already covered by
     # tests/integration/test_security.py.
     app.config["WTF_CSRF_ENABLED"] = False
     app.config["TALISMAN_FORCE_HTTPS"] = True
@@ -104,16 +105,16 @@ def live_server_url():
 
     yield base_url
 
-    # Thread démon : s'arrête avec le process de test, pas de teardown
-    # explicite nécessaire (app.run() bloquant n'a pas de méthode
-    # d'arrêt propre côté Werkzeug dev server).
+    # Daemon thread: stops with the test process, no explicit teardown
+    # needed (the blocking app.run() has no clean stop method on the
+    # Werkzeug dev server side).
 
 
 @pytest.fixture
 def logged_in_page(live_server_url, page):
-    """Page Playwright déjà connectée en admin (formulaire réel, pas de
-    cookie injecté directement - vérifie que le flux de login fonctionne
-    vraiment dans le navigateur)."""
+    """A Playwright page already logged in as admin (a real form, no
+    directly-injected cookie - this verifies the login flow actually
+    works in the browser)."""
     page.goto(f"{live_server_url}/login")
     page.fill('input[name="email"]', ADMIN_EMAIL)
     page.fill('input[name="password"]', ADMIN_PASSWORD)
@@ -124,14 +125,14 @@ def logged_in_page(live_server_url, page):
 
 @pytest.fixture(scope="module")
 def oidc_live_servers():
-    """Lance un vrai serveur Flask (l'app) ET un faux fournisseur OIDC
-    (tests/e2e/oidc_mock_provider.py), tous deux dans des threads sur des
-    ports libres, pour exercer le flux SSO complet via un vrai navigateur
-    - redirection vers l'IdP, vraie page de login avec un clic, retour
-    avec un code, échanges serveur-à-serveur (découverte, token,
-    userinfo), établissement de la session, tout comme un IdP réel.
+    """Launch a real Flask server (the app) AND a fake OIDC provider
+    (tests/e2e/oidc_mock_provider.py), both in threads on free ports, to
+    exercise the full SSO flow through a real browser - redirect to the
+    IdP, a real login page with a click, return with a code,
+    server-to-server exchanges (discovery, token, userinfo), session
+    establishment, just like a real IdP.
 
-    Renvoie (app_base_url, idp_base_url).
+    Returns (app_base_url, idp_base_url).
     """
     pytest.importorskip("playwright")
 
@@ -171,10 +172,11 @@ def oidc_live_servers():
 
     from app import CSP_POLICY, create_app, db
 
-    # create_app() lit OIDCConfig (déjà à jour ci-dessus) et, comme
-    # OIDC_ENABLED+is_configured() sont vrais, appelle oidc_auth.init_app()
-    # qui fait une vraie requête HTTP de découverte vers idp_base_url - le
-    # faux fournisseur doit donc déjà tourner à ce stade (fait ci-dessus).
+    # create_app() reads OIDCConfig (already up to date above) and,
+    # since OIDC_ENABLED+is_configured() are true, calls
+    # oidc_auth.init_app(), which makes a real HTTP discovery request to
+    # idp_base_url - so the fake provider must already be running at
+    # this point (done above).
     app = create_app("app.config.TestingConfig")
     app.config["WTF_CSRF_ENABLED"] = False
     app.config["TALISMAN_FORCE_HTTPS"] = True

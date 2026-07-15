@@ -1,7 +1,8 @@
 """
-Tests ciblés sur les branches d'erreur/edge-case de app/routes/shift_routes.py
-non couvertes par les suites existantes (test_routes.py, test_main_*.py) :
-validation de formulaire, 404, exceptions, API drag & drop complète.
+Targeted tests for the error/edge-case branches of
+app/routes/shift_routes.py not covered by the existing suites
+(test_routes.py, test_main_*.py): form validation, 404s, exceptions,
+the full drag & drop API.
 """
 
 from datetime import date, datetime, timedelta
@@ -139,7 +140,7 @@ class TestAddShiftValidation:
 
 class TestDeleteShift:
     def test_delete_nonexistent_shift_404(self, test_app, logged_in_client):
-        resp = logged_in_client.get("/schedule/delete/999999")
+        resp = logged_in_client.post("/schedule/delete/999999")
         assert resp.status_code == 404
 
     def test_delete_shift_exception_handled(
@@ -149,7 +150,7 @@ class TestDeleteShift:
             "app.routes.shift_routes.ShiftService.delete_shift",
             side_effect=RuntimeError("boom"),
         ):
-            resp = logged_in_client.get(
+            resp = logged_in_client.post(
                 f"/schedule/delete/{test_shift.id}", follow_redirects=True
             )
         assert resp.status_code == 200

@@ -11,26 +11,22 @@ from datetime import datetime, timedelta
 from app import db
 from app.models import OnCall, User
 from app.repositories.oncall_repository import OnCallRepository
-from app.utils.helpers import can_add_oncall
+from app.utils.helpers import _get_overlapping_leave, can_add_oncall
 
 
 class OnCallService:
-    """Logique métier pour les astreintes."""
+    """Business logic for on-call duties."""
 
     @staticmethod
     def list_paginated(page: int, per_page: int):
         return OnCallRepository.list_paginated(page, per_page)
 
     @staticmethod
-    def list_in_window(window_start: datetime, window_end: datetime) -> list[OnCall]:
-        return OnCallRepository.list_in_window(window_start, window_end)
-
-    @staticmethod
     def add_oncall(
         user: User, start_date: datetime
     ) -> tuple[OnCall | None, str | None]:
         """
-        Crée une astreinte d'une semaine à partir du vendredi 21h donné.
+        Create a one-week on-call starting from the given Friday 9pm.
 
         Returns:
             (oncall, error_message)
@@ -89,7 +85,7 @@ class OnCallService:
     def api_update(
         oncall_id: int, new_start: datetime, new_end: datetime
     ) -> tuple[OnCall | None, str | None]:
-        """Met à jour une astreinte depuis l'API drag & drop. Returns (oncall, error_message)."""
+        """Update an on-call from the drag & drop API. Returns (oncall, error_message)."""
         oncall = OnCallRepository.get_by_id(oncall_id)
         if not oncall:
             return None, "Astreinte non trouvée"
@@ -104,6 +100,15 @@ class OnCallService:
             return (
                 None,
                 f"Une astreinte existe déjà pour {oncall.user.name} pendant cette période",
+            )
+
+        # Originally missing: the creation path (add_oncall) goes through
+        # can_add_oncall(), which also checks leave over the period - drag
+        # & drop didn't (same class of bug as ShiftService.api_update).
+        if _get_overlapping_leave(oncall.user_id, new_start.date(), new_end.date()):
+            return (
+                None,
+                f"{oncall.user.name} est en congé pendant cette période",
             )
 
         oncall.start_time = new_start

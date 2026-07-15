@@ -1,39 +1,39 @@
 #!/usr/bin/env python3
 """
-Script de test manuel pour vérifier les corrections du thème visuel.
+Manual test script to check the visual theme fixes.
 
-Ce script permet de tester manuellement les fonctionnalités clés :
-1. Thème sombre (toggle, persistance, préférences système)
-2. Affichage FullCalendar
-3. Cohérence visuelle entre les pages
-4. Accessibilité
+This script lets you manually test the key features:
+1. Dark theme (toggle, persistence, system preferences)
+2. FullCalendar rendering
+3. Visual consistency across pages
+4. Accessibility
 
-Exécution : python tests/manual_test_theme.py
+Run with: python tests/manual_test_theme.py
 """
 
 import os
 import sys
 
-# Ajouter le répertoire parent au path
+# Add the parent directory to the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def print_header(title):
-    """Affiche un en-tête coloré."""
+    """Print a colored header."""
     print(f"\n{'='*60}")
     print(f"  {title}")
     print(f"{'='*60}\n")
 
 
 def print_section(title):
-    """Affiche une section colorée."""
+    """Print a colored section."""
     print(f"\n{'-'*60}")
     print(f"  {title}")
     print(f"{'-'*60}")
 
 
 def print_result(test_name, passed, message=""):
-    """Affiche le résultat d'un test."""
+    """Print a test's result."""
     status = "✅ PASS" if passed else "❌ FAIL"
     print(f"  {status}: {test_name}")
     if message:
@@ -41,13 +41,13 @@ def print_result(test_name, passed, message=""):
 
 
 def test_file_structure():
-    """Teste la structure des fichiers."""
-    print_header("📁 TEST DE LA STRUCTURE DES FICHIERS")
+    """Test the file structure."""
+    print_header("📁 FILE STRUCTURE TEST")
 
     static_folder = os.path.join(os.path.dirname(__file__), "..", "app", "static")
     template_folder = os.path.join(os.path.dirname(__file__), "..", "app", "templates")
 
-    # Vérifier les fichiers CSS
+    # Check the CSS files
     css_files = [
         "css/variables.css",
         "css/base.css",
@@ -56,18 +56,18 @@ def test_file_structure():
         "css/vendor/fullcalendar-overrides.css",
     ]
 
-    print_section("Fichiers CSS")
+    print_section("CSS files")
     for css_file in css_files:
         css_path = os.path.join(static_folder, css_file)
         exists = os.path.exists(css_path)
         print_result(
-            f"{css_file} existe",
+            f"{css_file} exists",
             exists,
-            f"Taille: {os.path.getsize(css_path)} octets" if exists else "",
+            f"Size: {os.path.getsize(css_path)} bytes" if exists else "",
         )
 
-    # Vérifier les fichiers JS
-    print_section("Fichiers JavaScript")
+    # Check the JS files
+    print_section("JavaScript files")
     js_files = [
         "js/main.js",
         "js/theme/theme-manager.js",
@@ -81,10 +81,10 @@ def test_file_structure():
         exists = os.path.exists(js_path)
         size = os.path.getsize(js_path) if exists else 0
         print_result(
-            f"{js_file} existe", exists, f"Taille: {size} octets" if exists else ""
+            f"{js_file} exists", exists, f"Size: {size} bytes" if exists else ""
         )
 
-    # Vérifier les templates
+    # Check the templates
     print_section("Templates")
     template_files = [
         "base.html",
@@ -99,19 +99,19 @@ def test_file_structure():
         exists = os.path.exists(template_path)
         size = os.path.getsize(template_path) if exists else 0
         print_result(
-            f"{template_file} existe",
+            f"{template_file} exists",
             exists,
-            f"Taille: {size} octets" if exists else "",
+            f"Size: {size} bytes" if exists else "",
         )
 
 
 def test_css_content():
-    """Teste le contenu des fichiers CSS."""
-    print_header("🎨 TEST DU CONTENU CSS")
+    """Test the CSS files' content."""
+    print_header("🎨 CSS CONTENT TEST")
 
     static_folder = os.path.join(os.path.dirname(__file__), "..", "app", "static")
 
-    # Vérifier base.css / utilities.css / components/buttons.css
+    # Check base.css / utilities.css / components/buttons.css
     print_section("base.css / utilities.css / components/buttons.css")
     with open(os.path.join(static_folder, "css", "base.css")) as f:
         base_content = f.read()
@@ -121,23 +121,23 @@ def test_css_content():
         buttons_content = f.read()
 
     checks = [
-        (".skip-link" in base_content, "Classe skip-link présente (base.css)"),
+        (".skip-link" in base_content, "skip-link class present (base.css)"),
         (
             ".min-w-180" in utilities_content,
-            "Classe min-w-180 présente (utilities.css)",
+            "min-w-180 class present (utilities.css)",
         ),
-        (".gap-2" in utilities_content, "Classe gap-2 présente (utilities.css)"),
-        (".d-none" in utilities_content, "Classe d-none présente (utilities.css)"),
+        (".gap-2" in utilities_content, "gap-2 class present (utilities.css)"),
+        (".d-none" in utilities_content, "d-none class present (utilities.css)"),
         (
             ".type-tag" in buttons_content,
-            "Classe type-tag présente (components/buttons.css)",
+            "type-tag class present (components/buttons.css)",
         ),
     ]
 
     for passed, description in checks:
         print_result(description, passed)
 
-    # Vérifier vendor/fullcalendar-overrides.css et themes/dark.css
+    # Check vendor/fullcalendar-overrides.css and themes/dark.css
     print_section("vendor/fullcalendar-overrides.css / themes/dark.css")
     fc_styles_path = os.path.join(
         static_folder, "css", "vendor", "fullcalendar-overrides.css"
@@ -149,25 +149,25 @@ def test_css_content():
         dark_content = f.read()
 
     checks = [
-        (".fc-event-shift" in fc_content, "Style fc-event-shift présent"),
-        (".fc-event-oncall" in fc_content, "Style fc-event-oncall présent"),
-        (".fc-event-leave" in fc_content, "Style fc-event-leave présent"),
-        ('[data-theme="dark"]' in dark_content, "Sélecteurs dark theme présents"),
+        (".fc-event-shift" in fc_content, "fc-event-shift style present"),
+        (".fc-event-oncall" in fc_content, "fc-event-oncall style present"),
+        (".fc-event-leave" in fc_content, "fc-event-leave style present"),
+        ('[data-theme="dark"]' in dark_content, "dark theme selectors present"),
     ]
 
     for passed, description in checks:
         print_result(description, passed)
 
-    # Vérifier variables.css
+    # Check variables.css
     print_section("variables.css")
     variables_path = os.path.join(static_folder, "css", "variables.css")
     with open(variables_path) as f:
         content = f.read()
 
     checks = [
-        ("--bulma-grey:", "Variable --bulma-grey présente"),
-        ("--bulma-grey-light:", "Variable --bulma-grey-light présente"),
-        ("--bulma-grey-dark:", "Variable --bulma-grey-dark présente"),
+        ("--bulma-grey:", "--bulma-grey variable present"),
+        ("--bulma-grey-light:", "--bulma-grey-light variable present"),
+        ("--bulma-grey-dark:", "--bulma-grey-dark variable present"),
     ]
 
     for variable, description in checks:
@@ -175,8 +175,8 @@ def test_css_content():
 
 
 def test_js_content():
-    """Teste le contenu du fichier JavaScript."""
-    print_header("⚡ TEST DU CONTENU JAVASCRIPT")
+    """Test the JavaScript file's content."""
+    print_header("⚡ JAVASCRIPT CONTENT TEST")
 
     static_folder = os.path.join(os.path.dirname(__file__), "..", "app", "static")
     theme_manager_path = os.path.join(static_folder, "js", "theme", "theme-manager.js")
@@ -186,12 +186,12 @@ def test_js_content():
 
     print_section("js/theme/theme-manager.js")
     checks = [
-        ("class ThemeManager", "Classe ThemeManager présente"),
-        ("applyTheme", "Fonction applyTheme présente"),
-        ("getSystemTheme", "Fonction getSystemTheme présente"),
-        ("getCurrentTheme", "Fonction getCurrentTheme présente"),
-        ("localStorage", "Utilisation de localStorage présente"),
-        ("prefers-color-scheme", "Support des préférences système présent"),
+        ("class ThemeManager", "ThemeManager class present"),
+        ("applyTheme", "applyTheme function present"),
+        ("getSystemTheme", "getSystemTheme function present"),
+        ("getCurrentTheme", "getCurrentTheme function present"),
+        ("localStorage", "localStorage usage present"),
+        ("prefers-color-scheme", "system-preference support present"),
     ]
 
     for check, description in checks:
@@ -199,23 +199,23 @@ def test_js_content():
 
 
 def test_template_content():
-    """Teste le contenu des templates."""
-    print_header("📜 TEST DU CONTENU DES TEMPLATES")
+    """Test the templates' content."""
+    print_header("📜 TEMPLATE CONTENT TEST")
 
     template_folder = os.path.join(os.path.dirname(__file__), "..", "app", "templates")
 
-    # Vérifier base.html
+    # Check base.html
     print_section("base.html")
     base_path = os.path.join(template_folder, "base.html")
     with open(base_path) as f:
         content = f.read()
 
     checks = [
-        ("css/base.css", "base.css inclus"),
-        ("themes/dark.css", "themes/dark.css inclus"),
-        ("js/main.js", "main.js inclus"),
-        ('type="module"' in content, "main.js chargé en module ES6"),
-        ("function applyTheme" not in content, "Pas de fonction applyTheme inline"),
+        ("css/base.css", "base.css included"),
+        ("themes/dark.css", "themes/dark.css included"),
+        ("js/main.js", "main.js included"),
+        ('type="module"' in content, "main.js loaded as an ES6 module"),
+        ("function applyTheme" not in content, "no inline applyTheme function"),
     ]
 
     for check, description in checks:
@@ -224,7 +224,7 @@ def test_template_content():
         else:
             print_result(description, check in content)
 
-    # Vérifier index.html
+    # Check index.html
     print_section("index.html")
     index_path = os.path.join(template_folder, "index.html")
     with open(index_path) as f:
@@ -233,10 +233,10 @@ def test_template_content():
     checks = [
         (
             "vendor/fullcalendar-overrides.css",
-            "vendor/fullcalendar-overrides.css inclus",
+            "vendor/fullcalendar-overrides.css included",
         ),
-        ("min-w-180", "Classe min-w-180 utilisée"),
-        ('style="min-width: 180px"' not in content, "Pas de style inline min-width"),
+        ("min-w-180", "min-w-180 class used"),
+        ('style="min-width: 180px"' not in content, "no inline min-width style"),
     ]
 
     for check, description in checks:
@@ -245,16 +245,16 @@ def test_template_content():
         else:
             print_result(description, check in content)
 
-    # Vérifier dashboard.html
+    # Check dashboard.html
     print_section("dashboard.html")
     dashboard_path = os.path.join(template_folder, "dashboard.html")
     with open(dashboard_path) as f:
         content = f.read()
 
     checks = [
-        ('class="badge badge-primary"', "Classe badge badge-primary utilisée"),
-        ('class="badge badge-ghost"', "Classe badge badge-ghost utilisée"),
-        ("var(--bulma-grey)" not in content, "Pas de var(--bulma-grey)"),
+        ('class="badge badge-primary"', "badge badge-primary class used"),
+        ('class="badge badge-ghost"', "badge badge-ghost class used"),
+        ("var(--bulma-grey)" not in content, "no var(--bulma-grey)"),
     ]
 
     for check, description in checks:
@@ -265,15 +265,15 @@ def test_template_content():
 
 
 def test_duplicate_detection():
-    """Teste la détection des duplications."""
-    print_header("🔍 TEST DE DÉTECTION DES DUPLICATIONS")
+    """Test the duplication detection."""
+    print_header("🔍 DUPLICATION DETECTION TEST")
 
     template_folder = os.path.join(os.path.dirname(__file__), "..", "app", "templates")
     static_folder = os.path.join(os.path.dirname(__file__), "..", "app", "static")
 
-    print_section("Vérification des duplications CSS")
+    print_section("CSS duplication check")
 
-    # Vérifier que skip-link n'est que dans base.css
+    # Check that skip-link only lives in base.css
     base_styles_path = os.path.join(static_folder, "css", "base.css")
     base_template_path = os.path.join(template_folder, "base.html")
 
@@ -287,10 +287,10 @@ def test_duplicate_detection():
         "<style>" in base_template_content and ".skip-link" in base_template_content
     )
 
-    print_result("skip-link dans base.css", has_skip_link_in_css)
-    print_result("skip-link N'EST PAS inline dans base.html", not has_skip_link_inline)
+    print_result("skip-link in base.css", has_skip_link_in_css)
+    print_result("skip-link is NOT inline in base.html", not has_skip_link_inline)
 
-    # Vérifier que FullCalendar n'est que dans vendor/fullcalendar-overrides.css
+    # Check that FullCalendar only lives in vendor/fullcalendar-overrides.css
     fc_styles_path = os.path.join(
         static_folder, "css", "vendor", "fullcalendar-overrides.css"
     )
@@ -307,14 +307,14 @@ def test_duplicate_detection():
         and ".fc-event-shift" in index_template_content
     )
 
-    print_result("FullCalendar dans vendor/fullcalendar-overrides.css", has_fc_in_css)
-    print_result("FullCalendar N'EST PAS inline dans index.html", not has_fc_inline)
+    print_result("FullCalendar in vendor/fullcalendar-overrides.css", has_fc_in_css)
+    print_result("FullCalendar is NOT inline in index.html", not has_fc_inline)
 
 
 def run_all_tests():
-    """Exécute tous les tests."""
+    """Run every test."""
     print("\n" + "=" * 60)
-    print("  🧪 TESTS MANUELS POUR LE THÈME VISUEL")
+    print("  🧪 MANUAL TESTS FOR THE VISUAL THEME")
     print("=" * 60)
 
     test_file_structure()
@@ -323,15 +323,15 @@ def run_all_tests():
     test_template_content()
     test_duplicate_detection()
 
-    print_header("✅ TOUS LES TESTS MANUELS TERMINÉS")
-    print("\nPour tester les fonctionnalités dynamiques (thème sombre, FullCalendar),")
-    print("veuillez démarrer le serveur et tester manuellement dans le navigateur :")
-    print("  1. Naviguez sur http://localhost:5000")
-    print("  2. Cliquez sur le bouton lune/soleil pour toggler le thème sombre")
-    print("  3. Vérifiez que le thème est persistant entre les pages")
-    print("  4. Vérifiez que FullCalendar s'affiche correctement")
-    print("  5. Testez le skip-link (Tab + Entrée)")
-    print("\nPour exécuter les tests automatiques :")
+    print_header("✅ ALL MANUAL TESTS COMPLETE")
+    print("\nTo test the dynamic features (dark theme, FullCalendar),")
+    print("start the server and test manually in the browser:")
+    print("  1. Navigate to http://localhost:5000")
+    print("  2. Click the moon/sun button to toggle the dark theme")
+    print("  3. Check that the theme persists across pages")
+    print("  4. Check that FullCalendar renders correctly")
+    print("  5. Test the skip-link (Tab + Enter)")
+    print("\nTo run the automated tests:")
     print("  pytest tests/test_dark_theme.py tests/test_theme_fixes.py -v")
 
 

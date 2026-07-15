@@ -1,6 +1,6 @@
 """
-Routes pour les notifications internes à l'app (bell icon). Enregistrées
-sur main_bp (cf. app/routes/main.py).
+Routes for in-app notifications (bell icon). Registered on main_bp
+(see app/routes/main.py).
 """
 
 from flask import abort, flash, redirect, render_template, url_for

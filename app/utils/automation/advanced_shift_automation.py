@@ -1,48 +1,48 @@
 # ============================================================================
-# AUTOMATISATION AVANCÉE DES SHIFTS (NOUVELLES RÈGLES MÉTIERS)
+# ADVANCED SHIFT AUTOMATION (NEW BUSINESS RULES)
 # ============================================================================
 
 from datetime import date
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    # Modèles importés uniquement pour les annotations de type (en chaîne
-    # dans ce fichier) - jamais au runtime, pour éviter l'import circulaire
-    # que les imports différés dans chaque méthode contournent déjà (voir
-    # `from app.models import ...` locaux plus bas). Avant ce bloc, ces
-    # noms n'étaient importés nulle part : inoffensif au runtime (une
-    # annotation entre guillemets n'est jamais évaluée), mais cassait tout
-    # outil qui les résout (mypy, typing.get_type_hints()).
+    # Models imported only for type annotations (as strings in this
+    # file) - never at runtime, to avoid the circular import that the
+    # deferred imports in each method already work around (see the
+    # local `from app.models import ...` further below). Before this
+    # block, these names weren't imported anywhere: harmless at runtime
+    # (a quoted annotation is never evaluated), but broke any tool that
+    # resolves them (mypy, typing.get_type_hints()).
     from app.models import Leave, OnCall, ShiftType, User
 
-# Sentinel distinct de None : None est une valeur valide (aucune astreinte
-# ce jour-là) pour oncall_today/oncall_user_last_week dans
-# determine_shift_for_user - il faut donc un marqueur séparé pour détecter
-# "argument non fourni, calcule-le toi-même" (comportement historique,
-# préservé pour les appelants qui invoquent la méthode isolément).
+# Sentinel distinct from None: None is a valid value (no on-call that
+# day) for oncall_today/oncall_user_last_week in determine_shift_for_user
+# - a separate marker is needed to detect "argument not provided,
+# compute it yourself" (historical behavior, preserved for callers who
+# invoke the method in isolation).
 _UNSET: "object" = object()
 
 
 class AdvancedShiftAutomation:
     """
-    Classe pour gérer l'automatisation avancée des shifts selon les nouvelles règles métiers.
+    Class managing advanced shift automation per the new business rules.
 
-    Règles implémentées :
-    1. Créneau 13h-21h : Réservé à la personne d'astreinte SI elle fait partie d'un groupe schedule
-    2. Rotation des créneaux : Si une personne était sur 13h-21h une semaine, elle doit être sur 07h-15h la semaine suivante
-    3. Créneau par défaut : 09h-17h pour tous les autres cas (plusieurs personnes peuvent être sur ce créneau)
-    4. Cas des congés : Si seulement 2 personnes disponibles, la personne NON d'astreinte doit être sur 07h-15h
-    5. Contrainte légale : Pas 2 astreintes de suite - minimum 2 semaines sans astreinte entre deux astreintes
+    Implemented rules:
+    1. 1pm-9pm slot: Reserved for the on-call person IF they belong to a schedule group
+    2. Slot rotation: If someone was on 1pm-9pm one week, they must be on 7am-3pm the following week
+    3. Default slot: 9am-5pm for all other cases (several people can be on this slot)
+    4. Leave case: If only 2 people are available, the person NOT on-call must be on 7am-3pm
+    5. Legal constraint: No 2 consecutive on-calls - minimum 2 weeks without on-call between two on-calls
     """
 
-    # Créneaux horaires
-    SHIFT_07_15 = (7, 15)  # 07h-15h
-    SHIFT_09_17 = (9, 17)  # 09h-17h
-    SHIFT_13_21 = (13, 21)  # 13h-21h
+    # Time slots
+    SHIFT_07_15 = (7, 15)  # 7am-3pm
+    SHIFT_09_17 = (9, 17)  # 9am-5pm
+    SHIFT_13_21 = (13, 21)  # 1pm-9pm
 
     @staticmethod
     def get_shift_type_by_hours(start_hour: int, end_hour: int) -> "ShiftType":
-        """Récupère ou crée un type de shift basé sur les heures."""
+        """Fetch or create a shift type based on the hours."""
         from app import db
         from app.models import ShiftType
 
@@ -52,7 +52,7 @@ class AdvancedShiftAutomation:
         if shift_type:
             return shift_type
 
-        # Créer un nouveau type de shift si nécessaire
+        # Create a new shift type if needed
         name = f"{start_hour:02d}-{end_hour:02d}"
         label = f"{start_hour:02d}h-{end_hour:02d}h"
 
@@ -60,19 +60,19 @@ class AdvancedShiftAutomation:
             name=name, label=label, start_hour=start_hour, end_hour=end_hour
         )
         db.session.add(new_shift_type)
-        db.session.flush()  # Pour obtenir l'ID
+        db.session.flush()  # To get the ID
         return new_shift_type
 
     @staticmethod
     def get_users_in_schedule_groups() -> list:
-        """Récupère les utilisateurs qui font partie de groupes pouvant être ajoutés au schedule."""
+        """Fetch users belonging to groups that can be added to the schedule."""
         from app.models import Group, User
 
         return User.query.join(Group).filter(Group.is_part_of_schedule.is_(True)).all()
 
     @staticmethod
     def get_available_users_for_date(date: "date") -> list:
-        """Récupère les utilisateurs disponibles pour une date donnée (pas en congé)."""
+        """Fetch users available for a given date (not on leave)."""
         from app import db
         from app.models import Leave
 
@@ -81,10 +81,10 @@ class AdvancedShiftAutomation:
         if not eligible_users:
             return []
 
-        # Optimisation : Récupérer tous les user_ids éligibles
+        # Optimization: fetch all eligible user_ids
         user_ids = [user.id for user in eligible_users]
 
-        # Récupérer tous les utilisateurs en congé pour cette date en une seule requête
+        # Fetch all users on leave for this date in a single query
         users_on_leave = set()
         leave_conflicts = (
             db.session.query(Leave.user_id)
@@ -97,7 +97,7 @@ class AdvancedShiftAutomation:
         )
         users_on_leave = {lc.user_id for lc in leave_conflicts}
 
-        # Filtrer les utilisateurs disponibles
+        # Filter available users
         available_users = [
             user for user in eligible_users if user.id not in users_on_leave
         ]
@@ -106,13 +106,13 @@ class AdvancedShiftAutomation:
 
     @staticmethod
     def get_oncall_for_date(date: "date") -> "OnCall | None":
-        """Récupère l'astreinte (OnCall) pour une date donnée."""
+        """Fetch the on-call (OnCall) for a given date."""
         from datetime import datetime
 
         from app import db
         from app.models import OnCall
 
-        # Optimisation : utiliser une requête avec JOIN pour éviter le lazy loading
+        # Optimization: use a query with JOIN to avoid lazy loading
         oncall = (
             db.session.query(OnCall)
             .options(db.joinedload(OnCall.user))
@@ -127,7 +127,7 @@ class AdvancedShiftAutomation:
 
     @staticmethod
     def get_oncall_user_for_date(date: "date") -> "User | None":
-        """Récupère l'utilisateur d'astreinte pour une date donnée."""
+        """Fetch the on-call user for a given date."""
         oncall = AdvancedShiftAutomation.get_oncall_for_date(date)
         return oncall.user if oncall else None
 
@@ -139,36 +139,36 @@ class AdvancedShiftAutomation:
         oncall_user_last_week: "User | None | object" = _UNSET,
     ) -> "tuple[int, int]":
         """
-        Détermine le créneau de shift pour un utilisateur à une date donnée.
+        Determine the shift slot for a user on a given date.
 
-        Règles :
-        1. Si l'utilisateur est d'astreinte cette semaine :
-           - Si c'est le premier jour ouvré de son astreinte (lundi) -> 09h-17h (par défaut)
-           - Sinon (mardi-jeudi) -> 13h-21h (si éligible)
-           - Le vendredi (dernier jour de l'astreinte) -> 09h-17h (par défaut)
-        2. Si l'utilisateur était d'astreinte la semaine précédente (et pas cette semaine) -> 07h-15h (rotation)
-        3. Sinon -> 09h-17h
+        Rules:
+        1. If the user is on-call this week:
+           - If it's the first business day of their on-call (Monday) -> 9am-5pm (default)
+           - Otherwise (Tuesday-Thursday) -> 1pm-9pm (if eligible)
+           - Friday (last day of on-call) -> 9am-5pm (default)
+        2. If the user was on-call the previous week (and not this week) -> 7am-3pm (rotation)
+        3. Otherwise -> 9am-5pm
 
-        `oncall_today`/`oncall_user_last_week` : passés par l'appelant (une
-        seule requête par jour dans generate_daily_shifts) au lieu d'être
-        requêtés une fois par utilisateur - ils restent optionnels pour les
-        appelants qui invoquent cette méthode isolément (tests notamment).
+        `oncall_today`/`oncall_user_last_week`: passed by the caller (a
+        single query per day in generate_daily_shifts) instead of being
+        queried once per user - they stay optional for callers that
+        invoke this method in isolation (notably tests).
         """
         from datetime import timedelta
         from typing import cast
 
-        # Règle 1 : Vérifier si l'utilisateur est d'astreinte cette semaine
+        # Rule 1: check whether the user is on-call this week
         if oncall_today is _UNSET:
             oncall = AdvancedShiftAutomation.get_oncall_for_date(date)
         else:
             oncall = cast("OnCall | None", oncall_today)
         if oncall and oncall.user_id == user.id:
-            # Vérifier si c'est le premier jour ouvré de l'astreinte (lundi)
-            # ou le dernier jour (vendredi, fin de l'astreinte à 07h)
-            if date.weekday() == 0 or date.weekday() == 4:  # 0 = lundi, 4 = vendredi
+            # Check whether it's the first business day of the on-call
+            # (Monday) or the last day (Friday, on-call ends at 7am)
+            if date.weekday() == 0 or date.weekday() == 4:  # 0 = Monday, 4 = Friday
                 return AdvancedShiftAutomation.SHIFT_09_17
 
-            # Pour les autres jours (mardi-jeudi), vérifier l'éligibilité
+            # For other days (Tuesday-Thursday), check eligibility
             from app import db
             from app.models import Group, User
 
@@ -182,7 +182,7 @@ class AdvancedShiftAutomation:
             if user_in_schedule:
                 return AdvancedShiftAutomation.SHIFT_13_21
 
-        # Règle 2 : Vérifier si l'utilisateur était d'astreinte la semaine précédente
+        # Rule 2: check whether the user was on-call the previous week
         if oncall_user_last_week is _UNSET:
             previous_week_date = date - timedelta(days=7)
             previous_oncall_user = AdvancedShiftAutomation.get_oncall_user_for_date(
@@ -193,14 +193,14 @@ class AdvancedShiftAutomation:
         if previous_oncall_user and previous_oncall_user.id == user.id:
             return AdvancedShiftAutomation.SHIFT_07_15
 
-        # Règle 3 : Créneau par défaut
+        # Rule 3: default slot
         return AdvancedShiftAutomation.SHIFT_09_17
 
     @staticmethod
     def handle_two_users_case(available_users: list, date: "date") -> "dict":
         """
-        Gère le cas spécial où il n'y a que 2 personnes disponibles.
-        La personne NON d'astreinte doit être sur 07h-15h.
+        Handle the special case where only 2 people are available.
+        The person NOT on-call must be on 7am-3pm.
         """
         if len(available_users) != 2:
             return {}
@@ -224,14 +224,14 @@ class AdvancedShiftAutomation:
     def generate_daily_shifts(
         date: "date", dry_run: bool = False, commit: bool = True
     ) -> "tuple[list, list]":
-        """Génère les shifts pour une journée selon les nouvelles règles.
+        """Generate the shifts for a day per the new business rules.
 
-        `commit` : si False (utilisé par rebalance_after_leave pour rendre
-        tout le rééquilibrage atomique), les changements sont seulement
-        flush() - visibles dans la session courante mais pas persistés - et
-        laissés à la charge de l'appelant de committer/rollback. Toute
-        exception lors du flush n'est alors pas absorbée ici : elle remonte
-        pour que l'appelant puisse annuler l'ensemble de l'opération.
+        `commit`: if False (used by rebalance_after_leave to make the
+        whole rebalance atomic), changes are only flush()'d - visible in
+        the current session but not persisted - and left for the caller
+        to commit/rollback. Any exception during the flush is then not
+        absorbed here: it propagates so the caller can undo the whole
+        operation.
         """
         from datetime import datetime, timedelta
 
@@ -253,9 +253,9 @@ class AdvancedShiftAutomation:
                 f"⚠️ Aucun utilisateur disponible pour le {date.strftime('%d/%m/%Y')}"
             ]
 
-        # Règle 6 : effectif minimum 1 personne. Quand une seule personne est
-        # disponible (cas limite, en dessous du cas à 2 personnes ci-dessous),
-        # elle est placée directement en 09h-17h sans passer par
+        # Rule 6: minimum headcount of 1 person. When only one person is
+        # available (edge case, below the 2-person case handled below),
+        # they're placed directly on 9am-5pm without going through
         # determine_shift_for_user/handle_two_users_case.
         if len(available_users) == 1:
             sole_user = available_users[0]
@@ -295,7 +295,7 @@ class AdvancedShiftAutomation:
             )
             return generated_shifts, messages
 
-        # Cas spécial : seulement 2 personnes disponibles
+        # Special case: only 2 people available
         if len(available_users) == 2:
             assignments = AdvancedShiftAutomation.handle_two_users_case(
                 available_users, date
@@ -335,14 +335,14 @@ class AdvancedShiftAutomation:
 
                 return generated_shifts, messages
 
-        # Cas normal : 3+ utilisateurs
-        # Optimisation : utiliser un set pour les user_ids disponibles pour éviter les lookups linéaires
+        # Normal case: 3+ users
+        # Optimization: use a set for available user_ids to avoid linear lookups
         available_user_ids = {user.id for user in available_users}
         schedule_users = AdvancedShiftAutomation.get_users_in_schedule_groups()
 
-        # Récupérées une seule fois pour la journée (au lieu d'une requête
-        # OnCall par utilisateur dans determine_shift_for_user - l'astreinte
-        # du jour ne dépend pas de l'utilisateur itéré).
+        # Fetched once for the day (instead of one OnCall query per user
+        # in determine_shift_for_user - the day's on-call doesn't depend
+        # on the user being iterated).
         oncall_today = AdvancedShiftAutomation.get_oncall_for_date(date)
         previous_week_date = date - timedelta(days=7)
         oncall_user_last_week = AdvancedShiftAutomation.get_oncall_user_for_date(
@@ -387,7 +387,7 @@ class AdvancedShiftAutomation:
             else:
                 db.session.flush()
 
-        # Retourner un résumé au lieu de messages détaillés
+        # Return a summary instead of detailed messages
         if generated_shifts:
             return generated_shifts, [
                 f"✅ {len(generated_shifts)} shifts générés pour le {date.strftime('%d/%m/%Y')}"
@@ -403,7 +403,7 @@ class AdvancedShiftAutomation:
     def generate_full_schedule(
         start_date: "date", end_date: "date", dry_run: bool = False
     ) -> "tuple[list, list]":
-        """Génère les shifts pour toute une période."""
+        """Generate the shifts for an entire period."""
         all_shifts = []
         days_with_shifts = 0
         days_skipped = 0
@@ -421,7 +421,7 @@ class AdvancedShiftAutomation:
                 days_skipped += 1
             current_date += timedelta(days=1)
 
-        # Retourner un résumé
+        # Return a summary
         if dry_run:
             msg = f"📋 Prévisualisation : {len(all_shifts)} shifts seraient générés pour la période du {start_date.strftime('%d/%m/%Y')} au {end_date.strftime('%d/%m/%Y')}"
         else:
@@ -435,16 +435,17 @@ class AdvancedShiftAutomation:
         leave: "Leave", dry_run: bool = False
     ) -> "tuple[list, list]":
         """
-        Rééquilibre les shifts et astreintes après l'ajout/modification d'un congé.
-        Appelé automatiquement lors de l'ajout d'un congé.
-        Les congés sont prioritaires : ils suppriment et recalculent les shifts et astreintes chevauchantes.
+        Rebalance shifts and on-calls after a leave is added/modified.
+        Called automatically when a leave is added. Leaves take
+        priority: they remove and recompute overlapping shifts and
+        on-calls.
 
-        Atomique quand dry_run=False : toutes les suppressions/régénérations
-        (astreintes puis shifts) ne sont flush() qu'au fil de l'eau (visibles
-        dans la session courante, donc les jours suivants de la boucle voient
-        bien les changements des jours précédents) et un seul commit() a lieu
-        à la fin. Si une étape échoue, rollback() annule tout - pas de
-        planning partiellement régénéré.
+        Atomic when dry_run=False: all deletions/regenerations
+        (on-calls then shifts) are only flush()'d as they go (visible in
+        the current session, so later days in the loop do see earlier
+        days' changes) and a single commit() happens at the end. If any
+        step fails, rollback() undoes everything - no partially
+        regenerated schedule.
         """
         from datetime import datetime, timedelta
 
@@ -457,12 +458,12 @@ class AdvancedShiftAutomation:
         regenerated_oncalls = []
 
         try:
-            # Trouver la période des astreintes à recalculer
-            # Les astreintes couvrent du vendredi 21h au vendredi suivant 07h
-            # Nous devons trouver tous les vendredis qui ont des astreintes chevauchantes
+            # Find the on-call period to recompute
+            # On-calls span from Friday 9pm to the following Friday 7am
+            # We need to find all Fridays that have overlapping on-calls
             oncall_periods_to_regenerate = set()
 
-            # Trouver les astreintes qui chevauchent le congé
+            # Find on-calls overlapping the leave
             overlapping_oncalls = OnCall.query.filter(
                 OnCall.user_id == leave.user_id,
                 OnCall.start_time
@@ -474,11 +475,11 @@ class AdvancedShiftAutomation:
             ).all()
 
             for oncall in overlapping_oncalls:
-                # Trouver le vendredi de début de cette astreinte
+                # Find the starting Friday of this on-call
                 friday_start = oncall.start_time.date()
                 oncall_periods_to_regenerate.add(friday_start)
 
-            # Supprimer les astreintes chevauchantes
+            # Delete the overlapping on-calls
             if overlapping_oncalls and not dry_run:
                 for oncall in overlapping_oncalls:
                     db.session.delete(oncall)
@@ -487,38 +488,39 @@ class AdvancedShiftAutomation:
                     f"🗑️ {len(overlapping_oncalls)} astreintes supprimées pour l'utilisateur {leave.user_id}"
                 )
 
-            # Déterminer la période complète à recalculer
-            # Si des astreintes ont été supprimées, nous devons recalculer les shifts pour toute la période affectée
+            # Determine the full period to recompute
+            # If on-calls were deleted, we need to recompute shifts for the whole affected period
             shift_period_start = leave.start_date
             shift_period_end = leave.end_date
 
             if oncall_periods_to_regenerate:
-                # Trouver la période à couvrir : du premier vendredi avant le congé
-                # au dernier vendredi après la fin du congé + 7 jours (pour couvrir toute l'astreinte)
+                # Find the period to cover: from the first Friday before
+                # the leave to the last Friday after the leave ends + 7
+                # days (to cover the whole on-call)
 
-                # Trouver le premier vendredi avant ou pendant le congé
+                # Find the first Friday before or during the leave
                 first_friday = leave.start_date
-                while first_friday.weekday() != 4:  # 4 = vendredi
+                while first_friday.weekday() != 4:  # 4 = Friday
                     first_friday -= timedelta(days=1)
 
-                # Trouver le dernier vendredi après ou pendant le congé
+                # Find the last Friday after or during the leave
                 last_friday = leave.end_date
                 while last_friday.weekday() != 4:
                     last_friday += timedelta(days=1)
 
-                # Étendre la période pour couvrir les astreintes complètes
+                # Extend the period to cover complete on-calls
                 shift_period_start = first_friday - timedelta(
                     days=7
-                )  # Prendre une semaine avant
+                )  # Take one week before
                 shift_period_end = last_friday + timedelta(
                     days=7
-                )  # Prendre une semaine après
+                )  # Take one week after
 
-            # Supprimer et régénérer les shifts pour toute la période affectée
+            # Delete and regenerate shifts for the whole affected period
             current_date = shift_period_start
             while current_date <= shift_period_end:
-                if current_date.weekday() < 5:  # Seulement du lundi au vendredi
-                    # Supprimer les shifts existants
+                if current_date.weekday() < 5:  # Monday to Friday only
+                    # Delete existing shifts
                     existing_shifts = Shift.query.filter_by(date=current_date).all()
                     if existing_shifts and not dry_run:
                         for shift in existing_shifts:
@@ -528,7 +530,7 @@ class AdvancedShiftAutomation:
                             f"🗑️ {len(existing_shifts)} shifts supprimés pour le {current_date.strftime('%d/%m/%Y')}"
                         )
 
-                    # Régénérer les shifts avec les règles métiers avancées
+                    # Regenerate shifts with the advanced business rules
                     shifts, date_messages = (
                         AdvancedShiftAutomation.generate_daily_shifts(
                             current_date, dry_run=dry_run, commit=False
@@ -538,21 +540,22 @@ class AdvancedShiftAutomation:
                     messages.extend(date_messages)
                 current_date += timedelta(days=1)
 
-            # Régénérer les astreintes pour la période affectée
-            # Si des astreintes ont été supprimées, nous devons les recalculer
+            # Regenerate on-calls for the affected period
+            # If on-calls were deleted, we need to recompute them
             if oncall_periods_to_regenerate and not dry_run:
-                # Utiliser la même période que pour les shifts
+                # Use the same period as for shifts
                 from app.models import AutomationConfig
                 from app.repositories.oncall_repository import OnCallRepository
 
-                # La suppression plus haut ne cible que les astreintes du
-                # congé (leave.user_id) ; la période à régénérer est étendue
-                # de ±7 jours (padding) et peut donc chevaucher des
-                # astreintes d'AUTRES utilisateurs, jamais supprimées.
-                # generate_oncall_schedule créant toujours de nouvelles
-                # astreintes sans vérifier l'existant, il fallait vider tout
-                # le créneau avant de régénérer, sous peine d'astreintes en
-                # double/chevauchantes sur les vendredis adjacents.
+                # The deletion above only targets the leave's on-calls
+                # (leave.user_id); the period to regenerate is padded by
+                # ±7 days and can therefore overlap OTHER users' on-calls,
+                # which were never deleted. Since
+                # generate_oncall_schedule always creates new on-calls
+                # without checking what already exists, the whole slot
+                # had to be cleared before regenerating, otherwise
+                # duplicate/overlapping on-calls would appear on the
+                # adjacent Fridays.
                 other_oncalls_deleted = OnCallRepository.delete_overlapping_range(
                     shift_period_start, shift_period_end
                 )
@@ -579,9 +582,10 @@ class AdvancedShiftAutomation:
             if not dry_run:
                 db.session.commit()
         except Exception:
-            # Atomicité : toute erreur annule l'ensemble de l'opération (pas
-            # de planning partiellement régénéré). Propagée telle quelle -
-            # LeaveService._rebalance_after_leave la capture et la logue déjà.
+            # Atomicity: any error undoes the whole operation (no
+            # partially regenerated schedule). Propagated as-is -
+            # LeaveService._rebalance_after_leave already catches and
+            # logs it.
             db.session.rollback()
             raise
 

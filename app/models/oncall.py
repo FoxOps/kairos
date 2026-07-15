@@ -28,9 +28,18 @@ class OnCall(BaseModel):
     start_time = db.Column(db.DateTime, nullable=False, index=True)
     end_time = db.Column(db.DateTime, nullable=False, index=True)
 
-    # Composite index for frequent overlap queries
+    # Composite index for frequent overlap queries, plus a unique
+    # constraint closing the can_add_oncall() check-then-insert race for
+    # the exact same week: on-call start_time is always constrained to
+    # Friday 21:00 (see can_add_oncall), so two concurrent requests for
+    # the same user/week can no longer both insert. This does not
+    # enforce full range-overlap exclusion across different weeks (that
+    # would need a Postgres-only EXCLUDE USING gist constraint - not
+    # portable to SQLite, this project's default/tested engine); that
+    # remains an application-level check only.
     __table_args__ = (
         db.Index("idx_oncall_user_start_end", "user_id", "start_time", "end_time"),
+        db.UniqueConstraint("user_id", "start_time", name="uq_oncall_user_start_time"),
     )
 
     def duration(self) -> int:

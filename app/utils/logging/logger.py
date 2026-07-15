@@ -15,8 +15,8 @@ from flask import Flask
 
 class SensitiveDataFilter(logging.Filter):
     """
-    Filtre de logging qui masque les données sensibles (mots de passe, tokens,
-    clés API) dans les messages et arguments avant qu'ils ne soient écrits.
+    Logging filter that masks sensitive data (passwords, tokens, API
+    keys) in messages and arguments before they get written.
     """
 
     _PATTERN = re.compile(r"(password|token|api_key)=\S+", re.IGNORECASE)
@@ -124,10 +124,11 @@ def configure_logging(
     werkzeug_logger = logging.getLogger("werkzeug")
     werkzeug_logger.setLevel(log_level)
 
-    # Dossier de logs applicatif (app/error/http/audit) - à côté du dossier logs/
-    # à la racine du projet, ignoré par git (*.log). Nom distinct de log_dir
-    # ci-dessus (portée de fonction partagée en Python, pas de scope de bloc)
-    # pour éviter un conflit d'annotation de type avec ce premier usage.
+    # App log directory (app/error/http/audit) - next to the logs/
+    # directory at the project root, ignored by git (*.log). Named
+    # differently from log_dir above (Python functions share scope
+    # across blocks, there's no block-level scoping) to avoid a type
+    # annotation conflict with that earlier usage.
     _app_logs_path = os.path.join(os.getcwd(), "logs")
     app_log_dir: str | None
     try:
@@ -153,8 +154,8 @@ def configure_logging(
         return handler
 
     if app is not None:
-        # Logger applicatif principal : console + fichier app + fichier erreurs
-        # + fichier debug (au moins 4 handlers, cf. tests/test_error_handlers.py)
+        # Main application logger: console + app file + error file +
+        # debug file (at least 4 handlers, see tests/test_error_handlers.py)
         _reset_handlers(app.logger)
         app.logger.setLevel(log_level)
         app.logger.propagate = False
@@ -174,7 +175,7 @@ def configure_logging(
             if maybe_handler is not None:
                 app.logger.addHandler(maybe_handler)
 
-    # Logger dédié aux erreurs HTTP (404, 403, ...)
+    # Logger dedicated to HTTP errors (404, 403, ...)
     http_logger = logging.getLogger("http_errors")
     _reset_handlers(http_logger)
     http_logger.setLevel(logging.WARNING)
@@ -185,7 +186,7 @@ def configure_logging(
     )
     http_logger.addHandler(http_handler)
 
-    # Logger d'audit (actions utilisateur significatives)
+    # Audit logger (significant user actions)
     audit_logger = logging.getLogger("audit")
     _reset_handlers(audit_logger)
     audit_logger.setLevel(logging.INFO)
@@ -218,11 +219,11 @@ def get_logger(name: str) -> logging.Logger:
 
 def log_http_error(code: int, message: str) -> None:
     """
-    Log une erreur HTTP sur le logger dédié 'http_errors'.
+    Log an HTTP error on the dedicated 'http_errors' logger.
 
     Args:
-        code: Code de statut HTTP (404, 403, 500, ...)
-        message: Message décrivant l'erreur
+        code: HTTP status code (404, 403, 500, ...)
+        message: Message describing the error
     """
     logger = logging.getLogger("http_errors")
     logger.error(f"HTTP {code}: {message}")
@@ -230,14 +231,14 @@ def log_http_error(code: int, message: str) -> None:
 
 def get_error_template_data(code: int, message: str) -> dict:
     """
-    Construit les données de contexte pour les templates d'erreur.
+    Build the context data for error templates.
 
     Args:
-        code: Code de statut HTTP
-        message: Message d'erreur
+        code: HTTP status code
+        message: Error message
 
     Returns:
-        Dictionnaire {'error_code': ..., 'error_message': ...}
+        Dictionary {'error_code': ..., 'error_message': ...}
     """
     return {"error_code": code, "error_message": message}
 
@@ -250,19 +251,19 @@ def log_audit_action(
     details: str | None = None,
 ) -> None:
     """
-    Log une action d'audit (création/modification/suppression de ressource,
-    connexion, etc.) sur le logger dédié 'audit'.
+    Log an audit action (resource creation/update/deletion, login, etc.)
+    on the dedicated 'audit' logger.
 
     Args:
-        action: Nom de l'action (ex: 'delete_leave', 'login')
-        user: Utilisateur ayant effectué l'action (objet avec un attribut .name),
-              ou None pour un utilisateur anonyme
-        path: Chemin de la requête concernée
-        status: 'success' ou 'failure'
-        details: Détails complémentaires optionnels
+        action: Name of the action (e.g. 'delete_leave', 'login')
+        user: User who performed the action (object with a .name
+              attribute), or None for an anonymous user
+        path: Path of the relevant request
+        status: 'success' or 'failure'
+        details: Optional additional details
     """
     logger = logging.getLogger("audit")
-    username = getattr(user, "name", None) or "anonyme"
+    username = getattr(user, "name", None) or "anonymous"
     logger.info(
         f"action={action} user={username} path={path} status={status} details={details}"
     )

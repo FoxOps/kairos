@@ -1,12 +1,12 @@
 """
-Tests de sécurité pour Leviia Schedule.
+Security tests for Leviia Schedule.
 
-TestingConfig désactive Talisman (TESTING=True -> create_app() saute
-l'initialisation de Talisman, voir app/__init__.py) et CSRF
-(WTF_CSRF_ENABLED=False) pour simplifier les tests fonctionnels. Les tests
-qui vérifient ces deux protections construisent donc leur propre instance
-d'application avec ces options réactivées, plutôt que d'utiliser le
-fixture test_app standard qui les désactive.
+TestingConfig disables Talisman (TESTING=True -> create_app() skips
+Talisman's initialization, see app/__init__.py) and CSRF
+(WTF_CSRF_ENABLED=False) to simplify the functional tests. The tests
+that check these two protections therefore build their own app
+instance with these options re-enabled, instead of using the standard
+test_app fixture that disables them.
 """
 
 import pytest
@@ -17,8 +17,8 @@ from app.models import User
 
 @pytest.fixture
 def secure_app():
-    """App avec Talisman ET CSRF activés, pour tester les protections
-    normalement désactivées par TestingConfig."""
+    """App with both Talisman and CSRF enabled, to test the protections
+    TestingConfig normally disables."""
     app = create_app("app.config.TestingConfig")
     app.config["WTF_CSRF_ENABLED"] = True
     app.config["TALISMAN_FORCE_HTTPS"] = True
@@ -41,7 +41,7 @@ def secure_app():
 
 
 class TestSensitiveDataNotSerialized:
-    """User.to_dict() ne doit jamais exposer password_hash ni ics_token."""
+    """User.to_dict() must never expose password_hash or ics_token."""
 
     def test_to_dict_excludes_password_hash(self, test_app):
         user = User(name="Test", email="secure@test.com", group_id=1)
@@ -82,13 +82,13 @@ class TestTalismanSecurityHeaders:
         assert resp.headers.get("X-Frame-Options") is not None
 
     def test_security_headers_applied_even_without_force_https(self, test_app):
-        """Bug réel corrigé en Phase 6 : les en-têtes de sécurité (CSP,
-        X-Content-Type-Options, etc.) étaient entièrement gated derrière
-        TALISMAN_FORCE_HTTPS - un déploiement avec TLS terminé par un
-        reverse proxy (donc TALISMAN_FORCE_HTTPS=false côté app, comme
-        docker/docker-compose.yml) n'avait alors AUCUN en-tête de sécurité.
-        Talisman est maintenant toujours initialisé (sauf en test) ;
-        force_https ne contrôle plus que la redirection HTTP->HTTPS."""
+        """Regression test: the security headers (CSP,
+        X-Content-Type-Options, etc.) used to be entirely gated behind
+        TALISMAN_FORCE_HTTPS - a deployment with TLS terminated by a
+        reverse proxy (so TALISMAN_FORCE_HTTPS=false on the app side, as
+        in docker/docker-compose.yml) then had NO security headers at
+        all. Talisman is now always initialized (except in tests);
+        force_https only controls the HTTP->HTTPS redirect."""
         app = create_app("app.config.Config")
         app.config["TALISMAN_FORCE_HTTPS"] = False
         with app.app_context():
@@ -104,11 +104,11 @@ class TestTalismanSecurityHeaders:
     def test_csp_blocks_inline_script_but_allows_onclick_and_inline_style(
         self, secure_app
     ):
-        """CSP réelle appliquée par l'app (CSP_POLICY) : script-src 'self'
-        (bloque tout <script> injecté), script-src-attr 'unsafe-inline'
-        (les attributs onclick="" restants dans les templates sont du
-        contenu statique, pas des données utilisateur), style-src avec
-        'unsafe-inline' (un seul style dynamique dans dashboard.html)."""
+        """The real CSP enforced by the app (CSP_POLICY): script-src 'self'
+        (blocks any injected <script>), script-src-attr 'unsafe-inline'
+        (the remaining onclick="" attributes in the templates are static
+        content, not user data), style-src with 'unsafe-inline' (a single
+        dynamic style in dashboard.html)."""
         client = secure_app.test_client()
         resp = client.get("/login")
         csp = resp.headers.get("Content-Security-Policy")
@@ -133,33 +133,32 @@ class TestTalismanSecurityHeaders:
     def test_page_has_no_inline_executable_script(
         self, test_app, logged_in_client, path
     ):
-        """Régression Phase 6 : script-src 'self' strict (pas de
-        unsafe-inline, pas de nonce) bloque silencieusement tout <script>
-        inline exécutable - le navigateur ne le signale pas comme une
-        erreur HTTP, juste une erreur console, donc ça passe inaperçu sans
-        ce test. Trois pages avaient un <script> inline (index.html,
-        auth/ics_token.html, admin/automation/full.html) - seule la
-        première avait été vérifiée à l'origine (Phase 6), les deux autres
-        sont restées cassées jusqu'à cet audit. Balayage sur plusieurs
-        pages représentatives plutôt qu'une seule pour éviter que ça se
-        reproduise ailleurs sans être détecté."""
+        """Regression test: a strict script-src 'self' (no unsafe-inline,
+        no nonce) silently blocks any executable inline <script> - the
+        browser doesn't report it as an HTTP error, just a console error,
+        so it goes unnoticed without this test. Three pages had an inline
+        <script> (index.html, auth/ics_token.html,
+        admin/automation/full.html) - only the first one had originally
+        been checked, the other two stayed broken until this was caught.
+        This sweeps several representative pages instead of just one so
+        the same regression can't reappear elsewhere undetected."""
         resp = logged_in_client.get(path)
-        assert resp.status_code == 200, f"{path} : statut {resp.status_code}"
+        assert resp.status_code == 200, f"{path}: status {resp.status_code}"
         html = resp.data.decode("utf-8")
         import re
 
         inline_script_blocks = re.findall(r"<script(?![^>]*\bsrc=)[^>]*>", html)
         for tag in inline_script_blocks:
             assert 'type="application/json"' in tag, (
-                f"{path} : script inline exécutable trouvé ({tag}) - "
-                "bloqué silencieusement par script-src 'self'"
+                f"{path}: found an executable inline script ({tag}) - "
+                "silently blocked by script-src 'self'"
             )
 
     def test_calendar_page_uses_external_module(self, test_app, logged_in_client):
-        """Régression Phase 6 : index.html avait un <script> inline de
-        ~576 lignes (config FullCalendar), externalisé vers
-        static/js/calendar/fullcalendar-config.js pour permettre un
-        script-src strict sans nonce ni unsafe-inline."""
+        """Regression test: index.html used to have a ~576-line inline
+        <script> (the FullCalendar config), extracted to
+        static/js/calendar/fullcalendar-config.js to allow a strict
+        script-src with no nonce or unsafe-inline."""
         resp = logged_in_client.get("/")
         assert resp.status_code == 200
         html = resp.data.decode("utf-8")
@@ -174,8 +173,8 @@ class TestCSRFProtection:
             "/login",
             data={"email": "admin@leviia.local", "password": "admin123"},
         )
-        # Sans jeton CSRF valide, Flask-WTF renvoie 400 (CSRFError) plutôt
-        # que de traiter la requête normalement.
+        # Without a valid CSRF token, Flask-WTF returns 400 (CSRFError)
+        # instead of processing the request normally.
         assert resp.status_code == 400
 
     def test_post_with_valid_csrf_token_succeeds(self, secure_app):
@@ -195,14 +194,14 @@ class TestCSRFProtection:
             db.session.commit()
 
         client = secure_app.test_client()
-        # Récupérer un jeton CSRF valide comme le ferait un vrai navigateur :
-        # GET la page du formulaire, extraire la valeur du champ caché.
+        # Fetch a valid CSRF token the way a real browser would: GET the
+        # form page, extract the hidden field's value.
         login_page = client.get("/login")
         html = login_page.data.decode("utf-8")
         import re
 
         match = re.search(r'name="csrf_token" value="([^"]+)"', html)
-        assert match, "Aucun champ csrf_token trouvé dans le formulaire de login"
+        assert match, "No csrf_token field found in the login form"
         token = match.group(1)
 
         resp = client.post(
@@ -219,8 +218,8 @@ class TestCSRFProtection:
 
 
 class TestAccessControl:
-    """Un utilisateur non-admin ne doit pas pouvoir agir sur les
-    ressources d'un autre utilisateur ni accéder aux routes admin."""
+    """A non-admin user must not be able to act on another user's
+    resources, nor access the admin routes."""
 
     def test_non_admin_cannot_access_admin_dashboard(self, test_app, non_admin_client):
         resp = non_admin_client.get("/admin", follow_redirects=False)
@@ -239,11 +238,11 @@ class TestAccessControl:
     def test_non_admin_cannot_delete_other_users_shift(
         self, test_app, non_admin_client, test_shift
     ):
-        # test_shift appartient à test_user, non_admin_client est connecté
-        # en tant que test_user lui-même ici (fixture), donc on vérifie
-        # plutôt qu'un utilisateur non-admin ne peut pas utiliser la route
-        # de suppression réservée aux admins, même pour son propre shift.
-        resp = non_admin_client.get(
+        # test_shift belongs to test_user, and non_admin_client is
+        # logged in as test_user itself here (fixture), so this really
+        # checks that a non-admin user can't use the delete route
+        # reserved for admins, even for their own shift.
+        resp = non_admin_client.post(
             f"/schedule/delete/{test_shift.id}", follow_redirects=False
         )
         assert resp.status_code in (302, 403)
@@ -254,4 +253,4 @@ class TestAccessControl:
             assert resp.status_code in (
                 302,
                 401,
-            ), f"{path} accessible sans authentification"
+            ), f"{path} accessible without authentication"

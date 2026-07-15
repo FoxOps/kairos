@@ -1,14 +1,14 @@
-"""Tests d'intégration pour les routes OIDC (/login, /oidc/login,
-/oidc/callback, /logout en mode SSO).
+"""Integration tests for the OIDC routes (/login, /oidc/login,
+/oidc/callback, /logout in SSO mode).
 
-test_app désactive OIDC globalement (voir tests/conftest.py) - le
-fixture oidc_mode ci-dessous le réactive pour ce module en patchant
-directement OIDCConfig (state de classe déjà figé au moment où
-test_app a fini son setup). Les appels réseau réels d'OIDCAuthLib sont
-mockés au niveau du singleton `oidc_auth` importé par app/routes/auth.py
-- ces tests vérifient le câblage des routes (redirections, flashs,
-session), pas la logique OIDC elle-même (voir tests/unit/test_oidc_auth.py
-et test_user_manager_oidc_sync.py pour ça)."""
+test_app disables OIDC globally (see tests/conftest.py) - the
+oidc_mode fixture below re-enables it for this module by patching
+OIDCConfig directly (class state already frozen by the time test_app
+finishes its setup). OIDCAuthLib's real network calls are mocked at
+the level of the `oidc_auth` singleton imported by app/routes/auth.py
+- these tests check the route wiring (redirects, flashes, session),
+not the OIDC logic itself (see tests/unit/test_oidc_auth.py and
+test_user_manager_oidc_sync.py for that)."""
 
 from unittest.mock import patch
 
@@ -19,7 +19,7 @@ from config_oidc import OIDCConfig
 
 @pytest.fixture
 def oidc_mode(test_app, monkeypatch):
-    """Active le mode OIDC (SSO obligatoire, auth basique désactivée)."""
+    """Enable OIDC mode (mandatory SSO, basic auth disabled)."""
     monkeypatch.setattr(OIDCConfig, "ENABLED", True)
     monkeypatch.setattr(OIDCConfig, "DISABLE_BASIC_AUTH", True)
     monkeypatch.setattr(OIDCConfig, "ISSUER", "https://idp.example.com")
@@ -31,10 +31,10 @@ def oidc_mode(test_app, monkeypatch):
 
 @pytest.fixture
 def oidc_optional_mode(test_app, monkeypatch):
-    """Active OIDC en mode optionnel : SSO disponible EN PLUS du
-    formulaire classique (OIDC_DISABLE_BASIC_AUTH=false) - /login
-    n'auto-redirige pas, affiche les deux, voir bouton "Se connecter
-    avec SSO" sur auth/login.html."""
+    """Enable OIDC in optional mode: SSO available IN ADDITION to the
+    classic form (OIDC_DISABLE_BASIC_AUTH=false) - /login doesn't
+    auto-redirect, shows both, see the "Se connecter avec SSO" button
+    on auth/login.html."""
     monkeypatch.setattr(OIDCConfig, "ENABLED", True)
     monkeypatch.setattr(OIDCConfig, "DISABLE_BASIC_AUTH", False)
     monkeypatch.setattr(OIDCConfig, "ISSUER", "https://idp.example.com")
@@ -60,8 +60,8 @@ class TestLoginRedirectsToOidcWhenBasicAuthDisabled:
         assert "/oidc/login" in resp.headers["Location"]
 
     def test_login_form_still_works_when_oidc_not_forced(self, test_app, client):
-        # OIDC désactivé (comportement par défaut de test_app) : /login
-        # affiche bien le formulaire classique, pas de redirection.
+        # OIDC disabled (test_app's default behavior): /login correctly
+        # shows the classic form, no redirect.
         resp = client.get("/login")
         assert resp.status_code == 200
         assert b"password" in resp.data.lower() or b"mot de passe" in resp.data.lower()
@@ -79,13 +79,12 @@ class TestOidcLoginRoute:
         assert resp.headers["Location"].startswith("https://idp.example.com/authorize")
 
     def test_redirects_to_local_login_when_oidc_not_configured(self, test_app, client):
-        """Aucun garde sur is_basic_auth_disabled() ici (il y en avait un
-        avant, bug réel : bloquait aussi le SSO optionnel quand
-        OIDC_DISABLE_BASIC_AUTH=false, voir CHANGELOG/commit) - c'est
-        get_authorization_url() qui renvoie None (OIDC non configuré) qui
-        déclenche cette redirection, avec oidc_error=1 pour éviter la
-        boucle de redirection infinie documentée plus haut dans
-        auth.login()."""
+        """No guard on is_basic_auth_disabled() here (there used to be
+        one, and it was a real bug: it also blocked optional SSO
+        whenever OIDC_DISABLE_BASIC_AUTH=false) - this redirect is
+        actually triggered by get_authorization_url() returning None
+        (OIDC not configured), with oidc_error=1 to avoid the infinite
+        redirect loop documented further up in auth.login()."""
         resp = client.get("/oidc/login", follow_redirects=False)
         assert resp.status_code == 302
         assert resp.headers["Location"] == "/login?oidc_error=1"
@@ -104,10 +103,10 @@ class TestOidcLoginRoute:
 
 class TestOidcCallbackRoute:
     def test_redirects_to_local_login_when_oidc_not_configured(self, test_app, client):
-        """Même raison que TestOidcLoginRoute ci-dessus : plus de garde sur
-        is_basic_auth_disabled() (bloquait le SSO optionnel), c'est
-        handle_oauth_callback() qui échoue (state invalide, OIDC non
-        configuré) et redirige avec oidc_error=1."""
+        """Same reason as TestOidcLoginRoute above: no more guard on
+        is_basic_auth_disabled() (it used to block optional SSO), it's
+        handle_oauth_callback() that fails (invalid state, OIDC not
+        configured) and redirects with oidc_error=1."""
         resp = client.get("/oidc/callback", follow_redirects=False)
         assert resp.status_code == 302
         assert resp.headers["Location"] == "/login?oidc_error=1"
@@ -146,10 +145,10 @@ class TestOidcCallbackRoute:
         db.session.add(oidc_user)
         db.session.commit()
 
-        # Seul handle_oauth_callback est mocké (fait de vrais appels
-        # réseau) - oidc_auth.login_user() reste la vraie implémentation
-        # (sync_user_from_oidc + flask_login.login_user(), tout local,
-        # pas d'appel réseau) pour que la session soit réellement établie.
+        # Only handle_oauth_callback is mocked (it makes real network
+        # calls) - oidc_auth.login_user() stays the real implementation
+        # (sync_user_from_oidc + flask_login.login_user(), all local, no
+        # network call) so the session actually gets established.
         with patch(
             "app.routes.auth.oidc_auth.handle_oauth_callback",
             return_value={"email": "oidc-user@example.com", "name": "OIDC User"},
@@ -161,11 +160,10 @@ class TestOidcCallbackRoute:
 
 
 class TestLogoutInOidcMode:
-    """Se connecte AVANT d'activer le mode OIDC (le fixture oidc_mode
-    ferait rediriger /login vers /oidc/login avant toute vérification
-    d'identifiants, cf. TestLoginRedirectsToOidcWhenBasicAuthDisabled) -
-    seul le comportement de /logout nous intéresse ici, pas la façon
-    dont la session a été ouverte."""
+    """Logs in BEFORE enabling OIDC mode (the oidc_mode fixture would
+    make /login redirect to /oidc/login before any credential check,
+    cf. TestLoginRedirectsToOidcWhenBasicAuthDisabled) - only /logout's
+    behavior matters here, not how the session was opened."""
 
     def _login_then_enable_oidc_mode(self, test_app, client, test_user, monkeypatch):
         client.post(
@@ -214,12 +212,12 @@ class TestLogoutInOidcMode:
 
 
 class TestOidcOptionalMode:
-    """SSO disponible EN PLUS du formulaire classique (bug réel : un
-    garde sur is_basic_auth_disabled() dans oidc_login()/oidc_callback()
-    bloquait silencieusement tout le flux SSO dès que
-    OIDC_DISABLE_BASIC_AUTH=false - le clic sur "Se connecter avec SSO"
-    ne faisait rien d'observable pour l'utilisateur, juste un aller-retour
-    vers /login)."""
+    """SSO available IN ADDITION to the classic form (a real bug: a
+    guard on is_basic_auth_disabled() in oidc_login()/oidc_callback()
+    silently blocked the entire SSO flow whenever
+    OIDC_DISABLE_BASIC_AUTH=false - clicking "Se connecter avec SSO"
+    did nothing observable for the user, just a round trip back to
+    /login)."""
 
     def test_login_page_does_not_auto_redirect(
         self, test_app, oidc_optional_mode, client

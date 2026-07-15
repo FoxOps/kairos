@@ -1,6 +1,6 @@
 """
-Tests pour AppNotificationService : notifications internes à l'app,
-créées par SwapService sur les événements d'échange de shifts.
+Tests for AppNotificationService: in-app notifications created by
+SwapService on shift-swap events.
 """
 
 from app import db

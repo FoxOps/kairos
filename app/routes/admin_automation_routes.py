@@ -1,6 +1,6 @@
 """
-Routes admin pour l'automatisation (astreintes/shifts). Enregistrées sur
-admin_bp (cf. app/routes/admin.py).
+Admin routes for automation (on-calls/shifts). Registered on admin_bp
+(see app/routes/admin.py).
 """
 
 from datetime import date, datetime, timedelta
@@ -35,7 +35,7 @@ def _flash_automation_messages(messages, default_category="info"):
 @admin_bp.route("/admin/automation")
 @admin_required
 def automation_dashboard():
-    """Tableau de bord de l'automatisation."""
+    """Automation dashboard."""
     status = get_automation_status()
 
     return render_template(
@@ -47,7 +47,7 @@ def automation_dashboard():
 @admin_bp.route("/admin/automation/full", methods=["GET", "POST"])
 @admin_required
 def automation_full():
-    """Génération complète (astreintes + shifts)."""
+    """Full generation (on-calls + shifts)."""
     if request.method == "POST":
         action = request.form.get("action")
 
@@ -99,11 +99,11 @@ def automation_full():
                 )
 
                 if dry_run:
-                    # Note : la prévisualisation des shifts se base sur les
-                    # astreintes déjà en base pour la période (le dry_run
-                    # des astreintes ci-dessus ne sauvegarde rien) - elle
-                    # peut donc différer du résultat final si aucune
-                    # astreinte n'existe encore pour cette période.
+                    # Note: the shift preview is based on the on-calls
+                    # already in the database for the period (the on-call
+                    # dry_run above doesn't save anything) - it can
+                    # therefore differ from the final result if no
+                    # on-call exists yet for this period.
                     shifts, shift_messages = (
                         AdvancedShiftAutomation.generate_full_schedule(
                             start_date, end_date, dry_run=True
@@ -169,7 +169,7 @@ def automation_full():
 @admin_bp.route("/admin/automation/status")
 @admin_required
 def automation_status():
-    """Affiche l'état actuel de l'automatisation."""
+    """Show the current automation status."""
     status = get_automation_status()
     return render_template("admin/automation/status.html", status=status)
 
@@ -178,10 +178,10 @@ def automation_status():
 @admin_required
 def refresh_shifts():
     """
-    Rafraîchit les shifts en vérifiant les astreintes actuelles.
+    Refresh shifts by checking the current on-calls.
 
-    Cette route permet de recalculer tous les shifts pour une période donnée
-    en tenant compte des astreintes actuelles (même modifiées manuellement).
+    This route recomputes all shifts for a given period, taking the
+    current on-calls into account (even if manually modified).
     """
     if request.method == "POST":
         start_date_str = request.form.get("start_date")
@@ -191,9 +191,9 @@ def refresh_shifts():
             start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
             end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
 
-            # Ne supprime que les shifts (pas les astreintes, contrairement à
-            # automation_full) : on ne fait que régénérer les shifts en
-            # tenant compte des astreintes existantes.
+            # Only deletes shifts (not on-calls, unlike automation_full):
+            # this only regenerates shifts, taking existing on-calls into
+            # account.
             deleted = ShiftRepository.delete_in_date_range(start_date, end_date)
             if deleted:
                 db.session.commit()
