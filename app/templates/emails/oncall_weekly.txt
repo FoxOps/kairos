@@ -1,9 +1,9 @@
-Bonjour {{ user_name }},
+{{ _("Bonjour %(user_name)s,", user_name=user_name) }}
 
-Vous êtes d'astreinte à partir de demain :
+{{ _("Vous êtes d'astreinte à partir de demain :") }}
 
-Du {{ oncall_start.strftime('%A %d/%m/%Y à %Hh%M')|capitalize }} au {{ oncall_end.strftime('%A %d/%m/%Y à %Hh%M')|capitalize }}
+{{ _("Du %(start)s au %(end)s", start=oncall_start.strftime('%A %d/%m/%Y à %Hh%M')|capitalize, end=oncall_end.strftime('%A %d/%m/%Y à %Hh%M')|capitalize) }}
 {% if app_base_url %}
-Voir les astreintes : {{ app_base_url }}/oncall
+{{ _("Voir les astreintes : %(url)s", url=app_base_url ~ "/oncall") }}
 {% endif %}
-Ceci est un rappel automatique envoyé chaque jeudi pour l'astreinte du lendemain.
+{{ _("Ceci est un rappel automatique envoyé chaque jeudi pour l'astreinte du lendemain.") }}
