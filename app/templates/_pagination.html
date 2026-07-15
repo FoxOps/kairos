@@ -19,29 +19,29 @@
    refonte. Icônes fa-chevron gardées (cohérence avec le reste de l'app)
    plutôt que les caractères « » du modèle daisyUI. #}
 <div class="flex flex-wrap justify-between items-center gap-2 my-2">
-    <nav class="join" role="navigation" aria-label="Pagination">
+    <nav class="join" role="navigation" aria-label="{{ _("Pagination") }}">
         <a class="join-item btn btn-sm {% if not pagination.has_prev %}btn-disabled{% endif %}"
            href="{{ url_for(route, page=pagination.prev_num, per_page=per_page) if pagination.has_prev else '#' }}"
-           aria-label="Page précédente"
+           aria-label="{{ _("Page précédente") }}"
            {% if not pagination.has_prev %}aria-disabled="true" tabindex="-1"{% endif %}>
             <i class="fas fa-chevron-left" aria-hidden="true"></i>
         </a>
-        <span class="join-item btn btn-sm btn-disabled" aria-current="page">Page {{ pagination.page }} / {{ pagination.pages or 1 }}</span>
+        <span class="join-item btn btn-sm btn-disabled" aria-current="page">{{ _("Page %(page)s / %(pages)s", page=pagination.page, pages=pagination.pages or 1) }}</span>
         <a class="join-item btn btn-sm {% if not pagination.has_next %}btn-disabled{% endif %}"
            href="{{ url_for(route, page=pagination.next_num, per_page=per_page) if pagination.has_next else '#' }}"
-           aria-label="Page suivante"
+           aria-label="{{ _("Page suivante") }}"
            {% if not pagination.has_next %}aria-disabled="true" tabindex="-1"{% endif %}>
             <i class="fas fa-chevron-right" aria-hidden="true"></i>
         </a>
     </nav>
 
     {# Sélecteur de nombre d'éléments par page #}
-    <form method="get" action="{{ url_for(route) }}" class="flex items-center gap-2" aria-label="Nombre d'éléments par page">
-        <select name="per_page" class="select select-sm" onchange="this.form.submit()" aria-label="Éléments par page">
+    <form method="get" action="{{ url_for(route) }}" class="flex items-center gap-2" aria-label="{{ _("Nombre d'éléments par page") }}">
+        <select name="per_page" class="select select-sm" onchange="this.form.submit()" aria-label="{{ _("Éléments par page") }}">
             {% for option in per_page_options %}
             <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
             {% endfor %}
-            <option value="0" {% if per_page == 999999 %}selected{% endif %}>Tout</option>
+            <option value="0" {% if per_page == 999999 %}selected{% endif %}>{{ _("Tout") }}</option>
         </select>
         <input type="hidden" name="page" value="1">
         <small class="text-base-content/60 whitespace-nowrap">
