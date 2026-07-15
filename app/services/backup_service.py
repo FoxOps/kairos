@@ -33,7 +33,32 @@ class BackupService:
 
     @staticmethod
     def get_config() -> BackupConfig:
-        return BackupConfig.from_env()
+        """Env config, with retention_days/max_backups overridden by any
+        DB-stored Setting (admin-editable at /admin/settings). This only
+        affects admin-UI-triggered actions (create_now/cleanup_now/
+        list_all_backups below) - the standalone cron-invoked
+        scripts/backup_database.py stays 100% env-var-driven by design,
+        preserving its "never imports app.*" isolation guarantee (see
+        tests/unit/test_backup_database.py). Silently skips the
+        DB override (env-only) when called outside a Flask app context -
+        this method predates the Settings feature and some callers
+        (tests, scripts) still invoke it without one."""
+        config = BackupConfig.from_env()
+
+        try:
+            from app.services.settings_service import SettingsService
+
+            retention_days = SettingsService.get_backup_retention_days()
+            if retention_days is not None:
+                config.retention_days = retention_days
+
+            max_backups = SettingsService.get_backup_max_backups()
+            if max_backups is not None:
+                config.max_backups = max_backups
+        except RuntimeError:
+            pass
+
+        return config
 
     @staticmethod
     def list_all_backups() -> dict[str, Any]:

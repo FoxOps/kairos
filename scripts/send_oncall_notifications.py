@@ -37,24 +37,36 @@ logger = logging.getLogger(__name__)
 def main() -> int:
     config = NotificationConfig.from_env()
 
-    if not config.is_configured():
-        logger.info(
-            "Notifications désactivées ou configuration SMTP incomplète "
-            "(NOTIFICATIONS_ENABLED/NOTIFICATION_FROM_EMAIL/SMTP_HOST) - rien à faire."
-        )
-        return 0
-
-    smtp_config = {
-        "smtp_host": config.smtp_host,
-        "smtp_port": config.smtp_port,
-        "from_email": config.from_email,
-        "smtp_username": config.smtp_username,
-        "smtp_password": config.smtp_password,
-        "smtp_use_tls": config.smtp_use_tls,
-        "smtp_timeout": config.smtp_timeout,
-    }
-
     with app.app_context():
+        from app.services import SettingsService
+
+        # SettingsService.get_notifications_enabled() checks the
+        # DB-stored Setting first (admin-editable at /admin/settings)
+        # and falls back to the NOTIFICATIONS_ENABLED env var when no
+        # override exists - see app/services/settings_service.py.
+        # SMTP completeness (from_email/smtp_host) stays env-only, those
+        # are secrets/deployment config, not migrated.
+        if not (
+            SettingsService.get_notifications_enabled()
+            and config.from_email
+            and config.smtp_host
+        ):
+            logger.info(
+                "Notifications désactivées ou configuration SMTP incomplète "
+                "(NOTIFICATIONS_ENABLED/NOTIFICATION_FROM_EMAIL/SMTP_HOST) - rien à faire."
+            )
+            return 0
+
+        smtp_config = {
+            "smtp_host": config.smtp_host,
+            "smtp_port": config.smtp_port,
+            "from_email": config.from_email,
+            "smtp_username": config.smtp_username,
+            "smtp_password": config.smtp_password,
+            "smtp_use_tls": config.smtp_use_tls,
+            "smtp_timeout": config.smtp_timeout,
+        }
+
         result = NotificationService.send_weekly_oncall_notification(
             smtp_config, app_base_url=config.app_base_url
         )
