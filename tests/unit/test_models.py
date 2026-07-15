@@ -14,6 +14,7 @@ from app.models import (
     Leave,
     NotificationLog,
     OnCall,
+    Setting,
     Shift,
     ShiftType,
     SwapRequest,
@@ -499,3 +500,44 @@ class TestAppNotificationModel:
             notification.mark_read()
             assert notification.read_at is not None
             assert notification.is_unread() is False
+
+
+class TestSettingModel:
+    """Tests for the Setting model (generic key/value admin settings store)."""
+
+    def test_get_returns_default_when_missing(self, test_app):
+        with test_app.app_context():
+            assert Setting.get("does_not_exist") is None
+            assert Setting.get("does_not_exist", default="fallback") == "fallback"
+
+    def test_set_then_get_round_trips_string(self, test_app):
+        with test_app.app_context():
+            Setting.set("default_timezone", "Europe/Paris")
+            assert Setting.get("default_timezone") == "Europe/Paris"
+
+    def test_set_then_get_round_trips_non_string_types(self, test_app):
+        with test_app.app_context():
+            Setting.set("items_per_page", 25)
+            Setting.set("notifications_enabled", True)
+            Setting.set("some_list", [1, 2, 3])
+
+            assert Setting.get("items_per_page") == 25
+            assert Setting.get("notifications_enabled") is True
+            assert Setting.get("some_list") == [1, 2, 3]
+
+    def test_set_upserts_existing_key(self, test_app):
+        with test_app.app_context():
+            Setting.set("default_timezone", "Europe/Paris")
+            Setting.set("default_timezone", "America/New_York")
+
+            assert Setting.get("default_timezone") == "America/New_York"
+            assert Setting.query.filter_by(key="default_timezone").count() == 1
+
+    def test_different_keys_do_not_collide(self, test_app):
+        with test_app.app_context():
+            Setting.set("key_a", "value_a")
+            Setting.set("key_b", "value_b")
+
+            assert Setting.get("key_a") == "value_a"
+            assert Setting.get("key_b") == "value_b"
+            assert Setting.query.count() == 2
