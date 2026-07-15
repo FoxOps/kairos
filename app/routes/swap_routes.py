@@ -55,9 +55,7 @@ def add_swap():
             flash(f"Impossible de créer la demande : {error}", "danger")
             return redirect(url_for("main.add_swap"))
 
-        flash(
-            "✅ Demande d'échange envoyée, en attente de validation admin.", "success"
-        )
+        flash("Demande d'échange envoyée, en attente de validation admin.", "success")
         return redirect(url_for("main.swaps"))
 
     my_shifts = [

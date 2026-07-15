@@ -51,6 +51,13 @@ class User(BaseModel, UserMixin):
         is_admin: Whether the user has administrator privileges
         group_id: Foreign key to Group
         ics_token: Unique token for ICS export
+        timezone: Optional personal IANA timezone (e.g. "Europe/Paris"); None
+            means "use the organization's default_timezone setting"
+        shift_notifications_enabled: Opt-out for the weekly shift reminder
+            email (only takes effect if notifications are enabled org-wide,
+            see SettingsService.get_notifications_enabled())
+        oncall_notifications_enabled: Opt-out for the weekly on-call
+            reminder email (same org-wide gate as above)
         shifts: Relationship to Shift model
         on_calls: Relationship to OnCall model
         leaves: Relationship to Leave model
@@ -66,6 +73,9 @@ class User(BaseModel, UserMixin):
         db.Integer, db.ForeignKey("groups.id"), nullable=False, default=1, index=True
     )
     ics_token = db.Column(db.String(64), unique=True, nullable=True)
+    timezone = db.Column(db.String(64), nullable=True)
+    shift_notifications_enabled = db.Column(db.Boolean, nullable=False, default=True)
+    oncall_notifications_enabled = db.Column(db.Boolean, nullable=False, default=True)
 
     # Relationships
     shifts = db.relationship(
@@ -146,6 +156,15 @@ class User(BaseModel, UserMixin):
         if not self.ics_token:
             return None
         return f"/export/{export_type}?scope={scope}&token={self.ics_token}"
+
+    def effective_timezone(self) -> str:
+        """The IANA timezone to use for this user: their own preference if
+        set, otherwise the organization's default_timezone setting."""
+        if self.timezone:
+            return self.timezone
+        from app.services import SettingsService
+
+        return SettingsService.get_default_timezone()
 
     def __repr__(self) -> str:
         return f"<User {self.name} ({self.email})>"

@@ -35,10 +35,10 @@ def backups_create():
     results = BackupService.create_now()
 
     if results["success"]:
-        flash("✅ Sauvegarde créée avec succès.", "success")
+        flash("Sauvegarde créée avec succès.", "success")
     else:
         errors = "; ".join(results.get("errors", [])) or "erreur inconnue"
-        flash(f"❌ Échec de la sauvegarde : {errors}", "danger")
+        flash(f"Échec de la sauvegarde : {errors}", "danger")
 
     return redirect(url_for("admin.backups_dashboard"))
 
@@ -52,7 +52,7 @@ def backups_cleanup():
     s3 = results["s3"]
 
     flash(
-        f"🧹 Nettoyage terminé : {local['count']} sauvegarde(s) locale(s), "
+        f"Nettoyage terminé : {local['count']} sauvegarde(s) locale(s), "
         f"{s3['count']} sauvegarde(s) S3 supprimée(s).",
         "info",
     )

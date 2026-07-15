@@ -45,7 +45,7 @@ class TestBuildCalendarEvents:
         with test_app.app_context():
             from app.services.schedule_service import ScheduleService
 
-            events = ScheduleService.build_calendar_events([], [], [])
+            events = ScheduleService.build_calendar_events([], [], [], None)
             assert events == []
 
     def test_build_calendar_events_with_shift(
@@ -65,7 +65,7 @@ class TestBuildCalendarEvents:
                 user=test_user,
                 shift_type=test_shift_type,
             )
-            events = ScheduleService.build_calendar_events([shift], [], [])
+            events = ScheduleService.build_calendar_events([shift], [], [], test_user)
             assert len(events) == 1
             assert events[0]["className"] == "fc-event-shift"
             assert test_user.name in events[0]["title"]
@@ -82,7 +82,7 @@ class TestBuildCalendarEvents:
                 end_time=now + timedelta(days=8),
                 user=test_user,
             )
-            events = ScheduleService.build_calendar_events([], [oncall], [])
+            events = ScheduleService.build_calendar_events([], [oncall], [], test_user)
             assert len(events) == 1
             assert events[0]["className"] == "fc-event-oncall"
             assert "Astreinte" in events[0]["title"]
@@ -98,10 +98,69 @@ class TestBuildCalendarEvents:
                 end_date=date.today() + timedelta(days=5),
                 user=test_user,
             )
-            events = ScheduleService.build_calendar_events([], [], [leave])
+            events = ScheduleService.build_calendar_events([], [], [leave], test_user)
             assert len(events) == 1
             assert events[0]["className"] == "fc-event-leave"
             assert events[0]["allDay"] is True
+
+
+class TestBuildCalendarEventsTimezoneConversion:
+    """A shift stored at 09:00 (naive, meaning org default_timezone) must
+    be translated to the viewer's own effective_timezone before being
+    serialized - this is what makes the /profile/update timezone
+    preference actually visible in the calendar (not just in ICS
+    exports, which always stay in the org's canonical timezone - see
+    CLAUDE.md's "Multi-timezone support" section)."""
+
+    def test_shift_translated_to_viewer_timezone(
+        self, test_app, test_user, test_shift_type
+    ):
+        with test_app.app_context():
+            from app.services import ScheduleService, SettingsService
+
+            SettingsService.set_default_timezone("Europe/Paris")
+            test_user.timezone = "America/New_York"
+
+            start_time = datetime(2024, 7, 1, 9, 0)  # summer: CEST = UTC+2
+            shift = Shift(
+                user_id=test_user.id,
+                shift_type_id=test_shift_type.id,
+                start_time=start_time,
+                end_time=start_time + timedelta(hours=8),
+                date=start_time.date(),
+                user=test_user,
+                shift_type=test_shift_type,
+            )
+
+            events = ScheduleService.build_calendar_events([shift], [], [], test_user)
+
+        # New York (EDT, UTC-4) is 6 hours behind Paris in summer: 09:00
+        # Paris -> 03:00 New York, same instant.
+        assert events[0]["start"] == "2024-07-01T03:00:00"
+
+    def test_viewer_without_preference_sees_org_timezone(
+        self, test_app, test_user, test_shift_type
+    ):
+        with test_app.app_context():
+            from app.services import ScheduleService, SettingsService
+
+            SettingsService.set_default_timezone("Europe/Paris")
+            assert test_user.timezone is None
+
+            start_time = datetime(2024, 7, 1, 9, 0)
+            shift = Shift(
+                user_id=test_user.id,
+                shift_type_id=test_shift_type.id,
+                start_time=start_time,
+                end_time=start_time + timedelta(hours=8),
+                date=start_time.date(),
+                user=test_user,
+                shift_type=test_shift_type,
+            )
+
+            events = ScheduleService.build_calendar_events([shift], [], [], test_user)
+
+        assert events[0]["start"] == "2024-07-01T09:00:00"
 
 
 class TestIndexRoute:

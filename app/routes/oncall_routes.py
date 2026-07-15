@@ -6,7 +6,7 @@ main_bp (see app/routes/main.py).
 from datetime import datetime
 
 from flask import abort, flash, jsonify, redirect, render_template, request, url_for
-from flask_login import login_required
+from flask_login import current_user, login_required
 
 from app import db
 from app.auth.decorators import admin_required
@@ -14,6 +14,7 @@ from app.models import User
 from app.repositories.oncall_repository import OnCallRepository
 from app.routes.main import main_bp
 from app.services import OnCallService, UserService
+from app.utils.helpers.timezone_helpers import to_org_timezone, to_viewer_timezone
 
 
 @main_bp.route("/oncall")
@@ -109,14 +110,14 @@ def delete_all_oncalls():
         count = OnCallService.delete_all()
         if count > 0:
             flash(
-                f"✅ Toutes les {count} astreintes ont été supprimées avec succès !",
+                f"Toutes les {count} astreintes ont été supprimées avec succès !",
                 "success",
             )
         else:
-            flash("⚠️ Aucune astreinte à supprimer.", "warning")
+            flash("Aucune astreinte à supprimer.", "warning")
     except Exception as e:
         db.session.rollback()
-        flash(f"❌ Erreur : {str(e)}", "danger")
+        flash(f"Erreur : {str(e)}", "danger")
     return redirect(url_for("main.oncall"))
 
 
@@ -130,15 +131,15 @@ def delete_all_oncalls_for_user(user_id):
     try:
         count = OnCallService.delete_all_for_user(user_id)
         if count == 0:
-            flash(f"⚠️ Aucun astreinte trouvée pour {user.name}.", "warning")
+            flash(f"Aucun astreinte trouvée pour {user.name}.", "warning")
         else:
             flash(
-                f"✅ Toutes les {count} astreintes de {user.name} ont été supprimées avec succès !",
+                f"Toutes les {count} astreintes de {user.name} ont été supprimées avec succès !",
                 "success",
             )
     except Exception as e:
         db.session.rollback()
-        flash(f"❌ Erreur : {str(e)}", "danger")
+        flash(f"Erreur : {str(e)}", "danger")
     return redirect(url_for("main.oncall"))
 
 
@@ -178,10 +179,20 @@ def api_update_oncall(oncall_id):
         if not new_start_str:
             return jsonify({"success": False, "error": "Date de début manquante"}), 400
 
-        new_start = datetime.fromisoformat(new_start_str.replace("Z", "+00:00"))
+        # FullCalendar's timeZone: 'UTC' (fullcalendar-config.js) means
+        # these strings carry the viewer's own wall-clock digits, not a
+        # real UTC instant - strip tzinfo and convert to the org's
+        # canonical timezone before storage.
+        new_start = datetime.fromisoformat(
+            new_start_str.replace("Z", "+00:00")
+        ).replace(tzinfo=None)
+        new_start = to_org_timezone(new_start, current_user)
 
         if new_end_str:
-            new_end = datetime.fromisoformat(new_end_str.replace("Z", "+00:00"))
+            new_end = datetime.fromisoformat(
+                new_end_str.replace("Z", "+00:00")
+            ).replace(tzinfo=None)
+            new_end = to_org_timezone(new_end, current_user)
         else:
             duration = oncall_obj.end_time - oncall_obj.start_time
             new_end = new_start + duration
@@ -196,8 +207,12 @@ def api_update_oncall(oncall_id):
                 "message": "Astreinte mise à jour avec succès",
                 "oncall": {
                     "id": updated_oncall.id,
-                    "start": updated_oncall.start_time.isoformat(),
-                    "end": updated_oncall.end_time.isoformat(),
+                    "start": to_viewer_timezone(
+                        updated_oncall.start_time, current_user
+                    ).isoformat(),
+                    "end": to_viewer_timezone(
+                        updated_oncall.end_time, current_user
+                    ).isoformat(),
                 },
             }
         )

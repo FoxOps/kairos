@@ -31,6 +31,34 @@ class TestGetConfig:
         config = BackupService.get_config()
         assert config.enabled is True
 
+    def test_falls_back_to_env_without_app_context(self, monkeypatch):
+        """No Flask app context here (deliberately, matching the rest of
+        this file) - get_config() must not crash, just skip the DB
+        override (can't query Setting without a context)."""
+        monkeypatch.setenv("BACKUP_RETENTION_DAYS", "45")
+        config = BackupService.get_config()
+        assert config.retention_days == 45
+
+    def test_db_override_wins_with_app_context(self, test_app, monkeypatch):
+        monkeypatch.setenv("BACKUP_RETENTION_DAYS", "45")
+        monkeypatch.setenv("BACKUP_MAX_BACKUPS", "10")
+        with test_app.app_context():
+            from app.services import SettingsService
+
+            SettingsService.set_backup_retention(retention_days=60, max_backups=20)
+
+            config = BackupService.get_config()
+            assert config.retention_days == 60
+            assert config.max_backups == 20
+
+    def test_env_fallback_inside_app_context_when_no_db_row(
+        self, test_app, monkeypatch
+    ):
+        monkeypatch.setenv("BACKUP_RETENTION_DAYS", "45")
+        with test_app.app_context():
+            config = BackupService.get_config()
+            assert config.retention_days == 45
+
 
 class TestListAllBackups:
     def test_empty_when_no_backups(self):

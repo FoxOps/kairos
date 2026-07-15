@@ -168,6 +168,9 @@ class Config:
     # the right domain (proxy not forwarding X-Forwarded-Host). See
     # app/__init__.py's inject_public_base_url and the
     # _ics_export_buttons.html / auth/ics_token.html templates.
+    # Fallback only when no DB-stored Setting exists - admin-editable at
+    # /admin/settings without redeploy, see
+    # app/services/settings_service.py::SettingsService.get_public_base_url().
     PUBLIC_BASE_URL: str | None = os.environ.get("PUBLIC_BASE_URL") or None
 
     # Debug Mode (should be False in production)
@@ -213,6 +216,9 @@ class Config:
     )
 
     # Pagination Configuration
+    # Fallback only when no DB-stored Setting exists - see
+    # app/services/settings_service.py::SettingsService.get_items_per_page()/
+    # get_max_per_page().
     ITEMS_PER_PAGE: int = get_int_from_env("ITEMS_PER_PAGE", 20)
     MAX_PER_PAGE: int = get_int_from_env("MAX_PER_PAGE", 100)
 

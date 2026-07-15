@@ -42,6 +42,10 @@
                         <i class="fas fa-edit" aria-hidden="true"></i>
                         <span>Modifier le profil</span>
                     </a>
+                    <a href="{{ url_for('auth.profile_settings') }}" class="btn btn-secondary" aria-label="Mes paramètres">
+                        <i class="fas fa-sliders" aria-hidden="true"></i>
+                        <span>Mes paramètres</span>
+                    </a>
                     <a href="{{ url_for('auth.generate_ics_token') }}" class="btn btn-info" aria-label="Générer un token ICS">
                         <i class="fas fa-calendar-alt" aria-hidden="true"></i>
                         <span>Token ICS</span>

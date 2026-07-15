@@ -29,7 +29,7 @@ def add_shift_type():
         end_hour = request.form.get("end_hour")
 
         if not all([name, label, start_hour, end_hour]):
-            flash("❌ Tous les champs sont obligatoires.", "danger")
+            flash("Tous les champs sont obligatoires.", "danger")
             return redirect(url_for("admin.add_shift_type"))
 
         try:
@@ -37,18 +37,18 @@ def add_shift_type():
                 name, label, int(start_hour), int(end_hour)
             )
             if error:
-                flash(f"❌ {error}", "danger")
+                flash(f"{error}", "danger")
                 return redirect(url_for("admin.add_shift_type"))
 
-            flash("✅ Type de shift ajouté avec succès !", "success")
+            flash("Type de shift ajouté avec succès !", "success")
             return redirect(url_for("admin.list_shift_types"))
         except ValueError:
             db.session.rollback()
-            flash("❌ Les heures doivent être des nombres entiers.", "danger")
+            flash("Les heures doivent être des nombres entiers.", "danger")
             return redirect(url_for("admin.add_shift_type"))
         except Exception as e:
             db.session.rollback()
-            flash(f"❌ Erreur : {str(e)}", "danger")
+            flash(f"Erreur : {str(e)}", "danger")
 
     return render_template("admin/add_shift_type.html")
 
@@ -65,7 +65,7 @@ def edit_shift_type(shift_type_id):
         end_hour = request.form.get("end_hour")
 
         if not all([name, label, start_hour, end_hour]):
-            flash("❌ Tous les champs sont obligatoires.", "danger")
+            flash("Tous les champs sont obligatoires.", "danger")
             return redirect(
                 url_for("admin.edit_shift_type", shift_type_id=shift_type_id)
             )
@@ -75,22 +75,22 @@ def edit_shift_type(shift_type_id):
                 shift_type_id, name, label, int(start_hour), int(end_hour)
             )
             if error:
-                flash(f"❌ {error}", "danger")
+                flash(f"{error}", "danger")
                 return redirect(
                     url_for("admin.edit_shift_type", shift_type_id=shift_type_id)
                 )
 
-            flash("✅ Type de shift modifié avec succès !", "success")
+            flash("Type de shift modifié avec succès !", "success")
             return redirect(url_for("admin.list_shift_types"))
         except ValueError:
             db.session.rollback()
-            flash("❌ Les heures doivent être des nombres entiers.", "danger")
+            flash("Les heures doivent être des nombres entiers.", "danger")
             return redirect(
                 url_for("admin.edit_shift_type", shift_type_id=shift_type_id)
             )
         except Exception as e:
             db.session.rollback()
-            flash(f"❌ Erreur : {str(e)}", "danger")
+            flash(f"Erreur : {str(e)}", "danger")
 
     return render_template("admin/edit_shift_type.html", shift_type=shift_type)
 
@@ -104,11 +104,11 @@ def delete_shift_type(shift_type_id):
     try:
         deleted, error = ShiftTypeService.delete(shift_type_id)
         if error:
-            flash(f"❌ {error}", "danger")
+            flash(f"{error}", "danger")
         elif deleted:
-            flash("✅ Type de shift supprimé avec succès !", "success")
+            flash("Type de shift supprimé avec succès !", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"❌ Erreur : {str(e)}", "danger")
+        flash(f"Erreur : {str(e)}", "danger")
 
     return redirect(url_for("admin.list_shift_types"))

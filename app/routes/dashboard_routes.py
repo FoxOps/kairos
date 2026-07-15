@@ -25,7 +25,7 @@ from app.utils.optimizations import eager_load
 @eager_load(Leave, ["user"])
 def index():
     """Home page - only accessible to logged-in users."""
-    events = ScheduleService.get_calendar_events()
+    events = ScheduleService.get_calendar_events(current_user)
     return render_template("index.html", events=events)
 
 
@@ -33,7 +33,7 @@ def index():
 @login_required
 def api_get_shifts():
     """API endpoint to fetch shifts as JSON for FullCalendar."""
-    events = ScheduleService.get_calendar_events()
+    events = ScheduleService.get_calendar_events(current_user)
     return jsonify(events)
 
 

@@ -40,7 +40,7 @@ def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_admin:
-            flash("❌ Accès refusé : vous devez être administrateur.", "danger")
+            flash("Accès refusé : vous devez être administrateur.", "danger")
             return redirect(url_for("main.index"))
         return f(*args, **kwargs)
 
@@ -99,7 +99,7 @@ def user_owns_resource(model, resource_id_param, user_id_attr="user_id"):
                 return f(*args, **kwargs)
 
             flash(
-                "❌ Accès refusé : vous ne pouvez modifier que vos propres données.",
+                "Accès refusé : vous ne pouvez modifier que vos propres données.",
                 "danger",
             )
             return redirect(url_for("main.index"))

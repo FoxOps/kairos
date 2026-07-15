@@ -10,6 +10,7 @@ organized by domain:
 - SwapRequest: SwapRequest (shift exchange between users, admin validation)
 - AppNotification: AppNotification (in-app notification, not the email-dedup NotificationLog)
 - Base: BaseModel (common fields and methods)
+- Setting: Setting (generic DB-backed admin settings, distinct from AutomationConfig)
 """
 
 from app.models.app_notification import AppNotification
@@ -18,6 +19,7 @@ from app.models.base import BaseModel
 from app.models.leave import Leave
 from app.models.notification_log import NotificationLog
 from app.models.oncall import OnCall
+from app.models.setting import Setting
 from app.models.shift import Shift, ShiftType
 from app.models.swap_request import SwapRequest
 from app.models.user import Group, User
@@ -31,6 +33,7 @@ __all__ = [
     "OnCall",
     "Leave",
     "AutomationConfig",
+    "Setting",
     "NotificationLog",
     "SwapRequest",
     "AppNotification",

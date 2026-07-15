@@ -194,3 +194,59 @@ class TestApiUpdateOncall:
                 json={"start": datetime.now().isoformat()},
             )
         assert resp.status_code == 500
+
+    def test_update_converts_viewer_tz_to_org_tz_for_storage(
+        self, test_app, logged_in_client, test_user
+    ):
+        """Same round-trip as
+        TestApiCreateShiftTimezoneConversion in
+        test_shift_routes_coverage.py, for the on-call drag & drop
+        update path. Uses Europe/London (1h behind Paris in summer,
+        rather than New York's 6h) so the converted start still falls on
+        the same Friday - OnCallService.api_update rejects any start
+        that isn't a Friday, a business rule that operates on the org-tz
+        canonical value."""
+        from app import db
+        from app.models import OnCall
+        from app.services import SettingsService
+
+        with test_app.app_context():
+            SettingsService.set_default_timezone("Europe/Paris")
+            oncall = OnCall(
+                user_id=test_user.id,
+                start_time=datetime(2024, 7, 5, 21, 0),
+                end_time=datetime(2024, 7, 12, 7, 0),
+            )
+            db.session.add(oncall)
+            db.session.commit()
+            oncall_id = oncall.id
+
+        logged_in_client.post(
+            "/profile/update",
+            data={
+                "name": "Admin",
+                "email": "login@example.com",
+                "timezone": "Europe/London",
+            },
+            follow_redirects=True,
+        )
+
+        resp = logged_in_client.patch(
+            f"/api/oncall/{oncall_id}",
+            # Viewer (Europe/London) wall-clock digits.
+            json={"start": "2024-07-05T20:00:00", "end": "2024-07-12T06:00:00"},
+        )
+
+        assert resp.status_code == 200
+        body = resp.get_json()
+        assert body["success"] is True
+
+        # Paris (CEST, UTC+2) is 1 hour ahead of London (BST, UTC+1) in
+        # summer.
+        with test_app.app_context():
+            updated = db.session.get(OnCall, oncall_id)
+            assert updated.start_time.isoformat() == "2024-07-05T21:00:00"
+            assert updated.end_time.isoformat() == "2024-07-12T07:00:00"
+
+        assert body["oncall"]["start"] == "2024-07-05T20:00:00"
+        assert body["oncall"]["end"] == "2024-07-12T06:00:00"

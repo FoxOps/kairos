@@ -14,6 +14,7 @@ from app.models import (
     Leave,
     NotificationLog,
     OnCall,
+    Setting,
     Shift,
     ShiftType,
     SwapRequest,
@@ -174,6 +175,47 @@ class TestUserModel:
             assert len(test_user.leaves) == 1
             assert test_user.leaves[0].id == leave.id
             assert test_user.group.id == test_group.id
+
+    def test_effective_timezone_uses_own_preference_when_set(self, test_app, test_user):
+        with test_app.app_context():
+            test_user.timezone = "America/New_York"
+            db.session.commit()
+
+            assert test_user.effective_timezone() == "America/New_York"
+
+    def test_effective_timezone_falls_back_to_org_default(self, test_app, test_user):
+        with test_app.app_context():
+            assert test_user.timezone is None
+            assert test_user.effective_timezone() == "Europe/Paris"
+
+    def test_effective_timezone_reflects_admin_default_change(
+        self, test_app, test_user
+    ):
+        """A user without a personal preference must pick up a change to
+        the org default retroactively - the fallback is resolved at read
+        time, not baked into the column."""
+        with test_app.app_context():
+            from app.services import SettingsService
+
+            SettingsService.set_default_timezone("America/New_York")
+
+            assert test_user.effective_timezone() == "America/New_York"
+
+    def test_notification_preferences_default_to_enabled(self, test_app, test_group):
+        """No opt-out existed before this preference was added - default
+        must be True so existing/new users keep getting the emails they
+        already got, until they explicitly disable one."""
+        with test_app.app_context():
+            user = User(
+                name="Default Notif User",
+                email="default-notif@test.com",
+                group_id=test_group.id,
+            )
+            db.session.add(user)
+            db.session.commit()
+
+            assert user.shift_notifications_enabled is True
+            assert user.oncall_notifications_enabled is True
 
 
 class TestShiftTypeModel:
@@ -499,3 +541,44 @@ class TestAppNotificationModel:
             notification.mark_read()
             assert notification.read_at is not None
             assert notification.is_unread() is False
+
+
+class TestSettingModel:
+    """Tests for the Setting model (generic key/value admin settings store)."""
+
+    def test_get_returns_default_when_missing(self, test_app):
+        with test_app.app_context():
+            assert Setting.get("does_not_exist") is None
+            assert Setting.get("does_not_exist", default="fallback") == "fallback"
+
+    def test_set_then_get_round_trips_string(self, test_app):
+        with test_app.app_context():
+            Setting.set("default_timezone", "Europe/Paris")
+            assert Setting.get("default_timezone") == "Europe/Paris"
+
+    def test_set_then_get_round_trips_non_string_types(self, test_app):
+        with test_app.app_context():
+            Setting.set("items_per_page", 25)
+            Setting.set("notifications_enabled", True)
+            Setting.set("some_list", [1, 2, 3])
+
+            assert Setting.get("items_per_page") == 25
+            assert Setting.get("notifications_enabled") is True
+            assert Setting.get("some_list") == [1, 2, 3]
+
+    def test_set_upserts_existing_key(self, test_app):
+        with test_app.app_context():
+            Setting.set("default_timezone", "Europe/Paris")
+            Setting.set("default_timezone", "America/New_York")
+
+            assert Setting.get("default_timezone") == "America/New_York"
+            assert Setting.query.filter_by(key="default_timezone").count() == 1
+
+    def test_different_keys_do_not_collide(self, test_app):
+        with test_app.app_context():
+            Setting.set("key_a", "value_a")
+            Setting.set("key_b", "value_b")
+
+            assert Setting.get("key_a") == "value_a"
+            assert Setting.get("key_b") == "value_b"
+            assert Setting.query.count() == 2

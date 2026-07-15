@@ -121,11 +121,15 @@
         <div class="card-body">
             <h2 class="text-lg font-semibold"><i class="fas fa-comments" aria-hidden="true"></i> Messages de génération</h2>
 
+            {% set automation_alert_class_map = {'danger': 'alert-error', 'success': 'alert-success', 'warning': 'alert-warning', 'info': 'alert-info'} %}
+            {% set automation_alert_icon_map = {'danger': 'fa-circle-exclamation', 'success': 'fa-circle-check', 'warning': 'fa-triangle-exclamation', 'info': 'fa-circle-info'} %}
+
             <h3 class="font-semibold">Astreintes</h3>
             {% if result.oncall.messages %}
             <div class="flex flex-col gap-2 mb-4">
-                {% for msg in result.oncall.messages %}
-                <div class="alert {% if '✅' in msg or '🎉' in msg %}alert-success{% elif '⚠️' in msg %}alert-warning{% else %}alert-error{% endif %}">
+                {% for category, msg in result.oncall.messages %}
+                <div class="alert {{ automation_alert_class_map.get(category, 'alert-error') }}">
+                    <i class="fas {{ automation_alert_icon_map.get(category, 'fa-circle-exclamation') }}" aria-hidden="true"></i>
                     <p>{{ msg }}</p>
                 </div>
                 {% endfor %}
@@ -137,8 +141,9 @@
             <h3 class="font-semibold">Shifts</h3>
             {% if result.shift.messages %}
             <div class="flex flex-col gap-2">
-                {% for msg in result.shift.messages %}
-                <div class="alert {% if '✅' in msg or '🎉' in msg %}alert-success{% elif '⚠️' in msg %}alert-warning{% else %}alert-error{% endif %}">
+                {% for category, msg in result.shift.messages %}
+                <div class="alert {{ automation_alert_class_map.get(category, 'alert-error') }}">
+                    <i class="fas {{ automation_alert_icon_map.get(category, 'fa-circle-exclamation') }}" aria-hidden="true"></i>
                     <p>{{ msg }}</p>
                 </div>
                 {% endfor %}

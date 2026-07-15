@@ -6,6 +6,7 @@ This module provides general utility functions used throughout the application.
 
 import os
 from datetime import date, datetime, timedelta
+from zoneinfo import available_timezones
 
 from flask_login import current_user
 
@@ -35,6 +36,12 @@ def get_int(env_var: str, default: int = 0) -> int:
         return int(value.strip())
     except ValueError:
         return default
+
+
+def get_timezone_choices() -> list[str]:
+    """Sorted IANA timezone names, for the /profile/update and
+    /admin/settings timezone <select> dropdowns."""
+    return sorted(available_timezones())
 
 
 _FR_WEEKDAYS_ABBR = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."]

@@ -128,6 +128,19 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const calendar = new FullCalendar.Calendar(calendarEl, {
+        // Event start/end strings from the server are already translated
+        // into the viewer's own timezone (server-side, via
+        // app/utils/helpers/timezone_helpers.py) - timeZone: 'UTC' tells
+        // FullCalendar to display those digits literally instead of
+        // reinterpreting them against the browser's own system clock,
+        // which would double-convert. No moment-timezone/luxon plugin
+        // needed (this app is CDN-only, see CLAUDE.md's Frontend
+        // section) - the server does all the real zoneinfo conversion.
+        // Every other Date getter/constructor in this file must stay
+        // consistent with this (UTC getters, no `new Date(str)` on a
+        // timezone-less string) - see formatDateForInput and the
+        // shift-creation modal below.
+        timeZone: 'UTC',
         initialView: 'dayGridMonth',
         headerToolbar: {
             left: 'prev,next today',
@@ -386,7 +399,8 @@ document.addEventListener('DOMContentLoaded', function () {
         // Disable drag & drop on weekends
         dateClick: function (info) {
             const date = info.date;
-            if (date.getDay() === 0 || date.getDay() === 6) { // Sunday (0) or Saturday (6)
+            // getUTCDay, not getDay - see formatDateForInput's comment.
+            if (date.getUTCDay() === 0 || date.getUTCDay() === 6) { // Sunday (0) or Saturday (6)
                 announceToScreenReader('Les shifts ne peuvent pas être créés ou déplacés vers les week-ends (samedi/dimanche).', 'assertive');
                 return false;
             }
@@ -529,6 +543,17 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
+                // startInput/endInput ("YYYY-MM-DDTHH:MM", from a native
+                // <input type="datetime-local">) must NOT go through
+                // `new Date(str)` - that parses a timezone-less string as
+                // browser-local time and applies a real UTC conversion,
+                // inconsistent with the drag & drop path above (which
+                // sends the viewer's literal wall-clock digits, no real
+                // conversion, matching the server's expectation - see
+                // app/utils/helpers/timezone_helpers.py). Appending
+                // seconds + "Z" keeps the same literal-digits contract.
+                const toLiteralIso = (value) => `${value}:00Z`;
+
                 // Create the shift via the API
                 fetch('/api/shifts', {
                     method: 'POST',
@@ -541,8 +566,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     body: JSON.stringify({
                         userId: userId,
                         shiftTypeId: shiftTypeId,
-                        start: new Date(startInput).toISOString(),
-                        end: new Date(endInput).toISOString()
+                        start: toLiteralIso(startInput),
+                        end: toLiteralIso(endInput)
                     })
                 })
                     .then(response => response.json())
@@ -570,8 +595,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Format a date for a datetime-local input
     function formatDateForInput(date) {
+        // UTC getters, not local ones: under timeZone: 'UTC' (see the
+        // Calendar config above), FullCalendar's Date objects carry the
+        // viewer's own wall-clock digits in their UTC components - local
+        // getters would reapply the browser's real system offset on top,
+        // shifting the digits a second time.
         const pad = (num) => num.toString().padStart(2, '0');
-        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
     }
 
     // Handle the Delete key to remove an event (edit mode only)

@@ -14,6 +14,7 @@ from app.models import User
 from app.repositories.shift_repository import ShiftRepository, ShiftTypeRepository
 from app.routes.main import main_bp
 from app.services import ShiftService, UserService
+from app.utils.helpers.timezone_helpers import to_org_timezone, to_viewer_timezone
 
 
 @main_bp.route("/schedule")
@@ -139,14 +140,12 @@ def delete_all_shifts():
     try:
         count = ShiftService.delete_all()
         if count > 0:
-            flash(
-                f"✅ Tous les {count} shifts ont été supprimés avec succès !", "success"
-            )
+            flash(f"Tous les {count} shifts ont été supprimés avec succès !", "success")
         else:
-            flash("⚠️ Aucun shift à supprimer.", "warning")
+            flash("Aucun shift à supprimer.", "warning")
     except Exception as e:
         db.session.rollback()
-        flash(f"❌ Erreur : {str(e)}", "danger")
+        flash(f"Erreur : {str(e)}", "danger")
     return redirect(url_for("main.schedule"))
 
 
@@ -160,15 +159,15 @@ def delete_all_shifts_for_user(user_id):
     try:
         count = ShiftService.delete_all_for_user(user_id)
         if count == 0:
-            flash(f"⚠️ Aucun shift trouvé pour {user.name}.", "warning")
+            flash(f"Aucun shift trouvé pour {user.name}.", "warning")
         else:
             flash(
-                f"✅ Tous les {count} shifts de {user.name} ont été supprimés avec succès !",
+                f"Tous les {count} shifts de {user.name} ont été supprimés avec succès !",
                 "success",
             )
     except Exception as e:
         db.session.rollback()
-        flash(f"❌ Erreur : {str(e)}", "danger")
+        flash(f"Erreur : {str(e)}", "danger")
     return redirect(url_for("main.schedule"))
 
 
@@ -183,19 +182,19 @@ def delete_all_shifts_for_day(date_str):
 
         if count == 0:
             flash(
-                f"⚠️ Aucun shift trouvé pour le {date_obj.strftime('%d/%m/%Y')}.",
+                f"Aucun shift trouvé pour le {date_obj.strftime('%d/%m/%Y')}.",
                 "warning",
             )
         else:
             flash(
-                f"✅ Tous les {count} shifts du {date_obj.strftime('%d/%m/%Y')} ont été supprimés avec succès !",
+                f"Tous les {count} shifts du {date_obj.strftime('%d/%m/%Y')} ont été supprimés avec succès !",
                 "success",
             )
     except ValueError:
-        flash("❌ Format de date invalide.", "danger")
+        flash("Format de date invalide.", "danger")
     except Exception as e:
         db.session.rollback()
-        flash(f"❌ Erreur : {str(e)}", "danger")
+        flash(f"Erreur : {str(e)}", "danger")
     return redirect(url_for("main.schedule"))
 
 
@@ -212,19 +211,19 @@ def delete_all_shifts_for_week(date_str):
 
         if count == 0:
             flash(
-                f"⚠️ Aucun shift trouvé pour la semaine du {monday.strftime('%d/%m/%Y')}.",
+                f"Aucun shift trouvé pour la semaine du {monday.strftime('%d/%m/%Y')}.",
                 "warning",
             )
         else:
             flash(
-                f"✅ Tous les {count} shifts de la semaine du {monday.strftime('%d/%m/%Y')} ont été supprimés avec succès !",
+                f"Tous les {count} shifts de la semaine du {monday.strftime('%d/%m/%Y')} ont été supprimés avec succès !",
                 "success",
             )
     except ValueError:
-        flash("❌ Format de date invalide.", "danger")
+        flash("Format de date invalide.", "danger")
     except Exception as e:
         db.session.rollback()
-        flash(f"❌ Erreur : {str(e)}", "danger")
+        flash(f"Erreur : {str(e)}", "danger")
     return redirect(url_for("main.schedule"))
 
 
@@ -260,12 +259,22 @@ def api_create_shift():
         if not shift_type:
             return jsonify({"success": False, "error": "Type de shift non trouvé"}), 404
 
-        start_time = datetime.fromisoformat(start_str.replace("Z", "+00:00"))
+        # FullCalendar is configured with timeZone: 'UTC' (see
+        # fullcalendar-config.js), so the "Z"/offset on these strings is
+        # just a serialization artifact, not a real UTC instant - the
+        # digits are the viewer's own wall-clock time. Strip the tzinfo
+        # and convert from the viewer's effective timezone to the org's
+        # canonical one before storage.
+        start_time = datetime.fromisoformat(start_str.replace("Z", "+00:00")).replace(
+            tzinfo=None
+        )
         end_time = (
-            datetime.fromisoformat(end_str.replace("Z", "+00:00"))
+            datetime.fromisoformat(end_str.replace("Z", "+00:00")).replace(tzinfo=None)
             if end_str
             else start_time
         )
+        start_time = to_org_timezone(start_time, current_user)
+        end_time = to_org_timezone(end_time, current_user)
 
         shift, error = ShiftService.api_create(user, shift_type, start_time, end_time)
         if error:
@@ -278,8 +287,10 @@ def api_create_shift():
                 "shift": {
                     "id": shift.id,
                     "title": f"{user.name} - {shift_type.label}",
-                    "start": shift.start_time.isoformat(),
-                    "end": shift.end_time.isoformat(),
+                    "start": to_viewer_timezone(
+                        shift.start_time, current_user
+                    ).isoformat(),
+                    "end": to_viewer_timezone(shift.end_time, current_user).isoformat(),
                     "className": "fc-event-shift",
                     "userId": user_id,
                     "shiftTypeId": shift_type_id,
@@ -315,10 +326,20 @@ def api_update_shift(shift_id):
         if not new_start_str:
             return jsonify({"success": False, "error": "Date de début manquante"}), 400
 
-        new_start = datetime.fromisoformat(new_start_str.replace("Z", "+00:00"))
+        # See api_create_shift's comment: FullCalendar's timeZone: 'UTC'
+        # means these strings carry the viewer's own wall-clock digits,
+        # not a real UTC instant - strip tzinfo and convert to the org's
+        # canonical timezone before storage.
+        new_start = datetime.fromisoformat(
+            new_start_str.replace("Z", "+00:00")
+        ).replace(tzinfo=None)
+        new_start = to_org_timezone(new_start, current_user)
 
         if new_end_str:
-            new_end = datetime.fromisoformat(new_end_str.replace("Z", "+00:00"))
+            new_end = datetime.fromisoformat(
+                new_end_str.replace("Z", "+00:00")
+            ).replace(tzinfo=None)
+            new_end = to_org_timezone(new_end, current_user)
         else:
             duration = shift.end_time - shift.start_time
             new_end = new_start + duration
@@ -333,8 +354,12 @@ def api_update_shift(shift_id):
                 "message": "Shift mis à jour avec succès",
                 "shift": {
                     "id": updated_shift.id,
-                    "start": updated_shift.start_time.isoformat(),
-                    "end": updated_shift.end_time.isoformat(),
+                    "start": to_viewer_timezone(
+                        updated_shift.start_time, current_user
+                    ).isoformat(),
+                    "end": to_viewer_timezone(
+                        updated_shift.end_time, current_user
+                    ).isoformat(),
                     "date": updated_shift.date.isoformat(),
                 },
             }
