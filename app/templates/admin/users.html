@@ -14,7 +14,7 @@
         <i class="fas fa-users" aria-hidden="true"></i> Gestion des utilisateurs
     </h1>
 
-    <!-- Bouton pour ajouter un utilisateur -->
+    <!-- Button to add a user -->
     <div class="flex gap-2 mb-4" role="group" aria-label="Actions utilisateurs">
         {% set add_button_route = 'admin.add_user' %}
         {% set add_button_label = 'Ajouter un utilisateur' %}
@@ -27,7 +27,7 @@
         </a>
     </div>
 
-    <!-- Tableau des utilisateurs -->
+    <!-- Users table -->
     <div class="overflow-x-auto" role="region" aria-labelledby="users-title">
         <table class="table table-zebra" aria-describedby="users-title">
             <caption class="sr-only">Liste des utilisateurs</caption>
@@ -86,7 +86,7 @@
         </table>
     </div>
 
-    <!-- Légende des actions -->
+    <!-- Action legend -->
     {% set action_items = [
         {'class': 'btn-warning btn-sm', 'icon': 'edit', 'label': 'Modifier', 'description': 'Modifier l\'utilisateur'},
         {'class': 'btn-error btn-sm', 'icon': 'trash', 'label': 'Supprimer', 'description': 'Supprimer l\'utilisateur'}

@@ -3,7 +3,7 @@
 {% block title %}Leviia - Accueil{% endblock %}
 
 {% block extra_css %}
-<!-- FullCalendar v7 - Le CSS est inclus dans le JS, pas de fichier CSS séparé -->
+<!-- FullCalendar - its CSS is bundled into its JS, no separate CSS file -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor/fullcalendar-overrides.css') }}">
 {% endblock %}
 
@@ -13,12 +13,11 @@
         <i class="fas fa-home" aria-hidden="true"></i> Calendrier - Leviia
     </h1>
 
-    <!-- Composition en grille asymétrique : le calendrier occupe la zone
-         principale large, actions rapides et légende sont rangées dans
-         une colonne latérale étroite plutôt qu'empilées pleine largeur
-         au-dessus/en-dessous. -->
+    <!-- Asymmetric grid layout: the calendar takes the wide main area,
+         quick actions and the legend sit in a narrow side column rather
+         than being stacked full-width above/below. -->
     <div class="grid grid-cols-1 xl:grid-cols-4 gap-3 items-start">
-        <!-- Calendrier interactif avec Drag & Drop -->
+        <!-- Interactive calendar with drag & drop -->
         <div class="xl:col-span-3 card card-sm bg-base-100 shadow-md" role="region" aria-labelledby="calendar-title">
             <div class="card-body p-3 md:p-4">
                 <div class="flex flex-wrap items-center justify-between gap-2">
@@ -42,7 +41,7 @@
                     {% endif %}
                 </div>
 
-                <!-- Conteneur pour les événements externes (pour créer de nouveaux shifts) -->
+                <!-- Container for external events (used to create new shifts) -->
                 {% if current_user.is_admin %}
                 <div class="alert alert-info mt-3 hidden" id="tips-container" role="status" aria-live="polite" aria-label="Conseils d'utilisation">
                     <div>
@@ -69,7 +68,7 @@
             </div>
         </div>
 
-        <!-- Colonne latérale : actions rapides + légende -->
+        <!-- Side column: quick actions + legend -->
         <div class="flex flex-col gap-3">
             <div class="card card-sm bg-base-100 shadow-md" role="region" aria-labelledby="quick-actions-title">
                 <div class="card-body p-3 md:p-4">
@@ -140,10 +139,10 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- FullCalendar 6.1.21 - chargé depuis jsDelivr (cdnjs n'héberge pas
-     les locales de ce paquet ; voir le commentaire en tête de
-     fullcalendar-config.js pour le détail complet, y compris pourquoi
-     la version reste en 6.x). -->
+<!-- FullCalendar 6.1.21 - loaded from jsDelivr (cdnjs doesn't host this
+     package's locale files); see the comment at the top of
+     fullcalendar-config.js for the full detail, including why the
+     version stays on 6.x. -->
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.21/index.global.min.js'></script>
 <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.21/locales/fr.global.min.js'></script>
 <script type="module" src="{{ url_for('static', filename='js/calendar/fullcalendar-config.js') }}"></script>

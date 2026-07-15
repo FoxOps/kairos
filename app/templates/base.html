@@ -9,37 +9,38 @@
     <title>{% block title %}Leviia{% endblock %}</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
 
-    <!-- Pose data-theme avant tout rendu (évite le flash clair/sombre) -
-         script classique synchrone (pas type="module", pas defer/async),
-         tout en haut de <head>, voir le commentaire dans le fichier pour
-         le détail. -->
+    <!-- Sets data-theme before any rendering happens (avoids a
+         light/dark flash) - a plain synchronous script (not
+         type="module", not defer/async), at the very top of <head>; see
+         the comment in that file for the full detail. -->
     <script src="{{ url_for('static', filename='js/theme/theme-init.js') }}"></script>
 
-    <!-- Font Awesome 7.2.0 - via CDN cdnjs (7.3.0 pas encore publié), mode
-         SVG+JS plutôt que la police web habituelle : les 4 fichiers
-         .woff2 hébergés par cdnjs pour cette version sont chacun tronqués
-         d'exactement 1 octet par rapport à la copie de référence (vérifié
-         en comparant aux fichiers vendorisés localement, identiques sauf
-         ce dernier octet) - rejetés par le sanitizer de police de Chromium
-         ("OTS parsing error"), toutes les icônes restaient invisibles.
-         Le mode SVG+JS (officiellement supporté par Font Awesome) ne
-         charge aucune police, contourne le fichier corrompu.
-         `fontawesome.min.js` (moteur, 68 Ko) + `solid.min.js` (jeu
-         d'icônes "solid", 819 Ko) plutôt que `all.min.js` (1,56 Mo,
-         inclut aussi regular/light/thin/duotone/sharp/brands) : seul le
-         style `fas` (solid) est utilisé dans tout le projet (vérifié par
-         grep sur les templates, zéro `far`/`fab`/`fal`/`fad`) - ~43% de
-         payload en moins pour un rendu identique, testé isolément. -->
+    <!-- Font Awesome 7.2.0 - via cdnjs (7.3.0 isn't published yet), in
+         SVG+JS mode rather than the usual web font: the 4 .woff2 files
+         cdnjs hosts for this version are each truncated by exactly 1
+         byte relative to the reference copy (confirmed by comparing
+         against the previously-vendored files, identical except for
+         that last byte) - rejected outright by Chromium's font
+         sanitizer ("OTS parsing error"), leaving every icon invisible.
+         SVG+JS mode (officially supported by Font Awesome) loads no
+         font at all, sidestepping the corrupt file.
+         `fontawesome.min.js` (engine, 68 KB) + `solid.min.js` (the
+         "solid" icon set, 819 KB) instead of `all.min.js` (1.56 MB,
+         which also bundles regular/light/thin/duotone/sharp/brands):
+         only the `fas` (solid) style is used anywhere in the project
+         (confirmed via a grep across the templates, zero
+         `far`/`fab`/`fal`/`fad`) - about 43% less payload for an
+         identical render. -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.2.0/js/fontawesome.min.js" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.2.0/js/solid.min.js" crossorigin="anonymous"></script>
 
-    <!-- daisyUI 5.1.25 + Tailwind CSS 4 (compilateur JIT navigateur,
-         zéro étape de build) - via CDN cdnjs -->
+    <!-- daisyUI 5.1.25 + Tailwind CSS 4 (browser JIT compiler, zero
+         build step) - via cdnjs -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/daisyui/5.1.25/daisyui.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss-browser/4.3.2/index.global.min.js"></script>
-    <!-- Teinte de marque sur les thèmes daisyUI "light"/"dark" - voir
-         theme-colors.css pour le détail (tailwindcss-browser ne
-         supporte pas @plugin/@config pour redéfinir un thème complet). -->
+    <!-- Brand tint on daisyUI's "light"/"dark" themes - see
+         theme-colors.css for the detail (tailwindcss-browser doesn't
+         support @plugin/@config to redefine a full theme). -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme-colors.css') }}">
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/variables.css') }}">
@@ -54,7 +55,7 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body class="min-h-screen flex flex-col">
-    <!-- Skip link pour l'accessibilite -->
+    <!-- Skip link for accessibility -->
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-content">Sauter la navigation</a>
 
     {% set nav_links = [
@@ -67,37 +68,33 @@
     ] %}
 
     {% macro theme_toggle() %}
-    <!-- Pattern "Theme Controller" de daisyUI (swap +
-         checkbox, https://daisyui.com/components/theme-controller/)
-         SANS la classe theme-controller elle-même :
-         cette classe pilote le thème via un mécanisme
-         CSS :has() interne à daisyUI qui ne pose
-         jamais l'attribut data-theme sur <html>
-         (vérifié empiriquement) - elle appliquerait
-         donc le thème "dark" stock de daisyUI en
-         court-circuitant la palette Dracula/Alucard
-         (theme-colors.css, branchée sur [data-theme]).
-         Seule la mécanique visuelle swap-on/off est
-         reprise ; le thème réel reste géré par
-         theme-manager.js via l'attribut data-theme.
-         Icônes en SVG inline (tracés exacts de la démo
-         daisyUI) plutôt qu'en Font Awesome : le glyphe
-         fa-sun devient illisible (ressemble à un
-         rouage) à la petite taille imposée par ce
-         bouton de pied de sidebar - constaté visuellement.
-         Le `swap` est sur un <span> séparé du <label>
-         `btn` : `.btn` pose `display:flex`, qui écrase
-         le `display:inline-grid` de `.swap` (même
-         spécificité, `.btn` gagne dans la cascade) et
-         casse le stacking grid qui superpose les deux
-         icônes - sans ça les deux <svg> se poussaient
-         l'un l'autre au lieu de se superposer, donnant
-         un effet de glissement façon switch au clic
-         (constaté en inspectant le computed style).
-         Macro partagée entre utilisateurs connectés et
-         anonymes (visible aussi sur /login) - un seul
-         <input id="theme-toggle"> par page reste garanti
-         car les deux branches du if/else sont exclusives. -->
+    <!-- daisyUI's "Theme Controller" pattern (swap + checkbox,
+         https://daisyui.com/components/theme-controller/) WITHOUT the
+         theme-controller class itself: that class drives the theme
+         through a CSS :has() mechanism internal to daisyUI which never
+         sets the data-theme attribute on <html> - it would apply
+         daisyUI's stock "dark" theme, bypassing the Dracula/Alucard
+         palette (theme-colors.css, wired to [data-theme]) entirely.
+         Only the swap-on/off visual mechanics are reused; the actual
+         theme stays managed by theme-manager.js via the data-theme
+         attribute. -->
+
+    <!-- Icons are inline SVG (exact paths from the daisyUI demo) rather
+         than Font Awesome: the fa-sun glyph becomes unreadable (looks
+         like a gear) at the small size this sidebar-footer button
+         imposes. -->
+
+    <!-- `swap` sits on a <span> separate from the `btn` <label>: `.btn`
+         sets `display:flex`, which overrides `.swap`'s
+         `display:inline-grid` (same specificity, `.btn` wins the
+         cascade) and breaks the stacking grid that overlays the two
+         icons - without this separation the two <svg> elements pushed
+         each other aside instead of overlapping, producing a
+         switch-style slide effect on click instead of the intended
+         swap. Shared macro between logged-in and anonymous users
+         (also visible on /login) - exactly one <input id="theme-toggle">
+         per page is still guaranteed since the two if/else branches are
+         mutually exclusive. -->
     <label class="btn btn-ghost btn-sm btn-circle shrink-0" aria-label="Basculer entre le thème clair et sombre">
         <span class="swap swap-rotate">
             <input type="checkbox" id="theme-toggle">
@@ -111,20 +108,21 @@
     </label>
     {% endmacro %}
 
-    <!-- Sidebar permanente à partir du breakpoint lg (drawer lg:drawer-open,
-         pattern daisyUI documenté) - même case à cocher/mécanisme que le
-         panneau mobile, juste rendu inline plutôt qu'en overlay flottant à
-         partir de ce breakpoint. navbar-menu.js n'a besoin d'aucun
-         changement : il ne fait que piloter l'état "checked" de la case,
-         ignoré par daisyUI en mode lg:drawer-open (la sidebar reste
-         affichée quel que soit son état). -->
+    <!-- Permanent sidebar from the lg breakpoint up (drawer
+         lg:drawer-open, documented daisyUI pattern) - same
+         checkbox/mechanism as the mobile panel, just rendered inline
+         instead of as a floating overlay above this breakpoint.
+         navbar-menu.js needs no changes for this: it only drives the
+         checkbox's "checked" state, which daisyUI ignores in
+         lg:drawer-open mode (the sidebar stays shown regardless of that
+         state). -->
     <div class="drawer lg:drawer-open">
         <input id="mobile-drawer" type="checkbox" class="drawer-toggle" />
 
         <div class="drawer-content flex flex-col min-h-screen">
-            <!-- Barre du haut : mobile uniquement (burger + marque) - le
-                 reste (thème, compte) vit dans le pied de la sidebar,
-                 accessible en ouvrant le tiroir sur mobile. -->
+            <!-- Top bar: mobile only (burger + brand) - the rest
+                 (theme, account) lives in the sidebar footer, reachable
+                 by opening the drawer on mobile. -->
             <header class="sticky top-0 z-40 navbar bg-base-100 border-b border-base-300 px-2 lg:hidden">
                 <div class="navbar-start">
                     <button type="button" class="btn btn-ghost btn-square" id="navbar-burger" aria-label="Menu" aria-expanded="false" aria-controls="sidebar-menu">
@@ -225,7 +223,7 @@
         </div>
     </div>
 
-    <!-- JavaScript centralise (modules ES6) -->
+    <!-- Centralized JavaScript (ES6 modules) -->
     <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
 
     {% block extra_js %}{% endblock %}

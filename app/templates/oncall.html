@@ -8,7 +8,7 @@
         <i class="fas fa-moon" aria-hidden="true"></i> Astreintes
     </h1>
 
-    <!-- Boutons pour ajouter, exporter et supprimer -->
+    <!-- Add, export, and delete buttons -->
     <div class="flex flex-wrap gap-2 mb-4" role="group" aria-label="Actions principales">
         {% if current_user.is_admin %}
         <a class="btn btn-primary" href="{{ url_for('main.add_oncall') }}"
@@ -34,7 +34,7 @@
         {% endif %}
     </div>
 
-    <!-- Pagination en haut + sélecteur -->
+    <!-- Pagination at the top + selector -->
     {% if on_calls.has_prev or on_calls.has_next or on_calls.total > 0 %}
     {% set pagination = on_calls %}
     {% set route = 'main.oncall' %}
@@ -42,7 +42,7 @@
     {% include "_pagination.html" %}
     {% endif %}
 
-    <!-- Tableau des astreintes -->
+    <!-- On-call table -->
     <div class="overflow-x-auto" role="region" aria-labelledby="oncall-title">
         <table class="table table-zebra" aria-describedby="oncall-title">
             <caption class="sr-only">Liste des astreintes</caption>
@@ -73,8 +73,8 @@
                                     <i class="fas fa-trash" aria-hidden="true"></i>
                                 </button>
                             </form>
-                            <!-- Bouton pour supprimer toutes les astreintes de cet utilisateur -->
-                            <!-- Afficher seulement pour la première occurrence de chaque utilisateur -->
+                            <!-- Button to delete all of this user's on-calls -->
+                            <!-- Only shown for the first occurrence of each user -->
                             {% set is_first_user = namespace(value=(oncall.user.id not in seen_users)) %}
                             {% if is_first_user.value %}
                             <form method="POST" action="{{ url_for('main.delete_all_oncalls_for_user', user_id=oncall.user.id) }}" class="mb-0">
@@ -97,7 +97,7 @@
         </table>
     </div>
 
-    <!-- Légende des actions -->
+    <!-- Action legend -->
     {% if current_user.is_admin %}
     {% set action_items = [
         {'class': 'btn-error btn-sm min-w-200', 'icon': 'trash', 'label': 'Supprimer cette astreinte', 'description': 'Supprimer l\'astreinte sélectionnée'},
@@ -106,7 +106,7 @@
     {% include "_action_legend.html" %}
     {% endif %}
 
-    <!-- Pagination en bas -->
+    <!-- Pagination at the bottom -->
     {% if on_calls.has_prev or on_calls.has_next or on_calls.total > 0 %}
     {% set pagination = on_calls %}
     {% set route = 'main.oncall' %}
