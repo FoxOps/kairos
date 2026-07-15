@@ -24,6 +24,10 @@ Services:
   with notification_service above (emails, cron-only)
 - backup_service: Admin UI support for database backups, wraps the
   pure functions in scripts/backup_database.py
+- settings_service: Typed getters/setters for DB-backed admin settings
+  (app/models/setting.py) - default timezone, public base URL, pagination,
+  notifications toggle, backup retention, ICS token expiry. DB row wins
+  when present, falls back live to app.config/env otherwise.
 """
 
 from app.services.app_notification_service import AppNotificationService
@@ -35,6 +39,7 @@ from app.services.leave_service import LeaveService
 from app.services.notification_service import NotificationService
 from app.services.oncall_service import OnCallService
 from app.services.schedule_service import ScheduleService
+from app.services.settings_service import SettingsService
 from app.services.shift_service import ShiftService
 from app.services.shift_type_service import ShiftTypeService
 from app.services.swap_service import SwapService
@@ -54,4 +59,5 @@ __all__ = [
     "NotificationService",
     "AppNotificationService",
     "BackupService",
+    "SettingsService",
 ]
