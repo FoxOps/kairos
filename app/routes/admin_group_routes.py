@@ -4,6 +4,7 @@ app/routes/admin.py).
 """
 
 from flask import abort, flash, redirect, render_template, request, url_for
+from flask_babel import gettext as _
 
 from app import db
 from app.auth.decorators import admin_required
@@ -28,7 +29,7 @@ def add_group():
         is_part_of_oncall = "is_part_of_oncall" in request.form
 
         if not name:
-            flash("Le nom du groupe est obligatoire.", "danger")
+            flash(_("Le nom du groupe est obligatoire."), "danger")
             return redirect(url_for("admin.add_group"))
 
         try:
@@ -36,14 +37,14 @@ def add_group():
                 name, is_part_of_schedule, is_part_of_oncall
             )
             if error:
-                flash(f"{error}", "danger")
+                flash(error, "danger")
                 return redirect(url_for("admin.add_group"))
 
-            flash("Groupe ajouté avec succès !", "success")
+            flash(_("Groupe ajouté avec succès !"), "success")
             return redirect(url_for("admin.list_groups"))
         except Exception as e:
             db.session.rollback()
-            flash(f"Erreur : {str(e)}", "danger")
+            flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
 
     return render_template("admin/add_group.html")
 
@@ -59,7 +60,7 @@ def edit_group(group_id):
         is_part_of_oncall = "is_part_of_oncall" in request.form
 
         if not name:
-            flash("Le nom du groupe est obligatoire.", "danger")
+            flash(_("Le nom du groupe est obligatoire."), "danger")
             return redirect(url_for("admin.edit_group", group_id=group_id))
 
         try:
@@ -67,14 +68,14 @@ def edit_group(group_id):
                 group_id, name, is_part_of_schedule, is_part_of_oncall
             )
             if error:
-                flash(f"{error}", "danger")
+                flash(error, "danger")
                 return redirect(url_for("admin.edit_group", group_id=group_id))
 
-            flash("Groupe modifié avec succès !", "success")
+            flash(_("Groupe modifié avec succès !"), "success")
             return redirect(url_for("admin.list_groups"))
         except Exception as e:
             db.session.rollback()
-            flash(f"Erreur : {str(e)}", "danger")
+            flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
 
     return render_template("admin/edit_group.html", group=group)
 
@@ -88,11 +89,11 @@ def delete_group(group_id):
     try:
         deleted, error = GroupService.delete(group_id)
         if error:
-            flash(f"{error}", "danger")
+            flash(error, "danger")
         elif deleted:
-            flash("Groupe supprimé avec succès !", "success")
+            flash(_("Groupe supprimé avec succès !"), "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"Erreur : {str(e)}", "danger")
+        flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
 
     return redirect(url_for("admin.list_groups"))

@@ -6,6 +6,7 @@ main_bp (see app/routes/main.py).
 from datetime import datetime, timedelta
 
 from flask import abort, flash, jsonify, redirect, render_template, request, url_for
+from flask_babel import gettext as _
 from flask_login import current_user, login_required
 
 from app import db
@@ -52,19 +53,19 @@ def add_shift():
         end_date_str = request.form.get("end_date")
 
         if not all([user_id, shift_type_id, start_date_str, end_date_str]):
-            flash("Tous les champs sont obligatoires.", "danger")
+            flash(_("Tous les champs sont obligatoires."), "danger")
             return redirect(url_for("main.add_shift"))
 
         try:
             shift_type = ShiftTypeRepository.get_by_id(int(shift_type_id))
             if not shift_type:
-                flash("Type de shift invalide.", "danger")
+                flash(_("Type de shift invalide."), "danger")
                 return redirect(url_for("main.add_shift"))
 
             user_id = int(user_id)
             target_user = db.session.get(User, user_id)
             if not target_user:
-                flash("Utilisateur invalide.", "danger")
+                flash(_("Utilisateur invalide."), "danger")
                 return redirect(url_for("main.add_shift"))
 
             start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
@@ -72,7 +73,8 @@ def add_shift():
 
             if start_date > end_date:
                 flash(
-                    "La date de debut doit etre anterieure a la date de fin.", "danger"
+                    _("La date de debut doit etre anterieure a la date de fin."),
+                    "danger",
                 )
                 return redirect(url_for("main.add_shift"))
 
@@ -82,32 +84,41 @@ def add_shift():
 
             if failed_date is not None:
                 flash(
-                    f"Impossible d'ajouter ce shift (le {failed_date.strftime('%d/%m/%Y')}).",
+                    _(
+                        "Impossible d'ajouter ce shift (le %(strftime)s).",
+                        strftime=failed_date.strftime("%d/%m/%Y"),
+                    ),
                     "danger",
                 )
                 return redirect(url_for("main.add_shift"))
 
             if shifts_added:
                 flash(
-                    f"Shifts ajoutes avec succes pour les dates : {', '.join(shifts_added)} !",
+                    _(
+                        "Shifts ajoutes avec succes pour les dates : %(join)s !",
+                        join=", ".join(shifts_added),
+                    ),
                     "success",
                 )
             else:
                 flash(
-                    "Aucun shift ajoute (periode invalide ou jours non ouvres).",
+                    _("Aucun shift ajoute (periode invalide ou jours non ouvres)."),
                     "danger",
                 )
             return redirect(url_for("main.schedule"))
         except ValueError as e:
             db.session.rollback()
             flash(
-                f"Format de date invalide : {str(e)}. Utilisez le format AAAA-MM-JJ.",
+                _(
+                    "Format de date invalide : %(val0)s. Utilisez le format AAAA-MM-JJ.",
+                    val0=str(e),
+                ),
                 "danger",
             )
             return redirect(url_for("main.add_shift"))
         except Exception as e:
             db.session.rollback()
-            flash(f"Erreur : {str(e)}", "danger")
+            flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
             return redirect(url_for("main.add_shift"))
 
     # Only administrators can see this page
@@ -125,10 +136,10 @@ def delete_shift(shift_id):
 
     try:
         ShiftService.delete_shift(shift_id)
-        flash("Shift supprime avec succes !", "success")
+        flash(_("Shift supprime avec succes !"), "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"Erreur : {str(e)}", "danger")
+        flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
     return redirect(url_for("main.schedule"))
 
 
@@ -140,12 +151,18 @@ def delete_all_shifts():
     try:
         count = ShiftService.delete_all()
         if count > 0:
-            flash(f"Tous les {count} shifts ont été supprimés avec succès !", "success")
+            flash(
+                _(
+                    "Tous les %(count)s shifts ont été supprimés avec succès !",
+                    count=count,
+                ),
+                "success",
+            )
         else:
-            flash("Aucun shift à supprimer.", "warning")
+            flash(_("Aucun shift à supprimer."), "warning")
     except Exception as e:
         db.session.rollback()
-        flash(f"Erreur : {str(e)}", "danger")
+        flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
     return redirect(url_for("main.schedule"))
 
 
@@ -159,15 +176,19 @@ def delete_all_shifts_for_user(user_id):
     try:
         count = ShiftService.delete_all_for_user(user_id)
         if count == 0:
-            flash(f"Aucun shift trouvé pour {user.name}.", "warning")
+            flash(_("Aucun shift trouvé pour %(name)s.", name=user.name), "warning")
         else:
             flash(
-                f"Tous les {count} shifts de {user.name} ont été supprimés avec succès !",
+                _(
+                    "Tous les %(count)s shifts de %(name)s ont été supprimés avec succès !",
+                    count=count,
+                    name=user.name,
+                ),
                 "success",
             )
     except Exception as e:
         db.session.rollback()
-        flash(f"Erreur : {str(e)}", "danger")
+        flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
     return redirect(url_for("main.schedule"))
 
 
@@ -182,19 +203,26 @@ def delete_all_shifts_for_day(date_str):
 
         if count == 0:
             flash(
-                f"Aucun shift trouvé pour le {date_obj.strftime('%d/%m/%Y')}.",
+                _(
+                    "Aucun shift trouvé pour le %(strftime)s.",
+                    strftime=date_obj.strftime("%d/%m/%Y"),
+                ),
                 "warning",
             )
         else:
             flash(
-                f"Tous les {count} shifts du {date_obj.strftime('%d/%m/%Y')} ont été supprimés avec succès !",
+                _(
+                    "Tous les %(count)s shifts du %(strftime)s ont été supprimés avec succès !",
+                    count=count,
+                    strftime=date_obj.strftime("%d/%m/%Y"),
+                ),
                 "success",
             )
     except ValueError:
-        flash("Format de date invalide.", "danger")
+        flash(_("Format de date invalide."), "danger")
     except Exception as e:
         db.session.rollback()
-        flash(f"Erreur : {str(e)}", "danger")
+        flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
     return redirect(url_for("main.schedule"))
 
 
@@ -211,19 +239,26 @@ def delete_all_shifts_for_week(date_str):
 
         if count == 0:
             flash(
-                f"Aucun shift trouvé pour la semaine du {monday.strftime('%d/%m/%Y')}.",
+                _(
+                    "Aucun shift trouvé pour la semaine du %(strftime)s.",
+                    strftime=monday.strftime("%d/%m/%Y"),
+                ),
                 "warning",
             )
         else:
             flash(
-                f"Tous les {count} shifts de la semaine du {monday.strftime('%d/%m/%Y')} ont été supprimés avec succès !",
+                _(
+                    "Tous les %(count)s shifts de la semaine du %(strftime)s ont été supprimés avec succès !",
+                    count=count,
+                    strftime=monday.strftime("%d/%m/%Y"),
+                ),
                 "success",
             )
     except ValueError:
-        flash("Format de date invalide.", "danger")
+        flash(_("Format de date invalide."), "danger")
     except Exception as e:
         db.session.rollback()
-        flash(f"Erreur : {str(e)}", "danger")
+        flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
     return redirect(url_for("main.schedule"))
 
 

@@ -6,6 +6,7 @@ main_bp (see app/routes/main.py).
 from datetime import datetime
 
 from flask import abort, flash, jsonify, redirect, render_template, request, url_for
+from flask_babel import gettext as _
 from flask_login import current_user, login_required
 
 from app import db
@@ -49,7 +50,7 @@ def add_leave():
         end_date_str = request.form.get("end_date")
 
         if not all([user_id, start_date_str, end_date_str]):
-            flash("Tous les champs obligatoires doivent être remplis.", "danger")
+            flash(_("Tous les champs obligatoires doivent être remplis."), "danger")
             return redirect(url_for("main.add_leave"))
 
         try:
@@ -57,7 +58,9 @@ def add_leave():
 
             # Permission check: a regular user may only add their own leave
             if not current_user.is_admin and current_user.id != user_id:
-                flash("Vous ne pouvez ajouter des congés que pour vous-même.", "danger")
+                flash(
+                    _("Vous ne pouvez ajouter des congés que pour vous-même."), "danger"
+                )
                 return redirect(url_for("main.leave"))
 
             start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
@@ -65,7 +68,7 @@ def add_leave():
 
             target_user = db.session.get(User, user_id)
             if not target_user:
-                flash("Utilisateur invalide.", "danger")
+                flash(_("Utilisateur invalide."), "danger")
                 return redirect(url_for("main.add_leave"))
 
             new_leave, regenerated_shifts = LeaveService.add_leave(
@@ -73,32 +76,37 @@ def add_leave():
             )
             if not new_leave:
                 flash(
-                    "Impossible d'ajouter ce congé (dates invalides, congé existant "
-                    "sur cette période, ou effectif disponible tombant à 0 un jour "
-                    "de cette période).",
+                    _(
+                        "Impossible d'ajouter ce congé (dates invalides, congé existant sur cette période, ou effectif disponible tombant à 0 un jour de cette période)."
+                    ),
                     "danger",
                 )
                 return redirect(url_for("main.add_leave"))
 
             if regenerated_shifts is None:
-                flash("Rééquilibrage automatique des shifts échoué.", "warning")
+                flash(_("Rééquilibrage automatique des shifts échoué."), "warning")
             elif regenerated_shifts:
                 flash(
-                    f"Congé ajouté. {len(regenerated_shifts)} shifts ont été recalculés.",
+                    _(
+                        "Congé ajouté. %(val0)s shifts ont été recalculés.",
+                        val0=len(regenerated_shifts),
+                    ),
                     "success",
                 )
             else:
-                flash("Congé ajouté. Aucun shift à recalculer.", "success")
+                flash(_("Congé ajouté. Aucun shift à recalculer."), "success")
 
-            flash("Conge ajoute avec succes !", "success")
+            flash(_("Conge ajoute avec succes !"), "success")
             return redirect(url_for("main.leave"))
         except ValueError:
             db.session.rollback()
-            flash("Format de date invalide. Utilisez le format AAAA-MM-JJ.", "danger")
+            flash(
+                _("Format de date invalide. Utilisez le format AAAA-MM-JJ."), "danger"
+            )
             return redirect(url_for("main.add_leave"))
         except Exception as e:
             db.session.rollback()
-            flash(f"Erreur : {str(e)}", "danger")
+            flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
 
     # A regular user only sees themselves in the list
     users = UserService.visible_users_for_leave(current_user)
@@ -116,19 +124,22 @@ def delete_leave(leave_id):
         _leave, regenerated_shifts = LeaveService.delete_leave(leave_id)
 
         if regenerated_shifts is None:
-            flash("Rééquilibrage automatique des shifts échoué.", "warning")
+            flash(_("Rééquilibrage automatique des shifts échoué."), "warning")
         elif regenerated_shifts:
             flash(
-                f"Congé supprimé. {len(regenerated_shifts)} shifts ont été recalculés.",
+                _(
+                    "Congé supprimé. %(val0)s shifts ont été recalculés.",
+                    val0=len(regenerated_shifts),
+                ),
                 "success",
             )
         else:
-            flash("Congé supprimé. Aucun shift à recalculer.", "success")
+            flash(_("Congé supprimé. Aucun shift à recalculer."), "success")
 
-        flash("Conge supprime avec succes !", "success")
+        flash(_("Conge supprime avec succes !"), "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"Erreur : {str(e)}", "danger")
+        flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
     return redirect(url_for("main.leave"))
 
 

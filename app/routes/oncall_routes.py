@@ -6,6 +6,7 @@ main_bp (see app/routes/main.py).
 from datetime import datetime
 
 from flask import abort, flash, jsonify, redirect, render_template, request, url_for
+from flask_babel import gettext as _
 from flask_login import current_user, login_required
 
 from app import db
@@ -50,14 +51,14 @@ def add_oncall():
         start_date_str = request.form.get("start_date")
 
         if not all([user_id, start_date_str]):
-            flash("Tous les champs sont obligatoires.", "danger")
+            flash(_("Tous les champs sont obligatoires."), "danger")
             return redirect(url_for("main.add_oncall"))
 
         try:
             user_id = int(user_id)
             target_user = db.session.get(User, user_id)
             if not target_user:
-                flash("Utilisateur invalide.", "danger")
+                flash(_("Utilisateur invalide."), "danger")
                 return redirect(url_for("main.add_oncall"))
 
             start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
@@ -68,17 +69,21 @@ def add_oncall():
                 return redirect(url_for("main.add_oncall"))
 
             flash(
-                "Astreinte ajoutee avec succes ! (Du vendredi 21h au vendredi suivant 07h)",
+                _(
+                    "Astreinte ajoutee avec succes ! (Du vendredi 21h au vendredi suivant 07h)"
+                ),
                 "success",
             )
             return redirect(url_for("main.oncall"))
         except ValueError:
             db.session.rollback()
-            flash("Format de date invalide. Utilisez le format AAAA-MM-JJ.", "danger")
+            flash(
+                _("Format de date invalide. Utilisez le format AAAA-MM-JJ."), "danger"
+            )
             return redirect(url_for("main.add_oncall"))
         except Exception as e:
             db.session.rollback()
-            flash(f"Erreur : {str(e)}", "danger")
+            flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
 
     # Only administrators can see this page
     users = UserService.list_for_oncall()
@@ -94,10 +99,10 @@ def delete_oncall(oncall_id):
 
     try:
         OnCallService.delete_oncall(oncall_id)
-        flash("Astreinte supprimee avec succes !", "success")
+        flash(_("Astreinte supprimee avec succes !"), "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"Erreur : {str(e)}", "danger")
+        flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
     return redirect(url_for("main.oncall"))
 
 
@@ -110,14 +115,17 @@ def delete_all_oncalls():
         count = OnCallService.delete_all()
         if count > 0:
             flash(
-                f"Toutes les {count} astreintes ont été supprimées avec succès !",
+                _(
+                    "Toutes les %(count)s astreintes ont été supprimées avec succès !",
+                    count=count,
+                ),
                 "success",
             )
         else:
-            flash("Aucune astreinte à supprimer.", "warning")
+            flash(_("Aucune astreinte à supprimer."), "warning")
     except Exception as e:
         db.session.rollback()
-        flash(f"Erreur : {str(e)}", "danger")
+        flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
     return redirect(url_for("main.oncall"))
 
 
@@ -131,15 +139,21 @@ def delete_all_oncalls_for_user(user_id):
     try:
         count = OnCallService.delete_all_for_user(user_id)
         if count == 0:
-            flash(f"Aucun astreinte trouvée pour {user.name}.", "warning")
+            flash(
+                _("Aucun astreinte trouvée pour %(name)s.", name=user.name), "warning"
+            )
         else:
             flash(
-                f"Toutes les {count} astreintes de {user.name} ont été supprimées avec succès !",
+                _(
+                    "Toutes les %(count)s astreintes de %(name)s ont été supprimées avec succès !",
+                    count=count,
+                    name=user.name,
+                ),
                 "success",
             )
     except Exception as e:
         db.session.rollback()
-        flash(f"Erreur : {str(e)}", "danger")
+        flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
     return redirect(url_for("main.oncall"))
 
 

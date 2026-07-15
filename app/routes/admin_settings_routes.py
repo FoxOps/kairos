@@ -6,6 +6,7 @@ validation error in one group doesn't affect the others.
 """
 
 from flask import flash, redirect, render_template, request, url_for
+from flask_babel import gettext as _
 
 from app.auth.decorators import admin_required
 from app.routes.admin import admin_bp
@@ -24,73 +25,73 @@ def settings_dashboard():
             tz_name = request.form.get("default_timezone", "")
             error = SettingsService.set_default_timezone(tz_name)
             if error:
-                flash(f"Erreur : {error}", "danger")
+                flash(_("Erreur : %(error)s", error=error), "danger")
             else:
-                flash("Fuseau horaire par défaut enregistré", "success")
+                flash(_("Fuseau horaire par défaut enregistré"), "success")
 
         elif section == "language":
             lang_code = request.form.get("default_language", "")
             error = SettingsService.set_default_language(lang_code)
             if error:
-                flash(f"Erreur : {error}", "danger")
+                flash(_("Erreur : %(error)s", error=error), "danger")
             else:
-                flash("Langue par défaut enregistrée", "success")
+                flash(_("Langue par défaut enregistrée"), "success")
 
         elif section == "general":
             public_base_url = request.form.get("public_base_url", "").strip() or None
             error = SettingsService.set_public_base_url(public_base_url)
             if error:
-                flash(f"Erreur : {error}", "danger")
+                flash(_("Erreur : %(error)s", error=error), "danger")
             else:
-                flash("URL publique enregistrée", "success")
+                flash(_("URL publique enregistrée"), "success")
 
         elif section == "pagination":
             try:
                 items_per_page = int(request.form.get("items_per_page", ""))
                 max_per_page = int(request.form.get("max_per_page", ""))
             except ValueError:
-                flash("Erreur : valeurs de pagination invalides", "danger")
+                flash(_("Erreur : valeurs de pagination invalides"), "danger")
             else:
                 error = SettingsService.set_pagination(items_per_page, max_per_page)
                 if error:
-                    flash(f"Erreur : {error}", "danger")
+                    flash(_("Erreur : %(error)s", error=error), "danger")
                 else:
-                    flash("Pagination enregistrée", "success")
+                    flash(_("Pagination enregistrée"), "success")
 
         elif section == "notifications":
             enabled = request.form.get("notifications_enabled") == "on"
             error = SettingsService.set_notifications_enabled(enabled)
             if error:
-                flash(f"Erreur : {error}", "danger")
+                flash(_("Erreur : %(error)s", error=error), "danger")
             else:
-                flash("Notifications enregistrées", "success")
+                flash(_("Notifications enregistrées"), "success")
 
         elif section == "backups":
             try:
                 retention_days = int(request.form.get("backup_retention_days", ""))
                 max_backups = int(request.form.get("backup_max_backups", ""))
             except ValueError:
-                flash("Erreur : valeurs de sauvegarde invalides", "danger")
+                flash(_("Erreur : valeurs de sauvegarde invalides"), "danger")
             else:
                 error = SettingsService.set_backup_retention(
                     retention_days, max_backups
                 )
                 if error:
-                    flash(f"Erreur : {error}", "danger")
+                    flash(_("Erreur : %(error)s", error=error), "danger")
                 else:
-                    flash("Rétention des sauvegardes enregistrée", "success")
+                    flash(_("Rétention des sauvegardes enregistrée"), "success")
 
         elif section == "ics":
             try:
                 expiry_days = int(request.form.get("ics_token_expiry_days", ""))
             except ValueError:
-                flash("Erreur : durée d'expiration invalide", "danger")
+                flash(_("Erreur : durée d'expiration invalide"), "danger")
             else:
                 error = SettingsService.set_ics_token_expiry_days(expiry_days)
                 if error:
-                    flash(f"Erreur : {error}", "danger")
+                    flash(_("Erreur : %(error)s", error=error), "danger")
                 else:
-                    flash("Durée d'expiration ICS enregistrée", "success")
+                    flash(_("Durée d'expiration ICS enregistrée"), "success")
 
         return redirect(url_for("admin.settings_dashboard"))
 

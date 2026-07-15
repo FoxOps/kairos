@@ -7,6 +7,7 @@ app/routes/admin_swap_routes.py.
 from datetime import date
 
 from flask import abort, flash, jsonify, redirect, render_template, request, url_for
+from flask_babel import gettext as _
 from flask_login import current_user, login_required
 
 from app import db
@@ -35,7 +36,7 @@ def add_swap():
         target_shift_id = request.form.get("target_shift_id", type=int)
 
         if not shift_id or not target_user_id:
-            flash("Sélectionnez un shift à échanger et un destinataire.", "danger")
+            flash(_("Sélectionnez un shift à échanger et un destinataire."), "danger")
             return redirect(url_for("main.add_swap"))
 
         shift = ShiftRepository.get_by_id(shift_id)
@@ -45,17 +46,21 @@ def add_swap():
         )
 
         if not shift or not target_user:
-            flash("Shift ou utilisateur invalide.", "danger")
+            flash(_("Shift ou utilisateur invalide."), "danger")
             return redirect(url_for("main.add_swap"))
 
         swap_request, error = SwapService.request_swap(
             current_user, shift, target_user, target_shift
         )
         if error:
-            flash(f"Impossible de créer la demande : {error}", "danger")
+            flash(
+                _("Impossible de créer la demande : %(error)s", error=error), "danger"
+            )
             return redirect(url_for("main.add_swap"))
 
-        flash("Demande d'échange envoyée, en attente de validation admin.", "success")
+        flash(
+            _("Demande d'échange envoyée, en attente de validation admin."), "success"
+        )
         return redirect(url_for("main.swaps"))
 
     my_shifts = [
@@ -80,7 +85,7 @@ def cancel_swap(swap_request_id):
     if error:
         flash(error, "danger")
     else:
-        flash("Demande d'échange annulée.", "success")
+        flash(_("Demande d'échange annulée."), "success")
     return redirect(url_for("main.swaps"))
 
 
@@ -89,7 +94,11 @@ def cancel_swap(swap_request_id):
 def purge_swaps():
     count = SwapService.purge_resolved_for_user(current_user)
     flash(
-        f"{count} demande(s) terminée(s) supprimée(s) de votre historique.", "success"
+        _(
+            "%(count)s demande(s) terminée(s) supprimée(s) de votre historique.",
+            count=count,
+        ),
+        "success",
     )
     return redirect(url_for("main.swaps"))
 

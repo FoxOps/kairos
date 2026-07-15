@@ -4,6 +4,7 @@ app/routes/admin.py).
 """
 
 from flask import abort, flash, redirect, render_template, request, url_for
+from flask_babel import gettext as _
 from sqlalchemy.orm import selectinload
 
 from app import db
@@ -37,20 +38,20 @@ def add_user():
         password = request.form.get("password", "")
 
         if not all([name, email, group_id]):
-            flash("Tous les champs sont obligatoires.", "danger")
+            flash(_("Tous les champs sont obligatoires."), "danger")
             return render_template("admin/add_user.html", groups=groups)
 
         try:
             user, error = UserService.create(name, email, int(group_id), password)
             if error:
-                flash(f"{error}", "danger")
+                flash(error, "danger")
                 return render_template("admin/add_user.html", groups=groups)
 
-            flash("Utilisateur ajouté avec succès !", "success")
+            flash(_("Utilisateur ajouté avec succès !"), "success")
             return redirect(url_for("admin.list_users"))
         except Exception as e:
             db.session.rollback()
-            flash(f"Erreur : {str(e)}", "danger")
+            flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
 
     return render_template("admin/add_user.html", groups=groups)
 
@@ -69,7 +70,7 @@ def edit_user(user_id):
         password = request.form.get("password", "")
 
         if not all([name, email, group_id]):
-            flash("Tous les champs sont obligatoires.", "danger")
+            flash(_("Tous les champs sont obligatoires."), "danger")
             return render_template("admin/edit_user.html", user=user, groups=groups)
 
         try:
@@ -77,14 +78,14 @@ def edit_user(user_id):
                 user_id, name, email, int(group_id), is_admin, password
             )
             if error:
-                flash(f"{error}", "danger")
+                flash(error, "danger")
                 return render_template("admin/edit_user.html", user=user, groups=groups)
 
-            flash("Utilisateur modifié avec succès !", "success")
+            flash(_("Utilisateur modifié avec succès !"), "success")
             return redirect(url_for("admin.list_users"))
         except Exception as e:
             db.session.rollback()
-            flash(f"Erreur : {str(e)}", "danger")
+            flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
 
     return render_template("admin/edit_user.html", user=user, groups=groups)
 
@@ -98,11 +99,11 @@ def delete_user(user_id):
     try:
         deleted, error = UserService.delete(user_id)
         if error:
-            flash(f"{error}", "danger")
+            flash(error, "danger")
         elif deleted:
-            flash("Utilisateur supprimé avec succès !", "success")
+            flash(_("Utilisateur supprimé avec succès !"), "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"Erreur : {str(e)}", "danger")
+        flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
 
     return redirect(url_for("admin.list_users"))

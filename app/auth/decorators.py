@@ -21,6 +21,7 @@ Usage:
 from functools import wraps
 
 from flask import flash, redirect, url_for
+from flask_babel import gettext as _
 from flask_login import current_user, login_required
 
 
@@ -40,7 +41,7 @@ def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_admin:
-            flash("Accès refusé : vous devez être administrateur.", "danger")
+            flash(_("Accès refusé : vous devez être administrateur."), "danger")
             return redirect(url_for("main.index"))
         return f(*args, **kwargs)
 
@@ -99,7 +100,7 @@ def user_owns_resource(model, resource_id_param, user_id_attr="user_id"):
                 return f(*args, **kwargs)
 
             flash(
-                "Accès refusé : vous ne pouvez modifier que vos propres données.",
+                _("Accès refusé : vous ne pouvez modifier que vos propres données."),
                 "danger",
             )
             return redirect(url_for("main.index"))
