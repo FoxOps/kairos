@@ -9,6 +9,8 @@ thin: they parse the request, call this service, and turn the result
 into a flash message / redirect / JSON response.
 """
 
+from flask_babel import gettext as _
+
 from app import db
 from app.models import Shift, SwapRequest, User
 from app.repositories.swap_request_repository import SwapRequestRepository
@@ -47,32 +49,42 @@ class SwapService:
     ) -> str | None:
         """Re-validate the business rules for an exchange. None if valid, otherwise an error message."""
         if shift is None:
-            return "Shift introuvable"
+            return _("Shift introuvable")
         if target_user is None:
-            return "Utilisateur cible introuvable"
+            return _("Utilisateur cible introuvable")
         if shift.user_id != requester.id:
-            return "Ce shift ne vous appartient plus"
+            return _("Ce shift ne vous appartient plus")
         if target_user.id == requester.id:
-            return "Impossible de proposer un échange à vous-même"
+            return _("Impossible de proposer un échange à vous-même")
         if target_shift is not None and target_shift.user_id != target_user.id:
-            return "Le shift proposé en retour n'appartient plus à cet utilisateur"
+            return _("Le shift proposé en retour n'appartient plus à cet utilisateur")
 
         if is_user_on_leave(target_user.id, shift.date):
-            return f"{target_user.name} est en congé le {shift.date}"
+            return _(
+                "%(name)s est en congé le %(date)s",
+                name=target_user.name,
+                date=shift.date,
+            )
         if SwapService._other_shift_on_date(
             target_user.id,
             shift.date,
             exclude_shift_id=target_shift.id if target_shift else None,
         ):
-            return f"{target_user.name} a déjà un autre shift le {shift.date}"
+            return _(
+                "%(name)s a déjà un autre shift le %(date)s",
+                name=target_user.name,
+                date=shift.date,
+            )
 
         if target_shift is not None:
             if is_user_on_leave(requester.id, target_shift.date):
-                return f"Vous êtes en congé le {target_shift.date}"
+                return _("Vous êtes en congé le %(date)s", date=target_shift.date)
             if SwapService._other_shift_on_date(
                 requester.id, target_shift.date, exclude_shift_id=shift.id
             ):
-                return f"Vous avez déjà un autre shift le {target_shift.date}"
+                return _(
+                    "Vous avez déjà un autre shift le %(date)s", date=target_shift.date
+                )
 
         return None
 
@@ -89,7 +101,7 @@ class SwapService:
             (swap_request, None) on success, (None, error_message) otherwise.
         """
         if SwapRequestRepository.has_pending_for_shift(shift.id):
-            return None, "Une demande est déjà en attente pour ce shift"
+            return None, _("Une demande est déjà en attente pour ce shift")
 
         error = SwapService._validation_error(
             requester, shift, target_user, target_shift
@@ -111,9 +123,11 @@ class SwapService:
     def cancel_swap(swap_request: SwapRequest, user: User) -> str | None:
         """Cancel a request (by its author, or an admin). None on success."""
         if not swap_request.is_pending():
-            return "Cette demande n'est plus en attente"
+            return _("Cette demande n'est plus en attente")
         if swap_request.requester_id != user.id and not user.is_admin:
-            return "Seul le demandeur ou un administrateur peut annuler cette demande"
+            return _(
+                "Seul le demandeur ou un administrateur peut annuler cette demande"
+            )
 
         swap_request.status = SwapRequest.CANCELLED
         db.session.commit()
@@ -123,7 +137,7 @@ class SwapService:
     def approve_swap(swap_request: SwapRequest, admin: User) -> str | None:
         """Approve a request: reassigns the shifts. None on success."""
         if not swap_request.is_pending():
-            return "Cette demande n'est plus en attente"
+            return _("Cette demande n'est plus en attente")
 
         error = SwapService._validation_error(
             swap_request.requester,
@@ -132,7 +146,9 @@ class SwapService:
             swap_request.target_shift,
         )
         if error:
-            return f"Échange invalide, réessayez de le rejeter : {error}"
+            return _(
+                "Échange invalide, réessayez de le rejeter : %(error)s", error=error
+            )
 
         swap_request.shift.user_id = swap_request.target_user_id
         if swap_request.target_shift is not None:
@@ -157,18 +173,24 @@ class SwapService:
         situation.
         """
         if swap_request.status != SwapRequest.APPROVED:
-            return "Seul un échange approuvé peut être annulé"
+            return _("Seul un échange approuvé peut être annulé")
 
         shift = swap_request.shift
         if shift is None or shift.user_id != swap_request.target_user_id:
-            return "Le shift a changé depuis l'approbation, annulation impossible automatiquement"
+            return _(
+                "Le shift a changé depuis l'approbation, annulation impossible "
+                "automatiquement"
+            )
 
         target_shift = swap_request.target_shift
         if (
             target_shift is not None
             and target_shift.user_id != swap_request.requester_id
         ):
-            return "Le shift retourné a changé depuis l'approbation, annulation impossible automatiquement"
+            return _(
+                "Le shift retourné a changé depuis l'approbation, annulation "
+                "impossible automatiquement"
+            )
 
         shift.user_id = swap_request.requester_id
         if target_shift is not None:
@@ -190,7 +212,7 @@ class SwapService:
     ) -> str | None:
         """Reject a request. None on success."""
         if not swap_request.is_pending():
-            return "Cette demande n'est plus en attente"
+            return _("Cette demande n'est plus en attente")
 
         swap_request.mark_reviewed(admin.id, SwapRequest.REJECTED, comment=reason)
         db.session.commit()

@@ -9,6 +9,9 @@ notification_service.py) only sends weekly reminder *emails* from cron
 scripts, never from a request/response cycle - don't confuse the two.
 """
 
+from flask_babel import force_locale
+from flask_babel import gettext as _
+
 from app import db
 from app.models import AppNotification, SwapRequest, User
 from app.repositories.app_notification_repository import AppNotificationRepository
@@ -30,7 +33,7 @@ class AppNotificationService:
     def mark_read(notification: AppNotification, user: User) -> str | None:
         """Mark a notification as read. None on success."""
         if notification.user_id != user.id:
-            return "Cette notification ne vous appartient pas"
+            return _("Cette notification ne vous appartient pas")
         notification.mark_read()
         db.session.commit()
         return None
@@ -58,11 +61,20 @@ class AppNotificationService:
 
     @staticmethod
     def notify_admins_new_swap_request(swap_request: SwapRequest) -> None:
-        message = (
-            f"{swap_request.requester.name} propose un échange de shift à "
-            f"{swap_request.target_user.name}, en attente de validation."
-        )
+        # Persisted message, read later by potentially a different user
+        # than whoever triggered this event - each admin may have their
+        # own language preference, so build the message per-recipient
+        # inside force_locale() rather than once upfront (unlike a plain
+        # flash(), which renders immediately in the acting request's own
+        # locale and needs no such per-recipient handling).
         for admin in UserRepository.list_admins():
+            with force_locale(admin.effective_language()):
+                message = _(
+                    "%(requester)s propose un échange de shift à %(target)s, en "
+                    "attente de validation.",
+                    requester=swap_request.requester.name,
+                    target=swap_request.target_user.name,
+                )
             AppNotificationService._notify(
                 admin.id, "swap_request_created", message, "/admin/swaps"
             )
@@ -72,14 +84,17 @@ class AppNotificationService:
     def notify_swap_decision(swap_request: SwapRequest, decision: str) -> None:
         """decision: SwapRequest.APPROVED, REJECTED, or REVERTED."""
         if decision == SwapRequest.APPROVED:
-            requester_message = (
-                f"Votre demande d'échange avec {swap_request.target_user.name} "
-                "a été approuvée."
-            )
-            target_message = (
-                f"{swap_request.requester.name} et vous avez échangé un shift "
-                "(approuvé par l'administrateur)."
-            )
+            with force_locale(swap_request.requester.effective_language()):
+                requester_message = _(
+                    "Votre demande d'échange avec %(name)s a été approuvée.",
+                    name=swap_request.target_user.name,
+                )
+            with force_locale(swap_request.target_user.effective_language()):
+                target_message = _(
+                    "%(name)s et vous avez échangé un shift (approuvé par "
+                    "l'administrateur).",
+                    name=swap_request.requester.name,
+                )
             AppNotificationService._notify(
                 swap_request.requester_id, "swap_approved", requester_message, "/swaps"
             )
@@ -87,24 +102,31 @@ class AppNotificationService:
                 swap_request.target_user_id, "swap_approved", target_message, "/swaps"
             )
         elif decision == SwapRequest.REJECTED:
-            requester_message = (
-                f"Votre demande d'échange avec {swap_request.target_user.name} "
-                "a été rejetée."
-            )
-            if swap_request.admin_comment:
-                requester_message += f" Motif : {swap_request.admin_comment}"
+            with force_locale(swap_request.requester.effective_language()):
+                requester_message = _(
+                    "Votre demande d'échange avec %(name)s a été rejetée.",
+                    name=swap_request.target_user.name,
+                )
+                if swap_request.admin_comment:
+                    requester_message += _(
+                        " Motif : %(comment)s", comment=swap_request.admin_comment
+                    )
             AppNotificationService._notify(
                 swap_request.requester_id, "swap_rejected", requester_message, "/swaps"
             )
         elif decision == SwapRequest.REVERTED:
-            requester_message = (
-                f"L'échange approuvé avec {swap_request.target_user.name} a été "
-                "annulé par l'administrateur, vos shifts d'origine sont restaurés."
-            )
-            target_message = (
-                f"L'échange avec {swap_request.requester.name} a été annulé par "
-                "l'administrateur, vos shifts d'origine sont restaurés."
-            )
+            with force_locale(swap_request.requester.effective_language()):
+                requester_message = _(
+                    "L'échange approuvé avec %(name)s a été annulé par "
+                    "l'administrateur, vos shifts d'origine sont restaurés.",
+                    name=swap_request.target_user.name,
+                )
+            with force_locale(swap_request.target_user.effective_language()):
+                target_message = _(
+                    "L'échange avec %(name)s a été annulé par l'administrateur, "
+                    "vos shifts d'origine sont restaurés.",
+                    name=swap_request.requester.name,
+                )
             AppNotificationService._notify(
                 swap_request.requester_id, "swap_reverted", requester_message, "/swaps"
             )

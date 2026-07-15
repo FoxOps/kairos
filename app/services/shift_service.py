@@ -8,6 +8,8 @@ flash message / redirect / JSON response.
 
 from datetime import date, datetime, timedelta
 
+from flask_babel import gettext as _
+
 from app import db
 from app.models import Shift, ShiftType, User
 from app.repositories.shift_repository import ShiftRepository
@@ -110,10 +112,10 @@ class ShiftService:
         """Create a shift from the drag & drop API. Returns (shift, error_message)."""
         on_date = start_time.date()
         if on_date.weekday() >= 5:
-            return None, "Impossible de créer un shift pour un week-end"
+            return None, _("Impossible de créer un shift pour un week-end")
 
         if not can_add_shift(user, on_date, shift_type.name):
-            return None, "Conflit détecté pour ce shift"
+            return None, _("Conflit détecté pour ce shift")
 
         shift = ShiftRepository.create(
             user.id, shift_type.id, start_time, end_time, on_date
@@ -128,11 +130,11 @@ class ShiftService:
         """Update a shift from the drag & drop API. Returns (shift, error_message)."""
         shift = ShiftRepository.get_by_id(shift_id)
         if not shift:
-            return None, "Shift non trouvé"
+            return None, _("Shift non trouvé")
 
         new_date = new_start.date()
         if new_date.weekday() >= 5:
-            return None, "Impossible de déplacer vers un week-end (samedi/dimanche)"
+            return None, _("Impossible de déplacer vers un week-end (samedi/dimanche)")
 
         conflict = ShiftRepository.find_conflict(
             shift.user_id, new_date, exclude_id=shift_id
@@ -140,7 +142,11 @@ class ShiftService:
         if conflict:
             return (
                 None,
-                f"Un shift existe déjà pour {shift.user.name} le {new_date.strftime('%d/%m/%Y')}",
+                _(
+                    "Un shift existe déjà pour %(name)s le %(date)s",
+                    name=shift.user.name,
+                    date=new_date.strftime("%d/%m/%Y"),
+                ),
             )
 
         # Originally missing: the creation path (api_create/
@@ -150,7 +156,11 @@ class ShiftService:
         if is_user_on_leave(shift.user_id, new_date):
             return (
                 None,
-                f"{shift.user.name} est en congé le {new_date.strftime('%d/%m/%Y')}",
+                _(
+                    "%(name)s est en congé le %(date)s",
+                    name=shift.user.name,
+                    date=new_date.strftime("%d/%m/%Y"),
+                ),
             )
 
         shift.start_time = new_start

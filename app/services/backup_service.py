@@ -13,6 +13,8 @@ import os
 import tempfile
 from typing import Any
 
+from flask_babel import gettext as _
+
 from scripts.backup_config import BackupConfig
 from scripts.backup_database import (
     cleanup_local_backups,
@@ -82,7 +84,9 @@ class BackupService:
                 "local": None,
                 "s3": None,
                 "timestamp": None,
-                "errors": ["Les sauvegardes sont désactivées (BACKUP_ENABLED=false)"],
+                "errors": [
+                    _("Les sauvegardes sont désactivées (BACKUP_ENABLED=false)")
+                ],
             }
 
         results = create_backup(config, logger)

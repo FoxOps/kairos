@@ -6,6 +6,8 @@ from (admins see everyone relevant, regular users only see themselves),
 plus admin CRUD on users.
 """
 
+from flask_babel import gettext as _
+
 from app import db
 from app.models import User
 from app.repositories.leave_repository import LeaveRepository
@@ -48,7 +50,7 @@ class UserService:
         name: str, email: str, group_id: int, password: str = ""
     ) -> tuple[User | None, str | None]:
         if UserRepository.email_taken(email):
-            return None, "Un utilisateur avec cet email existe déjà."
+            return None, _("Un utilisateur avec cet email existe déjà.")
 
         user = UserRepository.create(name, email, group_id)
         user.set_password(password or "password123")
@@ -69,7 +71,7 @@ class UserService:
             return None, None
 
         if UserRepository.email_taken(email, exclude_id=user_id):
-            return None, "Un utilisateur avec cet email existe déjà."
+            return None, _("Un utilisateur avec cet email existe déjà.")
 
         user.name = name
         user.email = email
@@ -93,7 +95,10 @@ class UserService:
         ):
             return (
                 False,
-                "Impossible de supprimer cet utilisateur : il a des shifts, astreintes ou congés associés.",
+                _(
+                    "Impossible de supprimer cet utilisateur : il a des shifts, "
+                    "astreintes ou congés associés."
+                ),
             )
 
         UserRepository.delete(user)

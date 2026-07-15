@@ -15,6 +15,7 @@ error_message | None instead of raising.
 from zoneinfo import available_timezones
 
 from flask import current_app
+from flask_babel import gettext as _
 
 from app import db
 from app.config.base import get_bool_from_env, get_int_from_env
@@ -57,7 +58,7 @@ class SettingsService:
     @staticmethod
     def set_default_timezone(tz_name: str) -> str | None:
         if tz_name not in available_timezones():
-            return f"Fuseau horaire invalide : {tz_name}"
+            return _("Fuseau horaire invalide : %(tz_name)s", tz_name=tz_name)
         try:
             Setting.set(DEFAULT_TIMEZONE_KEY, tz_name)
             return None
@@ -77,7 +78,7 @@ class SettingsService:
     @staticmethod
     def set_default_language(lang_code: str) -> str | None:
         if lang_code not in SUPPORTED_LANGUAGES:
-            return f"Langue invalide : {lang_code}"
+            return _("Langue invalide : %(lang_code)s", lang_code=lang_code)
         try:
             Setting.set(DEFAULT_LANGUAGE_KEY, lang_code)
             return None
@@ -122,9 +123,9 @@ class SettingsService:
     @staticmethod
     def set_pagination(items_per_page: int, max_per_page: int) -> str | None:
         if items_per_page <= 0 or max_per_page <= 0:
-            return "Les valeurs de pagination doivent être positives"
+            return _("Les valeurs de pagination doivent être positives")
         if items_per_page > max_per_page:
-            return "items_per_page ne peut pas dépasser max_per_page"
+            return _("items_per_page ne peut pas dépasser max_per_page")
         try:
             Setting.set(ITEMS_PER_PAGE_KEY, items_per_page)
             Setting.set(MAX_PER_PAGE_KEY, max_per_page)
@@ -172,7 +173,7 @@ class SettingsService:
     @staticmethod
     def set_backup_retention(retention_days: int, max_backups: int) -> str | None:
         if retention_days <= 0 or max_backups <= 0:
-            return "Les valeurs de rétention doivent être positives"
+            return _("Les valeurs de rétention doivent être positives")
         try:
             Setting.set(BACKUP_RETENTION_DAYS_KEY, retention_days)
             Setting.set(BACKUP_MAX_BACKUPS_KEY, max_backups)
@@ -196,7 +197,7 @@ class SettingsService:
     @staticmethod
     def set_ics_token_expiry_days(days: int) -> str | None:
         if days <= 0:
-            return "La durée d'expiration doit être positive"
+            return _("La durée d'expiration doit être positive")
         try:
             Setting.set(ICS_TOKEN_EXPIRY_DAYS_KEY, days)
             return None

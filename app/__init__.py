@@ -60,10 +60,20 @@ def get_locale() -> str:
     never consults browser-provided data. This also keeps rendering
     deterministic for anonymous pages (login, error pages) regardless
     of visitor - important for test stability (see
-    SettingsService.FALLBACK_DEFAULT_LANGUAGE)."""
+    SettingsService.FALLBACK_DEFAULT_LANGUAGE).
+
+    This is Flask-Babel's locale_selector, invoked by gettext()/_() on
+    every call - including from service-layer code that may run with
+    only an app_context() and no real HTTP request (e.g. called
+    directly in unit tests, or in principle any future non-request
+    caller). current_user requires a request context to resolve;
+    without one it's None rather than flask_login's usual
+    AnonymousUserMixin, so check has_request_context() first instead of
+    letting that raise AttributeError."""
+    from flask import has_request_context
     from flask_login import current_user
 
-    if current_user.is_authenticated:
+    if has_request_context() and current_user.is_authenticated:
         return current_user.effective_language()
 
     from app.services import SettingsService
