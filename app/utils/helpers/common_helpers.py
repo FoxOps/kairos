@@ -107,6 +107,18 @@ def build_shift_type_color_map(shift_type_ids) -> dict:
 # ---------------------------------------------------------------------------
 
 
+def _resolve_authenticated_user(user):
+    """Résout `user` vers current_user si absent, ou None si non
+    authentifié - préambule identique répété par can_add_shift/
+    can_add_leave/can_add_oncall avant chacune de leurs vérifications
+    spécifiques."""
+    if user is None:
+        user = current_user
+    if not user or not user.is_authenticated:
+        return None
+    return user
+
+
 def can_add_shift(user=None, date=None, shift_type_id=None):
     """
     Check if a user can add a shift on a specific date.
@@ -119,14 +131,12 @@ def can_add_shift(user=None, date=None, shift_type_id=None):
     Returns:
         True if user can add a shift, False otherwise
     """
+    user = _resolve_authenticated_user(user)
     if user is None:
-        user = current_user
+        return False
 
     if date is None:
         date = datetime.now().date()
-
-    if not user or not user.is_authenticated:
-        return False
 
     # Les shifts ne peuvent être ajoutés que du lundi au vendredi
     if date.weekday() >= 5:
@@ -155,13 +165,11 @@ def can_add_leave(user=None, start_date=None, end_date=None, exclude_leave_id=No
     Returns:
         True if user can add leave, False otherwise
     """
+    user = _resolve_authenticated_user(user)
     if user is None:
-        user = current_user
-
-    if start_date is None or end_date is None:
         return False
 
-    if not user or not user.is_authenticated:
+    if start_date is None or end_date is None:
         return False
 
     # La date de début doit être antérieure (ou égale) à la date de fin
@@ -245,13 +253,11 @@ def can_add_oncall(user=None, start_time=None, end_time=None):
     Returns:
         True if user can add on-call, False otherwise
     """
+    user = _resolve_authenticated_user(user)
     if user is None:
-        user = current_user
-
-    if start_time is None or end_time is None:
         return False
 
-    if not user or not user.is_authenticated:
+    if start_time is None or end_time is None:
         return False
 
     # L'astreinte doit commencer un vendredi à 21h
