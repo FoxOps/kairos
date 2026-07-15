@@ -321,10 +321,14 @@ def create_app(config_object: str | None = None):
     # Explicit fallback for absolute links (ICS export) when the reverse
     # proxy doesn't correctly forward X-Forwarded-Host to ProxyFix above
     # - otherwise request.host_url exposes the backend's internal
-    # IP/hostname instead of the public domain.
+    # IP/hostname instead of the public domain. Admin-editable at
+    # /admin/settings (falls back to the PUBLIC_BASE_URL env var when no
+    # DB override exists - see SettingsService.get_public_base_url()).
     @app.context_processor
     def inject_public_base_url():
-        base_url = app.config.get("PUBLIC_BASE_URL")
+        from app.services import SettingsService
+
+        base_url = SettingsService.get_public_base_url()
         return {"public_base_url": base_url.rstrip("/") if base_url else None}
 
     # Unread notifications badge in the sidebar (see "Notifications" in
