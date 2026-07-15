@@ -2,45 +2,45 @@
 
 {% block admin_content %}
 <section class="p-3 md:p-4 max-w-4xl mx-auto">
-    <div class="breadcrumbs text-sm mb-2" aria-label="Fil d'Ariane">
+    <div class="breadcrumbs text-sm mb-2" aria-label="{{ _("Fil d'Ariane") }}">
         <ul>
             <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
-            <li><a href="{{ url_for('admin.automation_dashboard') }}">Automatisation</a></li>
-            <li>État</li>
+            <li><a href="{{ url_for('admin.automation_dashboard') }}">{{ _("Automatisation") }}</a></li>
+            <li>{{ _("État") }}</li>
         </ul>
     </div>
-    <h1 class="text-2xl font-bold mb-4"><i class="fas fa-chart-line" aria-hidden="true"></i> État de l'automatisation</h1>
+    <h1 class="text-2xl font-bold mb-4"><i class="fas fa-chart-line" aria-hidden="true"></i> {{ _("État de l'automatisation") }}</h1>
 
     <div class="stats stats-vertical sm:stats-horizontal shadow-md bg-base-100 w-full mb-6">
         <div class="stat">
-            <div class="stat-title">Astreintes existantes</div>
+            <div class="stat-title">{{ _("Astreintes existantes") }}</div>
             <div class="stat-value text-primary">{{ status.oncall_count }}</div>
         </div>
         <div class="stat">
-            <div class="stat-title">Shifts existants</div>
+            <div class="stat-title">{{ _("Shifts existants") }}</div>
             <div class="stat-value text-info">{{ status.shift_count }}</div>
         </div>
         <div class="stat">
-            <div class="stat-title">Utilisateurs éligibles (astreintes)</div>
+            <div class="stat-title">{{ _("Utilisateurs éligibles (astreintes)") }}</div>
             <div class="stat-value text-success">{{ status.oncall_eligible_users }}</div>
         </div>
         <div class="stat">
-            <div class="stat-title">Utilisateurs éligibles (shifts)</div>
+            <div class="stat-title">{{ _("Utilisateurs éligibles (shifts)") }}</div>
             <div class="stat-value text-warning">{{ status.shift_eligible_users }}</div>
         </div>
     </div>
 
     <div class="card card-sm bg-base-100 shadow-md mb-4">
         <div class="card-body">
-            <h2 class="text-lg font-semibold"><i class="fas fa-calendar-alt" aria-hidden="true"></i> Prochaine astreinte disponible</h2>
+            <h2 class="text-lg font-semibold"><i class="fas fa-calendar-alt" aria-hidden="true"></i> {{ _("Prochaine astreinte disponible") }}</h2>
 
             {% if status.next_available_oncall_date %}
             <div class="alert alert-success">
-                <p>La prochaine astreinte peut être générée à partir du <strong>{{ status.next_available_oncall_date }}</strong>.</p>
+                <p>{{ _("La prochaine astreinte peut être générée à partir du") }} <strong>{{ status.next_available_oncall_date }}</strong>.</p>
             </div>
             {% else %}
             <div class="alert alert-warning">
-                <p>Aucune date disponible trouvée.</p>
+                <p>{{ _("Aucune date disponible trouvée.") }}</p>
             </div>
             {% endif %}
         </div>
@@ -48,7 +48,7 @@
 
     <div class="flex gap-2 mt-5">
         <a class="btn btn-primary" href="{{ url_for('admin.automation_dashboard') }}">
-            <i class="fas fa-arrow-left"></i> Retour au tableau de bord
+            <i class="fas fa-arrow-left"></i> {{ _("Retour au tableau de bord") }}
         </a>
     </div>
 </section>

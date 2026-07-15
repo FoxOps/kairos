@@ -2,30 +2,30 @@
 
 {% block admin_content %}
 <section class="p-3 md:p-4 max-w-6xl mx-auto">
-    <div class="breadcrumbs text-sm mb-2" aria-label="Fil d'Ariane">
+    <div class="breadcrumbs text-sm mb-2" aria-label="{{ _("Fil d'Ariane") }}">
         <ul>
             <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
-            <li><a href="{{ url_for('admin.automation_dashboard') }}">Automatisation</a></li>
-            <li>Prévisualisation</li>
+            <li><a href="{{ url_for('admin.automation_dashboard') }}">{{ _("Automatisation") }}</a></li>
+            <li>{{ _("Prévisualisation") }}</li>
         </ul>
     </div>
-    <h1 class="text-2xl font-bold mb-4"><i class="fas fa-eye" aria-hidden="true"></i> Prévisualisation - Génération complète</h1>
+    <h1 class="text-2xl font-bold mb-4"><i class="fas fa-eye" aria-hidden="true"></i> {{ _("Prévisualisation - Génération complète") }}</h1>
 
     <div class="alert alert-info mb-4">
-        <p><i class="fas fa-info-circle"></i> Ceci est une prévisualisation. Aucune donnée n'a été sauvegardée en base de données.</p>
+        <p><i class="fas fa-info-circle"></i> {{ _("Ceci est une prévisualisation. Aucune donnée n'a été sauvegardée en base de données.") }}</p>
     </div>
 
     <div class="card card-sm bg-base-100 shadow-md mb-4">
         <div class="card-body">
-            <h2 class="text-lg font-semibold"><i class="fas fa-calendar-alt" aria-hidden="true"></i> Période : {{ start_date.strftime('%d/%m/%Y') }} au {{ end_date.strftime('%d/%m/%Y') }}</h2>
+            <h2 class="text-lg font-semibold"><i class="fas fa-calendar-alt" aria-hidden="true"></i> {{ _("Période : %(start)s au %(end)s", start=start_date.strftime('%d/%m/%Y'), end=end_date.strftime('%d/%m/%Y')) }}</h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                    <h3 class="font-semibold mb-2"><i class="fas fa-bell" aria-hidden="true"></i> Astreintes</h3>
+                    <h3 class="font-semibold mb-2"><i class="fas fa-bell" aria-hidden="true"></i> {{ _("Astreintes") }}</h3>
 
                     {% if result.oncall.generated %}
                     <div class="alert alert-success mb-2">
-                        <p><strong>{{ result.oncall.generated|length }}</strong> astreinte(s) sera(seront) générée(s)</p>
+                        <p>{{ _("%(count)s astreinte(s) sera(seront) générée(s)", count=result.oncall.generated|length) }}</p>
                     </div>
 
                     <div class="overflow-x-auto">
@@ -33,9 +33,9 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Utilisateur</th>
-                                    <th>Début</th>
-                                    <th>Fin</th>
+                                    <th>{{ _("Utilisateur") }}</th>
+                                    <th>{{ _("Début") }}</th>
+                                    <th>{{ _("Fin") }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -52,17 +52,17 @@
                     </div>
                     {% else %}
                     <div class="alert alert-warning">
-                        <p>Aucune astreinte ne sera générée.</p>
+                        <p>{{ _("Aucune astreinte ne sera générée.") }}</p>
                     </div>
                     {% endif %}
                 </div>
 
                 <div>
-                    <h3 class="font-semibold mb-2"><i class="fas fa-calendar-check" aria-hidden="true"></i> Shifts</h3>
+                    <h3 class="font-semibold mb-2"><i class="fas fa-calendar-check" aria-hidden="true"></i> {{ _("Shifts") }}</h3>
 
                     {% if result.shift.generated %}
                     <div class="alert alert-success mb-2">
-                        <p><strong>{{ result.shift.generated|length }}</strong> shift(s) sera(seront) généré(s)</p>
+                        <p>{{ _("%(count)s shift(s) sera(seront) généré(s)", count=result.shift.generated|length) }}</p>
                     </div>
 
                     <div class="overflow-x-auto">
@@ -70,9 +70,9 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Date</th>
-                                    <th>Type</th>
-                                    <th>Utilisateur</th>
+                                    <th>{{ _("Date") }}</th>
+                                    <th>{{ _("Type") }}</th>
+                                    <th>{{ _("Utilisateur") }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -89,7 +89,7 @@
                     </div>
                     {% else %}
                     <div class="alert alert-warning">
-                        <p>Aucun shift ne sera généré.</p>
+                        <p>{{ _("Aucun shift ne sera généré.") }}</p>
                     </div>
                     {% endif %}
                 </div>
@@ -99,18 +99,18 @@
 
     <div class="card card-sm bg-base-100 shadow-md mb-4">
         <div class="card-body">
-            <h2 class="text-lg font-semibold"><i class="fas fa-chart-line" aria-hidden="true"></i> Résumé</h2>
+            <h2 class="text-lg font-semibold"><i class="fas fa-chart-line" aria-hidden="true"></i> {{ _("Résumé") }}</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div class="alert alert-primary flex-col items-start">
-                    <p><strong>Total astreintes</strong></p>
+                    <p><strong>{{ _("Total astreintes") }}</strong></p>
                     <p class="text-2xl font-bold">{{ result.oncall.generated|length }}</p>
                 </div>
                 <div class="alert alert-info flex-col items-start">
-                    <p><strong>Total shifts</strong></p>
+                    <p><strong>{{ _("Total shifts") }}</strong></p>
                     <p class="text-2xl font-bold">{{ result.shift.generated|length }}</p>
                 </div>
                 <div class="alert alert-success flex-col items-start">
-                    <p><strong>Total général</strong></p>
+                    <p><strong>{{ _("Total général") }}</strong></p>
                     <p class="text-2xl font-bold">{{ result.oncall.generated|length + result.shift.generated|length }}</p>
                 </div>
             </div>
@@ -119,12 +119,12 @@
 
     <div class="card card-sm bg-base-100 shadow-md mb-4">
         <div class="card-body">
-            <h2 class="text-lg font-semibold"><i class="fas fa-comments" aria-hidden="true"></i> Messages de génération</h2>
+            <h2 class="text-lg font-semibold"><i class="fas fa-comments" aria-hidden="true"></i> {{ _("Messages de génération") }}</h2>
 
             {% set automation_alert_class_map = {'danger': 'alert-error', 'success': 'alert-success', 'warning': 'alert-warning', 'info': 'alert-info'} %}
             {% set automation_alert_icon_map = {'danger': 'fa-circle-exclamation', 'success': 'fa-circle-check', 'warning': 'fa-triangle-exclamation', 'info': 'fa-circle-info'} %}
 
-            <h3 class="font-semibold">Astreintes</h3>
+            <h3 class="font-semibold">{{ _("Astreintes") }}</h3>
             {% if result.oncall.messages %}
             <div class="flex flex-col gap-2 mb-4">
                 {% for category, msg in result.oncall.messages %}
@@ -135,10 +135,10 @@
                 {% endfor %}
             </div>
             {% else %}
-            <p>Aucun message pour les astreintes.</p>
+            <p>{{ _("Aucun message pour les astreintes.") }}</p>
             {% endif %}
 
-            <h3 class="font-semibold">Shifts</h3>
+            <h3 class="font-semibold">{{ _("Shifts") }}</h3>
             {% if result.shift.messages %}
             <div class="flex flex-col gap-2">
                 {% for category, msg in result.shift.messages %}
@@ -149,7 +149,7 @@
                 {% endfor %}
             </div>
             {% else %}
-            <p>Aucun message pour les shifts.</p>
+            <p>{{ _("Aucun message pour les shifts.") }}</p>
             {% endif %}
         </div>
     </div>
@@ -165,11 +165,11 @@
             <input type="hidden" name="include_{{ user_id }}" value="1">
             {% endfor %}
             <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> Confirmer et sauvegarder tout
+                <i class="fas fa-save"></i> {{ _("Confirmer et sauvegarder tout") }}
             </button>
         </form>
         <a class="btn btn-ghost" href="{{ url_for('admin.automation_full') }}">
-            <i class="fas fa-arrow-left"></i> Retour à la configuration
+            <i class="fas fa-arrow-left"></i> {{ _("Retour à la configuration") }}
         </a>
     </div>
 </section>

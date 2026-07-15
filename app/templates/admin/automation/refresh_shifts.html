@@ -1,36 +1,35 @@
 {% extends "admin/base_admin.html" %}
 
-{% block title %}Rafraîchir les Shifts - Automatisation{% endblock %}
+{% block title %}{{ _("Rafraîchir les Shifts") }} - Automatisation{% endblock %}
 
 {% block content %}
 <div class="p-3 md:p-4 max-w-4xl mx-auto">
-    <div class="breadcrumbs text-sm mb-2" aria-label="Fil d'Ariane">
+    <div class="breadcrumbs text-sm mb-2" aria-label="{{ _("Fil d'Ariane") }}">
         <ul>
             <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
-            <li><a href="{{ url_for('admin.automation_dashboard') }}">Automatisation</a></li>
-            <li>Rafraîchir les shifts</li>
+            <li><a href="{{ url_for('admin.automation_dashboard') }}">{{ _("Automatisation") }}</a></li>
+            <li>{{ _("Rafraîchir les shifts") }}</li>
         </ul>
     </div>
     <h1 class="text-2xl font-bold mb-4">
-        <i class="fas fa-sync-alt" aria-hidden="true"></i> Rafraîchir les Shifts
+        <i class="fas fa-sync-alt" aria-hidden="true"></i> {{ _("Rafraîchir les Shifts") }}
     </h1>
 
     <div class="alert alert-info mb-4">
         <div>
             <p>
                 <i class="fas fa-info-circle"></i>
-                Cette page permet de recalculer tous les shifts pour une période donnée
-                en tenant compte des <strong>astreintes actuelles</strong> (même modifiées manuellement).
+                {{ _("Cette page permet de recalculer tous les shifts pour une période donnée en tenant compte des") }} <strong>{{ _("astreintes actuelles") }}</strong> ({{ _("même modifiées manuellement") }}).
             </p>
             <p>
-                Les nouvelles règles métiers seront appliquées :
+                {{ _("Les nouvelles règles métiers seront appliquées :") }}
             </p>
             <ul class="list-disc list-inside">
-                <li>Créneau 13h-21h pour la personne d'astreinte (si elle fait partie d'un groupe schedule)</li>
-                <li>Rotation : 13h-21h → 07h-15h la semaine suivante</li>
-                <li>09h-17h par défaut pour les autres</li>
-                <li>Cas spécial avec 2 personnes : la non-astreinte passe en 07h-15h</li>
-                <li>Contrainte légale : 2 semaines minimum entre deux astreintes</li>
+                <li>{{ _("Créneau 13h-21h pour la personne d'astreinte (si elle fait partie d'un groupe schedule)") }}</li>
+                <li>{{ _("Rotation : 13h-21h → 07h-15h la semaine suivante") }}</li>
+                <li>{{ _("09h-17h par défaut pour les autres") }}</li>
+                <li>{{ _("Cas spécial avec 2 personnes : la non-astreinte passe en 07h-15h") }}</li>
+                <li>{{ _("Contrainte légale : 2 semaines minimum entre deux astreintes") }}</li>
             </ul>
         </div>
     </div>
@@ -39,15 +38,15 @@
         <div class="card-body gap-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div>
-                <label class="label">Période</label>
+                <label class="label">{{ _("Période") }}</label>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                        <label class="label">Date de début</label>
+                        <label class="label">{{ _("Date de début") }}</label>
                         <input class="input w-full" type="date" name="start_date"
                                value="{{ start_date_default.strftime('%Y-%m-%d') }}" required>
                     </div>
                     <div>
-                        <label class="label">Date de fin</label>
+                        <label class="label">{{ _("Date de fin") }}</label>
                         <input class="input w-full" type="date" name="end_date"
                                value="{{ end_date_default.strftime('%Y-%m-%d') }}" required>
                     </div>
@@ -57,11 +56,11 @@
             <div class="flex gap-2">
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-sync-alt" aria-hidden="true"></i>
-                    Rafraîchir les Shifts
+                    {{ _("Rafraîchir les Shifts") }}
                 </button>
                 <a class="btn btn-outline" href="{{ url_for('admin.automation_dashboard') }}">
                     <i class="fas fa-arrow-left" aria-hidden="true"></i>
-                    Retour au tableau de bord
+                    {{ _("Retour au tableau de bord") }}
                 </a>
             </div>
         </div>
