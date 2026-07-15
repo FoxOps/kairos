@@ -1,22 +1,22 @@
 /* ============================================
-   PALETTE DE MARQUE - DRACULA (dark) / ALUCARD (light)
+   BRAND PALETTE - DRACULA (dark) / ALUCARD (light)
    ============================================
-   tailwindcss-browser (compilateur JIT, voir base.html) ne supporte pas
-   les directives @plugin/@config ("does not support plugins or config
-   files", testé en navigateur réel) - impossible de redéfinir un thème
-   daisyUI complet via @plugin "daisyui/theme" comme documenté pour un
-   usage avec build. On garde donc les thèmes "light"/"dark" intégrés de
-   daisyUI (chargés par le <link> daisyui.css dans base.html) et on
-   surcharge directement les variables --color-* sous chaque
-   [data-theme=...] - ce fichier n'étant pas dans un @layer, il gagne
-   sur les définitions [data-theme=...] layered de daisyUI quel que soit
-   l'ordre de chargement.
+   tailwindcss-browser (the JIT compiler, see base.html) does not
+   support the @plugin/@config directives - a real-browser check raised
+   "does not support plugins or config files" - so a full daisyUI theme
+   can't be redefined via @plugin "daisyui/theme" the way the
+   build-tooling docs describe. We therefore keep daisyUI's built-in
+   "light"/"dark" themes (loaded via the daisyui.css <link> in
+   base.html) and directly override the --color-* variables under each
+   [data-theme=...] - since this file isn't inside an @layer, it wins
+   over daisyUI's layered [data-theme=...] definitions regardless of
+   load order.
 
-   Valeurs 100% issues de la spec officielle draculatheme.com/spec
-   (Dracula pour [data-theme="dark"], Alucard - variante claire officielle
-   - pour [data-theme="light"]), aucune teinte inventée ni dérivée par
-   calcul : Background/Current Line (opaque)/Selection donnent
-   directement les 3 niveaux de surface base-100/200/300. */
+   Values are taken 1:1 from the official spec at draculatheme.com/spec
+   (Dracula for [data-theme="dark"], Alucard - the official light
+   variant - for [data-theme="light"]), no invented or computed hue: the
+   spec's Background/Current Line (opaque)/Selection colors map directly
+   to the three base-100/200/300 surface levels. */
 
 [data-theme="light"] {
     /* Alucard */
@@ -71,10 +71,10 @@
 }
 
 /* ============================================
-   FORME / PROFONDEUR
+   SHAPE / DEPTH
    ============================================
-   Mêmes tokens pour les deux thèmes (pas de raison de varier la forme
-   par thème) - esthétique Dracula plutôt nette/plate, depth discret. */
+   Same tokens for both themes (no reason to vary the shape by theme) -
+   Dracula's aesthetic leans crisp/flat, so depth stays subtle. */
 :root {
     --radius-box: 1rem;
     --radius-field: 0.75rem;

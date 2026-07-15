@@ -1,22 +1,22 @@
 /* ============================================
-   LEVIIA SCHEDULE - THÈME SOMBRE
+   LEVIIA SCHEDULE - DARK THEME
    ============================================
-   Depuis la refonte Tailwind/daisyUI (Phase 7 - retrait de Bulma),
-   daisyUI gère lui-même la bascule clair/sombre de tous ses composants
-   (boutons, alertes, badges, cards...) via ses propres variables
-   --color-* et l'attribut [data-theme] - plus besoin de correctifs de
-   contraste manuels comme du temps de Bulma. Ne reste ici que ce que
-   daisyUI ne peut pas connaître : les surcharges FullCalendar (lib
-   externe, DOM et classes propres à elle) et quelques réglages
-   d'accessibilité génériques indépendants du framework CSS.
+   Under Tailwind/daisyUI (Bulma has been removed), daisyUI itself
+   handles the light/dark switch for all of its components (buttons,
+   alerts, badges, cards...) through its own --color-* variables and the
+   [data-theme] attribute - no more manual contrast fixes like in the
+   Bulma days. All that's left here is what daisyUI can't know about:
+   FullCalendar overrides (an external library with its own DOM and
+   classes) and a couple of generic, framework-independent accessibility
+   rules.
    ============================================ */
 
-/* FullCalendar en mode sombre - les variables --fc-event-* sont ce que
-   .fc-event-main (le texte réellement affiché, notamment en vues
-   Semaine/Jour) consulte réellement, pas background-color/color
-   classiques sur le conteneur (voir le commentaire détaillé dans
-   vendor/fullcalendar-overrides.css - bug de contraste trouvé en test
-   manuel, texte blanc illisible sur fond clair). */
+/* FullCalendar in dark mode - the --fc-event-* variables are what
+   .fc-event-main (the text actually rendered, notably in the Week/Day
+   views) really reads, not the container's plain background-color/color
+   (see the detailed comment in vendor/fullcalendar-overrides.css - a
+   contrast bug where the event text stayed white/unreadable on a light
+   background). */
 [data-theme="dark"] .fc-event-shift {
     --fc-event-bg-color: var(--app-color-primary) !important;
     --fc-event-border-color: var(--app-color-primary) !important;
@@ -55,12 +55,12 @@
     color: var(--text-primary) !important;
 }
 
-/* Variables globales de FullCalendar (consultées par TOUTES ses bordures/
-   fonds internes, y compris les vues Semaine/Jour - grille horaire,
-   colonnes, séparateurs - jamais couvertes par les sélecteurs .fc-day/
-   .fc-col-header-cell ci-dessous, qui ne visent que la vue Mois). Sans
-   ça, les bordures restaient en #ddd (gris clair fixe de FullCalendar),
-   look non adapté/cassé sur fond sombre - bug trouvé en test manuel. */
+/* FullCalendar's global variables (read by ALL of its internal borders/
+   backgrounds, including the Week/Day views - time grid, columns,
+   separators - which the .fc-day/.fc-col-header-cell selectors below
+   never cover, since those only target the Month view). Without this,
+   the borders stayed at #ddd (FullCalendar's hardcoded light gray),
+   unreadable/broken against a dark background. */
 [data-theme="dark"] #calendar {
     --fc-border-color: var(--border-primary);
     --fc-page-bg-color: var(--bg-primary);
@@ -128,7 +128,7 @@
     box-shadow: 0 0 0 2px var(--app-color-warning) !important;
 }
 
-/* Focus visible - générique, indépendant du framework CSS */
+/* Visible focus - generic, framework-independent */
 [data-theme="dark"] a:focus-visible,
 [data-theme="dark"] button:focus-visible,
 [data-theme="dark"] input:focus-visible,
@@ -139,7 +139,7 @@
     outline-offset: 2px !important;
 }
 
-/* Réduction des mouvements */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
     [data-theme="dark"] *,
     [data-theme="dark"] *::before,

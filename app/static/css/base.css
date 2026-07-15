@@ -1,17 +1,16 @@
 /* ============================================
-   LEVIIA SCHEDULE - STYLES DE BASE
+   LEVIIA SCHEDULE - BASE STYLES
    ============================================
-   Reset léger, typographie de base, et règles d'accessibilité
-   génériques (indépendantes du framework CSS) partagées entre toutes
-   les pages. Depuis la refonte Tailwind/daisyUI (Phase 7) : plus de
-   classes Bulma (.section/.title/.notification/...) ni de .skip-link/
-   .is-sr-only maison (remplacées par les utilitaires Tailwind sr-only/
-   focus:not-sr-only directement dans les templates), plus de padding-top
-   fixe non plus (l'en-tête est "sticky", pas "fixed", donc reste dans le
-   flux normal du document). Tailwind reset déjà les marges par défaut de
-   p/ul/ol/li (preflight) - ce fichier ne fait que redonner une
-   typographie de base pour le texte qui n'utilise pas de classes
-   utilitaires explicites (pages d'erreur, aide, etc.).
+   Light reset, base typography, and generic accessibility rules
+   (framework-independent) shared across all pages. Under Tailwind/
+   daisyUI there are no more Bulma classes (.section/.title/
+   .notification/...) and no more home-grown .skip-link/.is-sr-only
+   (replaced by the Tailwind sr-only/focus:not-sr-only utilities directly
+   in the templates), and no more fixed padding-top either (the header is
+   "sticky", not "fixed", so it stays in the document's normal flow).
+   Tailwind's preflight already resets the default margins on
+   p/ul/ol/li - this file only restores base typography for text that
+   doesn't use explicit utility classes (error pages, help pages, etc.).
    ============================================ */
 
 p {
@@ -54,7 +53,7 @@ a:focus-visible {
 }
 
 /* ============================================
-   RÉDUCTION DES MOUVEMENTS
+   REDUCED MOTION
    ============================================ */
 @media (prefers-reduced-motion: reduce) {
     *,

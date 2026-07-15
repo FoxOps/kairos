@@ -1,8 +1,9 @@
 /* ============================================
-   PAGE - ORDRE DE ROTATION (admin/automation/full.html)
+   PAGE - ROTATION ORDER (admin/automation/full.html)
    ============================================
-   Externalisé depuis un <style> inline (cohérence avec le reste de
-   l'app, et rayons alignés sur l'échelle globale plutôt que 4px en dur).
+   Extracted from an inline <style> block (consistency with the rest of
+   the app, and radii aligned on the global scale instead of a hardcoded
+   4px).
    ============================================ */
 
 .sortable-list {

@@ -1,8 +1,8 @@
 /* ============================================
-   COMPOSANT - CARTES
+   COMPONENT - CARDS
    ============================================
-   Augmente les cards daisyUI (.card) - la classe Bulma .box n'est plus
-   utilisée dans les templates, retirée en Phase 7.
+   Augments daisyUI's cards (.card) - Bulma's .box class is no longer
+   used in the templates, and has been removed.
    ============================================ */
 
 .card {
