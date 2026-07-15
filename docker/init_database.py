@@ -3,6 +3,7 @@
 
 from app import app, db
 from app.models import Group, ShiftType, User
+from run import setup_database
 
 # Types de shifts par défaut
 DEFAULT_SHIFT_TYPES = [
@@ -15,7 +16,7 @@ DEFAULT_SHIFT_TYPES = [
 def main():
     """Initialise la base de données avec les tables et données par défaut."""
     with app.app_context():
-        db.create_all()
+        setup_database()
 
         # Types de shifts par défaut
         for st in DEFAULT_SHIFT_TYPES:

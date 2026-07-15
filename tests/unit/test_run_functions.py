@@ -214,11 +214,15 @@ class TestSetupDatabase:
             assert "user" in tables
 
     def test_setup_database_with_valid_structure(self, test_app):
-        """Test setup_database with a valid structure."""
+        """Test setup_database against a pre-Alembic database (tables
+        already created by db.create_all(), no alembic_version table)."""
         with test_app.app_context():
             db.create_all()
 
-            # setup_database should do nothing
+            # Stamps the baseline revision and applies anything after
+            # it - a no-op on the schema either way since it already
+            # matches current models, but no longer a literal no-op
+            # call (it does touch the DB to record the stamp).
             setup_database()
 
             # Check that the tables still exist

@@ -1,18 +1,18 @@
 """
-Tests prioritaires pour main.py.
+Priority tests for main.py.
 """
 
 from datetime import datetime, timedelta
 
 from app import db
-from app.models import OnCall, Shift
+from app.models import OnCall, Shift, User
 
 
 class TestDeleteAllShifts:
-    """Tests pour /shift/delete-all."""
+    """Tests for /shift/delete-all."""
 
     def test_delete_all_shifts(self, logged_in_client, test_shift):
-        """Test la suppression de tous les shifts."""
+        """Test deleting all shifts."""
         initial_count = Shift.query.count()
         assert initial_count > 0
 
@@ -57,13 +57,27 @@ class TestDeleteAllShiftsForDay:
     ):
         """Test deleting all shifts for a day."""
         today = datetime.now().date()
-        # Create shifts for today
-        for i in range(3):
+        # Create shifts for today, one per user - uq_shift_user_date
+        # allows at most one shift per (user, date), so this needs 3
+        # distinct users rather than 3 shifts for the same one.
+        users = [test_user]
+        for i in range(2):
+            other = User(
+                name=f"Day User {i}",
+                email=f"day-user-{i}@test.com",
+                group_id=test_user.group_id,
+            )
+            other.set_password("pw")
+            db.session.add(other)
+            users.append(other)
+        db.session.commit()
+
+        for i, user in enumerate(users):
             start_time = datetime.combine(today, datetime.min.time()).replace(
                 hour=9 + i * 2
             )
             shift = Shift(
-                user_id=test_user.id,
+                user_id=user.id,
                 shift_type_id=test_shift_type.id,
                 start_time=start_time,
                 end_time=start_time + timedelta(hours=8),
@@ -179,7 +193,7 @@ class TestCalendarFunctions:
         assert abs((end - expected_end).total_seconds()) < 10
 
     def test_build_calendar_events_empty(self, test_app):
-        """Test _build_calendar_events avec des listes vides."""
+        """Test _build_calendar_events with empty lists."""
         from app.services.schedule_service import ScheduleService
 
         events = ScheduleService.build_calendar_events([], [], [])

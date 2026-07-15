@@ -22,6 +22,7 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_login import LOGIN_MESSAGE, LoginManager
+from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_talisman import Talisman
 from flask_wtf import CSRFProtect
@@ -41,6 +42,7 @@ warnings.filterwarnings(
 # ---------------------------------------------------------------------------
 
 db = SQLAlchemy()
+migrate = Migrate()
 login_manager = LoginManager()
 login_manager.login_message_category = "danger"
 limiter = Limiter(key_func=get_remote_address)
@@ -184,6 +186,7 @@ def create_app(config_object: str | None = None):
 
     # Initialize the extensions
     db.init_app(app)
+    migrate.init_app(app, db)
     login_manager.init_app(app)
     limiter.init_app(app)
     csrf.init_app(app)
