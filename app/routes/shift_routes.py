@@ -140,14 +140,12 @@ def delete_all_shifts():
     try:
         count = ShiftService.delete_all()
         if count > 0:
-            flash(
-                f"✅ Tous les {count} shifts ont été supprimés avec succès !", "success"
-            )
+            flash(f"Tous les {count} shifts ont été supprimés avec succès !", "success")
         else:
-            flash("⚠️ Aucun shift à supprimer.", "warning")
+            flash("Aucun shift à supprimer.", "warning")
     except Exception as e:
         db.session.rollback()
-        flash(f"❌ Erreur : {str(e)}", "danger")
+        flash(f"Erreur : {str(e)}", "danger")
     return redirect(url_for("main.schedule"))
 
 
@@ -161,15 +159,15 @@ def delete_all_shifts_for_user(user_id):
     try:
         count = ShiftService.delete_all_for_user(user_id)
         if count == 0:
-            flash(f"⚠️ Aucun shift trouvé pour {user.name}.", "warning")
+            flash(f"Aucun shift trouvé pour {user.name}.", "warning")
         else:
             flash(
-                f"✅ Tous les {count} shifts de {user.name} ont été supprimés avec succès !",
+                f"Tous les {count} shifts de {user.name} ont été supprimés avec succès !",
                 "success",
             )
     except Exception as e:
         db.session.rollback()
-        flash(f"❌ Erreur : {str(e)}", "danger")
+        flash(f"Erreur : {str(e)}", "danger")
     return redirect(url_for("main.schedule"))
 
 
@@ -184,19 +182,19 @@ def delete_all_shifts_for_day(date_str):
 
         if count == 0:
             flash(
-                f"⚠️ Aucun shift trouvé pour le {date_obj.strftime('%d/%m/%Y')}.",
+                f"Aucun shift trouvé pour le {date_obj.strftime('%d/%m/%Y')}.",
                 "warning",
             )
         else:
             flash(
-                f"✅ Tous les {count} shifts du {date_obj.strftime('%d/%m/%Y')} ont été supprimés avec succès !",
+                f"Tous les {count} shifts du {date_obj.strftime('%d/%m/%Y')} ont été supprimés avec succès !",
                 "success",
             )
     except ValueError:
-        flash("❌ Format de date invalide.", "danger")
+        flash("Format de date invalide.", "danger")
     except Exception as e:
         db.session.rollback()
-        flash(f"❌ Erreur : {str(e)}", "danger")
+        flash(f"Erreur : {str(e)}", "danger")
     return redirect(url_for("main.schedule"))
 
 
@@ -213,19 +211,19 @@ def delete_all_shifts_for_week(date_str):
 
         if count == 0:
             flash(
-                f"⚠️ Aucun shift trouvé pour la semaine du {monday.strftime('%d/%m/%Y')}.",
+                f"Aucun shift trouvé pour la semaine du {monday.strftime('%d/%m/%Y')}.",
                 "warning",
             )
         else:
             flash(
-                f"✅ Tous les {count} shifts de la semaine du {monday.strftime('%d/%m/%Y')} ont été supprimés avec succès !",
+                f"Tous les {count} shifts de la semaine du {monday.strftime('%d/%m/%Y')} ont été supprimés avec succès !",
                 "success",
             )
     except ValueError:
-        flash("❌ Format de date invalide.", "danger")
+        flash("Format de date invalide.", "danger")
     except Exception as e:
         db.session.rollback()
-        flash(f"❌ Erreur : {str(e)}", "danger")
+        flash(f"Erreur : {str(e)}", "danger")
     return redirect(url_for("main.schedule"))
 
 

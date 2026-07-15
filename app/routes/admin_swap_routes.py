@@ -30,9 +30,9 @@ def approve_swap(swap_request_id):
 
     error = SwapService.approve_swap(swap_request, current_user)
     if error:
-        flash(f"❌ {error}", "danger")
+        flash(f"{error}", "danger")
     else:
-        flash("✅ Échange approuvé, shifts réassignés.", "success")
+        flash("Échange approuvé, shifts réassignés.", "success")
     return redirect(url_for("admin.list_swaps"))
 
 
@@ -45,10 +45,10 @@ def revert_swap(swap_request_id):
 
     error = SwapService.revert_swap(swap_request, current_user)
     if error:
-        flash(f"❌ {error}", "danger")
+        flash(f"{error}", "danger")
     else:
         flash(
-            "✅ Échange annulé, shifts réassignés à leurs propriétaires d'origine.",
+            "Échange annulé, shifts réassignés à leurs propriétaires d'origine.",
             "success",
         )
     return redirect(url_for("admin.list_swaps"))
@@ -64,7 +64,7 @@ def reject_swap(swap_request_id):
     reason = request.form.get("reason", "").strip() or None
     error = SwapService.reject_swap(swap_request, current_user, reason)
     if error:
-        flash(f"❌ {error}", "danger")
+        flash(f"{error}", "danger")
     else:
         flash("Échange rejeté.", "warning")
     return redirect(url_for("admin.list_swaps"))

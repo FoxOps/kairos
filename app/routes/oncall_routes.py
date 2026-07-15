@@ -110,14 +110,14 @@ def delete_all_oncalls():
         count = OnCallService.delete_all()
         if count > 0:
             flash(
-                f"✅ Toutes les {count} astreintes ont été supprimées avec succès !",
+                f"Toutes les {count} astreintes ont été supprimées avec succès !",
                 "success",
             )
         else:
-            flash("⚠️ Aucune astreinte à supprimer.", "warning")
+            flash("Aucune astreinte à supprimer.", "warning")
     except Exception as e:
         db.session.rollback()
-        flash(f"❌ Erreur : {str(e)}", "danger")
+        flash(f"Erreur : {str(e)}", "danger")
     return redirect(url_for("main.oncall"))
 
 
@@ -131,15 +131,15 @@ def delete_all_oncalls_for_user(user_id):
     try:
         count = OnCallService.delete_all_for_user(user_id)
         if count == 0:
-            flash(f"⚠️ Aucun astreinte trouvée pour {user.name}.", "warning")
+            flash(f"Aucun astreinte trouvée pour {user.name}.", "warning")
         else:
             flash(
-                f"✅ Toutes les {count} astreintes de {user.name} ont été supprimées avec succès !",
+                f"Toutes les {count} astreintes de {user.name} ont été supprimées avec succès !",
                 "success",
             )
     except Exception as e:
         db.session.rollback()
-        flash(f"❌ Erreur : {str(e)}", "danger")
+        flash(f"Erreur : {str(e)}", "danger")
     return redirect(url_for("main.oncall"))
 
 

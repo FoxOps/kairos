@@ -3,6 +3,7 @@ Admin routes for automation (on-calls/shifts). Registered on admin_bp
 (see app/routes/admin.py).
 """
 
+import re
 from datetime import date, datetime, timedelta
 
 from flask import flash, redirect, render_template, request, url_for
@@ -18,18 +19,34 @@ from app.utils.automation import (
     get_automation_status,
 )
 
+# app/utils/automation/ (AdvancedShiftAutomation/OnCallAutomation) encodes
+# each generated message's severity as a leading emoji rather than a
+# separate field. Detect the category from it here, then strip the emoji
+# before display - Font Awesome icons, not emoji, are this project's icon
+# convention (see base.html's flash rendering, which already prepends a
+# category icon; keeping the emoji too would show it twice).
+_EMOJI_PREFIX_RE = re.compile(r"^[\U0001F300-\U0001FAFF☀-➿️]+\s*")
+
+
+def _classify_automation_message(
+    msg: str, default_category: str = "info"
+) -> tuple[str, str]:
+    """Returns (category, message with its leading emoji stripped)."""
+    if "✅" in msg or "🎉" in msg:
+        category = "success"
+    elif "⚠️" in msg:
+        category = "warning"
+    elif default_category == "info":
+        category = "info"
+    else:
+        category = "danger"
+    return category, _EMOJI_PREFIX_RE.sub("", msg)
+
 
 def _flash_automation_messages(messages, default_category="info"):
     for msg in messages:
-        if "✅" in msg or "🎉" in msg:
-            category = "success"
-        elif "⚠️" in msg:
-            category = "warning"
-        elif default_category == "info":
-            category = "info"
-        else:
-            category = "danger"
-        flash(msg, category)
+        category, stripped_msg = _classify_automation_message(msg, default_category)
+        flash(stripped_msg, category)
 
 
 @admin_bp.route("/admin/automation")
@@ -63,12 +80,12 @@ def automation_full():
                 error = AutomationAdminService.save_rotation_order(rotation_order_ids)
                 if error:
                     flash(
-                        f"❌ Erreur lors de la sauvegarde de l'ordre : {error}",
+                        f"Erreur lors de la sauvegarde de l'ordre : {error}",
                         "danger",
                     )
                 else:
                     flash(
-                        "✅ Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour appliquer.",
+                        "Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour appliquer.",
                         "success",
                     )
                 return redirect(url_for("admin.automation_full"))
@@ -85,12 +102,12 @@ def automation_full():
                     )
                     if oncalls_deleted:
                         flash(
-                            f"🗑️ {oncalls_deleted} astreintes existantes supprimées pour la période",
+                            f"{oncalls_deleted} astreintes existantes supprimées pour la période",
                             "info",
                         )
                     if shifts_deleted:
                         flash(
-                            f"🗑️ {shifts_deleted} shifts existants supprimés pour la période",
+                            f"{shifts_deleted} shifts existants supprimés pour la période",
                             "info",
                         )
 
@@ -114,11 +131,17 @@ def automation_full():
                         result={
                             "oncall": {
                                 "generated": oncalls,
-                                "messages": oncall_messages,
+                                "messages": [
+                                    _classify_automation_message(m, "danger")
+                                    for m in oncall_messages
+                                ],
                             },
                             "shift": {
                                 "generated": shifts,
-                                "messages": shift_messages,
+                                "messages": [
+                                    _classify_automation_message(m, "info")
+                                    for m in shift_messages
+                                ],
                             },
                         },
                         start_date=start_date,
@@ -138,15 +161,15 @@ def automation_full():
                     _flash_automation_messages(shift_messages, default_category="info")
 
                     flash(
-                        f"🔄 Régénération complète terminée pour la période du {start_date.strftime('%d/%m/%Y')} au {end_date.strftime('%d/%m/%Y')}",
+                        f"Régénération complète terminée pour la période du {start_date.strftime('%d/%m/%Y')} au {end_date.strftime('%d/%m/%Y')}",
                         "success",
                     )
                     return redirect(url_for("admin.automation_full"))
 
             except ValueError as e:
-                flash(f"❌ Format de date invalide : {str(e)}", "danger")
+                flash(f"Format de date invalide : {str(e)}", "danger")
             except Exception as e:
-                flash(f"❌ Erreur : {str(e)}", "danger")
+                flash(f"Erreur : {str(e)}", "danger")
 
     oncall_users = OnCallAutomation.get_eligible_users()
     current_rotation_order = AutomationAdminService.get_rotation_order()
@@ -197,9 +220,7 @@ def refresh_shifts():
             deleted = ShiftRepository.delete_in_date_range(start_date, end_date)
             if deleted:
                 db.session.commit()
-                flash(
-                    f"🗑️ {deleted} shifts existants supprimés pour la période", "info"
-                )
+                flash(f"{deleted} shifts existants supprimés pour la période", "info")
 
             shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
                 start_date, end_date, dry_run=False
@@ -207,14 +228,14 @@ def refresh_shifts():
 
             _flash_automation_messages(messages, default_category="info")
 
-            flash(f"🔄 {len(shifts)} shifts régénérés avec succès !", "success")
+            flash(f"{len(shifts)} shifts régénérés avec succès !", "success")
             return redirect(url_for("admin.refresh_shifts"))
 
         except ValueError as e:
-            flash(f"❌ Format de date invalide : {str(e)}", "danger")
+            flash(f"Format de date invalide : {str(e)}", "danger")
         except Exception as e:
             db.session.rollback()
-            flash(f"❌ Erreur : {str(e)}", "danger")
+            flash(f"Erreur : {str(e)}", "danger")
 
     today = date.today()
     end_date_default = today + timedelta(days=180)
