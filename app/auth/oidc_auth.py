@@ -35,8 +35,25 @@ class OIDCAuthLib:
             self.init_app(app)
 
     def init_app(self, app):
-        """Initialize the Flask application."""
+        """Initialize the Flask application.
+
+        Resets every endpoint/client attribute first: this instance is
+        a module-level singleton (see `oidc_auth` below), shared across
+        every app built by create_app() in the same process (notably in
+        the test suite, where many apps get built back to back). Without
+        this reset, an app with OIDC configured could leave stale
+        endpoints (from a real discovery call) on the singleton, which
+        would then leak into a later, unrelated app that has OIDC
+        disabled.
+        """
         self.app = app
+        self.oauth = None
+        self.oidc_client = None
+        self.authorization_endpoint = None
+        self.token_endpoint = None
+        self.userinfo_endpoint = None
+        self.end_session_endpoint = None
+
         self.oauth = OAuth(app)
         self._configure_oauth()
 

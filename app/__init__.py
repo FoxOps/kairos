@@ -212,11 +212,14 @@ def create_app(config_object: str | None = None):
     def load_user(user_id):
         return db.session.get(User, int(user_id))
 
-    # Initialize OIDC if configured
-    if OIDCConfig.ENABLED and OIDCConfig.is_configured():
-        from app.auth.oidc_auth import oidc_auth
+    # Always (re)initialize OIDC, even when disabled/unconfigured: oidc_auth
+    # is a module-level singleton shared across every app instance built by
+    # create_app() in this process (see the comment on
+    # OIDCAuthLib.init_app) - it must be reset here regardless, or a
+    # previous app's real OIDC discovery could leak into this one.
+    from app.auth.oidc_auth import oidc_auth
 
-        oidc_auth.init_app(app)
+    oidc_auth.init_app(app)
 
     # Initialize the cache
     from app.utils.cache import init_cache
