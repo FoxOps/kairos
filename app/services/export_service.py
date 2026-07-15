@@ -14,6 +14,7 @@ from app.repositories.leave_repository import LeaveRepository
 from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository
 from app.repositories.user_repository import UserRepository
+from app.services.settings_service import SettingsService
 from app.utils.export.ics_exporter import export_to_ics
 
 VALID_SCOPES = ("all", "my")
@@ -44,7 +45,9 @@ class ExportService:
             else ShiftRepository.list_all_with_user()
         )
         return export_to_ics(
-            shifts, f"Leviia Schedule - Shifts ({'All' if scope == 'all' else 'My'})"
+            shifts,
+            f"Leviia Schedule - Shifts ({'All' if scope == 'all' else 'My'})",
+            tz_name=SettingsService.get_default_timezone(),
         )
 
     @staticmethod
@@ -55,7 +58,9 @@ class ExportService:
             else OnCallRepository.list_all_with_user()
         )
         return export_to_ics(
-            on_calls, f"Leviia Schedule - OnCall ({'All' if scope == 'all' else 'My'})"
+            on_calls,
+            f"Leviia Schedule - OnCall ({'All' if scope == 'all' else 'My'})",
+            tz_name=SettingsService.get_default_timezone(),
         )
 
     @staticmethod
@@ -66,5 +71,7 @@ class ExportService:
             else LeaveRepository.list_all_with_user()
         )
         return export_to_ics(
-            leaves, f"Leviia Schedule - Leaves ({'All' if scope == 'all' else 'My'})"
+            leaves,
+            f"Leviia Schedule - Leaves ({'All' if scope == 'all' else 'My'})",
+            tz_name=SettingsService.get_default_timezone(),
         )

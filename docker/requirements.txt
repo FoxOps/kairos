@@ -16,7 +16,11 @@ alembic==1.18.5
 # Export ICS
 icalendar==7.2.0
 python-dateutil==2.9.0.post0
-pytz==2026.2
+
+# Timezone data for zoneinfo (stdlib) - the Alpine/musl base image
+# doesn't ship the IANA tz database itself, so this pure-Python package is
+# required for ZoneInfo(...) to resolve real timezone names.
+tzdata==2026.3
 
 # Configuration .env
 python-dotenv==1.2.2

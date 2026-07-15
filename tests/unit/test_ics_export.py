@@ -269,3 +269,80 @@ class TestICSExport:
 
         # Check that the UID is present and contains the shift's ID
         assert f"UID:Shift-{test_shift.id}@mtg-schedule" in ics_content
+
+
+class TestICSTimezoneCorrectness:
+    """Regression tests for the floating-time bug: dtstart/dtend used to
+    carry no tzinfo at all, so every calendar client interpreted them in
+    its own local timezone instead of the organization's. These assert
+    the fix concretely (real TZID + a matching VTIMEZONE component), not
+    just that generation doesn't crash."""
+
+    def test_dtstart_has_tzid_not_floating(self, test_shift):
+        ics_content = _generate_ics_shifts([test_shift])
+
+        assert "DTSTART;TZID=Europe/Paris:" in ics_content
+        assert "DTEND;TZID=Europe/Paris:" in ics_content
+
+    def test_vtimezone_component_present_and_matches_tzid(self, test_shift):
+        ics_content = _generate_ics_shifts([test_shift])
+
+        assert "BEGIN:VTIMEZONE" in ics_content
+        assert "TZID:Europe/Paris" in ics_content
+        assert "END:VTIMEZONE" in ics_content
+
+    def test_export_uses_org_timezone_not_arbitrary_one(
+        self, test_app, test_user, test_shift_type
+    ):
+        """The tz_name always reflects the organization's canonical
+        timezone (SettingsService.get_default_timezone()) - never a
+        viewer's personal preference, since attaching the wrong tzinfo
+        would relabel the instant instead of translating it (see
+        CLAUDE.md's "Multi-timezone support" section)."""
+        with test_app.app_context():
+            shift_date = datetime(2023, 12, 1).date()
+            start_time = datetime.combine(shift_date, datetime.min.time()).replace(
+                hour=9
+            )
+            end_time = start_time + timedelta(hours=8)
+            shift = Shift(
+                user_id=test_user.id,
+                shift_type_id=test_shift_type.id,
+                start_time=start_time,
+                end_time=end_time,
+                date=shift_date,
+            )
+            db.session.add(shift)
+            db.session.commit()
+
+            ics_ny = generate_ics_standard(
+                [shift], "Test Calendar", tz_name="America/New_York"
+            )
+
+        # Same underlying wall-clock number (09:00), just declared under
+        # a different TZID - a real translation would change the digits,
+        # not just the label. This confirms the exporter attaches
+        # whatever tz_name it's given without silently converting it -
+        # callers (ExportService) are responsible for always passing the
+        # org's canonical timezone, never a per-viewer one.
+        assert "DTSTART;TZID=America/New_York:20231201T090000" in ics_ny
+
+    def test_leave_all_day_event_also_gets_tzid(self, test_app, test_user):
+        with test_app.app_context():
+            leave = Leave(
+                user_id=test_user.id,
+                start_date=datetime(2023, 12, 10).date(),
+                end_date=datetime(2023, 12, 15).date(),
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            ics_content = _generate_ics_leaves([leave])
+
+        assert "DTSTART;TZID=Europe/Paris:" in ics_content
+
+    def test_add_missing_timezones_does_not_crash_on_empty_calendar(self, test_app):
+        with test_app.app_context():
+            ics_content = _generate_ics_shifts([])
+
+        assert "BEGIN:VCALENDAR" in ics_content
