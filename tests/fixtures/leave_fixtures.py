@@ -1,4 +1,4 @@
-"""Fixtures liées aux congés."""
+"""Leave-related fixtures."""
 
 from datetime import date, timedelta
 
@@ -10,7 +10,7 @@ from app.models import Leave
 
 @pytest.fixture
 def test_leave(test_app, test_user):
-    """Crée un congé de test."""
+    """Create a test leave."""
     leave = Leave(
         user_id=test_user.id,
         start_date=date.today(),

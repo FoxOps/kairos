@@ -1,12 +1,12 @@
-"""Tests unitaires pour app/auth/oidc_auth.py (OIDCAuthLib).
+"""Unit tests for app/auth/oidc_auth.py (OIDCAuthLib).
 
-Construit des instances OIDCAuthLib directement (pas via le singleton
-`oidc_auth` global ni une vraie découverte réseau) pour isoler chaque
-méthode - `oidc_client`/`authorization_endpoint`/etc. sont pré-remplis à
-la main pour simuler un client déjà configuré. Les appels HTTP sortants
-(`requests.get`/`requests.post`) sont mockés : aucun test ici ne
-contacte un vrai fournisseur OIDC (voir tests/e2e/test_oidc_browser_flow.py
-pour le flux complet avec un faux fournisseur OIDC réel).
+Builds OIDCAuthLib instances directly (not via the global `oidc_auth`
+singleton nor a real network discovery) to isolate each method -
+`oidc_client`/`authorization_endpoint`/etc. are pre-filled by hand to
+simulate an already-configured client. Outgoing HTTP calls
+(`requests.get`/`requests.post`) are mocked: no test here contacts a
+real OIDC provider (see tests/e2e/test_oidc_browser_flow.py for the
+full flow against a real fake OIDC provider).
 """
 
 import base64
@@ -22,8 +22,8 @@ from config_oidc import OIDCConfig
 
 @pytest.fixture
 def configured_auth():
-    """OIDCAuthLib avec un client + endpoints déjà en place (simule une
-    découverte OIDC réussie), sans appel réseau."""
+    """OIDCAuthLib with a client + endpoints already in place (simulates
+    a successful OIDC discovery), with no network call."""
     auth = OIDCAuthLib()
     auth.oidc_client = MagicMock()
     auth.authorization_endpoint = "https://idp.example.com/authorize"
@@ -35,12 +35,13 @@ def configured_auth():
 
 @pytest.fixture(autouse=True)
 def oidc_config_values(monkeypatch, test_app):
-    """Valeurs OIDCConfig déterministes pour ce module de tests.
+    """Deterministic OIDCConfig values for this test module.
 
-    Dépend explicitement de test_app : sa création (create_app()) appelle
-    OIDCConfig.load_config(), qui écraserait ces valeurs si ce fixture
-    s'exécutait avant (l'ordre des fixtures autouse sans dépendance
-    explicite n'est pas garanti après un fixture non-autouse)."""
+    Explicitly depends on test_app: its creation (create_app()) calls
+    OIDCConfig.load_config(), which would overwrite these values if this
+    fixture ran first (fixture ordering among autouse fixtures with no
+    explicit dependency isn't guaranteed relative to a non-autouse
+    fixture)."""
     monkeypatch.setattr(OIDCConfig, "CLIENT_ID", "test-client-id")
     monkeypatch.setattr(OIDCConfig, "CLIENT_SECRET", "test-client-secret")
     monkeypatch.setattr(
@@ -55,8 +56,9 @@ def oidc_config_values(monkeypatch, test_app):
 
 
 def _fake_jwt(payload: dict) -> str:
-    """JWT non signé suffisant pour les tests : oidc_auth.py décode le
-    payload manuellement (base64) sans jamais vérifier la signature."""
+    """An unsigned JWT, good enough for these tests: oidc_auth.py
+    decodes the payload manually (base64) without ever checking the
+    signature."""
     header = base64.urlsafe_b64encode(b'{"alg":"none"}').rstrip(b"=").decode()
     body = base64.urlsafe_b64encode(json.dumps(payload).encode()).rstrip(b"=").decode()
     return f"{header}.{body}.fakesignature"
@@ -321,7 +323,7 @@ class TestBuildLogoutUrl:
             session["oidc_id_token"] = "it-789"
             url = configured_auth.build_logout_url()
             assert "id_token_hint=it-789" in url
-            # Consommé (pop) une fois utilisé - pas réutilisable après coup
+            # Consumed (popped) once used - not reusable afterwards
             assert "oidc_id_token" not in session
 
     def test_includes_post_logout_redirect_uri(self, configured_auth, test_app):

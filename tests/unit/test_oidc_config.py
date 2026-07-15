@@ -1,9 +1,9 @@
-"""Tests unitaires pour config_oidc.py (OIDCConfig, get_bool_from_env).
+"""Unit tests for config_oidc.py (OIDCConfig, get_bool_from_env).
 
-OIDCConfig est un état de classe global (pas une instance) chargé depuis
-les variables d'environnement - chaque test sauvegarde/restaure les env
-vars qu'il touche et recharge la config au teardown, pour ne pas fuiter
-d'état vers d'autres tests (même pattern que tests/conftest.py::test_app).
+OIDCConfig is global class state (not an instance) loaded from
+environment variables - each test saves/restores the env vars it
+touches and reloads the config at teardown, so state doesn't leak into
+other tests (same pattern as tests/conftest.py::test_app).
 """
 
 import os
@@ -16,7 +16,7 @@ from config_oidc import OIDCConfig, get_bool_from_env
 
 @pytest.fixture
 def clean_oidc_env():
-    """Sauvegarde/restaure toutes les variables OIDC_* autour d'un test."""
+    """Save/restore every OIDC_* variable around a test."""
     keys = [
         "OIDC_ENABLED",
         "OIDC_ISSUER",
@@ -115,10 +115,9 @@ class TestOIDCConfigLoadConfig:
         assert OIDCConfig.NAME_CLAIM == "name"
         assert OIDCConfig.USERNAME_CLAIM == "preferred_username"
         assert OIDCConfig.SCOPE == "openid profile email"
-        # DISABLE_BASIC_AUTH par défaut à True (pas False comme les
-        # autres bools) - décision produit : une fois OIDC_ENABLED, on
-        # bascule sur SSO par défaut plutôt que de garder les deux actifs
-        # silencieusement.
+        # DISABLE_BASIC_AUTH defaults to True (not False like the other
+        # bools) - a product decision: once OIDC_ENABLED, we switch to
+        # SSO by default rather than silently keeping both active.
         assert OIDCConfig.DISABLE_BASIC_AUTH is True
 
 
@@ -172,15 +171,16 @@ class TestOIDCConfigGetConfigDict:
 
 
 class TestCreateAppLoginManagerOidcMode:
-    """create_app() configure login_manager.login_view/login_message selon
-    OIDCConfig - lu depuis les variables d'environnement à la création de
-    l'app (OIDCConfig.load_config() y est appelé), pas patchable après
-    coup sur une app déjà construite (voir tests/integration/
-    test_oidc_routes.py::oidc_mode, qui teste le câblage des ROUTES, pas
-    cette configuration faite une fois au démarrage).
+    """create_app() sets login_manager.login_view/login_message based on
+    OIDCConfig - read from environment variables when the app is created
+    (OIDCConfig.load_config() is called there), not patchable after the
+    fact on an already-built app (see tests/integration/
+    test_oidc_routes.py::oidc_mode, which tests the ROUTE wiring, not
+    this once-at-startup configuration).
 
-    OIDCAuthLib.init_app est mocké pour éviter un vrai appel réseau de
-    découverte OIDC (non pertinent ici, et sinon lent/instable en test)."""
+    OIDCAuthLib.init_app is mocked to avoid a real network OIDC
+    discovery call (irrelevant here, and otherwise slow/flaky in
+    tests)."""
 
     def _set_all_required(self, monkeypatch):
         monkeypatch.setenv("OIDC_ENABLED", "true")
@@ -192,11 +192,11 @@ class TestCreateAppLoginManagerOidcMode:
     def test_disables_login_message_when_basic_auth_disabled(
         self, clean_oidc_env, monkeypatch
     ):
-        """Sinon le flash "please log in" par défaut de Flask-Login,
-        déclenché par @login_required avant la redirection vers
-        auth.oidc_login (qui ne rend jamais de template), ressort collé
-        au flash "Connexion OIDC réussie !" sur la première page rendue
-        après le retour de l'IdP - les deux s'affichent en même temps."""
+        """Otherwise Flask-Login's default "please log in" flash,
+        triggered by @login_required before the redirect to
+        auth.oidc_login (which never renders a template), ends up stuck
+        alongside the "Connexion OIDC réussie !" flash on the first page
+        rendered after returning from the IdP - both show up at once."""
         self._set_all_required(monkeypatch)
         monkeypatch.setenv("OIDC_DISABLE_BASIC_AUTH", "true")
 
@@ -209,8 +209,8 @@ class TestCreateAppLoginManagerOidcMode:
         assert app.login_manager.login_message is None
 
     def test_keeps_login_message_in_basic_auth_mode(self, clean_oidc_env, monkeypatch):
-        """En mode auth.login classique (formulaire), le flash s'affiche
-        normalement sur cette page - un seul saut, pas de double flash."""
+        """In classic auth.login mode (form-based), the flash displays
+        normally on this page - a single hop, no double flash."""
         monkeypatch.setenv("OIDC_ENABLED", "false")
 
         from app import create_app

@@ -1,4 +1,4 @@
-"""Fixtures liées aux shifts et types de shift."""
+"""Shift and shift-type related fixtures."""
 
 from datetime import date, datetime
 
@@ -10,7 +10,7 @@ from app.models import Shift, ShiftType
 
 @pytest.fixture
 def test_shift_type(test_app):
-    """Crée un type de shift de test."""
+    """Create a test shift type."""
     shift_type = ShiftType(name="morning", label="Matin", start_hour=7, end_hour=15)
     db.session.add(shift_type)
     db.session.commit()
@@ -19,7 +19,7 @@ def test_shift_type(test_app):
 
 @pytest.fixture
 def afternoon_shift_type(test_app):
-    """Crée un type de shift pour l'après-midi."""
+    """Create an afternoon shift type."""
     shift_type = ShiftType(
         name="Afternoon",
         label="PM",
@@ -33,7 +33,7 @@ def afternoon_shift_type(test_app):
 
 @pytest.fixture
 def test_shift(test_app, test_user, test_shift_type):
-    """Crée un shift de test."""
+    """Create a test shift."""
     shift = Shift(
         date=date.today(),
         start_time=datetime.combine(date.today(), datetime.min.time()),

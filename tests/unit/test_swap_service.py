@@ -1,6 +1,6 @@
 """
-Tests pour SwapService : règles métier des échanges de shifts entre
-utilisateurs (création, annulation, approbation, rejet).
+Tests for SwapService: the business rules for shift swaps between users
+(create, cancel, approve, reject).
 """
 
 from datetime import datetime, timedelta
@@ -25,7 +25,7 @@ class TestRequestSwap:
     def test_request_swap_not_owner(
         self, test_app, test_user, second_user, test_swap_shift
     ):
-        """second_user essaie de proposer un shift qui n'est pas le sien."""
+        """second_user tries to offer a shift that isn't theirs."""
         with test_app.app_context():
             swap_request, error = SwapService.request_swap(
                 second_user, test_swap_shift, test_user
@@ -44,7 +44,7 @@ class TestRequestSwap:
     def test_request_swap_duplicate_pending(
         self, test_app, test_user, second_user, test_swap_shift, test_swap_request
     ):
-        """Une demande pending existe déjà pour ce shift (fixture test_swap_request)."""
+        """A pending request already exists for this shift (test_swap_request fixture)."""
         with test_app.app_context():
             swap_request, error = SwapService.request_swap(
                 test_user, test_swap_shift, second_user
@@ -101,7 +101,7 @@ class TestCancelSwap:
     def test_cancel_by_unrelated_user_denied(
         self, test_app, test_swap_request, second_user
     ):
-        """second_user est le target, pas le requester, et n'est pas admin."""
+        """second_user is the target, not the requester, and isn't admin."""
         with test_app.app_context():
             error = SwapService.cancel_swap(test_swap_request, second_user)
             assert error is not None
@@ -185,7 +185,7 @@ class TestRejectSwap:
             assert test_swap_request.status == SwapRequest.REJECTED
             assert test_swap_request.admin_comment == "Effectif insuffisant"
 
-            # Le shift n'a pas bougé
+            # The shift hasn't moved
             unchanged_shift = db.session.get(Shift, test_swap_request.shift_id)
             assert unchanged_shift.user_id == test_swap_request.requester_id
 
@@ -260,7 +260,7 @@ class TestRevertSwap:
             SwapService.approve_swap(test_swap_request, admin_user)
 
             shift = db.session.get(Shift, test_swap_request.shift_id)
-            shift.user_id = test_user.id  # quelqu'un a déjà retouché le shift
+            shift.user_id = test_user.id  # someone already reassigned the shift
             db.session.commit()
 
             error = SwapService.revert_swap(test_swap_request, admin_user)
@@ -269,25 +269,24 @@ class TestRevertSwap:
 
 
 class TestPurgeSwaps:
-    """Note : le statut "déjà résolu" est fixé directement sur l'objet
-    (pas via reject_swap/approve_swap) pour isoler la logique de purge de
-    celle des transitions de statut, déjà couvertes par TestRejectSwap/
+    """Note: the "already resolved" status is set directly on the object
+    (not via reject_swap/approve_swap) to isolate the purge logic from
+    the status-transition logic, already covered by TestRejectSwap/
     TestApproveSwap/TestRevertSwap.
 
-    Pas de `with test_app.app_context():` ici, volontairement, contrairement
-    au reste du fichier : `test_app` a déjà un contexte actif pour toute la
-    durée du test (voir tests/conftest.py). En imbriquer un second fait
-    résoudre `db.session` vers une session SQLAlchemy différente de celle
-    utilisée par les fixtures (confirmé via
-    "Object ... is already attached to session 'N' (this is 'M')") - les
-    objets de fixture (`test_swap_request`) restent alors invisibles pour
-    les commits faits dans le bloc imbriqué. Inoffensif pour les tests qui
-    ne vérifient que l'attribut Python en mémoire (le reste de ce fichier),
-    mais silencieusement faux dès qu'on vérifie l'état réellement persisté
-    (`SwapRequest.query.count()` après un DELETE en masse, ici). L'app
-    réelle n'est pas concernée : chaque requête HTTP a son propre contexte,
-    jamais imbriqué (voir test_swap_routes.py::TestAdminSwapRoutes/
-    TestUserPurgeSwaps, même comportement couvert via de vraies requêtes)."""
+    Deliberately no `with test_app.app_context():` here, unlike the rest
+    of this file: `test_app` already has an active context for the
+    entire test (see tests/conftest.py). Nesting a second one makes
+    `db.session` resolve to a different SQLAlchemy session than the one
+    the fixtures use (confirmed via "Object ... is already attached to
+    session 'N' (this is 'M')") - the fixture objects (`test_swap_request`)
+    then stay invisible to commits made inside the nested block. Harmless
+    for tests that only check the in-memory Python attribute (the rest of
+    this file), but silently wrong as soon as you check the actually
+    persisted state (`SwapRequest.query.count()` after a bulk DELETE,
+    here). The real app isn't affected: each HTTP request has its own
+    context, never nested (see test_swap_routes.py::TestAdminSwapRoutes/
+    TestUserPurgeSwaps, the same behavior covered via real requests)."""
 
     def test_purge_resolved_for_user_deletes_non_pending(
         self, test_app, test_swap_request, test_user
@@ -309,9 +308,9 @@ class TestPurgeSwaps:
     def test_purge_resolved_for_user_ignores_others(
         self, test_app, test_swap_request, admin_user
     ):
-        """admin_user n'est ni demandeur ni destinataire de
-        test_swap_request - un tiers étranger à la demande ne doit pas
-        pouvoir la purger."""
+        """admin_user is neither the requester nor the target of
+        test_swap_request - a third party unrelated to the request must
+        not be able to purge it."""
         test_swap_request.status = SwapRequest.REJECTED
         db.session.commit()
 

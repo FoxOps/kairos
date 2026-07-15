@@ -1,6 +1,6 @@
 """
-Tests ciblés sur les branches d'erreur/edge-case de app/routes/oncall_routes.py
-non couvertes par les suites existantes.
+Targeted tests for the error/edge-case branches of
+app/routes/oncall_routes.py not covered by the existing suites.
 """
 
 from datetime import date, datetime, timedelta

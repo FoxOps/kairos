@@ -1,5 +1,5 @@
 """
-Tests supplémentaires pour améliorer la couverture de app/routes/main.py
+Additional tests to improve coverage of app/routes/main.py
 """
 
 from datetime import date, datetime, timedelta
@@ -8,10 +8,10 @@ from app.models import Leave, OnCall, Shift
 
 
 class TestCalendarWindow:
-    """Tests pour la fonction _calendar_window."""
+    """Tests for the _calendar_window function."""
 
     def test_calendar_window_returns_tuple(self, test_app):
-        """Test que _calendar_window retourne un tuple de 2 dates."""
+        """Test that _calendar_window returns a 2-date tuple."""
         with test_app.app_context():
             from app.services.schedule_service import ScheduleService
 
@@ -21,7 +21,7 @@ class TestCalendarWindow:
             assert end > start
 
     def test_calendar_window_180_days(self, test_app):
-        """Test que la fenêtre du calendrier est de 180 jours."""
+        """Test that the calendar window spans 180 days."""
         with test_app.app_context():
             from app.services.schedule_service import (
                 CALENDAR_WINDOW_DAYS,
@@ -32,16 +32,16 @@ class TestCalendarWindow:
             now = datetime.now()
             expected_start = now - timedelta(days=CALENDAR_WINDOW_DAYS)
             expected_end = now + timedelta(days=CALENDAR_WINDOW_DAYS)
-            # Vérifier que les dates sont proches (à quelques secondes près)
+            # Check that the dates are close (within a few seconds)
             assert abs((start - expected_start).total_seconds()) < 10
             assert abs((end - expected_end).total_seconds()) < 10
 
 
 class TestBuildCalendarEvents:
-    """Tests pour la fonction _build_calendar_events."""
+    """Tests for the _build_calendar_events function."""
 
     def test_build_calendar_events_empty(self, test_app):
-        """Test que _build_calendar_events retourne une liste vide avec des entrées vides."""
+        """Test that _build_calendar_events returns an empty list for empty inputs."""
         with test_app.app_context():
             from app.services.schedule_service import ScheduleService
 
@@ -51,7 +51,7 @@ class TestBuildCalendarEvents:
     def test_build_calendar_events_with_shift(
         self, test_app, test_user, test_shift_type
     ):
-        """Test que _build_calendar_events crée des événements pour les shifts."""
+        """Test that _build_calendar_events creates events for shifts."""
         with test_app.app_context():
             from app.services.schedule_service import ScheduleService
 
@@ -71,7 +71,7 @@ class TestBuildCalendarEvents:
             assert test_user.name in events[0]["title"]
 
     def test_build_calendar_events_with_oncall(self, test_app, test_user):
-        """Test que _build_calendar_events crée des événements pour les astreintes."""
+        """Test that _build_calendar_events creates events for on-calls."""
         with test_app.app_context():
             from app.services.schedule_service import ScheduleService
 
@@ -88,7 +88,7 @@ class TestBuildCalendarEvents:
             assert "Astreinte" in events[0]["title"]
 
     def test_build_calendar_events_with_leave(self, test_app, test_user):
-        """Test que _build_calendar_events crée des événements pour les congés."""
+        """Test that _build_calendar_events creates events for leaves."""
         with test_app.app_context():
             from app.services.schedule_service import ScheduleService
 
@@ -105,81 +105,81 @@ class TestBuildCalendarEvents:
 
 
 class TestIndexRoute:
-    """Tests pour la route index."""
+    """Tests for the index route."""
 
     def test_index_route_returns_200(self, logged_in_client):
-        """Test que la route index retourne 200."""
+        """Test that the index route returns 200."""
         response = logged_in_client.get("/")
         assert response.status_code == 200
 
     def test_index_route_requires_login(self, client):
-        """Test que la route index nécessite une connexion."""
+        """Test that the index route requires login."""
         response = client.get("/")
         assert response.status_code == 302
 
 
 class TestScheduleRoute:
-    """Tests pour la route schedule."""
+    """Tests for the schedule route."""
 
     def test_schedule_route_returns_200(self, logged_in_client):
-        """Test que la route schedule retourne 200."""
+        """Test that the schedule route returns 200."""
         response = logged_in_client.get("/schedule")
         assert response.status_code == 200
 
     def test_schedule_route_requires_login(self, client):
-        """Test que la route schedule nécessite une connexion."""
+        """Test that the schedule route requires login."""
         response = client.get("/schedule")
         assert response.status_code == 302
 
     def test_schedule_route_with_pagination(self, logged_in_client):
-        """Test que la route schedule gère la pagination."""
+        """Test that the schedule route handles pagination."""
         response = logged_in_client.get("/schedule?page=1&per_page=10")
         assert response.status_code == 200
 
 
 class TestLeaveRoute:
-    """Tests pour la route leave."""
+    """Tests for the leave route."""
 
     def test_leave_route_returns_200(self, logged_in_client):
-        """Test que la route leave retourne 200."""
+        """Test that the leave route returns 200."""
         response = logged_in_client.get("/leave")
         assert response.status_code == 200
 
     def test_leave_route_with_pagination(self, logged_in_client):
-        """Test que la route leave gère la pagination."""
+        """Test that the leave route handles pagination."""
         response = logged_in_client.get("/leave?page=1&per_page=10")
         assert response.status_code == 200
 
 
 class TestOnCallRoute:
-    """Tests pour la route oncall."""
+    """Tests for the oncall route."""
 
     def test_oncall_route_returns_200(self, logged_in_client):
-        """Test que la route oncall retourne 200."""
+        """Test that the oncall route returns 200."""
         response = logged_in_client.get("/oncall")
         assert response.status_code == 200
 
     def test_oncall_route_with_pagination(self, logged_in_client):
-        """Test que la route oncall gère la pagination."""
+        """Test that the oncall route handles pagination."""
         response = logged_in_client.get("/oncall?page=1&per_page=10")
         assert response.status_code == 200
 
 
 class TestAddLeaveRoute:
-    """Tests pour la route add_leave."""
+    """Tests for the add_leave route."""
 
     def test_add_leave_get_returns_200(self, logged_in_client):
-        """Test que la route add_leave (GET) retourne 200."""
+        """Test that the add_leave route (GET) returns 200."""
         response = logged_in_client.get("/leave/add")
         assert response.status_code == 200
 
     def test_add_leave_post_missing_fields(self, logged_in_client):
-        """Test que add_leave POST échoue avec des champs manquants."""
+        """Test that add_leave POST fails with missing fields."""
         response = logged_in_client.post("/leave/add", data={})
         assert response.status_code == 302
 
     def test_add_leave_post_invalid_dates(self, logged_in_client):
-        """Test que add_leave POST échoue avec des dates invalides."""
+        """Test that add_leave POST fails with invalid dates."""
         response = logged_in_client.post(
             "/leave/add",
             data={
@@ -192,105 +192,105 @@ class TestAddLeaveRoute:
 
 
 class TestAddOnCallRoute:
-    """Tests pour la route add_oncall."""
+    """Tests for the add_oncall route."""
 
     def test_add_oncall_get_requires_admin(self, non_admin_client):
-        """Test que add_oncall GET nécessite admin."""
+        """Test that add_oncall GET requires admin."""
         response = non_admin_client.get("/oncall/add")
-        # 302 = redirection vers login (car non admin)
+        # 302 = redirect to login (not an admin)
         assert response.status_code in [302, 403]
 
     def test_add_oncall_post_missing_fields(self, logged_in_client):
-        """Test que add_oncall POST échoue avec des champs manquants."""
+        """Test that add_oncall POST fails with missing fields."""
         response = logged_in_client.post("/oncall/add", data={})
-        # 302 = redirection avec flash message
+        # 302 = redirect with a flash message
         assert response.status_code == 302
 
     def test_add_oncall_post_invalid_date(self, logged_in_client):
-        """Test que add_oncall POST échoue avec une date invalide."""
+        """Test that add_oncall POST fails with an invalid date."""
         response = logged_in_client.post(
             "/oncall/add", data={"user_id": 1, "start_date": "invalid-date"}
         )
-        # 302 = redirection avec flash message
+        # 302 = redirect with a flash message
         assert response.status_code == 302
 
 
 class TestAddShiftRoute:
-    """Tests pour la route add_shift."""
+    """Tests for the add_shift route."""
 
     def test_add_shift_get_requires_admin(self, non_admin_client):
-        """Test que add_shift GET nécessite admin."""
+        """Test that add_shift GET requires admin."""
         response = non_admin_client.get("/schedule/add")
-        # 302 = redirection vers login (car non admin)
+        # 302 = redirect to login (not an admin)
         assert response.status_code in [302, 403]
 
     def test_add_shift_post_missing_fields(self, logged_in_client):
-        """Test que add_shift POST échoue avec des champs manquants."""
+        """Test that add_shift POST fails with missing fields."""
         response = logged_in_client.post("/schedule/add", data={})
-        # 302 = redirection avec flash message
+        # 302 = redirect with a flash message
         assert response.status_code == 302
 
 
 class TestDeleteRoutes:
-    """Tests pour les routes de suppression."""
+    """Tests for the delete routes."""
 
     def test_delete_shift_requires_admin(self, logged_in_client, test_shift):
-        """Test que delete_shift nécessite admin."""
+        """Test that delete_shift requires admin."""
         response = logged_in_client.post(f"/schedule/delete/{test_shift.id}")
-        # 302 = redirection vers login (car non admin)
+        # 302 = redirect to login (not an admin)
         assert response.status_code in [302, 403]
 
     def test_delete_leave_requires_ownership(
         self, logged_in_client, test_leave, test_user
     ):
-        """Test que delete_leave vérifie la propriété."""
-        # test_leave appartient à test_user, logged_in_client est test_user
+        """Test that delete_leave checks ownership."""
+        # test_leave belongs to test_user, logged_in_client is test_user
         response = logged_in_client.post(f"/leave/delete/{test_leave.id}")
-        # 302 = redirection après suppression
+        # 302 = redirect after deletion
         assert response.status_code == 302
 
     def test_delete_oncall_requires_admin(self, logged_in_client, test_oncall):
-        """Test que delete_oncall nécessite admin."""
+        """Test that delete_oncall requires admin."""
         response = logged_in_client.post(f"/oncall/delete/{test_oncall.id}")
-        # 302 = redirection vers login (car non admin)
+        # 302 = redirect to login (not an admin)
         assert response.status_code in [302, 403]
 
 
 class TestAPIEndpoints:
-    """Tests pour les endpoints API."""
+    """Tests for the API endpoints."""
 
     def test_api_get_shifts_returns_json(self, logged_in_client):
-        """Test que /api/shifts retourne du JSON."""
+        """Test that /api/shifts returns JSON."""
         response = logged_in_client.get("/api/shifts")
         assert response.status_code == 200
         assert response.content_type == "application/json"
 
     def test_api_get_users_returns_json(self, logged_in_client):
-        """Test que /api/users retourne du JSON."""
+        """Test that /api/users returns JSON."""
         response = logged_in_client.get("/api/users")
         assert response.status_code == 200
         assert response.content_type == "application/json"
 
     def test_api_get_shift_types_returns_json(self, logged_in_client):
-        """Test que /api/shift-types retourne du JSON."""
+        """Test that /api/shift-types returns JSON."""
         response = logged_in_client.get("/api/shift-types")
         assert response.status_code == 200
         assert response.content_type == "application/json"
 
     def test_api_create_shift_requires_admin(self, non_admin_client):
-        """Test que POST /api/shifts nécessite admin."""
+        """Test that POST /api/shifts requires admin."""
         response = non_admin_client.post("/api/shifts", json={})
-        # 302 = redirection vers login (car non admin)
+        # 302 = redirect to login (not an admin)
         assert response.status_code in [302, 403]
 
     def test_api_update_shift_requires_admin(self, non_admin_client):
-        """Test que PATCH /api/shifts/<id> nécessite admin."""
+        """Test that PATCH /api/shifts/<id> requires admin."""
         response = non_admin_client.patch("/api/shifts/1", json={})
-        # 302 = redirection vers login (car non admin)
+        # 302 = redirect to login (not an admin)
         assert response.status_code in [302, 403]
 
     def test_api_delete_shift_requires_admin(self, non_admin_client):
-        """Test que DELETE /api/shifts/<id> nécessite admin."""
+        """Test that DELETE /api/shifts/<id> requires admin."""
         response = non_admin_client.delete("/api/shifts/1")
-        # 302 = redirection vers login (car non admin)
+        # 302 = redirect to login (not an admin)
         assert response.status_code in [302, 403]

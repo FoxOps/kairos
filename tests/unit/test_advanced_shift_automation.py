@@ -1,5 +1,5 @@
 """
-Tests pour le module d'automatisation avancée des shifts.
+Tests for the advanced shift automation module.
 """
 
 from datetime import date, datetime, timedelta
@@ -13,10 +13,10 @@ from app.utils.automation import AdvancedShiftAutomation, OnCallAutomation
 
 
 class TestAdvancedShiftAutomationBasics:
-    """Tests pour les méthodes de base de l'automatisation avancée."""
+    """Tests for the advanced automation's basic methods."""
 
     def test_shift_constants(self, test_app):
-        """Test que les constantes des créneaux sont correctes."""
+        """Test that the shift-slot constants are correct."""
         with test_app.app_context():
             assert AdvancedShiftAutomation.SHIFT_07_15 == (7, 15)
             assert AdvancedShiftAutomation.SHIFT_09_17 == (9, 17)
@@ -25,12 +25,12 @@ class TestAdvancedShiftAutomationBasics:
     def test_get_users_in_schedule_groups(
         self, test_app, test_group, test_user, second_user
     ):
-        """Test la récupération des utilisateurs dans les groupes schedule."""
+        """Test fetching the users in the schedule groups."""
         with test_app.app_context():
-            # test_group a is_part_of_schedule=True par défaut
+            # test_group has is_part_of_schedule=True by default
             users = AdvancedShiftAutomation.get_users_in_schedule_groups()
 
-            # Doit contenir test_user et second_user
+            # Should contain test_user and second_user
             user_ids = [u.id for u in users]
             assert test_user.id in user_ids
             assert second_user.id in user_ids
@@ -38,9 +38,9 @@ class TestAdvancedShiftAutomationBasics:
     def test_get_users_in_schedule_groups_excludes_non_schedule(
         self, test_app, test_group, test_user, group_not_in_schedule
     ):
-        """Test que les utilisateurs de groupes non-schedule sont exclus."""
+        """Test that users from non-schedule groups are excluded."""
         with test_app.app_context():
-            # Créer un utilisateur dans un groupe non-schedule
+            # Create a user in a non-schedule group
             user_not_in_schedule = User(
                 name="User Not In Schedule",
                 email="notinschedule@test.com",
@@ -60,9 +60,9 @@ class TestAdvancedShiftAutomationBasics:
     def test_get_available_users_for_date(
         self, test_app, test_group, test_user, second_user
     ):
-        """Test la récupération des utilisateurs disponibles pour une date."""
+        """Test fetching the users available for a date."""
         with test_app.app_context():
-            # Sans congés, tous les utilisateurs doivent être disponibles
+            # With no leaves, every user should be available
             test_date = date(2023, 12, 15)
             available_users = AdvancedShiftAutomation.get_available_users_for_date(
                 test_date
@@ -75,9 +75,9 @@ class TestAdvancedShiftAutomationBasics:
     def test_get_available_users_excludes_on_leave(
         self, test_app, test_group, test_user, second_user
     ):
-        """Test que les utilisateurs en congé sont exclus."""
+        """Test that users on leave are excluded."""
         with test_app.app_context():
-            # Créer un congé pour test_user
+            # Create a leave for test_user
             leave = Leave(
                 user_id=test_user.id,
                 start_date=date(2023, 12, 10),
@@ -86,7 +86,7 @@ class TestAdvancedShiftAutomationBasics:
             db.session.add(leave)
             db.session.commit()
 
-            # Vérifier pendant le congé
+            # Check during the leave
             test_date = date(2023, 12, 12)
             available_users = AdvancedShiftAutomation.get_available_users_for_date(
                 test_date
@@ -97,9 +97,9 @@ class TestAdvancedShiftAutomationBasics:
             assert second_user.id in user_ids
 
     def test_get_oncall_user_for_date(self, test_app, test_user):
-        """Test la récupération de l'utilisateur d'astreinte pour une date."""
+        """Test fetching the on-call user for a date."""
         with test_app.app_context():
-            # Créer une astreinte
+            # Create an on-call
             start_time = datetime(2023, 12, 1, 21, 0)
             end_time = start_time + timedelta(days=7, hours=-14)
             oncall = OnCall(
@@ -108,7 +108,7 @@ class TestAdvancedShiftAutomationBasics:
             db.session.add(oncall)
             db.session.commit()
 
-            # Vérifier pendant l'astreinte
+            # Check during the on-call
             test_date = date(2023, 12, 2)
             oncall_user = AdvancedShiftAutomation.get_oncall_user_for_date(test_date)
 
@@ -116,7 +116,7 @@ class TestAdvancedShiftAutomationBasics:
             assert oncall_user.id == test_user.id
 
     def test_get_oncall_user_for_date_no_oncall(self, test_app, test_user):
-        """Test qu'aucun utilisateur n'est retourné s'il n'y a pas d'astreinte."""
+        """Test that no user is returned when there's no on-call."""
         with test_app.app_context():
             test_date = date(2023, 12, 15)
             oncall_user = AdvancedShiftAutomation.get_oncall_user_for_date(test_date)
@@ -125,10 +125,10 @@ class TestAdvancedShiftAutomationBasics:
 
 
 class TestShiftTypeByHours:
-    """Tests pour la création de types de shifts par heures."""
+    """Tests for creating shift types by hours."""
 
     def test_get_shift_type_by_hours_existing(self, test_app, test_shift_type):
-        """Test la récupération d'un type de shift existant."""
+        """Test fetching an existing shift type."""
         with test_app.app_context():
             shift_type = AdvancedShiftAutomation.get_shift_type_by_hours(7, 15)
 
@@ -137,9 +137,9 @@ class TestShiftTypeByHours:
             assert shift_type.end_hour == 15
 
     def test_get_shift_type_by_hours_new(self, test_app):
-        """Test la création d'un nouveau type de shift."""
+        """Test creating a new shift type."""
         with test_app.app_context():
-            # S'assurer qu'aucun type 13-21 n'existe
+            # Make sure no 13-21 type exists
             existing = ShiftType.query.filter_by(start_hour=13, end_hour=21).first()
             if existing:
                 db.session.delete(existing)
@@ -155,15 +155,15 @@ class TestShiftTypeByHours:
 
 
 class TestDetermineShiftForUser:
-    """Tests pour la détermination du créneau de shift pour un utilisateur."""
+    """Tests for determining a user's shift slot."""
 
     def test_determine_shift_rotation_after_oncall(
         self, test_app, test_group, test_user
     ):
-        """Test la rotation : après une astreinte, l'utilisateur doit être sur 07h-15h."""
+        """Test rotation: after an on-call, the user should be on 07h-15h."""
         with test_app.app_context():
-            # Créer une astreinte pour la semaine précédente
-            previous_friday = date(2023, 12, 1)  # vendredi
+            # Create an on-call for the previous week
+            previous_friday = date(2023, 12, 1)  # Friday
             start_time = datetime.combine(previous_friday, datetime.min.time()).replace(
                 hour=21
             )
@@ -174,8 +174,8 @@ class TestDetermineShiftForUser:
             db.session.add(oncall)
             db.session.commit()
 
-            # Vérifier la semaine suivante (lundi, après l'astreinte)
-            test_date = date(2023, 12, 11)  # lundi de la semaine suivante
+            # Check the following week (Monday, after the on-call)
+            test_date = date(2023, 12, 11)  # Monday of the following week
             shift_hours = AdvancedShiftAutomation.determine_shift_for_user(
                 test_user, test_date
             )
@@ -185,10 +185,10 @@ class TestDetermineShiftForUser:
     def test_determine_shift_oncall_user_in_schedule(
         self, test_app, test_group, test_user
     ):
-        """Test qu'un utilisateur d'astreinte dans un groupe schedule a le créneau 13h-21h."""
+        """Test that an on-call user in a schedule group gets the 13h-21h slot."""
         with test_app.app_context():
-            # Créer une astreinte pour cette semaine
-            friday = date(2023, 12, 1)  # vendredi
+            # Create an on-call for this week
+            friday = date(2023, 12, 1)  # Friday
             start_time = datetime.combine(friday, datetime.min.time()).replace(hour=21)
             end_time = start_time + timedelta(days=7, hours=-14)
             oncall = OnCall(
@@ -197,8 +197,8 @@ class TestDetermineShiftForUser:
             db.session.add(oncall)
             db.session.commit()
 
-            # Vérifier pendant l'astreinte
-            test_date = date(2023, 12, 2)  # samedi (mais dans la période d'astreinte)
+            # Check during the on-call
+            test_date = date(2023, 12, 2)  # Saturday (but within the on-call period)
             shift_hours = AdvancedShiftAutomation.determine_shift_for_user(
                 test_user, test_date
             )
@@ -206,7 +206,7 @@ class TestDetermineShiftForUser:
             assert shift_hours == AdvancedShiftAutomation.SHIFT_13_21
 
     def test_determine_shift_default(self, test_app, test_group, test_user):
-        """Test que le créneau par défaut est 09h-17h."""
+        """Test that the default slot is 09h-17h."""
         with test_app.app_context():
             test_date = date(2023, 12, 15)
             shift_hours = AdvancedShiftAutomation.determine_shift_for_user(
@@ -218,25 +218,25 @@ class TestDetermineShiftForUser:
     def test_determine_shift_uses_passed_in_oncall_data_without_requerying(
         self, test_app, test_group, test_user, second_user
     ):
-        """Régression bug 6 : quand oncall_today/oncall_user_last_week sont
-        fournis par l'appelant, determine_shift_for_user ne doit pas
-        re-requêter OnCall lui-même. On le vérifie en passant des valeurs
-        délibérément fausses (incohérentes avec l'état réel en base) et en
-        constatant qu'elles sont bien celles utilisées pour la décision."""
+        """Regression test: when oncall_today/oncall_user_last_week are
+        supplied by the caller, determine_shift_for_user must not
+        re-query OnCall itself. Checked by passing deliberately wrong
+        values (inconsistent with the real DB state) and confirming
+        those are indeed what drives the decision."""
         with test_app.app_context():
-            test_date = date(2023, 12, 15)  # vendredi, aucune astreinte réelle
+            test_date = date(2023, 12, 15)  # Friday, no real on-call
 
-            # oncall_today mock : test_user est "d'astreinte" ce jour selon
-            # la valeur fournie, alors qu'il n'y a aucune astreinte réelle
-            # en base pour cette date.
+            # oncall_today mock: test_user is "on call" this day according
+            # to the supplied value, even though there's no real on-call
+            # in the database for this date.
             fake_oncall = OnCall(
                 user_id=test_user.id,
                 start_time=datetime.combine(test_date, datetime.min.time()),
                 end_time=datetime.combine(test_date, datetime.min.time())
                 + timedelta(hours=7),
             )
-            # Vendredi -> règle 1 retombe toujours sur SHIFT_09_17 (premier/
-            # dernier jour d'astreinte), donc on vérifie plutôt un mardi.
+            # Friday -> rule 1 always resolves to SHIFT_09_17 (first/last
+            # on-call day), so check a Tuesday instead.
             tuesday = date(2023, 12, 12)
             fake_oncall.start_time = datetime.combine(tuesday, datetime.min.time())
             fake_oncall.end_time = fake_oncall.start_time + timedelta(hours=7)
@@ -248,21 +248,21 @@ class TestDetermineShiftForUser:
                 oncall_user_last_week=None,
             )
 
-            # Si la méthode ignorait l'argument et re-requêtait la base
-            # (où aucune astreinte n'existe), elle retomberait sur
-            # SHIFT_09_17 (règle 3) au lieu de SHIFT_13_21 (règle 1).
+            # If the method ignored the argument and re-queried the
+            # database (where no on-call exists), it would fall back to
+            # SHIFT_09_17 (rule 3) instead of SHIFT_13_21 (rule 1).
             assert shift_hours == AdvancedShiftAutomation.SHIFT_13_21
 
 
 class TestHandleTwoUsersCase:
-    """Tests pour le cas spécial avec 2 utilisateurs disponibles."""
+    """Tests for the special case with 2 available users."""
 
     def test_handle_two_users_case_oncall_gets_13_21(
         self, test_app, test_group, test_user, second_user
     ):
-        """Test que l'utilisateur d'astreinte obtient 13h-21h."""
+        """Test that the on-call user gets 13h-21h."""
         with test_app.app_context():
-            # Créer une astreinte pour test_user
+            # Create an on-call for test_user
             friday = date(2023, 12, 1)
             start_time = datetime.combine(friday, datetime.min.time()).replace(hour=21)
             end_time = start_time + timedelta(days=7, hours=-14)
@@ -272,7 +272,7 @@ class TestHandleTwoUsersCase:
             db.session.add(oncall)
             db.session.commit()
 
-            # Tester avec les deux utilisateurs disponibles
+            # Test with both users available
             test_date = date(2023, 12, 2)
             available_users = [test_user, second_user]
             assignments = AdvancedShiftAutomation.handle_two_users_case(
@@ -286,7 +286,7 @@ class TestHandleTwoUsersCase:
     def test_handle_two_users_case_no_oncall(
         self, test_app, test_group, test_user, second_user
     ):
-        """Test le cas avec 2 utilisateurs mais sans astreinte."""
+        """Test the case with 2 users but no on-call."""
         with test_app.app_context():
             test_date = date(2023, 12, 15)
             available_users = [test_user, second_user]
@@ -294,10 +294,11 @@ class TestHandleTwoUsersCase:
                 available_users, test_date
             )
 
-            # Sans astreinte, selon la logique actuelle, les deux obtiennent 07h-15h
-            # car la méthode vérifie si oncall_user existe et si user.id == oncall_user.id
-            # Si oncall_user est None, alors user.id == oncall_user.id sera False
-            # et donc assignments[user] = SHIFT_07_15
+            # With no on-call, per the current logic, both get 07h-15h
+            # because the method checks whether oncall_user exists and
+            # whether user.id == oncall_user.id. If oncall_user is None,
+            # then user.id == oncall_user.id is False and so
+            # assignments[user] = SHIFT_07_15
             assert len(assignments) == 2
             assert assignments[test_user] == AdvancedShiftAutomation.SHIFT_07_15
             assert assignments[second_user] == AdvancedShiftAutomation.SHIFT_07_15
@@ -305,14 +306,14 @@ class TestHandleTwoUsersCase:
     def test_handle_two_users_case_not_two_users(
         self, test_app, test_group, test_user, second_user
     ):
-        """Test que la méthode retourne un dict vide si ce n'est pas exactement 2 utilisateurs."""
+        """Test that the method returns an empty dict when it isn't exactly 2 users."""
         with test_app.app_context():
             test_date = date(2023, 12, 15)
             available_users = [
                 test_user,
                 second_user,
                 test_user,
-            ]  # 3 utilisateurs (test_user en double)
+            ]  # 3 users (test_user duplicated)
             assignments = AdvancedShiftAutomation.handle_two_users_case(
                 available_users, test_date
             )
@@ -321,12 +322,12 @@ class TestHandleTwoUsersCase:
 
 
 class TestGenerateDailyShifts:
-    """Tests pour la génération quotidienne des shifts."""
+    """Tests for the daily shift generation."""
 
     def test_generate_daily_shifts_weekend(self, test_app):
-        """Test qu'aucun shift n'est généré le week-end."""
+        """Test that no shift is generated on weekends."""
         with test_app.app_context():
-            saturday = date(2023, 12, 2)  # samedi
+            saturday = date(2023, 12, 2)  # Saturday
             shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(
                 saturday, dry_run=True
             )
@@ -335,9 +336,9 @@ class TestGenerateDailyShifts:
             assert any("week-end" in msg.lower() for msg in messages)
 
     def test_generate_daily_shifts_no_available_users(self, test_app, test_group):
-        """Test qu'aucun shift n'est généré s'il n'y a pas d'utilisateurs disponibles."""
+        """Test that no shift is generated when no user is available."""
         with test_app.app_context():
-            # Créer un congé pour tous les utilisateurs
+            # Create a leave for every user
             users = User.query.all()
             for user in users:
                 leave = Leave(
@@ -359,8 +360,8 @@ class TestGenerateDailyShifts:
     def test_generate_daily_shifts_with_one_user(
         self, test_app, test_group, test_user, second_user
     ):
-        """Régression règle 6 : avec une seule personne disponible (l'autre
-        en congé), cette personne doit être placée directement en 09h-17h."""
+        """Regression test: with a single person available (the other
+        one is on leave), that person must land directly on 09h-17h."""
         with test_app.app_context():
             test_date = date(2023, 12, 15)
             leave = Leave(
@@ -383,15 +384,15 @@ class TestGenerateDailyShifts:
     def test_generate_daily_shifts_with_two_users(
         self, test_app, test_group, test_user, second_user, test_shift_type
     ):
-        """Test la génération avec exactement 2 utilisateurs disponibles."""
+        """Test generation with exactly 2 available users."""
         with test_app.app_context():
-            # S'assurer qu'il n'y a que ces deux utilisateurs dans le groupe schedule
+            # Make sure only these two users are in the schedule group
             test_date = date(2023, 12, 15)
             shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(
                 test_date, dry_run=True
             )
 
-            # Doit générer des shifts pour les deux utilisateurs
+            # Should generate shifts for both users
             assert len(shifts) == 2
             assert any(test_user.id == s.user_id for s in shifts)
             assert any(second_user.id == s.user_id for s in shifts)
@@ -399,9 +400,9 @@ class TestGenerateDailyShifts:
     def test_generate_daily_shifts_with_three_users(
         self, test_app, test_group, test_user, second_user
     ):
-        """Test la génération avec 3 utilisateurs disponibles."""
+        """Test generation with 3 available users."""
         with test_app.app_context():
-            # Créer un troisième utilisateur
+            # Create a third user
             user3 = User(
                 name="Third User",
                 email="third@test.com",
@@ -417,15 +418,15 @@ class TestGenerateDailyShifts:
                 test_date, dry_run=True
             )
 
-            # Doit générer des shifts pour les 3 utilisateurs
+            # Should generate shifts for all 3 users
             assert len(shifts) == 3
 
     def test_generate_daily_shifts_dry_run_no_commit(
         self, test_app, test_group, test_user, test_shift_type
     ):
-        """Test que dry_run=True ne commite pas les changements."""
+        """Test that dry_run=True doesn't commit the changes."""
         with test_app.app_context():
-            # Compter les shifts existants
+            # Count the existing shifts
             initial_count = Shift.query.count()
 
             test_date = date(2023, 12, 15)
@@ -433,16 +434,16 @@ class TestGenerateDailyShifts:
                 test_date, dry_run=True
             )
 
-            # Vérifier qu'aucun shift n'a été ajouté à la base
+            # Check that no shift was added to the database
             final_count = Shift.query.count()
             assert final_count == initial_count
 
     def test_generate_daily_shifts_with_commit(
         self, test_app, test_group, test_user, test_shift_type
     ):
-        """Test que dry_run=False commite les changements."""
+        """Test that dry_run=False commits the changes."""
         with test_app.app_context():
-            # Compter les shifts existants
+            # Count the existing shifts
             initial_count = Shift.query.count()
 
             test_date = date(2023, 12, 15)
@@ -450,16 +451,16 @@ class TestGenerateDailyShifts:
                 test_date, dry_run=False
             )
 
-            # Vérifier que les shifts ont été ajoutés
+            # Check that the shifts were added
             final_count = Shift.query.count()
             assert final_count > initial_count
 
 
 class TestGenerateFullSchedule:
-    """Tests pour la génération complète du planning."""
+    """Tests for the full schedule generation."""
 
     def test_generate_full_schedule_single_day(self, test_app, test_group, test_user):
-        """Test la génération pour un seul jour."""
+        """Test generation for a single day."""
         with test_app.app_context():
             start_date = date(2023, 12, 15)
             end_date = date(2023, 12, 15)
@@ -472,7 +473,7 @@ class TestGenerateFullSchedule:
     def test_generate_full_schedule_multiple_days(
         self, test_app, test_group, test_user
     ):
-        """Test la génération pour plusieurs jours."""
+        """Test generation over several days."""
         with test_app.app_context():
             start_date = date(2023, 12, 15)
             end_date = date(2023, 12, 20)
@@ -480,9 +481,9 @@ class TestGenerateFullSchedule:
                 start_date, end_date, dry_run=True
             )
 
-            # Doit générer des shifts pour chaque jour ouvré
-            # 15, 16, 17, 18, 19, 20 = 6 jours (lundi à vendredi + samedi)
-            # Mais seulement du lundi au vendredi
+            # Should generate shifts for every business day
+            # 15, 16, 17, 18, 19, 20 = 6 days (Monday to Friday + Saturday)
+            # But only Monday through Friday
             workdays = [
                 d
                 for d in range((end_date - start_date).days + 1)
@@ -495,7 +496,7 @@ class TestGenerateFullSchedule:
             )
 
     def test_generate_full_schedule_dry_run(self, test_app, test_group, test_user):
-        """Test que dry_run=True ne commite pas."""
+        """Test that dry_run=True doesn't commit."""
         with test_app.app_context():
             initial_count = Shift.query.count()
 
@@ -509,7 +510,7 @@ class TestGenerateFullSchedule:
             assert final_count == initial_count
 
     def test_generate_full_schedule_with_commit(self, test_app, test_group, test_user):
-        """Test que dry_run=False commite les changements."""
+        """Test that dry_run=False commits the changes."""
         with test_app.app_context():
             initial_count = Shift.query.count()
 
@@ -524,18 +525,18 @@ class TestGenerateFullSchedule:
 
 
 class TestRebalanceAfterLeave:
-    """Tests pour le rééquilibrage après l'ajout d'un congé."""
+    """Tests for rebalancing after adding a leave."""
 
     def test_rebalance_after_leave_does_not_duplicate_adjacent_oncalls(
         self, test_app, test_group, test_user, second_user
     ):
-        """Régression : la période régénérée après un congé est étendue de
-        ±7 jours (padding) autour des vendredis affectés, et peut donc
-        englober des astreintes d'AUTRES vendredis déjà attribuées à
-        d'autres utilisateurs. L'ancien code ne supprimait que les
-        astreintes du congé (leave.user_id) avant de régénérer sur toute la
-        période étendue, créant des astreintes en double sur les vendredis
-        adjacents non concernés par le congé."""
+        """Regression test: the period regenerated after a leave is
+        extended by ±7 days (padding) around the affected Fridays, and
+        can therefore include on-calls for OTHER Fridays already
+        assigned to other users. The old code only removed the leave
+        owner's own on-calls (leave.user_id) before regenerating across
+        the whole extended period, creating duplicate on-calls on
+        adjacent Fridays unrelated to the leave."""
         with test_app.app_context():
             user3 = User(
                 name="Third User",
@@ -561,7 +562,7 @@ class TestRebalanceAfterLeave:
             db.session.add(make_oncall(user3.id, friday_after))
             db.session.commit()
 
-            # second_user part en congé pendant sa propre semaine d'astreinte
+            # second_user goes on leave during their own on-call week
             leave = Leave(
                 user_id=second_user.id,
                 start_date=date(2023, 12, 10),
@@ -578,16 +579,16 @@ class TestRebalanceAfterLeave:
                     OnCall.start_time == day_start.replace(hour=21)
                 ).count()
                 assert count == 1, (
-                    f"{count} astreintes trouvées pour le vendredi {friday} "
-                    "(doublon attendu absent avec le fix)"
+                    f"{count} on-calls found for Friday {friday} "
+                    "(expected duplicate absent with the fix)"
                 )
 
     def test_rebalance_after_leave_dry_run(
         self, test_app, test_group, test_user, test_shift_type
     ):
-        """Test le rééquilibrage en mode dry_run."""
+        """Test rebalancing in dry_run mode."""
         with test_app.app_context():
-            # Créer un congé
+            # Create a leave
             leave = Leave(
                 user_id=test_user.id,
                 start_date=date(2023, 12, 15),
@@ -596,22 +597,22 @@ class TestRebalanceAfterLeave:
             db.session.add(leave)
             db.session.commit()
 
-            # Compter les shifts initiaux
+            # Count the initial shifts
             initial_count = Shift.query.count()
 
-            # Exécuter le rééquilibrage en dry_run
+            # Run the rebalance in dry_run
             shifts, messages = AdvancedShiftAutomation.rebalance_after_leave(
                 leave, dry_run=True
             )
 
-            # Aucun changement ne doit être commité
+            # No change should be committed
             final_count = Shift.query.count()
             assert final_count == initial_count
 
     def test_rebalance_after_leave_with_oncall(self, test_app, test_group, test_user):
-        """Test le rééquilibrage avec une astreinte chevauchante."""
+        """Test rebalancing with an overlapping on-call."""
         with test_app.app_context():
-            # Créer une astreinte
+            # Create an on-call
             friday = date(2023, 12, 15)
             start_time = datetime.combine(friday, datetime.min.time()).replace(hour=21)
             end_time = start_time + timedelta(days=7, hours=-14)
@@ -620,7 +621,7 @@ class TestRebalanceAfterLeave:
             )
             db.session.add(oncall)
 
-            # Créer un congé qui chevauche l'astreinte
+            # Create a leave that overlaps the on-call
             leave = Leave(
                 user_id=test_user.id,
                 start_date=date(2023, 12, 16),
@@ -629,13 +630,13 @@ class TestRebalanceAfterLeave:
             db.session.add(leave)
             db.session.commit()
 
-            # Exécuter le rééquilibrage
+            # Run the rebalance
             shifts, messages = AdvancedShiftAutomation.rebalance_after_leave(
                 leave, dry_run=True
             )
 
-            # Doit mentionner la suppression de l'astreinte ou des shifts
-            # Le message peut être en français ou anglais
+            # Should mention the removal of the on-call or shifts
+            # The message can be in French or English
             assert any(
                 "astreinte" in msg.lower()
                 or "supprim" in msg.lower()
@@ -648,9 +649,9 @@ class TestRebalanceAfterLeave:
     def test_rebalance_after_leave_uses_configured_rotation_order(
         self, test_app, test_group, test_user, second_user
     ):
-        """Le rééquilibrage doit respecter l'ordre de rotation configuré
-        (AutomationConfig) plutôt que de retomber sur l'ordre alphabétique
-        (rotation_order_ids=None en dur - bug corrigé)."""
+        """Rebalancing must honor the configured rotation order
+        (AutomationConfig) instead of falling back to alphabetical order
+        (a hardcoded rotation_order_ids=None was a bug, now fixed)."""
         with test_app.app_context():
             AutomationConfig.set_rotation_order([second_user.id, test_user.id])
 
@@ -682,9 +683,9 @@ class TestRebalanceAfterLeave:
             ]
 
     def test_rebalance_after_leave_no_overlap(self, test_app, test_group, test_user):
-        """Test le rééquilibrage avec un congé qui ne chevauche rien."""
+        """Test rebalancing with a leave that overlaps nothing."""
         with test_app.app_context():
-            # Créer un congé dans le futur sans chevauchement
+            # Create a leave in the future with no overlap
             leave = Leave(
                 user_id=test_user.id,
                 start_date=date(2025, 1, 1),
@@ -697,16 +698,16 @@ class TestRebalanceAfterLeave:
                 leave, dry_run=True
             )
 
-            # Doit générer des messages mais pas de suppression
+            # Should generate messages but no deletion
             assert len(messages) > 0
 
     def test_rebalance_after_leave_rolls_back_fully_on_failure(
         self, test_app, test_group, test_user, second_user
     ):
-        """Régression Phase 3 : si la régénération des astreintes échoue en
-        fin de rééquilibrage, l'astreinte déjà supprimée (flush, pas commit)
-        et les shifts déjà régénérés doivent être annulés - pas de planning
-        partiellement modifié."""
+        """Regression test: if regenerating the on-calls fails at the
+        end of the rebalance, the already-deleted on-call (flushed, not
+        committed) and the already-regenerated shifts must be rolled
+        back - no partially modified schedule."""
         with test_app.app_context():
             friday = date(2023, 12, 15)
             start_time = datetime.combine(friday, datetime.min.time()).replace(hour=21)
@@ -738,17 +739,17 @@ class TestRebalanceAfterLeave:
                     raised = True
 
             assert raised is True
-            # Rollback complet : l'astreinte supprimée (via flush) doit être
-            # revenue, et aucun shift regénéré ne doit avoir survécu.
+            # Full rollback: the on-call deleted via flush must be back,
+            # and no regenerated shift should have survived.
             assert OnCall.query.count() == oncall_count_before
             assert Shift.query.count() == shift_count_before
 
     def test_rebalance_after_leave_commits_once_on_success(
         self, test_app, test_group, test_user, second_user
     ):
-        """Phase 3 : un rééquilibrage réussi (dry_run=False) doit
-        effectivement persister astreintes et shifts régénérés (un seul
-        commit final, pas de commits intermédiaires perdus)."""
+        """A successful rebalance (dry_run=False) must actually persist
+        the regenerated on-calls and shifts (a single final commit, no
+        lost intermediate commits)."""
         with test_app.app_context():
             friday = date(2023, 12, 15)
             start_time = datetime.combine(friday, datetime.min.time()).replace(hour=21)
@@ -770,18 +771,18 @@ class TestRebalanceAfterLeave:
                 AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
             )
 
-            # L'ancienne astreinte de test_user pour cette période a bien été
-            # supprimée et la suppression persistée (pas juste flush() puis
-            # perdue faute de commit). On vérifie sur (user, start_time)
-            # plutôt que sur l'id : SQLite peut réutiliser un rowid supprimé
-            # pour la nouvelle astreinte régénérée à la même date.
+            # test_user's old on-call for this period was indeed deleted
+            # and that deletion persisted (not just flush()'d then lost
+            # for lack of a commit). Checked on (user, start_time) rather
+            # than id: SQLite may reuse a deleted rowid for the new
+            # on-call regenerated on the same date.
             assert (
                 OnCall.query.filter_by(
                     user_id=test_user.id, start_time=start_time
                 ).first()
                 is None
             )
-            # Les shifts régénérés retournés doivent aussi exister en base.
+            # The returned regenerated shifts must also exist in the database.
             assert len(regenerated_shifts) > 0
             for shift in regenerated_shifts:
                 assert db.session.get(Shift, shift.id) is not None

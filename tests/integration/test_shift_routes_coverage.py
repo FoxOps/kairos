@@ -1,7 +1,8 @@
 """
-Tests ciblés sur les branches d'erreur/edge-case de app/routes/shift_routes.py
-non couvertes par les suites existantes (test_routes.py, test_main_*.py) :
-validation de formulaire, 404, exceptions, API drag & drop complète.
+Targeted tests for the error/edge-case branches of
+app/routes/shift_routes.py not covered by the existing suites
+(test_routes.py, test_main_*.py): form validation, 404s, exceptions,
+the full drag & drop API.
 """
 
 from datetime import date, datetime, timedelta

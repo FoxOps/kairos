@@ -12,11 +12,11 @@ from scripts.backup_config import BackupConfig
 
 @pytest.fixture(autouse=True)
 def _isolate_cwd(tmp_path, monkeypatch):
-    """BackupConfig.__post_init__ fait os.makedirs(local_dir) dès que
-    local_enabled=True (défaut) - avec local_dir="backups" (relatif,
-    défaut aussi), ça créerait un vrai dossier backups/ à la racine du
-    dépôt à chaque instanciation. Isole le CWD dans un dossier temporaire
-    pour tous les tests de ce module."""
+    """BackupConfig.__post_init__ runs os.makedirs(local_dir) as soon as
+    local_enabled=True (the default) - with local_dir="backups" (relative,
+    also the default), that would create a real backups/ directory at the
+    repo root on every instantiation. Isolates the CWD in a temp
+    directory for every test in this module."""
     monkeypatch.chdir(tmp_path)
 
 
@@ -67,9 +67,9 @@ class TestBackupConfigDefaults:
         assert config.s3_enabled is False
 
     def test_no_dead_scaffolding_fields(self):
-        """Régression : encrypt/encryption_key/frequency n'étaient jamais
-        lus par backup_database.py - retirés plutôt que documentés comme
-        s'ils faisaient quelque chose."""
+        """Regression test: encrypt/encryption_key/frequency were never
+        read by backup_database.py - removed rather than documented as if
+        they did something."""
         config = BackupConfig()
         assert not hasattr(config, "encrypt")
         assert not hasattr(config, "encryption_key")

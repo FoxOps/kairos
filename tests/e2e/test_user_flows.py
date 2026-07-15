@@ -1,14 +1,14 @@
 """
-Tests E2E - parcours utilisateur complets via le client de test Flask.
+E2E tests - full user journeys via the Flask test client.
 
-Pas de navigateur réel ici (voir test_browser_flows.py pour ça, avec
-Playwright) - ces tests enchaînent plusieurs requêtes HTTP successives
-pour simuler un parcours utilisateur de bout en bout (login -> action ->
-vérification -> logout), avec assertions sur le contenu réellement rendu
-à chaque étape plutôt que sur des appels de service isolés. Rapides,
-zéro dépendance lourde, bons pour vérifier permissions/redirections/
-données - complémentaires de test_browser_flows.py, pas remplacés par
-lui (voir report/E2E Playwright - Tests navigateur réel.md).
+No real browser here (see test_browser_flows.py for that, with
+Playwright) - these tests chain several successive HTTP requests to
+simulate an end-to-end user journey (login -> action -> verification ->
+logout), with assertions on what's actually rendered at each step
+rather than on isolated service calls. Fast, no heavy dependency, good
+for checking permissions/redirects/data - complementary to
+test_browser_flows.py, not replaced by it (see report/E2E Playwright -
+Tests navigateur réel.md).
 """
 
 from datetime import date, timedelta
@@ -18,7 +18,7 @@ from app.models import Group, ShiftType, User
 
 
 def _weekday_range(days=5):
-    """Renvoie (lundi, vendredi) de la semaine courante ou suivante."""
+    """Return (Monday, Friday) of the current or next week."""
     start = date.today()
     while start.weekday() != 0:
         start += timedelta(days=1)
@@ -26,13 +26,13 @@ def _weekday_range(days=5):
 
 
 class TestAdminCreatesUserAndAssignsShift:
-    """Parcours : un admin crée un groupe, un utilisateur, puis lui
-    assigne des shifts - et l'utilisateur les retrouve en se connectant."""
+    """Journey: an admin creates a group, a user, then assigns shifts to
+    them - and the user finds them after logging in."""
 
     def test_full_flow(self, test_app, logged_in_client):
         client = logged_in_client
 
-        # 1. Créer un groupe participant au planning
+        # 1. Create a group that's part of the schedule
         resp = client.post(
             "/admin/groups/add",
             data={
@@ -49,7 +49,7 @@ class TestAdminCreatesUserAndAssignsShift:
             assert group is not None
             group_id = group.id
 
-        # 2. Créer un utilisateur dans ce groupe
+        # 2. Create a user in that group
         resp = client.post(
             "/admin/users/add",
             data={
@@ -76,7 +76,7 @@ class TestAdminCreatesUserAndAssignsShift:
                 db.session.commit()
             shift_type_id = shift_type.id
 
-        # 3. Assigner des shifts pour la semaine (admin uniquement)
+        # 3. Assign shifts for the week (admin only)
         monday, friday = _weekday_range()
         resp = client.post(
             "/schedule/add",
@@ -91,7 +91,7 @@ class TestAdminCreatesUserAndAssignsShift:
         assert resp.status_code == 200
         assert b"Shifts ajoutes avec succes" in resp.data or b"ajout" in resp.data
 
-        # 4. Se déconnecter de l'admin, se connecter en tant qu'employé
+        # 4. Log out of the admin account, log in as the employee
         client.get("/logout", follow_redirects=True)
         resp = client.post(
             "/login",
@@ -100,7 +100,7 @@ class TestAdminCreatesUserAndAssignsShift:
         )
         assert resp.status_code == 200
 
-        # 5. L'employé consulte son planning
+        # 5. The employee views their schedule
         resp = client.get("/schedule")
         assert resp.status_code == 200
 
@@ -108,8 +108,8 @@ class TestAdminCreatesUserAndAssignsShift:
 
 
 class TestUserRequestsLeave:
-    """Parcours : un utilisateur normal demande un congé pour lui-même,
-    ne peut pas en demander pour un autre, un admin peut le supprimer."""
+    """Journey: a regular user requests a leave for themselves, can't
+    request one for someone else, an admin can delete it."""
 
     def test_user_can_request_own_leave(self, test_app, test_user, client):
         resp = client.post(
@@ -169,8 +169,8 @@ class TestUserRequestsLeave:
 
 
 class TestLoginLogoutFlow:
-    """Parcours : mauvais mot de passe rejeté, bon mot de passe accepté,
-    session invalidée après logout."""
+    """Journey: wrong password rejected, correct password accepted,
+    session invalidated after logout."""
 
     def test_wrong_password_then_correct_password(self, test_app, test_user, client):
         resp = client.post(
@@ -204,7 +204,7 @@ class TestLoginLogoutFlow:
 
 
 class TestExportFlow:
-    """Parcours : un utilisateur connecté exporte ses shifts en ICS."""
+    """Journey: a logged-in user exports their shifts as ICS."""
 
     def test_export_shifts_after_login(self, test_app, test_user, test_shift, client):
         client.post(

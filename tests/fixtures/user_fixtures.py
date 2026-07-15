@@ -1,4 +1,4 @@
-"""Fixtures liées aux utilisateurs, groupes et clients de test authentifiés."""
+"""User, group, and authenticated test client fixtures."""
 
 import pytest
 from werkzeug.security import generate_password_hash
@@ -9,7 +9,7 @@ from app.models import Group, User
 
 @pytest.fixture
 def test_group(test_app):
-    """Crée un groupe de test."""
+    """Create a test group."""
     group = Group(name="Test Group", is_part_of_schedule=True, is_part_of_oncall=True)
     db.session.add(group)
     db.session.commit()
@@ -18,7 +18,7 @@ def test_group(test_app):
 
 @pytest.fixture
 def group_not_in_schedule(test_app):
-    """Crée un groupe de test qui ne fait pas partie du planning."""
+    """Create a test group that isn't part of the schedule."""
     group = Group(
         name="Group Not In Schedule", is_part_of_schedule=False, is_part_of_oncall=False
     )
@@ -29,7 +29,7 @@ def group_not_in_schedule(test_app):
 
 @pytest.fixture
 def test_user(test_app, test_group):
-    """Crée un utilisateur normal."""
+    """Create a regular user."""
     user = User(
         name="Test User",
         email="test@test.com",
@@ -44,7 +44,7 @@ def test_user(test_app, test_group):
 
 @pytest.fixture
 def admin_user(test_app, test_group):
-    """Crée un utilisateur administrateur."""
+    """Create an admin user."""
     user = User(
         name="Admin User",
         email="admin@test.com",
@@ -59,7 +59,7 @@ def admin_user(test_app, test_group):
 
 @pytest.fixture
 def second_user(test_app, test_group):
-    """Crée un deuxième utilisateur normal."""
+    """Create a second regular user."""
     user = User(
         name="Second User",
         email="second@test.com",
@@ -74,11 +74,11 @@ def second_user(test_app, test_group):
 
 @pytest.fixture
 def logged_in_client(client):
-    """Client de test Flask avec un utilisateur connecté.
+    """Flask test client with a logged-in user.
 
-    Crée un utilisateur et se connecte via POST /login.
+    Creates a user and logs in via POST /login.
     """
-    # Créer un groupe et un utilisateur dans le contexte du client
+    # Create a group and a user within the client's context
     with client.application.app_context():
         group = Group(
             name="Test Group Login", is_part_of_schedule=True, is_part_of_oncall=True
@@ -96,20 +96,20 @@ def logged_in_client(client):
         db.session.add(user)
         db.session.commit()
 
-    # Se connecter via POST /login
+    # Log in via POST /login
     response = client.post(
         "/login",
         data={"email": "login@example.com", "password": "loginpassword"},
         follow_redirects=True,
     )
-    # On devrait être sur la page d'accueil
+    # We should land on the home page
     assert (
         response.status_code == 200
     ), f"Login failed with status {response.status_code}"
 
     yield client
 
-    # Se déconnecter
+    # Log out
     try:
         client.get("/logout", follow_redirects=True)
     except Exception:
@@ -118,10 +118,10 @@ def logged_in_client(client):
 
 @pytest.fixture
 def non_admin_client(client, test_user):
-    """Client de test Flask connecté avec un utilisateur non-admin (test_user).
+    """Flask test client logged in as a non-admin user (test_user).
 
-    Utile pour vérifier qu'une route protégée par @admin_required rejette
-    bien un utilisateur normal (logged_in_client est un admin).
+    Useful for checking that a route protected by @admin_required
+    correctly rejects a regular user (logged_in_client is an admin).
     """
     response = client.post(
         "/login",

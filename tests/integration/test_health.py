@@ -1,9 +1,9 @@
 """
-Tests pour les endpoints de santé k8s (app/utils/health.py).
+Tests for the k8s health endpoints (app/utils/health.py).
 
-Ces routes sont enregistrées inconditionnellement dans create_app() (pas
-de feature flag), donc testables directement via le client de test
-standard, sans fixture spéciale.
+These routes are registered unconditionally in create_app() (no
+feature flag), so they're testable directly via the standard test
+client, with no special fixture.
 """
 
 from unittest.mock import patch
@@ -75,5 +75,5 @@ class TestCheckCache:
         with test_app.app_context():
             test_app.config["CACHE_TYPE"] = "redis"
             test_app.config["CACHE_REDIS_URL"] = "redis://localhost:1/0"
-            # Pas de serveur Redis dans cet environnement : la connexion doit échouer proprement.
+            # No Redis server in this environment: the connection must fail cleanly.
             assert check_cache(test_app) is False

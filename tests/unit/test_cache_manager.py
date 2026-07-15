@@ -1,17 +1,18 @@
 """
-Tests pour app/utils/cache/cache_manager.py.
+Tests for app/utils/cache/cache_manager.py.
 
-init_cache(app) tourne inconditionnellement à chaque démarrage de
-l'application (app/__init__.py) - ces tests couvrent ses branches
-(simple/redis/memcached/fallback sur exception), le seul chemin de ce
-module réellement exercé en production.
+init_cache(app) runs unconditionally on every app startup
+(app/__init__.py) - these tests cover its branches
+(simple/redis/memcached/fallback on exception), the only path in this
+module actually exercised in production.
 
-get_cache()/clear_cache()/cache_key() ont été supprimés (audit/cleanup-
-perf-security) : plus aucun appelant depuis la suppression des
-décorateurs cached_route/cache_result (Phase 4), qui importaient déjà
-`cache` depuis app.utils.cache de façon cassée (jamais exporté).
-SimpleDictCache reste le seul chemin réellement exercé en production
-(flask_caching absent de cet environnement) - testé directement ici.
+get_cache()/clear_cache()/cache_key() have been removed: they had no
+callers left once the cached_route/cache_result decorators were
+removed as dead code, and those decorators already imported `cache`
+from app.utils.cache in a broken way (it was never exported).
+SimpleDictCache remains the only path actually exercised in production
+(flask_caching isn't installed in this environment) - tested directly
+here.
 """
 
 import pytest
@@ -21,7 +22,7 @@ from app.utils.cache import cache_manager
 
 @pytest.fixture(autouse=True)
 def reset_global_cache():
-    """cache_manager._cache est un global module-level - reset entre tests."""
+    """cache_manager._cache is a module-level global - reset between tests."""
     cache_manager._cache = None
     yield
     cache_manager._cache = None
@@ -29,9 +30,9 @@ def reset_global_cache():
 
 class TestInitCacheSimple:
     def test_default_simple_cache_falls_back_to_dict_cache(self, test_app):
-        # flask_caching n'est pas installé dans cet environnement (déjà visible
-        # dans les logs de test partout ailleurs) - donc même CACHE_TYPE=simple
-        # tombe dans le fallback ImportError -> SimpleDictCache.
+        # flask_caching isn't installed in this environment (already visible
+        # in the test logs elsewhere) - so even CACHE_TYPE=simple falls
+        # into the ImportError -> SimpleDictCache fallback.
         with test_app.app_context():
             test_app.config["CACHE_TYPE"] = "simple"
             cache_manager.init_cache(test_app)
@@ -50,8 +51,8 @@ class TestInitCacheRedisFallback:
         with test_app.app_context():
             test_app.config["CACHE_TYPE"] = "redis"
             cache_manager.init_cache(test_app)
-            # flask_caching absent -> ImportError -> fallback dict cache,
-            # pas de crash.
+            # flask_caching missing -> ImportError -> falls back to the
+            # dict cache, no crash.
             assert isinstance(cache_manager._cache, cache_manager.SimpleDictCache)
 
 
@@ -64,8 +65,8 @@ class TestInitCacheMemcachedFallback:
 
 
 class TestSimpleDictCache:
-    """Le fallback est ce qui tourne réellement dans cet environnement -
-    testé directement plutôt que via get_cache() (non appelé en prod)."""
+    """The fallback is what actually runs in this environment - tested
+    directly rather than via get_cache() (not called in production)."""
 
     def test_set_and_get(self):
         cache = cache_manager.SimpleDictCache()

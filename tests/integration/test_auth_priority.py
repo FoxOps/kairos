@@ -12,13 +12,13 @@ class TestRegisterRoute:
     """Tests pour /register."""
 
     def test_register_get(self, client):
-        """Test l'affichage de la page d'inscription."""
+        """Test rendering the registration page."""
         response = client.get("/register")
         assert response.status_code == 302
         assert response.location.endswith("/login")
 
     def test_register_post(self, client):
-        """Test l'inscription (désactivée)."""
+        """Test registration (disabled)."""
         response = client.post(
             "/register",
             data={
@@ -29,16 +29,16 @@ class TestRegisterRoute:
             follow_redirects=True,
         )
         assert response.status_code == 200
-        # L'inscription publique est désactivée
+        # Public registration is disabled
         assert b"Connexion" in response.data
 
 
 class TestProfileRoute:
-    """Tests pour /profile."""
+    """Tests for /profile."""
 
     def test_profile_get(self, client):
-        """Test l'affichage du profil."""
-        # Créer un groupe et un utilisateur
+        """Test rendering the profile page."""
+        # Create a group and a user
         with client.application.app_context():
             group = Group(
                 name="Test Group Profile",
@@ -58,7 +58,7 @@ class TestProfileRoute:
             db.session.add(user)
             db.session.commit()
 
-        # Se connecter
+        # Log in
         response = client.post(
             "/login",
             data={"email": "profile@example.com", "password": "profilepassword"},
@@ -66,11 +66,11 @@ class TestProfileRoute:
         )
         assert response.status_code == 200
 
-        # Accéder au profil
+        # Access the profile page
         response = client.get("/profile")
         assert response.status_code == 200
 
     def test_profile_unauthenticated(self, client):
-        """Test que le profil nécessite une authentification."""
+        """Test that the profile page requires authentication."""
         response = client.get("/profile", follow_redirects=True)
         assert b"Connexion" in response.data

@@ -1,4 +1,4 @@
-"""Fixtures liées aux demandes d'échange de shifts (SwapRequest)."""
+"""Fixtures for shift-swap requests (SwapRequest)."""
 
 from datetime import date, datetime, timedelta
 
@@ -17,7 +17,7 @@ def _next_weekday(from_date: date) -> date:
 
 @pytest.fixture
 def test_swap_shift(test_app, test_user, test_shift_type):
-    """Shift à venir appartenant à test_user, proposable à l'échange."""
+    """An upcoming shift owned by test_user, eligible to be offered for swap."""
     shift_date = _next_weekday(date.today() + timedelta(days=3))
     shift = Shift(
         date=shift_date,
@@ -33,7 +33,7 @@ def test_swap_shift(test_app, test_user, test_shift_type):
 
 @pytest.fixture
 def test_swap_request(test_app, test_user, second_user, test_swap_shift):
-    """Demande d'échange en attente : test_user propose test_swap_shift à second_user."""
+    """A pending swap request: test_user offers test_swap_shift to second_user."""
     swap_request = SwapRequest(
         requester_id=test_user.id,
         shift_id=test_swap_shift.id,

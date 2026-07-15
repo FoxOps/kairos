@@ -1,10 +1,9 @@
 """
 Tests unitaires pour app/repositories/.
 
-Couche accès aux données créée en Phase 2, jusqu'ici uniquement exercée
-indirectement via les tests de routes HTTP (tests/integration/). Ces
-tests appellent les repositories directement, sans passer par le client
-de test Flask.
+The data-access layer, until now only exercised indirectly through the
+HTTP route tests (tests/integration/). These tests call the
+repositories directly, without going through the Flask test client.
 """
 
 from datetime import date, datetime, timedelta

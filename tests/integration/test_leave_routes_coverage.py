@@ -1,6 +1,6 @@
 """
-Tests ciblés sur les branches d'erreur/edge-case de app/routes/leave_routes.py
-non couvertes par les suites existantes.
+Targeted tests for the error/edge-case branches of
+app/routes/leave_routes.py not covered by the existing suites.
 """
 
 from datetime import date, timedelta
@@ -18,8 +18,8 @@ class TestAddLeaveEdgeCases:
             },
             follow_redirects=True,
         )
-        # user_id != current_user.id (999999 != test_user.id) -> bloqué par la
-        # vérification de permission avant même d'atteindre le lookup utilisateur.
+        # user_id != current_user.id (999999 != test_user.id) -> blocked by
+        # the permission check before it even reaches the user lookup.
         assert resp.status_code == 200
         assert b"vous-m" in resp.data
 
@@ -89,9 +89,9 @@ class TestApiDeleteLeave:
     def test_forbidden_for_other_users_leave(
         self, test_app, non_admin_client, test_leave, second_user
     ):
-        # test_leave appartient à test_user ; non_admin_client est connecté en tant
-        # que test_user lui-même par construction du fixture -> tester le cas
-        # "autre utilisateur" nécessite un congé appartenant à second_user.
+        # test_leave belongs to test_user; non_admin_client is logged in as
+        # test_user itself by fixture construction -> testing the "other
+        # user" case needs a leave that belongs to second_user.
         from app import db
         from app.models import Leave
 
@@ -122,8 +122,8 @@ class TestApiDeleteLeave:
     def test_rebalance_failure_surfaces_warning(
         self, test_app, logged_in_client, test_leave
     ):
-        """Régression : api_delete_leave doit signaler un échec de
-        rééquilibrage au lieu de l'avaler silencieusement (bug 3)."""
+        """Regression test: api_delete_leave must surface a rebalance
+        failure instead of silently swallowing it."""
         with patch(
             "app.routes.leave_routes.LeaveService.api_delete",
             return_value=(True, True),
@@ -213,8 +213,8 @@ class TestApiUpdateLeave:
     def test_rebalance_failure_surfaces_warning(
         self, test_app, logged_in_client, test_leave
     ):
-        """Régression : api_update_leave doit signaler un échec de
-        rééquilibrage au lieu de l'avaler silencieusement (bug 3)."""
+        """Regression test: api_update_leave must surface a rebalance
+        failure instead of silently swallowing it."""
         with patch(
             "app.routes.leave_routes.LeaveService.api_update",
             return_value=(test_leave, None, True),

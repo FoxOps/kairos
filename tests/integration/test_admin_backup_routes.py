@@ -12,8 +12,8 @@ def make_sqlite_file(path):
 
 @pytest.fixture(autouse=True)
 def _isolate_backup_env(tmp_path, monkeypatch):
-    """Isole le dossier de sauvegarde locale et désactive S3, pour éviter
-    que ces tests ne touchent le vrai dépôt / la vraie base de dev."""
+    """Isolate the local backup directory and disable S3, so these tests
+    never touch the real repo / the real dev database."""
     monkeypatch.delenv("BACKUP_S3_ENABLED", raising=False)
     monkeypatch.setenv("BACKUP_LOCAL_DIR", str(tmp_path / "backups"))
 

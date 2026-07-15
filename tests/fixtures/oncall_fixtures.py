@@ -1,4 +1,4 @@
-"""Fixtures liées aux astreintes."""
+"""On-call-related fixtures."""
 
 from datetime import datetime, timedelta
 
@@ -10,7 +10,7 @@ from app.models import OnCall
 
 @pytest.fixture
 def test_oncall(test_app, test_user):
-    """Crée une astreinte de test."""
+    """Create a test on-call."""
     oncall = OnCall(
         user_id=test_user.id,
         start_time=datetime.now(),

@@ -1,9 +1,9 @@
 """
-Tests pour app/utils/prometheus_metrics.py.
+Tests for app/utils/prometheus_metrics.py.
 
-Gated par PROMETHEUS_ENABLED (False par défaut, y compris en test) -
-construit sa propre instance d'app avec le flag activé, comme
-secure_app dans test_security.py pour CSRF/Talisman.
+Gated by PROMETHEUS_ENABLED (False by default, including in tests) -
+builds its own app instance with the flag enabled, the same pattern as
+secure_app in test_security.py for CSRF/Talisman.
 """
 
 import pytest
@@ -13,7 +13,7 @@ from app import create_app, db
 
 @pytest.fixture
 def prometheus_app():
-    """App avec les métriques Prometheus initialisées."""
+    """App with Prometheus metrics initialized."""
     app = create_app("app.config.TestingConfig")
     app.config["PROMETHEUS_ENABLED"] = True
 
@@ -42,9 +42,10 @@ class TestPrometheusMetricsEndpoint:
         assert "leviia_users_total" in body
 
     def test_requests_are_tracked_without_crashing(self, prometheus_app):
-        """Bug réel trouvé et corrigé : after_request utilisait `request`
-        sans l'importer (NameError sur CHAQUE requête si ce flag était
-        activé). Ce test vérifie qu'une requête normale ne plante plus."""
+        """Regression test: after_request used to reference `request`
+        without importing it (a NameError on EVERY request whenever this
+        flag was on). This test checks that a normal request no longer
+        crashes."""
         client = prometheus_app.test_client()
         resp = client.get("/login")
         assert resp.status_code == 200
@@ -89,5 +90,5 @@ class TestSystemMetricsUpdate:
         from app.utils.prometheus_metrics import _update_system_metrics
 
         with prometheus_app.app_context():
-            # Ne doit jamais lever, même si psutil échoue (try/except large côté source).
+            # Must never raise, even if psutil fails (broad try/except on the source side).
             _update_system_metrics()

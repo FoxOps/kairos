@@ -1,15 +1,16 @@
 """
-Test E2E du flux SSO complet, dans un vrai navigateur, contre un faux
-fournisseur OIDC réel (tests/e2e/oidc_mock_provider.py) - pas un mock
-Python au niveau des fonctions (voir tests/integration/test_oidc_routes.py
-pour ça). Ce test exerce le vrai câblage HTTP de bout en bout :
-redirection navigateur vers l'IdP, vraie page de login avec un clic,
-retour avec un code d'autorisation, échanges serveur-à-serveur réels
-(découverte OIDC, exchange_code_for_token, get_user_info), création
-d'utilisateur, établissement de session, déconnexion RP-initiated.
+E2E test of the full SSO flow, in a real browser, against a real fake
+OIDC provider (tests/e2e/oidc_mock_provider.py) - not a Python-level
+function mock (see tests/integration/test_oidc_routes.py for that).
+This test exercises the real end-to-end HTTP wiring: browser redirect
+to the IdP, a real login page with a click, return with an authorization
+code, real server-to-server exchanges (OIDC discovery,
+exchange_code_for_token, get_user_info), user creation, session
+establishment, RP-initiated logout.
 
-Nécessite `pip install -r requirements-e2e.txt && playwright install
-chromium` - sinon collecte skippée proprement (pytest.importorskip).
+Requires `pip install -r requirements-e2e.txt && playwright install
+chromium` - otherwise collection is cleanly skipped
+(pytest.importorskip).
 """
 
 import pytest
@@ -40,7 +41,7 @@ class TestOidcBrowserLogin:
         page.click("#mock-idp-approve")
         page.wait_for_load_state("networkidle")
 
-        # De retour côté app, session ouverte, utilisateur OIDC créé à la volée.
+        # Back on the app side, session open, OIDC user created on the fly.
         assert page.url.startswith(app_url)
         assert "/login" not in page.url
         assert page.locator(f"text={MOCK_USER_NAME}").first.is_visible()
@@ -50,15 +51,15 @@ class TestOidcBrowserLogin:
     ):
         app_url, idp_url = oidc_live_servers
 
-        # Premier aller-retour : crée l'utilisateur.
+        # First round trip: creates the user.
         page.goto(f"{app_url}/login")
         page.click("#mock-idp-approve")
         page.wait_for_load_state("networkidle")
 
-        # browser.new_context() (pas context.new_page()) : une nouvelle
-        # page dans le même contexte partagerait les cookies de session
-        # de `page` (déjà connectée) et sauterait directement le login -
-        # il faut un contexte isolé pour un vrai 2e aller-retour SSO.
+        # browser.new_context() (not context.new_page()): a new page in
+        # the same context would share `page`'s session cookies (already
+        # logged in) and skip login entirely - an isolated context is
+        # needed for a genuine 2nd SSO round trip.
         context2 = browser.new_context()
         page2 = context2.new_page()
         page2.goto(f"{app_url}/login")
@@ -86,10 +87,10 @@ class TestOidcBrowserLogout:
         page.goto(f"{app_url}/logout")
         page.wait_for_load_state("networkidle")
 
-        # build_logout_url() envoie vers l'IdP (end_session_endpoint du
-        # mock, /logout) - la déconnexion locale seule laisserait la
-        # session côté fournisseur active (bug déjà corrigé ailleurs,
-        # voir app/auth/oidc_auth.py::build_logout_url).
+        # build_logout_url() sends the user to the IdP (the mock's
+        # end_session_endpoint, /logout) - a local-only logout would
+        # leave the session active on the provider side (a bug already
+        # fixed elsewhere, see app/auth/oidc_auth.py::build_logout_url).
         assert page.url.startswith(idp_url)
 
     def test_protected_page_requires_new_login_after_logout(
@@ -106,14 +107,14 @@ class TestOidcBrowserLogout:
 
         page.goto(f"{app_url}/dashboard")
         page.wait_for_load_state("networkidle")
-        # @login_required doit rediriger loin de /dashboard (vers /login
-        # puis /oidc/login, la session ayant été invalidée par /logout) -
-        # jusqu'à la page de login du faux IdP, pas rester sur le
-        # dashboard. Ne pas vérifier l'absence de MOCK_USER_EMAIL dans la
-        # page ici : le formulaire de login du mock IdP lui-même affiche
-        # cet email (indiquant quel utilisateur le clic va authentifier),
-        # donc cette assertion serait toujours vraie même si /logout ne
-        # faisait rien.
+        # @login_required must redirect away from /dashboard (to /login
+        # then /oidc/login, since /logout invalidated the session) - all
+        # the way to the fake IdP's login page, not stay on the
+        # dashboard. Not checking for the absence of MOCK_USER_EMAIL on
+        # the page here: the mock IdP's own login form displays that
+        # email itself (indicating which user the click will
+        # authenticate), so that assertion would always be true even if
+        # /logout did nothing.
         assert page.url.startswith(idp_url)
 
 
@@ -121,18 +122,18 @@ class TestOidcBrowserSingleFlashMessage:
     def test_no_stale_login_required_flash_after_redirect_from_protected_page(
         self, oidc_live_servers, page
     ):
-        """Bug réel : visiter une page protégée (login_required) non
-        authentifié déclenche le flash "please log in" par défaut de
-        Flask-Login avant la redirection vers auth.oidc_login - lequel ne
-        rend jamais de template et enchaîne aussitôt vers l'IdP. Ce flash
-        traversait alors tout l'aller-retour SSO sans jamais être
-        consommé, et ressortait collé au flash "Connexion OIDC réussie !"
-        sur la première page rendue après coup (les deux affichés en même
-        temps). Fix : login_manager.login_message désactivé en mode OIDC
-        forcé (app/__init__.py)."""
+        """Regression test: visiting a protected page (login_required)
+        while unauthenticated used to trigger Flask-Login's default
+        "please log in" flash before the redirect to auth.oidc_login -
+        which never renders a template and immediately continues on to
+        the IdP. That flash then survived the whole SSO round trip
+        without ever being consumed, and ended up stuck alongside the
+        "Connexion OIDC réussie !" flash on the first page rendered
+        afterwards (both shown at once). Fix: login_manager.login_message
+        is disabled in forced-OIDC mode (app/__init__.py)."""
         app_url, idp_url = oidc_live_servers
 
-        # Page protégée (pas /login) : déclenche @login_required.
+        # A protected page (not /login): triggers @login_required.
         page.goto(f"{app_url}/dashboard")
         page.wait_for_load_state("networkidle")
         assert page.url.startswith(idp_url)

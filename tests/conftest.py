@@ -1,10 +1,10 @@
 """
-Configuration des tests pour Leviia Schedule.
+Test configuration for Leviia Schedule.
 
-Cette version utilise create_app() pour créer une nouvelle instance de l'application
-pour les tests, ce qui permet de désactiver Talisman avant son initialisation.
+This version uses create_app() to build a fresh app instance for the
+tests, which allows disabling Talisman before it initializes.
 
-Mise à jour pour Flask 3.x et Flask-Login 0.6.3.
+Updated for Flask 3.x and Flask-Login 0.6.3.
 """
 
 import os
@@ -12,17 +12,18 @@ import warnings
 
 import pytest
 
-# Filtrer les warnings de dépréciation de datetime.utcnow()
+# Filter datetime.utcnow() deprecation warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="flask_login")
 
-# Importer les modules nécessaires - après warnings.filterwarnings() ci-dessus
-# volontairement : importer `app` déclenche flask_limiter, dont le warning
-# doit déjà être filtré à ce moment-là.
+# Import the required modules - deliberately after the
+# warnings.filterwarnings() call above: importing `app` triggers
+# flask_limiter, whose warning must already be filtered by then.
 from app import db, limiter  # noqa: E402
 
-# Fixtures de modèles (user/group, shift/shift_type, leave, oncall) extraites
-# dans tests/fixtures/ - déclarées ici pour rester visibles dans tous les
-# sous-dossiers (unit/integration/e2e) sans import explicite par test.
+# Model fixtures (user/group, shift/shift_type, leave, oncall) extracted
+# into tests/fixtures/ - declared here so they stay visible across all
+# subdirectories (unit/integration/e2e) without an explicit per-test
+# import.
 pytest_plugins = [
     "tests.fixtures.user_fixtures",
     "tests.fixtures.shift_fixtures",
@@ -35,46 +36,46 @@ pytest_plugins = [
 @pytest.fixture(scope="function")
 def test_app():
     """
-    Fixture qui crée une nouvelle instance de l'application pour les tests.
-    Désactive Talisman et OIDC avant son initialisation.
-    Scope: function pour éviter les conflits entre tests.
+    Fixture that builds a fresh app instance for the tests.
+    Disables Talisman and OIDC before it initializes.
+    Scope: function, to avoid conflicts between tests.
     """
-    # Sauvegarder et désactiver OIDC pour les tests
+    # Save and disable OIDC for the tests
     original_oidc_enabled = os.environ.get("OIDC_ENABLED")
     original_oidc_disable_basic = os.environ.get("OIDC_DISABLE_BASIC_AUTH")
     os.environ["OIDC_ENABLED"] = "False"
     os.environ["OIDC_DISABLE_BASIC_AUTH"] = "False"
 
-    # Recharger la configuration OIDC
+    # Reload the OIDC configuration
     from config_oidc import OIDCConfig
 
     OIDCConfig.ENABLED = False
     OIDCConfig.DISABLE_BASIC_AUTH = False
 
-    # Créer une nouvelle instance de l'application avec une configuration de test
+    # Build a fresh app instance with a test configuration
     from app import create_app
 
     app = create_app("app.config.TestingConfig")
 
-    # Désactiver le rate limiter
+    # Disable the rate limiter
     limiter.enabled = False
 
-    # Désactiver le cache pour les tests
+    # Disable the cache for the tests
     from app.utils.cache import CacheConfig
 
     CacheConfig.CACHE_ENABLED = False
 
-    # Créer un contexte d'application
+    # Create an app context
     with app.app_context():
-        # Re-créer les tables pour le test
+        # Recreate the tables for the test
         db.drop_all()
         db.create_all()
         yield app
-        # Nettoyer après le test
+        # Clean up after the test
         db.session.rollback()
         db.drop_all()
 
-    # Restaurer OIDC
+    # Restore OIDC
     if original_oidc_enabled is not None:
         os.environ["OIDC_ENABLED"] = original_oidc_enabled
     else:
@@ -88,14 +89,14 @@ def test_app():
 
 @pytest.fixture
 def client(test_app):
-    """Client de test Flask avec cookies et session activés.
+    """Flask test client with cookies and sessions enabled.
 
-    NE CRÉE PAS d'utilisateur par défaut pour éviter les conflits entre tests.
+    Does NOT create a default user, to avoid conflicts between tests.
     """
     with test_app.test_client(use_cookies=True) as client:
         yield client
 
 
-# Alias requis par pytest-flask : son fixture autouse _configure_application
-# cherche une fixture nommée exactement "app" (voir pytest_flask/plugin.py).
+# Alias required by pytest-flask: its autouse _configure_application
+# fixture looks for a fixture named exactly "app" (see pytest_flask/plugin.py).
 app = test_app

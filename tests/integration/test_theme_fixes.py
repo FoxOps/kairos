@@ -1,17 +1,16 @@
 """
-Tests pour vérifier les corrections des bugs et duplications du thème visuel.
+Tests checking the fixes for bugs and duplication in the visual theme.
 
-Ces tests vérifient que :
-1. Les styles dupliqués ont été supprimés
-2. Le JavaScript a été centralisé
-3. Les variables CSS manquantes ont été ajoutées
-4. Les styles inline ont été remplacés par des classes CSS
+These tests check that:
+1. Duplicated styles have been removed
+2. The JavaScript has been centralized
+3. The missing CSS variables have been added
+4. Inline styles have been replaced with CSS classes
 
-Depuis la Phase 3 (restructuration frontend), les anciens fichiers
-`base-styles.css`, `dark-theme.css` et `fullcalendar-styles.css` ont été
-supprimés et remplacés par une arborescence (`variables.css`, `base.css`,
-`utilities.css`, `components/*.css`, `layout/*.css`, `themes/dark.css`,
-`vendor/fullcalendar-overrides.css`).
+The old `base-styles.css`, `dark-theme.css` and `fullcalendar-styles.css`
+files have been removed and replaced by a tree of files (`variables.css`,
+`base.css`, `utilities.css`, `components/*.css`, `layout/*.css`,
+`themes/dark.css`, `vendor/fullcalendar-overrides.css`).
 """
 
 import os
@@ -27,14 +26,14 @@ def read_css(*parts: str) -> str:
 
 
 class TestNoDuplicateStyles:
-    """Tests pour vérifier l'absence de styles dupliqués."""
+    """Tests checking there are no duplicated styles."""
 
     def test_skip_link_not_duplicated(self, test_app):
-        """Test que le skip link n'est stylé qu'à un seul endroit. Depuis
-        la refonte Tailwind/daisyUI (Phase 7), plus de classe .skip-link
-        maison dans base.css - le style (masqué sauf au focus) est porté
-        directement par les utilitaires Tailwind sr-only/focus:not-sr-only
-        sur le lien lui-même dans base.html, donc rien à dupliquer."""
+        """Test that the skip link is only styled in one place. Under
+        Tailwind/daisyUI, there's no home-grown .skip-link class in
+        base.css anymore - the style (hidden except on focus) is carried
+        directly by the Tailwind sr-only/focus:not-sr-only utilities on
+        the link itself in base.html, so there's nothing to duplicate."""
         with test_app.app_context():
             base_css_content = read_css("base.css")
             assert ".skip-link {" not in base_css_content
@@ -47,7 +46,7 @@ class TestNoDuplicateStyles:
             assert "sr-only" in base_template_content
 
     def test_fullcalendar_styles_not_duplicated(self, test_app):
-        """Test que les styles FullCalendar ne sont pas dupliqués."""
+        """Test that the FullCalendar styles aren't duplicated."""
         with test_app.app_context():
             fc_styles_content = read_css("vendor", "fullcalendar-overrides.css")
 
@@ -64,17 +63,17 @@ class TestNoDuplicateStyles:
             assert (
                 "<style>" not in index_template_content
                 or ".fc-event-shift" not in index_template_content
-            ), "Les styles FullCalendar ne doivent plus être inline dans index.html"
+            ), "The FullCalendar styles must no longer be inline in index.html"
 
 
 class TestCentralizedJavaScript:
-    """Tests pour vérifier que le JavaScript a été centralisé."""
+    """Tests checking that the JavaScript has been centralized."""
 
     def test_script_js_exists(self, test_app):
-        """Test que main.js existe et charge le ThemeManager."""
+        """Test that main.js exists and loads the ThemeManager."""
         with test_app.app_context():
             main_path = os.path.join(current_app.static_folder, "js", "main.js")
-            assert os.path.exists(main_path), f"Le fichier {main_path} n'existe pas"
+            assert os.path.exists(main_path), f"File {main_path} does not exist"
 
             with open(main_path) as f:
                 main_content = f.read()
@@ -86,7 +85,7 @@ class TestCentralizedJavaScript:
             )
             assert os.path.exists(
                 theme_manager_path
-            ), f"Le fichier {theme_manager_path} n'existe pas"
+            ), f"File {theme_manager_path} does not exist"
 
             with open(theme_manager_path) as f:
                 theme_manager_content = f.read()
@@ -97,7 +96,7 @@ class TestCentralizedJavaScript:
             assert "getCurrentTheme" in theme_manager_content
 
     def test_no_inline_js_in_base(self, test_app):
-        """Test qu'il n'y a plus de JavaScript inline dans base.html."""
+        """Test that there's no more inline JavaScript in base.html."""
         with test_app.app_context():
             base_template_path = os.path.join(current_app.template_folder, "base.html")
             with open(base_template_path) as f:
@@ -113,18 +112,18 @@ class TestCentralizedJavaScript:
 
 
 class TestCSSVariables:
-    """Tests pour vérifier que les variables CSS manquantes ont été ajoutées."""
+    """Tests checking that the missing CSS variables have been added."""
 
     def test_base_styles_has_utility_classes(self, test_app):
-        """Test que utilities.css contient les classes utilitaires min-w-*.
-        Depuis la refonte Tailwind/daisyUI (Phase 7), les classes
-        d'espacement/affichage maison (gap-*, d-none, ...) et .type-tag
-        (buttons.css) ont été retirées : Tailwind (JIT) génère déjà des
-        classes du même nom que gap-*/d-*, et daisyUI fournit .badge à la
-        place de .type-tag - garder les définitions maison en plus était
-        redondant et, pour gap-*/mt-*/mb-*, silencieusement incorrect
-        (valeurs différentes de celles de Tailwind, toujours prioritaires
-        car hors de tout @layer)."""
+        """Test that utilities.css contains the min-w-* utility classes.
+        Under Tailwind/daisyUI, the home-grown spacing/display classes
+        (gap-*, d-none, ...) and .type-tag (buttons.css) have been
+        removed: Tailwind (JIT) already generates classes with the same
+        names as gap-*/d-*, and daisyUI provides .badge in place of
+        .type-tag - keeping the home-grown definitions on top was
+        redundant and, for gap-*/mt-*/mb-*, silently wrong (different
+        values than Tailwind's, which always take priority since they're
+        outside any @layer)."""
         with test_app.app_context():
             utilities_content = read_css("utilities.css")
 
@@ -139,10 +138,10 @@ class TestCSSVariables:
 
 
 class TestInlineStylesReplacement:
-    """Tests pour vérifier que les styles inline ont été remplacés."""
+    """Tests checking that inline styles have been replaced."""
 
     def test_no_inline_styles_in_base(self, test_app):
-        """Test qu'il n'y a plus de styles inline dans base.html."""
+        """Test that there's no more inline style in base.html."""
         with test_app.app_context():
             base_template_path = os.path.join(current_app.template_folder, "base.html")
             with open(base_template_path) as f:
@@ -161,20 +160,20 @@ class TestInlineStylesReplacement:
                     ):
                         assert (
                             False
-                        ), f"Style inline trouvé dans base.html: {style_content[:100]}"
+                        ), f"Inline style found in base.html: {style_content[:100]}"
 
     def test_dashboard_uses_type_tag_classes(self, test_app):
-        """Test que dashboard.html utilise des classes de badge daisyUI
-        (plutôt que des styles inline) - anciennement les classes maison
-        type-tag is-primary/is-light, remplacées par des badges daisyUI
-        lors de la refonte Tailwind/daisyUI.
+        """Test that dashboard.html uses daisyUI badge classes (rather
+        than inline styles) - the former home-grown type-tag
+        is-primary/is-light classes were replaced by daisyUI badges
+        under Tailwind/daisyUI.
 
-        Les badges de type de shift utilisent maintenant une couleur
-        dynamique par type (shift_type_colors, voir
-        common_helpers.build_shift_type_color_map, calculée par rang côté
-        route puis passée au template) plutôt qu'une classe fixe - vérifie
-        le pattern (badge daisyUI généré dynamiquement) plutôt qu'une
-        classe littérale précise."""
+        Shift-type badges now use a dynamic per-type color
+        (shift_type_colors, see common_helpers.build_shift_type_color_map,
+        computed by rank on the route side then passed to the template)
+        instead of a fixed class - this checks the pattern (a
+        dynamically generated daisyUI badge) rather than one exact
+        literal class."""
         with test_app.app_context():
             dashboard_template_path = os.path.join(
                 current_app.template_folder, "dashboard.html"
@@ -187,7 +186,7 @@ class TestInlineStylesReplacement:
             assert "var(--bulma-grey)" not in dashboard_content
 
     def test_index_uses_min_w_classes(self, test_app):
-        """Test que index.html utilise les classes min-w-* au lieu des styles inline."""
+        """Test that index.html uses the min-w-* classes instead of inline styles."""
         with test_app.app_context():
             index_template_path = os.path.join(
                 current_app.template_folder, "index.html"
@@ -202,10 +201,10 @@ class TestInlineStylesReplacement:
 
 
 class TestFileStructure:
-    """Tests pour vérifier la structure des fichiers."""
+    """Tests checking the file structure."""
 
     def test_required_files_exist(self, test_app):
-        """Test que tous les fichiers requis existent."""
+        """Test that every required file exists."""
         with test_app.app_context():
             static_folder = current_app.static_folder
             template_folder = current_app.template_folder
@@ -219,7 +218,7 @@ class TestFileStructure:
             ]
             for css_file in required_css:
                 css_path = os.path.join(static_folder, css_file)
-                assert os.path.exists(css_path), f"Le fichier {css_path} n'existe pas"
+                assert os.path.exists(css_path), f"File {css_path} does not exist"
 
             required_js = [
                 "js/main.js",
@@ -231,17 +230,17 @@ class TestFileStructure:
             ]
             for js_file in required_js:
                 js_path = os.path.join(static_folder, js_file)
-                assert os.path.exists(js_path), f"Le fichier {js_path} n'existe pas"
+                assert os.path.exists(js_path), f"File {js_path} does not exist"
 
             required_templates = ["base.html", "index.html", "dashboard.html"]
             for template_file in required_templates:
                 template_path = os.path.join(template_folder, template_file)
                 assert os.path.exists(
                     template_path
-                ), f"Le template {template_path} n'existe pas"
+                ), f"Template {template_path} does not exist"
 
     def test_css_files_included_in_templates(self, logged_in_client):
-        """Test que les fichiers CSS sont correctement inclus dans les templates."""
+        """Test that the CSS files are correctly included in the templates."""
         response = logged_in_client.get("/")
         assert response.status_code == 200
         html_content = response.data.decode("utf-8")
@@ -254,7 +253,7 @@ class TestFileStructure:
         assert "vendor/fullcalendar-overrides.css" in html_content
 
     def test_js_file_included_in_base_template(self, logged_in_client):
-        """Test que main.js est inclus dans le template de base en tant que module."""
+        """Test that main.js is included in the base template as a module."""
         response = logged_in_client.get("/")
         assert response.status_code == 200
         html_content = response.data.decode("utf-8")
