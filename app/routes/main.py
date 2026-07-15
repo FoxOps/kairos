@@ -1,19 +1,19 @@
 """
-Blueprint principal ("main"). Les routes sont définies dans des fichiers
-séparés par domaine (dashboard_routes, shift_routes, oncall_routes,
-leave_routes) qui s'enregistrent tous sur main_bp défini ici - le nom du
-blueprint reste "main" partout (url_for("main.xxx"), templates), seul le
-découpage en fichiers change.
+Main blueprint ("main"). Routes are defined in separate files by domain
+(dashboard_routes, shift_routes, oncall_routes, leave_routes) which all
+register onto the main_bp defined here - the blueprint name stays
+"main" everywhere (url_for("main.xxx"), templates), only the file split
+changes.
 """
 
 from flask import Blueprint
 
 main_bp = Blueprint("main", __name__)
 
-# Ces imports déclenchent l'enregistrement des routes sur main_bp
-# (chaque module fait `from app.routes.main import main_bp` puis décore
-# ses fonctions avec @main_bp.route(...)). Doivent rester après la
-# création de main_bp ci-dessus.
+# These imports trigger route registration onto main_bp (each module
+# does `from app.routes.main import main_bp` then decorates its
+# functions with @main_bp.route(...)). Must stay after main_bp is
+# created above.
 from app.routes import (  # noqa: E402
     dashboard_routes,  # noqa: F401
     leave_routes,  # noqa: F401

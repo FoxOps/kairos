@@ -1,15 +1,15 @@
 """
-Module d'authentification pour Leviia Schedule.
+Authentication module for Leviia Schedule.
 
-Ce module contient les fonctionnalités d'authentification, y compris:
-- Authentification basique (email/mot de passe)
-- Authentification OIDC/SSO (optionnelle) utilisant Authlib
-- Décorateurs pour les permissions
+This module contains the authentication features, including:
+- Basic authentication (email/password)
+- OIDC/SSO authentication (optional) using Authlib
+- Permission decorators
 """
 
 from app.auth.decorators import admin_required, user_owns_resource
 from app.auth.oidc_auth import OIDCAuthLib as OIDCAuth
 from app.auth.user_manager import UserManager
 
-# Exporter les classes et fonctions principales
+# Export the main classes and functions
 __all__ = ["OIDCAuth", "UserManager", "admin_required", "user_owns_resource"]

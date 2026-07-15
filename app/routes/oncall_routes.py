@@ -1,6 +1,6 @@
 """
-Routes pour les astreintes (planning, CRUD, API drag & drop). Enregistrées
-sur main_bp (cf. app/routes/main.py).
+Routes for on-calls (schedule, CRUD, drag & drop API). Registered on
+main_bp (see app/routes/main.py).
 """
 
 from datetime import datetime
@@ -79,7 +79,7 @@ def add_oncall():
             db.session.rollback()
             flash(f"Erreur : {str(e)}", "danger")
 
-    # Seuls les administrateurs peuvent voir cette page
+    # Only administrators can see this page
     users = UserService.list_for_oncall()
     return render_template("add_oncall.html", users=users)
 
@@ -104,7 +104,7 @@ def delete_oncall(oncall_id):
 @login_required
 @admin_required
 def delete_all_oncalls():
-    """Supprime toutes les astreintes."""
+    """Delete all on-calls."""
     try:
         count = OnCallService.delete_all()
         if count > 0:
@@ -124,7 +124,7 @@ def delete_all_oncalls():
 @login_required
 @admin_required
 def delete_all_oncalls_for_user(user_id):
-    """Supprime toutes les astreintes d'un utilisateur spécifique."""
+    """Delete all on-calls for a specific user."""
     user = db.session.get(User, user_id) or abort(404)
 
     try:
@@ -146,7 +146,7 @@ def delete_all_oncalls_for_user(user_id):
 @login_required
 @admin_required
 def api_delete_oncall(oncall_id):
-    """API endpoint pour supprimer une astreinte."""
+    """API endpoint to delete an on-call."""
     if not OnCallRepository.get_by_id(oncall_id):
         return jsonify({"success": False, "error": "Astreinte non trouvée"}), 404
 
@@ -162,7 +162,7 @@ def api_delete_oncall(oncall_id):
 @login_required
 @admin_required
 def api_update_oncall(oncall_id):
-    """API endpoint pour mettre à jour une astreinte via drag & drop."""
+    """API endpoint to update an on-call via drag & drop."""
     oncall_obj = OnCallRepository.get_by_id(oncall_id)
     if not oncall_obj:
         return jsonify({"success": False, "error": "Astreinte non trouvée"}), 404

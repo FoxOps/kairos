@@ -1,10 +1,10 @@
 """
-Décorateurs pour la gestion des rôles et permissions.
+Decorators for role and permission management.
 
-Ce module fournit des décorateurs pour contrôler l'accès aux routes Flask
-en fonction des rôles des utilisateurs et des permissions.
+This module provides decorators to control access to Flask routes
+based on user roles and permissions.
 
-Utilisation:
+Usage:
     from app.auth.decorators import admin_required, user_owns_resource
 
     @app.route('/admin')
@@ -26,10 +26,10 @@ from flask_login import current_user, login_required
 
 def admin_required(f):
     """
-    Décorateur pour vérifier que l'utilisateur est administrateur.
-    Redirige vers la page d'accueil avec un message si non autorisé.
+    Decorator to check that the user is an administrator.
+    Redirects to the home page with a message if not authorized.
 
-    Utilisation:
+    Usage:
         @app.route('/admin')
         @admin_required
         def admin_dashboard():
@@ -49,23 +49,23 @@ def admin_required(f):
 
 def user_owns_resource(model, resource_id_param, user_id_attr="user_id"):
     """
-    Décorateur pour vérifier que l'utilisateur est propriétaire d'une ressource.
+    Decorator to check that the user owns a resource.
 
-    L'administrateur peut accéder à toutes les ressources.
-    Un utilisateur normal ne peut accéder qu'à ses propres ressources.
+    An administrator can access all resources.
+    A regular user can only access their own resources.
 
     Args:
-        model: Le modèle SQLAlchemy de la ressource (ex: Leave, Shift, OnCall)
-        resource_id_param: Le nom du paramètre contenant l'ID de la ressource (ex: 'leave_id')
-        user_id_attr: Le nom de l'attribut du modèle qui contient l'user_id (par défaut: 'user_id')
+        model: The resource's SQLAlchemy model (e.g. Leave, Shift, OnCall)
+        resource_id_param: The name of the parameter holding the resource ID (e.g. 'leave_id')
+        user_id_attr: The name of the model attribute holding the user_id (default: 'user_id')
 
-    Utilisation:
+    Usage:
         @app.route('/leave/delete/<int:leave_id>')
         @user_owns_resource(Leave, 'leave_id')
         def delete_leave(leave_id):
             from flask import abort
             leave = db.session.get(Leave, leave_id) or abort(404)
-            # La vérification de propriété est déjà faite par le décorateur
+            # Ownership was already checked by the decorator
             db.session.delete(leave)
             db.session.commit()
             ...
@@ -75,24 +75,24 @@ def user_owns_resource(model, resource_id_param, user_id_attr="user_id"):
         @login_required
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            # Récupérer l'ID de la ressource depuis kwargs
+            # Get the resource ID from kwargs
             resource_id = kwargs.get(resource_id_param)
 
-            # Si on n'a pas l'ID, on ne peut pas vérifier, donc on laisse passer
-            # (la route va probablement retourner 404 de toute façon)
+            # If we don't have the ID, we can't check, so let it through
+            # (the route will likely return 404 anyway)
             if resource_id is None:
                 return f(*args, **kwargs)
 
-            # Récupérer la ressource depuis la base de données
+            # Fetch the resource from the database
             from app import db
 
             resource = db.session.get(model, resource_id)
 
-            # Si la ressource n'existe pas, on laisse passer (la route va gérer le 404)
+            # If the resource doesn't exist, let it through (the route handles the 404)
             if resource is None:
                 return f(*args, **kwargs)
 
-            # Vérifier si l'utilisateur est propriétaire ou admin
+            # Check whether the user owns it or is an admin
             resource_user_id = getattr(resource, user_id_attr, None)
 
             if current_user.is_admin or current_user.id == resource_user_id:

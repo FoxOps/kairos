@@ -1,6 +1,6 @@
 """
-Routes admin pour la gestion des groupes. Enregistrées sur admin_bp
-(cf. app/routes/admin.py).
+Admin routes for managing groups. Registered on admin_bp (see
+app/routes/admin.py).
 """
 
 from flask import abort, flash, redirect, render_template, request, url_for

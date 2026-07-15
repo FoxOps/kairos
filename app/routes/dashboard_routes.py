@@ -1,6 +1,6 @@
 """
-Routes pour l'accueil (calendrier) et le tableau de bord utilisateur.
-Enregistrées sur main_bp (cf. app/routes/main.py).
+Routes for the home page (calendar) and the user dashboard. Registered
+on main_bp (see app/routes/main.py).
 """
 
 from datetime import date, datetime
@@ -24,7 +24,7 @@ from app.utils.optimizations import eager_load
 @eager_load(OnCall, ["user"])
 @eager_load(Leave, ["user"])
 def index():
-    """Page d'accueil - accessible uniquement aux utilisateurs connectés."""
+    """Home page - only accessible to logged-in users."""
     events = ScheduleService.get_calendar_events()
     return render_template("index.html", events=events)
 
@@ -32,7 +32,7 @@ def index():
 @main_bp.route("/api/shifts", methods=["GET"])
 @login_required
 def api_get_shifts():
-    """API endpoint pour récupérer les shifts au format JSON pour FullCalendar."""
+    """API endpoint to fetch shifts as JSON for FullCalendar."""
     events = ScheduleService.get_calendar_events()
     return jsonify(events)
 
@@ -40,7 +40,7 @@ def api_get_shifts():
 @main_bp.route("/dashboard")
 @login_required
 def user_dashboard():
-    """Tableau de bord utilisateur - Vue d'ensemble personnalisée."""
+    """User dashboard - personalized overview."""
     user_id = current_user.id
 
     total_shifts = Shift.query.filter_by(user_id=user_id).count()
@@ -80,8 +80,8 @@ def user_dashboard():
     )
 
     shift_types = ShiftType.query.all()
-    # Un .count() par type de shift (boucle) faisait autant de requêtes que
-    # de types existants - remplacé par un unique GROUP BY.
+    # A .count() per shift type (loop) used to run as many queries as
+    # there were types - replaced with a single GROUP BY.
     counts_by_type_id = dict(
         db.session.query(Shift.shift_type_id, func.count(Shift.id))
         .filter(Shift.user_id == user_id)
@@ -99,9 +99,9 @@ def user_dashboard():
         if counts_by_type_id.get(shift_type.id, 0) > 0
     ]
 
-    # Par rang parmi les types existants (pas par id % taille_palette),
-    # sinon deux types dont les IDs diffèrent d'un multiple de la taille
-    # de la palette se retrouvent avec la même couleur.
+    # By rank among the existing types (not by id % palette size),
+    # otherwise two types whose IDs differ by a multiple of the palette
+    # size end up with the same color.
     shift_type_colors = build_shift_type_color_map(st.id for st in shift_types)
 
     first_day_of_month = date(today.year, today.month, 1)

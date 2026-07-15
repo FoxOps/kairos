@@ -13,17 +13,18 @@ auth_bp = Blueprint("auth", __name__)
 
 
 def is_basic_auth_disabled():
-    """Vérifie si l'authentification basique est désactivée."""
+    """Check whether basic authentication is disabled."""
     return OIDCConfig.ENABLED and OIDCConfig.DISABLE_BASIC_AUTH
 
 
 def _is_safe_next_url(target: str) -> bool:
-    """Rejette les URLs de redirection post-login pointant hors de ce site.
+    """Reject post-login redirect URLs pointing outside this site.
 
-    Sans ça, ?next=https://phishing.example passe tel quel à redirect() :
-    un attaquant envoie un lien de login légitime avec ce paramètre, la
-    victime s'authentifie normalement puis atterrit sur un site externe
-    (CWE-601, open redirect classique utilisé pour du phishing).
+    Without this, ?next=https://phishing.example would pass straight
+    through to redirect(): an attacker sends a legitimate-looking login
+    link with this parameter, the victim authenticates normally and
+    lands on an external site (CWE-601, a classic open redirect used for
+    phishing).
     """
     if not target:
         return False
@@ -34,12 +35,12 @@ def _is_safe_next_url(target: str) -> bool:
 
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
-    """Page d'inscription (désactivée par défaut, seule l'admin peut créer des utilisateurs)."""
-    # Vérifier si l'inscription est autorisée (par exemple, via une variable de config)
-    # Pour l'instant, on désactive l'inscription publique
+    """Registration page (disabled by default, only an admin can create users)."""
+    # Check whether registration is allowed (e.g. via a config variable)
+    # For now, public registration is disabled
 
-    # Si OIDC est activé et que l'authentification basique est désactivée,
-    # rediriger vers la connexion OIDC
+    # If OIDC is enabled and basic authentication is disabled, redirect
+    # to OIDC login
     if is_basic_auth_disabled():
         flash(
             "L'inscription publique est désactivée. Utilisez l'authentification OIDC.",
@@ -56,22 +57,19 @@ def register():
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
-    """Page de connexion."""
+    """Login page."""
     if current_user.is_authenticated:
         return redirect(url_for("main.index"))
 
-    # Vérifier si l'authentification basique est désactivée
-    #
-    # oidc_error=1 casse volontairement ce renvoi automatique : sans lui,
-    # tout échec OIDC (fournisseur injoignable, mauvaise config,
-    # synchronisation utilisateur qui échoue...) redirige vers /login,
-    # qui ici redirige aussitôt vers /oidc/login, qui échoue à nouveau et
-    # redirige vers /login - boucle de redirection infinie
-    # (ERR_TOO_MANY_REDIRECTS côté navigateur), application totalement
-    # inaccessible tant que le SSO ne fonctionne pas. Bug réel trouvé en
-    # écrivant les tests OIDC (voir tests/integration/test_oidc_routes.py).
+    # oidc_error=1 deliberately breaks this automatic redirect: without
+    # it, any OIDC failure (provider unreachable, bad config, user sync
+    # failing...) redirects to /login, which here immediately redirects
+    # to /oidc/login, which fails again and redirects to /login - an
+    # infinite redirect loop (ERR_TOO_MANY_REDIRECTS in the browser),
+    # making the app entirely inaccessible as long as SSO is broken. See
+    # tests/integration/test_oidc_routes.py for the regression test.
     if is_basic_auth_disabled() and not request.args.get("oidc_error"):
-        # Rediriger vers la connexion OIDC
+        # Redirect to OIDC login
         return redirect(url_for("auth.oidc_login"))
 
     if request.method == "POST":
@@ -89,7 +87,7 @@ def login():
             login_user(user, remember=remember)
             flash("Connexion réussie !", "success")
 
-            # Rediriger vers la page demandée ou vers l'index
+            # Redirect to the requested page, or to the index
             next_page = request.args.get("next")
             if next_page and _is_safe_next_url(next_page):
                 return redirect(next_page)
@@ -102,15 +100,15 @@ def login():
 
 @auth_bp.route("/oidc/login")
 def oidc_login():
-    """Redirige vers le fournisseur OIDC pour l'authentification.
+    """Redirect to the OIDC provider for authentication.
 
-    Pas de garde sur is_basic_auth_disabled() ici (il y en avait un avant,
-    bug réel) : cette route doit aussi fonctionner quand OIDC_DISABLE_BASIC_AUTH
-    est false (SSO optionnel, en plus du formulaire classique - voir le
-    bouton "Se connecter avec SSO" sur auth/login.html) et pas seulement
-    quand le SSO est forcé. Le cas "OIDC non configuré" est déjà couvert
-    juste en dessous (get_authorization_url() renvoie None), pas besoin
-    d'un garde en plus ici.
+    No guard on is_basic_auth_disabled() here (there used to be one,
+    which was a real bug): this route must also work when
+    OIDC_DISABLE_BASIC_AUTH is false (optional SSO alongside the regular
+    login form - see the "Sign in with SSO" button on auth/login.html),
+    not only when SSO is forced. The "OIDC not configured" case is
+    already handled right below (get_authorization_url() returns None),
+    so no extra guard is needed here.
     """
     auth_url = oidc_auth.get_authorization_url()
     if not auth_url:
@@ -122,17 +120,17 @@ def oidc_login():
 
 @auth_bp.route("/oidc/callback")
 def oidc_callback():
-    """Callback pour l'authentification OIDC.
+    """Callback for OIDC authentication.
 
-    Même raison qu'oidc_login() ci-dessus pour l'absence de garde sur
-    is_basic_auth_disabled() : bloquait le retour de l'IdP (code/state
-    perdus, redirection vers /login) dès que le SSO n'était qu'optionnel
-    plutôt que forcé. handle_oauth_callback() gère déjà l'échec
-    proprement (flash + redirect) juste en dessous.
+    Same reason as oidc_login() above for the lack of a guard on
+    is_basic_auth_disabled(): it used to block the IdP's return trip
+    (code/state lost, redirect to /login) as soon as SSO was optional
+    rather than forced. handle_oauth_callback() already handles the
+    failure cleanly (flash + redirect) right below.
     """
     user_data = oidc_auth.handle_oauth_callback(request)
     if not user_data:
-        # handle_oauth_callback affiche déjà un message d'erreur (flash)
+        # handle_oauth_callback already shows an error message (flash)
         return redirect(url_for("auth.login", oidc_error=1))
 
     user = oidc_auth.login_user(user_data)
@@ -147,16 +145,16 @@ def oidc_callback():
 @auth_bp.route("/logout")
 @login_required
 def logout():
-    """Déconnexion."""
+    """Logout."""
     is_oidc_mode = is_basic_auth_disabled()
     logout_user()
 
     if is_oidc_mode:
-        # Déconnexion locale seulement : la session côté fournisseur OIDC
-        # reste active, donc la prochaine redirection vers l'écran de
-        # connexion ré-authentifie silencieusement l'utilisateur via SSO
-        # (la déconnexion semble ne rien faire). Utiliser la déconnexion
-        # RP-initiated si le fournisseur l'expose (end_session_endpoint).
+        # Local logout only: the session on the OIDC provider's side
+        # stays active, so the next redirect to the login screen
+        # silently re-authenticates the user via SSO (logout appears to
+        # do nothing). Use RP-initiated logout if the provider exposes
+        # it (end_session_endpoint).
         logout_url = oidc_auth.build_logout_url(
             OIDCConfig.POST_LOGOUT_REDIRECT_URI or None
         )
@@ -171,14 +169,14 @@ def logout():
 @auth_bp.route("/profile")
 @login_required
 def profile():
-    """Page de profil utilisateur."""
+    """User profile page."""
     return render_template("auth/profile.html", user=current_user)
 
 
 @auth_bp.route("/profile/update", methods=["GET", "POST"])
 @login_required
 def update_profile():
-    """Mise à jour du profil utilisateur."""
+    """Update the user's profile."""
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         email = request.form.get("email", "").strip()
@@ -186,24 +184,24 @@ def update_profile():
         new_password = request.form.get("new_password", "")
         confirm_password = request.form.get("confirm_password", "")
 
-        # Vérifier que le nom et l'email ne sont pas vides
+        # Check that name and email aren't empty
         if not name or not email:
             flash("Le nom et l'email sont obligatoires.", "danger")
             return redirect(url_for("auth.update_profile"))
 
-        # Vérifier si l'email a changé
+        # Check whether the email changed
         if email != current_user.email:
-            # Vérifier que l'email n'est pas déjà utilisé
+            # Check that the email isn't already in use
             existing_user = User.query.filter_by(email=email).first()
             if existing_user and existing_user.id != current_user.id:
                 flash("Cet email est déjà utilisé par un autre utilisateur.", "danger")
                 return redirect(url_for("auth.update_profile"))
             current_user.email = email
 
-        # Mettre à jour le nom
+        # Update the name
         current_user.name = name
 
-        # Mettre à jour le mot de passe si fourni
+        # Update the password if provided
         if new_password:
             if not current_password:
                 flash(
@@ -232,9 +230,9 @@ def update_profile():
 @auth_bp.route("/profile/ics-token", methods=["GET", "POST"])
 @login_required
 def generate_ics_token():
-    """Génère ou régénère le token ICS pour l'export du calendrier."""
+    """Generate or regenerate the ICS token for calendar export."""
     if request.method == "POST":
-        # Régénérer le token
+        # Regenerate the token
         token = current_user.generate_ics_token()
         try:
             db.session.commit()
@@ -243,7 +241,7 @@ def generate_ics_token():
             db.session.rollback()
             flash(f"Erreur : {str(e)}", "danger")
 
-    # Afficher la page avec le token actuel
+    # Show the page with the current token
     token = current_user.ics_token
 
     return render_template("auth/ics_token.html", user=current_user, token=token)

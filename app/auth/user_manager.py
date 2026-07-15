@@ -1,8 +1,8 @@
 """
-Gestion des utilisateurs pour l'authentification OIDC.
+User management for OIDC authentication.
 
-Ce module gère la synchronisation des utilisateurs entre le fournisseur OIDC
-et la base de données locale de Leviia Schedule.
+This module handles syncing users between the OIDC provider and
+Leviia Schedule's local database.
 """
 
 import logging
@@ -15,63 +15,61 @@ logger = logging.getLogger(__name__)
 
 
 class UserManager:
-    """Classe pour gérer les utilisateurs OIDC."""
+    """Class managing OIDC users."""
 
     def sync_user_from_oidc(self, user_data):
-        """Synchronise un utilisateur depuis les données OIDC.
+        """Sync a user from OIDC data.
 
         Args:
-            user_data: Dictionnaire contenant les informations utilisateur OIDC
+            user_data: Dictionary containing the OIDC user information
 
         Returns:
-            User: L'utilisateur synchronisé ou None en cas d'erreur
+            User: The synced user, or None on error
         """
         if not user_data or "email" not in user_data:
-            logger.error("Données utilisateur OIDC invalides: email manquant")
+            logger.error("Invalid OIDC user data: missing email")
             return None
 
         email = user_data["email"]
-        # Utiliser 'name' comme champ principal, avec fallback sur 'username' ou email
+        # Use 'name' as the primary field, falling back to 'username' or email
         name = user_data.get("name") or user_data.get("username") or email.split("@")[0]
 
-        logger.info(f"[OIDC Sync] Début synchronisation pour: {email}")
+        logger.info(f"[OIDC Sync] Starting sync for: {email}")
 
-        # Chercher l'utilisateur existant par email
+        # Look up the existing user by email
         user = User.query.filter_by(email=email).first()
 
         if user:
-            logger.info(
-                f"[OIDC Sync] Utilisateur existant trouvé: {email} (ID: {user.id})"
-            )
-            # Mettre à jour l'utilisateur existant
+            logger.info(f"[OIDC Sync] Existing user found: {email} (ID: {user.id})")
+            # Update the existing user
             user.name = name or user.name
 
-            # Si l'utilisateur n'a pas de mot de passe (utilisateur OIDC), ne pas le modifier
+            # If the user has no password (OIDC user), don't set one
             if not user.password_hash:
-                pass  # Les utilisateurs OIDC n'ont pas de mot de passe local
+                pass  # OIDC users have no local password
 
-            # Synchroniser les groupes si configuré
+            # Sync groups if configured
             if OIDCConfig.GROUPS_CLAIM and "groups" in user_data:
                 self._sync_user_groups(user, user_data["groups"])
 
-            # Synchroniser les rôles si configuré
+            # Sync roles if configured
             if OIDCConfig.ROLES_CLAIM and "roles" in user_data:
                 self._sync_user_roles(user, user_data["roles"])
 
             db.session.commit()
-            logger.info(f"Mise à jour de l'utilisateur OIDC existant: {email}")
+            logger.info(f"Updated existing OIDC user: {email}")
             return user
         else:
-            # Créer un nouvel utilisateur
-            # Pour les utilisateurs OIDC, on ne définit pas de mot de passe
-            # car ils s'authentifient via OIDC
+            # Create a new user
+            # OIDC users don't get a local password since they
+            # authenticate via OIDC
             user = User(
                 email=email,
                 name=name,
-                is_admin=False,  # Par défaut, les utilisateurs OIDC ne sont pas admin
+                is_admin=False,  # OIDC users are not admin by default
             )
 
-            # Trouver le groupe par défaut
+            # Find the default group
             default_group = Group.query.filter_by(name="Defaut").first()
             if not default_group:
                 default_group = Group(name="Defaut")
@@ -79,52 +77,50 @@ class UserManager:
                 db.session.commit()
             user.group_id = default_group.id
 
-            # Synchroniser les groupes si configuré
+            # Sync groups if configured
             if OIDCConfig.GROUPS_CLAIM and "groups" in user_data:
                 self._sync_user_groups(user, user_data["groups"])
 
-            # Synchroniser les rôles si configuré
+            # Sync roles if configured
             if OIDCConfig.ROLES_CLAIM and "roles" in user_data:
                 self._sync_user_roles(user, user_data["roles"])
 
             db.session.add(user)
             db.session.commit()
-            logger.info(
-                f"[OIDC Sync] Nouvel utilisateur OIDC créé: {email} (ID: {user.id})"
-            )
+            logger.info(f"[OIDC Sync] New OIDC user created: {email} (ID: {user.id})")
             return user
 
     def _sync_user_groups(self, user, oidc_groups):
-        """Synchronise les groupes de l'utilisateur avec les groupes OIDC.
+        """Sync the user's groups with their OIDC groups.
 
         Args:
-            user: Utilisateur à synchroniser
-            oidc_groups: Liste des groupes OIDC de l'utilisateur
+            user: User to sync
+            oidc_groups: List of the user's OIDC groups
         """
         if not isinstance(oidc_groups, list):
             oidc_groups = [oidc_groups]
 
-        # Pour l'instant, on ne fait que logger les groupes OIDC
-        # 1. Créer des groupes locaux correspondant aux groupes OIDC
-        logger.info(f"Groupes OIDC pour {user.email}: {oidc_groups}")
+        # For now, we only log the OIDC groups
+        # 1. Create local groups matching the OIDC groups
+        logger.info(f"OIDC groups for {user.email}: {oidc_groups}")
 
-        # Les groupes OIDC peuvent être utilisés pour des autorisations supplémentaires
+        # OIDC groups could be used for additional authorization
 
     def _sync_user_roles(self, user, oidc_roles):
-        """Synchronise les rôles de l'utilisateur avec les rôles OIDC.
+        """Sync the user's roles with their OIDC roles.
 
         Args:
-            user: Utilisateur à synchroniser
-            oidc_roles: Liste des rôles OIDC de l'utilisateur
+            user: User to sync
+            oidc_roles: List of the user's OIDC roles
         """
         if not isinstance(oidc_roles, list):
             oidc_roles = [oidc_roles]
 
-        # Vérifier si l'utilisateur a le rôle admin
+        # Check whether the user has the admin role
         if "admin" in [role.lower() for role in oidc_roles]:
             user.is_admin = True
-            logger.info(f"Rôle admin attribué à {user.email} via OIDC")
+            logger.info(f"Admin role granted to {user.email} via OIDC")
 
-        logger.info(f"Rôles OIDC pour {user.email}: {oidc_roles}")
+        logger.info(f"OIDC roles for {user.email}: {oidc_roles}")
 
-        # Les rôles OIDC peuvent être utilisés pour des autorisations supplémentaires
+        # OIDC roles could be used for additional authorization

@@ -1,6 +1,6 @@
 """
-Routes pour les shifts (planning, CRUD, API drag & drop). Enregistrées
-sur main_bp (cf. app/routes/main.py).
+Routes for shifts (schedule, CRUD, drag & drop API). Registered on
+main_bp (see app/routes/main.py).
 """
 
 from datetime import datetime, timedelta
@@ -109,7 +109,7 @@ def add_shift():
             flash(f"Erreur : {str(e)}", "danger")
             return redirect(url_for("main.add_shift"))
 
-    # Seuls les administrateurs peuvent voir cette page
+    # Only administrators can see this page
     users = UserService.list_for_schedule()
     shift_types = ShiftTypeRepository.get_all()
     return render_template("add_shift.html", users=users, shift_types=shift_types)
@@ -135,7 +135,7 @@ def delete_shift(shift_id):
 @login_required
 @admin_required
 def delete_all_shifts():
-    """Supprime tous les shifts."""
+    """Delete all shifts."""
     try:
         count = ShiftService.delete_all()
         if count > 0:
@@ -154,7 +154,7 @@ def delete_all_shifts():
 @login_required
 @admin_required
 def delete_all_shifts_for_user(user_id):
-    """Supprime tous les shifts d'un utilisateur spécifique."""
+    """Delete all shifts for a specific user."""
     user = db.session.get(User, user_id) or abort(404)
 
     try:
@@ -176,7 +176,7 @@ def delete_all_shifts_for_user(user_id):
 @login_required
 @admin_required
 def delete_all_shifts_for_day(date_str):
-    """Supprime tous les shifts pour une journée spécifique."""
+    """Delete all shifts for a specific day."""
     try:
         date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
         count = ShiftService.delete_for_day(date_obj)
@@ -203,7 +203,7 @@ def delete_all_shifts_for_day(date_str):
 @login_required
 @admin_required
 def delete_all_shifts_for_week(date_str):
-    """Supprime tous les shifts pour une semaine complète (lundi-vendredi)."""
+    """Delete all shifts for a full week (Monday-Friday)."""
     try:
         date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
         monday = date_obj - timedelta(days=date_obj.weekday())
@@ -228,14 +228,14 @@ def delete_all_shifts_for_week(date_str):
     return redirect(url_for("main.schedule"))
 
 
-# ========== API ENDPOINTS POUR DRAG & DROP ====================
+# ========== API ENDPOINTS FOR DRAG & DROP ====================
 
 
 @main_bp.route("/api/shifts", methods=["POST"])
 @login_required
 @admin_required
 def api_create_shift():
-    """API endpoint pour créer un nouveau shift via drag & drop."""
+    """API endpoint to create a new shift via drag & drop."""
     data = request.get_json()
     if not data:
         return jsonify({"success": False, "error": "Aucune donnée reçue"}), 400
@@ -299,7 +299,7 @@ def api_create_shift():
 @login_required
 @admin_required
 def api_update_shift(shift_id):
-    """API endpoint pour mettre à jour un shift via drag & drop."""
+    """API endpoint to update a shift via drag & drop."""
     shift = ShiftRepository.get_by_id(shift_id)
     if not shift:
         return jsonify({"success": False, "error": "Shift non trouvé"}), 404
@@ -355,7 +355,7 @@ def api_update_shift(shift_id):
 @login_required
 @admin_required
 def api_delete_shift(shift_id):
-    """API endpoint pour supprimer un shift via drag & drop."""
+    """API endpoint to delete a shift via drag & drop."""
     if not ShiftRepository.get_by_id(shift_id):
         return jsonify({"success": False, "error": "Shift non trouvé"}), 404
 
@@ -370,7 +370,7 @@ def api_delete_shift(shift_id):
 @main_bp.route("/api/users", methods=["GET"])
 @login_required
 def api_get_users():
-    """API endpoint pour récupérer la liste des utilisateurs pour le drag & drop."""
+    """API endpoint to fetch the list of users for drag & drop."""
     users = UserService.visible_users_for_schedule(current_user)
 
     users_list = [
@@ -383,7 +383,7 @@ def api_get_users():
 @main_bp.route("/api/shift-types", methods=["GET"])
 @login_required
 def api_get_shift_types():
-    """API endpoint pour récupérer la liste des types de shifts."""
+    """API endpoint to fetch the list of shift types."""
     shift_types = ShiftTypeRepository.get_all()
 
     shift_types_list = [
