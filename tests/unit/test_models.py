@@ -201,6 +201,22 @@ class TestUserModel:
 
             assert test_user.effective_timezone() == "America/New_York"
 
+    def test_notification_preferences_default_to_enabled(self, test_app, test_group):
+        """No opt-out existed before this preference was added - default
+        must be True so existing/new users keep getting the emails they
+        already got, until they explicitly disable one."""
+        with test_app.app_context():
+            user = User(
+                name="Default Notif User",
+                email="default-notif@test.com",
+                group_id=test_group.id,
+            )
+            db.session.add(user)
+            db.session.commit()
+
+            assert user.shift_notifications_enabled is True
+            assert user.oncall_notifications_enabled is True
+
 
 class TestShiftTypeModel:
     """Tests for the ShiftType model."""

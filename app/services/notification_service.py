@@ -28,6 +28,7 @@ class NotificationBatchResult:
 
     sent: list[str] = field(default_factory=list)
     skipped_already_sent: list[str] = field(default_factory=list)
+    skipped_disabled_by_user: list[str] = field(default_factory=list)
     failed: list[tuple[str, str]] = field(default_factory=list)
 
 
@@ -77,6 +78,9 @@ class NotificationService:
 
         for user_id, user_shifts in shifts_by_user.items():
             user = user_shifts[0].user
+            if not user.shift_notifications_enabled:
+                result.skipped_disabled_by_user.append(user.email)
+                continue
             if NotificationLog.already_sent(
                 user_id, NotificationService.SHIFT_WEEKLY, week_start
             ):
@@ -147,6 +151,9 @@ class NotificationService:
             return result
 
         user: User = oncall.user
+        if not user.oncall_notifications_enabled:
+            result.skipped_disabled_by_user.append(user.email)
+            return result
         if NotificationLog.already_sent(
             user.id, NotificationService.ONCALL_WEEKLY, oncall_friday
         ):

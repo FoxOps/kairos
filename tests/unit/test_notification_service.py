@@ -160,6 +160,40 @@ class TestSendWeeklyShiftNotifications:
             # A NotificationLog row should only exist for the successful send.
             assert NotificationLog.query.count() == 1
 
+    def test_user_with_notifications_disabled_is_skipped(
+        self, test_app, test_group, test_user, test_shift_type
+    ):
+        with test_app.app_context():
+            test_user.shift_notifications_enabled = False
+            monday = NotificationService.next_monday(date(2026, 7, 12))
+            shift = Shift(
+                user_id=test_user.id,
+                shift_type_id=test_shift_type.id,
+                start_time=datetime.combine(monday, datetime.min.time()).replace(
+                    hour=7
+                ),
+                end_time=datetime.combine(monday, datetime.min.time()).replace(hour=15),
+                date=monday,
+            )
+            db.session.add(shift)
+            db.session.commit()
+
+            with patch(
+                "app.utils.notifications.email_sender.smtplib.SMTP"
+            ) as mock_smtp:
+                instance = MagicMock()
+                mock_smtp.return_value.__enter__.return_value = instance
+                result = NotificationService.send_weekly_shift_notifications(
+                    SMTP_CONFIG, reference_date=date(2026, 7, 12)
+                )
+
+            assert result.sent == []
+            assert result.skipped_disabled_by_user == [test_user.email]
+            instance.sendmail.assert_not_called()
+            # No NotificationLog row - nothing was sent, so re-enabling
+            # mid-week and rerunning the script must be able to catch up.
+            assert NotificationLog.query.count() == 0
+
 
 class TestSendWeeklyOncallNotification:
     def test_sends_to_assigned_user(self, test_app, test_group, test_user):
@@ -196,6 +230,31 @@ class TestSendWeeklyOncallNotification:
 
             assert result.sent == []
             assert result.failed == []
+            instance.sendmail.assert_not_called()
+
+    def test_user_with_notifications_disabled_is_skipped(
+        self, test_app, test_group, test_user
+    ):
+        with test_app.app_context():
+            test_user.oncall_notifications_enabled = False
+            thursday = date(2026, 7, 9)
+            friday = NotificationService.next_friday(thursday)
+            start = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+            end = start + timedelta(days=7, hours=-14)
+            db.session.add(OnCall(user_id=test_user.id, start_time=start, end_time=end))
+            db.session.commit()
+
+            with patch(
+                "app.utils.notifications.email_sender.smtplib.SMTP"
+            ) as mock_smtp:
+                instance = MagicMock()
+                mock_smtp.return_value.__enter__.return_value = instance
+                result = NotificationService.send_weekly_oncall_notification(
+                    SMTP_CONFIG, reference_date=thursday
+                )
+
+            assert result.sent == []
+            assert result.skipped_disabled_by_user == [test_user.email]
             instance.sendmail.assert_not_called()
 
     def test_idempotent_does_not_resend_same_week(

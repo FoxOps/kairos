@@ -183,7 +183,6 @@ def update_profile():
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         email = request.form.get("email", "").strip()
-        timezone = request.form.get("timezone", "").strip()
         current_password = request.form.get("current_password", "")
         new_password = request.form.get("new_password", "")
         confirm_password = request.form.get("confirm_password", "")
@@ -192,13 +191,6 @@ def update_profile():
         if not name or not email:
             flash("Le nom et l'email sont obligatoires.", "danger")
             return redirect(url_for("auth.update_profile"))
-
-        # Empty means "use the org default" (None); anything else must be
-        # a real IANA zone name.
-        if timezone and timezone not in available_timezones():
-            flash("Fuseau horaire invalide.", "danger")
-            return redirect(url_for("auth.update_profile"))
-        current_user.timezone = timezone or None
 
         # Check whether the email changed
         if email != current_user.email:
@@ -235,11 +227,53 @@ def update_profile():
         flash("Votre profil a été mis à jour avec succès !", "success")
         return redirect(url_for("auth.profile"))
 
+    return render_template("auth/update_profile.html", user=current_user)
+
+
+@auth_bp.route("/profile/settings", methods=["GET", "POST"])
+@login_required
+def profile_settings():
+    """Personal settings: timezone preference and per-user notification
+    opt-out. Kept separate from update_profile() (name/email/password) -
+    a different concern, and the notification section is conditionally
+    shown/hidden depending on the org-wide notifications toggle
+    (SettingsService.get_notifications_enabled()), which doesn't belong
+    mixed into the identity-focused profile form."""
+    notifications_enabled_org_wide = SettingsService.get_notifications_enabled()
+
+    if request.method == "POST":
+        timezone = request.form.get("timezone", "").strip()
+
+        # Empty means "use the org default" (None); anything else must be
+        # a real IANA zone name.
+        if timezone and timezone not in available_timezones():
+            flash("Fuseau horaire invalide.", "danger")
+            return redirect(url_for("auth.profile_settings"))
+        current_user.timezone = timezone or None
+
+        # Only apply the submitted notification checkboxes if the
+        # section was actually visible/editable - otherwise a stale
+        # form (opened while notifications were org-wide enabled, then
+        # submitted after an admin disabled them) could silently flip a
+        # preference the user never saw.
+        if notifications_enabled_org_wide:
+            current_user.shift_notifications_enabled = (
+                request.form.get("shift_notifications_enabled") == "on"
+            )
+            current_user.oncall_notifications_enabled = (
+                request.form.get("oncall_notifications_enabled") == "on"
+            )
+
+        db.session.commit()
+        flash("Vos paramètres ont été mis à jour avec succès !", "success")
+        return redirect(url_for("auth.profile_settings"))
+
     return render_template(
-        "auth/update_profile.html",
+        "auth/profile_settings.html",
         user=current_user,
         timezones=get_timezone_choices(),
         default_timezone=SettingsService.get_default_timezone(),
+        notifications_enabled_org_wide=notifications_enabled_org_wide,
     )
 
 

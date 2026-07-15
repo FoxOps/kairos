@@ -100,7 +100,10 @@ touching auth flows.
 `setting.py` hold the domain models, all subclassing `BaseModel`). `User.timezone` (nullable
 String) is the user's personal display timezone preference — `None` means "use the org's
 `default_timezone` Setting", resolved at read time via `User.effective_timezone()`, not baked
-into the column (see "Multi-timezone support" below).
+into the column (see "Multi-timezone support" below). `User.shift_notifications_enabled`/
+`oncall_notifications_enabled` (both `Boolean`, default `True`) are a per-user opt-out for the
+two weekly reminder emails, editable at `/profile/settings` — see "Email notifications" below for
+how they interact with the org-wide `notifications_enabled` `Setting`.
 
 Core entities: `Group` → `User` (1:N) → `Shift` / `OnCall` / `Leave` / `NotificationLog` (each 1:N
 from User), `ShiftType` → `Shift` (1:N). Composite indexes exist on `Shift(user_id, date)`,
@@ -312,6 +315,20 @@ per-recipient SMTP failures are logged and don't block the rest of the batch); i
 dependency) with Jinja2 templates rendered from `app/templates/emails/`. `NotificationLog` is the
 idempotency guard — re-running a script for an already-processed period is a no-op.
 
+Two independent gates, checked in order — don't conflate them: the org-wide
+`SettingsService.get_notifications_enabled()` above short-circuits the entire script (no user gets
+anything); `User.shift_notifications_enabled`/`oncall_notifications_enabled` (both default `True`)
+are then checked per-recipient inside `send_weekly_shift_notifications()`/
+`send_weekly_oncall_notification()` — a user who opted out is skipped (tracked in
+`NotificationBatchResult.skipped_disabled_by_user`, distinct from `skipped_already_sent`) *without*
+writing a `NotificationLog` row, so re-enabling mid-week and rerunning the script still catches
+them up. Editable at `/profile/settings` (`app/routes/auth.py::profile_settings`) — a page separate
+from `/profile/update` (name/email/password only) since the notification section there is
+conditionally shown/hidden based on the org-wide toggle, which doesn't belong mixed into an
+identity-focused form. Submitting the notification checkboxes while the org-wide toggle is off is
+deliberately ignored server-side (not just hidden client-side), so a stale form can't silently flip
+a preference the user never actually saw.
+
 ### Database backups
 
 `scripts/backup_database.py` (local + S3/S3-compatible, compression, integrity verification,
@@ -389,7 +406,7 @@ mechanisms consume it, with different rules — don't conflate them:
   `effective_timezone()`, both directions, via `app/utils/helpers/timezone_helpers.py`
   (`to_viewer_timezone()` for reads, `to_org_timezone()` for writes back to storage — drag & drop
   and the shift-creation modal both go through the write side). This is what makes the
-  `/profile/update` timezone preference visibly change the calendar, not just the ICS feed.
+  `/profile/settings` timezone preference visibly change the calendar, not just the ICS feed.
   `app/static/js/calendar/fullcalendar-config.js` sets `timeZone: 'UTC'` on the `Calendar`
   instance specifically so it never reinterprets the already-translated digits against the
   browser's own system clock — all the real `zoneinfo` conversion happens server-side, avoiding a
