@@ -1,21 +1,21 @@
 {% extends "base.html" %}
 {% from "macros/errors.html" import error_page with context %}
 
-{% block title %}Temps d'attente dépassé - Leviia{% endblock %}
+{% block title %}{{ _("Temps d'attente dépassé") }} - Leviia{% endblock %}
 
 {% block content %}
-{% call error_page(code=504, title="Temps d'attente dépassé", subtitle="Le serveur n'a pas répondu à temps.", color="text-warning", secondary=[{"onclick": "location.reload()", "icon": "fa-sync-alt", "label": "Actualiser"}]) %}
+{% call error_page(code=504, title=_("Temps d'attente dépassé"), subtitle=_("Le serveur n'a pas répondu à temps."), color="text-warning", secondary=[{"onclick": "location.reload()", "icon": "fa-sync-alt", "label": _("Actualiser")}]) %}
 <p role="alert" aria-live="assertive">
-    La requête a pris trop de temps à être traitée.
-    Cela peut être dû à une connexion lente ou à une surcharge du serveur.
+    {{ _("La requête a pris trop de temps à être traitée.") }}
+    {{ _("Cela peut être dû à une connexion lente ou à une surcharge du serveur.") }}
 </p>
 <p>
-    <strong>Que faire ?</strong>
+    <strong>{{ _("Que faire ?") }}</strong>
 </p>
 <ul class="ml-5">
-    <li>Vérifiez votre connexion internet</li>
-    <li>Actualisez la page</li>
-    <li>Réessayez dans quelques instants</li>
+    <li>{{ _("Vérifiez votre connexion internet") }}</li>
+    <li>{{ _("Actualisez la page") }}</li>
+    <li>{{ _("Réessayez dans quelques instants") }}</li>
 </ul>
 {% endcall %}
 {% endblock %}

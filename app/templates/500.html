@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 {% from "macros/errors.html" import error_page with context %}
 
-{% block title %}Erreur interne du serveur - Leviia{% endblock %}
+{% block title %}{{ _("Erreur interne du serveur") }} - Leviia{% endblock %}
 
 {% block content %}
-{% call error_page(code=500, title="Erreur interne du serveur", subtitle="Une erreur inattendue est survenue.", color="text-error") %}
+{% call error_page(code=500, title=_("Erreur interne du serveur"), subtitle=_("Une erreur inattendue est survenue."), color="text-error") %}
 <p role="alert" aria-live="assertive">
-    Nous sommes désolés pour ce désagrément. Veuillez réessayer plus tard.
+    {{ _("Nous sommes désolés pour ce désagrément. Veuillez réessayer plus tard.") }}
 </p>
 {% if error_message %}
 <div class="alert alert-error mt-4" role="alert" aria-live="assertive">
-    <p><strong>Détails :</strong> {{ error_message }}</p>
+    <p><strong>{{ _("Détails :") }}</strong> {{ error_message }}</p>
 </div>
 {% endif %}
 {% endcall %}

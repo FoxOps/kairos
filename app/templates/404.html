@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% from "macros/errors.html" import error_page with context %}
 
-{% block title %}Page non trouvée - Leviia{% endblock %}
+{% block title %}{{ _("Page non trouvée") }} - Leviia{% endblock %}
 
 {% block content %}
-{% call error_page(code=404, title="Page non trouvée", subtitle="La page que vous cherchez n'existe pas.", color="text-warning") %}
+{% call error_page(code=404, title=_("Page non trouvée"), subtitle=_("La page que vous cherchez n'existe pas."), color="text-warning") %}
 <p role="alert" aria-live="assertive">
-    Vérifiez l'URL ou retournez à la page d'accueil.
+    {{ _("Vérifiez l'URL ou retournez à la page d'accueil.") }}
 </p>
 {% endcall %}
 {% endblock %}
