@@ -1,38 +1,38 @@
 {% extends "admin/base_admin.html" %}
 
-{% block title %}Types de shifts - Administration{% endblock %}
+{% block title %}{{ _("Types de shifts") }} - Administration{% endblock %}
 
 {% block admin_content %}
 <section class="p-3 md:p-4 max-w-6xl mx-auto">
-    <div class="breadcrumbs text-sm mb-2" aria-label="Fil d'Ariane">
+    <div class="breadcrumbs text-sm mb-2" aria-label="{{ _("Fil d'Ariane") }}">
         <ul>
             <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
-            <li>Types de shifts</li>
+            <li>{{ _("Types de shifts") }}</li>
         </ul>
     </div>
     <h1 class="text-2xl font-bold mb-4">
-        <i class="fas fa-cogs" aria-hidden="true"></i> Gestion des types de shifts
+        <i class="fas fa-cogs" aria-hidden="true"></i> {{ _("Gestion des types de shifts") }}
     </h1>
 
-    <div class="flex gap-2 mb-4" role="group" aria-label="Actions types de shifts">
+    <div class="flex gap-2 mb-4" role="group" aria-label="{{ _("Actions types de shifts") }}">
         {% set add_button_route = 'admin.add_shift_type' %}
-        {% set add_button_label = 'Ajouter un type de shift' %}
+        {% set add_button_label = _('Ajouter un type de shift') %}
         {% set add_button_icon = 'plus' %}
-        {% set add_button_resource_name = 'Ajouter un nouveau type de shift' %}
+        {% set add_button_resource_name = _('Ajouter un nouveau type de shift') %}
         {% include "_add_button.html" %}
     </div>
 
     {% if shift_types %}
     <div class="overflow-x-auto" role="region" aria-labelledby="shift-types-title">
         <table class="table table-zebra" aria-describedby="shift-types-title">
-            <caption class="sr-only">Liste des types de shifts</caption>
+            <caption class="sr-only">{{ _("Liste des types de shifts") }}</caption>
             <thead>
                 <tr>
-                    <th scope="col">Nom</th>
-                    <th scope="col">Libellé</th>
-                    <th scope="col">Heure de début</th>
-                    <th scope="col">Heure de fin</th>
-                    <th scope="col">Actions</th>
+                    <th scope="col">{{ _("Nom") }}</th>
+                    <th scope="col">{{ _("Libellé") }}</th>
+                    <th scope="col">{{ _("Heure de début") }}</th>
+                    <th scope="col">{{ _("Heure de fin") }}</th>
+                    <th scope="col">{{ _("Actions") }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -43,19 +43,19 @@
                     <td>{{ "%02d"|format(shift_type.start_hour) }}h</td>
                     <td>{{ "%02d"|format(shift_type.end_hour) }}h</td>
                     <td>
-                        <div class="flex gap-2" role="group" aria-label="Actions pour le type de shift {{ shift_type.name }}">
-                            <div class="tooltip" data-tip="Modifier le type de shift">
+                        <div class="flex gap-2" role="group" aria-label="{{ _("Actions pour le type de shift %(name)s", name=shift_type.name) }}">
+                            <div class="tooltip" data-tip="{{ _("Modifier le type de shift") }}">
                                 <a class="btn btn-info btn-sm" href="{{ url_for('admin.edit_shift_type', shift_type_id=shift_type.id) }}"
-                                   aria-label="Modifier le type de shift {{ shift_type.name }}" title="Modifier le type de shift">
+                                   aria-label="{{ _("Modifier le type de shift %(name)s", name=shift_type.name) }}" title="{{ _("Modifier le type de shift") }}">
                                     <i class="fas fa-edit" aria-hidden="true"></i>
                                 </a>
                             </div>
-                            <div class="tooltip" data-tip="Supprimer le type de shift">
+                            <div class="tooltip" data-tip="{{ _("Supprimer le type de shift") }}">
                                 <form method="POST" action="{{ url_for('admin.delete_shift_type', shift_type_id=shift_type.id) }}" class="mb-0">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="btn btn-error btn-sm js-confirm-delete"
-                                            data-confirm-message="Êtes-vous sûr de vouloir supprimer le type de shift {{ shift_type.name }} ?"
-                                            aria-label="Supprimer le type de shift {{ shift_type.name }}" title="Supprimer le type de shift">
+                                            data-confirm-message="{{ _("Êtes-vous sûr de vouloir supprimer le type de shift %(name)s ?", name=shift_type.name) }}"
+                                            aria-label="{{ _("Supprimer le type de shift %(name)s", name=shift_type.name) }}" title="{{ _("Supprimer le type de shift") }}">
                                         <i class="fas fa-trash" aria-hidden="true"></i>
                                     </button>
                                 </form>
@@ -70,8 +70,8 @@
 
     <!-- Action legend -->
     {% set action_items = [
-        {'class': 'btn-info btn-sm', 'icon': 'edit', 'label': 'Modifier', 'description': 'Modifier le type de shift'},
-        {'class': 'btn-error btn-sm', 'icon': 'trash', 'label': 'Supprimer', 'description': 'Supprimer le type de shift'}
+        {'class': 'btn-info btn-sm', 'icon': 'edit', 'label': _('Modifier'), 'description': _('Modifier le type de shift')},
+        {'class': 'btn-error btn-sm', 'icon': 'trash', 'label': _('Supprimer'), 'description': _('Supprimer le type de shift')}
     ] %}
     {% include "_action_legend.html" %}
     {% endif %}

@@ -1,43 +1,43 @@
 {% extends "admin/base_admin.html" %}
 
-{% block title %}Échanges de shifts - Administration{% endblock %}
+{% block title %}{{ _("Échanges de shifts") }} - Administration{% endblock %}
 
 {% block admin_content %}
 <section class="p-3 md:p-4 max-w-6xl mx-auto">
-    <div class="breadcrumbs text-sm mb-2" aria-label="Fil d'Ariane">
+    <div class="breadcrumbs text-sm mb-2" aria-label="{{ _("Fil d'Ariane") }}">
         <ul>
             <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
-            <li>Échanges de shifts</li>
+            <li>{{ _("Échanges de shifts") }}</li>
         </ul>
     </div>
     <h1 class="text-2xl font-bold mb-4">
-        <i class="fas fa-right-left" aria-hidden="true"></i> Échanges de shifts
+        <i class="fas fa-right-left" aria-hidden="true"></i> {{ _("Échanges de shifts") }}
     </h1>
 
-    <div class="flex flex-wrap gap-2 mb-4" role="group" aria-label="Actions globales">
+    <div class="flex flex-wrap gap-2 mb-4" role="group" aria-label="{{ _("Actions globales") }}">
         <form method="POST" action="{{ url_for('admin.purge_swaps') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-ghost btn-sm" type="submit"
-                    aria-label="Purger l'historique complet des échanges terminés" title="Purger l'historique complet des échanges terminés"
-                    onclick="return confirm('Supprimer définitivement toutes les demandes terminées (approuvées, rejetées ou annulées), tous utilisateurs confondus ?');">
-                <i class="fas fa-broom" aria-hidden="true"></i> Purger l'historique (tous utilisateurs)
+                    aria-label="{{ _("Purger l'historique complet des échanges terminés") }}" title="{{ _("Purger l'historique complet des échanges terminés") }}"
+                    onclick="return confirm('{{ _("Supprimer définitivement toutes les demandes terminées (approuvées, rejetées ou annulées), tous utilisateurs confondus ?") }}');">
+                <i class="fas fa-broom" aria-hidden="true"></i> {{ _("Purger l'historique (tous utilisateurs)") }}
             </button>
         </form>
     </div>
 
-    <h2 class="text-xl font-semibold mb-2" id="swaps-title">En attente</h2>
+    <h2 class="text-xl font-semibold mb-2" id="swaps-title">{{ _("En attente") }}</h2>
     {% if pending %}
     <div class="overflow-x-auto mb-6" role="region" aria-labelledby="swaps-title">
         <table class="table table-zebra" aria-describedby="swaps-title">
-            <caption class="sr-only">Demandes d'échange en attente de validation</caption>
+            <caption class="sr-only">{{ _("Demandes d'échange en attente de validation") }}</caption>
             <thead>
                 <tr>
-                    <th scope="col">Demandeur</th>
-                    <th scope="col">Shift proposé</th>
-                    <th scope="col">Destinataire</th>
-                    <th scope="col">Shift demandé en retour</th>
-                    <th scope="col">Demandé le</th>
-                    <th scope="col">Actions</th>
+                    <th scope="col">{{ _("Demandeur") }}</th>
+                    <th scope="col">{{ _("Shift proposé") }}</th>
+                    <th scope="col">{{ _("Destinataire") }}</th>
+                    <th scope="col">{{ _("Shift demandé en retour") }}</th>
+                    <th scope="col">{{ _("Demandé le") }}</th>
+                    <th scope="col">{{ _("Actions") }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -50,26 +50,26 @@
                         {% if swap.target_shift %}
                         {{ swap.target_shift.date.strftime('%d/%m/%Y') }} - {{ swap.target_shift.shift_type.label }}
                         {% else %}
-                        <span class="text-base-content/60">Don simple</span>
+                        <span class="text-base-content/60">{{ _("Don simple") }}</span>
                         {% endif %}
                     </td>
                     <td>{{ swap.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
                     <td>
-                        <div class="flex flex-nowrap gap-2" role="group" aria-label="Actions pour la demande de {{ swap.requester.name }}">
+                        <div class="flex flex-nowrap gap-2" role="group" aria-label="{{ _("Actions pour la demande de %(name)s", name=swap.requester.name) }}">
                             <form method="POST" action="{{ url_for('admin.approve_swap', swap_request_id=swap.id) }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button class="btn btn-success btn-sm" type="submit"
-                                        aria-label="Approuver la demande" title="Approuver la demande"
-                                        onclick="return confirm('Approuver cet échange ? Les shifts seront réassignés immédiatement.');">
-                                    <i class="fas fa-check" aria-hidden="true"></i> Approuver
+                                        aria-label="{{ _("Approuver la demande") }}" title="{{ _("Approuver la demande") }}"
+                                        onclick="return confirm('{{ _("Approuver cet échange ? Les shifts seront réassignés immédiatement.") }}');">
+                                    <i class="fas fa-check" aria-hidden="true"></i> {{ _("Approuver") }}
                                 </button>
                             </form>
                             <form method="POST" action="{{ url_for('admin.reject_swap', swap_request_id=swap.id) }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button class="btn btn-error btn-sm" type="submit"
-                                        aria-label="Rejeter la demande" title="Rejeter la demande"
-                                        onclick="return confirm('Rejeter cette demande d\'échange ?');">
-                                    <i class="fas fa-times" aria-hidden="true"></i> Rejeter
+                                        aria-label="{{ _("Rejeter la demande") }}" title="{{ _("Rejeter la demande") }}"
+                                        onclick="return confirm('{{ _("Rejeter cette demande d'échange ?") }}');">
+                                    <i class="fas fa-times" aria-hidden="true"></i> {{ _("Rejeter") }}
                                 </button>
                             </form>
                         </div>
@@ -82,27 +82,27 @@
 
     <!-- Action legend -->
     {% set action_items = [
-        {'class': 'btn-success btn-sm', 'icon': 'check', 'label': 'Approuver', 'description': 'Valider l\'échange et réassigner les shifts'},
-        {'class': 'btn-error btn-sm', 'icon': 'times', 'label': 'Rejeter', 'description': 'Refuser la demande d\'échange'}
+        {'class': 'btn-success btn-sm', 'icon': 'check', 'label': _('Approuver'), 'description': _('Valider l\'échange et réassigner les shifts')},
+        {'class': 'btn-error btn-sm', 'icon': 'times', 'label': _('Rejeter'), 'description': _('Refuser la demande d\'échange')}
     ] %}
     {% include "_action_legend.html" %}
     {% else %}
-    <p class="text-base-content/60 mb-6">Aucune demande d'échange en attente.</p>
+    <p class="text-base-content/60 mb-6">{{ _("Aucune demande d'échange en attente.") }}</p>
     {% endif %}
 
-    <h2 class="text-xl font-semibold mb-2" id="approved-swaps-title">Approuvés</h2>
+    <h2 class="text-xl font-semibold mb-2" id="approved-swaps-title">{{ _("Approuvés") }}</h2>
     {% if approved %}
     <div class="overflow-x-auto" role="region" aria-labelledby="approved-swaps-title">
         <table class="table table-zebra" aria-describedby="approved-swaps-title">
-            <caption class="sr-only">Demandes d'échange approuvées</caption>
+            <caption class="sr-only">{{ _("Demandes d'échange approuvées") }}</caption>
             <thead>
                 <tr>
-                    <th scope="col">Demandeur</th>
-                    <th scope="col">Shift proposé</th>
-                    <th scope="col">Destinataire</th>
-                    <th scope="col">Shift demandé en retour</th>
-                    <th scope="col">Approuvé le</th>
-                    <th scope="col">Actions</th>
+                    <th scope="col">{{ _("Demandeur") }}</th>
+                    <th scope="col">{{ _("Shift proposé") }}</th>
+                    <th scope="col">{{ _("Destinataire") }}</th>
+                    <th scope="col">{{ _("Shift demandé en retour") }}</th>
+                    <th scope="col">{{ _("Approuvé le") }}</th>
+                    <th scope="col">{{ _("Actions") }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -115,7 +115,7 @@
                         {% if swap.target_shift %}
                         {{ swap.target_shift.date.strftime('%d/%m/%Y') }} - {{ swap.target_shift.shift_type.label }}
                         {% else %}
-                        <span class="text-base-content/60">Don simple</span>
+                        <span class="text-base-content/60">{{ _("Don simple") }}</span>
                         {% endif %}
                     </td>
                     <td>{{ swap.reviewed_at.strftime('%d/%m/%Y %H:%M') if swap.reviewed_at else '—' }}</td>
@@ -123,9 +123,9 @@
                         <form method="POST" action="{{ url_for('admin.revert_swap', swap_request_id=swap.id) }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button class="btn btn-warning btn-sm" type="submit"
-                                    aria-label="Annuler l'échange approuvé" title="Annuler l'échange approuvé"
-                                    onclick="return confirm('Annuler cet échange ? Les shifts seront réassignés à leurs propriétaires d\'origine.');">
-                                <i class="fas fa-rotate-left" aria-hidden="true"></i> Annuler
+                                    aria-label="{{ _("Annuler l'échange approuvé") }}" title="{{ _("Annuler l'échange approuvé") }}"
+                                    onclick="return confirm('{{ _("Annuler cet échange ? Les shifts seront réassignés à leurs propriétaires d'origine.") }}');">
+                                <i class="fas fa-rotate-left" aria-hidden="true"></i> {{ _("Annuler") }}
                             </button>
                         </form>
                     </td>
@@ -135,7 +135,7 @@
         </table>
     </div>
     {% else %}
-    <p class="text-base-content/60">Aucun échange approuvé.</p>
+    <p class="text-base-content/60">{{ _("Aucun échange approuvé.") }}</p>
     {% endif %}
 </section>
 {% endblock %}
