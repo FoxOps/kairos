@@ -213,6 +213,11 @@ def create_app(config_object: str | None = None):
     limiter.init_app(app)
     csrf.init_app(app)
     babel.init_app(app, locale_selector=get_locale)
+    # Flask-Babel auto-injects _/gettext/ngettext as Jinja globals (and
+    # the {% trans %} extension), but NOT get_locale() itself - register
+    # it explicitly so base.html's <html lang="{{ get_locale() }}">
+    # works.
+    app.jinja_env.globals["get_locale"] = get_locale
 
     # Configure rate limiting if enabled
     if app.config.get("RATE_LIMIT_ENABLED", True):
@@ -353,6 +358,15 @@ def create_app(config_object: str | None = None):
 
         base_url = SettingsService.get_public_base_url()
         return {"public_base_url": base_url.rstrip("/") if base_url else None}
+
+    # Server-translated strings for the handful of hardcoded-in-JS
+    # user-facing texts - see app/utils/helpers/js_translations.py and
+    # base.html's #i18n-strings script tag.
+    @app.context_processor
+    def inject_js_translations():
+        from app.utils.helpers.js_translations import get_js_translations
+
+        return {"js_translations": get_js_translations()}
 
     # Unread notifications badge in the sidebar (see "Notifications" in
     # nav_links, base.html) - lightweight query (COUNT), acceptable on

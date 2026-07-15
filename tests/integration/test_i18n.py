@@ -55,3 +55,34 @@ class TestGetLocaleResolution:
         # exercised through profile_settings which reads current_user).
         resp = logged_in_client.get("/profile/settings")
         assert resp.status_code == 200
+
+
+class TestHtmlLangAttribute:
+    def test_html_lang_reflects_default_locale(self, test_app, client):
+        resp = client.get("/login")
+        assert resp.status_code == 200
+        assert b'<html lang="fr">' in resp.data
+
+    def test_html_lang_reflects_org_default_change(self, test_app, client):
+        with test_app.app_context():
+            from app.services import SettingsService
+
+            SettingsService.set_default_language("en")
+
+        resp = client.get("/login")
+        assert resp.status_code == 200
+        assert b'<html lang="en">' in resp.data
+
+
+class TestJsTranslationsInjection:
+    def test_i18n_strings_script_tag_present_and_valid_json(self, test_app, client):
+        import json
+
+        resp = client.get("/login")
+        assert resp.status_code == 200
+        assert b'id="i18n-strings"' in resp.data
+
+        start = resp.data.index(b'id="i18n-strings">') + len(b'id="i18n-strings">')
+        end = resp.data.index(b"</script>", start)
+        payload = json.loads(resp.data[start:end])
+        assert payload["close"] == "Fermer"

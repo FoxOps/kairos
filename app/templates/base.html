@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ get_locale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -53,6 +53,15 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout/footer.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/themes/dark.css') }}">
     {% block extra_css %}{% endblock %}
+
+    <!-- Server-translated (gettext) strings for the handful of
+         hardcoded-in-JS user-facing texts (aria-labels, confirm()
+         dialogs) - see app/utils/helpers/js_translations.py and
+         app/static/js/utils/i18n.js. No Node/build-step toolchain in
+         this project (CDN-only, see CLAUDE.md's Frontend section), so
+         translation happens server-side and ships as plain JSON, same
+         pattern as index.html's #calendar-events-data. -->
+    <script type="application/json" id="i18n-strings">{{ js_translations | tojson }}</script>
 </head>
 <body class="min-h-screen flex flex-col">
     <!-- Skip link for accessibility -->
