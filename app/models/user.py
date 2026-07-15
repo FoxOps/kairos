@@ -53,6 +53,11 @@ class User(BaseModel, UserMixin):
         ics_token: Unique token for ICS export
         timezone: Optional personal IANA timezone (e.g. "Europe/Paris"); None
             means "use the organization's default_timezone setting"
+        shift_notifications_enabled: Opt-out for the weekly shift reminder
+            email (only takes effect if notifications are enabled org-wide,
+            see SettingsService.get_notifications_enabled())
+        oncall_notifications_enabled: Opt-out for the weekly on-call
+            reminder email (same org-wide gate as above)
         shifts: Relationship to Shift model
         on_calls: Relationship to OnCall model
         leaves: Relationship to Leave model
@@ -69,6 +74,8 @@ class User(BaseModel, UserMixin):
     )
     ics_token = db.Column(db.String(64), unique=True, nullable=True)
     timezone = db.Column(db.String(64), nullable=True)
+    shift_notifications_enabled = db.Column(db.Boolean, nullable=False, default=True)
+    oncall_notifications_enabled = db.Column(db.Boolean, nullable=False, default=True)
 
     # Relationships
     shifts = db.relationship(
