@@ -17,6 +17,16 @@ depends_on = None
 
 
 def upgrade():
+    # run.py::setup_database()'s legacy-DB backfill path calls
+    # db.create_all() (current model metadata, which already includes
+    # Setting) before stamping the baseline and running this migration -
+    # on that path the table already exists by the time we get here.
+    # Guard against "table already exists" rather than assuming a bare
+    # CREATE TABLE is always safe.
+    inspector = sa.inspect(op.get_bind())
+    if "setting" in inspector.get_table_names():
+        return
+
     op.create_table(
         "setting",
         sa.Column("key", sa.String(length=80), nullable=False),

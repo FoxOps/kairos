@@ -10,7 +10,10 @@ set_rotation_order) don't belong next to unrelated settings.
 """
 
 import json
+import logging
 from datetime import datetime, timezone
+
+from sqlalchemy.exc import SQLAlchemyError
 
 from app import db
 from app.models.base import BaseModel
@@ -38,12 +41,24 @@ class Setting(BaseModel):
 
         Args:
             key: Setting key
-            default: Value returned if no row exists for this key
+            default: Value returned if no row exists for this key, or if
+                the query itself fails (e.g. table missing/DB briefly
+                unavailable) - this is read from a context processor that
+                runs on every page render, including error pages, so a
+                DB hiccup here must never crash the page it's rendering.
 
         Returns:
             The stored value (decoded from JSON if applicable), or default
         """
-        setting = cls.query.filter_by(key=key).first()
+        try:
+            setting = cls.query.filter_by(key=key).first()
+        except SQLAlchemyError:
+            logging.getLogger(__name__).warning(
+                "Setting.get(%r) failed, falling back to default", key, exc_info=True
+            )
+            db.session.rollback()
+            return default
+
         if setting:
             try:
                 return json.loads(setting.value)

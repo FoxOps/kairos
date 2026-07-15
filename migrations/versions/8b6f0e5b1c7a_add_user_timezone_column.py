@@ -22,6 +22,15 @@ depends_on = None
 
 
 def upgrade():
+    # See 4319868f0801's comment: run.py::setup_database()'s legacy-DB
+    # backfill path (db.create_all() with current model metadata, which
+    # already includes User.timezone) can leave this column already
+    # present by the time this migration runs.
+    inspector = sa.inspect(op.get_bind())
+    existing_columns = [col["name"] for col in inspector.get_columns("user")]
+    if "timezone" in existing_columns:
+        return
+
     with op.batch_alter_table("user", schema=None) as batch_op:
         batch_op.add_column(sa.Column("timezone", sa.String(length=64), nullable=True))
 
