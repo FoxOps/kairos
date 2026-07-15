@@ -51,6 +51,8 @@ class User(BaseModel, UserMixin):
         is_admin: Whether the user has administrator privileges
         group_id: Foreign key to Group
         ics_token: Unique token for ICS export
+        timezone: Optional personal IANA timezone (e.g. "Europe/Paris"); None
+            means "use the organization's default_timezone setting"
         shifts: Relationship to Shift model
         on_calls: Relationship to OnCall model
         leaves: Relationship to Leave model
@@ -66,6 +68,7 @@ class User(BaseModel, UserMixin):
         db.Integer, db.ForeignKey("groups.id"), nullable=False, default=1, index=True
     )
     ics_token = db.Column(db.String(64), unique=True, nullable=True)
+    timezone = db.Column(db.String(64), nullable=True)
 
     # Relationships
     shifts = db.relationship(
