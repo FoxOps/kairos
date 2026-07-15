@@ -60,11 +60,6 @@ def test_app():
     # Disable the rate limiter
     limiter.enabled = False
 
-    # Disable the cache for the tests
-    from app.utils.cache import CacheConfig
-
-    CacheConfig.CACHE_ENABLED = False
-
     # Create an app context
     with app.app_context():
         # Recreate the tables for the test

@@ -41,13 +41,6 @@ class ProductionConfig(Config):
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_DEFAULT: str = "200 per day, 50 per hour"
 
-    # Cache settings for production
-    CACHE_TYPE: str = os.environ.get("CACHE_TYPE") or "redis"
-    CACHE_DEFAULT_TIMEOUT: int = 300  # 5 minutes
-    CACHE_REDIS_URL: str = (
-        os.environ.get("CACHE_REDIS_URL") or "redis://localhost:6379/0"
-    )
-
     # Logging configuration
     LOG_LEVEL: str = os.environ.get("LOG_LEVEL") or "INFO"
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

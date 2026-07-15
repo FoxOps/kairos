@@ -48,9 +48,6 @@ flask-compress==1.24
 # Pour PostgreSQL (optionnel)
 psycopg[binary]>=3.3.4
 
-# Pour Redis (optionnel)
-redis==8.0.1
-
 # Authentification OIDC/SSO (optionnel - pour Keycloak, Okta, etc.)
 # Authlib est la bibliothèque moderne pour OIDC, remplaçant flask-oidc
 Authlib==1.7.2

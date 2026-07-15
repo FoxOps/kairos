@@ -33,10 +33,6 @@ class DevelopmentConfig(Config):
     RATE_LIMIT_ENABLED: bool = get_bool_from_env("RATE_LIMIT_ENABLED", False)
     RATE_LIMIT_DEFAULT: str = "1000 per day, 100 per hour"
 
-    # Cache settings for development
-    CACHE_TYPE: str = "simple"
-    CACHE_DEFAULT_TIMEOUT: int = 60  # 1 minute for development
-
     # Logging configuration
     LOG_LEVEL: str = "DEBUG"
     LOG_FORMAT: str = (

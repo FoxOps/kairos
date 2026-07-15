@@ -38,9 +38,6 @@ requests==2.34.2
 # Pour PostgreSQL (optionnel - sera utilise si DATABASE_URL est postgresql)
 psycopg[binary]>=3.3.4
 
-# Pour Redis (optionnel - sera utilise si CACHE_TYPE=RedisCache)
-redis==8.0.1
-
 # Monitoring (optionnel - pour Prometheus)
 prometheus-client==0.25.0
 psutil==7.2.2

@@ -136,7 +136,7 @@ IP/hostname into links users paste into calendar apps.
 
 `app/utils/` is organized by concern, each a subpackage: `automation/` (shift/on-call
 auto-assignment and business rules — `advanced_shift_automation.py` is the biggest piece),
-`cache/`, `export/` (`ics_exporter.py`), `notifications/` (`email_sender.py` — smtplib/email
+`export/` (`ics_exporter.py`), `notifications/` (`email_sender.py` — smtplib/email
 stdlib wrapper for the weekly reminder emails, no Flask-Mail dependency), `security/` (empty —
 `token_manager.py`/`encryption.py` were removed after confirming zero real callers), `logging/` (multi-handler
 setup: app/error/http/audit/sql/auth log files, optional syslog, sensitive-data filtering),
@@ -147,7 +147,12 @@ setup: app/error/http/audit/sql/auth log files, optional syslog, sensitive-data 
 Dead code found and removed (confirmed zero references anywhere before deletion):
 `monitoring/`, `pagination/`, `lazy_loading.py` (785 lines, already excluded from coverage via a
 stale `.coveragerc` entry pointing at paths from an earlier flat-file layout the models package
-replaced), `helpers/env_helpers.py`, and `cache/cache_helpers.py`. `optimizations/__init__.py` was trimmed from 14 decorators to just
+replaced), `helpers/env_helpers.py`, and `cache/` in full (`cache_helpers.py` first, then the rest
+of the subpackage — `cache_manager.py`'s `init_cache()` was called at startup but nothing ever read
+from the cache it built: `get_cache()`/`cache_key()`/the `cached_route` decorator were themselves
+already-confirmed-dead removals from an earlier pass, leaving `init_cache()` with no real caller
+either. Caching is handled externally now (reverse proxy / dedicated cache), not by the app).
+`optimizations/__init__.py` was trimmed from 14 decorators to just
 `eager_load` — the other 13 (`cached_route`, `paginated_route`, `lazy_route`, `measure_time`, etc.)
 were never imported outside that file; `measure_time` even imported a module
 (`app.utils.performance_monitor`) that didn't exist, confirming it had never actually run.
@@ -327,7 +332,7 @@ path itself.
 
 `tests/conftest.py` defines the fixture chain: `test_app` builds a fresh app via
 `create_app('app.config.TestingConfig')` per test function (drops/recreates all tables, disables
-Talisman/OIDC/rate-limiting/cache), `client` wraps its test client, and `logged_in_client` logs in
+Talisman/OIDC/rate-limiting), `client` wraps its test client, and `logged_in_client` logs in
 an admin user via a real POST to `/login`. Model fixtures (`test_user`, `admin_user`, `test_shift`,
 `test_leave`, `test_oncall`, `test_shift_type`, etc.) build on `test_app`/`test_group`. Reuse these
 fixtures rather than constructing app instances manually in new tests.

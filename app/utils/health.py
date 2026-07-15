@@ -58,7 +58,6 @@ def register_health_endpoints(app: Flask) -> None:
 
         Checks if the application is ready to serve requests by verifying:
         - Database connection
-        - Cache connection (if configured)
 
         Returns:
             JSON response with status 'ok' if all checks pass
@@ -67,7 +66,6 @@ def register_health_endpoints(app: Flask) -> None:
 
         checks = {
             "database": check_database(current_app),
-            "cache": check_cache(current_app),
         }
 
         all_ready = all(checks.values())
@@ -134,44 +132,4 @@ def check_database(app: Flask) -> bool:
         return True
     except Exception as e:
         app.logger.error(f"Database check failed: {e}")
-        return False
-
-
-def check_cache(app: Flask) -> bool:
-    """
-    Check cache connection.
-
-    Args:
-        app: Flask application instance
-
-    Returns:
-        True if cache connection is healthy, False otherwise
-    """
-    try:
-        cache_type = app.config.get("CACHE_TYPE", "simple")
-
-        if cache_type == "simple":
-            # SimpleCache is always available
-            return True
-        elif cache_type == "redis":
-            # Check Redis connection
-            import redis
-
-            cache_url = app.config.get("CACHE_REDIS_URL", "redis://localhost:6379/0")
-            r = redis.Redis.from_url(cache_url)
-            # Imprecise redis stub (--ignore-missing-imports): from_url()
-            # never actually returns None, only a Redis client.
-            return r.ping()  # type: ignore[attr-defined]
-        elif cache_type == "memcached":
-            # Check Memcached connection
-            import memcache
-
-            cache_host = app.config.get("CACHE_MEMCACHED_HOST", "localhost")
-            cache_port = app.config.get("CACHE_MEMCACHED_PORT", 11211)
-            mc = memcache.Client([f"{cache_host}:{cache_port}"], cache_size=1024)
-            return mc.set("test", "value") and mc.get("test") == "value"
-        else:
-            return True
-    except Exception as e:
-        app.logger.error(f"Cache check failed: {e}")
         return False

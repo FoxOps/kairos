@@ -221,11 +221,6 @@ def create_app(config_object: str | None = None):
 
     oidc_auth.init_app(app)
 
-    # Initialize the cache
-    from app.utils.cache import init_cache
-
-    init_cache(app)
-
     # Initialize Talisman for HTTP security (headers + CSP).
     # Always active: force_https only controls the HTTP->HTTPS redirect
     # and HSTS, not the other headers (CSP, X-Content-Type-Options,

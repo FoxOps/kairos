@@ -212,13 +212,6 @@ class Config:
         "TALISMAN_STRICT_TRANSPORT_SECURITY", False
     )
 
-    # Cache Configuration
-    CACHE_TYPE: str = os.environ.get("CACHE_TYPE") or "simple"
-    CACHE_DEFAULT_TIMEOUT: int = get_int_from_env("CACHE_DEFAULT_TIMEOUT", 300)
-    CACHE_REDIS_URL: str = (
-        os.environ.get("CACHE_REDIS_URL") or "redis://localhost:6379/0"
-    )
-
     # Pagination Configuration
     ITEMS_PER_PAGE: int = get_int_from_env("ITEMS_PER_PAGE", 20)
     MAX_PER_PAGE: int = get_int_from_env("MAX_PER_PAGE", 100)
