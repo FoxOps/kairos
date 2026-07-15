@@ -80,13 +80,27 @@ touching auth flows.
   `app/__init__.py` and `app/auth/oidc_auth.py`. A `config_performance.py` used to exist alongside
   it but was orphaned (loaded nowhere) and removed — don't reintroduce it under that name without
   actually wiring it into `create_app()`.
+- A third layer sits on top of both: `Setting` (`app/models/setting.py`, generic key/value store,
+  same EAV shape as `AutomationConfig`) + `app/services/settings_service.py::SettingsService`
+  (typed getters/setters) for settings an admin can change at runtime from `/admin/settings`
+  without redeploying — `default_timezone`, `public_base_url`, `items_per_page`/`max_per_page`,
+  `notifications_enabled`, `backup_retention_days`/`backup_max_backups`,
+  `ics_token_expiry_days` (currently unenforced, see "Multi-timezone support" below). Rule: a
+  `Setting` row, if present, always wins; if absent, the getter falls back **live** to the
+  matching `app.config`/env value (never a one-time seed written to the DB) — so an env-var-only
+  deployment behaves identically to before this feature existed, until an admin actually saves a
+  value through the new page. Don't remove the underlying env vars from `app/config/base.py`
+  thinking they're superseded — they remain the permanent fallback layer.
 
 ### Models
 
 `app/models/` is a package (`base.py` defines the shared `BaseModel` with `id`/`created_at`/
 `updated_at` and CRUD helpers like `.save()`/`.update()`/`.to_dict()`; `user.py`, `shift.py`,
-`oncall.py`, `leave.py`, `automation_config.py`, `notification_log.py`, `swap_request.py` hold the
-domain models, all subclassing `BaseModel`).
+`oncall.py`, `leave.py`, `automation_config.py`, `notification_log.py`, `swap_request.py`,
+`setting.py` hold the domain models, all subclassing `BaseModel`). `User.timezone` (nullable
+String) is the user's personal display timezone preference — `None` means "use the org's
+`default_timezone` Setting", resolved at read time via `User.effective_timezone()`, not baked
+into the column (see "Multi-timezone support" below).
 
 Core entities: `Group` → `User` (1:N) → `Shift` / `OnCall` / `Leave` / `NotificationLog` (each 1:N
 from User), `ShiftType` → `Shift` (1:N). Composite indexes exist on `Shift(user_id, date)`,
@@ -136,13 +150,17 @@ IP/hostname into links users paste into calendar apps.
 
 `app/utils/` is organized by concern, each a subpackage: `automation/` (shift/on-call
 auto-assignment and business rules — `advanced_shift_automation.py` is the biggest piece),
-`export/` (`ics_exporter.py`), `notifications/` (`email_sender.py` — smtplib/email
+`export/` (`ics_exporter.py` — uses stdlib `zoneinfo`, not `pytz` (removed from dependencies);
+`generate_ics_standard()`/`export_to_ics()` take a `tz_name` parameter, always the org's
+`default_timezone`, see "Multi-timezone support" below), `notifications/` (`email_sender.py` — smtplib/email
 stdlib wrapper for the weekly reminder emails, no Flask-Mail dependency), `security/` (empty —
 `token_manager.py`/`encryption.py` were removed after confirming zero real callers), `logging/` (multi-handler
 setup: app/error/http/audit/sql/auth log files, optional syslog, sensitive-data filtering),
 `optimizations/` (single decorator `eager_load`, actively used by admin/dashboard routes),
-`helpers/` (`common_helpers.py` — actively used), plus `health.py` (k8s health endpoints) and
-`prometheus_metrics.py` (gated by `PROMETHEUS_ENABLED`).
+`helpers/` (`common_helpers.py` — actively used; `timezone_helpers.py` — `to_viewer_timezone()`/
+`to_org_timezone()`, the FullCalendar JSON API conversion, see "Multi-timezone support" below),
+plus `health.py` (k8s health endpoints) and `prometheus_metrics.py` (gated by
+`PROMETHEUS_ENABLED`).
 
 Dead code found and removed (confirmed zero references anywhere before deletion):
 `monitoring/`, `pagination/`, `lazy_loading.py` (785 lines, already excluded from coverage via a
@@ -282,7 +300,11 @@ Weekly reminder emails (shifts + on-call) are sent by two standalone scripts —
 by external cron, not by the Flask app (no APScheduler; same pattern as
 `scripts/backup_database.py`/`backup_config.py`). Config lives in `scripts/notification_config.py`
 (dataclass, env-var driven — `NOTIFICATIONS_ENABLED`, `SMTP_HOST`, etc., see `.env.example`); both
-scripts no-op silently (exit 0) if notifications aren't enabled or SMTP config is incomplete.
+scripts no-op silently (exit 0) if notifications aren't enabled or SMTP config is incomplete. Both
+scripts also check `SettingsService.get_notifications_enabled()` (DB-stored `Setting` override,
+admin-editable at `/admin/settings`, falls back to the `NOTIFICATIONS_ENABLED` env var) inside
+their existing `app.app_context()`, in addition to (not instead of) the SMTP-completeness check —
+SMTP host/credentials stay env-only (secrets, not migrated to `Setting`).
 `app/services/notification_service.py::NotificationService` does the actual work (date math via
 `next_monday()`/`next_friday()`, always strictly future even if run on the target weekday itself;
 per-recipient SMTP failures are logged and don't block the rest of the batch); it calls
@@ -309,7 +331,14 @@ guarded (prefix + resolved-path containment check); S3 downloads go through a se
 (`send_file` + `call_on_close` cleanup), not a presigned URL. `BackupService.create_now()` re-checks
 `BACKUP_ENABLED` itself (the script's own `main()` guard doesn't cover this path) so manual creation
 from the admin UI honors the same switch as the cron job; listing/downloading existing backups stays
-available regardless. Docker: `docker/entrypoint.sh` starts `crond` if `NOTIFICATIONS_ENABLED` and/or
+available regardless. `BackupService.get_config()` layers any DB-stored `Setting` override
+(`backup_retention_days`/`backup_max_backups`, admin-editable at `/admin/settings`) on top of
+`BackupConfig.from_env()` — but this only affects admin-UI-triggered actions (`create_now`/
+`cleanup_now`/`list_all_backups`); the standalone cron-invoked `scripts/backup_database.py` stays
+100% env-var-driven by design, so its isolation guarantee (above) is untouched — an admin who wants
+both paths in sync must keep the env var and the DB setting equal manually. `get_config()` silently
+skips the DB lookup (falls back to env only) when called outside a Flask app context, since some
+callers (tests) invoke it without one. Docker: `docker/entrypoint.sh` starts `crond` if `NOTIFICATIONS_ENABLED` and/or
 `BACKUP_ENABLED` is true (one shared crond, `docker/crontabs/appuser` always has both scripts'
 entries — each script no-ops internally if its own flag is off).
 
@@ -327,6 +356,56 @@ separate, simpler table-existence check (used by tests), no longer part of the s
 `TestingConfig` bypasses migrations entirely — `tests/conftest.py`'s `test_app` fixture calls
 `db.drop_all()`/`db.create_all()` directly for speed, since tests don't need to exercise the upgrade
 path itself.
+
+### Multi-timezone support
+
+Display-only, not a storage refactor: `Shift`/`OnCall` still store naive wall-clock `datetime`s
+(no tzinfo), now meaning explicitly "local time in the organization's `default_timezone`
+`Setting`" instead of a tacit "Europe/Paris" assumption. **Don't** interpret the naive-datetime
+call sites in `app/services/shift_service.py`/`oncall_service.py`/`app/utils/automation/` as a bug
+to fix — a shift's stored digits are already correct once the org timezone is known; a per-user
+timezone preference never redefines when a shift happens, only how it's displayed for that user. A
+full UTC-aware storage refactor was considered and rejected as disproportionate for this
+requirement — it would touch every naive-datetime call site above for no correctness gain beyond
+what the two mechanisms below already provide.
+
+`User.effective_timezone()` resolves the *display* timezone for a given user: their own
+`timezone` column if set, else `SettingsService.get_default_timezone()`. Two independent
+mechanisms consume it, with different rules — don't conflate them:
+
+- **ICS export** (`app/utils/export/ics_exporter.py`) always uses the org's `default_timezone`,
+  **never** a viewer's personal preference — `ExportService` passes
+  `tz_name=SettingsService.get_default_timezone()` explicitly. Attaching a viewer's own tz here
+  would *relabel* the stored digits without translating them (a real bug caught during this
+  feature's own design review), producing a wrong instant in the exported file. The exporter
+  attaches real `zoneinfo` tzinfo to `dtstart`/`dtend` and calls `Calendar.add_missing_timezones()`
+  to generate a matching `VTIMEZONE` component — this is what fixes the previous "floating time"
+  bug (no tzinfo at all, so every calendar client guessed its own local timezone). Translation to
+  the *viewer's* device timezone is the receiving calendar client's job, standard RFC 5545
+  behavior — not this app's.
+- **FullCalendar JSON API** (`app/services/schedule_service.py::build_calendar_events`,
+  `app/routes/shift_routes.py`'s `api_create_shift`/`api_update_shift`,
+  `app/routes/oncall_routes.py`'s `api_update_oncall`) *does* translate into the viewer's own
+  `effective_timezone()`, both directions, via `app/utils/helpers/timezone_helpers.py`
+  (`to_viewer_timezone()` for reads, `to_org_timezone()` for writes back to storage — drag & drop
+  and the shift-creation modal both go through the write side). This is what makes the
+  `/profile/update` timezone preference visibly change the calendar, not just the ICS feed.
+  `app/static/js/calendar/fullcalendar-config.js` sets `timeZone: 'UTC'` on the `Calendar`
+  instance specifically so it never reinterprets the already-translated digits against the
+  browser's own system clock — all the real `zoneinfo` conversion happens server-side, avoiding a
+  `moment-timezone`/`luxon` plugin (this app is CDN-only, see "Frontend" above). Every Date
+  getter/constructor in that file must stay consistent with this contract (UTC getters, never
+  `new Date(str)` on a timezone-less string) — see `formatDateForInput`'s and the create-shift
+  modal's comments if you touch this file. `Leave` dates have no time component and need no
+  conversion in either mechanism.
+
+Known, deliberately unaddressed by this feature: `OnCall.is_active()` (`app/models/oncall.py`)
+compares the naive-UTC value written by `BaseModel`'s `created_at`/`updated_at` pattern against a
+naive-*local* `datetime.now()` — a pre-existing bug unrelated to per-user timezones, left alone
+here to avoid folding an unrelated behavior change into this feature. `ICS_TOKEN_EXPIRY_DAYS`
+(migrated to `Setting` for scope consistency with the other backup/notification settings) has no
+enforcement point anywhere in `app/` — it's a documented no-op, not wired to any actual token
+expiry check.
 
 ## Testing conventions
 
