@@ -8,6 +8,7 @@ from datetime import date, datetime, timedelta
 from app import db
 from app.models import Leave, OnCall
 from app.utils.automation import OnCallAutomation
+from app.utils.automation.oncall_automation import AvailabilityIndex
 
 
 class TestOnCallAutomationGenerateScheduleFull:
@@ -125,8 +126,9 @@ class TestOnCallAutomationFindNextAvailableFull:
             start_time = now + timedelta(days=2)
             end_time = now + timedelta(days=5)
 
+            index = AvailabilityIndex([test_user.id])
             result = OnCallAutomation.find_next_available_user(
-                [test_user], start_time, end_time
+                [test_user], start_time, end_time, index
             )
 
             # Devrait ignorer test_user
@@ -150,8 +152,9 @@ class TestOnCallAutomationFindNextAvailableFull:
             start_time = now + timedelta(days=3)
             end_time = now + timedelta(days=4)
 
+            index = AvailabilityIndex([test_user.id])
             result = OnCallAutomation.find_next_available_user(
-                [test_user], start_time, end_time
+                [test_user], start_time, end_time, index
             )
 
             # Devrait ignorer test_user
@@ -185,8 +188,9 @@ class TestOnCallAutomationFindNextAvailableFull:
             start_time = now
             end_time = now + timedelta(days=7)
 
+            index = AvailabilityIndex([test_user.id])
             result = OnCallAutomation.find_next_available_user(
-                [test_user], start_time, end_time
+                [test_user], start_time, end_time, index
             )
 
             # Devrait ignorer test_user à cause de la contrainte des 2 semaines

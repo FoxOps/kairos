@@ -21,7 +21,7 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import event
 
 from app import compress, create_app, db
-from app.models import Shift, ShiftType, User
+from app.models import Shift, ShiftType, SwapRequest, User
 
 
 @contextmanager
@@ -181,4 +181,127 @@ class TestNPlusOneQueries:
         assert len(queries) <= 3, (
             f"{len(queries)} requêtes pour lister 10 shifts avec leurs "
             "relations - le joinedload ne semble pas efficace"
+        )
+
+    def _seed_swap_requests(self, group, shift_type, count, offset=0):
+        """Crée `count` SwapRequest, chacune avec son propre requester/
+        target_user/shift - pas de partage entre lignes, pour que le
+        pré-chargement bulk soit vraiment mis à l'épreuve."""
+        on_date = date.today() + timedelta(days=3)
+        while on_date.weekday() >= 5:
+            on_date += timedelta(days=1)
+
+        for i in range(offset, offset + count):
+            requester = User(
+                name=f"Swap Requester {i}",
+                email=f"swap-req-{i}@test.com",
+                group_id=group.id,
+            )
+            requester.set_password("pw")
+            target = User(
+                name=f"Swap Target {i}",
+                email=f"swap-target-{i}@test.com",
+                group_id=group.id,
+            )
+            target.set_password("pw")
+            db.session.add_all([requester, target])
+            db.session.flush()
+
+            shift = Shift(
+                date=on_date,
+                start_time=datetime.combine(on_date, datetime.min.time()),
+                end_time=datetime.combine(on_date, datetime.min.time())
+                + timedelta(hours=8),
+                user_id=requester.id,
+                shift_type_id=shift_type.id,
+            )
+            db.session.add(shift)
+            db.session.flush()
+
+            db.session.add(
+                SwapRequest(
+                    requester_id=requester.id,
+                    shift_id=shift.id,
+                    target_user_id=target.id,
+                    status=SwapRequest.PENDING,
+                )
+            )
+        db.session.commit()
+
+    def test_swap_request_repository_preloads_related_rows(self, test_app, test_group):
+        """Régression N+1 : SwapRequest n'a pas de db.relationship() (voir
+        app/models/swap_request.py) - sans le préchargement bulk de
+        SwapRequestRepository._preload_related, accéder à
+        requester/target_user/shift sur chaque ligne coûterait 3 requêtes
+        de plus par ligne, faisant grandir le total proportionnellement au
+        nombre de demandes listées."""
+        shift_type = ShiftType(
+            name="swap-perf", label="Perf", start_hour=7, end_hour=15
+        )
+        db.session.add(shift_type)
+        db.session.flush()
+
+        self._seed_swap_requests(test_group, shift_type, 3)
+        with count_queries() as small_queries:
+            from app.repositories.swap_request_repository import (
+                SwapRequestRepository,
+            )
+
+            pending = SwapRequestRepository.list_pending()
+            for sr in pending:
+                _ = sr.requester.name
+                _ = sr.target_user.name
+                _ = sr.shift.date
+
+        self._seed_swap_requests(test_group, shift_type, 15, offset=100)
+        with count_queries() as big_queries:
+            from app.repositories.swap_request_repository import (
+                SwapRequestRepository,
+            )
+
+            pending = SwapRequestRepository.list_pending()
+            for sr in pending:
+                _ = sr.requester.name
+                _ = sr.target_user.name
+                _ = sr.shift.date
+
+        # 18 demandes en plus (15 vs 3) ne devraient ajouter qu'une poignée
+        # de requêtes bulk, pas ~54 requêtes individuelles (3 par ligne).
+        assert len(big_queries) <= len(small_queries) + 5, (
+            f"{len(small_queries)} requêtes pour 3 demandes, "
+            f"{len(big_queries)} pour 18 demandes supplémentaires - "
+            "suspicion de N+1 (préchargement cassé ?)"
+        )
+
+    def test_generate_oncall_schedule_query_count_stable_across_period_length(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Régression : avant AvailabilityIndex (voir
+        app/utils/automation/oncall_automation.py), find_next_available_user
+        et check_oncall_constraint interrogeaient la DB à chaque candidat
+        testé pour chaque semaine (jusqu'à 3 requêtes/candidat) - une
+        génération de plusieurs mois grimpait à 1500+ requêtes."""
+        from app.utils.automation import OnCallAutomation
+
+        start_date = date(2024, 1, 5)  # Vendredi
+
+        with count_queries() as short_queries:
+            oncalls_short, _ = OnCallAutomation.generate_oncall_schedule(
+                start_date, start_date + timedelta(days=28), dry_run=True
+            )
+        assert len(oncalls_short) > 0
+
+        with count_queries() as long_queries:
+            oncalls_long, _ = OnCallAutomation.generate_oncall_schedule(
+                start_date, start_date + timedelta(days=180), dry_run=True
+            )
+        assert len(oncalls_long) > len(oncalls_short)
+
+        # ~26 semaines de plus (180 vs 28 jours) ne devraient pas ajouter
+        # de requêtes proportionnelles au nombre de semaines - juste le
+        # préchargement bulk (borné au nombre d'utilisateurs éligibles).
+        assert len(long_queries) <= len(short_queries) + 5, (
+            f"{len(short_queries)} requêtes pour {len(oncalls_short)} astreintes, "
+            f"{len(long_queries)} pour {len(oncalls_long)} astreintes - "
+            "suspicion de N+1 (AvailabilityIndex cassé ?)"
         )

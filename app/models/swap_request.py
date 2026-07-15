@@ -15,6 +15,11 @@ if TYPE_CHECKING:
     from app.models.shift import Shift
     from app.models.user import User
 
+# Sentinel distinguant "jamais préchargé" de "préchargé mais None" (ex:
+# reviewer avant décision admin) - un simple None par défaut ne pourrait
+# pas faire la différence.
+_NOT_PRELOADED = object()
+
 
 class SwapRequest(BaseModel):
     """
@@ -82,8 +87,25 @@ class SwapRequest(BaseModel):
     # plugin mypy dédié (non installé dans ce projet) - donc de simples
     # @property suivant le pattern déjà utilisé par
     # User.next_shift/current_oncall (app/models/user.py).
+    # Cache d'instance rempli par SwapRequestRepository._preload_related()
+    # pour éviter un N+1 sur les listes (admin/swaps.html, swaps.html).
+    # Nécessaire car l'identity map de SQLAlchemy est en références
+    # faibles : un bulk SELECT dont le résultat n'est conservé nulle part
+    # ailleurs peut être ramassé par le GC avant que ces @property y
+    # accèdent, provoquant une requête individuelle malgré le préchargement
+    # (observé empiriquement - comportement non déterministe selon le GC).
+    # Stocker les objets ici, sur l'instance elle-même, garantit une
+    # référence forte tant que la ligne SwapRequest reste vivante.
+    _cached_requester: "User | None | object" = _NOT_PRELOADED
+    _cached_target_user: "User | None | object" = _NOT_PRELOADED
+    _cached_reviewer: "User | None | object" = _NOT_PRELOADED
+    _cached_shift: "Shift | None | object" = _NOT_PRELOADED
+    _cached_target_shift: "Shift | None | object" = _NOT_PRELOADED
+
     @property
     def requester(self) -> "User":
+        if self._cached_requester is not _NOT_PRELOADED:
+            return cast("User", self._cached_requester)
         from app.models.user import User
 
         # requester_id est NOT NULL - cast documente cette garantie FK.
@@ -91,12 +113,16 @@ class SwapRequest(BaseModel):
 
     @property
     def target_user(self) -> "User":
+        if self._cached_target_user is not _NOT_PRELOADED:
+            return cast("User", self._cached_target_user)
         from app.models.user import User
 
         return cast(User, db.session.get(User, self.target_user_id))
 
     @property
     def reviewer(self) -> "User | None":
+        if self._cached_reviewer is not _NOT_PRELOADED:
+            return cast("User | None", self._cached_reviewer)
         if self.reviewed_by_id is None:
             return None
         from app.models.user import User
@@ -105,12 +131,16 @@ class SwapRequest(BaseModel):
 
     @property
     def shift(self) -> "Shift":
+        if self._cached_shift is not _NOT_PRELOADED:
+            return cast("Shift", self._cached_shift)
         from app.models.shift import Shift
 
         return cast(Shift, db.session.get(Shift, self.shift_id))
 
     @property
     def target_shift(self) -> "Shift | None":
+        if self._cached_target_shift is not _NOT_PRELOADED:
+            return cast("Shift | None", self._cached_target_shift)
         if self.target_shift_id is None:
             return None
         from app.models.shift import Shift

@@ -8,6 +8,7 @@ from datetime import date, datetime, timedelta
 from app import db
 from app.models import Group, OnCall
 from app.utils.automation import OnCallAutomation
+from app.utils.automation.oncall_automation import AvailabilityIndex
 
 
 class TestOnCallAutomationGetEligibleUsers:
@@ -56,7 +57,10 @@ class TestOnCallAutomationCheckConstraint:
         """Test que check_oncall_constraint retourne True sans astreinte précédente."""
         with test_app.app_context():
             start_time = datetime.now() + timedelta(days=30)
-            result = OnCallAutomation.check_oncall_constraint(test_user, start_time)
+            index = AvailabilityIndex([test_user.id])
+            result = OnCallAutomation.check_oncall_constraint(
+                test_user, start_time, index
+            )
             assert result is True
 
     def test_returns_false_too_soon(self, test_app, test_user):
@@ -74,7 +78,10 @@ class TestOnCallAutomationCheckConstraint:
 
             # Tester avec une date trop proche (moins de 2 semaines après)
             start_time = now - timedelta(days=12)
-            result = OnCallAutomation.check_oncall_constraint(test_user, start_time)
+            index = AvailabilityIndex([test_user.id])
+            result = OnCallAutomation.check_oncall_constraint(
+                test_user, start_time, index
+            )
             assert result is False
 
     def test_returns_true_sufficient_spacing(self, test_app, test_user):
@@ -92,7 +99,10 @@ class TestOnCallAutomationCheckConstraint:
 
             # Tester avec une date suffisamment éloignée
             start_time = now + timedelta(days=15)
-            result = OnCallAutomation.check_oncall_constraint(test_user, start_time)
+            index = AvailabilityIndex([test_user.id])
+            result = OnCallAutomation.check_oncall_constraint(
+                test_user, start_time, index
+            )
             assert result is True
 
 
@@ -102,8 +112,9 @@ class TestOnCallAutomationFindNextAvailable:
     def test_returns_none_empty_list(self, test_app):
         """Test que find_next_available_user retourne None avec une liste vide."""
         with test_app.app_context():
+            index = AvailabilityIndex([])
             result = OnCallAutomation.find_next_available_user(
-                [], datetime.now(), datetime.now()
+                [], datetime.now(), datetime.now(), index
             )
             assert result is None
 
@@ -112,8 +123,9 @@ class TestOnCallAutomationFindNextAvailable:
         with test_app.app_context():
             start_time = datetime.now() + timedelta(days=10)
             end_time = start_time + timedelta(days=7)
+            index = AvailabilityIndex([test_user.id])
             result = OnCallAutomation.find_next_available_user(
-                [test_user], start_time, end_time
+                [test_user], start_time, end_time, index
             )
             # Peut retourner test_user ou None selon les conflits
             assert result is None or result.id == test_user.id

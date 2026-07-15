@@ -7,8 +7,10 @@ from datetime import date, datetime
 
 from flask import jsonify, render_template
 from flask_login import current_user, login_required
+from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
+from app import db
 from app.models import Leave, OnCall, Shift, ShiftType
 from app.routes.main import main_bp
 from app.services import ScheduleService
@@ -77,21 +79,25 @@ def user_dashboard():
         .all()
     )
 
-    shift_types_stats = []
     shift_types = ShiftType.query.all()
-    for shift_type in shift_types:
-        count = Shift.query.filter_by(
-            user_id=user_id, shift_type_id=shift_type.id
-        ).count()
-        if count > 0:
-            shift_types_stats.append(
-                {
-                    "id": shift_type.id,
-                    "name": shift_type.name,
-                    "label": shift_type.label,
-                    "count": count,
-                }
-            )
+    # Un .count() par type de shift (boucle) faisait autant de requêtes que
+    # de types existants - remplacé par un unique GROUP BY.
+    counts_by_type_id = dict(
+        db.session.query(Shift.shift_type_id, func.count(Shift.id))
+        .filter(Shift.user_id == user_id)
+        .group_by(Shift.shift_type_id)
+        .all()
+    )
+    shift_types_stats = [
+        {
+            "id": shift_type.id,
+            "name": shift_type.name,
+            "label": shift_type.label,
+            "count": counts_by_type_id[shift_type.id],
+        }
+        for shift_type in shift_types
+        if counts_by_type_id.get(shift_type.id, 0) > 0
+    ]
 
     # Par rang parmi les types existants (pas par id % taille_palette),
     # sinon deux types dont les IDs diffèrent d'un multiple de la taille

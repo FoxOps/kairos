@@ -12,23 +12,15 @@ from app.models import User
 from app.repositories.user_repository import GroupRepository, UserRepository
 from app.routes.admin import admin_bp
 from app.services import UserService
-from app.utils.optimizations import eager_load
 
 
 @admin_bp.route("/admin/users")
 @admin_required
-@eager_load(User, ["group", "shifts", "on_calls", "leaves"])
 def list_users():
-    users = (
-        User.query.options(
-            selectinload(User.group),
-            selectinload(User.shifts),
-            selectinload(User.on_calls),
-            selectinload(User.leaves),
-        )
-        .order_by(User.name)
-        .all()
-    )
+    # admin/users.html n'affiche que user.group.name - shifts/on_calls/leaves
+    # n'y sont jamais rendus, les précharger ne faisait que gaspiller des
+    # requêtes (et grandir sans borne avec l'historique de chaque utilisateur).
+    users = User.query.options(selectinload(User.group)).order_by(User.name).all()
     groups = GroupRepository.get_all()
     return render_template("admin/users.html", users=users, groups=groups)
 

@@ -311,18 +311,28 @@ def leave_keeps_minimum_headcount(
     if user.id not in schedule_user_ids:
         return True
 
+    # Une requête par jour ouvré remplacée par une seule requête couvrant
+    # toute la période [start_date, end_date] - le chevauchement par jour
+    # est ensuite vérifié en mémoire sur cette petite liste de congés
+    # (nombre de congés en cours, pas nombre de jours de la période).
+    leave_query = Leave.query.filter(
+        Leave.user_id.in_(schedule_user_ids),
+        Leave.user_id != user.id,
+        Leave.start_date <= end_date,
+        Leave.end_date >= start_date,
+    )
+    if exclude_leave_id is not None:
+        leave_query = leave_query.filter(Leave.id != exclude_leave_id)
+    other_leaves = leave_query.all()
+
     current_date = start_date
     while current_date <= end_date:
         if current_date.weekday() < 5:  # Shifts générés du lundi au vendredi
-            leave_query = Leave.query.filter(
-                Leave.user_id.in_(schedule_user_ids),
-                Leave.user_id != user.id,
-                Leave.start_date <= current_date,
-                Leave.end_date >= current_date,
-            )
-            if exclude_leave_id is not None:
-                leave_query = leave_query.filter(Leave.id != exclude_leave_id)
-            other_users_on_leave = {leave.user_id for leave in leave_query.all()}
+            other_users_on_leave = {
+                leave.user_id
+                for leave in other_leaves
+                if leave.start_date <= current_date <= leave.end_date
+            }
 
             # -1 pour l'utilisateur qui demande ce congé : il quitte
             # l'effectif disponible ce jour-là.

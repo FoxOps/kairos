@@ -4,9 +4,85 @@ OnCall automation utilities for Leviia Schedule.
 This module provides automation functionality for on-call duties.
 """
 
-from datetime import datetime, timedelta
+from collections import defaultdict
+from collections.abc import Iterable
+from datetime import date, datetime, timedelta
 
 from app.models import Group, Leave, OnCall, User
+
+
+class AvailabilityIndex:
+    """Vue en mémoire des astreintes/congés existants pour un ensemble
+    d'utilisateurs, construite par UNE requête bulk par source (OnCall,
+    Leave) puis mise à jour localement via record_assignment() au fil des
+    affectations faites pendant une génération.
+
+    Remplace des requêtes DB répétées par candidat/semaine (jusqu'à 3 par
+    candidat testé : conflit d'astreinte, conflit de congé, contrainte
+    d'espacement légal) - sur une génération de 6 mois avec plusieurs
+    utilisateurs testés par semaine, ça représentait 1500+ requêtes.
+    record_assignment() est indispensable (pas seulement le préchargement
+    initial) : sans lui, une astreinte tout juste attribuée à un
+    utilisateur plus tôt dans la même génération ne serait pas vue par les
+    vérifications des semaines suivantes pour ce même utilisateur - avant
+    ce correctif, c'est l'autoflush de SQLAlchemy qui garantissait cette
+    visibilité implicitement à chaque requête.
+    """
+
+    def __init__(self, user_ids: Iterable[int]):
+        user_id_set = set(user_ids)
+        self._oncall_intervals: dict[int, list[tuple[datetime, datetime]]] = (
+            defaultdict(list)
+        )
+        self._last_oncall_end: dict[int, datetime] = {}
+        self._leave_intervals: dict[int, list[tuple[date, date]]] = defaultdict(list)
+
+        if not user_id_set:
+            return
+
+        for oncall in OnCall.query.filter(OnCall.user_id.in_(user_id_set)).all():
+            self._oncall_intervals[oncall.user_id].append(
+                (oncall.start_time, oncall.end_time)
+            )
+            current_last = self._last_oncall_end.get(oncall.user_id)
+            if current_last is None or oncall.end_time > current_last:
+                self._last_oncall_end[oncall.user_id] = oncall.end_time
+
+        for leave in Leave.query.filter(Leave.user_id.in_(user_id_set)).all():
+            self._leave_intervals[leave.user_id].append(
+                (leave.start_date, leave.end_date)
+            )
+
+    def has_oncall_conflict(
+        self, user_id: int, start_time: datetime, end_time: datetime
+    ) -> bool:
+        return any(
+            existing_start < end_time and existing_end > start_time
+            for existing_start, existing_end in self._oncall_intervals.get(user_id, [])
+        )
+
+    def has_leave_conflict(
+        self, user_id: int, start_date: date, end_date: date
+    ) -> bool:
+        return any(
+            leave_start <= end_date and leave_end >= start_date
+            for leave_start, leave_end in self._leave_intervals.get(user_id, [])
+        )
+
+    def meets_spacing_constraint(self, user_id: int, start_time: datetime) -> bool:
+        last_end = self._last_oncall_end.get(user_id)
+        if last_end is None:
+            return True
+        gap_days = (start_time - last_end).days
+        return gap_days / 7 >= 2
+
+    def record_assignment(
+        self, user_id: int, start_time: datetime, end_time: datetime
+    ) -> None:
+        self._oncall_intervals[user_id].append((start_time, end_time))
+        current_last = self._last_oncall_end.get(user_id)
+        if current_last is None or end_time > current_last:
+            self._last_oncall_end[user_id] = end_time
 
 
 class OnCallAutomation:
@@ -72,7 +148,9 @@ class OnCallAutomation:
         return eligible_users
 
     @staticmethod
-    def check_oncall_constraint(user: User, start_time: datetime) -> bool:
+    def check_oncall_constraint(
+        user: User, start_time: datetime, index: AvailabilityIndex
+    ) -> bool:
         """
         Vérifie la contrainte légale d'espacement minimal (2 semaines) entre deux
         astreintes consécutives pour un même utilisateur.
@@ -80,24 +158,20 @@ class OnCallAutomation:
         Args:
             user: Utilisateur à vérifier
             start_time: Début de la nouvelle astreinte envisagée
+            index: Vue en mémoire des astreintes/congés existants (voir
+                AvailabilityIndex) - évite une requête DB par appel.
 
         Returns:
             True si aucune astreinte précédente ou si l'espacement est suffisant.
         """
-        last_oncall = (
-            OnCall.query.filter(OnCall.user_id == user.id)
-            .order_by(OnCall.end_time.desc())
-            .first()
-        )
-        if not last_oncall:
-            return True
-
-        gap_days = (start_time - last_oncall.end_time).days
-        return gap_days / 7 >= 2
+        return index.meets_spacing_constraint(user.id, start_time)
 
     @staticmethod
     def find_next_available_user(
-        users: list[User], start_time: datetime, end_time: datetime
+        users: list[User],
+        start_time: datetime,
+        end_time: datetime,
+        index: AvailabilityIndex,
     ) -> User | None:
         """
         Trouve le premier utilisateur de la liste disponible pour la période donnée
@@ -107,34 +181,20 @@ class OnCallAutomation:
             users: Liste ordonnée d'utilisateurs candidats
             start_time: Début de la période d'astreinte
             end_time: Fin de la période d'astreinte
+            index: Vue en mémoire des astreintes/congés existants (voir
+                AvailabilityIndex) - évite une requête DB par candidat testé.
 
         Returns:
             Le premier utilisateur disponible, ou None si aucun ne l'est.
         """
         for user in users:
-            has_oncall_conflict = (
-                OnCall.query.filter(
-                    OnCall.user_id == user.id,
-                    OnCall.start_time < end_time,
-                    OnCall.end_time > start_time,
-                ).first()
-                is not None
-            )
-            if has_oncall_conflict:
+            if index.has_oncall_conflict(user.id, start_time, end_time):
                 continue
 
-            has_leave_conflict = (
-                Leave.query.filter(
-                    Leave.user_id == user.id,
-                    Leave.start_date <= end_time.date(),
-                    Leave.end_date >= start_time.date(),
-                ).first()
-                is not None
-            )
-            if has_leave_conflict:
+            if index.has_leave_conflict(user.id, start_time.date(), end_time.date()):
                 continue
 
-            if not OnCallAutomation.check_oncall_constraint(user, start_time):
+            if not OnCallAutomation.check_oncall_constraint(user, start_time, index):
                 continue
 
             return user
@@ -181,6 +241,10 @@ class OnCallAutomation:
         if not rotation_order:
             return [], ["Impossible de déterminer l'ordre de rotation."]
 
+        # Une requête bulk par source (OnCall, Leave) au lieu de plusieurs
+        # requêtes par candidat testé à chaque semaine - voir AvailabilityIndex.
+        index = AvailabilityIndex(user.id for user in eligible_users)
+
         days_ahead = (4 - start_date.weekday()) % 7
         current_friday = start_date + timedelta(days=days_ahead)
 
@@ -203,28 +267,18 @@ class OnCallAutomation:
                 rotation_order[rotation_index:] + rotation_order[:rotation_index]
             )
             assigned_user = OnCallAutomation.find_next_available_user(
-                ordered_candidates, start_time, end_time
+                ordered_candidates, start_time, end_time, index
             )
 
             if assigned_user is None:
                 # Dernier recours : ignorer la contrainte légale des 2 semaines,
                 # mais toujours respecter congés et astreintes existantes.
                 for user in ordered_candidates:
-                    has_conflict = (
-                        OnCall.query.filter(
-                            OnCall.user_id == user.id,
-                            OnCall.start_time < end_time,
-                            OnCall.end_time > start_time,
-                        ).first()
-                        is not None
+                    has_conflict = index.has_oncall_conflict(
+                        user.id, start_time, end_time
                     )
-                    has_leave = (
-                        Leave.query.filter(
-                            Leave.user_id == user.id,
-                            Leave.start_date <= end_time.date(),
-                            Leave.end_date >= start_time.date(),
-                        ).first()
-                        is not None
+                    has_leave = index.has_leave_conflict(
+                        user.id, start_time.date(), end_time.date()
                     )
                     if not has_conflict and not has_leave:
                         assigned_user = user
@@ -248,6 +302,10 @@ class OnCallAutomation:
             oncalls.append(oncall)
             if not dry_run:
                 db.session.add(oncall)
+            # Indispensable même en dry_run : les semaines suivantes de
+            # cette même génération doivent voir cette affectation pour
+            # respecter l'espacement légal et éviter les doublons.
+            index.record_assignment(assigned_user.id, start_time, end_time)
 
             rotation_index = (rotation_order.index(assigned_user) + 1) % len(
                 rotation_order

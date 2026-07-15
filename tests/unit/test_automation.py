@@ -11,6 +11,7 @@ from app.utils.automation import (
     OnCallAutomation,
     get_automation_status,
 )
+from app.utils.automation.oncall_automation import AvailabilityIndex
 
 
 class TestOnCallAutomation:
@@ -112,8 +113,9 @@ class TestOnCallAutomation:
             db.session.commit()
 
             # Trouver un utilisateur disponible pour la même période
+            index = AvailabilityIndex([test_user.id, second_user.id, user3.id])
             available_user = OnCallAutomation.find_next_available_user(
-                rotation_order, start_time, end_time
+                rotation_order, start_time, end_time, index
             )
 
             # test_user n'est pas disponible, donc second_user devrait être retourné
@@ -305,15 +307,19 @@ class TestEdgeCases:
             db.session.commit()
 
             start_date = date(2024, 1, 5)  # Vendredi
-            end_date = date(2024, 1, 19)  # 2 semaines plus tard
+            # Bornée à la fin du congé (pas 2 semaines après comme les
+            # autres tests) : au-delà, test_user redevient légitimement
+            # assignable une fois son congé terminé - ce test vérifie
+            # spécifiquement l'exclusion PENDANT le congé, pas au-delà.
+            end_date = date(2024, 1, 12)
 
             oncalls, messages = OnCallAutomation.generate_oncall_schedule(
                 start_date, end_date, dry_run=True
             )
 
-            # Devrait générer 3 astreintes (end_date inclusif), mais
-            # test_user ne devrait pas être assigné
-            assert len(oncalls) == 3
+            # end_date inclusif : 2 vendredis (05/01, 12/01), tous deux
+            # couverts par le congé de test_user.
+            assert len(oncalls) == 2
             assert all(oncall.user_id != test_user.id for oncall in oncalls)
 
             # Nettoyer
