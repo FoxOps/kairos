@@ -7,51 +7,51 @@ This module provides configuration for the cache system.
 
 class CacheConfig:
     """
-    Configuration du cache.
+    Cache configuration.
 
-    Peut être configurée via variables d'environnement ou directement.
+    Can be configured via environment variables or directly.
 
-    Variables d'environnement disponibles:
-    - CACHE_TYPE: 'simple' (défaut), 'redis', 'memcached'
-    - CACHE_ENABLED: true/false (défaut: true)
-    - CACHE_DEFAULT_TIMEOUT: durée en secondes (défaut: 300)
-    - CACHE_MAX_ENTRIES: nombre maximal d'entrées (défaut: 1000)
-    - CACHE_THRESHOLD: seuil de nettoyage (défaut: 0.75)
-    - CACHE_KEY_PREFIX: préfixe pour les clés (défaut: 'leviia:')
-    - CACHE_REDIS_URL: URL Redis (ex: 'redis://localhost:6379/0')
-    - CACHE_REDIS_PASSWORD: mot de passe Redis
-    - CACHE_REDIS_DB: numéro de base Redis (défaut: 0)
+    Available environment variables:
+    - CACHE_TYPE: 'simple' (default), 'redis', 'memcached'
+    - CACHE_ENABLED: true/false (default: true)
+    - CACHE_DEFAULT_TIMEOUT: duration in seconds (default: 300)
+    - CACHE_MAX_ENTRIES: maximum number of entries (default: 1000)
+    - CACHE_THRESHOLD: cleanup threshold (default: 0.75)
+    - CACHE_KEY_PREFIX: prefix for keys (default: 'leviia:')
+    - CACHE_REDIS_URL: Redis URL (e.g. 'redis://localhost:6379/0')
+    - CACHE_REDIS_PASSWORD: Redis password
+    - CACHE_REDIS_DB: Redis database number (default: 0)
     """
 
-    # Activation/désactivation du cache
+    # Enable/disable the cache
     CACHE_ENABLED = False
 
-    # Type de cache : 'simple', 'redis', 'memcached'
+    # Cache type: 'simple', 'redis', 'memcached'
     CACHE_TYPE = "simple"
 
-    # Configuration par défaut pour SimpleCache
+    # Default configuration for SimpleCache
     CACHE_DEFAULT_TIMEOUT = 300  # 5 minutes
-    CACHE_MAX_ENTRIES = 1000  # Nombre maximal d'entrées en mémoire
-    CACHE_THRESHOLD = 0.75  # Seuil pour le nettoyage automatique
+    CACHE_MAX_ENTRIES = 1000  # Maximum number of in-memory entries
+    CACHE_THRESHOLD = 0.75  # Threshold for automatic cleanup
 
-    # Configuration pour Redis
+    # Redis configuration
     CACHE_REDIS_URL = None  # 'redis://localhost:6379/0'
     CACHE_REDIS_PASSWORD = None
     CACHE_REDIS_DB = 0
     CACHE_REDIS_SOCKET_TIMEOUT = 5
     CACHE_REDIS_SOCKET_CONNECT_TIMEOUT = 5
 
-    # Configuration pour Memcached
+    # Memcached configuration
     CACHE_MEMCACHED_SERVERS: list[tuple[str, int]] = []  # [('localhost', 11211)]
     CACHE_MEMCACHED_USERNAME = None
     CACHE_MEMCACHED_PASSWORD = None
 
-    # Préfixe pour toutes les clés de cache
+    # Prefix for all cache keys
     CACHE_KEY_PREFIX = "leviia:"
 
     @classmethod
     def from_env(cls):
-        """Charge la configuration depuis les variables d'environnement."""
+        """Load configuration from environment variables."""
         import os
 
         from app.utils.helpers import get_bool, get_int
@@ -72,7 +72,7 @@ class CacheConfig:
         )
         cls.CACHE_REDIS_DB = get_int("CACHE_REDIS_DB", cls.CACHE_REDIS_DB)
 
-        # Configuration Memcached
+        # Memcached configuration
         memcached_servers = os.environ.get("CACHE_MEMCACHED_SERVERS", "")
         if memcached_servers:
             cls.CACHE_MEMCACHED_SERVERS = [
@@ -86,5 +86,5 @@ class CacheConfig:
         )
 
 
-# Charger la configuration depuis l'environnement
+# Load configuration from the environment
 CacheConfig.from_env()

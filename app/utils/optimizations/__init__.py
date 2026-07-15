@@ -1,13 +1,13 @@
 """
-Module d'optimisations pour Leviia Schedule.
+Optimizations module for Leviia Schedule.
 
-Un seul décorateur actif : eager_load, utilisé par le dashboard pour
-éviter le N+1 en chargeant les relations SQLAlchemy en une seule requête
-(sans effet sur une fonction qui renvoie déjà une liste matérialisée
-plutôt qu'une Query - retiré des routes admin list_users/list_shift_types/
-list_groups pour cette raison, voir audit/cleanup-perf-security).
+Only one active decorator: eager_load, used by the dashboard to avoid
+N+1 by loading SQLAlchemy relationships in a single query (has no
+effect on a function that already returns a materialized list rather
+than a Query - removed from the admin routes list_users/
+list_shift_types/list_groups for that reason).
 
-Utilisation :
+Usage:
     from app.utils.optimizations import eager_load
 
     @eager_load(User, ['group'])
@@ -27,14 +27,14 @@ def eager_load(
     strategy: str = "joinedload",
 ):
     """
-    Décorateur pour charger les relations de manière eager (éviter le N+1).
+    Decorator to eagerly load relationships (avoid N+1).
 
     Args:
-        model_class: Classe du modèle
-        relationships: Liste des relations à charger
-        strategy: Stratégie de chargement ('joinedload' ou 'selectinload')
+        model_class: Model class
+        relationships: List of relationships to load
+        strategy: Loading strategy ('joinedload' or 'selectinload')
 
-    Exemple:
+    Example:
         @eager_load(User, ['shifts', 'on_calls', 'leaves'])
         def get_user(user_id):
             return db.session.get(User, user_id)
@@ -43,10 +43,10 @@ def eager_load(
     def decorator(f: Callable) -> Callable:
         @wraps(f)
         def wrapped(*args, **kwargs):
-            # Appeler la fonction pour obtenir la requête ou le résultat
+            # Call the function to get the query or the result
             result = f(*args, **kwargs)
 
-            # Si c'est une requête, appliquer le eager loading
+            # If it's a query, apply eager loading
             if isinstance(result, Query):
                 if relationships:
                     for rel in relationships:
@@ -60,11 +60,11 @@ def eager_load(
                             )
                 return result
 
-            # Si c'est un objet modèle, charger les relations
+            # If it's a model instance, load the relationships
             if isinstance(result, model_class):
                 if relationships:
                     for rel in relationships:
-                        getattr(result, rel)  # Cela déclenche le lazy loading
+                        getattr(result, rel)  # This triggers lazy loading
                 return result
 
             return result

@@ -60,10 +60,10 @@ def format_date_fr(d: date | datetime | None, format_str: str = "%a %d/%m") -> s
     return d.strftime(resolved_format)
 
 
-# Palette de couleurs sémantiques daisyUI (voir app/static/css/theme-colors.css)
-# utilisée pour distinguer visuellement les types de shifts sur le dashboard
-# (graphique + badges) - "error" volontairement exclu (connotation négative
-# trompeuse pour un simple type de shift).
+# daisyUI semantic color palette (see app/static/css/theme-colors.css)
+# used to visually distinguish shift types on the dashboard (chart +
+# badges) - "error" deliberately excluded (misleadingly negative
+# connotation for a plain shift type).
 SHIFT_TYPE_COLOR_PALETTE = [
     "primary",
     "secondary",
@@ -76,23 +76,23 @@ SHIFT_TYPE_COLOR_PALETTE = [
 
 def build_shift_type_color_map(shift_type_ids) -> dict:
     """
-    Associe à chaque ShiftType.id une couleur sémantique daisyUI, garantie
-    distincte pour tous les IDs passés tant qu'il y en a au plus
-    len(SHIFT_TYPE_COLOR_PALETTE) (au-delà, la palette boucle).
+    Map each ShiftType.id to a daisyUI semantic color, guaranteed
+    distinct for all passed IDs as long as there are at most
+    len(SHIFT_TYPE_COLOR_PALETTE) of them (beyond that, the palette
+    wraps around).
 
-    Attribue par RANG (ordre trié des IDs), pas par `id % len(palette)` :
-    un modulo sur l'ID brut fait collisionner deux types dès que leurs IDs
-    diffèrent d'un multiple de la taille de la palette (ex: IDs 2 et 8 avec
-    une palette de 6 tombent tous les deux sur l'index 2) - bug réel
-    observé en pratique après suppression/recréation de types de shifts,
-    qui fait grimper les IDs auto-incrémentés sans qu'ils restent
-    contigus à partir de 1.
+    Assigns by RANK (sorted order of the IDs), not by `id % len(palette)`:
+    a modulo on the raw ID makes two types collide as soon as their IDs
+    differ by a multiple of the palette size (e.g. IDs 2 and 8 with a
+    palette of 6 both land on index 2) - a real bug observed in practice
+    after deleting/recreating shift types, which pushes auto-incremented
+    IDs up without them staying contiguous from 1.
 
     Args:
-        shift_type_ids: IDs de ShiftType à mapper (doublons/None tolérés)
+        shift_type_ids: ShiftType IDs to map (duplicates/None tolerated)
 
     Returns:
-        Dict {shift_type_id: nom_couleur_daisyui}
+        Dict {shift_type_id: daisyui_color_name}
     """
     unique_sorted_ids = sorted({sid for sid in shift_type_ids if sid is not None})
     palette_size = len(SHIFT_TYPE_COLOR_PALETTE)
@@ -108,10 +108,9 @@ def build_shift_type_color_map(shift_type_ids) -> dict:
 
 
 def _resolve_authenticated_user(user):
-    """Résout `user` vers current_user si absent, ou None si non
-    authentifié - préambule identique répété par can_add_shift/
-    can_add_leave/can_add_oncall avant chacune de leurs vérifications
-    spécifiques."""
+    """Resolve `user` to current_user if absent, or None if not
+    authenticated - identical preamble repeated by can_add_shift/
+    can_add_leave/can_add_oncall before each of their specific checks."""
     if user is None:
         user = current_user
     if not user or not user.is_authenticated:
@@ -138,11 +137,11 @@ def can_add_shift(user=None, date=None, shift_type_id=None):
     if date is None:
         date = datetime.now().date()
 
-    # Les shifts ne peuvent être ajoutés que du lundi au vendredi
+    # Shifts can only be added Monday through Friday
     if date.weekday() >= 5:
         return False
 
-    # L'utilisateur ne peut pas avoir de shift s'il est en congé
+    # The user can't have a shift while on leave
     if is_user_on_leave(user.id, date):
         return False
 
@@ -172,7 +171,7 @@ def can_add_leave(user=None, start_date=None, end_date=None, exclude_leave_id=No
     if start_date is None or end_date is None:
         return False
 
-    # La date de début doit être antérieure (ou égale) à la date de fin
+    # The start date must be before (or equal to) the end date
     if start_date > end_date:
         return False
 
@@ -186,20 +185,20 @@ def can_add_leave(user=None, start_date=None, end_date=None, exclude_leave_id=No
     if overlapping_leave is not None:
         return False
 
-    # Règle 6 : effectif minimum 1 personne, jamais 0. Un congé ne peut pas
-    # faire tomber l'effectif disponible d'un jour couvert (parmi les
-    # utilisateurs éligibles pour les shifts) à 0.
+    # Rule 6: minimum headcount of 1 person, never 0. A leave can't make
+    # the available headcount for a covered day (among users eligible
+    # for shifts) drop to 0.
     return leave_keeps_minimum_headcount(user, start_date, end_date, exclude_leave_id)
 
 
 def leave_keeps_minimum_headcount(
     user, start_date: date, end_date: date, exclude_leave_id=None
 ) -> bool:
-    """Vérifie que le congé [start_date, end_date] ne fait tomber
-    l'effectif disponible (utilisateurs de groupes schedule, hors congés)
-    à 0 pour aucun jour ouvré couvert. Ne s'applique qu'aux utilisateurs
-    éligibles pour les shifts - le congé de quelqu'un hors de ces groupes
-    n'affecte pas cet effectif."""
+    """Check that the leave [start_date, end_date] doesn't drop the
+    available headcount (users in schedule groups, excluding leave) to
+    0 for any covered business day. Only applies to users eligible for
+    shifts - a leave for someone outside these groups doesn't affect
+    this headcount."""
     from app.utils.automation.advanced_shift_automation import AdvancedShiftAutomation
 
     schedule_users = AdvancedShiftAutomation.get_users_in_schedule_groups()
@@ -208,10 +207,10 @@ def leave_keeps_minimum_headcount(
     if user.id not in schedule_user_ids:
         return True
 
-    # Une requête par jour ouvré remplacée par une seule requête couvrant
-    # toute la période [start_date, end_date] - le chevauchement par jour
-    # est ensuite vérifié en mémoire sur cette petite liste de congés
-    # (nombre de congés en cours, pas nombre de jours de la période).
+    # One query per business day replaced with a single query covering
+    # the whole [start_date, end_date] period - the per-day overlap is
+    # then checked in memory against this small list of leaves (count of
+    # ongoing leaves, not count of days in the period).
     leave_query = Leave.query.filter(
         Leave.user_id.in_(schedule_user_ids),
         Leave.user_id != user.id,
@@ -224,15 +223,15 @@ def leave_keeps_minimum_headcount(
 
     current_date = start_date
     while current_date <= end_date:
-        if current_date.weekday() < 5:  # Shifts générés du lundi au vendredi
+        if current_date.weekday() < 5:  # Shifts are generated Monday-Friday
             other_users_on_leave = {
                 leave.user_id
                 for leave in other_leaves
                 if leave.start_date <= current_date <= leave.end_date
             }
 
-            # -1 pour l'utilisateur qui demande ce congé : il quitte
-            # l'effectif disponible ce jour-là.
+            # -1 for the user requesting this leave: they leave the
+            # available headcount that day.
             available_after = len(schedule_user_ids) - len(other_users_on_leave) - 1
             if available_after < 1:
                 return False
@@ -260,11 +259,11 @@ def can_add_oncall(user=None, start_time=None, end_time=None):
     if start_time is None or end_time is None:
         return False
 
-    # L'astreinte doit commencer un vendredi à 21h
+    # On-call must start on a Friday at 9pm
     if start_time.weekday() != 4 or start_time.hour != 21:
         return False
 
-    # L'utilisateur ne peut pas avoir d'astreinte s'il est en congé sur la période
+    # The user can't have an on-call while on leave over the period
     if _get_overlapping_leave(user.id, start_time.date(), end_time.date()):
         return False
 

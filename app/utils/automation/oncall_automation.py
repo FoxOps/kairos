@@ -12,21 +12,20 @@ from app.models import Group, Leave, OnCall, User
 
 
 class AvailabilityIndex:
-    """Vue en mémoire des astreintes/congés existants pour un ensemble
-    d'utilisateurs, construite par UNE requête bulk par source (OnCall,
-    Leave) puis mise à jour localement via record_assignment() au fil des
-    affectations faites pendant une génération.
+    """In-memory view of the existing on-calls/leaves for a set of
+    users, built by ONE bulk query per source (OnCall, Leave) then
+    updated locally via record_assignment() as assignments are made
+    during a generation run.
 
-    Remplace des requêtes DB répétées par candidat/semaine (jusqu'à 3 par
-    candidat testé : conflit d'astreinte, conflit de congé, contrainte
-    d'espacement légal) - sur une génération de 6 mois avec plusieurs
-    utilisateurs testés par semaine, ça représentait 1500+ requêtes.
-    record_assignment() est indispensable (pas seulement le préchargement
-    initial) : sans lui, une astreinte tout juste attribuée à un
-    utilisateur plus tôt dans la même génération ne serait pas vue par les
-    vérifications des semaines suivantes pour ce même utilisateur - avant
-    ce correctif, c'est l'autoflush de SQLAlchemy qui garantissait cette
-    visibilité implicitement à chaque requête.
+    Replaces DB queries repeated per candidate/week (up to 3 per
+    candidate tested: on-call conflict, leave conflict, legal spacing
+    constraint) - for a 6-month generation with several candidates
+    tested per week, that added up to 1500+ queries.
+    record_assignment() is essential (not just the initial preload):
+    without it, an on-call just assigned to a user earlier in the same
+    generation run wouldn't be seen by the following weeks' checks for
+    that same user - before this fix, SQLAlchemy's autoflush implicitly
+    guaranteed that visibility on every query.
     """
 
     def __init__(self, user_ids: Iterable[int]):
@@ -87,19 +86,20 @@ class AvailabilityIndex:
 
 class OnCallAutomation:
     """
-    Classe pour gérer l'automatisation des astreintes (On-Call).
+    Class managing on-call automation.
 
-    Fonctionnalités :
-    - Génération automatique des astreintes avec rotation
-    - Gestion des remplacements en cas de conflit
-    - Configuration de l'ordre de rotation
+    Features:
+    - Automatic on-call generation with rotation
+    - Handling replacements on conflict
+    - Rotation order configuration
     """
 
     @staticmethod
     def get_eligible_users() -> list[User]:
         """
-        Récupère la liste des utilisateurs éligibles pour les astreintes.
-        Un utilisateur est éligible s'il appartient à un groupe participant aux astreintes.
+        Fetch the list of users eligible for on-call duty.
+        A user is eligible if they belong to a group that participates
+        in on-call rotation.
         """
         return (
             User.query.join(Group)
@@ -111,32 +111,32 @@ class OnCallAutomation:
     @staticmethod
     def get_rotation_order(rotation_order_ids: list[int] | None = None) -> list[User]:
         """
-        Récupère l'ordre de rotation des utilisateurs.
+        Fetch the users' rotation order.
 
         Args:
-            rotation_order_ids: Liste optionnelle d'IDs d'utilisateurs dans l'ordre souhaité.
-                              Si None, utilise l'ordre alphabétique.
+            rotation_order_ids: Optional list of user IDs in the desired
+                              order. If None, uses alphabetical order.
 
         Returns:
-            Liste des utilisateurs dans l'ordre de rotation.
+            List of users in rotation order.
         """
         eligible_users = OnCallAutomation.get_eligible_users()
 
         if not eligible_users:
             return []
 
-        # Si un ordre personnalisé est fourni
+        # If a custom order is provided
         if rotation_order_ids:
-            # Créer un mapping id -> user pour un accès rapide
+            # Build an id -> user map for quick access
             user_map = {user.id: user for user in eligible_users}
 
-            # Construire la liste dans l'ordre spécifié
+            # Build the list in the specified order
             ordered_users = []
             for user_id in rotation_order_ids:
                 if user_id in user_map:
                     ordered_users.append(user_map[user_id])
 
-            # Ajouter les utilisateurs restants (qui n'étaient pas dans rotation_order_ids)
+            # Add the remaining users (not in rotation_order_ids)
             remaining_users = [
                 u for u in eligible_users if u.id not in rotation_order_ids
             ]
@@ -144,7 +144,7 @@ class OnCallAutomation:
 
             return ordered_users
 
-        # Sinon, retourner dans l'ordre alphabétique
+        # Otherwise, return in alphabetical order
         return eligible_users
 
     @staticmethod
@@ -152,17 +152,17 @@ class OnCallAutomation:
         user: User, start_time: datetime, index: AvailabilityIndex
     ) -> bool:
         """
-        Vérifie la contrainte légale d'espacement minimal (2 semaines) entre deux
-        astreintes consécutives pour un même utilisateur.
+        Check the legal minimum spacing constraint (2 weeks) between two
+        consecutive on-calls for the same user.
 
         Args:
-            user: Utilisateur à vérifier
-            start_time: Début de la nouvelle astreinte envisagée
-            index: Vue en mémoire des astreintes/congés existants (voir
-                AvailabilityIndex) - évite une requête DB par appel.
+            user: User to check
+            start_time: Start of the prospective new on-call
+            index: In-memory view of existing on-calls/leaves (see
+                AvailabilityIndex) - avoids a DB query per call.
 
         Returns:
-            True si aucune astreinte précédente ou si l'espacement est suffisant.
+            True if there's no previous on-call or the spacing is sufficient.
         """
         return index.meets_spacing_constraint(user.id, start_time)
 
@@ -174,18 +174,18 @@ class OnCallAutomation:
         index: AvailabilityIndex,
     ) -> User | None:
         """
-        Trouve le premier utilisateur de la liste disponible pour la période donnée
-        (pas de congé, pas d'astreinte chevauchante, contrainte légale respectée).
+        Find the first available user in the list for the given period
+        (no leave, no overlapping on-call, legal constraint satisfied).
 
         Args:
-            users: Liste ordonnée d'utilisateurs candidats
-            start_time: Début de la période d'astreinte
-            end_time: Fin de la période d'astreinte
-            index: Vue en mémoire des astreintes/congés existants (voir
-                AvailabilityIndex) - évite une requête DB par candidat testé.
+            users: Ordered list of candidate users
+            start_time: Start of the on-call period
+            end_time: End of the on-call period
+            index: In-memory view of existing on-calls/leaves (see
+                AvailabilityIndex) - avoids a DB query per candidate tested.
 
         Returns:
-            Le premier utilisateur disponible, ou None si aucun ne l'est.
+            The first available user, or None if none is available.
         """
         for user in users:
             if index.has_oncall_conflict(user.id, start_time, end_time):
@@ -210,26 +210,26 @@ class OnCallAutomation:
         commit: bool = True,
     ):
         """
-        Génère un planning d'astreintes pour une période donnée.
+        Generate an on-call schedule for a given period.
 
-        Les astreintes commencent le vendredi à 21h et se terminent le vendredi
-        suivant à 07h. Les utilisateurs sont assignés selon l'ordre de rotation,
-        en respectant les congés, les astreintes existantes et l'espacement légal
-        de 2 semaines minimum. Si aucun utilisateur ne respecte toutes ces règles,
-        un utilisateur sans conflit de congé/astreinte est assigné malgré tout
-        (contrainte légale ignorée en dernier recours).
+        On-calls start on Friday at 9pm and end the following Friday at
+        7am. Users are assigned according to the rotation order,
+        respecting leaves, existing on-calls, and the minimum 2-week
+        legal spacing. If no user satisfies all these rules, a user with
+        no leave/on-call conflict is assigned anyway (legal constraint
+        ignored as a last resort).
 
         Args:
-            start_date: Date de début
-            end_date: Date de fin
-            rotation_order_ids: Ordre de rotation personnalisé
-            dry_run: Si True, ne sauvegarde rien en base
-            commit: Si False (utilisé par rebalance_after_leave pour rendre
-                tout le rééquilibrage atomique), flush() au lieu de commit()
-                - laisse l'appelant décider quand committer/rollback.
+            start_date: Start date
+            end_date: End date
+            rotation_order_ids: Custom rotation order
+            dry_run: If True, doesn't save anything to the database
+            commit: If False (used by rebalance_after_leave to make the
+                whole rebalance atomic), flush() instead of commit() -
+                lets the caller decide when to commit/rollback.
 
         Returns:
-            Tuple: (liste des astreintes générées (objets OnCall), messages de log)
+            Tuple: (list of generated on-calls (OnCall objects), log messages)
         """
         from app import db
 
@@ -241,8 +241,8 @@ class OnCallAutomation:
         if not rotation_order:
             return [], ["Impossible de déterminer l'ordre de rotation."]
 
-        # Une requête bulk par source (OnCall, Leave) au lieu de plusieurs
-        # requêtes par candidat testé à chaque semaine - voir AvailabilityIndex.
+        # One bulk query per source (OnCall, Leave) instead of several
+        # queries per candidate tested each week - see AvailabilityIndex.
         index = AvailabilityIndex(user.id for user in eligible_users)
 
         days_ahead = (4 - start_date.weekday()) % 7
@@ -252,11 +252,11 @@ class OnCallAutomation:
         messages = []
         rotation_index = 0
 
-        # end_date inclusif, comme AdvancedShiftAutomation.generate_full_schedule
-        # (`current_date <= end_date`) - les deux reçoivent la même période
-        # depuis admin_automation_routes.py::automation_full, elles doivent
-        # traiter end_date de la même façon. Avant : `<` ignorait la semaine
-        # dont le vendredi tombait exactement sur end_date.
+        # end_date inclusive, like AdvancedShiftAutomation.generate_full_schedule
+        # (`current_date <= end_date`) - both receive the same period
+        # from admin_automation_routes.py::automation_full, they must
+        # treat end_date the same way. Before: `<` ignored the week
+        # whose Friday landed exactly on end_date.
         while current_friday <= end_date:
             start_time = datetime.combine(current_friday, datetime.min.time()).replace(
                 hour=21
@@ -271,8 +271,8 @@ class OnCallAutomation:
             )
 
             if assigned_user is None:
-                # Dernier recours : ignorer la contrainte légale des 2 semaines,
-                # mais toujours respecter congés et astreintes existantes.
+                # Last resort: ignore the 2-week legal constraint, but
+                # still respect leaves and existing on-calls.
                 for user in ordered_candidates:
                     has_conflict = index.has_oncall_conflict(
                         user.id, start_time, end_time
@@ -302,9 +302,9 @@ class OnCallAutomation:
             oncalls.append(oncall)
             if not dry_run:
                 db.session.add(oncall)
-            # Indispensable même en dry_run : les semaines suivantes de
-            # cette même génération doivent voir cette affectation pour
-            # respecter l'espacement légal et éviter les doublons.
+            # Essential even in dry_run: the following weeks of this same
+            # generation run must see this assignment to respect the
+            # legal spacing and avoid duplicates.
             index.record_assignment(assigned_user.id, start_time, end_time)
 
             rotation_index = (rotation_order.index(assigned_user) + 1) % len(

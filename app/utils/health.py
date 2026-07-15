@@ -11,10 +11,11 @@ from datetime import datetime, timezone
 from flask import Flask, jsonify
 from sqlalchemy import text
 
-# Version par défaut si APP_VERSION n'est pas définie dans l'environnement.
-# Source unique : importée par app/__init__.py (context_processor du footer)
-# pour éviter que /version et le footer affichent deux valeurs différentes
-# (déjà arrivé : le footer était resté bloqué sur "0.6.0" après un bump ici).
+# Default version if APP_VERSION isn't set in the environment. Single
+# source of truth: imported by app/__init__.py (footer context_processor)
+# so /version and the footer never show two different values (this
+# already happened once: the footer stayed stuck on "0.6.0" after a
+# bump here).
 APP_VERSION_DEFAULT = "0.7.9"
 
 
@@ -158,8 +159,8 @@ def check_cache(app: Flask) -> bool:
 
             cache_url = app.config.get("CACHE_REDIS_URL", "redis://localhost:6379/0")
             r = redis.Redis.from_url(cache_url)
-            # Stub redis imprécis (--ignore-missing-imports) : from_url()
-            # ne renvoie jamais None en pratique, seulement un client Redis.
+            # Imprecise redis stub (--ignore-missing-imports): from_url()
+            # never actually returns None, only a Redis client.
             return r.ping()  # type: ignore[attr-defined]
         elif cache_type == "memcached":
             # Check Memcached connection
