@@ -11,10 +11,9 @@ class TestRolePermissions:
 
     def test_decorators_import(self):
         """Test que les decorateurs peuvent etre importes."""
-        from app.auth.decorators import admin_required, role_required
+        from app.auth.decorators import admin_required
 
         assert callable(admin_required)
-        assert callable(role_required)
 
     def test_models_have_is_admin(self):
         """Test que le modele User a le champ is_admin."""

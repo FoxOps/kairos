@@ -5,7 +5,7 @@ This module provides general utility functions used throughout the application.
 """
 
 import os
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, timedelta
 
 from flask_login import current_user
 
@@ -35,54 +35,6 @@ def get_int(env_var: str, default: int = 0) -> int:
         return int(value.strip())
     except ValueError:
         return default
-
-
-def format_date(d: date, format_str: str = "%Y-%m-%d") -> str:
-    """
-    Format a date object as a string.
-
-    Args:
-        d: Date object to format
-        format_str: Format string (default: YYYY-MM-DD)
-
-    Returns:
-        Formatted date string
-    """
-    if d is None:
-        return ""
-    return d.strftime(format_str)
-
-
-def format_datetime(dt: datetime, format_str: str = "%Y-%m-%d %H:%M:%S") -> str:
-    """
-    Format a datetime object as a string.
-
-    Args:
-        dt: Datetime object to format
-        format_str: Format string (default: YYYY-MM-DD HH:MM:SS)
-
-    Returns:
-        Formatted datetime string
-    """
-    if dt is None:
-        return ""
-    return dt.strftime(format_str)
-
-
-def format_time(t: time, format_str: str = "%H:%M") -> str:
-    """
-    Format a time object as a string.
-
-    Args:
-        t: Time object to format
-        format_str: Format string (default: HH:MM)
-
-    Returns:
-        Formatted time string
-    """
-    if t is None:
-        return ""
-    return t.strftime(format_str)
 
 
 _FR_WEEKDAYS_ABBR = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."]
@@ -148,69 +100,6 @@ def build_shift_type_color_map(shift_type_ids) -> dict:
         shift_type_id: SHIFT_TYPE_COLOR_PALETTE[index % palette_size]
         for index, shift_type_id in enumerate(unique_sorted_ids)
     }
-
-
-def parse_date(date_str: str, format_str: str = "%Y-%m-%d") -> date | None:
-    """
-    Parse a string into a date object.
-
-    Args:
-        date_str: String to parse
-        format_str: Format string (default: YYYY-MM-DD)
-
-    Returns:
-        Date object or None if parsing fails
-    """
-    try:
-        return datetime.strptime(date_str, format_str).date()
-    except (ValueError, TypeError):
-        return None
-
-
-def parse_datetime(
-    dt_str: str, format_str: str = "%Y-%m-%d %H:%M:%S"
-) -> datetime | None:
-    """
-    Parse a string into a datetime object.
-
-    Args:
-        dt_str: String to parse
-        format_str: Format string (default: YYYY-MM-DD HH:MM:SS)
-
-    Returns:
-        Datetime object or None if parsing fails
-    """
-    try:
-        return datetime.strptime(dt_str, format_str)
-    except (ValueError, TypeError):
-        return None
-
-
-def get_current_year() -> int:
-    """Get the current year."""
-    return datetime.now().year
-
-
-def get_current_month() -> int:
-    """Get the current month (1-12)."""
-    return datetime.now().month
-
-
-def get_days_in_month(year: int, month: int) -> int:
-    """
-    Get the number of days in a month.
-
-    Args:
-        year: Year
-        month: Month (1-12)
-
-    Returns:
-        Number of days in the month
-    """
-    if month == 12:
-        return (date(year + 1, 1, 1) - date(year, 12, 1)).days
-    else:
-        return (date(year, month + 1, 1) - date(year, month, 1)).days
 
 
 # ---------------------------------------------------------------------------

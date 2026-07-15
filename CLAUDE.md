@@ -76,8 +76,10 @@ touching auth flows.
 - Root-level `config.py` is a separate, mostly-legacy module only exercised by
   `tests/unit/test_config.py` and `scripts/validate_config.py`. Don't confuse the two when changing
   configuration — check which one a given caller actually imports (`app.config.X` vs `config`).
-- `config_oidc.py` (`OIDCConfig`) and `config_performance.py` are additional standalone config
-  modules loaded directly by `app/__init__.py` and `app/auth/oidc_auth.py`.
+- `config_oidc.py` (`OIDCConfig`) is an additional standalone config module loaded directly by
+  `app/__init__.py` and `app/auth/oidc_auth.py`. A `config_performance.py` used to exist alongside
+  it but was orphaned (loaded nowhere) and removed during the `audit/cleanup-perf-security` pass —
+  don't reintroduce it under that name without actually wiring it into `create_app()`.
 
 ### Models
 

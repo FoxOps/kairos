@@ -31,10 +31,6 @@ class SwapService:
         return SwapRequestRepository.list_by_status(SwapRequest.APPROVED)
 
     @staticmethod
-    def list_for_user(user_id: int) -> list[SwapRequest]:
-        return SwapRequestRepository.list_for_user(user_id)
-
-    @staticmethod
     def _other_shift_on_date(user_id: int, target_date, exclude_shift_id) -> bool:
         """True si user_id a un shift à target_date autre que exclude_shift_id."""
         query = Shift.query.filter(Shift.user_id == user_id, Shift.date == target_date)

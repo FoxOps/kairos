@@ -136,10 +136,6 @@ class SwapRequestRepository:
         return swap_request
 
     @staticmethod
-    def delete(swap_request: SwapRequest) -> None:
-        db.session.delete(swap_request)
-
-    @staticmethod
     def purge_resolved_for_user(user_id: int) -> int:
         """Supprime les demandes terminées (non pending) impliquant
         user_id (comme demandeur ou destinataire). Retourne le nombre

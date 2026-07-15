@@ -5,7 +5,7 @@ This module contains the SwapRequest model for shift exchange requests
 between users, subject to administrator validation.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, cast
 
 from app import db
@@ -85,8 +85,7 @@ class SwapRequest(BaseModel):
     # explicite ici serait elle bien vue par mypy, mais typée en dur
     # RelationshipProperty[Any] par les stubs SQLAlchemy 2.0 sans le
     # plugin mypy dédié (non installé dans ce projet) - donc de simples
-    # @property suivant le pattern déjà utilisé par
-    # User.next_shift/current_oncall (app/models/user.py).
+    # @property qui font un db.session.get() à l'accès.
     # Cache d'instance rempli par SwapRequestRepository._preload_related()
     # pour éviter un N+1 sur les listes (admin/swaps.html, swaps.html).
     # Nécessaire car l'identity map de SQLAlchemy est en références
@@ -163,7 +162,7 @@ class SwapRequest(BaseModel):
         """
         self.status = status
         self.reviewed_by_id = admin_user_id
-        self.reviewed_at = datetime.utcnow()
+        self.reviewed_at = datetime.now(timezone.utc)
         self.admin_comment = comment
 
     def __repr__(self) -> str:

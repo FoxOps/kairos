@@ -4,15 +4,7 @@ Tests unitaires pour les décorateurs sans contexte Flask.
 
 from unittest.mock import Mock
 
-from app.auth.decorators import (
-    admin_required,
-    role_required,
-    user_can_delete,
-    user_can_delete_resource,
-    user_can_edit,
-    user_can_edit_resource,
-    user_owns_resource,
-)
+from app.auth.decorators import admin_required, user_owns_resource
 
 
 class TestAdminRequiredDecorator:
@@ -47,39 +39,6 @@ class TestAdminRequiredDecorator:
             pass
 
         assert my_function.__name__ == "my_function"
-
-
-class TestRoleRequiredDecorator:
-    """Tests unitaires pour role_required."""
-
-    def test_role_required_decorator_structure(self):
-        """Test que role_required est un décorateur valide."""
-
-        @role_required("user")
-        def test_function():
-            return "test"
-
-        assert callable(test_function)
-
-    def test_role_required_with_multiple_roles(self):
-        """Test role_required avec plusieurs rôles."""
-
-        @role_required("admin", "user")
-        def test_function():
-            return "test"
-
-        assert callable(test_function)
-
-    def test_role_required_preserves_metadata(self):
-        """Test que role_required préserve les métadonnées."""
-
-        @role_required("admin")
-        def test_function():
-            """Test docstring."""
-            pass
-
-        assert test_function.__name__ == "test_function"
-        assert test_function.__doc__ == "Test docstring."
 
 
 class TestUserOwnsResourceDecorator:
@@ -119,44 +78,6 @@ class TestUserOwnsResourceDecorator:
         assert callable(test_function)
 
 
-class TestAliasDecorators:
-    """Tests pour les alias de décorateurs."""
-
-    def test_user_can_edit_resource_is_callable(self):
-        """Test que user_can_edit_resource est appelable."""
-        MockModel = Mock()
-        decorator = user_can_edit_resource(MockModel, "resource_id")
-        assert callable(decorator)
-
-    def test_user_can_delete_resource_is_callable(self):
-        """Test que user_can_delete_resource est appelable."""
-        MockModel = Mock()
-        decorator = user_can_delete_resource(MockModel, "resource_id")
-        assert callable(decorator)
-
-
-class TestLegacyDecorators:
-    """Tests pour les décorateurs obsolètes."""
-
-    def test_user_can_edit_decorator_structure(self):
-        """Test que user_can_edit est un décorateur valide."""
-
-        @user_can_edit("user_id")
-        def test_function(user_id):
-            return "test"
-
-        assert callable(test_function)
-
-    def test_user_can_delete_decorator_structure(self):
-        """Test que user_can_delete est un décorateur valide."""
-
-        @user_can_delete("shift")
-        def test_function():
-            return "test"
-
-        assert callable(test_function)
-
-
 class TestDecoratorChaining:
     """Tests pour l'enchaînement de décorateurs."""
 
@@ -165,7 +86,7 @@ class TestDecoratorChaining:
         MockModel = Mock()
 
         @user_owns_resource(MockModel, "resource_id")
-        @role_required("admin")
+        @admin_required
         def test_function(resource_id):
             return "test"
 
@@ -176,7 +97,7 @@ class TestDecoratorChaining:
         MockModel = Mock()
 
         @user_owns_resource(MockModel, "resource_id")
-        @role_required("admin")
+        @admin_required
         def test_function(resource_id):
             """Test docstring."""
             pass

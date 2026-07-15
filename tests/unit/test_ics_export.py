@@ -6,21 +6,29 @@ from datetime import datetime, timedelta
 
 from app import db
 from app.models import Leave, OnCall, Shift
-from app.utils.export import (
-    generate_ics_leaves,
-    generate_ics_oncall,
-    generate_ics_shifts,
-    generate_ics_standard,
-)
+from app.utils.export import generate_ics_standard
+
+
+def _generate_ics_shifts(shifts):
+    return generate_ics_standard(shifts, "Leviia Schedule - Shifts")
+
+
+def _generate_ics_oncall(on_calls):
+    return generate_ics_standard(on_calls, "Leviia Schedule - Astreintes")
+
+
+def _generate_ics_leaves(leaves):
+    return generate_ics_standard(leaves, "Leviia Schedule - Conge")
 
 
 class TestICSExport:
-    """Tests pour l'export ICS."""
+    """Tests pour l'export ICS (via generate_ics_standard, le seul chemin
+    réellement utilisé en production - voir app/services/export_service.py)."""
 
     def test_generate_ics_shifts(self, test_shift):
         """Test la génération d'un fichier ICS pour les shifts."""
         shifts = [test_shift]
-        ics_content = generate_ics_shifts(shifts)
+        ics_content = _generate_ics_shifts(shifts)
 
         # Vérifier que le contenu est valide
         assert "BEGIN:VCALENDAR" in ics_content
@@ -33,7 +41,7 @@ class TestICSExport:
     def test_generate_ics_oncall(self, test_oncall):
         """Test la génération d'un fichier ICS pour les astreintes."""
         on_calls = [test_oncall]
-        ics_content = generate_ics_oncall(on_calls)
+        ics_content = _generate_ics_oncall(on_calls)
 
         # Vérifier que le contenu est valide
         assert "BEGIN:VCALENDAR" in ics_content
@@ -46,7 +54,7 @@ class TestICSExport:
     def test_generate_ics_leaves(self, test_leave):
         """Test la génération d'un fichier ICS pour les congés."""
         leaves = [test_leave]
-        ics_content = generate_ics_leaves(leaves)
+        ics_content = _generate_ics_leaves(leaves)
 
         # Vérifier que le contenu est valide
         assert "BEGIN:VCALENDAR" in ics_content
@@ -59,7 +67,7 @@ class TestICSExport:
 
     def test_generate_ics_shifts_timezone(self, test_shift):
         """Test que les shifts sont exportés avec le bon timezone."""
-        ics_content = generate_ics_shifts([test_shift])
+        ics_content = _generate_ics_shifts([test_shift])
 
         # Vérifier que le timezone est présent
         assert "Europe/Paris" in ics_content
@@ -75,7 +83,7 @@ class TestICSExport:
         db.session.add(leave)
         db.session.commit()
 
-        ics_content = generate_ics_leaves([leave])
+        ics_content = _generate_ics_leaves([leave])
 
         # Vérifier que le congé est un événement toute la journée
         assert "DTSTART" in ics_content
@@ -104,7 +112,7 @@ class TestICSExport:
                 shifts.append(shift)
             db.session.commit()
 
-            ics_content = generate_ics_shifts(shifts)
+            ics_content = _generate_ics_shifts(shifts)
 
             # Vérifier que tous les shifts sont présents
             assert ics_content.count("BEGIN:VEVENT") == 3
@@ -129,7 +137,7 @@ class TestICSExport:
                 on_calls.append(oncall)
             db.session.commit()
 
-            ics_content = generate_ics_oncall(on_calls)
+            ics_content = _generate_ics_oncall(on_calls)
 
             # Vérifier que toutes les astreintes sont présentes
             assert ics_content.count("BEGIN:VEVENT") == 2
@@ -139,18 +147,18 @@ class TestICSExport:
         """Test l'export avec des listes vides."""
         with test_app.app_context():
             # Shifts vides
-            ics_content = generate_ics_shifts([])
+            ics_content = _generate_ics_shifts([])
             assert "BEGIN:VCALENDAR" in ics_content
             assert "END:VCALENDAR" in ics_content
             assert ics_content.count("BEGIN:VEVENT") == 0
 
             # Astreintes vides
-            ics_content = generate_ics_oncall([])
+            ics_content = _generate_ics_oncall([])
             assert "BEGIN:VCALENDAR" in ics_content
             assert ics_content.count("BEGIN:VEVENT") == 0
 
             # Congés vides
-            ics_content = generate_ics_leaves([])
+            ics_content = _generate_ics_leaves([])
             assert "BEGIN:VCALENDAR" in ics_content
             assert ics_content.count("BEGIN:VEVENT") == 0
 
@@ -222,7 +230,7 @@ class TestICSExport:
             db.session.add(shift)
             db.session.commit()
 
-            ics_content = generate_ics_shifts([shift])
+            ics_content = _generate_ics_shifts([shift])
 
             # Vérifier que le nom de l'utilisateur est présent
             assert test_user.name in ics_content
@@ -238,7 +246,7 @@ class TestICSExport:
             db.session.add(leave)
             db.session.commit()
 
-            ics_content = generate_ics_leaves([leave])
+            ics_content = _generate_ics_leaves([leave])
 
             # Vérifier que le congé est exporté correctement
             assert "Conge" in ics_content
@@ -246,7 +254,7 @@ class TestICSExport:
 
     def test_generate_ics_calendar_properties(self, test_shift):
         """Test que les propriétés du calendrier sont correctes."""
-        ics_content = generate_ics_shifts([test_shift])
+        ics_content = _generate_ics_shifts([test_shift])
 
         # Vérifier les propriétés standard du calendrier
         assert "PRODID:-//Leviia Schedule//fr" in ics_content
@@ -256,7 +264,7 @@ class TestICSExport:
 
     def test_generate_ics_event_uid(self, test_shift):
         """Test que chaque événement a un UID unique."""
-        ics_content = generate_ics_shifts([test_shift])
+        ics_content = _generate_ics_shifts([test_shift])
 
         # Vérifier que l'UID est présent et contient l'ID du shift
         assert f"UID:Shift-{test_shift.id}@mtg-schedule" in ics_content

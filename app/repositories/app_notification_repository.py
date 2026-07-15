@@ -5,7 +5,7 @@ Data access layer for the AppNotification model - no business logic, no
 Flask request/response handling, just queries.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app import db
 from app.models import AppNotification
@@ -47,7 +47,7 @@ class AppNotificationRepository:
     @staticmethod
     def mark_all_read_for_user(user_id: int) -> None:
         AppNotification.query.filter_by(user_id=user_id, read_at=None).update(
-            {"read_at": datetime.utcnow()}
+            {"read_at": datetime.now(timezone.utc)}
         )
 
     @staticmethod

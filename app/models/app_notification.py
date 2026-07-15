@@ -7,7 +7,7 @@ idempotency guard for the weekly *email* reminders and is never displayed
 in the UI. Don't confuse the two.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app import db
 from app.models.base import BaseModel
@@ -45,7 +45,7 @@ class AppNotification(BaseModel):
 
     def mark_read(self) -> None:
         """Set read_at (caller is responsible for commit)."""
-        self.read_at = datetime.utcnow()
+        self.read_at = datetime.now(timezone.utc)
 
     def __repr__(self) -> str:
         return f"<AppNotification {self.id} - user={self.user_id} - {self.notification_type}>"

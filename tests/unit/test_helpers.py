@@ -2,7 +2,7 @@
 Tests pour les fonctions helpers (validation des conflits).
 """
 
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, timedelta
 
 from app import db
 from app.models import Leave, OnCall, Shift
@@ -15,19 +15,11 @@ from app.utils.helpers import (
     can_add_leave,
     can_add_oncall,
     can_add_shift,
-    format_date,
     format_date_fr,
-    format_datetime,
-    format_time,
     get_bool,
-    get_current_month,
-    get_current_year,
-    get_days_in_month,
     get_int,
     is_user_on_leave,
     is_user_on_shift,
-    parse_date,
-    parse_datetime,
 )
 
 
@@ -501,24 +493,6 @@ class TestGetInt:
 
 
 class TestFormatFunctions:
-    def test_format_date(self):
-        assert format_date(date(2026, 7, 12)) == "2026-07-12"
-
-    def test_format_date_none(self):
-        assert format_date(None) == ""
-
-    def test_format_datetime(self):
-        assert format_datetime(datetime(2026, 7, 12, 9, 30, 0)) == "2026-07-12 09:30:00"
-
-    def test_format_datetime_none(self):
-        assert format_datetime(None) == ""
-
-    def test_format_time(self):
-        assert format_time(time(9, 30)) == "09:30"
-
-    def test_format_time_none(self):
-        assert format_time(None) == ""
-
     def test_format_date_fr_weekday_abbreviations(self):
         # 2026-07-13 est un lundi
         assert format_date_fr(date(2026, 7, 13)) == "lun. 13/07"
@@ -576,40 +550,6 @@ class TestBuildShiftTypeColorMap:
         from app.utils.helpers.common_helpers import SHIFT_TYPE_COLOR_PALETTE
 
         assert "error" not in SHIFT_TYPE_COLOR_PALETTE
-
-
-class TestParseFunctions:
-    def test_parse_date_valid(self):
-        assert parse_date("2026-07-12") == date(2026, 7, 12)
-
-    def test_parse_date_invalid(self):
-        assert parse_date("not-a-date") is None
-
-    def test_parse_date_none(self):
-        assert parse_date(None) is None
-
-    def test_parse_datetime_valid(self):
-        assert parse_datetime("2026-07-12 09:30:00") == datetime(2026, 7, 12, 9, 30, 0)
-
-    def test_parse_datetime_invalid(self):
-        assert parse_datetime("not-a-datetime") is None
-
-
-class TestDateHelpers:
-    def test_get_current_year(self):
-        assert get_current_year() == datetime.now().year
-
-    def test_get_current_month(self):
-        assert get_current_month() == datetime.now().month
-
-    def test_get_days_in_month_regular(self):
-        assert get_days_in_month(2026, 4) == 30
-
-    def test_get_days_in_month_december(self):
-        assert get_days_in_month(2026, 12) == 31
-
-    def test_get_days_in_month_leap_february(self):
-        assert get_days_in_month(2024, 2) == 29
 
 
 class TestOverlappingShiftAndOnCallHelpers:

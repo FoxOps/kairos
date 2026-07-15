@@ -7,9 +7,8 @@ It supports multiple cache backends: SimpleCache, Redis, and Memcached.
 Note: This implementation uses Flask-Caching compatible backends.
 """
 
-import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from flask import Flask
@@ -73,58 +72,6 @@ def init_cache(app: Flask) -> None:
         logger.warning("Falling back to simple dictionary cache")
 
 
-def get_cache():
-    """
-    Get the cache instance.
-
-    Returns:
-        The configured cache instance
-
-    Raises:
-        RuntimeError: If cache is not initialized
-    """
-    global _cache
-    if _cache is None:
-        raise RuntimeError("Cache not initialized. Call init_cache(app) first.")
-    return _cache
-
-
-def clear_cache() -> None:
-    """Clear all cached data."""
-    global _cache
-    if _cache is not None:
-        _cache.clear()
-        logger.info("Cache cleared")
-
-
-def cache_key(*args, **kwargs) -> str:
-    """
-    Generate a cache key from the provided arguments.
-
-    Args:
-        *args: Positional arguments to include in the key
-        **kwargs: Keyword arguments to include in the key
-
-    Returns:
-        A string cache key
-    """
-    key_parts = []
-
-    for arg in args:
-        if isinstance(arg, (list, tuple)):
-            key_parts.append(json.dumps(arg, sort_keys=True))
-        else:
-            key_parts.append(str(arg))
-
-    for key, value in sorted(kwargs.items()):
-        if isinstance(value, (list, tuple)):
-            key_parts.append(f"{key}={json.dumps(value, sort_keys=True)}")
-        else:
-            key_parts.append(f"{key}={value}")
-
-    return ":".join(key_parts)
-
-
 class SimpleDictCache:
     """
     Simple dictionary-based cache for fallback purposes.
@@ -141,7 +88,8 @@ class SimpleDictCache:
         """Set a value in the cache."""
         self._cache[key] = {
             "value": value,
-            "expires": datetime.utcnow() + timedelta(seconds=timeout or self.timeout),
+            "expires": datetime.now(timezone.utc)
+            + timedelta(seconds=timeout or self.timeout),
         }
 
     def get(self, key: str) -> Any:
@@ -150,7 +98,7 @@ class SimpleDictCache:
         if item is None:
             return None
 
-        if datetime.utcnow() > item["expires"]:
+        if datetime.now(timezone.utc) > item["expires"]:
             del self._cache[key]
             return None
 

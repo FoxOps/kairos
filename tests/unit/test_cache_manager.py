@@ -6,12 +6,12 @@ l'application (app/__init__.py) - ces tests couvrent ses branches
 (simple/redis/memcached/fallback sur exception), le seul chemin de ce
 module réellement exercé en production.
 
-get_cache()/clear_cache()/cache_key()/SimpleDictCache existent toujours
-mais n'ont plus aucun appelant dans app/ depuis la suppression des
-décorateurs cached_route/cache_result (Phase 4) - ils importaient
-`cache` depuis app.utils.cache, qui n'a jamais existé comme export (import
-cassé, cohérent avec le reste du code mort déjà supprimé). Signalé pour
-suppression plutôt que testé à vide - voir rapport Phase 4.
+get_cache()/clear_cache()/cache_key() ont été supprimés (audit/cleanup-
+perf-security) : plus aucun appelant depuis la suppression des
+décorateurs cached_route/cache_result (Phase 4), qui importaient déjà
+`cache` depuis app.utils.cache de façon cassée (jamais exporté).
+SimpleDictCache reste le seul chemin réellement exercé en production
+(flask_caching absent de cet environnement) - testé directement ici.
 """
 
 import pytest

@@ -14,41 +14,11 @@ class TestDecoratorImports:
 
         assert callable(admin_required)
 
-    def test_role_required_import(self):
-        """Test que le décorateur role_required peut être importé."""
-        from app.auth.decorators import role_required
-
-        assert callable(role_required)
-
-    def test_user_can_edit_import(self):
-        """Test que le décorateur user_can_edit peut être importé."""
-        from app.auth.decorators import user_can_edit
-
-        assert callable(user_can_edit)
-
-    def test_user_can_delete_import(self):
-        """Test que le décorateur user_can_delete peut être importé."""
-        from app.auth.decorators import user_can_delete
-
-        assert callable(user_can_delete)
-
     def test_user_owns_resource_import(self):
         """Test que le décorateur user_owns_resource peut être importé."""
         from app.auth.decorators import user_owns_resource
 
         assert callable(user_owns_resource)
-
-    def test_user_can_edit_resource_import(self):
-        """Test que le décorateur user_can_edit_resource peut être importé."""
-        from app.auth.decorators import user_can_edit_resource
-
-        assert callable(user_can_edit_resource)
-
-    def test_user_can_delete_resource_import(self):
-        """Test que le décorateur user_can_delete_resource peut être importé."""
-        from app.auth.decorators import user_can_delete_resource
-
-        assert callable(user_can_delete_resource)
 
 
 class TestDecoratorProperties:
@@ -85,13 +55,6 @@ class TestDecoratorProperties:
 
         assert callable(dummy)
 
-    def test_role_required_is_callable(self, test_app):
-        """Test que role_required est callable."""
-        from app.auth.decorators import role_required
-
-        decorated_func = role_required("admin")
-        assert callable(decorated_func)
-
     def test_user_owns_resource_is_callable(self, test_app):
         """Test que user_owns_resource est callable."""
         from app.auth.decorators import user_owns_resource
@@ -122,21 +85,6 @@ class TestAdminRequiredDecorator:
             or b"permissions" in response.data.lower()
             or b"admin" in response.data.lower()
         )
-
-
-class TestRoleRequiredDecorator:
-    """Tests pour le décorateur role_required."""
-
-    def test_role_required_allows_user(self, logged_in_client):
-        """Test qu'un utilisateur normal peut accéder aux routes user."""
-        # La route index est accessible à tous les utilisateurs connectés
-        response = logged_in_client.get("/")
-        assert response.status_code == 200
-
-    def test_role_required_allows_admin(self, logged_in_client):
-        """Test qu'un admin peut accéder aux routes user."""
-        response = logged_in_client.get("/")
-        assert response.status_code == 200
 
 
 class TestUserOwnsResourceDecorator:

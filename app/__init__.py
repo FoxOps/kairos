@@ -208,7 +208,7 @@ def create_app(config_object: str | None = None):
 
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
+        return db.session.get(User, int(user_id))
 
     # Initialiser OIDC si configuré
     if OIDCConfig.ENABLED and OIDCConfig.is_configured():

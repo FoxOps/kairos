@@ -14,7 +14,7 @@ from app.repositories.leave_repository import LeaveRepository
 from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository
 from app.repositories.user_repository import UserRepository
-from app.utils.export.ics_exporter import export_to_ics, generate_ics_calendar
+from app.utils.export.ics_exporter import export_to_ics
 
 VALID_SCOPES = ("all", "my")
 
@@ -68,7 +68,3 @@ class ExportService:
         return export_to_ics(
             leaves, f"Leviia Schedule - Leaves ({'All' if scope == 'all' else 'My'})"
         )
-
-    @staticmethod
-    def generate_ics(events: list, calendar_name: str = "Leviia Schedule") -> bytes:
-        return generate_ics_calendar(events, calendar_name=calendar_name)

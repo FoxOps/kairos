@@ -22,10 +22,6 @@ class ShiftService:
         return ShiftRepository.list_paginated(page, per_page)
 
     @staticmethod
-    def list_in_window(window_start: datetime, window_end: datetime) -> list[Shift]:
-        return ShiftRepository.list_in_window(window_start, window_end)
-
-    @staticmethod
     def add_shifts_for_range(
         user: User, shift_type: ShiftType, start_date: date, end_date: date
     ) -> tuple[list[str], date | None]:

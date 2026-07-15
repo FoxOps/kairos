@@ -27,10 +27,6 @@ class LeaveService:
         return LeaveRepository.list_paginated(page, per_page)
 
     @staticmethod
-    def list_in_window(window_start: date, window_end: date) -> list[Leave]:
-        return LeaveRepository.list_in_window(window_start, window_end)
-
-    @staticmethod
     def add_leave(
         user: User, start_date: date, end_date: date
     ) -> tuple[Leave | None, list | None]:

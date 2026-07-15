@@ -6,7 +6,7 @@ liveness/readiness probes.
 """
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Flask, jsonify
 from sqlalchemy import text
@@ -43,7 +43,7 @@ def register_health_endpoints(app: Flask) -> None:
             jsonify(
                 {
                     "status": "ok",
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "application": "Leviia Schedule",
                 }
             ),
@@ -76,7 +76,7 @@ def register_health_endpoints(app: Flask) -> None:
                 jsonify(
                     {
                         "status": "ok",
-                        "timestamp": datetime.utcnow().isoformat(),
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
                         "checks": checks,
                     }
                 ),
@@ -87,7 +87,7 @@ def register_health_endpoints(app: Flask) -> None:
                 jsonify(
                     {
                         "status": "not_ready",
-                        "timestamp": datetime.utcnow().isoformat(),
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
                         "checks": checks,
                     }
                 ),
@@ -108,7 +108,7 @@ def register_health_endpoints(app: Flask) -> None:
                     "application": "Leviia Schedule",
                     "version": os.environ.get("APP_VERSION", APP_VERSION_DEFAULT),
                     "environment": os.environ.get("FLASK_ENV", "development"),
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
             ),
             200,

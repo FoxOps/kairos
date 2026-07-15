@@ -22,10 +22,6 @@ class OnCallService:
         return OnCallRepository.list_paginated(page, per_page)
 
     @staticmethod
-    def list_in_window(window_start: datetime, window_end: datetime) -> list[OnCall]:
-        return OnCallRepository.list_in_window(window_start, window_end)
-
-    @staticmethod
     def add_oncall(
         user: User, start_date: datetime
     ) -> tuple[OnCall | None, str | None]:

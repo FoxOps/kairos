@@ -5,9 +5,19 @@ This module provides the BaseModel class that contains common fields
 and methods for all models in the application.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app import db
+
+
+def _utcnow() -> datetime:
+    """datetime.utcnow() est dépréciée (Python 3.12+) - utilisée comme
+    `default`/`onupdate` de colonne (référence de fonction, pas un appel),
+    donc un simple `datetime.now` ne suffit pas, il faut fixer l'argument
+    `timezone.utc`. Le round-trip SQLite de SQLAlchemy retire le tzinfo à
+    la lecture (vérifié empiriquement) : la valeur stockée reste une heure
+    UTC naïve comme avant, seul l'avertissement de dépréciation disparaît."""
+    return datetime.now(timezone.utc)
 
 
 class BaseModel(db.Model):  # type: ignore[name-defined]  # limitation connue mypy + Flask-SQLAlchemy sans stubs dédiés
@@ -26,81 +36,14 @@ class BaseModel(db.Model):  # type: ignore[name-defined]  # limitation connue my
     __abstract__ = True
 
     id = db.Column(db.Integer, primary_key=True)
-    created_at = db.Column(
-        db.DateTime, nullable=False, default=datetime.utcnow, index=True
-    )
+    created_at = db.Column(db.DateTime, nullable=False, default=_utcnow, index=True)
     updated_at = db.Column(
         db.DateTime,
         nullable=False,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=_utcnow,
+        onupdate=_utcnow,
         index=True,
     )
-
-    def save(self) -> None:
-        """Save the model instance to the database."""
-        db.session.add(self)
-        db.session.commit()
-
-    def delete(self) -> None:
-        """Delete the model instance from the database."""
-        db.session.delete(self)
-        db.session.commit()
-
-    def update(self, **kwargs) -> None:
-        """
-        Update the model instance with the provided keyword arguments.
-
-        Args:
-            **kwargs: Fields to update and their new values
-        """
-        for key, value in kwargs.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
-        db.session.commit()
-
-    @classmethod
-    def get_by_id(cls, id: int):
-        """
-        Get a model instance by its ID.
-
-        Args:
-            id: The ID of the model instance
-
-        Returns:
-            The model instance or None if not found
-        """
-        return cls.query.get(id)
-
-    @classmethod
-    def get_all(cls):
-        """
-        Get all instances of the model.
-
-        Returns:
-            List of all model instances
-        """
-        return cls.query.all()
-
-    @classmethod
-    def get_first(cls):
-        """
-        Get the first instance of the model.
-
-        Returns:
-            The first model instance or None if none exist
-        """
-        return cls.query.first()
-
-    @classmethod
-    def count(cls) -> int:
-        """
-        Count the number of instances of the model.
-
-        Returns:
-            The count of model instances
-        """
-        return cls.query.count()
 
     def to_dict(self) -> dict:
         """
