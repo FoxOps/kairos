@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from app.repositories.leave_repository import LeaveRepository
 from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository
+from app.utils.helpers.timezone_helpers import to_viewer_timezone
 
 CALENDAR_WINDOW_DAYS = 180
 
@@ -27,20 +28,26 @@ class ScheduleService:
         )
 
     @staticmethod
-    def get_calendar_events() -> list[dict]:
+    def get_calendar_events(viewer) -> list[dict]:
         """Fetch shifts/on-calls/leaves within the calendar window and
-        convert them into FullCalendar events."""
+        convert them into FullCalendar events, translated into the
+        viewer's effective timezone."""
         window_start, window_end = ScheduleService.calendar_window()
 
         shifts = ShiftRepository.list_in_window(window_start, window_end)
         on_calls = OnCallRepository.list_in_window(window_start, window_end)
         leaves = LeaveRepository.list_in_window(window_start.date(), window_end.date())
 
-        return ScheduleService.build_calendar_events(shifts, on_calls, leaves)
+        return ScheduleService.build_calendar_events(shifts, on_calls, leaves, viewer)
 
     @staticmethod
-    def build_calendar_events(shifts, on_calls, leaves) -> list[dict]:
-        events = []
+    def build_calendar_events(shifts, on_calls, leaves, viewer) -> list[dict]:
+        """viewer: the User the resulting event times are translated
+        for (see app/utils/helpers/timezone_helpers.py) - shift/on-call
+        start/end are stored as naive wall-clock times in the
+        organization's default_timezone; leave dates have no time
+        component and need no conversion."""
+        events: list[dict] = []
 
         for shift in shifts:
             label = shift.shift_type.label if shift.shift_type else shift.shift_type
@@ -48,8 +55,8 @@ class ScheduleService:
                 {
                     "id": f"shift-{shift.id}",
                     "title": f"{shift.user.name} - {label}",
-                    "start": shift.start_time.isoformat(),
-                    "end": shift.end_time.isoformat(),
+                    "start": to_viewer_timezone(shift.start_time, viewer).isoformat(),
+                    "end": to_viewer_timezone(shift.end_time, viewer).isoformat(),
                     "className": "fc-event-shift",
                     "extendedProps": {"type": "shift", "resourceId": shift.id},
                 }
@@ -60,8 +67,8 @@ class ScheduleService:
                 {
                     "id": f"oncall-{oncall.id}",
                     "title": f"Astreinte - {oncall.user.name}",
-                    "start": oncall.start_time.isoformat(),
-                    "end": oncall.end_time.isoformat(),
+                    "start": to_viewer_timezone(oncall.start_time, viewer).isoformat(),
+                    "end": to_viewer_timezone(oncall.end_time, viewer).isoformat(),
                     "className": "fc-event-oncall",
                     "extendedProps": {"type": "oncall", "resourceId": oncall.id},
                 }

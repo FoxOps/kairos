@@ -196,7 +196,7 @@ class TestCalendarFunctions:
         """Test _build_calendar_events with empty lists."""
         from app.services.schedule_service import ScheduleService
 
-        events = ScheduleService.build_calendar_events([], [], [])
+        events = ScheduleService.build_calendar_events([], [], [], None)
         assert events == []
 
     def test_build_calendar_events_with_data(
@@ -216,6 +216,6 @@ class TestCalendarFunctions:
             shift_type=test_shift_type,
         )
 
-        events = ScheduleService.build_calendar_events([shift], [], [])
+        events = ScheduleService.build_calendar_events([shift], [], [], test_user)
         assert len(events) == 1
         assert events[0]["title"] == f"{test_user.name} - {test_shift_type.label}"

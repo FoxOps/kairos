@@ -308,6 +308,64 @@ class TestApiCreateShift:
         assert resp.status_code == 500
 
 
+class TestApiCreateShiftTimezoneConversion:
+    """Round-trip: FullCalendar (timeZone: 'UTC') sends the viewer's own
+    wall-clock digits with no real conversion (see
+    fullcalendar-config.js's comment on the Calendar options and
+    app/utils/helpers/timezone_helpers.py). The server must convert
+    those digits from the viewer's effective_timezone into the org's
+    canonical default_timezone before storing, and convert back for
+    display - this is what makes the /profile/update timezone
+    preference actually affect the calendar, not just the ICS export."""
+
+    def test_create_converts_viewer_tz_to_org_tz_for_storage(
+        self, test_app, logged_in_client, test_user, test_shift_type
+    ):
+        with test_app.app_context():
+            from app.services import SettingsService
+
+            SettingsService.set_default_timezone("Europe/Paris")
+
+        logged_in_client.post(
+            "/profile/update",
+            data={
+                "name": "Admin",
+                "email": "login@example.com",
+                "timezone": "America/New_York",
+            },
+            follow_redirects=True,
+        )
+
+        # 2024-07-01 is a Monday, clear of the weekend rejection rule.
+        resp = logged_in_client.post(
+            "/api/shifts",
+            json={
+                "userId": test_user.id,
+                "shiftTypeId": test_shift_type.id,
+                # Viewer (America/New_York) wall-clock digits, exactly as
+                # FullCalendar/the create-shift modal would send them.
+                "start": "2024-07-01T09:00:00",
+                "end": "2024-07-01T17:00:00",
+            },
+        )
+
+        assert resp.status_code == 200
+        body = resp.get_json()
+        assert body["success"] is True
+
+        # Paris (CEST, UTC+2) is 6 hours ahead of New York (EDT, UTC-4)
+        # in summer: 09:00 New York -> 15:00 Paris, same instant.
+        with test_app.app_context():
+            stored_shift = db.session.get(Shift, body["shift"]["id"])
+            assert stored_shift.start_time.isoformat() == "2024-07-01T15:00:00"
+            assert stored_shift.end_time.isoformat() == "2024-07-01T23:00:00"
+
+        # The response echoes back in the viewer's own timezone (round
+        # trip), not the org's.
+        assert body["shift"]["start"] == "2024-07-01T09:00:00"
+        assert body["shift"]["end"] == "2024-07-01T17:00:00"
+
+
 class TestApiUpdateShift:
     def test_shift_not_found(self, test_app, logged_in_client):
         resp = logged_in_client.patch(
