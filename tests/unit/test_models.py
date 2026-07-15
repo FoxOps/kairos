@@ -176,6 +176,31 @@ class TestUserModel:
             assert test_user.leaves[0].id == leave.id
             assert test_user.group.id == test_group.id
 
+    def test_effective_timezone_uses_own_preference_when_set(self, test_app, test_user):
+        with test_app.app_context():
+            test_user.timezone = "America/New_York"
+            db.session.commit()
+
+            assert test_user.effective_timezone() == "America/New_York"
+
+    def test_effective_timezone_falls_back_to_org_default(self, test_app, test_user):
+        with test_app.app_context():
+            assert test_user.timezone is None
+            assert test_user.effective_timezone() == "Europe/Paris"
+
+    def test_effective_timezone_reflects_admin_default_change(
+        self, test_app, test_user
+    ):
+        """A user without a personal preference must pick up a change to
+        the org default retroactively - the fallback is resolved at read
+        time, not baked into the column."""
+        with test_app.app_context():
+            from app.services import SettingsService
+
+            SettingsService.set_default_timezone("America/New_York")
+
+            assert test_user.effective_timezone() == "America/New_York"
+
 
 class TestShiftTypeModel:
     """Tests for the ShiftType model."""

@@ -150,5 +150,14 @@ class User(BaseModel, UserMixin):
             return None
         return f"/export/{export_type}?scope={scope}&token={self.ics_token}"
 
+    def effective_timezone(self) -> str:
+        """The IANA timezone to use for this user: their own preference if
+        set, otherwise the organization's default_timezone setting."""
+        if self.timezone:
+            return self.timezone
+        from app.services import SettingsService
+
+        return SettingsService.get_default_timezone()
+
     def __repr__(self) -> str:
         return f"<User {self.name} ({self.email})>"
