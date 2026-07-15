@@ -39,9 +39,20 @@ def get_int(env_var: str, default: int = 0) -> int:
 
 
 def get_timezone_choices() -> list[str]:
-    """Sorted IANA timezone names, for the /profile/update and
+    """Sorted IANA timezone names, for the /profile/settings and
     /admin/settings timezone <select> dropdowns."""
     return sorted(available_timezones())
+
+
+LANGUAGE_CHOICES: list[tuple[str, str]] = [("fr", "Français"), ("en", "English")]
+
+
+def get_language_choices() -> list[tuple[str, str]]:
+    """(code, display name) pairs for the /profile/settings and
+    /admin/settings language <select> dropdowns. Tuples rather than bare
+    codes (unlike get_timezone_choices()) - "fr"/"en" aren't
+    self-explanatory the way IANA timezone names are."""
+    return LANGUAGE_CHOICES
 
 
 _FR_WEEKDAYS_ABBR = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."]

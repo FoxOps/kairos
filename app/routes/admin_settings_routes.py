@@ -10,7 +10,7 @@ from flask import flash, redirect, render_template, request, url_for
 from app.auth.decorators import admin_required
 from app.routes.admin import admin_bp
 from app.services import SettingsService
-from app.utils.helpers.common_helpers import get_timezone_choices
+from app.utils.helpers.common_helpers import get_language_choices, get_timezone_choices
 from scripts.backup_config import BackupConfig
 
 
@@ -27,6 +27,14 @@ def settings_dashboard():
                 flash(f"Erreur : {error}", "danger")
             else:
                 flash("Fuseau horaire par défaut enregistré", "success")
+
+        elif section == "language":
+            lang_code = request.form.get("default_language", "")
+            error = SettingsService.set_default_language(lang_code)
+            if error:
+                flash(f"Erreur : {error}", "danger")
+            else:
+                flash("Langue par défaut enregistrée", "success")
 
         elif section == "general":
             public_base_url = request.form.get("public_base_url", "").strip() or None
@@ -92,6 +100,8 @@ def settings_dashboard():
         "admin/settings.html",
         default_timezone=SettingsService.get_default_timezone(),
         timezones=get_timezone_choices(),
+        default_language=SettingsService.get_default_language(),
+        languages=get_language_choices(),
         public_base_url=SettingsService.get_public_base_url(),
         items_per_page=SettingsService.get_items_per_page(),
         max_per_page=SettingsService.get_max_per_page(),

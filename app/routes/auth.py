@@ -8,7 +8,7 @@ from app import db
 from app.auth.oidc_auth import oidc_auth
 from app.models import User
 from app.services import SettingsService
-from app.utils.helpers.common_helpers import get_timezone_choices
+from app.utils.helpers.common_helpers import get_language_choices, get_timezone_choices
 from config_oidc import OIDCConfig
 
 # Create blueprint
@@ -251,6 +251,12 @@ def profile_settings():
             return redirect(url_for("auth.profile_settings"))
         current_user.timezone = timezone or None
 
+        language = request.form.get("language", "").strip()
+        if language and language not in dict(get_language_choices()):
+            flash("Langue invalide.", "danger")
+            return redirect(url_for("auth.profile_settings"))
+        current_user.language = language or None
+
         # Only apply the submitted notification checkboxes if the
         # section was actually visible/editable - otherwise a stale
         # form (opened while notifications were org-wide enabled, then
@@ -273,6 +279,8 @@ def profile_settings():
         user=current_user,
         timezones=get_timezone_choices(),
         default_timezone=SettingsService.get_default_timezone(),
+        languages=get_language_choices(),
+        default_language=SettingsService.get_default_language(),
         notifications_enabled_org_wide=notifications_enabled_org_wide,
     )
 

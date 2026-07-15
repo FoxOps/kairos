@@ -26,6 +26,16 @@
                         </p>
                     </div>
 
+                    <div>
+                        <label class="label" for="language">Langue</label>
+                        <select class="select w-full" id="language" name="language">
+                            <option value="">Utiliser la langue par défaut de l'organisation ({{ default_language }})</option>
+                            {% for code, label in languages %}
+                            <option value="{{ code }}" {% if code == user.language %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
                     {% if notifications_enabled_org_wide %}
                     <div class="divider">Notifications par email</div>
 

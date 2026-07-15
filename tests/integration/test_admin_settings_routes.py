@@ -42,6 +42,34 @@ class TestSettingsTimezoneSection:
         assert SettingsService.get_default_timezone() == "Europe/Paris"
 
 
+class TestSettingsLanguageSection:
+    def test_valid_language_persists(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={"section": "language", "default_language": "en"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"enregistr\xc3\xa9" in response.data
+
+        from app.services import SettingsService
+
+        assert SettingsService.get_default_language() == "en"
+
+    def test_invalid_language_flashes_error_without_persisting(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={"section": "language", "default_language": "de"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
+
+        from app.services import SettingsService
+
+        assert SettingsService.get_default_language() == "fr"
+
+
 class TestSettingsGeneralSection:
     def test_public_base_url_persists(self, logged_in_client):
         response = logged_in_client.post(

@@ -36,6 +36,33 @@
         </div>
     </form>
 
+    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="language-form-title" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="section" value="language">
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <h2 class="font-semibold" id="language-form-title"><i class="fas fa-language" aria-hidden="true"></i> Langue</h2>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Langue par défaut de l'organisation</legend>
+                    <select class="select w-full" id="default_language" name="default_language" aria-describedby="language-help">
+                        {% for code, label in languages %}
+                        <option value="{{ code }}" {% if code == default_language %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-sm text-base-content/60" id="language-help">
+                        Langue utilisée pour l'interface et les emails de notification, quand un
+                        utilisateur n'a pas défini de préférence personnelle sur son profil.
+                    </p>
+                </fieldset>
+                <div>
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <i class="fas fa-save" aria-hidden="true"></i> Enregistrer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
     <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="general-form-title" class="mb-4">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="section" value="general">
