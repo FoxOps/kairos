@@ -1,42 +1,42 @@
 {% extends "admin/base_admin.html" %}
 
-{% block title %}Gestion des groupes - Leviia Schedule{% endblock %}
+{% block title %}{{ _("Gestion des groupes") }} - Leviia Schedule{% endblock %}
 
 {% block admin_content %}
 <section class="p-3 md:p-4 max-w-6xl mx-auto">
-    <div class="breadcrumbs text-sm mb-2" aria-label="Fil d'Ariane">
+    <div class="breadcrumbs text-sm mb-2" aria-label="{{ _("Fil d'Ariane") }}">
         <ul>
             <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
-            <li>Groupes</li>
+            <li>{{ _("Groupes") }}</li>
         </ul>
     </div>
     <h1 class="text-2xl font-bold mb-4">
-        <i class="fas fa-user-friends" aria-hidden="true"></i> Gestion des groupes
+        <i class="fas fa-user-friends" aria-hidden="true"></i> {{ _("Gestion des groupes") }}
     </h1>
 
-    <div class="flex gap-2 mb-4" role="group" aria-label="Actions groupes">
+    <div class="flex gap-2 mb-4" role="group" aria-label="{{ _("Actions groupes") }}">
         {% set add_button_route = 'admin.add_group' %}
-        {% set add_button_label = 'Ajouter un groupe' %}
+        {% set add_button_label = _('Ajouter un groupe') %}
         {% set add_button_icon = 'plus' %}
-        {% set add_button_resource_name = 'Ajouter un nouveau groupe' %}
+        {% set add_button_resource_name = _('Ajouter un nouveau groupe') %}
         {% include "_add_button.html" %}
         <a class="btn btn-ghost" href="{{ url_for('admin.admin_dashboard') }}"
-           aria-label="Retour à l'administration" title="Retour à l'admin">
-            Retour à l'admin
+           aria-label="{{ _("Retour à l'administration") }}" title="{{ _("Retour à l'admin") }}">
+            {{ _("Retour à l'admin") }}
         </a>
     </div>
 
     {% if groups %}
     <div class="overflow-x-auto" role="region" aria-labelledby="groups-title">
         <table class="table table-zebra" aria-describedby="groups-title">
-            <caption class="sr-only">Liste des groupes</caption>
+            <caption class="sr-only">{{ _("Liste des groupes") }}</caption>
             <thead>
                 <tr>
                     <th scope="col">ID</th>
-                    <th scope="col">Nom</th>
-                    <th scope="col">Fait partie de Schedule</th>
-                    <th scope="col">Fait partie de l'astreinte</th>
-                    <th scope="col">Actions</th>
+                    <th scope="col">{{ _("Nom") }}</th>
+                    <th scope="col">{{ _("Fait partie de Schedule") }}</th>
+                    <th scope="col">{{ _("Fait partie de l'astreinte") }}</th>
+                    <th scope="col">{{ _("Actions") }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -46,30 +46,30 @@
                     <td>{{ group.name }}</td>
                     <td>
                         {% if group.is_part_of_schedule %}
-                            <span class="badge badge-success">Oui</span>
+                            <span class="badge badge-success">{{ _("Oui") }}</span>
                         {% else %}
-                            <span class="badge badge-error">Non</span>
+                            <span class="badge badge-error">{{ _("Non") }}</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if group.is_part_of_oncall %}
-                            <span class="badge badge-success">Oui</span>
+                            <span class="badge badge-success">{{ _("Oui") }}</span>
                         {% else %}
-                            <span class="badge badge-error">Non</span>
+                            <span class="badge badge-error">{{ _("Non") }}</span>
                         {% endif %}
                     </td>
                     <td>
-                        <div class="flex gap-2" role="group" aria-label="Actions pour le groupe {{ group.name }}">
-                            <div class="tooltip" data-tip="Modifier le groupe">
+                        <div class="flex gap-2" role="group" aria-label="{{ _("Actions pour le groupe %(name)s", name=group.name) }}">
+                            <div class="tooltip" data-tip="{{ _("Modifier le groupe") }}">
                                 <a class="btn btn-info btn-sm" href="{{ url_for('admin.edit_group', group_id=group.id) }}"
-                                   aria-label="Modifier le groupe {{ group.name }}" title="Modifier le groupe">
+                                   aria-label="{{ _("Modifier le groupe %(name)s", name=group.name) }}" title="{{ _("Modifier le groupe") }}">
                                     <i class="fas fa-edit" aria-hidden="true"></i>
                                 </a>
                             </div>
-                            <div class="tooltip" data-tip="Supprimer le groupe">
+                            <div class="tooltip" data-tip="{{ _("Supprimer le groupe") }}">
                                 <a class="btn btn-error btn-sm js-confirm-delete" href="{{ url_for('admin.delete_group', group_id=group.id) }}"
-                                   data-confirm-message="Êtes-vous sûr de vouloir supprimer le groupe {{ group.name }} ?"
-                                   aria-label="Supprimer le groupe {{ group.name }}" title="Supprimer le groupe">
+                                   data-confirm-message="{{ _("Êtes-vous sûr de vouloir supprimer le groupe %(name)s ?", name=group.name) }}"
+                                   aria-label="{{ _("Supprimer le groupe %(name)s", name=group.name) }}" title="{{ _("Supprimer le groupe") }}">
                                     <i class="fas fa-trash" aria-hidden="true"></i>
                                 </a>
                             </div>
@@ -83,8 +83,8 @@
 
     <!-- Action legend -->
     {% set action_items = [
-        {'class': 'btn-info btn-sm', 'icon': 'edit', 'label': 'Modifier', 'description': 'Modifier le groupe'},
-        {'class': 'btn-error btn-sm', 'icon': 'trash', 'label': 'Supprimer', 'description': 'Supprimer le groupe'}
+        {'class': 'btn-info btn-sm', 'icon': 'edit', 'label': _('Modifier'), 'description': _('Modifier le groupe')},
+        {'class': 'btn-error btn-sm', 'icon': 'trash', 'label': _('Supprimer'), 'description': _('Supprimer le groupe')}
     ] %}
     {% include "_action_legend.html" %}
     {% endif %}

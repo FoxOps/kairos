@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Ajouter un groupe - Leviia{% endblock %}
+{% block title %}{{ _("Ajouter un groupe") }} - Leviia{% endblock %}
 
 {% block content %}
 <section class="p-3 md:p-4 max-w-2xl mx-auto">
     <h1 class="text-2xl font-bold mb-4">
-        <i class="fas fa-plus" aria-hidden="true"></i> Ajouter un groupe
+        <i class="fas fa-plus" aria-hidden="true"></i> {{ _("Ajouter un groupe") }}
     </h1>
 
     <form method="POST" action="{{ url_for('admin.add_group') }}">
@@ -13,25 +13,25 @@
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body gap-4">
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Nom du groupe <span class="text-error">*</span></legend>
-                    <input class="input w-full validator" type="text" name="name" required aria-required="true" placeholder="Ex: Équipe A">
+                    <legend class="fieldset-legend">{{ _("Nom du groupe") }} <span class="text-error">*</span></legend>
+                    <input class="input w-full validator" type="text" name="name" required aria-required="true" placeholder="{{ _("Ex: Équipe A") }}">
                 </fieldset>
 
                 <label class="label cursor-pointer justify-start gap-2">
                     <input type="checkbox" class="checkbox" name="is_part_of_schedule" value="True">
-                    Fait partie de Schedule (peut avoir des shifts)
+                    {{ _("Fait partie de Schedule (peut avoir des shifts)") }}
                 </label>
 
                 <label class="label cursor-pointer justify-start gap-2">
                     <input type="checkbox" class="checkbox" name="is_part_of_oncall" value="True">
-                    Fait partie de l'astreinte (peut être en astreinte)
+                    {{ _("Fait partie de l'astreinte (peut être en astreinte)") }}
                 </label>
 
                 <div class="flex gap-2">
                     <button class="btn btn-primary" type="submit">
-                        <i class="fas fa-save" aria-hidden="true"></i> Enregistrer
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
                     </button>
-                    <a class="btn btn-ghost" href="{{ url_for('admin.list_groups') }}">Annuler</a>
+                    <a class="btn btn-ghost" href="{{ url_for('admin.list_groups') }}">{{ _("Annuler") }}</a>
                 </div>
             </div>
         </div>

@@ -1,11 +1,11 @@
 {% extends "admin/base_admin.html" %}
 
-{% block title %}Modifier un utilisateur - Leviia{% endblock %}
+{% block title %}{{ _("Modifier un utilisateur") }} - Leviia{% endblock %}
 
 {% block admin_content %}
 <section class="p-3 md:p-4 max-w-2xl mx-auto">
     <h1 class="text-2xl font-bold mb-4">
-        <i class="fas fa-user-edit" aria-hidden="true"></i> Modifier un utilisateur
+        <i class="fas fa-user-edit" aria-hidden="true"></i> {{ _("Modifier un utilisateur") }}
     </h1>
 
     <form method="POST" action="{{ url_for('admin.edit_user', user_id=user.id) }}" aria-labelledby="form-title">
@@ -13,19 +13,19 @@
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body gap-4">
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Nom <span class="text-error">*</span></legend>
+                    <legend class="fieldset-legend">{{ _("Nom") }} <span class="text-error">*</span></legend>
                     <input class="input w-full validator" type="text" id="name" name="name" value="{{ user.name }}" required aria-required="true" aria-describedby="name-help">
-                    <p class="text-sm text-base-content/60" id="name-help">Nom complet de l'utilisateur</p>
+                    <p class="text-sm text-base-content/60" id="name-help">{{ _("Nom complet de l'utilisateur") }}</p>
                 </fieldset>
 
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">Email <span class="text-error">*</span></legend>
                     <input class="input w-full validator" type="email" id="email" name="email" value="{{ user.email }}" required aria-required="true" aria-describedby="email-help">
-                    <p class="text-sm text-base-content/60" id="email-help">Adresse email de l'utilisateur</p>
+                    <p class="text-sm text-base-content/60" id="email-help">{{ _("Adresse email de l'utilisateur") }}</p>
                 </fieldset>
 
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Groupe <span class="text-error">*</span></legend>
+                    <legend class="fieldset-legend">{{ _("Groupe") }} <span class="text-error">*</span></legend>
                     <select class="select w-full validator" id="group_id" name="group_id" required aria-required="true" aria-describedby="group-help">
                         {% for group in groups %}
                         <option value="{{ group.id }}" {% if group.id == user.group_id %}selected{% endif %}>
@@ -33,30 +33,30 @@
                         </option>
                         {% endfor %}
                     </select>
-                    <p class="text-sm text-base-content/60" id="group-help">Groupe auquel appartient l'utilisateur</p>
+                    <p class="text-sm text-base-content/60" id="group-help">{{ _("Groupe auquel appartient l'utilisateur") }}</p>
                 </fieldset>
 
                 <div>
                     <label class="label cursor-pointer justify-start gap-2" for="is_admin">
                         <input type="checkbox" class="checkbox" id="is_admin" name="is_admin" {% if user.is_admin %}checked{% endif %}>
-                        <span>Oui, cet utilisateur est administrateur</span>
+                        <span>{{ _("Oui, cet utilisateur est administrateur") }}</span>
                     </label>
                 </div>
 
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Nouveau mot de passe</legend>
-                    <input class="input w-full" type="password" id="password" name="password" placeholder="Laisser vide pour ne pas changer" aria-describedby="password-help">
+                    <legend class="fieldset-legend">{{ _("Nouveau mot de passe") }}</legend>
+                    <input class="input w-full" type="password" id="password" name="password" placeholder="{{ _("Laisser vide pour ne pas changer") }}" aria-describedby="password-help">
                     <p class="text-sm text-base-content/60" id="password-help">
-                        Laisser vide pour conserver le mot de passe actuel.
+                        {{ _("Laisser vide pour conserver le mot de passe actuel.") }}
                     </p>
                 </fieldset>
 
-                <div class="flex gap-2" role="group" aria-label="Actions du formulaire">
-                    <button class="btn btn-primary" type="submit" aria-label="Enregistrer les modifications" title="Enregistrer les modifications">
-                        <i class="fas fa-save" aria-hidden="true"></i> Enregistrer
+                <div class="flex gap-2" role="group" aria-label="{{ _("Actions du formulaire") }}">
+                    <button class="btn btn-primary" type="submit" aria-label="{{ _("Enregistrer les modifications") }}" title="{{ _("Enregistrer les modifications") }}">
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
                     </button>
-                    <a class="btn btn-ghost" href="{{ url_for('admin.list_users') }}" aria-label="Annuler et retourner à la liste" title="Annuler">
-                        Annuler
+                    <a class="btn btn-ghost" href="{{ url_for('admin.list_users') }}" aria-label="{{ _("Annuler et retourner à la liste") }}" title="{{ _("Annuler") }}">
+                        {{ _("Annuler") }}
                     </a>
                 </div>
             </div>
