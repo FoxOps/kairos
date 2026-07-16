@@ -50,7 +50,7 @@
                     </td>
                     <td>{% include "_swap_status_badge.html" %}</td>
                     <td>
-                        {% if swap.is_pending() %}
+                        {% if swap.is_active() %}
                         <form method="POST" action="{{ url_for('main.cancel_swap', swap_request_id=swap.id) }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button class="btn btn-error btn-sm" type="submit"
@@ -79,6 +79,7 @@
                     <th scope="col">{{ _("Son shift proposé") }}</th>
                     <th scope="col">{{ _("En échange de") }}</th>
                     <th scope="col">{{ _("Statut") }}</th>
+                    <th scope="col">{{ _("Actions") }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -94,16 +95,34 @@
                         {% endif %}
                     </td>
                     <td>{% include "_swap_status_badge.html" %}</td>
+                    <td>
+                        {% if swap.is_awaiting_target() %}
+                        <div class="flex flex-nowrap gap-2" role="group" aria-label="{{ _("Actions pour la demande de %(name)s", name=swap.requester.name) }}">
+                            <a class="btn btn-success btn-sm" href="{{ url_for('main.confirm_swap', swap_request_id=swap.id) }}"
+                               aria-label="{{ _("Confirmer l'échange") }}" title="{{ _("Confirmer l'échange") }}">
+                                <i class="fas fa-check" aria-hidden="true"></i> {{ _("Confirmer") }}
+                            </a>
+                            <form method="POST" action="{{ url_for('main.target_reject_swap', swap_request_id=swap.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button class="btn btn-error btn-sm" type="submit"
+                                        aria-label="{{ _("Refuser l'échange") }}" title="{{ _("Refuser l'échange") }}"
+                                        onclick="return confirm('{{ _("Refuser cette proposition d'échange ?") }}');">
+                                    <i class="fas fa-times" aria-hidden="true"></i> {{ _("Refuser") }}
+                                </button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="4" class="text-center text-base-content/60">{{ _("Aucune demande reçue") }}</td></tr>
+                <tr><td colspan="5" class="text-center text-base-content/60">{{ _("Aucune demande reçue") }}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
     <p class="text-sm text-base-content/60 mt-2">
         <i class="fas fa-info-circle" aria-hidden="true"></i>
-        {{ _("Une demande d'échange doit être validée par un administrateur avant d'être appliquée.") }}
+        {{ _("Une demande d'échange doit être confirmée par le destinataire puis validée par un administrateur avant d'être appliquée.") }}
     </p>
 </section>
 {% endblock %}

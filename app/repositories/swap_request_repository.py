@@ -77,8 +77,23 @@ class SwapRequestRepository:
 
     @staticmethod
     def list_pending() -> list[SwapRequest]:
+        """Requests still awaiting the target's own confirmation (status
+        PENDING) - read-only visibility for the admin queue, see
+        list_awaiting_admin() for the requests an admin can actually act
+        on."""
         results = (
             SwapRequest.query.filter(SwapRequest.status == SwapRequest.PENDING)
+            .order_by(SwapRequest.created_at)
+            .all()
+        )
+        return SwapRequestRepository._preload_related(results)
+
+    @staticmethod
+    def list_awaiting_admin() -> list[SwapRequest]:
+        """Requests the target has confirmed (status AWAITING_ADMIN) -
+        the admin's actionable queue."""
+        results = (
+            SwapRequest.query.filter(SwapRequest.status == SwapRequest.AWAITING_ADMIN)
             .order_by(SwapRequest.created_at)
             .all()
         )
@@ -110,26 +125,30 @@ class SwapRequestRepository:
 
     @staticmethod
     def has_pending_for_shift(shift_id: int) -> bool:
+        """True if shift_id already has an active (unresolved) request -
+        PENDING (awaiting target) or AWAITING_ADMIN (awaiting admin).
+        Keeps the original name (existing call sites), but now also
+        blocks a shift already confirmed by its target and awaiting
+        admin, not just a brand new PENDING one."""
         return (
             SwapRequest.query.filter(
                 SwapRequest.shift_id == shift_id,
-                SwapRequest.status == SwapRequest.PENDING,
+                SwapRequest.status.in_(
+                    [SwapRequest.PENDING, SwapRequest.AWAITING_ADMIN]
+                ),
             ).first()
             is not None
         )
 
     @staticmethod
-    def create(
-        requester_id: int,
-        shift_id: int,
-        target_user_id: int,
-        target_shift_id: int | None = None,
-    ) -> SwapRequest:
+    def create(requester_id: int, shift_id: int, target_user_id: int) -> SwapRequest:
+        """target_shift_id is deliberately not settable here - it's the
+        target's own choice, filled in later by SwapService.confirm_swap()
+        once the target picks (or declines to pick) their own shift."""
         swap_request = SwapRequest(
             requester_id=requester_id,
             shift_id=shift_id,
             target_user_id=target_user_id,
-            target_shift_id=target_shift_id,
             status=SwapRequest.PENDING,
         )
         db.session.add(swap_request)
@@ -137,22 +156,26 @@ class SwapRequestRepository:
 
     @staticmethod
     def purge_resolved_for_user(user_id: int) -> int:
-        """Delete resolved (non-pending) requests involving user_id (as
-        either requester or target). Returns the number deleted. A given
-        row can therefore also disappear for the other party involved -
-        it's a single shared historical record, not a per-user view."""
+        """Delete resolved requests involving user_id (as either requester
+        or target) - "resolved" now excludes both PENDING (awaiting
+        target) and AWAITING_ADMIN (awaiting admin), not just PENDING.
+        Returns the number deleted. A given row can therefore also
+        disappear for the other party involved - it's a single shared
+        historical record, not a per-user view."""
         return SwapRequest.query.filter(
             or_(
                 SwapRequest.requester_id == user_id,
                 SwapRequest.target_user_id == user_id,
             ),
-            SwapRequest.status != SwapRequest.PENDING,
+            SwapRequest.status.notin_(
+                [SwapRequest.PENDING, SwapRequest.AWAITING_ADMIN]
+            ),
         ).delete(synchronize_session=False)
 
     @staticmethod
     def purge_all_resolved() -> int:
-        """Delete all resolved (non-pending) requests, across every user.
-        Returns the number deleted."""
+        """Delete all resolved requests, across every user. Returns the
+        number deleted."""
         return SwapRequest.query.filter(
-            SwapRequest.status != SwapRequest.PENDING
+            SwapRequest.status.notin_([SwapRequest.PENDING, SwapRequest.AWAITING_ADMIN])
         ).delete(synchronize_session=False)

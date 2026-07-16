@@ -60,6 +60,41 @@ class AppNotificationService:
         )
 
     @staticmethod
+    def notify_target_confirmation_needed(swap_request: SwapRequest) -> None:
+        """A new request needs the target's own confirmation before it can
+        even reach the admin - notifies only the target, not admins (see
+        notify_admins_new_swap_request(), now triggered later, once the
+        target has confirmed)."""
+        with force_locale(swap_request.target_user.effective_language()):
+            message = _(
+                "%(requester)s vous propose un échange de shift, à confirmer.",
+                requester=swap_request.requester.name,
+            )
+        AppNotificationService._notify(
+            swap_request.target_user_id, "swap_confirmation_needed", message, "/swaps"
+        )
+        db.session.commit()
+
+    @staticmethod
+    def notify_target_rejection(swap_request: SwapRequest) -> None:
+        """The target declined the exchange before it ever reached the
+        admin - notifies only the requester (nothing changed for the
+        target, same reasoning as the REJECTED branch of
+        notify_swap_decision() below, which only fires for an admin
+        rejection)."""
+        with force_locale(swap_request.requester.effective_language()):
+            message = _(
+                "%(name)s n'a pas retenu votre proposition d'échange.",
+                name=swap_request.target_user.name,
+            )
+            if swap_request.admin_comment:
+                message += _(" Motif : %(comment)s", comment=swap_request.admin_comment)
+        AppNotificationService._notify(
+            swap_request.requester_id, "swap_target_rejected", message, "/swaps"
+        )
+        db.session.commit()
+
+    @staticmethod
     def notify_admins_new_swap_request(swap_request: SwapRequest) -> None:
         # Persisted message, read later by potentially a different user
         # than whoever triggered this event - each admin may have their

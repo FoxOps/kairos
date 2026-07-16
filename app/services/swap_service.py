@@ -28,7 +28,16 @@ class SwapService:
 
     @staticmethod
     def list_pending() -> list[SwapRequest]:
+        """Requests still awaiting the target's own confirmation - read-only
+        visibility, see list_awaiting_admin() for the admin's actionable
+        queue."""
         return SwapRequestRepository.list_pending()
+
+    @staticmethod
+    def list_awaiting_admin() -> list[SwapRequest]:
+        """Requests the target has confirmed - the admin's actionable
+        queue."""
+        return SwapRequestRepository.list_awaiting_admin()
 
     @staticmethod
     def list_approved() -> list[SwapRequest]:
@@ -95,9 +104,11 @@ class SwapService:
         requester: User,
         shift: Shift,
         target_user: User,
-        target_shift: Shift | None = None,
     ) -> tuple[SwapRequest | None, str | None]:
-        """Create an exchange request, pending admin approval.
+        """Create an exchange request, pending the target's own
+        confirmation (they pick which of their shifts to offer back, or
+        decline - see confirm_swap()/target_reject_swap()). The requester
+        never picks target_shift themselves.
 
         Returns:
             (swap_request, None) on success, (None, error_message) otherwise.
@@ -105,9 +116,7 @@ class SwapService:
         if SwapRequestRepository.has_pending_for_shift(shift.id):
             return None, _("Une demande est déjà en attente pour ce shift")
 
-        error = SwapService._validation_error(
-            requester, shift, target_user, target_shift
-        )
+        error = SwapService._validation_error(requester, shift, target_user, None)
         if error:
             return None, error
 
@@ -115,7 +124,6 @@ class SwapService:
             requester_id=requester.id,
             shift_id=shift.id,
             target_user_id=target_user.id,
-            target_shift_id=target_shift.id if target_shift else None,
         )
         db.session.commit()
         AuditService.log(
@@ -125,13 +133,13 @@ class SwapService:
             details=f"{requester.name} -> {target_user.name}",
             actor=requester,
         )
-        AppNotificationService.notify_admins_new_swap_request(swap_request)
+        AppNotificationService.notify_target_confirmation_needed(swap_request)
         AppriseNotificationService.notify(
             "swap",
             _("Nouvelle demande d'échange de shift"),
             _(
                 "%(requester)s propose un échange de shift à %(target)s, en "
-                "attente de validation.",
+                "attente de sa confirmation.",
                 requester=requester.name,
                 target=target_user.name,
             ),
@@ -139,9 +147,94 @@ class SwapService:
         return swap_request, None
 
     @staticmethod
+    def confirm_swap(
+        swap_request: SwapRequest,
+        target_user: User,
+        target_shift: Shift | None = None,
+    ) -> str | None:
+        """The target confirms the exchange and picks which of their own
+        shifts to offer back (or leaves it a one-way give-away). Moves the
+        request into the admin's queue. None on success.
+
+        Returns:
+            error_message on failure, None on success.
+        """
+        if not swap_request.is_awaiting_target():
+            return _("Cette demande n'est plus en attente de votre confirmation")
+        if swap_request.target_user_id != target_user.id:
+            return _("Cette demande ne vous est pas destinée")
+
+        error = SwapService._validation_error(
+            swap_request.requester, swap_request.shift, target_user, target_shift
+        )
+        if error:
+            return error
+
+        swap_request.target_shift_id = target_shift.id if target_shift else None
+        swap_request.status = SwapRequest.AWAITING_ADMIN
+        db.session.commit()
+        AuditService.log(
+            "swap.confirm",
+            resource_type="SwapRequest",
+            resource_id=swap_request.id,
+            details=f"{swap_request.requester.name} -> {target_user.name}",
+            actor=target_user,
+        )
+        AppNotificationService.notify_admins_new_swap_request(swap_request)
+        AppriseNotificationService.notify(
+            "swap",
+            _("Échange de shift confirmé par le destinataire"),
+            _(
+                "%(target)s a confirmé l'échange proposé par %(requester)s, "
+                "en attente de validation admin.",
+                target=target_user.name,
+                requester=swap_request.requester.name,
+            ),
+        )
+        return None
+
+    @staticmethod
+    def target_reject_swap(
+        swap_request: SwapRequest, target_user: User, reason: str | None = None
+    ) -> str | None:
+        """The target declines the exchange outright, before it ever
+        reaches the admin. None on success.
+
+        Returns:
+            error_message on failure, None on success.
+        """
+        if not swap_request.is_awaiting_target():
+            return _("Cette demande n'est plus en attente de votre confirmation")
+        if swap_request.target_user_id != target_user.id:
+            return _("Cette demande ne vous est pas destinée")
+
+        swap_request.mark_reviewed(target_user.id, SwapRequest.REJECTED, comment=reason)
+        db.session.commit()
+        AuditService.log(
+            "swap.reject",
+            resource_type="SwapRequest",
+            resource_id=swap_request.id,
+            details=reason,
+            actor=target_user,
+        )
+        AppNotificationService.notify_target_rejection(swap_request)
+        AppriseNotificationService.notify(
+            "swap",
+            _("Échange de shift décliné par le destinataire"),
+            _(
+                "%(target)s a décliné la proposition d'échange de %(requester)s.",
+                target=target_user.name,
+                requester=swap_request.requester.name,
+            ),
+        )
+        return None
+
+    @staticmethod
     def cancel_swap(swap_request: SwapRequest, user: User) -> str | None:
-        """Cancel a request (by its author, or an admin). None on success."""
-        if not swap_request.is_pending():
+        """Cancel a request (by its author, or an admin). Allowed while
+        awaiting the target's confirmation or the admin's decision - not
+        just the original PENDING stage. None on success."""
+        if not swap_request.is_active():
             return _("Cette demande n'est plus en attente")
         if swap_request.requester_id != user.id and not user.is_admin:
             return _(
@@ -160,9 +253,11 @@ class SwapService:
 
     @staticmethod
     def approve_swap(swap_request: SwapRequest, admin: User) -> str | None:
-        """Approve a request: reassigns the shifts. None on success."""
-        if not swap_request.is_pending():
-            return _("Cette demande n'est plus en attente")
+        """Approve a request: reassigns the shifts. Only once the target
+        has confirmed (AWAITING_ADMIN) - an admin can no longer act on a
+        request the target hasn't seen yet. None on success."""
+        if not swap_request.is_awaiting_admin():
+            return _("Cette demande n'est pas en attente de validation admin")
 
         error = SwapService._validation_error(
             swap_request.requester,
@@ -270,9 +365,10 @@ class SwapService:
     def reject_swap(
         swap_request: SwapRequest, admin: User, reason: str | None = None
     ) -> str | None:
-        """Reject a request. None on success."""
-        if not swap_request.is_pending():
-            return _("Cette demande n'est plus en attente")
+        """Reject a request. Only once the target has confirmed
+        (AWAITING_ADMIN) - see approve_swap(). None on success."""
+        if not swap_request.is_awaiting_admin():
+            return _("Cette demande n'est pas en attente de validation admin")
 
         swap_request.mark_reviewed(admin.id, SwapRequest.REJECTED, comment=reason)
         db.session.commit()
@@ -298,8 +394,9 @@ class SwapService:
 
     @staticmethod
     def purge_resolved_for_user(user: User) -> int:
-        """Delete the user's resolved (non-pending) requests (as either
-        requester or target). Returns the number deleted."""
+        """Delete the user's resolved requests (as either requester or
+        target) - excludes both PENDING and AWAITING_ADMIN, not just
+        PENDING. Returns the number deleted."""
         count = SwapRequestRepository.purge_resolved_for_user(user.id)
         db.session.commit()
         if count:

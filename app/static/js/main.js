@@ -9,7 +9,6 @@
 
 import { ThemeManager } from './theme/theme-manager.js';
 import { NavbarMenu } from './navbar/navbar-menu.js';
-import { formatDate, formatTime, formatDateTime } from './utils/date.js';
 import {
     toggleVisibility,
     showElement,
@@ -53,9 +52,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // Export functions for the templates (inline onclick, FullCalendar callbacks)
 window.Leviia = {
     ThemeManager,
-    formatDate,
-    formatTime,
-    formatDateTime,
     showNotification,
     confirmAction,
     confirmActionAccessible,

@@ -1,7 +1,7 @@
 # 🗺️ Feuille de Route - Leviia Schedule
 
-> **Version** : 5.11.0 - Notifications externes via Apprise (Slack/Discord/Telegram/webhooks)
-> **Version app** : 0.9.1 (`/version`) - Hérite de l'audit trail
+> **Version** : 5.12.0 - Sécurité sidebar + confirmation destinataire échanges + nettoyage Makefile
+> **Version app** : 0.9.2 (`/version`) - Hérite des notifications externes via Apprise (v0.9.1), de l'audit trail
 > (historique des modifications, `/admin/audit-log`, PR #117), de l'audit
 > code mort/legacy/performance/sécurité (PR #113), du multi-fuseau horaire +
 > page `/admin/settings` DB-backed (PR #114), du support multi-langues
@@ -38,7 +38,8 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 - ✅ **Stabilisation** : Refonte Phases 1-6 terminée (architecture, sécurité, DevOps)
 - ✅ **Multi-langues, multi-fuseau, audit trail, notifications externes** : i18n FR/EN, fuseau
   horaire et formats de date/heure personnalisables, historique complet des modifications,
-  notifications Slack/Discord/Telegram/webhooks via Apprise (v0.7.10 → v0.9.1)
+  notifications Slack/Discord/Telegram/webhooks via Apprise, échange de shifts en 2 temps
+  avec confirmation du destinataire (v0.7.10 → v0.9.2)
 - 📈 **Améliorations** : Fonctionnalités avancées et intégrations (Phase 5/7 roadmap, à venir)
 - 🚀 **Production Ready** : Support multi-DB et tests de charge restants avant v1.0
 
@@ -79,7 +80,7 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 | **Performance** | Cache | ✅ | Système de cache implémenté |
 | **Performance** | Pagination | ✅ | Pagination complète |
 | **Performance** | Compression Gzip/Brotli/Zstd | ✅ | flask-compress, activé Phase 6 |
-| **Tests** | Tests unitaires + intégration | ✅ | **1133 tests passent**, couverture ~92% |
+| **Tests** | Tests unitaires + intégration | ✅ | **1224 tests passent**, couverture ~92% |
 | **i18n** | Multi-langues (Français/Anglais) | ✅ | Flask-Babel, préférence par utilisateur + défaut org (PR #115, v0.7.11) |
 | **Personnalisation** | Fuseau horaire, formats date/heure | ✅ | Par utilisateur + défaut org, `SettingsService`/`/admin/settings` (PR #114 et #116, v0.7.10-v0.8.0) |
 | **Tests** | Tests d'intégration | ✅ | Scénarios utilisateurs complets (e2e/) |
@@ -334,7 +335,7 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 | **Gestionnaires d'erreurs** | 9 | 400, 401, 403, 404, 405, 500, 502, 503, 504 + ValueError/TypeError |
 | **Templates** | 30+ | Jinja2 templates (app/templates/) |
 | **Fichiers de configuration** | app/config/ (package) | base.py, development.py, production.py, testing.py + config_oidc.py (config_performance.py retiré, jamais câblé) |
-| **Scripts** | scripts/ | backup_database.py, backup_config.py, validate_config.py, bug_hunt.sh, send_shift_notifications.py, send_oncall_notifications.py |
+| **Scripts** | scripts/ | backup_database.py, backup_config.py, validate_config.py, find_duplicates.py, send_shift_notifications.py, send_oncall_notifications.py |
 | **Infrastructure** | docker/, k8s/, grafana/, .gitlab-ci/ | build multi-stage, manifests k8s complets, dashboard Grafana, pipeline GitLab CI |
 
 ### Structure du projet
@@ -385,7 +386,7 @@ leviia-schedule/
 ├── .gitlab-ci/.gitlab-ci.yml    # pipeline CI/CD (futur dépôt GitLab)
 ├── migrations/                  # Alembic (Flask-Migrate), appliquées au démarrage
 └── scripts/                     # backup_database.py, backup_config.py,
-                                  # validate_config.py, bug_hunt.sh,
+                                  # validate_config.py, find_duplicates.py,
                                   # send_shift_notifications.py, send_oncall_notifications.py
 ```
 
@@ -541,6 +542,7 @@ Pour toute question concernant la feuille de route :
 
 | Version | Date | Auteur | Changements |
 |---------|------|--------|-------------|
+| 5.12.0 | 16 juillet 2026 | Claude Code | Trois chantiers indépendants : (1) **Sécurité** - la boucle `nav_links` de `base.html` (Accueil/Tableau de bord/Shifts/Astreintes/Congés/Échanges) était la seule section de la sidebar sans garde `current_user.is_authenticated`, corrige d'un coup `/login` et toutes les pages d'erreur 400-504 (fuite d'information de structure interne, pas un bypass - toutes les routes restent `@login_required`). (2) **Workflow d'échange de shifts en 2 temps** - nouvel état `AWAITING_ADMIN` entre la demande (`PENDING`) et la validation admin : le destinataire choisit désormais lui-même son shift à échanger (ou refuse directement) avant qu'un admin ne voie la demande, le demandeur ne pré-choisit plus rien. Aucune migration nécessaire. `/api/swaps/target-shifts`, `swap-form.js` et `app/static/js/utils/date.js` supprimés (code mort une fois le formulaire de demande simplifié). (3) **Makefile** - 39 cibles réduites à 15 (bloc `bug-hunt`/`scripts/bug_hunt.sh` confirmé jamais exécuté et divergent de la vraie config `ruff`, supprimé ; `find-duplicates` gardé seul). Version app 0.9.1 -> 0.9.2. 1224 tests (+31). |
 | 5.11.0 | 16 juillet 2026 | Claude Code | Notifications externes via Apprise (Slack/Discord/Telegram/webhooks génériques) : nouveau modèle `NotificationTarget` (CRUD, catégories JSON encodées `swap`/`backup`/`system`, `subscribes_to()`), `AppriseNotificationService` avec deux points d'entrée (`notify()` fire-and-forget jamais bloquant, `send_test()` qui remonte le vrai succès/échec pour le bouton "Tester" admin), câblé sur le cycle de vie des échanges de shifts (`SwapService`), les sauvegardes déclenchées depuis l'UI admin (`BackupService.create_now()`/`cleanup_now()` - pas le script cron, isolation `scripts/` préservée) et les échecs d'envoi des rappels email hebdomadaires (`NotificationService`). Page d'admin dédiée `/admin/notification-targets` (pas une section de `/admin/settings`), toggle global `SettingsService.apprise_notifications_enabled` (opt-in, pas de repli env). L'URL Apprise traitée comme un secret : jamais dans l'audit trail/les logs, jamais affichée en clair dans la liste. Version app 0.9.0 -> 0.9.1. |
 | 5.10.0 | 16 juillet 2026 | Claude Code | Audit trail - historique des modifications (PR #117) : modèle `AuditLog` append-only + `AuditService.log()` (point d'écriture unique, double écriture DB + `logs/audit.log`), retrofit de tout le CRUD métier et des événements d'authentification, UI `/admin/audit-log` (filtres auteur/domaine/dates, purge basée sur une rétention configurable dans `/admin/settings`, sans repli numérique par défaut), rotation de tous les fichiers de logs (`RotatingFileHandler`, `LOG_MAX_BYTES`/`LOG_BACKUP_COUNT`). Avant cette PR le logger `"audit"` existait dans le code depuis longtemps sans jamais être appelé - `logs/audit.log` ne contenait aucune activité réelle. Version app 0.8.0 -> 0.9.0. 1133 tests (couverture ~92%) |
 | 5.9.0 | 16 juillet 2026 | Claude Code | Formats de date/heure configurables (PR #116) : même architecture Setting/User que le multi-fuseau horaire, 3 formats de date / 2 formats d'heure, 3 nouveaux filtres Jinja (`format_date`/`format_time`/`format_datetime`) remplaçant les `strftime()` d'affichage. Bug N+1 réel trouvé et corrigé (cache `flask.g` manquant sur les résolveurs de format). Version app 0.7.11 -> 0.8.0. 1099 tests |

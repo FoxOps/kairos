@@ -25,8 +25,41 @@
         </form>
     </div>
 
-    <h2 class="text-xl font-semibold mb-2" id="swaps-title">{{ _("En attente") }}</h2>
-    {% if pending %}
+    <h2 class="text-xl font-semibold mb-2" id="awaiting-target-title">{{ _("En attente du destinataire") }}</h2>
+    {% if awaiting_target %}
+    <div class="overflow-x-auto mb-6" role="region" aria-labelledby="awaiting-target-title">
+        <table class="table table-zebra" aria-describedby="awaiting-target-title">
+            <caption class="sr-only">{{ _("Demandes d'échange en attente de confirmation du destinataire") }}</caption>
+            <thead>
+                <tr>
+                    <th scope="col">{{ _("Demandeur") }}</th>
+                    <th scope="col">{{ _("Shift proposé") }}</th>
+                    <th scope="col">{{ _("Destinataire") }}</th>
+                    <th scope="col">{{ _("Demandé le") }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for swap in awaiting_target %}
+                <tr>
+                    <td>{{ swap.requester.name }}</td>
+                    <td>{{ swap.shift.date|format_date }} - {{ swap.shift.shift_type.label }}</td>
+                    <td>{{ swap.target_user.name }}</td>
+                    <td>{{ swap.created_at|format_datetime }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="text-sm text-base-content/60 mb-6">
+        <i class="fas fa-info-circle" aria-hidden="true"></i>
+        {{ _("Lecture seule - le destinataire doit d'abord confirmer (et choisir son propre shift) avant qu'une action admin soit possible.") }}
+    </p>
+    {% else %}
+    <p class="text-base-content/60 mb-6">{{ _("Aucune demande en attente du destinataire.") }}</p>
+    {% endif %}
+
+    <h2 class="text-xl font-semibold mb-2" id="swaps-title">{{ _("En attente de validation") }}</h2>
+    {% if awaiting_admin %}
     <div class="overflow-x-auto mb-6" role="region" aria-labelledby="swaps-title">
         <table class="table table-zebra" aria-describedby="swaps-title">
             <caption class="sr-only">{{ _("Demandes d'échange en attente de validation") }}</caption>
@@ -41,7 +74,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for swap in pending %}
+                {% for swap in awaiting_admin %}
                 <tr>
                     <td>{{ swap.requester.name }}</td>
                     <td>{{ swap.shift.date|format_date }} - {{ swap.shift.shift_type.label }}</td>
@@ -87,7 +120,7 @@
     ] %}
     {% include "_action_legend.html" %}
     {% else %}
-    <p class="text-base-content/60 mb-6">{{ _("Aucune demande d'échange en attente.") }}</p>
+    <p class="text-base-content/60 mb-6">{{ _("Aucune demande d'échange en attente de validation.") }}</p>
     {% endif %}
 
     <h2 class="text-xl font-semibold mb-2" id="approved-swaps-title">{{ _("Approuvés") }}</h2>

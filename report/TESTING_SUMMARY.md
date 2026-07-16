@@ -2,9 +2,9 @@
 
 ## 📊 Aperçu Global
 
-- **Date de mise à jour** : 16 juillet 2026 (notifications externes via Apprise)
-- **Nombre total de tests** : 1193
-- **Tests réussis** : 1193 ✅
+- **Date de mise à jour** : 16 juillet 2026 (sécurité sidebar + confirmation destinataire échanges + nettoyage Makefile)
+- **Nombre total de tests** : 1224
+- **Tests réussis** : 1224 ✅
 - **Tests échoués** : 0
 - **Couverture de code** : **~92%** (`--cov=app --cov=config`)
 - **Lint (ruff)** : propre - **0 erreur**
@@ -466,3 +466,33 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
   - un id soumis hors de cette liste éligible est silencieusement
   ignoré (testé explicitement). Lien de documentation Apprise pointé
   vers appriseit.com/services.
+- **16 juillet 2026** : 1224 tests (0 échec, +31). Trois chantiers
+  indépendants sur une même branche :
+  - **Sécurité** : la boucle `nav_links` de `base.html` (Accueil/
+    Tableau de bord/Shifts/Astreintes/Congés/Échanges) était la seule
+    section de la sidebar sans garde `current_user.is_authenticated`
+    - corrige d'un coup `/login` et toutes les pages d'erreur 400-504
+    (même layout partagé). Fuite d'information (structure interne de
+    l'app), pas un bypass fonctionnel (toutes les routes ciblées
+    restent `@login_required`).
+  - **Workflow d'échange de shifts en 2 temps** : nouvel état
+    `AWAITING_ADMIN` entre la demande (`PENDING`) et la validation
+    admin - le destinataire choisit désormais lui-même son shift à
+    échanger (ou aucun) au moment de confirmer, ou refuse directement,
+    avant même qu'un admin ne voie la demande. Aucune migration
+    nécessaire (`status` reste un `String(20)` libre,
+    `target_shift_id` déjà nullable). Retrofit complet des tests
+    existants (nouvelle fixture `confirmed_swap_request` pour les tests
+    d'approbation/rejet/annulation admin, qui ne partent plus
+    directement de `PENDING`) + nouveaux tests `TestConfirmSwap`/
+    `TestTargetRejectSwap`. `/api/swaps/target-shifts` et
+    `swap-form.js` devenus morts (le demandeur ne choisit plus le
+    shift retour) - supprimés, ainsi que `app/static/js/utils/date.js`
+    (plus aucun appelant réel une fois `swap-form.js` retiré).
+  - **Makefile** : 39 cibles réduites à 15 (suppression du bloc
+    `bug-hunt`/`scripts/bug_hunt.sh`, confirmé jamais exécuté dans ce
+    repo - `reports/` n'existait pas - et déjà divergent de la vraie
+    config `ruff`/`.ruff.toml` ; fusion des variantes `test-*`/
+    `backup-*` redondantes en invocations directes documentées).
+    `find-duplicates` gardé seul, unique apport réel de l'ancien bloc
+    bug-hunt.

@@ -9,8 +9,8 @@ from app.repositories.app_notification_repository import AppNotificationReposito
 from app.services import AppNotificationService, SwapService
 
 
-class TestNotifyAdminsNewSwapRequest:
-    def test_notifies_all_admins(
+class TestNotifyTargetConfirmationNeeded:
+    def test_notifies_only_target(
         self, test_app, test_user, second_user, admin_user, test_swap_shift
     ):
         with test_app.app_context():
@@ -19,28 +19,62 @@ class TestNotifyAdminsNewSwapRequest:
             )
             assert error is None
 
+            target_notifs = AppNotification.query.filter_by(
+                user_id=second_user.id
+            ).all()
+            assert len(target_notifs) == 1
+            assert target_notifs[0].notification_type == "swap_confirmation_needed"
+            assert target_notifs[0].link == "/swaps"
+            assert test_user.name in target_notifs[0].message
+
+            # Neither the requester (already knows) nor admins (not yet
+            # their turn) are notified at creation time.
+            assert AppNotification.query.filter_by(user_id=test_user.id).count() == 0
+            assert AppNotification.query.filter_by(user_id=admin_user.id).count() == 0
+
+
+class TestNotifyAdminsNewSwapRequest:
+    def test_notifies_all_admins_on_confirm(
+        self, test_app, test_swap_request, admin_user, second_user, test_user
+    ):
+        """Admins are notified once the target confirms (AWAITING_ADMIN),
+        not at request creation time."""
+        with test_app.app_context():
+            error = SwapService.confirm_swap(test_swap_request, second_user)
+            assert error is None
+
             notifications = AppNotification.query.filter_by(user_id=admin_user.id).all()
             assert len(notifications) == 1
             assert notifications[0].notification_type == "swap_request_created"
             assert notifications[0].link == "/admin/swaps"
             assert test_user.name in notifications[0].message
 
-    def test_target_and_requester_not_notified_on_creation(
-        self, test_app, test_user, second_user, admin_user, test_swap_shift
+
+class TestNotifyTargetRejection:
+    def test_notifies_only_requester(
+        self, test_app, test_swap_request, second_user, test_user, admin_user
     ):
         with test_app.app_context():
-            SwapService.request_swap(test_user, test_swap_shift, second_user)
+            SwapService.target_reject_swap(
+                test_swap_request, second_user, reason="Indisponible"
+            )
 
-            assert AppNotification.query.filter_by(user_id=test_user.id).count() == 0
+            requester_notifs = AppNotification.query.filter_by(
+                user_id=test_user.id, notification_type="swap_target_rejected"
+            ).all()
+            assert len(requester_notifs) == 1
+            assert second_user.name in requester_notifs[0].message
+            assert "Indisponible" in requester_notifs[0].message
             assert AppNotification.query.filter_by(user_id=second_user.id).count() == 0
+            assert AppNotification.query.filter_by(user_id=admin_user.id).count() == 0
 
 
 class TestNotifySwapDecision:
     def test_approve_notifies_requester_and_target(
-        self, test_app, test_swap_request, admin_user, test_user, second_user
+        self, test_app, confirmed_swap_request, admin_user, test_user, second_user
     ):
         with test_app.app_context():
-            SwapService.approve_swap(test_swap_request, admin_user)
+            SwapService.approve_swap(confirmed_swap_request, admin_user)
 
             requester_notif = AppNotification.query.filter_by(
                 user_id=test_user.id, notification_type="swap_approved"
@@ -53,10 +87,10 @@ class TestNotifySwapDecision:
             assert requester_notif.link == "/swaps"
 
     def test_reject_notifies_only_requester(
-        self, test_app, test_swap_request, admin_user, test_user, second_user
+        self, test_app, confirmed_swap_request, admin_user, test_user, second_user
     ):
         with test_app.app_context():
-            SwapService.reject_swap(test_swap_request, admin_user, reason="Non")
+            SwapService.reject_swap(confirmed_swap_request, admin_user, reason="Non")
 
             assert (
                 AppNotification.query.filter_by(
@@ -72,21 +106,23 @@ class TestNotifySwapDecision:
             )
 
     def test_reject_message_includes_reason(
-        self, test_app, test_swap_request, admin_user, test_user
+        self, test_app, confirmed_swap_request, admin_user, test_user
     ):
         with test_app.app_context():
             SwapService.reject_swap(
-                test_swap_request, admin_user, reason="Effectif insuffisant"
+                confirmed_swap_request, admin_user, reason="Effectif insuffisant"
             )
-            notif = AppNotification.query.filter_by(user_id=test_user.id).first()
+            notif = AppNotification.query.filter_by(
+                user_id=test_user.id, notification_type="swap_rejected"
+            ).first()
             assert "Effectif insuffisant" in notif.message
 
     def test_revert_notifies_requester_and_target(
-        self, test_app, test_swap_request, admin_user, test_user, second_user
+        self, test_app, confirmed_swap_request, admin_user, test_user, second_user
     ):
         with test_app.app_context():
-            SwapService.approve_swap(test_swap_request, admin_user)
-            SwapService.revert_swap(test_swap_request, admin_user)
+            SwapService.approve_swap(confirmed_swap_request, admin_user)
+            SwapService.revert_swap(confirmed_swap_request, admin_user)
 
             assert (
                 AppNotification.query.filter_by(

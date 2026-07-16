@@ -27,7 +27,7 @@ def admin_dashboard():
     groups_count = db.session.query(func.count(Group.id)).scalar()
     pending_swaps_count = (
         db.session.query(func.count(SwapRequest.id))
-        .filter(SwapRequest.status == SwapRequest.PENDING)
+        .filter(SwapRequest.status == SwapRequest.AWAITING_ADMIN)
         .scalar()
     )
 

@@ -26,26 +26,39 @@ class SwapRequest(BaseModel):
     SwapRequest model for tracking shift exchange requests between users.
 
     A requester proposes to give up one of their shifts (shift_id) to
-    target_user, optionally in exchange for one of target_user's shifts
-    (target_shift_id) - if target_shift_id is null, it's a one-way
-    give-away rather than a reciprocal exchange. An administrator must
-    approve the request before the underlying Shift rows are reassigned.
+    target_user. The target user must first confirm the request and pick
+    which of their own shifts to offer back (target_shift_id) - or decline
+    outright - before an administrator gets to approve/reject it. The
+    requester never picks target_shift_id themselves anymore: it stays
+    null while status is PENDING (awaiting the target's own decision) and
+    only gets filled in by SwapService.confirm_swap() at the moment the
+    target confirms, together with the status transition to
+    AWAITING_ADMIN. If target_shift_id ends up null even after
+    confirmation, it's a one-way give-away rather than a reciprocal
+    exchange.
 
     Attributes:
         requester_id: Foreign key to User - who initiates the request
         shift_id: Foreign key to Shift - the requester's shift being offered
         target_user_id: Foreign key to User - who is being proposed the swap
-        target_shift_id: Foreign key to Shift - target's shift offered back
-            (nullable - null means a one-way give-away)
-        status: One of PENDING, APPROVED, REJECTED, CANCELLED, REVERTED
-        reviewed_by_id: Foreign key to User - admin who reviewed the request
-        reviewed_at: Timestamp of the admin decision
-        admin_comment: Optional comment left by the admin on decision
+        target_shift_id: Foreign key to Shift - target's shift offered back,
+            set by the target at confirmation time, not by the requester at
+            creation time (nullable - null means a one-way give-away)
+        status: One of PENDING (awaiting target confirmation), AWAITING_ADMIN
+            (target confirmed, awaiting admin), APPROVED, REJECTED,
+            CANCELLED, REVERTED
+        reviewed_by_id: Foreign key to User - who made the final decision
+            (an admin for APPROVED/REVERTED, either an admin or the target
+            user themselves for REJECTED - see SwapService.target_reject_swap)
+        reviewed_at: Timestamp of that decision
+        admin_comment: Optional comment left on decision (despite the name,
+            also used for the target's own decline reason)
     """
 
     __tablename__ = "swap_request"
 
     PENDING = "pending"
+    AWAITING_ADMIN = "awaiting_admin"
     APPROVED = "approved"
     REJECTED = "rejected"
     CANCELLED = "cancelled"
@@ -147,8 +160,27 @@ class SwapRequest(BaseModel):
         return db.session.get(Shift, self.target_shift_id)
 
     def is_pending(self) -> bool:
-        """Check if this request is still awaiting an admin decision."""
+        """Check if this request is still awaiting the target's own
+        confirmation - kept as the original name for existing call sites,
+        same meaning as is_awaiting_target()."""
         return self.status == self.PENDING
+
+    def is_awaiting_target(self) -> bool:
+        """Alias of is_pending() - clearer name at target-facing call
+        sites introduced by the confirmation step."""
+        return self.status == self.PENDING
+
+    def is_awaiting_admin(self) -> bool:
+        """Check if the target has confirmed and this is now in the
+        admin's queue."""
+        return self.status == self.AWAITING_ADMIN
+
+    def is_active(self) -> bool:
+        """Check if this request is still unresolved (awaiting either the
+        target's confirmation or the admin's decision) - used to gate
+        requester-side cancellation and to exclude from purge/"resolved"
+        queries."""
+        return self.status in (self.PENDING, self.AWAITING_ADMIN)
 
     def mark_reviewed(
         self, admin_user_id: int, status: str, comment: str | None = None

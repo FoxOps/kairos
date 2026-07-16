@@ -1,7 +1,9 @@
 {# Template partiel : badge de statut pour une demande d'échange (swap).
    Variable requise : swap (instance de SwapRequest, statut dans swap.status) #}
 {% if swap.status == 'pending' %}
-<span class="badge badge-warning">{{ _("En attente") }}</span>
+<span class="badge badge-warning">{{ _("En attente du destinataire") }}</span>
+{% elif swap.status == 'awaiting_admin' %}
+<span class="badge badge-info">{{ _("En attente de validation admin") }}</span>
 {% elif swap.status == 'approved' %}
 <span class="badge badge-success">{{ _("Approuvée") }}</span>
 {% elif swap.status == 'rejected' %}
