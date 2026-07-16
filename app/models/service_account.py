@@ -16,9 +16,7 @@ from datetime import datetime, timezone
 from app import db
 from app.models.base import BaseModel
 
-TOKEN_PREFIX = (
-    "lsak_"  # noqa: S105 - "Leviia Schedule API Key", a public prefix, not a secret
-)
+TOKEN_PREFIX = "lsak_"  # noqa: S105 # nosec B105 - "Leviia Schedule API Key", a public prefix, not a secret
 
 
 class ServiceAccount(BaseModel):

@@ -72,3 +72,11 @@ psutil==7.2.2
 # Notifications externes (Slack/Discord/Telegram/webhooks génériques) via
 # Apprise - voir app/services/apprise_notification_service.py
 apprise==1.12.0
+
+# API REST publique (comptes de service, /api/v1/*) - flask-smorest génère
+# l'OpenAPI depuis les schémas marshmallow, voir app/api/ et CLAUDE.md
+# "API publique (flask-smorest)". apispec/webargs sont des transitives de
+# flask-smorest, non listées séparément (même convention que les autres
+# transitives de ce fichier).
+flask-smorest==0.47.0
+marshmallow==4.3.0

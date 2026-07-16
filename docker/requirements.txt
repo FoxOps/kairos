@@ -59,3 +59,8 @@ botocore>=1.43.0
 # Notifications externes (Slack/Discord/Telegram/webhooks generiques) via
 # Apprise - voir app/services/apprise_notification_service.py
 apprise==1.12.0
+
+# API REST publique (comptes de service, /api/v1/*) - flask-smorest genere
+# l'OpenAPI depuis les schemas marshmallow, voir app/api/
+flask-smorest==0.47.0
+marshmallow==4.3.0

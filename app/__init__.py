@@ -369,6 +369,19 @@ def create_app(config_object: str | None = None):
     app.register_blueprint(admin_bp)
     app.register_blueprint(export_bp)
 
+    # Public REST API (flask-smorest, bearer-token/ServiceAccount auth,
+    # /api/v1/*) - see app/api/ and CLAUDE.md's "API publique
+    # (flask-smorest)" section. CSRF-exempt: this blueprint never
+    # accepts cookie-based auth, so the usual CSRF risk (a browser
+    # silently attaching a valid session cookie to a cross-site
+    # request) doesn't apply here.
+    from app.api import init_api
+    from app.api.resources import all_blueprints
+
+    init_api(app)
+    for blp in all_blueprints:
+        csrf.exempt(blp)
+
     # Configure login_manager.login_view AFTER registering the blueprints
     # This lets Flask-Login find the auth.login route
     if (
