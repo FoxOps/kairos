@@ -9,6 +9,7 @@ from flask_babel import gettext as _
 from app import db
 from app.models import Group
 from app.repositories.user_repository import GroupRepository, UserRepository
+from app.services.audit_service import AuditService
 
 
 class GroupService:
@@ -27,6 +28,9 @@ class GroupService:
 
         group = GroupRepository.create(name, is_part_of_schedule, is_part_of_oncall)
         db.session.commit()
+        AuditService.log(
+            "group.create", resource_type="Group", resource_id=group.id, details=name
+        )
         return group, None
 
     @staticmethod
@@ -44,6 +48,9 @@ class GroupService:
         group.is_part_of_schedule = is_part_of_schedule
         group.is_part_of_oncall = is_part_of_oncall
         db.session.commit()
+        AuditService.log(
+            "group.update", resource_type="Group", resource_id=group.id, details=name
+        )
         return group, None
 
     @staticmethod
@@ -61,6 +68,13 @@ class GroupService:
                 ),
             )
 
+        deleted_name = group.name
         GroupRepository.delete(group)
         db.session.commit()
+        AuditService.log(
+            "group.delete",
+            resource_type="Group",
+            resource_id=group_id,
+            details=deleted_name,
+        )
         return True, None

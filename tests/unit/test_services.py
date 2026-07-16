@@ -72,6 +72,18 @@ class TestUserService:
         assert user is not None
         assert UserRepository.get_by_email("new-svc@test.com") is not None
 
+    def test_create_writes_audit_log_entry(self, test_app, test_group):
+        from app.models import AuditLog
+
+        user, error = UserService.create(
+            "New", "audit-create@test.com", test_group.id, "pw123"
+        )
+        assert error is None
+        entry = AuditLog.query.filter_by(action="user.create").first()
+        assert entry is not None
+        assert entry.resource_id == user.id
+        assert entry.details == "audit-create@test.com"
+
     def test_create_rejects_duplicate_email(self, test_app, test_user, test_group):
         user, error = UserService.create("Dup", test_user.email, test_group.id)
         assert user is None
@@ -124,6 +136,21 @@ class TestGroupService:
         assert error is None
         assert group.is_part_of_schedule is True
         assert group.is_part_of_oncall is False
+
+    def test_delete_writes_audit_log_entry(self, test_app):
+        from app.models import AuditLog
+
+        group, _error = GroupService.create("To Delete", False, False)
+        group_id = group.id
+
+        ok, error = GroupService.delete(group_id)
+        assert ok is True
+        assert error is None
+
+        entry = AuditLog.query.filter_by(action="group.delete").first()
+        assert entry is not None
+        assert entry.resource_id == group_id
+        assert entry.details == "To Delete"
 
     def test_create_rejects_duplicate_name(self, test_app, test_group):
         group, error = GroupService.create(test_group.name, True, True)

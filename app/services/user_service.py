@@ -14,6 +14,7 @@ from app.repositories.leave_repository import LeaveRepository
 from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository
 from app.repositories.user_repository import UserRepository
+from app.services.audit_service import AuditService
 
 
 class UserService:
@@ -55,6 +56,9 @@ class UserService:
         user = UserRepository.create(name, email, group_id)
         user.set_password(password or "password123")
         db.session.commit()
+        AuditService.log(
+            "user.create", resource_type="User", resource_id=user.id, details=email
+        )
         return user, None
 
     @staticmethod
@@ -80,6 +84,9 @@ class UserService:
         if password:
             user.set_password(password)
         db.session.commit()
+        AuditService.log(
+            "user.update", resource_type="User", resource_id=user.id, details=email
+        )
         return user, None
 
     @staticmethod
@@ -101,6 +108,13 @@ class UserService:
                 ),
             )
 
+        deleted_email = user.email
         UserRepository.delete(user)
         db.session.commit()
+        AuditService.log(
+            "user.delete",
+            resource_type="User",
+            resource_id=user_id,
+            details=deleted_email,
+        )
         return True, None
