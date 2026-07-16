@@ -70,6 +70,66 @@ class TestSettingsLanguageSection:
         assert SettingsService.get_default_language() == "fr"
 
 
+class TestSettingsDateFormatSection:
+    def test_valid_date_format_persists(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={"section": "date_format", "default_date_format": "%Y-%m-%d"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"enregistr\xc3\xa9" in response.data
+
+        from app.services import SettingsService
+
+        assert SettingsService.get_default_date_format() == "%Y-%m-%d"
+
+    def test_invalid_date_format_flashes_error_without_persisting(
+        self, logged_in_client
+    ):
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={"section": "date_format", "default_date_format": "%B %d, %Y"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
+
+        from app.services import SettingsService
+
+        assert SettingsService.get_default_date_format() == "%d/%m/%Y"
+
+
+class TestSettingsTimeFormatSection:
+    def test_valid_time_format_persists(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={"section": "time_format", "default_time_format": "%I:%M %p"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"enregistr\xc3\xa9" in response.data
+
+        from app.services import SettingsService
+
+        assert SettingsService.get_default_time_format() == "%I:%M %p"
+
+    def test_invalid_time_format_flashes_error_without_persisting(
+        self, logged_in_client
+    ):
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={"section": "time_format", "default_time_format": "%H:%M:%S"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
+
+        from app.services import SettingsService
+
+        assert SettingsService.get_default_time_format() == "%H:%M"
+
+
 class TestSettingsGeneralSection:
     def test_public_base_url_persists(self, logged_in_client):
         response = logged_in_client.post(

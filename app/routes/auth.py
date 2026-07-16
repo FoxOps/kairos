@@ -9,7 +9,12 @@ from app import db
 from app.auth.oidc_auth import oidc_auth
 from app.models import User
 from app.services import SettingsService
-from app.utils.helpers.common_helpers import get_language_choices, get_timezone_choices
+from app.utils.helpers.common_helpers import (
+    get_date_format_choices,
+    get_language_choices,
+    get_time_format_choices,
+    get_timezone_choices,
+)
 from config_oidc import OIDCConfig
 
 # Create blueprint
@@ -264,6 +269,18 @@ def profile_settings():
             return redirect(url_for("auth.profile_settings"))
         current_user.language = language or None
 
+        date_format = request.form.get("date_format", "").strip()
+        if date_format and date_format not in dict(get_date_format_choices()):
+            flash(_("Format de date invalide."), "danger")
+            return redirect(url_for("auth.profile_settings"))
+        current_user.date_format = date_format or None
+
+        time_format = request.form.get("time_format", "").strip()
+        if time_format and time_format not in dict(get_time_format_choices()):
+            flash(_("Format d'heure invalide."), "danger")
+            return redirect(url_for("auth.profile_settings"))
+        current_user.time_format = time_format or None
+
         # Only apply the submitted notification checkboxes if the
         # section was actually visible/editable - otherwise a stale
         # form (opened while notifications were org-wide enabled, then
@@ -288,6 +305,10 @@ def profile_settings():
         default_timezone=SettingsService.get_default_timezone(),
         languages=get_language_choices(),
         default_language=SettingsService.get_default_language(),
+        date_formats=get_date_format_choices(),
+        default_date_format=SettingsService.get_default_date_format(),
+        time_formats=get_time_format_choices(),
+        default_time_format=SettingsService.get_default_time_format(),
         notifications_enabled_org_wide=notifications_enabled_org_wide,
     )
 

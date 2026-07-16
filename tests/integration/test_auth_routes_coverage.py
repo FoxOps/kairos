@@ -198,6 +198,90 @@ class TestProfileSettings:
             user = User.query.filter_by(email="login@example.com").first()
             assert user.language is None
 
+    def test_valid_date_format_persists(self, test_app, logged_in_client):
+        resp = logged_in_client.post(
+            "/profile/settings",
+            data={"date_format": "%Y-%m-%d"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with test_app.app_context():
+            user = User.query.filter_by(email="login@example.com").first()
+            assert user.date_format == "%Y-%m-%d"
+
+    def test_empty_date_format_clears_to_org_default(self, test_app, logged_in_client):
+        logged_in_client.post(
+            "/profile/settings",
+            data={"date_format": "%Y-%m-%d"},
+            follow_redirects=True,
+        )
+
+        resp = logged_in_client.post(
+            "/profile/settings",
+            data={"date_format": ""},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with test_app.app_context():
+            user = User.query.filter_by(email="login@example.com").first()
+            assert user.date_format is None
+
+    def test_invalid_date_format_rejected_without_mutation(
+        self, test_app, logged_in_client
+    ):
+        resp = logged_in_client.post(
+            "/profile/settings",
+            data={"date_format": "%B %d, %Y"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        assert b"invalide" in resp.data
+        with test_app.app_context():
+            user = User.query.filter_by(email="login@example.com").first()
+            assert user.date_format is None
+
+    def test_valid_time_format_persists(self, test_app, logged_in_client):
+        resp = logged_in_client.post(
+            "/profile/settings",
+            data={"time_format": "%I:%M %p"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with test_app.app_context():
+            user = User.query.filter_by(email="login@example.com").first()
+            assert user.time_format == "%I:%M %p"
+
+    def test_empty_time_format_clears_to_org_default(self, test_app, logged_in_client):
+        logged_in_client.post(
+            "/profile/settings",
+            data={"time_format": "%I:%M %p"},
+            follow_redirects=True,
+        )
+
+        resp = logged_in_client.post(
+            "/profile/settings",
+            data={"time_format": ""},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with test_app.app_context():
+            user = User.query.filter_by(email="login@example.com").first()
+            assert user.time_format is None
+
+    def test_invalid_time_format_rejected_without_mutation(
+        self, test_app, logged_in_client
+    ):
+        resp = logged_in_client.post(
+            "/profile/settings",
+            data={"time_format": "%H:%M:%S"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        assert b"invalide" in resp.data
+        with test_app.app_context():
+            user = User.query.filter_by(email="login@example.com").first()
+            assert user.time_format is None
+
     def test_notification_section_hidden_when_disabled_org_wide(
         self, test_app, logged_in_client
     ):

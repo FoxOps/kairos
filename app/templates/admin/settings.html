@@ -60,6 +60,58 @@
         </div>
     </form>
 
+    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="date-format-form-title" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="section" value="date_format">
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <h2 class="font-semibold" id="date-format-form-title"><i class="fas fa-calendar-day" aria-hidden="true"></i> {{ _("Format de date") }}</h2>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Format de date par défaut de l'organisation") }}</legend>
+                    <select class="select w-full" id="default_date_format" name="default_date_format" aria-describedby="date-format-help">
+                        {% for pattern, sample in date_formats %}
+                        <option value="{{ pattern }}" {% if pattern == default_date_format %}selected{% endif %}>{{ sample }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-sm text-base-content/60" id="date-format-help">
+                        {{ _("Format utilisé pour afficher les dates, quand un utilisateur n'a pas défini de préférence personnelle sur son profil. N'affecte pas l'export ICS.") }}
+                    </p>
+                </fieldset>
+                <div>
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="time-format-form-title" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="section" value="time_format">
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <h2 class="font-semibold" id="time-format-form-title"><i class="fas fa-clock" aria-hidden="true"></i> {{ _("Format d'heure") }}</h2>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Format d'heure par défaut de l'organisation") }}</legend>
+                    <select class="select w-full" id="default_time_format" name="default_time_format" aria-describedby="time-format-help">
+                        {% for pattern, sample in time_formats %}
+                        <option value="{{ pattern }}" {% if pattern == default_time_format %}selected{% endif %}>{{ sample }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-sm text-base-content/60" id="time-format-help">
+                        {{ _("Format utilisé pour afficher les heures, quand un utilisateur n'a pas défini de préférence personnelle sur son profil. N'affecte pas l'export ICS.") }}
+                    </p>
+                </fieldset>
+                <div>
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
     <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="general-form-title" class="mb-4">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="section" value="general">

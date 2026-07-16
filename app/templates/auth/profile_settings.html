@@ -35,6 +35,26 @@
                         </select>
                     </div>
 
+                    <div>
+                        <label class="label" for="date_format">{{ _("Format de date") }}</label>
+                        <select class="select w-full" id="date_format" name="date_format">
+                            <option value="">{{ _("Utiliser le format de date par défaut de l'organisation (%(default_date_format)s)", default_date_format=default_date_format) }}</option>
+                            {% for pattern, sample in date_formats %}
+                            <option value="{{ pattern }}" {% if pattern == user.date_format %}selected{% endif %}>{{ sample }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="label" for="time_format">{{ _("Format d'heure") }}</label>
+                        <select class="select w-full" id="time_format" name="time_format">
+                            <option value="">{{ _("Utiliser le format d'heure par défaut de l'organisation (%(default_time_format)s)", default_time_format=default_time_format) }}</option>
+                            {% for pattern, sample in time_formats %}
+                            <option value="{{ pattern }}" {% if pattern == user.time_format %}selected{% endif %}>{{ sample }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
                     {% if notifications_enabled_org_wide %}
                     <div class="divider">{{ _("Notifications par email") }}</div>
 
