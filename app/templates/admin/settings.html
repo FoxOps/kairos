@@ -206,6 +206,28 @@
         </div>
     </form>
 
+    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="audit-form-title" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="section" value="audit">
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <h2 class="font-semibold" id="audit-form-title"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i> {{ _("Audit trail") }}</h2>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Rétention (jours)") }}</legend>
+                    <input class="input w-full" type="number" min="1" id="audit_log_retention_days" name="audit_log_retention_days" value="{{ audit_log_retention_days or '' }}" placeholder="{{ _("Non configuré") }}">
+                </fieldset>
+                <p class="text-sm text-base-content/60">
+                    {{ _("Tant qu'aucune valeur n'est enregistrée ici, aucune purge n'est effectuée : toutes les entrées de l'historique sont conservées indéfiniment.") }}
+                </p>
+                <div>
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
     <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="ics-form-title">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="section" value="ics">

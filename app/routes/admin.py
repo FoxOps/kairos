@@ -47,6 +47,7 @@ def admin_dashboard():
 # functions with @admin_bp.route(...)). Must stay after admin_bp is
 # created above.
 from app.routes import (  # noqa: E402
+    admin_audit_routes,  # noqa: F401
     admin_automation_routes,  # noqa: F401
     admin_backup_routes,  # noqa: F401
     admin_group_routes,  # noqa: F401

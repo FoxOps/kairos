@@ -1,0 +1,140 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}{{ _("Historique des modifications") }} - Administration{% endblock %}
+
+{% block admin_content %}
+<section class="p-3 md:p-4 max-w-6xl mx-auto">
+    <div class="breadcrumbs text-sm mb-2" aria-label="{{ _("Fil d'Ariane") }}">
+        <ul>
+            <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
+            <li>{{ _("Historique des modifications") }}</li>
+        </ul>
+    </div>
+    <h1 class="text-2xl font-bold mb-4">
+        <i class="fas fa-clock-rotate-left" aria-hidden="true"></i> {{ _("Historique des modifications") }}
+    </h1>
+
+    <form method="GET" action="{{ url_for('admin.audit_log') }}" class="card card-sm bg-base-100 shadow-md mb-4" aria-labelledby="audit-filters-title">
+        <div class="card-body gap-4">
+            <h2 class="font-semibold" id="audit-filters-title">{{ _("Filtres") }}</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Auteur") }}</legend>
+                    <select class="select w-full" name="actor_id">
+                        <option value="">{{ _("Tous") }}</option>
+                        {% for u in users %}
+                        <option value="{{ u.id }}" {% if selected_actor_id == u.id %}selected{% endif %}>{{ u.name }}</option>
+                        {% endfor %}
+                    </select>
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Domaine") }}</legend>
+                    <select class="select w-full" name="action_domain">
+                        <option value="">{{ _("Tous") }}</option>
+                        {% for domain in action_domains %}
+                        <option value="{{ domain }}" {% if selected_action_domain == domain %}selected{% endif %}>{{ domain }}</option>
+                        {% endfor %}
+                    </select>
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Du") }}</legend>
+                    <input class="input w-full" type="date" name="date_from" value="{{ date_from }}">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Au") }}</legend>
+                    <input class="input w-full" type="date" name="date_to" value="{{ date_to }}">
+                </fieldset>
+            </div>
+            <input type="hidden" name="per_page" value="{{ per_page }}">
+            <div class="flex flex-wrap gap-2">
+                <button class="btn btn-primary btn-sm" type="submit">
+                    <i class="fas fa-filter" aria-hidden="true"></i> {{ _("Filtrer") }}
+                </button>
+                <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.audit_log') }}">
+                    <i class="fas fa-eraser" aria-hidden="true"></i> {{ _("Réinitialiser") }}
+                </a>
+            </div>
+        </div>
+    </form>
+
+    <div class="flex flex-wrap gap-2 mb-4" role="group" aria-label="{{ _("Actions globales") }}">
+        <form method="POST" action="{{ url_for('admin.purge_audit_log') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-ghost btn-sm" type="submit"
+                    aria-label="{{ _("Purger les entrées plus anciennes que la rétention configurée") }}"
+                    title="{{ _("Purger les entrées plus anciennes que la rétention configurée") }}"
+                    onclick="return confirm('{{ _("Supprimer définitivement les entrées d'historique plus anciennes que la rétention configurée ?") }}');">
+                <i class="fas fa-broom" aria-hidden="true"></i> {{ _("Purger selon la rétention") }}
+            </button>
+        </form>
+        {% if audit_log_retention_days %}
+        <span class="text-sm text-base-content/60 self-center">{{ _("Rétention actuelle : %(days)s jour(s)", days=audit_log_retention_days) }}</span>
+        {% else %}
+        <span class="text-sm text-base-content/60 self-center">
+            {{ _("Aucune rétention configurée -") }}
+            <a class="link" href="{{ url_for('admin.settings_dashboard') }}">{{ _("réglez-la dans les paramètres") }}</a>
+            {{ _("pour pouvoir purger.") }}
+        </span>
+        {% endif %}
+    </div>
+
+    {% if entries.items %}
+    <div class="overflow-x-auto" role="region" aria-labelledby="audit-log-title">
+        <h2 class="sr-only" id="audit-log-title">{{ _("Entrées de l'historique") }}</h2>
+        <table class="table table-zebra" aria-describedby="audit-log-title">
+            <thead>
+                <tr>
+                    <th scope="col">{{ _("Date") }}</th>
+                    <th scope="col">{{ _("Auteur") }}</th>
+                    <th scope="col">{{ _("Action") }}</th>
+                    <th scope="col">{{ _("Ressource") }}</th>
+                    <th scope="col">{{ _("Détails") }}</th>
+                    <th scope="col">{{ _("Adresse IP") }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries.items %}
+                <tr>
+                    <td>{{ entry.created_at|format_datetime }}</td>
+                    <td>{{ entry.actor.name if entry.actor else _("Système") }}</td>
+                    <td><code>{{ entry.action }}</code></td>
+                    <td>
+                        {% if entry.resource_type %}
+                        {{ entry.resource_type }}{% if entry.resource_id %} #{{ entry.resource_id }}{% endif %}
+                        {% else %}
+                        &mdash;
+                        {% endif %}
+                    </td>
+                    <td>{{ entry.details or "—" }}</td>
+                    <td>{{ entry.ip_address or "—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="flex flex-wrap justify-between items-center gap-2 my-2">
+        <nav class="join" role="navigation" aria-label="{{ _("Pagination") }}">
+            <a class="join-item btn btn-sm {% if not entries.has_prev %}btn-disabled{% endif %}"
+               href="{{ url_for('admin.audit_log', page=entries.prev_num, per_page=per_page, actor_id=selected_actor_id, action_domain=selected_action_domain, date_from=date_from, date_to=date_to) if entries.has_prev else '#' }}"
+               aria-label="{{ _("Page précédente") }}"
+               {% if not entries.has_prev %}aria-disabled="true" tabindex="-1"{% endif %}>
+                <i class="fas fa-chevron-left" aria-hidden="true"></i>
+            </a>
+            <span class="join-item btn btn-sm btn-disabled" aria-current="page">{{ _("Page %(page)s / %(pages)s", page=entries.page, pages=entries.pages or 1) }}</span>
+            <a class="join-item btn btn-sm {% if not entries.has_next %}btn-disabled{% endif %}"
+               href="{{ url_for('admin.audit_log', page=entries.next_num, per_page=per_page, actor_id=selected_actor_id, action_domain=selected_action_domain, date_from=date_from, date_to=date_to) if entries.has_next else '#' }}"
+               aria-label="{{ _("Page suivante") }}"
+               {% if not entries.has_next %}aria-disabled="true" tabindex="-1"{% endif %}>
+                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+            </a>
+        </nav>
+        <small class="text-base-content/60 whitespace-nowrap">
+            {{ entries.items|length }} / {{ entries.total }} {{ _("entrées") }}
+        </small>
+    </div>
+    {% else %}
+    <p class="text-base-content/60">{{ _("Aucune entrée d'historique ne correspond à ces filtres.") }}</p>
+    {% endif %}
+</section>
+{% endblock %}

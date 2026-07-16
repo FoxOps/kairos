@@ -32,6 +32,7 @@ MAX_PER_PAGE_KEY = "max_per_page"
 NOTIFICATIONS_ENABLED_KEY = "notifications_enabled"
 BACKUP_RETENTION_DAYS_KEY = "backup_retention_days"
 BACKUP_MAX_BACKUPS_KEY = "backup_max_backups"
+AUDIT_LOG_RETENTION_DAYS_KEY = "audit_log_retention_days"
 # Setting key name, not a secret
 ICS_TOKEN_EXPIRY_DAYS_KEY = "ics_token_expiry_days"  # noqa: S105
 
@@ -271,6 +272,35 @@ class SettingsService:
                 "setting.update",
                 resource_type="Setting",
                 details=f"backup_retention_days={retention_days}, backup_max_backups={max_backups}",
+            )
+            return None
+        except Exception as e:
+            db.session.rollback()
+            return str(e)
+
+    # --- audit log retention ---
+
+    @staticmethod
+    def get_audit_log_retention_days() -> int | None:
+        """Returns None if no DB override exists - callers should keep
+        every AuditLog entry (no purge) in that case, unlike
+        get_backup_retention_days() there is no env-var fallback: audit
+        log retention was never configurable before this Setting
+        existed, and defaulting to "purge something" without an admin
+        explicitly opting in would be surprising for an audit trail."""
+        value = Setting.get(AUDIT_LOG_RETENTION_DAYS_KEY)
+        return int(value) if value is not None else None
+
+    @staticmethod
+    def set_audit_log_retention_days(days: int) -> str | None:
+        if days <= 0:
+            return _("La durée de rétention doit être positive")
+        try:
+            Setting.set(AUDIT_LOG_RETENTION_DAYS_KEY, days)
+            AuditService.log(
+                "setting.update",
+                resource_type="Setting",
+                details=f"audit_log_retention_days={days}",
             )
             return None
         except Exception as e:
