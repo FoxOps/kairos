@@ -579,6 +579,26 @@ class TestSwapRequestModel:
             test_swap_request.status = SwapRequest.APPROVED
             assert test_swap_request.is_pending() is False
 
+    def test_is_awaiting_target(self, test_app, test_swap_request):
+        with test_app.app_context():
+            assert test_swap_request.is_awaiting_target() is True
+            test_swap_request.status = SwapRequest.AWAITING_ADMIN
+            assert test_swap_request.is_awaiting_target() is False
+
+    def test_is_awaiting_admin(self, test_app, test_swap_request):
+        with test_app.app_context():
+            assert test_swap_request.is_awaiting_admin() is False
+            test_swap_request.status = SwapRequest.AWAITING_ADMIN
+            assert test_swap_request.is_awaiting_admin() is True
+
+    def test_is_active(self, test_app, test_swap_request):
+        with test_app.app_context():
+            assert test_swap_request.is_active() is True
+            test_swap_request.status = SwapRequest.AWAITING_ADMIN
+            assert test_swap_request.is_active() is True
+            test_swap_request.status = SwapRequest.APPROVED
+            assert test_swap_request.is_active() is False
+
     def test_mark_reviewed(self, test_app, test_swap_request, second_user):
         with test_app.app_context():
             test_swap_request.mark_reviewed(

@@ -33,7 +33,8 @@ def test_swap_shift(test_app, test_user, test_shift_type):
 
 @pytest.fixture
 def test_swap_request(test_app, test_user, second_user, test_swap_shift):
-    """A pending swap request: test_user offers test_swap_shift to second_user."""
+    """A pending swap request: test_user offers test_swap_shift to
+    second_user, still awaiting second_user's own confirmation."""
     swap_request = SwapRequest(
         requester_id=test_user.id,
         shift_id=test_swap_shift.id,
@@ -43,3 +44,14 @@ def test_swap_request(test_app, test_user, second_user, test_swap_shift):
     db.session.add(swap_request)
     db.session.commit()
     return swap_request
+
+
+@pytest.fixture
+def confirmed_swap_request(test_app, test_swap_request):
+    """The same request as test_swap_request, but already confirmed by
+    its target (AWAITING_ADMIN, no target_shift - one-way give-away) -
+    for tests exercising the admin approve/reject/revert actions, which
+    now only apply once the target has confirmed."""
+    test_swap_request.status = SwapRequest.AWAITING_ADMIN
+    db.session.commit()
+    return test_swap_request
