@@ -21,7 +21,10 @@
                     <legend class="fieldset-legend">{{ _("URL Apprise") }} *</legend>
                     <input class="input w-full validator" type="text" name="apprise_url" placeholder="slack://TokenA/TokenB/TokenC/#canal" required aria-required="true">
                     <p class="text-sm text-base-content/60">
-                        {{ _("Voir la documentation Apprise pour le format d'URL de chaque service (Slack, Discord, Telegram, webhook générique...).") }}
+                        {{ _("Format d'URL spécifique à chaque service (Slack, Discord, Telegram, webhook générique...).") }}
+                        <a class="link" href="https://github.com/caronc/apprise/wiki" target="_blank" rel="noopener noreferrer">
+                            {{ _("Voir la documentation Apprise") }} <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                        </a>
                     </p>
                 </fieldset>
 
@@ -36,6 +39,11 @@
                         {% endfor %}
                     </div>
                     <p class="text-sm text-base-content/60">{{ _("Aucune catégorie cochée = toutes les catégories.") }}</p>
+                    <ul class="text-sm text-base-content/60 list-disc list-inside mt-1">
+                        <li><strong>swap</strong> — {{ _("Échanges de shifts entre utilisateurs : nouvelle demande, approbation, rejet, annulation d'un échange déjà approuvé.") }}</li>
+                        <li><strong>backup</strong> — {{ _("Sauvegardes déclenchées manuellement depuis l'interface d'administration (création, nettoyage) : succès et échecs. N'inclut pas les sauvegardes automatiques planifiées par cron.") }}</li>
+                        <li><strong>system</strong> — {{ _("Alertes système générales, notamment les échecs d'envoi des emails de rappel hebdomadaires (shifts et astreintes).") }}</li>
+                    </ul>
                 </fieldset>
 
                 <div>
