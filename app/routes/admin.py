@@ -52,6 +52,7 @@ from app.routes import (  # noqa: E402
     admin_backup_routes,  # noqa: F401
     admin_group_routes,  # noqa: F401
     admin_notification_target_routes,  # noqa: F401
+    admin_service_account_routes,  # noqa: F401
     admin_settings_routes,  # noqa: F401
     admin_shift_type_routes,  # noqa: F401
     admin_swap_routes,  # noqa: F401

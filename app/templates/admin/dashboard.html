@@ -128,6 +128,17 @@
 
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
+                <h2 class="font-semibold"><i class="fas fa-key" aria-hidden="true"></i> {{ _("API publique") }}</h2>
+                <p>{{ _("Comptes de service pour intégrations tierces") }}</p>
+                <a class="btn btn-info btn-sm mt-2" href="{{ url_for('admin.list_service_accounts') }}"
+                   aria-label="{{ _("Gérer les comptes de service") }}" title="{{ _("Gérer les comptes de service") }}">
+                    <i class="fas fa-list" aria-hidden="true"></i> {{ _("Gérer") }}
+                </a>
+            </div>
+        </div>
+
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body">
                 <h2 class="font-semibold"><i class="fas fa-sliders" aria-hidden="true"></i> {{ _("Paramètres") }}</h2>
                 <p>{{ _("Fuseau horaire, pagination, notifications...") }}</p>
                 <a class="btn btn-info btn-sm mt-2" href="{{ url_for('admin.settings_dashboard') }}"
