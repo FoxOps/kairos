@@ -86,3 +86,25 @@ class TestJsTranslationsInjection:
         end = resp.data.index(b"</script>", start)
         payload = json.loads(resp.data[start:end])
         assert payload["close"] == "Fermer"
+
+
+class TestEnCatalogTranslation:
+    """Round-trip check for the en.po catalog: renders known French text
+    with default_language="en" and asserts the English msgstr actually
+    appears. Catches two distinct failure modes that a "page renders
+    without error" test would miss: a string extracted but never given
+    an English msgstr (silently falls back to French), and messages.mo
+    never compiled at all (same silent French fallback, see
+    conftest.py's _compile_babel_catalogs fixture)."""
+
+    def test_login_page_renders_in_english(self, test_app, client):
+        with test_app.app_context():
+            from app.services import SettingsService
+
+            SettingsService.set_default_language("en")
+
+        resp = client.get("/login")
+        html = resp.get_data(as_text=True)
+
+        assert "Login" in html
+        assert "Connexion" not in html
