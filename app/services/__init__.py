@@ -34,6 +34,9 @@ Services:
   services (Slack/Discord/Telegram/webhooks) via Apprise - not to be
   confused with notification_service (emails) or app_notification_service
   (bell icon) - see CLAUDE.md's "External notifications (Apprise)" section.
+- service_account_service: Admin-managed bearer credentials for the
+  public REST API (app/api/) - creation/revocation/secret regeneration,
+  see CLAUDE.md's "API publique (flask-smorest)" section.
 """
 
 from app.services.app_notification_service import AppNotificationService
@@ -47,6 +50,7 @@ from app.services.leave_service import LeaveService
 from app.services.notification_service import NotificationService
 from app.services.oncall_service import OnCallService
 from app.services.schedule_service import ScheduleService
+from app.services.service_account_service import ServiceAccountService
 from app.services.settings_service import SettingsService
 from app.services.shift_service import ShiftService
 from app.services.shift_type_service import ShiftTypeService
@@ -70,4 +74,5 @@ __all__ = [
     "SettingsService",
     "AuditService",
     "AppriseNotificationService",
+    "ServiceAccountService",
 ]
