@@ -298,6 +298,11 @@ def profile_settings():
         flash(_("Vos paramètres ont été mis à jour avec succès !"), "success")
         return redirect(url_for("auth.profile_settings"))
 
+    date_formats = get_date_format_choices()
+    time_formats = get_time_format_choices()
+    default_date_format = SettingsService.get_default_date_format()
+    default_time_format = SettingsService.get_default_time_format()
+
     return render_template(
         "auth/profile_settings.html",
         user=current_user,
@@ -305,10 +310,16 @@ def profile_settings():
         default_timezone=SettingsService.get_default_timezone(),
         languages=get_language_choices(),
         default_language=SettingsService.get_default_language(),
-        date_formats=get_date_format_choices(),
-        default_date_format=SettingsService.get_default_date_format(),
-        time_formats=get_time_format_choices(),
-        default_time_format=SettingsService.get_default_time_format(),
+        date_formats=date_formats,
+        default_date_format=default_date_format,
+        default_date_format_sample=dict(date_formats).get(
+            default_date_format, default_date_format
+        ),
+        time_formats=time_formats,
+        default_time_format=default_time_format,
+        default_time_format_sample=dict(time_formats).get(
+            default_time_format, default_time_format
+        ),
         notifications_enabled_org_wide=notifications_enabled_org_wide,
     )
 

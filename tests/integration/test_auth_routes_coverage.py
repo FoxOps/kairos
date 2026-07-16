@@ -119,6 +119,20 @@ class TestProfileSettings:
             user = User.query.filter_by(email="login@example.com").first()
             assert user.timezone == "America/New_York"
 
+    def test_org_default_options_show_a_rendered_sample_not_the_raw_pattern(
+        self, logged_in_client
+    ):
+        """Regression test: the "use org default" <option> for date/time
+        format must show a rendered sample (e.g. "31/12/2026"), not the
+        raw strftime pattern (e.g. "%d/%m/%Y") - a real bug caught via a
+        screenshot after this feature shipped."""
+        resp = logged_in_client.get("/profile/settings")
+        html = resp.get_data(as_text=True)
+        assert "(%d/%m/%Y)" not in html
+        assert "(%H:%M)" not in html
+        assert "(%m/%d/%Y)" not in html
+        assert "(%I:%M %p)" not in html
+
     def test_empty_timezone_clears_to_org_default(self, test_app, logged_in_client):
         """Set then clear through two real requests on the same client -
         an out-of-band DB write in a separate app_context wouldn't be
