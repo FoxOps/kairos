@@ -30,9 +30,14 @@ Services:
   when present, falls back live to app.config/env otherwise.
 - audit_service: Single write path for the audit trail (AuditLog model +
   logs/audit.log dual-write) - see CLAUDE.md's "Audit trail" section.
+- apprise_notification_service: Outbound notifications to external
+  services (Slack/Discord/Telegram/webhooks) via Apprise - not to be
+  confused with notification_service (emails) or app_notification_service
+  (bell icon) - see CLAUDE.md's "External notifications (Apprise)" section.
 """
 
 from app.services.app_notification_service import AppNotificationService
+from app.services.apprise_notification_service import AppriseNotificationService
 from app.services.audit_service import AuditService
 from app.services.automation_admin_service import AutomationAdminService
 from app.services.backup_service import BackupService
@@ -64,4 +69,5 @@ __all__ = [
     "BackupService",
     "SettingsService",
     "AuditService",
+    "AppriseNotificationService",
 ]

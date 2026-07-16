@@ -55,3 +55,7 @@ psutil==7.2.2
 # silencieusement avec "boto3 non disponible" plutot que de sauvegarder.
 boto3>=1.43.0
 botocore>=1.43.0
+
+# Notifications externes (Slack/Discord/Telegram/webhooks generiques) via
+# Apprise - voir app/services/apprise_notification_service.py
+apprise==1.12.0

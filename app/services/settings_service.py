@@ -33,6 +33,7 @@ NOTIFICATIONS_ENABLED_KEY = "notifications_enabled"
 BACKUP_RETENTION_DAYS_KEY = "backup_retention_days"
 BACKUP_MAX_BACKUPS_KEY = "backup_max_backups"
 AUDIT_LOG_RETENTION_DAYS_KEY = "audit_log_retention_days"
+APPRISE_NOTIFICATIONS_ENABLED_KEY = "apprise_notifications_enabled"
 # Setting key name, not a secret
 ICS_TOKEN_EXPIRY_DAYS_KEY = "ics_token_expiry_days"  # noqa: S105
 
@@ -301,6 +302,33 @@ class SettingsService:
                 "setting.update",
                 resource_type="Setting",
                 details=f"audit_log_retention_days={days}",
+            )
+            return None
+        except Exception as e:
+            db.session.rollback()
+            return str(e)
+
+    # --- Apprise external notifications master toggle ---
+
+    @staticmethod
+    def get_apprise_notifications_enabled() -> bool:
+        """No env var fallback - a brand new concept, never configurable
+        before this Setting existed (same footnote as default_language/
+        audit_log_retention_days). Defaults to False (opt-in): an admin
+        must explicitly enable outbound network calls to external
+        services, they should never start firing silently the moment
+        this feature ships."""
+        value = Setting.get(APPRISE_NOTIFICATIONS_ENABLED_KEY)
+        return bool(value) if value is not None else False
+
+    @staticmethod
+    def set_apprise_notifications_enabled(enabled: bool) -> str | None:
+        try:
+            Setting.set(APPRISE_NOTIFICATIONS_ENABLED_KEY, bool(enabled))
+            AuditService.log(
+                "setting.update",
+                resource_type="Setting",
+                details=f"apprise_notifications_enabled={enabled}",
             )
             return None
         except Exception as e:

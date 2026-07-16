@@ -193,3 +193,15 @@ class TestIcsTokenExpiryDays:
         with test_app.app_context():
             error = SettingsService.set_ics_token_expiry_days(0)
             assert error is not None
+
+
+class TestAppriseNotificationsEnabled:
+    def test_defaults_to_false(self, test_app):
+        with test_app.app_context():
+            assert SettingsService.get_apprise_notifications_enabled() is False
+
+    def test_db_override_wins(self, test_app):
+        with test_app.app_context():
+            error = SettingsService.set_apprise_notifications_enabled(True)
+            assert error is None
+            assert SettingsService.get_apprise_notifications_enabled() is True
