@@ -17,6 +17,7 @@ import os
 import warnings
 
 from flask import Flask, render_template
+from flask_babel import Babel
 from flask_compress import Compress
 from flask_cors import CORS
 from flask_limiter import Limiter
@@ -48,6 +49,37 @@ login_manager.login_message_category = "danger"
 limiter = Limiter(key_func=get_remote_address)
 csrf = CSRFProtect()
 compress = Compress()
+babel = Babel()
+
+
+def get_locale() -> str:
+    """Resolution order: the authenticated user's own language
+    preference, else the organization's default_language Setting.
+    Deliberately no Accept-Language sniffing - org/user settings are
+    the single source of truth here, exactly like effective_timezone()
+    never consults browser-provided data. This also keeps rendering
+    deterministic for anonymous pages (login, error pages) regardless
+    of visitor - important for test stability (see
+    SettingsService.FALLBACK_DEFAULT_LANGUAGE).
+
+    This is Flask-Babel's locale_selector, invoked by gettext()/_() on
+    every call - including from service-layer code that may run with
+    only an app_context() and no real HTTP request (e.g. called
+    directly in unit tests, or in principle any future non-request
+    caller). current_user requires a request context to resolve;
+    without one it's None rather than flask_login's usual
+    AnonymousUserMixin, so check has_request_context() first instead of
+    letting that raise AttributeError."""
+    from flask import has_request_context
+    from flask_login import current_user
+
+    if has_request_context() and current_user.is_authenticated:
+        return current_user.effective_language()
+
+    from app.services import SettingsService
+
+    return SettingsService.get_default_language()
+
 
 # Content-Security-Policy applied by Talisman - see the comment in
 # create_app() for details on each directive. Exposed as a module-level
@@ -190,6 +222,12 @@ def create_app(config_object: str | None = None):
     login_manager.init_app(app)
     limiter.init_app(app)
     csrf.init_app(app)
+    babel.init_app(app, locale_selector=get_locale)
+    # Flask-Babel auto-injects _/gettext/ngettext as Jinja globals (and
+    # the {% trans %} extension), but NOT get_locale() itself - register
+    # it explicitly so base.html's <html lang="{{ get_locale() }}">
+    # works.
+    app.jinja_env.globals["get_locale"] = get_locale
 
     # Configure rate limiting if enabled
     if app.config.get("RATE_LIMIT_ENABLED", True):
@@ -330,6 +368,15 @@ def create_app(config_object: str | None = None):
 
         base_url = SettingsService.get_public_base_url()
         return {"public_base_url": base_url.rstrip("/") if base_url else None}
+
+    # Server-translated strings for the handful of hardcoded-in-JS
+    # user-facing texts - see app/utils/helpers/js_translations.py and
+    # base.html's #i18n-strings script tag.
+    @app.context_processor
+    def inject_js_translations():
+        from app.utils.helpers.js_translations import get_js_translations
+
+        return {"js_translations": get_js_translations()}
 
     # Unread notifications badge in the sidebar (see "Notifications" in
     # nav_links, base.html) - lightweight query (COUNT), acceptable on

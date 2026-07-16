@@ -37,9 +37,9 @@ ROUTE_DIRS = [
 
 
 def _iter_flash_call_string_args():
-    """Yield (file, lineno, string_value) for every literal/f-string
-    argument passed as the first positional argument to a flash() call,
-    across app/routes/ and app/auth/."""
+    """Yield (file, lineno, string_value) for every literal/f-string/
+    gettext-wrapped argument passed as the first positional argument to
+    a flash() call, across app/routes/ and app/auth/."""
     for directory in ROUTE_DIRS:
         for path in sorted(directory.glob("*.py")):
             source = path.read_text(encoding="utf-8")
@@ -52,6 +52,14 @@ def _iter_flash_call_string_args():
                     and node.args
                 ):
                     first_arg = node.args[0]
+                    # gettext-wrapped: flash(_("...", ...))
+                    if (
+                        isinstance(first_arg, ast.Call)
+                        and isinstance(first_arg.func, ast.Name)
+                        and first_arg.func.id == "_"
+                        and first_arg.args
+                    ):
+                        first_arg = first_arg.args[0]
                     # Constant string: flash("...")
                     if isinstance(first_arg, ast.Constant) and isinstance(
                         first_arg.value, str

@@ -2,46 +2,46 @@
 
 {% block admin_content %}
 <section class="p-3 md:p-4 max-w-6xl mx-auto">
-    <div class="breadcrumbs text-sm mb-2" aria-label="Fil d'Ariane">
+    <div class="breadcrumbs text-sm mb-2" aria-label="{{ _("Fil d'Ariane") }}">
         <ul>
             <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
-            <li>Sauvegardes</li>
+            <li>{{ _("Sauvegardes") }}</li>
         </ul>
     </div>
-    <h1 class="text-2xl font-bold mb-4"><i class="fas fa-database" aria-hidden="true"></i> Sauvegardes</h1>
+    <h1 class="text-2xl font-bold mb-4"><i class="fas fa-database" aria-hidden="true"></i> {{ _("Sauvegardes") }}</h1>
 
-    <div class="flex gap-2 mb-4" role="group" aria-label="Actions sauvegardes">
+    <div class="flex gap-2 mb-4" role="group" aria-label="{{ _("Actions sauvegardes") }}">
         <a class="btn btn-ghost" href="{{ url_for('admin.admin_dashboard') }}"
-           aria-label="Retour à l'administration" title="Retour à l'admin">
-            Retour à l'admin
+           aria-label="{{ _("Retour à l'administration") }}" title="{{ _("Retour à l'admin") }}">
+            {{ _("Retour à l'admin") }}
         </a>
     </div>
 
     {% if not config.enabled %}
     <div class="alert alert-warning mb-4">
-        <p><i class="fas fa-exclamation-triangle" aria-hidden="true"></i> Les sauvegardes sont désactivées (<code>BACKUP_ENABLED=false</code>). La création de nouvelles sauvegardes (planifiée ou manuelle) est bloquée ; les sauvegardes déjà existantes restent consultables et téléchargeables ci-dessous.</p>
+        <p><i class="fas fa-exclamation-triangle" aria-hidden="true"></i> {{ _("Les sauvegardes sont désactivées (%(var)s). La création de nouvelles sauvegardes (planifiée ou manuelle) est bloquée ; les sauvegardes déjà existantes restent consultables et téléchargeables ci-dessous.", var="BACKUP_ENABLED=false") }}</p>
     </div>
     {% endif %}
 
     <div class="card card-sm bg-base-100 shadow-md mb-4">
         <div class="card-body">
-            <h2 class="text-lg font-semibold"><i class="fas fa-info-circle" aria-hidden="true"></i> Configuration</h2>
+            <h2 class="text-lg font-semibold"><i class="fas fa-info-circle" aria-hidden="true"></i> {{ _("Configuration") }}</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div>
-                    <p><strong>Sauvegardes automatiques</strong></p>
-                    <p>{{ "Activées" if config.enabled else "Désactivées" }}</p>
+                    <p><strong>{{ _("Sauvegardes automatiques") }}</strong></p>
+                    <p>{{ _("Activées") if config.enabled else _("Désactivées") }}</p>
                 </div>
                 <div>
-                    <p><strong>Locale</strong></p>
-                    <p>{{ "Activée (" + config.local_dir + ")" if config.local_enabled else "Désactivée" }}</p>
+                    <p><strong>{{ _("Locale") }}</strong></p>
+                    <p>{{ _("Activée (%(dir)s)", dir=config.local_dir) if config.local_enabled else _("Désactivée") }}</p>
                 </div>
                 <div>
                     <p><strong>S3</strong></p>
-                    <p>{{ "Activée (" + config.s3_bucket + ")" if config.s3_enabled and config.s3_bucket else "Désactivée" }}</p>
+                    <p>{{ _("Activée (%(bucket)s)", bucket=config.s3_bucket) if config.s3_enabled and config.s3_bucket else _("Désactivée") }}</p>
                 </div>
                 <div>
-                    <p><strong>Rétention</strong></p>
-                    <p>{{ config.retention_days }} jours / {{ config.max_backups }} max</p>
+                    <p><strong>{{ _("Rétention") }}</strong></p>
+                    <p>{{ _("%(days)s jours / %(max)s max", days=config.retention_days, max=config.max_backups) }}</p>
                 </div>
             </div>
 
@@ -49,14 +49,14 @@
                 <form method="POST" action="{{ url_for('admin.backups_create') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-success btn-sm" {{ "disabled" if not config.enabled }}
-                            title="{{ 'Activez BACKUP_ENABLED pour créer une sauvegarde' if not config.enabled else '' }}">
-                        <i class="fas fa-play" aria-hidden="true"></i> Créer une sauvegarde maintenant
+                            title="{{ _('Activez BACKUP_ENABLED pour créer une sauvegarde') if not config.enabled else '' }}">
+                        <i class="fas fa-play" aria-hidden="true"></i> {{ _("Créer une sauvegarde maintenant") }}
                     </button>
                 </form>
                 <form method="POST" action="{{ url_for('admin.backups_cleanup') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-warning btn-sm">
-                        <i class="fas fa-broom" aria-hidden="true"></i> Nettoyer les sauvegardes expirées
+                        <i class="fas fa-broom" aria-hidden="true"></i> {{ _("Nettoyer les sauvegardes expirées") }}
                     </button>
                 </form>
             </div>
@@ -65,15 +65,15 @@
 
     <div class="card card-sm bg-base-100 shadow-md mb-4">
         <div class="card-body">
-            <h2 class="text-lg font-semibold"><i class="fas fa-hdd" aria-hidden="true"></i> Sauvegardes locales</h2>
+            <h2 class="text-lg font-semibold"><i class="fas fa-hdd" aria-hidden="true"></i> {{ _("Sauvegardes locales") }}</h2>
             {% if local_backups %}
             <div class="overflow-x-auto">
                 <table class="table table-zebra">
                     <thead>
                         <tr>
-                            <th>Fichier</th>
-                            <th>Taille</th>
-                            <th>Date</th>
+                            <th>{{ _("Fichier") }}</th>
+                            <th>{{ _("Taille") }}</th>
+                            <th>{{ _("Date") }}</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -85,8 +85,8 @@
                             <td>{{ backup.modified }}</td>
                             <td>
                                 <a class="btn btn-info btn-sm" href="{{ url_for('admin.backups_download_local', filename=backup.filename) }}"
-                                   aria-label="Télécharger {{ backup.filename }}" title="Télécharger">
-                                    <i class="fas fa-download" aria-hidden="true"></i> Télécharger
+                                   aria-label="{{ _("Télécharger %(filename)s", filename=backup.filename) }}" title="{{ _("Télécharger") }}">
+                                    <i class="fas fa-download" aria-hidden="true"></i> {{ _("Télécharger") }}
                                 </a>
                             </td>
                         </tr>
@@ -95,22 +95,22 @@
                 </table>
             </div>
             {% else %}
-            <p>Aucune sauvegarde locale disponible.</p>
+            <p>{{ _("Aucune sauvegarde locale disponible.") }}</p>
             {% endif %}
         </div>
     </div>
 
     <div class="card card-sm bg-base-100 shadow-md">
         <div class="card-body">
-            <h2 class="text-lg font-semibold"><i class="fas fa-cloud" aria-hidden="true"></i> Sauvegardes S3</h2>
+            <h2 class="text-lg font-semibold"><i class="fas fa-cloud" aria-hidden="true"></i> {{ _("Sauvegardes S3") }}</h2>
             {% if s3_backups %}
             <div class="overflow-x-auto">
                 <table class="table table-zebra">
                     <thead>
                         <tr>
-                            <th>Clé</th>
-                            <th>Taille</th>
-                            <th>Date</th>
+                            <th>{{ _("Clé") }}</th>
+                            <th>{{ _("Taille") }}</th>
+                            <th>{{ _("Date") }}</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -122,8 +122,8 @@
                             <td>{{ backup.modified }}</td>
                             <td>
                                 <a class="btn btn-info btn-sm" href="{{ url_for('admin.backups_download_s3', key=backup.key) }}"
-                                   aria-label="Télécharger {{ backup.key }}" title="Télécharger">
-                                    <i class="fas fa-download" aria-hidden="true"></i> Télécharger
+                                   aria-label="{{ _("Télécharger %(key)s", key=backup.key) }}" title="{{ _("Télécharger") }}">
+                                    <i class="fas fa-download" aria-hidden="true"></i> {{ _("Télécharger") }}
                                 </a>
                             </td>
                         </tr>
@@ -132,7 +132,7 @@
                 </table>
             </div>
             {% else %}
-            <p>Aucune sauvegarde S3 disponible.</p>
+            <p>{{ _("Aucune sauvegarde S3 disponible.") }}</p>
             {% endif %}
         </div>
     </div>

@@ -83,14 +83,18 @@ touching auth flows.
 - A third layer sits on top of both: `Setting` (`app/models/setting.py`, generic key/value store,
   same EAV shape as `AutomationConfig`) + `app/services/settings_service.py::SettingsService`
   (typed getters/setters) for settings an admin can change at runtime from `/admin/settings`
-  without redeploying — `default_timezone`, `public_base_url`, `items_per_page`/`max_per_page`,
-  `notifications_enabled`, `backup_retention_days`/`backup_max_backups`,
-  `ics_token_expiry_days` (currently unenforced, see "Multi-timezone support" below). Rule: a
-  `Setting` row, if present, always wins; if absent, the getter falls back **live** to the
-  matching `app.config`/env value (never a one-time seed written to the DB) — so an env-var-only
-  deployment behaves identically to before this feature existed, until an admin actually saves a
-  value through the new page. Don't remove the underlying env vars from `app/config/base.py`
-  thinking they're superseded — they remain the permanent fallback layer.
+  without redeploying — `default_timezone`, `default_language`, `public_base_url`,
+  `items_per_page`/`max_per_page`, `notifications_enabled`,
+  `backup_retention_days`/`backup_max_backups`, `ics_token_expiry_days` (currently unenforced, see
+  "Multi-timezone support" below). Rule: a `Setting` row, if present, always wins; if absent, the
+  getter falls back **live** to the matching `app.config`/env value (never a one-time seed written
+  to the DB) — so an env-var-only deployment behaves identically to before this feature existed,
+  until an admin actually saves a value through the new page. Don't remove the underlying env vars
+  from `app/config/base.py` thinking they're superseded — they remain the permanent fallback
+  layer. **`default_language` is the one exception**: there is no env var counterpart (a brand new
+  concept, never configurable before the i18n feature) — its fallback
+  (`SettingsService.FALLBACK_DEFAULT_LANGUAGE`) is a hardcoded `"fr"` constant, not an env read.
+  See "Multi-language support" below.
 
 ### Models
 
@@ -100,7 +104,10 @@ touching auth flows.
 `setting.py` hold the domain models, all subclassing `BaseModel`). `User.timezone` (nullable
 String) is the user's personal display timezone preference — `None` means "use the org's
 `default_timezone` Setting", resolved at read time via `User.effective_timezone()`, not baked
-into the column (see "Multi-timezone support" below). `User.shift_notifications_enabled`/
+into the column (see "Multi-timezone support" below). `User.language` (nullable `String(5)`)
+is the same pattern for the UI/email language — `None` means "use the org's `default_language`
+Setting", resolved via `User.effective_language()` (see "Multi-language support" below).
+`User.shift_notifications_enabled`/
 `oncall_notifications_enabled` (both `Boolean`, default `True`) are a per-user opt-out for the
 two weekly reminder emails, editable at `/profile/settings` — see "Email notifications" below for
 how they interact with the org-wide `notifications_enabled` `Setting`.
@@ -423,6 +430,90 @@ here to avoid folding an unrelated behavior change into this feature. `ICS_TOKEN
 (migrated to `Setting` for scope consistency with the other backup/notification settings) has no
 enforcement point anywhere in `app/` — it's a documented no-op, not wired to any actual token
 expiry check.
+
+### Multi-language support (i18n)
+
+French/English, same architecture as multi-timezone support above (org default + personal
+override), built with **Flask-Babel 4.0.0** — `Babel(app, locale_selector=fn)`, not the
+deprecated `@babel.localeselector` decorator. Flask-Babel reintroduces `pytz` as a transitive
+dependency (this app dropped it in favor of `zoneinfo`) — harmless, Flask-Babel only uses it
+internally for its own formatting helpers, never called here; don't "fix" this by removing it.
+
+`User.language` (nullable `String(5)`, room for a future regional variant like `"en-US"` without
+a new migration) mirrors `User.timezone`: `None` means "use the org default".
+`User.effective_language()` resolves it the same way as `effective_timezone()` — own value if
+set, else `SettingsService.get_default_language()`. `SettingsService.DEFAULT_LANGUAGE_KEY`/
+`FALLBACK_DEFAULT_LANGUAGE` follow the same `Setting`-wins/env-falls-back pattern as the rest of
+`SettingsService` — **except** there is no env var counterpart for language (a brand new concept,
+never configurable before this feature): `FALLBACK_DEFAULT_LANGUAGE = "fr"` is a hardcoded
+constant, not an env read. This fallback is also structurally load-bearing for the test suite
+(see below).
+
+**`app/__init__.py::get_locale()`** is the Flask-Babel `locale_selector` callback: authenticated
+user's `effective_language()` if a real request context exists, else
+`SettingsService.get_default_language()`. Deliberately **no `Accept-Language` sniffing** — org/user
+settings stay the single source of truth, consistent with `effective_timezone()`, and it keeps
+anonymous pages (login, error pages) deterministic across visitors. `get_locale` is registered
+twice: once as Flask-Babel's `locale_selector`, and separately as a Jinja global
+(`app.jinja_env.globals["get_locale"]`) for `base.html`'s `<html lang="{{ get_locale() }}">` —
+Flask-Babel's `init_app()` auto-injects `gettext`/`ngettext`/`_` and the `jinja2.ext.i18n`
+extension into Jinja, but **not** `get_locale` itself (confirmed via `inspect.getsource()` on the
+installed package), so it needs this explicit registration or every template render throws
+`UndefinedError`.
+
+**Don't call `app`'s `get_locale()` directly from application code** (e.g. `format_date_fr()` in
+`app/utils/helpers/common_helpers.py`) — it's the raw locale-selector callback and ignores an
+active `force_locale()` override. Use `flask_babel.get_locale()` instead (the *resolved* current
+locale), which respects `force_locale()`. This distinction matters specifically for the email
+path below, where each recipient is rendered inside its own `force_locale()` block.
+
+**Two independent translation-consuming mechanisms**, each with its own resolution point — don't
+conflate them:
+
+- **HTTP requests** (templates via `{{ _(...) }}`/`{% trans %}`, `flash()` messages, service-layer
+  error strings) resolve through `get_locale()` above, once per request, transparently.
+- **Weekly reminder emails** (`app/services/notification_service.py`) have no real request
+  context (cron-triggered, `app.app_context()` only) and batch multiple recipients who may have
+  different language preferences — each recipient's `html_body`/`text_body`/subject render inside
+  `with force_locale(user.effective_language()):`, never a single upfront translation for the
+  whole batch. `force_locale()` only needs Flask's `g` (confirmed via source inspection:
+  `_get_current_context()` checks `if not g: return None`), so it works from an `app_context()`
+  alone, no real request needed. The same per-recipient pattern is used by
+  `AppNotificationService` (in-app bell notifications, see "In-app notifications" above) for the
+  same reason — a notification persisted now may be read later by a user with a different
+  language than whoever triggered the event.
+
+**JS strings**: this app is CDN-only with no build step (see "Frontend" above), so there's no
+i18next-style client pipeline. Instead, `app/utils/helpers/js_translations.py::get_js_translations()`
+(each value passed through `_()`) is injected via `base.html` as a `<script type="application/json"
+id="i18n-strings">` tag — same JSON-injection pattern already used for `#calendar-events-data` —
+and read at runtime by `app/static/js/utils/i18n.js::getString(key)` (caches the parsed JSON on
+first call). Call sites: `fullcalendar-config.js` and `accessibility.js`. `getString()` has no
+placeholder-interpolation support (unlike Python's `%(name)s` gettext placeholders) — the one
+call site that needs a dynamic value (`accessibility.js`'s form-validation error) does a plain
+`.replace('%(field)s', fieldName)` on the returned string instead. Most JS-adjacent user-facing
+text (`onclick="return confirm('...')"` attributes) actually lives directly in Jinja templates,
+not JS files, and is translated there via the normal `{{ _(...) }}` mechanism — only text
+hardcoded inside `.js` files itself needs `getString()`.
+
+**Translation catalog workflow**: `babel.cfg` scopes extraction to `app/**.py` and
+`app/templates/**.html`/`**.txt` only (not `scripts/`, `tests/`, `migrations/` — no user-facing
+text there). `make babel-extract`/`babel-update`/`babel-compile` wrap `pybabel extract`/`update`/
+`compile`; catalogs live at `app/translations/<locale>/LC_MESSAGES/messages.po`. **`fr.po` is
+committed with every `msgstr` left empty** — gettext falls back to the `msgid` (the original
+French source string) when `msgstr` is empty, so this is intentionally a no-op catalog, not an
+oversight: French rendering is identical whether or not `fr.po` exists at all. `en.po` carries the
+real translation work — every `msgid` has a real English `msgstr`. `.mo` files are compiled
+build artifacts, gitignored (`*.mo`/`*.pot`) — `docker/Dockerfile` runs `pybabel compile` during
+the image build, and `tests/conftest.py`'s session-scoped autouse `_compile_babel_catalogs`
+fixture does the same before the test suite runs. Without one of these, a fresh checkout has no
+`en.mo`, and Flask-Babel silently falls back to the French `msgid` even when `default_language`
+is set to `"en"` — the exact bug class `TestEnCatalogTranslation` in
+`tests/integration/test_i18n.py` exists to catch (that test, plus the general **"fr.po is
+committed empty" invariant**, are why the 1000+ pre-existing tests stay green through this
+feature with zero changes: `BABEL_DEFAULT_LOCALE = "fr"` + `FALLBACK_DEFAULT_LANGUAGE = "fr"` mean
+`get_locale()` resolves to `"fr"` in every fixture-built test app, where gettext's empty-`msgstr`
+fallback makes every `_()` call render exactly the original French text).
 
 ## Testing conventions
 

@@ -27,7 +27,7 @@
 {% endmacro %}
 
 {% macro error_page(code, title, subtitle, color="text-error", primary=none, secondary=[], auth_toggle=True) %}
-{% set primary = primary or {"url": url_for("main.index"), "icon": "fa-home", "label": "Retour à l'accueil"} %}
+{% set primary = primary or {"url": url_for("main.index"), "icon": "fa-home", "label": _("Retour à l'accueil")} %}
 <main role="main" aria-labelledby="error-title" class="flex justify-center px-4 py-12">
     <div class="w-full max-w-2xl">
         <div class="card card-sm bg-base-100 shadow-md text-center" role="region" aria-labelledby="error-title" aria-describedby="error-description">
@@ -55,9 +55,9 @@
 
                     {% if auth_toggle %}
                         {% if current_user.is_authenticated %}
-                            {{ _action_button({"url": url_for("auth.logout"), "icon": "fa-sign-out-alt", "label": "Se déconnecter"}, "btn-ghost") }}
+                            {{ _action_button({"url": url_for("auth.logout"), "icon": "fa-sign-out-alt", "label": _("Se déconnecter")}, "btn-ghost") }}
                         {% else %}
-                            {{ _action_button({"url": url_for("auth.login"), "icon": "fa-sign-in-alt", "label": "Se connecter"}, "btn-ghost") }}
+                            {{ _action_button({"url": url_for("auth.login"), "icon": "fa-sign-in-alt", "label": _("Se connecter")}, "btn-ghost") }}
                         {% endif %}
                     {% endif %}
                 </div>

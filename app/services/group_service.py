@@ -4,6 +4,8 @@ Group service for Leviia Schedule.
 Business logic for group creation/update/deletion (admin section).
 """
 
+from flask_babel import gettext as _
+
 from app import db
 from app.models import Group
 from app.repositories.user_repository import GroupRepository, UserRepository
@@ -21,7 +23,7 @@ class GroupService:
         name: str, is_part_of_schedule: bool, is_part_of_oncall: bool
     ) -> tuple[Group | None, str | None]:
         if GroupRepository.name_taken(name):
-            return None, "Un groupe avec ce nom existe déjà."
+            return None, _("Un groupe avec ce nom existe déjà.")
 
         group = GroupRepository.create(name, is_part_of_schedule, is_part_of_oncall)
         db.session.commit()
@@ -36,7 +38,7 @@ class GroupService:
             return None, None
 
         if GroupRepository.name_taken(name, exclude_id=group_id):
-            return None, "Un groupe avec ce nom existe déjà."
+            return None, _("Un groupe avec ce nom existe déjà.")
 
         group.name = name
         group.is_part_of_schedule = is_part_of_schedule
@@ -53,7 +55,10 @@ class GroupService:
         if UserRepository.exists_for_group(group_id):
             return (
                 False,
-                "Impossible de supprimer ce groupe : des utilisateurs y sont associés.",
+                _(
+                    "Impossible de supprimer ce groupe : des utilisateurs y sont "
+                    "associés."
+                ),
             )
 
         GroupRepository.delete(group)

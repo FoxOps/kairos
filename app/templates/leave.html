@@ -1,25 +1,25 @@
 {% extends "base.html" %}
 
-{% block title %}Congés - Leviia Schedule{% endblock %}
+{% block title %}{{ _("Congés") }} - Leviia Schedule{% endblock %}
 
 {% block content %}
 <section class="p-3 md:p-4 max-w-6xl mx-auto">
     <h1 class="text-2xl font-bold mb-4">
-        <i class="fas fa-umbrella-beach" aria-hidden="true"></i> Congés
+        <i class="fas fa-umbrella-beach" aria-hidden="true"></i> {{ _("Congés") }}
     </h1>
 
     <!-- Add and export buttons -->
-    <div class="flex flex-wrap gap-2 mb-4" role="group" aria-label="Actions principales">
+    <div class="flex flex-wrap gap-2 mb-4" role="group" aria-label="{{ _("Actions principales") }}">
         {% if current_user.is_admin or current_user.is_authenticated %}
         <a class="btn btn-primary" href="{{ url_for('main.add_leave') }}"
-           aria-label="Ajouter un congé" title="Ajouter un congé">
-            <i class="fas fa-plus" aria-hidden="true"></i> Ajouter un congé
+           aria-label="{{ _("Ajouter un congé") }}" title="{{ _("Ajouter un congé") }}">
+            <i class="fas fa-plus" aria-hidden="true"></i> {{ _("Ajouter un congé") }}
         </a>
         {% endif %}
 
         {# Boutons d'export ICS #}
         {% set resource_type = 'leaves' %}
-        {% set resource_name = 'congés' %}
+        {% set resource_name = _('congés') %}
         {% include "_ics_export_buttons.html" %}
     </div>
 
@@ -27,20 +27,20 @@
     {% if leaves.has_prev or leaves.has_next or leaves.total > 0 %}
     {% set pagination = leaves %}
     {% set route = 'main.leave' %}
-    {% set pagination_total_name = 'congés' %}
+    {% set pagination_total_name = _('congés') %}
     {% include "_pagination.html" %}
     {% endif %}
 
     <!-- Leave table -->
     <div class="overflow-x-auto" role="region" aria-labelledby="leave-title">
         <table class="table table-zebra" aria-describedby="leave-title">
-            <caption class="sr-only">Liste des congés</caption>
+            <caption class="sr-only">{{ _("Liste des congés") }}</caption>
             <thead>
                 <tr>
-                    <th scope="col">Utilisateur</th>
-                    <th scope="col">Début</th>
-                    <th scope="col">Fin</th>
-                    <th scope="col">Actions</th>
+                    <th scope="col">{{ _("Utilisateur") }}</th>
+                    <th scope="col">{{ _("Début") }}</th>
+                    <th scope="col">{{ _("Fin") }}</th>
+                    <th scope="col">{{ _("Actions") }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -51,12 +51,12 @@
                     <td>{{ leave.end_date.strftime('%d/%m/%Y') }}</td>
                     <td>
                         {% if current_user.is_admin or current_user.id == leave.user.id %}
-                        <div class="flex flex-nowrap gap-2" role="group" aria-label="Actions pour ce congé">
+                        <div class="flex flex-nowrap gap-2" role="group" aria-label="{{ _("Actions pour ce congé") }}">
                             <form method="POST" action="{{ url_for('main.delete_leave', leave_id=leave.id) }}" class="mb-0">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-error btn-sm js-confirm-delete"
-                                        data-confirm-message="Êtes-vous sûr de vouloir supprimer ce congé ?"
-                                        aria-label="Supprimer le congé" title="Supprimer ce congé">
+                                        data-confirm-message="{{ _("Êtes-vous sûr de vouloir supprimer ce congé ?") }}"
+                                        aria-label="{{ _("Supprimer le congé") }}" title="{{ _("Supprimer ce congé") }}">
                                     <i class="fas fa-trash" aria-hidden="true"></i>
                                 </button>
                             </form>
@@ -71,7 +71,7 @@
 
     <!-- Action legend -->
     {% set action_items = [
-        {'class': 'btn-error btn-sm min-w-200', 'icon': 'trash', 'label': 'Supprimer ce congé', 'description': 'Supprimer le congé sélectionné'}
+        {'class': 'btn-error btn-sm min-w-200', 'icon': 'trash', 'label': _('Supprimer ce congé'), 'description': _('Supprimer le congé sélectionné')}
     ] %}
     {% include "_action_legend.html" %}
 
@@ -79,7 +79,7 @@
     {% if leaves.has_prev or leaves.has_next or leaves.total > 0 %}
     {% set pagination = leaves %}
     {% set route = 'main.leave' %}
-    {% set pagination_total_name = 'congés' %}
+    {% set pagination_total_name = _('congés') %}
     {% include "_pagination.html" %}
     {% endif %}
 </section>

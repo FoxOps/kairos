@@ -1,38 +1,38 @@
 {% extends "base.html" %}
 
-{% block title %}Notifications - Leviia Schedule{% endblock %}
+{% block title %}{{ _("Notifications") }} - Leviia Schedule{% endblock %}
 
 {% block content %}
 <section class="p-3 md:p-4 max-w-3xl mx-auto">
     <h1 class="text-2xl font-bold mb-4">
-        <i class="fas fa-bell" aria-hidden="true"></i> Notifications
+        <i class="fas fa-bell" aria-hidden="true"></i> {{ _("Notifications") }}
     </h1>
 
     {% if notifications %}
-    <div class="flex flex-wrap gap-2 mb-4" role="group" aria-label="Actions sur les notifications">
+    <div class="flex flex-wrap gap-2 mb-4" role="group" aria-label="{{ _("Actions sur les notifications") }}">
         <form method="POST" action="{{ url_for('main.mark_all_notifications_read') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn btn-ghost btn-sm" type="submit" aria-label="Tout marquer comme lu" title="Tout marquer comme lu">
-                <i class="fas fa-check-double" aria-hidden="true"></i> Tout marquer comme lu
+            <button class="btn btn-ghost btn-sm" type="submit" aria-label="{{ _("Tout marquer comme lu") }}" title="{{ _("Tout marquer comme lu") }}">
+                <i class="fas fa-check-double" aria-hidden="true"></i> {{ _("Tout marquer comme lu") }}
             </button>
         </form>
         <form method="POST" action="{{ url_for('main.purge_notifications') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn btn-ghost btn-sm" type="submit" aria-label="Purger les notifications lues" title="Purger les notifications lues"
-                    onclick="return confirm('Supprimer définitivement toutes les notifications lues ?');">
-                <i class="fas fa-broom" aria-hidden="true"></i> Purger les notifications lues
+            <button class="btn btn-ghost btn-sm" type="submit" aria-label="{{ _("Purger les notifications lues") }}" title="{{ _("Purger les notifications lues") }}"
+                    onclick="return confirm('{{ _("Supprimer définitivement toutes les notifications lues ?") }}');">
+                <i class="fas fa-broom" aria-hidden="true"></i> {{ _("Purger les notifications lues") }}
             </button>
         </form>
     </div>
 
-    <ul class="flex flex-col gap-2" aria-label="Liste des notifications">
+    <ul class="flex flex-col gap-2" aria-label="{{ _("Liste des notifications") }}">
         {% for notification in notifications %}
         <li>
             <div class="card card-sm bg-base-100 shadow-sm {{ 'border border-primary' if notification.is_unread() else '' }}">
                 <div class="card-body flex-row items-center justify-between gap-2">
                     <div class="min-w-0">
                         {% if notification.is_unread() %}
-                        <span class="badge badge-primary badge-xs mb-1">Nouveau</span><br>
+                        <span class="badge badge-primary badge-xs mb-1">{{ _("Nouveau") }}</span><br>
                         {% endif %}
                         <span>{{ notification.message }}</span>
                         <p class="text-xs text-base-content/60 mt-1">{{ notification.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
@@ -40,11 +40,11 @@
                     <form method="POST" action="{{ url_for('main.mark_notification_read', notification_id=notification.id) }}" class="shrink-0">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         {% if notification.link %}
-                        <button class="btn btn-primary btn-sm" type="submit" aria-label="Voir et marquer comme lu" title="Voir">
-                            <i class="fas fa-arrow-right" aria-hidden="true"></i> Voir
+                        <button class="btn btn-primary btn-sm" type="submit" aria-label="{{ _("Voir et marquer comme lu") }}" title="{{ _("Voir") }}">
+                            <i class="fas fa-arrow-right" aria-hidden="true"></i> {{ _("Voir") }}
                         </button>
                         {% elif notification.is_unread() %}
-                        <button class="btn btn-ghost btn-sm" type="submit" aria-label="Marquer comme lu" title="Marquer comme lu">
+                        <button class="btn btn-ghost btn-sm" type="submit" aria-label="{{ _("Marquer comme lu") }}" title="{{ _("Marquer comme lu") }}">
                             <i class="fas fa-check" aria-hidden="true"></i>
                         </button>
                         {% endif %}
@@ -55,7 +55,7 @@
         {% endfor %}
     </ul>
     {% else %}
-    <p class="text-base-content/60">Aucune notification.</p>
+    <p class="text-base-content/60">{{ _("Aucune notification.") }}</p>
     {% endif %}
 </section>
 {% endblock %}

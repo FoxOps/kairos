@@ -1,19 +1,19 @@
 {% extends "base.html" %}
 {% from "macros/errors.html" import error_page with context %}
 
-{% block title %}Service indisponible - Leviia{% endblock %}
+{% block title %}{{ _("Service indisponible") }} - Leviia{% endblock %}
 
 {% block content %}
-{% call error_page(code=503, title="Service temporairement indisponible", subtitle="Le serveur est actuellement surchargé ou en maintenance.", color="text-warning", secondary=[{"onclick": "location.reload()", "icon": "fa-sync-alt", "label": "Réessayer"}]) %}
+{% call error_page(code=503, title=_("Service temporairement indisponible"), subtitle=_("Le serveur est actuellement surchargé ou en maintenance."), color="text-warning", secondary=[{"onclick": "location.reload()", "icon": "fa-sync-alt", "label": _("Réessayer")}]) %}
 <p role="alert" aria-live="assertive">
-    Nous effectuons actuellement une maintenance ou notre serveur est surchargé.
-    Veuillez réessayer dans quelques minutes.
+    {{ _("Nous effectuons actuellement une maintenance ou notre serveur est surchargé.") }}
+    {{ _("Veuillez réessayer dans quelques minutes.") }}
 </p>
 {% if retry_after %}
 <div class="alert alert-info mt-4" role="status" aria-live="polite">
     <p>
-        <strong>Temps estimé avant disponibilité :</strong>
-        {{ retry_after }} secondes
+        <strong>{{ _("Temps estimé avant disponibilité :") }}</strong>
+        {{ _("%(retry_after)s secondes", retry_after=retry_after) }}
     </p>
 </div>
 {% endif %}

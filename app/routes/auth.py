@@ -2,13 +2,14 @@ from urllib.parse import urljoin, urlparse
 from zoneinfo import available_timezones
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_babel import gettext as _
 from flask_login import current_user, login_required, login_user, logout_user
 
 from app import db
 from app.auth.oidc_auth import oidc_auth
 from app.models import User
 from app.services import SettingsService
-from app.utils.helpers.common_helpers import get_timezone_choices
+from app.utils.helpers.common_helpers import get_language_choices, get_timezone_choices
 from config_oidc import OIDCConfig
 
 # Create blueprint
@@ -46,13 +47,15 @@ def register():
     # to OIDC login
     if is_basic_auth_disabled():
         flash(
-            "L'inscription publique est désactivée. Utilisez l'authentification OIDC.",
+            _(
+                "L'inscription publique est désactivée. Utilisez l'authentification OIDC."
+            ),
             "danger",
         )
         return redirect(url_for("auth.oidc_login"))
 
     flash(
-        "L'inscription publique est désactivée. Contactez l'administrateur.",
+        _("L'inscription publique est désactivée. Contactez l'administrateur."),
         "danger",
     )
     return redirect(url_for("auth.login"))
@@ -81,14 +84,14 @@ def login():
         remember = "remember" in request.form
 
         if not email or not password:
-            flash("Email et mot de passe sont obligatoires.", "danger")
+            flash(_("Email et mot de passe sont obligatoires."), "danger")
             return redirect(url_for("auth.login"))
 
         user = User.query.filter_by(email=email).first()
 
         if user and user.check_password(password):
             login_user(user, remember=remember)
-            flash("Connexion réussie !", "success")
+            flash(_("Connexion réussie !"), "success")
 
             # Redirect to the requested page, or to the index
             next_page = request.args.get("next")
@@ -96,7 +99,7 @@ def login():
                 return redirect(next_page)
             return redirect(url_for("main.index"))
         else:
-            flash("Email ou mot de passe incorrect.", "danger")
+            flash(_("Email ou mot de passe incorrect."), "danger")
 
     return render_template("auth/login.html", oidc_enabled=OIDCConfig.ENABLED)
 
@@ -115,7 +118,7 @@ def oidc_login():
     """
     auth_url = oidc_auth.get_authorization_url()
     if not auth_url:
-        flash("La connexion OIDC n'est pas disponible pour le moment.", "danger")
+        flash(_("La connexion OIDC n'est pas disponible pour le moment."), "danger")
         return redirect(url_for("auth.login", oidc_error=1))
 
     return redirect(auth_url)
@@ -138,10 +141,10 @@ def oidc_callback():
 
     user = oidc_auth.login_user(user_data)
     if not user:
-        flash("La connexion OIDC a échoué. Veuillez réessayer.", "danger")
+        flash(_("La connexion OIDC a échoué. Veuillez réessayer."), "danger")
         return redirect(url_for("auth.login", oidc_error=1))
 
-    flash("Connexion OIDC réussie !", "success")
+    flash(_("Connexion OIDC réussie !"), "success")
     return redirect(url_for("main.index"))
 
 
@@ -165,7 +168,7 @@ def logout():
             return redirect(logout_url)
         return redirect(url_for("auth.login"))
 
-    flash("Vous avez été déconnecté.", "success")
+    flash(_("Vous avez été déconnecté."), "success")
     return redirect(url_for("auth.login"))
 
 
@@ -189,7 +192,7 @@ def update_profile():
 
         # Check that name and email aren't empty
         if not name or not email:
-            flash("Le nom et l'email sont obligatoires.", "danger")
+            flash(_("Le nom et l'email sont obligatoires."), "danger")
             return redirect(url_for("auth.update_profile"))
 
         # Check whether the email changed
@@ -197,7 +200,9 @@ def update_profile():
             # Check that the email isn't already in use
             existing_user = User.query.filter_by(email=email).first()
             if existing_user and existing_user.id != current_user.id:
-                flash("Cet email est déjà utilisé par un autre utilisateur.", "danger")
+                flash(
+                    _("Cet email est déjà utilisé par un autre utilisateur."), "danger"
+                )
                 return redirect(url_for("auth.update_profile"))
             current_user.email = email
 
@@ -208,23 +213,25 @@ def update_profile():
         if new_password:
             if not current_password:
                 flash(
-                    "Le mot de passe actuel est obligatoire pour changer de mot de passe.",
+                    _(
+                        "Le mot de passe actuel est obligatoire pour changer de mot de passe."
+                    ),
                     "danger",
                 )
                 return redirect(url_for("auth.update_profile"))
 
             if not current_user.check_password(current_password):
-                flash("Le mot de passe actuel est incorrect.", "danger")
+                flash(_("Le mot de passe actuel est incorrect."), "danger")
                 return redirect(url_for("auth.update_profile"))
 
             if new_password != confirm_password:
-                flash("Les nouveaux mots de passe ne correspondent pas.", "danger")
+                flash(_("Les nouveaux mots de passe ne correspondent pas."), "danger")
                 return redirect(url_for("auth.update_profile"))
 
             current_user.set_password(new_password)
 
         db.session.commit()
-        flash("Votre profil a été mis à jour avec succès !", "success")
+        flash(_("Votre profil a été mis à jour avec succès !"), "success")
         return redirect(url_for("auth.profile"))
 
     return render_template("auth/update_profile.html", user=current_user)
@@ -247,9 +254,15 @@ def profile_settings():
         # Empty means "use the org default" (None); anything else must be
         # a real IANA zone name.
         if timezone and timezone not in available_timezones():
-            flash("Fuseau horaire invalide.", "danger")
+            flash(_("Fuseau horaire invalide."), "danger")
             return redirect(url_for("auth.profile_settings"))
         current_user.timezone = timezone or None
+
+        language = request.form.get("language", "").strip()
+        if language and language not in dict(get_language_choices()):
+            flash(_("Langue invalide."), "danger")
+            return redirect(url_for("auth.profile_settings"))
+        current_user.language = language or None
 
         # Only apply the submitted notification checkboxes if the
         # section was actually visible/editable - otherwise a stale
@@ -265,7 +278,7 @@ def profile_settings():
             )
 
         db.session.commit()
-        flash("Vos paramètres ont été mis à jour avec succès !", "success")
+        flash(_("Vos paramètres ont été mis à jour avec succès !"), "success")
         return redirect(url_for("auth.profile_settings"))
 
     return render_template(
@@ -273,6 +286,8 @@ def profile_settings():
         user=current_user,
         timezones=get_timezone_choices(),
         default_timezone=SettingsService.get_default_timezone(),
+        languages=get_language_choices(),
+        default_language=SettingsService.get_default_language(),
         notifications_enabled_org_wide=notifications_enabled_org_wide,
     )
 
@@ -286,10 +301,10 @@ def generate_ics_token():
         token = current_user.generate_ics_token()
         try:
             db.session.commit()
-            flash("Token ICS régénéré avec succès !", "success")
+            flash(_("Token ICS régénéré avec succès !"), "success")
         except Exception as e:
             db.session.rollback()
-            flash(f"Erreur : {str(e)}", "danger")
+            flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
 
     # Show the page with the current token
     token = current_user.ics_token

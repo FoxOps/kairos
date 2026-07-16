@@ -6,31 +6,31 @@
 
 {% block admin_content %}
 <section class="p-3 md:p-4 max-w-4xl mx-auto">
-    <div class="breadcrumbs text-sm mb-2" aria-label="Fil d'Ariane">
+    <div class="breadcrumbs text-sm mb-2" aria-label="{{ _("Fil d'Ariane") }}">
         <ul>
             <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
-            <li><a href="{{ url_for('admin.automation_dashboard') }}">Automatisation</a></li>
-            <li>Génération complète</li>
+            <li><a href="{{ url_for('admin.automation_dashboard') }}">{{ _("Automatisation") }}</a></li>
+            <li>{{ _("Génération complète") }}</li>
         </ul>
     </div>
-    <h1 class="text-2xl font-bold mb-4"><i class="fas fa-cogs" aria-hidden="true"></i> Génération complète</h1>
+    <h1 class="text-2xl font-bold mb-4"><i class="fas fa-cogs" aria-hidden="true"></i> {{ _("Génération complète") }}</h1>
 
     <div class="alert alert-info mb-4">
-        <p><i class="fas fa-info-circle"></i> Configurez l'ordre de rotation et générez automatiquement les astreintes. Les shifts seront générés automatiquement après selon les nouvelles règles métiers.</p>
+        <p><i class="fas fa-info-circle"></i> {{ _("Configurez l'ordre de rotation et générez automatiquement les astreintes. Les shifts seront générés automatiquement après selon les nouvelles règles métiers.") }}</p>
     </div>
 
     <div class="card card-sm bg-base-100 shadow-md mb-4">
         <div class="card-body">
-            <h2 class="text-lg font-semibold"><i class="fas fa-users" aria-hidden="true"></i> Utilisateurs éligibles pour les astreintes</h2>
+            <h2 class="text-lg font-semibold"><i class="fas fa-users" aria-hidden="true"></i> {{ _("Utilisateurs éligibles pour les astreintes") }}</h2>
 
             {% if oncall_users %}
             <div class="alert alert-success">
-                <p>{{ oncall_users|length }} utilisateur(s) éligible(s) trouvé(s)</p>
+                <p>{{ _("%(count)s utilisateur(s) éligible(s) trouvé(s)", count=oncall_users|length) }}</p>
             </div>
 
             {% if current_rotation_order %}
             <div class="rotation-order-info">
-                <h4 class="mb-2"><i class="fas fa-list-ol"></i> Ordre de rotation actuel :</h4>
+                <h4 class="mb-2"><i class="fas fa-list-ol"></i> {{ _("Ordre de rotation actuel :") }}</h4>
                 <p class="mb-1">
                     {% for user_id in current_rotation_order %}
                         {% set user = oncall_users|selectattr("id", "equalto", user_id)|first %}
@@ -39,7 +39,7 @@
                         {% endif %}
                     {% endfor %}
                 </p>
-                <p class="text-sm text-base-content/60">Glissez-déposez les utilisateurs ci-dessous pour modifier l'ordre.</p>
+                <p class="text-sm text-base-content/60">{{ _("Glissez-déposez les utilisateurs ci-dessous pour modifier l'ordre.") }}</p>
             </div>
             {% endif %}
 
@@ -47,10 +47,9 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                 <div>
-                    <label class="label">Ordre de rotation <i class="fas fa-question-circle" title="Glissez-déposez pour réorganiser, cochez pour inclure dans la rotation"></i></label>
+                    <label class="label">{{ _("Ordre de rotation") }} <i class="fas fa-question-circle" title="{{ _("Glissez-déposez pour réorganiser, cochez pour inclure dans la rotation") }}"></i></label>
                     <p class="text-sm text-base-content/60">
-                        <strong>Définissez l'ordre de rotation</strong> en glissant-déposant les utilisateurs.
-                        La rotation se fera dans l'ordre affiché.
+                        <strong>{{ _("Définissez l'ordre de rotation") }}</strong> {{ _("en glissant-déposant les utilisateurs. La rotation se fera dans l'ordre affiché.") }}
                     </p>
 
                     <ol id="rotation-order-list" class="sortable-list">
@@ -69,7 +68,7 @@
                                         <div class="include-checkbox">
                                             <label class="label cursor-pointer justify-start gap-2">
                                                 <input type="checkbox" class="checkbox" name="include_{{ user.id }}" value="1" checked>
-                                                Inclure
+                                                {{ _("Inclure") }}
                                             </label>
                                         </div>
                                         <!-- Hidden position field (updated by JS) -->
@@ -90,7 +89,7 @@
                                         <div class="include-checkbox">
                                             <label class="label cursor-pointer justify-start gap-2">
                                                 <input type="checkbox" class="checkbox" name="include_{{ user.id }}" value="1" checked>
-                                                Inclure
+                                                {{ _("Inclure") }}
                                             </label>
                                         </div>
                                         <!-- Hidden position field (updated by JS) -->
@@ -110,7 +109,7 @@
                                     <div class="include-checkbox">
                                         <label class="label cursor-pointer justify-start gap-2">
                                             <input type="checkbox" class="checkbox" name="include_{{ user.id }}" value="1" checked>
-                                            Inclure
+                                            {{ _("Inclure") }}
                                         </label>
                                     </div>
                                     <!-- Hidden position field (updated by JS) -->
@@ -123,31 +122,31 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                     <div>
-                        <label class="label">Date de début</label>
+                        <label class="label">{{ _("Date de début") }}</label>
                         <input class="input w-full" type="date" name="start_date"
                                value="{{ start_date_default.strftime('%Y-%m-%d') }}" required>
-                        <p class="text-sm text-base-content/60">Premier vendredi à partir de cette date</p>
+                        <p class="text-sm text-base-content/60">{{ _("Premier vendredi à partir de cette date") }}</p>
                     </div>
                     <div>
-                        <label class="label">Date de fin</label>
+                        <label class="label">{{ _("Date de fin") }}</label>
                         <input class="input w-full" type="date" name="end_date"
                                value="{{ end_date_default.strftime('%Y-%m-%d') }}" required>
-                        <p class="text-sm text-base-content/60">Dernier jour de la période (6 mois par défaut)</p>
+                        <p class="text-sm text-base-content/60">{{ _("Dernier jour de la période (6 mois par défaut)") }}</p>
                     </div>
                 </div>
 
                 <div class="flex flex-wrap gap-2 mt-5">
                     <button type="button" class="btn btn-info" onclick="Leviia.saveRotationOrder()">
-                        <i class="fas fa-save"></i> Sauvegarder l'ordre
+                        <i class="fas fa-save"></i> {{ _("Sauvegarder l'ordre") }}
                     </button>
                     <button type="submit" name="action" value="generate" class="btn btn-primary">
-                        <i class="fas fa-play"></i> Générer les astreintes et shifts
+                        <i class="fas fa-play"></i> {{ _("Générer les astreintes et shifts") }}
                     </button>
                     <button type="submit" name="action" value="dry_run" class="btn btn-info">
-                        <i class="fas fa-eye"></i> Prévisualiser (Dry Run)
+                        <i class="fas fa-eye"></i> {{ _("Prévisualiser (Dry Run)") }}
                     </button>
                     <a class="btn btn-ghost" href="{{ url_for('admin.automation_dashboard') }}">
-                        <i class="fas fa-arrow-left"></i> Retour
+                        <i class="fas fa-arrow-left"></i> {{ _("Retour") }}
                     </a>
                 </div>
             </form>
@@ -155,21 +154,21 @@
             {% else %}
             <div class="alert alert-warning">
                 <div>
-                    <p><i class="fas fa-exclamation-triangle"></i> Aucun utilisateur éligible trouvé pour les astreintes.</p>
-                    <p>Vérifiez que :</p>
+                    <p><i class="fas fa-exclamation-triangle"></i> {{ _("Aucun utilisateur éligible trouvé pour les astreintes.") }}</p>
+                    <p>{{ _("Vérifiez que :") }}</p>
                     <ul class="list-disc list-inside">
-                        <li>Des utilisateurs existent</li>
-                        <li>Les utilisateurs appartiennent à un groupe configuré dans <a href="{{ url_for('admin.automation_dashboard') }}" class="link">la configuration</a></li>
+                        <li>{{ _("Des utilisateurs existent") }}</li>
+                        <li>{{ _("Les utilisateurs appartiennent à un groupe configuré dans") }} <a href="{{ url_for('admin.automation_dashboard') }}" class="link">{{ _("la configuration") }}</a></li>
                     </ul>
                     <div class="flex flex-wrap gap-2 mt-3">
                         <a class="btn btn-info" href="{{ url_for('admin.list_groups') }}">
-                            <i class="fas fa-users-cog"></i> Gérer les groupes
+                            <i class="fas fa-users-cog"></i> {{ _("Gérer les groupes") }}
                         </a>
                         <a class="btn btn-info" href="{{ url_for('admin.list_users') }}">
-                            <i class="fas fa-user-plus"></i> Gérer les utilisateurs
+                            <i class="fas fa-user-plus"></i> {{ _("Gérer les utilisateurs") }}
                         </a>
                         <a class="btn btn-info" href="{{ url_for('admin.automation_dashboard') }}">
-                            <i class="fas fa-cog"></i> Configurer les groupes éligibles
+                            <i class="fas fa-cog"></i> {{ _("Configurer les groupes éligibles") }}
                         </a>
                     </div>
                 </div>
@@ -180,24 +179,24 @@
 
     <div class="card card-sm bg-base-100 shadow-md">
         <div class="card-body">
-            <h2 class="text-lg font-semibold"><i class="fas fa-question-circle" aria-hidden="true"></i> Comment ça marche ?</h2>
+            <h2 class="text-lg font-semibold"><i class="fas fa-question-circle" aria-hidden="true"></i> {{ _("Comment ça marche ?") }}</h2>
             <ol class="list-decimal list-inside flex flex-col gap-1">
-                <li><strong>Définissez l'ordre de rotation :</strong> Attribuez une position (1, 2, 3, ...) à chaque utilisateur pour définir l'ordre dans lequel ils seront désignés pour les astreintes.</li>
-                <li><strong>Cochez les utilisateurs :</strong> Sélectionnez quels utilisateurs inclure dans la rotation.</li>
-                <li><strong>Choisissez la période :</strong> Sélectionnez la date de début et de fin pour la génération.</li>
-                <li><strong>Prévisualisez :</strong> Utilisez le bouton "Prévisualiser" pour voir ce qui sera généré sans sauvegarder.</li>
-                <li><strong>Générez :</strong> Cliquez sur "Générer les astreintes et shifts" pour créer les astreintes et les shifts en base de données.</li>
+                <li><strong>{{ _("Définissez l'ordre de rotation :") }}</strong> {{ _("Attribuez une position (1, 2, 3, ...) à chaque utilisateur pour définir l'ordre dans lequel ils seront désignés pour les astreintes.") }}</li>
+                <li><strong>{{ _("Cochez les utilisateurs :") }}</strong> {{ _("Sélectionnez quels utilisateurs inclure dans la rotation.") }}</li>
+                <li><strong>{{ _("Choisissez la période :") }}</strong> {{ _("Sélectionnez la date de début et de fin pour la génération.") }}</li>
+                <li><strong>{{ _("Prévisualisez :") }}</strong> {{ _("Utilisez le bouton \"Prévisualiser\" pour voir ce qui sera généré sans sauvegarder.") }}</li>
+                <li><strong>{{ _("Générez :") }}</strong> {{ _("Cliquez sur \"Générer les astreintes et shifts\" pour créer les astreintes et les shifts en base de données.") }}</li>
             </ol>
-            <p class="mt-4"><strong>Règles appliquées :</strong></p>
+            <p class="mt-4"><strong>{{ _("Règles appliquées :") }}</strong></p>
             <ul class="list-disc list-inside flex flex-col gap-1">
-                <li>Chaque astreinte commence selon la configuration (par défaut <strong>vendredi à 21h</strong>) et se termine selon la configuration (par défaut <strong>vendredi suivant à 07h</strong>).</li>
-                <li>La rotation suit l'ordre que vous avez défini et sauvegardé. Cet ordre est stocké dans la configuration et sera réutilisé pour les prochaines générations.</li>
-                <li>Si un utilisateur n'est pas disponible (congé, astreinte existante), le système passe au suivant dans la rotation.</li>
-                <li>Un message d'avertissement est affiché si aucun utilisateur n'est disponible pour une période.</li>
-                <li><strong>Les shifts sont générés automatiquement</strong> après les astreintes selon les nouvelles règles métiers (13h-21h pour l'astreinte, rotation des créneaux, etc.).</li>
+                <li>{{ _("Chaque astreinte commence selon la configuration (par défaut") }} <strong>{{ _("vendredi à 21h") }}</strong>) {{ _("et se termine selon la configuration (par défaut") }} <strong>{{ _("vendredi suivant à 07h") }}</strong>).</li>
+                <li>{{ _("La rotation suit l'ordre que vous avez défini et sauvegardé. Cet ordre est stocké dans la configuration et sera réutilisé pour les prochaines générations.") }}</li>
+                <li>{{ _("Si un utilisateur n'est pas disponible (congé, astreinte existante), le système passe au suivant dans la rotation.") }}</li>
+                <li>{{ _("Un message d'avertissement est affiché si aucun utilisateur n'est disponible pour une période.") }}</li>
+                <li><strong>{{ _("Les shifts sont générés automatiquement") }}</strong> {{ _("après les astreintes selon les nouvelles règles métiers (13h-21h pour l'astreinte, rotation des créneaux, etc.).") }}</li>
             </ul>
             <p class="mt-3">
-                <strong>Note :</strong> L'ordre de rotation est sauvegardé automatiquement dans la base de données lorsque vous cliquez sur "Sauvegarder l'ordre".
+                <strong>{{ _("Note :") }}</strong> {{ _("L'ordre de rotation est sauvegardé automatiquement dans la base de données lorsque vous cliquez sur \"Sauvegarder l'ordre\".") }}
             </p>
         </div>
     </div>

@@ -1,21 +1,21 @@
 {% extends "base.html" %}
 {% from "macros/errors.html" import error_page with context %}
 
-{% block title %}Service temporairement indisponible - Leviia{% endblock %}
+{% block title %}{{ _("Service temporairement indisponible") }} - Leviia{% endblock %}
 
 {% block content %}
-{% call error_page(code=502, title="Service temporairement indisponible", subtitle="Le serveur a reçu une réponse invalide du serveur en amont.", color="text-warning", secondary=[{"onclick": "location.reload()", "icon": "fa-sync-alt", "label": "Réessayer"}]) %}
+{% call error_page(code=502, title=_("Service temporairement indisponible"), subtitle=_("Le serveur a reçu une réponse invalide du serveur en amont."), color="text-warning", secondary=[{"onclick": "location.reload()", "icon": "fa-sync-alt", "label": _("Réessayer")}]) %}
 <p role="alert" aria-live="assertive">
-    Nous rencontrons actuellement des problèmes techniques avec nos services.
-    Veuillez réessayer dans quelques instants.
+    {{ _("Nous rencontrons actuellement des problèmes techniques avec nos services.") }}
+    {{ _("Veuillez réessayer dans quelques instants.") }}
 </p>
 <p>
-    <strong>Cela peut être dû à :</strong>
+    <strong>{{ _("Cela peut être dû à :") }}</strong>
 </p>
 <ul class="ml-5">
-    <li>Une maintenance en cours</li>
-    <li>Un problème temporaire avec notre base de données</li>
-    <li>Une surcharge du serveur</li>
+    <li>{{ _("Une maintenance en cours") }}</li>
+    <li>{{ _("Un problème temporaire avec notre base de données") }}</li>
+    <li>{{ _("Une surcharge du serveur") }}</li>
 </ul>
 {% endcall %}
 {% endblock %}

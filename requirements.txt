@@ -5,6 +5,13 @@ Flask-Login==0.6.3
 Flask-WTF==1.3.0
 Werkzeug==3.1.8
 
+# i18n (français/anglais) - gettext + catalogues de traduction. Réintroduit
+# pytz en dépendance transitive (ce projet utilise zoneinfo, pas pytz, pour
+# tout le reste) - inoffensif, Flask-Babel ne l'utilise qu'en interne pour
+# son propre mécanisme de formatage, jamais appelé ici (to_viewer_timezone()/
+# format_date_fr restent le seul code de fuseau horaire réellement utilisé).
+Flask-Babel==4.0.0
+
 # Base de données
 SQLAlchemy==2.0.51
 Flask-Migrate==4.1.0

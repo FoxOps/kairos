@@ -7,6 +7,7 @@ import re
 from datetime import date, datetime, timedelta
 
 from flask import flash, redirect, render_template, request, url_for
+from flask_babel import gettext as _
 
 from app import db
 from app.auth.decorators import admin_required
@@ -80,12 +81,17 @@ def automation_full():
                 error = AutomationAdminService.save_rotation_order(rotation_order_ids)
                 if error:
                     flash(
-                        f"Erreur lors de la sauvegarde de l'ordre : {error}",
+                        _(
+                            "Erreur lors de la sauvegarde de l'ordre : %(error)s",
+                            error=error,
+                        ),
                         "danger",
                     )
                 else:
                     flash(
-                        "Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour appliquer.",
+                        _(
+                            "Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour appliquer."
+                        ),
                         "success",
                     )
                 return redirect(url_for("admin.automation_full"))
@@ -102,12 +108,18 @@ def automation_full():
                     )
                     if oncalls_deleted:
                         flash(
-                            f"{oncalls_deleted} astreintes existantes supprimées pour la période",
+                            _(
+                                "%(oncalls_deleted)s astreintes existantes supprimées pour la période",
+                                oncalls_deleted=oncalls_deleted,
+                            ),
                             "info",
                         )
                     if shifts_deleted:
                         flash(
-                            f"{shifts_deleted} shifts existants supprimés pour la période",
+                            _(
+                                "%(shifts_deleted)s shifts existants supprimés pour la période",
+                                shifts_deleted=shifts_deleted,
+                            ),
                             "info",
                         )
 
@@ -161,15 +173,19 @@ def automation_full():
                     _flash_automation_messages(shift_messages, default_category="info")
 
                     flash(
-                        f"Régénération complète terminée pour la période du {start_date.strftime('%d/%m/%Y')} au {end_date.strftime('%d/%m/%Y')}",
+                        _(
+                            "Régénération complète terminée pour la période du %(strftime)s au %(strftime1)s",
+                            strftime=start_date.strftime("%d/%m/%Y"),
+                            strftime1=end_date.strftime("%d/%m/%Y"),
+                        ),
                         "success",
                     )
                     return redirect(url_for("admin.automation_full"))
 
             except ValueError as e:
-                flash(f"Format de date invalide : {str(e)}", "danger")
+                flash(_("Format de date invalide : %(val0)s", val0=str(e)), "danger")
             except Exception as e:
-                flash(f"Erreur : {str(e)}", "danger")
+                flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
 
     oncall_users = OnCallAutomation.get_eligible_users()
     current_rotation_order = AutomationAdminService.get_rotation_order()
@@ -220,7 +236,13 @@ def refresh_shifts():
             deleted = ShiftRepository.delete_in_date_range(start_date, end_date)
             if deleted:
                 db.session.commit()
-                flash(f"{deleted} shifts existants supprimés pour la période", "info")
+                flash(
+                    _(
+                        "%(deleted)s shifts existants supprimés pour la période",
+                        deleted=deleted,
+                    ),
+                    "info",
+                )
 
             shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
                 start_date, end_date, dry_run=False
@@ -228,14 +250,17 @@ def refresh_shifts():
 
             _flash_automation_messages(messages, default_category="info")
 
-            flash(f"{len(shifts)} shifts régénérés avec succès !", "success")
+            flash(
+                _("%(val0)s shifts régénérés avec succès !", val0=len(shifts)),
+                "success",
+            )
             return redirect(url_for("admin.refresh_shifts"))
 
         except ValueError as e:
-            flash(f"Format de date invalide : {str(e)}", "danger")
+            flash(_("Format de date invalide : %(val0)s", val0=str(e)), "danger")
         except Exception as e:
             db.session.rollback()
-            flash(f"Erreur : {str(e)}", "danger")
+            flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
 
     today = date.today()
     end_date_default = today + timedelta(days=180)

@@ -5,6 +5,7 @@ lives in app/routes/swap_routes.py.
 """
 
 from flask import abort, flash, redirect, render_template, request, url_for
+from flask_babel import gettext as _
 from flask_login import current_user
 
 from app.auth.decorators import admin_required
@@ -30,9 +31,9 @@ def approve_swap(swap_request_id):
 
     error = SwapService.approve_swap(swap_request, current_user)
     if error:
-        flash(f"{error}", "danger")
+        flash(error, "danger")
     else:
-        flash("Échange approuvé, shifts réassignés.", "success")
+        flash(_("Échange approuvé, shifts réassignés."), "success")
     return redirect(url_for("admin.list_swaps"))
 
 
@@ -45,10 +46,10 @@ def revert_swap(swap_request_id):
 
     error = SwapService.revert_swap(swap_request, current_user)
     if error:
-        flash(f"{error}", "danger")
+        flash(error, "danger")
     else:
         flash(
-            "Échange annulé, shifts réassignés à leurs propriétaires d'origine.",
+            _("Échange annulé, shifts réassignés à leurs propriétaires d'origine."),
             "success",
         )
     return redirect(url_for("admin.list_swaps"))
@@ -64,9 +65,9 @@ def reject_swap(swap_request_id):
     reason = request.form.get("reason", "").strip() or None
     error = SwapService.reject_swap(swap_request, current_user, reason)
     if error:
-        flash(f"{error}", "danger")
+        flash(error, "danger")
     else:
-        flash("Échange rejeté.", "warning")
+        flash(_("Échange rejeté."), "warning")
     return redirect(url_for("admin.list_swaps"))
 
 
@@ -75,6 +76,10 @@ def reject_swap(swap_request_id):
 def purge_swaps():
     count = SwapService.purge_all_resolved()
     flash(
-        f"{count} demande(s) terminée(s) supprimée(s) (tous utilisateurs).", "success"
+        _(
+            "%(count)s demande(s) terminée(s) supprimée(s) (tous utilisateurs).",
+            count=count,
+        ),
+        "success",
     )
     return redirect(url_for("admin.list_swaps"))

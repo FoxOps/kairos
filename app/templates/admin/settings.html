@@ -1,11 +1,11 @@
 {% extends "admin/base_admin.html" %}
 
-{% block title %}Paramètres - Leviia{% endblock %}
+{% block title %}{{ _("Paramètres") }} - Leviia{% endblock %}
 
 {% block admin_content %}
 <section class="p-3 md:p-4 max-w-2xl mx-auto">
     <h1 class="text-2xl font-bold mb-4">
-        <i class="fas fa-sliders" aria-hidden="true"></i> Paramètres
+        <i class="fas fa-sliders" aria-hidden="true"></i> {{ _("Paramètres") }}
     </h1>
 
     <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="timezone-form-title" class="mb-4">
@@ -13,23 +13,47 @@
         <input type="hidden" name="section" value="timezone">
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body gap-4">
-                <h2 class="font-semibold" id="timezone-form-title"><i class="fas fa-globe" aria-hidden="true"></i> Fuseau horaire</h2>
+                <h2 class="font-semibold" id="timezone-form-title"><i class="fas fa-globe" aria-hidden="true"></i> {{ _("Fuseau horaire") }}</h2>
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Fuseau horaire par défaut de l'organisation</legend>
+                    <legend class="fieldset-legend">{{ _("Fuseau horaire par défaut de l'organisation") }}</legend>
                     <select class="select w-full" id="default_timezone" name="default_timezone" aria-describedby="timezone-help">
                         {% for tz in timezones %}
                         <option value="{{ tz }}" {% if tz == default_timezone %}selected{% endif %}>{{ tz }}</option>
                         {% endfor %}
                     </select>
                     <p class="text-sm text-base-content/60" id="timezone-help">
-                        Fuseau utilisé pour interpréter les heures des shifts/astreintes et pour l'export ICS.
-                        Les utilisateurs peuvent choisir un fuseau personnel sur leur profil, ce qui n'affecte
-                        que l'affichage dans l'app, jamais le fichier ICS exporté ni l'heure réelle du shift.
+                        {{ _("Fuseau utilisé pour interpréter les heures des shifts/astreintes et pour l'export ICS. Les utilisateurs peuvent choisir un fuseau personnel sur leur profil, ce qui n'affecte que l'affichage dans l'app, jamais le fichier ICS exporté ni l'heure réelle du shift.") }}
                     </p>
                 </fieldset>
                 <div>
                     <button class="btn btn-primary btn-sm" type="submit">
-                        <i class="fas fa-save" aria-hidden="true"></i> Enregistrer
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="language-form-title" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="section" value="language">
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <h2 class="font-semibold" id="language-form-title"><i class="fas fa-language" aria-hidden="true"></i> {{ _("Langue") }}</h2>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Langue par défaut de l'organisation") }}</legend>
+                    <select class="select w-full" id="default_language" name="default_language" aria-describedby="language-help">
+                        {% for code, label in languages %}
+                        <option value="{{ code }}" {% if code == default_language %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-sm text-base-content/60" id="language-help">
+                        {{ _("Langue utilisée pour l'interface et les emails de notification, quand un utilisateur n'a pas défini de préférence personnelle sur son profil.") }}
+                    </p>
+                </fieldset>
+                <div>
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
                     </button>
                 </div>
             </div>
@@ -41,20 +65,19 @@
         <input type="hidden" name="section" value="general">
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body gap-4">
-                <h2 class="font-semibold" id="general-form-title"><i class="fas fa-link" aria-hidden="true"></i> URL publique</h2>
+                <h2 class="font-semibold" id="general-form-title"><i class="fas fa-link" aria-hidden="true"></i> {{ _("URL publique") }}</h2>
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">URL publique de l'application</legend>
+                    <legend class="fieldset-legend">{{ _("URL publique de l'application") }}</legend>
                     <input class="input w-full" type="text" id="public_base_url" name="public_base_url"
                            value="{{ public_base_url or '' }}" placeholder="https://schedule.example.com"
                            aria-describedby="public-base-url-help">
                     <p class="text-sm text-base-content/60" id="public-base-url-help">
-                        Utilisée pour générer les liens absolus (abonnements ICS). Laisser vide pour utiliser
-                        l'URL de la requête entrante.
+                        {{ _("Utilisée pour générer les liens absolus (abonnements ICS). Laisser vide pour utiliser l'URL de la requête entrante.") }}
                     </p>
                 </fieldset>
                 <div>
                     <button class="btn btn-primary btn-sm" type="submit">
-                        <i class="fas fa-save" aria-hidden="true"></i> Enregistrer
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
                     </button>
                 </div>
             </div>
@@ -66,18 +89,18 @@
         <input type="hidden" name="section" value="pagination">
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body gap-4">
-                <h2 class="font-semibold" id="pagination-form-title"><i class="fas fa-list-ol" aria-hidden="true"></i> Pagination</h2>
+                <h2 class="font-semibold" id="pagination-form-title"><i class="fas fa-list-ol" aria-hidden="true"></i> {{ _("Pagination") }}</h2>
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Éléments par page</legend>
+                    <legend class="fieldset-legend">{{ _("Éléments par page") }}</legend>
                     <input class="input w-full" type="number" min="1" id="items_per_page" name="items_per_page" value="{{ items_per_page }}">
                 </fieldset>
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Maximum par page</legend>
+                    <legend class="fieldset-legend">{{ _("Maximum par page") }}</legend>
                     <input class="input w-full" type="number" min="1" id="max_per_page" name="max_per_page" value="{{ max_per_page }}">
                 </fieldset>
                 <div>
                     <button class="btn btn-primary btn-sm" type="submit">
-                        <i class="fas fa-save" aria-hidden="true"></i> Enregistrer
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
                     </button>
                 </div>
             </div>
@@ -89,16 +112,16 @@
         <input type="hidden" name="section" value="notifications">
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body gap-4">
-                <h2 class="font-semibold" id="notifications-form-title"><i class="fas fa-bell" aria-hidden="true"></i> Notifications par email</h2>
+                <h2 class="font-semibold" id="notifications-form-title"><i class="fas fa-bell" aria-hidden="true"></i> {{ _("Notifications par email") }}</h2>
                 <div>
                     <label class="label cursor-pointer justify-start gap-2" for="notifications_enabled">
                         <input type="checkbox" class="checkbox" id="notifications_enabled" name="notifications_enabled" {% if notifications_enabled %}checked{% endif %}>
-                        <span>Activer les rappels hebdomadaires par email (shifts + astreintes)</span>
+                        <span>{{ _("Activer les rappels hebdomadaires par email (shifts + astreintes)") }}</span>
                     </label>
                 </div>
                 <div>
                     <button class="btn btn-primary btn-sm" type="submit">
-                        <i class="fas fa-save" aria-hidden="true"></i> Enregistrer
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
                     </button>
                 </div>
             </div>
@@ -110,22 +133,21 @@
         <input type="hidden" name="section" value="backups">
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body gap-4">
-                <h2 class="font-semibold" id="backups-form-title"><i class="fas fa-database" aria-hidden="true"></i> Sauvegardes</h2>
+                <h2 class="font-semibold" id="backups-form-title"><i class="fas fa-database" aria-hidden="true"></i> {{ _("Sauvegardes") }}</h2>
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Rétention (jours)</legend>
+                    <legend class="fieldset-legend">{{ _("Rétention (jours)") }}</legend>
                     <input class="input w-full" type="number" min="1" id="backup_retention_days" name="backup_retention_days" value="{{ backup_retention_days }}">
                 </fieldset>
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Nombre maximum de sauvegardes</legend>
+                    <legend class="fieldset-legend">{{ _("Nombre maximum de sauvegardes") }}</legend>
                     <input class="input w-full" type="number" min="1" id="backup_max_backups" name="backup_max_backups" value="{{ backup_max_backups }}">
                 </fieldset>
                 <p class="text-sm text-base-content/60">
-                    S'applique uniquement aux actions déclenchées depuis l'UI admin (Sauvegardes).
-                    La tâche planifiée (cron) continue d'utiliser les variables d'environnement.
+                    {{ _("S'applique uniquement aux actions déclenchées depuis l'UI admin (Sauvegardes). La tâche planifiée (cron) continue d'utiliser les variables d'environnement.") }}
                 </p>
                 <div>
                     <button class="btn btn-primary btn-sm" type="submit">
-                        <i class="fas fa-save" aria-hidden="true"></i> Enregistrer
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
                     </button>
                 </div>
             </div>
@@ -137,18 +159,17 @@
         <input type="hidden" name="section" value="ics">
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body gap-4">
-                <h2 class="font-semibold" id="ics-form-title"><i class="fas fa-calendar-check" aria-hidden="true"></i> Export ICS</h2>
+                <h2 class="font-semibold" id="ics-form-title"><i class="fas fa-calendar-check" aria-hidden="true"></i> {{ _("Export ICS") }}</h2>
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Expiration du jeton ICS (jours)</legend>
+                    <legend class="fieldset-legend">{{ _("Expiration du jeton ICS (jours)") }}</legend>
                     <input class="input w-full" type="number" min="1" id="ics_token_expiry_days" name="ics_token_expiry_days" value="{{ ics_token_expiry_days }}">
                 </fieldset>
                 <p class="text-sm text-base-content/60">
-                    Réglage actuellement sans effet : aucune expiration n'est encore appliquée aux jetons ICS
-                    existants. Conservé pour cohérence, en attendant une éventuelle implémentation future.
+                    {{ _("Réglage actuellement sans effet : aucune expiration n'est encore appliquée aux jetons ICS existants. Conservé pour cohérence, en attendant une éventuelle implémentation future.") }}
                 </p>
                 <div>
                     <button class="btn btn-primary btn-sm" type="submit">
-                        <i class="fas fa-save" aria-hidden="true"></i> Enregistrer
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
                     </button>
                 </div>
             </div>

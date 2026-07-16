@@ -1,10 +1,10 @@
-Bonjour {{ user_name }},
+{{ _("Bonjour %(user_name)s,", user_name=user_name) }}
 
-Voici vos shifts pour la semaine du {{ week_start.strftime('%d/%m/%Y') }} au {{ week_end.strftime('%d/%m/%Y') }} :
+{{ _("Voici vos shifts pour la semaine du %(week_start)s au %(week_end)s :", week_start=week_start.strftime('%d/%m/%Y'), week_end=week_end.strftime('%d/%m/%Y')) }}
 {% for shift in shifts %}
 - {{ shift.date.strftime('%A')|capitalize }} {{ shift.date.strftime('%d/%m/%Y') }} : {{ shift.start_time.strftime('%Hh%M') }} - {{ shift.end_time.strftime('%Hh%M') }}
 {%- endfor %}
 {% if app_base_url %}
-Voir le planning : {{ app_base_url }}/schedule
+{{ _("Voir le planning : %(url)s", url=app_base_url ~ "/schedule") }}
 {% endif %}
-Ceci est un rappel automatique envoyé chaque dimanche pour la semaine à venir.
+{{ _("Ceci est un rappel automatique envoyé chaque dimanche pour la semaine à venir.") }}

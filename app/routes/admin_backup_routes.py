@@ -7,6 +7,7 @@ wraps scripts/backup_database.py.
 import os
 
 from flask import abort, flash, redirect, render_template, send_file, url_for
+from flask_babel import gettext as _
 
 from app.auth.decorators import admin_required
 from app.routes.admin import admin_bp
@@ -35,10 +36,10 @@ def backups_create():
     results = BackupService.create_now()
 
     if results["success"]:
-        flash("Sauvegarde créée avec succès.", "success")
+        flash(_("Sauvegarde créée avec succès."), "success")
     else:
         errors = "; ".join(results.get("errors", [])) or "erreur inconnue"
-        flash(f"Échec de la sauvegarde : {errors}", "danger")
+        flash(_("Échec de la sauvegarde : %(errors)s", errors=errors), "danger")
 
     return redirect(url_for("admin.backups_dashboard"))
 
@@ -52,8 +53,11 @@ def backups_cleanup():
     s3 = results["s3"]
 
     flash(
-        f"Nettoyage terminé : {local['count']} sauvegarde(s) locale(s), "
-        f"{s3['count']} sauvegarde(s) S3 supprimée(s).",
+        _(
+            "Nettoyage terminé : %(val0)s sauvegarde(s) locale(s), %(val1)s sauvegarde(s) S3 supprimée(s).",
+            val0=local["count"],
+            val1=s3["count"],
+        ),
         "info",
     )
 

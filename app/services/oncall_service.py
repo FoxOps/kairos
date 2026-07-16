@@ -8,6 +8,8 @@ flash message / redirect / JSON response.
 
 from datetime import datetime, timedelta
 
+from flask_babel import gettext as _
+
 from app import db
 from app.models import OnCall, User
 from app.repositories.oncall_repository import OnCallRepository
@@ -32,7 +34,7 @@ class OnCallService:
             (oncall, error_message)
         """
         if start_date.weekday() != 4:
-            return None, "L'astreinte doit commencer un vendredi."
+            return None, _("L'astreinte doit commencer un vendredi.")
 
         start_time = datetime.combine(start_date, datetime.min.time()).replace(hour=21)
         end_time = start_time + timedelta(days=7, hours=-14)
@@ -40,7 +42,10 @@ class OnCallService:
         if not can_add_oncall(user, start_time, end_time):
             return (
                 None,
-                "Impossible d'ajouter cette astreinte (période déjà couverte ou congé sur la période).",
+                _(
+                    "Impossible d'ajouter cette astreinte (période déjà couverte "
+                    "ou congé sur la période)."
+                ),
             )
 
         oncall = OnCallRepository.create(user.id, start_time, end_time)
@@ -88,10 +93,10 @@ class OnCallService:
         """Update an on-call from the drag & drop API. Returns (oncall, error_message)."""
         oncall = OnCallRepository.get_by_id(oncall_id)
         if not oncall:
-            return None, "Astreinte non trouvée"
+            return None, _("Astreinte non trouvée")
 
         if new_start.weekday() != 4:
-            return None, "L'astreinte doit commencer un vendredi"
+            return None, _("L'astreinte doit commencer un vendredi")
 
         conflict = OnCallRepository.find_conflict(
             oncall.user_id, new_start, new_end, exclude_id=oncall_id
@@ -99,7 +104,10 @@ class OnCallService:
         if conflict:
             return (
                 None,
-                f"Une astreinte existe déjà pour {oncall.user.name} pendant cette période",
+                _(
+                    "Une astreinte existe déjà pour %(name)s pendant cette période",
+                    name=oncall.user.name,
+                ),
             )
 
         # Originally missing: the creation path (add_oncall) goes through
@@ -108,7 +116,10 @@ class OnCallService:
         if _get_overlapping_leave(oncall.user_id, new_start.date(), new_end.date()):
             return (
                 None,
-                f"{oncall.user.name} est en congé pendant cette période",
+                _(
+                    "%(name)s est en congé pendant cette période",
+                    name=oncall.user.name,
+                ),
             )
 
         oncall.start_time = new_start

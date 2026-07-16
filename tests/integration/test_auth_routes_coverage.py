@@ -156,6 +156,48 @@ class TestProfileSettings:
             user = User.query.filter_by(email="login@example.com").first()
             assert user.timezone is None
 
+    def test_valid_language_persists(self, test_app, logged_in_client):
+        resp = logged_in_client.post(
+            "/profile/settings",
+            data={"language": "en"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with test_app.app_context():
+            user = User.query.filter_by(email="login@example.com").first()
+            assert user.language == "en"
+
+    def test_empty_language_clears_to_org_default(self, test_app, logged_in_client):
+        logged_in_client.post(
+            "/profile/settings",
+            data={"language": "en"},
+            follow_redirects=True,
+        )
+
+        resp = logged_in_client.post(
+            "/profile/settings",
+            data={"language": ""},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with test_app.app_context():
+            user = User.query.filter_by(email="login@example.com").first()
+            assert user.language is None
+
+    def test_invalid_language_rejected_without_mutation(
+        self, test_app, logged_in_client
+    ):
+        resp = logged_in_client.post(
+            "/profile/settings",
+            data={"language": "de"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        assert b"invalide" in resp.data
+        with test_app.app_context():
+            user = User.query.filter_by(email="login@example.com").first()
+            assert user.language is None
+
     def test_notification_section_hidden_when_disabled_org_wide(
         self, test_app, logged_in_client
     ):

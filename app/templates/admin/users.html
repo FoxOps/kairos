@@ -1,45 +1,45 @@
 {% extends "admin/base_admin.html" %}
 
-{% block title %}Gestion des utilisateurs - Leviia Schedule{% endblock %}
+{% block title %}{{ _("Gestion des utilisateurs") }} - Leviia Schedule{% endblock %}
 
 {% block admin_content %}
 <section class="p-3 md:p-4 max-w-6xl mx-auto">
-    <div class="breadcrumbs text-sm mb-2" aria-label="Fil d'Ariane">
+    <div class="breadcrumbs text-sm mb-2" aria-label="{{ _("Fil d'Ariane") }}">
         <ul>
             <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
-            <li>Utilisateurs</li>
+            <li>{{ _("Utilisateurs") }}</li>
         </ul>
     </div>
     <h1 class="text-2xl font-bold mb-4">
-        <i class="fas fa-users" aria-hidden="true"></i> Gestion des utilisateurs
+        <i class="fas fa-users" aria-hidden="true"></i> {{ _("Gestion des utilisateurs") }}
     </h1>
 
     <!-- Button to add a user -->
-    <div class="flex gap-2 mb-4" role="group" aria-label="Actions utilisateurs">
+    <div class="flex gap-2 mb-4" role="group" aria-label="{{ _("Actions utilisateurs") }}">
         {% set add_button_route = 'admin.add_user' %}
-        {% set add_button_label = 'Ajouter un utilisateur' %}
+        {% set add_button_label = _('Ajouter un utilisateur') %}
         {% set add_button_icon = 'plus' %}
-        {% set add_button_resource_name = 'Ajouter un nouvel utilisateur' %}
+        {% set add_button_resource_name = _('Ajouter un nouvel utilisateur') %}
         {% include "_add_button.html" %}
         <a class="btn btn-ghost" href="{{ url_for('admin.admin_dashboard') }}"
-           aria-label="Retour à l'administration" title="Retour à l'admin">
-            Retour à l'admin
+           aria-label="{{ _("Retour à l'administration") }}" title="{{ _("Retour à l'admin") }}">
+            {{ _("Retour à l'admin") }}
         </a>
     </div>
 
     <!-- Users table -->
     <div class="overflow-x-auto" role="region" aria-labelledby="users-title">
         <table class="table table-zebra" aria-describedby="users-title">
-            <caption class="sr-only">Liste des utilisateurs</caption>
+            <caption class="sr-only">{{ _("Liste des utilisateurs") }}</caption>
             <thead>
                 <tr>
                     <th scope="col"></th>
                     <th scope="col">ID</th>
-                    <th scope="col">Nom</th>
+                    <th scope="col">{{ _("Nom") }}</th>
                     <th scope="col">Email</th>
-                    <th scope="col">Groupe</th>
-                    <th scope="col">Administrateur</th>
-                    <th scope="col">Actions</th>
+                    <th scope="col">{{ _("Groupe") }}</th>
+                    <th scope="col">{{ _("Administrateur") }}</th>
+                    <th scope="col">{{ _("Actions") }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -55,7 +55,7 @@
                     <td>{{ user.id }}</td>
                     <td>{{ user.name }}</td>
                     <td>{{ user.email }}</td>
-                    <td>{{ user.group.name if user.group else 'Aucun' }}</td>
+                    <td>{{ user.group.name if user.group else _('Aucun') }}</td>
                     <td>
                         {% if user.is_admin %}
                             <i class="fas fa-check text-success" aria-hidden="true"></i>
@@ -64,17 +64,17 @@
                         {% endif %}
                     </td>
                     <td>
-                        <div class="flex gap-2" role="group" aria-label="Actions pour l'utilisateur {{ user.name }}">
-                            <div class="tooltip" data-tip="Modifier l'utilisateur">
+                        <div class="flex gap-2" role="group" aria-label="{{ _("Actions pour l'utilisateur %(name)s", name=user.name) }}">
+                            <div class="tooltip" data-tip="{{ _("Modifier l'utilisateur") }}">
                                 <a class="btn btn-warning btn-sm" href="{{ url_for('admin.edit_user', user_id=user.id) }}"
-                                   aria-label="Modifier l'utilisateur {{ user.name }}" title="Modifier l'utilisateur">
+                                   aria-label="{{ _("Modifier l'utilisateur %(name)s", name=user.name) }}" title="{{ _("Modifier l'utilisateur") }}">
                                     <i class="fas fa-edit" aria-hidden="true"></i>
                                 </a>
                             </div>
-                            <div class="tooltip" data-tip="Supprimer l'utilisateur">
+                            <div class="tooltip" data-tip="{{ _("Supprimer l'utilisateur") }}">
                                 <a class="btn btn-error btn-sm js-confirm-delete" href="{{ url_for('admin.delete_user', user_id=user.id) }}"
-                                   data-confirm-message="Êtes-vous sûr de vouloir supprimer l'utilisateur {{ user.name }} ?"
-                                   aria-label="Supprimer l'utilisateur {{ user.name }}" title="Supprimer l'utilisateur">
+                                   data-confirm-message="{{ _("Êtes-vous sûr de vouloir supprimer l'utilisateur %(name)s ?", name=user.name) }}"
+                                   aria-label="{{ _("Supprimer l'utilisateur %(name)s", name=user.name) }}" title="{{ _("Supprimer l'utilisateur") }}">
                                     <i class="fas fa-trash" aria-hidden="true"></i>
                                 </a>
                             </div>
@@ -88,8 +88,8 @@
 
     <!-- Action legend -->
     {% set action_items = [
-        {'class': 'btn-warning btn-sm', 'icon': 'edit', 'label': 'Modifier', 'description': 'Modifier l\'utilisateur'},
-        {'class': 'btn-error btn-sm', 'icon': 'trash', 'label': 'Supprimer', 'description': 'Supprimer l\'utilisateur'}
+        {'class': 'btn-warning btn-sm', 'icon': 'edit', 'label': _('Modifier'), 'description': _('Modifier l\'utilisateur')},
+        {'class': 'btn-error btn-sm', 'icon': 'trash', 'label': _('Supprimer'), 'description': _('Supprimer l\'utilisateur')}
     ] %}
     {% include "_action_legend.html" %}
 </section>

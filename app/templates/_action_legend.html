@@ -11,9 +11,9 @@
 <div class="alert alert-info mt-4" role="status" aria-live="polite">
     <div>
         <h3 class="font-semibold text-sm">
-            <i class="fas fa-info-circle" aria-hidden="true"></i> Légende des actions
+            <i class="fas fa-info-circle" aria-hidden="true"></i> {{ _("Légende des actions") }}
         </h3>
-        <p class="flex flex-wrap gap-2 mt-2" role="list" aria-label="Légende des boutons d'action">
+        <p class="flex flex-wrap gap-2 mt-2" role="list" aria-label="{{ _("Légende des boutons d'action") }}">
             {% for item in action_items %}
             <span class="btn {{ item.class }}" role="listitem"
                   {% if item.description %}aria-label="{{ item.description }}"{% endif %}>

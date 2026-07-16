@@ -1,152 +1,147 @@
 {% extends "base.html" %}
 
-{% block title %}Token ICS - Leviia{% endblock %}
+{% block title %}{{ _("Token ICS") }} - Leviia{% endblock %}
 
 {% block content %}
 <div class="flex justify-center px-4 py-12">
     <div class="w-full max-w-3xl">
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
-                <h1 class="text-2xl font-bold text-center mb-4">Token d'export ICS</h1>
+                <h1 class="text-2xl font-bold text-center mb-4">{{ _("Token d'export ICS") }}</h1>
 
                 <p class="mb-4">
-                    Ce token vous permet d'exporter les calendriers au format ICS
-                    et de l'importer dans des logiciels comme Thunderbird, Google Calendar, Outlook, etc.
+                    {{ _("Ce token vous permet d'exporter les calendriers au format ICS et de l'importer dans des logiciels comme Thunderbird, Google Calendar, Outlook, etc.") }}
                 </p>
 
                 <div class="alert alert-info mb-4">
                     <p>
                         <i class="fas fa-info-circle"></i>
-                        <strong>Important :</strong> Ce token est personnel et confidentiel.
-                        Ne le partagez avec personne. Si vous pensez qu'il a été compromis,
-                        régénérez-le immédiatement.
+                        <strong>{{ _("Important :") }}</strong> {{ _("Ce token est personnel et confidentiel. Ne le partagez avec personne. Si vous pensez qu'il a été compromis, régénérez-le immédiatement.") }}
                     </p>
                 </div>
 
                 <div class="alert alert-warning mb-4">
                     <p>
                         <i class="fas fa-exclamation-triangle"></i>
-                        <strong>Attention :</strong> Ce token permet d'accéder à TOUS les shifts (scope=all).
-                        Utilisez-le avec précaution.
+                        <strong>{{ _("Attention :") }}</strong> {{ _("Ce token permet d'accéder à TOUS les shifts (scope=all). Utilisez-le avec précaution.") }}
                     </p>
                 </div>
 
                 {% if token %}
                 <div class="mb-4">
-                    <label class="label">Votre token</label>
+                    <label class="label">{{ _("Votre token") }}</label>
                     <div class="join w-full">
                         <input class="input join-item flex-1" type="text" value="{{ token }}" id="tokenInput" readonly>
                         <button class="btn btn-primary join-item no-hover-transform" onclick="Leviia.copyToken(event)">
                             <i class="fas fa-copy"></i>
-                            <span>Copier</span>
+                            <span>{{ _("Copier") }}</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- Shift URLs -->
                 <div class="mb-4">
-                    <label class="label">URL Shifts (Tous)</label>
+                    <label class="label">{{ _("URL Shifts (Tous)") }}</label>
                     <div class="join w-full">
                         <input class="input join-item flex-1" type="text"
                                value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('shifts', 'all') }}"
                                id="urlShiftsAllInput" readonly>
                         <button class="btn btn-primary join-item no-hover-transform" onclick="Leviia.copyUrlShiftsAll(event)">
                             <i class="fas fa-copy"></i>
-                            <span>Copier</span>
+                            <span>{{ _("Copier") }}</span>
                         </button>
                     </div>
                     <p class="text-sm text-base-content/60">
-                        URL pour exporter TOUS les shifts (scope=all)
+                        {{ _("URL pour exporter TOUS les shifts (scope=all)") }}
                     </p>
                 </div>
 
                 <div class="mb-4">
-                    <label class="label">URL Shifts (Perso)</label>
+                    <label class="label">{{ _("URL Shifts (Perso)") }}</label>
                     <div class="join w-full">
                         <input class="input join-item flex-1" type="text"
                                value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('shifts', 'my') }}"
                                id="urlShiftsMyInput" readonly>
                         <button class="btn btn-primary join-item no-hover-transform" onclick="Leviia.copyUrlShiftsMy(event)">
                             <i class="fas fa-copy"></i>
-                            <span>Copier</span>
+                            <span>{{ _("Copier") }}</span>
                         </button>
                     </div>
                     <p class="text-sm text-base-content/60">
-                        URL pour exporter uniquement vos shifts (scope=my)
+                        {{ _("URL pour exporter uniquement vos shifts (scope=my)") }}
                     </p>
                 </div>
 
                 <!-- OnCall URLs -->
                 <div class="mb-4">
-                    <label class="label">URL Astreintes (Tous)</label>
+                    <label class="label">{{ _("URL Astreintes (Tous)") }}</label>
                     <div class="join w-full">
                         <input class="input join-item flex-1" type="text"
                                value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('oncall', 'all') }}"
                                id="urlOncallAllInput" readonly>
                         <button class="btn btn-primary join-item no-hover-transform" onclick="Leviia.copyUrlOncallAll(event)">
                             <i class="fas fa-copy"></i>
-                            <span>Copier</span>
+                            <span>{{ _("Copier") }}</span>
                         </button>
                     </div>
                     <p class="text-sm text-base-content/60">
-                        URL pour exporter TOUTES les astreintes (scope=all)
+                        {{ _("URL pour exporter TOUTES les astreintes (scope=all)") }}
                     </p>
                 </div>
 
                 <div class="mb-4">
-                    <label class="label">URL Astreintes (Perso)</label>
+                    <label class="label">{{ _("URL Astreintes (Perso)") }}</label>
                     <div class="join w-full">
                         <input class="input join-item flex-1" type="text"
                                value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('oncall', 'my') }}"
                                id="urlOncallMyInput" readonly>
                         <button class="btn btn-primary join-item no-hover-transform" onclick="Leviia.copyUrlOncallMy(event)">
                             <i class="fas fa-copy"></i>
-                            <span>Copier</span>
+                            <span>{{ _("Copier") }}</span>
                         </button>
                     </div>
                     <p class="text-sm text-base-content/60">
-                        URL pour exporter uniquement vos astreintes (scope=my)
+                        {{ _("URL pour exporter uniquement vos astreintes (scope=my)") }}
                     </p>
                 </div>
 
                 <!-- Leaves URLs -->
                 <div class="mb-4">
-                    <label class="label">URL Congés (Tous)</label>
+                    <label class="label">{{ _("URL Congés (Tous)") }}</label>
                     <div class="join w-full">
                         <input class="input join-item flex-1" type="text"
                                value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('leaves', 'all') }}"
                                id="urlLeavesAllInput" readonly>
                         <button class="btn btn-primary join-item no-hover-transform" onclick="Leviia.copyUrlLeavesAll(event)">
                             <i class="fas fa-copy"></i>
-                            <span>Copier</span>
+                            <span>{{ _("Copier") }}</span>
                         </button>
                     </div>
                     <p class="text-sm text-base-content/60">
-                        URL pour exporter TOUS les congés (scope=all)
+                        {{ _("URL pour exporter TOUS les congés (scope=all)") }}
                     </p>
                 </div>
 
                 <div class="mb-4">
-                    <label class="label">URL Congés (Perso)</label>
+                    <label class="label">{{ _("URL Congés (Perso)") }}</label>
                     <div class="join w-full">
                         <input class="input join-item flex-1" type="text"
                                value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('leaves', 'my') }}"
                                id="urlLeavesMyInput" readonly>
                         <button class="btn btn-primary join-item no-hover-transform" onclick="Leviia.copyUrlLeavesMy(event)">
                             <i class="fas fa-copy"></i>
-                            <span>Copier</span>
+                            <span>{{ _("Copier") }}</span>
                         </button>
                     </div>
                     <p class="text-sm text-base-content/60">
-                        URL pour exporter uniquement vos congés (scope=my)
+                        {{ _("URL pour exporter uniquement vos congés (scope=my)") }}
                     </p>
                 </div>
 
                 <div class="alert alert-warning mb-4">
                     <p>
                         <i class="fas fa-exclamation-triangle"></i>
-                        <strong>Note :</strong> Certains logiciels de calendrier (comme Thunderbird)
-                        peuvent nécessiter de rafraîchir manuellement le calendrier après des modifications.
+                        <strong>{{ _("Note :") }}</strong> {{ _("Certains logiciels de calendrier (comme Thunderbird) peuvent nécessiter de rafraîchir manuellement le calendrier après des modifications.") }}
                     </p>
                 </div>
                 {% endif %}
@@ -157,17 +152,17 @@
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-primary no-hover-transform">
                             <i class="fas fa-sync-alt"></i>
-                            <span>{% if token %}Régénérer le token{% else %}Générer un token{% endif %}</span>
+                            <span>{% if token %}{{ _("Régénérer le token") }}{% else %}{{ _("Générer un token") }}{% endif %}</span>
                         </button>
                     </form>
                     <a href="{{ url_for('auth.profile') }}" class="btn btn-ghost no-hover-transform">
-                        Retour au profil
+                        {{ _("Retour au profil") }}
                     </a>
                 </div>
 
                 {% if not token %}
                 <div class="alert alert-warning mb-4 mt-4">
-                    <p>Vous n'avez pas encore de token. Générez-en un ci-dessus.</p>
+                    <p>{{ _("Vous n'avez pas encore de token. Générez-en un ci-dessus.") }}</p>
                 </div>
                 {% endif %}
             </div>

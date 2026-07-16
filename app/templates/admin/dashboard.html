@@ -2,115 +2,115 @@
 
 {% block admin_content %}
 <section class="p-3 md:p-4 max-w-6xl mx-auto">
-    <h1 class="text-2xl font-bold mb-4"><i class="fas fa-tachometer-alt" aria-hidden="true"></i> Tableau de bord Admin</h1>
+    <h1 class="text-2xl font-bold mb-4"><i class="fas fa-tachometer-alt" aria-hidden="true"></i> {{ _("Tableau de bord Admin") }}</h1>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
-                <h2 class="font-semibold"><i class="fas fa-users" aria-hidden="true"></i> Utilisateurs</h2>
-                <p>Nombre total : {{ users_count }}</p>
+                <h2 class="font-semibold"><i class="fas fa-users" aria-hidden="true"></i> {{ _("Utilisateurs") }}</h2>
+                <p>{{ _("Nombre total : %(count)s", count=users_count) }}</p>
                 <a class="btn btn-info btn-sm mt-2" href="{{ url_for('admin.list_users') }}"
-                   aria-label="Voir la liste des utilisateurs" title="Voir la liste des utilisateurs">
-                    <i class="fas fa-list" aria-hidden="true"></i> Voir la liste
+                   aria-label="{{ _("Voir la liste des utilisateurs") }}" title="{{ _("Voir la liste des utilisateurs") }}">
+                    <i class="fas fa-list" aria-hidden="true"></i> {{ _("Voir la liste") }}
                 </a>
             </div>
         </div>
 
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
-                <h2 class="font-semibold"><i class="fas fa-user-friends" aria-hidden="true"></i> Groupes</h2>
-                <p>Nombre total : {{ groups_count }}</p>
+                <h2 class="font-semibold"><i class="fas fa-user-friends" aria-hidden="true"></i> {{ _("Groupes") }}</h2>
+                <p>{{ _("Nombre total : %(count)s", count=groups_count) }}</p>
                 <a class="btn btn-info btn-sm mt-2" href="{{ url_for('admin.list_groups') }}"
-                   aria-label="Voir la liste des groupes" title="Voir la liste des groupes">
-                    <i class="fas fa-list" aria-hidden="true"></i> Voir la liste
+                   aria-label="{{ _("Voir la liste des groupes") }}" title="{{ _("Voir la liste des groupes") }}">
+                    <i class="fas fa-list" aria-hidden="true"></i> {{ _("Voir la liste") }}
                 </a>
             </div>
         </div>
 
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
-                <h2 class="font-semibold"><i class="fas fa-calendar-alt" aria-hidden="true"></i> Shifts</h2>
-                <p>Nombre total : {{ shifts_count }}</p>
+                <h2 class="font-semibold"><i class="fas fa-calendar-alt" aria-hidden="true"></i> {{ _("Shifts") }}</h2>
+                <p>{{ _("Nombre total : %(count)s", count=shifts_count) }}</p>
                 <a class="btn btn-info btn-sm mt-2" href="{{ url_for('main.schedule') }}"
-                   aria-label="Voir la liste des shifts" title="Voir la liste des shifts">
-                    <i class="fas fa-list" aria-hidden="true"></i> Voir la liste
+                   aria-label="{{ _("Voir la liste des shifts") }}" title="{{ _("Voir la liste des shifts") }}">
+                    <i class="fas fa-list" aria-hidden="true"></i> {{ _("Voir la liste") }}
                 </a>
             </div>
         </div>
 
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
-                <h2 class="font-semibold"><i class="fas fa-cogs" aria-hidden="true"></i> Types de shifts</h2>
-                <p>Gérer les types</p>
+                <h2 class="font-semibold"><i class="fas fa-cogs" aria-hidden="true"></i> {{ _("Types de shifts") }}</h2>
+                <p>{{ _("Gérer les types") }}</p>
                 <a class="btn btn-info btn-sm mt-2" href="{{ url_for('admin.list_shift_types') }}"
-                   aria-label="Voir la liste des types de shifts" title="Voir la liste des types de shifts">
-                    <i class="fas fa-list" aria-hidden="true"></i> Voir la liste
+                   aria-label="{{ _("Voir la liste des types de shifts") }}" title="{{ _("Voir la liste des types de shifts") }}">
+                    <i class="fas fa-list" aria-hidden="true"></i> {{ _("Voir la liste") }}
                 </a>
             </div>
         </div>
 
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
-                <h2 class="font-semibold"><i class="fas fa-moon" aria-hidden="true"></i> Astreintes</h2>
-                <p>Nombre total : {{ on_calls_count }}</p>
+                <h2 class="font-semibold"><i class="fas fa-moon" aria-hidden="true"></i> {{ _("Astreintes") }}</h2>
+                <p>{{ _("Nombre total : %(count)s", count=on_calls_count) }}</p>
                 <a class="btn btn-info btn-sm mt-2" href="{{ url_for('main.oncall') }}"
-                   aria-label="Voir la liste des astreintes" title="Voir la liste des astreintes">
-                    <i class="fas fa-list" aria-hidden="true"></i> Voir la liste
+                   aria-label="{{ _("Voir la liste des astreintes") }}" title="{{ _("Voir la liste des astreintes") }}">
+                    <i class="fas fa-list" aria-hidden="true"></i> {{ _("Voir la liste") }}
                 </a>
             </div>
         </div>
 
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
-                <h2 class="font-semibold"><i class="fas fa-umbrella-beach" aria-hidden="true"></i> Congés</h2>
-                <p>Nombre total : {{ leaves_count }}</p>
+                <h2 class="font-semibold"><i class="fas fa-umbrella-beach" aria-hidden="true"></i> {{ _("Congés") }}</h2>
+                <p>{{ _("Nombre total : %(count)s", count=leaves_count) }}</p>
                 <a class="btn btn-info btn-sm mt-2" href="{{ url_for('main.leave') }}"
-                   aria-label="Voir la liste des congés" title="Voir la liste des congés">
-                    <i class="fas fa-list" aria-hidden="true"></i> Voir la liste
+                   aria-label="{{ _("Voir la liste des congés") }}" title="{{ _("Voir la liste des congés") }}">
+                    <i class="fas fa-list" aria-hidden="true"></i> {{ _("Voir la liste") }}
                 </a>
             </div>
         </div>
 
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
-                <h2 class="font-semibold"><i class="fas fa-right-left" aria-hidden="true"></i> Échanges de shifts</h2>
-                <p>En attente : {{ pending_swaps_count }}</p>
+                <h2 class="font-semibold"><i class="fas fa-right-left" aria-hidden="true"></i> {{ _("Échanges de shifts") }}</h2>
+                <p>{{ _("En attente : %(count)s", count=pending_swaps_count) }}</p>
                 <a class="btn btn-info btn-sm mt-2" href="{{ url_for('admin.list_swaps') }}"
-                   aria-label="Voir les demandes d'échange" title="Voir les demandes d'échange">
-                    <i class="fas fa-list" aria-hidden="true"></i> Voir la liste
+                   aria-label="{{ _("Voir les demandes d'échange") }}" title="{{ _("Voir les demandes d'échange") }}">
+                    <i class="fas fa-list" aria-hidden="true"></i> {{ _("Voir la liste") }}
                 </a>
             </div>
         </div>
 
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
-                <h2 class="font-semibold"><i class="fas fa-robot" aria-hidden="true"></i> Automatisation</h2>
-                <p>Génération automatique</p>
+                <h2 class="font-semibold"><i class="fas fa-robot" aria-hidden="true"></i> {{ _("Automatisation") }}</h2>
+                <p>{{ _("Génération automatique") }}</p>
                 <a class="btn btn-success btn-sm mt-2" href="{{ url_for('admin.automation_dashboard') }}"
-                   aria-label="Configurer l'automatisation" title="Configurer l'automatisation">
-                    <i class="fas fa-cog" aria-hidden="true"></i> Configurer
+                   aria-label="{{ _("Configurer l'automatisation") }}" title="{{ _("Configurer l'automatisation") }}">
+                    <i class="fas fa-cog" aria-hidden="true"></i> {{ _("Configurer") }}
                 </a>
             </div>
         </div>
 
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
-                <h2 class="font-semibold"><i class="fas fa-database" aria-hidden="true"></i> Sauvegardes</h2>
+                <h2 class="font-semibold"><i class="fas fa-database" aria-hidden="true"></i> {{ _("Sauvegardes") }}</h2>
                 <p>Local &amp; S3</p>
                 <a class="btn btn-info btn-sm mt-2" href="{{ url_for('admin.backups_dashboard') }}"
-                   aria-label="Gérer les sauvegardes" title="Gérer les sauvegardes">
-                    <i class="fas fa-list" aria-hidden="true"></i> Gérer
+                   aria-label="{{ _("Gérer les sauvegardes") }}" title="{{ _("Gérer les sauvegardes") }}">
+                    <i class="fas fa-list" aria-hidden="true"></i> {{ _("Gérer") }}
                 </a>
             </div>
         </div>
 
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
-                <h2 class="font-semibold"><i class="fas fa-sliders" aria-hidden="true"></i> Paramètres</h2>
-                <p>Fuseau horaire, pagination, notifications...</p>
+                <h2 class="font-semibold"><i class="fas fa-sliders" aria-hidden="true"></i> {{ _("Paramètres") }}</h2>
+                <p>{{ _("Fuseau horaire, pagination, notifications...") }}</p>
                 <a class="btn btn-info btn-sm mt-2" href="{{ url_for('admin.settings_dashboard') }}"
-                   aria-label="Gérer les paramètres" title="Gérer les paramètres">
-                    <i class="fas fa-cog" aria-hidden="true"></i> Configurer
+                   aria-label="{{ _("Gérer les paramètres") }}" title="{{ _("Gérer les paramètres") }}">
+                    <i class="fas fa-cog" aria-hidden="true"></i> {{ _("Configurer") }}
                 </a>
             </div>
         </div>
@@ -118,43 +118,43 @@
 
     <div class="card card-sm bg-base-100 shadow-md">
         <div class="card-body">
-            <h2 class="font-semibold"><i class="fas fa-bolt" aria-hidden="true"></i> Actions rapides</h2>
-            <div class="flex flex-wrap gap-2" role="group" aria-label="Actions rapides administrateur">
+            <h2 class="font-semibold"><i class="fas fa-bolt" aria-hidden="true"></i> {{ _("Actions rapides") }}</h2>
+            <div class="flex flex-wrap gap-2" role="group" aria-label="{{ _("Actions rapides administrateur") }}">
                 {% set add_button_route = 'admin.add_user' %}
-                {% set add_button_label = 'Ajouter un utilisateur' %}
+                {% set add_button_label = _('Ajouter un utilisateur') %}
                 {% set add_button_icon = 'user-plus' %}
-                {% set add_button_resource_name = 'Ajouter un utilisateur' %}
+                {% set add_button_resource_name = _('Ajouter un utilisateur') %}
                 {% set add_button_class = 'btn-sm' %}
                 {% include "_add_button.html" %}
 
                 {% set add_button_route = 'admin.add_group' %}
-                {% set add_button_label = 'Ajouter un groupe' %}
+                {% set add_button_label = _('Ajouter un groupe') %}
                 {% set add_button_icon = 'user-friends' %}
-                {% set add_button_resource_name = 'Ajouter un groupe' %}
+                {% set add_button_resource_name = _('Ajouter un groupe') %}
                 {% set add_button_class = 'btn-sm' %}
                 {% include "_add_button.html" %}
 
                 {% set add_button_route = 'admin.add_shift_type' %}
-                {% set add_button_label = 'Ajouter un type de shift' %}
+                {% set add_button_label = _('Ajouter un type de shift') %}
                 {% set add_button_icon = 'plus' %}
-                {% set add_button_resource_name = 'Ajouter un type de shift' %}
+                {% set add_button_resource_name = _('Ajouter un type de shift') %}
                 {% set add_button_class = 'btn-sm' %}
                 {% include "_add_button.html" %}
 
                 {% if current_user.ics_token %}
                 {# Boutons d'export ICS pour admin #}
                 {% set resource_type = 'shifts' %}
-                {% set resource_name = 'shifts' %}
+                {% set resource_name = _('shifts') %}
                 {% set show_my = false %}
                 {% include "_ics_export_buttons.html" %}
 
                 {% set resource_type = 'oncall' %}
-                {% set resource_name = 'astreintes' %}
+                {% set resource_name = _('astreintes') %}
                 {% set show_my = false %}
                 {% include "_ics_export_buttons.html" %}
 
                 {% set resource_type = 'leaves' %}
-                {% set resource_name = 'congés' %}
+                {% set resource_name = _('congés') %}
                 {% set show_my = false %}
                 {% include "_ics_export_buttons.html" %}
                 {% endif %}

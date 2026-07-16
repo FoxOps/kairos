@@ -27,6 +27,7 @@ import {
     confirmActionAccessible,
     focusElement,
 } from '../utils/accessibility.js';
+import { getString } from '../utils/i18n.js';
 
 document.addEventListener('DOMContentLoaded', function () {
     const calendarEl = document.getElementById('calendar');
@@ -67,29 +68,29 @@ document.addEventListener('DOMContentLoaded', function () {
         // Update the UI
         if (editModeStatusTag) {
             if (enabled) {
-                editModeStatusTag.innerHTML = '<i class="fas fa-edit" aria-hidden="true"></i> Mode édition activé';
+                editModeStatusTag.innerHTML = `<i class="fas fa-edit" aria-hidden="true"></i> ${getString('edit_mode_on')}`;
                 editModeStatusTag.classList.remove('badge-error');
                 editModeStatusTag.classList.add('badge-success');
-                editModeStatusTag.setAttribute('aria-label', 'Mode édition activé');
+                editModeStatusTag.setAttribute('aria-label', getString('edit_mode_on'));
             } else {
-                editModeStatusTag.innerHTML = '<i class="fas fa-edit" aria-hidden="true"></i> Mode édition désactivé';
+                editModeStatusTag.innerHTML = `<i class="fas fa-edit" aria-hidden="true"></i> ${getString('edit_mode_off')}`;
                 editModeStatusTag.classList.remove('badge-success');
                 editModeStatusTag.classList.add('badge-error');
-                editModeStatusTag.setAttribute('aria-label', 'Mode édition désactivé');
+                editModeStatusTag.setAttribute('aria-label', getString('edit_mode_off'));
             }
         }
 
         if (toggleEditModeBtn) {
             if (enabled) {
-                toggleEditModeBtn.innerHTML = '<i class="fas fa-toggle-off" aria-hidden="true"></i> Désactiver l\'édition';
+                toggleEditModeBtn.innerHTML = `<i class="fas fa-toggle-off" aria-hidden="true"></i> ${getString('disable_edit_mode_short')}`;
                 toggleEditModeBtn.classList.remove('btn-success');
                 toggleEditModeBtn.classList.add('btn-error');
-                toggleEditModeBtn.setAttribute('aria-label', 'Désactiver le mode édition');
+                toggleEditModeBtn.setAttribute('aria-label', getString('disable_edit_mode'));
             } else {
-                toggleEditModeBtn.innerHTML = '<i class="fas fa-toggle-on" aria-hidden="true"></i> Activer l\'édition';
+                toggleEditModeBtn.innerHTML = `<i class="fas fa-toggle-on" aria-hidden="true"></i> ${getString('enable_edit_mode_short')}`;
                 toggleEditModeBtn.classList.remove('btn-error');
                 toggleEditModeBtn.classList.add('btn-success');
-                toggleEditModeBtn.setAttribute('aria-label', 'Activer le mode édition');
+                toggleEditModeBtn.setAttribute('aria-label', getString('enable_edit_mode'));
             }
         }
 
@@ -113,16 +114,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (tipsVisible) {
                 tipsContainer.classList.remove('hidden');
-                toggleTipsBtn.innerHTML = '<i class="fas fa-eye-slash" aria-hidden="true"></i> Cacher conseils';
+                toggleTipsBtn.innerHTML = `<i class="fas fa-eye-slash" aria-hidden="true"></i> ${getString('hide_tips_short')}`;
                 toggleTipsBtn.classList.remove('btn-info');
                 toggleTipsBtn.classList.add('btn-warning');
-                toggleTipsBtn.setAttribute('aria-label', 'Cacher les conseils');
+                toggleTipsBtn.setAttribute('aria-label', getString('hide_tips'));
             } else {
                 tipsContainer.classList.add('hidden');
-                toggleTipsBtn.innerHTML = '<i class="fas fa-eye" aria-hidden="true"></i> Afficher conseils';
+                toggleTipsBtn.innerHTML = `<i class="fas fa-eye" aria-hidden="true"></i> ${getString('show_tips_short')}`;
                 toggleTipsBtn.classList.remove('btn-warning');
                 toggleTipsBtn.classList.add('btn-info');
-                toggleTipsBtn.setAttribute('aria-label', 'Afficher les conseils');
+                toggleTipsBtn.setAttribute('aria-label', getString('show_tips'));
             }
         });
     }
@@ -342,13 +343,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (type === 'shift') {
                     endpoint = `/api/shifts/${resourceId}`;
-                    message = 'Voulez-vous supprimer ce shift ?';
+                    message = getString('confirm_delete_shift');
                 } else if (type === 'oncall') {
                     endpoint = `/api/oncall/${resourceId}`;
-                    message = 'Voulez-vous supprimer cette astreinte ?';
+                    message = getString('confirm_delete_oncall');
                 } else if (type === 'leave') {
                     endpoint = `/api/leave/${resourceId}`;
-                    message = 'Voulez-vous supprimer ce congé ?';
+                    message = getString('confirm_delete_leave');
                 } else {
                     return;
                 }
@@ -454,40 +455,40 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="modal-box">
                         <div class="flex items-start justify-between">
                             <h2 id="create-shift-title" class="text-lg font-bold">
-                                <i class="fas fa-plus" aria-hidden="true"></i> Créer un nouveau shift
+                                <i class="fas fa-plus" aria-hidden="true"></i> ${getString('create_new_shift_title')}
                             </h2>
-                            <button type="button" class="btn btn-sm btn-circle btn-ghost close-modal" aria-label="Fermer">&times;</button>
+                            <button type="button" class="btn btn-sm btn-circle btn-ghost close-modal" aria-label="${getString('close')}">&times;</button>
                         </div>
                         <form id="shift-creation-form" aria-labelledby="create-shift-title" class="flex flex-col gap-4 py-4">
                             <div>
-                                <label class="label" for="shift-start">Date et heure de début</label>
+                                <label class="label" for="shift-start">${getString('start_datetime')}</label>
                                 <input type="datetime-local" id="shift-start" class="input w-full" value="${formatDateForInput(start)}" required aria-required="true">
                             </div>
                             <div>
-                                <label class="label" for="shift-end">Date et heure de fin</label>
+                                <label class="label" for="shift-end">${getString('end_datetime')}</label>
                                 <input type="datetime-local" id="shift-end" class="input w-full" value="${formatDateForInput(end)}" required aria-required="true">
                             </div>
                             <div>
-                                <label class="label" for="shift-user">Utilisateur</label>
+                                <label class="label" for="shift-user">${getString('user')}</label>
                                 <select id="shift-user" class="select w-full" required aria-required="true">
-                                    <option value="">Sélectionnez un utilisateur</option>
+                                    <option value="">${getString('select_user')}</option>
                                     ${users.map(u => `<option value="${u.id}">${escapeHtml(u.name)} (${escapeHtml(u.email)})</option>`).join('')}
                                 </select>
                             </div>
                             <div>
-                                <label class="label" for="shift-type">Type de shift</label>
+                                <label class="label" for="shift-type">${getString('shift_type')}</label>
                                 <select id="shift-type" class="select w-full" required aria-required="true">
-                                    <option value="">Sélectionnez un type de shift</option>
+                                    <option value="">${getString('select_shift_type')}</option>
                                     ${shiftTypes.map(st => `<option value="${st.id}">${escapeHtml(st.label)} (${st.start_hour}:00 - ${st.end_hour}:00)</option>`).join('')}
                                 </select>
                             </div>
                         </form>
                         <div class="modal-action">
-                            <button type="button" class="btn close-modal" aria-label="Annuler">
-                                <i class="fas fa-times" aria-hidden="true"></i> Annuler
+                            <button type="button" class="btn close-modal" aria-label="${getString('cancel')}">
+                                <i class="fas fa-times" aria-hidden="true"></i> ${getString('cancel')}
                             </button>
-                            <button type="button" class="btn btn-primary create-shift-btn" aria-label="Créer le shift">
-                                <i class="fas fa-check" aria-hidden="true"></i> Créer
+                            <button type="button" class="btn btn-primary create-shift-btn" aria-label="${getString('create_shift')}">
+                                <i class="fas fa-check" aria-hidden="true"></i> ${getString('create')}
                             </button>
                         </div>
                     </div>
@@ -619,13 +620,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (type === 'shift') {
                     endpoint = `/api/shifts/${resourceId}`;
-                    message = 'Voulez-vous supprimer ce shift ?';
+                    message = getString('confirm_delete_shift');
                 } else if (type === 'oncall') {
                     endpoint = `/api/oncall/${resourceId}`;
-                    message = 'Voulez-vous supprimer cette astreinte ?';
+                    message = getString('confirm_delete_oncall');
                 } else if (type === 'leave') {
                     endpoint = `/api/leave/${resourceId}`;
-                    message = 'Voulez-vous supprimer ce congé ?';
+                    message = getString('confirm_delete_leave');
                 } else {
                     return;
                 }

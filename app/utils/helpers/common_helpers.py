@@ -39,20 +39,38 @@ def get_int(env_var: str, default: int = 0) -> int:
 
 
 def get_timezone_choices() -> list[str]:
-    """Sorted IANA timezone names, for the /profile/update and
+    """Sorted IANA timezone names, for the /profile/settings and
     /admin/settings timezone <select> dropdowns."""
     return sorted(available_timezones())
 
 
+LANGUAGE_CHOICES: list[tuple[str, str]] = [("fr", "Français"), ("en", "English")]
+
+
+def get_language_choices() -> list[tuple[str, str]]:
+    """(code, display name) pairs for the /profile/settings and
+    /admin/settings language <select> dropdowns. Tuples rather than bare
+    codes (unlike get_timezone_choices()) - "fr"/"en" aren't
+    self-explanatory the way IANA timezone names are."""
+    return LANGUAGE_CHOICES
+
+
 _FR_WEEKDAYS_ABBR = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."]
+_EN_WEEKDAYS_ABBR = ["Mon.", "Tue.", "Wed.", "Thu.", "Fri.", "Sat.", "Sun."]
 
 
 def format_date_fr(d: date | datetime | None, format_str: str = "%a %d/%m") -> str:
     """
-    Format a date/datetime with a French weekday abbreviation for %a,
-    independent of the server's OS locale (%a/%A depend on locale.setlocale,
-    fragile/process-global in a WSGI app - defaults to English abbreviations
-    here otherwise).
+    Format a date/datetime with a locale-aware weekday abbreviation for
+    %a, independent of the server's OS locale (%a/%A depend on
+    locale.setlocale, fragile/process-global in a WSGI app - defaults to
+    English abbreviations here otherwise). Locale comes from
+    flask_babel.get_locale() - the currently *resolved* locale (same
+    resolution order as everywhere else: viewer's own preference, else
+    the org default). Deliberately not app.get_locale() (the
+    locale_selector callback itself): calling that directly bypasses an
+    active force_locale() override (e.g. per-recipient email rendering),
+    while flask_babel.get_locale() correctly honors it.
 
     Args:
         d: Date or datetime object to format
@@ -63,7 +81,11 @@ def format_date_fr(d: date | datetime | None, format_str: str = "%a %d/%m") -> s
     """
     if d is None:
         return ""
-    resolved_format = format_str.replace("%a", _FR_WEEKDAYS_ABBR[d.weekday()])
+
+    from flask_babel import get_locale
+
+    weekdays = _EN_WEEKDAYS_ABBR if str(get_locale()) == "en" else _FR_WEEKDAYS_ABBR
+    resolved_format = format_str.replace("%a", weekdays[d.weekday()])
     return d.strftime(resolved_format)
 
 

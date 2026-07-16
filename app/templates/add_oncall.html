@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Ajouter une astreinte - Leviia Schedule{% endblock %}
+{% block title %}{{ _("Ajouter une astreinte") }} - Leviia Schedule{% endblock %}
 
 {% block content %}
 <section class="p-3 md:p-4 max-w-2xl mx-auto">
     <h1 class="text-2xl font-bold mb-4">
-        <i class="fas fa-plus" aria-hidden="true"></i> Ajouter une astreinte
+        <i class="fas fa-plus" aria-hidden="true"></i> {{ _("Ajouter une astreinte") }}
     </h1>
 
     <form method="POST" action="{{ url_for('main.add_oncall') }}" aria-labelledby="form-title">
@@ -13,28 +13,28 @@
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body gap-4">
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Utilisateur <span class="text-error">*</span></legend>
+                    <legend class="fieldset-legend">{{ _("Utilisateur") }} <span class="text-error">*</span></legend>
                     <select class="select w-full validator" id="user_id" name="user_id" required aria-required="true" aria-describedby="user-help">
-                        <option value="" disabled selected>Sélectionnez un utilisateur</option>
+                        <option value="" disabled selected>{{ _("Sélectionnez un utilisateur") }}</option>
                         {% for user in users %}
                         <option value="{{ user.id }}">{{ user.name }}</option>
                         {% endfor %}
                     </select>
-                    <p class="text-sm text-base-content/60" id="user-help">Sélectionnez l'utilisateur pour cette astreinte</p>
+                    <p class="text-sm text-base-content/60" id="user-help">{{ _("Sélectionnez l'utilisateur pour cette astreinte") }}</p>
                 </fieldset>
 
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Date de début (vendredi) <span class="text-error">*</span></legend>
+                    <legend class="fieldset-legend">{{ _("Date de début (vendredi)") }} <span class="text-error">*</span></legend>
                     <input class="input w-full validator" type="date" id="start_date" name="start_date" required aria-required="true" aria-describedby="start-date-help">
-                    <p class="text-sm text-base-content/60" id="start-date-help">L'astreinte commence le vendredi à 21h et se termine le vendredi suivant à 07h.</p>
+                    <p class="text-sm text-base-content/60" id="start-date-help">{{ _("L'astreinte commence le vendredi à 21h et se termine le vendredi suivant à 07h.") }}</p>
                 </fieldset>
 
-                <div class="flex gap-2" role="group" aria-label="Actions du formulaire">
-                    <button class="btn btn-primary" type="submit" aria-label="Enregistrer l'astreinte" title="Enregistrer l'astreinte">
-                        <i class="fas fa-save" aria-hidden="true"></i> Enregistrer
+                <div class="flex gap-2" role="group" aria-label="{{ _("Actions du formulaire") }}">
+                    <button class="btn btn-primary" type="submit" aria-label="{{ _("Enregistrer l'astreinte") }}" title="{{ _("Enregistrer l'astreinte") }}">
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
                     </button>
-                    <a class="btn btn-ghost" href="{{ url_for('main.oncall') }}" aria-label="Annuler et retourner à la liste" title="Annuler">
-                        Annuler
+                    <a class="btn btn-ghost" href="{{ url_for('main.oncall') }}" aria-label="{{ _("Annuler et retourner à la liste") }}" title="{{ _("Annuler") }}">
+                        {{ _("Annuler") }}
                     </a>
                 </div>
             </div>

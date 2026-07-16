@@ -14,6 +14,8 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
 
 from flask import render_template
+from flask_babel import force_locale
+from flask_babel import gettext as _
 
 from app import db
 from app.models import NotificationLog, User
@@ -88,28 +90,31 @@ class NotificationService:
                 continue
 
             try:
-                html_body = render_template(
-                    "emails/shift_weekly.html",
-                    user_name=user.name,
-                    week_start=week_start,
-                    week_end=week_end,
-                    shifts=user_shifts,
-                    app_base_url=app_base_url,
-                )
-                text_body = render_template(
-                    "emails/shift_weekly.txt",
-                    user_name=user.name,
-                    week_start=week_start,
-                    week_end=week_end,
-                    shifts=user_shifts,
-                    app_base_url=app_base_url,
-                )
+                with force_locale(user.effective_language()):
+                    html_body = render_template(
+                        "emails/shift_weekly.html",
+                        user_name=user.name,
+                        week_start=week_start,
+                        week_end=week_end,
+                        shifts=user_shifts,
+                        app_base_url=app_base_url,
+                    )
+                    text_body = render_template(
+                        "emails/shift_weekly.txt",
+                        user_name=user.name,
+                        week_start=week_start,
+                        week_end=week_end,
+                        shifts=user_shifts,
+                        app_base_url=app_base_url,
+                    )
+                    subject = _(
+                        "Vos shifts de la semaine du %(start)s au %(end)s",
+                        start=week_start.strftime("%d/%m"),
+                        end=week_end.strftime("%d/%m"),
+                    )
                 send_email(
                     to_email=user.email,
-                    subject=(
-                        f"Vos shifts de la semaine du "
-                        f"{week_start.strftime('%d/%m')} au {week_end.strftime('%d/%m')}"
-                    ),
+                    subject=subject,
                     html_body=html_body,
                     text_body=text_body,
                     **smtp_config,
@@ -161,23 +166,27 @@ class NotificationService:
             return result
 
         try:
-            html_body = render_template(
-                "emails/oncall_weekly.html",
-                user_name=user.name,
-                oncall_start=oncall_start,
-                oncall_end=oncall_end,
-                app_base_url=app_base_url,
-            )
-            text_body = render_template(
-                "emails/oncall_weekly.txt",
-                user_name=user.name,
-                oncall_start=oncall_start,
-                oncall_end=oncall_end,
-                app_base_url=app_base_url,
-            )
+            with force_locale(user.effective_language()):
+                html_body = render_template(
+                    "emails/oncall_weekly.html",
+                    user_name=user.name,
+                    oncall_start=oncall_start,
+                    oncall_end=oncall_end,
+                    app_base_url=app_base_url,
+                )
+                text_body = render_template(
+                    "emails/oncall_weekly.txt",
+                    user_name=user.name,
+                    oncall_start=oncall_start,
+                    oncall_end=oncall_end,
+                    app_base_url=app_base_url,
+                )
+                subject = _(
+                    "Astreinte du %(date)s", date=oncall_start.strftime("%d/%m/%Y")
+                )
             send_email(
                 to_email=user.email,
-                subject=f"Astreinte du {oncall_start.strftime('%d/%m/%Y')}",
+                subject=subject,
                 html_body=html_body,
                 text_body=text_body,
                 **smtp_config,

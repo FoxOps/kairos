@@ -4,6 +4,8 @@ ShiftType service for Leviia Schedule.
 Business logic for shift type creation/update/deletion (admin section).
 """
 
+from flask_babel import gettext as _
+
 from app import db
 from app.models import ShiftType
 from app.repositories.shift_repository import ShiftRepository, ShiftTypeRepository
@@ -21,12 +23,12 @@ class ShiftTypeService:
         name: str, label: str, start_hour: int, end_hour: int
     ) -> tuple[ShiftType | None, str | None]:
         if ShiftTypeRepository.name_taken(name):
-            return None, "Un type de shift avec ce nom existe déjà."
+            return None, _("Un type de shift avec ce nom existe déjà.")
 
         if not (0 <= start_hour < 24) or not (0 <= end_hour < 24):
-            return None, "Les heures doivent être comprises entre 0 et 23."
+            return None, _("Les heures doivent être comprises entre 0 et 23.")
         if start_hour >= end_hour:
-            return None, "L'heure de début doit être antérieure à l'heure de fin."
+            return None, _("L'heure de début doit être antérieure à l'heure de fin.")
 
         shift_type = ShiftTypeRepository.create(name, label, start_hour, end_hour)
         db.session.commit()
@@ -41,12 +43,12 @@ class ShiftTypeService:
             return None, None
 
         if ShiftTypeRepository.name_taken(name, exclude_id=shift_type_id):
-            return None, "Un type de shift avec ce nom existe déjà."
+            return None, _("Un type de shift avec ce nom existe déjà.")
 
         if not (0 <= start_hour < 24) or not (0 <= end_hour < 24):
-            return None, "Les heures doivent être comprises entre 0 et 23."
+            return None, _("Les heures doivent être comprises entre 0 et 23.")
         if start_hour >= end_hour:
-            return None, "L'heure de début doit être antérieure à l'heure de fin."
+            return None, _("L'heure de début doit être antérieure à l'heure de fin.")
 
         shift_type.name = name
         shift_type.label = label
@@ -64,7 +66,10 @@ class ShiftTypeService:
         if ShiftRepository.exists_for_shift_type(shift_type_id):
             return (
                 False,
-                "Impossible de supprimer ce type de shift : il est utilisé dans des shifts existants.",
+                _(
+                    "Impossible de supprimer ce type de shift : il est utilisé "
+                    "dans des shifts existants."
+                ),
             )
 
         ShiftTypeRepository.delete(shift_type)

@@ -9,6 +9,8 @@ into a flash message / redirect / JSON response.
 
 from datetime import date
 
+from flask_babel import gettext as _
+
 from app import db
 from app.models import Leave, User
 from app.repositories.leave_repository import LeaveRepository
@@ -75,10 +77,10 @@ class LeaveService:
         """
         leave = LeaveRepository.get_by_id(leave_id)
         if not leave:
-            return None, "Congé non trouvé", False
+            return None, _("Congé non trouvé"), False
 
         if new_end_date < new_start_date:
-            return None, "La date de fin doit être après la date de début", False
+            return None, _("La date de fin doit être après la date de début"), False
 
         conflict = LeaveRepository.find_conflict(
             leave.user_id, new_start_date, new_end_date, exclude_id=leave_id
@@ -86,7 +88,10 @@ class LeaveService:
         if conflict:
             return (
                 None,
-                f"Un congé existe déjà pour {leave.user.name} pendant cette période",
+                _(
+                    "Un congé existe déjà pour %(name)s pendant cette période",
+                    name=leave.user.name,
+                ),
                 False,
             )
 
@@ -95,7 +100,10 @@ class LeaveService:
         ):
             return (
                 None,
-                "Impossible : l'effectif disponible tomberait à 0 sur au moins un jour de cette période",
+                _(
+                    "Impossible : l'effectif disponible tomberait à 0 sur au moins "
+                    "un jour de cette période"
+                ),
                 False,
             )
 

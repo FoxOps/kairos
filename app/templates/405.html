@@ -1,26 +1,25 @@
 {% extends "base.html" %}
 {% from "macros/errors.html" import error_page with context %}
 
-{% block title %}Méthode non autorisée - Leviia{% endblock %}
+{% block title %}{{ _("Méthode non autorisée") }} - Leviia{% endblock %}
 
 {% block content %}
-{% call error_page(code=405, title="Méthode non autorisée", subtitle="La méthode HTTP utilisée n'est pas autorisée pour cette ressource.", color="text-warning", secondary=[{"onclick": "history.back()", "icon": "fa-arrow-left", "label": "Retour en arrière"}]) %}
+{% call error_page(code=405, title=_("Méthode non autorisée"), subtitle=_("La méthode HTTP utilisée n'est pas autorisée pour cette ressource."), color="text-warning", secondary=[{"onclick": "history.back()", "icon": "fa-arrow-left", "label": _("Retour en arrière")}]) %}
 <p>
-    Le serveur a reçu une requête avec une méthode (GET, POST, PUT, DELETE, etc.)
-    qui n'est pas supportée pour cette URL.
+    {{ _("Le serveur a reçu une requête avec une méthode (GET, POST, PUT, DELETE, etc.) qui n'est pas supportée pour cette URL.") }}
 </p>
 {% if error_message %}
 <div class="alert alert-warning mt-4" role="alert" aria-live="assertive">
-    <p><strong>Détails :</strong> {{ error_message }}</p>
+    <p><strong>{{ _("Détails :") }}</strong> {{ error_message }}</p>
 </div>
 {% endif %}
 <p>
-    <strong>Vérifiez que :</strong>
+    <strong>{{ _("Vérifiez que :") }}</strong>
 </p>
 <ul class="ml-5">
-    <li>Vous utilisez la bonne méthode HTTP (GET pour consulter, POST pour créer, etc.)</li>
-    <li>L'URL est correcte</li>
-    <li>Vous avez les permissions nécessaires</li>
+    <li>{{ _("Vous utilisez la bonne méthode HTTP (GET pour consulter, POST pour créer, etc.)") }}</li>
+    <li>{{ _("L'URL est correcte") }}</li>
+    <li>{{ _("Vous avez les permissions nécessaires") }}</li>
 </ul>
 {% endcall %}
 {% endblock %}
