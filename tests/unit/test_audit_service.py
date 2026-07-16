@@ -40,8 +40,9 @@ class TestLog:
     def test_resolves_actor_from_current_user_in_request_context(
         self, test_app, logged_in_client
     ):
-        # logged_in_client performs a real login POST, establishing a
-        # session current_user can resolve from within a request.
+        # logged_in_client performs a real login POST, which itself now
+        # writes an auth.login_success entry - filter on our own action
+        # rather than counting every entry in the table.
         with test_app.test_request_context("/"):
             from flask_login import login_user
 
@@ -52,7 +53,7 @@ class TestLog:
 
             AuditService.log("shift.create")
 
-            entries = AuditLog.query.all()
+            entries = AuditLog.query.filter_by(action="shift.create").all()
             assert len(entries) == 1
             assert entries[0].actor_id == user.id
 

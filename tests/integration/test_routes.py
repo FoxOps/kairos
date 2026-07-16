@@ -3,7 +3,7 @@ Tests for the Flask routes.
 """
 
 from app import db
-from app.models import Group, Leave, OnCall, Shift, ShiftType, User
+from app.models import AuditLog, Group, Leave, OnCall, Shift, ShiftType, User
 
 
 class TestRolePermissions:
@@ -62,6 +62,43 @@ class TestAuthRoutes:
         )
         assert response.status_code == 200
         assert b"Email ou mot de passe incorrect" in response.data
+
+    def test_login_post_valid_writes_audit_log_entry(self, client, test_user, test_app):
+        with test_app.app_context():
+            client.post(
+                "/login",
+                data={"email": test_user.email, "password": "test123"},
+                follow_redirects=True,
+            )
+
+            entry = AuditLog.query.filter_by(action="auth.login_success").first()
+            assert entry is not None
+            assert entry.actor_id == test_user.id
+
+    def test_login_post_invalid_writes_audit_log_entry(self, client, test_app):
+        with test_app.app_context():
+            client.post(
+                "/login",
+                data={"email": "invalid@test.com", "password": "wrongpassword"},
+                follow_redirects=True,
+            )
+
+            entry = AuditLog.query.filter_by(action="auth.login_failure").first()
+            assert entry is not None
+            assert entry.details == "invalid@test.com"
+
+    def test_logout_writes_audit_log_entry(self, client, test_user, test_app):
+        with test_app.app_context():
+            client.post(
+                "/login",
+                data={"email": test_user.email, "password": "test123"},
+                follow_redirects=True,
+            )
+            client.get("/logout", follow_redirects=True)
+
+            entry = AuditLog.query.filter_by(action="auth.logout").first()
+            assert entry is not None
+            assert entry.resource_id == test_user.id
 
     def test_login_post_empty_fields(self, client):
         """Test logging in with empty fields."""
