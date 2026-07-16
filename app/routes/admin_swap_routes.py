@@ -17,9 +17,15 @@ from app.services import SwapService
 @admin_bp.route("/admin/swaps")
 @admin_required
 def list_swaps():
-    pending = SwapService.list_pending()
+    awaiting_target = SwapService.list_pending()
+    awaiting_admin = SwapService.list_awaiting_admin()
     approved = SwapService.list_approved()
-    return render_template("admin/swaps.html", pending=pending, approved=approved)
+    return render_template(
+        "admin/swaps.html",
+        awaiting_target=awaiting_target,
+        awaiting_admin=awaiting_admin,
+        approved=approved,
+    )
 
 
 @admin_bp.route("/admin/swaps/<int:swap_request_id>/approve", methods=["POST"])

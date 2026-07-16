@@ -34,15 +34,9 @@
                     <p class="text-sm text-base-content/60" id="target-user-help">{{ _("L'utilisateur à qui proposer l'échange") }}</p>
                 </fieldset>
 
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">{{ _("Shift demandé en retour (optionnel)") }}</legend>
-                    <select class="select w-full" id="target_shift_id" name="target_shift_id" aria-describedby="target-shift-help" disabled>
-                        <option value="">{{ _("Aucun (don simple)") }}</option>
-                    </select>
-                    <p class="text-sm text-base-content/60" id="target-shift-help">
-                        {{ _("Choisissez d'abord un collègue - laissez vide pour un don simple de votre shift") }}
-                    </p>
-                </fieldset>
+                <p class="text-sm text-base-content/60">
+                    {{ _("Le destinataire choisira ensuite quel shift proposer en retour (ou déclinera l'échange).") }}
+                </p>
 
                 <div class="flex gap-2" role="group" aria-label="{{ _("Actions du formulaire") }}">
                     <button class="btn btn-primary" type="submit" aria-label="{{ _("Envoyer la demande") }}" title="{{ _("Envoyer la demande") }}">
@@ -56,8 +50,4 @@
         </div>
     </form>
 </section>
-{% endblock %}
-
-{% block extra_js %}
-<script type="module" src="{{ url_for('static', filename='js/swaps/swap-form.js') }}"></script>
 {% endblock %}

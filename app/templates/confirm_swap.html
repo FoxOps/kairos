@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _("Confirmer un échange") }} - Leviia Schedule{% endblock %}
+
+{% block content %}
+<section class="p-3 md:p-4 max-w-2xl mx-auto">
+    <h1 class="text-2xl font-bold mb-4">
+        <i class="fas fa-right-left" aria-hidden="true"></i> {{ _("Confirmer l'échange proposé par %(name)s", name=swap_request.requester.name) }}
+    </h1>
+
+    <div class="card card-sm bg-base-100 shadow-md mb-4">
+        <div class="card-body gap-2">
+            <p>
+                {{ _("%(name)s vous propose d'échanger ce shift :", name=swap_request.requester.name) }}
+                <strong>{{ swap_request.shift.date|format_date }} - {{ swap_request.shift.shift_type.label }}</strong>
+            </p>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('main.confirm_swap', swap_request_id=swap_request.id) }}" aria-labelledby="confirm-form-title">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <h2 class="sr-only" id="confirm-form-title">{{ _("Choisir le shift à proposer en retour") }}</h2>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Shift à proposer en retour (optionnel)") }}</legend>
+                    <select class="select w-full" id="target_shift_id" name="target_shift_id">
+                        <option value="">{{ _("Aucun (don simple)") }}</option>
+                        {% for shift in my_shifts %}
+                        <option value="{{ shift.id }}">{{ shift.date|format_date }} - {{ shift.shift_type.label }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-sm text-base-content/60">
+                        {{ _("Laissez vide pour accepter le shift sans rien proposer en retour.") }}
+                    </p>
+                </fieldset>
+
+                <div class="flex flex-wrap gap-2" role="group" aria-label="{{ _("Actions") }}">
+                    <button class="btn btn-success" type="submit" aria-label="{{ _("Confirmer l'échange") }}" title="{{ _("Confirmer l'échange") }}">
+                        <i class="fas fa-check" aria-hidden="true"></i> {{ _("Confirmer") }}
+                    </button>
+                    <a class="btn btn-ghost" href="{{ url_for('main.swaps') }}" aria-label="{{ _("Annuler et retourner à la liste") }}" title="{{ _("Annuler") }}">
+                        {{ _("Annuler") }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <form method="POST" action="{{ url_for('main.target_reject_swap', swap_request_id=swap_request.id) }}" class="mt-4" aria-labelledby="reject-form-title">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <h2 class="sr-only" id="reject-form-title">{{ _("Refuser l'échange") }}</h2>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Refuser cet échange (optionnel : motif)") }}</legend>
+                    <input class="input w-full" type="text" id="reason" name="reason" placeholder="{{ _("Motif du refus (optionnel)") }}">
+                </fieldset>
+                <div>
+                    <button class="btn btn-error btn-sm" type="submit" aria-label="{{ _("Refuser l'échange") }}" title="{{ _("Refuser l'échange") }}"
+                            onclick="return confirm('{{ _("Refuser cette proposition d'échange ?") }}');">
+                        <i class="fas fa-times" aria-hidden="true"></i> {{ _("Refuser") }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</section>
+{% endblock %}
