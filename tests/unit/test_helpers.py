@@ -506,6 +506,13 @@ class TestFormatFunctions:
     def test_format_date_fr_custom_format(self):
         assert format_date_fr(date(2026, 7, 13), "%a %d/%m/%Y") == "lun. 13/07/2026"
 
+    def test_format_date_fr_english_locale(self, test_app):
+        from flask_babel import force_locale
+
+        with test_app.app_context(), force_locale("en"):
+            assert format_date_fr(date(2026, 7, 13)) == "Mon. 13/07"
+            assert format_date_fr(date(2026, 7, 19)) == "Sun. 19/07"
+
 
 class TestBuildShiftTypeColorMap:
     def test_all_colors_within_palette(self):
