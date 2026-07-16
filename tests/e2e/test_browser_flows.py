@@ -177,6 +177,7 @@ class TestNoConsoleErrors:
             "/profile/ics-token",
             "/admin",
             "/admin/automation/full",
+            "/admin/service-accounts",
         ],
     )
     def test_page_has_no_console_errors(self, logged_in_page, live_server_url, path):
@@ -264,3 +265,29 @@ class TestDeleteConfirmationModal:
         page.wait_for_load_state("networkidle")
 
         assert page.locator("tr", has_text="05/04/2031").count() == 0
+
+
+class TestServiceAccountCreationFlow:
+    """Real-browser check for the admin service accounts UI
+    (app/routes/admin_service_account_routes.py): the token is shown
+    exactly once, right after creation, and never again on later
+    visits to the same page."""
+
+    def test_create_shows_token_once_then_hidden_on_list(
+        self, logged_in_page, live_server_url
+    ):
+        page = logged_in_page
+        page.goto(f"{live_server_url}/admin/service-accounts/add")
+        page.fill('input[name="name"]', "Playwright test integration")
+        page.click('button[type="submit"]')
+        page.wait_for_load_state("networkidle")
+
+        token_input = page.locator("#full-token")
+        assert token_input.count() == 1
+        token_value = token_input.input_value()
+        assert token_value.startswith("lsak_")
+
+        page.goto(f"{live_server_url}/admin/service-accounts")
+        page.wait_for_load_state("networkidle")
+        assert "Playwright test integration" in page.content()
+        assert token_value not in page.content()
