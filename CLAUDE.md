@@ -48,8 +48,15 @@ safety scan --full-report
 make all
 ```
 
-`make help` lists everything, including database backup/restore targets (`make backup-*`) and the
-bug-hunt aggregate checks (`make bug-hunt*`, wraps `scripts/bug_hunt.sh`).
+`make help` lists everything. Deliberately kept minimal (15 targets) — `test`/`test-coverage` cover
+the common cases, anything more specific (a single test file, an HTML coverage report, an S3 backup,
+listing/cleaning backups) is a direct `pytest`/`scripts/backup_database.py` invocation rather than
+a dedicated target, see the comments inside the Makefile itself and
+`Docs/deployment/BACKUP_GUIDE.md`. The `bug-hunt*` targets and `scripts/bug_hunt.sh` (a bash
+reimplementation of `test`/`lint`/`security` with its own JSON parsing) were removed as dead code:
+never actually run in this repo (`reports/` didn't exist) and already diverged from the real config
+(its own `ruff check` skipped `--config=.ruff.toml`). `find-duplicates` (`scripts/find_duplicates.py`)
+was the only genuinely non-redundant piece of that old bug-hunt block and is kept as its own target.
 
 Default admin created on first run: `admin@leviia.local` / `admin123` (override via
 `DEFAULT_ADMIN_EMAIL` / `DEFAULT_ADMIN_PASSWORD` env vars).
@@ -625,8 +632,9 @@ hardcoded inside `.js` files itself needs `getString()`.
 
 **Translation catalog workflow**: `babel.cfg` scopes extraction to `app/**.py` and
 `app/templates/**.html`/`**.txt` only (not `scripts/`, `tests/`, `migrations/` — no user-facing
-text there). `make babel-extract`/`babel-update`/`babel-compile` wrap `pybabel extract`/`update`/
-`compile`; catalogs live at `app/translations/<locale>/LC_MESSAGES/messages.po`. **`fr.po` is
+text there). `make babel-update` (extraction + update in one step, `pybabel extract` runs first as
+an internal prerequisite) and `make babel-compile` wrap `pybabel update`/`compile`; catalogs live at
+`app/translations/<locale>/LC_MESSAGES/messages.po`. **`fr.po` is
 committed with every `msgstr` left empty** — gettext falls back to the `msgid` (the original
 French source string) when `msgstr` is empty, so this is intentionally a no-op catalog, not an
 oversight: French rendering is identical whether or not `fr.po` exists at all. `en.po` carries the

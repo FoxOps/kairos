@@ -334,7 +334,7 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 | **Gestionnaires d'erreurs** | 9 | 400, 401, 403, 404, 405, 500, 502, 503, 504 + ValueError/TypeError |
 | **Templates** | 30+ | Jinja2 templates (app/templates/) |
 | **Fichiers de configuration** | app/config/ (package) | base.py, development.py, production.py, testing.py + config_oidc.py (config_performance.py retiré, jamais câblé) |
-| **Scripts** | scripts/ | backup_database.py, backup_config.py, validate_config.py, bug_hunt.sh, send_shift_notifications.py, send_oncall_notifications.py |
+| **Scripts** | scripts/ | backup_database.py, backup_config.py, validate_config.py, find_duplicates.py, send_shift_notifications.py, send_oncall_notifications.py |
 | **Infrastructure** | docker/, k8s/, grafana/, .gitlab-ci/ | build multi-stage, manifests k8s complets, dashboard Grafana, pipeline GitLab CI |
 
 ### Structure du projet
@@ -385,7 +385,7 @@ leviia-schedule/
 ├── .gitlab-ci/.gitlab-ci.yml    # pipeline CI/CD (futur dépôt GitLab)
 ├── migrations/                  # Alembic (Flask-Migrate), appliquées au démarrage
 └── scripts/                     # backup_database.py, backup_config.py,
-                                  # validate_config.py, bug_hunt.sh,
+                                  # validate_config.py, find_duplicates.py,
                                   # send_shift_notifications.py, send_oncall_notifications.py
 ```
 

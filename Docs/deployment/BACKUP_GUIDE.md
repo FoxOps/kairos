@@ -87,8 +87,6 @@ Le système de sauvegarde automatique de Leviia Schedule permet de :
 make install
 
 # Installer boto3 pour les sauvegardes S3
-make install-boto3
-# ou
 pip install boto3
 ```
 
@@ -224,8 +222,8 @@ Crée une sauvegarde locale de la base de données :
 # Méthode 1: Utiliser le script directement
 python scripts/backup_database.py --local
 
-# Méthode 2: Utiliser Makefile
-make backup-local
+# Méthode 2: Utiliser Makefile (équivalent à --local --verify)
+make backup
 
 # Avec vérification
 python scripts/backup_database.py --local --verify
@@ -259,15 +257,13 @@ Crée une sauvegarde locale + S3 :
 # Sauvegarde locale + S3
 python scripts/backup_database.py --local --s3
 
-# Avec Makefile
-make backup-s3
-
 # Sauvegarde complète (local + S3 + vérification + nettoyage)
 python scripts/backup_database.py --local --s3 --verify --cleanup
-
-# Avec Makefile
-make backup-full
 ```
+
+> Le Makefile ne wrap que la sauvegarde locale par défaut (`make backup`) et la
+> restauration (`make backup-restore`) - les combinaisons S3/nettoyage/liste
+> ci-dessous s'invoquent directement via `scripts/backup_database.py`.
 
 **Sortie attendue :**
 ```
@@ -296,9 +292,6 @@ Lister toutes les sauvegardes disponibles :
 ```bash
 # Lister les sauvegardes
 python scripts/backup_database.py --list
-
-# Avec Makefile
-make backup-list
 ```
 
 **Sortie attendue :**
@@ -347,9 +340,6 @@ Nettoyer les anciennes sauvegardes :
 ```bash
 # Nettoyer les sauvegardes locales et S3
 python scripts/backup_database.py --cleanup
-
-# Avec Makefile
-make backup-cleanup
 
 # Nettoyer uniquement les sauvegardes locales
 python scripts/backup_database.py --local --cleanup
