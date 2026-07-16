@@ -186,6 +186,16 @@ class TestShiftTypeService:
         assert error is None
         assert shift_type.name == "night"
 
+    def test_create_writes_audit_log_entry(self, test_app):
+        from app.models import AuditLog
+
+        shift_type, _error = ShiftTypeService.create("night2", "Nuit2", 22, 23)
+
+        entry = AuditLog.query.filter_by(action="shift_type.create").first()
+        assert entry is not None
+        assert entry.resource_id == shift_type.id
+        assert entry.details == "night2"
+
     def test_create_rejects_duplicate_name(self, test_app, test_shift_type):
         shift_type, error = ShiftTypeService.create("morning", "Matin bis", 8, 16)
         assert shift_type is None
