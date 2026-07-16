@@ -222,12 +222,8 @@ class TestApiUpdateOncall:
             oncall_id = oncall.id
 
         logged_in_client.post(
-            "/profile/update",
-            data={
-                "name": "Admin",
-                "email": "login@example.com",
-                "timezone": "Europe/London",
-            },
+            "/profile/settings",
+            data={"timezone": "Europe/London"},
             follow_redirects=True,
         )
 
