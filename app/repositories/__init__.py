@@ -14,6 +14,8 @@ Repositories:
 - audit_log_repository: AuditLog (audit trail) data access
 - notification_target_repository: NotificationTarget (Apprise external
   notification destinations) data access
+- service_account_repository: ServiceAccount (public REST API bearer
+  credentials) data access
 """
 
 from app.repositories.app_notification_repository import AppNotificationRepository
@@ -23,6 +25,7 @@ from app.repositories.notification_target_repository import (
     NotificationTargetRepository,
 )
 from app.repositories.oncall_repository import OnCallRepository
+from app.repositories.service_account_repository import ServiceAccountRepository
 from app.repositories.shift_repository import ShiftRepository, ShiftTypeRepository
 from app.repositories.swap_request_repository import SwapRequestRepository
 from app.repositories.user_repository import GroupRepository, UserRepository
@@ -38,4 +41,5 @@ __all__ = [
     "AppNotificationRepository",
     "AuditLogRepository",
     "NotificationTargetRepository",
+    "ServiceAccountRepository",
 ]

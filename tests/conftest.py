@@ -30,6 +30,7 @@ pytest_plugins = [
     "tests.fixtures.leave_fixtures",
     "tests.fixtures.oncall_fixtures",
     "tests.fixtures.swap_fixtures",
+    "tests.fixtures.service_account_fixtures",
 ]
 
 

@@ -12,6 +12,12 @@ info:
     routes qui n'ont jamais existé (`/leaves/my-leaves`,
     `/admin/users/generate-token/<id>`, etc.) et omettait la plupart des
     endpoints `/api/*` réels.
+
+    Documente uniquement cette API interne (`/api/*`, cookie de
+    session) - la spec de l'API publique v1 pour intégrations tierces
+    (`/api/v1/*`, jeton bearer/compte de service) est générée
+    automatiquement, pas maintenue ici : voir `GET /api/v1/openapi.json`
+    et la section "API publique v1" de `API.md`.
   version: "1.0"
   license:
     name: CeCILL v2.1

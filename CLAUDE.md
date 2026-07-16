@@ -407,6 +407,88 @@ view (only pre-filled on the edit form's own input), never interpolated into any
 log line. The actual mitigation is discipline at the call sites above (never log `apprise_url`),
 not a regex extension.
 
+### API publique (flask-smorest)
+
+A second, independent JSON surface for third-party integrations (Zapier, external scripts,
+reporting tools) — not to be confused with the internal `/api/*` routes (`app/routes/`, session
+cookie, consumed by the app's own frontend) documented under "Doc" below and in `Docs/api/API.md`.
+Built with **flask-smorest** (chosen over FastAPI — this app is 100% synchronous WSGI, adding an
+ASGI framework would mean a second process/server and a duplicated auth layer for no real gain at
+this scale — and over Flask-RESTful — no built-in OpenAPI generation, would need bolting
+apispec/flasgger on top for the same result flask-smorest gives natively).
+
+`ServiceAccount` (`app/models/service_account.py`) is the credential: `name`/`description`,
+`token_prefix` (first chars after the `lsak_` prefix — "Leviia Schedule API Key" — kept in clear
+for UI identification, e.g. in `/admin/service-accounts`), `token_hash`, `is_active`,
+`expires_at` (nullable = never expires), `last_used_at` (best-effort, admin UI only, never part of
+the validity check). `generate_token()` returns `(full_token, prefix, hash)` — `full_token` is
+**never persisted**, shown to the admin exactly once (creation or regeneration), same UX as a
+GitHub PAT. Hashing is **SHA-256**, deliberately not `werkzeug.security.generate_password_hash`
+(PBKDF2) like `User.password_hash` — PBKDF2's CPU cost exists to slow down brute-forcing a
+low-entropy *human* password; this token already has 256 bits of entropy from
+`secrets.token_urlsafe(32)`, so a slow hash would only add latency to every API call for zero
+security benefit. `User.ics_token` (see "Multi-timezone support" — unrelated feature, same repo)
+is the closest prior art but stores its token in clear, no hash at all — not a pattern to copy for
+a token meant to survive a database leak.
+
+`app/auth/service_account_auth.py::resolve_service_account()` is the bearer-token auth hook —
+registered once per blueprint at **import time** via `app/api/setup.py::configure_blueprint()`,
+**not** inside `app/api/__init__.py::init_api()` (which reruns on every `create_app()` call, and
+Flask blueprints only allow `before_request`/`register_error_handler` "setup" calls *before* their
+first registration on an app — calling them a second time raises). Reads `Authorization: Bearer
+<token>`, hashes it, looks up `ServiceAccountRepository.get_by_token_hash()`, and on success sets
+`g.service_account` (never `current_user`/Flask-Login — completely separate identity, no
+`db.session.get(User, ...)` involved) and touches `last_used_at`. Failure always aborts with a
+JSON `401` (`flask_smorest.abort(401, message=...)`), never an HTML redirect like
+`app/auth/decorators.py::admin_required` — see `app/api/errors.py` for why this needs an explicit
+**per-code** (not per-exception-class) error handler registered on each blueprint: Flask resolves
+error handlers in the order "blueprint+code > app+code > blueprint+class > app+class", so a
+blueprint handler registered only by `HTTPException` class would still lose to the app-wide
+code-specific HTML handlers already registered in `app/__init__.py` for 400/401/403/404/405/
+500/502/503/504 — confirmed by testing both orderings directly, not assumed from the Flask docs
+prose alone. Deliberately excludes `422`: flask-smorest's own validation-error handler already
+returns structured per-field detail there, which a generic override would flatten and degrade.
+
+URL prefix is **`/api/v1/*`**, deliberately distinct from the internal `/api/*` (same app, same
+process, different blueprint) to avoid any route collision. `app/api/` layout: `resources/` (one
+flask-smorest `Blueprint` + `MethodView` pair per resource — `shifts`, `oncall`, `leave`, `users`,
+`shift_types`), `schemas/` (one marshmallow `Schema` per resource, used both for response
+serialization and to auto-generate the OpenAPI spec), `setup.py` (the one-time blueprint wiring
+above), `errors.py`, `rate_limit.py`. **v1 scope is read-only** — `GET` list (paginated, same
+`SettingsService.get_items_per_page()`/`get_max_per_page()` knobs as the admin UI, no new
+pagination system invented) and `GET <id>` for shifts/oncall/leave/users, list-only for
+shift-types — reusing the existing repositories/services directly (`ShiftRepository`,
+`OnCallRepository`, `LeaveRepository`, `UserRepository`, `ShiftTypeRepository`), no business logic
+duplicated. Write endpoints are a deliberate v1 omission (would require re-validating the same
+conflict/weekend/leave rules already encapsulated in the service layer for `/api/*`), not an
+oversight — extend here first if that need materializes, don't build a third parallel API surface.
+`UserSchema` deliberately excludes every sensitive/preference field (`password_hash`, `ics_token`,
+`apprise_*_target_ids`, `timezone`/`language`/`date_format`/`time_format`, notification opt-outs) —
+same public contract as the internal `/api/users` endpoint, plus `group_id`.
+
+Rate limiting (`app/api/rate_limit.py::service_account_key()`) keys Flask-Limiter by
+`g.service_account.id` rather than IP — the first use of `@limiter.limit()` on an individual route
+in this app (until now only the app-wide `RATELIMIT_DEFAULT` existed). CSRF: every blueprint in
+`app/api/resources/` is exempted via `csrf.exempt(blp)` in `create_app()` — safe only because this
+API never accepts cookie-based auth, so the cross-site-request-with-a-valid-cookie risk CSRF
+protects against doesn't apply here.
+
+OpenAPI: `GET /api/v1/openapi.json` is generated **automatically** from the marshmallow schemas on
+every app start — unlike `Docs/api/openapi.yaml` (internal `/api/*`, hand-maintained, already
+known to drift), this one structurally cannot go stale. `OPENAPI_SWAGGER_UI_PATH`/
+`OPENAPI_REDOC_PATH`/`OPENAPI_RAPIDOC_PATH` are deliberately left unset in `app/api/__init__.py`:
+flask-smorest's default interactive UIs pull JS/CSS from a CDN not in `CSP_POLICY`
+(`app/__init__.py`), and relaxing the CSP for this alone wasn't judged worth it — only the raw spec
+is served, importable into an external Swagger UI/Postman/Insomnia. `/admin/service-accounts`
+(`app/routes/admin_service_account_routes.py`) is the admin CRUD page — same pattern as
+`admin_notification_target_routes.py` (list/add/edit/delete, `AuditService.log()` on every mutation
+under the `service_account.*` namespace, secret never in `details`/logs). Regeneration
+(`regenerate_service_account_secret`) and creation both render `service_account_created.html`
+directly in the same response (not a redirect, which would have nowhere safe to carry the plaintext
+token) — the one-time-reveal screen. `edit_service_account` only touches name/description/
+`expires_at`; the secret itself is immutable outside create/regenerate, matching how a GitHub PAT
+can be renamed but never "edited" in place.
+
 ### Frontend
 
 Tailwind CSS 4 + daisyUI 5, both loaded via `cdnjs.cloudflare.com` — no build step: Tailwind runs
