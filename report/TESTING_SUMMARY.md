@@ -2,9 +2,9 @@
 
 ## 📊 Aperçu Global
 
-- **Date de mise à jour** : 16 juillet 2026 (audit trail : historique des modifications)
-- **Nombre total de tests** : 1133
-- **Tests réussis** : 1133 ✅
+- **Date de mise à jour** : 16 juillet 2026 (notifications externes via Apprise)
+- **Nombre total de tests** : 1176
+- **Tests réussis** : 1176 ✅
 - **Tests échoués** : 0
 - **Couverture de code** : **~92%** (`--cov=app --cov=config`)
 - **Lint (ruff)** : propre - **0 erreur**
@@ -425,3 +425,18 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
   connexion réelle effectuée par le fixture `logged_in_client` écrit
   désormais elle-même une entrée `auth.login_success` - corrigé en
   filtrant sur l'action testée plutôt qu'en comptant la table entière.
+- **16 juillet 2026** : 1176 tests (0 échec, +43). Notifications externes
+  via Apprise (Slack/Discord/Telegram/webhooks génériques) : nouveau
+  modèle `NotificationTarget` (catégories JSON encodées, `subscribes_to()`
+  avec la règle "liste vide = toutes catégories") + `AppriseNotificationService`,
+  deux points d'entrée testés séparément - `notify()` (fire-and-forget,
+  jamais d'exception propagée même si le repository échoue, une cible en
+  échec n'empêche pas les autres d'être notifiées) et `send_test()`
+  (retourne le vrai succès/échec pour le bouton "Tester" de l'admin).
+  `apprise.Apprise` parle réseau, donc entièrement mocké
+  (`unittest.mock.patch` sur le point d'import du service) - aucun appel
+  réseau réel dans la suite. Tests représentatifs pour chaque site
+  d'appel retrofit (`SwapService.request_swap()` déclenche bien
+  `notify("swap", ...)`, mocké) plutôt qu'une duplication par méthode.
+  Suite complète pour `/admin/notification-targets` : CRUD, permission
+  admin-only, toggle global, action de test avec succès/échec mockés.

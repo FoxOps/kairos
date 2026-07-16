@@ -1,7 +1,8 @@
 # 🗺️ Feuille de Route - Leviia Schedule
 
-> **Version** : 5.10.0 - Audit trail : historique des modifications (PR #117)
-> **Version app** : 0.9.0 (`/version`) - Hérite de l'audit
+> **Version** : 5.11.0 - Notifications externes via Apprise (Slack/Discord/Telegram/webhooks)
+> **Version app** : 0.9.1 (`/version`) - Hérite de l'audit trail
+> (historique des modifications, `/admin/audit-log`, PR #117), de l'audit
 > code mort/legacy/performance/sécurité (PR #113), du multi-fuseau horaire +
 > page `/admin/settings` DB-backed (PR #114), du support multi-langues
 > Français/Anglais (Flask-Babel, PR #115), des formats de date/heure
@@ -14,8 +15,8 @@
 > breadcrumbs, avatar, tooltip, collapse, hero, swap), modale de création
 > de shift en `<dialog>` natif
 > **Dernière mise à jour** : 16 juillet 2026
-> **Statut** : Développement actif - **1133 tests passent** ✅ (dont 23 E2E navigateur réel)
-> **Commit actuel** : `1cc9870` (main, PR #117 mergée)
+> **Statut** : Développement actif - **suite de tests complète, voir `make test`** ✅
+> **Commit actuel** : branche `feature/apprise-notifications`
 >
 > ℹ️ Ne pas confondre avec les « Phases » de refonte (`report/Phase 1` à
 > `report/Phase 6`, un chantier qualité/infra achevé) et les « Phases » de
@@ -35,9 +36,9 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 - ✅ **Automatisation avancée** : Règles métiers complexes implémentées
 - ✅ **Documentation complète** : Documentation technique, API et utilisateur
 - ✅ **Stabilisation** : Refonte Phases 1-6 terminée (architecture, sécurité, DevOps)
-- ✅ **Multi-langues, multi-fuseau, audit trail** : i18n FR/EN, fuseau horaire et
-  formats de date/heure personnalisables, historique complet des modifications
-  (v0.7.10 → v0.9.0)
+- ✅ **Multi-langues, multi-fuseau, audit trail, notifications externes** : i18n FR/EN, fuseau
+  horaire et formats de date/heure personnalisables, historique complet des modifications,
+  notifications Slack/Discord/Telegram/webhooks via Apprise (v0.7.10 → v0.9.1)
 - 📈 **Améliorations** : Fonctionnalités avancées et intégrations (Phase 5/7 roadmap, à venir)
 - 🚀 **Production Ready** : Support multi-DB et tests de charge restants avant v1.0
 
@@ -67,6 +68,7 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 | **Sécurité** | CSP + security headers | ✅ | Talisman toujours actif (Phase 6), CSP stricte |
 | **Sécurité** | Audit de sécurité | ✅ | Rapport complet (report/SECURITY_AUDIT_REPORT.md) + audit legacy/perf/sécurité (PR #113) |
 | **Sécurité** | Historique des modifications (audit trail) | ✅ | Modèle `AuditLog`, double écriture DB + `logs/audit.log`, UI `/admin/audit-log` (PR #117, v0.9.0) |
+| **Intégrations** | Notifications externes (Apprise) | ✅ | Slack/Discord/Telegram/webhooks génériques, `/admin/notification-targets`, catégories swap/backup/system (v0.9.1) |
 | **Automatisation** | Règles métiers shifts | ✅ | **5 règles complexes** implémentées |
 | **Automatisation** | Rotation astreintes | ✅ | Algorithme automatique avec contraintes |
 | **Automatisation** | Gestion des conflits | ✅ | Congés vs shifts vs astreintes |
@@ -235,7 +237,7 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 
 | Élément | Statut | Priorité | Livraison estimée | Détails |
 |---------|--------|----------|-------------------|---------|
-| **Webhooks** | ❌ | Basse | v0.9 | Notifications vers des services externes |
+| **Webhooks** | ✅ | Basse | v0.9.1 | Notifications vers des services externes (Slack/Discord/Telegram/webhooks génériques) via Apprise, `/admin/notification-targets` |
 | **API REST publique** | ❌ | Moyenne | v0.9 | Pour intégrations tierces |
 
 ### Phase 6 : 🚀 Production Ready (Prévu - v1.0)
@@ -300,9 +302,9 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 - ❌ Accessibilité WCAG complète
 - ❌ API REST publique
 
-### Version 0.9 (Audit trail - **Terminé**)
+### Version 0.9 (Audit trail + Webhooks - **Terminé**)
 - ✅ Historique des modifications (audit trail, PR #117)
-- ❌ Webhooks
+- ✅ Webhooks / notifications externes (Apprise, v0.9.1)
 - ❌ Support MySQL/MariaDB
 - ❌ Tests de charge
 - ❌ Documentation finale
@@ -325,7 +327,7 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 |----------|--------|---------|
 | **Tests** | **1133 passent** | 0 échec (voir `python -m pytest tests/ -v`) |
 | **Couverture de code** | **~92%** | `--cov=app --cov=config`, objectif ≥80% largement dépassé |
-| **Modèles de données** | 10 | User, Group, ShiftType, Shift, OnCall, Leave, AutomationConfig, NotificationLog, Setting, SwapRequest, AppNotification, AuditLog (app/models/, package - voir Docs/architecture/ERD.md) |
+| **Modèles de données** | 11 | User, Group, ShiftType, Shift, OnCall, Leave, AutomationConfig, NotificationLog, Setting, SwapRequest, AppNotification, AuditLog, NotificationTarget (app/models/, package - voir Docs/architecture/ERD.md) |
 | **Architecture** | 3 couches | routes/ → services/ → repositories/ (report/Phase 2) |
 | **Modules de routes** | Multiples fichiers/blueprint | main, admin, auth, export - chacun splité en plusieurs fichiers (ex: shift_routes.py, admin_user_routes.py, admin_audit_routes.py) |
 | **Modules utilitaires** | app/utils/, par sous-package | automation/, export/, security/ (vide), logging/, optimizations/, helpers/, health.py, prometheus_metrics.py - cache/ entièrement retiré (code mort confirmé, PR #113) |
@@ -345,21 +347,23 @@ leviia-schedule/
 │   ├── config/                  # base.py, development.py, production.py, testing.py
 │   ├── models/                  # base.py (BaseModel) + user, shift, oncall, leave,
 │   │                             # automation_config, notification_log, setting,
-│   │                             # swap_request, app_notification, audit_log
+│   │                             # swap_request, app_notification, audit_log,
+│   │                             # notification_target
 │   ├── repositories/            # UserRepository, GroupRepository,
 │   │                             # ShiftRepository, ShiftTypeRepository,
 │   │                             # OnCallRepository, LeaveRepository,
 │   │                             # SwapRequestRepository, AppNotificationRepository,
-│   │                             # AuditLogRepository
+│   │                             # AuditLogRepository, NotificationTargetRepository
 │   ├── services/                # UserService, GroupService, ShiftService,
 │   │                             # ShiftTypeService, OnCallService, LeaveService,
 │   │                             # ExportService, ScheduleService,
 │   │                             # AutomationAdminService, SwapService,
 │   │                             # SettingsService, AppNotificationService,
-│   │                             # AuditService, NotificationService, BackupService
+│   │                             # AuditService, NotificationService, BackupService,
+│   │                             # AppriseNotificationService
 │   ├── routes/                  # blueprints auth/main/admin/export, chacun
 │   │                             # splité en plusieurs fichiers (shift_routes.py,
-│   │                             # admin_user_routes.py, admin_audit_routes.py, etc.)
+│   │                             # admin_audit_routes.py, admin_notification_target_routes.py, etc.)
 │   ├── utils/
 │   │   ├── automation/          # OnCallAutomation, AdvancedShiftAutomation
 │   │   ├── export/ (ics_exporter.py, zoneinfo), security/ (vide),
@@ -537,6 +541,7 @@ Pour toute question concernant la feuille de route :
 
 | Version | Date | Auteur | Changements |
 |---------|------|--------|-------------|
+| 5.11.0 | 16 juillet 2026 | Claude Code | Notifications externes via Apprise (Slack/Discord/Telegram/webhooks génériques) : nouveau modèle `NotificationTarget` (CRUD, catégories JSON encodées `swap`/`backup`/`system`, `subscribes_to()`), `AppriseNotificationService` avec deux points d'entrée (`notify()` fire-and-forget jamais bloquant, `send_test()` qui remonte le vrai succès/échec pour le bouton "Tester" admin), câblé sur le cycle de vie des échanges de shifts (`SwapService`), les sauvegardes déclenchées depuis l'UI admin (`BackupService.create_now()`/`cleanup_now()` - pas le script cron, isolation `scripts/` préservée) et les échecs d'envoi des rappels email hebdomadaires (`NotificationService`). Page d'admin dédiée `/admin/notification-targets` (pas une section de `/admin/settings`), toggle global `SettingsService.apprise_notifications_enabled` (opt-in, pas de repli env). L'URL Apprise traitée comme un secret : jamais dans l'audit trail/les logs, jamais affichée en clair dans la liste. Version app 0.9.0 -> 0.9.1. |
 | 5.10.0 | 16 juillet 2026 | Claude Code | Audit trail - historique des modifications (PR #117) : modèle `AuditLog` append-only + `AuditService.log()` (point d'écriture unique, double écriture DB + `logs/audit.log`), retrofit de tout le CRUD métier et des événements d'authentification, UI `/admin/audit-log` (filtres auteur/domaine/dates, purge basée sur une rétention configurable dans `/admin/settings`, sans repli numérique par défaut), rotation de tous les fichiers de logs (`RotatingFileHandler`, `LOG_MAX_BYTES`/`LOG_BACKUP_COUNT`). Avant cette PR le logger `"audit"` existait dans le code depuis longtemps sans jamais être appelé - `logs/audit.log` ne contenait aucune activité réelle. Version app 0.8.0 -> 0.9.0. 1133 tests (couverture ~92%) |
 | 5.9.0 | 16 juillet 2026 | Claude Code | Formats de date/heure configurables (PR #116) : même architecture Setting/User que le multi-fuseau horaire, 3 formats de date / 2 formats d'heure, 3 nouveaux filtres Jinja (`format_date`/`format_time`/`format_datetime`) remplaçant les `strftime()` d'affichage. Bug N+1 réel trouvé et corrigé (cache `flask.g` manquant sur les résolveurs de format). Version app 0.7.11 -> 0.8.0. 1099 tests |
 | 5.8.0 | 16 juillet 2026 | Claude Code | Support multi-langues Français/Anglais (PR #115) : Flask-Babel, `User.language` + `SettingsService.default_language`, retrofit complet du texte utilisateur (55 templates, flash messages, erreurs de services, chaînes JS via injection JSON), `en.po` traduit intégralement (806 chaînes), `fr.po` gardé vide à dessein (repli standard sur le français). Version app 0.7.10 -> 0.7.11 |
@@ -582,8 +587,7 @@ Pour toute question concernant la feuille de route :
 
 ### À long terme (3-6 mois)
 1. **API REST publique**
-2. **Webhooks** vers des services externes
-3. **Préparation pour la version 1.0 stable** (support MySQL/MariaDB, tests
+2. **Préparation pour la version 1.0 stable** (support MySQL/MariaDB, tests
    de charge, version stable pour la production)
 
 ---
@@ -597,6 +601,7 @@ Pour toute question concernant la feuille de route :
 5. **Documentation** : La documentation est globalement à jour pour les développeurs et administrateurs (Docs/, report/, CLAUDE.md) — voir la note "documentation finale" ci-dessus pour les fichiers pas encore repassés depuis les dernières fonctionnalités.
 6. **Refonte Phases 1-6** : Un chantier qualité/infra en 6 phases (dépendances, backend, frontend, tests, documentation, optimisations) est terminé — voir `report/Phase 1` à `report/Phase 6` pour le détail de chaque bug trouvé et corrigé.
 7. **Historique des modifications** : depuis la v0.9.0, chaque action métier (et pas seulement les logs applicatifs) est tracée et consultable dans `/admin/audit-log` — voir CLAUDE.md "Audit trail".
+8. **Notifications externes** : depuis la v0.9.1, des cibles Slack/Discord/Telegram/webhooks génériques peuvent être configurées dans `/admin/notification-targets` pour recevoir les événements d'échange de shifts et les alertes système (sauvegardes, échecs d'envoi d'email) — désactivé par défaut (opt-in), voir CLAUDE.md "External notifications (Apprise)".
 
 > **⚠️ Rappel** : Cette feuille de route est évolutive et peut être ajustée en fonction des priorités, des retours utilisateurs et des contraintes techniques. Les dates de livraison sont indicatives et peuvent varier.
 

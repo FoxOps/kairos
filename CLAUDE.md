@@ -291,6 +291,56 @@ domain, date range) and a purge action. Purge deletes entries older than
 entry, purge nothing" until an admin explicitly opts in, since defaulting an audit trail to silently
 deleting its own history would be a surprising, not a safe, default.
 
+### External notifications (Apprise)
+
+`NotificationTarget` (`app/models/notification_target.py`) is an admin-managed outbound
+destination (Slack, Discord, Telegram, generic webhook...) configured as an
+[Apprise](https://github.com/caronc/apprise) service URL, sent via `AppriseNotificationService`
+(`app/services/apprise_notification_service.py`) — **not** the same thing as `NotificationService`
+(weekly reminder emails, cron-only) or `AppNotificationService` (in-app bell icon); don't confuse
+any of the three "notification" services in this codebase. `categories` is a JSON-encoded list of
+strings on the model (`get_categories()`/`set_categories()`, same encode/decode idea as
+`AutomationConfig.get_rotation_order()` but scoped to this one column) — an empty/`None` list means
+"subscribed to every category" (`NotificationTarget.subscribes_to()`). Closed taxonomy in use:
+`swap`, `backup`, `system`.
+
+`AppriseNotificationService` has two entry points with deliberately different failure behavior:
+
+- `notify(category, title, body)` — the business-call-site path, **never raises**. Checks
+  `SettingsService.get_apprise_notifications_enabled()` first (org-wide master toggle, opt-in,
+  `False` by default, no env-var fallback — a brand-new concept like `default_language`), then
+  fetches matching targets via `NotificationTargetRepository.list_enabled_for_category()` and sends
+  to each inside its own nested `try/except` — one broken target must not stop the others from
+  receiving the notification, same batch-resilience idea already used by
+  `NotificationService.send_weekly_shift_notifications()`. A fresh `apprise.Apprise()` object is
+  built per target per call (no shared/cached instance), mirroring the per-call `smtplib` style in
+  `app/utils/notifications/email_sender.py`.
+- `send_test(target)` — the admin "Test" button path on `/admin/notification-targets`, returns
+  `(ok, error_message)` and does **not** swallow anything, so the admin sees the real success/
+  failure immediately (the route's own `try`/`flash` surfaces it) — the opposite trade-off from
+  `notify()` on purpose.
+
+Call sites (post-commit, same placement rule as `AppNotificationService`/`AuditService` above):
+`SwapService` (`swap` category, one call after each existing `AppNotificationService` call —
+request/approve/revert/reject), `BackupService.create_now()`/`cleanup_now()` (`backup` category,
+admin-UI-triggered paths only — **not** wired into `scripts/backup_database.py`, which must never
+import `app/`, see "Database backups" above), and `NotificationService`'s weekly batches (`system`
+category, only when `result.failed` is non-empty — safe to call from there since, unlike
+`backup_database.py`, `NotificationService` already lives in `app/` and its cron scripts import
+`app/` freely).
+
+`/admin/notification-targets` (`app/routes/admin_notification_target_routes.py`) is its own
+dedicated admin page — deliberately **not** a section on `/admin/settings` (unlike every other
+`SettingsService`-backed toggle) — full CRUD per target plus the master toggle. The target's
+`apprise_url` is treated as a secret: never included in `AuditService` `details` (only `id`/`name`
+are — `notification_target.create`/`.update`/`.delete`/`.toggle` actions), never shown in the list
+view (only pre-filled on the edit form's own input), never interpolated into any log message.
+`SensitiveDataFilter` (`app/utils/logging/logger.py`) only masks `key=value`-shaped text
+(`password|token|api_key=...`) — a typical Apprise URL is positional path segments
+(`slack://TokenA/TokenB/TokenC`), which that regex would **not** catch if one ever leaked into a
+log line. The actual mitigation is discipline at the call sites above (never log `apprise_url`),
+not a regex extension.
+
 ### Frontend
 
 Tailwind CSS 4 + daisyUI 5, both loaded via `cdnjs.cloudflare.com` — no build step: Tailwind runs
