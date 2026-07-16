@@ -194,10 +194,11 @@ class TestSendWeeklyShiftNotifications:
             # mid-week and rerunning the script must be able to catch up.
             assert NotificationLog.query.count() == 0
 
-    def test_success_relays_to_apprise_shift_weekly_category(
+    def test_success_relays_to_selected_apprise_targets(
         self, test_app, test_group, test_user, test_shift_type
     ):
         with test_app.app_context():
+            test_user.set_apprise_shift_target_ids([42])
             monday = NotificationService.next_monday(date(2026, 7, 12))
             shift = Shift(
                 user_id=test_user.id,
@@ -214,7 +215,8 @@ class TestSendWeeklyShiftNotifications:
             with (
                 patch("app.utils.notifications.email_sender.smtplib.SMTP") as mock_smtp,
                 patch(
-                    "app.services.notification_service.AppriseNotificationService.notify"
+                    "app.services.notification_service.AppriseNotificationService."
+                    "notify_to_targets"
                 ) as mock_notify,
             ):
                 instance = MagicMock()
@@ -223,13 +225,12 @@ class TestSendWeeklyShiftNotifications:
                     SMTP_CONFIG, reference_date=date(2026, 7, 12)
                 )
 
-            assert mock_notify.call_args[0][0] == "shift_weekly"
+            assert mock_notify.call_args[0][0] == [42]
 
-    def test_apprise_toggle_off_skips_relay(
+    def test_no_targets_selected_skips_relay(
         self, test_app, test_group, test_user, test_shift_type
     ):
         with test_app.app_context():
-            test_user.apprise_shift_notifications_enabled = False
             monday = NotificationService.next_monday(date(2026, 7, 12))
             shift = Shift(
                 user_id=test_user.id,
@@ -246,7 +247,8 @@ class TestSendWeeklyShiftNotifications:
             with (
                 patch("app.utils.notifications.email_sender.smtplib.SMTP") as mock_smtp,
                 patch(
-                    "app.services.notification_service.AppriseNotificationService.notify"
+                    "app.services.notification_service.AppriseNotificationService."
+                    "notify_to_targets"
                 ) as mock_notify,
             ):
                 instance = MagicMock()
@@ -349,10 +351,11 @@ class TestSendWeeklyOncallNotification:
 
 
 class TestSendWeeklyOncallApprise:
-    def test_success_relays_to_apprise_oncall_weekly_category(
+    def test_success_relays_to_selected_apprise_targets(
         self, test_app, test_group, test_user
     ):
         with test_app.app_context():
+            test_user.set_apprise_oncall_target_ids([7])
             thursday = date(2026, 7, 9)
             friday = NotificationService.next_friday(thursday)
             start = datetime.combine(friday, datetime.min.time()).replace(hour=21)
@@ -363,7 +366,8 @@ class TestSendWeeklyOncallApprise:
             with (
                 patch("app.utils.notifications.email_sender.smtplib.SMTP") as mock_smtp,
                 patch(
-                    "app.services.notification_service.AppriseNotificationService.notify"
+                    "app.services.notification_service.AppriseNotificationService."
+                    "notify_to_targets"
                 ) as mock_notify,
             ):
                 instance = MagicMock()
@@ -372,11 +376,10 @@ class TestSendWeeklyOncallApprise:
                     SMTP_CONFIG, reference_date=thursday
                 )
 
-            assert mock_notify.call_args[0][0] == "oncall_weekly"
+            assert mock_notify.call_args[0][0] == [7]
 
-    def test_apprise_toggle_off_skips_relay(self, test_app, test_group, test_user):
+    def test_no_targets_selected_skips_relay(self, test_app, test_group, test_user):
         with test_app.app_context():
-            test_user.apprise_oncall_notifications_enabled = False
             thursday = date(2026, 7, 9)
             friday = NotificationService.next_friday(thursday)
             start = datetime.combine(friday, datetime.min.time()).replace(hour=21)
@@ -387,7 +390,8 @@ class TestSendWeeklyOncallApprise:
             with (
                 patch("app.utils.notifications.email_sender.smtplib.SMTP") as mock_smtp,
                 patch(
-                    "app.services.notification_service.AppriseNotificationService.notify"
+                    "app.services.notification_service.AppriseNotificationService."
+                    "notify_to_targets"
                 ) as mock_notify,
             ):
                 instance = MagicMock()

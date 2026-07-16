@@ -25,9 +25,16 @@ class AppriseNotificationService:
     """Outbound external notifications (Slack/Discord/Telegram/webhooks)."""
 
     @staticmethod
+    def _send_to_target(target: NotificationTarget, title: str, body: str) -> None:
+        apobj = apprise.Apprise()
+        apobj.add(target.apprise_url)
+        apobj.notify(title=title, body=body)
+
+    @staticmethod
     def notify(category: str, title: str, body: str) -> None:
-        """Fire-and-forget: never raises. A failure here must never break
-        the business action that triggered it - same guarantee as
+        """Fire-and-forget, to every enabled target subscribed to
+        category: never raises. A failure here must never break the
+        business action that triggered it - same guarantee as
         AuditService.log()."""
         try:
             if not SettingsService.get_apprise_notifications_enabled():
@@ -35,9 +42,7 @@ class AppriseNotificationService:
             targets = NotificationTargetRepository.list_enabled_for_category(category)
             for target in targets:
                 try:
-                    apobj = apprise.Apprise()
-                    apobj.add(target.apprise_url)
-                    apobj.notify(title=title, body=body)
+                    AppriseNotificationService._send_to_target(target, title, body)
                 except Exception:
                     logger.exception(
                         "Échec d'envoi Apprise vers la cible id=%s (catégorie=%s)",
@@ -48,6 +53,30 @@ class AppriseNotificationService:
             logger.exception(
                 "Échec du service de notifications externes (catégorie=%s)", category
             )
+
+    @staticmethod
+    def notify_to_targets(target_ids: list[int], title: str, body: str) -> None:
+        """Fire-and-forget, to a specific user-selected list of target ids
+        (see User.get_apprise_shift_target_ids()/get_apprise_oncall_target_ids())
+        rather than every target subscribed to a category - never raises.
+        Silently skips ids that no longer resolve to an enabled target
+        (deleted/disabled since the user picked it), same resilience
+        philosophy as notify()."""
+        try:
+            if not SettingsService.get_apprise_notifications_enabled():
+                return
+            for target_id in target_ids:
+                target = NotificationTargetRepository.get_by_id(target_id)
+                if not target or not target.enabled:
+                    continue
+                try:
+                    AppriseNotificationService._send_to_target(target, title, body)
+                except Exception:
+                    logger.exception(
+                        "Échec d'envoi Apprise vers la cible id=%s", target_id
+                    )
+        except Exception:
+            logger.exception("Échec du service de notifications externes (cibles)")
 
     @staticmethod
     def send_test(target: NotificationTarget) -> tuple[bool, str | None]:

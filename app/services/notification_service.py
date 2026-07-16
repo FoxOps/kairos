@@ -134,8 +134,11 @@ class NotificationService:
             db.session.commit()
             result.sent.append(user.email)
 
-            if user.apprise_shift_notifications_enabled:
-                AppriseNotificationService.notify("shift_weekly", subject, text_body)
+            apprise_target_ids = user.get_apprise_shift_target_ids()
+            if apprise_target_ids:
+                AppriseNotificationService.notify_to_targets(
+                    apprise_target_ids, subject, text_body
+                )
 
         if result.failed:
             AppriseNotificationService.notify(
@@ -228,7 +231,10 @@ class NotificationService:
         db.session.commit()
         result.sent.append(user.email)
 
-        if user.apprise_oncall_notifications_enabled:
-            AppriseNotificationService.notify("oncall_weekly", subject, text_body)
+        apprise_target_ids = user.get_apprise_oncall_target_ids()
+        if apprise_target_ids:
+            AppriseNotificationService.notify_to_targets(
+                apprise_target_ids, subject, text_body
+            )
 
         return result

@@ -396,43 +396,90 @@ class TestProfileSettings:
             "notifications externes sont actuellement désactivées".encode() in resp.data
         )
 
-    def test_apprise_toggles_persist_when_enabled_org_wide(
+    def test_apprise_target_selection_persists_when_enabled_org_wide(
         self, test_app, logged_in_client
     ):
         with test_app.app_context():
+            from app import db as _db
+            from app.repositories.notification_target_repository import (
+                NotificationTargetRepository,
+            )
             from app.services import SettingsService
 
             SettingsService.set_apprise_notifications_enabled(True)
+            target = NotificationTargetRepository.create(
+                "Slack", "json://localhost", True, ["shift_weekly"]
+            )
+            _db.session.commit()
+            target_id = target.id
 
         resp = logged_in_client.post(
             "/profile/settings",
-            data={"timezone": ""},  # unchecked checkboxes = disabled
+            data={"timezone": "", "apprise_shift_target_ids": [str(target_id)]},
             follow_redirects=True,
         )
         assert resp.status_code == 200
         with test_app.app_context():
             user = User.query.filter_by(email="login@example.com").first()
-            assert user.apprise_shift_notifications_enabled is False
-            assert user.apprise_oncall_notifications_enabled is False
+            assert user.get_apprise_shift_target_ids() == [target_id]
+            assert user.get_apprise_oncall_target_ids() == []
 
-    def test_apprise_toggles_ignored_when_disabled_org_wide(
+    def test_apprise_target_selection_rejects_ineligible_target(
+        self, test_app, logged_in_client
+    ):
+        """A target not subscribed to shift_weekly (or disabled) must not
+        be persisted even if its id is submitted - only ids actually
+        offered by the eligible-targets list are accepted."""
+        with test_app.app_context():
+            from app import db as _db
+            from app.repositories.notification_target_repository import (
+                NotificationTargetRepository,
+            )
+            from app.services import SettingsService
+
+            SettingsService.set_apprise_notifications_enabled(True)
+            backup_only_target = NotificationTargetRepository.create(
+                "Backup channel", "json://localhost", True, ["backup"]
+            )
+            _db.session.commit()
+            target_id = backup_only_target.id
+
+        resp = logged_in_client.post(
+            "/profile/settings",
+            data={"timezone": "", "apprise_shift_target_ids": [str(target_id)]},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with test_app.app_context():
+            user = User.query.filter_by(email="login@example.com").first()
+            assert user.get_apprise_shift_target_ids() == []
+
+    def test_apprise_target_selection_ignored_when_disabled_org_wide(
         self, test_app, logged_in_client
     ):
         with test_app.app_context():
+            from app import db as _db
+            from app.repositories.notification_target_repository import (
+                NotificationTargetRepository,
+            )
             from app.services import SettingsService
 
+            target = NotificationTargetRepository.create(
+                "Slack", "json://localhost", True, ["shift_weekly"]
+            )
+            _db.session.commit()
+            target_id = target.id
             SettingsService.set_apprise_notifications_enabled(False)
 
         resp = logged_in_client.post(
             "/profile/settings",
-            data={"timezone": ""},
+            data={"timezone": "", "apprise_shift_target_ids": [str(target_id)]},
             follow_redirects=True,
         )
         assert resp.status_code == 200
         with test_app.app_context():
             user = User.query.filter_by(email="login@example.com").first()
-            assert user.apprise_shift_notifications_enabled is True
-            assert user.apprise_oncall_notifications_enabled is True
+            assert user.get_apprise_shift_target_ids() == []
 
 
 class TestGenerateIcsToken:

@@ -270,6 +270,34 @@ class TestUserModel:
             assert user.shift_notifications_enabled is True
             assert user.oncall_notifications_enabled is True
 
+    def test_apprise_target_ids_default_to_empty(self, test_app, test_user):
+        with test_app.app_context():
+            assert test_user.get_apprise_shift_target_ids() == []
+            assert test_user.get_apprise_oncall_target_ids() == []
+
+    def test_apprise_shift_target_ids_round_trip(self, test_app, test_user):
+        with test_app.app_context():
+            test_user.set_apprise_shift_target_ids([1, 2, 3])
+            db.session.commit()
+
+            assert test_user.get_apprise_shift_target_ids() == [1, 2, 3]
+
+    def test_apprise_oncall_target_ids_round_trip(self, test_app, test_user):
+        with test_app.app_context():
+            test_user.set_apprise_oncall_target_ids([5])
+            db.session.commit()
+
+            assert test_user.get_apprise_oncall_target_ids() == [5]
+
+    def test_set_empty_apprise_target_ids_stores_none(self, test_app, test_user):
+        with test_app.app_context():
+            test_user.set_apprise_shift_target_ids([1])
+            test_user.set_apprise_shift_target_ids([])
+            db.session.commit()
+
+            assert test_user.apprise_shift_target_ids is None
+            assert test_user.get_apprise_shift_target_ids() == []
+
 
 class TestShiftTypeModel:
     """Tests for the ShiftType model."""

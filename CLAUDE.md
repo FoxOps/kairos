@@ -328,15 +328,24 @@ admin-UI-triggered paths only — **not** wired into `scripts/backup_database.py
 import `app/`, see "Database backups" above), and `NotificationService`'s weekly batches. The latter
 fires twice: a `system`-category alert only when `result.failed` is non-empty (safe to call from
 there since, unlike `backup_database.py`, `NotificationService` already lives in `app/` and its
-cron scripts import `app/` freely), and — on every *successful* per-recipient send — a
-`shift_weekly`/`oncall_weekly` notification relaying the same content that just went out by email,
-gated by `User.apprise_shift_notifications_enabled`/`apprise_oncall_notifications_enabled`
-(nullable-free `Boolean`, default `True`, same shape as `shift_notifications_enabled`/
-`oncall_notifications_enabled` but a genuinely independent toggle — a user may want the email
-without the external relay, or vice versa). Editable at `/profile/settings`, in its own section
-gated by `apprise_notifications_enabled_org_wide` (same "only apply submitted checkboxes when the
-section was actually visible" guard as the email section, so a stale form can't silently flip a
-preference the user never saw).
+cron scripts import `app/` freely), and — on every *successful* per-recipient send — a relay
+notification via `AppriseNotificationService.notify_to_targets(target_ids, title, body)`
+(**not** `notify(category, ...)`) sent only to the specific target(s) the user themselves picked,
+not to every target subscribed to `shift_weekly`/`oncall_weekly`. `User.apprise_shift_target_ids`/
+`apprise_oncall_target_ids` (`Text`, JSON-encoded list of `NotificationTarget` ids, same
+encode/decode idea as `NotificationTarget.categories` — `get_apprise_shift_target_ids()`/
+`set_apprise_shift_target_ids()` and the `oncall` equivalents) are deliberately **not** a blanket
+on/off toggle: a user chooses *which* channel(s) receive their own reminder (e.g. shifts to a
+personal Discord webhook, on-call to the team Slack), independently of whether they also get the
+email (`shift_notifications_enabled`/`oncall_notifications_enabled` stay a completely separate
+gate). `notify_to_targets()` re-resolves each id at send time and silently skips one that's been
+deleted or disabled since the user picked it (same resilience philosophy as `notify()`). Editable
+at `/profile/settings`, in its own section gated by `apprise_notifications_enabled_org_wide` (same
+"only apply the submission when the section was actually visible" guard as the email section) —
+the route only offers, and only persists, targets returned by
+`NotificationTargetRepository.list_enabled_for_category("shift_weekly"/"oncall_weekly")` (enabled
++ subscribed to that category, or subscribed to none = all); any submitted id outside that eligible
+set is silently dropped rather than trusted from the form.
 
 `/admin/notification-targets` (`app/routes/admin_notification_target_routes.py`) is its own
 dedicated admin page — deliberately **not** a section on `/admin/settings` (unlike every other
@@ -442,10 +451,11 @@ are then checked per-recipient inside `send_weekly_shift_notifications()`/
 `send_weekly_oncall_notification()` — a user who opted out is skipped (tracked in
 `NotificationBatchResult.skipped_disabled_by_user`, distinct from `skipped_already_sent`) *without*
 writing a `NotificationLog` row, so re-enabling mid-week and rerunning the script still catches
-them up. A third, independent toggle (`apprise_shift_notifications_enabled`/
-`apprise_oncall_notifications_enabled`) additionally relays each successful send to external
-notification targets — see "External notifications (Apprise)" below, this is a separate channel,
-not a replacement for the email gates above. Editable at `/profile/settings`
+them up. A third, independent mechanism (`User.apprise_shift_target_ids`/`apprise_oncall_target_ids`
+— a user-picked *set of channels*, not a boolean toggle) additionally relays each successful send
+to whichever external notification target(s) the user selected — see "External notifications
+(Apprise)" below, this is a separate channel, not a replacement for the email gates above. Editable
+at `/profile/settings`
 (`app/routes/auth.py::profile_settings`) — a page separate
 from `/profile/update` (name/email/password only) since the notification section there is
 conditionally shown/hidden based on the org-wide toggle, which doesn't belong mixed into an

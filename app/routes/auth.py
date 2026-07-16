@@ -8,6 +8,9 @@ from flask_login import current_user, login_required, login_user, logout_user
 from app import db
 from app.auth.oidc_auth import oidc_auth
 from app.models import User
+from app.repositories.notification_target_repository import (
+    NotificationTargetRepository,
+)
 from app.services import AuditService, SettingsService
 from app.utils.helpers.common_helpers import (
     get_date_format_choices,
@@ -327,11 +330,34 @@ def profile_settings():
             )
 
         if apprise_notifications_enabled_org_wide:
-            current_user.apprise_shift_notifications_enabled = (
-                request.form.get("apprise_shift_notifications_enabled") == "on"
+            eligible_shift_target_ids = {
+                t.id
+                for t in NotificationTargetRepository.list_enabled_for_category(
+                    "shift_weekly"
+                )
+            }
+            submitted_shift_target_ids = {
+                int(v)
+                for v in request.form.getlist("apprise_shift_target_ids")
+                if v.isdigit()
+            }
+            current_user.set_apprise_shift_target_ids(
+                sorted(submitted_shift_target_ids & eligible_shift_target_ids)
             )
-            current_user.apprise_oncall_notifications_enabled = (
-                request.form.get("apprise_oncall_notifications_enabled") == "on"
+
+            eligible_oncall_target_ids = {
+                t.id
+                for t in NotificationTargetRepository.list_enabled_for_category(
+                    "oncall_weekly"
+                )
+            }
+            submitted_oncall_target_ids = {
+                int(v)
+                for v in request.form.getlist("apprise_oncall_target_ids")
+                if v.isdigit()
+            }
+            current_user.set_apprise_oncall_target_ids(
+                sorted(submitted_oncall_target_ids & eligible_oncall_target_ids)
             )
 
         db.session.commit()
@@ -362,6 +388,14 @@ def profile_settings():
         ),
         notifications_enabled_org_wide=notifications_enabled_org_wide,
         apprise_notifications_enabled_org_wide=apprise_notifications_enabled_org_wide,
+        apprise_shift_targets=NotificationTargetRepository.list_enabled_for_category(
+            "shift_weekly"
+        ),
+        apprise_oncall_targets=NotificationTargetRepository.list_enabled_for_category(
+            "oncall_weekly"
+        ),
+        selected_apprise_shift_target_ids=current_user.get_apprise_shift_target_ids(),
+        selected_apprise_oncall_target_ids=current_user.get_apprise_oncall_target_ids(),
     )
 
 

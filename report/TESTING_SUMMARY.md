@@ -3,8 +3,8 @@
 ## 📊 Aperçu Global
 
 - **Date de mise à jour** : 16 juillet 2026 (notifications externes via Apprise)
-- **Nombre total de tests** : 1183
-- **Tests réussis** : 1183 ✅
+- **Nombre total de tests** : 1193
+- **Tests réussis** : 1193 ✅
 - **Tests échoués** : 0
 - **Couverture de code** : **~92%** (`--cov=app --cov=config`)
 - **Lint (ruff)** : propre - **0 erreur**
@@ -452,3 +452,17 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
   relais absent si le toggle utilisateur est désactivé (`NotificationService`),
   section masquée/visible selon le toggle global, persistance/ignorance
   des cases selon le toggle global (`/profile/settings`).
+- **16 juillet 2026** : 1193 tests (0 échec, +10). Retour utilisateur :
+  le simple booléen `apprise_shift_notifications_enabled`/
+  `apprise_oncall_notifications_enabled` remplacé par une vraie
+  sélection de cibles (`User.apprise_shift_target_ids`/
+  `apprise_oncall_target_ids`, liste JSON encodée d'ids `NotificationTarget`,
+  même migration modifiée en place car pas encore mergée). Nouvelle
+  méthode `AppriseNotificationService.notify_to_targets(target_ids, ...)`
+  (fire-and-forget, resout chaque id à l'envoi et ignore silencieusement
+  une cible supprimée/désactivée depuis la sélection). `/profile/settings`
+  n'affiche et n'accepte que les cibles activées ET abonnées à la
+  catégorie correspondante (`NotificationTargetRepository.list_enabled_for_category`)
+  - un id soumis hors de cette liste éligible est silencieusement
+  ignoré (testé explicitement). Lien de documentation Apprise pointé
+  vers appriseit.com/services.
