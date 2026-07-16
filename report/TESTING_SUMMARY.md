@@ -2,9 +2,9 @@
 
 ## 📊 Aperçu Global
 
-- **Date de mise à jour** : 16 juillet 2026 (sécurité sidebar + confirmation destinataire échanges + nettoyage Makefile)
-- **Nombre total de tests** : 1224
-- **Tests réussis** : 1224 ✅
+- **Date de mise à jour** : 17 juillet 2026 (API REST publique pour intégrations tierces, flask-smorest)
+- **Nombre total de tests** : 1292
+- **Tests réussis** : 1292 ✅
 - **Tests échoués** : 0
 - **Couverture de code** : **~92%** (`--cov=app --cov=config`)
 - **Lint (ruff)** : propre - **0 erreur**
@@ -53,7 +53,10 @@ tests/
 ├── conftest.py                      # Fixture chain : test_app, client, logged_in_client
 ├── fixtures/                        # test_user, test_group, test_shift, test_leave, test_oncall...
 │
-├── unit/                            # 545 tests - composants isolés, pas de HTTP
+├── unit/                            # 645 tests - composants isolés, pas de HTTP
+│   ├── test_service_account_model.py     # ServiceAccount : jeton/hash SHA-256, is_valid()
+│   ├── test_service_account_repository.py
+│   ├── test_service_account_service.py   # create/revoke/regenerate + audit trail
 │   ├── test_models.py               # User, Group, Shift, OnCall, Leave, ShiftType, NotificationLog
 │   ├── test_repositories.py         # Couche accès aux données
 │   ├── test_services.py             # Couche logique métier
@@ -78,9 +81,14 @@ tests/
 │   ├── test_backup_service.py       # BackupService (couche support /admin/backups)
 │   └── test_settings_service.py     # SettingsService (fuseau horaire, langue, formats date/heure...)
 │
-├── integration/                     # 524 tests - routes Flask, client de test
+├── integration/                     # 615 tests - routes Flask, client de test
 │   ├── test_routes.py, test_*_priority.py, test_*_coverage.py
-│   ├── test_admin_*.py              # Routes admin (users/groups/shift-types/automation/backups)
+│   ├── test_admin_*.py              # Routes admin (users/groups/shift-types/automation/backups,
+│   │                                 #   service accounts)
+│   ├── test_service_account_auth.py # resolve_service_account() : header manquant/invalide/expiré/révoqué
+│   ├── test_api_v1_routes.py        # Endpoints /api/v1/* (shifts/oncall/leave/users/shift-types)
+│   ├── test_api_csrf_exemption.py   # Blueprints app/api/ exemptés de CSRFProtect
+│   └── test_openapi_spec.py         # /api/v1/openapi.json généré, pas d'UI Swagger servie
 │   ├── test_security.py             # CSP, CSRF, Talisman, contrôle d'accès
 │   ├── test_oidc_routes.py          # /login, /oidc/login, /oidc/callback, /logout (13 tests)
 │   ├── test_performance.py          # Temps de réponse, N+1, compression
@@ -89,10 +97,11 @@ tests/
 │   ├── test_dark_theme.py, test_theme_fixes.py
 │   └── test_error_handlers.py
 │
-└── e2e/                             # 30 tests
+└── e2e/                             # 32 tests
     ├── test_user_flows.py           # 6 tests, client de test Flask
     ├── conftest.py                  # live_server_url, oidc_live_servers (Playwright)
-    ├── test_browser_flows.py        # 18 tests, Chromium réel (optionnel)
+    ├── test_browser_flows.py        # 20 tests, Chromium réel (optionnel) - dont la création
+    │                                 #   d'un compte de service (jeton affiché une fois)
     ├── oidc_mock_provider.py        # Faux fournisseur OIDC réel (Flask, pas Docker)
     └── test_oidc_browser_flow.py    # 6 tests, flux SSO complet en navigateur réel (optionnel)
 ```

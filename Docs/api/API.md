@@ -124,3 +124,42 @@ complet. Champs à retenir pour l'API :
 - `User.to_dict()` exclut toujours `password_hash` et `ics_token` — ces
   champs ne sont jamais présents dans une réponse JSON, y compris
   `/api/users`.
+
+## API publique v1 (comptes de service)
+
+**Une deuxième surface API, distincte de tout ce qui précède** — ne pas
+confondre les deux mécanismes d'authentification. Pensée pour les
+intégrations tierces (Zapier, scripts externes, outils de reporting),
+pas pour le frontend de l'application lui-même (qui continue d'utiliser
+l'API interne `/api/*` ci-dessus, cookie de session).
+
+- **Base URL** : `/api/v1/*` — préfixe volontairement distinct de
+  `/api/*` (API interne) pour éviter toute collision.
+- **Authentification** : en-tête `Authorization: Bearer <jeton>`,
+  jamais de cookie de session. Le jeton est généré depuis
+  `/admin/service-accounts` (réservé aux administrateurs) et affiché en
+  clair **une seule fois**, à la création ou à la régénération — il
+  n'est jamais ré-affichable ensuite (seul un préfixe tronqué reste
+  visible dans la liste, pour identification). Un jeton absent, invalide,
+  révoqué ou expiré renvoie `401` avec un corps JSON
+  `{"message": "..."}`  — jamais de redirection HTML, contrairement aux
+  routes `/api/*`/HTML classiques.
+- **CSRF** : non applicable — cette API n'accepte jamais de cookie, donc
+  aucun `X-CSRFToken` n'est requis.
+- **Rate limiting** : par identité de compte de service (pas par IP),
+  `60 requêtes/minute, 1000/jour` par défaut.
+- **Portée v1** : **lecture seule**. `GET /api/v1/shifts[/<id>]`,
+  `GET /api/v1/oncall[/<id>]`, `GET /api/v1/leave[/<id>]`,
+  `GET /api/v1/users[/<id>]`, `GET /api/v1/shift-types`. Les listes sont
+  paginées (`?page=`, `?per_page=`), avec les mêmes réglages par défaut
+  que l'admin (`items_per_page`/`max_per_page`, `/admin/settings`).
+  L'écriture n'est pas prévue en v1 — une évolution future si un besoin
+  réel apparaît, pas un oubli.
+- **Documentation machine-lisible** : `GET /api/v1/openapi.json`, une
+  spec OpenAPI 3.0.3 **générée automatiquement** depuis les schémas
+  marshmallow (`app/api/schemas/`) à chaque démarrage — contrairement à
+  [`openapi.yaml`](openapi.yaml) ci-dessus (API interne), elle ne peut
+  pas driver du code réel. Aucune UI Swagger/Redoc interactive n'est
+  servie par l'application (la CSP stricte du site ne whiteliste pas le
+  CDN dont ces UI ont besoin par défaut) — importer `openapi.json` dans
+  un Swagger UI/Postman/Insomnia externe pour l'explorer visuellement.
