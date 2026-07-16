@@ -23,6 +23,8 @@ from app.models import Setting
 
 DEFAULT_TIMEZONE_KEY = "default_timezone"
 DEFAULT_LANGUAGE_KEY = "default_language"
+DEFAULT_DATE_FORMAT_KEY = "default_date_format"
+DEFAULT_TIME_FORMAT_KEY = "default_time_format"
 PUBLIC_BASE_URL_KEY = "public_base_url"
 ITEMS_PER_PAGE_KEY = "items_per_page"
 MAX_PER_PAGE_KEY = "max_per_page"
@@ -41,6 +43,16 @@ FALLBACK_DEFAULT_TIMEZONE = "Europe/Paris"
 # (see app/__init__.py::get_locale() and CLAUDE.md's i18n section).
 FALLBACK_DEFAULT_LANGUAGE = "fr"
 SUPPORTED_LANGUAGES = ("fr", "en")
+
+# Same no-env-var-equivalent situation as language above: date/time
+# display format was never a configurable concept before this Setting
+# existed. These fallbacks match the format hardcoded everywhere in the
+# app before this feature (%d/%m/%Y, %H:%M), so existing tests asserting
+# on that exact rendering keep passing unchanged.
+FALLBACK_DEFAULT_DATE_FORMAT = "%d/%m/%Y"
+FALLBACK_DEFAULT_TIME_FORMAT = "%H:%M"
+SUPPORTED_DATE_FORMATS = ("%d/%m/%Y", "%m/%d/%Y", "%Y-%m-%d")
+SUPPORTED_TIME_FORMATS = ("%H:%M", "%I:%M %p")
 
 
 class SettingsService:
@@ -81,6 +93,48 @@ class SettingsService:
             return _("Langue invalide : %(lang_code)s", lang_code=lang_code)
         try:
             Setting.set(DEFAULT_LANGUAGE_KEY, lang_code)
+            return None
+        except Exception as e:
+            db.session.rollback()
+            return str(e)
+
+    # --- date/time format ---
+
+    @staticmethod
+    def get_default_date_format() -> str:
+        value = Setting.get(DEFAULT_DATE_FORMAT_KEY)
+        if value:
+            return str(value)
+        return FALLBACK_DEFAULT_DATE_FORMAT
+
+    @staticmethod
+    def set_default_date_format(date_format: str) -> str | None:
+        if date_format not in SUPPORTED_DATE_FORMATS:
+            return _(
+                "Format de date invalide : %(date_format)s", date_format=date_format
+            )
+        try:
+            Setting.set(DEFAULT_DATE_FORMAT_KEY, date_format)
+            return None
+        except Exception as e:
+            db.session.rollback()
+            return str(e)
+
+    @staticmethod
+    def get_default_time_format() -> str:
+        value = Setting.get(DEFAULT_TIME_FORMAT_KEY)
+        if value:
+            return str(value)
+        return FALLBACK_DEFAULT_TIME_FORMAT
+
+    @staticmethod
+    def set_default_time_format(time_format: str) -> str | None:
+        if time_format not in SUPPORTED_TIME_FORMATS:
+            return _(
+                "Format d'heure invalide : %(time_format)s", time_format=time_format
+            )
+        try:
+            Setting.set(DEFAULT_TIME_FORMAT_KEY, time_format)
             return None
         except Exception as e:
             db.session.rollback()

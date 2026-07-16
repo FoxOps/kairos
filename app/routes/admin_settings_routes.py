@@ -11,7 +11,12 @@ from flask_babel import gettext as _
 from app.auth.decorators import admin_required
 from app.routes.admin import admin_bp
 from app.services import SettingsService
-from app.utils.helpers.common_helpers import get_language_choices, get_timezone_choices
+from app.utils.helpers.common_helpers import (
+    get_date_format_choices,
+    get_language_choices,
+    get_time_format_choices,
+    get_timezone_choices,
+)
 from scripts.backup_config import BackupConfig
 
 
@@ -36,6 +41,22 @@ def settings_dashboard():
                 flash(_("Erreur : %(error)s", error=error), "danger")
             else:
                 flash(_("Langue par défaut enregistrée"), "success")
+
+        elif section == "date_format":
+            date_format = request.form.get("default_date_format", "")
+            error = SettingsService.set_default_date_format(date_format)
+            if error:
+                flash(_("Erreur : %(error)s", error=error), "danger")
+            else:
+                flash(_("Format de date par défaut enregistré"), "success")
+
+        elif section == "time_format":
+            time_format = request.form.get("default_time_format", "")
+            error = SettingsService.set_default_time_format(time_format)
+            if error:
+                flash(_("Erreur : %(error)s", error=error), "danger")
+            else:
+                flash(_("Format d'heure par défaut enregistré"), "success")
 
         elif section == "general":
             public_base_url = request.form.get("public_base_url", "").strip() or None
@@ -103,6 +124,10 @@ def settings_dashboard():
         timezones=get_timezone_choices(),
         default_language=SettingsService.get_default_language(),
         languages=get_language_choices(),
+        default_date_format=SettingsService.get_default_date_format(),
+        date_formats=get_date_format_choices(),
+        default_time_format=SettingsService.get_default_time_format(),
+        time_formats=get_time_format_choices(),
         public_base_url=SettingsService.get_public_base_url(),
         items_per_page=SettingsService.get_items_per_page(),
         max_per_page=SettingsService.get_max_per_page(),

@@ -315,7 +315,7 @@ class TestApiCreateShiftTimezoneConversion:
     app/utils/helpers/timezone_helpers.py). The server must convert
     those digits from the viewer's effective_timezone into the org's
     canonical default_timezone before storing, and convert back for
-    display - this is what makes the /profile/update timezone
+    display - this is what makes the /profile/settings timezone
     preference actually affect the calendar, not just the ICS export."""
 
     def test_create_converts_viewer_tz_to_org_tz_for_storage(
@@ -327,12 +327,8 @@ class TestApiCreateShiftTimezoneConversion:
             SettingsService.set_default_timezone("Europe/Paris")
 
         logged_in_client.post(
-            "/profile/update",
-            data={
-                "name": "Admin",
-                "email": "login@example.com",
-                "timezone": "America/New_York",
-            },
+            "/profile/settings",
+            data={"timezone": "America/New_York"},
             follow_redirects=True,
         )
 

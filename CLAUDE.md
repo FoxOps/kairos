@@ -515,6 +515,67 @@ feature with zero changes: `BABEL_DEFAULT_LOCALE = "fr"` + `FALLBACK_DEFAULT_LAN
 `get_locale()` resolves to `"fr"` in every fixture-built test app, where gettext's empty-`msgstr`
 fallback makes every `_()` call render exactly the original French text).
 
+### Date/time display format
+
+Same architecture again: org default (`SettingsService.default_date_format`/`default_time_format`)
++ personal override (`User.date_format`/`User.time_format`), resolved via
+`User.effective_date_format()`/`effective_time_format()`. Values are **strftime patterns
+themselves** (`"%d/%m/%Y"`, `"%m/%d/%Y"`, `"%Y-%m-%d"` for dates; `"%H:%M"`, `"%I:%M %p"` for
+time), not an indirection code — `SettingsService.SUPPORTED_DATE_FORMATS`/`SUPPORTED_TIME_FORMATS`
+enumerate the only valid values, `get_date_format_choices()`/`get_time_format_choices()`
+(`app/utils/helpers/common_helpers.py`) pair each pattern with a *computed* sample render (e.g.
+`datetime(2026, 12, 31).strftime(pattern)`), never a hand-typed label, so the `<select>` option
+text can never drift from what the pattern actually produces.
+
+`app/__init__.py::get_date_format()`/`get_time_format()` mirror `get_locale()`'s resolution order
+and request-context guard, with one addition: **both cache their result on `flask.g` for the
+lifetime of the request**. `get_locale()` doesn't need this because `flask_babel.get_locale()`
+already caches internally once Babel resolves it — but there is no equivalent library-level cache
+here, and templates like `schedule.html` call the `format_date`/`format_time` Jinja filters once
+per table row. Without the `flask.g` cache, that's a real N+1 (`Setting.get()` hits the DB on every
+filter call) — caught once already by
+`test_performance.py::test_schedule_query_count_stable_across_dataset_size` during this feature's
+own development; keep that test green if you touch either resolver.
+
+Three Jinja filters (`app/utils/helpers/common_helpers.py`, registered in `app/__init__.py`
+alongside `date_fr`): `format_date`, `format_time`, `format_datetime` (the latter is just
+`format_date() + " " + format_time()`). These replace essentially every display-facing
+`.strftime('%d/%m/%Y')`/`.strftime('%H:%M')` call across the templates — but **not** every
+`strftime()` call: `<input type="date">`/`<input type="datetime-local">` `value` attributes and
+`date_str=...` URL route parameters (e.g. `schedule.html`'s `delete_all_shifts_for_week`) must
+stay `strftime('%Y-%m-%d')`, since those are consumed by the browser's native date input or parsed
+back by a route with `datetime.strptime(..., "%Y-%m-%d")` — never display, and never
+format-preference-aware. Don't "fix" these by pointing them at `format_date` too. The weekly
+reminder emails (`app/templates/emails/*.html`/`*.txt`) also went through this filter
+retrofit — as a side effect, the weekday name there now goes through the `date_fr` filter (already
+locale-aware, see above) instead of a raw `strftime('%A')`, which fixed a latent bug: `%A` depends
+on the OS locale (`locale.setlocale`), never reliably French in a WSGI process, so emails were
+likely showing English weekday names even in French - see `format_date_fr()`'s own docstring for
+why this codebase avoids `%A`/`%a` directly anywhere.
+
+Emails are a **display-format exception**, same boundary as timezone (see above): `NotificationService`
+renders inside `force_locale(user.effective_language())` per recipient for *text*, but
+`get_date_format()`/`get_time_format()` have no request context during a cron-triggered send
+(`app.app_context()` only, `has_request_context()` is `False`), so they always fall through to the
+**org default**, never the recipient's personal format preference. This mirrors the existing
+timezone behavior in emails (org-canonical time, not per-recipient) — not a bug to fix by threading
+the recipient through these resolvers.
+
+Beyond Jinja: `base.html` exposes the resolved patterns as `<body data-date-format
+data-time-format>`, the one non-Jinja-filter consumption point every other piece of
+format-aware JS reads from. `app/static/js/calendar/fullcalendar-config.js` derives a boolean
+`hour12` from `data-time-format` (`.includes('%I')`) to drive FullCalendar's own
+`eventTimeFormat`/`slotLabelFormat` — the calendar grid's own hour display, independent of any
+Jinja-rendered text. `app/static/js/utils/date.js` (`formatDate`/`formatTime`/`formatDateTime`,
+used by `swap-form.js`'s dynamically-fetched target-shift dropdown) reads the same two data
+attributes and switches on the pattern directly, rather than attempting a general strftime-in-JS
+engine — safe specifically because `SUPPORTED_DATE_FORMATS`/`SUPPORTED_TIME_FORMATS` above are a
+closed, small enumeration, not arbitrary user input. Both files use UTC getters
+(`getUTCDate()`/`getUTCHours()`/...), never local ones — same rule as documented at the top of
+`fullcalendar-config.js`: a date-only ISO string (`"2026-07-16"`, no time/offset) parses as UTC
+midnight, and a local getter would reinterpret it against the browser's own timezone and silently
+shift the day.
+
 ## Testing conventions
 
 `tests/conftest.py` defines the fixture chain: `test_app` builds a fresh app via

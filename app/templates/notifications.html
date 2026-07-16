@@ -35,7 +35,7 @@
                         <span class="badge badge-primary badge-xs mb-1">{{ _("Nouveau") }}</span><br>
                         {% endif %}
                         <span>{{ notification.message }}</span>
-                        <p class="text-xs text-base-content/60 mt-1">{{ notification.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+                        <p class="text-xs text-base-content/60 mt-1">{{ notification.created_at|format_datetime }}</p>
                     </div>
                     <form method="POST" action="{{ url_for('main.mark_notification_read', notification_id=notification.id) }}" class="shrink-0">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

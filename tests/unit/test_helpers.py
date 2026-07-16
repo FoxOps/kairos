@@ -15,7 +15,10 @@ from app.utils.helpers import (
     can_add_leave,
     can_add_oncall,
     can_add_shift,
+    format_date,
     format_date_fr,
+    format_datetime,
+    format_time,
     get_bool,
     get_int,
     is_user_on_leave,
@@ -512,6 +515,44 @@ class TestFormatFunctions:
         with test_app.app_context(), force_locale("en"):
             assert format_date_fr(date(2026, 7, 13)) == "Mon. 13/07"
             assert format_date_fr(date(2026, 7, 19)) == "Sun. 19/07"
+
+    def test_format_date_uses_org_default(self, test_app):
+        with test_app.app_context():
+            assert format_date(date(2026, 7, 13)) == "13/07/2026"
+
+    def test_format_date_none(self, test_app):
+        with test_app.app_context():
+            assert format_date(None) == ""
+
+    def test_format_date_respects_org_setting_change(self, test_app):
+        with test_app.app_context():
+            from app.services import SettingsService
+
+            SettingsService.set_default_date_format("%Y-%m-%d")
+            assert format_date(date(2026, 7, 13)) == "2026-07-13"
+
+    def test_format_time_uses_org_default(self, test_app):
+        with test_app.app_context():
+            assert format_time(datetime(2026, 7, 13, 14, 30)) == "14:30"
+
+    def test_format_time_none(self, test_app):
+        with test_app.app_context():
+            assert format_time(None) == ""
+
+    def test_format_time_respects_org_setting_change(self, test_app):
+        with test_app.app_context():
+            from app.services import SettingsService
+
+            SettingsService.set_default_time_format("%I:%M %p")
+            assert format_time(datetime(2026, 7, 13, 14, 30)) == "02:30 PM"
+
+    def test_format_datetime_combines_date_and_time(self, test_app):
+        with test_app.app_context():
+            assert format_datetime(datetime(2026, 7, 13, 14, 30)) == "13/07/2026 14:30"
+
+    def test_format_datetime_none(self, test_app):
+        with test_app.app_context():
+            assert format_datetime(None) == ""
 
 
 class TestBuildShiftTypeColorMap:

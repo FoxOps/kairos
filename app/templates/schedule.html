@@ -75,12 +75,12 @@
                         <td>{{ shift.shift_type.label if shift.shift_type else shift.shift_type }}</td>
                         <td>
                             {% if is_first_date.value %}
-                                {{ shift.date.strftime('%d/%m/%Y') }}
+                                {{ shift.date|format_date }}
                                 {% set seen_dates = (seen_dates or []) + [shift.date] %}
                             {% endif %}
                         </td>
-                        <td>{{ shift.start_time.strftime('%H:%M') }}</td>
-                        <td>{{ shift.end_time.strftime('%H:%M') }}</td>
+                        <td>{{ shift.start_time|format_time }}</td>
+                        <td>{{ shift.end_time|format_time }}</td>
                         <td>
                             {% if current_user.is_admin %}
                             <div class="flex flex-wrap gap-2" role="group" aria-label="{{ _("Actions pour ce shift") }}">
@@ -89,7 +89,7 @@
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="btn btn-error btn-sm js-confirm-delete"
                                             data-confirm-message="{{ _("Êtes-vous sûr de vouloir supprimer ce shift ?") }}"
-                                            aria-label="{{ _("Supprimer le shift du %(date)s", date=shift.date.strftime('%d/%m/%Y')) }}"
+                                            aria-label="{{ _("Supprimer le shift du %(date)s", date=shift.date|format_date) }}"
                                             title="{{ _("Supprimer ce shift") }}">
                                         <i class="fas fa-trash" aria-hidden="true"></i>
                                     </button>
@@ -113,8 +113,8 @@
                                 <form method="POST" action="{{ url_for('main.delete_all_shifts_for_week', date_str=shift.date.strftime('%Y-%m-%d')) }}" class="mb-0">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="btn btn-primary btn-sm js-confirm-delete"
-                                            data-confirm-message="{{ _("Êtes-vous SÛR de vouloir supprimer TOUS les shifts de la SEMAINE du %(date)s ?", date=shift.date.strftime('%d/%m/%Y')) }}"
-                                            aria-label="{{ _("Supprimer tous les shifts de la semaine du %(date)s", date=shift.date.strftime('%d/%m/%Y')) }}"
+                                            data-confirm-message="{{ _("Êtes-vous SÛR de vouloir supprimer TOUS les shifts de la SEMAINE du %(date)s ?", date=shift.date|format_date) }}"
+                                            aria-label="{{ _("Supprimer tous les shifts de la semaine du %(date)s", date=shift.date|format_date) }}"
                                             title="{{ _("Supprimer TOUS les shifts de la semaine") }}">
                                         <i class="fas fa-calendar-week" aria-hidden="true"></i>
                                     </button>
@@ -126,9 +126,9 @@
                                 <form method="POST" action="{{ url_for('main.delete_all_shifts_for_day', date_str=shift.date.strftime('%Y-%m-%d')) }}" class="mb-0">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="btn btn-info btn-sm js-confirm-delete"
-                                            data-confirm-message="{{ _("Êtes-vous sûr de vouloir supprimer TOUS les shifts du %(date)s ?", date=shift.date.strftime('%d/%m/%Y')) }}"
-                                            aria-label="{{ _("Supprimer tous les shifts de la journée du %(date)s", date=shift.date.strftime('%d/%m/%Y')) }}"
-                                            title="{{ _("Supprimer TOUS les shifts du %(date)s", date=shift.date.strftime('%d/%m/%Y')) }}">
+                                            data-confirm-message="{{ _("Êtes-vous sûr de vouloir supprimer TOUS les shifts du %(date)s ?", date=shift.date|format_date) }}"
+                                            aria-label="{{ _("Supprimer tous les shifts de la journée du %(date)s", date=shift.date|format_date) }}"
+                                            title="{{ _("Supprimer TOUS les shifts du %(date)s", date=shift.date|format_date) }}">
                                         <i class="fas fa-calendar-day" aria-hidden="true"></i>
                                     </button>
                                 </form>

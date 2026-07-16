@@ -17,7 +17,7 @@
                     <select class="select w-full validator" id="shift_id" name="shift_id" required aria-required="true" aria-describedby="shift-help">
                         <option value="" disabled selected>{{ _("Sélectionnez un de vos shifts à venir") }}</option>
                         {% for shift in my_shifts %}
-                        <option value="{{ shift.id }}">{{ shift.date.strftime('%d/%m/%Y') }} - {{ shift.shift_type.label }}</option>
+                        <option value="{{ shift.id }}">{{ shift.date|format_date }} - {{ shift.shift_type.label }}</option>
                         {% endfor %}
                     </select>
                     <p class="text-sm text-base-content/60" id="shift-help">{{ _("Seuls vos shifts à venir sont proposables") }}</p>

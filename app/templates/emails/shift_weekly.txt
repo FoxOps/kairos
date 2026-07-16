@@ -1,8 +1,8 @@
 {{ _("Bonjour %(user_name)s,", user_name=user_name) }}
 
-{{ _("Voici vos shifts pour la semaine du %(week_start)s au %(week_end)s :", week_start=week_start.strftime('%d/%m/%Y'), week_end=week_end.strftime('%d/%m/%Y')) }}
+{{ _("Voici vos shifts pour la semaine du %(week_start)s au %(week_end)s :", week_start=week_start|format_date, week_end=week_end|format_date) }}
 {% for shift in shifts %}
-- {{ shift.date.strftime('%A')|capitalize }} {{ shift.date.strftime('%d/%m/%Y') }} : {{ shift.start_time.strftime('%Hh%M') }} - {{ shift.end_time.strftime('%Hh%M') }}
+- {{ shift.date|date_fr("%a")|capitalize }} {{ shift.date|format_date }} : {{ shift.start_time|format_time }} - {{ shift.end_time|format_time }}
 {%- endfor %}
 {% if app_base_url %}
 {{ _("Voir le planning : %(url)s", url=app_base_url ~ "/schedule") }}

@@ -2,7 +2,7 @@
 
 {{ _("Vous êtes d'astreinte à partir de demain :") }}
 
-{{ _("Du %(start)s au %(end)s", start=oncall_start.strftime('%A %d/%m/%Y à %Hh%M')|capitalize, end=oncall_end.strftime('%A %d/%m/%Y à %Hh%M')|capitalize) }}
+{{ _("Du %(start)s au %(end)s", start=(oncall_start|date_fr("%a") ~ " " ~ oncall_start|format_date ~ " " ~ oncall_start|format_time), end=(oncall_end|date_fr("%a") ~ " " ~ oncall_end|format_date ~ " " ~ oncall_end|format_time)) }}
 {% if app_base_url %}
 {{ _("Voir les astreintes : %(url)s", url=app_base_url ~ "/oncall") }}
 {% endif %}

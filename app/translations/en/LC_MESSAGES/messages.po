@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-16 07:34+0200\n"
+"POT-Creation-Date: 2026-07-16 09:14+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -52,7 +52,9 @@ msgstr "%(shifts_deleted)s existing shifts deleted for the period"
 msgid ""
 "Régénération complète terminée pour la période du %(strftime)s au "
 "%(strftime1)s"
-msgstr "Full regeneration completed for the period from %(strftime)s to %(strftime1)s"
+msgstr ""
+"Full regeneration completed for the period from %(strftime)s to "
+"%(strftime1)s"
 
 #: app/routes/admin_automation_routes.py:186
 #: app/routes/admin_automation_routes.py:260
@@ -67,7 +69,7 @@ msgstr "Invalid date format: %(val0)s"
 #: app/routes/admin_shift_type_routes.py:94
 #: app/routes/admin_shift_type_routes.py:113 app/routes/admin_user_routes.py:54
 #: app/routes/admin_user_routes.py:88 app/routes/admin_user_routes.py:107
-#: app/routes/auth.py:307 app/routes/leave_routes.py:109
+#: app/routes/auth.py:328 app/routes/leave_routes.py:109
 #: app/routes/leave_routes.py:142 app/routes/oncall_routes.py:86
 #: app/routes/oncall_routes.py:105 app/routes/oncall_routes.py:128
 #: app/routes/oncall_routes.py:156 app/routes/shift_routes.py:121
@@ -102,7 +104,9 @@ msgstr "Backup failed: %(errors)s"
 msgid ""
 "Nettoyage terminé : %(val0)s sauvegarde(s) locale(s), %(val1)s "
 "sauvegarde(s) S3 supprimée(s)."
-msgstr "Cleanup completed: %(val0)s local backup(s), %(val1)s S3 backup(s) deleted."
+msgstr ""
+"Cleanup completed: %(val0)s local backup(s), %(val1)s S3 backup(s) "
+"deleted."
 
 #: app/routes/admin_group_routes.py:32 app/routes/admin_group_routes.py:63
 msgid "Le nom du groupe est obligatoire."
@@ -120,54 +124,64 @@ msgstr "Group successfully updated!"
 msgid "Groupe supprimé avec succès !"
 msgstr "Group successfully deleted!"
 
-#: app/routes/admin_settings_routes.py:28
-#: app/routes/admin_settings_routes.py:36
-#: app/routes/admin_settings_routes.py:44
+#: app/routes/admin_settings_routes.py:33
+#: app/routes/admin_settings_routes.py:41
+#: app/routes/admin_settings_routes.py:49
 #: app/routes/admin_settings_routes.py:57
 #: app/routes/admin_settings_routes.py:65
-#: app/routes/admin_settings_routes.py:80
-#: app/routes/admin_settings_routes.py:92
+#: app/routes/admin_settings_routes.py:78
+#: app/routes/admin_settings_routes.py:86
+#: app/routes/admin_settings_routes.py:101
+#: app/routes/admin_settings_routes.py:113
 #, python-format
 msgid "Erreur : %(error)s"
 msgstr "Error: %(error)s"
 
-#: app/routes/admin_settings_routes.py:30
+#: app/routes/admin_settings_routes.py:35
 msgid "Fuseau horaire par défaut enregistré"
 msgstr "Default timezone saved"
 
-#: app/routes/admin_settings_routes.py:38
+#: app/routes/admin_settings_routes.py:43
 msgid "Langue par défaut enregistrée"
 msgstr "Default language saved"
 
-#: app/routes/admin_settings_routes.py:46
+#: app/routes/admin_settings_routes.py:51
+msgid "Format de date par défaut enregistré"
+msgstr "Default date format saved"
+
+#: app/routes/admin_settings_routes.py:59
+msgid "Format d'heure par défaut enregistré"
+msgstr "Default time format saved"
+
+#: app/routes/admin_settings_routes.py:67
 msgid "URL publique enregistrée"
 msgstr "Public URL saved"
 
-#: app/routes/admin_settings_routes.py:53
+#: app/routes/admin_settings_routes.py:74
 msgid "Erreur : valeurs de pagination invalides"
 msgstr "Error: invalid pagination values"
 
-#: app/routes/admin_settings_routes.py:59
+#: app/routes/admin_settings_routes.py:80
 msgid "Pagination enregistrée"
 msgstr "Pagination saved"
 
-#: app/routes/admin_settings_routes.py:67
+#: app/routes/admin_settings_routes.py:88
 msgid "Notifications enregistrées"
 msgstr "Notifications saved"
 
-#: app/routes/admin_settings_routes.py:74
+#: app/routes/admin_settings_routes.py:95
 msgid "Erreur : valeurs de sauvegarde invalides"
 msgstr "Error: invalid backup values"
 
-#: app/routes/admin_settings_routes.py:82
+#: app/routes/admin_settings_routes.py:103
 msgid "Rétention des sauvegardes enregistrée"
 msgstr "Backup retention saved"
 
-#: app/routes/admin_settings_routes.py:88
+#: app/routes/admin_settings_routes.py:109
 msgid "Erreur : durée d'expiration invalide"
 msgstr "Error: invalid expiry duration"
 
-#: app/routes/admin_settings_routes.py:94
+#: app/routes/admin_settings_routes.py:115
 msgid "Durée d'expiration ICS enregistrée"
 msgstr "ICS expiry duration saved"
 
@@ -224,79 +238,88 @@ msgstr "User successfully updated!"
 msgid "Utilisateur supprimé avec succès !"
 msgstr "User successfully deleted!"
 
-#: app/routes/auth.py:51
+#: app/routes/auth.py:56
 msgid "L'inscription publique est désactivée. Utilisez l'authentification OIDC."
 msgstr "Public registration is disabled. Use OIDC authentication."
 
-#: app/routes/auth.py:58
+#: app/routes/auth.py:63
 msgid "L'inscription publique est désactivée. Contactez l'administrateur."
 msgstr "Public registration is disabled. Contact the administrator."
 
-#: app/routes/auth.py:87
+#: app/routes/auth.py:92
 msgid "Email et mot de passe sont obligatoires."
 msgstr "Email and password are required."
 
-#: app/routes/auth.py:94
+#: app/routes/auth.py:99
 msgid "Connexion réussie !"
 msgstr "Login successful!"
 
-#: app/routes/auth.py:102
+#: app/routes/auth.py:107
 msgid "Email ou mot de passe incorrect."
 msgstr "Incorrect email or password."
 
-#: app/routes/auth.py:121
+#: app/routes/auth.py:126
 msgid "La connexion OIDC n'est pas disponible pour le moment."
 msgstr "OIDC login is not available at the moment."
 
-#: app/routes/auth.py:144
+#: app/routes/auth.py:149
 msgid "La connexion OIDC a échoué. Veuillez réessayer."
 msgstr "OIDC login failed. Please try again."
 
-#: app/routes/auth.py:147
+#: app/routes/auth.py:152
 msgid "Connexion OIDC réussie !"
 msgstr "OIDC login successful!"
 
-#: app/routes/auth.py:171
+#: app/routes/auth.py:176
 msgid "Vous avez été déconnecté."
 msgstr "You have been logged out."
 
-#: app/routes/auth.py:195
+#: app/routes/auth.py:200
 msgid "Le nom et l'email sont obligatoires."
 msgstr "Name and email are required."
 
-#: app/routes/auth.py:204
+#: app/routes/auth.py:209
 msgid "Cet email est déjà utilisé par un autre utilisateur."
 msgstr "This email is already used by another user."
 
-#: app/routes/auth.py:217
+#: app/routes/auth.py:222
 msgid "Le mot de passe actuel est obligatoire pour changer de mot de passe."
 msgstr "The current password is required to change your password."
 
-#: app/routes/auth.py:224
+#: app/routes/auth.py:229
 msgid "Le mot de passe actuel est incorrect."
 msgstr "The current password is incorrect."
 
-#: app/routes/auth.py:228
+#: app/routes/auth.py:233
 msgid "Les nouveaux mots de passe ne correspondent pas."
 msgstr "The new passwords do not match."
 
-#: app/routes/auth.py:234
+#: app/routes/auth.py:239
 msgid "Votre profil a été mis à jour avec succès !"
 msgstr "Your profile has been successfully updated!"
 
-#: app/routes/auth.py:257
+#: app/routes/auth.py:262
 msgid "Fuseau horaire invalide."
 msgstr "Invalid timezone."
 
-#: app/routes/auth.py:263
+#: app/routes/auth.py:268
 msgid "Langue invalide."
 msgstr "Invalid language."
 
-#: app/routes/auth.py:281
+#: app/routes/auth.py:274 app/routes/shift_routes.py:222
+#: app/routes/shift_routes.py:258
+msgid "Format de date invalide."
+msgstr "Invalid date format."
+
+#: app/routes/auth.py:280
+msgid "Format d'heure invalide."
+msgstr "Invalid time format."
+
+#: app/routes/auth.py:298
 msgid "Vos paramètres ont été mis à jour avec succès !"
 msgstr "Your settings have been successfully updated!"
 
-#: app/routes/auth.py:304
+#: app/routes/auth.py:325
 msgid "Token ICS régénéré avec succès !"
 msgstr "ICS token successfully regenerated!"
 
@@ -317,7 +340,9 @@ msgstr "Invalid user."
 msgid ""
 "Impossible d'ajouter ce congé (dates invalides, congé existant sur cette "
 "période, ou effectif disponible tombant à 0 un jour de cette période)."
-msgstr "Unable to add this leave (invalid dates, existing leave over this period, or available staff dropping to 0 on a day within this period)."
+msgstr ""
+"Unable to add this leave (invalid dates, existing leave over this period,"
+" or available staff dropping to 0 on a day within this period)."
 
 #: app/routes/leave_routes.py:87 app/routes/leave_routes.py:127
 msgid "Rééquilibrage automatique des shifts échoué."
@@ -447,10 +472,6 @@ msgstr "No shift found for %(strftime)s."
 msgid "Tous les %(count)s shifts du %(strftime)s ont été supprimés avec succès !"
 msgstr "All %(count)s shifts for %(strftime)s were successfully deleted!"
 
-#: app/routes/shift_routes.py:222 app/routes/shift_routes.py:258
-msgid "Format de date invalide."
-msgstr "Invalid date format."
-
 #: app/routes/shift_routes.py:243
 #, python-format
 msgid "Aucun shift trouvé pour la semaine du %(strftime)s."
@@ -461,7 +482,9 @@ msgstr "No shift found for the week of %(strftime)s."
 msgid ""
 "Tous les %(count)s shifts de la semaine du %(strftime)s ont été supprimés"
 " avec succès !"
-msgstr "All %(count)s shifts for the week of %(strftime)s were successfully deleted!"
+msgstr ""
+"All %(count)s shifts for the week of %(strftime)s were successfully "
+"deleted!"
 
 #: app/routes/swap_routes.py:39
 msgid "Sélectionnez un shift à échanger et un destinataire."
@@ -525,14 +548,18 @@ msgstr " Reason: %(comment)s"
 msgid ""
 "L'échange approuvé avec %(name)s a été annulé par l'administrateur, vos "
 "shifts d'origine sont restaurés."
-msgstr "The approved swap with %(name)s has been reverted by the administrator, your original shifts have been restored."
+msgstr ""
+"The approved swap with %(name)s has been reverted by the administrator, "
+"your original shifts have been restored."
 
 #: app/services/app_notification_service.py:126
 #, python-format
 msgid ""
 "L'échange avec %(name)s a été annulé par l'administrateur, vos shifts "
 "d'origine sont restaurés."
-msgstr "The swap with %(name)s has been reverted by the administrator, your original shifts have been restored."
+msgstr ""
+"The swap with %(name)s has been reverted by the administrator, your "
+"original shifts have been restored."
 
 #: app/services/backup_service.py:88
 msgid "Les sauvegardes sont désactivées (BACKUP_ENABLED=false)"
@@ -563,7 +590,9 @@ msgstr "A leave already exists for %(name)s during this period"
 msgid ""
 "Impossible : l'effectif disponible tomberait à 0 sur au moins un jour de "
 "cette période"
-msgstr "Not possible: available staff would drop to 0 on at least one day of this period"
+msgstr ""
+"Not possible: available staff would drop to 0 on at least one day of this"
+" period"
 
 #: app/services/notification_service.py:111
 #, python-format
@@ -583,7 +612,9 @@ msgstr "The on-call must start on a Friday."
 msgid ""
 "Impossible d'ajouter cette astreinte (période déjà couverte ou congé sur "
 "la période)."
-msgstr "Unable to add this on-call (period already covered or leave during this period)."
+msgstr ""
+"Unable to add this on-call (period already covered or leave during this "
+"period)."
 
 #: app/services/oncall_service.py:96
 msgid "Astreinte non trouvée"
@@ -603,29 +634,39 @@ msgstr "An on-call already exists for %(name)s during this period"
 msgid "%(name)s est en congé pendant cette période"
 msgstr "%(name)s is on leave during this period"
 
-#: app/services/settings_service.py:61
+#: app/services/settings_service.py:73
 #, python-format
 msgid "Fuseau horaire invalide : %(tz_name)s"
 msgstr "Invalid timezone: %(tz_name)s"
 
-#: app/services/settings_service.py:81
+#: app/services/settings_service.py:93
 #, python-format
 msgid "Langue invalide : %(lang_code)s"
 msgstr "Invalid language: %(lang_code)s"
 
-#: app/services/settings_service.py:126
+#: app/services/settings_service.py:114
+#, python-format
+msgid "Format de date invalide : %(date_format)s"
+msgstr "Invalid date format: %(date_format)s"
+
+#: app/services/settings_service.py:134
+#, python-format
+msgid "Format d'heure invalide : %(time_format)s"
+msgstr "Invalid time format: %(time_format)s"
+
+#: app/services/settings_service.py:180
 msgid "Les valeurs de pagination doivent être positives"
 msgstr "Pagination values must be positive"
 
-#: app/services/settings_service.py:128
+#: app/services/settings_service.py:182
 msgid "items_per_page ne peut pas dépasser max_per_page"
 msgstr "items_per_page cannot exceed max_per_page"
 
-#: app/services/settings_service.py:176
+#: app/services/settings_service.py:230
 msgid "Les valeurs de rétention doivent être positives"
 msgstr "Retention values must be positive"
 
-#: app/services/settings_service.py:200
+#: app/services/settings_service.py:254
 msgid "La durée d'expiration doit être positive"
 msgstr "The expiry duration must be positive"
 
@@ -740,7 +781,9 @@ msgstr "The shift has changed since approval, automatic reversion is not possibl
 msgid ""
 "Le shift retourné a changé depuis l'approbation, annulation impossible "
 "automatiquement"
-msgstr "The returned shift has changed since approval, automatic reversion is not possible"
+msgstr ""
+"The returned shift has changed since approval, automatic reversion is not"
+" possible"
 
 #: app/services/user_service.py:53 app/services/user_service.py:74
 msgid "Un utilisateur avec cet email existe déjà."
@@ -750,7 +793,9 @@ msgstr "A user with this email already exists."
 msgid ""
 "Impossible de supprimer cet utilisateur : il a des shifts, astreintes ou "
 "congés associés."
-msgstr "Unable to delete this user: they have associated shifts, on-calls, or leaves."
+msgstr ""
+"Unable to delete this user: they have associated shifts, on-calls, or "
+"leaves."
 
 #: app/templates/400.html:4 app/templates/400.html:7
 msgid "Requête incorrecte"
@@ -853,7 +898,9 @@ msgstr "The HTTP method used is not allowed for this resource."
 msgid ""
 "Le serveur a reçu une requête avec une méthode (GET, POST, PUT, DELETE, "
 "etc.) qui n'est pas supportée pour cette URL."
-msgstr "The server received a request with a method (GET, POST, PUT, DELETE, etc.) that is not supported for this URL."
+msgstr ""
+"The server received a request with a method (GET, POST, PUT, DELETE, "
+"etc.) that is not supported for this URL."
 
 #: app/templates/405.html:17 app/templates/admin/automation/full.html:158
 msgid "Vérifiez que :"
@@ -1010,7 +1057,7 @@ msgstr "Export my %(resource_name)s in iCalendar format"
 msgid "Exporter mes %(resource_name)s"
 msgstr "Export my %(resource_name)s"
 
-#: app/templates/_pagination.html:22 app/templates/admin/settings.html:92
+#: app/templates/_pagination.html:22 app/templates/admin/settings.html:144
 msgid "Pagination"
 msgstr "Pagination"
 
@@ -1031,7 +1078,7 @@ msgstr "Next page"
 msgid "Nombre d'éléments par page"
 msgstr "Number of items per page"
 
-#: app/templates/_pagination.html:40 app/templates/admin/settings.html:94
+#: app/templates/_pagination.html:40 app/templates/admin/settings.html:146
 msgid "Éléments par page"
 msgstr "Items per page"
 
@@ -1119,9 +1166,10 @@ msgstr "Save the leave"
 #: app/templates/admin/add_user.html:61 app/templates/admin/edit_group.html:35
 #: app/templates/admin/edit_shift_type.html:41
 #: app/templates/admin/edit_user.html:56 app/templates/admin/settings.html:30
-#: app/templates/admin/settings.html:56 app/templates/admin/settings.html:80
-#: app/templates/admin/settings.html:103 app/templates/admin/settings.html:124
-#: app/templates/admin/settings.html:150 app/templates/admin/settings.html:172
+#: app/templates/admin/settings.html:56 app/templates/admin/settings.html:82
+#: app/templates/admin/settings.html:108 app/templates/admin/settings.html:132
+#: app/templates/admin/settings.html:155 app/templates/admin/settings.html:176
+#: app/templates/admin/settings.html:202 app/templates/admin/settings.html:224
 msgid "Enregistrer"
 msgstr "Save"
 
@@ -1145,7 +1193,7 @@ msgstr "Cancel and return to the list"
 #: app/templates/admin/edit_shift_type.html:44
 #: app/templates/admin/edit_user.html:58 app/templates/admin/edit_user.html:59
 #: app/templates/admin/swaps.html:128
-#: app/templates/auth/profile_settings.html:69
+#: app/templates/auth/profile_settings.html:89
 #: app/templates/auth/update_profile.html:53 app/templates/swaps.html:59
 #: app/utils/helpers/js_translations.py:30
 msgid "Annuler"
@@ -1259,7 +1307,9 @@ msgstr "None (simple give-away)"
 msgid ""
 "Choisissez d'abord un collègue - laissez vide pour un don simple de votre"
 " shift"
-msgstr "First choose a colleague - leave empty for a simple give-away of your shift"
+msgstr ""
+"First choose a colleague - leave empty for a simple give-away of your "
+"shift"
 
 #: app/templates/add_swap.html:48 app/templates/add_swap.html:49
 msgid "Envoyer la demande"
@@ -1269,110 +1319,110 @@ msgstr "Send the request"
 msgid "Leviia Schedule - Gestion des plannings, astreintes et congés d'équipe."
 msgstr "Leviia Schedule - Team shift, on-call, and leave management."
 
-#: app/templates/base.html:68
+#: app/templates/base.html:70
 msgid "Sauter la navigation"
 msgstr "Skip navigation"
 
-#: app/templates/base.html:71 app/templates/index.html:3
+#: app/templates/base.html:73 app/templates/index.html:3
 msgid "Accueil"
 msgstr "Home"
 
-#: app/templates/base.html:72 app/templates/dashboard.html:3
+#: app/templates/base.html:74 app/templates/dashboard.html:3
 msgid "Tableau de bord"
 msgstr "Dashboard"
 
 #: app/templates/admin/automation/full_dry_run.html:61
 #: app/templates/admin/automation/full_dry_run.html:141
-#: app/templates/admin/dashboard.html:32 app/templates/base.html:73
+#: app/templates/admin/dashboard.html:32 app/templates/base.html:75
 #: app/templates/index.html:130
 msgid "Shifts"
 msgstr "Shifts"
 
 #: app/templates/admin/automation/full_dry_run.html:24
 #: app/templates/admin/automation/full_dry_run.html:127
-#: app/templates/admin/dashboard.html:54 app/templates/base.html:74
+#: app/templates/admin/dashboard.html:54 app/templates/base.html:76
 #: app/templates/dashboard.html:28 app/templates/index.html:131
 #: app/templates/oncall.html:3 app/templates/oncall.html:8
 msgid "Astreintes"
 msgstr "On-calls"
 
-#: app/templates/admin/dashboard.html:65 app/templates/base.html:75
+#: app/templates/admin/dashboard.html:65 app/templates/base.html:77
 #: app/templates/dashboard.html:36 app/templates/index.html:132
 #: app/templates/leave.html:3 app/templates/leave.html:8
 msgid "Congés"
 msgstr "Leaves"
 
-#: app/templates/base.html:76
+#: app/templates/base.html:78
 msgid "Échanges"
 msgstr "Swaps"
 
-#: app/templates/base.html:107
+#: app/templates/base.html:109
 msgid "Basculer entre le thème clair et sombre"
 msgstr "Toggle between light and dark theme"
 
-#: app/templates/base.html:137
+#: app/templates/base.html:139
 msgid "Menu"
 msgstr "Menu"
 
-#: app/templates/base.html:142 app/templates/base.html:184
+#: app/templates/base.html:144 app/templates/base.html:186
 msgid "Accueil - Leviia"
 msgstr "Home - Leviia"
 
-#: app/templates/base.html:157
+#: app/templates/base.html:159
 msgid "Fermer cette notification"
 msgstr "Close this notification"
 
-#: app/templates/base.html:173
+#: app/templates/base.html:175
 msgid "Gestion des plannings, astreintes et congés d'équipe."
 msgstr "Team shift, on-call, and leave management."
 
-#: app/templates/base.html:174
+#: app/templates/base.html:176
 #, python-format
 msgid "Version %(app_version)s | (c) 2026 Leviia"
 msgstr "Version %(app_version)s | (c) 2026 Leviia"
 
-#: app/templates/base.html:181
+#: app/templates/base.html:183
 msgid "Fermer le menu"
 msgstr "Close the menu"
 
-#: app/templates/base.html:182
+#: app/templates/base.html:184
 msgid "Navigation principale"
 msgstr "Main navigation"
 
-#: app/templates/base.html:195
+#: app/templates/base.html:197
 #, python-format
 msgid "Notifications (%(count)s non lues)"
 msgstr "Notifications (%(count)s unread)"
 
-#: app/templates/base.html:195 app/templates/base.html:196
+#: app/templates/base.html:197 app/templates/base.html:198
 #: app/templates/notifications.html:3 app/templates/notifications.html:8
 msgid "Notifications"
 msgstr "Notifications"
 
-#: app/templates/base.html:204
+#: app/templates/base.html:206
 msgid "Administration"
 msgstr "Administration"
 
 #: app/templates/admin/dashboard.html:10 app/templates/admin/users.html:10
-#: app/templates/base.html:205
+#: app/templates/base.html:207
 msgid "Utilisateurs"
 msgstr "Users"
 
-#: app/templates/base.html:206 app/templates/index.html:96
+#: app/templates/base.html:208 app/templates/index.html:96
 msgid "Admin"
 msgstr "Admin"
 
-#: app/templates/base.html:212
+#: app/templates/base.html:214
 #, python-format
 msgid "Mon profil - %(name)s"
 msgstr "My profile - %(name)s"
 
-#: app/templates/base.html:221
+#: app/templates/base.html:223
 msgid "Déconnexion"
 msgstr "Logout"
 
 #: app/templates/auth/login.html:3 app/templates/auth/login.html:10
-#: app/templates/base.html:225 app/templates/base.html:226
+#: app/templates/base.html:227 app/templates/base.html:228
 msgid "Connexion"
 msgstr "Login"
 
@@ -1551,7 +1601,9 @@ msgstr "Edit mode enabled"
 msgid ""
 "Le drag & drop est activé. Cliquez sur un événement (shift, astreinte, "
 "congé) pour le supprimer (avec confirmation)."
-msgstr "Drag & drop is enabled. Click on an event (shift, on-call, leave) to delete it (with confirmation)."
+msgstr ""
+"Drag & drop is enabled. Click on an event (shift, on-call, leave) to "
+"delete it (with confirmation)."
 
 #: app/templates/index.html:51
 msgid "Déplacer un événement"
@@ -1593,7 +1645,9 @@ msgstr "Constraints"
 msgid ""
 "Les astreintes doivent commencer un vendredi. Les congés et shifts ne "
 "peuvent pas être placés sur des week-ends."
-msgstr "On-calls must start on a Friday. Leaves and shifts cannot be placed on weekends."
+msgstr ""
+"On-calls must start on a Friday. Leaves and shifts cannot be placed on "
+"weekends."
 
 #: app/templates/index.html:65
 msgid "Calendrier interactif"
@@ -1970,7 +2024,9 @@ msgstr "Purge my history of completed swaps"
 msgid ""
 "Supprimer définitivement toutes vos demandes terminées (approuvées, "
 "rejetées ou annulées) ?"
-msgstr "Permanently delete all your completed requests (approved, rejected, or cancelled)?"
+msgstr ""
+"Permanently delete all your completed requests (approved, rejected, or "
+"cancelled)?"
 
 #: app/templates/swaps.html:21
 msgid "Purger l'historique"
@@ -2163,7 +2219,9 @@ msgstr "Leave empty for a default password"
 msgid ""
 "Si vous ne spécifiez pas de mot de passe, un mot de passe par défaut sera"
 " généré (password123)."
-msgstr "If you do not specify a password, a default password will be generated (password123)."
+msgstr ""
+"If you do not specify a password, a default password will be generated "
+"(password123)."
 
 #: app/templates/admin/add_user.html:60
 msgid "Enregistrer l'utilisateur"
@@ -2261,7 +2319,7 @@ msgstr "Configure"
 
 #: app/templates/admin/backups/dashboard.html:8
 #: app/templates/admin/backups/dashboard.html:11
-#: app/templates/admin/dashboard.html:98 app/templates/admin/settings.html:136
+#: app/templates/admin/dashboard.html:98 app/templates/admin/settings.html:188
 msgid "Sauvegardes"
 msgstr "Backups"
 
@@ -2301,7 +2359,7 @@ msgstr "Unique group name"
 #: app/templates/admin/edit_group.html:34
 #: app/templates/admin/edit_shift_type.html:40
 #: app/templates/admin/edit_user.html:55
-#: app/templates/auth/profile_settings.html:66
+#: app/templates/auth/profile_settings.html:86
 #: app/templates/auth/update_profile.html:50
 msgid "Enregistrer les modifications"
 msgstr "Save changes"
@@ -2459,7 +2517,11 @@ msgid ""
 "l'export ICS. Les utilisateurs peuvent choisir un fuseau personnel sur "
 "leur profil, ce qui n'affecte que l'affichage dans l'app, jamais le "
 "fichier ICS exporté ni l'heure réelle du shift."
-msgstr "Timezone used to interpret shift/on-call times and for ICS export. Users can choose a personal timezone in their profile, which only affects the display in the app, never the exported ICS file nor the actual shift time."
+msgstr ""
+"Timezone used to interpret shift/on-call times and for ICS export. Users "
+"can choose a personal timezone in their profile, which only affects the "
+"display in the app, never the exported ICS file nor the actual shift "
+"time."
 
 #: app/templates/admin/settings.html:42
 #: app/templates/auth/profile_settings.html:29
@@ -2474,65 +2536,106 @@ msgstr "Organization's default language"
 msgid ""
 "Langue utilisée pour l'interface et les emails de notification, quand un "
 "utilisateur n'a pas défini de préférence personnelle sur son profil."
-msgstr "Language used for the interface and notification emails, when a user has not set a personal preference in their profile."
+msgstr ""
+"Language used for the interface and notification emails, when a user has "
+"not set a personal preference in their profile."
 
 #: app/templates/admin/settings.html:68
+#: app/templates/auth/profile_settings.html:39
+msgid "Format de date"
+msgstr "Date format"
+
+#: app/templates/admin/settings.html:70
+msgid "Format de date par défaut de l'organisation"
+msgstr "Organization's default date format"
+
+#: app/templates/admin/settings.html:77
+msgid ""
+"Format utilisé pour afficher les dates, quand un utilisateur n'a pas "
+"défini de préférence personnelle sur son profil. N'affecte pas l'export "
+"ICS."
+msgstr "Format used to display dates, when a user has not set a personal preference in their profile. Does not affect ICS export."
+
+#: app/templates/admin/settings.html:94
+#: app/templates/auth/profile_settings.html:49
+msgid "Format d'heure"
+msgstr "Time format"
+
+#: app/templates/admin/settings.html:96
+msgid "Format d'heure par défaut de l'organisation"
+msgstr "Organization's default time format"
+
+#: app/templates/admin/settings.html:103
+msgid ""
+"Format utilisé pour afficher les heures, quand un utilisateur n'a pas "
+"défini de préférence personnelle sur son profil. N'affecte pas l'export "
+"ICS."
+msgstr "Format used to display times, when a user has not set a personal preference in their profile. Does not affect ICS export."
+
+#: app/templates/admin/settings.html:120
 msgid "URL publique"
 msgstr "Public URL"
 
-#: app/templates/admin/settings.html:70
+#: app/templates/admin/settings.html:122
 msgid "URL publique de l'application"
 msgstr "Application's public URL"
 
-#: app/templates/admin/settings.html:75
+#: app/templates/admin/settings.html:127
 msgid ""
 "Utilisée pour générer les liens absolus (abonnements ICS). Laisser vide "
 "pour utiliser l'URL de la requête entrante."
-msgstr "Used to generate absolute links (ICS subscriptions). Leave empty to use the incoming request's URL."
+msgstr ""
+"Used to generate absolute links (ICS subscriptions). Leave empty to use "
+"the incoming request's URL."
 
-#: app/templates/admin/settings.html:98
+#: app/templates/admin/settings.html:150
 msgid "Maximum par page"
 msgstr "Maximum per page"
 
-#: app/templates/admin/settings.html:115
-#: app/templates/auth/profile_settings.html:39
-#: app/templates/auth/profile_settings.html:57
+#: app/templates/admin/settings.html:167
+#: app/templates/auth/profile_settings.html:59
+#: app/templates/auth/profile_settings.html:77
 msgid "Notifications par email"
 msgstr "Email notifications"
 
-#: app/templates/admin/settings.html:119
+#: app/templates/admin/settings.html:171
 msgid "Activer les rappels hebdomadaires par email (shifts + astreintes)"
 msgstr "Enable weekly email reminders (shifts + on-calls)"
 
-#: app/templates/admin/settings.html:138
+#: app/templates/admin/settings.html:190
 msgid "Rétention (jours)"
 msgstr "Retention (days)"
 
-#: app/templates/admin/settings.html:142
+#: app/templates/admin/settings.html:194
 msgid "Nombre maximum de sauvegardes"
 msgstr "Maximum number of backups"
 
-#: app/templates/admin/settings.html:146
+#: app/templates/admin/settings.html:198
 msgid ""
 "S'applique uniquement aux actions déclenchées depuis l'UI admin "
 "(Sauvegardes). La tâche planifiée (cron) continue d'utiliser les "
 "variables d'environnement."
-msgstr "Only applies to actions triggered from the admin UI (Backups). The scheduled task (cron) keeps using environment variables."
+msgstr ""
+"Only applies to actions triggered from the admin UI (Backups). The "
+"scheduled task (cron) keeps using environment variables."
 
-#: app/templates/admin/settings.html:162
+#: app/templates/admin/settings.html:214
 msgid "Export ICS"
 msgstr "ICS Export"
 
-#: app/templates/admin/settings.html:164
+#: app/templates/admin/settings.html:216
 msgid "Expiration du jeton ICS (jours)"
 msgstr "ICS token expiry (days)"
 
-#: app/templates/admin/settings.html:168
+#: app/templates/admin/settings.html:220
 msgid ""
 "Réglage actuellement sans effet : aucune expiration n'est encore "
 "appliquée aux jetons ICS existants. Conservé pour cohérence, en attendant"
 " une éventuelle implémentation future."
-msgstr "Setting currently has no effect: no expiry is yet enforced on existing ICS tokens. Kept for consistency, pending a possible future implementation."
+msgstr ""
+"Setting currently has no effect: no expiry is yet enforced on existing "
+"ICS tokens. Kept for consistency, pending a possible future "
+"implementation."
 
 #: app/templates/admin/shift_types.html:14
 msgid "Gestion des types de shifts"
@@ -2594,7 +2697,9 @@ msgstr "Purge the full history of completed swaps"
 msgid ""
 "Supprimer définitivement toutes les demandes terminées (approuvées, "
 "rejetées ou annulées), tous utilisateurs confondus ?"
-msgstr "Permanently delete all completed requests (approved, rejected, or cancelled), across all users?"
+msgstr ""
+"Permanently delete all completed requests (approved, rejected, or "
+"cancelled), across all users?"
 
 #: app/templates/admin/swaps.html:23
 msgid "Purger l'historique (tous utilisateurs)"
@@ -2750,7 +2855,9 @@ msgid ""
 "Ce module permet de générer automatiquement les astreintes. Les shifts "
 "sont générés automatiquement après les astreintes selon les règles "
 "métiers."
-msgstr "This module automatically generates on-calls. Shifts are automatically generated after on-calls according to the business rules."
+msgstr ""
+"This module automatically generates on-calls. Shifts are automatically "
+"generated after on-calls according to the business rules."
 
 #: app/templates/admin/automation/dashboard.html:27
 #: app/templates/admin/automation/full.html:13
@@ -2762,7 +2869,9 @@ msgstr "Full generation"
 msgid ""
 "Générer les astreintes. Les shifts seront automatiquement générés selon "
 "les règles métiers."
-msgstr "Generate on-calls. Shifts will be automatically generated according to the business rules."
+msgstr ""
+"Generate on-calls. Shifts will be automatically generated according to "
+"the business rules."
 
 #: app/templates/admin/automation/dashboard.html:31
 msgid "Lancer"
@@ -2776,7 +2885,9 @@ msgstr "Refresh Shifts"
 msgid ""
 "Recalculer les shifts en tenant compte des astreintes actuelles (même "
 "modifiées manuellement)."
-msgstr "Recalculate shifts taking current on-calls into account (even if manually modified)."
+msgstr ""
+"Recalculate shifts taking current on-calls into account (even if manually"
+" modified)."
 
 #: app/templates/admin/automation/dashboard.html:43
 msgid "Rafraîchir"
@@ -2816,7 +2927,9 @@ msgstr "On-call rotation:"
 msgid ""
 "Une rotation simple où chaque semaine un membre différent est désigné. "
 "Utilisez \"Génération complète\" pour configurer l'ordre de rotation."
-msgstr "A simple rotation where a different member is designated each week. Use \"Full generation\" to configure the rotation order."
+msgstr ""
+"A simple rotation where a different member is designated each week. Use "
+"\"Full generation\" to configure the rotation order."
 
 #: app/templates/admin/automation/dashboard.html:77
 msgid "Génération automatique des shifts :"
@@ -2827,7 +2940,10 @@ msgid ""
 "Après la génération des astreintes, les shifts sont automatiquement créés"
 " selon les règles métiers (13h-21h pour l'astreinte, rotation des "
 "créneaux, etc.)."
-msgstr "After on-calls are generated, shifts are automatically created according to the business rules (1pm-9pm for the on-call person, slot rotation, etc.)."
+msgstr ""
+"After on-calls are generated, shifts are automatically created according "
+"to the business rules (1pm-9pm for the on-call person, slot rotation, "
+"etc.)."
 
 #: app/templates/admin/automation/dashboard.html:78
 msgid "Rafraîchissement manuel :"
@@ -2837,7 +2953,9 @@ msgstr "Manual refresh:"
 msgid ""
 "Utilisez \"Rafraîchir Shifts\" pour recalculer les shifts si vous avez "
 "modifié manuellement les astreintes."
-msgstr "Use \"Refresh Shifts\" to recalculate shifts if you have manually modified on-calls."
+msgstr ""
+"Use \"Refresh Shifts\" to recalculate shifts if you have manually "
+"modified on-calls."
 
 #: app/templates/admin/automation/dashboard.html:79
 msgid "Période par défaut :"
@@ -2852,7 +2970,10 @@ msgid ""
 "Configurez l'ordre de rotation et générez automatiquement les astreintes."
 " Les shifts seront générés automatiquement après selon les nouvelles "
 "règles métiers."
-msgstr "Configure the rotation order and automatically generate on-calls. Shifts will be automatically generated afterward according to the new business rules."
+msgstr ""
+"Configure the rotation order and automatically generate on-calls. Shifts "
+"will be automatically generated afterward according to the new business "
+"rules."
 
 #: app/templates/admin/automation/full.html:24
 msgid "Utilisateurs éligibles pour les astreintes"
@@ -2887,7 +3008,9 @@ msgstr "Set the rotation order"
 msgid ""
 "en glissant-déposant les utilisateurs. La rotation se fera dans l'ordre "
 "affiché."
-msgstr "by dragging and dropping the users. The rotation will follow the displayed order."
+msgstr ""
+"by dragging and dropping the users. The rotation will follow the "
+"displayed order."
 
 #: app/templates/admin/automation/full.html:71
 #: app/templates/admin/automation/full.html:92
@@ -2952,7 +3075,9 @@ msgstr "Set the rotation order:"
 msgid ""
 "Attribuez une position (1, 2, 3, ...) à chaque utilisateur pour définir "
 "l'ordre dans lequel ils seront désignés pour les astreintes."
-msgstr "Assign a position (1, 2, 3, ...) to each user to define the order in which they will be designated for on-calls."
+msgstr ""
+"Assign a position (1, 2, 3, ...) to each user to define the order in "
+"which they will be designated for on-calls."
 
 #: app/templates/admin/automation/full.html:185
 msgid "Cochez les utilisateurs :"
@@ -2988,7 +3113,9 @@ msgstr "Generate:"
 msgid ""
 "Cliquez sur \"Générer les astreintes et shifts\" pour créer les "
 "astreintes et les shifts en base de données."
-msgstr "Click \"Generate on-calls and shifts\" to create the on-calls and shifts in the database."
+msgstr ""
+"Click \"Generate on-calls and shifts\" to create the on-calls and shifts "
+"in the database."
 
 #: app/templates/admin/automation/full.html:190
 msgid "Règles appliquées :"
@@ -3015,13 +3142,17 @@ msgid ""
 "La rotation suit l'ordre que vous avez défini et sauvegardé. Cet ordre "
 "est stocké dans la configuration et sera réutilisé pour les prochaines "
 "générations."
-msgstr "The rotation follows the order you defined and saved. This order is stored in the configuration and will be reused for future generations."
+msgstr ""
+"The rotation follows the order you defined and saved. This order is "
+"stored in the configuration and will be reused for future generations."
 
 #: app/templates/admin/automation/full.html:194
 msgid ""
 "Si un utilisateur n'est pas disponible (congé, astreinte existante), le "
 "système passe au suivant dans la rotation."
-msgstr "If a user is not available (leave, existing on-call), the system moves to the next one in the rotation."
+msgstr ""
+"If a user is not available (leave, existing on-call), the system moves to"
+" the next one in the rotation."
 
 #: app/templates/admin/automation/full.html:195
 msgid ""
@@ -3037,7 +3168,9 @@ msgstr "Shifts are automatically generated"
 msgid ""
 "après les astreintes selon les nouvelles règles métiers (13h-21h pour "
 "l'astreinte, rotation des créneaux, etc.)."
-msgstr "after on-calls according to the new business rules (1pm-9pm for the on-call person, slot rotation, etc.)."
+msgstr ""
+"after on-calls according to the new business rules (1pm-9pm for the on-"
+"call person, slot rotation, etc.)."
 
 #: app/templates/admin/automation/full.html:199
 #: app/templates/auth/ics_token.html:144
@@ -3048,7 +3181,9 @@ msgstr "Note:"
 msgid ""
 "L'ordre de rotation est sauvegardé automatiquement dans la base de "
 "données lorsque vous cliquez sur \"Sauvegarder l'ordre\"."
-msgstr "The rotation order is automatically saved to the database when you click \"Save the order\"."
+msgstr ""
+"The rotation order is automatically saved to the database when you click "
+"\"Save the order\"."
 
 #: app/templates/admin/automation/full_dry_run.html:9
 msgid "Prévisualisation"
@@ -3133,7 +3268,9 @@ msgstr "Refresh shifts"
 msgid ""
 "Cette page permet de recalculer tous les shifts pour une période donnée "
 "en tenant compte des"
-msgstr "This page allows you to recalculate all shifts for a given period, taking into account"
+msgstr ""
+"This page allows you to recalculate all shifts for a given period, taking"
+" into account"
 
 #: app/templates/admin/automation/refresh_shifts.html:22
 msgid "astreintes actuelles"
@@ -3224,7 +3361,10 @@ msgid ""
 "Les sauvegardes sont désactivées (%(var)s). La création de nouvelles "
 "sauvegardes (planifiée ou manuelle) est bloquée ; les sauvegardes déjà "
 "existantes restent consultables et téléchargeables ci-dessous."
-msgstr "Backups are disabled (%(var)s). Creating new backups (scheduled or manual) is blocked; existing backups remain viewable and downloadable below."
+msgstr ""
+"Backups are disabled (%(var)s). Creating new backups (scheduled or "
+"manual) is blocked; existing backups remain viewable and downloadable "
+"below."
 
 #: app/templates/admin/backups/dashboard.html:28
 msgid "Configuration"
@@ -3341,7 +3481,9 @@ msgid ""
 "Ce token vous permet d'exporter les calendriers au format ICS et de "
 "l'importer dans des logiciels comme Thunderbird, Google Calendar, "
 "Outlook, etc."
-msgstr "This token allows you to export calendars in ICS format and import them into software such as Thunderbird, Google Calendar, Outlook, etc."
+msgstr ""
+"This token allows you to export calendars in ICS format and import them "
+"into software such as Thunderbird, Google Calendar, Outlook, etc."
 
 #: app/templates/auth/ics_token.html:19
 msgid "Important :"
@@ -3351,7 +3493,9 @@ msgstr "Important:"
 msgid ""
 "Ce token est personnel et confidentiel. Ne le partagez avec personne. Si "
 "vous pensez qu'il a été compromis, régénérez-le immédiatement."
-msgstr "This token is personal and confidential. Do not share it with anyone. If you think it has been compromised, regenerate it immediately."
+msgstr ""
+"This token is personal and confidential. Do not share it with anyone. If "
+"you think it has been compromised, regenerate it immediately."
 
 #: app/templates/auth/ics_token.html:26
 msgid "Attention :"
@@ -3426,7 +3570,9 @@ msgstr "URL to export only your leaves (scope=my)"
 msgid ""
 "Certains logiciels de calendrier (comme Thunderbird) peuvent nécessiter "
 "de rafraîchir manuellement le calendrier après des modifications."
-msgstr "Some calendar software (such as Thunderbird) may require manually refreshing the calendar after changes."
+msgstr ""
+"Some calendar software (such as Thunderbird) may require manually "
+"refreshing the calendar after changes."
 
 #: app/templates/auth/ics_token.html:155
 msgid "Régénérer le token"
@@ -3484,7 +3630,9 @@ msgstr "Back to the home page"
 msgid ""
 "Gestion des plannings, astreintes et congés d'équipe - simple, claire, et"
 " disponible où que vous soyez."
-msgstr "Team shift, on-call, and leave management - simple, clear, and available wherever you are."
+msgstr ""
+"Team shift, on-call, and leave management - simple, clear, and available "
+"wherever you are."
 
 #: app/templates/auth/profile.html:3 app/templates/auth/profile.html:10
 msgid "Mon profil"
@@ -3519,22 +3667,38 @@ msgstr "Use the organization's default timezone (%(default_timezone)s)"
 msgid ""
 "Affecte uniquement l'affichage du calendrier dans l'application, jamais "
 "l'export ICS ni l'heure réelle des shifts."
-msgstr "Only affects the calendar display in the application, never the ICS export nor the actual shift time."
+msgstr ""
+"Only affects the calendar display in the application, never the ICS "
+"export nor the actual shift time."
 
 #: app/templates/auth/profile_settings.html:31
 #, python-format
 msgid "Utiliser la langue par défaut de l'organisation (%(default_language)s)"
 msgstr "Use the organization's default language (%(default_language)s)"
 
-#: app/templates/auth/profile_settings.html:45
+#: app/templates/auth/profile_settings.html:41
+#, python-format
+msgid ""
+"Utiliser le format de date par défaut de l'organisation "
+"(%(default_date_format)s)"
+msgstr "Use the organization's default date format (%(default_date_format)s)"
+
+#: app/templates/auth/profile_settings.html:51
+#, python-format
+msgid ""
+"Utiliser le format d'heure par défaut de l'organisation "
+"(%(default_time_format)s)"
+msgstr "Use the organization's default time format (%(default_time_format)s)"
+
+#: app/templates/auth/profile_settings.html:65
 msgid "Recevoir le rappel hebdomadaire de mes shifts"
 msgstr "Receive the weekly reminder for my shifts"
 
-#: app/templates/auth/profile_settings.html:53
+#: app/templates/auth/profile_settings.html:73
 msgid "Recevoir le rappel hebdomadaire de mes astreintes"
 msgstr "Receive the weekly reminder for my on-calls"
 
-#: app/templates/auth/profile_settings.html:59
+#: app/templates/auth/profile_settings.html:79
 msgid ""
 "Les notifications par email sont actuellement désactivées pour toute "
 "l'organisation."
@@ -3593,7 +3757,9 @@ msgstr "View on-calls"
 msgid ""
 "Ceci est un rappel automatique envoyé chaque jeudi pour l'astreinte du "
 "lendemain."
-msgstr "This is an automatic reminder sent every Thursday for the following day's on-call."
+msgstr ""
+"This is an automatic reminder sent every Thursday for the following day's"
+" on-call."
 
 #: app/templates/emails/oncall_weekly.txt:7
 #, python-format

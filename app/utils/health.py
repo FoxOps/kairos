@@ -16,7 +16,7 @@ from sqlalchemy import text
 # so /version and the footer never show two different values (this
 # already happened once: the footer stayed stuck on "0.6.0" after a
 # bump here).
-APP_VERSION_DEFAULT = "0.7.11"
+APP_VERSION_DEFAULT = "0.8.0"
 
 
 def register_health_endpoints(app: Flask) -> None:

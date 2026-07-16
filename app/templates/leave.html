@@ -47,8 +47,8 @@
                 {% for leave in leaves.items %}
                 <tr>
                     <td>{{ leave.user.name }}</td>
-                    <td>{{ leave.start_date.strftime('%d/%m/%Y') }}</td>
-                    <td>{{ leave.end_date.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ leave.start_date|format_date }}</td>
+                    <td>{{ leave.end_date|format_date }}</td>
                     <td>
                         {% if current_user.is_admin or current_user.id == leave.user.id %}
                         <div class="flex flex-nowrap gap-2" role="group" aria-label="{{ _("Actions pour ce congé") }}">

@@ -37,6 +37,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const isAdmin = calendarEl.dataset.isAdmin === 'true';
+    // Viewer/org-configurable time format (12h AM/PM vs 24h, see
+    // app.get_time_format() and base.html's <body data-time-format>) -
+    // drives FullCalendar's own event/slot time rendering below.
+    const hour12 = (document.body.dataset.timeFormat || '').includes('%I');
     const eventsDataEl = document.getElementById('calendar-events-data');
     const events = eventsDataEl ? JSON.parse(eventsDataEl.textContent) : [];
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
@@ -154,7 +158,12 @@ document.addEventListener('DOMContentLoaded', function () {
         eventTimeFormat: {
             hour: '2-digit',
             minute: '2-digit',
-            hour12: false
+            hour12: hour12
+        },
+        slotLabelFormat: {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: hour12
         },
         height: 'auto',
 

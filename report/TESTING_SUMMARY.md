@@ -2,11 +2,11 @@
 
 ## 📊 Aperçu Global
 
-- **Date de mise à jour** : 14 juillet 2026 (purge notifications/échanges, corrections UI)
-- **Nombre total de tests** : 1006
-- **Tests réussis** : 1006 ✅
+- **Date de mise à jour** : 16 juillet 2026 (i18n FR/EN + formats date/heure configurables)
+- **Nombre total de tests** : 1099
+- **Tests réussis** : 1099 ✅
 - **Tests échoués** : 0
-- **Couverture de code** : **~88%** (`--cov=app --cov=config`)
+- **Couverture de code** : **~92%** (`--cov=app --cov=config`)
 - **Lint (ruff)** : propre - **0 erreur**
 - **Types (mypy)** : propre - **0 erreur**
 - **Formatage (black)** : conforme
@@ -53,7 +53,7 @@ tests/
 ├── conftest.py                      # Fixture chain : test_app, client, logged_in_client
 ├── fixtures/                        # test_user, test_group, test_shift, test_leave, test_oncall...
 │
-├── unit/                            # 463 tests - composants isolés, pas de HTTP
+├── unit/                            # 545 tests - composants isolés, pas de HTTP
 │   ├── test_models.py               # User, Group, Shift, OnCall, Leave, ShiftType, NotificationLog
 │   ├── test_repositories.py         # Couche accès aux données
 │   ├── test_services.py             # Couche logique métier
@@ -75,24 +75,26 @@ tests/
 │   ├── test_notification_service.py # Rappels hebdo shifts/astreinte, idempotence
 │   ├── test_backup_config.py        # BackupConfig (SMTP/S3 via env vars)
 │   ├── test_backup_database.py      # scripts/backup_database.py (indépendant de app/)
-│   └── test_backup_service.py       # BackupService (couche support /admin/backups)
+│   ├── test_backup_service.py       # BackupService (couche support /admin/backups)
+│   └── test_settings_service.py     # SettingsService (fuseau horaire, langue, formats date/heure...)
 │
-├── integration/                     # 454 tests - routes Flask, client de test
+├── integration/                     # 524 tests - routes Flask, client de test
 │   ├── test_routes.py, test_*_priority.py, test_*_coverage.py
 │   ├── test_admin_*.py              # Routes admin (users/groups/shift-types/automation/backups)
 │   ├── test_security.py             # CSP, CSRF, Talisman, contrôle d'accès
 │   ├── test_oidc_routes.py          # /login, /oidc/login, /oidc/callback, /logout (13 tests)
 │   ├── test_performance.py          # Temps de réponse, N+1, compression
+│   ├── test_i18n.py                 # get_locale(), <html lang>, catalogue en.po (round-trip)
 │   ├── test_prometheus_metrics.py, test_health.py
 │   ├── test_dark_theme.py, test_theme_fixes.py
 │   └── test_error_handlers.py
 │
-└── e2e/                             # 27 tests
+└── e2e/                             # 30 tests
     ├── test_user_flows.py           # 6 tests, client de test Flask
     ├── conftest.py                  # live_server_url, oidc_live_servers (Playwright)
-    ├── test_browser_flows.py        # 16 tests, Chromium réel (optionnel)
+    ├── test_browser_flows.py        # 18 tests, Chromium réel (optionnel)
     ├── oidc_mock_provider.py        # Faux fournisseur OIDC réel (Flask, pas Docker)
-    └── test_oidc_browser_flow.py    # 5 tests, flux SSO complet en navigateur réel (optionnel)
+    └── test_oidc_browser_flow.py    # 6 tests, flux SSO complet en navigateur réel (optionnel)
 ```
 
 ---
@@ -111,7 +113,7 @@ Sans ça, `pytest tests/` skippe proprement les deux modules concernés
 (`pytest.importorskip("playwright")` en tête de fichier) - visible comme
 `skipped` dans le résumé, jamais comme échec ni erreur de collecte.
 Vérifié explicitement : sans playwright installé, la suite E2E devient
-6 passent + 2 skippés (au lieu de 25 passent).
+6 passent + 2 skippés (au lieu de 24 passent).
 
 Ce que cette couche vérifie et qu'aucune autre ne peut :
 - **Zéro erreur console** sur 8 pages clés (`TestNoConsoleErrors`) -
@@ -360,3 +362,44 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
   le reste de la suite jusqu'ici car la quasi-totalité des tests
   existants ne vérifient que l'attribut Python en mémoire après une
   action, jamais un état fraîchement requêté.
+- **16 juillet 2026** : 1099 tests (0 échec, +93). Deux features livrées
+  (PR #115 puis #116, même architecture Setting/User réutilisée pour
+  chacune) :
+  - **i18n Français/Anglais** (Flask-Babel) : `User.language` +
+    `SettingsService.default_language`, retrofit complet de tout le texte
+    utilisateur (55 templates, tous les `flash()`, erreurs de services, JS
+    codé en dur via un mécanisme JSON server→JS car pas de build step,
+    4 templates email rendus dans la langue de chaque destinataire via
+    `force_locale()`), catalogue `en.po` traduit intégralement (806
+    chaînes), `fr.po` gardé à `msgstr` vides à dessein (repli standard sur
+    le français, comportement inchangé pour la suite existante).
+    Nouveau `tests/integration/test_i18n.py`, dont un test round-trip
+    dédié (`TestEnCatalogTranslation`) qui rend une page avec
+    `default_language="en"` et vérifie que l'anglais apparaît vraiment -
+    attrape à la fois "chaîne jamais traduite" et "catalogue jamais
+    compilé". Nouvelle fixture pytest session-scope autouse
+    (`tests/conftest.py::_compile_babel_catalogs`) : sans elle un
+    checkout frais n'a pas de `.mo` (gitignorés, artefacts de build) et
+    gettext retombe silencieusement sur le français même en anglais.
+  - **Formats de date/heure configurables** : même pattern
+    (`User.date_format`/`time_format` + `SettingsService.default_date_format`/
+    `default_time_format`), 3 formats de date / 2 formats d'heure,
+    retrofit des `strftime()` d'affichage vers 3 nouveaux filtres Jinja
+    (`format_date`/`format_time`/`format_datetime`). Bug réel trouvé et
+    corrigé en cours de route : régression N+1
+    (`test_schedule_query_count_stable_across_dataset_size`, déjà présent
+    dans la suite avant cette session) - les nouveaux résolveurs de
+    format n'avaient pas le cache par requête dont bénéficie `get_locale()`
+    via `flask_babel` en interne, donc chaque cellule date/heure d'un
+    tableau déclenchait sa propre requête `Setting.get()` ; fix par cache
+    sur `flask.g`.
+  - Après coup, en relançant la suite complète : 2 tests trouvés cassés
+    depuis la scission `/profile/update` → `/profile/settings` (session
+    antérieure, migration timezone) - `TestApiCreateShiftTimezoneConversion`
+    et `TestApiUpdateOncall::test_update_converts_viewer_tz_to_org_tz_for_storage`
+    postaient encore `timezone` vers `/profile/update`, une route qui ne
+    lit que nom/email/mot de passe ; le POST était silencieusement ignoré
+    et aucune conversion de fuseau horaire n'avait lieu. Longtemps
+    mal-diagnostiqués en cours de session comme "bug DST préexistant" avant
+    lecture attentive du code des deux routes - corrigés en pointant vers
+    `/profile/settings`.
