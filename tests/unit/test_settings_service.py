@@ -19,6 +19,16 @@ class TestDefaultTimezone:
             assert error is None
             assert SettingsService.get_default_timezone() == "America/New_York"
 
+    def test_set_writes_audit_log_entry(self, test_app):
+        with test_app.app_context():
+            from app.models import AuditLog
+
+            SettingsService.set_default_timezone("America/New_York")
+
+            entry = AuditLog.query.filter_by(action="setting.update").first()
+            assert entry is not None
+            assert "default_timezone=America/New_York" in entry.details
+
     def test_rejects_invalid_timezone(self, test_app):
         with test_app.app_context():
             error = SettingsService.set_default_timezone("Not/A_Real_Zone")
