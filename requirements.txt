@@ -68,3 +68,7 @@ flask-talisman==1.1.0
 # Monitoring (optionnel - pour Prometheus)
 prometheus-client==0.25.0
 psutil==7.2.2
+
+# Notifications externes (Slack/Discord/Telegram/webhooks génériques) via
+# Apprise - voir app/services/apprise_notification_service.py
+apprise==1.12.0

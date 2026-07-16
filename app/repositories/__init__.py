@@ -12,11 +12,16 @@ Repositories:
 - swap_request_repository: SwapRequest data access
 - app_notification_repository: AppNotification (in-app notifications) data access
 - audit_log_repository: AuditLog (audit trail) data access
+- notification_target_repository: NotificationTarget (Apprise external
+  notification destinations) data access
 """
 
 from app.repositories.app_notification_repository import AppNotificationRepository
 from app.repositories.audit_log_repository import AuditLogRepository
 from app.repositories.leave_repository import LeaveRepository
+from app.repositories.notification_target_repository import (
+    NotificationTargetRepository,
+)
 from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository, ShiftTypeRepository
 from app.repositories.swap_request_repository import SwapRequestRepository
@@ -32,4 +37,5 @@ __all__ = [
     "SwapRequestRepository",
     "AppNotificationRepository",
     "AuditLogRepository",
+    "NotificationTargetRepository",
 ]

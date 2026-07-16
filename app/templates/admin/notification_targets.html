@@ -1,0 +1,120 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}{{ _("Notifications externes") }} - Administration{% endblock %}
+
+{% block admin_content %}
+<section class="p-3 md:p-4 max-w-6xl mx-auto">
+    <div class="breadcrumbs text-sm mb-2" aria-label="{{ _("Fil d'Ariane") }}">
+        <ul>
+            <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
+            <li>{{ _("Notifications externes") }}</li>
+        </ul>
+    </div>
+    <h1 class="text-2xl font-bold mb-4">
+        <i class="fas fa-paper-plane" aria-hidden="true"></i> {{ _("Notifications externes") }}
+    </h1>
+
+    <form method="POST" action="{{ url_for('admin.toggle_apprise_notifications') }}" class="card card-sm bg-base-100 shadow-md mb-4">
+        <div class="card-body gap-2">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label class="label cursor-pointer justify-start gap-2" for="enabled">
+                <input type="checkbox" class="checkbox" id="enabled" name="enabled" onchange="this.form.submit()" {% if apprise_notifications_enabled %}checked{% endif %}>
+                <span>{{ _("Activer les notifications externes (Slack, Discord, Telegram, webhooks...)") }}</span>
+            </label>
+            <p class="text-sm text-base-content/60">
+                {{ _("Tant que ce réglage est désactivé, aucune cible ci-dessous ne recevra de notification, même si elle est individuellement activée.") }}
+            </p>
+        </div>
+    </form>
+
+    <div class="flex gap-2 mb-4" role="group" aria-label="{{ _("Actions notifications externes") }}">
+        {% set add_button_route = 'admin.add_notification_target' %}
+        {% set add_button_label = _('Ajouter une cible') %}
+        {% set add_button_icon = 'plus' %}
+        {% set add_button_resource_name = _('Ajouter une nouvelle cible de notification') %}
+        {% include "_add_button.html" %}
+    </div>
+
+    {% if targets %}
+    <div class="overflow-x-auto" role="region" aria-labelledby="targets-title">
+        <h2 class="sr-only" id="targets-title">{{ _("Cibles de notification") }}</h2>
+        <table class="table table-zebra" aria-describedby="targets-title">
+            <caption class="sr-only">{{ _("Liste des cibles de notification externes") }}</caption>
+            <thead>
+                <tr>
+                    <th scope="col">{{ _("Nom") }}</th>
+                    <th scope="col">{{ _("Catégories") }}</th>
+                    <th scope="col">{{ _("Activée") }}</th>
+                    <th scope="col">{{ _("Actions") }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for target in targets %}
+                <tr>
+                    <td>{{ target.name }}</td>
+                    <td>
+                        {% set cats = target.get_categories() %}
+                        {% if cats %}
+                            {% for cat in cats %}
+                            <span class="badge badge-sm">{{ cat }}</span>
+                            {% endfor %}
+                        {% else %}
+                        <span class="text-base-content/60">{{ _("Toutes") }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form method="POST" action="{{ url_for('admin.toggle_notification_target_enabled', target_id=target.id) }}" class="mb-0">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-xs {% if target.enabled %}btn-success{% else %}btn-ghost{% endif %}"
+                                    aria-label="{{ _("Basculer l'activation de %(name)s", name=target.name) }}">
+                                {% if target.enabled %}{{ _("Oui") }}{% else %}{{ _("Non") }}{% endif %}
+                            </button>
+                        </form>
+                    </td>
+                    <td>
+                        <div class="flex flex-nowrap gap-2" role="group" aria-label="{{ _("Actions pour la cible %(name)s", name=target.name) }}">
+                            <div class="tooltip" data-tip="{{ _("Modifier") }}">
+                                <a class="btn btn-info btn-sm" href="{{ url_for('admin.edit_notification_target', target_id=target.id) }}"
+                                   aria-label="{{ _("Modifier la cible %(name)s", name=target.name) }}" title="{{ _("Modifier") }}">
+                                    <i class="fas fa-edit" aria-hidden="true"></i>
+                                </a>
+                            </div>
+                            <div class="tooltip" data-tip="{{ _("Tester") }}">
+                                <form method="POST" action="{{ url_for('admin.test_notification_target', target_id=target.id) }}" class="mb-0">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-warning btn-sm"
+                                            aria-label="{{ _("Tester la cible %(name)s", name=target.name) }}" title="{{ _("Tester") }}">
+                                        <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+                            </div>
+                            <div class="tooltip" data-tip="{{ _("Supprimer") }}">
+                                <form method="POST" action="{{ url_for('admin.delete_notification_target', target_id=target.id) }}" class="mb-0">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-error btn-sm js-confirm-delete"
+                                            data-confirm-message="{{ _("Êtes-vous sûr de vouloir supprimer la cible %(name)s ?", name=target.name) }}"
+                                            aria-label="{{ _("Supprimer la cible %(name)s", name=target.name) }}" title="{{ _("Supprimer") }}">
+                                        <i class="fas fa-trash" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Action legend -->
+    {% set action_items = [
+        {'class': 'btn-info btn-sm', 'icon': 'edit', 'label': _('Modifier'), 'description': _('Modifier la cible')},
+        {'class': 'btn-warning btn-sm', 'icon': 'paper-plane', 'label': _('Tester'), 'description': _('Envoyer une notification de test')},
+        {'class': 'btn-error btn-sm', 'icon': 'trash', 'label': _('Supprimer'), 'description': _('Supprimer la cible')}
+    ] %}
+    {% include "_action_legend.html" %}
+    {% else %}
+    <p class="text-base-content/60">{{ _("Aucune cible de notification configurée.") }}</p>
+    {% endif %}
+</section>
+{% endblock %}

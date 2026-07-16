@@ -15,6 +15,7 @@ from app import db
 from app.models import Shift, SwapRequest, User
 from app.repositories.swap_request_repository import SwapRequestRepository
 from app.services.app_notification_service import AppNotificationService
+from app.services.apprise_notification_service import AppriseNotificationService
 from app.services.audit_service import AuditService
 from app.utils.helpers import is_user_on_leave
 from app.utils.logging import get_logger
@@ -125,6 +126,16 @@ class SwapService:
             actor=requester,
         )
         AppNotificationService.notify_admins_new_swap_request(swap_request)
+        AppriseNotificationService.notify(
+            "swap",
+            _("Nouvelle demande d'échange de shift"),
+            _(
+                "%(requester)s propose un échange de shift à %(target)s, en "
+                "attente de validation.",
+                requester=requester.name,
+                target=target_user.name,
+            ),
+        )
         return swap_request, None
 
     @staticmethod
@@ -178,6 +189,16 @@ class SwapService:
             actor=admin,
         )
         AppNotificationService.notify_swap_decision(swap_request, SwapRequest.APPROVED)
+        AppriseNotificationService.notify(
+            "swap",
+            _("Échange de shift approuvé"),
+            _(
+                "%(requester)s <-> %(target)s : échange approuvé par %(admin)s.",
+                requester=swap_request.requester.name,
+                target=swap_request.target_user.name,
+                admin=admin.name,
+            ),
+        )
         logger.info(
             "Échange de shift id=%s approuvé par admin id=%s", swap_request.id, admin.id
         )
@@ -227,6 +248,17 @@ class SwapService:
             actor=admin,
         )
         AppNotificationService.notify_swap_decision(swap_request, SwapRequest.REVERTED)
+        AppriseNotificationService.notify(
+            "swap",
+            _("Échange de shift annulé"),
+            _(
+                "%(requester)s <-> %(target)s : échange approuvé annulé par "
+                "%(admin)s, shifts d'origine restaurés.",
+                requester=swap_request.requester.name,
+                target=swap_request.target_user.name,
+                admin=admin.name,
+            ),
+        )
         logger.info(
             "Échange de shift id=%s annulé après approbation par admin id=%s",
             swap_request.id,
@@ -252,6 +284,16 @@ class SwapService:
             actor=admin,
         )
         AppNotificationService.notify_swap_decision(swap_request, SwapRequest.REJECTED)
+        AppriseNotificationService.notify(
+            "swap",
+            _("Échange de shift rejeté"),
+            _(
+                "%(requester)s <-> %(target)s : demande rejetée par %(admin)s.",
+                requester=swap_request.requester.name,
+                target=swap_request.target_user.name,
+                admin=admin.name,
+            ),
+        )
         return None
 
     @staticmethod

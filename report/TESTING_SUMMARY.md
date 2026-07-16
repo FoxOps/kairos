@@ -2,9 +2,9 @@
 
 ## 📊 Aperçu Global
 
-- **Date de mise à jour** : 16 juillet 2026 (audit trail : historique des modifications)
-- **Nombre total de tests** : 1133
-- **Tests réussis** : 1133 ✅
+- **Date de mise à jour** : 16 juillet 2026 (notifications externes via Apprise)
+- **Nombre total de tests** : 1193
+- **Tests réussis** : 1193 ✅
 - **Tests échoués** : 0
 - **Couverture de code** : **~92%** (`--cov=app --cov=config`)
 - **Lint (ruff)** : propre - **0 erreur**
@@ -425,3 +425,44 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
   connexion réelle effectuée par le fixture `logged_in_client` écrit
   désormais elle-même une entrée `auth.login_success` - corrigé en
   filtrant sur l'action testée plutôt qu'en comptant la table entière.
+- **16 juillet 2026** : 1176 tests (0 échec, +43). Notifications externes
+  via Apprise (Slack/Discord/Telegram/webhooks génériques) : nouveau
+  modèle `NotificationTarget` (catégories JSON encodées, `subscribes_to()`
+  avec la règle "liste vide = toutes catégories") + `AppriseNotificationService`,
+  deux points d'entrée testés séparément - `notify()` (fire-and-forget,
+  jamais d'exception propagée même si le repository échoue, une cible en
+  échec n'empêche pas les autres d'être notifiées) et `send_test()`
+  (retourne le vrai succès/échec pour le bouton "Tester" de l'admin).
+  `apprise.Apprise` parle réseau, donc entièrement mocké
+  (`unittest.mock.patch` sur le point d'import du service) - aucun appel
+  réseau réel dans la suite. Tests représentatifs pour chaque site
+  d'appel retrofit (`SwapService.request_swap()` déclenche bien
+  `notify("swap", ...)`, mocké) plutôt qu'une duplication par méthode.
+  Suite complète pour `/admin/notification-targets` : CRUD, permission
+  admin-only, toggle global, action de test avec succès/échec mockés.
+- **16 juillet 2026** : 1183 tests (0 échec, +7). Ajout de deux
+  catégories Apprise dédiées (`shift_weekly`/`oncall_weekly`) qui
+  relaient chaque envoi hebdomadaire réussi (pas seulement les échecs
+  comme la catégorie `system`), avec un opt-out par utilisateur
+  indépendant de celui des emails (`User.apprise_shift_notifications_enabled`/
+  `apprise_oncall_notifications_enabled`, nouvelle migration), visible
+  et modifiable dans `/profile/settings` dans sa propre section (même
+  garde "n'applique les cases cochées que si la section était visible"
+  que pour la section email). Tests : relais déclenché sur succès,
+  relais absent si le toggle utilisateur est désactivé (`NotificationService`),
+  section masquée/visible selon le toggle global, persistance/ignorance
+  des cases selon le toggle global (`/profile/settings`).
+- **16 juillet 2026** : 1193 tests (0 échec, +10). Retour utilisateur :
+  le simple booléen `apprise_shift_notifications_enabled`/
+  `apprise_oncall_notifications_enabled` remplacé par une vraie
+  sélection de cibles (`User.apprise_shift_target_ids`/
+  `apprise_oncall_target_ids`, liste JSON encodée d'ids `NotificationTarget`,
+  même migration modifiée en place car pas encore mergée). Nouvelle
+  méthode `AppriseNotificationService.notify_to_targets(target_ids, ...)`
+  (fire-and-forget, resout chaque id à l'envoi et ignore silencieusement
+  une cible supprimée/désactivée depuis la sélection). `/profile/settings`
+  n'affiche et n'accepte que les cibles activées ET abonnées à la
+  catégorie correspondante (`NotificationTargetRepository.list_enabled_for_category`)
+  - un id soumis hors de cette liste éligible est silencieusement
+  ignoré (testé explicitement). Lien de documentation Apprise pointé
+  vers appriseit.com/services.

@@ -8,6 +8,9 @@ from flask_login import current_user, login_required, login_user, logout_user
 from app import db
 from app.auth.oidc_auth import oidc_auth
 from app.models import User
+from app.repositories.notification_target_repository import (
+    NotificationTargetRepository,
+)
 from app.services import AuditService, SettingsService
 from app.utils.helpers.common_helpers import (
     get_date_format_choices,
@@ -281,6 +284,9 @@ def profile_settings():
     (SettingsService.get_notifications_enabled()), which doesn't belong
     mixed into the identity-focused profile form."""
     notifications_enabled_org_wide = SettingsService.get_notifications_enabled()
+    apprise_notifications_enabled_org_wide = (
+        SettingsService.get_apprise_notifications_enabled()
+    )
 
     if request.method == "POST":
         timezone = request.form.get("timezone", "").strip()
@@ -323,6 +329,37 @@ def profile_settings():
                 request.form.get("oncall_notifications_enabled") == "on"
             )
 
+        if apprise_notifications_enabled_org_wide:
+            eligible_shift_target_ids = {
+                t.id
+                for t in NotificationTargetRepository.list_enabled_for_category(
+                    "shift_weekly"
+                )
+            }
+            submitted_shift_target_ids = {
+                int(v)
+                for v in request.form.getlist("apprise_shift_target_ids")
+                if v.isdigit()
+            }
+            current_user.set_apprise_shift_target_ids(
+                sorted(submitted_shift_target_ids & eligible_shift_target_ids)
+            )
+
+            eligible_oncall_target_ids = {
+                t.id
+                for t in NotificationTargetRepository.list_enabled_for_category(
+                    "oncall_weekly"
+                )
+            }
+            submitted_oncall_target_ids = {
+                int(v)
+                for v in request.form.getlist("apprise_oncall_target_ids")
+                if v.isdigit()
+            }
+            current_user.set_apprise_oncall_target_ids(
+                sorted(submitted_oncall_target_ids & eligible_oncall_target_ids)
+            )
+
         db.session.commit()
         flash(_("Vos paramètres ont été mis à jour avec succès !"), "success")
         return redirect(url_for("auth.profile_settings"))
@@ -350,6 +387,15 @@ def profile_settings():
             default_time_format, default_time_format
         ),
         notifications_enabled_org_wide=notifications_enabled_org_wide,
+        apprise_notifications_enabled_org_wide=apprise_notifications_enabled_org_wide,
+        apprise_shift_targets=NotificationTargetRepository.list_enabled_for_category(
+            "shift_weekly"
+        ),
+        apprise_oncall_targets=NotificationTargetRepository.list_enabled_for_category(
+            "oncall_weekly"
+        ),
+        selected_apprise_shift_target_ids=current_user.get_apprise_shift_target_ids(),
+        selected_apprise_oncall_target_ids=current_user.get_apprise_oncall_target_ids(),
     )
 
 

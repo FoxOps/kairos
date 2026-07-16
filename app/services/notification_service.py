@@ -21,6 +21,7 @@ from app import db
 from app.models import NotificationLog, User
 from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository
+from app.services.apprise_notification_service import AppriseNotificationService
 from app.utils.notifications import send_email
 
 
@@ -133,6 +134,23 @@ class NotificationService:
             db.session.commit()
             result.sent.append(user.email)
 
+            apprise_target_ids = user.get_apprise_shift_target_ids()
+            if apprise_target_ids:
+                AppriseNotificationService.notify_to_targets(
+                    apprise_target_ids, subject, text_body
+                )
+
+        if result.failed:
+            AppriseNotificationService.notify(
+                "system",
+                _("Échecs d'envoi des rappels de shifts"),
+                _(
+                    "%(count)s email(s) de rappel de shifts n'ont pas pu être "
+                    "envoyés cette semaine.",
+                    count=len(result.failed),
+                ),
+            )
+
         return result
 
     @staticmethod
@@ -193,6 +211,14 @@ class NotificationService:
             )
         except Exception as e:
             result.failed.append((user.email, str(e)))
+            AppriseNotificationService.notify(
+                "system",
+                _("Échec d'envoi du rappel d'astreinte"),
+                _(
+                    "Le rappel d'astreinte pour %(email)s n'a pas pu être envoyé.",
+                    email=user.email,
+                ),
+            )
             return result
 
         db.session.add(
@@ -204,5 +230,11 @@ class NotificationService:
         )
         db.session.commit()
         result.sent.append(user.email)
+
+        apprise_target_ids = user.get_apprise_oncall_target_ids()
+        if apprise_target_ids:
+            AppriseNotificationService.notify_to_targets(
+                apprise_target_ids, subject, text_body
+            )
 
         return result

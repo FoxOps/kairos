@@ -15,6 +15,7 @@ from typing import Any
 
 from flask_babel import gettext as _
 
+from app.services.apprise_notification_service import AppriseNotificationService
 from scripts.backup_config import BackupConfig
 from scripts.backup_database import (
     cleanup_local_backups,
@@ -91,6 +92,24 @@ class BackupService:
 
         results = create_backup(config, logger)
         send_backup_notification(config, results, logger)
+        if results.get("success"):
+            AppriseNotificationService.notify(
+                "backup",
+                _("Sauvegarde réussie"),
+                _(
+                    "Sauvegarde manuelle créée avec succès (%(timestamp)s).",
+                    timestamp=results.get("timestamp"),
+                ),
+            )
+        else:
+            AppriseNotificationService.notify(
+                "backup",
+                _("Échec de la sauvegarde"),
+                _(
+                    "Sauvegarde manuelle en échec : %(errors)s",
+                    errors=", ".join(results.get("errors") or []),
+                ),
+            )
         return results
 
     @staticmethod
@@ -99,6 +118,16 @@ class BackupService:
         logger = BackupService._logger()
         local_count, local_message = cleanup_local_backups(config, logger)
         s3_count, s3_message = cleanup_s3_backups(config, logger)
+        AppriseNotificationService.notify(
+            "backup",
+            _("Nettoyage des sauvegardes"),
+            _(
+                "%(local_count)s sauvegarde(s) locale(s) supprimée(s), "
+                "%(s3_count)s sur S3.",
+                local_count=local_count,
+                s3_count=s3_count,
+            ),
+        )
         return {
             "local": {"count": local_count, "message": local_message},
             "s3": {"count": s3_count, "message": s3_message},

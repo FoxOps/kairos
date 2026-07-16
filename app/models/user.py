@@ -5,6 +5,7 @@ This module contains the User and Group models for user management
 and authentication.
 """
 
+import json
 import secrets
 
 from flask_login import UserMixin
@@ -66,6 +67,14 @@ class User(BaseModel, UserMixin):
             see SettingsService.get_notifications_enabled())
         oncall_notifications_enabled: Opt-out for the weekly on-call
             reminder email (same org-wide gate as above)
+        apprise_shift_target_ids: JSON-encoded list of NotificationTarget
+            ids the user picked to relay their weekly shift reminder to
+            (independent of shift_notifications_enabled above - a user
+            may want one channel without the other). Empty/None means no
+            relay. Only takes effect if
+            SettingsService.get_apprise_notifications_enabled() is on.
+        apprise_oncall_target_ids: Same as above, for the weekly
+            on-call reminder
         shifts: Relationship to Shift model
         on_calls: Relationship to OnCall model
         leaves: Relationship to Leave model
@@ -87,6 +96,8 @@ class User(BaseModel, UserMixin):
     time_format = db.Column(db.String(20), nullable=True)
     shift_notifications_enabled = db.Column(db.Boolean, nullable=False, default=True)
     oncall_notifications_enabled = db.Column(db.Boolean, nullable=False, default=True)
+    apprise_shift_target_ids = db.Column(db.Text, nullable=True)
+    apprise_oncall_target_ids = db.Column(db.Text, nullable=True)
 
     # Relationships
     shifts = db.relationship(
@@ -205,6 +216,28 @@ class User(BaseModel, UserMixin):
         from app.services import SettingsService
 
         return SettingsService.get_default_time_format()
+
+    def get_apprise_shift_target_ids(self) -> list[int]:
+        if not self.apprise_shift_target_ids:
+            return []
+        try:
+            return json.loads(self.apprise_shift_target_ids)
+        except json.JSONDecodeError:
+            return []
+
+    def set_apprise_shift_target_ids(self, target_ids: list[int]) -> None:
+        self.apprise_shift_target_ids = json.dumps(target_ids) if target_ids else None
+
+    def get_apprise_oncall_target_ids(self) -> list[int]:
+        if not self.apprise_oncall_target_ids:
+            return []
+        try:
+            return json.loads(self.apprise_oncall_target_ids)
+        except json.JSONDecodeError:
+            return []
+
+    def set_apprise_oncall_target_ids(self, target_ids: list[int]) -> None:
+        self.apprise_oncall_target_ids = json.dumps(target_ids) if target_ids else None
 
     def __repr__(self) -> str:
         return f"<User {self.name} ({self.email})>"

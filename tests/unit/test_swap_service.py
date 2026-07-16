@@ -4,6 +4,7 @@ Tests for SwapService: the business rules for shift swaps between users
 """
 
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 from app import db
 from app.models import AuditLog, Leave, Shift, SwapRequest
@@ -21,6 +22,18 @@ class TestRequestSwap:
             assert error is None
             assert swap_request is not None
             assert swap_request.status == SwapRequest.PENDING
+
+    def test_request_swap_triggers_apprise_notification(
+        self, test_app, test_user, second_user, test_swap_shift
+    ):
+        with test_app.app_context():
+            with patch(
+                "app.services.swap_service.AppriseNotificationService.notify"
+            ) as mock_notify:
+                SwapService.request_swap(test_user, test_swap_shift, second_user)
+
+            mock_notify.assert_called_once()
+            assert mock_notify.call_args[0][0] == "swap"
 
     def test_request_swap_writes_audit_log_entry(
         self, test_app, test_user, second_user, test_swap_shift
