@@ -2,6 +2,7 @@
  * Shared accessibility helpers (screen-reader announcements, focus,
  * keyboard navigation, form validation, confirmation modal).
  */
+import { getString } from './i18n.js';
 
 /**
  * Announce a message to screen readers.
@@ -155,8 +156,8 @@ export function validateFormAccessible(form) {
             const fieldName = field.getAttribute('aria-label') ||
                              field.getAttribute('name') ||
                              field.getAttribute('id') ||
-                             'Champ non nommé';
-            errors[field.name || field.id] = `Le champ ${fieldName} est obligatoire.`;
+                             getString('unnamed_field');
+            errors[field.name || field.id] = getString('field_required').replace('%(field)s', fieldName);
 
             // Add a visible error message
             let errorEl = field.nextElementSibling;
@@ -215,7 +216,7 @@ export function makeTableAccessible(tableSelector) {
     if (!table.querySelector('caption')) {
         const caption = document.createElement('caption');
         caption.className = 'is-sr-only';
-        caption.textContent = 'Tableau de données';
+        caption.textContent = getString('data_table');
         table.insertBefore(caption, table.firstChild);
     }
 }
@@ -242,16 +243,16 @@ export function confirmActionAccessible(message, onConfirm, onCancel) {
     modal.innerHTML = `
         <div class="modal-box">
             <div class="flex items-start justify-between">
-                <h2 id="confirmation-title" class="text-lg font-bold">Confirmation</h2>
-                <button class="btn btn-sm btn-circle btn-ghost" aria-label="Fermer" role="button">&times;</button>
+                <h2 id="confirmation-title" class="text-lg font-bold">${getString('confirmation_title')}</h2>
+                <button class="btn btn-sm btn-circle btn-ghost" aria-label="${getString('close')}" role="button">&times;</button>
             </div>
             <p class="py-4"></p>
             <div class="modal-action">
-                <button class="btn" aria-label="Annuler" role="button">Annuler</button>
-                <button class="btn btn-primary" aria-label="Confirmer" role="button">Confirmer</button>
+                <button class="btn" aria-label="${getString('cancel')}" role="button">${getString('cancel')}</button>
+                <button class="btn btn-primary" aria-label="${getString('confirm')}" role="button">${getString('confirm')}</button>
             </div>
         </div>
-        <div class="modal-backdrop" role="button" tabindex="0" aria-label="Fermer"></div>
+        <div class="modal-backdrop" role="button" tabindex="0" aria-label="${getString('close')}"></div>
     `;
     modal.querySelector('p.py-4').textContent = message;
 
@@ -350,7 +351,7 @@ export function initConfirmDeleteActions() {
         if (!trigger) return;
 
         event.preventDefault();
-        const message = trigger.dataset.confirmMessage || 'Êtes-vous sûr ?';
+        const message = trigger.dataset.confirmMessage || getString('are_you_sure');
 
         if (trigger.tagName === 'BUTTON') {
             const form = trigger.form;
