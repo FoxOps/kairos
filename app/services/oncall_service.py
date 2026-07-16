@@ -13,6 +13,7 @@ from flask_babel import gettext as _
 from app import db
 from app.models import OnCall, User
 from app.repositories.oncall_repository import OnCallRepository
+from app.services.audit_service import AuditService
 from app.utils.helpers import _get_overlapping_leave, can_add_oncall
 
 
@@ -50,6 +51,12 @@ class OnCallService:
 
         oncall = OnCallRepository.create(user.id, start_time, end_time)
         db.session.commit()
+        AuditService.log(
+            "oncall.create",
+            resource_type="OnCall",
+            resource_id=oncall.id,
+            details=f"{user.name} - {start_date.strftime('%d/%m/%Y')}",
+        )
         return oncall, None
 
     @staticmethod
@@ -57,8 +64,15 @@ class OnCallService:
         oncall = OnCallRepository.get_by_id(oncall_id)
         if not oncall:
             return None
+        details = f"{oncall.user.name} - {oncall.start_time.strftime('%d/%m/%Y')}"
         OnCallRepository.delete(oncall)
         db.session.commit()
+        AuditService.log(
+            "oncall.delete",
+            resource_type="OnCall",
+            resource_id=oncall_id,
+            details=details,
+        )
         return oncall
 
     @staticmethod
@@ -67,6 +81,11 @@ class OnCallService:
         if count > 0:
             OnCallRepository.delete_all()
             db.session.commit()
+            AuditService.log(
+                "oncall.bulk_delete",
+                resource_type="OnCall",
+                details=f"{count} on-call(s) - all",
+            )
         return count
 
     @staticmethod
@@ -75,6 +94,12 @@ class OnCallService:
         if count > 0:
             OnCallRepository.delete_for_user(user_id)
             db.session.commit()
+            AuditService.log(
+                "oncall.bulk_delete",
+                resource_type="User",
+                resource_id=user_id,
+                details=f"{count} on-call(s) for user {user_id}",
+            )
         return count
 
     @staticmethod
@@ -82,8 +107,15 @@ class OnCallService:
         oncall = OnCallRepository.get_by_id(oncall_id)
         if not oncall:
             return False
+        details = f"{oncall.user.name} - {oncall.start_time.strftime('%d/%m/%Y')}"
         OnCallRepository.delete(oncall)
         db.session.commit()
+        AuditService.log(
+            "oncall.delete",
+            resource_type="OnCall",
+            resource_id=oncall_id,
+            details=details,
+        )
         return True
 
     @staticmethod
@@ -125,4 +157,10 @@ class OnCallService:
         oncall.start_time = new_start
         oncall.end_time = new_end
         db.session.commit()
+        AuditService.log(
+            "oncall.update",
+            resource_type="OnCall",
+            resource_id=oncall.id,
+            details=f"{oncall.user.name} -> {new_start.strftime('%d/%m/%Y')}",
+        )
         return oncall, None

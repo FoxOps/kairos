@@ -13,6 +13,7 @@ from flask_babel import gettext as _
 from app import db
 from app.models import Shift, ShiftType, User
 from app.repositories.shift_repository import ShiftRepository
+from app.services.audit_service import AuditService
 from app.utils.helpers import can_add_shift, is_user_on_leave
 
 
@@ -61,6 +62,12 @@ class ShiftService:
             current_date += timedelta(days=1)
 
         db.session.commit()
+        if shifts_added:
+            AuditService.log(
+                "shift.create",
+                resource_type="Shift",
+                details=f"{user.name}: {len(shifts_added)} shift(s), {shifts_added[0]}-{shifts_added[-1]}",
+            )
         return shifts_added, None
 
     @staticmethod
@@ -68,8 +75,12 @@ class ShiftService:
         shift = ShiftRepository.get_by_id(shift_id)
         if not shift:
             return None
+        details = f"{shift.user.name} - {shift.date.strftime('%d/%m/%Y')}"
         ShiftRepository.delete(shift)
         db.session.commit()
+        AuditService.log(
+            "shift.delete", resource_type="Shift", resource_id=shift_id, details=details
+        )
         return shift
 
     @staticmethod
@@ -78,6 +89,11 @@ class ShiftService:
         if count > 0:
             ShiftRepository.delete_all()
             db.session.commit()
+            AuditService.log(
+                "shift.bulk_delete",
+                resource_type="Shift",
+                details=f"{count} shift(s) - all",
+            )
         return count
 
     @staticmethod
@@ -86,6 +102,12 @@ class ShiftService:
         if count > 0:
             ShiftRepository.delete_for_user(user_id)
             db.session.commit()
+            AuditService.log(
+                "shift.bulk_delete",
+                resource_type="User",
+                resource_id=user_id,
+                details=f"{count} shift(s) for user {user_id}",
+            )
         return count
 
     @staticmethod
@@ -94,6 +116,10 @@ class ShiftService:
         if count > 0:
             ShiftRepository.delete_for_date(on_date)
             db.session.commit()
+            AuditService.log(
+                "shift.bulk_delete",
+                details=f"{count} shift(s) on {on_date.strftime('%d/%m/%Y')}",
+            )
         return count
 
     @staticmethod
@@ -103,6 +129,10 @@ class ShiftService:
         if count > 0:
             ShiftRepository.delete_for_dates(dates)
             db.session.commit()
+            AuditService.log(
+                "shift.bulk_delete",
+                details=f"{count} shift(s), week of {monday.strftime('%d/%m/%Y')}",
+            )
         return count
 
     @staticmethod
@@ -121,6 +151,12 @@ class ShiftService:
             user.id, shift_type.id, start_time, end_time, on_date
         )
         db.session.commit()
+        AuditService.log(
+            "shift.create",
+            resource_type="Shift",
+            resource_id=shift.id,
+            details=f"{user.name} - {on_date.strftime('%d/%m/%Y')}",
+        )
         return shift, None
 
     @staticmethod
@@ -167,6 +203,12 @@ class ShiftService:
         shift.end_time = new_end
         shift.date = new_date
         db.session.commit()
+        AuditService.log(
+            "shift.update",
+            resource_type="Shift",
+            resource_id=shift.id,
+            details=f"{shift.user.name} -> {new_date.strftime('%d/%m/%Y')}",
+        )
         return shift, None
 
     @staticmethod
@@ -174,6 +216,10 @@ class ShiftService:
         shift = ShiftRepository.get_by_id(shift_id)
         if not shift:
             return False
+        details = f"{shift.user.name} - {shift.date.strftime('%d/%m/%Y')}"
         ShiftRepository.delete(shift)
         db.session.commit()
+        AuditService.log(
+            "shift.delete", resource_type="Shift", resource_id=shift_id, details=details
+        )
         return True

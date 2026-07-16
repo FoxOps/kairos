@@ -242,6 +242,18 @@ class TestShiftService:
         assert len(added) == 5
         assert ShiftRepository.count_for_user(test_user.id) == 5
 
+    def test_add_shifts_for_range_writes_audit_log_entry(
+        self, test_app, test_user, test_shift_type
+    ):
+        from app.models import AuditLog
+
+        weekday = _next_weekday()
+        ShiftService.add_shifts_for_range(test_user, test_shift_type, weekday, weekday)
+
+        entry = AuditLog.query.filter_by(action="shift.create").first()
+        assert entry is not None
+        assert test_user.name in entry.details
+
     def test_add_shifts_for_range_conflict_rolls_back(
         self, test_app, test_user, test_shift_type
     ):
@@ -355,6 +367,17 @@ class TestOnCallService:
         assert oncall is not None
         assert oncall.start_time.hour == 21
 
+    def test_add_oncall_writes_audit_log_entry(self, test_app, test_user):
+        from app.models import AuditLog
+
+        friday = _next_friday()
+        start = datetime.combine(friday, datetime.min.time())
+        oncall, _error = OnCallService.add_oncall(test_user, start)
+
+        entry = AuditLog.query.filter_by(action="oncall.create").first()
+        assert entry is not None
+        assert entry.resource_id == oncall.id
+
     def test_delete_oncall(self, test_app, test_oncall):
         deleted = OnCallService.delete_oncall(test_oncall.id)
         assert deleted is not None
@@ -412,6 +435,17 @@ class TestLeaveService:
         )
         assert leave is not None
         assert LeaveRepository.get_by_id(leave.id) is not None
+
+    def test_add_leave_writes_audit_log_entry(self, test_app, test_user, second_user):
+        from app.models import AuditLog
+
+        leave, _regenerated = LeaveService.add_leave(
+            test_user, date.today(), date.today() + timedelta(days=2)
+        )
+
+        entry = AuditLog.query.filter_by(action="leave.create").first()
+        assert entry is not None
+        assert entry.resource_id == leave.id
 
     def test_add_leave_conflict_returns_none(self, test_app, test_user, test_leave):
         leave, regenerated = LeaveService.add_leave(
