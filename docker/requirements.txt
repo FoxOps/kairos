@@ -11,7 +11,9 @@ Werkzeug==3.1.8
 # i18n (francais/anglais) - gettext + catalogues de traduction
 Flask-Babel==4.0.0
 
-# Base de donnees SQLite
+# Base de donnees (SQLAlchemy/Flask-SQLAlchemy/Alembic - le driver
+# specifique au moteur choisi via DATABASE_URL est ajoute plus bas :
+# psycopg pour PostgreSQL, PyMySQL pour MySQL/MariaDB)
 SQLAlchemy==2.0.51
 Flask-Migrate==4.1.0
 alembic==1.18.5
@@ -44,6 +46,12 @@ requests==2.34.2
 
 # Pour PostgreSQL (optionnel - sera utilise si DATABASE_URL est postgresql)
 psycopg[binary]>=3.3.4
+
+# Pour MySQL/MariaDB (optionnel - sera utilise si DATABASE_URL est mysql/mariadb)
+# - driver 100% pur Python, aucune lib systeme requise (contrairement a
+# mysqlclient qui necessite les headers MySQL/MariaDB au build) - voir
+# CLAUDE.md "Configuration: two parallel systems" pour le detail du choix
+PyMySQL==1.2.0
 
 # Monitoring (optionnel - pour Prometheus)
 prometheus-client==0.25.0

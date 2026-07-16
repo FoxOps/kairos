@@ -124,5 +124,8 @@ class Config:
         """Detect the database type from the URI."""
         return get_database_type(database_uri or Config.SQLALCHEMY_DATABASE_URI)
 
-    # SQLAlchemy engine options configuration depending on the database type
-    custom_engine_options = get_json_from_env("SQLALCHEMY_ENGINE_OPTIONS")
+    # SQLAlchemy engine options configuration depending on the database type.
+    # Uppercase to stay consistent with app/config/base.py::Config
+    # (there, the name matters: Flask's app.config.from_object() only copies
+    # uppercase attributes).
+    SQLALCHEMY_ENGINE_OPTIONS = get_json_from_env("SQLALCHEMY_ENGINE_OPTIONS")

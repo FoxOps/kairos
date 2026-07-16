@@ -37,7 +37,7 @@ CRITICAL_VARIABLES = {
         "required_in_production": True,
         "type": "string",
         "description": "URI de la base de données",
-        "pattern": r"^(sqlite|postgresql|mysql)://",
+        "pattern": r"^(sqlite|postgresql|mysql|mariadb)://",
     },
 }
 

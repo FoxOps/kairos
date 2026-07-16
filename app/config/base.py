@@ -238,8 +238,13 @@ class Config:
         or "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
 
-    # Custom SQLAlchemy Engine Options
-    custom_engine_options: dict[str, Any] = (
+    # Custom SQLAlchemy Engine Options. Must stay UPPERCASE: Config.from_object()
+    # (this class's own utility method below) and Flask's app.config.from_object()
+    # (app/__init__.py) both only copy attributes where key.isupper() - a
+    # lowercase name here would silently never reach app.config, exactly the bug
+    # this attribute previously had (confirmed dead: SQLALCHEMY_ENGINE_OPTIONS was
+    # documented in Docs/reference/ENVIRONMENT_VARIABLES.md but had zero effect).
+    SQLALCHEMY_ENGINE_OPTIONS: dict[str, Any] = (
         get_json_from_env("SQLALCHEMY_ENGINE_OPTIONS") or {}
     )
 
