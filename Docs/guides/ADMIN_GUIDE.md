@@ -224,6 +224,28 @@ Détail du flux de connexion :
 
 ### Audit et Journalisation
 
+#### Historique des modifications (audit trail)
+
+Depuis la version 0.9.0, `/admin/audit-log` (lien depuis le tableau de bord admin)
+liste chaque action métier significative : qui, quoi, quand, sur quelle ressource.
+Couverture : CRUD utilisateurs/groupes/shifts/astreintes/congés/types de shift,
+tout le cycle de vie des échanges de shifts (demande/annulation/approbation/
+rejet/annulation d'un échange approuvé/purge), modification des paramètres admin,
+et les événements de connexion (réussie, échouée, déconnexion, inscription,
+changement de mot de passe).
+
+La page permet de filtrer par auteur, domaine d'action (`shift`, `oncall`,
+`leave`, `swap`, `user`, `group`, `shift_type`, `setting`, `auth`, `profile`) et
+plage de dates. Chaque entrée est aussi écrite dans `logs/audit.log` (double
+écriture, défense en profondeur) — voir CLAUDE.md "Audit trail" pour le détail
+technique.
+
+**Purge** : le bouton "Purger selon la rétention" supprime les entrées plus
+anciennes que la durée configurée dans **Paramètres → Audit trail**
+(`/admin/settings`). Tant qu'aucune valeur n'y a été enregistrée, aucune purge
+n'est possible — l'historique est conservé indéfiniment par défaut, contrairement
+à la rétention des sauvegardes qui a un repli numérique.
+
 #### Activer le logging avancé
 
 Dans `.env` :
@@ -233,14 +255,15 @@ LOG_LEVEL=DEBUG
 
 #### Fichiers de log
 
-Les logs sont disponibles dans la console. Pour les rediriger vers un fichier :
+`logs/app.log`, `logs/error.log`, `logs/debug.log`, `logs/http_errors.log` et
+`logs/audit.log` sont créés automatiquement au démarrage, avec rotation
+(`LOG_MAX_BYTES` / `LOG_BACKUP_COUNT`, voir
+[`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-configuration-du-logging)).
+`LOG_FILE` permet en plus de rediriger la sortie racine vers un fichier
+supplémentaire :
 
 ```bash
-# Linux/macOS
-python run.py > leviia.log 2>&1 &
-
-# Windows
-python run.py > leviia.log 2>&1
+LOG_FILE=leviia.log
 ```
 
 ---
@@ -565,6 +588,28 @@ Vous pouvez personnaliser les règles dans le fichier de configuration ou via l'
 ---
 
 ## 🔧 Configuration Technique
+
+### Paramètres administrables via l'UI (`/admin/settings`)
+
+Depuis les versions 0.7.10 à 0.9.0, un ensemble croissant de réglages,
+auparavant uniquement des variables d'environnement, est éditable à chaud
+depuis `/admin/settings` sans redéploiement : fuseau horaire par défaut,
+langue par défaut (Français/Anglais), formats de date/heure par défaut,
+URL publique, pagination (éléments par page), notifications par email
+(activation globale), rétention des sauvegardes, durée d'expiration du
+token ICS, et rétention de l'audit trail. Chaque réglage suit la même
+règle : une valeur enregistrée en base l'emporte toujours ; tant
+qu'aucune valeur n'a été enregistrée, l'application se rabat en direct
+sur la variable d'environnement/valeur par défaut correspondante (donc un
+déploiement piloté uniquement par variables d'environnement continue de
+fonctionner à l'identique tant que personne ne passe par cette page).
+Chaque utilisateur peut aussi surcharger individuellement son fuseau
+horaire, sa langue, et ses formats de date/heure depuis `/profile/settings`
+(sinon la valeur par défaut de l'organisation s'applique).
+
+Chaque modification effectuée sur cette page (comme toute action métier)
+est enregistrée dans l'historique des modifications — voir "Audit et
+Journalisation" ci-dessus.
 
 ### Fichier de Configuration
 

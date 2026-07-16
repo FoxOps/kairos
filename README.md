@@ -38,6 +38,15 @@ Elle permet de gérer les horaires de travail, les rotations d'astreinte et les 
 - ✅ **Gestion des congés** avec visualisation dans le planning
 - ✅ **Notifications par email** : rappels hebdomadaires des shifts et
   de l'astreinte à venir (SMTP configurable, scripts cron autonomes)
+- ✅ **Échanges de shifts entre utilisateurs** : demande (don simple ou
+  réciproque), validation/rejet/annulation par un admin, notifications
+  internes (cloche)
+- ✅ **Multi-langues** (Français/Anglais) et **multi-fuseau horaire**,
+  personnalisables par utilisateur ou par défaut pour toute
+  l'organisation (`/admin/settings`)
+- ✅ **Formats de date/heure configurables** (par utilisateur ou par défaut)
+- ✅ **Historique des modifications (audit trail)** : qui a fait quoi,
+  quand, consultable dans `/admin/audit-log`
 - ✅ **Export ICS** pour intégration avec Google Calendar, Outlook, etc.
 - ✅ **Authentification sécurisée** (Flask-Login)
 - ✅ **Authentification SSO/OIDC** (Keycloak, Okta, Auth0, etc.)
@@ -55,6 +64,8 @@ Elle permet de gérer les horaires de travail, les rotations d'astreinte et les 
 | **Base de données** | SQLite (par défaut), PostgreSQL | - |
 | **Authentification** | Flask-Login, Authlib (OIDC) | 0.6.3, 1.7.2 |
 | **Export ICS** | icalendar | 7.2.0 |
+| **Internationalisation** | Flask-Babel | 4.0.0 |
+| **Migrations** | Flask-Migrate (Alembic) | - |
 
 ---
 
@@ -152,7 +163,7 @@ leviia-schedule/
 
 ## 🧪 Tests et Qualité de Code
 
-> **⚠️ Statut** : **768 tests**, tous passent - Couverture : ~81%
+> **⚠️ Statut** : **1133 tests**, tous passent - Couverture : ~92%
 
 ### Exécuter les tests
 
@@ -231,8 +242,8 @@ Pour toute question ou suggestion, n'hésitez pas à ouvrir une **Issue** ou une
 - **Statut** : Développement actif
 - **Stabilité** : Non recommandé pour la production
 - **Fonctionnalités** : Toutes les fonctionnalités de base sont implémentées
-- **Tests** : 768 tests (tous passent)
-- **Couverture** : ~81%
+- **Tests** : 1133 tests (tous passent)
+- **Couverture** : ~92%
 
 > **📖 Feuille de route** : [ROADMAP.md](ROADMAP.md)
 

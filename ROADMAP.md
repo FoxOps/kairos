@@ -1,20 +1,21 @@
 # 🗺️ Feuille de Route - Leviia Schedule
 
-> **Version** : 5.7.0 - Refonte visuelle Dracula/Alucard (PR #110)
-> **Version app** : 0.7.9 (`/version`) - Audit code mort/legacy,
-> performance, requêtes SQL, chasse aux bugs, sécurité (branche
-> audit/cleanup-perf-security). Hérite des corrections diverses (dashboard,
-> flash messages, export ICS, OIDC), de l'échange de shifts entre
-> utilisateurs (demande, don simple ou réciproque, validation/annulation
-> admin, modèle `SwapRequest`) + notifications internes à l'app (bell icon,
-> modèle `AppNotification`) et de la refonte visuelle Tailwind/daisyUI
+> **Version** : 5.10.0 - Audit trail : historique des modifications (PR #117)
+> **Version app** : 0.9.0 (`/version`) - Hérite de l'audit
+> code mort/legacy/performance/sécurité (PR #113), du multi-fuseau horaire +
+> page `/admin/settings` DB-backed (PR #114), du support multi-langues
+> Français/Anglais (Flask-Babel, PR #115), des formats de date/heure
+> configurables (PR #116), de l'échange de shifts entre utilisateurs
+> (demande, don simple ou réciproque, validation/annulation admin, modèle
+> `SwapRequest`) + notifications internes à l'app (bell icon, modèle
+> `AppNotification`, PR #111) et de la refonte visuelle Tailwind/daisyUI
 > (PR #108, #110) : palette officielle Dracula (thème sombre) / Alucard
 > (thème clair), drawer mobile natif, composants daisyUI (stats,
 > breadcrumbs, avatar, tooltip, collapse, hero, swap), modale de création
 > de shift en `<dialog>` natif
-> **Dernière mise à jour** : Juillet 2026
-> **Statut** : Développement actif - **1006 tests passent** ✅ (dont 23 E2E navigateur réel)
-> **Commit actuel** : branche audit/cleanup-perf-security
+> **Dernière mise à jour** : 16 juillet 2026
+> **Statut** : Développement actif - **1133 tests passent** ✅ (dont 23 E2E navigateur réel)
+> **Commit actuel** : `1cc9870` (main, PR #117 mergée)
 >
 > ℹ️ Ne pas confondre avec les « Phases » de refonte (`report/Phase 1` à
 > `report/Phase 6`, un chantier qualité/infra achevé) et les « Phases » de
@@ -30,10 +31,13 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 ## 🎯 Objectifs principaux
 
 - ✅ **Fonctionnalités de base** : Implémentation complète de toutes les fonctionnalités principales
-- ✅ **Tests complets** : **773 tests**, 0 échec, couverture ~82%
+- ✅ **Tests complets** : **1133 tests**, 0 échec, couverture ~92%
 - ✅ **Automatisation avancée** : Règles métiers complexes implémentées
 - ✅ **Documentation complète** : Documentation technique, API et utilisateur
 - ✅ **Stabilisation** : Refonte Phases 1-6 terminée (architecture, sécurité, DevOps)
+- ✅ **Multi-langues, multi-fuseau, audit trail** : i18n FR/EN, fuseau horaire et
+  formats de date/heure personnalisables, historique complet des modifications
+  (v0.7.10 → v0.9.0)
 - 📈 **Améliorations** : Fonctionnalités avancées et intégrations (Phase 5/7 roadmap, à venir)
 - 🚀 **Production Ready** : Support multi-DB et tests de charge restants avant v1.0
 
@@ -59,9 +63,10 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 | **Sécurité** | Authentification OIDC/SSO | ✅ | Authlib, Keycloak/Okta/Auth0-compatible |
 | **Sécurité** | Gestion des permissions | ✅ | Décorateurs (admin_required, role_required, etc.) |
 | **Sécurité** | Gestion des erreurs | ✅ | Pages personnalisées 400-504 |
-| **Sécurité** | Logging complet | ✅ | Rotation, syslog, filtrage des données sensibles |
+| **Sécurité** | Logging complet | ✅ | Rotation (`RotatingFileHandler`), filtrage des données sensibles - pas de syslog (voir ENVIRONMENT_VARIABLES.md) |
 | **Sécurité** | CSP + security headers | ✅ | Talisman toujours actif (Phase 6), CSP stricte |
-| **Sécurité** | Audit de sécurité | ✅ | Rapport complet (report/SECURITY_AUDIT_REPORT.md) |
+| **Sécurité** | Audit de sécurité | ✅ | Rapport complet (report/SECURITY_AUDIT_REPORT.md) + audit legacy/perf/sécurité (PR #113) |
+| **Sécurité** | Historique des modifications (audit trail) | ✅ | Modèle `AuditLog`, double écriture DB + `logs/audit.log`, UI `/admin/audit-log` (PR #117, v0.9.0) |
 | **Automatisation** | Règles métiers shifts | ✅ | **5 règles complexes** implémentées |
 | **Automatisation** | Rotation astreintes | ✅ | Algorithme automatique avec contraintes |
 | **Automatisation** | Gestion des conflits | ✅ | Congés vs shifts vs astreintes |
@@ -72,7 +77,9 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 | **Performance** | Cache | ✅ | Système de cache implémenté |
 | **Performance** | Pagination | ✅ | Pagination complète |
 | **Performance** | Compression Gzip/Brotli/Zstd | ✅ | flask-compress, activé Phase 6 |
-| **Tests** | Tests unitaires + intégration | ✅ | **773 tests passent**, couverture ~82% |
+| **Tests** | Tests unitaires + intégration | ✅ | **1133 tests passent**, couverture ~92% |
+| **i18n** | Multi-langues (Français/Anglais) | ✅ | Flask-Babel, préférence par utilisateur + défaut org (PR #115, v0.7.11) |
+| **Personnalisation** | Fuseau horaire, formats date/heure | ✅ | Par utilisateur + défaut org, `SettingsService`/`/admin/settings` (PR #114 et #116, v0.7.10-v0.8.0) |
 | **Tests** | Tests d'intégration | ✅ | Scénarios utilisateurs complets (e2e/) |
 | **Tests** | Tests des gestionnaires d'erreurs | ✅ | Toutes les erreurs HTTP (400-504) |
 | **Tests** | Tests d'export | ✅ | ICS, routes d'export |
@@ -219,9 +226,10 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 |---------|--------|----------|-------------------|---------|
 | **Notifications par email** | ✅ | **Haute** | v0.7 | Rappels hebdomadaires shifts (dimanche) et astreinte (jeudi), SMTP via variables d'environnement, scripts cron autonomes (PR #106) |
 | **Échanges de shifts entre utilisateurs** | ✅ | Moyenne | v0.7 | Demande (don simple ou réciproque) + validation admin, modèle `SwapRequest` |
-| **Multi-langues (i18n)** | ❌ | Moyenne | v0.8 | Français, Anglais, Espagnol |
-| **Gestion des fuseaux horaires** | ❌ | Moyenne | v0.8 | Support multi-timezone |
-| **Historique des modifications** | ❌ | Basse | v0.9 | Audit trail des changements |
+| **Multi-langues (i18n)** | ✅ | Moyenne | v0.7.11 | Français, Anglais (Flask-Babel) - Espagnol non fait |
+| **Gestion des fuseaux horaires** | ✅ | Moyenne | v0.7.10 | Multi-timezone par utilisateur + défaut org (`SettingsService`) |
+| **Formats de date/heure configurables** | ✅ | Moyenne | v0.8.0 | Par utilisateur + défaut org, filtres Jinja dédiés |
+| **Historique des modifications** | ✅ | Basse | v0.9.0 | Audit trail des changements (`AuditLog`, `/admin/audit-log`) |
 
 #### 5.3 Intégrations externes
 
@@ -278,21 +286,24 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 - ✅ 773 tests passent, couverture ~82%
 - ⚠️ Support PostgreSQL (configuration possible, tests CI à ajouter)
 
-### Version 0.7 (Fonctionnalités avancées - **items Haute priorité terminés**)
-- ✅ Refonte UI/UX (PR #103 : palette, burger mobile, composants, dashboard, audit responsive)
+### Version 0.7 (Fonctionnalités avancées - **Terminé**)
+- ✅ Refonte UI/UX (PR #103, #108, #110 : Tailwind/daisyUI, palette Dracula/Alucard, burger mobile, composants, dashboard, audit responsive)
 - ✅ Calendrier interactif (drag & drop, FullCalendar)
 - ✅ Notifications par email (PR #106)
-- ✅ Échanges de shifts entre utilisateurs (demande + validation admin)
-- ❌ Multi-langues (i18n)
+- ✅ Échanges de shifts entre utilisateurs + notifications internes (PR #111)
+- ✅ Audit legacy/perf/sécurité + Alembic + traduction des commentaires (PR #113)
+- ✅ Multi-fuseau horaire + page `/admin/settings` DB-backed (PR #114)
+- ✅ Multi-langues i18n Français/Anglais (PR #115)
 
-### Version 0.8 (Intégrations)
+### Version 0.8 (Personnalisation - **Terminé**)
+- ✅ Formats de date/heure configurables (PR #116)
 - ❌ Accessibilité WCAG complète
 - ❌ API REST publique
 
-### Version 0.9 (Pré-lancement)
+### Version 0.9 (Audit trail - **Terminé**)
+- ✅ Historique des modifications (audit trail, PR #117)
 - ❌ Webhooks
 - ❌ Support MySQL/MariaDB
-- ❌ Monitoring et métriques
 - ❌ Tests de charge
 - ❌ Documentation finale
 
@@ -312,16 +323,16 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 
 | Métrique | Valeur | Détails |
 |----------|--------|---------|
-| **Tests** | **773 passent** | 0 échec (voir `python -m pytest tests/ -v`) |
-| **Couverture de code** | **~82%** | `--cov=app --cov=config`, objectif ≥80% atteint |
-| **Modèles de données** | 6 | User, Group, ShiftType, Shift, OnCall, Leave (app/models/, package) |
+| **Tests** | **1133 passent** | 0 échec (voir `python -m pytest tests/ -v`) |
+| **Couverture de code** | **~92%** | `--cov=app --cov=config`, objectif ≥80% largement dépassé |
+| **Modèles de données** | 10 | User, Group, ShiftType, Shift, OnCall, Leave, AutomationConfig, NotificationLog, Setting, SwapRequest, AppNotification, AuditLog (app/models/, package - voir Docs/architecture/ERD.md) |
 | **Architecture** | 3 couches | routes/ → services/ → repositories/ (report/Phase 2) |
-| **Modules de routes** | Multiples fichiers/blueprint | main, admin, auth, export - chacun splité en plusieurs fichiers (ex: shift_routes.py, admin_user_routes.py) |
-| **Modules utilitaires** | app/utils/, par sous-package | automation/, cache/, export/, security/, logging/, optimizations/, helpers/, health.py, prometheus_metrics.py |
+| **Modules de routes** | Multiples fichiers/blueprint | main, admin, auth, export - chacun splité en plusieurs fichiers (ex: shift_routes.py, admin_user_routes.py, admin_audit_routes.py) |
+| **Modules utilitaires** | app/utils/, par sous-package | automation/, export/, security/ (vide), logging/, optimizations/, helpers/, health.py, prometheus_metrics.py - cache/ entièrement retiré (code mort confirmé, PR #113) |
 | **Gestionnaires d'erreurs** | 9 | 400, 401, 403, 404, 405, 500, 502, 503, 504 + ValueError/TypeError |
 | **Templates** | 30+ | Jinja2 templates (app/templates/) |
-| **Fichiers de configuration** | app/config/ (package) | base.py, development.py, production.py, testing.py + config_oidc.py, config_performance.py |
-| **Scripts** | scripts/ | backup_database.py, backup_config.py, validate_config.py, bug_hunt.sh, download_vendor_assets.py |
+| **Fichiers de configuration** | app/config/ (package) | base.py, development.py, production.py, testing.py + config_oidc.py (config_performance.py retiré, jamais câblé) |
+| **Scripts** | scripts/ | backup_database.py, backup_config.py, validate_config.py, bug_hunt.sh, send_shift_notifications.py, send_oncall_notifications.py |
 | **Infrastructure** | docker/, k8s/, grafana/, .gitlab-ci/ | build multi-stage, manifests k8s complets, dashboard Grafana, pipeline GitLab CI |
 
 ### Structure du projet
@@ -332,31 +343,35 @@ leviia-schedule/
 │   ├── __init__.py              # Factory create_app() + instance globale
 │   ├── auth/                    # decorators.py, user_manager.py, oidc_auth.py
 │   ├── config/                  # base.py, development.py, production.py, testing.py
-│   ├── models/                  # base.py (BaseModel) + user, shift, oncall,
-│   │                             # leave, automation_config
+│   ├── models/                  # base.py (BaseModel) + user, shift, oncall, leave,
+│   │                             # automation_config, notification_log, setting,
+│   │                             # swap_request, app_notification, audit_log
 │   ├── repositories/            # UserRepository, GroupRepository,
 │   │                             # ShiftRepository, ShiftTypeRepository,
-│   │                             # OnCallRepository, LeaveRepository
+│   │                             # OnCallRepository, LeaveRepository,
+│   │                             # SwapRequestRepository, AppNotificationRepository,
+│   │                             # AuditLogRepository
 │   ├── services/                # UserService, GroupService, ShiftService,
 │   │                             # ShiftTypeService, OnCallService, LeaveService,
 │   │                             # ExportService, ScheduleService,
-│   │                             # AutomationAdminService
+│   │                             # AutomationAdminService, SwapService,
+│   │                             # SettingsService, AppNotificationService,
+│   │                             # AuditService, NotificationService, BackupService
 │   ├── routes/                  # blueprints auth/main/admin/export, chacun
 │   │                             # splité en plusieurs fichiers (shift_routes.py,
-│   │                             # admin_user_routes.py, etc.)
+│   │                             # admin_user_routes.py, admin_audit_routes.py, etc.)
 │   ├── utils/
-│   │   ├── automation/          # OnCallAutomation, ShiftAutomation,
-│   │   │                         # AdvancedShiftAutomation
-│   │   ├── cache/, export/ (ics_exporter.py), security/ (token_manager.py),
-│   │   │   logging/, optimizations/ (eager_load), helpers/
-│   │   ├── health.py            # endpoints k8s /health /ready
+│   │   ├── automation/          # OnCallAutomation, AdvancedShiftAutomation
+│   │   ├── export/ (ics_exporter.py, zoneinfo), security/ (vide),
+│   │   │   logging/ (RotatingFileHandler), optimizations/ (eager_load), helpers/
+│   │   ├── health.py            # endpoints k8s /health /ready /version
 │   │   └── prometheus_metrics.py
-│   ├── static/                  # css/, js/ (modules ES6), vendor/ (local, no CDN)
+│   ├── static/                  # css/, js/ (modules ES6) - CDN cdnjs/jsdelivr, pas de vendoring local
 │   └── templates/                # 30+ templates Jinja2
-├── config_oidc.py, config_performance.py  # config standalone chargées directement
-├── run.py                       # Point d'entrée (setup DB + app.run)
+├── config_oidc.py                # config OIDC standalone chargée directement
+├── run.py                       # Point d'entrée (setup DB + migrations Alembic + app.run)
 ├── requirements.txt
-├── tests/                       # unit/, integration/, e2e/ - 773 tests
+├── tests/                       # unit/, integration/, e2e/ - 1133 tests
 ├── Docs/                        # architecture/, api/, guides/, reference/, deployment/
 ├── report/                      # rapports d'audit + refonte Phases 1-6
 ├── docker/                      # Dockerfile (multi-stage), docker-compose.yml, Makefile
@@ -364,23 +379,29 @@ leviia-schedule/
 │                                 # pvc, hpa, pdb, namespace
 ├── grafana/                     # dashboard JSON importable
 ├── .gitlab-ci/.gitlab-ci.yml    # pipeline CI/CD (futur dépôt GitLab)
+├── migrations/                  # Alembic (Flask-Migrate), appliquées au démarrage
 └── scripts/                     # backup_database.py, backup_config.py,
-                                  # validate_config.py, bug_hunt.sh
+                                  # validate_config.py, bug_hunt.sh,
+                                  # send_shift_notifications.py, send_oncall_notifications.py
 ```
 
-### Derniers changements (Commit 6e25cc2)
+### Derniers changements (Commit 1cc9870)
 
-- **Merge PR #102** : Phase 6 - Optimisations supplémentaires (dernière d'une
-  refonte en 6 phases, voir `report/Phase 1` à `report/Phase 6`)
-- **Contexte** : CSP stricte + bug Talisman corrigé (en-têtes de sécurité
-  silencieusement absents dès que `TALISMAN_FORCE_HTTPS=false`), compression
-  Gzip/Brotli/Zstd activée (dépendance déclarée mais jamais branchée), CI/CD
-  GitLab corrigée (double install, junit/coverage cassés, namespace k8s
-  invalide), Dockerfile multi-stage réparé et promu (415 Mo vs 926 Mo),
-  dashboard Grafana créé
-- **Impact** : architecture en couches (repositories/services), 773 tests
-  passent (couverture ~82%), infra Docker/k8s/CI/monitoring fonctionnelle
-  et vérifiée en réel (pas seulement en théorie)
+- **Merge PR #117** : Audit trail - historique des modifications. Modèle
+  `AuditLog` append-only + `AuditService.log()` (point d'écriture unique,
+  double écriture DB + `logs/audit.log`), retrofit de tout le CRUD métier
+  (users/groupes/shifts/astreintes/congés/types de shift/échanges/paramètres)
+  et des événements d'authentification, UI `/admin/audit-log` (filtres,
+  purge basée sur une rétention configurable), rotation des fichiers de logs
+  (`RotatingFileHandler`, corrige une croissance non bornée constatée en dev)
+- **Contexte** : avant cette PR, un logger `"audit"` existait dans le code
+  depuis longtemps mais n'était appelé nulle part en dehors des tests -
+  `logs/audit.log` ne contenait donc aucune activité réelle
+- **Hérite de** : PR #116 (formats date/heure configurables, v0.8.0), PR #115
+  (i18n Français/Anglais, v0.7.11), PR #114 (multi-fuseau horaire +
+  `/admin/settings` DB-backed, v0.7.10), PR #113 (audit legacy/perf/sécurité +
+  Alembic + traduction des commentaires, v0.7.9)
+- **Impact** : 1133 tests passent (couverture ~92%), version app 0.9.0
 
 ---
 
@@ -516,6 +537,15 @@ Pour toute question concernant la feuille de route :
 
 | Version | Date | Auteur | Changements |
 |---------|------|--------|-------------|
+| 5.10.0 | 16 juillet 2026 | Claude Code | Audit trail - historique des modifications (PR #117) : modèle `AuditLog` append-only + `AuditService.log()` (point d'écriture unique, double écriture DB + `logs/audit.log`), retrofit de tout le CRUD métier et des événements d'authentification, UI `/admin/audit-log` (filtres auteur/domaine/dates, purge basée sur une rétention configurable dans `/admin/settings`, sans repli numérique par défaut), rotation de tous les fichiers de logs (`RotatingFileHandler`, `LOG_MAX_BYTES`/`LOG_BACKUP_COUNT`). Avant cette PR le logger `"audit"` existait dans le code depuis longtemps sans jamais être appelé - `logs/audit.log` ne contenait aucune activité réelle. Version app 0.8.0 -> 0.9.0. 1133 tests (couverture ~92%) |
+| 5.9.0 | 16 juillet 2026 | Claude Code | Formats de date/heure configurables (PR #116) : même architecture Setting/User que le multi-fuseau horaire, 3 formats de date / 2 formats d'heure, 3 nouveaux filtres Jinja (`format_date`/`format_time`/`format_datetime`) remplaçant les `strftime()` d'affichage. Bug N+1 réel trouvé et corrigé (cache `flask.g` manquant sur les résolveurs de format). Version app 0.7.11 -> 0.8.0. 1099 tests |
+| 5.8.0 | 16 juillet 2026 | Claude Code | Support multi-langues Français/Anglais (PR #115) : Flask-Babel, `User.language` + `SettingsService.default_language`, retrofit complet du texte utilisateur (55 templates, flash messages, erreurs de services, chaînes JS via injection JSON), `en.po` traduit intégralement (806 chaînes), `fr.po` gardé vide à dessein (repli standard sur le français). Version app 0.7.10 -> 0.7.11 |
+| 5.7.0 | 15 juillet 2026 | Claude Code | Multi-fuseau horaire + page `/admin/settings` DB-backed (PR #114) : modèle `Setting` (clé/valeur générique), `SettingsService` (règle "Setting présent l'emporte, sinon repli live sur env/config"), `User.timezone`/`effective_timezone()`, conversion réelle org-tz/perso-tz dans le calendrier FullCalendar, correction du bug ICS "temps flottant" (TZID réel + VTIMEZONE), préférences de notification par utilisateur. Version app 0.7.9 -> 0.7.10 |
+| 5.5.4 | 14 juillet 2026 | Claude Code | Corrections diverses : dashboard, flash messages, export ICS, OIDC (PR #112). Version app 0.7.7 -> 0.7.8 |
+| 5.5.3 | 14 juillet 2026 | Claude Code | Échange de shifts entre utilisateurs + notifications internes (PR #111) : demande (don simple ou réciproque), validation/rejet/revert admin, modèle `SwapRequest` (premier modèle avec plusieurs FK vers la même table `User`), `AppNotification` (cloche in-app, badge non-lu). Version app 0.7.6 -> 0.7.7 |
+| 5.5.2 | 14 juillet 2026 | Claude Code | Refonte visuelle : palette officielle Dracula (thème sombre) / Alucard (thème clair, PR #110), surcharge complète des couleurs sémantiques daisyUI depuis draculatheme.com/spec, drawer mobile natif, modale de création de shift en `<dialog>` natif. Version app 0.7.5 -> 0.7.6 |
+| 5.5.1 | 13-14 juillet 2026 | Claude Code | Refonte UI/UX : Bulma -> Tailwind CSS 4 + daisyUI 5, vendor -> CDN cdnjs (PR #108) ; retrait du Makefile wrapper Docker, doc registry Harbor (PR #109). Version app -> 0.7.5 |
+| 5.6.0 | 15 juillet 2026 | Claude Code | Audit sécurité/perf/legacy + traduction des commentaires + Alembic (PR #113) : sécurité P0 (XSS stockée, CSRF sur suppressions GET, open redirect), bugs P1 (revalidation congé sur drag & drop), performance P2 (élimination N+1 sur SwapRequest/dashboard/congés/astreintes), nettoyage P3 (code mort confirmé et retiré : `cache/` en entier, `security/token_manager.py`/`encryption.py`, `optimizations/` réduit à `eager_load`), traduction intégrale des commentaires/docstrings en anglais (10 phases), migrations Alembic + contraintes uniques fermant la race condition TOCTOU shift/astreinte. Version app 0.7.8 -> 0.7.9 |
 | 5.5.0 | Juillet 2026 | Claude Code | Refonte du système de sauvegarde (PR #107) : activation/configuration entièrement par variables d'environnement (`BACKUP_ENABLED`, opt-in comme les notifications), retrait de la scaffolding jamais consommée (`encrypt`/`encryption_key`/`frequency`), alertes email de succès/échec réutilisant le système de notifications existant (`BACKUP_NOTIFICATION_EMAIL`, soumis à `NOTIFICATIONS_ENABLED`), `BackupService` + interface d'administration (`/admin/backups` : configuration, liste local/S3, création à la demande, nettoyage, téléchargement avec protection contre la traversée de chemin), intégration Docker (crond conditionnel sur `BACKUP_ENABLED`, planning dans `docker/crontabs/appuser`, même conteneur que l'application - pas de service Docker séparé). Documentation mise à jour (ENVIRONMENT_VARIABLES.md, BACKUP_GUIDE.md, ADMIN_GUIDE.md, docker.md) et références obsolètes à `BACKUP_ENCRYPT`/`BACKUP_ENCRYPTION_KEY` corrigées au passage. Version app 0.7.3 -> 0.7.4. 916 tests |
 | 5.4.0 | Juillet 2026 | Claude Code | Notifications par email (PR #106) : rappel hebdomadaire des shifts (dimanche, 24h avant le lundi) et de l'astreinte (jeudi, 24h avant le vendredi 21h), un email par semaine et par utilisateur (`NotificationLog` anti-doublon), SMTP configurable via variables d'environnement, deux scripts cron autonomes (`send_shift_notifications.py`/`send_oncall_notifications.py`, pattern `backup_database.py`), gabarits HTML + texte. Documentation mise à jour (README, CLAUDE.md, ADMIN_GUIDE.md, ARCHITECTURE.md, ERD.md, ENVIRONMENT_VARIABLES.md) et références obsolètes à `ShiftAutomation`/`business_rules.py`/`security/token_manager.py` (retirés en PR #105) corrigées au passage. Version app 0.7.2 -> 0.7.3. 891 tests |
 | 5.3.0 | Juillet 2026 | Claude Code | Retouches de textes UI (PR #105) : titre calendrier index ("Calendrier interactif" -> "Calendrier"), description footer (l'app ne gère pas les "organisations"), boutons "Retour à l'admin" ajoutés sur /admin/users et /admin/automation (renommés depuis "Retour au tableau de bord" sur /admin/groups pour éviter la confusion avec le tableau de bord utilisateur), occurrences de "nouvelles règles métiers" nettoyées sur /admin/automation. Version app 0.7.1 -> 0.7.2 |
@@ -538,15 +568,23 @@ Pour toute question concernant la feuille de route :
 4. **Tester le dashboard Grafana** contre une instance réelle (créé mais non testé en environnement live)
 
 ### À moyen terme (1 mois)
-1. **Implémenter les notifications par email**
-2. **Améliorer l'accessibilité WCAG** (partiellement fait : skip link,
+1. **Améliorer l'accessibilité WCAG** (partiellement fait : skip link,
    focus-visible, aria - refonte UI/UX terminée mais audit WCAG complet
    pas encore fait)
+2. **Ajouter l'espagnol** au support i18n (infra Flask-Babel déjà en place
+   pour FR/EN, `SettingsService.SUPPORTED_LANGUAGES` à étendre)
+3. **Documentation finale v0.9 → v1.0** : audit complet de Docs/ contre le
+   code réel (plusieurs inexactitudes historiques corrigées le 16 juillet
+   2026 - ENVIRONMENT_VARIABLES.md, ARCHITECTURE.md, ERD.md, ADMIN_GUIDE.md
+   - mais API.md/openapi.yaml et les guides restants n'ont pas encore été
+   repassés depuis les fonctionnalités Setting/SwapRequest/AppNotification/
+   AuditLog)
 
 ### À long terme (3-6 mois)
-1. **Support multi-langues (i18n)**
-2. **API REST publique**
-3. **Préparation pour la version 1.0 stable**
+1. **API REST publique**
+2. **Webhooks** vers des services externes
+3. **Préparation pour la version 1.0 stable** (support MySQL/MariaDB, tests
+   de charge, version stable pour la production)
 
 ---
 
@@ -554,14 +592,15 @@ Pour toute question concernant la feuille de route :
 
 1. **Version de développement** : Ce projet est actuellement en phase de développement actif et **n'est pas prêt pour une utilisation en production** sans une revue complète (voir CLAUDE.md).
 2. **Stabilité** : La version stable (v1.0) est prévue pour le déploiement en production.
-3. **Sécurité** : Un audit de sécurité complet a été réalisé (report/SECURITY_AUDIT_REPORT.md), CSP stricte et en-têtes de sécurité toujours actifs depuis Phase 6.
-4. **Tests** : **773 tests passent**, 0 échec, couverture ~82% (objectif ≥80% atteint).
-5. **Documentation** : La documentation est complète pour les développeurs et administrateurs (Docs/, report/).
+3. **Sécurité** : Un audit de sécurité complet a été réalisé (report/SECURITY_AUDIT_REPORT.md, complété par l'audit legacy/perf/sécurité de la PR #113), CSP stricte et en-têtes de sécurité toujours actifs depuis Phase 6.
+4. **Tests** : **1133 tests passent**, 0 échec, couverture ~92% (objectif ≥80% largement dépassé).
+5. **Documentation** : La documentation est globalement à jour pour les développeurs et administrateurs (Docs/, report/, CLAUDE.md) — voir la note "documentation finale" ci-dessus pour les fichiers pas encore repassés depuis les dernières fonctionnalités.
 6. **Refonte Phases 1-6** : Un chantier qualité/infra en 6 phases (dépendances, backend, frontend, tests, documentation, optimisations) est terminé — voir `report/Phase 1` à `report/Phase 6` pour le détail de chaque bug trouvé et corrigé.
+7. **Historique des modifications** : depuis la v0.9.0, chaque action métier (et pas seulement les logs applicatifs) est tracée et consultable dans `/admin/audit-log` — voir CLAUDE.md "Audit trail".
 
 > **⚠️ Rappel** : Cette feuille de route est évolutive et peut être ajustée en fonction des priorités, des retours utilisateurs et des contraintes techniques. Les dates de livraison sont indicatives et peuvent varier.
 
 ---
 
-*Document généré après analyse complète du dépôt - Dernière synchronisation : Juillet 2026*
-*Commit analysé : b881b3da87f3336208a37ad8a278d0f63d1c5eb8 (Merge PR #103 - Refonte UI/UX)*
+*Document généré après analyse complète du dépôt - Dernière synchronisation : 16 juillet 2026*
+*Commit analysé : 1cc9870e1fa515ec5d8bb643a90e1d1322aed8ab (Merge PR #117 - Audit trail)*

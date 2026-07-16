@@ -78,6 +78,10 @@ graph LR
         admin_group[admin_group_routes.py]
         admin_shift_type[admin_shift_type_routes.py]
         admin_automation[admin_automation_routes.py]
+        admin_backup[admin_backup_routes.py]
+        admin_swap[admin_swap_routes.py]
+        admin_settings[admin_settings_routes.py]
+        admin_audit[admin_audit_routes.py]
     end
 ```
 
@@ -92,27 +96,44 @@ app/
 ├── auth/                  # decorators.py (garde-fous de route), user_manager.py,
 │                          # oidc_auth.py (SSO via Authlib)
 ├── models/                 # BaseModel + Group, User, ShiftType, Shift, OnCall,
-│                          # Leave, AutomationConfig, NotificationLog
+│                          # Leave, AutomationConfig, NotificationLog, Setting,
+│                          # SwapRequest, AppNotification, AuditLog
 ├── repositories/           # UserRepository, GroupRepository, ShiftRepository,
-│                          # ShiftTypeRepository, OnCallRepository, LeaveRepository
+│                          # ShiftTypeRepository, OnCallRepository, LeaveRepository,
+│                          # SwapRequestRepository, AppNotificationRepository,
+│                          # AuditLogRepository (pas de repository dédié pour
+│                          # Setting - Setting.get()/set() sont des méthodes du
+│                          # modèle lui-même)
 ├── services/               # UserService, GroupService, ShiftService,
 │                          # ShiftTypeService, OnCallService, LeaveService,
 │                          # ExportService, ScheduleService, AutomationAdminService,
+│                          # SwapService, SettingsService (réglages admin
+│                          # DB-backed avec repli env, voir ERD.md), AuditService
+│                          # (point d'écriture unique de l'audit trail),
 │                          # NotificationService (rappels email, appelé par
 │                          # scripts/send_*_notifications.py, pas par une route),
+│                          # AppNotificationService (cloche in-app, appelé par
+│                          # SwapService sur les événements d'échange),
 │                          # BackupService (wrappe scripts/backup_database.py
 │                          # pour /admin/backups)
-├── routes/                 # auth.py, main.py + {dashboard,shift,oncall,leave}_routes.py,
-│                          # admin.py + admin_{user,group,shift_type,automation,backup}_routes.py,
-│                          # export.py
+├── routes/                 # auth.py, main.py + {dashboard,shift,oncall,leave,
+│                          # swap,notification}_routes.py, admin.py +
+│                          # admin_{user,group,shift_type,automation,backup,
+│                          # swap,settings,audit}_routes.py, export.py
 ├── utils/
 │   ├── automation/         # AdvancedShiftAutomation (moteur unique de génération
 │   │                      # de shifts), OnCallAutomation, status
-│   ├── cache/              # init_cache, cache_manager (fallback dict cache)
-│   ├── export/              # génération ICS (icalendar)
+│   ├── export/              # génération ICS (icalendar), zoneinfo (pas pytz)
 │   ├── helpers/             # common_helpers.py (can_add_shift/leave/oncall,
-│   │                      # formatage/parsing de dates)
-│   ├── logging/             # logger multi-handler (app/error/http/audit/sql/auth)
+│   │                      # formatage/parsing de dates, filtres Jinja
+│   │                      # format_date/format_time/format_datetime),
+│   │                      # timezone_helpers.py, js_translations.py
+│   ├── logging/             # logger multi-handler : app.log, error.log,
+│   │                      # debug.log, http_errors.log, audit.log (tous en
+│   │                      # RotatingFileHandler) - pas de sql.log/auth.log/
+│   │                      # syslog, contrairement à une ancienne version de
+│   │                      # cette doc. audit.log est alimenté par
+│   │                      # AuditService.log() (voir CLAUDE.md "Audit trail")
 │   ├── notifications/       # email_sender.py (smtplib/email, stdlib) - appelé
 │   │                      # par NotificationService, pas de route associée
 │   ├── optimizations/       # eager_load (seul décorateur restant, Phase 4)
@@ -178,7 +199,14 @@ autonome (clé/valeur JSON) sans relation, utilisée pour persister l'ordre
 de rotation des astreintes. `NotificationLog` (user_id, notification_type,
 period_start, contrainte unique sur les trois) enregistre les rappels
 email déjà envoyés, pour empêcher un double envoi si un script cron est
-relancé sur la même période.
+relancé sur la même période. `Setting` est le même genre de store
+clé/valeur qu'`AutomationConfig`, mais pour les réglages admin éditables
+à chaud (`/admin/settings`). `SwapRequest` porte 3 FK vers `User`
+(requester/target_user/reviewer) et 2 vers `Shift` (shift/target_shift).
+`AppNotification` (cloche in-app) et `AuditLog` (historique des
+modifications, `/admin/audit-log`) sont tous deux 1:N depuis `User` mais
+ne doivent pas être confondus entre eux ni avec `NotificationLog` — voir
+CLAUDE.md ("In-app notifications", "Audit trail") pour la distinction.
 
 ## Authentification
 

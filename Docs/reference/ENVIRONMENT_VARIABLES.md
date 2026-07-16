@@ -124,29 +124,26 @@ Guide de configuration complet :
 
 ## 📝 Configuration du Logging
 
+> ⚠️ Cette section a été corrigée le 16 juillet 2026 (chantier audit trail, voir
+> CLAUDE.md "Audit trail") : elle documentait un ensemble de variables
+> (`LOG_DIR`, `LOG_FILE_SIZE`, `LOG_FILE_APP`/`LOG_FILE_ERRORS`/.../`LOG_LEVEL_*`,
+> `LOG_FORMAT`, `SYSLOG_*`, `LOG_FILTER_*`) qui n'ont jamais existé dans le code
+> (`app/utils/logging/logger.py`) — probablement un reliquat d'une conception
+> antérieure jamais implémentée. Seules les 4 variables ci-dessous sont
+> réellement lues.
+
 | Variable | Type | Défaut | Description | Obligatoire |
 |----------|------|--------|-------------|-------------|
 | `LOG_LEVEL` | string | `INFO` | Niveau de log principal. Valeurs possibles : `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` | ❌ Non |
-| `LOG_DIR` | string | `logs` | Dossier des logs (relatif au répertoire du projet ou chemin absolu) | ❌ Non |
-| `LOG_FILE_SIZE` | entier | `5242880` | Taille maximale des fichiers de log en octets (par défaut : 5 Mo) | ❌ Non |
-| `LOG_BACKUP_COUNT` | entier | `10` | Nombre de fichiers de backup à conserver | ❌ Non |
-| `LOG_FILE_APP` | string | `leviia-app.log` | Nom du fichier de log pour l'application | ❌ Non |
-| `LOG_FILE_ERRORS` | string | `leviia-errors.log` | Nom du fichier de log pour les erreurs | ❌ Non |
-| `LOG_FILE_HTTP` | string | `leviia-http-errors.log` | Nom du fichier de log pour les erreurs HTTP | ❌ Non |
-| `LOG_FILE_DEBUG` | string | `leviia-debug.log` | Nom du fichier de log pour le débogage | ❌ Non |
-| `LOG_FILE_AUDIT` | string | `leviia-audit.log` | Nom du fichier de log pour l'audit | ❌ Non |
-| `LOG_LEVEL_APP` | string | `LOG_LEVEL` | Niveau de log pour l'application | ❌ Non |
-| `LOG_LEVEL_ERRORS` | string | `ERROR` | Niveau de log pour les erreurs | ❌ Non |
-| `LOG_LEVEL_HTTP` | string | `WARNING` | Niveau de log pour les erreurs HTTP | ❌ Non |
-| `LOG_LEVEL_DEBUG` | string | `DEBUG` | Niveau de log pour le débogage | ❌ Non |
-| `LOG_LEVEL_AUDIT` | string | `INFO` | Niveau de log pour l'audit | ❌ Non |
-| `LOG_FORMAT` | string | `%(asctime)s - %(name)s - %(levelname)s - %(message)s` | Format des logs | ❌ Non |
-| `LOG_DATE_FORMAT` | string | `%Y-%m-%d %H:%M:%S` | Format de la date dans les logs | ❌ Non |
-| `SYSLOG_ENABLED` | booléen | `false` | Active le syslog pour la production | ❌ Non |
-| `SYSLOG_ADDRESS` | string | `/dev/log` | Adresse du syslog (pour Unix : `/dev/log`, pour réseau : `localhost:514`) | ❌ Non |
-| `SYSLOG_FACILITY` | string | `local0` | Facility syslog. Valeurs possibles : `local0`, `local1`, ..., `local7`, `user`, `daemon`, etc. | ❌ Non |
-| `LOG_FILTER_SENSITIVE` | booléen | `true` | Filtre les données sensibles dans les logs (recommandé : `true`) | ❌ Non |
-| `LOG_FILTER_PATTERNS` | string | `"password,secret,token,api_key,auth"` | Patterns supplémentaires pour le filtrage des données sensibles (séparés par des virgules) | ❌ Non |
+| `LOG_FILE` | string | *(aucun)* | Chemin d'un fichier de log racine optionnel, en plus des fichiers `app.log`/`error.log`/`debug.log`/`http_errors.log`/`audit.log` toujours créés dans `logs/` (dossier fixe, non configurable) | ❌ Non |
+| `LOG_MAX_BYTES` | entier | `10485760` (10 Mo) | Taille maximale de chaque fichier de log avant rotation (`RotatingFileHandler`, s'applique à tous les fichiers de `logs/`, y compris `audit.log`) | ❌ Non |
+| `LOG_BACKUP_COUNT` | entier | `5` | Nombre de fichiers de backup conservés après rotation (`app.log.1`, `app.log.2`, ...) | ❌ Non |
+
+Le filtrage des données sensibles (masquage de `password=`/`token=`/`api_key=` dans
+les messages de log, `SensitiveDataFilter`) est toujours actif et n'est pas
+désactivable par variable d'environnement. `audit.log` (dans `logs/`) est
+alimenté par `AuditService.log()` — voir CLAUDE.md "Audit trail" pour la
+double écriture DB + fichier et la consultation via `/admin/audit-log`.
 
 ---
 

@@ -2,9 +2,9 @@
 
 ## 📊 Aperçu Global
 
-- **Date de mise à jour** : 16 juillet 2026 (i18n FR/EN + formats date/heure configurables)
-- **Nombre total de tests** : 1099
-- **Tests réussis** : 1099 ✅
+- **Date de mise à jour** : 16 juillet 2026 (audit trail : historique des modifications)
+- **Nombre total de tests** : 1133
+- **Tests réussis** : 1133 ✅
 - **Tests échoués** : 0
 - **Couverture de code** : **~92%** (`--cov=app --cov=config`)
 - **Lint (ruff)** : propre - **0 erreur**
@@ -403,3 +403,25 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
     mal-diagnostiqués en cours de session comme "bug DST préexistant" avant
     lecture attentive du code des deux routes - corrigés en pointant vers
     `/profile/settings`.
+- **16 juillet 2026** : 1133 tests (0 échec, +34). Audit trail (PR #117) :
+  modèle `AuditLog` (append-only) + `AuditLogRepository` + `AuditService.log()`
+  comme point d'écriture unique, double écriture DB + `logs/audit.log`.
+  Avant cette PR, `log_audit_action()` existait dans le code depuis
+  longtemps mais n'était appelé nulle part en dehors des tests - confirmé
+  par grep sur `app/routes/`/`app/services/`, zéro résultat. Retrofit de
+  tout le CRUD métier (utilisateurs, groupes, shifts, astreintes, congés,
+  types de shift, tout le cycle de vie des échanges, paramètres admin) et
+  des événements d'authentification (connexion réussie/échouée,
+  déconnexion, inscription, changement de mot de passe). Tests
+  représentatifs par domaine (pas une duplication systématique par
+  méthode, le pattern d'appel est identique partout) plus une suite dédiée
+  pour `AuditLogRepository`/`AuditService` (résolution d'acteur explicite
+  vs `current_user` vs aucun, non-propagation d'exception si l'écriture
+  échoue - `test_failure_writing_entry_does_not_raise`) et pour la route
+  admin `/admin/audit-log` (filtres, pagination, permission admin-only,
+  purge avec/sans rétention configurée). Un test s'est cassé en cours de
+  route (`test_resolves_actor_from_current_user_in_request_context`) :
+  il comptait *toutes* les lignes `AuditLog` de la table, mais la
+  connexion réelle effectuée par le fixture `logged_in_client` écrit
+  désormais elle-même une entrée `auth.login_success` - corrigé en
+  filtrant sur l'action testée plutôt qu'en comptant la table entière.
