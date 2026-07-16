@@ -22,13 +22,16 @@ Swagger UI/Postman/Insomnia instance.
 from flask import Flask
 from flask_smorest import Api
 
-from app.api.errors import JSON_ERROR_CODES, json_error_handler
-from app.auth.service_account_auth import resolve_service_account
-
 api = Api()
 
 
 def init_api(app: Flask) -> None:
+    """Registers the already-configured resource blueprints (auth
+    hook + JSON error handlers, see app/api/setup.py) on this specific
+    app instance. Safe to call on every create_app() - unlike the
+    per-blueprint setup calls, api.register_blueprint() (a thin wrapper
+    around Flask's own app.register_blueprint()) is meant to run once
+    per app instance, not once per process."""
     app.config.setdefault("API_TITLE", "Leviia Schedule Public API")
     app.config.setdefault("API_VERSION", "v1")
     app.config.setdefault("OPENAPI_VERSION", "3.0.3")
@@ -40,7 +43,4 @@ def init_api(app: Flask) -> None:
     from app.api.resources import all_blueprints
 
     for blp in all_blueprints:
-        blp.before_request(resolve_service_account)
-        for code in JSON_ERROR_CODES:
-            blp.register_error_handler(code, json_error_handler)
         api.register_blueprint(blp)
