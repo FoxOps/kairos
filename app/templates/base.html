@@ -189,10 +189,10 @@
                 </div>
 
                 <ul class="menu menu-sm px-2 gap-1 flex-1" id="sidebar-menu" role="menu">
+                    {% if current_user.is_authenticated %}
                     {% for href, icon, label in nav_links %}
                     <li><a href="{{ href }}" aria-label="{{ label }}" class="{{ 'menu-active' if request.path == href else '' }}"><i class="fas {{ icon }}" aria-hidden="true"></i> {{ label }}</a></li>
                     {% endfor %}
-                    {% if current_user.is_authenticated %}
                     <li>
                         <a href="{{ url_for('main.notifications') }}" aria-label="{{ _('Notifications (%(count)s non lues)', count=unread_notifications_count) if unread_notifications_count else _('Notifications') }}" class="{{ 'menu-active' if request.path == url_for('main.notifications') else '' }}">
                             <i class="fas fa-bell" aria-hidden="true"></i> {{ _("Notifications") }}

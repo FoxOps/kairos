@@ -42,6 +42,32 @@ class TestAuthRoutes:
         assert response.status_code == 200
         assert b"email" in response.data
 
+    def test_login_get_hides_authenticated_nav_links(self, client):
+        """An anonymous visitor must not see the internal nav links
+        (route map / feature disclosure) - only authenticated users get
+        the sidebar's nav_links loop (see base.html)."""
+        response = client.get("/login")
+        html = response.get_data(as_text=True)
+        for path in ("/dashboard", "/schedule", "/oncall", "/leave", "/swaps"):
+            assert f'href="{path}"' not in html
+
+    def test_login_get_authenticated_shows_nav_links(self, test_app, logged_in_client):
+        """Sanity check: the same nav links do appear once authenticated -
+        confirms the previous test isn't a false negative from a broken
+        nav_links definition."""
+        response = logged_in_client.get("/login", follow_redirects=True)
+        html = response.get_data(as_text=True)
+        assert 'href="/schedule"' in html
+
+    def test_404_page_hides_authenticated_nav_links(self, client):
+        """Same guard applies to error pages (400-504 all extend
+        base.html) - not a login.html-specific fix."""
+        response = client.get("/this-route-does-not-exist")
+        assert response.status_code == 404
+        html = response.get_data(as_text=True)
+        for path in ("/dashboard", "/schedule", "/oncall", "/leave", "/swaps"):
+            assert f'href="{path}"' not in html
+
     def test_login_post_valid(self, client, test_user, test_app):
         """Test logging in with valid credentials."""
         with test_app.app_context():
