@@ -17,7 +17,7 @@
 
     <div class="card card-sm bg-base-100 shadow-md mb-4">
         <div class="card-body">
-            <h2 class="text-lg font-semibold"><i class="fas fa-calendar-alt" aria-hidden="true"></i> {{ _("Période : %(start)s au %(end)s", start=start_date.strftime('%d/%m/%Y'), end=end_date.strftime('%d/%m/%Y')) }}</h2>
+            <h2 class="text-lg font-semibold"><i class="fas fa-calendar-alt" aria-hidden="true"></i> {{ _("Période : %(start)s au %(end)s", start=start_date|format_date, end=end_date|format_date) }}</h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
@@ -43,8 +43,8 @@
                                 <tr>
                                     <td>{{ loop.index }}</td>
                                     <td>{{ oncall.user.name if oncall.user else 'N/A' }}</td>
-                                    <td>{{ oncall.start_time.strftime('%d/%m/%Y %Hh') }}</td>
-                                    <td>{{ oncall.end_time.strftime('%d/%m/%Y %Hh') }}</td>
+                                    <td>{{ oncall.start_time|format_datetime }}</td>
+                                    <td>{{ oncall.end_time|format_datetime }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -79,7 +79,7 @@
                                 {% for shift in result.shift.generated %}
                                 <tr>
                                     <td>{{ loop.index }}</td>
-                                    <td>{{ shift.date.strftime('%d/%m/%Y') }}</td>
+                                    <td>{{ shift.date|format_date }}</td>
                                     <td>{{ shift.shift_type.label if shift.shift_type else 'N/A' }}</td>
                                     <td>{{ shift.user.name if shift.user else 'N/A' }}</td>
                                 </tr>

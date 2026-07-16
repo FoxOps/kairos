@@ -17,7 +17,7 @@
           <tr>
             <td style="padding:24px;">
               <p style="margin-top:0;">{{ _("Bonjour %(user_name)s,", user_name=user_name) }}</p>
-              <p>{{ _("Voici vos shifts pour la semaine du %(week_start)s au %(week_end)s :", week_start=week_start.strftime('%d/%m/%Y'), week_end=week_end.strftime('%d/%m/%Y')) }}</p>
+              <p>{{ _("Voici vos shifts pour la semaine du %(week_start)s au %(week_end)s :", week_start=week_start|format_date, week_end=week_end|format_date) }}</p>
               <table role="presentation" width="100%" cellpadding="8" cellspacing="0" style="border-collapse:collapse; margin:16px 0;">
                 <thead>
                   <tr style="background-color:#f0f0f0; text-align:left;">
@@ -29,9 +29,9 @@
                 <tbody>
                   {% for shift in shifts %}
                   <tr>
-                    <td style="padding:8px; border-bottom:1px solid #f0f0f0;">{{ shift.date.strftime('%A')|capitalize }}</td>
-                    <td style="padding:8px; border-bottom:1px solid #f0f0f0;">{{ shift.date.strftime('%d/%m/%Y') }}</td>
-                    <td style="padding:8px; border-bottom:1px solid #f0f0f0;">{{ shift.start_time.strftime('%Hh%M') }} - {{ shift.end_time.strftime('%Hh%M') }}</td>
+                    <td style="padding:8px; border-bottom:1px solid #f0f0f0;">{{ shift.date|date_fr("%a")|capitalize }}</td>
+                    <td style="padding:8px; border-bottom:1px solid #f0f0f0;">{{ shift.date|format_date }}</td>
+                    <td style="padding:8px; border-bottom:1px solid #f0f0f0;">{{ shift.start_time|format_time }} - {{ shift.end_time|format_time }}</td>
                   </tr>
                   {% endfor %}
                 </tbody>

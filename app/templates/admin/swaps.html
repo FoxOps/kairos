@@ -44,16 +44,16 @@
                 {% for swap in pending %}
                 <tr>
                     <td>{{ swap.requester.name }}</td>
-                    <td>{{ swap.shift.date.strftime('%d/%m/%Y') }} - {{ swap.shift.shift_type.label }}</td>
+                    <td>{{ swap.shift.date|format_date }} - {{ swap.shift.shift_type.label }}</td>
                     <td>{{ swap.target_user.name }}</td>
                     <td>
                         {% if swap.target_shift %}
-                        {{ swap.target_shift.date.strftime('%d/%m/%Y') }} - {{ swap.target_shift.shift_type.label }}
+                        {{ swap.target_shift.date|format_date }} - {{ swap.target_shift.shift_type.label }}
                         {% else %}
                         <span class="text-base-content/60">{{ _("Don simple") }}</span>
                         {% endif %}
                     </td>
-                    <td>{{ swap.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>{{ swap.created_at|format_datetime }}</td>
                     <td>
                         <div class="flex flex-nowrap gap-2" role="group" aria-label="{{ _("Actions pour la demande de %(name)s", name=swap.requester.name) }}">
                             <form method="POST" action="{{ url_for('admin.approve_swap', swap_request_id=swap.id) }}">
@@ -109,16 +109,16 @@
                 {% for swap in approved %}
                 <tr>
                     <td>{{ swap.requester.name }}</td>
-                    <td>{{ swap.shift.date.strftime('%d/%m/%Y') }} - {{ swap.shift.shift_type.label }}</td>
+                    <td>{{ swap.shift.date|format_date }} - {{ swap.shift.shift_type.label }}</td>
                     <td>{{ swap.target_user.name }}</td>
                     <td>
                         {% if swap.target_shift %}
-                        {{ swap.target_shift.date.strftime('%d/%m/%Y') }} - {{ swap.target_shift.shift_type.label }}
+                        {{ swap.target_shift.date|format_date }} - {{ swap.target_shift.shift_type.label }}
                         {% else %}
                         <span class="text-base-content/60">{{ _("Don simple") }}</span>
                         {% endif %}
                     </td>
-                    <td>{{ swap.reviewed_at.strftime('%d/%m/%Y %H:%M') if swap.reviewed_at else '—' }}</td>
+                    <td>{{ swap.reviewed_at|format_datetime if swap.reviewed_at else '—' }}</td>
                     <td>
                         <form method="POST" action="{{ url_for('admin.revert_swap', swap_request_id=swap.id) }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

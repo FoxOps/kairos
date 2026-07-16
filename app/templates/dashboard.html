@@ -74,7 +74,7 @@
                             <div>
                                 <p>
                                     <strong>{{ shift.start_time|date_fr }}</strong>
-                                    {{ _("à %(start)s - %(end)s", start=shift.start_time.strftime('%H:%M'), end=shift.end_time.strftime('%H:%M')) }}
+                                    {{ _("à %(start)s - %(end)s", start=shift.start_time|format_time, end=shift.end_time|format_time) }}
                                 </p>
                                 <p>
                                     <span class="badge badge-{{ shift_type_colors.get(shift.shift_type.id, 'neutral') if shift.shift_type else 'neutral' }}">
@@ -104,7 +104,7 @@
                             <div>
                                 <p>
                                     <strong>{{ oncall.start_time|date_fr }}</strong>
-                                    {{ _("de %(start)s à %(end)s", start=oncall.start_time.strftime('%H:%M'), end=oncall.end_time.strftime('%H:%M')) }}
+                                    {{ _("de %(start)s à %(end)s", start=oncall.start_time|format_time, end=oncall.end_time|format_time) }}
                                 </p>
                                 <p class="text-base-content/60">{{ _("Astreinte programmée") }}</p>
                             </div>
@@ -129,8 +129,8 @@
                         <li class="list-row px-0" role="listitem">
                             <div>
                                 <p>
-                                    <strong>{{ _("Du %(start)s", start=leave.start_date.strftime('%d/%m')) }}</strong>
-                                    {{ _("au %(end)s", end=leave.end_date.strftime('%d/%m/%Y')) }}
+                                    <strong>{{ _("Du %(start)s", start=leave.start_date|format_date) }}</strong>
+                                    {{ _("au %(end)s", end=leave.end_date|format_date) }}
                                 </p>
                                 <p class="text-base-content/60">
                                     {{ _("%(days)s jour(s)", days=(leave.end_date - leave.start_date).days + 1) }}
@@ -158,7 +158,7 @@
                             <div>
                                 <p>
                                     <strong>{{ shift.date|date_fr }}</strong>
-                                    {{ _("à %(start)s - %(end)s", start=shift.start_time.strftime('%H:%M'), end=shift.end_time.strftime('%H:%M')) }}
+                                    {{ _("à %(start)s - %(end)s", start=shift.start_time|format_time, end=shift.end_time|format_time) }}
                                 </p>
                                 <p>
                                     <span class="badge badge-{{ shift_type_colors.get(shift.shift_type.id, 'neutral') if shift.shift_type else 'neutral' }}">

@@ -3,6 +3,7 @@
  * chosen target user's list of upcoming shifts, via GET
  * /api/swaps/target-shifts.
  */
+import { formatDate } from '../utils/date.js';
 
 function resetTargetShiftSelect(select, message) {
     select.innerHTML = '';
@@ -28,7 +29,7 @@ async function loadTargetShifts(targetUserId, select) {
             for (const shift of data.shifts) {
                 const option = document.createElement('option');
                 option.value = shift.id;
-                const date = new Date(shift.date).toLocaleDateString('fr-FR');
+                const date = formatDate(shift.date);
                 option.textContent = `${date} - ${shift.shift_type}`;
                 select.appendChild(option);
             }

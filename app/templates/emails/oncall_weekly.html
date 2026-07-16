@@ -19,7 +19,7 @@
               <p style="margin-top:0;">{{ _("Bonjour %(user_name)s,", user_name=user_name) }}</p>
               <p>{{ _("Vous êtes d'astreinte à partir de demain :") }}</p>
               <p style="font-size:16px; font-weight:bold; background-color:#f0f0f0; padding:12px 16px; border-radius:4px;">
-                {{ _("Du %(start)s au %(end)s", start=oncall_start.strftime('%A %d/%m/%Y à %Hh%M')|capitalize, end=oncall_end.strftime('%A %d/%m/%Y à %Hh%M')|capitalize) }}
+                {{ _("Du %(start)s au %(end)s", start=(oncall_start|date_fr("%a") ~ " " ~ oncall_start|format_date ~ " " ~ oncall_start|format_time), end=(oncall_end|date_fr("%a") ~ " " ~ oncall_end|format_date ~ " " ~ oncall_end|format_time)) }}
               </p>
               {% if app_base_url %}
               <p>

@@ -63,7 +63,9 @@
          pattern as index.html's #calendar-events-data. -->
     <script type="application/json" id="i18n-strings">{{ js_translations | tojson }}</script>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col"
+      data-date-format="{{ get_date_format() }}"
+      data-time-format="{{ get_time_format() }}">
     <!-- Skip link for accessibility -->
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-content">{{ _("Sauter la navigation") }}</a>
 

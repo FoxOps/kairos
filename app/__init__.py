@@ -87,29 +87,55 @@ def get_date_format() -> str:
     organization's default_date_format Setting. Returns a strftime
     pattern (e.g. "%d/%m/%Y"), consumed by the `format_date` Jinja
     filter (app/utils/helpers/common_helpers.py) and by
-    app/utils/helpers/js_translations.py for the JS-side equivalent."""
-    from flask import has_request_context
+    app/utils/helpers/js_translations.py for the JS-side equivalent.
+
+    Cached on flask.g for the lifetime of the request: unlike
+    get_locale(), which flask_babel.get_locale() caches internally on
+    its own once resolved, this resolver has no such built-in cache -
+    templates like schedule.html call the format_date/format_time
+    filters once per row, and without this cache each call would hit
+    Setting.get() again, a real N+1 regression caught by
+    test_performance.py::test_schedule_query_count_stable_across_dataset_size
+    (a plain per-request in-memory cache is safe: the setting cannot
+    change mid-request)."""
+    from flask import g, has_request_context
     from flask_login import current_user
 
-    if has_request_context() and current_user.is_authenticated:
-        return current_user.effective_date_format()
+    if not has_request_context():
+        from app.services import SettingsService
 
-    from app.services import SettingsService
+        return SettingsService.get_default_date_format()
 
-    return SettingsService.get_default_date_format()
+    if not hasattr(g, "_resolved_date_format"):
+        if current_user.is_authenticated:
+            g._resolved_date_format = current_user.effective_date_format()
+        else:
+            from app.services import SettingsService
+
+            g._resolved_date_format = SettingsService.get_default_date_format()
+
+    return g._resolved_date_format
 
 
 def get_time_format() -> str:
-    """Same resolution order as get_date_format()."""
-    from flask import has_request_context
+    """Same resolution order and per-request g cache as get_date_format()."""
+    from flask import g, has_request_context
     from flask_login import current_user
 
-    if has_request_context() and current_user.is_authenticated:
-        return current_user.effective_time_format()
+    if not has_request_context():
+        from app.services import SettingsService
 
-    from app.services import SettingsService
+        return SettingsService.get_default_time_format()
 
-    return SettingsService.get_default_time_format()
+    if not hasattr(g, "_resolved_time_format"):
+        if current_user.is_authenticated:
+            g._resolved_time_format = current_user.effective_time_format()
+        else:
+            from app.services import SettingsService
+
+            g._resolved_time_format = SettingsService.get_default_time_format()
+
+    return g._resolved_time_format
 
 
 # Content-Security-Policy applied by Talisman - see the comment in
@@ -259,6 +285,8 @@ def create_app(config_object: str | None = None):
     # it explicitly so base.html's <html lang="{{ get_locale() }}">
     # works.
     app.jinja_env.globals["get_locale"] = get_locale
+    app.jinja_env.globals["get_date_format"] = get_date_format
+    app.jinja_env.globals["get_time_format"] = get_time_format
 
     # Configure rate limiting if enabled
     if app.config.get("RATE_LIMIT_ENABLED", True):
