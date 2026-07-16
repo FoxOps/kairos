@@ -81,6 +81,37 @@ def get_locale() -> str:
     return SettingsService.get_default_language()
 
 
+def get_date_format() -> str:
+    """Same resolution order and request-context guard as get_locale()
+    above: authenticated user's own date format preference, else the
+    organization's default_date_format Setting. Returns a strftime
+    pattern (e.g. "%d/%m/%Y"), consumed by the `format_date` Jinja
+    filter (app/utils/helpers/common_helpers.py) and by
+    app/utils/helpers/js_translations.py for the JS-side equivalent."""
+    from flask import has_request_context
+    from flask_login import current_user
+
+    if has_request_context() and current_user.is_authenticated:
+        return current_user.effective_date_format()
+
+    from app.services import SettingsService
+
+    return SettingsService.get_default_date_format()
+
+
+def get_time_format() -> str:
+    """Same resolution order as get_date_format()."""
+    from flask import has_request_context
+    from flask_login import current_user
+
+    if has_request_context() and current_user.is_authenticated:
+        return current_user.effective_time_format()
+
+    from app.services import SettingsService
+
+    return SettingsService.get_default_time_format()
+
+
 # Content-Security-Policy applied by Talisman - see the comment in
 # create_app() for details on each directive. Exposed as a module-level
 # constant (rather than inline) so tests can check the actual policy
@@ -412,9 +443,20 @@ def create_app(config_object: str | None = None):
     # filter by ID - see app/routes/dashboard_routes.py): a plain `id %
     # palette size` makes two types collide as soon as their IDs differ
     # by a multiple of the palette size.
-    from app.utils.helpers import format_date_fr
+    from app.utils.helpers import (
+        format_date,
+        format_date_fr,
+        format_datetime,
+        format_time,
+    )
 
     app.jinja_env.filters["date_fr"] = format_date_fr
+    # Viewer/org-configurable date & time display format (see
+    # get_date_format()/get_time_format() above and "Multi-language
+    # support" in CLAUDE.md for the equivalent per-user Setting pattern).
+    app.jinja_env.filters["format_date"] = format_date
+    app.jinja_env.filters["format_time"] = format_time
+    app.jinja_env.filters["format_datetime"] = format_datetime
 
     # Prometheus metrics configuration if enabled
     if app.config.get("PROMETHEUS_ENABLED", False):

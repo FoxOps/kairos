@@ -55,6 +55,12 @@ class User(BaseModel, UserMixin):
             means "use the organization's default_timezone setting"
         language: Optional personal UI language ("fr"/"en"); None means
             "use the organization's default_language setting"
+        date_format: Optional personal date display format (a strftime
+            pattern, e.g. "%d/%m/%Y"); None means "use the organization's
+            default_date_format setting"
+        time_format: Optional personal time display format (a strftime
+            pattern, e.g. "%H:%M"); None means "use the organization's
+            default_time_format setting"
         shift_notifications_enabled: Opt-out for the weekly shift reminder
             email (only takes effect if notifications are enabled org-wide,
             see SettingsService.get_notifications_enabled())
@@ -77,6 +83,8 @@ class User(BaseModel, UserMixin):
     ics_token = db.Column(db.String(64), unique=True, nullable=True)
     timezone = db.Column(db.String(64), nullable=True)
     language = db.Column(db.String(5), nullable=True)
+    date_format = db.Column(db.String(20), nullable=True)
+    time_format = db.Column(db.String(20), nullable=True)
     shift_notifications_enabled = db.Column(db.Boolean, nullable=False, default=True)
     oncall_notifications_enabled = db.Column(db.Boolean, nullable=False, default=True)
 
@@ -177,6 +185,26 @@ class User(BaseModel, UserMixin):
         from app.services import SettingsService
 
         return SettingsService.get_default_language()
+
+    def effective_date_format(self) -> str:
+        """The strftime date pattern to use for this user: their own
+        preference if set, otherwise the organization's default_date_format
+        setting."""
+        if self.date_format:
+            return self.date_format
+        from app.services import SettingsService
+
+        return SettingsService.get_default_date_format()
+
+    def effective_time_format(self) -> str:
+        """The strftime time pattern to use for this user: their own
+        preference if set, otherwise the organization's default_time_format
+        setting."""
+        if self.time_format:
+            return self.time_format
+        from app.services import SettingsService
+
+        return SettingsService.get_default_time_format()
 
     def __repr__(self) -> str:
         return f"<User {self.name} ({self.email})>"

@@ -89,6 +89,62 @@ def format_date_fr(d: date | datetime | None, format_str: str = "%a %d/%m") -> s
     return d.strftime(resolved_format)
 
 
+DATE_FORMAT_CHOICES: list[tuple[str, str]] = [
+    ("%d/%m/%Y", datetime(2026, 12, 31).strftime("%d/%m/%Y")),
+    ("%m/%d/%Y", datetime(2026, 12, 31).strftime("%m/%d/%Y")),
+    ("%Y-%m-%d", datetime(2026, 12, 31).strftime("%Y-%m-%d")),
+]
+TIME_FORMAT_CHOICES: list[tuple[str, str]] = [
+    ("%H:%M", datetime(2026, 12, 31, 14, 30).strftime("%H:%M")),
+    ("%I:%M %p", datetime(2026, 12, 31, 14, 30).strftime("%I:%M %p")),
+]
+
+
+def get_date_format_choices() -> list[tuple[str, str]]:
+    """(strftime pattern, rendered sample) pairs for the /profile/settings
+    and /admin/settings date format <select> dropdowns. The sample is
+    computed rather than hardcoded so it can never drift from what the
+    pattern actually produces."""
+    return DATE_FORMAT_CHOICES
+
+
+def get_time_format_choices() -> list[tuple[str, str]]:
+    """(strftime pattern, rendered sample) pairs for the date time format
+    <select> dropdowns."""
+    return TIME_FORMAT_CHOICES
+
+
+def format_date(d: date | datetime | None) -> str:
+    """Format a date/datetime using the viewer's effective date format
+    (own preference, else the org default) - see app.get_date_format().
+    Jinja filter: {{ shift.date|format_date }}."""
+    if d is None:
+        return ""
+
+    from app import get_date_format
+
+    return d.strftime(get_date_format())
+
+
+def format_time(t: date | datetime | None) -> str:
+    """Format a datetime/time using the viewer's effective time format -
+    see app.get_time_format(). Jinja filter: {{ shift.start_time|format_time }}."""
+    if t is None:
+        return ""
+
+    from app import get_time_format
+
+    return t.strftime(get_time_format())
+
+
+def format_datetime(dt: datetime | None) -> str:
+    """format_date() + format_time() combined, space-separated. Jinja
+    filter: {{ oncall.start_time|format_datetime }}."""
+    if dt is None:
+        return ""
+    return f"{format_date(dt)} {format_time(dt)}"
+
+
 # daisyUI semantic color palette (see app/static/css/theme-colors.css)
 # used to visually distinguish shift types on the dashboard (chart +
 # badges) - "error" deliberately excluded (misleadingly negative

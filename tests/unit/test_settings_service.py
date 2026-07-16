@@ -44,6 +44,42 @@ class TestDefaultLanguage:
             assert SettingsService.get_default_language() == "fr"
 
 
+class TestDefaultDateFormat:
+    def test_falls_back_to_hardcoded_default_when_unset(self, test_app):
+        with test_app.app_context():
+            assert SettingsService.get_default_date_format() == "%d/%m/%Y"
+
+    def test_db_override_wins(self, test_app):
+        with test_app.app_context():
+            error = SettingsService.set_default_date_format("%Y-%m-%d")
+            assert error is None
+            assert SettingsService.get_default_date_format() == "%Y-%m-%d"
+
+    def test_rejects_invalid_date_format(self, test_app):
+        with test_app.app_context():
+            error = SettingsService.set_default_date_format("%B %d, %Y")
+            assert error is not None
+            assert SettingsService.get_default_date_format() == "%d/%m/%Y"
+
+
+class TestDefaultTimeFormat:
+    def test_falls_back_to_hardcoded_default_when_unset(self, test_app):
+        with test_app.app_context():
+            assert SettingsService.get_default_time_format() == "%H:%M"
+
+    def test_db_override_wins(self, test_app):
+        with test_app.app_context():
+            error = SettingsService.set_default_time_format("%I:%M %p")
+            assert error is None
+            assert SettingsService.get_default_time_format() == "%I:%M %p"
+
+    def test_rejects_invalid_time_format(self, test_app):
+        with test_app.app_context():
+            error = SettingsService.set_default_time_format("%H:%M:%S")
+            assert error is not None
+            assert SettingsService.get_default_time_format() == "%H:%M"
+
+
 class TestPublicBaseUrl:
     def test_falls_back_to_app_config_when_unset(self, test_app):
         with test_app.app_context():

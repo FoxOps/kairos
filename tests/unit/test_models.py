@@ -226,6 +226,34 @@ class TestUserModel:
 
             assert test_user.effective_language() == "en"
 
+    def test_effective_date_format_uses_own_preference_when_set(
+        self, test_app, test_user
+    ):
+        with test_app.app_context():
+            test_user.date_format = "%Y-%m-%d"
+            db.session.commit()
+
+            assert test_user.effective_date_format() == "%Y-%m-%d"
+
+    def test_effective_date_format_falls_back_to_org_default(self, test_app, test_user):
+        with test_app.app_context():
+            assert test_user.date_format is None
+            assert test_user.effective_date_format() == "%d/%m/%Y"
+
+    def test_effective_time_format_uses_own_preference_when_set(
+        self, test_app, test_user
+    ):
+        with test_app.app_context():
+            test_user.time_format = "%I:%M %p"
+            db.session.commit()
+
+            assert test_user.effective_time_format() == "%I:%M %p"
+
+    def test_effective_time_format_falls_back_to_org_default(self, test_app, test_user):
+        with test_app.app_context():
+            assert test_user.time_format is None
+            assert test_user.effective_time_format() == "%H:%M"
+
     def test_notification_preferences_default_to_enabled(self, test_app, test_group):
         """No opt-out existed before this preference was added - default
         must be True so existing/new users keep getting the emails they
