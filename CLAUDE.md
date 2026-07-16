@@ -165,7 +165,10 @@ auto-assignment and business rules — `advanced_shift_automation.py` is the big
 `default_timezone`, see "Multi-timezone support" below), `notifications/` (`email_sender.py` — smtplib/email
 stdlib wrapper for the weekly reminder emails, no Flask-Mail dependency), `security/` (empty —
 `token_manager.py`/`encryption.py` were removed after confirming zero real callers), `logging/` (multi-handler
-setup: app/error/http/audit/sql/auth log files, optional syslog, sensitive-data filtering),
+setup: `app.log`/`error.log`/`debug.log`/`http_errors.log`/`audit.log` — no `sql.log`/`auth.log`/syslog
+support despite an earlier version of this doc claiming otherwise; every handler is a
+`RotatingFileHandler` (`LOG_MAX_BYTES`/`LOG_BACKUP_COUNT` env vars, defaults 10 MiB / 5 backups) —
+see "Audit trail" below for `audit.log`'s actual writer, sensitive-data filtering),
 `optimizations/` (single decorator `eager_load`, actively used by admin/dashboard routes),
 `helpers/` (`common_helpers.py` — actively used; `timezone_helpers.py` — `to_viewer_timezone()`/
 `to_org_timezone()`, the FullCalendar JSON API conversion, see "Multi-timezone support" below),
@@ -236,6 +239,57 @@ the requester is told). Routes live in `app/routes/notification_routes.py` (`/no
 trigger to another service, follow the same pattern: call `AppNotificationService` after the
 triggering action's own `db.session.commit()`, not before — a notification that fires ahead of a
 failed/rolled-back action would be wrong.
+
+### Audit trail
+
+`AuditLog` (`app/models/audit_log.py`) is the append-only "who did what, when, to which resource"
+record consulted at `/admin/audit-log` — **not** the same thing as `NotificationLog` (email
+send-dedup only) or `AppNotification` (in-app bell icon, swap-only scope, see above); don't confuse
+any of these three when searching for "audit"/"notification" in this codebase. Before this feature,
+`app/utils/logging/logger.py::log_audit_action()` already existed but was never called by any route
+or service (confirmed by grep — only the test suite invoked it), so `logs/audit.log` carried no real
+data; this feature is what actually wires it up, in addition to (not instead of) the new DB table —
+an explicit dual-write decision (DB for the filterable admin UI, file as a defense-in-depth copy that
+survives even if the DB is unavailable).
+
+`AuditLog.actor_id` is a nullable FK to `User` (same `@property`-over-`db.relationship()` pattern as
+`SwapRequest`, for the same SQLAlchemy 2.0 stub-typing reason — see "Models" above); `action` is a
+namespaced `"<domain>.<verb>"` string, e.g. `shift.create`, `swap.approve`, `auth.login_failure`.
+Domains in use: `user`, `group`, `shift` (plus `shift.bulk_delete` for the multi-row delete routes),
+`oncall` (same shape as `shift`), `leave` (no `bulk_delete` — none exists in `LeaveService`),
+`shift_type`, `swap` (`request`/`cancel`/`approve`/`reject`/`revert`/`purge`, mirroring every
+cross-cutting effect already documented under "Shift swaps" above), `setting` (one action,
+`setting.update`, for every `SettingsService` setter — `resource_type="Setting"`, `details` is a
+plain `"key=value"` string since `Setting` rows have no admin-facing PK), and `auth`/`profile`
+(`auth.register`, `auth.login_success`, `auth.login_failure`, `auth.logout`,
+`profile.password_change`). Deliberately out of scope: no field-by-field before/after diff, just
+who/what/when/which-resource plus a short human-readable `details` summary — a future enhancement,
+not this one.
+
+`AuditService.log()` (`app/services/audit_service.py`) is the single write path — resolves `actor`
+from `current_user` when not passed explicitly (same `has_request_context()`-guarded pattern as
+`app.get_locale()`), captures `flask.request.remote_addr`, writes the `AuditLog` row (own
+`db.session.commit()`), then calls `log_audit_action()` for the file copy — wrapped in a bare
+`try/except` that logs and swallows any failure, since a bug in the audit trail must never break the
+business action it's recording (`tests/unit/test_audit_service.py::test_failure_writing_entry_does_not_raise`
+is the regression test for this). **Call-site rule**: from the service layer, immediately after the
+triggering action's own successful `db.session.commit()` — identical placement rule to
+`AppNotificationService` above. The one exception is `app/routes/auth.py` (`register`/`login`/
+`oidc_callback`/`logout`, plus the password-change branch of `update_profile`): there is no
+dedicated `AuthService` in this app, so those call `AuditService.log()` directly from the route.
+`logout()` calls it *before* `logout_user()` — `current_user` would already be anonymous afterward.
+Service methods that already receive the acting user as a parameter (`SwapService`'s `requester`/
+`user`/`admin`) pass `actor=` explicitly rather than relying on `current_user` resolution, since
+`SwapService` never references `current_user` internally (confirmed via grep) and shouldn't start
+just for this.
+
+`/admin/audit-log` (`app/routes/admin_audit_routes.py`) lists entries with filters (actor, action
+domain, date range) and a purge action. Purge deletes entries older than
+`SettingsService.get_audit_log_retention_days()` (admin-editable at `/admin/settings`, same
+`Setting`-wins/fallback pattern as the rest of `SettingsService`) — **unlike** every other
+`SettingsService` retention-style setting, there is no numeric fallback: `None` means "keep every
+entry, purge nothing" until an admin explicitly opts in, since defaulting an audit trail to silently
+deleting its own history would be a surprising, not a safe, default.
 
 ### Frontend
 
