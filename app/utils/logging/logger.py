@@ -8,9 +8,18 @@ It supports both console and file logging with configurable levels and formats.
 import logging
 import os
 import re
+from logging.handlers import RotatingFileHandler
 from typing import Any
 
 from flask import Flask
+
+# 10 MiB per file, 5 rotated backups kept (app.log, app.log.1, ... app.log.5)
+# - applies to every app/error/debug/http_errors/audit log file below.
+# Overridable via env for deployments with different retention needs.
+# Fixes unbounded growth observed in dev (app.log/debug.log reaching ~24 MB
+# each with no rotation at all before this).
+_LOG_MAX_BYTES = int(os.environ.get("LOG_MAX_BYTES", 10 * 1024 * 1024))
+_LOG_BACKUP_COUNT = int(os.environ.get("LOG_BACKUP_COUNT", 5))
 
 
 class SensitiveDataFilter(logging.Filter):
@@ -100,7 +109,9 @@ def configure_logging(
         if log_dir and not os.path.exists(log_dir):
             os.makedirs(log_dir, exist_ok=True)
 
-        file_handler = logging.FileHandler(log_file)
+        file_handler = RotatingFileHandler(
+            log_file, maxBytes=_LOG_MAX_BYTES, backupCount=_LOG_BACKUP_COUNT
+        )
         file_handler.setLevel(log_level)
         file_handler.setFormatter(formatter)
         root_logger.addHandler(file_handler)
@@ -147,7 +158,11 @@ def configure_logging(
     def _file_handler(filename: str, min_level: int) -> logging.Handler | None:
         if not app_log_dir:
             return None
-        handler = logging.FileHandler(os.path.join(app_log_dir, filename))
+        handler = RotatingFileHandler(
+            os.path.join(app_log_dir, filename),
+            maxBytes=_LOG_MAX_BYTES,
+            backupCount=_LOG_BACKUP_COUNT,
+        )
         handler.setLevel(min_level)
         handler.setFormatter(formatter)
         handler.addFilter(sensitive_filter)

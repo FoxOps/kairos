@@ -11,9 +11,11 @@ Repositories:
 - leave_repository: Leave data access
 - swap_request_repository: SwapRequest data access
 - app_notification_repository: AppNotification (in-app notifications) data access
+- audit_log_repository: AuditLog (audit trail) data access
 """
 
 from app.repositories.app_notification_repository import AppNotificationRepository
+from app.repositories.audit_log_repository import AuditLogRepository
 from app.repositories.leave_repository import LeaveRepository
 from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository, ShiftTypeRepository
@@ -29,4 +31,5 @@ __all__ = [
     "LeaveRepository",
     "SwapRequestRepository",
     "AppNotificationRepository",
+    "AuditLogRepository",
 ]

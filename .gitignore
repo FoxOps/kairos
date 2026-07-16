@@ -79,8 +79,9 @@ ruff-report.txt
 mypy-report/
 safety-report.json
 
-# Logs
+# Logs (*.log.N are RotatingFileHandler backups, e.g. app.log.1)
 *.log
+*.log.*
 
 # Scrapy stuff:
 .scrapy
