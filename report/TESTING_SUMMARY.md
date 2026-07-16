@@ -3,8 +3,8 @@
 ## 📊 Aperçu Global
 
 - **Date de mise à jour** : 16 juillet 2026 (notifications externes via Apprise)
-- **Nombre total de tests** : 1176
-- **Tests réussis** : 1176 ✅
+- **Nombre total de tests** : 1183
+- **Tests réussis** : 1183 ✅
 - **Tests échoués** : 0
 - **Couverture de code** : **~92%** (`--cov=app --cov=config`)
 - **Lint (ruff)** : propre - **0 erreur**
@@ -440,3 +440,15 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
   `notify("swap", ...)`, mocké) plutôt qu'une duplication par méthode.
   Suite complète pour `/admin/notification-targets` : CRUD, permission
   admin-only, toggle global, action de test avec succès/échec mockés.
+- **16 juillet 2026** : 1183 tests (0 échec, +7). Ajout de deux
+  catégories Apprise dédiées (`shift_weekly`/`oncall_weekly`) qui
+  relaient chaque envoi hebdomadaire réussi (pas seulement les échecs
+  comme la catégorie `system`), avec un opt-out par utilisateur
+  indépendant de celui des emails (`User.apprise_shift_notifications_enabled`/
+  `apprise_oncall_notifications_enabled`, nouvelle migration), visible
+  et modifiable dans `/profile/settings` dans sa propre section (même
+  garde "n'applique les cases cochées que si la section était visible"
+  que pour la section email). Tests : relais déclenché sur succès,
+  relais absent si le toggle utilisateur est désactivé (`NotificationService`),
+  section masquée/visible selon le toggle global, persistance/ignorance
+  des cases selon le toggle global (`/profile/settings`).

@@ -15,7 +15,7 @@ from app.repositories.notification_target_repository import (
 from app.routes.admin import admin_bp
 from app.services import AppriseNotificationService, AuditService, SettingsService
 
-CATEGORY_CHOICES = ["swap", "backup", "system"]
+CATEGORY_CHOICES = ["swap", "backup", "system", "shift_weekly", "oncall_weekly"]
 
 
 @admin_bp.route("/admin/notification-targets")

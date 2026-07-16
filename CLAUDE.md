@@ -302,7 +302,8 @@ any of the three "notification" services in this codebase. `categories` is a JSO
 strings on the model (`get_categories()`/`set_categories()`, same encode/decode idea as
 `AutomationConfig.get_rotation_order()` but scoped to this one column) — an empty/`None` list means
 "subscribed to every category" (`NotificationTarget.subscribes_to()`). Closed taxonomy in use:
-`swap`, `backup`, `system`.
+`swap`, `backup`, `system`, `shift_weekly`, `oncall_weekly` (the last two mirror the two weekly
+email reminders, see below).
 
 `AppriseNotificationService` has two entry points with deliberately different failure behavior:
 
@@ -324,10 +325,18 @@ Call sites (post-commit, same placement rule as `AppNotificationService`/`AuditS
 `SwapService` (`swap` category, one call after each existing `AppNotificationService` call —
 request/approve/revert/reject), `BackupService.create_now()`/`cleanup_now()` (`backup` category,
 admin-UI-triggered paths only — **not** wired into `scripts/backup_database.py`, which must never
-import `app/`, see "Database backups" above), and `NotificationService`'s weekly batches (`system`
-category, only when `result.failed` is non-empty — safe to call from there since, unlike
-`backup_database.py`, `NotificationService` already lives in `app/` and its cron scripts import
-`app/` freely).
+import `app/`, see "Database backups" above), and `NotificationService`'s weekly batches. The latter
+fires twice: a `system`-category alert only when `result.failed` is non-empty (safe to call from
+there since, unlike `backup_database.py`, `NotificationService` already lives in `app/` and its
+cron scripts import `app/` freely), and — on every *successful* per-recipient send — a
+`shift_weekly`/`oncall_weekly` notification relaying the same content that just went out by email,
+gated by `User.apprise_shift_notifications_enabled`/`apprise_oncall_notifications_enabled`
+(nullable-free `Boolean`, default `True`, same shape as `shift_notifications_enabled`/
+`oncall_notifications_enabled` but a genuinely independent toggle — a user may want the email
+without the external relay, or vice versa). Editable at `/profile/settings`, in its own section
+gated by `apprise_notifications_enabled_org_wide` (same "only apply submitted checkboxes when the
+section was actually visible" guard as the email section, so a stale form can't silently flip a
+preference the user never saw).
 
 `/admin/notification-targets` (`app/routes/admin_notification_target_routes.py`) is its own
 dedicated admin page — deliberately **not** a section on `/admin/settings` (unlike every other
@@ -433,7 +442,11 @@ are then checked per-recipient inside `send_weekly_shift_notifications()`/
 `send_weekly_oncall_notification()` — a user who opted out is skipped (tracked in
 `NotificationBatchResult.skipped_disabled_by_user`, distinct from `skipped_already_sent`) *without*
 writing a `NotificationLog` row, so re-enabling mid-week and rerunning the script still catches
-them up. Editable at `/profile/settings` (`app/routes/auth.py::profile_settings`) — a page separate
+them up. A third, independent toggle (`apprise_shift_notifications_enabled`/
+`apprise_oncall_notifications_enabled`) additionally relays each successful send to external
+notification targets — see "External notifications (Apprise)" below, this is a separate channel,
+not a replacement for the email gates above. Editable at `/profile/settings`
+(`app/routes/auth.py::profile_settings`) — a page separate
 from `/profile/update` (name/email/password only) since the notification section there is
 conditionally shown/hidden based on the org-wide toggle, which doesn't belong mixed into an
 identity-focused form. Submitting the notification checkboxes while the org-wide toggle is off is

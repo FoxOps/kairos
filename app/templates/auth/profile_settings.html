@@ -80,6 +80,31 @@
                     </p>
                     {% endif %}
 
+                    {% if apprise_notifications_enabled_org_wide %}
+                    <div class="divider">{{ _("Notifications externes (Slack, Discord, Telegram...)") }}</div>
+
+                    <div>
+                        <label class="label cursor-pointer justify-start gap-2" for="apprise_shift_notifications_enabled">
+                            <input type="checkbox" class="checkbox" id="apprise_shift_notifications_enabled" name="apprise_shift_notifications_enabled"
+                                   {% if user.apprise_shift_notifications_enabled %}checked{% endif %}>
+                            <span>{{ _("Relayer le rappel hebdomadaire de mes shifts vers les notifications externes") }}</span>
+                        </label>
+                    </div>
+
+                    <div>
+                        <label class="label cursor-pointer justify-start gap-2" for="apprise_oncall_notifications_enabled">
+                            <input type="checkbox" class="checkbox" id="apprise_oncall_notifications_enabled" name="apprise_oncall_notifications_enabled"
+                                   {% if user.apprise_oncall_notifications_enabled %}checked{% endif %}>
+                            <span>{{ _("Relayer le rappel hebdomadaire de mes astreintes vers les notifications externes") }}</span>
+                        </label>
+                    </div>
+                    {% else %}
+                    <div class="divider">{{ _("Notifications externes (Slack, Discord, Telegram...)") }}</div>
+                    <p class="text-sm text-base-content/60">
+                        {{ _("Les notifications externes sont actuellement désactivées pour toute l'organisation.") }}
+                    </p>
+                    {% endif %}
+
                     <div class="flex justify-center gap-2 mt-5">
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save" aria-hidden="true"></i>

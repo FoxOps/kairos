@@ -134,6 +134,9 @@ class NotificationService:
             db.session.commit()
             result.sent.append(user.email)
 
+            if user.apprise_shift_notifications_enabled:
+                AppriseNotificationService.notify("shift_weekly", subject, text_body)
+
         if result.failed:
             AppriseNotificationService.notify(
                 "system",
@@ -224,5 +227,8 @@ class NotificationService:
         )
         db.session.commit()
         result.sent.append(user.email)
+
+        if user.apprise_oncall_notifications_enabled:
+            AppriseNotificationService.notify("oncall_weekly", subject, text_body)
 
         return result

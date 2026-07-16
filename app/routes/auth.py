@@ -281,6 +281,9 @@ def profile_settings():
     (SettingsService.get_notifications_enabled()), which doesn't belong
     mixed into the identity-focused profile form."""
     notifications_enabled_org_wide = SettingsService.get_notifications_enabled()
+    apprise_notifications_enabled_org_wide = (
+        SettingsService.get_apprise_notifications_enabled()
+    )
 
     if request.method == "POST":
         timezone = request.form.get("timezone", "").strip()
@@ -323,6 +326,14 @@ def profile_settings():
                 request.form.get("oncall_notifications_enabled") == "on"
             )
 
+        if apprise_notifications_enabled_org_wide:
+            current_user.apprise_shift_notifications_enabled = (
+                request.form.get("apprise_shift_notifications_enabled") == "on"
+            )
+            current_user.apprise_oncall_notifications_enabled = (
+                request.form.get("apprise_oncall_notifications_enabled") == "on"
+            )
+
         db.session.commit()
         flash(_("Vos paramètres ont été mis à jour avec succès !"), "success")
         return redirect(url_for("auth.profile_settings"))
@@ -350,6 +361,7 @@ def profile_settings():
             default_time_format, default_time_format
         ),
         notifications_enabled_org_wide=notifications_enabled_org_wide,
+        apprise_notifications_enabled_org_wide=apprise_notifications_enabled_org_wide,
     )
 
 

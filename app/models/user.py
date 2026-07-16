@@ -66,6 +66,14 @@ class User(BaseModel, UserMixin):
             see SettingsService.get_notifications_enabled())
         oncall_notifications_enabled: Opt-out for the weekly on-call
             reminder email (same org-wide gate as above)
+        apprise_shift_notifications_enabled: Opt-out for relaying the
+            weekly shift reminder to external notification targets
+            subscribed to the "shift_weekly" category (independent of
+            shift_notifications_enabled above - a user may want one
+            channel without the other; only takes effect if
+            SettingsService.get_apprise_notifications_enabled() is on)
+        apprise_oncall_notifications_enabled: Same as above, for the
+            "oncall_weekly" category
         shifts: Relationship to Shift model
         on_calls: Relationship to OnCall model
         leaves: Relationship to Leave model
@@ -87,6 +95,12 @@ class User(BaseModel, UserMixin):
     time_format = db.Column(db.String(20), nullable=True)
     shift_notifications_enabled = db.Column(db.Boolean, nullable=False, default=True)
     oncall_notifications_enabled = db.Column(db.Boolean, nullable=False, default=True)
+    apprise_shift_notifications_enabled = db.Column(
+        db.Boolean, nullable=False, default=True
+    )
+    apprise_oncall_notifications_enabled = db.Column(
+        db.Boolean, nullable=False, default=True
+    )
 
     # Relationships
     shifts = db.relationship(

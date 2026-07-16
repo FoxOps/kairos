@@ -382,6 +382,58 @@ class TestProfileSettings:
             assert user.shift_notifications_enabled is True
             assert user.oncall_notifications_enabled is True
 
+    def test_apprise_section_hidden_when_disabled_org_wide(
+        self, test_app, logged_in_client
+    ):
+        with test_app.app_context():
+            from app.services import SettingsService
+
+            SettingsService.set_apprise_notifications_enabled(False)
+
+        resp = logged_in_client.get("/profile/settings")
+        assert resp.status_code == 200
+        assert (
+            "notifications externes sont actuellement désactivées".encode() in resp.data
+        )
+
+    def test_apprise_toggles_persist_when_enabled_org_wide(
+        self, test_app, logged_in_client
+    ):
+        with test_app.app_context():
+            from app.services import SettingsService
+
+            SettingsService.set_apprise_notifications_enabled(True)
+
+        resp = logged_in_client.post(
+            "/profile/settings",
+            data={"timezone": ""},  # unchecked checkboxes = disabled
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with test_app.app_context():
+            user = User.query.filter_by(email="login@example.com").first()
+            assert user.apprise_shift_notifications_enabled is False
+            assert user.apprise_oncall_notifications_enabled is False
+
+    def test_apprise_toggles_ignored_when_disabled_org_wide(
+        self, test_app, logged_in_client
+    ):
+        with test_app.app_context():
+            from app.services import SettingsService
+
+            SettingsService.set_apprise_notifications_enabled(False)
+
+        resp = logged_in_client.post(
+            "/profile/settings",
+            data={"timezone": ""},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with test_app.app_context():
+            user = User.query.filter_by(email="login@example.com").first()
+            assert user.apprise_shift_notifications_enabled is True
+            assert user.apprise_oncall_notifications_enabled is True
+
 
 class TestGenerateIcsToken:
     def test_get_shows_current_token(self, test_app, logged_in_client):
