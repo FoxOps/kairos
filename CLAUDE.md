@@ -204,30 +204,71 @@ were never imported outside that file; `measure_time` even imported a module
 ### Shift swaps
 
 Users request to give up one of their shifts to another user (`app/routes/swap_routes.py`:
-`/swaps`, `/swaps/add`, `/swaps/<id>/cancel`), optionally in exchange for one of the target's shifts
-(reciprocal swap) — leave `target_shift_id` unset for a one-way give-away. An admin must approve
-before anything changes (`app/routes/admin_swap_routes.py`: `/admin/swaps`,
-`/admin/swaps/<id>/approve`, `/admin/swaps/<id>/reject`, `/admin/swaps/<id>/revert`) — this is the
+`/swaps`, `/swaps/add`, `/swaps/<id>/cancel`). Three-party workflow, not two: the **target** must
+confirm before an **admin** ever sees the request — this is the
 **only** approval workflow in the app; `Leave` (congés) has none by design (see "Models" above) and
-stays that way, don't add one there by analogy. `SwapService` (`app/services/swap_service.py`)
-re-validates the same business rules at both request time and approval time (`_validation_error`:
-shift still owned by requester, target not on leave / doesn't already have another shift that day,
-no duplicate pending request per shift) since state can drift between the two — approval doesn't
-blindly trust the original request. `approve_swap` reassigns `Shift.user_id` directly (swap, not
-delete+recreate) then commits; reject/cancel only touch `SwapRequest.status`, shifts stay untouched.
-`/admin/swaps` lists both pending and already-approved requests — an admin can `revert_swap` an
-approved exchange after the fact, which reassigns `Shift.user_id` back to the original owners and
-sets status to `REVERTED` (distinct from `CANCELLED`, which is only for the requester backing out
-*before* approval). `revert_swap` deliberately skips `_validation_error` (the swap back to the prior
-owners was valid by definition) but does check each shift is still owned by whoever the approval put
-it with — if either shift was reassigned again since (another swap, manual edit), it refuses rather
-than silently overwriting an unrelated change. `/api/swaps/target-shifts` is a small JSON endpoint
-backing `app/static/js/swaps/swap-form.js`, which populates the optional "shift requested back"
-dropdown once a target user is chosen on `add_swap.html`. `SwapService.purge_resolved_for_user`/
-`purge_all_resolved` hard-delete non-`PENDING` requests (`/swaps/purge` for a user's own history —
-matched as requester *or* target, so a purge can remove a row the other party can still see, since
-it's one shared historical record, not a per-user view; `/admin/swaps/purge` for everyone's) — no
-age threshold, "old" here means "no longer actionable", not time-based.
+stays that way, don't add one there by analogy.
+
+`SwapRequest.status` has 6 values (`app/models/swap_request.py`): `PENDING` (created, awaiting the
+target's own confirmation) → `AWAITING_ADMIN` (target confirmed, awaiting admin) →
+`APPROVED`/`REJECTED`, plus `CANCELLED` (requester backs out, possible from either `PENDING` or
+`AWAITING_ADMIN`) and `REVERTED` (admin undoes an already-`APPROVED` exchange). Helper methods:
+`is_pending()`/`is_awaiting_target()` (synonyms — status is still `PENDING`, semantics are "awaiting
+target"), `is_awaiting_admin()`, `is_active()` (`PENDING` or `AWAITING_ADMIN` — used to gate
+requester cancellation and to exclude from purge/"resolved" queries, see below). No migration was
+needed to add `AWAITING_ADMIN`: `status` is a free-text `String(20)`, not a DB-level enum/CHECK
+constraint.
+
+**The requester never picks `target_shift_id`** (`app/routes/swap_routes.py::add_swap()` only reads
+`shift_id`/`target_user_id`) — `SwapRequestRepository.create()` doesn't even accept it as a
+parameter. It's the **target** who picks which of their own shifts to offer back (or none, for a
+one-way give-away) at confirmation time (`SwapService.confirm_swap(swap_request, target_user,
+target_shift=None)`, called from `/swaps/<id>/confirm` — GET renders a plain server-rendered
+`<select>` of the target's own upcoming shifts, no JS/AJAX needed since the target is already known,
+unlike the old requester-side flow). `confirm_swap()` re-validates the same business rules the
+request itself will later be re-validated against at approval time (`_validation_error`: shift
+still owned by requester, target not on leave / doesn't already have another shift that day, and —
+only when a `target_shift` is actually chosen — the reciprocal-side checks too) since state can
+drift between request and confirmation. The target can instead decline outright via
+`SwapService.target_reject_swap(swap_request, target_user, reason=None)` (`/swaps/<id>/target-reject`)
+— `mark_reviewed(target_user.id, REJECTED, ...)`, reusing the exact same method/field an admin
+rejection uses; `reviewed_by_id` is generically "who made the final call", not admin-only by schema,
+so a target-declined request and an admin-declined one are both `REJECTED`, distinguishable by
+`reviewed_by_id`/`AuditLog.actor_id` if needed.
+
+Once `AWAITING_ADMIN`, an admin approves/rejects (`app/routes/admin_swap_routes.py`: `/admin/swaps`,
+`/admin/swaps/<id>/approve`, `/admin/swaps/<id>/reject`, `/admin/swaps/<id>/revert`) —
+`approve_swap`/`reject_swap` both now require `is_awaiting_admin()`, not `is_pending()`: an admin can
+no longer act on a request the target hasn't even seen yet. `approve_swap` re-validates
+`_validation_error` again (state can have drifted a second time between confirmation and approval)
+and reassigns `Shift.user_id` directly (swap, not delete+recreate) then commits; reject/cancel only
+touch `SwapRequest.status`, shifts stay untouched. `/admin/swaps` has **three** sections: requests
+still awaiting the target (`SwapService.list_pending()`, read-only — no admin action is possible
+yet), requests awaiting the admin (`SwapService.list_awaiting_admin()`, the actionable queue), and
+already-approved ones (revert-only). `revert_swap` deliberately skips `_validation_error` (the swap
+back to the prior owners was valid by definition) but does check each shift is still owned by
+whoever the approval put it with — if either shift was reassigned again since (another swap, manual
+edit), it refuses rather than silently overwriting an unrelated change.
+
+`SwapService.purge_resolved_for_user`/`purge_all_resolved` hard-delete "resolved" requests — which
+now excludes **both** `PENDING` and `AWAITING_ADMIN`, not just `PENDING` (`/swaps/purge` for a
+user's own history — matched as requester *or* target, so a purge can remove a row the other party
+can still see, since it's one shared historical record, not a per-user view; `/admin/swaps/purge`
+for everyone's) — no age threshold, "old" here means "no longer actionable", not time-based. The
+same "active means `PENDING` or `AWAITING_ADMIN`" rule also gates
+`SwapRequestRepository.has_pending_for_shift()` (still named for its original PENDING-only check,
+but now blocks a shift that's already been confirmed and is awaiting admin too, not just a fresh
+pending request — a shift can't be offered in two overlapping requests at once regardless of which
+of the two active stages the first one is in).
+
+Notifications (`AppNotificationService`, `app/services/app_notification_service.py`) follow the same
+three-party shape: `notify_target_confirmation_needed()` fires on request creation (target only —
+admins aren't told yet); `notify_admins_new_swap_request()` (an existing method, just triggered
+later than before) fires on confirmation, not creation; `notify_target_rejection()` fires when the
+target declines (requester only); `notify_swap_decision()` (unchanged) fires on the admin's
+approve/reject/revert. Every one of these five call sites also has a matching
+`AppriseNotificationService.notify("swap", ...)` call right after it (see "External notifications
+(Apprise)" above).
 
 ### In-app notifications
 
@@ -697,19 +738,15 @@ timezone behavior in emails (org-canonical time, not per-recipient) — not a bu
 the recipient through these resolvers.
 
 Beyond Jinja: `base.html` exposes the resolved patterns as `<body data-date-format
-data-time-format>`, the one non-Jinja-filter consumption point every other piece of
-format-aware JS reads from. `app/static/js/calendar/fullcalendar-config.js` derives a boolean
-`hour12` from `data-time-format` (`.includes('%I')`) to drive FullCalendar's own
-`eventTimeFormat`/`slotLabelFormat` — the calendar grid's own hour display, independent of any
-Jinja-rendered text. `app/static/js/utils/date.js` (`formatDate`/`formatTime`/`formatDateTime`,
-used by `swap-form.js`'s dynamically-fetched target-shift dropdown) reads the same two data
-attributes and switches on the pattern directly, rather than attempting a general strftime-in-JS
-engine — safe specifically because `SUPPORTED_DATE_FORMATS`/`SUPPORTED_TIME_FORMATS` above are a
-closed, small enumeration, not arbitrary user input. Both files use UTC getters
-(`getUTCDate()`/`getUTCHours()`/...), never local ones — same rule as documented at the top of
-`fullcalendar-config.js`: a date-only ISO string (`"2026-07-16"`, no time/offset) parses as UTC
-midnight, and a local getter would reinterpret it against the browser's own timezone and silently
-shift the day.
+data-time-format>`, the one non-Jinja-filter consumption point format-aware JS reads from.
+`app/static/js/calendar/fullcalendar-config.js` derives a boolean `hour12` from `data-time-format`
+(`.includes('%I')`) to drive FullCalendar's own `eventTimeFormat`/`slotLabelFormat` — the calendar
+grid's own hour display, independent of any Jinja-rendered text. It uses UTC getters
+(`getUTCDate()`/`getUTCHours()`/...), never local ones: a date-only ISO string (`"2026-07-16"`, no
+time/offset) parses as UTC midnight, and a local getter would reinterpret it against the browser's
+own timezone and silently shift the day. (`app/static/js/utils/date.js`, a similar UTC-getter helper
+previously used by the old requester-side swap form's dynamically-fetched target-shift dropdown, was
+removed as dead code along with that dropdown — see "Shift swaps" above.)
 
 ## Testing conventions
 
