@@ -15,6 +15,7 @@ from app import db
 from app.models import Shift, SwapRequest, User
 from app.repositories.swap_request_repository import SwapRequestRepository
 from app.services.app_notification_service import AppNotificationService
+from app.services.audit_service import AuditService
 from app.utils.helpers import is_user_on_leave
 from app.utils.logging import get_logger
 
@@ -116,6 +117,13 @@ class SwapService:
             target_shift_id=target_shift.id if target_shift else None,
         )
         db.session.commit()
+        AuditService.log(
+            "swap.request",
+            resource_type="SwapRequest",
+            resource_id=swap_request.id,
+            details=f"{requester.name} -> {target_user.name}",
+            actor=requester,
+        )
         AppNotificationService.notify_admins_new_swap_request(swap_request)
         return swap_request, None
 
@@ -131,6 +139,12 @@ class SwapService:
 
         swap_request.status = SwapRequest.CANCELLED
         db.session.commit()
+        AuditService.log(
+            "swap.cancel",
+            resource_type="SwapRequest",
+            resource_id=swap_request.id,
+            actor=user,
+        )
         return None
 
     @staticmethod
@@ -156,6 +170,13 @@ class SwapService:
 
         swap_request.mark_reviewed(admin.id, SwapRequest.APPROVED)
         db.session.commit()
+        AuditService.log(
+            "swap.approve",
+            resource_type="SwapRequest",
+            resource_id=swap_request.id,
+            details=f"{swap_request.requester.name} <-> {swap_request.target_user.name}",
+            actor=admin,
+        )
         AppNotificationService.notify_swap_decision(swap_request, SwapRequest.APPROVED)
         logger.info(
             "Échange de shift id=%s approuvé par admin id=%s", swap_request.id, admin.id
@@ -198,6 +219,13 @@ class SwapService:
 
         swap_request.mark_reviewed(admin.id, SwapRequest.REVERTED)
         db.session.commit()
+        AuditService.log(
+            "swap.revert",
+            resource_type="SwapRequest",
+            resource_id=swap_request.id,
+            details=f"{swap_request.requester.name} <-> {swap_request.target_user.name}",
+            actor=admin,
+        )
         AppNotificationService.notify_swap_decision(swap_request, SwapRequest.REVERTED)
         logger.info(
             "Échange de shift id=%s annulé après approbation par admin id=%s",
@@ -216,6 +244,13 @@ class SwapService:
 
         swap_request.mark_reviewed(admin.id, SwapRequest.REJECTED, comment=reason)
         db.session.commit()
+        AuditService.log(
+            "swap.reject",
+            resource_type="SwapRequest",
+            resource_id=swap_request.id,
+            details=reason,
+            actor=admin,
+        )
         AppNotificationService.notify_swap_decision(swap_request, SwapRequest.REJECTED)
         return None
 
@@ -225,6 +260,12 @@ class SwapService:
         requester or target). Returns the number deleted."""
         count = SwapRequestRepository.purge_resolved_for_user(user.id)
         db.session.commit()
+        if count:
+            AuditService.log(
+                "swap.purge",
+                details=f"{count} resolved request(s), own history",
+                actor=user,
+            )
         return count
 
     @staticmethod
@@ -233,4 +274,8 @@ class SwapService:
         by the route). Returns the number deleted."""
         count = SwapRequestRepository.purge_all_resolved()
         db.session.commit()
+        if count:
+            AuditService.log(
+                "swap.purge", details=f"{count} resolved request(s), all users"
+            )
         return count

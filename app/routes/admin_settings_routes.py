@@ -102,6 +102,22 @@ def settings_dashboard():
                 else:
                     flash(_("Rétention des sauvegardes enregistrée"), "success")
 
+        elif section == "audit":
+            try:
+                audit_log_retention_days = int(
+                    request.form.get("audit_log_retention_days", "")
+                )
+            except ValueError:
+                flash(_("Erreur : durée de rétention invalide"), "danger")
+            else:
+                error = SettingsService.set_audit_log_retention_days(
+                    audit_log_retention_days
+                )
+                if error:
+                    flash(_("Erreur : %(error)s", error=error), "danger")
+                else:
+                    flash(_("Rétention de l'audit trail enregistrée"), "success")
+
         elif section == "ics":
             try:
                 expiry_days = int(request.form.get("ics_token_expiry_days", ""))
@@ -137,4 +153,5 @@ def settings_dashboard():
         backup_max_backups=SettingsService.get_backup_max_backups()
         or env_backup_defaults.max_backups,
         ics_token_expiry_days=SettingsService.get_ics_token_expiry_days(),
+        audit_log_retention_days=SettingsService.get_audit_log_retention_days(),
     )

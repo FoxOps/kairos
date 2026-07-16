@@ -8,7 +8,7 @@ from flask_login import current_user, login_required, login_user, logout_user
 from app import db
 from app.auth.oidc_auth import oidc_auth
 from app.models import User
-from app.services import SettingsService
+from app.services import AuditService, SettingsService
 from app.utils.helpers.common_helpers import (
     get_date_format_choices,
     get_language_choices,
@@ -50,6 +50,8 @@ def register():
 
     # If OIDC is enabled and basic authentication is disabled, redirect
     # to OIDC login
+    AuditService.log("auth.register", details=request.form.get("email", ""))
+
     if is_basic_auth_disabled():
         flash(
             _(
@@ -96,6 +98,12 @@ def login():
 
         if user and user.check_password(password):
             login_user(user, remember=remember)
+            AuditService.log(
+                "auth.login_success",
+                resource_type="User",
+                resource_id=user.id,
+                actor=user,
+            )
             flash(_("Connexion réussie !"), "success")
 
             # Redirect to the requested page, or to the index
@@ -104,6 +112,12 @@ def login():
                 return redirect(next_page)
             return redirect(url_for("main.index"))
         else:
+            AuditService.log(
+                "auth.login_failure",
+                resource_type="User",
+                resource_id=user.id if user else None,
+                details=email,
+            )
             flash(_("Email ou mot de passe incorrect."), "danger")
 
     return render_template("auth/login.html", oidc_enabled=OIDCConfig.ENABLED)
@@ -146,9 +160,17 @@ def oidc_callback():
 
     user = oidc_auth.login_user(user_data)
     if not user:
+        AuditService.log("auth.login_failure", details="OIDC")
         flash(_("La connexion OIDC a échoué. Veuillez réessayer."), "danger")
         return redirect(url_for("auth.login", oidc_error=1))
 
+    AuditService.log(
+        "auth.login_success",
+        resource_type="User",
+        resource_id=user.id,
+        details="OIDC",
+        actor=user,
+    )
     flash(_("Connexion OIDC réussie !"), "success")
     return redirect(url_for("main.index"))
 
@@ -158,6 +180,7 @@ def oidc_callback():
 def logout():
     """Logout."""
     is_oidc_mode = is_basic_auth_disabled()
+    AuditService.log("auth.logout", resource_type="User", resource_id=current_user.id)
     logout_user()
 
     if is_oidc_mode:
@@ -236,6 +259,12 @@ def update_profile():
             current_user.set_password(new_password)
 
         db.session.commit()
+        if new_password:
+            AuditService.log(
+                "profile.password_change",
+                resource_type="User",
+                resource_id=current_user.id,
+            )
         flash(_("Votre profil a été mis à jour avec succès !"), "success")
         return redirect(url_for("auth.profile"))
 

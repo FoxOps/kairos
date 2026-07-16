@@ -9,6 +9,7 @@ from flask_babel import gettext as _
 from app import db
 from app.models import ShiftType
 from app.repositories.shift_repository import ShiftRepository, ShiftTypeRepository
+from app.services.audit_service import AuditService
 
 
 class ShiftTypeService:
@@ -32,6 +33,12 @@ class ShiftTypeService:
 
         shift_type = ShiftTypeRepository.create(name, label, start_hour, end_hour)
         db.session.commit()
+        AuditService.log(
+            "shift_type.create",
+            resource_type="ShiftType",
+            resource_id=shift_type.id,
+            details=name,
+        )
         return shift_type, None
 
     @staticmethod
@@ -55,6 +62,12 @@ class ShiftTypeService:
         shift_type.start_hour = start_hour
         shift_type.end_hour = end_hour
         db.session.commit()
+        AuditService.log(
+            "shift_type.update",
+            resource_type="ShiftType",
+            resource_id=shift_type.id,
+            details=name,
+        )
         return shift_type, None
 
     @staticmethod
@@ -72,6 +85,13 @@ class ShiftTypeService:
                 ),
             )
 
+        deleted_name = shift_type.name
         ShiftTypeRepository.delete(shift_type)
         db.session.commit()
+        AuditService.log(
+            "shift_type.delete",
+            resource_type="ShiftType",
+            resource_id=shift_type_id,
+            details=deleted_name,
+        )
         return True, None

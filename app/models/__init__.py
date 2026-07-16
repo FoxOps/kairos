@@ -9,11 +9,13 @@ organized by domain:
 - Leave: Leave
 - SwapRequest: SwapRequest (shift exchange between users, admin validation)
 - AppNotification: AppNotification (in-app notification, not the email-dedup NotificationLog)
+- AuditLog: AuditLog (who did what, when - business CRUD + auth events, see AuditService)
 - Base: BaseModel (common fields and methods)
 - Setting: Setting (generic DB-backed admin settings, distinct from AutomationConfig)
 """
 
 from app.models.app_notification import AppNotification
+from app.models.audit_log import AuditLog
 from app.models.automation_config import AutomationConfig
 from app.models.base import BaseModel
 from app.models.leave import Leave
@@ -37,4 +39,5 @@ __all__ = [
     "NotificationLog",
     "SwapRequest",
     "AppNotification",
+    "AuditLog",
 ]

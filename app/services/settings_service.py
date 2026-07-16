@@ -20,6 +20,7 @@ from flask_babel import gettext as _
 from app import db
 from app.config.base import get_bool_from_env, get_int_from_env
 from app.models import Setting
+from app.services.audit_service import AuditService
 
 DEFAULT_TIMEZONE_KEY = "default_timezone"
 DEFAULT_LANGUAGE_KEY = "default_language"
@@ -31,6 +32,7 @@ MAX_PER_PAGE_KEY = "max_per_page"
 NOTIFICATIONS_ENABLED_KEY = "notifications_enabled"
 BACKUP_RETENTION_DAYS_KEY = "backup_retention_days"
 BACKUP_MAX_BACKUPS_KEY = "backup_max_backups"
+AUDIT_LOG_RETENTION_DAYS_KEY = "audit_log_retention_days"
 # Setting key name, not a secret
 ICS_TOKEN_EXPIRY_DAYS_KEY = "ics_token_expiry_days"  # noqa: S105
 
@@ -73,6 +75,11 @@ class SettingsService:
             return _("Fuseau horaire invalide : %(tz_name)s", tz_name=tz_name)
         try:
             Setting.set(DEFAULT_TIMEZONE_KEY, tz_name)
+            AuditService.log(
+                "setting.update",
+                resource_type="Setting",
+                details=f"default_timezone={tz_name}",
+            )
             return None
         except Exception as e:
             db.session.rollback()
@@ -93,6 +100,11 @@ class SettingsService:
             return _("Langue invalide : %(lang_code)s", lang_code=lang_code)
         try:
             Setting.set(DEFAULT_LANGUAGE_KEY, lang_code)
+            AuditService.log(
+                "setting.update",
+                resource_type="Setting",
+                details=f"default_language={lang_code}",
+            )
             return None
         except Exception as e:
             db.session.rollback()
@@ -115,6 +127,11 @@ class SettingsService:
             )
         try:
             Setting.set(DEFAULT_DATE_FORMAT_KEY, date_format)
+            AuditService.log(
+                "setting.update",
+                resource_type="Setting",
+                details=f"default_date_format={date_format}",
+            )
             return None
         except Exception as e:
             db.session.rollback()
@@ -135,6 +152,11 @@ class SettingsService:
             )
         try:
             Setting.set(DEFAULT_TIME_FORMAT_KEY, time_format)
+            AuditService.log(
+                "setting.update",
+                resource_type="Setting",
+                details=f"default_time_format={time_format}",
+            )
             return None
         except Exception as e:
             db.session.rollback()
@@ -153,6 +175,11 @@ class SettingsService:
     def set_public_base_url(url: str | None) -> str | None:
         try:
             Setting.set(PUBLIC_BASE_URL_KEY, url or "")
+            AuditService.log(
+                "setting.update",
+                resource_type="Setting",
+                details=f"public_base_url={url}",
+            )
             return None
         except Exception as e:
             db.session.rollback()
@@ -183,6 +210,11 @@ class SettingsService:
         try:
             Setting.set(ITEMS_PER_PAGE_KEY, items_per_page)
             Setting.set(MAX_PER_PAGE_KEY, max_per_page)
+            AuditService.log(
+                "setting.update",
+                resource_type="Setting",
+                details=f"items_per_page={items_per_page}, max_per_page={max_per_page}",
+            )
             return None
         except Exception as e:
             db.session.rollback()
@@ -204,6 +236,11 @@ class SettingsService:
     def set_notifications_enabled(enabled: bool) -> str | None:
         try:
             Setting.set(NOTIFICATIONS_ENABLED_KEY, bool(enabled))
+            AuditService.log(
+                "setting.update",
+                resource_type="Setting",
+                details=f"notifications_enabled={enabled}",
+            )
             return None
         except Exception as e:
             db.session.rollback()
@@ -231,6 +268,40 @@ class SettingsService:
         try:
             Setting.set(BACKUP_RETENTION_DAYS_KEY, retention_days)
             Setting.set(BACKUP_MAX_BACKUPS_KEY, max_backups)
+            AuditService.log(
+                "setting.update",
+                resource_type="Setting",
+                details=f"backup_retention_days={retention_days}, backup_max_backups={max_backups}",
+            )
+            return None
+        except Exception as e:
+            db.session.rollback()
+            return str(e)
+
+    # --- audit log retention ---
+
+    @staticmethod
+    def get_audit_log_retention_days() -> int | None:
+        """Returns None if no DB override exists - callers should keep
+        every AuditLog entry (no purge) in that case, unlike
+        get_backup_retention_days() there is no env-var fallback: audit
+        log retention was never configurable before this Setting
+        existed, and defaulting to "purge something" without an admin
+        explicitly opting in would be surprising for an audit trail."""
+        value = Setting.get(AUDIT_LOG_RETENTION_DAYS_KEY)
+        return int(value) if value is not None else None
+
+    @staticmethod
+    def set_audit_log_retention_days(days: int) -> str | None:
+        if days <= 0:
+            return _("La durée de rétention doit être positive")
+        try:
+            Setting.set(AUDIT_LOG_RETENTION_DAYS_KEY, days)
+            AuditService.log(
+                "setting.update",
+                resource_type="Setting",
+                details=f"audit_log_retention_days={days}",
+            )
             return None
         except Exception as e:
             db.session.rollback()
@@ -254,6 +325,11 @@ class SettingsService:
             return _("La durée d'expiration doit être positive")
         try:
             Setting.set(ICS_TOKEN_EXPIRY_DAYS_KEY, days)
+            AuditService.log(
+                "setting.update",
+                resource_type="Setting",
+                details=f"ics_token_expiry_days={days}",
+            )
             return None
         except Exception as e:
             db.session.rollback()

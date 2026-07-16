@@ -11,7 +11,7 @@ effort, not a simple test addition.
 
 from unittest.mock import patch
 
-from app.models import User
+from app.models import AuditLog, User
 
 
 class TestLoginRedirectsIfAlreadyAuthenticated:
@@ -101,6 +101,36 @@ class TestUpdateProfile:
         )
         assert resp.status_code == 200
         assert "mis à jour avec succès".encode() in resp.data
+
+    def test_password_change_writes_audit_log_entry(self, test_app, logged_in_client):
+        logged_in_client.post(
+            "/profile/update",
+            data={
+                "name": "Admin",
+                "email": "login@example.com",
+                "current_password": "loginpassword",
+                "new_password": "newpass123",
+                "confirm_password": "newpass123",
+            },
+            follow_redirects=True,
+        )
+
+        with test_app.app_context():
+            entry = AuditLog.query.filter_by(action="profile.password_change").first()
+            assert entry is not None
+
+    def test_name_only_update_does_not_write_password_audit_entry(
+        self, test_app, logged_in_client
+    ):
+        logged_in_client.post(
+            "/profile/update",
+            data={"name": "Admin Renamed", "email": "login@example.com"},
+            follow_redirects=True,
+        )
+
+        with test_app.app_context():
+            entry = AuditLog.query.filter_by(action="profile.password_change").first()
+            assert entry is None
 
 
 class TestProfileSettings:

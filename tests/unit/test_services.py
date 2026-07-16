@@ -72,6 +72,18 @@ class TestUserService:
         assert user is not None
         assert UserRepository.get_by_email("new-svc@test.com") is not None
 
+    def test_create_writes_audit_log_entry(self, test_app, test_group):
+        from app.models import AuditLog
+
+        user, error = UserService.create(
+            "New", "audit-create@test.com", test_group.id, "pw123"
+        )
+        assert error is None
+        entry = AuditLog.query.filter_by(action="user.create").first()
+        assert entry is not None
+        assert entry.resource_id == user.id
+        assert entry.details == "audit-create@test.com"
+
     def test_create_rejects_duplicate_email(self, test_app, test_user, test_group):
         user, error = UserService.create("Dup", test_user.email, test_group.id)
         assert user is None
@@ -125,6 +137,21 @@ class TestGroupService:
         assert group.is_part_of_schedule is True
         assert group.is_part_of_oncall is False
 
+    def test_delete_writes_audit_log_entry(self, test_app):
+        from app.models import AuditLog
+
+        group, _error = GroupService.create("To Delete", False, False)
+        group_id = group.id
+
+        ok, error = GroupService.delete(group_id)
+        assert ok is True
+        assert error is None
+
+        entry = AuditLog.query.filter_by(action="group.delete").first()
+        assert entry is not None
+        assert entry.resource_id == group_id
+        assert entry.details == "To Delete"
+
     def test_create_rejects_duplicate_name(self, test_app, test_group):
         group, error = GroupService.create(test_group.name, True, True)
         assert group is None
@@ -158,6 +185,16 @@ class TestShiftTypeService:
         shift_type, error = ShiftTypeService.create("night", "Nuit", 22, 23)
         assert error is None
         assert shift_type.name == "night"
+
+    def test_create_writes_audit_log_entry(self, test_app):
+        from app.models import AuditLog
+
+        shift_type, _error = ShiftTypeService.create("night2", "Nuit2", 22, 23)
+
+        entry = AuditLog.query.filter_by(action="shift_type.create").first()
+        assert entry is not None
+        assert entry.resource_id == shift_type.id
+        assert entry.details == "night2"
 
     def test_create_rejects_duplicate_name(self, test_app, test_shift_type):
         shift_type, error = ShiftTypeService.create("morning", "Matin bis", 8, 16)
@@ -214,6 +251,18 @@ class TestShiftService:
         assert conflict_date is None
         assert len(added) == 5
         assert ShiftRepository.count_for_user(test_user.id) == 5
+
+    def test_add_shifts_for_range_writes_audit_log_entry(
+        self, test_app, test_user, test_shift_type
+    ):
+        from app.models import AuditLog
+
+        weekday = _next_weekday()
+        ShiftService.add_shifts_for_range(test_user, test_shift_type, weekday, weekday)
+
+        entry = AuditLog.query.filter_by(action="shift.create").first()
+        assert entry is not None
+        assert test_user.name in entry.details
 
     def test_add_shifts_for_range_conflict_rolls_back(
         self, test_app, test_user, test_shift_type
@@ -328,6 +377,17 @@ class TestOnCallService:
         assert oncall is not None
         assert oncall.start_time.hour == 21
 
+    def test_add_oncall_writes_audit_log_entry(self, test_app, test_user):
+        from app.models import AuditLog
+
+        friday = _next_friday()
+        start = datetime.combine(friday, datetime.min.time())
+        oncall, _error = OnCallService.add_oncall(test_user, start)
+
+        entry = AuditLog.query.filter_by(action="oncall.create").first()
+        assert entry is not None
+        assert entry.resource_id == oncall.id
+
     def test_delete_oncall(self, test_app, test_oncall):
         deleted = OnCallService.delete_oncall(test_oncall.id)
         assert deleted is not None
@@ -385,6 +445,17 @@ class TestLeaveService:
         )
         assert leave is not None
         assert LeaveRepository.get_by_id(leave.id) is not None
+
+    def test_add_leave_writes_audit_log_entry(self, test_app, test_user, second_user):
+        from app.models import AuditLog
+
+        leave, _regenerated = LeaveService.add_leave(
+            test_user, date.today(), date.today() + timedelta(days=2)
+        )
+
+        entry = AuditLog.query.filter_by(action="leave.create").first()
+        assert entry is not None
+        assert entry.resource_id == leave.id
 
     def test_add_leave_conflict_returns_none(self, test_app, test_user, test_leave):
         leave, regenerated = LeaveService.add_leave(

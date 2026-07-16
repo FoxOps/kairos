@@ -6,7 +6,7 @@ Tests for SwapService: the business rules for shift swaps between users
 from datetime import datetime, timedelta
 
 from app import db
-from app.models import Leave, Shift, SwapRequest
+from app.models import AuditLog, Leave, Shift, SwapRequest
 from app.services import SwapService
 
 
@@ -21,6 +21,19 @@ class TestRequestSwap:
             assert error is None
             assert swap_request is not None
             assert swap_request.status == SwapRequest.PENDING
+
+    def test_request_swap_writes_audit_log_entry(
+        self, test_app, test_user, second_user, test_swap_shift
+    ):
+        with test_app.app_context():
+            swap_request, _error = SwapService.request_swap(
+                test_user, test_swap_shift, second_user
+            )
+
+            entry = AuditLog.query.filter_by(action="swap.request").first()
+            assert entry is not None
+            assert entry.resource_id == swap_request.id
+            assert entry.actor_id == test_user.id
 
     def test_request_swap_not_owner(
         self, test_app, test_user, second_user, test_swap_shift

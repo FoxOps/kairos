@@ -28,9 +28,12 @@ Services:
   (app/models/setting.py) - default timezone, public base URL, pagination,
   notifications toggle, backup retention, ICS token expiry. DB row wins
   when present, falls back live to app.config/env otherwise.
+- audit_service: Single write path for the audit trail (AuditLog model +
+  logs/audit.log dual-write) - see CLAUDE.md's "Audit trail" section.
 """
 
 from app.services.app_notification_service import AppNotificationService
+from app.services.audit_service import AuditService
 from app.services.automation_admin_service import AutomationAdminService
 from app.services.backup_service import BackupService
 from app.services.export_service import ExportService
@@ -60,4 +63,5 @@ __all__ = [
     "AppNotificationService",
     "BackupService",
     "SettingsService",
+    "AuditService",
 ]

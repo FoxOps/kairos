@@ -106,6 +106,17 @@
 
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body">
+                <h2 class="font-semibold"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i> {{ _("Historique des modifications") }}</h2>
+                <p>{{ _("Audit trail") }}</p>
+                <a class="btn btn-info btn-sm mt-2" href="{{ url_for('admin.audit_log') }}"
+                   aria-label="{{ _("Voir l'historique des modifications") }}" title="{{ _("Voir l'historique des modifications") }}">
+                    <i class="fas fa-list" aria-hidden="true"></i> {{ _("Voir la liste") }}
+                </a>
+            </div>
+        </div>
+
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body">
                 <h2 class="font-semibold"><i class="fas fa-sliders" aria-hidden="true"></i> {{ _("Paramètres") }}</h2>
                 <p>{{ _("Fuseau horaire, pagination, notifications...") }}</p>
                 <a class="btn btn-info btn-sm mt-2" href="{{ url_for('admin.settings_dashboard') }}"
