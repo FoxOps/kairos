@@ -106,6 +106,20 @@ class TestPublicBaseUrl:
                 SettingsService.get_public_base_url() == "https://from-db.example.com"
             )
 
+    def test_explicit_clear_does_not_fall_back_to_env(self, test_app):
+        """Bug hunt regression (v1.0): set_public_base_url(None) stores
+        an empty string (the only setter that persists a falsy value on
+        purpose, to represent "explicitly cleared"). get_public_base_url()
+        used to check `if value:`, so an empty-string Setting row was
+        treated the same as "no row at all" and silently fell back to
+        the env var - contradicting the documented "a Setting row, if
+        present, always wins" rule."""
+        with test_app.app_context():
+            test_app.config["PUBLIC_BASE_URL"] = "https://from-env.example.com"
+            SettingsService.set_public_base_url("https://from-db.example.com")
+            SettingsService.set_public_base_url(None)
+            assert SettingsService.get_public_base_url() is None
+
 
 class TestPagination:
     def test_falls_back_to_app_config_when_unset(self, test_app):

@@ -1,9 +1,13 @@
 """
 Tests for app/utils/prometheus_metrics.py.
 
-Gated by PROMETHEUS_ENABLED (False by default, including in tests) -
-builds its own app instance with the flag enabled, the same pattern as
-secure_app in test_security.py for CSRF/Talisman.
+Gated by PROMETHEUS_ENABLED (False by default, including in tests) - the
+fixture below forces app.config["PROMETHEUS_ENABLED"] = True directly and
+calls init_prometheus() manually, bypassing create_app()'s own env-var
+wiring entirely (same pattern as secure_app in test_security.py for
+CSRF/Talisman). See tests/unit/test_config.py::TestPrometheusEnabledEnvVar
+for a regression test that exercises the real env-var-to-Config wiring
+this fixture bypasses.
 """
 
 import pytest

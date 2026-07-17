@@ -18,7 +18,7 @@
 - [📧 Configuration des Notifications](#-configuration-des-notifications)
 - [💾 Configuration des Sauvegardes](#-configuration-des-sauvegardes)
 - [🧹 Configuration du Nettoyage Automatique](#-configuration-du-nettoyage-automatique)
-- [⚡ Configuration du Cache](#-configuration-du-cache)
+- [📈 Configuration du Monitoring](#-configuration-du-monitoring)
 - [🎯 Configuration par Environnement](#-configuration-par-environnement)
 - [📝 Exemples de Configuration](#-exemples-de-configuration)
 - [⚠️ Bonnes Pratiques](#️-bonnes-pratiques)
@@ -312,34 +312,30 @@ DATA_CLEANUP_SCHEDULE="0 0 1 * *"
 
 ---
 
-## ⚡ Configuration du Cache
+## 📈 Configuration du Monitoring
 
 | Variable | Type | Défaut | Description | Obligatoire |
 |----------|------|--------|-------------|-------------|
-| `CACHE_TYPE` | string | `simple` | Type de cache. Valeurs possibles : `simple` (en mémoire), `redis`, `memcached` — lu par `app/config/base.py`, appliqué dans `cache_manager.init_cache()` | ❌ Non |
-| `CACHE_DEFAULT_TIMEOUT` | entier | `300` | Durée de vie par défaut des entrées de cache (en secondes) | ❌ Non |
-| `CACHE_REDIS_URL` | string | `redis://localhost:6379/0` | URL Redis, utilisée si `CACHE_TYPE=redis` | ❌ Non |
-| `CACHE_ENABLED` | booléen | `true` | Lu par `CacheConfig` (`app/utils/cache/config.py`) mais plus consommé nulle part dans le code actuel depuis la suppression des décorateurs `cached_route`/`cache_result` en Phase 4 — actuellement sans effet | ❌ Non |
+| `PROMETHEUS_ENABLED` | booléen | `false` | Active le blueprint `app/utils/prometheus_metrics.py` (endpoint `/metrics` au format Prometheus). Désactivé par défaut | ❌ Non |
 
-> Si `flask-caching` n'est pas installé (dépendance optionnelle), le cache
-> retombe automatiquement sur une implémentation dictionnaire en mémoire
-> (`SimpleDictCache`) — visible dans les logs au démarrage
-> (`Flask-Caching not available, using simple dictionary cache`).
+> Liveness/readiness pour Kubernetes : `/health` et `/ready` sont
+> toujours actifs (`app/utils/health.py`, enregistrés
+> inconditionnellement), indépendamment de `PROMETHEUS_ENABLED`.
 
 ### Variables supprimées (code mort retiré en Phase 4)
 
 Les versions précédentes de ce document listaient des sections
-**Pagination**, **Lazy Loading**, **Optimisation des Requêtes** et
-**Monitoring des Performances** (`PAGINATION_*`, `LAZY_LOAD*`,
-`QUERY_OPTIMIZATION_*`, `PERFORMANCE_MONITORING_ENABLED`,
+**Cache** (`CACHE_TYPE`, `CACHE_DEFAULT_TIMEOUT`, `CACHE_REDIS_URL`,
+`CACHE_ENABLED`), **Pagination**, **Lazy Loading**, **Optimisation des
+Requêtes** et **Monitoring des Performances** (`PAGINATION_*`,
+`LAZY_LOAD*`, `QUERY_OPTIMIZATION_*`, `PERFORMANCE_MONITORING_ENABLED`,
 `SLOW_QUERY_THRESHOLD`, etc.). Ces variables sont **retirées de cette
-documentation** : elles sont lues par `config_performance.py`, un module
-qui n'est importé **nulle part** dans `app/` ou `run.py` (vérifié par
-recherche exhaustive) — les fonctionnalités qu'elles configuraient
-(`app/utils/pagination/`, `app/utils/lazy_loading.py`, un module de
-monitoring de performance) ont été supprimées comme code mort en
-Phase 4 (voir `report/Phase 4: AMÉLIORATION DES TESTS.md`). Les définir
-dans `.env` n'a aujourd'hui **aucun effet**.
+documentation** : `app/utils/cache/` (dont `cache_manager.init_cache()`)
+et `config_performance.py` ont tous deux été supprimés comme code mort
+(recherche exhaustive confirmant zéro import restant dans `app/` ou
+`run.py` — voir CLAUDE.md "utils/ layout" et `report/Phase 4:
+AMÉLIORATION DES TESTS.md`). Les définir dans `.env` n'a aujourd'hui
+**aucun effet**.
 
 ---
 

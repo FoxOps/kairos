@@ -35,7 +35,7 @@ BACKUP_MAX_BACKUPS_KEY = "backup_max_backups"
 AUDIT_LOG_RETENTION_DAYS_KEY = "audit_log_retention_days"
 APPRISE_NOTIFICATIONS_ENABLED_KEY = "apprise_notifications_enabled"
 # Setting key name, not a secret
-ICS_TOKEN_EXPIRY_DAYS_KEY = "ics_token_expiry_days"  # noqa: S105
+ICS_TOKEN_EXPIRY_DAYS_KEY = "ics_token_expiry_days"  # noqa: S105 # nosec B105
 
 FALLBACK_DEFAULT_TIMEZONE = "Europe/Paris"
 # Unlike every other FALLBACK_* constant in this module, there is no
@@ -167,9 +167,17 @@ class SettingsService:
 
     @staticmethod
     def get_public_base_url() -> str | None:
+        # value is not None (not `if value:`): a Setting row storing ""
+        # means an admin explicitly cleared the override via
+        # /admin/settings (see set_public_base_url() below) - that must
+        # return None (no override), not silently fall through to the
+        # env var. Setting.get() only returns None when no row exists at
+        # all, so this correctly distinguishes "never set" from
+        # "explicitly cleared", unlike a falsy check which conflated
+        # them (bug found in the v1.0 bug hunt).
         value = Setting.get(PUBLIC_BASE_URL_KEY)
-        if value:
-            return str(value)
+        if value is not None:
+            return str(value) or None
         return current_app.config.get("PUBLIC_BASE_URL")
 
     @staticmethod

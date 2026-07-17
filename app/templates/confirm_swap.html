@@ -12,7 +12,11 @@
         <div class="card-body gap-2">
             <p>
                 {{ _("%(name)s vous propose d'échanger ce shift :", name=swap_request.requester.name) }}
+                {% if swap_request.shift %}
                 <strong>{{ swap_request.shift.date|format_date }} - {{ swap_request.shift.shift_type.label }}</strong>
+                {% else %}
+                <strong class="text-base-content/60">{{ _("Shift supprimé") }}</strong>
+                {% endif %}
             </p>
         </div>
     </div>
