@@ -2,9 +2,9 @@
 
 ## 📊 Aperçu Global
 
-- **Date de mise à jour** : 17 juillet 2026 (API REST publique pour intégrations tierces, flask-smorest)
-- **Nombre total de tests** : 1292
-- **Tests réussis** : 1292 ✅
+- **Date de mise à jour** : 17 juillet 2026 (support MySQL/MariaDB, PyMySQL sans dépendance système)
+- **Nombre total de tests** : 1309
+- **Tests réussis** : 1309 ✅
 - **Tests échoués** : 0
 - **Couverture de code** : **~92%** (`--cov=app --cov=config`)
 - **Lint (ruff)** : propre - **0 erreur**
@@ -53,7 +53,7 @@ tests/
 ├── conftest.py                      # Fixture chain : test_app, client, logged_in_client
 ├── fixtures/                        # test_user, test_group, test_shift, test_leave, test_oncall...
 │
-├── unit/                            # 645 tests - composants isolés, pas de HTTP
+├── unit/                            # 662 tests - composants isolés, pas de HTTP
 │   ├── test_service_account_model.py     # ServiceAccount : jeton/hash SHA-256, is_valid()
 │   ├── test_service_account_repository.py
 │   ├── test_service_account_service.py   # create/revoke/regenerate + audit trail
@@ -67,7 +67,8 @@ tests/
 │   ├── test_helpers.py
 │   ├── test_ics_export.py
 │   ├── test_cache_manager.py
-│   ├── test_config.py
+│   ├── test_config.py               # DATABASE_URL, normalize_database_uri() (MySQL/PostgreSQL
+│   │                                 #   driver rewrite), get_database_type(), SQLALCHEMY_ENGINE_OPTIONS
 │   ├── test_run_functions.py        # setup_database/create_default_data
 │   ├── test_vendor_assets.py        # Bulma/FontAwesome/FullCalendar vendorisés
 │   ├── test_oidc_config.py          # OIDCConfig (25 tests)
