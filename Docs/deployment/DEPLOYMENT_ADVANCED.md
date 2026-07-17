@@ -1,6 +1,6 @@
-# Guide Avancé : Déploiement avec PostgreSQL et Redis
+# Guide Avancé : Déploiement avec PostgreSQL, MySQL/MariaDB et Redis
 
-Ce guide explique comment étendre la configuration Docker de base pour utiliser **PostgreSQL** comme base de données et **Redis** comme cache, une fois que vous maîtrisez le déploiement de base avec SQLite.
+Ce guide explique comment étendre la configuration Docker de base pour utiliser **PostgreSQL** ou **MySQL/MariaDB** comme base de données et **Redis** comme cache, une fois que vous maîtrisez le déploiement de base avec SQLite.
 
 ---
 
@@ -148,6 +148,76 @@ docker compose logs db
 
 # Vérifier que l'application se connecte
 docker compose logs web
+```
+
+---
+
+## 🐬 Ajouter MySQL/MariaDB (dev/test local)
+
+Ce guide couvre le cas d'un MySQL/MariaDB **local géré par Docker Compose**,
+utile en développement/test — en miroir de la section PostgreSQL ci-dessus.
+Pour se connecter à un serveur MySQL/MariaDB **externe déjà existant** (le
+cas le plus courant en production), voir directement
+[`DEPLOYMENT_GUIDE.md` section 7.3.1](DEPLOYMENT_GUIDE.md#731-cas-recommandé--serveur-mysqlmariadb-externe) —
+aucun overlay Docker n'est nécessaire dans ce cas, seule la variable
+`DATABASE_URL` du `.env` change.
+
+### 1. Créer un fichier `docker-compose.mysql.yml`
+
+```yaml
+# docker/docker-compose.mysql.yml
+version: '3.8'
+
+services:
+  db:
+    image: mariadb:11
+    container_name: leviia-db
+    restart: unless-stopped
+    environment:
+      - MARIADB_DATABASE=${MARIADB_DATABASE:-leviia}
+      - MARIADB_USER=${MARIADB_USER:-leviia}
+      - MARIADB_PASSWORD=${MARIADB_PASSWORD:-changez-moi}
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD:-changez-moi-aussi}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - leviia-net
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "3306:3306"
+
+volumes:
+  mariadb_data:
+    driver: local
+
+networks:
+  leviia-net:
+    external: true
+```
+
+### 2. Configurer les variables d'environnement
+
+```env
+# Configuration MariaDB
+MARIADB_DATABASE=leviia
+MARIADB_USER=leviia
+MARIADB_PASSWORD=votre_mot_de_passe_sécurisé
+MARIADB_ROOT_PASSWORD=un_autre_mot_de_passe_sécurisé
+DATABASE_URL=mariadb://leviia:votre_mot_de_passe_sécurisé@db:3306/leviia
+```
+
+Aucune modification du `Dockerfile`/de l'image `leviia-web` n'est
+nécessaire : le driver `PyMySQL` est déjà inclus dans
+`docker/requirements.txt`, 100% pur Python, sans dépendance système.
+
+### 3. Démarrer les services
+
+```bash
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.mysql.yml up -d
 ```
 
 ---
