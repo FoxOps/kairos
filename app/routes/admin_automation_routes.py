@@ -13,7 +13,11 @@ from app import db
 from app.auth.decorators import admin_required
 from app.repositories.shift_repository import ShiftRepository
 from app.routes.admin import admin_bp
-from app.services import AutomationAdminService
+from app.services import (
+    AppNotificationService,
+    AppriseNotificationService,
+    AutomationAdminService,
+)
 from app.utils.automation import (
     AdvancedShiftAutomation,
     OnCallAutomation,
@@ -123,8 +127,10 @@ def automation_full():
                             "info",
                         )
 
-                oncalls, oncall_messages = OnCallAutomation.generate_oncall_schedule(
-                    start_date, end_date, rotation_order_ids, dry_run=dry_run
+                oncalls, oncall_messages, oncall_unfilled_dates = (
+                    OnCallAutomation.generate_oncall_schedule(
+                        start_date, end_date, rotation_order_ids, dry_run=dry_run
+                    )
                 )
 
                 if dry_run:
@@ -171,6 +177,25 @@ def automation_full():
                         oncall_messages, default_category="danger"
                     )
                     _flash_automation_messages(shift_messages, default_category="info")
+
+                    if oncall_unfilled_dates:
+                        AppNotificationService.notify_admins_oncall_gap(
+                            oncall_unfilled_dates
+                        )
+                        AppriseNotificationService.notify(
+                            "system",
+                            _("Génération d'astreintes incomplète"),
+                            _(
+                                "Aucun utilisateur disponible dans le respect du "
+                                "délai légal de 2 semaines pour : %(dates)s. "
+                                "Assignation manuelle nécessaire dans "
+                                "/admin/automation.",
+                                dates=", ".join(
+                                    d.strftime("%d/%m/%Y")
+                                    for d in oncall_unfilled_dates
+                                ),
+                            ),
+                        )
 
                     flash(
                         _(

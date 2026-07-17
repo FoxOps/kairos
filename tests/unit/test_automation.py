@@ -145,7 +145,7 @@ class TestOnCallAutomation:
             start_date = date(2024, 1, 5)  # Friday
             end_date = date(2024, 2, 23)  # 8 weeks later
 
-            oncalls, messages = OnCallAutomation.generate_oncall_schedule(
+            oncalls, messages, _unfilled = OnCallAutomation.generate_oncall_schedule(
                 start_date, end_date, dry_run=True
             )
 
@@ -181,7 +181,7 @@ class TestOnCallAutomation:
             # Custom order: second_user, test_user, user3
             rotation_order = [second_user.id, test_user.id, user3.id]
 
-            oncalls, messages = OnCallAutomation.generate_oncall_schedule(
+            oncalls, messages, _unfilled = OnCallAutomation.generate_oncall_schedule(
                 start_date, end_date, rotation_order, dry_run=True
             )
 
@@ -225,8 +225,10 @@ class TestFullScheduleGeneration:
             assert len(shifts) > 0
             assert len(messages) > 0
 
-            oncalls, oncall_messages = OnCallAutomation.generate_oncall_schedule(
-                start_date, end_date, dry_run=True
+            oncalls, oncall_messages, _unfilled = (
+                OnCallAutomation.generate_oncall_schedule(
+                    start_date, end_date, dry_run=True
+                )
             )
             # end_date inclusive: 3 Fridays (01/05, 01/12, 01/19).
             assert len(oncalls) == 3
@@ -274,7 +276,7 @@ class TestEdgeCases:
             start_date = date(2024, 1, 5)
             end_date = date(2024, 1, 19)
 
-            oncalls, messages = OnCallAutomation.generate_oncall_schedule(
+            oncalls, messages, _unfilled = OnCallAutomation.generate_oncall_schedule(
                 start_date, end_date, dry_run=True
             )
 
@@ -314,7 +316,7 @@ class TestEdgeCases:
             # beyond it.
             end_date = date(2024, 1, 12)
 
-            oncalls, messages = OnCallAutomation.generate_oncall_schedule(
+            oncalls, messages, _unfilled = OnCallAutomation.generate_oncall_schedule(
                 start_date, end_date, dry_run=True
             )
 

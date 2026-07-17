@@ -108,8 +108,12 @@ class TestAdvancedShiftAutomationBasics:
             db.session.add(oncall)
             db.session.commit()
 
-            # Check during the on-call
-            test_date = date(2023, 12, 2)
+            # Check during the on-call - a weekday (Tuesday), not the
+            # weekend: get_oncall_for_date() is anchored to the
+            # Monday-Friday shift week (see its docstring), the only
+            # real callers (generate_daily_shifts()) never pass weekend
+            # dates.
+            test_date = date(2023, 12, 5)
             oncall_user = AdvancedShiftAutomation.get_oncall_user_for_date(test_date)
 
             assert oncall_user is not None
@@ -197,8 +201,10 @@ class TestDetermineShiftForUser:
             db.session.add(oncall)
             db.session.commit()
 
-            # Check during the on-call
-            test_date = date(2023, 12, 2)  # Saturday (but within the on-call period)
+            # Check during the on-call - a weekday (Tuesday): the shift
+            # week is Monday-Friday only, see get_oncall_for_date()'s
+            # docstring.
+            test_date = date(2023, 12, 5)  # Tuesday, within the on-call period
             shift_hours = AdvancedShiftAutomation.determine_shift_for_user(
                 test_user, test_date
             )
@@ -235,8 +241,6 @@ class TestDetermineShiftForUser:
                 end_time=datetime.combine(test_date, datetime.min.time())
                 + timedelta(hours=7),
             )
-            # Friday -> rule 1 always resolves to SHIFT_09_17 (first/last
-            # on-call day), so check a Tuesday instead.
             tuesday = date(2023, 12, 12)
             fake_oncall.start_time = datetime.combine(tuesday, datetime.min.time())
             fake_oncall.end_time = fake_oncall.start_time + timedelta(hours=7)
@@ -252,6 +256,56 @@ class TestDetermineShiftForUser:
             # database (where no on-call exists), it would fall back to
             # SHIFT_09_17 (rule 3) instead of SHIFT_13_21 (rule 1).
             assert shift_hours == AdvancedShiftAutomation.SHIFT_13_21
+
+    def test_determine_shift_transition_friday_outgoing_vs_incoming(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Regression test: on the Friday where one on-call ends (7am)
+        and the next one starts (9pm), both genuinely overlap that
+        calendar day - get_oncall_for_date() used to pick one of the two
+        arbitrarily (unordered `.first()` on an interval-overlap query),
+        so the wrong person could end up on 1pm-9pm depending on
+        implementation-detail row ordering. The correct rule: the
+        OUTGOING person (on-call ending that Friday) is on 1pm-9pm - they
+        remain "this week's on-call" for shift purposes through their
+        last day; the INCOMING person (on-call starting that evening)
+        is NOT - shift changes only happen the following Monday, so they
+        get whatever the default (9am-5pm) gives, same as the day
+        before."""
+        with test_app.app_context():
+            outgoing_friday = date(2023, 12, 1)  # Friday
+            incoming_friday = outgoing_friday + timedelta(days=7)  # next Friday
+
+            outgoing_oncall = OnCall(
+                user_id=test_user.id,
+                start_time=datetime.combine(
+                    outgoing_friday, datetime.min.time()
+                ).replace(hour=21),
+                end_time=datetime.combine(incoming_friday, datetime.min.time()).replace(
+                    hour=7
+                ),
+            )
+            incoming_oncall = OnCall(
+                user_id=second_user.id,
+                start_time=datetime.combine(
+                    incoming_friday, datetime.min.time()
+                ).replace(hour=21),
+                end_time=datetime.combine(
+                    incoming_friday + timedelta(days=7), datetime.min.time()
+                ).replace(hour=7),
+            )
+            db.session.add_all([outgoing_oncall, incoming_oncall])
+            db.session.commit()
+
+            outgoing_shift = AdvancedShiftAutomation.determine_shift_for_user(
+                test_user, incoming_friday
+            )
+            incoming_shift = AdvancedShiftAutomation.determine_shift_for_user(
+                second_user, incoming_friday
+            )
+
+            assert outgoing_shift == AdvancedShiftAutomation.SHIFT_13_21
+            assert incoming_shift == AdvancedShiftAutomation.SHIFT_09_17
 
 
 class TestHandleTwoUsersCase:
@@ -272,8 +326,10 @@ class TestHandleTwoUsersCase:
             db.session.add(oncall)
             db.session.commit()
 
-            # Test with both users available
-            test_date = date(2023, 12, 2)
+            # Test with both users available - a weekday (Tuesday): the
+            # shift week is Monday-Friday only, see
+            # get_oncall_for_date()'s docstring.
+            test_date = date(2023, 12, 5)
             available_users = [test_user, second_user]
             assignments = AdvancedShiftAutomation.handle_two_users_case(
                 available_users, test_date
@@ -601,7 +657,7 @@ class TestRebalanceAfterLeave:
             initial_count = Shift.query.count()
 
             # Run the rebalance in dry_run
-            shifts, messages = AdvancedShiftAutomation.rebalance_after_leave(
+            shifts, messages, _unfilled = AdvancedShiftAutomation.rebalance_after_leave(
                 leave, dry_run=True
             )
 
@@ -631,7 +687,7 @@ class TestRebalanceAfterLeave:
             db.session.commit()
 
             # Run the rebalance
-            shifts, messages = AdvancedShiftAutomation.rebalance_after_leave(
+            shifts, messages, _unfilled = AdvancedShiftAutomation.rebalance_after_leave(
                 leave, dry_run=True
             )
 
@@ -694,7 +750,7 @@ class TestRebalanceAfterLeave:
             db.session.add(leave)
             db.session.commit()
 
-            shifts, messages = AdvancedShiftAutomation.rebalance_after_leave(
+            shifts, messages, _unfilled = AdvancedShiftAutomation.rebalance_after_leave(
                 leave, dry_run=True
             )
 
@@ -767,7 +823,7 @@ class TestRebalanceAfterLeave:
             db.session.add(leave)
             db.session.commit()
 
-            regenerated_shifts, messages = (
+            regenerated_shifts, messages, _unfilled = (
                 AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
             )
 

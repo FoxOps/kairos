@@ -4,6 +4,9 @@ Tests for the automation routes in admin.py.
 
 from datetime import date, timedelta
 
+from app import db
+from app.models import AppNotification, Group
+
 
 class TestAutomationDashboard:
     """Tests for /admin/automation."""
@@ -119,6 +122,52 @@ class TestAutomationFull:
             or b"invalid" in response.data
             or b"Erreur" in response.data
         )
+
+    def test_automation_full_post_generate_notifies_admins_on_gap(
+        self, logged_in_client, test_user, second_user
+    ):
+        """Regression test: with only 2 rotating users, the legal 2-week
+        on-call spacing constraint makes some weeks impossible to fill -
+        generate_oncall_schedule() deliberately leaves them unassigned
+        rather than violating the constraint, and every admin (here,
+        logged_in_client's own "Login User") must get an in-app
+        notification about the gap."""
+        # logged_in_client's own admin ("Login User") is in an
+        # oncall-eligible group too - excluded here so exactly
+        # test_user/second_user rotate (a 3rd rotating user could sustain
+        # the 2-week spacing indefinitely, masking the gap this test is
+        # about).
+        with logged_in_client.application.app_context():
+            login_group = Group.query.filter_by(name="Test Group Login").first()
+            login_group.is_part_of_oncall = False
+            db.session.commit()
+
+        today = date.today()
+        start_date = today
+        while start_date.weekday() != 4:  # Friday
+            start_date += timedelta(days=1)
+        end_date = start_date + timedelta(days=35)
+
+        response = logged_in_client.post(
+            "/admin/automation/full",
+            data={
+                "action": "generate",
+                "start_date": start_date.strftime("%Y-%m-%d"),
+                "end_date": end_date.strftime("%Y-%m-%d"),
+                f"rotation_order_{test_user.id}": "1",
+                f"include_{test_user.id}": "1",
+                f"rotation_order_{second_user.id}": "2",
+                f"include_{second_user.id}": "1",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+
+        gap_notifs = AppNotification.query.filter_by(
+            notification_type="oncall_generation_gap"
+        ).all()
+        assert len(gap_notifs) >= 1
+        assert gap_notifs[0].link == "/admin/automation"
 
 
 class TestAutomationStatus:

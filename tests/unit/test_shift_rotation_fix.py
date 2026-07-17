@@ -1,6 +1,9 @@
 """
 Test checking that shift rotation works correctly.
-This test checks that the first day of an on-call (Monday) uses 09h-17h, not 13h-21h.
+The on-call person is on 13h-21h every weekday of their on-call week,
+Monday and Friday included - no exception for the first/last day (an
+on-call runs Friday 9pm to the following Friday 7am, so both transition
+Fridays are still on-call days too).
 """
 
 from datetime import date, datetime, timedelta
@@ -25,8 +28,9 @@ def app_context():
         db.drop_all()
 
 
-def test_shift_rotation_first_day_of_oncall(app_context):
-    """Test that the first day of an on-call (Monday) uses 09h-17h, not 13h-21h."""
+def test_shift_rotation_every_day_of_oncall_is_13_21(app_context):
+    """Every weekday of the on-call week is 13h-21h, Monday and Friday
+    included - no exception for the first/last day."""
     with app_context.app_context():
         # Create a group eligible for shifts and on-calls
         group = Group(
@@ -53,8 +57,8 @@ def test_shift_rotation_first_day_of_oncall(app_context):
         monday = date(2024, 6, 24)  # Monday
         shift = AdvancedShiftAutomation.determine_shift_for_user(user, monday)
         assert (
-            shift == AdvancedShiftAutomation.SHIFT_09_17
-        ), f"Monday (first on-call day) should be 09h-17h, got {shift}"
+            shift == AdvancedShiftAutomation.SHIFT_13_21
+        ), f"Monday (first on-call day) should be 13h-21h, got {shift}"
 
         # Test Tuesday (2nd day)
         tuesday = date(2024, 6, 25)
@@ -81,8 +85,8 @@ def test_shift_rotation_first_day_of_oncall(app_context):
         friday = date(2024, 6, 28)
         shift = AdvancedShiftAutomation.determine_shift_for_user(user, friday)
         assert (
-            shift == AdvancedShiftAutomation.SHIFT_09_17
-        ), f"Friday (last on-call day) should be 09h-17h, got {shift}"
+            shift == AdvancedShiftAutomation.SHIFT_13_21
+        ), f"Friday (last on-call day) should be 13h-21h, got {shift}"
 
 
 def test_shift_rotation_after_previous_oncall(app_context):
