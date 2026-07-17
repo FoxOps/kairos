@@ -1,0 +1,127 @@
+# .dockerignore
+# =============================================================================
+# Fichier .dockerignore pour Leviia Schedule
+# =============================================================================
+#
+# Doit rester à la racine du dépôt : c'est le contexte de build réel
+# (docker/docker-compose.yml utilise `context: ..`, donc la racine, pas
+# `docker/`). Un .dockerignore placé ailleurs (ex. docker/.dockerignore)
+# n'est jamais lu par Docker et n'exclut donc rien - vérifié par un
+# rebuild réel avant cette correction : un fichier de base de données
+# de développement local (instance/app.db) se retrouvait dans l'image.
+#
+
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Local configuration
+.env.local
+.env.*.local
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Documentation (le dossier réel s'appelle Docs/, pas docs/ - aucun des
+# deux n'est nécessaire au runtime de toute façon)
+Docs/
+docs/
+*.md
+report/
+k8s/
+grafana/
+
+# Tests
+tests/
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.tox/
+.mypy_cache/
+.ruff_cache/
+junit.xml
+
+# Reports générés par `make lint`/`make security` (bandit, ruff, mypy,
+# safety - voir .gitignore, jamais commités mais pas non plus utiles
+# au runtime)
+bandit-results.json
+bandit-report.json
+ruff-report.txt
+mypy-report/
+safety-report.json
+
+# CI et outils d'assistant (métadonnées locales de session, config CI -
+# jamais lus par l'application elle-même)
+.claude/
+.gitlab-ci/
+
+# Local databases / Flask instance folder (jamais nécessaires au
+# runtime - la base réelle vient de DATABASE_URL, pas d'un fichier
+# copié dans l'image)
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# Static files (will be built in the image)
+app/static/node_modules/
+app/static/.cache/
+
+# Data directories (will be mounted as volumes)
+data/
+backups/
+
+# Certificates (will be mounted as volumes)
+certs/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
