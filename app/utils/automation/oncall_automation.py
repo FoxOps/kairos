@@ -315,5 +315,12 @@ class OnCallAutomation:
             else:
                 db.session.flush()
 
-        messages.append(f"Généré {len(oncalls)} astreintes.")
+        # ✅ prefix: matches AdvancedShiftAutomation's own summary
+        # messages (e.g. "✅ N shifts générés pour le ...") - without a
+        # recognized emoji, _classify_automation_message() in
+        # admin_automation_routes.py falls through to the caller's
+        # default_category ("danger" for on-call messages), which
+        # rendered this line as a red flash despite being a plain
+        # success summary.
+        messages.append(f"✅ {len(oncalls)} astreintes générées.")
         return oncalls, messages, unfilled_dates
