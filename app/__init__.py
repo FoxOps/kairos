@@ -344,6 +344,25 @@ def create_app(config_object: str | None = None):
                 "TALISMAN_STRICT_TRANSPORT_SECURITY", True
             ),
             content_security_policy=CSP_POLICY,
+            # Real bug found during v1.0 load testing: Talisman's own
+            # session_cookie_secure default is True, independent of
+            # force_https/TALISMAN_FORCE_HTTPS - its before_request hook
+            # (_force_https) unconditionally overwrites
+            # app.config["SESSION_COOKIE_SECURE"] to True on every
+            # request whenever app.debug is False, silently ignoring
+            # this app's own SESSION_COOKIE_SECURE/Config setting.
+            # Confirmed end-to-end: with the documented default
+            # (TALISMAN_FORCE_HTTPS=false, SESSION_COOKIE_SECURE=false,
+            # e.g. `python run.py` -> http://localhost:5000, or Docker
+            # without a TLS-terminating reverse proxy configured yet),
+            # the browser silently drops the Secure session cookie over
+            # plain HTTP, breaking login entirely - every request starts
+            # a brand new anonymous session. Explicitly tying this to
+            # the app's own SESSION_COOKIE_SECURE keeps both scenarios
+            # correct: plain HTTP deployments keep working, and an admin
+            # behind a TLS-terminating proxy who sets
+            # SESSION_COOKIE_SECURE=true still gets the hardened cookie.
+            session_cookie_secure=app.config.get("SESSION_COOKIE_SECURE", False),
         )
 
     # Gzip/Brotli response compression (flask-compress was a declared

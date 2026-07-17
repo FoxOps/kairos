@@ -1,9 +1,13 @@
 # Leviia Schedule
 
-> **⚠️ Avertissement : Version de développement**
-> Ce projet est actuellement en phase de développement actif et **n'est pas prêt pour une utilisation en production**.
-> Il peut contenir des bugs, des fonctionnalités incomplètes ou des problèmes de sécurité.
-> **Ne l'utilisez pas en environnement de production sans une revue complète et des tests approfondis.**
+> **✅ Version 1.0** — stabilisation de production terminée : 1314 tests,
+> audit de sécurité complet, chasse aux bugs ciblée, test de charge. Voir
+> `ROADMAP.md` ("Verdict de stabilité v1.0") pour le détail complet — deux
+> points opérationnels (pas des défauts de code) restent à trancher par
+> l'équipe déployant l'app avant une mise en production réelle : la CI
+> GitLab configurée dans ce dépôt ne s'exécute pas réellement sur GitHub
+> (aucun workflow GitHub Actions équivalent), et le scan de dépendances
+> Safety nécessite une clé API non configurée par défaut.
 
 ---
 
@@ -162,7 +166,7 @@ leviia-schedule/
 
 ## 🧪 Tests et Qualité de Code
 
-> **⚠️ Statut** : **1133 tests**, tous passent - Couverture : ~92%
+> **✅ Statut** : **1314 tests**, tous passent - Couverture : ~92%
 
 ### Exécuter les tests
 
@@ -236,19 +240,23 @@ Pour toute question ou suggestion, n'hésitez pas à ouvrir une **Issue** ou une
 
 ## 📌 Notes de version
 
-### Version actuelle (en développement)
+### Version 1.0
 
-- **Statut** : Développement actif
-- **Stabilité** : Non recommandé pour la production
+- **Statut** : Stabilisation de production terminée (voir `ROADMAP.md` →
+  "Verdict de stabilité v1.0" pour le détail complet, y compris les
+  points opérationnels restant à trancher par l'équipe déployant l'app)
 - **Fonctionnalités** : Toutes les fonctionnalités de base sont implémentées
-- **Tests** : 1133 tests (tous passent)
+- **Tests** : 1314 tests (tous passent)
 - **Couverture** : ~92%
+- **Sécurité** : Audit complet réalisé (`report/SECURITY_AUDIT_v1.0.md`),
+  0 finding Bandit sur `app/`
+- **Performance** : Test de charge réalisé (`report/LOAD_TEST_v1.0.md`)
 
 > **📖 Feuille de route** : [ROADMAP.md](ROADMAP.md)
 
 ---
 
-> **⚠️ Rappel : Version de développement**
+> **⚠️ Garantie**
 > Ce logiciel est fourni "tel quel", sans garantie d'aucune sorte.
 > L'auteur ne peut être tenu responsable de tout dommage direct, indirect,
 > accessoire, spécial ou consécutif découlant de l'utilisation de ce logiciel.
