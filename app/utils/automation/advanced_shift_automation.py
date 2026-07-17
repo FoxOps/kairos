@@ -106,20 +106,44 @@ class AdvancedShiftAutomation:
 
     @staticmethod
     def get_oncall_for_date(date: "date") -> "OnCall | None":
-        """Fetch the on-call (OnCall) for a given date."""
-        from datetime import datetime
+        """Fetch the on-call (OnCall) covering the Monday-Friday shift
+        week that `date` belongs to, for shift-assignment purposes only
+        (see determine_shift_for_user()/handle_two_users_case() below -
+        not a general "who is on call right now" lookup, see
+        OnCall.is_active() for that). `date` must be a weekday
+        (Monday-Friday) - the only callers in the real generation
+        pipeline (generate_daily_shifts()) always skip weekends before
+        reaching this method; the anchor computation below is only
+        meaningful for Mon-Fri.
+
+        Anchored to the Friday that starts this shift week (`date`'s
+        Monday minus 3 days), not a naive interval overlap check: on the
+        transition Friday itself two different on-calls genuinely
+        overlap that calendar day (the one ending 7am that morning, and
+        the new one starting 9pm that evening), and shift changes only
+        happen on Monday, never on Friday - the person whose on-call is
+        ENDING that Friday is still "this week's on-call" for shift
+        purposes (1pm-9pm), while the person whose on-call is STARTING
+        that evening isn't yet (they keep whatever they were already on
+        the day before, until the following Monday). A plain interval
+        overlap query can't distinguish the two and picks one of them
+        arbitrarily via an unordered `.first()`."""
+        from datetime import datetime, timedelta
 
         from app import db
         from app.models import OnCall
+
+        week_monday = date - timedelta(days=date.weekday())
+        anchor_friday = week_monday - timedelta(days=3)
+        anchor_start = datetime.combine(anchor_friday, datetime.min.time()).replace(
+            hour=21
+        )
 
         # Optimization: use a query with JOIN to avoid lazy loading
         oncall = (
             db.session.query(OnCall)
             .options(db.joinedload(OnCall.user))
-            .filter(
-                OnCall.start_time <= datetime.combine(date, datetime.max.time()),
-                OnCall.end_time >= datetime.combine(date, datetime.min.time()),
-            )
+            .filter(OnCall.start_time == anchor_start)
             .first()
         )
 
@@ -142,10 +166,16 @@ class AdvancedShiftAutomation:
         Determine the shift slot for a user on a given date.
 
         Rules:
-        1. If the user is on-call this week (Monday through Friday, no
-           exception for the first/last day) -> 1pm-9pm (if eligible)
+        1. If the user is "this week's on-call" (see get_oncall_for_date()
+           - Monday through Friday, transition Friday included: the
+           person whose on-call is ENDING that Friday, not the one
+           starting that evening, since shift changes only happen on
+           Monday) -> 1pm-9pm (if eligible)
         2. If the user was on-call the previous week (and not this week) -> 7am-3pm (rotation)
-        3. Otherwise -> 9am-5pm
+        3. Otherwise -> 9am-5pm (this is also what a user whose on-call
+           starts on a transition Friday gets that day - same as the day
+           before, since they're not "this week's on-call" for shift
+           purposes until the following Monday)
 
         `oncall_today`/`oncall_user_last_week`: passed by the caller (a
         single query per day in generate_daily_shifts) instead of being
