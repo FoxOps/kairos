@@ -150,13 +150,14 @@ class TestDarkThemeTemplate:
         assert "theme-toggle" in html_content
         assert 'aria-label="Basculer entre le thème clair et sombre"' in html_content
 
-    def test_theme_toggle_button_present_for_anonymous(self, client):
-        """Test that the toggle button is present for anonymous users (login page)."""
+    def test_theme_toggle_button_absent_for_anonymous(self, client):
+        """The sidebar (which hosts the toggle) is fully hidden on anonymous
+        pages like /login - only the centered login card is shown."""
         response = client.get("/login")
         assert response.status_code == 200
         html_content = response.data.decode("utf-8")
 
-        assert 'id="theme-toggle"' in html_content
+        assert 'id="theme-toggle"' not in html_content
 
     def test_theme_javascript_present(self, logged_in_client):
         """Test that the dark theme's JavaScript is present."""
@@ -207,9 +208,10 @@ class TestDarkThemeAccessibility:
 
         assert 'id="main-content"' in html_content
 
-    def test_navbar_has_role(self, client):
-        """Test that the navbar has an ARIA role."""
-        response = client.get("/login")
+    def test_navbar_has_role(self, logged_in_client):
+        """Test that the navbar has an ARIA role. The nav sidebar only
+        exists for authenticated users - anonymous pages hide it entirely."""
+        response = logged_in_client.get("/")
         assert response.status_code == 200
         html_content = response.data.decode("utf-8")
 

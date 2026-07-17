@@ -102,10 +102,12 @@
          icons - without this separation the two <svg> elements pushed
          each other aside instead of overlapping, producing a
          switch-style slide effect on click instead of the intended
-         swap. Shared macro between logged-in and anonymous users
-         (also visible on /login) - exactly one <input id="theme-toggle">
-         per page is still guaranteed since the two if/else branches are
-         mutually exclusive. -->
+         swap. Only called from the sidebar footer, itself only rendered
+         for authenticated users (the whole sidebar is hidden on
+         anonymous pages like /login - see the drawer-side block below)
+         - anonymous pages have no theme toggle at all, the theme is
+         still applied from localStorage/system preference via
+         theme-init.js, just not switchable from those pages. -->
     <label class="btn btn-ghost btn-sm btn-circle shrink-0" aria-label="{{ _("Basculer entre le thème clair et sombre") }}">
         <span class="swap swap-rotate">
             <input type="checkbox" id="theme-toggle">
@@ -127,10 +129,19 @@
          checkbox's "checked" state, which daisyUI ignores in
          lg:drawer-open mode (the sidebar stays shown regardless of that
          state). -->
-    <div class="drawer lg:drawer-open">
+    <!-- The sidebar itself (drawer-side below) is only rendered for
+         authenticated users - anonymous pages (login, error pages) have
+         nothing to navigate to, so lg:drawer-open (which forces the
+         sidebar to always show from the lg breakpoint up) is dropped
+         too: without it, an authless page used to still reserve the
+         permanent sidebar's width/background (empty of nav_links, which
+         are already guarded, but the <aside> box itself wasn't),
+         leaving a blank gray column next to the centered login card. -->
+    <div class="drawer {{ 'lg:drawer-open' if current_user.is_authenticated }}">
         <input id="mobile-drawer" type="checkbox" class="drawer-toggle" />
 
         <div class="drawer-content flex flex-col min-h-screen">
+            {% if current_user.is_authenticated %}
             <!-- Top bar: mobile only (burger + brand) - the rest
                  (theme, account) lives in the sidebar footer, reachable
                  by opening the drawer on mobile. -->
@@ -145,6 +156,7 @@
                 </div>
                 <div class="navbar-end w-10"></div>
             </header>
+            {% endif %}
 
             {% set flash_category_map = {'danger': 'error', 'success': 'success', 'warning': 'warning', 'info': 'info'} %}
             {% set flash_icon_map = {'error': 'fa-circle-exclamation', 'success': 'fa-circle-check', 'warning': 'fa-triangle-exclamation', 'info': 'fa-circle-info'} %}
@@ -179,6 +191,7 @@
             </footer>
         </div>
 
+        {% if current_user.is_authenticated %}
         <div class="drawer-side z-50">
             <label for="mobile-drawer" aria-label="{{ _("Fermer le menu") }}" class="drawer-overlay lg:hidden"></label>
             <aside class="bg-base-200 text-base-content min-h-full w-64 flex flex-col" role="navigation" aria-label="{{ _("Navigation principale") }}">
@@ -189,7 +202,6 @@
                 </div>
 
                 <ul class="menu menu-sm px-2 gap-1 flex-1" id="sidebar-menu" role="menu">
-                    {% if current_user.is_authenticated %}
                     {% for href, icon, label in nav_links %}
                     <li><a href="{{ href }}" aria-label="{{ label }}" class="{{ 'menu-active' if request.path == href else '' }}"><i class="fas {{ icon }}" aria-hidden="true"></i> {{ label }}</a></li>
                     {% endfor %}
@@ -201,8 +213,7 @@
                             {% endif %}
                         </a>
                     </li>
-                    {% endif %}
-                    {% if current_user.is_authenticated and current_user.is_admin %}
+                    {% if current_user.is_admin %}
                     <li class="menu-title mt-3">{{ _("Administration") }}</li>
                     <li><a href="{{ url_for('admin.list_users') }}" aria-label="{{ _("Utilisateurs") }}" class="{{ 'menu-active' if request.path == url_for('admin.list_users') else '' }}"><i class="fas fa-users" aria-hidden="true"></i> {{ _("Utilisateurs") }}</a></li>
                     <li><a href="{{ url_for('admin.admin_dashboard') }}" aria-label="{{ _("Admin") }}" class="{{ 'menu-active' if request.path == url_for('admin.admin_dashboard') else '' }}"><i class="fas fa-cog" aria-hidden="true"></i> {{ _("Admin") }}</a></li>
@@ -210,28 +221,22 @@
                 </ul>
 
                 <div class="p-2 border-t border-base-300 flex items-center gap-1">
-                    {% if current_user.is_authenticated %}
-                        <a href="{{ url_for('auth.profile') }}" class="btn btn-ghost btn-sm flex-1 justify-start gap-2 min-w-0" aria-label="{{ _("Mon profil - %(name)s", name=current_user.name) }}">
-                            <span class="avatar avatar-placeholder shrink-0">
-                                <span class="bg-neutral text-neutral-content w-6 h-6 rounded-full text-xs">
-                                    <span aria-hidden="true">{{ current_user.name[:1] | upper }}</span>
-                                </span>
+                    <a href="{{ url_for('auth.profile') }}" class="btn btn-ghost btn-sm flex-1 justify-start gap-2 min-w-0" aria-label="{{ _("Mon profil - %(name)s", name=current_user.name) }}">
+                        <span class="avatar avatar-placeholder shrink-0">
+                            <span class="bg-neutral text-neutral-content w-6 h-6 rounded-full text-xs">
+                                <span aria-hidden="true">{{ current_user.name[:1] | upper }}</span>
                             </span>
-                            <span class="truncate">{{ current_user.name }}</span>
-                        </a>
-                        {{ theme_toggle() }}
-                        <a href="{{ url_for('auth.logout') }}" class="btn btn-ghost btn-sm btn-circle shrink-0" aria-label="{{ _("Déconnexion") }}" title="{{ _("Déconnexion") }}">
-                            <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
-                        </a>
-                    {% else %}
-                        <a class="btn btn-ghost btn-sm flex-1 justify-start" href="{{ url_for('auth.login') }}" aria-label="{{ _("Connexion") }}">
-                            <i class="fas fa-sign-in-alt" aria-hidden="true"></i> {{ _("Connexion") }}
-                        </a>
-                        {{ theme_toggle() }}
-                    {% endif %}
+                        </span>
+                        <span class="truncate">{{ current_user.name }}</span>
+                    </a>
+                    {{ theme_toggle() }}
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-ghost btn-sm btn-circle shrink-0" aria-label="{{ _("Déconnexion") }}" title="{{ _("Déconnexion") }}">
+                        <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+                    </a>
                 </div>
             </aside>
         </div>
+        {% endif %}
     </div>
 
     <!-- Centralized JavaScript (ES6 modules) -->
