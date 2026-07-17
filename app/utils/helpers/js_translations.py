@@ -46,4 +46,27 @@ def get_js_translations() -> dict[str, str]:
         "shift_type": _("Type de shift"),
         "select_shift_type": _("Sélectionnez un type de shift"),
         "create": _("Créer"),
+        "rebalance_warning": _(
+            "Événement mis à jour, mais le rééquilibrage automatique des shifts a échoué."
+        ),
+        "error_prefix": _("Erreur: "),
+        "update_error": _("Une erreur est survenue lors de la mise à jour."),
+        "resize_error": _("Une erreur est survenue lors du redimensionnement."),
+        "event_deleted": _("Événement supprimé avec succès."),
+        "delete_error": _("Une erreur est survenue lors de la suppression."),
+        "delete_cancelled": _("Suppression annulée."),
+        "weekend_restriction": _(
+            "Les shifts ne peuvent pas être créés ou déplacés vers les week-ends "
+            "(samedi/dimanche)."
+        ),
+        "shift_creation_cancelled": _("Création de shift annulée."),
+        "fill_required_fields": _("Veuillez remplir tous les champs obligatoires."),
+        "shift_created": _("Shift créé avec succès."),
+        "shift_creation_error": _(
+            "Une erreur est survenue lors de la création du shift."
+        ),
+        "data_load_error": _("Une erreur est survenue lors du chargement des données."),
+        "dark_theme_enabled": _("Thème sombre activé"),
+        "light_theme_enabled": _("Thème clair activé"),
+        "copied": _("Copié !"),
     }

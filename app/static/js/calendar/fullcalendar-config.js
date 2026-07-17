@@ -228,20 +228,20 @@ document.addEventListener('DOMContentLoaded', function () {
                         calendar.refetchEvents();
                         if (data.rebalance_warning) {
                             announceToScreenReader(
-                                'Événement mis à jour, mais le rééquilibrage automatique des shifts a échoué.',
+                                getString('rebalance_warning'),
                                 'assertive'
                             );
                         }
                     } else {
                         // Revert the change on error
                         info.revert();
-                        announceToScreenReader('Erreur: ' + data.error, 'assertive');
+                        announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
                     }
                 })
                 .catch(error => {
                     info.revert();
                     console.error('Error:', error);
-                    announceToScreenReader('Une erreur est survenue lors de la mise à jour.', 'assertive');
+                    announceToScreenReader(getString('update_error'), 'assertive');
                 });
         },
 
@@ -297,19 +297,19 @@ document.addEventListener('DOMContentLoaded', function () {
                         calendar.refetchEvents();
                         if (data.rebalance_warning) {
                             announceToScreenReader(
-                                'Événement mis à jour, mais le rééquilibrage automatique des shifts a échoué.',
+                                getString('rebalance_warning'),
                                 'assertive'
                             );
                         }
                     } else {
                         info.revert();
-                        announceToScreenReader('Erreur: ' + data.error, 'assertive');
+                        announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
                     }
                 })
                 .catch(error => {
                     info.revert();
                     console.error('Error:', error);
-                    announceToScreenReader('Une erreur est survenue lors du redimensionnement.', 'assertive');
+                    announceToScreenReader(getString('resize_error'), 'assertive');
                 });
         },
 
@@ -379,20 +379,20 @@ document.addEventListener('DOMContentLoaded', function () {
                                 if (data.success) {
                                     event.remove();
                                     console.log('Event deleted:', data.message);
-                                    announceToScreenReader('Événement supprimé avec succès.', 'polite');
+                                    announceToScreenReader(getString('event_deleted'), 'polite');
                                     // Reload the page to resync with the backend
                                     location.reload();
                                 } else {
-                                    announceToScreenReader('Erreur: ' + data.error, 'assertive');
+                                    announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
                                 }
                             })
                             .catch(error => {
                                 console.error('Error:', error);
-                                announceToScreenReader('Une erreur est survenue lors de la suppression.', 'assertive');
+                                announceToScreenReader(getString('delete_error'), 'assertive');
                             });
                     },
                     () => {
-                        announceToScreenReader('Suppression annulée.', 'polite');
+                        announceToScreenReader(getString('delete_cancelled'), 'polite');
                     }
                 );
             }
@@ -411,7 +411,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const date = info.date;
             // getUTCDay, not getDay - see formatDateForInput's comment.
             if (date.getUTCDay() === 0 || date.getUTCDay() === 6) { // Sunday (0) or Saturday (6)
-                announceToScreenReader('Les shifts ne peuvent pas être créés ou déplacés vers les week-ends (samedi/dimanche).', 'assertive');
+                announceToScreenReader(getString('weekend_restriction'), 'assertive');
                 return false;
             }
         }
@@ -510,7 +510,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 modal.addEventListener('click', (e) => {
                     if (e.target === modal) {
                         modal.close();
-                        announceToScreenReader('Création de shift annulée.', 'polite');
+                        announceToScreenReader(getString('shift_creation_cancelled'), 'polite');
                     }
                 });
 
@@ -519,7 +519,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // a successful save, so there's no risk of announcing
                 // "cancelled" right after "created".
                 modal.addEventListener('cancel', () => {
-                    announceToScreenReader('Création de shift annulée.', 'polite');
+                    announceToScreenReader(getString('shift_creation_cancelled'), 'polite');
                 });
             } else {
                 // Update the values
@@ -538,7 +538,7 @@ document.addEventListener('DOMContentLoaded', function () {
             modal.querySelectorAll('.close-modal').forEach(btn => {
                 btn.onclick = () => {
                     modal.close();
-                    announceToScreenReader('Création de shift annulée.', 'polite');
+                    announceToScreenReader(getString('shift_creation_cancelled'), 'polite');
                 };
             });
 
@@ -549,7 +549,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const endInput = modal.querySelector('#shift-end').value;
 
                 if (!userId || !shiftTypeId || !startInput || !endInput) {
-                    announceToScreenReader('Veuillez remplir tous les champs obligatoires.', 'assertive');
+                    announceToScreenReader(getString('fill_required_fields'), 'assertive');
                     return;
                 }
 
@@ -585,21 +585,21 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (data.success) {
                             modal.close();
                             console.log('Shift created:', data.message);
-                            announceToScreenReader('Shift créé avec succès.', 'polite');
+                            announceToScreenReader(getString('shift_created'), 'polite');
                             // Reload the page to resync with the backend
                             location.reload();
                         } else {
-                            announceToScreenReader('Erreur: ' + data.error, 'assertive');
+                            announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        announceToScreenReader('Une erreur est survenue lors de la création du shift.', 'assertive');
+                        announceToScreenReader(getString('shift_creation_error'), 'assertive');
                     });
             };
         }).catch(error => {
             console.error('Error loading data:', error);
-            announceToScreenReader('Une erreur est survenue lors du chargement des données.', 'assertive');
+            announceToScreenReader(getString('data_load_error'), 'assertive');
         });
     }
 
@@ -656,20 +656,20 @@ document.addEventListener('DOMContentLoaded', function () {
                                 if (data.success) {
                                     selectedEvent.remove();
                                     console.log('Event deleted:', data.message);
-                                    announceToScreenReader('Événement supprimé avec succès.', 'polite');
+                                    announceToScreenReader(getString('event_deleted'), 'polite');
                                     // Reload the page to resync with the backend
                                     location.reload();
                                 } else {
-                                    announceToScreenReader('Erreur: ' + data.error, 'assertive');
+                                    announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
                                 }
                             })
                             .catch(error => {
                                 console.error('Error:', error);
-                                announceToScreenReader('Une erreur est survenue lors de la suppression.', 'assertive');
+                                announceToScreenReader(getString('delete_error'), 'assertive');
                             });
                     },
                     () => {
-                        announceToScreenReader('Suppression annulée.', 'polite');
+                        announceToScreenReader(getString('delete_cancelled'), 'polite');
                     }
                 );
             }
