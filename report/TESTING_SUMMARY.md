@@ -2,11 +2,11 @@
 
 ## 📊 Aperçu Global
 
-- **Date de mise à jour** : 17 juillet 2026 (support MySQL/MariaDB, PyMySQL sans dépendance système)
-- **Nombre total de tests** : 1309
-- **Tests réussis** : 1309 ✅
+- **Date de mise à jour** : 17 juillet 2026 (stabilisation v1.0, PR #122-#127)
+- **Nombre total de tests** : 1314
+- **Tests réussis** : 1314 ✅
 - **Tests échoués** : 0
-- **Couverture de code** : **~92%** (`--cov=app --cov=config`)
+- **Couverture de code** : **~92%** (`--cov=app`)
 - **Lint (ruff)** : propre - **0 erreur**
 - **Types (mypy)** : propre - **0 erreur**
 - **Formatage (black)** : conforme
@@ -506,3 +506,18 @@ safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
     `backup-*` redondantes en invocations directes documentées).
     `find-duplicates` gardé seul, unique apport réel de l'ancien bloc
     bug-hunt.
+- **17 juillet 2026** : 1314 tests (0 échec). Stabilisation v1.0 (PR
+  #122-#127, 6 PR thématiques) : hygiène Docker/dépendances, code mort
+  (`config.py`/`ProductionConfig`/`DevelopmentConfig`/`get_database_type()`),
+  optimisation SQL (N+1 Apprise, bulk delete, `joinedload` manquant),
+  audit sécurité complet + chasse aux bugs ciblée + CI bloquante, i18n
+  (chaînes JS + placeholders + 206 chaînes `en.po` en retard rattrapées),
+  test de charge. Deux tests de régression ajoutés pour deux bugs réels
+  trouvés *pendant le test de charge* : `run.py` forçait `debug=True` sur
+  le serveur de développement Flask quel que soit `FLASK_DEBUG` (risque
+  RCE via le débogueur Werkzeug), et Flask-Talisman force
+  `SESSION_COOKIE_SECURE=True` indépendamment de `TALISMAN_FORCE_HTTPS`
+  (cassait la connexion sur tout déploiement HTTP simple, le mode par
+  défaut documenté) - les deux étaient couplés et corrigés ensemble. Voir
+  `report/SECURITY_AUDIT_v1.0.md`, `report/BUG_HUNT_v1.0.md`,
+  `report/LOAD_TEST_v1.0.md` pour le détail complet.

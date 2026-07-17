@@ -30,6 +30,7 @@ def secure_app():
         force_https=False,
         strict_transport_security=False,
         content_security_policy=CSP_POLICY,
+        session_cookie_secure=app.config.get("SESSION_COOKIE_SECURE", False),
     )
 
     with app.app_context():
@@ -98,6 +99,32 @@ class TestTalismanSecurityHeaders:
         resp = client.get("/login")
         assert resp.headers.get("X-Content-Type-Options") == "nosniff"
         assert resp.headers.get("Content-Security-Policy") is not None
+        with app.app_context():
+            db.drop_all()
+
+    def test_session_cookie_not_forced_secure_without_https(self):
+        """Regression test (v1.0 load testing): Flask-Talisman's own
+        session_cookie_secure default is True, independent of
+        force_https - its before_request hook overwrites
+        app.config["SESSION_COOKIE_SECURE"] to True on every request
+        whenever app.debug is False, silently ignoring this app's own
+        SESSION_COOKIE_SECURE setting. Confirmed end-to-end with a real
+        gunicorn process: in the documented default configuration
+        (TALISMAN_FORCE_HTTPS=false, SESSION_COOKIE_SECURE=false, no TLS
+        anywhere in the chain, e.g. `python run.py` ->
+        http://localhost:5000), the browser silently drops the Secure
+        session cookie over plain HTTP - login appeared to succeed (302)
+        but no session ever persisted, every subsequent request was
+        anonymous again."""
+        app = create_app("app.config.Config")
+        app.config["TALISMAN_FORCE_HTTPS"] = False
+        app.config["SESSION_COOKIE_SECURE"] = False
+        with app.app_context():
+            db.drop_all()
+            db.create_all()
+        client = app.test_client()
+        client.get("/login")
+        assert app.config["SESSION_COOKIE_SECURE"] is False
         with app.app_context():
             db.drop_all()
 

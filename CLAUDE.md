@@ -11,8 +11,13 @@ otherwise).
 ## Project
 
 Leviia Schedule is a Flask web app for team shift scheduling, on-call rotations, and leave
-management, with ICS calendar export. Active development, French-language docs/commit history,
-not production-hardened.
+management, with ICS calendar export. Active development, French-language docs/commit history.
+v1.0 stabilization complete (security audit, targeted bug hunt, load test — see
+`report/SECURITY_AUDIT_v1.0.md`, `report/BUG_HUNT_v1.0.md`, `report/LOAD_TEST_v1.0.md`, and
+ROADMAP.md's "Verdict de stabilité v1.0"); two operational gaps remain to be decided by whoever
+deploys it, not code defects: the GitLab CI config (`.gitlab-ci/.gitlab-ci.yml`) doesn't actually
+run against this GitHub-hosted repo (no equivalent GitHub Actions workflow exists), and the Safety
+dependency scan is inactive without a `SAFETY_API_KEY`.
 
 ## Commands
 

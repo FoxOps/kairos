@@ -162,5 +162,14 @@ if __name__ == "__main__":
     port = int(os.environ.get("FLASK_PORT") or 5000)
 
     # Disable the reloader to avoid "database is locked" issues with SQLite -
-    # the reloader spawns a new process that can lock the database
-    app.run(host=host, port=port, debug=True, use_reloader=False)
+    # the reloader spawns a new process that can lock the database.
+    # debug=Config.DEBUG (read from FLASK_DEBUG, default False), not a
+    # hardcoded True - found during v1.0 load testing: this used to
+    # ignore FLASK_DEBUG/Config.DEBUG entirely, so `python run.py` (the
+    # documented non-Docker way to run this app, HOST defaults to
+    # 0.0.0.0) always exposed Werkzeug's interactive debugger regardless
+    # of what an admin set in .env - a real RCE surface on any unhandled
+    # exception for a reachable deployment.
+    app.run(
+        host=host, port=port, debug=app.config.get("DEBUG", False), use_reloader=False
+    )

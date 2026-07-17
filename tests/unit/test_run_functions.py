@@ -12,6 +12,26 @@ from run import (
 )
 
 
+class TestDevServerDebugFlag:
+    """Regression test (v1.0 load testing): app.run()'s debug argument
+    used to be hardcoded True, ignoring FLASK_DEBUG/Config.DEBUG
+    entirely - `python run.py` (the documented non-Docker way to run
+    this app, HOST defaults to 0.0.0.0) always exposed Werkzeug's
+    interactive debugger regardless of what an admin set in .env, a real
+    RCE surface on any unhandled exception. The `if __name__ ==
+    "__main__":` block itself can't be unit-tested without spawning a
+    real subprocess (slow/flaky for CI) - this checks the source
+    directly instead, same pattern as
+    test_backup_database.py::test_no_import_of_app_package."""
+
+    def test_dev_server_debug_flag_is_not_hardcoded(self):
+        import run
+
+        source = open(run.__file__).read()
+        assert "debug=True" not in source
+        assert 'app.config.get("DEBUG"' in source
+
+
 class TestDefaultShiftTypes:
     """Tests for DEFAULT_SHIFT_TYPES."""
 
