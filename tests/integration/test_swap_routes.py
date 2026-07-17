@@ -71,6 +71,26 @@ class TestUserSwapRoutes:
         with test_app.app_context():
             assert SwapRequest.query.count() == 0
 
+    def test_swaps_page_survives_deleted_shift(
+        self, test_app, non_admin_client, test_swap_request, test_swap_shift
+    ):
+        """Bug hunt regression (v1.0): SwapRequest.shift is a plain
+        property doing db.session.get() (see app/models/swap_request.py),
+        not an ORM relationship, so it silently returns None once the
+        referenced Shift row is deleted - nothing in ShiftService's
+        delete paths is aware a SwapRequest can reference a shift.
+        swaps.html used to dereference swap.shift.date with no null
+        guard (unlike target_shift, always guarded) - a single deleted
+        shift 500'd the whole /swaps page for every user who could see
+        that request."""
+        with test_app.app_context():
+            db.session.delete(db.session.get(Shift, test_swap_shift.id))
+            db.session.commit()
+
+        resp = non_admin_client.get("/swaps")
+        assert resp.status_code == 200
+        assert "Shift supprimé".encode() in resp.data
+
     def test_confirm_page_renders_for_target(
         self, test_app, client, second_user, test_swap_request
     ):
@@ -99,6 +119,22 @@ class TestUserSwapRoutes:
         with test_app.app_context():
             swap = db.session.get(SwapRequest, test_swap_request.id)
             assert swap.status == SwapRequest.AWAITING_ADMIN
+
+    def test_confirm_page_survives_deleted_shift(
+        self, test_app, client, second_user, test_swap_request, test_swap_shift
+    ):
+        with test_app.app_context():
+            db.session.delete(db.session.get(Shift, test_swap_shift.id))
+            db.session.commit()
+
+        client.post(
+            "/login",
+            data={"email": second_user.email, "password": "test123"},
+            follow_redirects=True,
+        )
+        resp = client.get(f"/swaps/{test_swap_request.id}/confirm")
+        assert resp.status_code == 200
+        assert "Shift supprimé".encode() in resp.data
 
     def test_target_reject_post_declines(
         self, test_app, client, second_user, test_swap_request
@@ -187,6 +223,17 @@ class TestAdminSwapRoutes:
     ):
         resp = logged_in_client.get("/admin/swaps")
         assert resp.status_code == 200
+
+    def test_admin_swaps_page_survives_deleted_shift(
+        self, test_app, logged_in_client, test_swap_request, test_swap_shift
+    ):
+        with test_app.app_context():
+            db.session.delete(db.session.get(Shift, test_swap_shift.id))
+            db.session.commit()
+
+        resp = logged_in_client.get("/admin/swaps")
+        assert resp.status_code == 200
+        assert "Shift supprimé".encode() in resp.data
 
     def test_approve_swap_reassigns_shift(
         self, test_app, logged_in_client, confirmed_swap_request, second_user

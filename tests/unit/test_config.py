@@ -199,6 +199,36 @@ class TestConfigEnvironmentVariables:
             "pool_recycle": 3600,
         }
 
+    def test_prometheus_enabled_reads_env(self, monkeypatch):
+        """Regression guard (v1.0 bug hunt): PROMETHEUS_ENABLED was never
+        read into Config at all - app/__init__.py's
+        app.config.get("PROMETHEUS_ENABLED", False) check could therefore
+        never be True in a real deployment, no matter the env var, making
+        the /metrics endpoint structurally unreachable. Masked in tests
+        by tests/integration/test_prometheus_metrics.py forcing
+        app.config["PROMETHEUS_ENABLED"] = True directly instead of going
+        through this env-var wiring."""
+        import sys
+
+        monkeypatch.setenv("PROMETHEUS_ENABLED", "true")
+        if "app.config.base" in sys.modules:
+            del sys.modules["app.config.base"]
+
+        from app.config.base import Config
+
+        assert Config().PROMETHEUS_ENABLED is True
+
+    def test_prometheus_enabled_defaults_to_false(self, monkeypatch):
+        import sys
+
+        monkeypatch.delenv("PROMETHEUS_ENABLED", raising=False)
+        if "app.config.base" in sys.modules:
+            del sys.modules["app.config.base"]
+
+        from app.config.base import Config
+
+        assert Config().PROMETHEUS_ENABLED is False
+
 
 class TestNormalizeDatabaseUri:
     """Tests for normalize_database_uri() (app/config/base.py) - the fix for

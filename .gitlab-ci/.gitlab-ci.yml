@@ -38,7 +38,7 @@ run_tests:
   stage: test
   script:
     - echo "Running pytest..."
-    - pytest tests/ -v --tb=short --junitxml=junit.xml --cov=app --cov=config --cov-report=term-missing
+    - pytest tests/ -v --tb=short --junitxml=junit.xml --cov=app --cov-report=term-missing
   artifacts:
     when: always
     reports:
@@ -70,17 +70,19 @@ run_e2e_browser:
     paths:
       - junit-e2e.xml
 
-# Job: Linting avec Ruff
+# Job: Linting avec Ruff. Blocking (no more `|| true`) - same commands as
+# `make lint`/`make format-check`, so a green pipeline means the exact
+# same guarantee a contributor already checked locally.
 run_linting:
   extends: .python-template
   stage: lint
   script:
     - echo "Running ruff..."
-    - ruff check app/ tests/ --output-file=ruff-report.txt || true
+    - ruff check . --config=.ruff.toml --output-file=ruff-report.txt
     - echo "Running mypy..."
-    - mypy app/ --ignore-missing-imports --html-report mypy-report || true
+    - mypy app/ tests/ --ignore-missing-imports --allow-untyped-decorators --html-report mypy-report
     - echo "Running black..."
-    - black --check app/ tests/ || true
+    - black --check . --exclude=".git|__pycache__|instance|venv"
   artifacts:
     when: always
     paths:
@@ -95,14 +97,33 @@ run_linting:
 # - $CI_PIPELINE_SOURCE == "schedule" est alors dispo pour cibler ce job
 # seul si besoin. Pas configurable depuis ce fichier YAML (propriété du
 # projet GitLab, pas du repo).
+#
+# bandit is blocking (no `|| true`): it needs no external service/auth,
+# so a real finding must fail the pipeline like any other check. safety
+# is a deliberate exception: `safety check` (the old command this job
+# used to run) has been fully unsupported since May 2024, and its
+# replacement, `safety scan`, requires either an interactive `safety
+# auth login` or a $SAFETY_API_KEY (https://platform.safetycli.com) -
+# neither is available in a fresh clone of this repo's CI. Confirmed by
+# direct testing: `safety scan` with no key blocks on stdin waiting for
+# a login prompt, which would hang every pipeline indefinitely rather
+# than just report findings. The job below only runs it when
+# $SAFETY_API_KEY is configured (CI/CD > Variables) and fails the
+# pipeline on findings in that case; otherwise it skips with an explicit
+# message instead of silently swallowing a broken command.
 run_security:
   extends: .python-template
   stage: security
   script:
     - echo "Running bandit..."
-    - bandit -r app/ -f json -o bandit-report.json || true
-    - echo "Running safety..."
-    - safety check --json -o safety-report.json || true
+    - bandit -r app/ -f json -o bandit-report.json
+    - |
+      if [ -n "$SAFETY_API_KEY" ]; then
+        echo "Running safety..."
+        safety scan --output json --save-as json safety-report.json
+      else
+        echo "SAFETY_API_KEY non configurée (CI/CD > Variables) - scan safety ignoré. Voir le commentaire de ce job."
+      fi
   artifacts:
     when: always
     paths:

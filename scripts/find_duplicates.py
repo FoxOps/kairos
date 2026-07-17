@@ -70,8 +70,13 @@ def find_duplicate_functions(directory, min_lines=5):
                                     func_code = "\n".join(func_lines)
                                     # Normaliser le code (enlever les commentaires, standardiser les espaces)
                                     normalized = normalize_code(func_code)
+                                    # Not a security use (code-similarity
+                                    # fingerprint, not a cryptographic
+                                    # hash) - usedforsecurity=False tells
+                                    # both bandit and FIPS-mode Python
+                                    # this is intentional.
                                     func_hash = hashlib.md5(
-                                        normalized.encode()
+                                        normalized.encode(), usedforsecurity=False
                                     ).hexdigest()
 
                                     duplicates[func_hash].append(

@@ -48,7 +48,7 @@ class UserService:
 
     @staticmethod
     def create(
-        name: str, email: str, group_id: int, password: str = ""
+        name: str, email: str, group_id: int, password: str = ""  # nosec B107
     ) -> tuple[User | None, str | None]:
         if UserRepository.email_taken(email):
             return None, _("Un utilisateur avec cet email existe déjà.")
@@ -68,7 +68,7 @@ class UserService:
         email: str,
         group_id: int,
         is_admin: bool,
-        password: str = "",
+        password: str = "",  # nosec B107
     ) -> tuple[User | None, str | None]:
         user = UserRepository.get_by_id(user_id)
         if not user:

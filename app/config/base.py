@@ -172,8 +172,14 @@ class Config:
         "SQLALCHEMY_TRACK_MODIFICATIONS", False
     )
 
-    # Flask Server Configuration
-    HOST: str = os.environ.get("FLASK_HOST") or "0.0.0.0"
+    # Flask Server Configuration. Binding to all interfaces is
+    # intentional, not an oversight: the app always runs inside a
+    # container (Docker) or behind a reverse proxy in production - it
+    # must accept connections forwarded from outside its own network
+    # namespace, which a 127.0.0.1 default would silently break.
+    # Network-level exposure is controlled by the deployment (Docker
+    # port mapping, reverse proxy, firewall), not by this app.
+    HOST: str = os.environ.get("FLASK_HOST") or "0.0.0.0"  # nosec B104
     PORT: int = int(os.environ.get("FLASK_PORT") or 5000)
 
     # Public URL of the app behind a reverse proxy (e.g. https://schedule.example.com/)
@@ -240,6 +246,17 @@ class Config:
     # default already, spelled out explicitly for discoverability.
     BABEL_DEFAULT_LOCALE: str = "fr"
     BABEL_TRANSLATION_DIRECTORIES: str = "translations"
+
+    # Prometheus metrics (app/utils/prometheus_metrics.py, /metrics
+    # endpoint). Bug found during the v1.0 bug hunt: this key was never
+    # actually wired here, so app/__init__.py's
+    # `app.config.get("PROMETHEUS_ENABLED", False)` check could never be
+    # True from an env var in a real deployment - the feature was
+    # structurally unreachable regardless of what an admin set. Masked in
+    # tests because tests/integration/test_prometheus_metrics.py forces
+    # app.config["PROMETHEUS_ENABLED"] = True directly and calls
+    # init_prometheus() manually, bypassing this wiring entirely.
+    PROMETHEUS_ENABLED: bool = get_bool_from_env("PROMETHEUS_ENABLED", False)
 
     # Logging Configuration
     LOG_LEVEL: str = os.environ.get("LOG_LEVEL") or "INFO"

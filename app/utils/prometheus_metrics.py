@@ -8,7 +8,7 @@ This module exposes metrics for monitoring the application via the
 import logging
 import time
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, current_app, request
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
     Counter,
@@ -154,41 +154,20 @@ def metrics():
     return metrics_data, 200, {"Content-Type": CONTENT_TYPE_LATEST}
 
 
-@metrics_bp.route("/health")
-def health():
-    """
-    Health endpoint for Kubernetes probes.
-
-    Returns a 200 status if the application is healthy.
-    """
-    return (
-        jsonify(
-            {
-                "status": "healthy",
-                "version": current_app.config.get("VERSION", "unknown"),
-                "environment": current_app.config.get("FLASK_ENV", "unknown"),
-            }
-        ),
-        200,
-    )
-
-
-@metrics_bp.route("/ready")
-def ready():
-    """
-    Readiness endpoint for Kubernetes probes.
-
-    Returns a 200 status if the application is ready to receive traffic.
-    """
-    # Check the database connection
-    try:
-        from app import db
-
-        db.session.execute("SELECT 1")
-        db.session.commit()
-        return jsonify({"status": "ready"}), 200
-    except Exception as e:
-        return jsonify({"status": "not ready", "error": str(e)}), 503
+# /health and /ready are NOT redefined here - app/utils/health.py already
+# registers both directly on the app (register_health_endpoints(), called
+# unconditionally in create_app(), unlike this blueprint which only
+# registers when PROMETHEUS_ENABLED is set). This module used to define
+# its own /health and /ready on metrics_bp, silently shadowed by
+# health.py's versions (Flask/Werkzeug allows two different endpoints to
+# map to the same URL rule; whichever registers first wins the actual
+# routing, and register_health_endpoints() always runs before
+# init_prometheus() below) - dead code, removed rather than left as a
+# landmine. The removed /ready duplicate additionally called
+# db.session.execute("SELECT 1") with a bare string, which raises
+# ArgumentError under SQLAlchemy 2.0 (needs sqlalchemy.text(...), see
+# health.py::check_database() for the correct version) - never actually
+# triggered in production only because it was unreachable.
 
 
 # ============================================

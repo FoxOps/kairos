@@ -39,7 +39,13 @@
             <tbody>
                 {% for swap in sent %}
                 <tr>
-                    <td>{{ swap.shift.date|format_date }} - {{ swap.shift.shift_type.label }}</td>
+                    <td>
+                        {% if swap.shift %}
+                        {{ swap.shift.date|format_date }} - {{ swap.shift.shift_type.label }}
+                        {% else %}
+                        <span class="text-base-content/60">{{ _("Shift supprimé") }}</span>
+                        {% endif %}
+                    </td>
                     <td>{{ swap.target_user.name }}</td>
                     <td>
                         {% if swap.target_shift %}
@@ -86,7 +92,13 @@
                 {% for swap in received %}
                 <tr>
                     <td>{{ swap.requester.name }}</td>
-                    <td>{{ swap.shift.date|format_date }} - {{ swap.shift.shift_type.label }}</td>
+                    <td>
+                        {% if swap.shift %}
+                        {{ swap.shift.date|format_date }} - {{ swap.shift.shift_type.label }}
+                        {% else %}
+                        <span class="text-base-content/60">{{ _("Shift supprimé") }}</span>
+                        {% endif %}
+                    </td>
                     <td>
                         {% if swap.target_shift %}
                         {{ swap.target_shift.date|format_date }} - {{ swap.target_shift.shift_type.label }}
