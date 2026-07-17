@@ -174,3 +174,165 @@ class TestConfigEnvironmentVariables:
 
             for key in config_keys:
                 assert key in test_app.config, f"Missing config key: {key}"
+
+    def test_sqlalchemy_engine_options_is_uppercase_and_reads_env(self, monkeypatch):
+        """Regression guard: this attribute used to be named
+        custom_engine_options (lowercase), silently never copied into
+        app.config by Flask's app.config.from_object() (which only copies
+        uppercase attributes) - see app/config/base.py and config.py."""
+        import sys
+
+        monkeypatch.setenv(
+            "SQLALCHEMY_ENGINE_OPTIONS", '{"pool_pre_ping": true, "pool_recycle": 3600}'
+        )
+        if "config" in sys.modules:
+            del sys.modules["config"]
+
+        from config import Config
+
+        config = Config()
+        assert not hasattr(config, "custom_engine_options")
+        assert config.SQLALCHEMY_ENGINE_OPTIONS == {
+            "pool_pre_ping": True,
+            "pool_recycle": 3600,
+        }
+
+
+class TestGetDatabaseType:
+    """Tests for get_database_type() - database dialect detection from the
+    DATABASE_URL prefix. Not called anywhere in app/ (SQLAlchemy resolves
+    the dialect/driver itself from the URI prefix at runtime), but its
+    detection logic is still exercised here since it's public, documented
+    behavior (see CLAUDE.md's "Configuration: two parallel systems")."""
+
+    def test_sqlite(self):
+        from config import get_database_type
+
+        assert get_database_type("sqlite:///app.db") == "sqlite"
+        assert get_database_type("sqlite:///:memory:") == "sqlite"
+
+    def test_postgresql(self):
+        from config import get_database_type
+
+        assert get_database_type("postgresql://u:p@host:5432/db") == "postgresql"
+        assert get_database_type("postgres://u:p@host:5432/db") == "postgresql"
+
+    def test_mysql(self):
+        from config import get_database_type
+
+        assert get_database_type("mysql://u:p@host:3306/db") == "mysql"
+
+    def test_mariadb(self):
+        from config import get_database_type
+
+        assert get_database_type("mariadb://u:p@host:3306/db") == "mysql"
+
+    def test_unknown_scheme_falls_back_to_sqlite(self):
+        """Unrecognized scheme silently defaults to sqlite - documented
+        existing fallback behavior, not something this change introduces."""
+        from config import get_database_type
+
+        assert get_database_type("oracle://u:p@host/db") == "sqlite"
+
+    def test_default_reads_database_url_env(self, monkeypatch):
+        from config import get_database_type
+
+        monkeypatch.setenv("DATABASE_URL", "mysql://u:p@host:3306/db")
+        assert get_database_type() == "mysql"
+
+
+class TestNormalizeDatabaseUri:
+    """Tests for normalize_database_uri() (app/config/base.py, mirrored in
+    config.py) - the fix for a real bug found while building MySQL
+    support: SQLAlchemy's bare mysql://, mariadb://, postgres:// and
+    postgresql:// prefixes (the format documented everywhere in this
+    repo's docs/.env.example) default to the "classic" DBAPI drivers
+    (MySQLdb/mysqlclient, psycopg2), NOT the pure-Python/modern ones this
+    app actually ships (PyMySQL, psycopg 3) - confirmed by
+    create_engine() raising ModuleNotFoundError on the bare prefixes
+    before this fix existed."""
+
+    def test_rewrites_bare_mysql(self):
+        from app.config.base import normalize_database_uri
+
+        assert normalize_database_uri("mysql://u:p@host:3306/db") == (
+            "mysql+pymysql://u:p@host:3306/db"
+        )
+
+    def test_rewrites_bare_mariadb(self):
+        from app.config.base import normalize_database_uri
+
+        assert normalize_database_uri("mariadb://u:p@host:3306/db") == (
+            "mariadb+pymysql://u:p@host:3306/db"
+        )
+
+    def test_rewrites_bare_postgres_and_postgresql(self):
+        from app.config.base import normalize_database_uri
+
+        assert normalize_database_uri("postgres://u:p@host:5432/db") == (
+            "postgresql+psycopg://u:p@host:5432/db"
+        )
+        assert normalize_database_uri("postgresql://u:p@host:5432/db") == (
+            "postgresql+psycopg://u:p@host:5432/db"
+        )
+
+    def test_leaves_sqlite_untouched(self):
+        from app.config.base import normalize_database_uri
+
+        assert normalize_database_uri("sqlite:///app.db") == "sqlite:///app.db"
+
+    def test_leaves_explicit_driver_untouched(self):
+        """An admin who already picked their own driver (e.g. installed
+        mysqlclient themselves) must never be silently overridden."""
+        from app.config.base import normalize_database_uri
+
+        uri = "postgresql+psycopg2://u:p@host:5432/db"
+        assert normalize_database_uri(uri) == uri
+
+    def test_config_py_mirror_matches(self):
+        """config.py (legacy module) must stay in sync with
+        app/config/base.py - see CLAUDE.md "Configuration: two parallel
+        systems"."""
+        from app.config.base import normalize_database_uri as app_version
+        from config import normalize_database_uri as legacy_version
+
+        for uri in (
+            "mysql://u:p@host:3306/db",
+            "mariadb://u:p@host:3306/db",
+            "postgres://u:p@host:5432/db",
+            "sqlite:///app.db",
+        ):
+            assert app_version(uri) == legacy_version(uri)
+
+
+class TestMySQLDriverAvailable:
+    """PyMySQL must be resolvable by SQLAlchemy without a real MySQL
+    server - proves a normalized DATABASE_URL actually works once
+    PyMySQL is installed, not just in theory."""
+
+    def test_pymysql_importable(self):
+        """PyMySQL is installed and importable (pure-Python, no system
+        library required)."""
+        import pymysql  # noqa: F401
+
+    def test_sqlalchemy_resolves_mysql_pymysql_dialect(self):
+        """Building (not connecting) an engine with mysql+pymysql:// must
+        not raise ImportError/ModuleNotFoundError."""
+        from sqlalchemy import create_engine
+
+        engine = create_engine("mysql+pymysql://user:pass@localhost:3306/testdb")
+        assert engine.dialect.name == "mysql"
+        assert engine.dialect.driver == "pymysql"
+
+    def test_normalized_bare_mysql_scheme_resolves_to_pymysql(self):
+        """The exact round-trip a real deployment goes through:
+        DATABASE_URL=mysql://... (bare, the documented format) ->
+        normalize_database_uri() -> a SQLAlchemy engine using pymysql,
+        with zero ModuleNotFoundError."""
+        from sqlalchemy import create_engine
+
+        from app.config.base import normalize_database_uri
+
+        uri = normalize_database_uri("mysql://user:pass@localhost:3306/testdb")
+        engine = create_engine(uri)
+        assert engine.dialect.driver == "pymysql"

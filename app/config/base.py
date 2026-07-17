@@ -135,6 +135,42 @@ def get_database_type(database_uri: str | None = None) -> str:
         return "sqlite"
 
 
+# Bare mysql://, mariadb://, postgres:// and postgresql:// (no explicit
+# +driver suffix - the format documented throughout this app's docs and
+# .env.example) all default, in SQLAlchemy, to the "classic" DBAPI driver
+# for that dialect: MySQLdb (mysqlclient) for mysql/mariadb, psycopg2 for
+# postgres/postgresql. Neither is installed in this project on purpose -
+# requirements.txt ships PyMySQL and psycopg[binary] (psycopg 3) instead,
+# specifically because they don't require compiled system libraries (see
+# CLAUDE.md "Configuration: two parallel systems"). Left unrewritten, a
+# bare DATABASE_URL=mysql://... or postgresql://... fails at engine
+# creation with ModuleNotFoundError even though a perfectly good driver
+# IS installed - confirmed by direct testing (create_engine() against
+# each bare prefix), not assumed from SQLAlchemy's docs alone.
+_DATABASE_URI_DRIVER_REWRITES = {
+    "mysql": "mysql+pymysql://",
+    "mariadb": "mariadb+pymysql://",
+    "postgres": "postgresql+psycopg://",
+    "postgresql": "postgresql+psycopg://",
+}
+
+
+def normalize_database_uri(database_uri: str) -> str:
+    """
+    Rewrites a bare mysql://, mariadb://, postgres:// or postgresql://
+    prefix to the pure-Python/modern driver this app actually ships (see
+    _DATABASE_URI_DRIVER_REWRITES above). An admin who already specifies
+    an explicit +driver suffix (e.g. postgresql+psycopg2://, for a
+    deployment that installed its own driver) is always left untouched -
+    only a bare scheme with no "+" is rewritten.
+    """
+    scheme = database_uri.split("://", 1)[0] if "://" in database_uri else ""
+    rewritten_prefix = _DATABASE_URI_DRIVER_REWRITES.get(scheme)
+    if rewritten_prefix is None:
+        return database_uri
+    return rewritten_prefix + database_uri.split("://", 1)[1]
+
+
 # ---------------------------------------------------------------------------
 # Base Configuration Class
 # ---------------------------------------------------------------------------
@@ -154,7 +190,9 @@ class Config:
     SECRET_KEY: str = os.environ.get("SECRET_KEY") or secrets.token_urlsafe(32)
 
     # Database Configuration
-    SQLALCHEMY_DATABASE_URI: str = os.environ.get("DATABASE_URL") or "sqlite:///app.db"
+    SQLALCHEMY_DATABASE_URI: str = normalize_database_uri(
+        os.environ.get("DATABASE_URL") or "sqlite:///app.db"
+    )
     SQLALCHEMY_TRACK_MODIFICATIONS: bool = get_bool_from_env(
         "SQLALCHEMY_TRACK_MODIFICATIONS", False
     )

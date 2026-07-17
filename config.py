@@ -97,6 +97,32 @@ def get_database_type(database_uri=None):
         return "sqlite"
 
 
+# Bare mysql://, mariadb://, postgres:// and postgresql:// (no explicit
+# +driver suffix) all default, in SQLAlchemy, to the "classic" DBAPI
+# driver for that dialect (MySQLdb/mysqlclient, psycopg2) - neither
+# installed here on purpose, this project ships PyMySQL and
+# psycopg[binary] (psycopg 3) instead. Kept in sync with
+# app/config/base.py::normalize_database_uri() - see that module's
+# docstring for the full rationale.
+_DATABASE_URI_DRIVER_REWRITES = {
+    "mysql": "mysql+pymysql://",
+    "mariadb": "mariadb+pymysql://",
+    "postgres": "postgresql+psycopg://",
+    "postgresql": "postgresql+psycopg://",
+}
+
+
+def normalize_database_uri(database_uri):
+    """Rewrites a bare mysql://, mariadb://, postgres:// or postgresql://
+    prefix to the driver this app actually ships - see
+    _DATABASE_URI_DRIVER_REWRITES above."""
+    scheme = database_uri.split("://", 1)[0] if "://" in database_uri else ""
+    rewritten_prefix = _DATABASE_URI_DRIVER_REWRITES.get(scheme)
+    if rewritten_prefix is None:
+        return database_uri
+    return rewritten_prefix + database_uri.split("://", 1)[1]
+
+
 # Base configuration for Flask
 class Config:
     # Secret key for Flask (REQUIRED in production)
@@ -104,7 +130,9 @@ class Config:
 
     # Database URI - can be configured via DATABASE_URL
     # SQLite remains the default database
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL") or "sqlite:///app.db"
+    SQLALCHEMY_DATABASE_URI = normalize_database_uri(
+        os.environ.get("DATABASE_URL") or "sqlite:///app.db"
+    )
     SQLALCHEMY_TRACK_MODIFICATIONS = get_bool_from_env(
         "SQLALCHEMY_TRACK_MODIFICATIONS", False
     )
