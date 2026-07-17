@@ -52,6 +52,28 @@ class TestGetAll:
             assert [t.name for t in targets] == ["Alpha", "Zeta"]
 
 
+class TestGetByIds:
+    def test_returns_matching_targets_in_one_bulk_query(self, test_app):
+        with test_app.app_context():
+            first = NotificationTargetRepository.create(
+                "Slack", "json://localhost", True, []
+            )
+            second = NotificationTargetRepository.create(
+                "Discord", "json://localhost", True, []
+            )
+            NotificationTargetRepository.create(
+                "Not requested", "json://localhost", True, []
+            )
+            db.session.commit()
+
+            targets = NotificationTargetRepository.get_by_ids([first.id, second.id])
+            assert {t.id for t in targets} == {first.id, second.id}
+
+    def test_empty_list_returns_empty_list_without_querying(self, test_app):
+        with test_app.app_context():
+            assert NotificationTargetRepository.get_by_ids([]) == []
+
+
 class TestDelete:
     def test_deletes_target(self, test_app):
         with test_app.app_context():

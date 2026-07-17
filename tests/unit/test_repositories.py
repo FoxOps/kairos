@@ -192,6 +192,20 @@ class TestShiftRepository:
         assert deleted == 1
         assert ShiftRepository.get_by_id(test_shift.id) is None
 
+    def test_delete_in_date_range_uses_a_single_bulk_delete(
+        self, test_app, test_user, test_shift_type, test_shift, monkeypatch
+    ):
+        """Regression guard: this used to fetch every matching row into
+        Python objects and call db.session.delete() once per row - now a
+        single bulk DELETE ... WHERE (see ShiftRepository.delete_in_date_range())."""
+        calls = []
+        monkeypatch.setattr(db.session, "delete", lambda obj: calls.append(obj))
+
+        deleted = ShiftRepository.delete_in_date_range(test_shift.date, test_shift.date)
+
+        assert deleted == 1
+        assert calls == []
+
     def test_delete_all(self, test_app, test_shift):
         ShiftRepository.delete_all()
         db.session.commit()
@@ -307,6 +321,23 @@ class TestOnCallRepository:
         db.session.commit()
         assert deleted == 1
         assert OnCallRepository.get_by_id(test_oncall.id) is None
+
+    def test_delete_overlapping_range_uses_a_single_bulk_delete(
+        self, test_app, test_oncall, monkeypatch
+    ):
+        """Regression guard: this used to fetch every overlapping row into
+        Python objects and call db.session.delete() once per row - now a
+        single bulk DELETE ... WHERE (see OnCallRepository.delete_overlapping_range()).
+        """
+        calls = []
+        monkeypatch.setattr(db.session, "delete", lambda obj: calls.append(obj))
+
+        deleted = OnCallRepository.delete_overlapping_range(
+            test_oncall.start_time.date(), test_oncall.end_time.date()
+        )
+
+        assert deleted == 1
+        assert calls == []
 
     def test_delete_all(self, test_app, test_oncall):
         OnCallRepository.delete_all()

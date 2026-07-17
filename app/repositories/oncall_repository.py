@@ -51,7 +51,8 @@ class OnCallRepository:
     @staticmethod
     def list_for_user(user_id: int) -> list[OnCall]:
         return (
-            OnCall.query.filter(OnCall.user_id == user_id)
+            OnCall.query.options(joinedload(OnCall.user))
+            .filter(OnCall.user_id == user_id)
             .order_by(OnCall.start_time)
             .all()
         )
@@ -95,22 +96,33 @@ class OnCallRepository:
         )
 
     @staticmethod
-    def list_overlapping_range(start_date, end_date) -> list[OnCall]:
-        """On-calls overlapping [start_date, end_date] (dates, not datetimes)."""
+    def _overlapping_range_filter(start_date, end_date):
+        """Shared WHERE clause for [start_date, end_date] (dates, not
+        datetimes) - list_overlapping_range()/delete_overlapping_range()
+        below both filter on it, one to fetch rows, one to bulk-delete."""
         from datetime import datetime, timedelta
 
-        return OnCall.query.filter(
+        return (
             OnCall.start_time
             < datetime.combine(end_date + timedelta(days=1), datetime.min.time()),
             OnCall.end_time > datetime.combine(start_date, datetime.min.time()),
+        )
+
+    @staticmethod
+    def list_overlapping_range(start_date, end_date) -> list[OnCall]:
+        """On-calls overlapping [start_date, end_date] (dates, not datetimes)."""
+        return OnCall.query.filter(
+            *OnCallRepository._overlapping_range_filter(start_date, end_date)
         ).all()
 
     @staticmethod
     def delete_overlapping_range(start_date, end_date) -> int:
-        oncalls = OnCallRepository.list_overlapping_range(start_date, end_date)
-        for oncall in oncalls:
-            db.session.delete(oncall)
-        return len(oncalls)
+        # synchronize_session="evaluate": see the identical comment on
+        # ShiftRepository.delete_in_date_range() - callers here can hold
+        # an already-loaded OnCall instance across the delete.
+        return OnCall.query.filter(
+            *OnCallRepository._overlapping_range_filter(start_date, end_date)
+        ).delete(synchronize_session="evaluate")
 
     @staticmethod
     def create(user_id: int, start_time: datetime, end_time: datetime) -> OnCall:
