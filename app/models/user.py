@@ -84,7 +84,14 @@ class User(BaseModel, UserMixin):
 
     name = db.Column(db.String(80), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128))
+    # 255, not 128: werkzeug.security.generate_password_hash()'s default
+    # method (scrypt) produces a ~162-character string - SQLite has no
+    # VARCHAR length enforcement (silently accepted regardless of the
+    # declared length), which is why this was never caught until MySQL/
+    # PostgreSQL, both of which reject an over-length value outright
+    # (confirmed: DataError "Data too long for column" on MariaDB, even
+    # for the very first default-admin creation on a fresh install).
+    password_hash = db.Column(db.String(255))
     is_admin = db.Column(db.Boolean, default=False)
     group_id = db.Column(
         db.Integer, db.ForeignKey("groups.id"), nullable=False, default=1, index=True

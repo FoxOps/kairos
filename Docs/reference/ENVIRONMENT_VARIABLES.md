@@ -65,12 +65,31 @@ DATABASE_URL=sqlite:///chemin/vers/app.db
 # PostgreSQL (recommandé pour la production)
 DATABASE_URL=postgresql://utilisateur:motdepasse@hote:port/base_de_donnees
 
-# MySQL
+# MySQL / MariaDB
 DATABASE_URL=mysql://utilisateur:motdepasse@hote:port/base_de_donnees
+DATABASE_URL=mariadb://utilisateur:motdepasse@hote:port/base_de_donnees
 
 # SQLite en mémoire (pour les tests)
 DATABASE_URL=sqlite:///:memory:
 ```
+
+**Drivers requis (déjà inclus par défaut dans `requirements.txt`, rien à installer) :**
+- SQLite : intégré à Python (module `sqlite3`, bibliothèque standard)
+- PostgreSQL : `psycopg[binary]` (psycopg 3)
+- MySQL / MariaDB : `PyMySQL` — driver 100% pur Python, aucune bibliothèque
+  système requise (`libmariadb-dev`/`libmysqlclient-dev`), ni à
+  l'installation ni à l'exécution, ni sur l'hôte ni dans l'image Docker
+
+Les formats ci-dessus (sans suffixe `+driver` explicite) sont automatiquement
+routés vers le bon driver — l'app réécrit `mysql://`/`mariadb://` vers
+`mysql+pymysql://`/`mariadb+pymysql://` et `postgres(ql)://` vers
+`postgresql+psycopg://` en interne (voir `app/config/base.py::normalize_database_uri()`),
+car les préfixes nus de SQLAlchemy pointent par défaut vers les drivers
+classiques (`mysqlclient`, `psycopg2`) qui ne sont volontairement pas
+installés ici. `SQLALCHEMY_ENGINE_OPTIONS` (ci-dessus) est particulièrement
+utile avec un serveur MySQL/PostgreSQL externe : `pool_pre_ping`/`pool_recycle`
+évitent une erreur de connexion périmée quand le serveur ferme les connexions
+inactives (`wait_timeout` MySQL, souvent réduit sur les offres managées).
 
 ---
 

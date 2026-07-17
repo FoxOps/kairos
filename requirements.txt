@@ -59,6 +59,12 @@ flask-compress==1.24
 # Pour PostgreSQL (optionnel)
 psycopg[binary]>=3.3.4
 
+# Pour MySQL/MariaDB (optionnel) - driver 100% pur Python, aucune lib
+# systeme requise (contrairement a mysqlclient qui necessite les headers
+# MySQL/MariaDB au build) - voir CLAUDE.md "Configuration: two parallel
+# systems" pour le detail du choix
+PyMySQL==1.2.0
+
 # Authentification OIDC/SSO (optionnel - pour Keycloak, Okta, etc.)
 # Authlib est la bibliothèque moderne pour OIDC, remplaçant flask-oidc
 Authlib==1.7.2

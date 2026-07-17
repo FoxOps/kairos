@@ -10,7 +10,7 @@ This configuration is used in production and includes:
 import os
 from datetime import timedelta
 
-from app.config.base import Config, get_bool_from_env
+from app.config.base import Config, get_bool_from_env, normalize_database_uri
 
 
 class ProductionConfig(Config):
@@ -25,8 +25,10 @@ class ProductionConfig(Config):
     TESTING: bool = False
     DEVELOPMENT: bool = False
 
-    # Production database (should be set via DATABASE_URL)
-    SQLALCHEMY_DATABASE_URI: str = (
+    # Production database (should be set via DATABASE_URL) - normalize_database_uri()
+    # rewrites a bare postgresql://mysql://mariadb:// to the driver this app
+    # actually ships (psycopg 3/PyMySQL), see app/config/base.py.
+    SQLALCHEMY_DATABASE_URI: str = normalize_database_uri(
         os.environ.get("DATABASE_URL") or "postgresql:///leviia"
     )
     SQLALCHEMY_ECHO: bool = False

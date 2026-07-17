@@ -295,7 +295,44 @@ DATABASE_URL=postgresql://leviia_user:votre_mot_de_passe@localhost:5432/leviia
 
 ### 7.3 MySQL/MariaDB
 
-#### 7.3.1 Installation
+Leviia Schedule se connecte à tout serveur MySQL/MariaDB via SQLAlchemy +
+`PyMySQL` — un driver 100% pur Python, déjà inclus dans `requirements.txt`.
+Aucune bibliothèque système (`libmariadb-dev`/`libmysqlclient-dev`) n'est
+requise, ni à l'installation ni à l'exécution, ni sur l'hôte ni dans l'image
+Docker.
+
+#### 7.3.1 Cas recommandé : serveur MySQL/MariaDB externe
+
+Si vous disposez déjà d'un serveur MySQL/MariaDB géré ailleurs (hébergeur
+managé, cluster existant, autre VM), il suffit de créer la base et
+l'utilisateur applicatif **sur ce serveur** (pas sur la machine qui exécute
+Leviia Schedule), puis de pointer `DATABASE_URL` dessus :
+
+```bash
+# Sur le serveur MySQL/MariaDB externe (exécuté là-bas, pas ici)
+CREATE DATABASE leviia CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'leviia_user'@'%' IDENTIFIED BY 'votre_mot_de_passe';
+GRANT ALL PRIVILEGES ON leviia.* TO 'leviia_user'@'%';
+FLUSH PRIVILEGES;
+```
+
+```bash
+# Dans le .env de Leviia Schedule (cette machine - aucun serveur MySQL
+# local requis, ni sur l'hôte ni dans l'image Docker)
+DATABASE_URL=mariadb://leviia_user:votre_mot_de_passe@mysql-externe.example.com:3306/leviia
+
+# Recommandé pour un serveur externe : les connexions inactives peuvent
+# être coupées côté serveur (wait_timeout MySQL par défaut ~8h, souvent
+# plus court sur une offre managée) - pool_pre_ping revalide la connexion
+# avant chaque emprunt au pool, pool_recycle la referme proactivement.
+SQLALCHEMY_ENGINE_OPTIONS={"pool_pre_ping": true, "pool_recycle": 3600}
+```
+
+#### 7.3.2 Alternative : serveur MySQL/MariaDB local (dev/test)
+
+Pour héberger MariaDB directement sur la même machine (typiquement en
+développement) :
+
 ```bash
 # Sur Ubuntu/Debian
 sudo apt update
@@ -307,7 +344,6 @@ sudo systemctl enable mariadb
 sudo mysql_secure_installation
 ```
 
-#### 7.3.2 Configuration
 ```bash
 # Se connecter à MySQL
 sudo mysql -u root
@@ -320,11 +356,14 @@ FLUSH PRIVILEGES;
 quit
 ```
 
-#### 7.3.3 Configuration dans Leviia
 ```bash
 # Dans votre fichier .env
 DATABASE_URL=mysql://leviia_user:votre_mot_de_passe@localhost:3306/leviia
 ```
+
+Voir aussi
+[`DEPLOYMENT_ADVANCED.md`](DEPLOYMENT_ADVANCED.md#-ajouter-mysqlmariadb-devtest-local)
+pour un overlay docker-compose optionnel équivalent à ce cas local.
 
 ---
 

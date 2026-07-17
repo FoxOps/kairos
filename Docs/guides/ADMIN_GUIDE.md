@@ -661,7 +661,8 @@ DATABASE_URL=sqlite:///app.db
 DATABASE_URL=postgresql://user:password@localhost/leviia
 ```
 
-Nécessite `pip install psycopg2-binary`. Voir
+Le driver (`psycopg[binary]`, psycopg 3) est déjà inclus par défaut dans
+`requirements.txt` — aucune installation supplémentaire nécessaire. Voir
 [`deployment/DEPLOYMENT_ADVANCED.md`](../deployment/DEPLOYMENT_ADVANCED.md)
 pour une configuration complète.
 
@@ -675,10 +676,14 @@ DATABASE_URL=mariadb://user:password@localhost:3306/leviia
 # ou : DATABASE_URL=mysql://user:password@localhost:3306/leviia
 ```
 
-Déjà supporté (SQLAlchemy gère le choix du backend via l'URI) —
-nécessite d'installer le driver correspondant (non inclus dans
-`requirements.txt` par défaut, ex. `pip install pymysql` ou
-`mysqlclient`).
+Déjà supporté (SQLAlchemy gère le choix du backend via l'URI). Le driver
+`PyMySQL` — 100% pur Python, aucune bibliothèque système requise — est
+déjà inclus par défaut dans `requirements.txt`, aucune installation
+supplémentaire nécessaire. C'est ce qui permet de connecter l'app à un
+serveur MySQL/MariaDB **externe** sans rien installer côté MySQL, ni sur
+la machine hôte ni dans l'image Docker. Voir
+[`deployment/DEPLOYMENT_GUIDE.md`](../deployment/DEPLOYMENT_GUIDE.md#73-mysqlmariadb)
+section 7.3 pour un exemple complet.
 
 ### Configuration du Serveur
 

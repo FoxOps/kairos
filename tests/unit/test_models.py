@@ -112,6 +112,31 @@ class TestUserModel:
             assert user.check_password("mysecretpassword") is True
             assert user.check_password("wrongpassword") is False
 
+    def test_user_password_hash_column_fits_real_hash(self, test_app, test_group):
+        """Regression guard: password_hash used to be String(128), too
+        short for werkzeug.security.generate_password_hash()'s default
+        scrypt output (~162 chars) - silently accepted by SQLite (no
+        VARCHAR length enforcement) but rejected outright by MySQL/
+        PostgreSQL, breaking even the very first default-admin creation
+        on a fresh install. See migrations/versions/
+        6ff493358d9e_widen_user_password_hash_column.py."""
+        from werkzeug.security import generate_password_hash
+
+        with test_app.app_context():
+            real_hash = generate_password_hash("whatever-password")
+            assert len(real_hash) > 128  # the actual bug condition
+
+            user = User(
+                name="Hash Length User",
+                email="hashlength@test.com",
+                group_id=test_group.id,
+                password_hash=real_hash,
+            )
+            db.session.add(user)
+            db.session.commit()
+
+            assert User.query.filter_by(email="hashlength@test.com").first() is not None
+
     def test_user_default_values(self, test_app, test_group):
         """Test the user's default values."""
         with test_app.app_context():

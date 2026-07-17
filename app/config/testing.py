@@ -9,7 +9,7 @@ This configuration is used during testing and includes:
 
 import os
 
-from app.config.base import Config
+from app.config.base import Config, normalize_database_uri
 
 
 class TestingConfig(Config):
@@ -24,8 +24,11 @@ class TestingConfig(Config):
     DEBUG: bool = False
     DEVELOPMENT: bool = False
 
-    # In-memory database for tests
-    SQLALCHEMY_DATABASE_URI: str = (
+    # In-memory database for tests - normalize_database_uri() rewrites a
+    # bare postgresql://mysql://mariadb:// to the driver this app actually
+    # ships, in case TEST_DATABASE_URL points at a real external server
+    # rather than the sqlite in-memory default (see app/config/base.py).
+    SQLALCHEMY_DATABASE_URI: str = normalize_database_uri(
         os.environ.get("TEST_DATABASE_URL") or "sqlite:///:memory:"
     )
     SQLALCHEMY_ECHO: bool = False
