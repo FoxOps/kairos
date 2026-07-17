@@ -272,6 +272,70 @@ class TestNPlusOneQueries:
             "possible N+1 (broken preload?)"
         )
 
+    def test_list_for_user_repositories_preload_the_user_relationship(
+        self, test_app, test_group, test_user, test_shift_type
+    ):
+        """Regression guard: ShiftRepository/OnCallRepository/
+        LeaveRepository's list_for_user() used to load rows without
+        joinedload(<Model>.user) - harmless for the current callers
+        (they already hold the same User object, so SQLAlchemy's
+        identity map absorbs the lookup) but a latent N+1 trap for any
+        future caller iterating rows and reading .user. Now eager-loaded
+        like every other list_* method in these repositories."""
+        from app.models import Leave, OnCall
+        from app.repositories.leave_repository import LeaveRepository
+        from app.repositories.oncall_repository import OnCallRepository
+        from app.repositories.shift_repository import ShiftRepository
+
+        on_date = date.today() + timedelta(days=3)
+        while on_date.weekday() >= 5:
+            on_date += timedelta(days=1)
+        db.session.add(
+            Shift(
+                date=on_date,
+                start_time=datetime.combine(on_date, datetime.min.time()),
+                end_time=datetime.combine(on_date, datetime.min.time())
+                + timedelta(hours=8),
+                user_id=test_user.id,
+                shift_type_id=test_shift_type.id,
+            )
+        )
+        db.session.add(
+            OnCall(
+                user_id=test_user.id,
+                start_time=datetime.combine(on_date, datetime.min.time()),
+                end_time=datetime.combine(on_date, datetime.min.time())
+                + timedelta(days=7),
+            )
+        )
+        db.session.add(
+            Leave(user_id=test_user.id, start_date=on_date, end_date=on_date)
+        )
+        db.session.commit()
+        # Capture the id before expiring: test_user is itself a
+        # session-attached object, so expire_all() would otherwise make
+        # the `.id` access below issue its own refresh SELECT, polluting
+        # the query count this test is trying to measure.
+        user_id = test_user.id
+        db.session.expire_all()
+
+        with count_queries() as queries:
+            for shift in ShiftRepository.list_for_user(user_id):
+                _ = shift.user.name
+        assert len(queries) == 1, "ShiftRepository.list_for_user: expected joinedload"
+
+        db.session.expire_all()
+        with count_queries() as queries:
+            for oncall in OnCallRepository.list_for_user(user_id):
+                _ = oncall.user.name
+        assert len(queries) == 1, "OnCallRepository.list_for_user: expected joinedload"
+
+        db.session.expire_all()
+        with count_queries() as queries:
+            for leave in LeaveRepository.list_for_user(user_id):
+                _ = leave.user.name
+        assert len(queries) == 1, "LeaveRepository.list_for_user: expected joinedload"
+
     def test_generate_oncall_schedule_query_count_stable_across_period_length(
         self, test_app, test_group, test_user, second_user
     ):

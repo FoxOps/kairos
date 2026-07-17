@@ -49,7 +49,8 @@ class LeaveRepository:
     @staticmethod
     def list_for_user(user_id: int) -> list[Leave]:
         return (
-            Leave.query.filter(Leave.user_id == user_id)
+            Leave.query.options(joinedload(Leave.user))
+            .filter(Leave.user_id == user_id)
             .order_by(Leave.start_date)
             .all()
         )

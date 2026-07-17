@@ -65,15 +65,15 @@ class AppriseNotificationService:
         try:
             if not SettingsService.get_apprise_notifications_enabled():
                 return
-            for target_id in target_ids:
-                target = NotificationTargetRepository.get_by_id(target_id)
-                if not target or not target.enabled:
+            targets = NotificationTargetRepository.get_by_ids(target_ids)
+            for target in targets:
+                if not target.enabled:
                     continue
                 try:
                     AppriseNotificationService._send_to_target(target, title, body)
                 except Exception:
                     logger.exception(
-                        "Échec d'envoi Apprise vers la cible id=%s", target_id
+                        "Échec d'envoi Apprise vers la cible id=%s", target.id
                     )
         except Exception:
             logger.exception("Échec du service de notifications externes (cibles)")

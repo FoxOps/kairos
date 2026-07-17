@@ -80,7 +80,7 @@ class ShiftRepository:
     @staticmethod
     def list_for_user(user_id: int) -> list[Shift]:
         return (
-            Shift.query.options(joinedload(Shift.shift_type))
+            Shift.query.options(joinedload(Shift.user), joinedload(Shift.shift_type))
             .filter(Shift.user_id == user_id)
             .order_by(Shift.start_time)
             .all()
@@ -136,10 +136,17 @@ class ShiftRepository:
 
     @staticmethod
     def delete_in_date_range(start_date: date, end_date: date) -> int:
-        shifts = ShiftRepository.list_in_date_range(start_date, end_date)
-        for shift in shifts:
-            db.session.delete(shift)
-        return len(shifts)
+        # synchronize_session="evaluate" (not False, unlike the other
+        # delete_* methods below): those never had callers holding an
+        # already-loaded Shift instance across the delete, this one can
+        # (e.g. a caller that fetched a shift, then deletes its whole
+        # range) - "evaluate" keeps any such in-session objects properly
+        # expunged/detached instead of raising ObjectDeletedError on
+        # next access, at zero extra query cost (evaluated in Python
+        # against the identity map, no extra SELECT).
+        return Shift.query.filter(
+            Shift.date >= start_date, Shift.date <= end_date
+        ).delete(synchronize_session="evaluate")
 
     @staticmethod
     def create(

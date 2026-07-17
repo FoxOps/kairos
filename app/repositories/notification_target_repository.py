@@ -18,6 +18,16 @@ class NotificationTargetRepository:
         return db.session.get(NotificationTarget, target_id)
 
     @staticmethod
+    def get_by_ids(target_ids: list[int]) -> list[NotificationTarget]:
+        """Bulk lookup - one query for the whole list instead of one
+        per id (see AppriseNotificationService.notify_to_targets())."""
+        if not target_ids:
+            return []
+        return NotificationTarget.query.filter(
+            NotificationTarget.id.in_(target_ids)
+        ).all()
+
+    @staticmethod
     def get_all() -> list[NotificationTarget]:
         return NotificationTarget.query.order_by(NotificationTarget.name).all()
 

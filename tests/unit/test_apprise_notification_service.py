@@ -163,10 +163,37 @@ class TestNotifyToTargets:
             SettingsService.set_apprise_notifications_enabled(True)
             with patch(
                 "app.services.apprise_notification_service."
-                "NotificationTargetRepository.get_by_id",
+                "NotificationTargetRepository.get_by_ids",
                 side_effect=RuntimeError("db is down"),
             ):
                 AppriseNotificationService.notify_to_targets([1], "title", "body")
+
+    def test_resolves_all_target_ids_in_a_single_bulk_query(self, test_app):
+        """Regression guard: notify_to_targets() used to call
+        get_by_id() once per target id (one query each) - now a single
+        get_by_ids() bulk lookup, see
+        NotificationTargetRepository.get_by_ids()."""
+        with test_app.app_context():
+            SettingsService.set_apprise_notifications_enabled(True)
+            first = NotificationTargetRepository.create(
+                "First", "json://localhost", True, []
+            )
+            second = NotificationTargetRepository.create(
+                "Second", "json://localhost", True, []
+            )
+            db.session.commit()
+
+            with patch(
+                "app.services.apprise_notification_service."
+                "NotificationTargetRepository.get_by_ids",
+                wraps=NotificationTargetRepository.get_by_ids,
+            ) as mock_get_by_ids:
+                with patch("app.services.apprise_notification_service.apprise.Apprise"):
+                    AppriseNotificationService.notify_to_targets(
+                        [first.id, second.id], "title", "body"
+                    )
+
+            mock_get_by_ids.assert_called_once_with([first.id, second.id])
 
 
 class TestSendTest:
