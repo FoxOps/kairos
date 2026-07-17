@@ -349,13 +349,13 @@ class TestNPlusOneQueries:
         start_date = date(2024, 1, 5)  # Friday
 
         with count_queries() as short_queries:
-            oncalls_short, _ = OnCallAutomation.generate_oncall_schedule(
+            oncalls_short, _, _u1 = OnCallAutomation.generate_oncall_schedule(
                 start_date, start_date + timedelta(days=28), dry_run=True
             )
         assert len(oncalls_short) > 0
 
         with count_queries() as long_queries:
-            oncalls_long, _ = OnCallAutomation.generate_oncall_schedule(
+            oncalls_long, _, _u2 = OnCallAutomation.generate_oncall_schedule(
                 start_date, start_date + timedelta(days=180), dry_run=True
             )
         assert len(oncalls_long) > len(oncalls_short)

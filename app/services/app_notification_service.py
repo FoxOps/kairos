@@ -2,12 +2,16 @@
 AppNotificationService for Leviia Schedule.
 
 In-app notifications (bell icon in the sidebar) - creation is triggered
-synchronously by other services on domain events (currently only
-SwapService: new request -> admins, decision -> requester/target). This
-is a new pattern in this app: NotificationService (app/services/
-notification_service.py) only sends weekly reminder *emails* from cron
-scripts, never from a request/response cycle - don't confuse the two.
+synchronously by other services on domain events (SwapService: new
+request -> admins, decision -> requester/target; on-call automation:
+generation gap -> admins, see notify_admins_oncall_gap()). This is a
+pattern distinct from NotificationService (app/services/
+notification_service.py), which only sends weekly reminder *emails*
+from cron scripts, never from a request/response cycle - don't confuse
+the two.
 """
+
+from datetime import date
 
 from flask_babel import force_locale
 from flask_babel import gettext as _
@@ -167,5 +171,33 @@ class AppNotificationService:
             )
             AppNotificationService._notify(
                 swap_request.target_user_id, "swap_reverted", target_message, "/swaps"
+            )
+        db.session.commit()
+
+    @staticmethod
+    def notify_admins_oncall_gap(dates: list[date]) -> None:
+        """No user satisfies the legal 2-week on-call spacing constraint
+        (or is free of leave/overlap) for these Fridays - automatic
+        generation (OnCallAutomation.generate_oncall_schedule(), called
+        either interactively from /admin/automation or automatically by
+        AdvancedShiftAutomation.rebalance_after_leave()) deliberately
+        leaves them unassigned rather than assigning someone in
+        violation of the legal constraint. Manual admin assignment is
+        needed. Call only after the triggering generation's own commit
+        has actually succeeded (same rule as every other call site in
+        this app - see CLAUDE.md "In-app notifications")."""
+        if not dates:
+            return
+        dates_str = ", ".join(d.strftime("%d/%m/%Y") for d in dates)
+        for admin in UserRepository.list_admins():
+            with force_locale(admin.effective_language()):
+                message = _(
+                    "Astreinte(s) non générée(s) automatiquement (aucun utilisateur "
+                    "ne respecte le délai légal de 2 semaines) : %(dates)s. "
+                    "Assignation manuelle nécessaire.",
+                    dates=dates_str,
+                )
+            AppNotificationService._notify(
+                admin.id, "oncall_generation_gap", message, "/admin/automation"
             )
         db.session.commit()

@@ -235,8 +235,6 @@ class TestDetermineShiftForUser:
                 end_time=datetime.combine(test_date, datetime.min.time())
                 + timedelta(hours=7),
             )
-            # Friday -> rule 1 always resolves to SHIFT_09_17 (first/last
-            # on-call day), so check a Tuesday instead.
             tuesday = date(2023, 12, 12)
             fake_oncall.start_time = datetime.combine(tuesday, datetime.min.time())
             fake_oncall.end_time = fake_oncall.start_time + timedelta(hours=7)
@@ -601,7 +599,7 @@ class TestRebalanceAfterLeave:
             initial_count = Shift.query.count()
 
             # Run the rebalance in dry_run
-            shifts, messages = AdvancedShiftAutomation.rebalance_after_leave(
+            shifts, messages, _unfilled = AdvancedShiftAutomation.rebalance_after_leave(
                 leave, dry_run=True
             )
 
@@ -631,7 +629,7 @@ class TestRebalanceAfterLeave:
             db.session.commit()
 
             # Run the rebalance
-            shifts, messages = AdvancedShiftAutomation.rebalance_after_leave(
+            shifts, messages, _unfilled = AdvancedShiftAutomation.rebalance_after_leave(
                 leave, dry_run=True
             )
 
@@ -694,7 +692,7 @@ class TestRebalanceAfterLeave:
             db.session.add(leave)
             db.session.commit()
 
-            shifts, messages = AdvancedShiftAutomation.rebalance_after_leave(
+            shifts, messages, _unfilled = AdvancedShiftAutomation.rebalance_after_leave(
                 leave, dry_run=True
             )
 
@@ -767,7 +765,7 @@ class TestRebalanceAfterLeave:
             db.session.add(leave)
             db.session.commit()
 
-            regenerated_shifts, messages = (
+            regenerated_shifts, messages, _unfilled = (
                 AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
             )
 

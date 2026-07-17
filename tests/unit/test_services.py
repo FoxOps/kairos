@@ -8,6 +8,7 @@ through the Flask test client.
 """
 
 from datetime import date, datetime, timedelta
+from unittest.mock import patch
 
 from app import db
 from app.models import Leave
@@ -456,6 +457,32 @@ class TestLeaveService:
         entry = AuditLog.query.filter_by(action="leave.create").first()
         assert entry is not None
         assert entry.resource_id == leave.id
+
+    def test_add_leave_notifies_admins_on_oncall_gap(
+        self, test_app, admin_user, test_user, second_user
+    ):
+        """Regression test: when rebalance_after_leave() reports Friday
+        dates left unassigned (legal 2-week on-call spacing constraint,
+        see AdvancedShiftAutomation.rebalance_after_leave), LeaveService
+        must notify admins - but only after rebalance_after_leave's own
+        commit has actually succeeded (it always has, by the time this
+        return value is available)."""
+        from app.models import AppNotification
+
+        gap_date = date(2026, 8, 21)
+        with patch(
+            "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
+            return_value=([], ["some message"], [gap_date]),
+        ):
+            LeaveService.add_leave(
+                test_user, date.today(), date.today() + timedelta(days=2)
+            )
+
+        notifs = AppNotification.query.filter_by(
+            user_id=admin_user.id, notification_type="oncall_generation_gap"
+        ).all()
+        assert len(notifs) == 1
+        assert "21/08/2026" in notifs[0].message
 
     def test_add_leave_conflict_returns_none(self, test_app, test_user, test_leave):
         leave, regenerated = LeaveService.add_leave(

@@ -142,10 +142,8 @@ class AdvancedShiftAutomation:
         Determine the shift slot for a user on a given date.
 
         Rules:
-        1. If the user is on-call this week:
-           - If it's the first business day of their on-call (Monday) -> 9am-5pm (default)
-           - Otherwise (Tuesday-Thursday) -> 1pm-9pm (if eligible)
-           - Friday (last day of on-call) -> 9am-5pm (default)
+        1. If the user is on-call this week (Monday through Friday, no
+           exception for the first/last day) -> 1pm-9pm (if eligible)
         2. If the user was on-call the previous week (and not this week) -> 7am-3pm (rotation)
         3. Otherwise -> 9am-5pm
 
@@ -157,18 +155,15 @@ class AdvancedShiftAutomation:
         from datetime import timedelta
         from typing import cast
 
-        # Rule 1: check whether the user is on-call this week
+        # Rule 1: check whether the user is on-call this week - every
+        # weekday of their on-call gets 1pm-9pm, Monday and Friday
+        # included (an on-call runs Friday 9pm to the following Friday
+        # 7am, so both transition Fridays are still on-call days).
         if oncall_today is _UNSET:
             oncall = AdvancedShiftAutomation.get_oncall_for_date(date)
         else:
             oncall = cast("OnCall | None", oncall_today)
         if oncall and oncall.user_id == user.id:
-            # Check whether it's the first business day of the on-call
-            # (Monday) or the last day (Friday, on-call ends at 7am)
-            if date.weekday() == 0 or date.weekday() == 4:  # 0 = Monday, 4 = Friday
-                return AdvancedShiftAutomation.SHIFT_09_17
-
-            # For other days (Tuesday-Thursday), check eligibility
             from app import db
             from app.models import Group, User
 
@@ -199,8 +194,12 @@ class AdvancedShiftAutomation:
     @staticmethod
     def handle_two_users_case(available_users: list, date: "date") -> "dict":
         """
-        Handle the special case where only 2 people are available.
-        The person NOT on-call must be on 7am-3pm.
+        Handle the special case where only 2 people are available. The
+        on-call person is on 1pm-9pm, the other on 7am-3pm. No schedule-
+        group check needed here: available_users is already derived from
+        get_users_in_schedule_groups() (via get_available_users_for_date()),
+        so the on-call person, if one of these 2, is necessarily already
+        a schedule-group member.
         """
         if len(available_users) != 2:
             return {}
@@ -210,11 +209,7 @@ class AdvancedShiftAutomation:
 
         for user in available_users:
             if oncall_user and user.id == oncall_user.id:
-                schedule_users = AdvancedShiftAutomation.get_users_in_schedule_groups()
-                if any(u.id == user.id for u in schedule_users):
-                    assignments[user] = AdvancedShiftAutomation.SHIFT_13_21
-                else:
-                    assignments[user] = AdvancedShiftAutomation.SHIFT_09_17
+                assignments[user] = AdvancedShiftAutomation.SHIFT_13_21
             else:
                 assignments[user] = AdvancedShiftAutomation.SHIFT_07_15
 
@@ -433,7 +428,7 @@ class AdvancedShiftAutomation:
     @staticmethod
     def rebalance_after_leave(
         leave: "Leave", dry_run: bool = False
-    ) -> "tuple[list, list]":
+    ) -> "tuple[list, list, list]":
         """
         Rebalance shifts and on-calls after a leave is added/modified.
         Called automatically when a leave is added. Leaves take
@@ -446,6 +441,13 @@ class AdvancedShiftAutomation:
         days' changes) and a single commit() happens at the end. If any
         step fails, rollback() undoes everything - no partially
         regenerated schedule.
+
+        Returns (regenerated_shifts, messages, unfilled_oncall_dates) -
+        the 3rd item is passed through from
+        OnCallAutomation.generate_oncall_schedule() (Friday dates left
+        unassigned because no user respects the legal spacing
+        constraint) so the caller can notify admins once this method's
+        own commit has actually succeeded.
         """
         from datetime import datetime, timedelta
 
@@ -456,6 +458,7 @@ class AdvancedShiftAutomation:
         messages = []
         regenerated_shifts = []
         regenerated_oncalls = []
+        unfilled_oncall_dates: list = []
 
         try:
             # Find the on-call period to recompute
@@ -566,15 +569,18 @@ class AdvancedShiftAutomation:
                         f"supprimée(s) dans la période étendue avant régénération"
                     )
 
-                oncalls, oncall_messages = OnCallAutomation.generate_oncall_schedule(
-                    shift_period_start,
-                    shift_period_end,
-                    rotation_order_ids=AutomationConfig.get_rotation_order(),
-                    dry_run=False,
-                    commit=False,
+                oncalls, oncall_messages, oncall_unfilled_dates = (
+                    OnCallAutomation.generate_oncall_schedule(
+                        shift_period_start,
+                        shift_period_end,
+                        rotation_order_ids=AutomationConfig.get_rotation_order(),
+                        dry_run=False,
+                        commit=False,
+                    )
                 )
                 regenerated_oncalls.extend(oncalls)
                 messages.extend(oncall_messages)
+                unfilled_oncall_dates.extend(oncall_unfilled_dates)
                 messages.append(
                     f"🔄 {len(oncalls)} astreintes régénérées pour la période {shift_period_start.strftime('%d/%m/%Y')} - {shift_period_end.strftime('%d/%m/%Y')}"
                 )
@@ -589,4 +595,4 @@ class AdvancedShiftAutomation:
             db.session.rollback()
             raise
 
-        return regenerated_shifts, messages
+        return regenerated_shifts, messages, unfilled_oncall_dates

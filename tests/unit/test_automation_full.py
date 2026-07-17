@@ -39,7 +39,7 @@ class TestOnCallAutomationGenerateScheduleFull:
             # (each on-call lasts until the following Friday at 07h)
             end_date = start_date + timedelta(days=35)  # 5 weeks
 
-            oncalls, messages = OnCallAutomation.generate_oncall_schedule(
+            oncalls, messages, unfilled = OnCallAutomation.generate_oncall_schedule(
                 start_date,
                 end_date,
                 rotation_order_ids=[test_user.id, test_user2.id],
@@ -48,7 +48,14 @@ class TestOnCallAutomationGenerateScheduleFull:
 
             # end_date inclusive: 35 days after a Friday also falls on a
             # Friday (35 = 5*7) -> 6 Fridays (+0, +7, +14, +21, +28, +35).
-            assert len(oncalls) == 6
+            # With only 2 rotating users, the legal 2-week spacing
+            # constraint (2 full weeks of rest after a week-long on-call)
+            # makes every 3rd Friday mathematically impossible to fill -
+            # deliberately left unassigned rather than violating the
+            # constraint (see OnCallAutomation.generate_oncall_schedule),
+            # so only 4 of the 6 Fridays get an on-call here.
+            assert len(oncalls) == 4
+            assert len(unfilled) == 2
 
     def test_respects_start_date(self, test_app, test_user, test_group):
         """Test that generate_oncall_schedule respects the start date."""
@@ -59,7 +66,7 @@ class TestOnCallAutomationGenerateScheduleFull:
             start_date = date.today() + timedelta(days=10)
             end_date = start_date + timedelta(days=7)
 
-            oncalls, messages = OnCallAutomation.generate_oncall_schedule(
+            oncalls, messages, _unfilled = OnCallAutomation.generate_oncall_schedule(
                 start_date, end_date, rotation_order_ids=[test_user.id], dry_run=True
             )
 
@@ -90,7 +97,7 @@ class TestOnCallAutomationGenerateScheduleFull:
             start_date = today + timedelta(days=days_until_friday)
             end_date = start_date + timedelta(days=7)
 
-            oncalls, messages = OnCallAutomation.generate_oncall_schedule(
+            oncalls, messages, _unfilled = OnCallAutomation.generate_oncall_schedule(
                 start_date, end_date, rotation_order_ids=[test_user.id], dry_run=True
             )
 

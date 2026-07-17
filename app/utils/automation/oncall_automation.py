@@ -215,9 +215,11 @@ class OnCallAutomation:
         On-calls start on Friday at 9pm and end the following Friday at
         7am. Users are assigned according to the rotation order,
         respecting leaves, existing on-calls, and the minimum 2-week
-        legal spacing. If no user satisfies all these rules, a user with
-        no leave/on-call conflict is assigned anyway (legal constraint
-        ignored as a last resort).
+        legal spacing. If no user satisfies all three rules, that week is
+        deliberately left unassigned rather than assigning someone in
+        violation of the legal spacing constraint - the caller is
+        responsible for notifying admins (see unfilled_dates in the
+        return value) so the gap can be filled manually.
 
         Args:
             start_date: Start date
@@ -229,17 +231,21 @@ class OnCallAutomation:
                 lets the caller decide when to commit/rollback.
 
         Returns:
-            Tuple: (list of generated on-calls (OnCall objects), log messages)
+            Tuple: (list of generated on-calls (OnCall objects), log
+            messages, list of Friday dates left unassigned because no
+            user satisfied the legal spacing constraint - only notify
+            admins about these once the caller's own commit has actually
+            succeeded, never before).
         """
         from app import db
 
         eligible_users = OnCallAutomation.get_eligible_users()
         if not eligible_users:
-            return [], ["Aucun utilisateur éligible pour les astreintes."]
+            return [], ["Aucun utilisateur éligible pour les astreintes."], []
 
         rotation_order = OnCallAutomation.get_rotation_order(rotation_order_ids)
         if not rotation_order:
-            return [], ["Impossible de déterminer l'ordre de rotation."]
+            return [], ["Impossible de déterminer l'ordre de rotation."], []
 
         # One bulk query per source (OnCall, Leave) instead of several
         # queries per candidate tested each week - see AvailabilityIndex.
@@ -250,6 +256,7 @@ class OnCallAutomation:
 
         oncalls = []
         messages = []
+        unfilled_dates = []
         rotation_index = 0
 
         # end_date inclusive, like AdvancedShiftAutomation.generate_full_schedule
@@ -271,26 +278,16 @@ class OnCallAutomation:
             )
 
             if assigned_user is None:
-                # Last resort: ignore the 2-week legal constraint, but
-                # still respect leaves and existing on-calls.
-                for user in ordered_candidates:
-                    has_conflict = index.has_oncall_conflict(
-                        user.id, start_time, end_time
-                    )
-                    has_leave = index.has_leave_conflict(
-                        user.id, start_time.date(), end_time.date()
-                    )
-                    if not has_conflict and not has_leave:
-                        assigned_user = user
-                        messages.append(
-                            f"Utilisateur avec contrainte légale seulement : {user.name} pour le {current_friday.strftime('%d/%m/%Y')}."
-                        )
-                        break
-
-            if assigned_user is None:
+                # Deliberately left unassigned - no fallback that ignores
+                # the legal 2-week spacing constraint. The caller is
+                # responsible for notifying admins once its own commit
+                # has succeeded (see unfilled_dates in the return value).
                 messages.append(
-                    f"Aucun utilisateur disponible pour l'astreinte du {current_friday.strftime('%d/%m/%Y')}."
+                    f"⚠️ Aucune astreinte générée pour le {current_friday.strftime('%d/%m/%Y')} "
+                    "(aucun utilisateur ne respecte le délai légal de 2 semaines entre deux "
+                    "astreintes) - assignation manuelle nécessaire."
                 )
+                unfilled_dates.append(current_friday)
                 current_friday += timedelta(days=7)
                 continue
 
@@ -319,4 +316,4 @@ class OnCallAutomation:
                 db.session.flush()
 
         messages.append(f"Généré {len(oncalls)} astreintes.")
-        return oncalls, messages
+        return oncalls, messages, unfilled_dates

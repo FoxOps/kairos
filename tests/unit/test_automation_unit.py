@@ -143,7 +143,7 @@ class TestOnCallAutomationGenerateSchedule:
                 start_date, end_date, dry_run=True
             )
             assert isinstance(result, tuple)
-            assert len(result) == 2
+            assert len(result) == 3
 
     def test_dry_run_does_not_save(self, test_app, test_user, test_group):
         """Test that dry_run=True doesn't save to the database."""

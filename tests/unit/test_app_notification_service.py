@@ -1,7 +1,10 @@
 """
 Tests for AppNotificationService: in-app notifications created by
-SwapService on shift-swap events.
+SwapService on shift-swap events, and by the on-call automation on a
+generation gap (see TestNotifyAdminsOncallGap).
 """
+
+from datetime import date
 
 from app import db
 from app.models import AppNotification
@@ -207,3 +210,40 @@ class TestPurgeRead:
             count = AppNotificationService.purge_read(test_user)
             assert count == 0
             assert AppNotification.query.filter_by(user_id=second_user.id).count() == 1
+
+
+class TestNotifyAdminsOncallGap:
+    """Regression tests: OnCallAutomation.generate_oncall_schedule() no
+    longer assigns an on-call in violation of the legal 2-week spacing
+    constraint as a last resort - it leaves the week unassigned instead
+    and the caller notifies admins so they can fill the gap manually."""
+
+    def test_notifies_every_admin(self, test_app, admin_user, test_user):
+        with test_app.app_context():
+            gap_date = date(2026, 8, 21)
+            AppNotificationService.notify_admins_oncall_gap([gap_date])
+
+            notifs = AppNotification.query.filter_by(
+                user_id=admin_user.id, notification_type="oncall_generation_gap"
+            ).all()
+            assert len(notifs) == 1
+            assert notifs[0].link == "/admin/automation"
+            assert "21/08/2026" in notifs[0].message
+
+            # A non-admin is never notified.
+            assert (
+                AppNotification.query.filter_by(
+                    user_id=test_user.id, notification_type="oncall_generation_gap"
+                ).count()
+                == 0
+            )
+
+    def test_empty_dates_notifies_nobody(self, test_app, admin_user):
+        with test_app.app_context():
+            AppNotificationService.notify_admins_oncall_gap([])
+            assert (
+                AppNotification.query.filter_by(
+                    notification_type="oncall_generation_gap"
+                ).count()
+                == 0
+            )

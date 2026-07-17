@@ -14,6 +14,8 @@ from flask_babel import gettext as _
 from app import db
 from app.models import Leave, User
 from app.repositories.leave_repository import LeaveRepository
+from app.services.app_notification_service import AppNotificationService
+from app.services.apprise_notification_service import AppriseNotificationService
 from app.services.audit_service import AuditService
 from app.utils.automation.advanced_shift_automation import AdvancedShiftAutomation
 from app.utils.helpers import can_add_leave, leave_keeps_minimum_headcount
@@ -150,9 +152,28 @@ class LeaveService:
     def _rebalance_after_leave(leave: Leave) -> list | None:
         """Rebalance the shifts affected by a leave. None on failure."""
         try:
-            regenerated_shifts, _messages = (
+            regenerated_shifts, _messages, unfilled_oncall_dates = (
                 AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
             )
+            # rebalance_after_leave's own commit() already succeeded at
+            # this point (an exception would have skipped straight to
+            # the except branch below) - safe to notify now, never
+            # before (see AppNotificationService.notify_admins_oncall_gap()).
+            if unfilled_oncall_dates:
+                AppNotificationService.notify_admins_oncall_gap(unfilled_oncall_dates)
+                AppriseNotificationService.notify(
+                    "system",
+                    _("Génération d'astreintes incomplète"),
+                    _(
+                        "Aucun utilisateur disponible dans le respect du délai "
+                        "légal de 2 semaines pour : %(dates)s (rééquilibrage "
+                        "après congé). Assignation manuelle nécessaire dans "
+                        "/admin/automation.",
+                        dates=", ".join(
+                            d.strftime("%d/%m/%Y") for d in unfilled_oncall_dates
+                        ),
+                    ),
+                )
             return regenerated_shifts
         except Exception:
             logger.exception(
