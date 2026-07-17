@@ -464,8 +464,8 @@ cp app.db app.db.backup-$(date +%Y%m%d)
 # Sauvegarder PostgreSQL
 pg_dump leviia > leviia_backup_$(date +%Y%m%d).sql
 
-# Sauvegarder le répertoire de configuration
-cp -r .env config.py leviia_config_backup_$(date +%Y%m%d)/
+# Sauvegarder le fichier de configuration
+cp .env leviia_config_backup_$(date +%Y%m%d)/
 ```
 
 ### 10.3 Monitoring
@@ -492,7 +492,8 @@ h top
 **Cause** : SQLite ne supporte pas les accès concurrents.  
 **Solution** : 
 - Utiliser PostgreSQL pour la production
-- Ou configurer le retry dans `config.py` (déjà configuré)
+- Ou configurer `SQLALCHEMY_ENGINE_OPTIONS` via `.env` (voir
+  Docs/reference/ENVIRONMENT_VARIABLES.md)
 
 #### 11.1.2 "502 Bad Gateway" (Nginx)
 **Cause** : Gunicorn/uWSGI ne répond pas.  

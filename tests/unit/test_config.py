@@ -1,5 +1,7 @@
 """
-Tests for the application configuration.
+Tests for the application configuration (app/config/base.py::Config - the
+class actually loaded by create_app() in every real deployment, see
+CLAUDE.md "Configuration: two parallel systems").
 """
 
 
@@ -8,13 +10,13 @@ class TestConfig:
 
     def test_config_import(self):
         """Test that the config module can be imported."""
-        from config import Config
+        from app.config.base import Config
 
         assert Config is not None
 
     def test_config_has_secret_key(self):
         """Test that the configuration has a SECRET_KEY."""
-        from config import Config
+        from app.config.base import Config
 
         config = Config()
         assert hasattr(config, "SECRET_KEY")
@@ -29,10 +31,10 @@ class TestConfig:
         monkeypatch.setenv("SECRET_KEY", test_key)
 
         # Reload the config module to pick up the new variable
-        if "config" in sys.modules:
-            del sys.modules["config"]
+        if "app.config.base" in sys.modules:
+            del sys.modules["app.config.base"]
 
-        from config import Config
+        from app.config.base import Config
 
         config = Config()
         assert config.SECRET_KEY == test_key
@@ -45,10 +47,10 @@ class TestConfig:
         monkeypatch.delenv("SECRET_KEY", raising=False)
 
         # Reload the config module to pick up the missing variable
-        if "config" in sys.modules:
-            del sys.modules["config"]
+        if "app.config.base" in sys.modules:
+            del sys.modules["app.config.base"]
 
-        from config import Config
+        from app.config.base import Config
 
         config = Config()
         # SECRET_KEY without an env var: randomly generated
@@ -58,7 +60,7 @@ class TestConfig:
 
     def test_config_sqlalchemy_database_uri(self):
         """Test that SQLALCHEMY_DATABASE_URI is configured."""
-        from config import Config
+        from app.config.base import Config
 
         config = Config()
         assert hasattr(config, "SQLALCHEMY_DATABASE_URI")
@@ -67,7 +69,7 @@ class TestConfig:
 
     def test_config_sqlalchemy_track_modifications(self):
         """Test that SQLALCHEMY_TRACK_MODIFICATIONS is configured."""
-        from config import Config
+        from app.config.base import Config
 
         config = Config()
         assert hasattr(config, "SQLALCHEMY_TRACK_MODIFICATIONS")
@@ -83,10 +85,10 @@ class TestConfig:
         monkeypatch.setenv("LOGIN_DISABLED", "True")
 
         # Reload the config module to pick up the new variable
-        if "config" in sys.modules:
-            del sys.modules["config"]
+        if "app.config.base" in sys.modules:
+            del sys.modules["app.config.base"]
 
-        from config import Config
+        from app.config.base import Config
 
         config = Config()
         # LOGIN_DISABLED is now correctly read from the environment
@@ -104,17 +106,17 @@ class TestConfig:
         monkeypatch.delenv("LOGIN_DISABLED", raising=False)
 
         # Reload the config module to pick up the missing variable
-        if "config" in sys.modules:
-            del sys.modules["config"]
+        if "app.config.base" in sys.modules:
+            del sys.modules["app.config.base"]
 
-        from config import Config
+        from app.config.base import Config
 
         config = Config()
         assert config.LOGIN_DISABLED is False
 
     def test_config_remember_cookie_duration(self):
         """Test that REMEMBER_COOKIE_DURATION is configured."""
-        from config import Config
+        from app.config.base import Config
 
         config = Config()
         assert hasattr(config, "REMEMBER_COOKIE_DURATION")
@@ -122,7 +124,7 @@ class TestConfig:
 
     def test_config_session_protection(self):
         """Test that SESSION_PROTECTION is configured."""
-        from config import Config
+        from app.config.base import Config
 
         config = Config()
         assert hasattr(config, "SESSION_PROTECTION")
@@ -179,16 +181,16 @@ class TestConfigEnvironmentVariables:
         """Regression guard: this attribute used to be named
         custom_engine_options (lowercase), silently never copied into
         app.config by Flask's app.config.from_object() (which only copies
-        uppercase attributes) - see app/config/base.py and config.py."""
+        uppercase attributes) - see app/config/base.py."""
         import sys
 
         monkeypatch.setenv(
             "SQLALCHEMY_ENGINE_OPTIONS", '{"pool_pre_ping": true, "pool_recycle": 3600}'
         )
-        if "config" in sys.modules:
-            del sys.modules["config"]
+        if "app.config.base" in sys.modules:
+            del sys.modules["app.config.base"]
 
-        from config import Config
+        from app.config.base import Config
 
         config = Config()
         assert not hasattr(config, "custom_engine_options")
@@ -198,59 +200,15 @@ class TestConfigEnvironmentVariables:
         }
 
 
-class TestGetDatabaseType:
-    """Tests for get_database_type() - database dialect detection from the
-    DATABASE_URL prefix. Not called anywhere in app/ (SQLAlchemy resolves
-    the dialect/driver itself from the URI prefix at runtime), but its
-    detection logic is still exercised here since it's public, documented
-    behavior (see CLAUDE.md's "Configuration: two parallel systems")."""
-
-    def test_sqlite(self):
-        from config import get_database_type
-
-        assert get_database_type("sqlite:///app.db") == "sqlite"
-        assert get_database_type("sqlite:///:memory:") == "sqlite"
-
-    def test_postgresql(self):
-        from config import get_database_type
-
-        assert get_database_type("postgresql://u:p@host:5432/db") == "postgresql"
-        assert get_database_type("postgres://u:p@host:5432/db") == "postgresql"
-
-    def test_mysql(self):
-        from config import get_database_type
-
-        assert get_database_type("mysql://u:p@host:3306/db") == "mysql"
-
-    def test_mariadb(self):
-        from config import get_database_type
-
-        assert get_database_type("mariadb://u:p@host:3306/db") == "mysql"
-
-    def test_unknown_scheme_falls_back_to_sqlite(self):
-        """Unrecognized scheme silently defaults to sqlite - documented
-        existing fallback behavior, not something this change introduces."""
-        from config import get_database_type
-
-        assert get_database_type("oracle://u:p@host/db") == "sqlite"
-
-    def test_default_reads_database_url_env(self, monkeypatch):
-        from config import get_database_type
-
-        monkeypatch.setenv("DATABASE_URL", "mysql://u:p@host:3306/db")
-        assert get_database_type() == "mysql"
-
-
 class TestNormalizeDatabaseUri:
-    """Tests for normalize_database_uri() (app/config/base.py, mirrored in
-    config.py) - the fix for a real bug found while building MySQL
-    support: SQLAlchemy's bare mysql://, mariadb://, postgres:// and
-    postgresql:// prefixes (the format documented everywhere in this
-    repo's docs/.env.example) default to the "classic" DBAPI drivers
-    (MySQLdb/mysqlclient, psycopg2), NOT the pure-Python/modern ones this
-    app actually ships (PyMySQL, psycopg 3) - confirmed by
-    create_engine() raising ModuleNotFoundError on the bare prefixes
-    before this fix existed."""
+    """Tests for normalize_database_uri() (app/config/base.py) - the fix for
+    a real bug found while building MySQL support: SQLAlchemy's bare
+    mysql://, mariadb://, postgres:// and postgresql:// prefixes (the format
+    documented everywhere in this repo's docs/.env.example) default to the
+    "classic" DBAPI drivers (MySQLdb/mysqlclient, psycopg2), NOT the
+    pure-Python/modern ones this app actually ships (PyMySQL, psycopg 3) -
+    confirmed by create_engine() raising ModuleNotFoundError on the bare
+    prefixes before this fix existed."""
 
     def test_rewrites_bare_mysql(self):
         from app.config.base import normalize_database_uri
@@ -288,21 +246,6 @@ class TestNormalizeDatabaseUri:
 
         uri = "postgresql+psycopg2://u:p@host:5432/db"
         assert normalize_database_uri(uri) == uri
-
-    def test_config_py_mirror_matches(self):
-        """config.py (legacy module) must stay in sync with
-        app/config/base.py - see CLAUDE.md "Configuration: two parallel
-        systems"."""
-        from app.config.base import normalize_database_uri as app_version
-        from config import normalize_database_uri as legacy_version
-
-        for uri in (
-            "mysql://u:p@host:3306/db",
-            "mariadb://u:p@host:3306/db",
-            "postgres://u:p@host:5432/db",
-            "sqlite:///app.db",
-        ):
-            assert app_version(uri) == legacy_version(uri)
 
 
 class TestMySQLDriverAvailable:

@@ -110,31 +110,6 @@ def get_json_from_env(env_var: str, default: Any | None = None) -> Any:
         return default
 
 
-def get_database_type(database_uri: str | None = None) -> str:
-    """
-    Detect the database type from the URI.
-
-    Args:
-        database_uri: Database URI (default: DATABASE_URL environment variable)
-
-    Returns:
-        Database type: 'postgresql', 'mysql', 'sqlite'
-    """
-    if database_uri is None:
-        database_uri = os.environ.get("DATABASE_URL") or "sqlite:///app.db"
-
-    if database_uri.startswith("postgresql://") or database_uri.startswith(
-        "postgres://"
-    ):
-        return "postgresql"
-    elif database_uri.startswith("mysql://") or database_uri.startswith("mariadb://"):
-        return "mysql"
-    elif database_uri.startswith("sqlite://"):
-        return "sqlite"
-    else:
-        return "sqlite"
-
-
 # Bare mysql://, mariadb://, postgres:// and postgresql:// (no explicit
 # +driver suffix - the format documented throughout this app's docs and
 # .env.example) all default, in SQLAlchemy, to the "classic" DBAPI driver
@@ -244,10 +219,7 @@ class Config:
     # Talisman (HTTP security headers). force_https redirects to https://
     # on every request: only enable behind a reverse proxy that
     # terminates TLS (otherwise it loops on a redirect that serves no
-    # purpose). Note: create_app() loads this base class by default,
-    # regardless of FLASK_ENV - these keys must therefore be read here,
-    # not only in ProductionConfig/TestingConfig, for the env var to
-    # have any real effect in deployment.
+    # purpose).
     TALISMAN_FORCE_HTTPS: bool = get_bool_from_env("TALISMAN_FORCE_HTTPS", False)
     TALISMAN_STRICT_TRANSPORT_SECURITY: bool = get_bool_from_env(
         "TALISMAN_STRICT_TRANSPORT_SECURITY", False
@@ -285,23 +257,6 @@ class Config:
     SQLALCHEMY_ENGINE_OPTIONS: dict[str, Any] = (
         get_json_from_env("SQLALCHEMY_ENGINE_OPTIONS") or {}
     )
-
-    # ---------------------------------------------------------------------------
-    # Database Type Detection
-    # ---------------------------------------------------------------------------
-
-    @staticmethod
-    def get_database_type(database_uri: str | None = None) -> str:
-        """
-        Detect the database type from the URI.
-
-        Args:
-            database_uri: Database URI (default: SQLALCHEMY_DATABASE_URI)
-
-        Returns:
-            Database type: 'postgresql', 'mysql', 'sqlite'
-        """
-        return get_database_type(database_uri or Config.SQLALCHEMY_DATABASE_URI)
 
     # ---------------------------------------------------------------------------
     # Configuration Validation

@@ -118,9 +118,7 @@ openssl rand -hex 32
 
 #### Désactiver l'authentification (DÉVELOPPEMENT UNIQUEMENT)
 
-Dans `.env` (pas `config.py` — voir
-[Configuration Technique](#-configuration-technique) pour la distinction
-entre `app/config/` et le `config.py` legacy) :
+Dans `.env` :
 ```bash
 LOGIN_DISABLED=true
 ```
@@ -613,13 +611,12 @@ Journalisation" ci-dessus.
 
 ### Fichier de Configuration
 
-La configuration active vit dans `app/config/` (`base.py`,
-`development.py`, `production.py`, `testing.py`), lue à partir des
-variables d'environnement (`.env`). Il existe aussi un `config.py`
-legacy à la racine du dépôt, utilisé uniquement par
-`scripts/validate_config.py` et ses tests — ne le confondez pas avec
-`app/config/`, qui est la configuration réellement chargée par
-l'application (`create_app()`).
+La configuration active vit dans `app/config/` (`base.py`, `testing.py`),
+lue à partir des variables d'environnement (`.env`). `create_app()` charge
+toujours `app.config.base.Config` en production comme en développement
+(`FLASK_ENV` ne sélectionne qu'entre Gunicorn et le serveur de
+développement Flask, pas une classe de configuration) ; `TestingConfig`
+n'est utilisée que par la suite de tests.
 
 ```python
 # app/config/base.py (extrait)

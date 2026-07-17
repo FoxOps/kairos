@@ -345,29 +345,14 @@ dans `.env` n'a aujourd'hui **aucun effet**.
 
 ## 🎯 Configuration par Environnement
 
-Le projet fournit trois configurations prédéfinies :
-
-### Développement (`DevelopmentConfig`)
-- `DEBUG = True`
-- `DEBUG_ERRORS = True`
-- `LOG_LEVEL = DEBUG`
-- `SQLALCHEMY_ECHO = True` (affiche les requêtes SQL)
-
-**Activation :**
-```bash
-FLASK_ENV=development
-```
-
-### Production (`ProductionConfig`)
-- `DEBUG = False`
-- `DEBUG_ERRORS = False`
-- `LOG_LEVEL = WARNING`
-- `SQLALCHEMY_ECHO = False`
-
-**Activation :**
-```bash
-FLASK_ENV=production
-```
+`create_app()` (`app/__init__.py`) charge une seule classe de configuration réelle,
+`app.config.base.Config`, quel que soit `FLASK_ENV` — cette variable ne sert qu'à
+`docker/entrypoint.sh` pour choisir entre Gunicorn (`FLASK_ENV=production`) et le
+serveur de développement Flask (toute autre valeur), elle ne sélectionne aucune
+classe de configuration. Tous les réglages (`DEBUG`, `LOG_LEVEL`,
+`SQLALCHEMY_ECHO`, etc.) se pilotent donc directement via leurs propres variables
+d'environnement respectives (voir tableau ci-dessus), pas via un profil
+développement/production prédéfini.
 
 ### Test (`TestingConfig`)
 - `TESTING = True`

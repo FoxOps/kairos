@@ -97,8 +97,7 @@ class TestResponseTime:
 
 
 class TestCompression:
-    """Regression test: flask-compress was a declared dependency
-    (COMPRESS_REGISTER/COMPRESS_MIMETYPES in ProductionConfig) but
+    """Regression test: flask-compress was a declared dependency but
     Compress(app) was never actually called anywhere - so compression
     never did anything in practice. Compress is now initialized in
     create_app() (except in TESTING, since the test client doesn't
