@@ -1,4 +1,5 @@
 import { announceToScreenReader } from '../utils/accessibility.js';
+import { getString } from '../utils/i18n.js';
 
 /**
  * Manages the app's dark theme.
@@ -68,8 +69,8 @@ export class ThemeManager {
      */
     announceThemeChange(theme) {
         const message = theme === 'dark'
-            ? 'Thème sombre activé'
-            : 'Thème clair activé';
+            ? getString('dark_theme_enabled')
+            : getString('light_theme_enabled');
         announceToScreenReader(message, 'polite');
     }
 

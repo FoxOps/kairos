@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-16 09:14+0200\n"
+"POT-Creation-Date: 2026-07-17 16:17+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -24,6 +24,21 @@ msgstr ""
 
 #: app/auth/decorators.py:103
 msgid "Accès refusé : vous ne pouvez modifier que vos propres données."
+msgstr ""
+
+#: app/routes/admin_audit_routes.py:64
+msgid "Date invalide."
+msgstr ""
+
+#: app/routes/admin_audit_routes.py:99
+msgid ""
+"Aucune durée de rétention n'est configurée : réglez-la d'abord dans les "
+"paramètres pour pouvoir purger l'historique."
+msgstr ""
+
+#: app/routes/admin_audit_routes.py:110
+#, python-format
+msgid "%(count)s entrée(s) d'historique purgée(s)."
 msgstr ""
 
 #: app/routes/admin_automation_routes.py:85
@@ -63,11 +78,14 @@ msgstr ""
 #: app/routes/admin_automation_routes.py:188
 #: app/routes/admin_automation_routes.py:263
 #: app/routes/admin_group_routes.py:47 app/routes/admin_group_routes.py:78
-#: app/routes/admin_group_routes.py:97 app/routes/admin_shift_type_routes.py:52
+#: app/routes/admin_group_routes.py:97
+#: app/routes/admin_notification_target_routes.py:82
+#: app/routes/admin_notification_target_routes.py:126
+#: app/routes/admin_shift_type_routes.py:52
 #: app/routes/admin_shift_type_routes.py:94
 #: app/routes/admin_shift_type_routes.py:113 app/routes/admin_user_routes.py:54
 #: app/routes/admin_user_routes.py:88 app/routes/admin_user_routes.py:107
-#: app/routes/auth.py:328 app/routes/leave_routes.py:109
+#: app/routes/auth.py:414 app/routes/leave_routes.py:109
 #: app/routes/leave_routes.py:142 app/routes/oncall_routes.py:86
 #: app/routes/oncall_routes.py:105 app/routes/oncall_routes.py:128
 #: app/routes/oncall_routes.py:156 app/routes/shift_routes.py:121
@@ -120,6 +138,7 @@ msgstr ""
 msgid "Groupe supprimé avec succès !"
 msgstr ""
 
+#: app/routes/admin_notification_target_routes.py:39
 #: app/routes/admin_settings_routes.py:33
 #: app/routes/admin_settings_routes.py:41
 #: app/routes/admin_settings_routes.py:49
@@ -128,9 +147,70 @@ msgstr ""
 #: app/routes/admin_settings_routes.py:78
 #: app/routes/admin_settings_routes.py:86
 #: app/routes/admin_settings_routes.py:101
-#: app/routes/admin_settings_routes.py:113
+#: app/routes/admin_settings_routes.py:117
+#: app/routes/admin_settings_routes.py:129
 #, python-format
 msgid "Erreur : %(error)s"
+msgstr ""
+
+#: app/routes/admin_notification_target_routes.py:43
+msgid "Notifications externes activées."
+msgstr ""
+
+#: app/routes/admin_notification_target_routes.py:45
+msgid "Notifications externes désactivées."
+msgstr ""
+
+#: app/routes/admin_notification_target_routes.py:64
+#: app/routes/admin_notification_target_routes.py:105
+msgid "Le nom et l'URL Apprise sont obligatoires."
+msgstr ""
+
+#: app/routes/admin_notification_target_routes.py:78
+msgid "Cible de notification ajoutée avec succès !"
+msgstr ""
+
+#: app/routes/admin_notification_target_routes.py:122
+msgid "Cible de notification modifiée avec succès !"
+msgstr ""
+
+#: app/routes/admin_notification_target_routes.py:150
+msgid "Cible de notification supprimée avec succès !"
+msgstr ""
+
+#: app/routes/admin_notification_target_routes.py:179
+msgid "Notification de test envoyée avec succès !"
+msgstr ""
+
+#: app/routes/admin_notification_target_routes.py:181
+#, python-format
+msgid "Échec du test : %(error)s"
+msgstr ""
+
+#: app/routes/admin_service_account_routes.py:39
+#: app/routes/admin_service_account_routes.py:74
+msgid "Le nom est obligatoire."
+msgstr ""
+
+#: app/routes/admin_service_account_routes.py:45
+#: app/routes/admin_service_account_routes.py:85
+msgid "Date d'expiration invalide."
+msgstr ""
+
+#: app/routes/admin_service_account_routes.py:94
+msgid "Compte de service modifié avec succès !"
+msgstr ""
+
+#: app/routes/admin_service_account_routes.py:131
+msgid "Compte de service révoqué."
+msgstr ""
+
+#: app/routes/admin_service_account_routes.py:134
+msgid "Compte de service réactivé."
+msgstr ""
+
+#: app/routes/admin_service_account_routes.py:148
+msgid "Compte de service supprimé avec succès !"
 msgstr ""
 
 #: app/routes/admin_settings_routes.py:35
@@ -173,11 +253,19 @@ msgstr ""
 msgid "Rétention des sauvegardes enregistrée"
 msgstr ""
 
-#: app/routes/admin_settings_routes.py:109
+#: app/routes/admin_settings_routes.py:111
+msgid "Erreur : durée de rétention invalide"
+msgstr ""
+
+#: app/routes/admin_settings_routes.py:119
+msgid "Rétention de l'audit trail enregistrée"
+msgstr ""
+
+#: app/routes/admin_settings_routes.py:125
 msgid "Erreur : durée d'expiration invalide"
 msgstr ""
 
-#: app/routes/admin_settings_routes.py:115
+#: app/routes/admin_settings_routes.py:131
 msgid "Durée d'expiration ICS enregistrée"
 msgstr ""
 
@@ -205,19 +293,19 @@ msgstr ""
 msgid "Type de shift supprimé avec succès !"
 msgstr ""
 
-#: app/routes/admin_swap_routes.py:36
+#: app/routes/admin_swap_routes.py:42
 msgid "Échange approuvé, shifts réassignés."
 msgstr ""
 
-#: app/routes/admin_swap_routes.py:52
+#: app/routes/admin_swap_routes.py:58
 msgid "Échange annulé, shifts réassignés à leurs propriétaires d'origine."
 msgstr ""
 
-#: app/routes/admin_swap_routes.py:70
+#: app/routes/admin_swap_routes.py:76
 msgid "Échange rejeté."
 msgstr ""
 
-#: app/routes/admin_swap_routes.py:80
+#: app/routes/admin_swap_routes.py:86
 #, python-format
 msgid "%(count)s demande(s) terminée(s) supprimée(s) (tous utilisateurs)."
 msgstr ""
@@ -234,88 +322,88 @@ msgstr ""
 msgid "Utilisateur supprimé avec succès !"
 msgstr ""
 
-#: app/routes/auth.py:56
+#: app/routes/auth.py:61
 msgid "L'inscription publique est désactivée. Utilisez l'authentification OIDC."
 msgstr ""
 
-#: app/routes/auth.py:63
+#: app/routes/auth.py:68
 msgid "L'inscription publique est désactivée. Contactez l'administrateur."
 msgstr ""
 
-#: app/routes/auth.py:92
+#: app/routes/auth.py:97
 msgid "Email et mot de passe sont obligatoires."
 msgstr ""
 
-#: app/routes/auth.py:99
+#: app/routes/auth.py:110
 msgid "Connexion réussie !"
 msgstr ""
 
-#: app/routes/auth.py:107
+#: app/routes/auth.py:124
 msgid "Email ou mot de passe incorrect."
 msgstr ""
 
-#: app/routes/auth.py:126
+#: app/routes/auth.py:143
 msgid "La connexion OIDC n'est pas disponible pour le moment."
 msgstr ""
 
-#: app/routes/auth.py:149
+#: app/routes/auth.py:167
 msgid "La connexion OIDC a échoué. Veuillez réessayer."
 msgstr ""
 
-#: app/routes/auth.py:152
+#: app/routes/auth.py:177
 msgid "Connexion OIDC réussie !"
 msgstr ""
 
-#: app/routes/auth.py:176
+#: app/routes/auth.py:202
 msgid "Vous avez été déconnecté."
 msgstr ""
 
-#: app/routes/auth.py:200
+#: app/routes/auth.py:226
 msgid "Le nom et l'email sont obligatoires."
 msgstr ""
 
-#: app/routes/auth.py:209
+#: app/routes/auth.py:235
 msgid "Cet email est déjà utilisé par un autre utilisateur."
 msgstr ""
 
-#: app/routes/auth.py:222
+#: app/routes/auth.py:248
 msgid "Le mot de passe actuel est obligatoire pour changer de mot de passe."
 msgstr ""
 
-#: app/routes/auth.py:229
+#: app/routes/auth.py:255
 msgid "Le mot de passe actuel est incorrect."
 msgstr ""
 
-#: app/routes/auth.py:233
+#: app/routes/auth.py:259
 msgid "Les nouveaux mots de passe ne correspondent pas."
 msgstr ""
 
-#: app/routes/auth.py:239
+#: app/routes/auth.py:271
 msgid "Votre profil a été mis à jour avec succès !"
 msgstr ""
 
-#: app/routes/auth.py:262
+#: app/routes/auth.py:297
 msgid "Fuseau horaire invalide."
 msgstr ""
 
-#: app/routes/auth.py:268
+#: app/routes/auth.py:303
 msgid "Langue invalide."
 msgstr ""
 
-#: app/routes/auth.py:274 app/routes/shift_routes.py:222
+#: app/routes/auth.py:309 app/routes/shift_routes.py:222
 #: app/routes/shift_routes.py:258
 msgid "Format de date invalide."
 msgstr ""
 
-#: app/routes/auth.py:280
+#: app/routes/auth.py:315
 msgid "Format d'heure invalide."
 msgstr ""
 
-#: app/routes/auth.py:298
+#: app/routes/auth.py:364
 msgid "Vos paramètres ont été mis à jour avec succès !"
 msgstr ""
 
-#: app/routes/auth.py:325
+#: app/routes/auth.py:411
 msgid "Token ICS régénéré avec succès !"
 msgstr ""
 
@@ -478,28 +566,37 @@ msgid ""
 " avec succès !"
 msgstr ""
 
-#: app/routes/swap_routes.py:39
+#: app/routes/swap_routes.py:38
 msgid "Sélectionnez un shift à échanger et un destinataire."
 msgstr ""
 
-#: app/routes/swap_routes.py:49
+#: app/routes/swap_routes.py:45
 msgid "Shift ou utilisateur invalide."
 msgstr ""
 
-#: app/routes/swap_routes.py:57
+#: app/routes/swap_routes.py:51
 #, python-format
 msgid "Impossible de créer la demande : %(error)s"
 msgstr ""
 
-#: app/routes/swap_routes.py:62
-msgid "Demande d'échange envoyée, en attente de validation admin."
-msgstr ""
-
-#: app/routes/swap_routes.py:88
-msgid "Demande d'échange annulée."
+#: app/routes/swap_routes.py:57
+#, python-format
+msgid "Demande d'échange envoyée, en attente de confirmation de %(name)s."
 msgstr ""
 
 #: app/routes/swap_routes.py:98
+msgid "Échange confirmé, en attente de validation admin."
+msgstr ""
+
+#: app/routes/swap_routes.py:123
+msgid "Demande d'échange déclinée."
+msgstr ""
+
+#: app/routes/swap_routes.py:138
+msgid "Demande d'échange annulée."
+msgstr ""
+
+#: app/routes/swap_routes.py:148
 #, python-format
 msgid "%(count)s demande(s) terminée(s) supprimée(s) de votre historique."
 msgstr ""
@@ -508,270 +605,421 @@ msgstr ""
 msgid "Cette notification ne vous appartient pas"
 msgstr ""
 
-#: app/services/app_notification_service.py:73
+#: app/services/app_notification_service.py:70
+#, python-format
+msgid "%(requester)s vous propose un échange de shift, à confirmer."
+msgstr ""
+
+#: app/services/app_notification_service.py:87
+#, python-format
+msgid "%(name)s n'a pas retenu votre proposition d'échange."
+msgstr ""
+
+#: app/services/app_notification_service.py:91
+#: app/services/app_notification_service.py:147
+#, python-format
+msgid " Motif : %(comment)s"
+msgstr ""
+
+#: app/services/app_notification_service.py:108
 #, python-format
 msgid ""
 "%(requester)s propose un échange de shift à %(target)s, en attente de "
 "validation."
 msgstr ""
 
-#: app/services/app_notification_service.py:89
+#: app/services/app_notification_service.py:124
 #, python-format
 msgid "Votre demande d'échange avec %(name)s a été approuvée."
 msgstr ""
 
-#: app/services/app_notification_service.py:94
+#: app/services/app_notification_service.py:129
 #, python-format
 msgid "%(name)s et vous avez échangé un shift (approuvé par l'administrateur)."
 msgstr ""
 
-#: app/services/app_notification_service.py:107
+#: app/services/app_notification_service.py:142
 #, python-format
 msgid "Votre demande d'échange avec %(name)s a été rejetée."
 msgstr ""
 
-#: app/services/app_notification_service.py:112
-#, python-format
-msgid " Motif : %(comment)s"
-msgstr ""
-
-#: app/services/app_notification_service.py:120
+#: app/services/app_notification_service.py:155
 #, python-format
 msgid ""
 "L'échange approuvé avec %(name)s a été annulé par l'administrateur, vos "
 "shifts d'origine sont restaurés."
 msgstr ""
 
-#: app/services/app_notification_service.py:126
+#: app/services/app_notification_service.py:161
 #, python-format
 msgid ""
 "L'échange avec %(name)s a été annulé par l'administrateur, vos shifts "
 "d'origine sont restaurés."
 msgstr ""
 
-#: app/services/backup_service.py:88
+#: app/services/apprise_notification_service.py:87
+msgid "URL Apprise invalide."
+msgstr ""
+
+#: app/services/apprise_notification_service.py:90
+msgid "Test de notification - Leviia Schedule"
+msgstr ""
+
+#: app/services/apprise_notification_service.py:92
+msgid ""
+"Ceci est une notification de test envoyée depuis /admin/notification-"
+"targets."
+msgstr ""
+
+#: app/services/apprise_notification_service.py:98
+msgid "Échec de l'envoi (voir les logs pour le détail)."
+msgstr ""
+
+#: app/services/backup_service.py:89
 msgid "Les sauvegardes sont désactivées (BACKUP_ENABLED=false)"
 msgstr ""
 
-#: app/services/group_service.py:26 app/services/group_service.py:41
+#: app/services/backup_service.py:98
+msgid "Sauvegarde réussie"
+msgstr ""
+
+#: app/services/backup_service.py:100
+#, python-format
+msgid "Sauvegarde manuelle créée avec succès (%(timestamp)s)."
+msgstr ""
+
+#: app/services/backup_service.py:107
+msgid "Échec de la sauvegarde"
+msgstr ""
+
+#: app/services/backup_service.py:109
+#, python-format
+msgid "Sauvegarde manuelle en échec : %(errors)s"
+msgstr ""
+
+#: app/services/backup_service.py:123
+msgid "Nettoyage des sauvegardes"
+msgstr ""
+
+#: app/services/backup_service.py:125
+#, python-format
+msgid "%(local_count)s sauvegarde(s) locale(s) supprimée(s), %(s3_count)s sur S3."
+msgstr ""
+
+#: app/services/group_service.py:27 app/services/group_service.py:45
 msgid "Un groupe avec ce nom existe déjà."
 msgstr ""
 
-#: app/services/group_service.py:59
+#: app/services/group_service.py:66
 msgid "Impossible de supprimer ce groupe : des utilisateurs y sont associés."
 msgstr ""
 
-#: app/services/leave_service.py:80
+#: app/services/leave_service.py:91
 msgid "Congé non trouvé"
 msgstr ""
 
-#: app/services/leave_service.py:83
+#: app/services/leave_service.py:94
 msgid "La date de fin doit être après la date de début"
 msgstr ""
 
-#: app/services/leave_service.py:92
+#: app/services/leave_service.py:103
 #, python-format
 msgid "Un congé existe déjà pour %(name)s pendant cette période"
 msgstr ""
 
-#: app/services/leave_service.py:104
+#: app/services/leave_service.py:115
 msgid ""
 "Impossible : l'effectif disponible tomberait à 0 sur au moins un jour de "
 "cette période"
 msgstr ""
 
-#: app/services/notification_service.py:111
+#: app/services/notification_service.py:112
 #, python-format
 msgid "Vos shifts de la semaine du %(start)s au %(end)s"
 msgstr ""
 
-#: app/services/notification_service.py:185
+#: app/services/notification_service.py:146
+msgid "Échecs d'envoi des rappels de shifts"
+msgstr ""
+
+#: app/services/notification_service.py:148
+#, python-format
+msgid ""
+"%(count)s email(s) de rappel de shifts n'ont pas pu être envoyés cette "
+"semaine."
+msgstr ""
+
+#: app/services/notification_service.py:203
 #, python-format
 msgid "Astreinte du %(date)s"
 msgstr ""
 
-#: app/services/oncall_service.py:37
+#: app/services/notification_service.py:216
+msgid "Échec d'envoi du rappel d'astreinte"
+msgstr ""
+
+#: app/services/notification_service.py:218
+#, python-format
+msgid "Le rappel d'astreinte pour %(email)s n'a pas pu être envoyé."
+msgstr ""
+
+#: app/services/oncall_service.py:38
 msgid "L'astreinte doit commencer un vendredi."
 msgstr ""
 
-#: app/services/oncall_service.py:46
+#: app/services/oncall_service.py:47
 msgid ""
 "Impossible d'ajouter cette astreinte (période déjà couverte ou congé sur "
 "la période)."
 msgstr ""
 
-#: app/services/oncall_service.py:96
+#: app/services/oncall_service.py:128
 msgid "Astreinte non trouvée"
 msgstr ""
 
-#: app/services/oncall_service.py:99
+#: app/services/oncall_service.py:131
 msgid "L'astreinte doit commencer un vendredi"
 msgstr ""
 
-#: app/services/oncall_service.py:108
+#: app/services/oncall_service.py:140
 #, python-format
 msgid "Une astreinte existe déjà pour %(name)s pendant cette période"
 msgstr ""
 
-#: app/services/oncall_service.py:120
+#: app/services/oncall_service.py:152
 #, python-format
 msgid "%(name)s est en congé pendant cette période"
 msgstr ""
 
-#: app/services/settings_service.py:73
+#: app/services/settings_service.py:76
 #, python-format
 msgid "Fuseau horaire invalide : %(tz_name)s"
 msgstr ""
 
-#: app/services/settings_service.py:93
+#: app/services/settings_service.py:101
 #, python-format
 msgid "Langue invalide : %(lang_code)s"
 msgstr ""
 
-#: app/services/settings_service.py:114
+#: app/services/settings_service.py:127
 #, python-format
 msgid "Format de date invalide : %(date_format)s"
 msgstr ""
 
-#: app/services/settings_service.py:134
+#: app/services/settings_service.py:152
 #, python-format
 msgid "Format d'heure invalide : %(time_format)s"
 msgstr ""
 
-#: app/services/settings_service.py:180
+#: app/services/settings_service.py:216
 msgid "Les valeurs de pagination doivent être positives"
 msgstr ""
 
-#: app/services/settings_service.py:182
+#: app/services/settings_service.py:218
 msgid "items_per_page ne peut pas dépasser max_per_page"
 msgstr ""
 
-#: app/services/settings_service.py:230
+#: app/services/settings_service.py:276
 msgid "Les valeurs de rétention doivent être positives"
 msgstr ""
 
-#: app/services/settings_service.py:254
+#: app/services/settings_service.py:306
+msgid "La durée de rétention doit être positive"
+msgstr ""
+
+#: app/services/settings_service.py:361
 msgid "La durée d'expiration doit être positive"
 msgstr ""
 
-#: app/services/shift_service.py:115
+#: app/services/shift_service.py:145
 msgid "Impossible de créer un shift pour un week-end"
 msgstr ""
 
-#: app/services/shift_service.py:118
+#: app/services/shift_service.py:148
 msgid "Conflit détecté pour ce shift"
 msgstr ""
 
-#: app/services/shift_service.py:133
+#: app/services/shift_service.py:169
 msgid "Shift non trouvé"
 msgstr ""
 
-#: app/services/shift_service.py:137
+#: app/services/shift_service.py:173
 msgid "Impossible de déplacer vers un week-end (samedi/dimanche)"
 msgstr ""
 
-#: app/services/shift_service.py:146
+#: app/services/shift_service.py:182
 #, python-format
 msgid "Un shift existe déjà pour %(name)s le %(date)s"
 msgstr ""
 
-#: app/services/shift_service.py:160 app/services/swap_service.py:64
+#: app/services/shift_service.py:196 app/services/swap_service.py:75
 #, python-format
 msgid "%(name)s est en congé le %(date)s"
 msgstr ""
 
-#: app/services/shift_type_service.py:26 app/services/shift_type_service.py:46
+#: app/services/shift_type_service.py:27 app/services/shift_type_service.py:53
 msgid "Un type de shift avec ce nom existe déjà."
 msgstr ""
 
-#: app/services/shift_type_service.py:29 app/services/shift_type_service.py:49
+#: app/services/shift_type_service.py:30 app/services/shift_type_service.py:56
 msgid "Les heures doivent être comprises entre 0 et 23."
 msgstr ""
 
-#: app/services/shift_type_service.py:31 app/services/shift_type_service.py:51
+#: app/services/shift_type_service.py:32 app/services/shift_type_service.py:58
 msgid "L'heure de début doit être antérieure à l'heure de fin."
 msgstr ""
 
-#: app/services/shift_type_service.py:70
+#: app/services/shift_type_service.py:83
 msgid ""
 "Impossible de supprimer ce type de shift : il est utilisé dans des shifts"
 " existants."
 msgstr ""
 
-#: app/services/swap_service.py:52
+#: app/services/swap_service.py:63
 msgid "Shift introuvable"
 msgstr ""
 
-#: app/services/swap_service.py:54
+#: app/services/swap_service.py:65
 msgid "Utilisateur cible introuvable"
 msgstr ""
 
-#: app/services/swap_service.py:56
+#: app/services/swap_service.py:67
 msgid "Ce shift ne vous appartient plus"
 msgstr ""
 
-#: app/services/swap_service.py:58
+#: app/services/swap_service.py:69
 msgid "Impossible de proposer un échange à vous-même"
 msgstr ""
 
-#: app/services/swap_service.py:60
+#: app/services/swap_service.py:71
 msgid "Le shift proposé en retour n'appartient plus à cet utilisateur"
 msgstr ""
 
-#: app/services/swap_service.py:74
+#: app/services/swap_service.py:85
 #, python-format
 msgid "%(name)s a déjà un autre shift le %(date)s"
 msgstr ""
 
-#: app/services/swap_service.py:81
+#: app/services/swap_service.py:92
 #, python-format
 msgid "Vous êtes en congé le %(date)s"
 msgstr ""
 
-#: app/services/swap_service.py:86
+#: app/services/swap_service.py:97
 #, python-format
 msgid "Vous avez déjà un autre shift le %(date)s"
 msgstr ""
 
-#: app/services/swap_service.py:104
+#: app/services/swap_service.py:117
 msgid "Une demande est déjà en attente pour ce shift"
 msgstr ""
 
-#: app/services/swap_service.py:126 app/services/swap_service.py:140
-#: app/services/swap_service.py:215
+#: app/services/swap_service.py:139
+msgid "Nouvelle demande d'échange de shift"
+msgstr ""
+
+#: app/services/swap_service.py:141
+#, python-format
+msgid ""
+"%(requester)s propose un échange de shift à %(target)s, en attente de sa "
+"confirmation."
+msgstr ""
+
+#: app/services/swap_service.py:163 app/services/swap_service.py:207
+msgid "Cette demande n'est plus en attente de votre confirmation"
+msgstr ""
+
+#: app/services/swap_service.py:165 app/services/swap_service.py:209
+msgid "Cette demande ne vous est pas destinée"
+msgstr ""
+
+#: app/services/swap_service.py:186
+msgid "Échange de shift confirmé par le destinataire"
+msgstr ""
+
+#: app/services/swap_service.py:188
+#, python-format
+msgid ""
+"%(target)s a confirmé l'échange proposé par %(requester)s, en attente de "
+"validation admin."
+msgstr ""
+
+#: app/services/swap_service.py:223
+msgid "Échange de shift décliné par le destinataire"
+msgstr ""
+
+#: app/services/swap_service.py:225
+#, python-format
+msgid "%(target)s a décliné la proposition d'échange de %(requester)s."
+msgstr ""
+
+#: app/services/swap_service.py:238
 msgid "Cette demande n'est plus en attente"
 msgstr ""
 
-#: app/services/swap_service.py:129
+#: app/services/swap_service.py:241
 msgid "Seul le demandeur ou un administrateur peut annuler cette demande"
 msgstr ""
 
-#: app/services/swap_service.py:150
+#: app/services/swap_service.py:260 app/services/swap_service.py:371
+msgid "Cette demande n'est pas en attente de validation admin"
+msgstr ""
+
+#: app/services/swap_service.py:270
 #, python-format
 msgid "Échange invalide, réessayez de le rejeter : %(error)s"
 msgstr ""
 
-#: app/services/swap_service.py:176
+#: app/services/swap_service.py:289
+msgid "Échange de shift approuvé"
+msgstr ""
+
+#: app/services/swap_service.py:291
+#, python-format
+msgid "%(requester)s <-> %(target)s : échange approuvé par %(admin)s."
+msgstr ""
+
+#: app/services/swap_service.py:313
 msgid "Seul un échange approuvé peut être annulé"
 msgstr ""
 
-#: app/services/swap_service.py:181
+#: app/services/swap_service.py:318
 msgid ""
 "Le shift a changé depuis l'approbation, annulation impossible "
 "automatiquement"
 msgstr ""
 
-#: app/services/swap_service.py:191
+#: app/services/swap_service.py:328
 msgid ""
 "Le shift retourné a changé depuis l'approbation, annulation impossible "
 "automatiquement"
 msgstr ""
 
-#: app/services/user_service.py:53 app/services/user_service.py:74
+#: app/services/swap_service.py:348
+msgid "Échange de shift annulé"
+msgstr ""
+
+#: app/services/swap_service.py:350
+#, python-format
+msgid ""
+"%(requester)s <-> %(target)s : échange approuvé annulé par %(admin)s, "
+"shifts d'origine restaurés."
+msgstr ""
+
+#: app/services/swap_service.py:385
+msgid "Échange de shift rejeté"
+msgstr ""
+
+#: app/services/swap_service.py:387
+#, python-format
+msgid "%(requester)s <-> %(target)s : demande rejetée par %(admin)s."
+msgstr ""
+
+#: app/services/user_service.py:54 app/services/user_service.py:78
 msgid "Un utilisateur avec cet email existe déjà."
 msgstr ""
 
-#: app/services/user_service.py:99
+#: app/services/user_service.py:106
 msgid ""
 "Impossible de supprimer cet utilisateur : il a des shifts, astreintes ou "
 "congés associés."
@@ -1035,20 +1283,21 @@ msgstr ""
 msgid "Exporter mes %(resource_name)s"
 msgstr ""
 
-#: app/templates/_pagination.html:22 app/templates/admin/settings.html:144
+#: app/templates/_pagination.html:22 app/templates/admin/audit_log.html:117
+#: app/templates/admin/settings.html:144
 msgid "Pagination"
 msgstr ""
 
-#: app/templates/_pagination.html:25
+#: app/templates/_pagination.html:25 app/templates/admin/audit_log.html:120
 msgid "Page précédente"
 msgstr ""
 
-#: app/templates/_pagination.html:29
+#: app/templates/_pagination.html:29 app/templates/admin/audit_log.html:124
 #, python-format
 msgid "Page %(page)s / %(pages)s"
 msgstr ""
 
-#: app/templates/_pagination.html:32
+#: app/templates/_pagination.html:32 app/templates/admin/audit_log.html:127
 msgid "Page suivante"
 msgstr ""
 
@@ -1065,19 +1314,23 @@ msgid "Tout"
 msgstr ""
 
 #: app/templates/_swap_status_badge.html:4 app/templates/admin/swaps.html:28
-msgid "En attente"
+msgid "En attente du destinataire"
 msgstr ""
 
 #: app/templates/_swap_status_badge.html:6
-msgid "Approuvée"
+msgid "En attente de validation admin"
 msgstr ""
 
 #: app/templates/_swap_status_badge.html:8
-msgid "Rejetée"
+msgid "Approuvée"
 msgstr ""
 
 #: app/templates/_swap_status_badge.html:10
+msgid "Rejetée"
+msgstr ""
+
 #: app/templates/_swap_status_badge.html:12
+#: app/templates/_swap_status_badge.html:14
 msgid "Annulée"
 msgstr ""
 
@@ -1127,8 +1380,9 @@ msgid "Date de fin du congé"
 msgstr ""
 
 #: app/templates/add_leave.html:38 app/templates/add_oncall.html:32
-#: app/templates/add_shift.html:50 app/templates/add_swap.html:47
+#: app/templates/add_shift.html:50 app/templates/add_swap.html:41
 #: app/templates/admin/edit_group.html:33
+#: app/templates/admin/edit_notification_target.html:58
 #: app/templates/admin/edit_shift_type.html:39
 #: app/templates/admin/edit_user.html:54
 msgid "Actions du formulaire"
@@ -1140,39 +1394,50 @@ msgstr ""
 
 #: app/templates/add_leave.html:40 app/templates/add_oncall.html:34
 #: app/templates/add_shift.html:52 app/templates/admin/add_group.html:32
+#: app/templates/admin/add_notification_target.html:60
 #: app/templates/admin/add_shift_type.html:41
 #: app/templates/admin/add_user.html:61 app/templates/admin/edit_group.html:35
+#: app/templates/admin/edit_notification_target.html:60
+#: app/templates/admin/edit_service_account.html:38
 #: app/templates/admin/edit_shift_type.html:41
 #: app/templates/admin/edit_user.html:56 app/templates/admin/settings.html:30
 #: app/templates/admin/settings.html:56 app/templates/admin/settings.html:82
 #: app/templates/admin/settings.html:108 app/templates/admin/settings.html:132
 #: app/templates/admin/settings.html:155 app/templates/admin/settings.html:176
 #: app/templates/admin/settings.html:202 app/templates/admin/settings.html:224
+#: app/templates/admin/settings.html:246
 msgid "Enregistrer"
 msgstr ""
 
 #: app/templates/add_leave.html:42 app/templates/add_oncall.html:36
-#: app/templates/add_shift.html:54 app/templates/add_swap.html:51
+#: app/templates/add_shift.html:54 app/templates/add_swap.html:45
 #: app/templates/admin/edit_group.html:37
+#: app/templates/admin/edit_notification_target.html:62
 #: app/templates/admin/edit_shift_type.html:43
-#: app/templates/admin/edit_user.html:58
+#: app/templates/admin/edit_user.html:58 app/templates/confirm_swap.html:46
 msgid "Annuler et retourner à la liste"
 msgstr ""
 
 #: app/templates/add_leave.html:42 app/templates/add_leave.html:43
 #: app/templates/add_oncall.html:36 app/templates/add_oncall.html:37
 #: app/templates/add_shift.html:54 app/templates/add_shift.html:55
-#: app/templates/add_swap.html:51 app/templates/add_swap.html:52
+#: app/templates/add_swap.html:45 app/templates/add_swap.html:46
 #: app/templates/admin/add_group.html:34
+#: app/templates/admin/add_notification_target.html:62
+#: app/templates/admin/add_service_account.html:42
 #: app/templates/admin/add_shift_type.html:43
 #: app/templates/admin/add_user.html:63 app/templates/admin/edit_group.html:37
 #: app/templates/admin/edit_group.html:38
+#: app/templates/admin/edit_notification_target.html:62
+#: app/templates/admin/edit_notification_target.html:63
+#: app/templates/admin/edit_service_account.html:40
 #: app/templates/admin/edit_shift_type.html:43
 #: app/templates/admin/edit_shift_type.html:44
 #: app/templates/admin/edit_user.html:58 app/templates/admin/edit_user.html:59
-#: app/templates/admin/swaps.html:128
-#: app/templates/auth/profile_settings.html:89
-#: app/templates/auth/update_profile.html:53 app/templates/swaps.html:59
+#: app/templates/admin/swaps.html:179
+#: app/templates/auth/profile_settings.html:134
+#: app/templates/auth/update_profile.html:53 app/templates/confirm_swap.html:46
+#: app/templates/confirm_swap.html:47 app/templates/swaps.html:65
 #: app/utils/helpers/js_translations.py:30
 msgid "Annuler"
 msgstr ""
@@ -1274,20 +1539,12 @@ msgid "L'utilisateur à qui proposer l'échange"
 msgstr ""
 
 #: app/templates/add_swap.html:38
-msgid "Shift demandé en retour (optionnel)"
-msgstr ""
-
-#: app/templates/add_swap.html:40
-msgid "Aucun (don simple)"
-msgstr ""
-
-#: app/templates/add_swap.html:43
 msgid ""
-"Choisissez d'abord un collègue - laissez vide pour un don simple de votre"
-" shift"
+"Le destinataire choisira ensuite quel shift proposer en retour (ou "
+"déclinera l'échange)."
 msgstr ""
 
-#: app/templates/add_swap.html:48 app/templates/add_swap.html:49
+#: app/templates/add_swap.html:42 app/templates/add_swap.html:43
 msgid "Envoyer la demande"
 msgstr ""
 
@@ -1400,6 +1657,83 @@ msgstr ""
 #: app/templates/auth/login.html:3 app/templates/auth/login.html:10
 #: app/templates/base.html:227 app/templates/base.html:228
 msgid "Connexion"
+msgstr ""
+
+#: app/templates/confirm_swap.html:3
+msgid "Confirmer un échange"
+msgstr ""
+
+#: app/templates/confirm_swap.html:8
+#, python-format
+msgid "Confirmer l'échange proposé par %(name)s"
+msgstr ""
+
+#: app/templates/confirm_swap.html:14
+#, python-format
+msgid "%(name)s vous propose d'échanger ce shift :"
+msgstr ""
+
+#: app/templates/admin/swaps.html:49 app/templates/admin/swaps.html:90
+#: app/templates/admin/swaps.html:161 app/templates/confirm_swap.html:18
+#: app/templates/swaps.html:46 app/templates/swaps.html:99
+msgid "Shift supprimé"
+msgstr ""
+
+#: app/templates/confirm_swap.html:28
+msgid "Choisir le shift à proposer en retour"
+msgstr ""
+
+#: app/templates/confirm_swap.html:30
+msgid "Shift à proposer en retour (optionnel)"
+msgstr ""
+
+#: app/templates/confirm_swap.html:32
+msgid "Aucun (don simple)"
+msgstr ""
+
+#: app/templates/confirm_swap.html:38
+msgid "Laissez vide pour accepter le shift sans rien proposer en retour."
+msgstr ""
+
+#: app/templates/admin/groups.html:39
+#: app/templates/admin/notification_targets.html:48
+#: app/templates/admin/service_accounts.html:41
+#: app/templates/admin/shift_types.html:35 app/templates/admin/swaps.html:79
+#: app/templates/admin/swaps.html:150 app/templates/admin/users.html:42
+#: app/templates/confirm_swap.html:42 app/templates/leave.html:43
+#: app/templates/oncall.html:55 app/templates/schedule.html:59
+#: app/templates/swaps.html:36 app/templates/swaps.html:88
+msgid "Actions"
+msgstr ""
+
+#: app/templates/confirm_swap.html:43 app/templates/swaps.html:114
+msgid "Confirmer l'échange"
+msgstr ""
+
+#: app/templates/confirm_swap.html:44 app/templates/swaps.html:115
+#: app/utils/helpers/js_translations.py:39
+msgid "Confirmer"
+msgstr ""
+
+#: app/templates/confirm_swap.html:58 app/templates/confirm_swap.html:64
+#: app/templates/swaps.html:120
+msgid "Refuser l'échange"
+msgstr ""
+
+#: app/templates/confirm_swap.html:60
+msgid "Refuser cet échange (optionnel : motif)"
+msgstr ""
+
+#: app/templates/confirm_swap.html:61
+msgid "Motif du refus (optionnel)"
+msgstr ""
+
+#: app/templates/confirm_swap.html:65 app/templates/swaps.html:121
+msgid "Refuser cette proposition d'échange ?"
+msgstr ""
+
+#: app/templates/confirm_swap.html:66 app/templates/swaps.html:122
+msgid "Refuser"
 msgstr ""
 
 #: app/templates/dashboard.html:11
@@ -1625,7 +1959,7 @@ msgstr ""
 msgid "Calendrier interactif"
 msgstr ""
 
-#: app/templates/admin/dashboard.html:121 app/templates/index.html:76
+#: app/templates/admin/dashboard.html:154 app/templates/index.html:76
 #: app/templates/index.html:78
 msgid "Actions rapides"
 msgstr ""
@@ -1689,7 +2023,7 @@ msgstr ""
 msgid "Actions principales"
 msgstr ""
 
-#: app/templates/admin/dashboard.html:157 app/templates/leave.html:22
+#: app/templates/admin/dashboard.html:190 app/templates/leave.html:22
 #: app/templates/leave.html:30 app/templates/leave.html:82
 msgid "congés"
 msgstr ""
@@ -1706,14 +2040,6 @@ msgstr ""
 #: app/templates/admin/automation/full_dry_run.html:38
 #: app/templates/leave.html:42 app/templates/oncall.html:54
 msgid "Fin"
-msgstr ""
-
-#: app/templates/admin/groups.html:39 app/templates/admin/shift_types.html:35
-#: app/templates/admin/swaps.html:40 app/templates/admin/swaps.html:105
-#: app/templates/admin/users.html:42 app/templates/leave.html:43
-#: app/templates/oncall.html:55 app/templates/schedule.html:59
-#: app/templates/swaps.html:36
-msgid "Actions"
 msgstr ""
 
 #: app/templates/leave.html:54
@@ -1776,7 +2102,7 @@ msgstr ""
 msgid "Aucune notification."
 msgstr ""
 
-#: app/templates/admin/dashboard.html:152 app/templates/oncall.html:22
+#: app/templates/admin/dashboard.html:185 app/templates/oncall.html:22
 #: app/templates/oncall.html:41 app/templates/oncall.html:113
 msgid "astreintes"
 msgstr ""
@@ -1849,7 +2175,7 @@ msgstr ""
 msgid "Ajouter un nouveau shift"
 msgstr ""
 
-#: app/templates/admin/dashboard.html:147 app/templates/schedule.html:23
+#: app/templates/admin/dashboard.html:180 app/templates/schedule.html:23
 #: app/templates/schedule.html:42 app/templates/schedule.html:160
 msgid "shifts"
 msgstr ""
@@ -1872,6 +2198,7 @@ msgstr ""
 msgid "Liste des shifts avec les utilisateurs, types, dates et heures"
 msgstr ""
 
+#: app/templates/admin/audit_log.html:87
 #: app/templates/admin/automation/full_dry_run.html:73
 #: app/templates/admin/backups/dashboard.html:76
 #: app/templates/admin/backups/dashboard.html:113
@@ -2014,8 +2341,8 @@ msgstr ""
 msgid "Mon shift"
 msgstr ""
 
-#: app/templates/admin/swaps.html:37 app/templates/admin/swaps.html:102
-#: app/templates/swaps.html:33
+#: app/templates/admin/swaps.html:37 app/templates/admin/swaps.html:76
+#: app/templates/admin/swaps.html:147 app/templates/swaps.html:33
 msgid "Destinataire"
 msgstr ""
 
@@ -2023,60 +2350,65 @@ msgstr ""
 msgid "Shift en retour"
 msgstr ""
 
-#: app/templates/swaps.html:35 app/templates/swaps.html:81
+#: app/templates/swaps.html:35 app/templates/swaps.html:87
 msgid "Statut"
 msgstr ""
 
-#: app/templates/swaps.html:57
+#: app/templates/swaps.html:63
 msgid "Annuler la demande"
 msgstr ""
 
-#: app/templates/swaps.html:58
+#: app/templates/swaps.html:64
 msgid "Annuler cette demande d'échange ?"
 msgstr ""
 
-#: app/templates/swaps.html:66
+#: app/templates/swaps.html:72
 msgid "Aucune demande envoyée"
 msgstr ""
 
-#: app/templates/swaps.html:72
+#: app/templates/swaps.html:78
 msgid "Demandes reçues"
 msgstr ""
 
-#: app/templates/swaps.html:75
+#: app/templates/swaps.html:81
 msgid "Demandes d'échange reçues"
 msgstr ""
 
-#: app/templates/swaps.html:78
+#: app/templates/swaps.html:84
 msgid "De"
 msgstr ""
 
-#: app/templates/swaps.html:79
+#: app/templates/swaps.html:85
 msgid "Son shift proposé"
 msgstr ""
 
-#: app/templates/swaps.html:80
+#: app/templates/swaps.html:86
 msgid "En échange de"
 msgstr ""
 
-#: app/templates/admin/swaps.html:53 app/templates/admin/swaps.html:118
-#: app/templates/swaps.html:93
+#: app/templates/admin/swaps.html:98 app/templates/admin/swaps.html:169
+#: app/templates/swaps.html:106
 msgid "Don simple"
 msgstr ""
 
-#: app/templates/swaps.html:99
+#: app/templates/admin/swaps.html:103 app/templates/swaps.html:112
+#, python-format
+msgid "Actions pour la demande de %(name)s"
+msgstr ""
+
+#: app/templates/swaps.html:130
 msgid "Aucune demande reçue"
 msgstr ""
 
-#: app/templates/swaps.html:106
+#: app/templates/swaps.html:137
 msgid ""
-"Une demande d'échange doit être validée par un administrateur avant "
-"d'être appliquée."
+"Une demande d'échange doit être confirmée par le destinataire puis "
+"validée par un administrateur avant d'être appliquée."
 msgstr ""
 
 #: app/templates/admin/add_group.html:3 app/templates/admin/add_group.html:8
-#: app/templates/admin/dashboard.html:131
-#: app/templates/admin/dashboard.html:133 app/templates/admin/groups.html:19
+#: app/templates/admin/dashboard.html:164
+#: app/templates/admin/dashboard.html:166 app/templates/admin/groups.html:19
 msgid "Ajouter un groupe"
 msgstr ""
 
@@ -2096,20 +2428,153 @@ msgstr ""
 msgid "Fait partie de l'astreinte (peut être en astreinte)"
 msgstr ""
 
+#: app/templates/admin/add_notification_target.html:3
+#: app/templates/admin/add_notification_target.html:8
+msgid "Ajouter une cible de notification"
+msgstr ""
+
+#: app/templates/admin/add_notification_target.html:16
+#: app/templates/admin/add_service_account.html:16
+#: app/templates/admin/add_shift_type.html:16
+#: app/templates/admin/edit_notification_target.html:16
+#: app/templates/admin/edit_service_account.html:16
+#: app/templates/admin/edit_shift_type.html:16
+#: app/templates/admin/edit_user.html:16 app/templates/admin/groups.html:36
+#: app/templates/admin/notification_targets.html:45
+#: app/templates/admin/service_accounts.html:36
+#: app/templates/admin/shift_types.html:31 app/templates/admin/users.html:38
+#: app/templates/auth/profile.html:14 app/templates/auth/update_profile.html:15
+msgid "Nom"
+msgstr ""
+
+#: app/templates/admin/add_notification_target.html:17
+msgid "Ex: Slack - #on-call"
+msgstr ""
+
+#: app/templates/admin/add_notification_target.html:21
+#: app/templates/admin/edit_notification_target.html:21
+msgid "URL Apprise"
+msgstr ""
+
+#: app/templates/admin/add_notification_target.html:24
+#: app/templates/admin/edit_notification_target.html:24
+msgid ""
+"Format d'URL spécifique à chaque service (Slack, Discord, Telegram, "
+"webhook générique...)."
+msgstr ""
+
+#: app/templates/admin/add_notification_target.html:26
+#: app/templates/admin/edit_notification_target.html:26
+msgid "Voir la documentation Apprise"
+msgstr ""
+
+#: app/templates/admin/add_notification_target.html:32
+#: app/templates/admin/edit_notification_target.html:32
+#: app/templates/admin/notification_targets.html:46
+msgid "Catégories"
+msgstr ""
+
+#: app/templates/admin/add_notification_target.html:41
+#: app/templates/admin/edit_notification_target.html:41
+msgid "Aucune catégorie cochée = toutes les catégories."
+msgstr ""
+
+#: app/templates/admin/add_notification_target.html:43
+#: app/templates/admin/edit_notification_target.html:43
+msgid ""
+"Échanges de shifts entre utilisateurs : nouvelle demande, approbation, "
+"rejet, annulation d'un échange déjà approuvé."
+msgstr ""
+
+#: app/templates/admin/add_notification_target.html:44
+#: app/templates/admin/edit_notification_target.html:44
+msgid ""
+"Sauvegardes déclenchées manuellement depuis l'interface d'administration "
+"(création, nettoyage) : succès et échecs. N'inclut pas les sauvegardes "
+"automatiques planifiées par cron."
+msgstr ""
+
+#: app/templates/admin/add_notification_target.html:45
+#: app/templates/admin/edit_notification_target.html:45
+msgid ""
+"Alertes système générales, notamment les échecs d'envoi des emails de "
+"rappel hebdomadaires (shifts et astreintes)."
+msgstr ""
+
+#: app/templates/admin/add_notification_target.html:46
+#: app/templates/admin/edit_notification_target.html:46
+msgid ""
+"Rappel hebdomadaire des shifts, en relais du rappel par email. Chaque "
+"utilisateur peut désactiver ce relais individuellement dans ses "
+"paramètres personnels."
+msgstr ""
+
+#: app/templates/admin/add_notification_target.html:47
+#: app/templates/admin/edit_notification_target.html:47
+msgid ""
+"Rappel hebdomadaire d'astreinte, en relais du rappel par email. Chaque "
+"utilisateur peut désactiver ce relais individuellement dans ses "
+"paramètres personnels."
+msgstr ""
+
+#: app/templates/admin/add_notification_target.html:54
+#: app/templates/admin/edit_notification_target.html:54
+#: app/templates/admin/notification_targets.html:47
+msgid "Activée"
+msgstr ""
+
+#: app/templates/admin/add_service_account.html:3
+#: app/templates/admin/add_service_account.html:8
+#: app/templates/admin/service_accounts.html:23
+msgid "Créer un compte de service"
+msgstr ""
+
+#: app/templates/admin/add_service_account.html:17
+msgid "Ex: Zapier"
+msgstr ""
+
+#: app/templates/admin/add_service_account.html:21
+#: app/templates/admin/edit_service_account.html:21
+msgid "Description"
+msgstr ""
+
+#: app/templates/admin/add_service_account.html:22
+msgid "Ex: Synchronisation des shifts vers Zapier"
+msgstr ""
+
+#: app/templates/admin/add_service_account.html:26
+#: app/templates/admin/edit_service_account.html:26
+#: app/templates/admin/service_accounts.html:40
+msgid "Expiration"
+msgstr ""
+
+#: app/templates/admin/add_service_account.html:28
+#: app/templates/admin/edit_service_account.html:28
+msgid "Optionnel : laissez vide pour un jeton sans expiration."
+msgstr ""
+
+#: app/templates/admin/add_service_account.html:34
+msgid ""
+"Le jeton d'accès (secret) sera affiché une seule fois après la création. "
+"Notez-le immédiatement : il ne pourra plus jamais être ré-affiché."
+msgstr ""
+
+#: app/templates/admin/add_service_account.html:40
+#: app/utils/helpers/js_translations.py:48
+msgid "Créer"
+msgstr ""
+
 #: app/templates/admin/add_shift_type.html:3
 #: app/templates/admin/add_shift_type.html:8
-#: app/templates/admin/dashboard.html:138
-#: app/templates/admin/dashboard.html:140
+#: app/templates/admin/dashboard.html:171
+#: app/templates/admin/dashboard.html:173
 #: app/templates/admin/shift_types.html:19
 msgid "Ajouter un type de shift"
 msgstr ""
 
-#: app/templates/admin/add_shift_type.html:16
-#: app/templates/admin/edit_shift_type.html:16
-#: app/templates/admin/edit_user.html:16 app/templates/admin/groups.html:36
-#: app/templates/admin/shift_types.html:31 app/templates/admin/users.html:38
-#: app/templates/auth/profile.html:14 app/templates/auth/update_profile.html:15
-msgid "Nom"
+#: app/templates/admin/add_shift_type.html:17
+#: app/templates/admin/edit_shift_type.html:17
+msgid "Ex: morning"
 msgstr ""
 
 #: app/templates/admin/add_shift_type.html:18
@@ -2123,14 +2588,29 @@ msgstr ""
 msgid "Libellé"
 msgstr ""
 
+#: app/templates/admin/add_shift_type.html:23
+#: app/templates/admin/edit_shift_type.html:23
+msgid "Ex: 07h-15h"
+msgstr ""
+
 #: app/templates/admin/add_shift_type.html:24
 #: app/templates/admin/edit_shift_type.html:24
 msgid "Libellé affiché aux utilisateurs"
 msgstr ""
 
+#: app/templates/admin/add_shift_type.html:29
+#: app/templates/admin/edit_shift_type.html:29
+msgid "Ex: 7"
+msgstr ""
+
 #: app/templates/admin/add_shift_type.html:30
 #: app/templates/admin/edit_shift_type.html:30
 msgid "Heure de début du shift (0-23)"
+msgstr ""
+
+#: app/templates/admin/add_shift_type.html:35
+#: app/templates/admin/edit_shift_type.html:35
+msgid "Ex: 15"
 msgstr ""
 
 #: app/templates/admin/add_shift_type.html:36
@@ -2139,8 +2619,8 @@ msgid "Heure de fin du shift (0-23)"
 msgstr ""
 
 #: app/templates/admin/add_user.html:3 app/templates/admin/add_user.html:8
-#: app/templates/admin/dashboard.html:124
-#: app/templates/admin/dashboard.html:126 app/templates/admin/users.html:20
+#: app/templates/admin/dashboard.html:157
+#: app/templates/admin/dashboard.html:159 app/templates/admin/users.html:20
 msgid "Ajouter un utilisateur"
 msgstr ""
 
@@ -2152,12 +2632,20 @@ msgstr ""
 msgid "Nom complet"
 msgstr ""
 
+#: app/templates/admin/add_user.html:30
+msgid "Ex: Jean Dupont"
+msgstr ""
+
 #: app/templates/admin/add_user.html:31
 msgid "Exemple : Jean Dupont"
 msgstr ""
 
 #: app/templates/admin/add_user.html:35 app/templates/auth/login.html:30
 msgid "Adresse email"
+msgstr ""
+
+#: app/templates/admin/add_user.html:36
+msgid "Ex: jean.dupont@exemple.com"
 msgstr ""
 
 #: app/templates/admin/add_user.html:37
@@ -2199,6 +2687,125 @@ msgstr ""
 msgid "Annuler et retourner à la liste des utilisateurs"
 msgstr ""
 
+#: app/templates/admin/audit_log.html:3 app/templates/admin/audit_log.html:10
+#: app/templates/admin/audit_log.html:14 app/templates/admin/dashboard.html:109
+msgid "Historique des modifications"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:7
+#: app/templates/admin/automation/dashboard.html:5
+#: app/templates/admin/automation/full.html:9
+#: app/templates/admin/automation/full_dry_run.html:5
+#: app/templates/admin/automation/refresh_shifts.html:7
+#: app/templates/admin/automation/status.html:5
+#: app/templates/admin/backups/dashboard.html:5
+#: app/templates/admin/groups.html:7
+#: app/templates/admin/notification_targets.html:7
+#: app/templates/admin/service_accounts.html:7
+#: app/templates/admin/shift_types.html:7 app/templates/admin/swaps.html:7
+#: app/templates/admin/users.html:7
+msgid "Fil d'Ariane"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:19
+msgid "Filtres"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:22 app/templates/admin/audit_log.html:88
+msgid "Auteur"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:24 app/templates/admin/audit_log.html:33
+msgid "Tous"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:31
+msgid "Domaine"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:40
+msgid "Du"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:44
+msgid "Au"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:51
+msgid "Filtrer"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:54
+msgid "Réinitialiser"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:60 app/templates/admin/swaps.html:17
+msgid "Actions globales"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:64 app/templates/admin/audit_log.html:65
+msgid "Purger les entrées plus anciennes que la rétention configurée"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:66
+msgid ""
+"Supprimer définitivement les entrées d'historique plus anciennes que la "
+"rétention configurée ?"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:67
+msgid "Purger selon la rétention"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:71
+#, python-format
+msgid "Rétention actuelle : %(days)s jour(s)"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:74
+msgid "Aucune rétention configurée -"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:75
+msgid "réglez-la dans les paramètres"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:76
+msgid "pour pouvoir purger."
+msgstr ""
+
+#: app/templates/admin/audit_log.html:83
+msgid "Entrées de l'historique"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:89
+msgid "Action"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:90
+msgid "Ressource"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:91
+msgid "Détails"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:92
+msgid "Adresse IP"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:99
+msgid "Système"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:133
+msgid "entrées"
+msgstr ""
+
+#: app/templates/admin/audit_log.html:137
+msgid "Aucune entrée d'historique ne correspond à ces filtres."
+msgstr ""
+
 #: app/templates/admin/dashboard.html:5
 msgid "Tableau de bord Admin"
 msgstr ""
@@ -2217,7 +2824,7 @@ msgstr ""
 #: app/templates/admin/dashboard.html:14 app/templates/admin/dashboard.html:25
 #: app/templates/admin/dashboard.html:36 app/templates/admin/dashboard.html:47
 #: app/templates/admin/dashboard.html:58 app/templates/admin/dashboard.html:69
-#: app/templates/admin/dashboard.html:80
+#: app/templates/admin/dashboard.html:80 app/templates/admin/dashboard.html:113
 msgid "Voir la liste"
 msgstr ""
 
@@ -2281,7 +2888,8 @@ msgstr ""
 msgid "Configurer l'automatisation"
 msgstr ""
 
-#: app/templates/admin/dashboard.html:91 app/templates/admin/dashboard.html:113
+#: app/templates/admin/dashboard.html:91 app/templates/admin/dashboard.html:124
+#: app/templates/admin/dashboard.html:146
 msgid "Configurer"
 msgstr ""
 
@@ -2296,23 +2904,60 @@ msgid "Gérer les sauvegardes"
 msgstr ""
 
 #: app/templates/admin/dashboard.html:102
+#: app/templates/admin/dashboard.html:135
 msgid "Gérer"
 msgstr ""
 
-#: app/templates/admin/dashboard.html:109 app/templates/admin/settings.html:3
+#: app/templates/admin/dashboard.html:110 app/templates/admin/settings.html:214
+msgid "Audit trail"
+msgstr ""
+
+#: app/templates/admin/dashboard.html:112
+msgid "Voir l'historique des modifications"
+msgstr ""
+
+#: app/templates/admin/dashboard.html:120
+#: app/templates/admin/notification_targets.html:3
+#: app/templates/admin/notification_targets.html:10
+#: app/templates/admin/notification_targets.html:14
+msgid "Notifications externes"
+msgstr ""
+
+#: app/templates/admin/dashboard.html:121
+msgid "Slack, Discord, Telegram, webhooks..."
+msgstr ""
+
+#: app/templates/admin/dashboard.html:123
+msgid "Configurer les notifications externes"
+msgstr ""
+
+#: app/templates/admin/dashboard.html:131
+#: app/templates/admin/service_accounts.html:10
+msgid "API publique"
+msgstr ""
+
+#: app/templates/admin/dashboard.html:132
+msgid "Comptes de service pour intégrations tierces"
+msgstr ""
+
+#: app/templates/admin/dashboard.html:134
+msgid "Gérer les comptes de service"
+msgstr ""
+
+#: app/templates/admin/dashboard.html:142 app/templates/admin/settings.html:3
 #: app/templates/admin/settings.html:8
 msgid "Paramètres"
 msgstr ""
 
-#: app/templates/admin/dashboard.html:110
+#: app/templates/admin/dashboard.html:143
 msgid "Fuseau horaire, pagination, notifications..."
 msgstr ""
 
-#: app/templates/admin/dashboard.html:112
+#: app/templates/admin/dashboard.html:145
 msgid "Gérer les paramètres"
 msgstr ""
 
-#: app/templates/admin/dashboard.html:122
+#: app/templates/admin/dashboard.html:155
 msgid "Actions rapides administrateur"
 msgstr ""
 
@@ -2325,11 +2970,32 @@ msgid "Nom unique du groupe"
 msgstr ""
 
 #: app/templates/admin/edit_group.html:34
+#: app/templates/admin/edit_notification_target.html:59
 #: app/templates/admin/edit_shift_type.html:40
 #: app/templates/admin/edit_user.html:55
-#: app/templates/auth/profile_settings.html:86
+#: app/templates/auth/profile_settings.html:131
 #: app/templates/auth/update_profile.html:50
 msgid "Enregistrer les modifications"
+msgstr ""
+
+#: app/templates/admin/edit_notification_target.html:3
+#: app/templates/admin/edit_notification_target.html:8
+msgid "Modifier une cible de notification"
+msgstr ""
+
+#: app/templates/admin/edit_service_account.html:3
+#: app/templates/admin/edit_service_account.html:8
+msgid "Modifier un compte de service"
+msgstr ""
+
+#: app/templates/admin/edit_service_account.html:32
+msgid "Jeton : "
+msgstr ""
+
+#: app/templates/admin/edit_service_account.html:33
+msgid ""
+"Le secret ne peut pas être modifié ici — utilisez la régénération depuis "
+"la liste des comptes."
 msgstr ""
 
 #: app/templates/admin/edit_shift_type.html:3
@@ -2376,17 +3042,6 @@ msgstr ""
 msgid "Gestion des groupes"
 msgstr ""
 
-#: app/templates/admin/automation/dashboard.html:5
-#: app/templates/admin/automation/full.html:9
-#: app/templates/admin/automation/full_dry_run.html:5
-#: app/templates/admin/automation/refresh_shifts.html:7
-#: app/templates/admin/automation/status.html:5
-#: app/templates/admin/backups/dashboard.html:5
-#: app/templates/admin/groups.html:7 app/templates/admin/shift_types.html:7
-#: app/templates/admin/swaps.html:7 app/templates/admin/users.html:7
-msgid "Fil d'Ariane"
-msgstr ""
-
 #: app/templates/admin/groups.html:17
 msgid "Actions groupes"
 msgstr ""
@@ -2423,10 +3078,14 @@ msgid "Fait partie de l'astreinte"
 msgstr ""
 
 #: app/templates/admin/groups.html:49 app/templates/admin/groups.html:56
+#: app/templates/admin/notification_targets.html:70
+#: app/templates/admin/service_accounts.html:54
 msgid "Oui"
 msgstr ""
 
 #: app/templates/admin/groups.html:51 app/templates/admin/groups.html:58
+#: app/templates/admin/notification_targets.html:70
+#: app/templates/admin/service_accounts.html:54
 msgid "Non"
 msgstr ""
 
@@ -2460,14 +3119,247 @@ msgstr ""
 msgid "Supprimer le groupe %(name)s"
 msgstr ""
 
-#: app/templates/admin/groups.html:86 app/templates/admin/shift_types.html:73
-#: app/templates/admin/users.html:91
+#: app/templates/admin/groups.html:86
+#: app/templates/admin/notification_targets.html:76
+#: app/templates/admin/notification_targets.html:78
+#: app/templates/admin/notification_targets.html:111
+#: app/templates/admin/service_accounts.html:62
+#: app/templates/admin/service_accounts.html:64
+#: app/templates/admin/service_accounts.html:97
+#: app/templates/admin/shift_types.html:73 app/templates/admin/users.html:91
 msgid "Modifier"
 msgstr ""
 
-#: app/templates/admin/groups.html:87 app/templates/admin/shift_types.html:74
-#: app/templates/admin/users.html:92
+#: app/templates/admin/groups.html:87
+#: app/templates/admin/notification_targets.html:91
+#: app/templates/admin/notification_targets.html:96
+#: app/templates/admin/notification_targets.html:113
+#: app/templates/admin/service_accounts.html:78
+#: app/templates/admin/service_accounts.html:83
+#: app/templates/admin/service_accounts.html:99
+#: app/templates/admin/shift_types.html:74 app/templates/admin/users.html:92
 msgid "Supprimer"
+msgstr ""
+
+#: app/templates/admin/notification_targets.html:22
+msgid "Activer les notifications externes (Slack, Discord, Telegram, webhooks...)"
+msgstr ""
+
+#: app/templates/admin/notification_targets.html:25
+msgid ""
+"Tant que ce réglage est désactivé, aucune cible ci-dessous ne recevra de "
+"notification, même si elle est individuellement activée."
+msgstr ""
+
+#: app/templates/admin/notification_targets.html:30
+msgid "Actions notifications externes"
+msgstr ""
+
+#: app/templates/admin/notification_targets.html:32
+msgid "Ajouter une cible"
+msgstr ""
+
+#: app/templates/admin/notification_targets.html:34
+msgid "Ajouter une nouvelle cible de notification"
+msgstr ""
+
+#: app/templates/admin/notification_targets.html:40
+msgid "Cibles de notification"
+msgstr ""
+
+#: app/templates/admin/notification_targets.html:42
+msgid "Liste des cibles de notification externes"
+msgstr ""
+
+#: app/templates/admin/notification_targets.html:62
+msgid "Toutes"
+msgstr ""
+
+#: app/templates/admin/notification_targets.html:69
+#: app/templates/admin/service_accounts.html:53
+#, python-format
+msgid "Basculer l'activation de %(name)s"
+msgstr ""
+
+#: app/templates/admin/notification_targets.html:75
+#, python-format
+msgid "Actions pour la cible %(name)s"
+msgstr ""
+
+#: app/templates/admin/notification_targets.html:78
+#, python-format
+msgid "Modifier la cible %(name)s"
+msgstr ""
+
+#: app/templates/admin/notification_targets.html:82
+#: app/templates/admin/notification_targets.html:86
+#: app/templates/admin/notification_targets.html:112
+msgid "Tester"
+msgstr ""
+
+#: app/templates/admin/notification_targets.html:86
+#, python-format
+msgid "Tester la cible %(name)s"
+msgstr ""
+
+#: app/templates/admin/notification_targets.html:95
+#, python-format
+msgid "Êtes-vous sûr de vouloir supprimer la cible %(name)s ?"
+msgstr ""
+
+#: app/templates/admin/notification_targets.html:96
+#, python-format
+msgid "Supprimer la cible %(name)s"
+msgstr ""
+
+#: app/templates/admin/notification_targets.html:111
+msgid "Modifier la cible"
+msgstr ""
+
+#: app/templates/admin/notification_targets.html:112
+msgid "Envoyer une notification de test"
+msgstr ""
+
+#: app/templates/admin/notification_targets.html:113
+msgid "Supprimer la cible"
+msgstr ""
+
+#: app/templates/admin/notification_targets.html:117
+msgid "Aucune cible de notification configurée."
+msgstr ""
+
+#: app/templates/admin/service_account_created.html:3
+msgid "Jeton du compte de service"
+msgstr ""
+
+#: app/templates/admin/service_account_created.html:10
+#, python-format
+msgid "Secret régénéré pour %(name)s"
+msgstr ""
+
+#: app/templates/admin/service_account_created.html:12
+#, python-format
+msgid "Compte de service %(name)s créé"
+msgstr ""
+
+#: app/templates/admin/service_account_created.html:19
+msgid ""
+"Ce jeton ne sera plus jamais affiché. Copiez-le et stockez-le en lieu sûr"
+" maintenant."
+msgstr ""
+
+#: app/templates/admin/service_account_created.html:21
+msgid "L'ancien jeton ne fonctionne plus."
+msgstr ""
+
+#: app/templates/admin/service_account_created.html:28
+msgid "Jeton d'accès (Authorization: Bearer ...)"
+msgstr ""
+
+#: app/templates/admin/service_account_created.html:34
+msgid "J'ai noté le jeton, retour à la liste"
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:3
+#: app/templates/admin/service_accounts.html:14
+msgid "API publique - Comptes de service"
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:17
+msgid ""
+"Un compte de service authentifie une intégration tierce sur l'API "
+"publique (/api/v1/*) via un jeton bearer, indépendamment des comptes "
+"utilisateurs. Documentation : "
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:21
+msgid "Actions comptes de service"
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:25
+msgid "Créer un nouveau compte de service"
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:31
+msgid "Comptes de service"
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:33
+msgid "Liste des comptes de service de l'API publique"
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:37
+msgid "Jeton"
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:38
+msgid "Actif"
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:39
+msgid "Dernière utilisation"
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:58
+#: app/templates/admin/service_accounts.html:59
+msgid "Jamais"
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:61
+#, python-format
+msgid "Actions pour le compte %(name)s"
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:64
+#, python-format
+msgid "Modifier le compte %(name)s"
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:68
+#: app/templates/admin/service_accounts.html:73
+msgid "Régénérer le secret"
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:72
+#, python-format
+msgid ""
+"Régénérer le secret de %(name)s ? L'ancien jeton cessera immédiatement de"
+" fonctionner."
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:73
+#, python-format
+msgid "Régénérer le secret de %(name)s"
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:82
+#, python-format
+msgid "Êtes-vous sûr de vouloir supprimer le compte %(name)s ?"
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:83
+#, python-format
+msgid "Supprimer le compte %(name)s"
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:97
+msgid "Modifier le nom, la description ou l'expiration"
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:98
+msgid "Régénérer"
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:98
+msgid "Générer un nouveau secret, invalidant l'ancien"
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:99
+msgid "Supprimer définitivement le compte"
+msgstr ""
+
+#: app/templates/admin/service_accounts.html:103
+msgid "Aucun compte de service configuré."
 msgstr ""
 
 #: app/templates/admin/settings.html:16
@@ -2562,7 +3454,7 @@ msgstr ""
 msgid "Activer les rappels hebdomadaires par email (shifts + astreintes)"
 msgstr ""
 
-#: app/templates/admin/settings.html:190
+#: app/templates/admin/settings.html:190 app/templates/admin/settings.html:216
 msgid "Rétention (jours)"
 msgstr ""
 
@@ -2577,15 +3469,25 @@ msgid ""
 "variables d'environnement."
 msgstr ""
 
-#: app/templates/admin/settings.html:214
-msgid "Export ICS"
-msgstr ""
-
-#: app/templates/admin/settings.html:216
-msgid "Expiration du jeton ICS (jours)"
+#: app/templates/admin/settings.html:217
+msgid "Non configuré"
 msgstr ""
 
 #: app/templates/admin/settings.html:220
+msgid ""
+"Tant qu'aucune valeur n'est enregistrée ici, aucune purge n'est effectuée"
+" : toutes les entrées de l'historique sont conservées indéfiniment."
+msgstr ""
+
+#: app/templates/admin/settings.html:236
+msgid "Export ICS"
+msgstr ""
+
+#: app/templates/admin/settings.html:238
+msgid "Expiration du jeton ICS (jours)"
+msgstr ""
+
+#: app/templates/admin/settings.html:242
 msgid ""
 "Réglage actuellement sans effet : aucune expiration n'est encore "
 "appliquée aux jetons ICS existants. Conservé pour cohérence, en attendant"
@@ -2640,10 +3542,6 @@ msgstr ""
 msgid "Supprimer le type de shift %(name)s"
 msgstr ""
 
-#: app/templates/admin/swaps.html:17
-msgid "Actions globales"
-msgstr ""
-
 #: app/templates/admin/swaps.html:21
 msgid "Purger l'historique complet des échanges terminés"
 msgstr ""
@@ -2659,89 +3557,104 @@ msgid "Purger l'historique (tous utilisateurs)"
 msgstr ""
 
 #: app/templates/admin/swaps.html:32
-msgid "Demandes d'échange en attente de validation"
+msgid "Demandes d'échange en attente de confirmation du destinataire"
 msgstr ""
 
-#: app/templates/admin/swaps.html:35 app/templates/admin/swaps.html:100
+#: app/templates/admin/swaps.html:35 app/templates/admin/swaps.html:74
+#: app/templates/admin/swaps.html:145
 msgid "Demandeur"
 msgstr ""
 
-#: app/templates/admin/swaps.html:36 app/templates/admin/swaps.html:101
+#: app/templates/admin/swaps.html:36 app/templates/admin/swaps.html:75
+#: app/templates/admin/swaps.html:146
 msgid "Shift proposé"
 msgstr ""
 
-#: app/templates/admin/swaps.html:38 app/templates/admin/swaps.html:103
-msgid "Shift demandé en retour"
-msgstr ""
-
-#: app/templates/admin/swaps.html:39
+#: app/templates/admin/swaps.html:38 app/templates/admin/swaps.html:78
 msgid "Demandé le"
 msgstr ""
 
-#: app/templates/admin/swaps.html:58
-#, python-format
-msgid "Actions pour la demande de %(name)s"
+#: app/templates/admin/swaps.html:61
+msgid ""
+"Lecture seule - le destinataire doit d'abord confirmer (et choisir son "
+"propre shift) avant qu'une action admin soit possible."
 msgstr ""
 
-#: app/templates/admin/swaps.html:62
-msgid "Approuver la demande"
+#: app/templates/admin/swaps.html:64
+msgid "Aucune demande en attente du destinataire."
 msgstr ""
 
-#: app/templates/admin/swaps.html:63
-msgid "Approuver cet échange ? Les shifts seront réassignés immédiatement."
-msgstr ""
-
-#: app/templates/admin/swaps.html:64 app/templates/admin/swaps.html:85
-msgid "Approuver"
-msgstr ""
-
-#: app/templates/admin/swaps.html:70
-msgid "Rejeter la demande"
+#: app/templates/admin/swaps.html:67
+msgid "En attente de validation"
 msgstr ""
 
 #: app/templates/admin/swaps.html:71
+msgid "Demandes d'échange en attente de validation"
+msgstr ""
+
+#: app/templates/admin/swaps.html:77 app/templates/admin/swaps.html:148
+msgid "Shift demandé en retour"
+msgstr ""
+
+#: app/templates/admin/swaps.html:107
+msgid "Approuver la demande"
+msgstr ""
+
+#: app/templates/admin/swaps.html:108
+msgid "Approuver cet échange ? Les shifts seront réassignés immédiatement."
+msgstr ""
+
+#: app/templates/admin/swaps.html:109 app/templates/admin/swaps.html:130
+msgid "Approuver"
+msgstr ""
+
+#: app/templates/admin/swaps.html:115
+msgid "Rejeter la demande"
+msgstr ""
+
+#: app/templates/admin/swaps.html:116
 msgid "Rejeter cette demande d'échange ?"
 msgstr ""
 
-#: app/templates/admin/swaps.html:72 app/templates/admin/swaps.html:86
+#: app/templates/admin/swaps.html:117 app/templates/admin/swaps.html:131
 msgid "Rejeter"
 msgstr ""
 
-#: app/templates/admin/swaps.html:85
+#: app/templates/admin/swaps.html:130
 msgid "Valider l'échange et réassigner les shifts"
 msgstr ""
 
-#: app/templates/admin/swaps.html:86
+#: app/templates/admin/swaps.html:131
 msgid "Refuser la demande d'échange"
 msgstr ""
 
-#: app/templates/admin/swaps.html:90
-msgid "Aucune demande d'échange en attente."
+#: app/templates/admin/swaps.html:135
+msgid "Aucune demande d'échange en attente de validation."
 msgstr ""
 
-#: app/templates/admin/swaps.html:93
+#: app/templates/admin/swaps.html:138
 msgid "Approuvés"
 msgstr ""
 
-#: app/templates/admin/swaps.html:97
+#: app/templates/admin/swaps.html:142
 msgid "Demandes d'échange approuvées"
 msgstr ""
 
-#: app/templates/admin/swaps.html:104
+#: app/templates/admin/swaps.html:149
 msgid "Approuvé le"
 msgstr ""
 
-#: app/templates/admin/swaps.html:126
+#: app/templates/admin/swaps.html:177
 msgid "Annuler l'échange approuvé"
 msgstr ""
 
-#: app/templates/admin/swaps.html:127
+#: app/templates/admin/swaps.html:178
 msgid ""
 "Annuler cet échange ? Les shifts seront réassignés à leurs propriétaires "
 "d'origine."
 msgstr ""
 
-#: app/templates/admin/swaps.html:138
+#: app/templates/admin/swaps.html:189
 msgid "Aucun échange approuvé."
 msgstr ""
 
@@ -3518,6 +4431,10 @@ msgstr ""
 msgid "ou"
 msgstr ""
 
+#: app/templates/auth/login.html:34
+msgid "votre@email.com"
+msgstr ""
+
 #: app/templates/auth/login.html:36
 msgid "Exemple : votre@email.com"
 msgstr ""
@@ -3609,6 +4526,38 @@ msgstr ""
 #: app/templates/auth/profile_settings.html:79
 msgid ""
 "Les notifications par email sont actuellement désactivées pour toute "
+"l'organisation."
+msgstr ""
+
+#: app/templates/auth/profile_settings.html:84
+#: app/templates/auth/profile_settings.html:122
+msgid "Notifications externes (Slack, Discord, Telegram...)"
+msgstr ""
+
+#: app/templates/auth/profile_settings.html:87
+msgid "Relayer le rappel hebdomadaire de mes shifts vers"
+msgstr ""
+
+#: app/templates/auth/profile_settings.html:99
+msgid "Aucune cible n'est disponible pour les rappels de shifts pour le moment."
+msgstr ""
+
+#: app/templates/auth/profile_settings.html:101
+#: app/templates/auth/profile_settings.html:119
+msgid "Aucune cible cochée = pas de relais."
+msgstr ""
+
+#: app/templates/auth/profile_settings.html:105
+msgid "Relayer le rappel hebdomadaire de mes astreintes vers"
+msgstr ""
+
+#: app/templates/auth/profile_settings.html:117
+msgid "Aucune cible n'est disponible pour les rappels d'astreinte pour le moment."
+msgstr ""
+
+#: app/templates/auth/profile_settings.html:124
+msgid ""
+"Les notifications externes sont actuellement désactivées pour toute "
 "l'organisation."
 msgstr ""
 
@@ -3763,10 +4712,6 @@ msgstr ""
 msgid "Confirmation"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:39
-msgid "Confirmer"
-msgstr ""
-
 #: app/utils/helpers/js_translations.py:40
 msgid "Êtes-vous sûr ?"
 msgstr ""
@@ -3787,7 +4732,95 @@ msgstr ""
 msgid "Sélectionnez un type de shift"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:48
-msgid "Créer"
+#: app/utils/helpers/js_translations.py:50
+msgid ""
+"Événement mis à jour, mais le rééquilibrage automatique des shifts a "
+"échoué."
 msgstr ""
+
+#: app/utils/helpers/js_translations.py:52
+msgid "Erreur: "
+msgstr ""
+
+#: app/utils/helpers/js_translations.py:53
+msgid "Une erreur est survenue lors de la mise à jour."
+msgstr ""
+
+#: app/utils/helpers/js_translations.py:54
+msgid "Une erreur est survenue lors du redimensionnement."
+msgstr ""
+
+#: app/utils/helpers/js_translations.py:55
+msgid "Événement supprimé avec succès."
+msgstr ""
+
+#: app/utils/helpers/js_translations.py:56
+msgid "Une erreur est survenue lors de la suppression."
+msgstr ""
+
+#: app/utils/helpers/js_translations.py:57
+msgid "Suppression annulée."
+msgstr ""
+
+#: app/utils/helpers/js_translations.py:59
+msgid ""
+"Les shifts ne peuvent pas être créés ou déplacés vers les week-ends "
+"(samedi/dimanche)."
+msgstr ""
+
+#: app/utils/helpers/js_translations.py:62
+msgid "Création de shift annulée."
+msgstr ""
+
+#: app/utils/helpers/js_translations.py:63
+msgid "Veuillez remplir tous les champs obligatoires."
+msgstr ""
+
+#: app/utils/helpers/js_translations.py:64
+msgid "Shift créé avec succès."
+msgstr ""
+
+#: app/utils/helpers/js_translations.py:66
+msgid "Une erreur est survenue lors de la création du shift."
+msgstr ""
+
+#: app/utils/helpers/js_translations.py:69
+msgid "Une erreur est survenue lors du chargement des données."
+msgstr ""
+
+#: app/utils/helpers/js_translations.py:71
+msgid "Thème sombre activé"
+msgstr ""
+
+#: app/utils/helpers/js_translations.py:72
+msgid "Thème clair activé"
+msgstr ""
+
+#: app/utils/helpers/js_translations.py:73
+msgid "Copié !"
+msgstr ""
+
+#~ msgid "Demande d'échange envoyée, en attente de validation admin."
+#~ msgstr ""
+
+#~ msgid "En attente"
+#~ msgstr ""
+
+#~ msgid "Shift demandé en retour (optionnel)"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Choisissez d'abord un collègue - laissez"
+#~ " vide pour un don simple de "
+#~ "votre shift"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Une demande d'échange doit être validée"
+#~ " par un administrateur avant d'être "
+#~ "appliquée."
+#~ msgstr ""
+
+#~ msgid "Aucune demande d'échange en attente."
+#~ msgstr ""
 

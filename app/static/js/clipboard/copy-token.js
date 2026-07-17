@@ -7,13 +7,15 @@
  * blocked by the browser, which broke every "Copy" button on that page.
  */
 
+import { getString } from '../utils/i18n.js';
+
 function copyInputValue(inputId, button) {
     const input = document.getElementById(inputId);
     input.select();
     document.execCommand('copy');
 
     const originalText = button.innerHTML;
-    button.innerHTML = '<span class="icon"><i class="fas fa-check"></i></span><span>Copié !</span>';
+    button.innerHTML = `<span class="icon"><i class="fas fa-check"></i></span><span>${getString('copied')}</span>`;
 
     setTimeout(() => {
         button.innerHTML = originalText;

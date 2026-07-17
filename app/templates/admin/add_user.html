@@ -27,13 +27,13 @@
             <div class="card-body gap-4">
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">{{ _("Nom complet") }} <span class="text-error">*</span></legend>
-                    <input class="input w-full validator" type="text" id="name" name="name" required aria-required="true" placeholder="Ex: Jean Dupont" aria-describedby="name-help">
+                    <input class="input w-full validator" type="text" id="name" name="name" required aria-required="true" placeholder="{{ _("Ex: Jean Dupont") }}" aria-describedby="name-help">
                     <p class="hidden" id="name-help">{{ _("Exemple : Jean Dupont") }}</p>
                 </fieldset>
 
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">{{ _("Adresse email") }} <span class="text-error">*</span></legend>
-                    <input class="input w-full validator" type="email" id="email" name="email" required aria-required="true" placeholder="Ex: jean.dupont@exemple.com" aria-describedby="email-help">
+                    <input class="input w-full validator" type="email" id="email" name="email" required aria-required="true" placeholder="{{ _("Ex: jean.dupont@exemple.com") }}" aria-describedby="email-help">
                     <p class="hidden" id="email-help">{{ _("Exemple : jean.dupont@exemple.com") }}</p>
                 </fieldset>
 
