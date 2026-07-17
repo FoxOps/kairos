@@ -248,7 +248,6 @@ Cette feuille de route présente les étapes clés, l'état actuel et les priori
 | Élément | Statut | Priorité | Livraison estimée | Détails |
 |---------|--------|----------|-------------------|---------|
 | **Support MySQL/MariaDB** | ❌ | Moyenne | v1.0 | Alternative à PostgreSQL |
-| **Scalabilité horizontale** | ❌ | Basse | v1.0 | Support multi-instances (replicas k8s déjà à 2) |
 | **Monitoring et métriques** | ✅ | Moyenne | v0.6 | Prometheus (/metrics) + dashboard Grafana (report/Phase 6) |
 | **Documentation finale** | ✅ | Moyenne | v0.6 | Docs/ complet (report/Phase 5) |
 | **Version stable** | ❌ | **Haute** | v1.0 | Version recommandée pour la production |

@@ -28,7 +28,7 @@ python run.py                              # http://localhost:5000
 python -m pytest tests/ -v --tb=short              # all tests (make test)
 python -m pytest tests/unit/test_models.py -v      # one file
 python -m pytest tests/unit/test_models.py::TestUserModel::test_user_creation -v  # one test
-python -m pytest tests/ --cov=app --cov=config --cov-report=term-missing    # coverage
+python -m pytest tests/ --cov=app --cov-report=term-missing    # coverage
 
 # Real-browser E2E tests (optional, not in requirements.txt - skipped cleanly if absent)
 pip install -r requirements-e2e.txt && playwright install chromium
@@ -77,12 +77,16 @@ touching auth flows.
 
 ### Configuration: two parallel systems
 
-- `app/config/` (`base.py`, `development.py`, `production.py`, `testing.py`) is what the running
-  app actually uses — `create_app()` defaults to `"app.config.Config"`, and tests use
-  `create_app('app.config.TestingConfig')`.
-- Root-level `config.py` is a separate, mostly-legacy module only exercised by
-  `tests/unit/test_config.py` and `scripts/validate_config.py`. Don't confuse the two when changing
-  configuration — check which one a given caller actually imports (`app.config.X` vs `config`).
+- `app/config/` (`base.py`, `testing.py`) is what the running app actually uses —
+  `create_app()` defaults to `"app.config.Config"`, and tests use
+  `create_app('app.config.TestingConfig')`. Root-level `config.py`, and `app/config/production.py`/
+  `development.py` (`ProductionConfig`/`DevelopmentConfig`), were removed as dead code (v1.0
+  stabilization pass): nothing in this repo ever passed them to `create_app()` —
+  `docker/entrypoint.sh`'s `FLASK_ENV` only selects gunicorn vs the Flask dev server, it never
+  selects a config class — so `config.py` was a legacy duplicate only exercised by its own test file,
+  and `ProductionConfig`/`DevelopmentConfig` were subclasses nothing ever instantiated. Any fix that
+  matters in a real deployment must land in `Config` (`app/config/base.py`) itself — it's the only
+  class that's actually load-bearing.
 - `config_oidc.py` (`OIDCConfig`) is an additional standalone config module loaded directly by
   `app/__init__.py` and `app/auth/oidc_auth.py`. A `config_performance.py` used to exist alongside
   it but was orphaned (loaded nowhere) and removed — don't reintroduce it under that name without
@@ -104,10 +108,10 @@ touching auth flows.
   See "Multi-language support" below.
 - **Database engines supported**: SQLite (default, `sqlite:///app.db`, stdlib `sqlite3`), PostgreSQL
   (`postgresql://`/`postgres://`, driver `psycopg[binary]` — psycopg 3) and MySQL/MariaDB
-  (`mysql://`/`mariadb://`, driver `PyMySQL`). `get_database_type()` (duplicated identically in
-  `app/config/base.py` and `config.py`, kept in sync per above) detects the dialect from the URI
-  prefix but is never actually called anywhere in `app/` — dead but correct, kept for its documented
-  public behavior (tested in `tests/unit/test_config.py::TestGetDatabaseType`). PyMySQL was chosen
+  (`mysql://`/`mariadb://`, driver `PyMySQL`). SQLAlchemy resolves the dialect/driver itself from the
+  URI prefix at runtime — a `get_database_type()` helper that duplicated that detection existed in
+  both `app/config/base.py` and the (now-removed) root `config.py` but had zero real callers anywhere
+  in `app/`, and was removed as dead code in the v1.0 stabilization pass. PyMySQL was chosen
   over `mysqlclient` (the "reference" MySQL driver) specifically because it's 100% pure Python: zero
   extension-C compilation, zero system library (`libmariadb-dev`/`libmysqlclient-dev`) required
   either to install or to run it — the whole point being that an admin can point `DATABASE_URL` at
@@ -118,7 +122,7 @@ touching auth flows.
   migrations already use `batch_alter_table` unconditionally (safe on every dialect) and no `db.Text`
   column is engaged in a unique constraint/index (MySQL requires an explicit prefix length to index
   `TEXT`, not applicable here).
-  **`normalize_database_uri()`** (`app/config/base.py`, mirrored in `config.py`) is a real bug fix
+  **`normalize_database_uri()`** (`app/config/base.py`) is a real bug fix
   found while building this: SQLAlchemy's *bare* `mysql://`/`mariadb://`/`postgres://`/`postgresql://`
   prefixes (the format documented everywhere in this repo's docs and `.env.example`) default to the
   "classic" DBAPI driver for that dialect — `MySQLdb`/`mysqlclient` for mysql/mariadb, `psycopg2` for
@@ -128,7 +132,7 @@ touching auth flows.
   `+driver` form (`mysql+pymysql://`, `mariadb+pymysql://`, `postgresql+psycopg://`) before it reaches
   `SQLALCHEMY_DATABASE_URI`, leaving an already-explicit `+driver` suffix untouched (an admin who
   installed their own driver is never silently overridden). Applied in `Config` (the only class
-  `create_app()` actually uses in practice — see below), `ProductionConfig`, and `TestingConfig`.
+  `create_app()` actually uses in practice — see below) and `TestingConfig`.
   **`SQLALCHEMY_ENGINE_OPTIONS`** (`app/config/base.py`) is another bug found in the same pass: it was
   previously named `custom_engine_options` (lowercase) — Flask's `app.config.from_object()` only
   copies attributes where `key.isupper()`, so the setting was parsed from the env var but silently
@@ -142,11 +146,6 @@ touching auth flows.
   MySQL/PostgreSQL, breaking even the very first default-admin creation on a fresh install. Widened to
   `String(255)` (migration `6ff493358d9e`), verified end-to-end against a real ephemeral MariaDB
   container (migrations, default-admin creation, login) — not just in theory.
-  **`ProductionConfig`/`DevelopmentConfig` (`app/config/production.py`/`development.py`) are dead code
-  in practice**: `create_app()` (`app/__init__.py`) defaults to `"app.config.Config"` when no argument
-  is passed, and nothing in this repo ever passes `ProductionConfig`/`DevelopmentConfig` explicitly —
-  so any fix that matters in a real deployment must land in `Config` itself, not those subclasses
-  (still fixed there too, for consistency, but `Config` is the one that's actually load-bearing).
 
 ### Models
 

@@ -34,7 +34,7 @@ test: ## Exécute la suite de tests complète
 
 test-coverage: ## Exécute les tests avec couverture de code (terminal)
 	@echo "$(YELLOW)Exécution des tests avec couverture...$(NC)"
-	python -m pytest tests/ --cov=app --cov=config --cov-report=term-missing
+	python -m pytest tests/ --cov=app --cov-report=term-missing
 	# Rapport HTML : ajouter --cov-report=html (ouvre htmlcov/index.html)
 	# Rapport JSON : ajouter --cov-report=json
 

@@ -2,7 +2,7 @@
 
 [run]
 # Source packages à mesurer
-source = app, config
+source = app
 
 omit =
     */tests/*

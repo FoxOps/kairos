@@ -143,8 +143,7 @@ leviia-schedule/
 │   ├── services/             # Logique métier
 │   ├── routes/              # Routes / blueprints Flask
 │   └── utils/               # Fonctions utilitaires (par sous-package)
-├── app/config/              # Configuration active (base/dev/prod/testing)
-├── config.py                # Configuration legacy (voir CLAUDE.md)
+├── app/config/              # Configuration (base + testing)
 ├── run.py                   # Point d'entrée
 ├── requirements.txt         # Dépendances Python
 ├── Docs/                    # 📚 Documentation complète
@@ -175,7 +174,7 @@ pip install -r requirements.txt
 pytest tests/ -v --tb=short
 
 # Exécuter avec couverture de code
-pytest tests/ --cov=app --cov=config --cov-report=term-missing
+pytest tests/ --cov=app --cov-report=term-missing
 ```
 
 ### Vérification de la qualité du code

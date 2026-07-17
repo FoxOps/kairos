@@ -70,7 +70,7 @@ Il n'y a pas de formulaire de modification dédié. Deux options :
 
 ### Comment désactiver l'authentification pour le développement ?
 
-Dans le fichier `.env` (pas `config.py`) :
+Dans le fichier `.env` :
 
 ```bash
 LOGIN_DISABLED=true

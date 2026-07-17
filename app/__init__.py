@@ -232,7 +232,7 @@ def create_app(config_object: str | None = None):
     Args:
         config_object: Path to the configuration class to use.
                       Defaults to 'app.config.Config'.
-                      Examples: 'app.config.DevelopmentConfig', 'app.config.ProductionConfig'
+                      Example: 'app.config.TestingConfig' (used by the test suite)
 
     Returns:
         Configured Flask application instance
@@ -347,11 +347,12 @@ def create_app(config_object: str | None = None):
         )
 
     # Gzip/Brotli response compression (flask-compress was a declared
-    # dependency with its config in ProductionConfig but never
-    # initialized: Compress(app) was called nowhere, so
-    # COMPRESS_REGISTER/COMPRESS_MIMETYPES did nothing). Disabled in
-    # tests because the test client doesn't decode Content-Encoding:
-    # assertions on resp.data (text) would break on gzipped responses.
+    # dependency but Compress(app) was called nowhere, so it never
+    # actually compressed anything - now initialized here, using
+    # Flask-Compress's own built-in defaults since no COMPRESS_REGISTER/
+    # COMPRESS_MIMETYPES override is set in Config). Disabled in tests
+    # because the test client doesn't decode Content-Encoding: assertions
+    # on resp.data (text) would break on gzipped responses.
     if not app.config.get("TESTING", False):
         compress.init_app(app)
 

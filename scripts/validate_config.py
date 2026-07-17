@@ -22,8 +22,9 @@ from pathlib import Path
 # Ajouter le répertoire parent au path pour importer config
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# Importer les fonctions utilitaires depuis config
-from config import get_bool_from_env
+# Importer les fonctions utilitaires depuis la config réellement chargée
+# par create_app() (voir CLAUDE.md "Configuration: two parallel systems")
+from app.config.base import get_bool_from_env
 
 # Variables d'environnement critiques qui doivent être définies en production
 CRITICAL_VARIABLES = {
