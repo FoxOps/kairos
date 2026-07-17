@@ -22,7 +22,7 @@ sudo chmod -R 755 data logs
 # Créer un fichier .env si inexistant
 if [ ! -f ".env" ]; then
     echo "📝 Création du fichier .env"
-    cp ../.env.example .env
+    cp .env.example .env
     
     # Générer une clé secrète
     SECRET_KEY=$(python -c "import secrets; print(secrets.token_hex(32))" 2>/dev/null || echo "changez-moi")

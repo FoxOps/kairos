@@ -1,12 +1,12 @@
 # Dockerisation de Leviia Schedule (Version Simplifiée)
 
 > **Méthode recommandée** : deux fichiers à récupérer
-> (`docker-compose.example.yml` + `.env.example`, à la racine du dépôt),
-> une image déjà construite sur le registry - pas de clone du dépôt, pas
-> de build local, pas de mock OIDC (dev only). Construire l'image
-> soi-même ou cloner le dépôt pour un environnement de dev complet
-> (`docker/`) sont des alternatives réservées au développement ou à des
-> cas particuliers - voir plus bas.
+> (`docker/docker-compose.example.yml` + `docker/.env.example`), une
+> image déjà construite sur le registry - pas de clone du dépôt, pas de
+> build local, pas de mock OIDC (dev only). Construire l'image soi-même
+> ou cloner le dépôt pour un environnement de dev complet (`docker/`)
+> sont des alternatives réservées au développement ou à des cas
+> particuliers - voir plus bas.
 
 ---
 
@@ -18,14 +18,16 @@ commit de la branche par défaut (job `build_docker`, voir
 
 ### 1️⃣ Récupérer les deux fichiers nécessaires
 
-Pas besoin de cloner le dépôt entier - seuls deux fichiers, à la racine
-du dépôt, sont nécessaires :
+Pas besoin de cloner le dépôt entier - seuls deux fichiers sont
+nécessaires, tous deux déjà adaptés à une exécution Docker (chemins
+absolus sous `/app/data`, `TALISMAN_FORCE_HTTPS=false` par défaut - pas
+de reverse proxy TLS dans cette stack minimale) :
 
 ```bash
 mkdir leviia-schedule && cd leviia-schedule
 
-curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker-compose.example.yml
-curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/.env.example
+curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/docker-compose.example.yml
+curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/.env.example
 ```
 
 ### 2️⃣ Configurer
@@ -34,7 +36,7 @@ curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/.env.
 nano .env
 ```
 
-**Variables minimales :**
+**Variables minimales à changer :**
 ```env
 # Image à tirer du registry Harbor - remplacez <HARBOR_PROJECT> par le
 # nom du projet Harbor réel (voir la variable CI/CD CI_REGISTRY_IMAGE,
@@ -43,20 +45,6 @@ LEVIIA_IMAGE=harbor.leviia.com/<HARBOR_PROJECT>/leviia-schedule:latest
 
 SECRET_KEY=votre_clé_secrète
 DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe
-```
-
-**Variables à adapter pour Docker** (valeurs différentes de celles par
-défaut dans `.env.example`, pensées pour une exécution hors conteneur) :
-```env
-# Chemin absolu dans le conteneur, résolu sur le volume monté
-# (./data:/app/data) - sans ça la base SQLite n'est pas persistée.
-DATABASE_URL=sqlite:////app/data/app.db
-
-# Pas de reverse proxy TLS dans cette stack par défaut : forcer HTTPS
-# ferait boucler chaque requête sur une redirection https:// que rien
-# ne sert. Repassez à true (ou retirez la ligne) une fois un reverse
-# proxy TLS placé devant ce service.
-TALISMAN_FORCE_HTTPS=false
 ```
 
 ### 3️⃣ Démarrer
@@ -119,7 +107,7 @@ Toutes les commandes ci-dessous s'exécutent **depuis le dossier `docker/`**.
 ### Configurer l'environnement
 
 ```bash
-cp ../.env.example .env
+cp .env.example .env
 nano .env
 ```
 
@@ -173,7 +161,7 @@ défaut identiques à la section recommandée ci-dessus).
 
 | Variable | Description | Défaut | Requis |
 |----------|-------------|--------|--------|
-| `LEVIIA_IMAGE` | Image à utiliser (registry) | requis dans `docker-compose.example.yml` ; `leviia-schedule:dev` (build local) dans `docker/docker-compose.yml` | ✅ / ❌ selon le fichier |
+| `LEVIIA_IMAGE` | Image à utiliser (registry) | requis dans `docker/docker-compose.example.yml` ; `leviia-schedule:dev` (build local) dans `docker/docker-compose.yml` | ✅ / ❌ selon le fichier |
 | `FLASK_ENV` | Mode (development/production) | development | ❌ |
 | `SECRET_KEY` | Clé secrète Flask | requis | ✅ |
 | `DATABASE_URL` | URL de la base de données (voir note ci-dessous) | sqlite:////app/data/app.db | ❌ |
@@ -187,7 +175,7 @@ défaut identiques à la section recommandée ci-dessus).
 ### Exemple de `.env` complet
 
 ```env
-# Image du registry - obligatoire avec docker-compose.example.yml
+# Image du registry - obligatoire avec docker/docker-compose.example.yml
 LEVIIA_IMAGE=harbor.leviia.com/<HARBOR_PROJECT>/leviia-schedule:latest
 
 # Configuration de base
@@ -208,7 +196,7 @@ DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe_sécurisé
 
 ## 📦 Fichiers Expliqués
 
-### docker-compose.example.yml (racine du dépôt)
+### docker/docker-compose.example.yml
 - **Méthode recommandée** : un seul service, pas de `build:` - tire
   toujours `LEVIIA_IMAGE` depuis le registry. À copier en
   `docker-compose.yml` dans le dossier où vous déployez (voir
@@ -391,8 +379,8 @@ kill <PID>
 
 ```bash
 mkdir leviia-schedule && cd leviia-schedule
-curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker-compose.example.yml
-curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/.env.example
+curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/docker-compose.example.yml
+curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/.env.example
 
 nano .env  # LEVIIA_IMAGE, SECRET_KEY, DEFAULT_ADMIN_PASSWORD, DATABASE_URL, TALISMAN_FORCE_HTTPS
 
@@ -406,8 +394,8 @@ docker compose up -d
 
 ```bash
 mkdir leviia-schedule && cd leviia-schedule
-curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker-compose.example.yml
-curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/.env.example
+curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/docker-compose.example.yml
+curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/.env.example
 
 nano .env  # LEVIIA_IMAGE, SECRET_KEY, DEFAULT_ADMIN_PASSWORD, DATABASE_URL, FLASK_ENV=production
 
