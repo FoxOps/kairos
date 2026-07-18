@@ -1,44 +1,50 @@
 # Environment Variables - Kairos
 
-> **Complete documentation of every environment variable available to configure Kairos**
+> Every variable below is verified against the code that actually reads
+> it (`app/config/base.py`, `app/config/testing.py`, `run.py`,
+> `config_oidc.py`, `app/utils/logging/logger.py`,
+> `scripts/backup_config.py`, `scripts/notification_config.py`). When in
+> doubt, [`.env.example`](../../.env.example) is authoritative.
 
 ---
 
 ## 📋 Table of Contents
 
-- [🔐 Basic Flask Configuration](#-basic-flask-configuration)
+- [🔐 Flask Configuration](#-flask-configuration)
 - [🗄️ Database Configuration](#️-database-configuration)
-- [🔒 Authentication Configuration](#-authentication-configuration)
-- [⚠️ Error Configuration](#️-error-configuration)
+- [🔒 Session & Login Configuration](#-session--login-configuration)
+- [🚦 Rate Limiting](#-rate-limiting)
+- [🛡️ HTTP Security (Talisman)](#️-http-security-talisman)
+- [📄 Pagination](#-pagination)
 - [📝 Logging Configuration](#-logging-configuration)
-- [🔒 Security Configuration](#-security-configuration)
+- [🔒 Authentication Configuration](#-authentication-configuration)
 - [📊 Default Data Configuration](#-default-data-configuration)
-- [📅 Shift Type Configuration](#-shift-type-configuration)
 - [📤 ICS Export Configuration](#-ics-export-configuration)
 - [📧 Notification Configuration](#-notification-configuration)
 - [💾 Backup Configuration](#-backup-configuration)
-- [🧹 Automatic Cleanup Configuration](#-automatic-cleanup-configuration)
 - [📈 Monitoring Configuration](#-monitoring-configuration)
-- [🎯 Configuration by Environment](#-configuration-by-environment)
-- [📝 Configuration Examples](#-configuration-examples)
+- [🎯 Configuration Profiles](#-configuration-profiles)
 - [⚠️ Best Practices](#️-best-practices)
 
 ---
 
-## 🔐 Basic Flask Configuration
+## 🔐 Flask Configuration
 
 | Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
-| `SECRET_KEY` | string | `ta-cle-secrete-ici` | Secret key for Flask. **Must be long, random, and kept secret in production**. Generate with: `python -c "import secrets; print(secrets.token_hex(32))"` | ✅ Yes |
-| `FLASK_ENV` | string | `development` | Flask environment. Possible values: `development`, `production`, `testing` | ❌ No |
-| `FLASK_TESTING` | boolean | `false` | Test mode enabled. Used for unit tests | ❌ No |
-| `PUBLIC_BASE_URL` | string | (empty) | Public URL of the app behind a reverse proxy (e.g. `https://schedule.example.com`). Used as a fallback for absolute links (ICS export) when the proxy doesn't correctly pass `X-Forwarded-Host` to `ProxyFix` — otherwise these links leak the backend's internal IP/hostname instead of the correct domain. Leave empty to use `request.host_url` (default behavior) | ❌ No |
+| `SECRET_KEY` | string | *(random, regenerated on every restart)* | Secret key for Flask session signing. **Must be set to a fixed, long, random value in production** — without it, every restart invalidates all existing sessions. Generate with: `python -c "import secrets; print(secrets.token_hex(32))"` | ✅ Yes (production) |
+| `FLASK_HOST` | string | `0.0.0.0` | Interface the dev server (`python run.py`) binds to. Ignored by Gunicorn (Docker) | ❌ No |
+| `FLASK_PORT` | integer | `5000` | Port the dev server binds to. Ignored by Gunicorn (Docker) | ❌ No |
+| `FLASK_DEBUG` | boolean | `false` | Enables Flask's debug mode. **Never enable in production** — exposes the interactive Werkzeug debugger, a real remote-code-execution surface on any unhandled exception | ❌ No |
+| `FLASK_TESTING` | boolean | `false` | Flask's own `TESTING` flag | ❌ No |
+| `PUBLIC_BASE_URL` | string | *(empty)* | Public URL of the app behind a reverse proxy (e.g. `https://schedule.example.com`). Used as a fallback for absolute links (ICS export) when the proxy doesn't correctly pass `X-Forwarded-Host` — otherwise these links leak the backend's internal IP/hostname. Leave empty to use `request.host_url`. **A value saved at `/admin/settings` always takes priority over this variable** | ❌ No |
 
 **Example:**
 ```bash
 SECRET_KEY=my_secret_key_generated_with_python_secrets
-FLASK_ENV=production
-FLASK_TESTING=false
+FLASK_HOST=0.0.0.0
+FLASK_PORT=5000
+FLASK_DEBUG=false
 PUBLIC_BASE_URL=https://schedule.example.com
 ```
 
@@ -48,14 +54,9 @@ PUBLIC_BASE_URL=https://schedule.example.com
 
 | Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
-| `DATABASE_URL` | string | `sqlite:///app.db` | Database URI. Supported formats: SQLite, PostgreSQL, MySQL | ✅ Yes |
-| `SQLALCHEMY_TRACK_MODIFICATIONS` | boolean | `false` | Disables SQLAlchemy modification tracking (recommended: `false`) | ❌ No |
-| `SQLALCHEMY_ECHO` | boolean | `false` | Prints SQL queries to the logs (useful for debugging) | ❌ No |
-| `SQLALCHEMY_ENGINE_OPTIONS` | JSON | `{}` | SQLAlchemy engine options in JSON format. Example: `{"connect_args": {"timeout": 30}, "pool_pre_ping": true, "pool_recycle": 3600}` | ❌ No |
-| `DATABASE_POOL_SIZE` | integer | `5` | Database connection pool size | ❌ No |
-| `DATABASE_MAX_OVERFLOW` | integer | `10` | Maximum number of extra connections | ❌ No |
-| `DATABASE_CONNECT_TIMEOUT` | integer | `30` | Timeout for the database connection (in seconds) | ❌ No |
-| `DATABASE_POOL_RECYCLE` | integer | `3600` | Recycles connections after this many seconds | ❌ No |
+| `DATABASE_URL` | string | `sqlite:///app.db` | Database URI. Supported: SQLite, PostgreSQL, MySQL/MariaDB | ✅ Yes (production) |
+| `SQLALCHEMY_TRACK_MODIFICATIONS` | boolean | `false` | SQLAlchemy's own modification-tracking flag (recommended: `false`, this is Flask-SQLAlchemy's own recommendation) | ❌ No |
+| `SQLALCHEMY_ENGINE_OPTIONS` | JSON | `{}` | SQLAlchemy engine options, e.g. `{"pool_pre_ping": true, "pool_recycle": 3600}` — the recommended way to configure connection pooling (pool size, timeouts, recycling) against an external PostgreSQL/MySQL server; there is no separate `DATABASE_POOL_SIZE`-style variable | ❌ No |
 
 **DATABASE_URL formats:**
 ```bash
@@ -94,20 +95,72 @@ managed offerings).
 
 ---
 
-## 🔒 Authentication Configuration
+## 🔒 Session & Login Configuration
 
 | Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
-| `LOGIN_DISABLED` | boolean | `false` | **DANGER**: Completely disables authentication. Never enable in production! | ❌ No |
-| `REMEMBER_COOKIE_DURATION` | integer | `86400` | Duration of the "remember me" cookie in seconds (default: 1 day = 86400) | ❌ No |
-| `SESSION_PROTECTION` | string | `strong` | Session protection level. Possible values: `none`, `basic`, `strong` | ❌ No |
-| `WTF_CSRF_ENABLED` | boolean | `true` | Enables CSRF protection for forms | ❌ No |
-| `WTF_CSRF_TIME_LIMIT` | integer | `3600` | Validity duration of the CSRF token in seconds (default: 1 hour) | ❌ No |
-| `SESSION_COOKIE_SECURE` | boolean | `false` | Enables the Secure flag for session cookies (recommended: `true` in production with HTTPS) | ❌ No |
-| `SESSION_COOKIE_HTTPONLY` | boolean | `true` | Enables the HttpOnly flag for session cookies | ❌ No |
-| `SESSION_COOKIE_SAMESITE` | string | `Lax` | SameSite policy for cookies. Possible values: `Lax`, `Strict`, `None` | ❌ No |
-| `REMEMBER_COOKIE_SECURE` | boolean | `false` | Enables the Secure flag for the "remember me" cookie | ❌ No |
-| `PREFERRED_URL_SCHEME` | string | `http` | Preferred URL scheme. Possible values: `http`, `https` | ❌ No |
+| `SESSION_COOKIE_SECURE` | boolean | `false` | Sends the session cookie only over HTTPS. Set to `true` in production behind HTTPS | ❌ No |
+| `SESSION_COOKIE_HTTPONLY` | boolean | `true` | Blocks JavaScript access to the session cookie | ❌ No |
+| `SESSION_COOKIE_SAMESITE` | string | `Lax` | SameSite cookie policy. Possible values: `Lax`, `Strict`, `None` | ❌ No |
+| `PERMANENT_SESSION_LIFETIME_DAYS` | integer | `30` | Session lifetime in days | ❌ No |
+| `LOGIN_DISABLED` | boolean | `false` | **DANGER**: completely disables authentication. Never enable in production | ❌ No |
+| `REMEMBER_COOKIE_DURATION` | integer | `86400` | Duration of the "remember me" cookie in seconds (default: 1 day) | ❌ No |
+| `SESSION_PROTECTION` | string | `strong` | Flask-Login session protection level. Possible values: `none`, `basic`, `strong` | ❌ No |
+
+---
+
+## 🚦 Rate Limiting
+
+| Variable | Type | Default | Description | Required |
+|----------|------|--------|-------------|-------------|
+| `RATE_LIMIT_ENABLED` | boolean | `true` | Enables Flask-Limiter | ❌ No |
+| `RATE_LIMIT_DEFAULT` | string | `"200 per day, 50 per hour"` | Default limits, Flask-Limiter format | ❌ No |
+
+---
+
+## 🛡️ HTTP Security (Talisman)
+
+| Variable | Type | Default | Description | Required |
+|----------|------|--------|-------------|-------------|
+| `TALISMAN_FORCE_HTTPS` | boolean | `false` | Redirects every request to HTTPS. **Only enable behind a reverse proxy that terminates TLS** — otherwise it loops on a redirect that serves no purpose | ❌ No |
+| `TALISMAN_STRICT_TRANSPORT_SECURITY` | boolean | `false` | Sends the `Strict-Transport-Security` header | ❌ No |
+
+CORS (`flask-cors`) and Gzip/Brotli response compression (`flask-compress`)
+are both always active with their library defaults — there is no
+`CORS_ENABLED`/`COMPRESS_ENABLED` variable, nothing to configure.
+
+---
+
+## 📄 Pagination
+
+| Variable | Type | Default | Description | Required |
+|----------|------|--------|-------------|-------------|
+| `ITEMS_PER_PAGE` | integer | `20` | Default page size for paginated lists | ❌ No |
+| `MAX_PER_PAGE` | integer | `100` | Maximum page size a user/API call can request | ❌ No |
+
+Both are only the fallback used when no `Setting` row exists — an admin
+can override them at runtime from `/admin/settings` without a restart.
+
+---
+
+## 📝 Logging Configuration
+
+| Variable | Type | Default | Description | Required |
+|----------|------|--------|-------------|-------------|
+| `LOG_LEVEL` | string | `INFO` | Main log level. Possible values: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` | ❌ No |
+| `LOG_FORMAT` | string | `%(asctime)s - %(name)s - %(levelname)s - %(message)s` | Log line format (Python `logging` format string) | ❌ No |
+| `LOG_FILE` | string | *(none)* | Path to an optional additional log file, on top of the `app.log`/`error.log`/`debug.log`/`http_errors.log`/`audit.log` files always created under `logs/` (fixed directory, not configurable) | ❌ No |
+| `LOG_MAX_BYTES` | integer | `10485760` (10 MB) | Maximum size of each log file before rotation (`RotatingFileHandler`, applies to every file under `logs/`, including `audit.log`) | ❌ No |
+| `LOG_BACKUP_COUNT` | integer | `5` | Number of backup files kept after rotation (`app.log.1`, `app.log.2`, ...) | ❌ No |
+
+Sensitive-data filtering (masking `password=`/`token=`/`api_key=` in log
+messages, `SensitiveDataFilter`) is always active and cannot be disabled.
+`audit.log` is written to by `AuditService.log()`, alongside a database
+copy browsable via `/admin/audit-log`.
+
+---
+
+## 🔒 Authentication Configuration
 
 ### SSO/OIDC (optional)
 
@@ -130,79 +183,21 @@ Full configuration guide:
 
 ---
 
-## ⚠️ Error Configuration
-
-| Variable | Type | Default | Description | Required |
-|----------|------|--------|-------------|-------------|
-| `DEBUG_ERRORS` | boolean | `false` | **DANGER**: Shows error details (stack traces). Never enable in production! | ❌ No |
-| `SHOW_CUSTOM_ERROR_PAGES` | boolean | `true` | Shows custom error pages | ❌ No |
-| `ERROR_500_MESSAGE` | string | `"Une erreur interne du serveur s'est produite. Veuillez reessayer plus tard."` | Custom message for 500 errors | ❌ No |
-| `ERROR_503_MESSAGE` | string | `"Service temporairement indisponible. Veuillez reessayer dans quelques instants."` | Custom message for 503 errors | ❌ No |
-| `ERROR_503_RETRY_AFTER` | integer | `300` | Retry delay for 503 errors (in seconds) | ❌ No |
-
----
-
-## 📝 Logging Configuration
-
-> Only the 4 variables below are actually read by
-> `app/utils/logging/logger.py`. There is no `LOG_DIR`, `SYSLOG_*`, or
-> per-file `LOG_LEVEL_*`/`LOG_FORMAT` setting - logs always go to fixed
-> files under `logs/`.
-
-| Variable | Type | Default | Description | Required |
-|----------|------|--------|-------------|-------------|
-| `LOG_LEVEL` | string | `INFO` | Main log level. Possible values: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` | ❌ No |
-| `LOG_FILE` | string | *(none)* | Path to an optional root log file, in addition to the `app.log`/`error.log`/`debug.log`/`http_errors.log`/`audit.log` files always created under `logs/` (fixed directory, not configurable) | ❌ No |
-| `LOG_MAX_BYTES` | integer | `10485760` (10 MB) | Maximum size of each log file before rotation (`RotatingFileHandler`, applies to every file under `logs/`, including `audit.log`) | ❌ No |
-| `LOG_BACKUP_COUNT` | integer | `5` | Number of backup files kept after rotation (`app.log.1`, `app.log.2`, ...) | ❌ No |
-
-Sensitive-data filtering (masking `password=`/`token=`/`api_key=` in log
-messages, `SensitiveDataFilter`) is always active and cannot be disabled
-via an environment variable. `audit.log` (under `logs/`) is written to by
-`AuditService.log()`, alongside a database copy browsable via
-`/admin/audit-log`.
-
----
-
-## 🔒 Security Configuration
-
-| Variable | Type | Default | Description | Required |
-|----------|------|--------|-------------|-------------|
-| `SEND_FILE_MAX_AGE_DEFAULT` | integer | `0` | Disables caching for error pages (recommended: `0`) | ❌ No |
-| `CORS_ENABLED` | boolean | `false` | Enables CORS (Cross-Origin Resource Sharing) | ❌ No |
-| `RATE_LIMIT_ENABLED` | boolean | `true` | Enables rate limiting | ❌ No |
-| `RATE_LIMIT_DEFAULT` | string | `"200 per day, 50 per hour"` | Default rate limits in Flask-Limiter format | ❌ No |
-| `COMPRESS_ENABLED` | boolean | `true` | Enables Gzip compression of responses | ❌ No |
-| `COMPRESS_MIMETYPES` | list | See code | MIME types to compress. Default: `['text/html', 'text/css', 'text/xml', 'application/json', 'application/javascript']` | ❌ No |
-
----
-
 ## 📊 Default Data Configuration
+
+Read once, when the database is first created (`run.py::create_default_data`).
 
 | Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
 | `DEFAULT_ADMIN_EMAIL` | string | `admin@kairos.local` | Email of the default admin user | ❌ No |
-| `DEFAULT_ADMIN_PASSWORD` | string | `admin123` | **DANGER**: Password of the default admin user. **Change this value after the first login!** | ❌ No |
+| `DEFAULT_ADMIN_PASSWORD` | string | *(random, printed to the log on first run — `admin123` in the Docker image specifically)* | **DANGER**: password of the default admin user. **Change this value after the first login!** | ❌ No |
 | `DEFAULT_GROUP_NAME` | string | `Defaut` | Name of the default group | ❌ No |
 | `DEFAULT_GROUP_IN_SCHEDULE` | boolean | `true` | The default group is part of the schedule | ❌ No |
 | `DEFAULT_GROUP_IN_ONCALL` | boolean | `true` | The default group is part of the on-call rotation | ❌ No |
 
----
-
-## 📅 Shift Type Configuration
-
-| Variable | Type | Default | Description | Required |
-|----------|------|--------|-------------|-------------|
-| `DEFAULT_SHIFT_TYPES` | JSON | See code | Default shift types in JSON format. Example: `[{"name": "morning", "label": "07h-15h", "start_hour": 7, "end_hour": 15}, {"name": "afternoon", "label": "09h-17h", "start_hour": 9, "end_hour": 17}]` | ❌ No |
-
-**Default value:**
-```json
-[
-    {"name": "morning", "label": "07h-15h", "start_hour": 7, "end_hour": 15},
-    {"name": "afternoon", "label": "09h-17h", "start_hour": 9, "end_hour": 17},
-    {"name": "evening", "label": "13h-21h", "start_hour": 13, "end_hour": 21}
-]
-```
+The default shift types (`07h-15h`/`09h-17h`/`13h-21h`) are a fixed list
+in `run.py`, not configurable via an environment variable — edit them
+after first run from `/admin/shift-types` instead.
 
 ---
 
@@ -210,11 +205,10 @@ via an environment variable. `audit.log` (under `logs/`) is written to by
 
 | Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
-| `ICS_TOKEN_EXPIRY_DAYS` | integer | `365` | Validity duration of the ICS token in days | ❌ No |
+| `ICS_TOKEN_EXPIRY_DAYS` | integer | `365` | Intended validity duration of the ICS subscription token, in days. **Not currently enforced anywhere** — documented here because the setting exists and is admin-editable at `/admin/settings`, but no code path actually checks or expires a token based on it yet | ❌ No |
 
 The ICS subscription URLs shown to the user (`/profile/ics-token` page)
-use `PUBLIC_BASE_URL` if set (see
-[🔐 Basic Flask Configuration](#-basic-flask-configuration)), otherwise
+use `PUBLIC_BASE_URL` if set (see [🔐 Flask Configuration](#-flask-configuration)), otherwise
 `request.host_url` — relevant behind a reverse proxy.
 
 ---
@@ -243,7 +237,10 @@ if a script is rerun).
 
 If `NOTIFICATIONS_ENABLED=false`, or if `NOTIFICATION_FROM_EMAIL`/
 `SMTP_HOST` are missing, both scripts exit silently without sending
-anything (exit code 0).
+anything (exit code 0). This same flag also gates the in-app
+"Apprise" external-notification relay for weekly reminders (Slack/
+Discord/Telegram/webhook), which reuses this SMTP-adjacent config only
+for the enable/disable check, not for its own delivery.
 
 ---
 
@@ -284,161 +281,70 @@ from the Notifications section above, so they're also subject to
 
 ---
 
-## 🧹 Automatic Cleanup Configuration
-
-| Variable | Type | Default | Description | Required |
-|----------|------|--------|-------------|-------------|
-| `DATA_CLEANUP_ENABLED` | boolean | `false` | **Disabled by default for safety**. Enables automatic data cleanup | ❌ No |
-| `DATA_CLEANUP_RETENTION` | string | `"365d"` | Data retention duration. Supported formats: `1y` (1 year), `6m` (6 months), `30d` (30 days), or a plain number of days | ❌ No |
-| `DATA_CLEANUP_RETENTION_DAYS` | integer | `365` | Retention duration in days (alternative to DATA_CLEANUP_RETENTION) | ❌ No |
-| `DATA_CLEANUP_BATCH_SIZE` | integer | `1000` | Batch size for deletion | ❌ No |
-| `DATA_CLEANUP_SCHEDULE` | string | `"0 0 * * *"` | Cron schedule for cleanup (default: every day at midnight) | ❌ No |
-
-**Cron schedule examples:**
-```bash
-# Every day at midnight
-DATA_CLEANUP_SCHEDULE="0 0 * * *"
-
-# Every Monday at 2 AM
-DATA_CLEANUP_SCHEDULE="0 2 * * 1"
-
-# The 1st of every month at midnight
-DATA_CLEANUP_SCHEDULE="0 0 1 * *"
-```
-
----
-
 ## 📈 Monitoring Configuration
 
 | Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
-| `PROMETHEUS_ENABLED` | boolean | `false` | Enables the `app/utils/prometheus_metrics.py` blueprint (`/metrics` endpoint in Prometheus format). Disabled by default | ❌ No |
+| `PROMETHEUS_ENABLED` | boolean | `false` | Enables the `app/utils/prometheus_metrics.py` blueprint (`/metrics` endpoint in Prometheus format) | ❌ No |
 
 > Liveness/readiness for Kubernetes: `/health` and `/ready` are always
 > active (`app/utils/health.py`, registered unconditionally), regardless
 > of `PROMETHEUS_ENABLED`.
 
-### Removed variables
-
-**Cache** (`CACHE_TYPE`, `CACHE_DEFAULT_TIMEOUT`, `CACHE_REDIS_URL`,
-`CACHE_ENABLED`), **Pagination**, **Lazy Loading**, **Query
-Optimization**, and **Performance Monitoring** (`PAGINATION_*`,
-`LAZY_LOAD*`, `QUERY_OPTIMIZATION_*`, `PERFORMANCE_MONITORING_ENABLED`,
-`SLOW_QUERY_THRESHOLD`, etc.) are not read anywhere in the code.
-Setting them in `.env` today has **no effect**.
+There is no cache, pagination-tuning (beyond the two variables above),
+lazy-loading, query-optimization, or performance-monitoring system in
+this application, and therefore no corresponding environment variable —
+none of `CACHE_*`, `LAZY_LOAD*`, `QUERY_OPTIMIZATION_*`,
+`PERFORMANCE_MONITORING_*`, `SLOW_QUERY_THRESHOLD` is read anywhere.
+There is also no automatic data-retention/cleanup system (no
+`DATA_CLEANUP_*` variable) — the only retention/purge mechanisms are the
+admin-configurable ones already covered above (backups, audit log).
 
 ---
 
-## 🎯 Configuration by Environment
+## 🎯 Configuration Profiles
 
-`create_app()` (`app/__init__.py`) loads a single real configuration
-class, `app.config.base.Config`, regardless of `FLASK_ENV` — this
-variable is only used by `docker/entrypoint.sh` to choose between
-Gunicorn (`FLASK_ENV=production`) and the Flask development server
-(any other value); it does not select any configuration class. All
-settings (`DEBUG`, `LOG_LEVEL`, `SQLALCHEMY_ECHO`, etc.) are therefore
-controlled directly via their own respective environment variables (see
-table above), not via a predefined development/production profile.
+`create_app()` (`app/__init__.py`) always loads the same configuration
+class, `app.config.base.Config` — there is no separate development/
+production profile selected by `FLASK_ENV`. `docker/entrypoint.sh` reads
+`FLASK_ENV` only to decide whether to start Gunicorn
+(`FLASK_ENV=production`) or the Flask dev server (any other value); it
+never selects a different set of defaults. Every setting in this
+document is controlled directly by its own environment variable
+regardless of `FLASK_ENV`.
 
-### Testing (`TestingConfig`)
-- `TESTING = True`
-- `SQLALCHEMY_DATABASE_URI = sqlite:///:memory:`
-- `WTF_CSRF_ENABLED = False`
+### Tests (`TestingConfig`)
+
+Used automatically by the test suite (`create_app('app.config.TestingConfig')`),
+not selectable via an environment variable:
+- `TESTING = True`, `SQLALCHEMY_DATABASE_URI = sqlite:///:memory:`
+- `WTF_CSRF_ENABLED = False`, `RATELIMIT_ENABLED = False`, `TALISMAN` disabled
 - `LOG_LEVEL = DEBUG`
-- `DEBUG_ERRORS = True`
-- `RATE_LIMIT_ENABLED = False`
-- `COMPRESS_ENABLED = False`
-
-**Activation:**
-```bash
-FLASK_ENV=testing
-```
 
 ---
 
 ## 📝 Configuration Examples
 
-### Production configuration with PostgreSQL
+### Production with PostgreSQL, behind a TLS-terminating reverse proxy
 
 ```bash
-# Base configuration
-FLASK_ENV=production
 SECRET_KEY=your_random_secret_key_here
-
-# PostgreSQL database
 DATABASE_URL=postgresql://kairos_user:secure_password@localhost:5432/kairos_db
 
-# Logging
 LOG_LEVEL=WARNING
-SYSLOG_ENABLED=true
-SYSLOG_ADDRESS=/dev/log
 
-# Security
 SESSION_COOKIE_SECURE=true
-SESSION_COOKIE_HTTPONLY=true
-SESSION_COOKIE_SAMESITE=Lax
-CORS_ENABLED=false
-DEBUG_ERRORS=false
-
-# Cache
-CACHE_TYPE=redis
-CACHE_REDIS_URL=redis://localhost:6379/0
-
-# Automatic cleanup (optional)
-DATA_CLEANUP_ENABLED=true
-DATA_CLEANUP_RETENTION=1y
-DATA_CLEANUP_SCHEDULE="0 0 * * *"
+TALISMAN_FORCE_HTTPS=true
+TALISMAN_STRICT_TRANSPORT_SECURITY=true
 ```
 
-### Development configuration
+### Local development
 
 ```bash
-FLASK_ENV=development
 SECRET_KEY=dev_secret_key
-
-# SQLite database
 DATABASE_URL=sqlite:///app.db
-
-# Verbose logging
+FLASK_DEBUG=true
 LOG_LEVEL=DEBUG
-SQLALCHEMY_ECHO=true
-DEBUG_ERRORS=true
-
-# Disable security for development
-SESSION_COOKIE_SECURE=false
-CORS_ENABLED=true
-
-# Disable cache in development
-CACHE_ENABLED=false
-```
-
-### Test configuration
-
-```bash
-FLASK_ENV=testing
-FLASK_TESTING=true
-SECRET_KEY=test_secret_key
-
-# In-memory database
-DATABASE_URL=sqlite:///:memory:
-
-# Disable production features
-WTF_CSRF_ENABLED=false
-RATE_LIMIT_ENABLED=false
-COMPRESS_ENABLED=false
-CORS_ENABLED=true
-
-# Logging
-LOG_LEVEL=DEBUG
-DEBUG_ERRORS=true
-```
-
-### Configuration with Redis
-
-```bash
-CACHE_TYPE=redis
-CACHE_REDIS_URL=redis://localhost:6379/0
-CACHE_DEFAULT_TIMEOUT=300
 ```
 
 ---
@@ -447,19 +353,18 @@ CACHE_DEFAULT_TIMEOUT=300
 
 ### 🔐 Security
 
-1. **SECRET_KEY**: Always use a long, random key in production. Never commit this value to Git.
+1. **SECRET_KEY**: Always set a fixed, long, random key in production — without it, sessions don't survive a restart. Never commit this value to Git.
    ```bash
-   # Generate a secure key
    python -c "import secrets; print(secrets.token_hex(32))"
    ```
 
 2. **DEFAULT_ADMIN_PASSWORD**: Always change the admin password after the first login.
 
-3. **Database**: In production, never use SQLite with multiple worker processes. Use PostgreSQL or MySQL.
+3. **Database**: In production, never use SQLite with multiple worker processes. Use PostgreSQL or MySQL/MariaDB.
 
 4. **Sensitive variables**: Never store passwords or secret keys in a `.env` file committed to Git. Use system environment variables or a secrets management service.
 
-5. **HTTPS**: In production, always use HTTPS and enable `SESSION_COOKIE_SECURE=true`.
+5. **HTTPS**: In production behind a TLS-terminating proxy, set both `SESSION_COOKIE_SECURE=true` and `TALISMAN_FORCE_HTTPS=true`.
 
 ### 📁 .env file
 
@@ -470,51 +375,13 @@ CACHE_DEFAULT_TIMEOUT=300
 
 2. **Git**: Add `.env` to your `.gitignore` file to avoid committing sensitive information.
 
-3. **Production**: In production, it's recommended to set variables directly in the system environment rather than using a `.env` file.
-
-### 🐳 Docker
-
-For Docker environments, you can:
-
-1. **Mount the .env file**:
-   ```yaml
-   # docker-compose.yml
-   services:
-     app:
-       image: kairos
-       env_file:
-         - .env
-   ```
-
-2. **Pass the variables directly**:
-   ```yaml
-   # docker-compose.yml
-   services:
-     app:
-       image: kairos
-       environment:
-         - SECRET_KEY=your_key
-         - DATABASE_URL=postgresql://user:pass@db:5432/kairos
-   ```
-
-3. **Use Docker secrets** for sensitive information.
+3. **Production**: it's recommended to set variables directly in the system environment rather than using a `.env` file.
 
 ### 🔄 Boolean Variables
 
 Boolean variables accept the following values (case-insensitive):
-- True: `true`, `True`, `TRUE`, `1`, `yes`, `Yes`, `YES`, `y`, `on`
-- False: `false`, `False`, `FALSE`, `0`, `no`, `No`, `NO`, `n`, `off`
-
-### 📊 Data Types
-
-| Type | Format | Example |
-|------|--------|---------|
-| Boolean | true/false, 1/0, yes/no | `true`, `false`, `1`, `0` |
-| Integer | Whole number | `300`, `86400` |
-| Float | Decimal number | `0.75`, `1.5` |
-| String | Text | `"kairos:"`, `"INFO"` |
-| JSON | JSON object or array | `{"key": "value"}`, `[1, 2, 3]` |
-| List | Comma-separated values | `"password,secret,token"` |
+- True: `true`, `1`, `yes`, `y`, `on`
+- False: `false`, `0`, `no`, `n`, `off`
 
 ---
 
@@ -522,10 +389,5 @@ Boolean variables accept the following values (case-insensitive):
 
 - [Flask Documentation](https://flask.palletsprojects.com/)
 - [SQLAlchemy Documentation](https://www.sqlalchemy.org/)
-- [python-dotenv Documentation](https://saurabh-kumar.com/python-dotenv/)
-- [`app/config/`](../../app/config/) — active configuration, loaded by `create_app()`
+- [`app/config/base.py`](../../app/config/base.py) — the actual source of truth
 - [`.env.example`](../../.env.example) — canonical reference, always up to date
-
----
-
-*This file documents the environment variables actually read by the application. When in doubt, `.env.example` is authoritative.*
