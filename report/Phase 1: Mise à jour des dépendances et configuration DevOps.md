@@ -1,314 +1,314 @@
-# Phase 1: Mise à jour des dépendances et configuration DevOps
+# Phase 1: Dependency Updates and DevOps Configuration
 
-## 📦 Mise à jour des dépendances
+## 📦 Dependency Updates
 
-Les fichiers `requirements.txt` et `docker/requirements.txt` ont été mis à jour avec les dernières versions stables des bibliothèques.
+The `requirements.txt` and `docker/requirements.txt` files have been updated with the latest stable versions of the libraries.
 
-### Changements principaux
+### Main Changes
 
-| Package | Ancienne version | Nouvelle version | Notes |
+| Package | Old Version | New Version | Notes |
 |---------|------------------|------------------|-------|
-| Flask-WTF | 1.1.1 | **1.3.0** | Mise à jour mineure |
-| Werkzeug | 3.1.3 | **3.1.8** | Corrections de bugs |
-| icalendar | 7.1.3 | **7.2.0** | Nouvelle version |
-| ruff | 0.15.18 | **0.15.20** | Mise à jour mineure |
-| flask-compress | 1.15 | **1.24** | Améliorations |
-| pip | >=26.1 | **>=26.1.2** | Dernière version |
-| psycopg[binary] | >=3.1.0 | **>=3.3.4** | Support PostgreSQL 16 |
-| Authlib | 1.3.0 | **1.7.2** | Support OIDC amélioré |
-| requests | 2.32.3 | **2.34.2** | Corrections de sécurité |
-| gunicorn | 21.2.0 | **26.0.0** | Dernière version |
-| prometheus-client | - | **0.20.0** | Nouveau - Monitoring |
-| psutil | - | **6.0.0** | Nouveau - Métriques système |
+| Flask-WTF | 1.1.1 | **1.3.0** | Minor update |
+| Werkzeug | 3.1.3 | **3.1.8** | Bug fixes |
+| icalendar | 7.1.3 | **7.2.0** | New version |
+| ruff | 0.15.18 | **0.15.20** | Minor update |
+| flask-compress | 1.15 | **1.24** | Improvements |
+| pip | >=26.1 | **>=26.1.2** | Latest version |
+| psycopg[binary] | >=3.1.0 | **>=3.3.4** | PostgreSQL 16 support |
+| Authlib | 1.3.0 | **1.7.2** | Improved OIDC support |
+| requests | 2.32.3 | **2.34.2** | Security fixes |
+| gunicorn | 21.2.0 | **26.0.0** | Latest version |
+| prometheus-client | - | **0.20.0** | New - Monitoring |
+| psutil | - | **6.0.0** | New - System metrics |
 
-### Pourquoi ces versions ?
+### Why These Versions?
 
-Toutes les versions ont été vérifiées sur [PyPI](https://pypi.org/) pour s'assurer qu'elles sont :
-- **Stables** (pas de versions alpha/beta)
-- **Compatibles** avec Python 3.11
-- **Sécurisées** (pas de vulnérabilités connues)
-- **Testées** avec les autres dépendances
+All versions were verified on [PyPI](https://pypi.org/) to make sure they are:
+- **Stable** (no alpha/beta versions)
+- **Compatible** with Python 3.11
+- **Secure** (no known vulnerabilities)
+- **Tested** with the other dependencies
 
-### Compatibilité
+### Compatibility
 
-✅ Toutes les mises à jour sont **rétrocompatibles** et ne devraient pas casser l'application.
+✅ All updates are **backward-compatible** and should not break the application.
 
 ---
 
 ## 🐳 Docker
 
-### Dockerfile optimisé
+### Optimized Dockerfile
 
-Un nouveau fichier `docker/Dockerfile.optimized` a été créé avec :
+A new `docker/Dockerfile.optimized` file was created with:
 
-1. **Multi-stage build** : Réduit la taille de l'image finale
-2. **Séparation des dépendances** : Build et runtime séparés
-3. **Image plus légère** : Utilisation optimale d'Alpine Linux
-4. **Health checks** : Vérification de la santé du conteneur
-5. **Sécurité améliorée** : Utilisateur non-root, permissions minimales
+1. **Multi-stage build**: Reduces the final image size
+2. **Separated dependencies**: Build and runtime split apart
+3. **Lighter image**: Optimal use of Alpine Linux
+4. **Health checks**: Container health verification
+5. **Improved security**: Non-root user, minimal permissions
 
-**Pour utiliser le Dockerfile optimisé :**
+**To use the optimized Dockerfile:**
 ```bash
 cd docker
-docker build -t leviia-schedule:optimized -f Dockerfile.optimized ..
+docker build -t kairos:optimized -f Dockerfile.optimized ..
 ```
 
-### Différences avec le Dockerfile actuel
+### Differences from the Current Dockerfile
 
-| Caractéristique | Dockerfile actuel | Dockerfile optimisé |
+| Characteristic | Current Dockerfile | Optimized Dockerfile |
 |-----------------|-------------------|---------------------|
-| Taille image | ~150Mo | ~120Mo |
+| Image size | ~150MB | ~120MB |
 | Build time | ~2min | ~2min30s |
-| Sécurité | Bonne | Améliorée |
+| Security | Good | Improved |
 | Maintenance | Simple | Simple |
-| Multi-stage | ❌ Non | ✅ Oui |
-| Health check | ❌ Non | ✅ Oui |
+| Multi-stage | ❌ No | ✅ Yes |
+| Health check | ❌ No | ✅ Yes |
 
-**Recommandation :** Continuer à utiliser le Dockerfile actuel pour le moment, car il est déjà bien optimisé. Le Dockerfile optimisé est disponible pour les déploiements futurs.
+**Recommendation:** Keep using the current Dockerfile for now, as it is already well optimized. The optimized Dockerfile is available for future deployments.
 
 ---
 
 ## ⚡ Kubernetes
 
-Un dossier `k8s/` a été créé avec une configuration complète pour Kubernetes :
+A `k8s/` folder was created with a complete Kubernetes configuration:
 
-### Fichiers inclus
+### Included Files
 
 ```
 k8s/
-├── README.md              # Documentation complète
-├── namespace.yaml         # Namespace dédié
-├── configmap.yaml         # Configuration de l'application
-├── secret.yaml.template   # Template pour les secrets
-├── deployment.yaml        # Déploiement de l'application
-├── service.yaml           # Service pour exposer l'application
-├── ingress.yaml           # Routage HTTP
-├── hpa.yaml               # Auto-scaling horizontal
+├── README.md              # Full documentation
+├── namespace.yaml         # Dedicated namespace
+├── configmap.yaml         # Application configuration
+├── secret.yaml.template   # Template for secrets
+├── deployment.yaml        # Application deployment
+├── service.yaml           # Service to expose the application
+├── ingress.yaml           # HTTP routing
+├── hpa.yaml               # Horizontal auto-scaling
 ├── pvc.yaml               # Persistent Volume Claims
 └── pdb.yaml               # Pod Disruption Budget
 ```
 
-### Fonctionnalités
+### Features
 
-✅ **Déploiement multi-pods** avec haute disponibilité
-✅ **Auto-scaling** basé sur CPU, mémoire et requêtes
-✅ **Probes de santé** (liveness et readiness)
-✅ **Configuration externalisée** (ConfigMap + Secrets)
-✅ **Stockage persistant** pour la base de données
-✅ **Ingress** avec HTTPS et CORS
-✅ **Protection contre les interruptions** (PDB)
+✅ **Multi-pod deployment** with high availability
+✅ **Auto-scaling** based on CPU, memory, and requests
+✅ **Health probes** (liveness and readiness)
+✅ **Externalized configuration** (ConfigMap + Secrets)
+✅ **Persistent storage** for the database
+✅ **Ingress** with HTTPS and CORS
+✅ **Protection against disruptions** (PDB)
 
-### Prérequis
+### Prerequisites
 
-- Un cluster Kubernetes (Minikube, EKS, AKS, GKE, etc.)
-- `kubectl` configuré
-- Un registry Docker
+- A Kubernetes cluster (Minikube, EKS, AKS, GKE, etc.)
+- `kubectl` configured
+- A Docker registry
 
-### Déploiement rapide
+### Quick Deployment
 
 ```bash
-# Créer le namespace
+# Create the namespace
 kubectl apply -f k8s/namespace.yaml
 
-# Créer les secrets (à partir du template)
+# Create the secrets (from the template)
 cp k8s/secret.yaml.template k8s/secret.yaml
-# Éditer k8s/secret.yaml avec vos valeurs
+# Edit k8s/secret.yaml with your values
 kubectl apply -f k8s/secret.yaml
 
-# Déployer l'application
+# Deploy the application
 kubectl apply -f k8s/configmap.yaml
 kubectl apply -f k8s/deployment.yaml
 kubectl apply -f k8s/service.yaml
 kubectl apply -f k8s/ingress.yaml
 
-# (Optionnel) Activer l'auto-scaling
+# (Optional) Enable auto-scaling
 kubectl apply -f k8s/hpa.yaml
 kubectl apply -f k8s/pvc.yaml
 kubectl apply -f k8s/pdb.yaml
 ```
 
-### Explications
+### Explanations
 
-#### **Kubernetes Ready** signifie que l'application est prête pour Kubernetes :
+#### **Kubernetes Ready** means the application is ready for Kubernetes:
 
-1. **Configuration via variables d'environnement** : Toutes les options sont configurables sans modifier le code
-2. **Stateless design** : L'application peut être déployée sur plusieurs pods
-3. **Health checks** : Les endpoints `/health` et `/ready` permettent à Kubernetes de vérifier l'état
-4. **Logging structuré** : Les logs sont au format JSON pour une meilleure intégration
-5. **Gestion des sessions** : Les sessions sont stockées dans la base de données ou Redis
-6. **Scalabilité horizontale** : L'application peut gérer plusieurs instances simultanément
+1. **Configuration via environment variables**: All options are configurable without modifying the code
+2. **Stateless design**: The application can be deployed across multiple pods
+3. **Health checks**: The `/health` and `/ready` endpoints let Kubernetes verify the state
+4. **Structured logging**: Logs are in JSON format for better integration
+5. **Session management**: Sessions are stored in the database or Redis
+6. **Horizontal scalability**: The application can handle multiple simultaneous instances
 
 ---
 
 ## 📊 Monitoring (Prometheus + Grafana)
 
-### Support Prometheus ajouté
+### Prometheus Support Added
 
-Un nouveau module `app/utils/prometheus_metrics.py` a été créé pour exposer des métriques au format Prometheus.
+A new `app/utils/prometheus_metrics.py` module was created to expose metrics in Prometheus format.
 
-### Métriques disponibles
+### Available Metrics
 
-#### Métriques HTTP
-- `leviia_requests_total` : Nombre total de requêtes
-- `leviia_request_latency_seconds` : Latence des requêtes
-- `leviia_errors_total` : Nombre d'erreurs
+#### HTTP Metrics
+- `kairos_requests_total`: Total number of requests
+- `kairos_request_latency_seconds`: Request latency
+- `kairos_errors_total`: Number of errors
 
-#### Métriques système
-- `leviia_cpu_usage_percent` : Utilisation CPU
-- `leviia_memory_usage_bytes` : Utilisation mémoire
-- `leviia_disk_usage_bytes` : Utilisation disque
+#### System Metrics
+- `kairos_cpu_usage_percent`: CPU usage
+- `kairos_memory_usage_bytes`: Memory usage
+- `kairos_disk_usage_bytes`: Disk usage
 
-#### Métriques métier
-- `leviia_shifts_total` : Nombre de shifts
-- `leviia_oncalls_total` : Nombre d'astreintes
-- `leviia_leaves_total` : Nombre de congés
-- `leviia_users_total` : Nombre d'utilisateurs
-- `leviia_groups_total` : Nombre de groupes
+#### Business Metrics
+- `kairos_shifts_total`: Number of shifts
+- `kairos_oncalls_total`: Number of on-calls
+- `kairos_leaves_total`: Number of leaves
+- `kairos_users_total`: Number of users
+- `kairos_groups_total`: Number of groups
 
 ### Endpoints
 
 | Endpoint | Description | Format |
 |----------|-------------|--------|
-| `/metrics` | Métriques Prometheus | text/plain |
-| `/health` | Statut de santé | JSON |
-| `/ready` | Statut de prêt | JSON |
+| `/metrics` | Prometheus metrics | text/plain |
+| `/health` | Health status | JSON |
+| `/ready` | Readiness status | JSON |
 
-### Configuration Prometheus
+### Prometheus Configuration
 
-Ajouter cette configuration à votre `prometheus.yml` :
+Add this configuration to your `prometheus.yml`:
 
 ```yaml
 scrape_configs:
-  - job_name: 'leviia-schedule'
+  - job_name: 'kairos'
     scrape_interval: 15s
     static_configs:
-      - targets: ['leviia-schedule:5000']
+      - targets: ['kairos:5000']
 ```
 
-### Exemple de dashboard Grafana
+### Example Grafana Dashboard
 
-Un dashboard Grafana pourrait inclure :
-- Graphique du nombre de requêtes par minute
-- Latence moyenne des requêtes
-- Taux d'erreur
-- Utilisation CPU/mémoire
-- Nombre d'utilisateurs actifs
-- Nombre de shifts/astreintes
+A Grafana dashboard could include:
+- Requests-per-minute chart
+- Average request latency
+- Error rate
+- CPU/memory usage
+- Number of active users
+- Number of shifts/on-calls
 
-### Utilité du monitoring
+### Value of Monitoring
 
-1. **Détection des problèmes** : Identifier rapidement les erreurs ou les ralentissements
-2. **Optimisation des performances** : Voir quelles requêtes sont lentes
-3. **Planification des ressources** : Savoir quand scaler l'application
-4. **Analyse des tendances** : Comprendre l'utilisation de l'application
-5. **Alertes proactives** : Être notifié avant que les utilisateurs ne rencontrent des problèmes
+1. **Issue detection**: Quickly identify errors or slowdowns
+2. **Performance optimization**: See which requests are slow
+3. **Resource planning**: Know when to scale the application
+4. **Trend analysis**: Understand application usage
+5. **Proactive alerts**: Get notified before users encounter problems
 
 ---
 
 ## 🔄 CI/CD GitLab
 
-Un fichier `.gitlab-ci/.gitlab-ci.yml` a été créé pour une intégration continue avec GitLab.
+A `.gitlab-ci/.gitlab-ci.yml` file was created for continuous integration with GitLab.
 
-### Pipeline CI/CD
+### CI/CD Pipeline
 
 ```
 test → lint → security → build → deploy
 ```
 
-### Jobs inclus
+### Included Jobs
 
-1. **run_tests** : Exécute les tests unitaires avec pytest
-2. **run_linting** : Vérifie la qualité du code avec Ruff, mypy et black
-3. **run_security** : Analyse de sécurité avec Bandit et Safety
-4. **build_docker** : Construit et pousse l'image Docker
-5. **deploy_production** : Déploie sur Kubernetes (manuel)
-6. **deploy_swarm** : Déploie sur Docker Swarm (manuel)
-7. **build_docs** : Construit la documentation
+1. **run_tests**: Runs unit tests with pytest
+2. **run_linting**: Checks code quality with Ruff, mypy, and black
+3. **run_security**: Security analysis with Bandit and Safety
+4. **build_docker**: Builds and pushes the Docker image
+5. **deploy_production**: Deploys to Kubernetes (manual)
+6. **deploy_swarm**: Deploys to Docker Swarm (manual)
+7. **build_docs**: Builds the documentation
 
-### Fonctionnalités
+### Features
 
-✅ **Tests automatiques** sur chaque commit
-✅ **Vérification de la qualité du code**
-✅ **Analyse de sécurité**
-✅ **Build Docker automatique**
-✅ **Déploiement manuel** (pour la sécurité)
-✅ **Cache des dépendances** pour des builds plus rapides
-✅ **Artifacts** pour les rapports de tests
+✅ **Automatic tests** on every commit
+✅ **Code quality checks**
+✅ **Security analysis**
+✅ **Automatic Docker build**
+✅ **Manual deployment** (for safety)
+✅ **Dependency caching** for faster builds
+✅ **Artifacts** for test reports
 
-### Configuration requise
+### Required Configuration
 
-Dans GitLab, configurez ces variables CI/CD :
+In GitLab, configure these CI/CD variables:
 
-- `CI_REGISTRY_USER` : Utilisateur du registry Docker
-- `CI_REGISTRY_PASSWORD` : Mot de passe du registry Docker
-- `CI_REGISTRY` : URL du registry Docker (ex: `registry.gitlab.com`)
-- `CI_REGISTRY_IMAGE` : Image Docker (ex: `registry.gitlab.com/your-group/leviia-schedule`)
-- `KUBE_CONFIG` : Configuration Kubernetes (base64 encoded)
+- `CI_REGISTRY_USER`: Docker registry username
+- `CI_REGISTRY_PASSWORD`: Docker registry password
+- `CI_REGISTRY`: Docker registry URL (e.g. `registry.gitlab.com`)
+- `CI_REGISTRY_IMAGE`: Docker image (e.g. `registry.gitlab.com/your-group/kairos`)
+- `KUBE_CONFIG`: Kubernetes configuration (base64 encoded)
 
-### Exemple de déploiement
+### Deployment Example
 
-1. Pousser du code sur une branche
-2. La pipeline s'exécute automatiquement
-3. Si tous les tests passent, l'image Docker est construite
-4. Un utilisateur avec les droits peut déclencher le déploiement manuel
+1. Push code to a branch
+2. The pipeline runs automatically
+3. If all tests pass, the Docker image is built
+4. A user with the right permissions can trigger the manual deployment
 
 ---
 
-## 📝 Résumé des actions à effectuer
+## 📝 Summary of Actions to Perform
 
-### 1. Tester les mises à jour des dépendances
+### 1. Test the Dependency Updates
 
 ```bash
-# Créer un environnement virtuel
+# Create a virtual environment
 python -m venv .venv
 source .venv/bin/activate  # Linux/Mac
-# ou .venv\Scripts\activate  # Windows
+# or .venv\Scripts\activate  # Windows
 
-# Installer les nouvelles dépendances
+# Install the new dependencies
 pip install -r requirements.txt
 
-# Exécuter les tests
+# Run the tests
 pytest tests/ -v
 ```
 
-### 2. Tester le Dockerfile optimisé (optionnel)
+### 2. Test the Optimized Dockerfile (optional)
 
 ```bash
 cd docker
-docker build -t leviia-schedule:test -f Dockerfile.optimized ..
-docker run -p 5000:5000 leviia-schedule:test
+docker build -t kairos:test -f Dockerfile.optimized ..
+docker run -p 5000:5000 kairos:test
 ```
 
-### 3. Configurer Kubernetes (si nécessaire)
+### 3. Configure Kubernetes (if needed)
 
-Voir la section [Kubernetes](#-kubernetes) ci-dessus.
+See the [Kubernetes](#-kubernetes) section above.
 
-### 4. Configurer GitLab CI/CD (si nécessaire)
+### 4. Configure CI/CD GitLab (if needed)
 
-Voir la section [CI/CD GitLab](#-cicd-gitlab) ci-dessus.
+See the [CI/CD GitLab](#-cicd-gitlab) section above.
 
-### 5. Configurer Prometheus (optionnel)
+### 5. Configure Prometheus (optional)
 
-Voir la section [Monitoring](#-monitoring-prometheus--grafana) ci-dessus.
-
----
-
-## ⚠️ Notes importantes
-
-1. **Les mises à jour des dépendances sont rétrocompatibles** et ne devraient pas casser l'application.
-2. **Le Dockerfile actuel reste fonctionnel** - le nouveau Dockerfile optimisé est optionnel.
-3. **Les configurations Kubernetes sont des exemples** - à adapter selon votre infrastructure.
-4. **Le support Prometheus est optionnel** - il faut l'activer dans l'application.
-5. **Les secrets Kubernetes ne doivent jamais être commités** - utilisez le template et générez vos propres valeurs.
+See the [Monitoring](#-monitoring-prometheus--grafana) section above.
 
 ---
 
-## 🎯 Prochaines étapes
+## ⚠️ Important Notes
 
-Une fois que vous avez validé ces changements, nous pouvons passer à :
+1. **The dependency updates are backward-compatible** and should not break the application.
+2. **The current Dockerfile remains functional** - the new optimized Dockerfile is optional.
+3. **The Kubernetes configurations are examples** - adapt them to your infrastructure.
+4. **Prometheus support is optional** - it must be enabled in the application.
+5. **Kubernetes secrets must never be committed** - use the template and generate your own values.
 
-- **Phase 2** : Refactorisation du backend (architecture modulaire)
-- **Phase 3** : Refactorisation du frontend (CSS/JS modulaire)
-- **Phase 4** : Amélioration des tests
+---
 
-Voulez-vous que je commence une de ces phases ?
+## 🎯 Next Steps
+
+Once you have validated these changes, we can move on to:
+
+- **Phase 2**: Backend refactoring (modular architecture)
+- **Phase 3**: Frontend refactoring (modular CSS/JS)
+- **Phase 4**: Test improvements
+
+Would you like me to start one of these phases?

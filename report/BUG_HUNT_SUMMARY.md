@@ -1,295 +1,295 @@
-# 🎯 **Résumé de la Chasse au Bug - Leviia Schedule**
+# 🎯 **Bug Hunt Summary - Kairos**
 
-*Généré le 30 juin 2026*
+*Generated on June 30, 2026*
 
 ---
 
-## 📋 **Tableau de Bord**
+## 📋 **Dashboard**
 
-| Métrique | Valeur | Statut | Priorité |
+| Metric | Value | Status | Priority |
 |----------|--------|--------|----------|
-| **Score Global** | 65/100 | ⚠️ Moyen | ⭐⭐⭐ |
-| **Code Dupliqué** | 8 instances | ❌ Critique | 🔴 |
-| **Problèmes de Sécurité** | 15 | ⚠️ Moyen | 🟡 |
-| **Erreurs de Linter** | 279+ | ❌ Critique | 🔴 |
-| **Tests Échoués** | 2 | ❌ Critique | 🔴 |
-| **Couverture de Code** | ~66% | ⚠️ Moyen | 🟡 |
-| **Logs d'Erreur** | 44+ | ⚠️ Faible | 🟢 |
+| **Overall Score** | 65/100 | ⚠️ Medium | ⭐⭐⭐ |
+| **Duplicated Code** | 8 instances | ❌ Critical | 🔴 |
+| **Security Issues** | 15 | ⚠️ Medium | 🟡 |
+| **Linter Errors** | 279+ | ❌ Critical | 🔴 |
+| **Failing Tests** | 2 | ❌ Critical | 🔴 |
+| **Code Coverage** | ~66% | ⚠️ Medium | 🟡 |
+| **Error Logs** | 44+ | ⚠️ Low | 🟢 |
 
 ---
 
-## 🎯 **Top 10 des Problèmes à Corriger**
+## 🎯 **Top 10 Issues to Fix**
 
-### 🔴 **Critique (À corriger IMMEDIATEMENT)**
+### 🔴 **Critical (Fix IMMEDIATELY)**
 
-1. **Fonction `create_app` manquante**
-   - **Impact :** Tous les tests de `test_automation_full.py` échouent
-   - **Fichier :** `app/__init__.py`
-   - **Solution :** Créer une factory function `create_app()`
-   - **Priorité :** 🔴🔴🔴
+1. **Missing `create_app` function**
+   - **Impact:** All tests in `test_automation_full.py` fail
+   - **File:** `app/__init__.py`
+   - **Solution:** Create a `create_app()` factory function
+   - **Priority:** 🔴🔴🔴
 
-2. **Code dupliqué dans les fonctions de cache**
-   - **Impact :** Maintenance difficile, risque d'incohérence
-   - **Fichiers :** `app/utils/cache.py`, `app/utils/optimizations.py`
-   - **Fonctions :** `_make_cache_key`, `_make_function_cache_key`
-   - **Solution :** Factoriser dans un module commun
-   - **Priorité :** 🔴🔴🔴
+2. **Duplicated code in cache functions**
+   - **Impact:** Difficult maintenance, risk of inconsistency
+   - **Files:** `app/utils/cache.py`, `app/utils/optimizations.py`
+   - **Functions:** `_make_cache_key`, `_make_function_cache_key`
+   - **Solution:** Factor out into a common module
+   - **Priority:** 🔴🔴🔴
 
-3. **279+ erreurs de linter (Ruff)**
-   - **Impact :** Code non standardisé, difficile à maintenir
-   - **Fichiers :** Tous les fichiers dans `app/`
-   - **Problèmes principaux :** Imports non utilisés, imports non triés, guillemets simples
-   - **Solution :** Nettoyer les imports et standardiser le style
-   - **Priorité :** 🔴🔴
+3. **279+ linter errors (Ruff)**
+   - **Impact:** Non-standardized code, hard to maintain
+   - **Files:** All files under `app/`
+   - **Main issues:** Unused imports, unsorted imports, single quotes
+   - **Solution:** Clean up imports and standardize style
+   - **Priority:** 🔴🔴
 
-4. **Vulnérabilités dans `cryptography`**
-   - **Impact :** Accès non autorisé, exécution de code arbitraire
-   - **CVE :** CVE-2026-34073, CVE-2026-39892, CVE-2026-26007
-   - **Solution :** `pip install --upgrade cryptography>=46.0.7`
-   - **Priorité :** 🔴🔴
+4. **Vulnerabilities in `cryptography`**
+   - **Impact:** Unauthorized access, arbitrary code execution
+   - **CVE:** CVE-2026-34073, CVE-2026-39892, CVE-2026-26007
+   - **Solution:** `pip install --upgrade cryptography>=46.0.7`
+   - **Priority:** 🔴🔴
 
-5. **Clé secrète par défaut faible**
-   - **Impact :** Session hijacking possible
-   - **Fichier :** `config.py`
-   - **Problème :** `SECRET_KEY = "ta-cle-secrete-ici"`
-   - **Solution :** `secrets.token_hex(32)`
-   - **Priorité :** 🔴🔴
+5. **Weak default secret key**
+   - **Impact:** Session hijacking possible
+   - **File:** `config.py`
+   - **Issue:** `SECRET_KEY = "ta-cle-secrete-ici"`
+   - **Solution:** `secrets.token_hex(32)`
+   - **Priority:** 🔴🔴
 
-### 🟡 **Moyen (À corriger rapidement)**
+### 🟡 **Medium (Fix soon)**
 
-6. **Fonctions `get_bool` et `get_int` dupliquées**
-   - **Impact :** Code redondant
-   - **Fichiers :** 4 fichiers différents
-   - **Solution :** Créer un module `utils/env_helpers.py`
-   - **Priorité :** 🟡🟡
+6. **Duplicated `get_bool` and `get_int` functions**
+   - **Impact:** Redundant code
+   - **Files:** 4 different files
+   - **Solution:** Create a `utils/env_helpers.py` module
+   - **Priority:** 🟡🟡
 
-7. **CSRF désactivé**
-   - **Impact :** Attaques CSRF possibles
-   - **Fichier :** `config.py`
-   - **Solution :** `WTF_CSRF_ENABLED = True`
-   - **Priorité :** 🟡🟡
+7. **CSRF disabled**
+   - **Impact:** CSRF attacks possible
+   - **File:** `config.py`
+   - **Solution:** `WTF_CSRF_ENABLED = True`
+   - **Priority:** 🟡🟡
 
-8. **Authentification désactivable**
-   - **Impact :** Accès non autorisé possible
-   - **Fichier :** `config.py`
-   - **Solution :** Supprimer `LOGIN_DISABLED` ou le restreindre
-   - **Priorité :** 🟡🟡
+8. **Authentication can be disabled**
+   - **Impact:** Unauthorized access possible
+   - **File:** `config.py`
+   - **Solution:** Remove `LOGIN_DISABLED` or restrict it
+   - **Priority:** 🟡🟡
 
-9. **Mot de passe admin par défaut faible**
-   - **Impact :** Accès admin non autorisé
-   - **Fichier :** `config.py`
-   - **Solution :** `secrets.token_urlsafe(16)`
-   - **Priorité :** 🟡🟡
+9. **Weak default admin password**
+   - **Impact:** Unauthorized admin access
+   - **File:** `config.py`
+   - **Solution:** `secrets.token_urlsafe(16)`
+   - **Priority:** 🟡🟡
 
-10. **Pas de rate limiting**
-    - **Impact :** Attaques par force brute
-    - **Solution :** Implémenter Flask-Limiter
-    - **Priorité :** 🟡🟡
+10. **No rate limiting**
+    - **Impact:** Brute-force attacks
+    - **Solution:** Implement Flask-Limiter
+    - **Priority:** 🟡🟡
 
 ---
 
-## 📊 **Statistiques Détaillées**
+## 📊 **Detailed Statistics**
 
-### **Code Dupliqué**
+### **Duplicated Code**
 
-| Fonction | Occurrences | Fichiers | Taille | Priorité |
+| Function | Occurrences | Files | Size | Priority |
 |----------|-------------|---------|--------|----------|
-| `_make_cache_key` | 3 | cache.py, optimizations.py | ~20 lignes | 🔴 |
-| `get_bool` | 4 | lazy_loading.py, automation.py, cache.py, performance_monitor.py | ~5 lignes | 🟡 |
-| `get_int` | 4 | lazy_loading.py, automation.py, cache.py, performance_monitor.py | ~5 lignes | 🟡 |
-| `admin_dashboard` | 3 | admin.py, decorators.py | ~10 lignes | 🟡 |
-| `delete_leave` | 4 | main.py, decorators.py | ~15 lignes | 🟡 |
-| `delete_shift` | 2 | main.py, decorators.py | ~15 lignes | 🟡 |
-| `expensive_computation` | 2 | lazy_loading.py, optimizations.py | ~5 lignes | 🟢 |
+| `_make_cache_key` | 3 | cache.py, optimizations.py | ~20 lines | 🔴 |
+| `get_bool` | 4 | lazy_loading.py, automation.py, cache.py, performance_monitor.py | ~5 lines | 🟡 |
+| `get_int` | 4 | lazy_loading.py, automation.py, cache.py, performance_monitor.py | ~5 lines | 🟡 |
+| `admin_dashboard` | 3 | admin.py, decorators.py | ~10 lines | 🟡 |
+| `delete_leave` | 4 | main.py, decorators.py | ~15 lines | 🟡 |
+| `delete_shift` | 2 | main.py, decorators.py | ~15 lines | 🟡 |
+| `expensive_computation` | 2 | lazy_loading.py, optimizations.py | ~5 lines | 🟢 |
 
-**Total :** 8 groupes de code dupliqué
+**Total:** 8 groups of duplicated code
 
-### **Problèmes de Sécurité**
+### **Security Issues**
 
-| ID | Titre | Sévérité | Impact | Statut |
+| ID | Title | Severity | Impact | Status |
 |----|-------|----------|--------|--------|
-| SEC-001 | Vulnérabilités cryptography | Critique | Accès non autorisé | ⚠️ Partiellement |
-| SEC-002 | Utilisation de MD5 | Critique | Mauvaise pratique | ✅ Corrigé |
-| SEC-003 | CSRF désactivé | Moyen | Attaques CSRF | ❌ Non corrigé |
-| SEC-004 | Clé secrète faible | Moyen | Session hijacking | ❌ Non corrigé |
-| SEC-005 | Authentification désactivable | Moyen | Accès non autorisé | ❌ Non corrigé |
-| SEC-006 | Mot de passe admin faible | Moyen | Accès admin | ❌ Non corrigé |
-| SEC-007 | Pas de rate limiting | Moyen | Force brute | ❌ Non corrigé |
-| SEC-008 | Pas d'en-têtes de sécurité | Moyen | XSS, Clickjacking | ❌ Non corrigé |
-| SEC-009 | CORS non configuré | Moyen | Accès non autorisé | ❌ Non corrigé |
-| SEC-010 | Tokens ICS persistants | Moyen | Accès non autorisé | ❌ Non corrigé |
+| SEC-001 | cryptography vulnerabilities | Critical | Unauthorized access | ⚠️ Partially |
+| SEC-002 | Use of MD5 | Critical | Poor practice | ✅ Fixed |
+| SEC-003 | CSRF disabled | Medium | CSRF attacks | ❌ Not fixed |
+| SEC-004 | Weak secret key | Medium | Session hijacking | ❌ Not fixed |
+| SEC-005 | Authentication can be disabled | Medium | Unauthorized access | ❌ Not fixed |
+| SEC-006 | Weak admin password | Medium | Admin access | ❌ Not fixed |
+| SEC-007 | No rate limiting | Medium | Brute force | ❌ Not fixed |
+| SEC-008 | No security headers | Medium | XSS, Clickjacking | ❌ Not fixed |
+| SEC-009 | CORS not configured | Medium | Unauthorized access | ❌ Not fixed |
+| SEC-010 | Persistent ICS tokens | Medium | Unauthorized access | ❌ Not fixed |
 
-**Total :** 15 problèmes (1 corrigé, 14 à corriger)
+**Total:** 15 issues (1 fixed, 14 to fix)
 
-### **Erreurs de Linter**
+### **Linter Errors**
 
-| Type | Occurrences | Exemples | Priorité |
+| Type | Occurrences | Examples | Priority |
 |------|-------------|----------|----------|
-| Imports non utilisés | 50+ | `render_template`, `request`, `jsonify` | 🔴 |
-| Imports non triés | 20+ | `app/__init__.py` | 🟡 |
-| Guillemets simples | 100+ | Partout | 🟢 |
-| Lignes trop longues | 50+ | Partout | 🟢 |
-| Espaces en fin de ligne | 20+ | Partout | 🟢 |
+| Unused imports | 50+ | `render_template`, `request`, `jsonify` | 🔴 |
+| Unsorted imports | 20+ | `app/__init__.py` | 🟡 |
+| Single quotes | 100+ | Everywhere | 🟢 |
+| Lines too long | 50+ | Everywhere | 🟢 |
+| Trailing whitespace | 20+ | Everywhere | 🟢 |
 
-**Total :** 279+ erreurs/avertissements
+**Total:** 279+ errors/warnings
 
 ### **Tests**
 
-| Fichier | Total | Passés | Échoués | Taux |
+| File | Total | Passed | Failed | Rate |
 |---------|-------|--------|---------|------|
 | test_automation_full.py | 12 | 10 | 2 | 83.3% |
-| Tous les autres | 510 | 510 | 0 | 100% |
+| All others | 510 | 510 | 0 | 100% |
 | **Total** | **522** | **515** | **2** | **98.7%** |
 
-**Couverture :** ~66%
+**Coverage:** ~66%
 
 ---
 
-## 🛠️ **Outils Disponibles**
+## 🛠️ **Available Tools**
 
-### **Scripts Créés**
+### **Scripts Created**
 
 1. **`scripts/bug_hunt.sh`**
-   - Script principal pour la chasse au bug
-   - Options : `--full`, `--security`, `--lint`, `--test`, `--duplicate`, `--quick`, `--report`
-   - Génère des rapports dans `reports/`
+   - Main script for the bug hunt
+   - Options: `--full`, `--security`, `--lint`, `--test`, `--duplicate`, `--quick`, `--report`
+   - Generates reports under `reports/`
 
 2. **`scripts/find_duplicates.py`**
-   - Trouve le code dupliqué et similaire
-   - Options : `--check-imports`, `--check-similar`, `--min-lines`
+   - Finds duplicated and similar code
+   - Options: `--check-imports`, `--check-similar`, `--min-lines`
 
 3. **`BUG_HUNT_REPORT.md`**
-   - Rapport complet de la chasse au bug
-   - Inclut toutes les découvertes et recommandations
+   - Full bug hunt report
+   - Includes all findings and recommendations
 
-### **Commandes Makefile**
+### **Makefile Commands**
 
 ```bash
-# Chasse au bug complète
+# Full bug hunt
 make bug-hunt-full
 
-# Analyse de sécurité
+# Security analysis
 make bug-hunt-security
 
-# Vérification du linter
+# Linter check
 make bug-hunt-lint
 
-# Exécution des tests
+# Run tests
 make bug-hunt-tests
 
-# Recherche de code dupliqué
+# Find duplicated code
 make bug-hunt-duplicates
 
-# Analyse rapide
+# Quick analysis
 make bug-hunt-quick
 
-# Générer un rapport
+# Generate a report
 make bug-hunt-report
 
-# Trouver les doublons
+# Find duplicates
 make find-duplicates
 ```
 
 ---
 
-## 🎯 **Plan d'Action Recommandé**
+## 🎯 **Recommended Action Plan**
 
-### **Phase 1 : Corrections Critiques (1-2 jours)**
+### **Phase 1: Critical Fixes (1-2 days)**
 
-1. ✅ **Créer la fonction `create_app`** dans `app/__init__.py`
-2. ✅ **Corriger les imports** dans `app/__init__.py`
-3. ✅ **Mettre à jour `cryptography`** vers >=46.0.7
-4. ✅ **Configurer les clés sécurisées** par défaut
-5. ✅ **Activer CSRF** en production
+1. ✅ **Create the `create_app` function** in `app/__init__.py`
+2. ✅ **Fix imports** in `app/__init__.py`
+3. ✅ **Upgrade `cryptography`** to >=46.0.7
+4. ✅ **Configure secure defaults** for keys
+5. ✅ **Enable CSRF** in production
 
-### **Phase 2 : Amélioration de la Qualité (3-5 jours)**
+### **Phase 2: Quality Improvements (3-5 days)**
 
-1. 🔧 **Éliminer le code dupliqué** (fonctions de cache, get_bool, get_int)
-2. 🔧 **Corriger les erreurs de linter** (Ruff)
-3. 🔧 **Standardiser le style de code**
-4. 🔧 **Implémenter le rate limiting**
-5. 🔧 **Configurer les en-têtes de sécurité**
+1. 🔧 **Eliminate duplicated code** (cache functions, get_bool, get_int)
+2. 🔧 **Fix linter errors** (Ruff)
+3. 🔧 **Standardize code style**
+4. 🔧 **Implement rate limiting**
+5. 🔧 **Configure security headers**
 
-### **Phase 3 : Sécurité Avancée (1 semaine)**
+### **Phase 3: Advanced Security (1 week)**
 
-1. 🔧 **Configurer CORS** avec origines spécifiques
-2. 🔧 **Limiter la durée des tokens ICS** à 30 jours
-3. 🔧 **Implémenter la validation d'entrée**
-4. 🔧 **Chiffrer les données sensibles**
-5. 🔧 **Implémenter l'authentification 2FA**
+1. 🔧 **Configure CORS** with specific origins
+2. 🔧 **Limit ICS token lifetime** to 30 days
+3. 🔧 **Implement input validation**
+4. 🔧 **Encrypt sensitive data**
+5. 🔧 **Implement 2FA authentication**
 
-### **Phase 4 : Tests et Validation (2-3 jours)**
+### **Phase 4: Tests and Validation (2-3 days)**
 
-1. 🔧 **Corriger les 2 tests échoués**
-2. 🔧 **Ajouter des tests pour les cas limites**
-3. 🔧 **Atteindre 80%+ de couverture**
-4. 🔧 **Exécuter un nouvel audit de sécurité**
+1. 🔧 **Fix the 2 failing tests**
+2. 🔧 **Add tests for edge cases**
+3. 🔧 **Reach 80%+ coverage**
+4. 🔧 **Run a new security audit**
 
 ---
 
-## 📈 **Métriques de Qualité**
+## 📈 **Quality Metrics**
 
-### **Avant la Chasse au Bug**
-- Code dupliqué : Inconnu
-- Problèmes de sécurité : 15 (d'après SECURITY_AUDIT_REPORT.md)
-- Erreurs de linter : Inconnu
-- Tests échoués : 2
-- Couverture : ~66%
+### **Before the Bug Hunt**
+- Duplicated code: Unknown
+- Security issues: 15 (per SECURITY_AUDIT_REPORT.md)
+- Linter errors: Unknown
+- Failing tests: 2
+- Coverage: ~66%
 
-### **Après la Chasse au Bug**
-- Code dupliqué : 8 instances identifiées
-- Problèmes de sécurité : 15 (1 corrigé)
-- Erreurs de linter : 279+ identifiées
-- Tests échoués : 2 (cause identifiée)
-- Couverture : ~66%
+### **After the Bug Hunt**
+- Duplicated code: 8 instances identified
+- Security issues: 15 (1 fixed)
+- Linter errors: 279+ identified
+- Failing tests: 2 (cause identified)
+- Coverage: ~66%
 
-### **Améliorations Potentielles**
-- **Code dupliqué :** -8 instances → 0
-- **Problèmes de sécurité :** -15 → 0-5
-- **Erreurs de linter :** -279+ → 0-50
-- **Tests échoués :** -2 → 0
-- **Couverture :** +14% → 80%+
+### **Potential Improvements**
+- **Duplicated code:** -8 instances → 0
+- **Security issues:** -15 → 0-5
+- **Linter errors:** -279+ → 0-50
+- **Failing tests:** -2 → 0
+- **Coverage:** +14% → 80%+
 
 ---
 
 ## 🎉 **Conclusion**
 
-La chasse au bug a permis d'identifier **plus de 300 problèmes** dans le projet Leviia Schedule, classés par priorité :
+The bug hunt identified **more than 300 issues** in the Kairos project, classified by priority:
 
-### ✅ **Points Forts**
-- Architecture modulaire et bien organisée
-- Bonne couverture des fonctionnalités principales
-- Système de logging complet
-- Gestion des erreurs robuste
-- Documentation technique détaillée
+### ✅ **Strengths**
+- Modular, well-organized architecture
+- Good coverage of core features
+- Comprehensive logging system
+- Robust error handling
+- Detailed technical documentation
 
-### ⚠️ **Points à Améliorer**
-- **Code dupliqué :** 8 instances à factoriser
-- **Sécurité :** 15 problèmes à corriger (3 critiques)
-- **Qualité du Code :** 279+ erreurs de linter
-- **Tests :** 2 tests échouent, couverture à améliorer
+### ⚠️ **Areas to Improve**
+- **Duplicated code:** 8 instances to factor out
+- **Security:** 15 issues to fix (3 critical)
+- **Code Quality:** 279+ linter errors
+- **Tests:** 2 tests failing, coverage to improve
 
-### 🎯 **Recommandation Finale**
+### 🎯 **Final Recommendation**
 
-**❌ NE PAS METTRE EN PRODUCTION dans l'état actuel**
+**❌ DO NOT DEPLOY TO PRODUCTION in the current state**
 
-Appliquer les corrections prioritaires (Phase 1 et 2) avant toute mise en production. Une fois ces corrections appliquées, un nouvel audit devrait être réalisé pour valider la qualité et la sécurité de l'application.
+Apply the priority fixes (Phase 1 and 2) before any production deployment. Once these fixes are applied, a new audit should be carried out to validate the quality and security of the application.
 
-**Score Actuel : 65/100** ⭐⭐⭐
-**Score Cible : 90/100** ⭐⭐⭐⭐⭐
+**Current Score: 65/100** ⭐⭐⭐
+**Target Score: 90/100** ⭐⭐⭐⭐⭐
 
 ---
 
-## 📚 **Ressources**
+## 📚 **Resources**
 
-- [Rapport Complet de Chasse au Bug](BUG_HUNT_REPORT.md)
-- [Rapport d'Audit de Sécurité](SECURITY_AUDIT_REPORT.md)
-- [Résumé des Tests](TESTING_SUMMARY.md)
-- [Documentation du Projet](README.md)
+- [Full Bug Hunt Report](BUG_HUNT_REPORT.md)
+- [Security Audit Report](SECURITY_AUDIT_REPORT.md)
+- [Testing Summary](TESTING_SUMMARY.md)
+- [Project Documentation](README.md)
 - [Roadmap](ROADMAP.md)
 
 ---
 
-*"La qualité n'est pas un acte, mais une habitude." - Aristote*
+*"Quality is not an act, it is a habit." - Aristotle*
 
-*Généré automatiquement par Vibe Code - Agent de Chasse au Bug*
+*Automatically generated by Vibe Code - Bug Hunt Agent*

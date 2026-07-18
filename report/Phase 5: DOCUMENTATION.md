@@ -1,180 +1,179 @@
-# 📋 Rapport de Refactorisation - Phase 5: Documentation
-**Branche** : `refacto/phase5`
-**PR** : [#101](https://github.com/FoxOps/leviia-schedule/pull/101)
-**Date de début** : 2026-07-12
-**Statut** : 🟢 Terminée
-**Base** : `main` (inclut Phases 1 + 2 + 3 + 4, PR #100 mergée)
+# 📋 Refactoring Report - Phase 5: Documentation
+**Branch**: `refacto/phase5`
+**PR**: [#101](https://github.com/FoxOps/leviia-schedule/pull/101)
+**Start date**: 2026-07-12
+**Status**: 🟢 Complete
+**Base**: `main` (includes Phases 1 + 2 + 3 + 4, PR #100 merged)
 
 ---
 
-## 📈 État des lieux (avant restructuration)
+## 📈 Current state (before restructuring)
 
-Un dossier `docs/` (minuscule) existe déjà : 14 fichiers markdown,
-~340 Ko, tous datés du 4 juillet — **avant** les Phases 2/3/4 qui ont
-massivement changé l'architecture (main.py → services/repositories,
-CSS/JS restructurés, tests réorganisés, CSRF ajouté, code mort
-supprimé). Audit en cours pour distinguer ce qui reste exact de ce qui
-est maintenant faux/obsolète, avant de décider quoi garder, réécrire ou
-supprimer.
+A (lowercase) `docs/` folder already exists: 14 markdown files,
+~340 KB, all dated July 4th — **before** Phases 2/3/4, which
+massively changed the architecture (main.py → services/repositories,
+CSS/JS restructured, tests reorganized, CSRF added, dead code
+removed). Audit under way to distinguish what remains accurate from what is
+now wrong/outdated, before deciding what to keep, rewrite, or
+delete.
 
-L'utilisateur a explicitement demandé que toute la documentation vive
-dans un dossier `Docs/` (majuscule), avec sous-dossiers par type si
-pertinent — `docs/` (minuscule, existant) sera donc renommé/réorganisé,
-pas dupliqué.
+The user explicitly requested that all documentation live
+in a (capitalized) `Docs/` folder, with subfolders by type where
+relevant — the existing (lowercase) `docs/` will therefore be renamed/reorganized,
+not duplicated.
 
 ---
 
-## 🎯 Plan de travail
+## 🎯 Work plan
 
-### 5.1 Documentation Technique
-- [x] Architecture : schémas Mermaid (`Docs/architecture/ARCHITECTURE.md`)
-- [x] API : documentation OpenAPI/Swagger (`Docs/api/API.md` + `openapi.yaml`)
-- [x] Base de données : schéma ERD (`Docs/architecture/ERD.md`)
-- [x] Flux utilisateur : diagrammes de séquence (`Docs/architecture/SEQUENCE_DIAGRAMS.md`)
+### 5.1 Technical Documentation
+- [x] Architecture: Mermaid diagrams (`Docs/architecture/ARCHITECTURE.md`)
+- [x] API: OpenAPI/Swagger documentation (`Docs/api/API.md` + `openapi.yaml`)
+- [x] Database: ERD schema (`Docs/architecture/ERD.md`)
+- [x] User flows: sequence diagrams (`Docs/architecture/SEQUENCE_DIAGRAMS.md`)
 
-### 5.2 Documentation Utilisateur
-- [x] Guide de démarrage rapide (`Docs/guides/QUICK_START.md`)
-- [x] Guide d'installation (section dédiée dans `Docs/guides/USER_GUIDE.md`,
-      plus complète que le quickstart)
-- [x] Guide d'administration (`Docs/guides/ADMIN_GUIDE.md`, section
-      SSO/OIDC ajoutée — promise par QUICK_START.md mais jamais écrite)
-- [x] FAQ (`Docs/guides/FAQ.md`, nouveau, extrait et corrigé depuis
+### 5.2 User Documentation
+- [x] Quick start guide (`Docs/guides/QUICK_START.md`)
+- [x] Installation guide (dedicated section in `Docs/guides/USER_GUIDE.md`,
+      more complete than the quickstart)
+- [x] Admin guide (`Docs/guides/ADMIN_GUIDE.md`, SSO/OIDC
+      section added — promised by QUICK_START.md but never written)
+- [x] FAQ (`Docs/guides/FAQ.md`, new, extracted and corrected from
       USER_GUIDE.md)
 
 ---
 
-## 📝 Journal
+## 📝 Log
 
-*(mis à jour à chaque étape)*
+*(updated at each step)*
 
-### 2026-07-12 — Réorganisation docs/ → Docs/ + 5.1 Documentation Technique terminée
+### 2026-07-12 — docs/ → Docs/ reorganization + 5.1 Technical Documentation complete
 
-**Audit préalable** (agent Explore, lecture des 14 fichiers + comparaison
-avec `app/routes/*.py`, `app/models/*.py`, `CLAUDE.md`) : verdict par
-fichier (KEEP / UPDATE / REWRITE / DELETE), liste réelle des endpoints
-HTTP, liste réelle des champs de modèles. Base de tout le travail qui a
-suivi plutôt que de réécrire à l'aveugle.
+**Preliminary audit** (Explore agent, reading the 14 files + comparison
+with `app/routes/*.py`, `app/models/*.py`, `CLAUDE.md`): per-file
+verdict (KEEP / UPDATE / REWRITE / DELETE), real list of HTTP
+endpoints, real list of model fields. Basis for all the work that
+followed rather than rewriting blindly.
 
-**Réorganisation** : `docs/` (14 fichiers, minuscule) → `Docs/`
-(majuscule, demande explicite), éclaté en 5 sous-dossiers par type
+**Reorganization**: `docs/` (14 files, lowercase) → `Docs/`
+(capitalized, explicit request), split into 5 subfolders by type
 (`architecture/`, `api/`, `guides/`, `deployment/`, `reference/`).
-`SUMMARY.md` supprimé (confirmé pur résumé de résumés, aucun contenu
-unique). Liens cassés corrigés dans `README.md` (racine), `ROADMAP.md`,
-`.gitlab-ci/.gitlab-ci.yml`. `README.md` racine corrigé au passage sur
-plusieurs points obsolètes trouvés en chemin : `app/models.py` →
-`app/models/`, versions Authlib/icalendar, statistiques de tests (522
-tests/66% avant Phase 4 → 768 tests/81% aujourd'hui), lien mort vers un
-`TESTING_SUMMARY.md` qui n'a jamais existé.
+`SUMMARY.md` removed (confirmed to be a pure summary-of-summaries, no unique
+content). Broken links fixed in the root `README.md`, `ROADMAP.md`,
+`.gitlab-ci/.gitlab-ci.yml`. The root `README.md` also fixed along the way on
+several outdated points found in passing: `app/models.py` →
+`app/models/`, Authlib/icalendar versions, test statistics (522
+tests/66% before Phase 4 → 768 tests/81% today), dead link to a
+`TESTING_SUMMARY.md` that never existed.
 
-**ARCHITECTURE.md** réécrit intégralement (l'ancienne version décrivait
-`app/models.py` en fichier plat, aucune mention de services/repositories
-ni du CSRF app-wide) — 2 diagrammes Mermaid (vue en couches, découpage
-des blueprints sur plusieurs fichiers).
+**ARCHITECTURE.md** rewritten in full (the old version described
+`app/models.py` as a flat file, no mention of services/repositories
+or the app-wide CSRF) — 2 Mermaid diagrams (layered view,
+blueprint split across multiple files).
 
-**ERD.md** (nouveau) : `erDiagram` Mermaid généré depuis les modèles
-réels. Corrige une erreur de l'ancienne doc (`Leave` n'a pas de champ
-`reason`) et documente `AutomationConfig`, absent de toute doc
-précédente.
+**ERD.md** (new): Mermaid `erDiagram` generated from the real models.
+Fixes an error in the old doc (`Leave` has no `reason`
+field) and documents `AutomationConfig`, absent from any prior
+doc.
 
-**SEQUENCE_DIAGRAMS.md** (nouveau) : 5 diagrammes — connexion basique,
-connexion OIDC/SSO, ajout de congé avec rééquilibrage automatique des
-shifts, mise à jour de shift par API JSON avec vérification CSRF, export
-ICS (session ou token porteur).
+**SEQUENCE_DIAGRAMS.md** (new): 5 diagrams — basic login,
+OIDC/SSO login, adding leave with automatic shift
+rebalancing, updating a shift via the JSON API with CSRF
+verification, ICS export (session or bearer token).
 
-**API.md** réécrit intégralement (l'ancienne version documentait des
-routes fictives — `/leaves/my-leaves`, `/schedule/my-shifts`,
-`/admin/users/generate-token/<id>` — et omettait la quasi-totalité des
-vrais endpoints `/api/*`). **`openapi.yaml`** (nouveau) : spec OpenAPI
-3.0 pour les 9 endpoints JSON réels, validée avec
+**API.md** rewritten in full (the old version documented
+fictitious routes — `/leaves/my-leaves`, `/schedule/my-shifts`,
+`/admin/users/generate-token/<id>` — and omitted nearly all of the
+real `/api/*` endpoints). **`openapi.yaml`** (new): OpenAPI
+3.0 spec for the 9 real JSON endpoints, validated with
 `openapi-spec-validator`.
 
-### 2026-07-12 — 5.2 Documentation Utilisateur + nettoyage reference/ terminés
+### 2026-07-12 — 5.2 User Documentation + reference/ cleanup complete
 
-**QUICK_START.md / USER_GUIDE.md** : ni l'un ni l'autre ne mentionnait
-`cp .env.example .env` avant le premier démarrage — sans ce fichier,
-`DEFAULT_ADMIN_PASSWORD` n'est pas défini et `run.py` génère un mot de
-passe admin aléatoire jamais affiché, pas `admin123` comme documenté
-partout. Vérifié en confrontant `run.py::create_default_data` au
-`.env.example` réel, corrigé aux deux endroits. `USER_GUIDE.md` corrigé
-aussi sur `SQLALCHEMY_DATABASE_URI` (config Flask interne, pas le nom
-réel de la variable d'environnement — c'est `DATABASE_URL`), les
-sections "modifier un shift/une astreinte/un congé" (possible par
-glisser-déposer en mode édition, réservé admin, pas juste "supprimer et
-recréer"), et les règles de validation des congés (lues dans
-`can_add_leave()` : aucune vérification de date future, aucun blocage
-sur chevauchement shift/astreinte — rééquilibrage automatique à la
-place).
+**QUICK_START.md / USER_GUIDE.md**: neither mentioned
+`cp .env.example .env` before the first startup — without this file,
+`DEFAULT_ADMIN_PASSWORD` is unset and `run.py` generates a random admin
+password that is never displayed, not `admin123` as documented
+everywhere. Verified by comparing `run.py::create_default_data` against the
+real `.env.example`, fixed in both places. `USER_GUIDE.md` also fixed
+on `SQLALCHEMY_DATABASE_URI` (internal Flask config, not the real
+name of the environment variable — that's `DATABASE_URL`), the
+"edit a shift/an on-call/a leave" sections (possible via
+drag-and-drop in edit mode, admin-only, not just "delete and
+recreate"), and the leave validation rules (read from
+`can_add_leave()`: no future-date check, no blocking
+on a shift/on-call overlap — automatic rebalancing instead).
 
-**FAQ.md** (nouveau) : section FAQ extraite de `USER_GUIDE.md` (évite la
-duplication constatée avec `SUMMARY.md`), corrigée sur les mêmes points,
-plus une entrée sur les erreurs 400 liées au CSRF.
+**FAQ.md** (new): FAQ section extracted from `USER_GUIDE.md` (avoids the
+duplication observed with `SUMMARY.md`), fixed on the same points,
+plus an entry on CSRF-related 400 errors.
 
-**ADMIN_GUIDE.md** : toutes les références à `config.py` corrigées vers
-`app/config/` (+ précision sur la distinction avec le `config.py` legacy
-racine) ; "Générer un token ICS via Admin > Utilisateurs" corrigé — c'est
-un self-service (`POST /profile/ics-token`), la route admin décrite n'a
-jamais existé ; chemins de personnalisation des règles métiers mis à jour
-(`app/auth/decorators.py`, déplacé en Phase 2) ; "MySQL/MariaDB - à
-venir" corrigé — déjà supporté via `DATABASE_URL`. **Section SSO/OIDC
-complète ajoutée** (activation, désactivation de l'auth basique,
-déconnexion RP-initiated, mapping des claims, cas Docker avec
-`OIDC_INTERNAL_ISSUER`) : `QUICK_START.md` promettait ce contenu
-("Guide Administrateur pour une configuration complète SSO/OIDC")
-depuis toujours sans qu'il n'ait jamais existé.
+**ADMIN_GUIDE.md**: all references to `config.py` fixed to point to
+`app/config/` (+ a note on the distinction with the legacy root
+`config.py`); "Generate an ICS token via Admin > Users" fixed — it's
+a self-service action (`POST /profile/ics-token`), the admin route described
+never existed; business-rule customization paths updated
+(`app/auth/decorators.py`, moved in Phase 2); "MySQL/MariaDB -
+coming soon" fixed — already supported via `DATABASE_URL`. **Full
+SSO/OIDC section added** (enabling it, disabling basic auth,
+RP-initiated logout, claim mapping, Docker case with
+`OIDC_INTERNAL_ISSUER`): `QUICK_START.md` had promised this content
+("Administrator Guide for a full SSO/OIDC setup")
+all along without it ever having existed.
 
-**ENVIRONMENT_VARIABLES.md** : sections Pagination/Lazy Loading/
-Optimisation des Requêtes/Monitoring des Performances retirées — toutes
-lues par `config_performance.py`, module vérifié comme n'étant importé
-nulle part dans `app/` ou `run.py` (les fonctionnalités qu'elles
-configuraient ont été supprimées comme code mort en Phase 4). Les
-définir dans `.env` n'a aujourd'hui aucun effet ; documenté explicitement
-plutôt que silencieusement retiré. Section Cache réduite aux variables
-réellement lues. Section SSO/OIDC complète ajoutée (absente auparavant).
+**ENVIRONMENT_VARIABLES.md**: Pagination/Lazy Loading/
+Query Optimization/Performance Monitoring sections removed — all
+read by `config_performance.py`, a module verified to be imported
+nowhere in `app/` or `run.py` (the features they configured
+were removed as dead code in Phase 4). Setting them in `.env` now has
+no effect; documented explicitly rather than silently removed.
+Cache section trimmed to the variables actually read. Full SSO/OIDC
+section added (previously absent).
 
-**PERFORMANCE_OPTIMIZATION.md** réécrit intégralement : 1397 → ~100
-lignes. ~90% de l'ancien contenu documentait des systèmes qui n'existent
-plus (pagination avancée, lazy loading 785 lignes, un `PerformanceMonitor`
-qui d'après l'audit Phase 4 n'a en réalité jamais fonctionné — import
-cassé vers un module inexistant). Nouveau contenu : cache, `eager_load`,
-index composites, pointeur vers `prometheus_metrics.py`/`health.py`.
+**PERFORMANCE_OPTIMIZATION.md** rewritten in full: 1397 → ~100
+lines. ~90% of the old content documented systems that no longer exist
+(advanced pagination, 785-line lazy loading, a `PerformanceMonitor`
+that, per the Phase 4 audit, had actually never worked — broken
+import to a nonexistent module). New content: cache, `eager_load`,
+composite indexes, pointer to `prometheus_metrics.py`/`health.py`.
 
-**ERROR_HANDLING.md** : références `config.py` corrigées vers
-`app/config/`, fonction de logging renommée (`configure_logging()` dans
-`app/utils/logging/logger.py`, pas `setup_logging()` dans
-`app/__init__.py`), note CSRF ajoutée.
+**ERROR_HANDLING.md**: `config.py` references fixed to point to
+`app/config/`, renamed logging function (`configure_logging()` in
+`app/utils/logging/logger.py`, not `setup_logging()` in
+`app/__init__.py`), CSRF note added.
 
-**DEPLOYMENT_GUIDE.md** : fichier détecté comme binaire par `file`
-(191 séquences corrompues — émojis et caractères accentués remplacés par
-un octet de contrôle + le code hexadécimal du point de code Unicode en
-texte littéral). Motif entièrement déterministe et réversible, décodé par
-script ; 4 cas particuliers résolus manuellement par le contexte. Vérifié
-: 0 octet de contrôle restant, tous les caractères Unicode valides, aucun
-autre fichier de `Docs/` affecté par le même problème.
+**DEPLOYMENT_GUIDE.md**: file detected as binary by `file`
+(191 corrupted sequences — emoji and accented characters replaced by
+a control byte + the Unicode code point's hex code as literal text).
+Fully deterministic and reversible pattern, decoded by script; 4 edge
+cases resolved manually from context. Verified: 0 remaining control
+bytes, all Unicode characters valid, no other file in `Docs/` affected by
+the same issue.
 
-**Docs/README.md** reconstruit pour refléter la structure en
-sous-dossiers. Vérification systématique de tous les liens markdown
-internes (`Docs/` + `README.md` + `ROADMAP.md` racine, script Python,
-résolution de chemin réelle) : 2 liens morts trouvés et corrigés
-(`CONTRIBUTING.md` inexistant dans `ROADMAP.md`, ancre invalidée par un
-renommage de section).
+**Docs/README.md** rebuilt to reflect the subfolder structure.
+Systematic check of every internal markdown link
+(`Docs/` + root `README.md` + `ROADMAP.md`, Python script,
+real path resolution): 2 dead links found and fixed
+(`CONTRIBUTING.md` missing in `ROADMAP.md`, anchor invalidated by a
+section rename).
 
-**Bilan de la phase** :
-- `docs/` → `Docs/` réorganisé en 5 sous-dossiers, `SUMMARY.md` supprimé
-- 3 fichiers réécrits intégralement (`ARCHITECTURE.md`, `API.md`,
-  `PERFORMANCE_OPTIMIZATION.md` — tous jugés majoritairement fictifs par
-  l'audit initial)
-- 3 nouveaux documents techniques (`ERD.md`, `SEQUENCE_DIAGRAMS.md`,
-  `openapi.yaml`) + 1 nouveau guide (`FAQ.md`)
-- 5 fichiers corrigés (`USER_GUIDE.md`, `ADMIN_GUIDE.md`, `QUICK_START.md`,
+**Phase summary**:
+- `docs/` → `Docs/` reorganized into 5 subfolders, `SUMMARY.md` removed
+- 3 files rewritten in full (`ARCHITECTURE.md`, `API.md`,
+  `PERFORMANCE_OPTIMIZATION.md` — all judged mostly fictitious by
+  the initial audit)
+- 3 new technical documents (`ERD.md`, `SEQUENCE_DIAGRAMS.md`,
+  `openapi.yaml`) + 1 new guide (`FAQ.md`)
+- 5 files fixed (`USER_GUIDE.md`, `ADMIN_GUIDE.md`, `QUICK_START.md`,
   `ENVIRONMENT_VARIABLES.md`, `ERROR_HANDLING.md`)
-- 1 bug d'encodage réel réparé (`DEPLOYMENT_GUIDE.md`, 191 séquences
-  corrompues, décodage déterministe)
-- Section SSO/OIDC écrite pour la première fois (promise depuis
-  `QUICK_START.md`, jamais tenue)
-- Plusieurs inexactitudes fonctionnelles corrigées après lecture directe
-  du code (validation des congés, workflow de token ICS, mot de passe
-  admin par défaut, modification de shifts/astreintes/congés)
+- 1 real encoding bug fixed (`DEPLOYMENT_GUIDE.md`, 191 corrupted
+  sequences, deterministic decoding)
+- SSO/OIDC section written for the first time (promised since
+  `QUICK_START.md`, never delivered)
+- Several factual inaccuracies fixed after reading the code directly
+  (leave validation, ICS token workflow, default admin
+  password, editing shifts/on-calls/leave)
 
 ---
 
-*Dernière mise à jour : 2026-07-12*
+*Last updated: 2026-07-12*
