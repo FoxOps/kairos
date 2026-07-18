@@ -1,11 +1,8 @@
 # Entity-Relationship Diagram (ERD)
 
-Generated from `app/models/*.py` (Phase 5, 2026-07, completed 2026-07-16
-with `Setting`/`SwapRequest`/`AppNotification`/`AuditLog` — see CLAUDE.md
-"Shift swaps"/"In-app notifications"/"Audit trail" for the functional
-detail of each) — the `id`, `created_at`, `updated_at` fields are
-inherited from `BaseModel` (`app/models/base.py`) and common to all
-tables below.
+Generated from `app/models/*.py` — the `id`, `created_at`, `updated_at`
+fields are inherited from `BaseModel` (`app/models/base.py`) and common
+to all tables below.
 
 ```mermaid
 erDiagram
@@ -181,8 +178,7 @@ erDiagram
   pagination, notifications, backup/audit retention, ICS
   token expiry) — a present row always wins; its absence falls
   straight back to the corresponding environment variable/default value
-  (`SettingsService`, see CLAUDE.md "Configuration:
-  two parallel systems").
+  (`SettingsService`).
 - **`SwapRequest`**: the first model in the project with several FKs to
   the same table (`requester_id`/`target_user_id`/`reviewer_id` → `User`).
   Deliberately **without** `db.relationship()` (a typing limitation of

@@ -1,7 +1,7 @@
 # Sequence Diagrams
 
 Key user flows, traced from the actual code (`app/routes/`,
-`app/services/`, `app/auth/`) — Phase 5, 2026-07.
+`app/services/`, `app/auth/`).
 
 ## Basic login (email/password)
 
