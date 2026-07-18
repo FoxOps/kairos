@@ -71,3 +71,32 @@
     border-radius: var(--app-radius, 0.5rem);
     box-shadow: var(--shadow-lg);
 }
+
+/* date-picker.js switches every bound field to type="text" (see that
+   file for why), which drops the browser's own calendar glyph a
+   native <input type="date"> renders for free. Restored here as a
+   background-image, keyed off the same data-kairos-native-type
+   attribute the JS sets on every bound field - purely decorative, the
+   input's own click handling already opens the popup regardless of
+   where in the field it's clicked.
+
+   A plain `fill="currentColor"` SVG doesn't reliably pick up the
+   input's CSS color when used as a background-image data URI (it's a
+   separate document, not inline markup), so two fixed-color variants
+   are used instead - same idea as the vendor's own arrow icons in
+   themes/dark.css - sourced directly from the Dracula/Alucard
+   text-color values in theme-colors.css. */
+input[data-kairos-native-type] {
+    background-repeat: no-repeat;
+    background-position: right 0.9rem center;
+    background-size: 1.1rem;
+    padding-right: 2.75rem;
+}
+
+[data-theme="light"] input[data-kairos-native-type] {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath fill='%231f1f1f' d='M152 24c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 40L64 64C28.7 64 0 92.7 0 128l0 16 0 320c0 35.3 28.7 64 64 64l320 0c35.3 0 64-28.7 64-64l0-320 0-16c0-35.3-28.7-64-64-64l-40 0 0-40c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 40L152 64l0-40zM48 192l352 0 0 272c0 8.8-7.2 16-16 16L64 480c-8.8 0-16-7.2-16-16l0-272z'/%3E%3C/svg%3E");
+}
+
+[data-theme="dark"] input[data-kairos-native-type] {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath fill='%23f8f8f2' d='M152 24c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 40L64 64C28.7 64 0 92.7 0 128l0 16 0 320c0 35.3 28.7 64 64 64l320 0c35.3 0 64-28.7 64-64l0-320 0-16c0-35.3-28.7-64-64-64l-40 0 0-40c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 40L152 64l0-40zM48 192l352 0 0 272c0 8.8-7.2 16-16 16L64 480c-8.8 0-16-7.2-16-16l0-272z'/%3E%3C/svg%3E");
+}
