@@ -126,8 +126,8 @@ LOGIN_DISABLED=true
 
 #### CSRF Protection
 
-Active across the entire application since Phase 4 (`Flask-WTF`
-`CSRFProtect`) — nothing to configure on the admin side, but good to know if
+Active across the entire application (`Flask-WTF` `CSRFProtect`) —
+nothing to configure on the admin side, but good to know if
 you script calls to the application (bulk import, third-party integration):
 any POST/PUT/PATCH/DELETE request without a valid CSRF token is rejected
 with `400 Bad Request`. See [`api/API.md`](../api/API.md#authentification)
@@ -230,8 +230,9 @@ login events (success, failure, logout, registration, password change).
 The page allows filtering by actor, action domain (`shift`, `oncall`,
 `leave`, `swap`, `user`, `group`, `shift_type`, `setting`, `auth`,
 `profile`) and date range. Every entry is also written to
-`logs/audit.log` (dual write, defense in depth) — see CLAUDE.md "Audit
-trail" for the technical detail.
+`logs/audit.log` (dual write, defense in depth: the database entry
+powers this filterable page, the file copy survives even if the
+database is unavailable).
 
 **Purge**: the "Purge according to retention" button deletes entries
 older than the duration configured in **Settings → Audit trail**

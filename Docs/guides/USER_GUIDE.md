@@ -978,7 +978,6 @@ branch, commit, Pull Request).
 
 - [README.md](../../README.md) - Technical documentation and installation
 - [ROADMAP.md](../../ROADMAP.md) - Development roadmap
-- [Phase 4 Report: Test Improvement](../../report/Phase%204%3A%20AM%C3%89LIORATION%20DES%20TESTS.md) - Test status and coverage
 - [LICENSE](../../LICENSE) - CeCILL v2.1 License
 - [GitHub Repository](https://github.com/FoxOps/leviia-schedule) - Source code and issues
 

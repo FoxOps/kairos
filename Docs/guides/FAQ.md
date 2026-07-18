@@ -1,9 +1,5 @@
 # FAQ
 
-> Content verified against the actual code in Phase 5 (2026-07). Formerly
-> a section of `USER_GUIDE.md`, extracted here to avoid duplication and
-> corrected on several inaccurate points (see inline notes).
-
 ## Frequently Asked Questions
 
 ### How do I reset my password?
@@ -116,7 +112,7 @@ anywhere. See
 
 ### A POST request fails with "Bad Request" / unexpected 400 error
 
-Since Phase 4, every write request (form or API call) requires a
+Every write request (form or API call) requires a
 valid CSRF token. If you are scripting calls to the application (curl,
 automated requests) instead of using the interface, you must first
 retrieve a CSRF token (hidden `csrf_token` field of the form, or
