@@ -155,10 +155,13 @@ CSP_POLICY = {
     # cdnjs.cloudflare.com: Font Awesome, daisyUI, tailwindcss-browser
     # (Tailwind CSS 4's browser-JIT compiler) are loaded from this CDN
     # rather than vendored locally.
-    # cdn.jsdelivr.net: FullCalendar only (see comment above).
+    # cdn.jsdelivr.net: FullCalendar, plus Vanilla Calendar Pro (the
+    # date/datetime-local picker - see date-picker.js and
+    # vanilla-calendar-overrides.css). Vanilla Calendar Pro ships its own
+    # layout stylesheet, so unlike FullCalendar it also needs style-src.
     "script-src": f"'self' {CDNJS_HOST} {JSDELIVR_HOST}",
     "script-src-attr": "'unsafe-inline'",
-    "style-src": f"'self' 'unsafe-inline' {CDNJS_HOST}",
+    "style-src": f"'self' 'unsafe-inline' {CDNJS_HOST} {JSDELIVR_HOST}",
     # FullCalendar bundles its icon font (calendar prev/next arrows) as a
     # @font-face data: URI in its own CSS (bundled into the vendor JS) -
     # without font-src, default-src 'self' blocks the data: URI and the

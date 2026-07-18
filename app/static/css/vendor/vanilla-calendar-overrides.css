@@ -1,0 +1,73 @@
+/* ============================================
+   VANILLA CALENDAR PRO OVERRIDES
+   ============================================
+   Vanilla Calendar Pro (loaded from jsDelivr, see base.html) ships its
+   own light/dark theme CSS bundled into styles/index.min.css, scoped
+   under [data-vc-theme="light"|"dark"] (auto-switched by the library's
+   themeAttrDetect reading our own data-theme attribute - see
+   date-picker.js). Its built-in accent color (a fixed cyan, #06b6d4,
+   identical in both its own light and dark theme) is the only thing
+   this file retints - to the app's Dracula/Alucard --app-color-primary
+   - same narrow scope as fullcalendar-overrides.css uses for
+   FullCalendar's own default CSS: this is not a full re-theme, only a
+   brand-accent swap on top of the vendor's own light/dark handling.
+
+   Selectors are prefixed with the same [data-vc-theme] attribute
+   (matching light AND dark) as the vendor's own rules purely to match
+   their selector specificity - load order (this file comes after
+   index.min.css in base.html) is what makes ours win, no !important
+   needed. Hex fallbacks = Alucard (light theme) values, same convention
+   as fullcalendar-overrides.css. */
+
+[data-vc-theme] .vc-date[data-vc-date-selected] .vc-date__btn,
+[data-vc-theme] .vc-date[data-vc-date-selected=first] .vc-date__btn,
+[data-vc-theme] .vc-date[data-vc-date-selected=last] .vc-date__btn {
+    background-color: var(--app-color-primary, #644ac9);
+    color: var(--color-primary-content, #fffbeb);
+}
+
+[data-vc-theme] .vc-date[data-vc-date-selected] .vc-date__btn:hover,
+[data-vc-theme] .vc-date[data-vc-date-selected=first] .vc-date__btn:hover,
+[data-vc-theme] .vc-date[data-vc-date-selected=last] .vc-date__btn:hover {
+    background-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 85%, black);
+    color: var(--color-primary-content, #fffbeb);
+}
+
+[data-vc-theme] .vc-date[data-vc-date-today] .vc-date__btn {
+    color: var(--app-color-primary, #644ac9);
+}
+
+[data-vc-theme] .vc-months__month[data-vc-months-month-selected],
+[data-vc-theme] .vc-years__year[data-vc-years-year-selected] {
+    background-color: var(--app-color-primary, #644ac9);
+    color: var(--color-primary-content, #fffbeb);
+}
+
+[data-vc-theme] .vc-months__month[data-vc-months-month-selected]:hover,
+[data-vc-theme] .vc-years__year[data-vc-years-year-selected]:hover {
+    background-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 85%, black);
+    color: var(--color-primary-content, #fffbeb);
+}
+
+/* Focus outline: the vendor's own orange (#fdba74, dark theme only -
+   light theme doesn't set one at all) replaced with the app's usual
+   focus-visible color for consistency with the rest of the app
+   (accessibility.js/base.css). */
+[data-vc-theme] [tabindex="0"]:focus-visible,
+[data-vc-theme] button:focus-visible,
+[data-vc-theme]:focus-visible {
+    outline-color: var(--app-color-primary, #644ac9);
+}
+
+[data-vc-theme] .vc-time__keeping:focus-visible,
+[data-vc-theme] .vc-time__hour input:focus-visible,
+[data-vc-theme] .vc-time__minute input:focus-visible {
+    outline-color: var(--app-color-primary, #644ac9);
+}
+
+/* The popup's own shadow/radius, aligned on the app's shared tokens
+   (variables.css) instead of the vendor's hardcoded values. */
+.vc[data-vc-input] {
+    border-radius: var(--app-radius, 0.5rem);
+    box-shadow: var(--shadow-lg);
+}

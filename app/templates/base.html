@@ -52,6 +52,18 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/tables.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout/footer.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/themes/dark.css') }}">
+
+    <!-- Vanilla Calendar Pro (date/datetime-local picker, see
+         date-picker.js) - "index.min.css" bundles layout + the library's
+         own built-in light/dark themes (selectors scoped under
+         [data-vc-theme=light|dark], switched automatically by
+         themeAttrDetect reading our data-theme attribute - same idea as
+         theme-colors.css). vanilla-calendar-overrides.css below only
+         retints the built-in slate/cyan accents to this app's
+         Dracula/Alucard primary color, same scope as
+         fullcalendar-overrides.css does for FullCalendar. -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vanilla-calendar-pro@3.1.0/styles/index.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor/vanilla-calendar-overrides.css') }}">
     {% block extra_css %}{% endblock %}
 
     <!-- Server-translated (gettext) strings for the handful of
