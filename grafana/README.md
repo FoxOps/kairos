@@ -1,36 +1,36 @@
-# Dashboard Grafana - Leviia Schedule
+# Grafana Dashboard - Kairos
 
-`kairos-dashboard.json` scrape les métriques exposées par
-`app/utils/prometheus_metrics.py` sur `/metrics` (endpoint gated par
-`PROMETHEUS_ENABLED`, voir `app/__init__.py`).
+`kairos-dashboard.json` scrapes the metrics exposed by
+`app/utils/prometheus_metrics.py` on `/metrics` (an endpoint gated by
+`PROMETHEUS_ENABLED`, see `app/__init__.py`).
 
 ## Import
 
 1. Grafana > Dashboards > New > Import
-2. Coller le contenu de `kairos-dashboard.json` (ou uploader le fichier)
-3. Choisir la datasource Prometheus qui scrape `/metrics`
+2. Paste the content of `kairos-dashboard.json` (or upload the file)
+3. Choose the Prometheus datasource that scrapes `/metrics`
 
-## Prérequis côté Prometheus
+## Prometheus-side requirements
 
-Un job de scrape pointant vers l'app, par exemple :
+A scrape job pointing at the app, for example:
 
 ```yaml
 scrape_configs:
-  - job_name: leviia-schedule
+  - job_name: kairos
     metrics_path: /metrics
     static_configs:
-      - targets: ["leviia-schedule:5000"]
+      - targets: ["kairos:5000"]
 ```
 
-## Contenu
+## Contents
 
-- Requêtes HTTP/s et erreurs/s (`leviia_requests_total`, `leviia_errors_total`)
-- Latence p95 par endpoint (`leviia_request_latency_seconds`)
-- Temps requêtes SQL p95 (`leviia_db_query_time_seconds`)
-- Utilisateurs/sessions actifs (`leviia_active_users`, `leviia_active_sessions`)
-- Volumétrie métier : shifts, astreintes, congés, utilisateurs, groupes
-- CPU / mémoire / disque (`leviia_cpu_usage_percent`, `leviia_memory_usage_bytes`, `leviia_disk_usage_bytes`)
+- HTTP requests/s and errors/s (`kairos_requests_total`, `kairos_errors_total`)
+- p95 latency per endpoint (`kairos_request_latency_seconds`)
+- p95 SQL query time (`kairos_db_query_time_seconds`)
+- Active users/sessions (`kairos_active_users`, `kairos_active_sessions`)
+- Business volume: shifts, on-call, leave, users, groups
+- CPU / memory / disk (`kairos_cpu_usage_percent`, `kairos_memory_usage_bytes`, `kairos_disk_usage_bytes`)
 
-Dashboard non testé contre une instance Grafana réelle (aucune disponible
-dans cet environnement) - noms de métriques et syntaxe JSON vérifiés contre
-`app/utils/prometheus_metrics.py` et le schéma Grafana (`schemaVersion: 39`).
+Dashboard not tested against a real Grafana instance (none available in
+this environment) - metric names and JSON syntax verified against
+`app/utils/prometheus_metrics.py` and the Grafana schema (`schemaVersion: 39`).
