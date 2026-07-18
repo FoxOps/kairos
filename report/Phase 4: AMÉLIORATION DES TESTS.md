@@ -1,348 +1,339 @@
-# 📋 Rapport de Refactorisation - Phase 4: Amélioration des Tests
-**Branche** : `refacto/phase4`
-**PR** : [#100](https://github.com/FoxOps/leviia-schedule/pull/100)
-**Date de début** : 2026-07-11
-**Statut** : 🟢 Terminée
-**Base** : `main` (inclut Phases 1 + 2 + 3, PR #99 mergée)
+# 📋 Refactoring Report - Phase 4: Test Improvements
+**Branch**: `refacto/phase4`
+**PR**: [#100](https://github.com/FoxOps/leviia-schedule/pull/100)
+**Start date**: 2026-07-11
+**Status**: 🟢 Done
+**Base**: `main` (includes Phases 1 + 2 + 3, PR #99 merged)
 
 ---
 
-## 📈 État des lieux (avant restructuration)
+## 📈 State of play (before restructuring)
 
-- 29 fichiers de tests, ~8085 lignes, tous à plat dans `tests/`, 511 tests,
-  511 passent.
-- `pytest-cov` **n'était pas installé** malgré le fait que `CLAUDE.md`
-  documente déjà `pytest tests/ --cov=app --cov=config --cov-report=term-missing`
-  comme commande existante — la commande plantait
-  (`unrecognized arguments: --cov=app`). Installé maintenant.
-- **Couverture réelle mesurée (baseline)** : **56%** (`app/` + `config.py`).
-- Aucun test dédié pour la couche `app/services/` ou `app/repositories/`
-  (créées en Phase 2) — seule `ScheduleService` a quelques tests indirects
-  dans `test_main_coverage.py`/`test_main_priority.py`. Le reste
-  (`UserService`, `GroupService`, `ShiftService`, `ShiftTypeService`,
+- 29 test files, ~8085 lines, all flat under `tests/`, 511 tests, 511
+  passing.
+- `pytest-cov` **wasn't installed** even though `CLAUDE.md` already
+  documented `pytest tests/ --cov=app --cov=config --cov-report=term-missing`
+  as an existing command - the command crashed
+  (`unrecognized arguments: --cov=app`). Now installed.
+- **Real measured coverage (baseline)**: **56%** (`app/` + `config.py`).
+- No dedicated tests for the `app/services/` or `app/repositories/`
+  layer (created in Phase 2) - only `ScheduleService` had a few indirect
+  tests in `test_main_coverage.py`/`test_main_priority.py`. Everything
+  else (`UserService`, `GroupService`, `ShiftService`, `ShiftTypeService`,
   `OnCallService`, `LeaveService`, `ExportService`,
-  `AutomationAdminService`) et tous les repositories ne sont couverts
-  qu'indirectement via les tests de routes HTTP.
-- **Pas de Selenium/Playwright, pas de chromedriver/geckodriver, pas de
-  sudo** dans cet environnement : impossible d'installer un navigateur
-  headless. Décision validée avec l'utilisateur : les tests "E2E" seront
-  des parcours multi-requêtes via le client de test Flask existant
-  (login → action → vérification → logout), pas de l'automatisation
-  navigateur réelle. Documenté honnêtement plutôt que la case cochée sans
-  base.
+  `AutomationAdminService`) and every repository was only covered
+  indirectly through HTTP route tests.
+- **No Selenium/Playwright, no chromedriver/geckodriver, no sudo** in
+  this environment: impossible to install a headless browser. Decision
+  validated with the user: the "E2E" tests will be multi-request flows
+  through the existing Flask test client (login -> action -> verify ->
+  logout), not real browser automation. Documented honestly rather than
+  checking the box with no real basis.
 
-### Distorsion de la couverture par du code mort
+### Coverage distortion from dead code
 
-Une partie non négligeable des lignes non couvertes vient de modules déjà
-identifiés comme inutilisés dans `CLAUDE.md`, plus deux nouveaux repérés
-cette phase :
+A significant chunk of the uncovered lines comes from modules already
+flagged as unused in `CLAUDE.md`, plus two newly spotted this phase:
 
-| Module | Lignes | Couverture | Statut |
+| Module | Lines | Coverage | Status |
 |---|---|---|---|
-| `app/utils/monitoring/__init__.py` | 344 | 0% | mort (déjà noté dans CLAUDE.md) |
-| `app/utils/pagination/__init__.py` | 248 | 0% | mort — atteignable seulement via des décorateurs eux-mêmes jamais appliqués (voir ci-dessous) |
-| `app/utils/prometheus_metrics.py` | 86 | 0% | conditionnel (`PROMETHEUS_ENABLED`), pas mort mais jamais exercé en test |
-| `app/utils/helpers/env_helpers.py` | 47 | 0% | mort (déjà noté dans CLAUDE.md) |
-| `app/utils/cache/cache_helpers.py` | 40 | 0% | mort, zéro référence ailleurs dans `app/` |
-| `app/utils/optimizations/__init__.py` (partiel) | ~230/292 non couvertes | 11% | seul `eager_load` est réellement importé par des routes (`admin_shift_type_routes.py`, `dashboard_routes.py`, `admin_user_routes.py`, `admin_group_routes.py`) ; `paginated_route`, `paginated_api`, `cached_route`, `cache_result`, `lazy_route`, `lazy_property_cache`, `batch_load`, `bulk_operation`, `retry_on_failure`, `measure_time` ne sont appliqués sur **aucune** route — code mort |
+| `app/utils/monitoring/__init__.py` | 344 | 0% | dead (already noted in CLAUDE.md) |
+| `app/utils/pagination/__init__.py` | 248 | 0% | dead - only reachable via decorators that are themselves never applied (see below) |
+| `app/utils/prometheus_metrics.py` | 86 | 0% | conditional (`PROMETHEUS_ENABLED`), not dead but never exercised in tests |
+| `app/utils/helpers/env_helpers.py` | 47 | 0% | dead (already noted in CLAUDE.md) |
+| `app/utils/cache/cache_helpers.py` | 40 | 0% | dead, zero references anywhere else in `app/` |
+| `app/utils/optimizations/__init__.py` (partial) | ~230/292 uncovered | 11% | only `eager_load` is actually imported by routes (`admin_shift_type_routes.py`, `dashboard_routes.py`, `admin_user_routes.py`, `admin_group_routes.py`); `paginated_route`, `paginated_api`, `cached_route`, `cache_result`, `lazy_route`, `lazy_property_cache`, `batch_load`, `bulk_operation`, `retry_on_failure`, `measure_time` are applied on **no** route at all - dead code |
 
-**Décision** : ne pas écrire de tests artificiels pour du code mort
-uniquement pour gonfler le pourcentage — ça ne testerait rien de réel et
-ça masquerait le vrai problème (du code jamais appelé qui devrait être
-supprimé, pas testé). Un objectif de 80% sur le périmètre actuel inclut
-~765 lignes de code mort confirmé ; un objectif réaliste et honnête porte
-sur le code effectivement utilisé. Recommandation de suppression du code
-mort documentée ici, suppression elle-même laissée à une décision
-utilisateur séparée (hors périmètre "tests" de cette phase, et
-`app/utils/monitoring/`/`env_helpers.py` sont déjà signalés comme tels
-dans `CLAUDE.md` sans qu'une suppression n'ait été demandée jusqu'ici).
-
----
-
-## 🎯 Plan de travail
-
-### 4.1 Restructuration des tests
-- [x] `tests/unit/` : 12 fichiers déplacés (sans client HTTP - models,
-      automation, config, helpers...)
-- [x] `tests/integration/` : 14 fichiers déplacés (passent par le client
-      de test Flask - routes, auth, export...)
-- [x] `tests/e2e/` : créé, rempli à l'étape suivante (parcours
-      multi-requêtes, voir décision ci-dessus)
-- [x] `tests/fixtures/` : `user_fixtures.py`, `shift_fixtures.py`,
-      `leave_fixtures.py`, `oncall_fixtures.py` — extraits de `conftest.py`
-      (qui ne garde que `test_app`/`client`), enregistrés via
-      `pytest_plugins`
-- [x] `Makefile` : chemins mis à jour (`test-main`, `test-dark-theme`) +
-      nouvelles cibles `test-unit`/`test-integration`/`test-e2e`
-
-### 4.2 Améliorations
-- [x] `unit/test_services.py` + `unit/test_repositories.py` : tests réels
-      pour la couche métier créée en Phase 2, jusqu'ici quasi intestée
-      directement (107 tests, repositories 100%, services 90%+)
-- [x] Couverture à 80%+ : **81%** atteint (71% → 81% via suppression de
-      code mort supplémentaire + tests ciblés services/repositories/
-      routes, voir Journal). OIDC (`oidc_auth.py`/`user_manager.py`)
-      resté hors périmètre par choix explicite.
-- [x] Tests de performance (temps de réponse + détection N+1 sur
-      `/schedule`)
-- [x] Tests de sécurité — **a débouché sur deux vrais correctifs, pas
-      seulement des tests** (voir Journal) :
-      1. `User.to_dict()` exposait `password_hash` et `ics_token` (latent,
-         rien ne l'appelait encore, mais c'était une bombe à retardement)
-      2. **CSRF protection totalement absente de l'application** (pas
-         seulement désactivée en test) - `Flask-WTF` est une dépendance,
-         `WTF_CSRF_ENABLED` existe dans la config, mais `CSRFProtect`
-         n'était instancié nulle part et aucun template n'avait de champ
-         `csrf_token`. Corrigé : voir Journal pour le détail complet.
-- [x] Tests d'accessibilité — déjà partiellement couverts par
-      `test_dark_theme.py`/`test_theme_fixes.py` (Phase 3), pas de WCAG
-      2.1 AA complet (hors scope confirmé en Phase 3)
-- [x] ~~Tests E2E avec Selenium ou Playwright~~ → parcours via client de
-      test Flask (décision validée, pas de navigateur headless réel)
+**Decision**: don't write artificial tests for dead code just to inflate
+the percentage - that wouldn't test anything real and would mask the
+actual problem (code that's never called, which should be deleted, not
+tested). An 80% target on the current scope includes ~765 lines of
+confirmed dead code; a realistic, honest target covers code that's
+actually used. A recommendation to remove the dead code is documented
+here, the removal itself left to a separate user decision (out of this
+phase's "tests" scope, and `app/utils/monitoring/`/`env_helpers.py` are
+already flagged as such in `CLAUDE.md` with no removal requested so
+far).
 
 ---
 
-## 📝 Journal
+## 🎯 Work plan
 
-*(mis à jour à chaque étape)*
+### 4.1 Test restructuring
+- [x] `tests/unit/`: 12 files moved (no HTTP client - models, automation,
+      config, helpers...)
+- [x] `tests/integration/`: 14 files moved (go through the Flask test
+      client - routes, auth, export...)
+- [x] `tests/e2e/`: created, filled in the next step (multi-request
+      flows, see decision above)
+- [x] `tests/fixtures/`: `user_fixtures.py`, `shift_fixtures.py`,
+      `leave_fixtures.py`, `oncall_fixtures.py` - extracted from
+      `conftest.py` (which keeps only `test_app`/`client`), registered
+      via `pytest_plugins`
+- [x] `Makefile`: paths updated (`test-main`, `test-dark-theme`) + new
+      `test-unit`/`test-integration`/`test-e2e` targets
 
-### 2026-07-11 — 4.1 Restructuration terminée
+### 4.2 Improvements
+- [x] `unit/test_services.py` + `unit/test_repositories.py`: real tests
+      for the business layer created in Phase 2, until now barely tested
+      directly (107 tests, repositories 100%, services 90%+)
+- [x] Coverage at 80%+: **81%** reached (71% -> 81% via additional dead
+      code removal + targeted services/repositories/routes tests, see
+      Log). OIDC (`oidc_auth.py`/`user_manager.py`) left out of scope by
+      explicit choice.
+- [x] Performance tests (response time + N+1 detection on `/schedule`)
+- [x] Security tests - **led to two real fixes, not just tests** (see
+      Log):
+      1. `User.to_dict()` exposed `password_hash` and `ics_token`
+         (latent, nothing called it yet, but it was a ticking time bomb)
+      2. **CSRF protection completely absent from the application** (not
+         just disabled in tests) - `Flask-WTF` is a dependency,
+         `WTF_CSRF_ENABLED` exists in the config, but `CSRFProtect` was
+         instantiated nowhere and no template had a `csrf_token` field.
+         Fixed: see Log for the full detail.
+- [x] Accessibility tests - already partially covered by
+      `test_dark_theme.py`/`test_theme_fixes.py` (Phase 3), no full WCAG
+      2.1 AA (confirmed out of scope in Phase 3)
+- [x] ~~E2E tests with Selenium or Playwright~~ -> flows via the Flask
+      test client (validated decision, no real headless browser)
 
-Déplacement mécanique (`git mv`, historique préservé) des 26 fichiers de
-tests existants vers `tests/unit/` (12, pas de client HTTP) et
-`tests/integration/` (14, passent par le client de test Flask).
-`tests/e2e/` et `tests/fixtures/` créés.
+---
 
-`conftest.py` réduit à `test_app`/`client` ; les fixtures de modèles
+## 📝 Log
+
+*(updated at every step)*
+
+### 2026-07-11 — 4.1 Restructuring done
+
+Mechanical move (`git mv`, history preserved) of the 26 existing test
+files into `tests/unit/` (12, no HTTP client) and `tests/integration/`
+(14, go through the Flask test client). `tests/e2e/` and
+`tests/fixtures/` created.
+
+`conftest.py` reduced to `test_app`/`client`; model fixtures
 (`test_group`, `test_user`, `admin_user`, `test_shift`, `test_leave`,
-`test_oncall`, etc.) extraites vers `tests/fixtures/*.py`, rattachées via
-`pytest_plugins` pour rester visibles partout sans import explicite.
+`test_oncall`, etc.) extracted into `tests/fixtures/*.py`, wired in via
+`pytest_plugins` to stay visible everywhere with no explicit import.
 
-**Bug réel attrapé par les tests avant commit** : j'ai d'abord supprimé
-l'alias `app = test_app` en bas de `conftest.py` en le prenant pour du
-code mort (grep ne montrait aucun test demandant une fixture nommée
-`app`). En réalité `pytest-flask` s'appuie dessus via sa fixture autouse
-`_configure_application`, qui cherche littéralement une fixture `app` —
-sans lui, 2 tests plantaient au setup (`fixture 'app' not found`). Alias
-restauré avec un commentaire expliquant pourquoi il existe, pour ne pas
-retomber dans le même piège plus tard.
+**Real bug caught by the tests before commit**: I first removed the
+`app = test_app` alias at the bottom of `conftest.py`, mistaking it for
+dead code (grep showed no test requesting a fixture named `app`). In
+reality, `pytest-flask` relies on it through its autouse
+`_configure_application` fixture, which literally looks for a fixture
+called `app` - without it, 2 tests crashed at setup
+(`fixture 'app' not found`). Alias restored with a comment explaining
+why it exists, to avoid falling into the same trap later.
 
-511 tests passent toujours (197 unit + 314 integration après la
-restructuration).
+511 tests still passing (197 unit + 314 integration after the
+restructuring).
 
-### 2026-07-11 — Tests unitaires services/repositories + tests E2E + performance
+### 2026-07-11 — Service/repository unit tests + E2E tests + performance
 
 `tests/unit/test_repositories.py` (UserRepository, GroupRepository,
 ShiftTypeRepository, ShiftRepository, LeaveRepository, OnCallRepository)
-et `tests/unit/test_services.py` (UserService, GroupService,
+and `tests/unit/test_services.py` (UserService, GroupService,
 ShiftTypeService, ShiftService, OnCallService, LeaveService,
-ExportService) : 107 tests appelant la couche métier/données directement.
-Couverture : repositories 100%, services 90%+ (sauf
-`automation_admin_service` et `oncall_service`, non couverts ici —
-`automation_admin_service` délègue à `AdvancedShiftAutomation` qui a déjà
-sa propre suite dédiée).
+ExportService): 107 tests calling the business/data layer directly.
+Coverage: repositories 100%, services 90%+ (except
+`automation_admin_service` and `oncall_service`, not covered here -
+`automation_admin_service` delegates to `AdvancedShiftAutomation`, which
+already has its own dedicated suite).
 
-Bug attrapé avant commit : `test_add_shifts_for_range_conflict_rolls_back`
-utilisait la fixture `test_shift` dont la date est `date.today()`, qui
-tombe un **samedi** dans cet environnement — `add_shifts_for_range` saute
-les week-ends avant de vérifier les conflits, donc le test ne testait
-rien du tout (`conflict_date` restait toujours `None`). Corrigé en créant
-explicitement un shift sur un jour ouvré.
+Bug caught before commit: `test_add_shifts_for_range_conflict_rolls_back`
+used the `test_shift` fixture, whose date is `date.today()`, which falls
+on a **Saturday** in this environment - `add_shifts_for_range` skips
+weekends before checking for conflicts, so the test wasn't testing
+anything at all (`conflict_date` always stayed `None`). Fixed by
+explicitly creating a shift on a business day.
 
-`tests/e2e/test_user_flows.py` : 4 parcours multi-requêtes (pas de
-navigateur réel, décision validée) — admin crée groupe → utilisateur →
-assigne des shifts → l'utilisateur se connecte et voit son planning ;
-utilisateur demande un congé pour lui-même (accepté) puis pour un autre
-(rejeté, vérifié en base) ; login faux mot de passe puis bon mot de
-passe, session invalidée après logout ; export ICS authentifié vs. rejeté
-sans authentification.
+`tests/e2e/test_user_flows.py`: 4 multi-request flows (no real browser,
+validated decision) - admin creates a group -> user -> assigns shifts ->
+the user logs in and sees their schedule; user requests leave for
+themselves (accepted) then for someone else (rejected, verified in the
+database); login with wrong password then correct password, session
+invalidated after logout; authenticated ICS export vs. rejected without
+authentication.
 
-`tests/integration/test_performance.py` : seuils larges sur `/schedule`
-et `/dashboard` (attrape une régression grossière, pas un micro-
-benchmark) + comptage de requêtes SQL pour vérifier que `joinedload()`
-dans `ShiftRepository.list_paginated` évite le N+1. **Vérifié que le test
-détecte vraiment une régression** : en retirant temporairement
-`joinedload()` du code (13 requêtes au lieu de 3 pour 10 shifts), les
-deux tests échouent immédiatement ; remis en place ensuite.
+`tests/integration/test_performance.py`: broad thresholds on `/schedule`
+and `/dashboard` (catches a gross regression, not a micro-benchmark) +
+SQL query counting to verify that `joinedload()` in
+`ShiftRepository.list_paginated` avoids the N+1. **Verified the test
+actually detects a regression**: temporarily removing `joinedload()`
+from the code (13 queries instead of 3 for 10 shifts) makes both tests
+fail immediately; put back afterward.
 
-Bug attrapé avant commit : `_seed_shifts` utilisait des emails fixes
-(`perf0@test.com`...) - appelée deux fois dans le même test avec des
-tailles différentes, la deuxième insertion violait la contrainte unique
-sur l'email. Corrigé avec un paramètre `offset`.
+Bug caught before commit: `_seed_shifts` used fixed emails
+(`perf0@test.com`...) - called twice in the same test with different
+sizes, the second insert violated the unique constraint on email. Fixed
+with an `offset` parameter.
 
-624 puis 628 tests passent au fil de ces ajouts.
+624 then 628 tests passing as these were added.
 
-### 2026-07-11 — Tests de sécurité : deux vrais correctifs, pas juste des tests
+### 2026-07-11 — Security tests: two real fixes, not just tests
 
-En écrivant `tests/integration/test_security.py`, deux problèmes réels
-sont apparus - pas des artefacts de test, des trous présents en
-production :
+While writing `tests/integration/test_security.py`, two real issues
+surfaced - not test artifacts, gaps actually present in production:
 
-**1. `User.to_dict()` exposait `password_hash` et `ics_token`.**
-`BaseModel.to_dict()` sérialise toutes les colonnes sans distinction ;
-`User` n'avait pas de surcharge. Personne n'appelle `user.to_dict()`
-dans le code actuel (vérifié par grep), donc latent - mais la méthode
-existe et n'importe quel futur endpoint JSON qui l'utiliserait aurait
-fuité le hash du mot de passe et le jeton d'export ICS (un jeton
-porteur, équivalent à un mot de passe pour le flux anonyme). Corrigé par
-une surcharge `User.to_dict()` qui retire ces deux champs. Testé
-(`TestSensitiveDataNotSerialized`).
+**1. `User.to_dict()` exposed `password_hash` and `ics_token`.**
+`BaseModel.to_dict()` serializes every column indiscriminately; `User`
+had no override. Nothing calls `user.to_dict()` in the current code
+(verified by grep), so it was latent - but the method exists, and any
+future JSON endpoint using it would have leaked the password hash and
+the ICS export token (a bearer token, equivalent to a password for the
+anonymous flow). Fixed with a `User.to_dict()` override that strips
+these two fields. Tested (`TestSensitiveDataNotSerialized`).
 
-**2. La protection CSRF était totalement absente de l'application, pas
-seulement désactivée en test.** `Flask-WTF` est une dépendance,
-`WTF_CSRF_ENABLED` existe dans `app/config/testing.py`, mais
-`CSRFProtect` n'était **instancié nulle part** dans `app/__init__.py`, et
-**aucun des 19 templates avec formulaire POST** n'avait de champ
-`csrf_token`. Le flag de config était entièrement décoratif : en
-production comme en dev, toutes les routes POST (login, ajout/suppression
-de shifts, gestion admin des utilisateurs/groupes, etc.) étaient
-exploitables par CSRF.
+**2. CSRF protection was completely absent from the application, not
+just disabled in tests.** `Flask-WTF` is a dependency,
+`WTF_CSRF_ENABLED` exists in `app/config/testing.py`, but `CSRFProtect`
+was **instantiated nowhere** in `app/__init__.py`, and **none of the 19
+templates with a POST form** had a `csrf_token` field. The config flag
+was purely decorative: in both production and dev, every POST route
+(login, adding/removing shifts, admin user/group management, etc.) was
+exploitable via CSRF.
 
-Décision utilisateur validée : correction complète dans cette même
-session (pas juste documentée), vu l'ampleur de l'impact en prod :
-- `csrf = CSRFProtect()` + `csrf.init_app(app)` dans `app/__init__.py`
-  (même pattern que `db`/`login_manager`/`limiter`)
-- `<meta name="csrf-token" content="{{ csrf_token() }}">` ajouté à
-  `base.html` pour que le JS puisse le lire
-- Champ caché `<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">`
-  ajouté juste après la balise `<form method="POST">` dans les 19
-  templates concernés (22 formulaires au total - `schedule.html` et
-  `oncall.html` en ont plusieurs)
-- Les 5 appels `fetch()` avec méthode d'écriture (PATCH/POST/DELETE) dans
-  `index.html` (drag & drop FullCalendar, création/suppression de shift
-  via modale) envoient maintenant l'en-tête `X-CSRFToken` lu depuis la
-  balise meta
+User decision validated: fix it fully in this same session (not just
+document it), given the scale of the production impact:
+- `csrf = CSRFProtect()` + `csrf.init_app(app)` in `app/__init__.py`
+  (same pattern as `db`/`login_manager`/`limiter`)
+- `<meta name="csrf-token" content="{{ csrf_token() }}">` added to
+  `base.html` so JS can read it
+- Hidden field `<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">`
+  added right after the `<form method="POST">` tag in the 19 affected
+  templates (22 forms total - `schedule.html` and `oncall.html` have
+  several each)
+- The 5 `fetch()` calls using a write method (PATCH/POST/DELETE) in
+  `index.html` (FullCalendar drag & drop, shift creation/deletion via
+  modal) now send the `X-CSRFToken` header read from the meta tag
 
-**Vérifié en conditions réelles**, pas seulement via les tests :
-serveur Flask avec `app.config.Config` (config de type prod, pas
-TestingConfig) et `WTF_CSRF_ENABLED` à sa valeur par défaut (True,
-puisque non surchargée hors TestingConfig) :
-- POST `/login` sans jeton → 400 (rejeté)
-- GET `/login` puis POST avec le jeton extrait du HTML → 302 (connecté),
-  cookie de session valide, `/dashboard` accessible ensuite
-- POST `/api/shifts` avec en-tête `X-CSRFToken` manquant → 400 ; avec
-  l'en-tête correct (celui rendu dans la balise meta) → 200, shift bien
-  créé
+**Verified under real conditions**, not just via the tests: Flask server
+with `app.config.Config` (prod-style config, not TestingConfig) and
+`WTF_CSRF_ENABLED` at its default value (True, since it isn't overridden
+outside TestingConfig):
+- POST `/login` with no token -> 400 (rejected)
+- GET `/login` then POST with the token extracted from the HTML -> 302
+  (logged in), valid session cookie, `/dashboard` reachable afterward
+- POST `/api/shifts` with a missing `X-CSRFToken` header -> 400; with the
+  correct header (the one rendered in the meta tag) -> 200, shift
+  actually created
 
-`tests/integration/test_security.py` (13 tests) : construit sa propre
-instance d'app avec Talisman ET CSRF réactivés (`TestingConfig` les
-désactive tous les deux pour simplifier les autres suites) pour tester
-ces deux protections spécifiquement, plus les headers de sécurité
-Talisman, le stockage des mots de passe (hashé, jamais en clair), et le
-contrôle d'accès admin/non-admin (dashboard admin, liste utilisateurs,
-ajout de shift, suppression de shift - tous 302/403 pour un non-admin ou
-un anonyme).
+`tests/integration/test_security.py` (13 tests): builds its own app
+instance with both Talisman AND CSRF re-enabled (`TestingConfig`
+disables both to simplify the other suites) to specifically test these
+two protections, plus Talisman's security headers, password storage
+(hashed, never in clear text), and admin/non-admin access control (admin
+dashboard, user list, adding a shift, deleting a shift - all 302/403 for
+a non-admin or an anonymous user).
 
-641 tests passent.
+641 tests passing.
 
-### 2026-07-11 — Bilan de fin de phase
+### 2026-07-11 — End-of-phase summary
 
-Couverture mesurée juste après les tests services/repositories/e2e/
-performance/sécurité : **57%** brut, quasiment inchangé depuis la
-baseline (56%) malgré 130 tests ajoutés — le poids du code mort confirmé
-(`monitoring/` 344 lignes, `pagination/` 248, `env_helpers.py` 47,
-`cache_helpers.py` 40, plus `lazy_loading.py` 785 lignes et 13 décorateurs
-morts dans `optimizations/__init__.py` découverts en creusant, tous à 0%,
-jamais appelés) écrasait la moyenne globale.
+Coverage measured right after the services/repositories/e2e/performance/
+security tests: **57%** raw, virtually unchanged from the baseline (56%)
+despite 130 added tests - the weight of confirmed dead code
+(`monitoring/` 344 lines, `pagination/` 248, `env_helpers.py` 47,
+`cache_helpers.py` 40, plus `lazy_loading.py` 785 lines and 13 dead
+decorators in `optimizations/__init__.py` found while digging, all at
+0%, never called) was dragging down the overall average.
 
-**Suite à la demande "nettoie le code mort"** : les 5 modules confirmés
-supprimés (git rm, chaque référence vérifiée à zéro ailleurs dans `app/`
-avant suppression) + `optimizations/__init__.py` réduit de 14 décorateurs
-à 1 (`eager_load`, le seul réellement utilisé). `.coveragerc` nettoyé au
-passage (ses règles `omit` pointaient vers d'anciens chemins de fichiers
-plats disparus depuis la réorganisation Phase 2, elles ne matchaient plus
-rien). **Résultat : couverture globale 57% → 71%**, sans écrire un seul
-test supplémentaire - juste en retirant ~1450 lignes qui n'étaient jamais
-exécutées du dénominateur. `prometheus_metrics.py` (86 lignes, 0%) gardé
-tel quel : pas mort, juste conditionnel (`PROMETHEUS_ENABLED`) et non
-exercé par la suite de tests actuelle.
+**Following the "clean up the dead code" request**: the 5 confirmed
+modules removed (git rm, every reference verified at zero elsewhere in
+`app/` before removal) + `optimizations/__init__.py` trimmed from 14
+decorators down to 1 (`eager_load`, the only one actually used).
+`.coveragerc` cleaned up along the way (its `omit` rules pointed at old
+flat-file paths gone since the Phase 2 reorganization, matching nothing
+anymore). **Result: overall coverage 57% -> 71%**, without writing a
+single additional test - just by removing ~1450 never-executed lines
+from the denominator. `prometheus_metrics.py` (86 lines, 0%) kept as-is:
+not dead, just conditional (`PROMETHEUS_ENABLED`) and not exercised by
+the current test suite.
 
-L'écart restant vers 80% vient des routes (`auth.py` 61%,
+The remaining gap to 80% comes from the routes (`auth.py` 61%,
 `leave_routes.py` 57%, `oncall_routes.py` 63%, `shift_routes.py` 64%,
-`dashboard_routes.py` 57%) et de `automation_admin_service.py`/
-`oncall_service.py`, non touchés par cette phase - suite logique d'un
-futur passage de couverture, hors périmètre de cette Phase 4 telle que
-définie.
+`dashboard_routes.py` 57%) and from `automation_admin_service.py`/
+`oncall_service.py`, untouched by this phase - a logical follow-up for a
+future coverage pass, out of scope for this Phase 4 as defined.
 
-Bilan de la phase :
-- Restructuration complète `unit/`/`integration/`/`e2e/`/`fixtures/`
-  (26 fichiers déplacés, historique préservé)
-- 130 tests ajoutés (107 services/repositories + 6 E2E + 4 performance +
-  13 sécurité) : repositories 100%, services 90%+
-- 3 bugs réels attrapés et corrigés avant commit (alias `app` pris pour
-  du code mort, fixture week-end faussant un test, collision d'emails
-  dans le seeding de perf)
-- 2 vraies vulnérabilités trouvées et corrigées (pas juste documentées) :
-  CSRF totalement absent de l'application (19 templates + 5 appels
-  fetch() corrigés, vérifié en conditions réelles), fuite potentielle de
-  `password_hash`/`ics_token` via `User.to_dict()`
-- ~1450 lignes de code mort confirmé supprimées (5 modules + 13
-  décorateurs inutilisés), couverture 57% → 71% sans nouveau test
-- E2E scopé en accord avec l'utilisateur (client de test Flask, pas de
-  navigateur headless - infra indisponible dans cet environnement)
+Phase summary:
+- Full `unit/`/`integration/`/`e2e/`/`fixtures/` restructuring (26 files
+  moved, history preserved)
+- 130 tests added (107 services/repositories + 6 E2E + 4 performance +
+  13 security): repositories 100%, services 90%+
+- 3 real bugs caught and fixed before commit (the `app` alias mistaken
+  for dead code, a weekend fixture skewing a test, an email collision in
+  perf seeding)
+- 2 real vulnerabilities found and fixed (not just documented): CSRF
+  completely absent from the application (19 templates + 5 fetch() calls
+  fixed, verified under real conditions), potential
+  `password_hash`/`ics_token` leak via `User.to_dict()`
+- ~1450 lines of confirmed dead code removed (5 modules + 13 unused
+  decorators), coverage 57% -> 71% with no new test
+- E2E scoped in agreement with the user (Flask test client, no headless
+  browser - infra unavailable in this environment)
 
-641 tests passent, 0 échec.
+641 tests passing, 0 failures.
 
-### 2026-07-12 — Objectif 80%+ atteint (81%)
+### 2026-07-12 — 80%+ target reached (81%)
 
-Suite à la demande explicite de repasser sous 80%, exécution du plan en
-3 étapes (Step 0/1/2 discutées avec l'utilisateur avant exécution).
+Following the explicit request to get back above 80%, executed the plan
+in 3 steps (Step 0/1/2 discussed with the user before execution).
 
-**Étape 0 — code mort supplémentaire** (zéro appelant vérifié dans
-`app/models`, `app/auth`, `app/routes`, `app/services` + `tests/` avant
-suppression) :
-- `app/utils/security/encryption.py` (26 lignes) et `token_manager.py`
-  (16 lignes). Le classifier auto a bloqué la première tentative de
-  suppression de `token_manager.py`, `CLAUDE.md` le documentant comme
-  "ICS export tokens" — vérification approfondie montrant que
-  `User.generate_ics_token()` utilise `secrets.token_urlsafe()` en
-  direct (`app/models/user.py:137`), zéro import de `token_manager`
-  nulle part : `CLAUDE.md` était obsolète sur ce point précis. Confirmé
-  explicitement avec l'utilisateur avant de réessayer la suppression.
-- `app/utils/automation/shift_automation.py` (32 lignes, le module
-  legacy pré-`AdvancedShiftAutomation`) — `generate_shifts`,
+**Step 0 — additional dead code** (zero caller verified in
+`app/models`, `app/auth`, `app/routes`, `app/services` + `tests/` before
+removal):
+- `app/utils/security/encryption.py` (26 lines) and `token_manager.py`
+  (16 lines). The auto classifier blocked the first attempt to remove
+  `token_manager.py`, since `CLAUDE.md` documents it as "ICS export
+  tokens" - a deeper check showed `User.generate_ics_token()` uses
+  `secrets.token_urlsafe()` directly (`app/models/user.py:137`), zero
+  import of `token_manager` anywhere: `CLAUDE.md` was stale on this
+  specific point. Explicitly confirmed with the user before retrying the
+  removal.
+- `app/utils/automation/shift_automation.py` (32 lines, the legacy
+  module predating `AdvancedShiftAutomation`) - `generate_shifts`,
   `generate_oncall_rotations`, `check_shift_conflicts`,
-  `check_oncall_conflicts` sans appelant réel.
-- `security/__init__.py` et `automation/__init__.py` trimmés en
-  conséquence (sinon `ImportError` au démarrage).
+  `check_oncall_conflicts` with no real caller.
+- `security/__init__.py` and `automation/__init__.py` trimmed
+  accordingly (otherwise an `ImportError` at startup).
 
-**Étape 1 — deux bugs réels trouvés en écrivant les tests, pas des
-artefacts** :
-1. `prometheus_metrics.py` : `after_request` utilisait `request.method`/
-   `request.path` sans jamais importer `request` au niveau du module —
-   `NameError` sur **chaque requête** dès que `PROMETHEUS_ENABLED=True`.
-   Comme ce flag n'a jamais été testé, personne ne l'avait remarqué.
-   Corrigé (import ajouté).
-2. `health.py` : `check_database()` faisait
-   `db.session.execute('SELECT 1')` — chaîne SQL brute, rejetée par
-   SQLAlchemy 2.x (`ObjectNotExecutableError`), silencieusement avalée
-   par le `except Exception` large qui l'entoure. Résultat : `/ready`
-   répondait **en permanence** `database: False` / 503, sans aucun flag
-   pour le désactiver — un vrai bug de prod, actif depuis toujours, pas
-   caché derrière une fonctionnalité optionnelle. Si ce endpoint sert de
-   readiness probe Kubernetes, le pod ne serait jamais passé "ready".
-   Corrigé avec `text('SELECT 1')`.
+**Step 1 — two real bugs found while writing tests, not test
+artifacts**:
+1. `prometheus_metrics.py`: `after_request` used `request.method`/
+   `request.path` without ever importing `request` at module level -
+   `NameError` on **every request** as soon as `PROMETHEUS_ENABLED=True`.
+   Since this flag had never been tested, nobody had noticed. Fixed
+   (import added).
+2. `health.py`: `check_database()` did
+   `db.session.execute('SELECT 1')` - a raw SQL string, rejected by
+   SQLAlchemy 2.x (`ObjectNotExecutableError`), silently swallowed by
+   the broad `except Exception` wrapping it. Result: `/ready` responded
+   `database: False` / 503 **permanently**, with no flag to disable it -
+   a real production bug, active since day one, not hidden behind an
+   optional feature. If this endpoint serves as a Kubernetes readiness
+   probe, the pod would never have gone "ready". Fixed with
+   `text('SELECT 1')`.
 
-Nouveaux tests : `test_cache_manager.py` (branches de `init_cache`,
-`SimpleDictCache`), `test_health.py`, `test_prometheus_metrics.py`
-(app dédiée avec `PROMETHEUS_ENABLED=True`, même pattern que `secure_app`
-pour CSRF en Phase 4 précédente), complément à `test_helpers.py`
-(`get_bool`/`get_int`/`format_*`/`parse_*`/`get_days_in_month` + les deux
-helpers de chevauchement jamais appelés dans les tests existants).
+New tests: `test_cache_manager.py` (branches of `init_cache`,
+`SimpleDictCache`), `test_health.py`, `test_prometheus_metrics.py` (a
+dedicated app with `PROMETHEUS_ENABLED=True`, same pattern as
+`secure_app` for CSRF in the previous Phase 4 step), an addition to
+`test_helpers.py` (`get_bool`/`get_int`/`format_*`/`parse_*`/
+`get_days_in_month` + the two overlap helpers never called by the
+existing tests).
 
-**Étape 2 — edge cases de routes** (branches d'erreur/validation/
-exceptions non couvertes par les suites existantes, mocks
-`unittest.mock.patch` pour simuler les échecs de service) :
+**Step 2 — route edge cases** (error/validation/exception branches
+uncovered by the existing suites, `unittest.mock.patch` mocks to
+simulate service failures):
 `test_shift_routes_coverage.py` (29 tests), `test_leave_routes_coverage.py`
 (17), `test_oncall_routes_coverage.py` (19), `test_auth_routes_coverage.py`
-(10 — branches non-OIDC uniquement ; OIDC nécessiterait de mocker le
-client Authlib, chantier à part, hors scope).
+(10 - non-OIDC branches only; OIDC would require mocking the Authlib
+client, a separate effort, out of scope).
 
-**Résultat : 768 tests passent, couverture 71% → 81%.** Objectif du
-plan atteint sans toucher `oidc_auth.py`/`user_manager.py` (236+43
-lignes non couvertes, laissées de côté comme prévu — nécessitent de
-mocker un flux OIDC complet).
+**Result: 768 tests passing, coverage 71% -> 81%.** Plan target reached
+without touching `oidc_auth.py`/`user_manager.py` (236+43 uncovered
+lines, left aside as planned - would require mocking a full OIDC flow).
 
 ---
 
-*Dernière mise à jour : 2026-07-12*
+*Last updated: 2026-07-12*
