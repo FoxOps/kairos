@@ -1,263 +1,264 @@
-# Leviia Schedule
+# Kairos
 
-> **✅ Version 1.0** — stabilisation de production terminée : 1314 tests,
-> audit de sécurité complet, chasse aux bugs ciblée, test de charge. Voir
-> `ROADMAP.md` ("Verdict de stabilité v1.0") pour le détail complet — deux
-> points opérationnels (pas des défauts de code) restent à trancher par
-> l'équipe déployant l'app avant une mise en production réelle : la CI
-> GitLab configurée dans ce dépôt ne s'exécute pas réellement sur GitHub
-> (aucun workflow GitHub Actions équivalent), et le scan de dépendances
-> Safety nécessite une clé API non configurée par défaut.
+> **✅ Version 1.0.0-rc1** — production stabilization complete: 1314 tests,
+> full security audit, targeted bug hunt, load test. See `ROADMAP.md`
+> ("v1.0 stability verdict") for the full detail — two operational points
+> (not code defects) remain to be decided by the team deploying the app
+> before a real production rollout: the GitLab CI configured in this repo
+> doesn't actually run on GitHub (no equivalent GitHub Actions workflow),
+> and the Safety dependency scan requires an API key not configured by
+> default.
 
 ---
 
 ## 📚 Documentation
 
-**La documentation complète est disponible dans [Docs/](Docs/)**
+**Full documentation is available in [Docs/](Docs/)**
 
-### 🎯 **Par où commencer ?**
+### 🎯 **Where to start?**
 
-| Rôle | Document Recommandé | Description |
+| Role | Recommended Document | Description |
 |------|---------------------|-------------|
-| **👥 Utilisateur** | [Docs/guides/QUICK_START.md](Docs/guides/QUICK_START.md) | Guide de démarrage rapide (5 min) |
-| **🛡️ Administrateur** | [Docs/guides/ADMIN_GUIDE.md](Docs/guides/ADMIN_GUIDE.md) | Configuration, sécurité, maintenance |
-| **💻 Développeur** | [Docs/architecture/ARCHITECTURE.md](Docs/architecture/ARCHITECTURE.md) | Architecture technique, diagrammes |
-| **📖 Tous** | [Docs/README.md](Docs/README.md) | **Index complet** de toute la documentation |
+| **👥 User** | [Docs/guides/QUICK_START.md](Docs/guides/QUICK_START.md) | Quick start guide (5 min) |
+| **🛡️ Administrator** | [Docs/guides/ADMIN_GUIDE.md](Docs/guides/ADMIN_GUIDE.md) | Configuration, security, maintenance |
+| **💻 Developer** | [Docs/architecture/ARCHITECTURE.md](Docs/architecture/ARCHITECTURE.md) | Technical architecture, diagrams |
+| **📖 Everyone** | [Docs/README.md](Docs/README.md) | **Full index** of all documentation |
 
-> **💡 Pour une prise en main rapide, consultez le [Guide de Démarrage Rapide](Docs/guides/QUICK_START.md)**
+> **💡 For a quick hands-on start, see the [Quick Start Guide](Docs/guides/QUICK_START.md)**
 
 ---
 
 ## 📋 Description
 
-**Leviia Schedule** est une application web de gestion des plannings, astreintes et congés d'équipe.
-Elle permet de gérer les horaires de travail, les rotations d'astreinte et les congés des membres d'une équipe.
+**Kairos** is a web application for team shift scheduling, on-call
+rotations, and leave management. It lets you manage work schedules,
+on-call rotations, and team members' leave.
 
-### Fonctionnalités principales
+### Main features
 
-- ✅ **Gestion des utilisateurs et groupes** (avec permissions)
-- ✅ **Gestion des types de shifts** (horaires personnalisables)
-- ✅ **Planning des shifts** avec visualisation jour/semaine/mois
-- ✅ **Gestion des astreintes (On-Call)** avec rotations automatiques
-- ✅ **Gestion des congés** avec visualisation dans le planning
-- ✅ **Notifications par email** : rappels hebdomadaires des shifts et
-  de l'astreinte à venir (SMTP configurable, scripts cron autonomes)
-- ✅ **Échanges de shifts entre utilisateurs** : demande (don simple ou
-  réciproque), validation/rejet/annulation par un admin, notifications
-  internes (cloche)
-- ✅ **Multi-langues** (Français/Anglais) et **multi-fuseau horaire**,
-  personnalisables par utilisateur ou par défaut pour toute
-  l'organisation (`/admin/settings`)
-- ✅ **Formats de date/heure configurables** (par utilisateur ou par défaut)
-- ✅ **Historique des modifications (audit trail)** : qui a fait quoi,
-  quand, consultable dans `/admin/audit-log`
-- ✅ **Export ICS** pour intégration avec Google Calendar, Outlook, etc.
-- ✅ **Authentification sécurisée** (Flask-Login)
-- ✅ **Authentification SSO/OIDC** (Keycloak, Okta, Auth0, etc.)
-- ✅ **Système de logging complet** avec rotation automatique
-- ✅ **Automatisation intelligente** avec règles métiers
+- ✅ **User and group management** (with permissions)
+- ✅ **Shift type management** (customizable hours)
+- ✅ **Shift scheduling** with day/week/month views
+- ✅ **On-call management** with automatic rotations
+- ✅ **Leave management** with schedule visualization
+- ✅ **Email notifications**: weekly reminders for upcoming shifts and
+  on-call duty (configurable SMTP, standalone cron scripts)
+- ✅ **Shift swaps between users**: request (simple give-away or
+  reciprocal), approve/reject/cancel by an admin, in-app notifications
+  (bell icon)
+- ✅ **Multi-language** (French/English) and **multi-timezone** support,
+  customizable per user or organization-wide by default
+  (`/admin/settings`)
+- ✅ **Configurable date/time formats** (per user or by default)
+- ✅ **Change history (audit trail)**: who did what, when, browsable at
+  `/admin/audit-log`
+- ✅ **ICS export** for integration with Google Calendar, Outlook, etc.
+- ✅ **Secure authentication** (Flask-Login)
+- ✅ **SSO/OIDC authentication** (Keycloak, Okta, Auth0, etc.)
+- ✅ **Full logging system** with automatic rotation
+- ✅ **Smart automation** with business rules
 
 ---
 
 ## 🛠 Technologies
 
-| Composant | Technologie | Version |
+| Component | Technology | Version |
 |-----------|-------------|---------|
-| **Framework Web** | Flask | 3.1.3 |
+| **Web framework** | Flask | 3.1.3 |
 | **ORM** | SQLAlchemy | 2.0.51 |
-| **Base de données** | SQLite (par défaut), PostgreSQL | - |
-| **Authentification** | Flask-Login, Authlib (OIDC) | 0.6.3, 1.7.2 |
-| **Export ICS** | icalendar | 7.2.0 |
-| **Internationalisation** | Flask-Babel | 4.0.0 |
+| **Database** | SQLite (default), PostgreSQL | - |
+| **Authentication** | Flask-Login, Authlib (OIDC) | 0.6.3, 1.7.2 |
+| **ICS export** | icalendar | 7.2.0 |
+| **Internationalization** | Flask-Babel | 4.0.0 |
 | **Migrations** | Flask-Migrate (Alembic) | - |
 
 ---
 
-## 📦 Prérequis
+## 📦 Requirements
 
-- Python 3.8 ou supérieur
-- pip (gestionnaire de paquets Python)
-- Git (optionnel, pour le clonage du dépôt)
+- Python 3.8 or later
+- pip (Python package manager)
+- Git (optional, for cloning the repo)
 
 ---
 
-## 🐳 Installation (méthode recommandée : Docker Compose)
+## 🐳 Installation (recommended: Docker Compose)
 
-Pas besoin de cloner le dépôt - deux fichiers suffisent :
+No need to clone the repo - two files are enough:
 
 ```bash
-mkdir leviia-schedule && cd leviia-schedule
+mkdir kairos && cd kairos
 curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/docker-compose.example.yml
 curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/.env.example
 
-nano .env  # LEVIIA_IMAGE=harbor.leviia.com/<HARBOR_PROJECT>/leviia-schedule:latest, SECRET_KEY, DEFAULT_ADMIN_PASSWORD
+nano .env  # KAIROS_IMAGE=harbor.leviia.com/<HARBOR_PROJECT>/kairos:latest, SECRET_KEY, DEFAULT_ADMIN_PASSWORD
 
 docker compose up -d
 ```
 
-L'application sera accessible à l'adresse : **http://localhost:5000**
+The application will be available at: **http://localhost:5000**
 
-> **📖 Documentation détaillée** : [Docs/deployment/docker.md](Docs/deployment/docker.md)
+> **📖 Detailed documentation**: [Docs/deployment/docker.md](Docs/deployment/docker.md)
 
-### Installation locale (développement / cas particuliers)
+### Local installation (development / special cases)
 
-Réservé au développement sur le code ou aux cas où Docker n'est pas
-disponible - l'image Docker ci-dessus reste la façon principale de
-lancer l'application.
+Reserved for working on the code itself, or for cases where Docker
+isn't available - the Docker image above remains the primary way to
+run the application.
 
 ```bash
 git clone https://github.com/FoxOps/leviia-schedule.git
 cd leviia-schedule
 python -m venv venv
-source venv/bin/activate  # Windows : venv\Scripts\activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python run.py
 ```
 
-L'application sera accessible à l'adresse : **http://localhost:5000**
+The application will be available at: **http://localhost:5000**
 
-> **📖 Documentation détaillée** : [Docs/guides/QUICK_START.md](Docs/guides/QUICK_START.md)
-
----
-
-## 🎯 Utilisation
-
-### Première connexion
-
-1. Connectez-vous avec les identifiants par défaut :
-   - Email : `admin@leviia.local`
-   - Mot de passe : `admin123`
-
-2. **⚠️ Changez immédiatement le mot de passe** après la première connexion via le menu Profil.
-
-> **📖 Documentation complète** :
-> - [Guide Utilisateur](Docs/guides/USER_GUIDE.md) - Pour l'utilisation quotidienne
-> - [Guide Administrateur](Docs/guides/ADMIN_GUIDE.md) - Pour la configuration et la gestion
+> **📖 Detailed documentation**: [Docs/guides/QUICK_START.md](Docs/guides/QUICK_START.md)
 
 ---
 
-## 📁 Structure du projet
+## 🎯 Usage
+
+### First login
+
+1. Log in with the default credentials:
+   - Email: `admin@kairos.local`
+   - Password: `admin123`
+
+2. **⚠️ Change the password immediately** after first login, via the Profile menu.
+
+> **📖 Full documentation**:
+> - [User Guide](Docs/guides/USER_GUIDE.md) - For day-to-day use
+> - [Admin Guide](Docs/guides/ADMIN_GUIDE.md) - For configuration and management
+
+---
+
+## 📁 Project structure
 
 ```
-leviia-schedule/
-├── app/                    # Code source de l'application
-│   ├── __init__.py         # Initialisation Flask (factory create_app)
-│   ├── models/              # Modèles de la base de données (package)
-│   ├── repositories/        # Accès aux données
-│   ├── services/             # Logique métier
-│   ├── routes/              # Routes / blueprints Flask
-│   └── utils/               # Fonctions utilitaires (par sous-package)
+kairos/
+├── app/                    # Application source code
+│   ├── __init__.py         # Flask initialization (create_app factory)
+│   ├── models/              # Database models (package)
+│   ├── repositories/        # Data access
+│   ├── services/             # Business logic
+│   ├── routes/              # Flask routes / blueprints
+│   └── utils/               # Utility functions (by sub-package)
 ├── app/config/              # Configuration (base + testing)
-├── run.py                   # Point d'entrée
-├── requirements.txt         # Dépendances Python
-├── Docs/                    # 📚 Documentation complète
-│   ├── README.md            # Index de la documentation
-│   ├── architecture/        # Architecture, ERD, diagrammes de séquence
-│   ├── api/                 # Documentation API + spec OpenAPI
-│   ├── guides/               # Guides utilisateur/admin/démarrage/FAQ
-│   ├── deployment/           # Déploiement, Docker, sauvegardes
-│   └── reference/             # Variables d'env, erreurs, performance
+├── run.py                   # Entry point
+├── requirements.txt         # Python dependencies
+├── Docs/                    # 📚 Full documentation
+│   ├── README.md            # Documentation index
+│   ├── architecture/        # Architecture, ERD, sequence diagrams
+│   ├── api/                 # API documentation + OpenAPI spec
+│   ├── guides/               # User/admin/quick-start/FAQ guides
+│   ├── deployment/           # Deployment, Docker, backups
+│   └── reference/             # Env vars, errors, performance
 └── tests/                    # Tests (unit/integration/e2e/fixtures)
 ```
 
-> **📖 Documentation technique** : [Docs/architecture/ARCHITECTURE.md](Docs/architecture/ARCHITECTURE.md)
+> **📖 Technical documentation**: [Docs/architecture/ARCHITECTURE.md](Docs/architecture/ARCHITECTURE.md)
 
 ---
 
-## 🧪 Tests et Qualité de Code
+## 🧪 Tests and Code Quality
 
-> **✅ Statut** : **1314 tests**, tous passent - Couverture : ~92%
+> **✅ Status**: **1314 tests**, all passing - Coverage: ~92%
 
-### Exécuter les tests
+### Running the tests
 
 ```bash
-# Installer les dépendances de test
+# Install test dependencies
 pip install -r requirements.txt
 
-# Exécuter tous les tests
+# Run all tests
 pytest tests/ -v --tb=short
 
-# Exécuter avec couverture de code
+# Run with code coverage
 pytest tests/ --cov=app --cov-report=term-missing
 ```
 
-### Vérification de la qualité du code
+### Code quality checks
 
 ```bash
-# Linting avec Ruff
+# Linting with Ruff
 ruff check . --config=.ruff.toml
 
-# Vérification des types avec mypy
+# Type checking with mypy
 mypy app/ tests/ --ignore-missing-imports --allow-untyped-decorators
 
-# Formatage avec Black
+# Formatting with Black
 black --check . --exclude=".git|__pycache__|instance|venv"
 ```
 
-> **📖 Documentation des tests** : [report/Phase 4: AMÉLIORATION DES TESTS.md](report/Phase%204%3A%20AM%C3%89LIORATION%20DES%20TESTS.md)
+> **📖 Test documentation**: [report/Phase 4: AMÉLIORATION DES TESTS.md](report/Phase%204%3A%20AM%C3%89LIORATION%20DES%20TESTS.md)
 
 ---
 
-## 📝 Contribution
+## 📝 Contributing
 
-Les contributions sont les bienvenues !
+Contributions are welcome!
 
-1. **Forker** le dépôt
-2. Créer une branche pour votre fonctionnalité (`git checkout -b feature/ma-fonctionnalité`)
-3. Commiter vos changements (`git commit -m 'Ajout de ma fonctionnalité'`)
-4. Pousser vers la branche (`git push origin feature/ma-fonctionnalité`)
-5. Ouvrir une **Pull Request**
+1. **Fork** the repo
+2. Create a branch for your feature (`git checkout -b feature/my-feature`)
+3. Commit your changes (`git commit -m 'Add my feature'`)
+4. Push to the branch (`git push origin feature/my-feature`)
+5. Open a **Pull Request**
 
-> **📖 Guide de contribution** : [Docs/README.md - Contribuer à la documentation](Docs/README.md#contribuer-à-la-documentation)
-
----
-
-## 🐛 Signaler un bug
-
-Pour signaler un bug, ouvrez une **Issue** sur GitHub avec les informations suivantes :
-
-- Version de l'application
-- Étapes pour reproduire le bug
-- Comportement attendu
-- Comportement réel
-- Captures d'écran (si applicable)
-- Logs d'erreur (si applicable)
-- Configuration utilisée (SQLite/PostgreSQL, etc.)
+> **📖 Contribution guide**: [Docs/README.md - Contributing to the documentation](Docs/README.md#contributing-to-the-documentation)
 
 ---
 
-## 📜 Licence
+## 🐛 Reporting a bug
 
-Ce projet est sous licence **CeCILL v2.1**. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+To report a bug, open an **Issue** on GitHub with the following information:
+
+- Application version
+- Steps to reproduce the bug
+- Expected behavior
+- Actual behavior
+- Screenshots (if applicable)
+- Error logs (if applicable)
+- Configuration used (SQLite/PostgreSQL, etc.)
+
+---
+
+## 📜 License
+
+This project is licensed under **CeCILL v2.1**. See the [LICENSE](LICENSE) file for details.
 
 ---
 
 ## 📞 Contact
 
-Pour toute question ou suggestion, n'hésitez pas à ouvrir une **Issue** ou une **Discussion** sur le dépôt GitHub.
+For any question or suggestion, feel free to open an **Issue** or a **Discussion** on the GitHub repo.
 
 ---
 
-## 📌 Notes de version
+## 📌 Release notes
 
-### Version 1.0
+### Version 1.0.0-rc1
 
-- **Statut** : Stabilisation de production terminée (voir `ROADMAP.md` →
-  "Verdict de stabilité v1.0" pour le détail complet, y compris les
-  points opérationnels restant à trancher par l'équipe déployant l'app)
-- **Fonctionnalités** : Toutes les fonctionnalités de base sont implémentées
-- **Tests** : 1314 tests (tous passent)
-- **Couverture** : ~92%
-- **Sécurité** : Audit complet réalisé (`report/SECURITY_AUDIT_v1.0.md`),
-  0 finding Bandit sur `app/`
-- **Performance** : Test de charge réalisé (`report/LOAD_TEST_v1.0.md`)
+- **Status**: Production stabilization complete (see `ROADMAP.md` →
+  "v1.0 stability verdict" for the full detail, including the
+  operational points left to the deploying team's judgment)
+- **Features**: All core features are implemented
+- **Tests**: 1314 tests (all passing)
+- **Coverage**: ~92%
+- **Security**: Full audit performed (`report/SECURITY_AUDIT_v1.0.md`),
+  0 Bandit findings on `app/`
+- **Performance**: Load test performed (`report/LOAD_TEST_v1.0.md`)
 
-> **📖 Feuille de route** : [ROADMAP.md](ROADMAP.md)
+> **📖 Roadmap**: [ROADMAP.md](ROADMAP.md)
 
 ---
 
-> **⚠️ Garantie**
-> Ce logiciel est fourni "tel quel", sans garantie d'aucune sorte.
-> L'auteur ne peut être tenu responsable de tout dommage direct, indirect,
-> accessoire, spécial ou consécutif découlant de l'utilisation de ce logiciel.
-> **Utilisez-le à vos propres risques.**
+> **⚠️ Warranty**
+> This software is provided "as is", without warranty of any kind.
+> The author cannot be held liable for any direct, indirect, incidental,
+> special, or consequential damages arising from the use of this software.
+> **Use it at your own risk.**
