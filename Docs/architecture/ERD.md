@@ -40,6 +40,8 @@ erDiagram
         string time_format "nullable, falls back to Setting.default_time_format"
         bool shift_notifications_enabled "default true"
         bool oncall_notifications_enabled "default true"
+        text apprise_shift_target_ids "nullable, JSON-encoded list of NotificationTarget ids"
+        text apprise_oncall_target_ids "nullable, JSON-encoded list of NotificationTarget ids"
         datetime created_at
         datetime updated_at
     }
@@ -59,7 +61,7 @@ erDiagram
         int reviewer_id FK "to user.id, nullable until processed"
         int shift_id FK "to shift.id"
         int target_shift_id FK "to shift.id, nullable (one-way give-away)"
-        string status "PENDING/APPROVED/REJECTED/CANCELLED/REVERTED"
+        string status "PENDING/AWAITING_ADMIN/APPROVED/REJECTED/CANCELLED/REVERTED"
         text admin_comment "nullable"
         datetime reviewed_at "nullable"
         datetime created_at
@@ -143,10 +145,41 @@ erDiagram
         datetime created_at
         datetime updated_at
     }
+
+    NOTIFICATION_TARGET {
+        int id PK
+        string name
+        text apprise_url "Apprise service URL, treated as a secret - never logged"
+        bool enabled "default true, indexed"
+        text categories "nullable, JSON-encoded list; empty/null = all categories"
+        datetime created_at
+        datetime updated_at
+    }
+
+    SERVICE_ACCOUNT {
+        int id PK
+        string name
+        text description "nullable"
+        string token_prefix "first chars after ksak_, shown in the admin UI"
+        string token_hash UK "SHA-256 of the full token, never the token itself"
+        bool is_active "default true, indexed"
+        datetime expires_at "nullable = never expires"
+        datetime last_used_at "nullable, best-effort, admin UI only"
+        datetime created_at
+        datetime updated_at
+    }
 ```
 
 ## Notes
 
+- **`NotificationTarget`** and **`ServiceAccount`** have no FK
+  relationship to any other table. `NotificationTarget` rows are picked
+  by id in `User.apprise_shift_target_ids`/`apprise_oncall_target_ids`
+  (a JSON-encoded list of ids on `User`, not a real foreign key —
+  deleting a target silently drops it from any user's list on next
+  read rather than cascading). `ServiceAccount` is a standalone bearer
+  credential for the public `/api/v1/*` API, unrelated to `User`/
+  Flask-Login sessions entirely.
 - **`AutomationConfig`** has no relationship to the other tables:
   it's a generic key/value store (used to persist the on-call
   rotation order across restarts). Absent from any previous
