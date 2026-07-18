@@ -7,12 +7,6 @@ info:
     routes listées ici renvoient du JSON, plus les 3 endpoints d'export
     ICS (`text/calendar`).
 
-    Écrit et vérifié contre le code réel en Phase 5 (2026-07), après
-    audit qui a montré que l'ancienne documentation API décrivait des
-    routes qui n'ont jamais existé (`/leaves/my-leaves`,
-    `/admin/users/generate-token/<id>`, etc.) et omettait la plupart des
-    endpoints `/api/*` réels.
-
     Documente uniquement cette API interne (`/api/*`, cookie de
     session) - la spec de l'API publique v1 pour intégrations tierces
     (`/api/v1/*`, jeton bearer/compte de service) est générée
