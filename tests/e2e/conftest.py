@@ -37,7 +37,7 @@ def _wait_until_up(host: str, port: int, timeout: float = 10.0) -> None:
     raise TimeoutError(f"Server did not start after {timeout}s on {host}:{port}")
 
 
-ADMIN_EMAIL = "e2e-admin@leviia.local"
+ADMIN_EMAIL = "e2e-admin@kairos.local"
 ADMIN_PASSWORD = (
     "e2e-password-123"  # noqa: S105 - synthetic test credential, not a real secret
 )

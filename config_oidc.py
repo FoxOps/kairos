@@ -1,5 +1,5 @@
 """
-OIDC/SSO configuration for Leviia Schedule.
+OIDC/SSO configuration for Kairos.
 
 This module contains the configuration for OIDC (OpenID Connect)
 authentication with providers like Keycloak, Okta, Auth0, etc.

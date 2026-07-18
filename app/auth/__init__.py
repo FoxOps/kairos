@@ -1,5 +1,5 @@
 """
-Authentication module for Leviia Schedule.
+Authentication module for Kairos.
 
 This module contains the authentication features, including:
 - Basic authentication (email/password)

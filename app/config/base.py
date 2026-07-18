@@ -1,5 +1,5 @@
 """
-Base configuration for Leviia Schedule.
+Base configuration for Kairos.
 
 This module provides the base configuration class that can be extended
 for different environments (development, production, testing).
@@ -153,7 +153,7 @@ def normalize_database_uri(database_uri: str) -> str:
 
 class Config:
     """
-    Base configuration class for Leviia Schedule.
+    Base configuration class for Kairos.
 
     This class contains default configuration values that can be overridden
     by environment-specific configuration classes.

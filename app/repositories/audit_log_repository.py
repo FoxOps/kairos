@@ -1,5 +1,5 @@
 """
-AuditLog repository for Leviia Schedule.
+AuditLog repository for Kairos.
 
 Data access layer for the AuditLog model - no business logic, no Flask
 request/response handling, just queries. See app/services/audit_service.py

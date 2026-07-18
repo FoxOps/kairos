@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "macros/errors.html" import error_page with context %}
 
-{% block title %}{{ _("Service indisponible") }} - Leviia{% endblock %}
+{% block title %}{{ _("Service indisponible") }} - Kairos{% endblock %}
 
 {% block content %}
 {% call error_page(code=503, title=_("Service temporairement indisponible"), subtitle=_("Le serveur est actuellement surchargé ou en maintenance."), color="text-warning", secondary=[{"onclick": "location.reload()", "icon": "fa-sync-alt", "label": _("Réessayer")}]) %}

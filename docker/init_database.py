@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Script d'initialisation de la base de données SQLite pour Leviia Schedule."""
+"""Script d'initialisation de la base de données SQLite pour Kairos."""
 
 from app import app, db
 from app.models import Group, ShiftType, User
@@ -35,7 +35,7 @@ def main():
             group = Group.query.first()
             admin = User(
                 name="Admin",
-                email="admin@leviia.local",
+                email="admin@kairos.local",
                 is_admin=True,
                 group_id=group.id,
             )

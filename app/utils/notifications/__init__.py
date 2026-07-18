@@ -1,5 +1,5 @@
 """
-Notification utilities for Leviia Schedule.
+Notification utilities for Kairos.
 
 This module provides email-sending functionality for the weekly
 shift/on-call reminder notifications (scripts/send_shift_notifications.py,

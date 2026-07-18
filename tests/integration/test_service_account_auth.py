@@ -33,7 +33,7 @@ class TestResolveServiceAccount:
 
     def test_unknown_token_aborts_401(self, test_app):
         with test_app.test_request_context(
-            "/api/v1/shifts", headers={"Authorization": "Bearer lsak_doesnotexist"}
+            "/api/v1/shifts", headers={"Authorization": "Bearer ksak_doesnotexist"}
         ):
             with pytest.raises(Unauthorized) as exc_info:
                 resolve_service_account()

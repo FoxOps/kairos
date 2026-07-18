@@ -1,5 +1,5 @@
 """
-Shift and ShiftType repositories for Leviia Schedule.
+Shift and ShiftType repositories for Kairos.
 
 Data access layer for Shift/ShiftType models - no business logic, no
 Flask request/response handling, just queries.

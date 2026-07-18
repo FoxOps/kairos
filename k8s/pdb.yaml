@@ -1,13 +1,13 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: leviia-schedule
-  namespace: leviia-schedule
+  name: kairos
+  namespace: kairos
   labels:
-    app: leviia-schedule
+    app: kairos
 spec:
   minAvailable: 1
   # ou maxUnavailable: 1
   selector:
     matchLabels:
-      app: leviia-schedule
+      app: kairos

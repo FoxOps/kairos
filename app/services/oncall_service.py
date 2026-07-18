@@ -1,5 +1,5 @@
 """
-OnCall service for Leviia Schedule.
+OnCall service for Kairos.
 
 Business logic for on-call creation/update/deletion. Routes stay thin:
 they parse the request, call this service, and turn the result into a

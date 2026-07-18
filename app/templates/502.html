@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "macros/errors.html" import error_page with context %}
 
-{% block title %}{{ _("Service temporairement indisponible") }} - Leviia{% endblock %}
+{% block title %}{{ _("Service temporairement indisponible") }} - Kairos{% endblock %}
 
 {% block content %}
 {% call error_page(code=502, title=_("Service temporairement indisponible"), subtitle=_("Le serveur a reçu une réponse invalide du serveur en amont."), color="text-warning", secondary=[{"onclick": "location.reload()", "icon": "fa-sync-alt", "label": _("Réessayer")}]) %}

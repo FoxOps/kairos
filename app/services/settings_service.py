@@ -1,5 +1,5 @@
 """
-Settings service for Leviia Schedule.
+Settings service for Kairos.
 
 Typed getters/setters for admin-editable, DB-backed application settings
 (app/models/setting.py). Fallback rule: if no Setting row exists for a

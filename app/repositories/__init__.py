@@ -1,5 +1,5 @@
 """
-Repositories module for Leviia Schedule.
+Repositories module for Kairos.
 
 This module contains the data access layer that abstracts the database
 operations. Each repository handles CRUD operations for a specific model.

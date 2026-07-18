@@ -1,5 +1,5 @@
 """
-Notification service for Leviia Schedule.
+Notification service for Kairos.
 
 Business logic for the weekly email reminders (shifts + on-call). Called
 by the standalone scripts (scripts/send_shift_notifications.py,

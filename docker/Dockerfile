@@ -1,4 +1,4 @@
-# Dockerfile pour Leviia Schedule - build multi-stage optimisé (Alpine)
+# Dockerfile pour Kairos - build multi-stage optimisé (Alpine)
 
 # ============================================
 # Stage 1: Build - Installation des dépendances

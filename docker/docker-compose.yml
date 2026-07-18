@@ -1,14 +1,14 @@
 services:
-  leviia-schedule:
+  kairos:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    # LEVIIA_IMAGE (dans docker/.env) pointe vers l'image du registry pour
+    # KAIROS_IMAGE (dans docker/.env) pointe vers l'image du registry pour
     # `docker compose up -d --no-build` (méthode recommandée, voir
     # Docs/deployment/docker.md) ; par défaut, tag local utilisé par
     # `docker compose build` (alternative dev, construction locale).
-    image: ${LEVIIA_IMAGE:-leviia-schedule:dev}
-    container_name: leviia-schedule
+    image: ${KAIROS_IMAGE:-kairos:dev}
+    container_name: kairos
     ports:
       - "5000:5000"
     user: "1000:1000"
@@ -21,12 +21,12 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
     networks:
-      - leviia-network
+      - kairos-network
 
   # Fournisseur OIDC de test, optionnel - démarré uniquement avec
   # `docker compose --profile oidc-mock up -d` (dev/test du flux SSO en
   # local, voir Docs/deployment/docker.md). Pas de dépendance depuis
-  # leviia-schedule : un `docker compose up -d` normal ne le démarre pas.
+  # kairos : un `docker compose up -d` normal ne le démarre pas.
   oidc-mock:
     profiles:
       - oidc-mock
@@ -66,7 +66,7 @@ services:
             "Password": "admin123",
             "Claims": [
               {"Type": "name", "Value": "Admin User", "ValueType": "string"},
-              {"Type": "email", "Value": "admin@leviia.local", "ValueType": "string"},
+              {"Type": "email", "Value": "admin@kairos.local", "ValueType": "string"},
               {"Type": "role", "Value": "user", "ValueType": "string"}
             ]
           },
@@ -76,7 +76,7 @@ services:
             "Password": "admin123",
             "Claims": [
               {"Type": "name", "Value": "Benjamin", "ValueType": "string"},
-              {"Type": "email", "Value": "benjamin@leviia.local", "ValueType": "string"},
+              {"Type": "email", "Value": "benjamin@kairos.local", "ValueType": "string"},
             ]
           },
           {
@@ -85,7 +85,7 @@ services:
             "Password": "admin123",
             "Claims": [
               {"Type": "name", "Value": "Morgan", "ValueType": "string"},
-              {"Type": "email", "Value": "morgan@leviia.local", "ValueType": "string"},
+              {"Type": "email", "Value": "morgan@kairos.local", "ValueType": "string"},
             ]
           },
           {
@@ -94,7 +94,7 @@ services:
             "Password": "admin123",
             "Claims": [
               {"Type": "name", "Value": "Pierre", "ValueType": "string"},
-              {"Type": "email", "Value": "pierre@leviia.local", "ValueType": "string"},
+              {"Type": "email", "Value": "pierre@kairos.local", "ValueType": "string"},
             ]
           },
           {
@@ -103,15 +103,15 @@ services:
             "Password": "admin123",
             "Claims": [
               {"Type": "name", "Value": "Julien", "ValueType": "string"},
-              {"Type": "email", "Value": "julien@leviia.local", "ValueType": "string"},
+              {"Type": "email", "Value": "julien@kairos.local", "ValueType": "string"},
             ]
           }
         ]
       CLIENTS_CONFIGURATION_INLINE: |
         [
           {
-            "ClientId": "leviia-app",
-            "ClientSecrets": ["leviia-secret"],
+            "ClientId": "kairos-app",
+            "ClientSecrets": ["kairos-secret"],
             "AllowedGrantTypes": ["authorization_code"],
             "RequirePkce": false,
             "AllowAccessTokensViaBrowser": true,
@@ -125,8 +125,8 @@ services:
           "IssuerUri": "http://192.168.1.169:8080"
         }
     networks:
-      - leviia-network
+      - kairos-network
 
 networks:
-  leviia-network:
+  kairos-network:
     driver: bridge

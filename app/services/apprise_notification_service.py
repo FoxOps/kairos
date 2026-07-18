@@ -1,5 +1,5 @@
 """
-Apprise external notification service for Leviia Schedule.
+Apprise external notification service for Kairos.
 
 Sends outbound notifications to admin-configured external destinations
 (Slack, Discord, Telegram, generic webhooks...) via the Apprise library.
@@ -87,7 +87,7 @@ class AppriseNotificationService:
             return False, _("URL Apprise invalide.")
 
         ok = apobj.notify(
-            title=_("Test de notification - Leviia Schedule"),
+            title=_("Test de notification - Kairos"),
             body=_(
                 "Ceci est une notification de test envoyée depuis "
                 "/admin/notification-targets."

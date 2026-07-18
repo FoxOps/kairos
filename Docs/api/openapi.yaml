@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
-  title: Leviia Schedule API
+  title: Kairos API
   description: |
-    Surface JSON réelle de Leviia Schedule. La grande majorité des routes
+    Surface JSON réelle de Kairos. La grande majorité des routes
     de l'application rendent du HTML côté serveur (Jinja2) — seules les
     routes listées ici renvoient du JSON, plus les 3 endpoints d'export
     ICS (`text/calendar`).

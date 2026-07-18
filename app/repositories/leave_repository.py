@@ -1,5 +1,5 @@
 """
-Leave repository for Leviia Schedule.
+Leave repository for Kairos.
 
 Data access layer for the Leave model - no business logic, no Flask
 request/response handling, just queries.

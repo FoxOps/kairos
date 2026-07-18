@@ -1,5 +1,5 @@
 """
-Logger configuration for Leviia Schedule.
+Logger configuration for Kairos.
 
 This module provides centralized logging configuration for the application.
 It supports both console and file logging with configurable levels and formats.

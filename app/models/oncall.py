@@ -1,5 +1,5 @@
 """
-OnCall model for Leviia Schedule.
+OnCall model for Kairos.
 
 This module contains the OnCall model for on-call duty management.
 """

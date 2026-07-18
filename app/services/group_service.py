@@ -1,5 +1,5 @@
 """
-Group service for Leviia Schedule.
+Group service for Kairos.
 
 Business logic for group creation/update/deletion (admin section).
 """

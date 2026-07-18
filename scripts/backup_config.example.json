@@ -1,5 +1,5 @@
 {
-  "_comment": "Exemple de configuration pour les sauvegardes Leviia Schedule",
+  "_comment": "Exemple de configuration pour les sauvegardes Kairos",
   "_instructions": "Copiez ce fichier en backup_config.json et modifiez les valeurs selon vos besoins",
   
   "enabled": false,
@@ -13,7 +13,7 @@
   "s3_region": "eu-west-1",
   "s3_access_key": "votre-access-key",
   "s3_secret_key": "votre-secret-key",
-  "s3_prefix": "leviia-schedule",
+  "s3_prefix": "kairos",
   "s3_use_ssl": true,
 
   "retention_days": 30,
@@ -23,7 +23,7 @@
 
   "include_timestamp": true,
   "timestamp_format": "%Y%m%d_%H%M%S",
-  "backup_prefix": "leviia_backup",
+  "backup_prefix": "kairos_backup",
   
   "verify_backup": true,
   

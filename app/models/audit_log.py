@@ -1,5 +1,5 @@
 """
-AuditLog model for Leviia Schedule.
+AuditLog model for Kairos.
 
 Append-only record of "who did what, when, to which resource" across
 the app (user/group/shift/oncall/leave/shift_type/swap CRUD, settings

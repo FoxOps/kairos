@@ -1,5 +1,5 @@
 """
-Services module for Leviia Schedule.
+Services module for Kairos.
 
 This module contains the business logic services that handle the
 application's core functionality. Each service encapsulates the

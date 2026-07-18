@@ -1,5 +1,5 @@
 """
-OnCall automation utilities for Leviia Schedule.
+OnCall automation utilities for Kairos.
 
 This module provides automation functionality for on-call duties.
 """

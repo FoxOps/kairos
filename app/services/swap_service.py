@@ -1,5 +1,5 @@
 """
-SwapRequest service for Leviia Schedule.
+SwapRequest service for Kairos.
 
 Business logic for shift exchange requests between users: a requester
 proposes to give up one of their shifts (optionally in return for one of

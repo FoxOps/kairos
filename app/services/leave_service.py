@@ -1,5 +1,5 @@
 """
-Leave service for Leviia Schedule.
+Leave service for Kairos.
 
 Business logic for leave creation/update/deletion, including the
 automatic shift rebalance that follows any leave change. Routes stay

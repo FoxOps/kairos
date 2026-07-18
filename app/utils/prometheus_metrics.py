@@ -28,21 +28,21 @@ metrics_bp = Blueprint("prometheus_metrics", __name__)
 
 # Counters
 REQUEST_COUNT = Counter(
-    "leviia_requests_total",
+    "kairos_requests_total",
     "Total number of HTTP requests",
     ["method", "endpoint", "http_status"],
 )
 
-ERROR_COUNT = Counter("leviia_errors_total", "Total number of errors", ["error_type"])
+ERROR_COUNT = Counter("kairos_errors_total", "Total number of errors", ["error_type"])
 
 # Gauges
-ACTIVE_USERS = Gauge("leviia_active_users", "Number of active users")
+ACTIVE_USERS = Gauge("kairos_active_users", "Number of active users")
 
-ACTIVE_SESSIONS = Gauge("leviia_active_sessions", "Number of active sessions")
+ACTIVE_SESSIONS = Gauge("kairos_active_sessions", "Number of active sessions")
 
 # Histograms
 REQUEST_LATENCY = Histogram(
-    "leviia_request_latency_seconds",
+    "kairos_request_latency_seconds",
     "Request latency in seconds",
     ["method", "endpoint"],
     buckets=[
@@ -63,28 +63,28 @@ REQUEST_LATENCY = Histogram(
 )
 
 DB_QUERY_TIME = Histogram(
-    "leviia_db_query_time_seconds",
+    "kairos_db_query_time_seconds",
     "SQLAlchemy query execution time",
     buckets=[0.001, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 1.0],
 )
 
 # System metrics
-CPU_USAGE = Gauge("leviia_cpu_usage_percent", "CPU usage percentage")
+CPU_USAGE = Gauge("kairos_cpu_usage_percent", "CPU usage percentage")
 
-MEMORY_USAGE = Gauge("leviia_memory_usage_bytes", "Memory usage in bytes")
+MEMORY_USAGE = Gauge("kairos_memory_usage_bytes", "Memory usage in bytes")
 
-DISK_USAGE = Gauge("leviia_disk_usage_bytes", "Disk usage in bytes")
+DISK_USAGE = Gauge("kairos_disk_usage_bytes", "Disk usage in bytes")
 
 # Business metrics
-SHIFTS_COUNT = Gauge("leviia_shifts_total", "Total number of shifts")
+SHIFTS_COUNT = Gauge("kairos_shifts_total", "Total number of shifts")
 
-ONCALLS_COUNT = Gauge("leviia_oncalls_total", "Total number of on-calls")
+ONCALLS_COUNT = Gauge("kairos_oncalls_total", "Total number of on-calls")
 
-LEAVES_COUNT = Gauge("leviia_leaves_total", "Total number of leaves")
+LEAVES_COUNT = Gauge("kairos_leaves_total", "Total number of leaves")
 
-USERS_COUNT = Gauge("leviia_users_total", "Total number of users")
+USERS_COUNT = Gauge("kairos_users_total", "Total number of users")
 
-GROUPS_COUNT = Gauge("leviia_groups_total", "Total number of groups")
+GROUPS_COUNT = Gauge("kairos_groups_total", "Total number of groups")
 
 
 # ============================================

@@ -1,5 +1,5 @@
 """
-Setting model for Leviia Schedule.
+Setting model for Kairos.
 
 Generic DB-backed key/value store for admin-editable application settings
 (default timezone, public base URL, pagination, notifications toggle,

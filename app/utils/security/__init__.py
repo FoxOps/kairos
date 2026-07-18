@@ -1,3 +1,3 @@
 """
-Security utilities for Leviia Schedule.
+Security utilities for Kairos.
 """

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "macros/errors.html" import error_page with context %}
 
-{% block title %}{{ _("Accès interdit") }} - Leviia{% endblock %}
+{% block title %}{{ _("Accès interdit") }} - Kairos{% endblock %}
 
 {% block content %}
 {% call error_page(code=403, title=_("Accès interdit"), subtitle=_("Vous n'avez pas la permission d'accéder à cette page."), color="text-error") %}

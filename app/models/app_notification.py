@@ -1,5 +1,5 @@
 """
-AppNotification model for Leviia Schedule.
+AppNotification model for Kairos.
 
 In-app notification shown to a user (bell icon in the sidebar) - distinct
 from NotificationLog (app/models/notification_log.py), which is purely an

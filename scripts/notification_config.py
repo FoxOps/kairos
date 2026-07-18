@@ -1,5 +1,5 @@
 """
-Leviia Schedule - Configuration des notifications par email
+Kairos - Configuration des notifications par email
 =============================================================
 
 Ce module contient la configuration pour l'envoi des notifications par

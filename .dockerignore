@@ -1,6 +1,6 @@
 # .dockerignore
 # =============================================================================
-# Fichier .dockerignore pour Leviia Schedule
+# Fichier .dockerignore pour Kairos
 # =============================================================================
 #
 # Doit rester à la racine du dépôt : c'est le contexte de build réel

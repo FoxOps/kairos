@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: leviia-config
-  namespace: leviia-schedule
+  name: kairos-config
+  namespace: kairos
   labels:
-    app: leviia-schedule
+    app: kairos
 data:
   # Configuration Flask
   FLASK_ENV: "production"
@@ -48,7 +48,7 @@ data:
   
   # Configuration OIDC (exemple, à adapter)
   OIDC_ENABLED: "0"
-  # OIDC_ISSUER: "https://keycloak.example.com/auth/realms/leviia"
-  # OIDC_CLIENT_ID: "leviia-schedule"
+  # OIDC_ISSUER: "https://keycloak.example.com/auth/realms/kairos"
+  # OIDC_CLIENT_ID: "kairos"
   # OIDC_CLIENT_SECRET: ""  # Dans les secrets
   # OIDC_REDIRECT_URI: "https://schedule.example.com/auth/callback"

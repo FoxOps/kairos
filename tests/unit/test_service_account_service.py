@@ -16,7 +16,7 @@ class TestCreateAccount:
 
             assert sa.id is not None
             assert sa.name == "Zapier"
-            assert full_token.startswith("lsak_")
+            assert full_token.startswith("ksak_")
             assert ServiceAccount.hash_token(full_token) == sa.token_hash
 
     def test_logs_audit_entry_without_leaking_token(self, test_app):

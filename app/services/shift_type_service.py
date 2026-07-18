@@ -1,5 +1,5 @@
 """
-ShiftType service for Leviia Schedule.
+ShiftType service for Kairos.
 
 Business logic for shift type creation/update/deletion (admin section).
 """

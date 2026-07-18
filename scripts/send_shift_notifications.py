@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Leviia Schedule - Envoi des rappels de shifts par email
+Kairos - Envoi des rappels de shifts par email
 =========================================================
 
 Envoie un email récapitulatif à chaque utilisateur ayant au moins un

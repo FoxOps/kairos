@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# Leviia Schedule - Test de charge
+# Kairos - Test de charge
 # ============================================================================
 #
 # Wrapper autour de wrk (préféré) ou hey - pas de dépendance Python
@@ -46,7 +46,7 @@ ENDPOINTS=(
     "/login"
 )
 
-echo "=== Test de charge Leviia Schedule ==="
+echo "=== Test de charge Kairos ==="
 echo "Cible       : $BASE_URL"
 echo "Durée/endpoint : $DURATION"
 echo "Connexions  : $CONNECTIONS"

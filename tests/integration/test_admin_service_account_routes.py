@@ -38,7 +38,7 @@ class TestAddServiceAccount:
             follow_redirects=True,
         )
         assert resp.status_code == 200
-        assert b"lsak_" in resp.data
+        assert b"ksak_" in resp.data
 
         with test_app.app_context():
             sa = ServiceAccount.query.filter_by(name="Zapier").first()
@@ -145,7 +145,7 @@ class TestRegenerateSecret:
         )
         assert resp.status_code == 200
         assert old_token.encode() not in resp.data
-        assert b"lsak_" in resp.data
+        assert b"ksak_" in resp.data
 
 
 class TestToggleActive:

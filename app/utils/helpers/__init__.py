@@ -1,5 +1,5 @@
 """
-Helper utilities for Leviia Schedule.
+Helper utilities for Kairos.
 
 This module provides general helper functions.
 """

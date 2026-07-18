@@ -1,13 +1,13 @@
 # Dashboard Grafana - Leviia Schedule
 
-`leviia-schedule-dashboard.json` scrape les métriques exposées par
+`kairos-dashboard.json` scrape les métriques exposées par
 `app/utils/prometheus_metrics.py` sur `/metrics` (endpoint gated par
 `PROMETHEUS_ENABLED`, voir `app/__init__.py`).
 
 ## Import
 
 1. Grafana > Dashboards > New > Import
-2. Coller le contenu de `leviia-schedule-dashboard.json` (ou uploader le fichier)
+2. Coller le contenu de `kairos-dashboard.json` (ou uploader le fichier)
 3. Choisir la datasource Prometheus qui scrape `/metrics`
 
 ## Prérequis côté Prometheus

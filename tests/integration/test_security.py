@@ -1,5 +1,5 @@
 """
-Security tests for Leviia Schedule.
+Security tests for Kairos.
 
 TestingConfig disables Talisman (TESTING=True -> create_app() skips
 Talisman's initialization, see app/__init__.py) and CSRF
@@ -198,7 +198,7 @@ class TestCSRFProtection:
         client = secure_app.test_client()
         resp = client.post(
             "/login",
-            data={"email": "admin@leviia.local", "password": "admin123"},
+            data={"email": "admin@kairos.local", "password": "admin123"},
         )
         # Without a valid CSRF token, Flask-WTF returns 400 (CSRFError)
         # instead of processing the request normally.

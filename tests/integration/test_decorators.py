@@ -78,7 +78,7 @@ class TestAdminRequiredDecorator:
         response = logged_in_client.get("/admin", follow_redirects=True)
         assert response.status_code == 200
         # The user is redirected to the index
-        assert b"Leviia" in response.data or b"Schedule" in response.data
+        assert b"Kairos" in response.data or b"Schedule" in response.data
         # The error message should be present
         assert (
             b"Acces refuse" in response.data

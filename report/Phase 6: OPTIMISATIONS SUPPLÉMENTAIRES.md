@@ -228,7 +228,7 @@ réel).
 ### Monitoring — Grafana — commit `4ce3c5c`
 
 Aucun artefact Grafana n'existait dans le repo (`find` exhaustif, zéro
-résultat). Créé `grafana/leviia-schedule-dashboard.json` (importable
+résultat). Créé `grafana/kairos-dashboard.json` (importable
 tel quel, datasource Prometheus paramétrable via variable de template) :
 requêtes/s et erreurs/s par endpoint, latence p95, temps requêtes SQL
 p95, utilisateurs/sessions actifs, volumétrie métier (shifts/astreintes/

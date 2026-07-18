@@ -1,5 +1,5 @@
 """
-ServiceAccount repository for Leviia Schedule.
+ServiceAccount repository for Kairos.
 
 Data access layer for the ServiceAccount model - no business logic, no
 Flask request/response handling, just queries. See

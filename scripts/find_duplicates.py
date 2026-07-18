@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script pour trouver le code dupliqué dans le projet Leviia Schedule.
+Script pour trouver le code dupliqué dans le projet Kairos.
 
 Usage:
     python scripts/find_duplicates.py [directory] [min_lines]
@@ -269,7 +269,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Trouver le code dupliqué dans le projet Leviia Schedule"
+        description="Trouver le code dupliqué dans le projet Kairos"
     )
     parser.add_argument(
         "directory",
@@ -296,7 +296,7 @@ def main():
 
     args = parser.parse_args()
 
-    print("🔍 Recherche de code dupliqué dans Leviia Schedule")
+    print("🔍 Recherche de code dupliqué dans Kairos")
     print("=" * 60)
     print()
 

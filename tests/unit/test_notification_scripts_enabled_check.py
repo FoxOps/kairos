@@ -19,7 +19,7 @@ import scripts.send_shift_notifications as send_shift_notifications
 
 class TestSendShiftNotificationsEnabledCheck:
     def test_disabled_short_circuits_without_sending(self, monkeypatch):
-        monkeypatch.setenv("NOTIFICATION_FROM_EMAIL", "noreply@leviia.local")
+        monkeypatch.setenv("NOTIFICATION_FROM_EMAIL", "noreply@kairos.local")
         monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
 
         with (
@@ -38,7 +38,7 @@ class TestSendShiftNotificationsEnabledCheck:
 
     def test_missing_smtp_host_short_circuits_even_if_db_enabled(self, monkeypatch):
         monkeypatch.delenv("SMTP_HOST", raising=False)
-        monkeypatch.setenv("NOTIFICATION_FROM_EMAIL", "noreply@leviia.local")
+        monkeypatch.setenv("NOTIFICATION_FROM_EMAIL", "noreply@kairos.local")
 
         with (
             patch(
@@ -57,7 +57,7 @@ class TestSendShiftNotificationsEnabledCheck:
 
 class TestSendOncallNotificationsEnabledCheck:
     def test_disabled_short_circuits_without_sending(self, monkeypatch):
-        monkeypatch.setenv("NOTIFICATION_FROM_EMAIL", "noreply@leviia.local")
+        monkeypatch.setenv("NOTIFICATION_FROM_EMAIL", "noreply@kairos.local")
         monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
 
         with (

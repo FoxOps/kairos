@@ -1,5 +1,5 @@
 """
-NotificationLog model for Leviia Schedule.
+NotificationLog model for Kairos.
 
 This module contains the NotificationLog model, used to record which
 weekly email notifications (shift/on-call reminders) have already been

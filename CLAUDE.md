@@ -10,7 +10,7 @@ otherwise).
 
 ## Project
 
-Leviia Schedule is a Flask web app for team shift scheduling, on-call rotations, and leave
+Kairos is a Flask web app for team shift scheduling, on-call rotations, and leave
 management, with ICS calendar export. Active development, French-language docs/commit history.
 v1.0 stabilization complete (security audit, targeted bug hunt, load test — see
 `report/SECURITY_AUDIT_v1.0.md`, `report/BUG_HUNT_v1.0.md`, `report/LOAD_TEST_v1.0.md`, and
@@ -63,7 +63,7 @@ never actually run in this repo (`reports/` didn't exist) and already diverged f
 (its own `ruff check` skipped `--config=.ruff.toml`). `find-duplicates` (`scripts/find_duplicates.py`)
 was the only genuinely non-redundant piece of that old bug-hunt block and is kept as its own target.
 
-Default admin created on first run: `admin@leviia.local` / `admin123` (override via
+Default admin created on first run: `admin@kairos.local` / `admin123` (override via
 `DEFAULT_ADMIN_EMAIL` / `DEFAULT_ADMIN_PASSWORD` env vars).
 
 ## Architecture
@@ -467,7 +467,7 @@ this scale — and over Flask-RESTful — no built-in OpenAPI generation, would 
 apispec/flasgger on top for the same result flask-smorest gives natively).
 
 `ServiceAccount` (`app/models/service_account.py`) is the credential: `name`/`description`,
-`token_prefix` (first chars after the `lsak_` prefix — "Leviia Schedule API Key" — kept in clear
+`token_prefix` (first chars after the `ksak_` prefix — "Kairos API Key" — kept in clear
 for UI identification, e.g. in `/admin/service-accounts`), `token_hash`, `is_active`,
 `expires_at` (nullable = never expires), `last_used_at` (best-effort, admin UI only, never part of
 the validity check). `generate_token()` returns `(full_token, prefix, hash)` — `full_token` is

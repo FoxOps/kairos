@@ -1,15 +1,15 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: leviia-schedule
-  namespace: leviia-schedule
+  name: kairos
+  namespace: kairos
   labels:
-    app: leviia-schedule
+    app: kairos
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: leviia-schedule
+    name: kairos
   minReplicas: 2
   maxReplicas: 10
   metrics:
@@ -31,7 +31,7 @@ spec:
         name: requests_per_second
         selector:
           matchLabels:
-            app: leviia-schedule
+            app: kairos
       target:
         type: AverageValue
         averageValue: 100

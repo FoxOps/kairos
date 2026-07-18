@@ -1,5 +1,5 @@
 """
-ServiceAccountService for Leviia Schedule.
+ServiceAccountService for Kairos.
 
 Business logic for admin-managed service accounts (bearer credentials
 for the public REST API, app/api/) - creation, revocation, secret

@@ -12,7 +12,7 @@ from app.services import NotificationService
 SMTP_CONFIG = {
     "smtp_host": "smtp.example.com",
     "smtp_port": 587,
-    "from_email": "noreply@leviia.local",
+    "from_email": "noreply@kairos.local",
     "smtp_username": None,
     "smtp_password": None,
     "smtp_use_tls": True,

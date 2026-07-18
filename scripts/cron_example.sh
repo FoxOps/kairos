@@ -1,18 +1,18 @@
 #!/bin/bash
 
 # ============================================================================
-# Leviia Schedule - Exemple de script pour Cron
+# Kairos - Exemple de script pour Cron
 # ============================================================================
 #
 # Ce script est un exemple pour automatiser les sauvegardes avec Cron.
 #
 # INSTRUCTIONS:
-# 1. Copiez ce fichier: cp scripts/cron_example.sh /usr/local/bin/leviia-backup
-# 2. Rendez-le exécutable: chmod +x /usr/local/bin/leviia-backup
+# 1. Copiez ce fichier: cp scripts/cron_example.sh /usr/local/bin/kairos-backup
+# 2. Rendez-le exécutable: chmod +x /usr/local/bin/kairos-backup
 # 3. Configurez les variables d'environnement ci-dessous
 # 4. Ajoutez une entrée à votre crontab: crontab -e
 #    Exemple pour une sauvegarde quotidienne à 2h:
-#    0 2 * * * /usr/local/bin/leviia-backup
+#    0 2 * * * /usr/local/bin/kairos-backup
 #
 # ============================================================================
 
@@ -20,17 +20,17 @@
 # CONFIGURATION
 # ============================================================================
 
-# Chemin vers le projet Leviia Schedule
-PROJECT_DIR="/chemin/vers/leviia-schedule"
+# Chemin vers le projet Kairos
+PROJECT_DIR="/chemin/vers/kairos"
 
 # Chemin vers l'interpréteur Python (utilisez l'environnement virtuel si disponible)
-PYTHON_BIN="/chemin/vers/leviia-schedule/venv/bin/python"
+PYTHON_BIN="/chemin/vers/kairos/venv/bin/python"
 
 # Chemin vers le script de sauvegarde
 BACKUP_SCRIPT="${PROJECT_DIR}/scripts/backup_database.py"
 
 # Fichier de log
-LOG_FILE="/var/log/leviia-backup.log"
+LOG_FILE="/var/log/kairos-backup.log"
 
 # ============================================================================
 # VARIABLES D'ENVIRONNEMENT POUR LA SAUVEGARDE
@@ -50,7 +50,7 @@ export BACKUP_S3_ENDPOINT=""  # Laissez vide pour AWS S3, ou spécifiez pour Min
 export BACKUP_S3_REGION="eu-west-1"
 export BACKUP_S3_ACCESS_KEY="votre-access-key"
 export BACKUP_S3_SECRET_KEY="votre-secret-key"
-export BACKUP_S3_PREFIX="leviia-schedule"
+export BACKUP_S3_PREFIX="kairos"
 export BACKUP_S3_USE_SSL=true
 
 # Rétention
@@ -80,7 +80,7 @@ if [ $? -eq 0 ]; then
 else
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERREUR: La sauvegarde a échoué" >> "${LOG_FILE}"
     # Envoyer une notification (optionnel)
-    # mail -s "Erreur de sauvegarde Leviia" admin@example.com < "${LOG_FILE}"
+    # mail -s "Erreur de sauvegarde Kairos" admin@example.com < "${LOG_FILE}"
 fi
 
 # ============================================================================
@@ -88,16 +88,16 @@ fi
 # ============================================================================
 #
 # Sauvegarde quotidienne à 2h:
-# 0 2 * * * /usr/local/bin/leviia-backup
+# 0 2 * * * /usr/local/bin/kairos-backup
 #
 # Sauvegarde hebdomadaire le dimanche à 3h:
-# 0 3 * * 0 /usr/local/bin/leviia-backup
+# 0 3 * * 0 /usr/local/bin/kairos-backup
 #
 # Sauvegarde mensuelle le 1er à 4h:
-# 0 4 1 * * /usr/local/bin/leviia-backup
+# 0 4 1 * * /usr/local/bin/kairos-backup
 #
 # Sauvegarde toutes les 6 heures:
-# 0 */6 * * * /usr/local/bin/leviia-backup
+# 0 */6 * * * /usr/local/bin/kairos-backup
 #
 # ============================================================================
 # NOTIFICATIONS PAR EMAIL (rappels de shifts et d'astreintes)
@@ -110,10 +110,10 @@ fi
 #
 # Rappel des shifts : envoyé le dimanche, 24h avant le début des shifts
 # du lundi. Un seul email par semaine et par utilisateur.
-# 0 9 * * 0 cd /chemin/vers/leviia-schedule && /chemin/vers/venv/bin/python scripts/send_shift_notifications.py >> /var/log/leviia-notifications.log 2>&1
+# 0 9 * * 0 cd /chemin/vers/kairos && /chemin/vers/venv/bin/python scripts/send_shift_notifications.py >> /var/log/kairos-notifications.log 2>&1
 #
 # Rappel d'astreinte : envoyé le jeudi, 24h avant le début de l'astreinte
 # du vendredi 21h.
-# 0 9 * * 4 cd /chemin/vers/leviia-schedule && /chemin/vers/venv/bin/python scripts/send_oncall_notifications.py >> /var/log/leviia-notifications.log 2>&1
+# 0 9 * * 4 cd /chemin/vers/kairos && /chemin/vers/venv/bin/python scripts/send_oncall_notifications.py >> /var/log/kairos-notifications.log 2>&1
 #
 # ============================================================================

@@ -1,5 +1,5 @@
 """
-ServiceAccount model for Leviia Schedule.
+ServiceAccount model for Kairos.
 
 Admin-generated bearer credentials for third-party integrations
 consuming the public API (app/api/, /api/v1/*) - never a human login,
@@ -16,7 +16,9 @@ from datetime import datetime, timezone
 from app import db
 from app.models.base import BaseModel
 
-TOKEN_PREFIX = "lsak_"  # noqa: S105 # nosec B105 - "Leviia Schedule API Key", a public prefix, not a secret
+TOKEN_PREFIX = (
+    "ksak_"  # noqa: S105 # nosec B105 - "Kairos API Key", a public prefix, not a secret
+)
 
 
 class ServiceAccount(BaseModel):
@@ -26,7 +28,7 @@ class ServiceAccount(BaseModel):
         description: Optional free-text note (e.g. "Zapier integration").
         token_prefix: The token's first characters (TOKEN_PREFIX + 8),
             stored in clear for UI identification (e.g.
-            "lsak_a1b2c3d4...") - never enough entropy on its own to
+            "ksak_a1b2c3d4...") - never enough entropy on its own to
             authenticate.
         token_hash: SHA-256 hex digest of the full token. Deliberately
             NOT werkzeug's generate_password_hash (PBKDF2, CPU-expensive

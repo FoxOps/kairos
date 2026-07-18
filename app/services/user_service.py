@@ -1,5 +1,5 @@
 """
-User service for Leviia Schedule.
+User service for Kairos.
 
 Business logic around which users a given viewer is allowed to see/pick
 from (admins see everyone relevant, regular users only see themselves),

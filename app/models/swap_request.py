@@ -1,5 +1,5 @@
 """
-SwapRequest model for Leviia Schedule.
+SwapRequest model for Kairos.
 
 This module contains the SwapRequest model for shift exchange requests
 between users, subject to administrator validation.

@@ -10,15 +10,15 @@ from app.utils.export import generate_ics_standard
 
 
 def _generate_ics_shifts(shifts):
-    return generate_ics_standard(shifts, "Leviia Schedule - Shifts")
+    return generate_ics_standard(shifts, "Kairos - Shifts")
 
 
 def _generate_ics_oncall(on_calls):
-    return generate_ics_standard(on_calls, "Leviia Schedule - Astreintes")
+    return generate_ics_standard(on_calls, "Kairos - Astreintes")
 
 
 def _generate_ics_leaves(leaves):
-    return generate_ics_standard(leaves, "Leviia Schedule - Conge")
+    return generate_ics_standard(leaves, "Kairos - Conge")
 
 
 class TestICSExport:
@@ -258,7 +258,7 @@ class TestICSExport:
         ics_content = _generate_ics_shifts([test_shift])
 
         # Check the standard calendar properties
-        assert "PRODID:-//Leviia Schedule//fr" in ics_content
+        assert "PRODID:-//Kairos//fr" in ics_content
         assert "VERSION:2.0" in ics_content
         assert "CALSCALE:GREGORIAN" in ics_content
         assert "METHOD:PUBLISH" in ics_content

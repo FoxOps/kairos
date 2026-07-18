@@ -1,5 +1,5 @@
 """
-Models module for Leviia Schedule.
+Models module for Kairos.
 
 This module contains all the SQLAlchemy models for the application,
 organized by domain:

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Leviia Schedule - Sauvegarde automatique de la base de données
+Kairos - Sauvegarde automatique de la base de données
 ===============================================================
 
-Ce script permet de sauvegarder la base de données Leviia Schedule :
+Ce script permet de sauvegarder la base de données Kairos :
 - Sauvegarde locale (fichier)
 - Stockage S3 ou S3-compatible (AWS S3, MinIO, etc.)
 
@@ -70,7 +70,7 @@ def setup_logging(
     log_level: str = "INFO", log_file: str | None = None
 ) -> logging.Logger:
     """Configure le logging pour le script de sauvegarde."""
-    logger = logging.getLogger("leviia.backup")
+    logger = logging.getLogger("kairos.backup")
     logger.setLevel(getattr(logging, log_level.upper(), logging.INFO))
 
     # Formatter
@@ -559,7 +559,7 @@ def send_backup_notification(
     assert notification_config.from_email and notification_config.smtp_host
 
     status_label = "réussie" if results["success"] else "échouée"
-    subject = f"[Leviia Schedule] Sauvegarde {status_label} - {results['timestamp']}"
+    subject = f"[Kairos] Sauvegarde {status_label} - {results['timestamp']}"
 
     lines = [f"Sauvegarde {status_label} le {results['timestamp']}.", ""]
     if results.get("local"):
@@ -846,7 +846,7 @@ def list_backups(config: BackupConfig, logger: logging.Logger) -> dict[str, Any]
 def main():
     """Fonction principale du script."""
     parser = argparse.ArgumentParser(
-        description="Sauvegarde automatique de la base de données Leviia Schedule",
+        description="Sauvegarde automatique de la base de données Kairos",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Exemples:
@@ -944,7 +944,7 @@ Variables d'environnement:
     logger = setup_logging(log_level, log_file)
 
     logger.info("=" * 60)
-    logger.info("Leviia Schedule - Sauvegarde de la base de données")
+    logger.info("Kairos - Sauvegarde de la base de données")
     logger.info("=" * 60)
 
     # Vérifier si les sauvegardes sont activées

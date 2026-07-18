@@ -1,5 +1,5 @@
 """
-Base model for Leviia Schedule.
+Base model for Kairos.
 
 This module provides the BaseModel class that contains common fields
 and methods for all models in the application.

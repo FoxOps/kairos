@@ -18,7 +18,7 @@ class TestSendEmail:
             send_email(
                 smtp_host="smtp.example.com",
                 smtp_port=587,
-                from_email="noreply@leviia.local",
+                from_email="noreply@kairos.local",
                 to_email="alice@example.com",
                 subject="Sujet de test",
                 html_body="<p>Bonjour</p>",
@@ -30,7 +30,7 @@ class TestSendEmail:
             instance.sendmail.assert_called_once()
 
             from_arg, to_arg, message_str = instance.sendmail.call_args[0]
-            assert from_arg == "noreply@leviia.local"
+            assert from_arg == "noreply@kairos.local"
             assert to_arg == ["alice@example.com"]
             assert "Subject: Sujet de test" in message_str
             assert "Bonjour" in message_str
@@ -43,7 +43,7 @@ class TestSendEmail:
             send_email(
                 smtp_host="smtp.example.com",
                 smtp_port=25,
-                from_email="noreply@leviia.local",
+                from_email="noreply@kairos.local",
                 to_email="alice@example.com",
                 subject="Sujet",
                 html_body="<p>x</p>",
@@ -61,7 +61,7 @@ class TestSendEmail:
             send_email(
                 smtp_host="smtp.example.com",
                 smtp_port=587,
-                from_email="noreply@leviia.local",
+                from_email="noreply@kairos.local",
                 to_email="alice@example.com",
                 subject="Sujet",
                 html_body="<p>x</p>",
@@ -80,7 +80,7 @@ class TestSendEmail:
             send_email(
                 smtp_host="smtp.example.com",
                 smtp_port=587,
-                from_email="noreply@leviia.local",
+                from_email="noreply@kairos.local",
                 to_email="alice@example.com",
                 subject="Sujet",
                 html_body="<p>x</p>",
@@ -99,7 +99,7 @@ class TestSendEmail:
                 send_email(
                     smtp_host="smtp.example.com",
                     smtp_port=587,
-                    from_email="noreply@leviia.local",
+                    from_email="noreply@kairos.local",
                     to_email="alice@example.com",
                     subject="Sujet",
                     html_body="<p>x</p>",

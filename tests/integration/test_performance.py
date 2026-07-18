@@ -1,5 +1,5 @@
 """
-Performance tests for Leviia Schedule.
+Performance tests for Kairos.
 
 Two deliberately modest angles (no real profiling/benchmarking tool in
 place):

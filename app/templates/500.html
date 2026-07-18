@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "macros/errors.html" import error_page with context %}
 
-{% block title %}{{ _("Erreur interne du serveur") }} - Leviia{% endblock %}
+{% block title %}{{ _("Erreur interne du serveur") }} - Kairos{% endblock %}
 
 {% block content %}
 {% call error_page(code=500, title=_("Erreur interne du serveur"), subtitle=_("Une erreur inattendue est survenue."), color="text-error") %}
