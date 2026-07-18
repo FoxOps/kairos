@@ -596,7 +596,7 @@ make all
 ## 🤝 Contributing
 
 Contributions are welcome! See the
-[Contributing](README.md#-contributing) section of the README for:
+[Contributing](README.md#contributing) section of the README for:
 
 - Reporting a bug
 - Proposing a new feature

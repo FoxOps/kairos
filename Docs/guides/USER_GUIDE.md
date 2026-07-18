@@ -969,7 +969,7 @@ To request a new feature:
 ### Contributing to the project
 
 Contributions are welcome! See the "Contribution" section of the
-[README](../../README.md#-contribution) for the process to follow (fork,
+[README](../../README.md#contributing) for the process to follow (fork,
 branch, commit, Pull Request).
 
 ---

@@ -1,264 +1,139 @@
 # Kairos
 
-> **✅ Version 1.0.0-rc1** — production stabilization complete: 1314 tests,
-> full security audit, targeted bug hunt, load test. See `ROADMAP.md`
-> ("v1.0 stability verdict") for the full detail — two operational points
-> (not code defects) remain to be decided by the team deploying the app
-> before a real production rollout: the GitLab CI configured in this repo
-> doesn't actually run on GitHub (no equivalent GitHub Actions workflow),
-> and the Safety dependency scan requires an API key not configured by
-> default.
+Team shift scheduling, on-call rotations, and leave management - with ICS
+calendar export, SSO/OIDC, a public REST API, and a rotation engine that
+actually understands legal rest constraints.
 
----
-
-## 📚 Documentation
-
-**Full documentation is available in [Docs/](Docs/)**
-
-### 🎯 **Where to start?**
-
-| Role | Recommended Document | Description |
-|------|---------------------|-------------|
-| **👥 User** | [Docs/guides/QUICK_START.md](Docs/guides/QUICK_START.md) | Quick start guide (5 min) |
-| **🛡️ Administrator** | [Docs/guides/ADMIN_GUIDE.md](Docs/guides/ADMIN_GUIDE.md) | Configuration, security, maintenance |
-| **💻 Developer** | [Docs/architecture/ARCHITECTURE.md](Docs/architecture/ARCHITECTURE.md) | Technical architecture, diagrams |
-| **📖 Everyone** | [Docs/README.md](Docs/README.md) | **Full index** of all documentation |
-
-> **💡 For a quick hands-on start, see the [Quick Start Guide](Docs/guides/QUICK_START.md)**
-
----
-
-## 📋 Description
-
-**Kairos** is a web application for team shift scheduling, on-call
-rotations, and leave management. It lets you manage work schedules,
-on-call rotations, and team members' leave.
-
-### Main features
-
-- ✅ **User and group management** (with permissions)
-- ✅ **Shift type management** (customizable hours)
-- ✅ **Shift scheduling** with day/week/month views
-- ✅ **On-call management** with automatic rotations
-- ✅ **Leave management** with schedule visualization
-- ✅ **Email notifications**: weekly reminders for upcoming shifts and
-  on-call duty (configurable SMTP, standalone cron scripts)
-- ✅ **Shift swaps between users**: request (simple give-away or
-  reciprocal), approve/reject/cancel by an admin, in-app notifications
-  (bell icon)
-- ✅ **Multi-language** (French/English) and **multi-timezone** support,
-  customizable per user or organization-wide by default
-  (`/admin/settings`)
-- ✅ **Configurable date/time formats** (per user or by default)
-- ✅ **Change history (audit trail)**: who did what, when, browsable at
-  `/admin/audit-log`
-- ✅ **ICS export** for integration with Google Calendar, Outlook, etc.
-- ✅ **Secure authentication** (Flask-Login)
-- ✅ **SSO/OIDC authentication** (Keycloak, Okta, Auth0, etc.)
-- ✅ **Full logging system** with automatic rotation
-- ✅ **Smart automation** with business rules
-
----
-
-## 🛠 Technologies
-
-| Component | Technology | Version |
-|-----------|-------------|---------|
-| **Web framework** | Flask | 3.1.3 |
-| **ORM** | SQLAlchemy | 2.0.51 |
-| **Database** | SQLite (default), PostgreSQL | - |
-| **Authentication** | Flask-Login, Authlib (OIDC) | 0.6.3, 1.7.2 |
-| **ICS export** | icalendar | 7.2.0 |
-| **Internationalization** | Flask-Babel | 4.0.0 |
-| **Migrations** | Flask-Migrate (Alembic) | - |
-
----
-
-## 📦 Requirements
-
-- Python 3.8 or later
-- pip (Python package manager)
-- Git (optional, for cloning the repo)
-
----
-
-## 🐳 Installation (recommended: Docker Compose)
+## Quick start (Docker)
 
 No need to clone the repo - two files are enough:
 
 ```bash
 mkdir kairos && cd kairos
-curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/docker-compose.example.yml
-curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/.env.example
+curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/kairos/main/docker/docker-compose.example.yml
+curl -o .env https://raw.githubusercontent.com/FoxOps/kairos/main/docker/.env.example
 
-nano .env  # KAIROS_IMAGE=harbor.leviia.com/<HARBOR_PROJECT>/kairos:latest, SECRET_KEY, DEFAULT_ADMIN_PASSWORD
+nano .env  # set SECRET_KEY and DEFAULT_ADMIN_PASSWORD at minimum
 
 docker compose up -d
 ```
 
-The application will be available at: **http://localhost:5000**
+Open **http://localhost:5000**, log in with `admin@kairos.local` /
+`admin123` (or whatever you set in `.env`), and change that password
+immediately.
 
-> **📖 Detailed documentation**: [Docs/deployment/docker.md](Docs/deployment/docker.md)
+Full install options (bare-metal, PostgreSQL/MySQL, Kubernetes, reverse
+proxy): [Docs/deployment/](Docs/deployment/). First five minutes as a new
+user or admin: [Docs/guides/QUICK_START.md](Docs/guides/QUICK_START.md).
 
-### Local installation (development / special cases)
+## What it does
 
-Reserved for working on the code itself, or for cases where Docker
-isn't available - the Docker image above remains the primary way to
-run the application.
+- Shift scheduling with day/week/month views, drag & drop, and configurable
+  shift types
+- On-call rotations, generated automatically while respecting a legal
+  minimum rest period between two on-call weeks - if nothing can be
+  generated without violating it, it leaves the slot unfilled and notifies
+  admins rather than silently breaking the rule
+- Leave management, integrated into the same schedule view
+- Shift swaps between users - three-party workflow (requester → target
+  confirms → admin approves), not just a two-click reassignment
+- Multi-language (French/English) and multi-timezone, per-user or
+  organization-wide
+- ICS export for Google Calendar/Outlook/etc., email reminders, in-app and
+  external (Slack/Discord/Telegram/webhook) notifications
+- SSO/OIDC (Keycloak, Okta, Auth0-compatible) alongside regular login
+- An audit trail of who changed what, and a public read-only REST API
+  (`/api/v1`) with its own service-account tokens, separate from the
+  session-based UI
 
-```bash
-git clone https://github.com/FoxOps/leviia-schedule.git
-cd leviia-schedule
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-python run.py
-```
+Full feature list and architecture: [Docs/](Docs/).
 
-The application will be available at: **http://localhost:5000**
+## Why Kairos?
 
-> **📖 Detailed documentation**: [Docs/guides/QUICK_START.md](Docs/guides/QUICK_START.md)
+In Ancient Greek, there were two words for time. Chronos (Χρόνος) is
+chronological time, the steady, measurable ticking of the clock. It's the
+kind of time you set a schedule by. Kairos (Καιρός) means something else
+entirely: the right moment, the instant when something needs to happen
+right now.
 
----
+That's the tension every on-call team lives in, really. Your schedule is
+chronos, predictable, rotating, planned weeks ahead. But an incident
+doesn't check your calendar first. It happens at 3 AM on a Sunday, and
+what matters isn't the schedule itself. It's making sure the right person
+gets reached at the right moment, every time.
 
-## 🎯 Usage
+Kairos handles the chronos part, the rotations, the shifts, the calendar
+logic, so your team can focus on what actually matters: being there,
+ready, exactly when it counts.
 
-### First login
+## Built with AI - honestly
 
-1. Log in with the default credentials:
-   - Email: `admin@kairos.local`
-   - Password: `admin123`
+Kairos was built almost entirely with AI coding tools, by someone whose
+day job is sysadmin work, not software engineering. It started as a way
+to fill a real, unmet need: an on-call/scheduling tool for a team that
+couldn't justify a PagerDuty-class budget, and couldn't get dedicated dev
+time to build something in-house either.
 
-2. **⚠️ Change the password immediately** after first login, via the Profile menu.
+This wasn't a weekend vibe-coding experiment. The AI was deliberately
+pushed to document every decision, comment its reasoning, and write real
+tests - the assumption from early on was that human developers might pick
+up where it left off, and the codebase needed to be legible to them, not
+just functional. `CLAUDE.md` at the root of this repo is that accumulated
+context: a long-running design log of what was tried, what broke, and
+why things are the way they are - written for whoever (human or AI) works
+on this next.
 
-> **📖 Full documentation**:
-> - [User Guide](Docs/guides/USER_GUIDE.md) - For day-to-day use
-> - [Admin Guide](Docs/guides/ADMIN_GUIDE.md) - For configuration and management
+That said, this is offered with open eyes, not a sales pitch. AI is a
+genuinely useful tool for turning an idea into working software fast,
+especially for someone who can script but can't "code to save their
+life." It is also not a substitute for the judgment a human engineer
+brings to legal nuance, organizational complexity, or the kind of
+long-term architectural tradeoffs that don't have a clean right answer.
+No human has audited every line of this codebase. If that matters to
+you before you rely on it, review it first - the code is right here.
+Contributions, code review, and blunt criticism from actual developers
+are genuinely welcome, not just tolerated.
 
----
+## Documentation
 
-## 📁 Project structure
+- [Docs/](Docs/) - full index: user guide, admin guide, architecture, API
+  reference, deployment, environment variables
+- [ROADMAP.md](ROADMAP.md) - version history and what's planned next
+- [CLAUDE.md](CLAUDE.md) - the design/decision log mentioned above
 
-```
-kairos/
-├── app/                    # Application source code
-│   ├── __init__.py         # Flask initialization (create_app factory)
-│   ├── models/              # Database models (package)
-│   ├── repositories/        # Data access
-│   ├── services/             # Business logic
-│   ├── routes/              # Flask routes / blueprints
-│   └── utils/               # Utility functions (by sub-package)
-├── app/config/              # Configuration (base + testing)
-├── run.py                   # Entry point
-├── requirements.txt         # Python dependencies
-├── Docs/                    # 📚 Full documentation
-│   ├── README.md            # Documentation index
-│   ├── architecture/        # Architecture, ERD, sequence diagrams
-│   ├── api/                 # API documentation + OpenAPI spec
-│   ├── guides/               # User/admin/quick-start/FAQ guides
-│   ├── deployment/           # Deployment, Docker, backups
-│   └── reference/             # Env vars, errors, performance
-└── tests/                    # Tests (unit/integration/e2e/fixtures)
-```
+## Tech stack & licenses
 
-> **📖 Technical documentation**: [Docs/architecture/ARCHITECTURE.md](Docs/architecture/ARCHITECTURE.md)
+Flask + SQLAlchemy on the backend, server-rendered Jinja2 + Tailwind/daisyUI
+on the frontend (no build step, no Node toolchain - see
+[Docs/architecture/ARCHITECTURE.md](Docs/architecture/ARCHITECTURE.md)).
+SQLite by default, PostgreSQL and MySQL/MariaDB also supported.
 
----
+Every third-party library this project depends on, with its license and a
+link to its source, is listed in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-## 🧪 Tests and Code Quality
+## Contributing
 
-> **✅ Status**: **1314 tests**, all passing - Coverage: ~92%
+Issues, discussions, and pull requests are welcome - see
+[Docs/README.md](Docs/README.md#contributing-to-the-documentation) for the
+docs contribution workflow, or just fork, branch, and open a PR for code.
 
-### Running the tests
+## License
 
-```bash
-# Install test dependencies
-pip install -r requirements.txt
+Kairos is licensed under **[CeCILL v2.1](LICENSE)**, a French free-software
+license GPL-compatible in spirit (copyleft, source access, same
+redistribution terms).
 
-# Run all tests
-pytest tests/ -v --tb=short
+> **Provided "as is"**, without warranty of any kind, express or implied,
+> including but not limited to warranties of merchantability, fitness for
+> a particular purpose, and non-infringement. Use it at your own risk -
+> see the [LICENSE](LICENSE) file for the full terms.
 
-# Run with code coverage
-pytest tests/ --cov=app --cov-report=term-missing
-```
+## Contact
 
-### Code quality checks
-
-```bash
-# Linting with Ruff
-ruff check . --config=.ruff.toml
-
-# Type checking with mypy
-mypy app/ tests/ --ignore-missing-imports --allow-untyped-decorators
-
-# Formatting with Black
-black --check . --exclude=".git|__pycache__|instance|venv"
-```
-
-> **📖 Test documentation**: [report/Phase 4: AMÉLIORATION DES TESTS.md](report/Phase%204%3A%20AM%C3%89LIORATION%20DES%20TESTS.md)
-
----
-
-## 📝 Contributing
-
-Contributions are welcome!
-
-1. **Fork** the repo
-2. Create a branch for your feature (`git checkout -b feature/my-feature`)
-3. Commit your changes (`git commit -m 'Add my feature'`)
-4. Push to the branch (`git push origin feature/my-feature`)
-5. Open a **Pull Request**
-
-> **📖 Contribution guide**: [Docs/README.md - Contributing to the documentation](Docs/README.md#contributing-to-the-documentation)
-
----
-
-## 🐛 Reporting a bug
-
-To report a bug, open an **Issue** on GitHub with the following information:
-
-- Application version
-- Steps to reproduce the bug
-- Expected behavior
-- Actual behavior
-- Screenshots (if applicable)
-- Error logs (if applicable)
-- Configuration used (SQLite/PostgreSQL, etc.)
+Questions, bugs, or ideas: open an [Issue](https://github.com/FoxOps/kairos/issues)
+or a [Discussion](https://github.com/FoxOps/kairos/discussions) on GitHub.
 
 ---
 
-## 📜 License
-
-This project is licensed under **CeCILL v2.1**. See the [LICENSE](LICENSE) file for details.
-
----
-
-## 📞 Contact
-
-For any question or suggestion, feel free to open an **Issue** or a **Discussion** on the GitHub repo.
-
----
-
-## 📌 Release notes
-
-### Version 1.0.0-rc1
-
-- **Status**: Production stabilization complete (see `ROADMAP.md` →
-  "v1.0 stability verdict" for the full detail, including the
-  operational points left to the deploying team's judgment)
-- **Features**: All core features are implemented
-- **Tests**: 1314 tests (all passing)
-- **Coverage**: ~92%
-- **Security**: Full audit performed (`report/SECURITY_AUDIT_v1.0.md`),
-  0 Bandit findings on `app/`
-- **Performance**: Load test performed (`report/LOAD_TEST_v1.0.md`)
-
-> **📖 Roadmap**: [ROADMAP.md](ROADMAP.md)
-
----
-
-> **⚠️ Warranty**
-> This software is provided "as is", without warranty of any kind.
-> The author cannot be held liable for any direct, indirect, incidental,
-> special, or consequential damages arising from the use of this software.
-> **Use it at your own risk.**
+**Version**: 1.0.0-rc1 · © 2026 FoxOps
