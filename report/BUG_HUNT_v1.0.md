@@ -1,222 +1,206 @@
-# Chasse aux bugs v1.0
+# Bug Hunt v1.0
 
-> Passe ciblée sur les fonctionnalités les plus récentes de l'app (multi-fuseau
-> horaire, multi-langue, formats date/heure, audit trail, notifications
-> Apprise, workflow d'échange de shifts à 3 parties, API REST publique v1,
-> support MySQL/MariaDB, `SettingsService`, sauvegardes) — les plus jeunes,
-> donc les moins éprouvées. Le cœur historique du planning a déjà fait l'objet
-> de plusieurs passes documentées (`report/BUG_HUNT_REPORT.md`,
-> `report/CHASSE_AU_BUG.md`) et n'est pas repris ici. Chaque trouvaille a été
-> vérifiée par lecture directe du code puis, quand c'était possible,
-> reproduite empiriquement (test réel qui plante avant correctif, passe
-> après) — pas de spéculation.
+> Targeted pass on the app's most recent features (multi-timezone,
+> multi-language, date/time formats, audit trail, Apprise notifications,
+> 3-party shift-swap workflow, public REST API v1, MySQL/MariaDB support,
+> `SettingsService`, backups) - the youngest, and therefore least
+> battle-tested. The historical core of the scheduling feature has already
+> been through several documented passes (`report/BUG_HUNT_REPORT.md`,
+> `report/CHASSE_AU_BUG.md`) and isn't repeated here. Every finding was
+> verified by direct code reading then, when possible, reproduced
+> empirically (a real test that fails before the fix, passes after) - no
+> speculation.
 
-## Corrigés dans cette PR
+## Fixed in this PR
 
-### 1. HIGH — Supprimer un shift référencé par un échange actif fait planter `/swaps`, `/admin/swaps` et `/swaps/<id>/confirm`
+### 1. HIGH — Deleting a shift referenced by an active swap crashes `/swaps`, `/admin/swaps` and `/swaps/<id>/confirm`
 
-**Fichiers** : `app/services/shift_service.py` (aucun chemin de suppression
-ne vérifie les `SwapRequest` actifs), `app/models/swap_request.py`
-(`SwapRequest.shift` est une simple `@property` faisant
-`db.session.get(Shift, self.shift_id)` — pas une relation ORM, voir le
-docstring du modèle), `app/templates/swaps.html`,
-`app/templates/admin/swaps.html`, `app/templates/confirm_swap.html`.
+**Files**: `app/services/shift_service.py` (no deletion path checks
+active `SwapRequest`s), `app/models/swap_request.py` (`SwapRequest.shift`
+is a plain `@property` doing `db.session.get(Shift, self.shift_id)` - not
+an ORM relationship, see the model's docstring),
+`app/templates/swaps.html`, `app/templates/admin/swaps.html`,
+`app/templates/confirm_swap.html`.
 
-Aucun des chemins de suppression de `ShiftService` (suppression unique ou
-en masse — jour/semaine/utilisateur/tout) ne vérifie qu'un `SwapRequest`
-référence encore le shift. Une fois la ligne `Shift` supprimée,
-`swap.shift` retourne silencieusement `None`. Les trois templates
-déréférençaient `swap.shift.date`/`swap_request.shift.date` **sans aucune
-garde** — contrairement à `target_shift`, toujours protégé par `{% if
-swap.target_shift %}`. Résultat : `jinja2.exceptions.UndefinedError:
-'None' has no attribute 'date'`, une exception non gérée qui fait planter
-**toute la page** pour chaque utilisateur ayant cette demande dans sa
-liste (y compris tous les admins sur `/admin/swaps`) — pas seulement la
-ligne concernée. Reproduit et confirmé par un test réel (suppression
-directe du shift référencé, puis `GET /swaps` → `UndefinedError`) avant
-correctif.
+None of `ShiftService`'s deletion paths (single or bulk - day/week/user/
+everything) check whether a `SwapRequest` still references the shift.
+Once the `Shift` row is deleted, `swap.shift` silently returns `None`.
+All three templates dereferenced `swap.shift.date`/
+`swap_request.shift.date` **with no guard at all** - unlike
+`target_shift`, always protected by `{% if swap.target_shift %}`. Result:
+`jinja2.exceptions.UndefinedError: 'None' has no attribute 'date'`, an
+unhandled exception that crashes **the entire page** for every user with
+that request in their list (including every admin on `/admin/swaps`) -
+not just the affected row. Reproduced and confirmed with a real test
+(direct deletion of the referenced shift, then `GET /swaps` ->
+`UndefinedError`) before the fix.
 
-Scénario déclencheur plausible et courant : suppression en masse d'une
-semaine/d'un utilisateur par un admin, sans qu'aucun avertissement
-n'existe sur un échange en cours.
+Plausible and common triggering scenario: an admin's bulk deletion of a
+week/user, with no warning about an ongoing swap.
 
-**Correctif appliqué** : garde défensive dans les 4 emplacements de
-templates concernés (`{% if swap.shift %}...{% else %}<span>Shift
-supprimé</span>{% endif %}`), même pattern que `target_shift` déjà en
-place. La couche service était déjà correcte de son côté : `POST
-/swaps/<id>/confirm` passe par `SwapService.confirm_swap()` →
-`_validation_error()`, qui gère déjà `shift is None` proprement
-(`"Shift introuvable"`) — seul le rendu `GET` (affichage brut dans le
-template) avait le trou. Pas de changement de règle métier (blocage de la
-suppression, annulation automatique de la demande) : décision produit
-plus large, volontairement laissée hors de cette PR — voir "Non traités"
-ci-dessous.
+**Fix applied**: defensive guard in the 4 affected template spots
+(`{% if swap.shift %}...{% else %}<span>Deleted shift</span>{% endif %}`),
+same pattern already used for `target_shift`. The service layer was
+already correct on its side: `POST /swaps/<id>/confirm` goes through
+`SwapService.confirm_swap()` -> `_validation_error()`, which already
+handles `shift is None` cleanly (`"Shift not found"`) - only the `GET`
+render (raw display in the template) had the gap. No business-rule change
+(blocking the deletion, auto-cancelling the request): a broader product
+decision, deliberately left out of this PR - see "Not addressed" below.
 
-Tests de régression ajoutés : `tests/integration/test_swap_routes.py`
+Regression tests added: `tests/integration/test_swap_routes.py`
 (`test_swaps_page_survives_deleted_shift`,
 `test_confirm_page_survives_deleted_shift`,
 `test_admin_swaps_page_survives_deleted_shift`).
 
-### 2. MEDIUM — Le filtre de domaine de l'audit log ignore silencieusement 2 domaines réels
+### 2. MEDIUM — The audit log's domain filter silently drops 2 real domains
 
-**Fichier** : `app/routes/admin_audit_routes.py`
+**File**: `app/routes/admin_audit_routes.py`
 
-`ACTION_DOMAINS` (utilisé pour peupler le menu déroulant de filtre sur
-`/admin/audit-log`) listait `auth, group, leave, oncall, profile,
-setting, shift, shift_type, swap, user` — mais `AuditService.log()` est
-bien appelé avec `"service_account.*"`
-(`app/services/service_account_service.py`) et
+`ACTION_DOMAINS` (used to populate the filter dropdown on
+`/admin/audit-log`) listed `auth, group, leave, oncall, profile, setting,
+shift, shift_type, swap, user` - but `AuditService.log()` is indeed
+called with `"service_account.*"`
+(`app/services/service_account_service.py`) and
 `"notification_target.*"` (`app/routes/admin_notification_target_routes.py`),
-deux domaines introduits par des fonctionnalités récentes. Un admin ne
-pouvait donc pas filtrer l'historique sur l'activité des clés API ou des
-cibles de notification externes — et pire, `action_prefix = f"{domain}."
-if domain in ACTION_DOMAINS else None` (ligne 50) signifie qu'une URL
-`?action_domain=service_account` construite à la main ne filtre ni
-n'erreure : elle retourne silencieusement la liste complète non filtrée,
-pouvant laisser croire à tort que le filtre a fonctionné.
+two domains introduced by recent features. An admin therefore couldn't
+filter the history on API-key or external notification-target activity -
+and worse, `action_prefix = f"{domain}." if domain in ACTION_DOMAINS else
+None` (line 50) means a hand-built `?action_domain=service_account` URL
+neither filters nor errors: it silently returns the full unfiltered list,
+which could wrongly suggest the filter worked.
 
-**Correctif** : ajout de `"service_account"` et `"notification_target"`
-à `ACTION_DOMAINS`. Le template consomme déjà cette liste dynamiquement
-(`{% for domain in action_domains %}`), aucun changement de template
-nécessaire.
+**Fix**: added `"service_account"` and `"notification_target"` to
+`ACTION_DOMAINS`. The template already consumes this list dynamically
+(`{% for domain in action_domains %}`), no template change needed.
 
-### 3. LOW — `SettingsService.get_public_base_url()` viole sa propre règle documentée « un Setting présent gagne toujours »
+### 3. LOW — `SettingsService.get_public_base_url()` violates its own documented "a present Setting always wins" rule
 
-**Fichier** : `app/services/settings_service.py`
+**File**: `app/services/settings_service.py`
 
-`set_public_base_url(None)` stocke une chaîne vide (`url or ""`) — le
-seul setter de ce module qui persiste volontairement une valeur falsy,
-pour représenter « explicitement effacé ». Mais `get_public_base_url()`
-faisait `if value: return str(value)`, donc une ligne `Setting` vide
-était traitée comme « absente » et retombait silencieusement sur la
-variable d'environnement `PUBLIC_BASE_URL`. Un admin qui efface
-explicitement la valeur via `/admin/settings` ne récupère donc pas
-« aucune surcharge » comme attendu, mais silencieusement la valeur
-d'environnement précédente — contredisant la règle documentée dans
-CLAUDE.md ("Configuration: two parallel systems") : *"a Setting row, if
+`set_public_base_url(None)` stores an empty string (`url or ""`) - the
+only setter in this module that deliberately persists a falsy value, to
+represent "explicitly cleared". But `get_public_base_url()` did
+`if value: return str(value)`, so an empty `Setting` row was treated as
+"absent" and silently fell back to the `PUBLIC_BASE_URL` environment
+variable. An admin who explicitly clears the value via `/admin/settings`
+therefore doesn't get "no override" as expected, but silently gets the
+previous environment value - contradicting the rule documented in
+CLAUDE.md ("Configuration: two parallel systems"): *"a Setting row, if
 present, always wins"*.
 
-**Correctif** : `if value is not None` (au lieu de `if value:`) —
-`Setting.get()` ne retourne `None` que si aucune ligne n'existe du tout
-(voir son propre docstring), donc ce test distingue correctement
-« jamais configuré » de « explicitement effacé ». Test de régression
-ajouté (`tests/unit/test_settings_service.py::test_explicit_clear_does_not_fall_back_to_env`).
+**Fix**: `if value is not None` (instead of `if value:`) -
+`Setting.get()` only returns `None` when no row exists at all at all (see
+its own docstring), so this check correctly distinguishes "never
+configured" from "explicitly cleared". Regression test added
+(`tests/unit/test_settings_service.py::test_explicit_clear_does_not_fall_back_to_env`).
 
-### 4. Bug transverse trouvé en creusant Bandit B104 : `PROMETHEUS_ENABLED` jamais câblé
+### 4. Cross-cutting bug found while digging into Bandit B104: `PROMETHEUS_ENABLED` never wired up
 
-Documenté et corrigé dans `report/SECURITY_AUDIT_v1.0.md` (section
-"Corrections apportées") plutôt que répété ici — trouvé pendant l'audit
-sécurité, pas la présente passe, mais mérite mention croisée : la
-fonctionnalité `/metrics` était structurellement inatteignable en
-déploiement réel, masqué par un test qui contournait le vrai chemin
-`create_app()`.
+Documented and fixed in `report/SECURITY_AUDIT_v1.0.md` (section
+"Fixes applied") rather than repeated here - found during the security
+audit, not this pass, but worth a cross-reference: the `/metrics`
+feature was structurally unreachable in a real deployment, masked by a
+test that bypassed the real `create_app()` path.
 
-## Non traités (identifiés, documentés, décision produit hors périmètre)
+## Not addressed (identified, documented, product decision out of scope)
 
-### LOW/MEDIUM — Pas de verrouillage optimiste sur les transitions du workflow d'échange
+### LOW/MEDIUM — No optimistic locking on swap-workflow transitions
 
-**Fichier** : `app/services/swap_service.py` (`approve_swap`,
-`confirm_swap`)
+**File**: `app/services/swap_service.py` (`approve_swap`, `confirm_swap`)
 
-Chaque méthode de transition lit `swap_request.status`, valide, puis
-écrit — sans verrou de ligne (`SELECT ... FOR UPDATE`) ni contrôle de
-version entre la lecture et le `commit()`. Deux requêtes réellement
-concurrentes (deux admins qui cliquent "Approuver" en même temps, ou une
-double soumission de `/confirm`) peuvent toutes deux passer les
-vérifications `is_awaiting_admin()`/`is_awaiting_target()` avant qu'aucune
-ne commite, menant à un double traitement (réassignation du shift deux
-fois, notifications dupliquées). Les doubles soumissions *séquentielles*
-sont déjà sûres (la deuxième requête relit le statut déjà mis à jour et
-est correctement rejetée) — seule la concurrence réelle est concernée.
-Non exploitable pour une élévation de privilège, mais un vrai trou
-d'intégrité des données dans un workflow dont la raison d'être est
-justement « validation à 3 parties, re-validée à chaque étape ». Correctif
-(verrou de ligne ou compteur de version) volontairement non appliqué ici
-— changement de comportement transactionnel qui mérite sa propre revue,
-pas une correction one-off dans une passe de chasse aux bugs.
+Each transition method reads `swap_request.status`, validates, then
+writes - with no row lock (`SELECT ... FOR UPDATE`) nor version check
+between the read and the `commit()`. Two genuinely concurrent requests
+(two admins clicking "Approve" at the same time, or a double submission
+of `/confirm`) can both pass the `is_awaiting_admin()`/
+`is_awaiting_target()` checks before either commits, leading to double
+processing (shift reassigned twice, duplicated notifications).
+*Sequential* double submissions are already safe (the second request
+re-reads the already-updated status and is correctly rejected) - only
+real concurrency is at risk. Not exploitable for a privilege escalation,
+but a real data-integrity gap in a workflow whose whole point is "3-party
+validation, re-validated at every step". A fix (row lock or version
+counter) was deliberately not applied here - a transactional-behavior
+change that deserves its own review, not a one-off fix in a bug-hunt
+pass.
 
-### LOW — `SettingsService.set_pagination()`/`set_backup_retention()` ne sont pas atomiques entre leurs deux réglages
+### LOW — `SettingsService.set_pagination()`/`set_backup_retention()` aren't atomic across their two settings
 
-**Fichier** : `app/services/settings_service.py`,
+**File**: `app/services/settings_service.py`,
 `app/models/setting.py::Setting.set()`
 
-`Setting.set()` commite en interne à chaque appel. `set_pagination()`
-valide `items_per_page <= max_per_page` ensemble puis appelle
-`Setting.set()` deux fois — deux transactions indépendantes déjà
-commitées chacune. Si le deuxième appel échoue après le succès du
-premier, le `except` ne fait un rollback que de la session courante : la
-première valeur reste déjà durablement commitée, laissant les deux
-réglages dans une combinaison jamais validée ensemble. Faible probabilité
-(nécessite une erreur DB transitoire en plein milieu d'une requête), mais
-un vrai trou étant donné que la validation est explicitement présentée
-comme une contrainte conjointe. Non corrigé : nécessiterait soit une
-transaction unique explicite dans `Setting.set()` (changement structurel
-touchant tous les appelants), soit une validation avant tout `commit()`
-dans chaque setter concerné — décision d'architecture, pas un correctif
-isolé.
+`Setting.set()` commits internally on every call. `set_pagination()`
+validates `items_per_page <= max_per_page` together then calls
+`Setting.set()` twice - two independent transactions, each already
+committed. If the second call fails after the first succeeded, the
+`except` only rolls back the current session: the first value stays
+durably committed, leaving the two settings in a combination that was
+never validated together. Low probability (requires a transient DB error
+mid-request), but a real gap given the validation is explicitly presented
+as a joint constraint. Not fixed: would require either a single explicit
+transaction in `Setting.set()` (a structural change affecting every
+caller), or validating before any `commit()` in each affected setter - an
+architecture decision, not an isolated fix.
 
-### LOW — Expiration des clés API à minuit UTC, pas en fin de journée
+### LOW — API key expiry at midnight UTC, not end of day
 
-**Fichier** : `app/routes/admin_service_account_routes.py`,
+**File**: `app/routes/admin_service_account_routes.py`,
 `app/models/service_account.py`
 
-Le formulaire admin prend une simple date (`<input type="date">`),
-convertie en `datetime` à minuit. Un admin qui choisit "2026-08-01" en
-pensant que la clé fonctionne jusqu'à la fin de cette journée la verra
-déjà invalide dès 00:00 UTC ce jour-là. Erre du côté prudent (expire tôt,
-jamais tard) donc pas un problème de sécurité, mais un vrai décalage
-sémantique entre ce que suggère l'interface et ce que fait réellement le
-contrôle. Non corrigé : changer ça (passer à 23:59:59 ou end-of-day dans
-le fuseau de l'admin) est un choix produit mineur mais visible, mérite
-confirmation explicite plutôt qu'un changement silencieux de comportement
-d'expiration de crédentials.
+The admin form takes a plain date (`<input type="date">`), converted to
+a `datetime` at midnight. An admin who picks "2026-08-01" thinking the
+key works until the end of that day will find it already invalid at
+00:00 UTC that same day. Errs on the safe side (expires early, never
+late) so not a security issue, but a real semantic gap between what the
+UI suggests and what the check actually does. Not fixed: changing this
+(moving to 23:59:59 or end-of-day in the admin's timezone) is a minor but
+visible product choice, deserving explicit confirmation rather than a
+silent change to credential-expiry behavior.
 
-## Vérifié et écarté (investigué, code correct)
+## Verified and dismissed (investigated, code correct)
 
-- **Rate limiting de l'API keyed par service account vs IP**
-  (`app/api/rate_limit.py`, `app/auth/service_account_auth.py`) :
-  suspicion initiale que le hook `before_request` du blueprint tournerait
-  après la vérification de rate-limit au niveau app, désactivant la clé
-  par compte. Vérifié dans le code source de Flask/Flask-Limiter : les
-  décorateurs `@limiter.limit()` au niveau route sont délibérément
-  différés à l'appel de la vue (après tous les hooks `before_request` de
-  blueprint) — confirmé empiriquement. `g.service_account` est bien
-  peuplé avant que la limite par compte ne s'applique. Pas de bug.
-- **Conversion multi-fuseau horaire** (lecture/écriture symétriques,
-  org-tz ⟷ viewer-tz) : cohérent des deux côtés ; les cas limites de
-  DST sont une contrepartie inhérente à tout système basé sur `zoneinfo`,
-  déjà un compromis accepté et documenté, pas une régression.
-- **`force_locale()` dans les notifications** (email hebdo, notifications
-  in-app) : chaque message persisté/multi-destinataire est bien construit
-  par destinataire dans son propre bloc `force_locale()`.
-- **Cache `flask.g` de `get_date_format()`/`get_time_format()`** :
-  correctement scopé par requête, pas de risque de valeur périmée.
-- **Path traversal / nettoyage des fichiers temporaires S3 dans
-  `BackupService`** : le check `startswith(local_dir + os.sep)` final
-  intercepte correctement `../` et l'injection de chemin absolu (vérifié
-  directement) ; le fichier temporaire S3 est nettoyé via
-  `response.call_on_close()`.
-- **Double réservation du même shift comme `target_shift` par deux
-  demandes concurrentes** : possible d'atteindre cet état à la
-  confirmation, mais `approve_swap()` re-valide et rejette correctement
-  la deuxième demande au moment de l'approbation — un désagrément UX, pas
-  une corruption de données.
-- **`normalize_database_uri()` MySQL/MariaDB** : réécrit correctement les
-  schémas nus, laisse intact un `+driver` déjà explicite ; aucun SQL brut
-  dépendant du dialecte trouvé ailleurs dans `app/`.
+- **API rate limiting keyed by service account vs IP**
+  (`app/api/rate_limit.py`, `app/auth/service_account_auth.py`): initial
+  suspicion that the blueprint's `before_request` hook would run after
+  the app-level rate-limit check, disabling the per-account key. Verified
+  in Flask/Flask-Limiter's source: route-level `@limiter.limit()`
+  decorators are deliberately deferred to the view call (after every
+  blueprint `before_request` hook) - confirmed empirically.
+  `g.service_account` is indeed populated before the per-account limit
+  applies. Not a bug.
+- **Multi-timezone conversion** (symmetric read/write, org-tz <->
+  viewer-tz): consistent on both sides; DST edge cases are an inherent
+  trade-off of any `zoneinfo`-based system, already an accepted and
+  documented compromise, not a regression.
+- **`force_locale()` in notifications** (weekly emails, in-app
+  notifications): every persisted/multi-recipient message is indeed built
+  per-recipient inside its own `force_locale()` block.
+- **`flask.g` cache for `get_date_format()`/`get_time_format()`**:
+  correctly scoped per request, no risk of a stale value.
+- **Path traversal / S3 temp-file cleanup in `BackupService`**: the
+  final `startswith(local_dir + os.sep)` check correctly catches `../`
+  and absolute-path injection (verified directly); the S3 temp file is
+  cleaned up via `response.call_on_close()`.
+- **Double booking of the same shift as `target_shift` by two concurrent
+  requests**: reachable at confirmation time, but `approve_swap()`
+  correctly re-validates and rejects the second request at approval time
+  - a UX annoyance, not data corruption.
+- **`normalize_database_uri()` for MySQL/MariaDB**: correctly rewrites
+  bare schemes, leaves an already-explicit `+driver` untouched; no raw
+  dialect-dependent SQL found elsewhere in `app/`.
 
 ## Verdict
 
-Les fonctionnalités récentes sont globalement bien construites :
-conventions de gestion d'erreur cohérentes (fire-and-forget vs
-levée d'exception, documenté et respecté), re-validation systématique à
-chaque étape du workflow d'échange, gestion symétrique et correcte du
-fuseau horaire/de la langue. Le seul problème **haute sévérité** (n°1) a
-été corrigé dans cette PR — c'était un vrai trou (rien dans le chemin de
-suppression de shift ne savait qu'un `SwapRequest` pouvait le référencer)
-et son mode d'échec (page entière en 500, non récupérable sans accès DB)
-justifiait une correction avant v1.0 plutôt qu'un simple signalement. Les
-trois éléments non traités sont documentés avec leur justification de
-mise à l'écart (décision produit ou changement structurel plus large, pas
-une négligence) — à trancher explicitement avant ou après le lancement
-v1.0, selon la tolérance au risque de l'équipe.
+The recent features are, overall, well built: consistent error-handling
+conventions (fire-and-forget vs raising, documented and followed),
+systematic re-validation at every step of the swap workflow, symmetric
+and correct timezone/language handling. The only **high-severity** issue
+(#1) was fixed in this PR - it was a real gap (nothing in the shift
+deletion path knew a `SwapRequest` could reference it) and its failure
+mode (a whole page 500ing, unrecoverable without DB access) justified a
+fix before v1.0 rather than a mere writeup. The three unaddressed items
+are documented with their reason for being set aside (a product decision
+or a broader structural change, not an oversight) - to be explicitly
+decided before or after the v1.0 launch, depending on the team's risk
+tolerance.
