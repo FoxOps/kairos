@@ -1,11 +1,9 @@
 # Roadmap
 
 **Current version: 1.0.0-rc1** — feature-complete, tested (1300+
-automated tests), and used for real team scheduling. Two operational
-items are still open before a production rollout should rely on them
-blindly — see "Known limitations" below.
+automated tests), and used for real team scheduling.
 
-## What Kairos does today
+## ✅ Done
 
 **Core scheduling**
 - Shift scheduling with day/week/month calendar views, drag & drop
@@ -44,26 +42,36 @@ blindly — see "Known limitations" below.
 - Prometheus metrics and Kubernetes health/readiness endpoints
 - Docker image and Kubernetes manifests provided for deployment
 
-## Known limitations
+## 🔜 Left to do
 
-- **CI doesn't run on GitHub.** The GitLab CI config in this repo
+- **CI on GitHub.** The GitLab CI config in this repo
   (`.gitlab-ci/.gitlab-ci.yml`) doesn't execute against this
   GitHub-hosted repository — there is no equivalent GitHub Actions
-  workflow yet.
-- **The Safety dependency scanner is inactive by default** — it
-  requires a `SAFETY_API_KEY` that isn't configured out of the box.
-- **ICS token expiry isn't enforced.** `ICS_TOKEN_EXPIRY_DAYS` exists
-  as a setting but nothing currently checks or expires a token based
-  on it — a token remains valid indefinitely once issued.
-- **A pre-existing timezone edge case** in `OnCall.is_active()`
-  compares a stored UTC timestamp against local server time, which can
-  be off by the server's UTC offset. Known, not yet fixed.
+  workflow yet. Needed before any change can be verified
+  automatically on every push/PR.
+- **Activate the Safety dependency scanner** — it requires a
+  `SAFETY_API_KEY` that isn't configured out of the box, so dependency
+  vulnerability scanning is currently a manual/local step, not a
+  gate.
+- **Write support on the public API v1.** `/api/v1/*` is deliberately
+  read-only today (listing shifts/on-call/leave/users) — adding
+  create/update/delete would mean re-validating the same
+  conflict/weekend/leave rules already enforced by the internal
+  session-based routes, without duplicating that logic. A real
+  candidate for a v2, not started yet.
+- **Enforce ICS token expiry.** `ICS_TOKEN_EXPIRY_DAYS` exists as a
+  setting but nothing currently checks or expires a token based on it
+  — a token remains valid indefinitely once issued.
+- **Fix a pre-existing timezone edge case** in `OnCall.is_active()`:
+  it compares a stored UTC timestamp against local server time, which
+  can be off by the server's UTC offset.
 
 ## Contributing
 
 Kairos was built almost entirely with AI coding tools by someone
 without a professional development background — see the README for
 the full story. Code review, bug reports, and contributions from
-experienced developers are genuinely welcome. If you want to help,
-start with an [Issue](https://github.com/FoxOps/kairos/issues) or a
+experienced developers are genuinely welcome, on either list above or
+anything else you find. Start with an
+[Issue](https://github.com/FoxOps/kairos/issues) or a
 [Discussion](https://github.com/FoxOps/kairos/discussions).
