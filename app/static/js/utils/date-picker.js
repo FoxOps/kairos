@@ -127,7 +127,27 @@ function buildOptions(input) {
     const { selectedDates, selectedTime } = dateAndTimeFromValue(input);
     return {
         inputMode: true,
-        positionToInput: 'auto',
+        // Not 'auto': for a wide input (this app's form fields are
+        // usually full-width), 'auto' centers the popup horizontally
+        // on the input's midpoint rather than aligning it to an edge,
+        // visibly detached from where the user clicked. 'left' is the
+        // library's own default and matches how every other date
+        // picker aligns - kept explicit here since we already override
+        // it once.
+        positionToInput: 'left',
+        // Default is true: focusing the input (not just clicking it)
+        // opens the popup. That includes a *programmatic* focus (e.g.
+        // filling a later field, a script, or Playwright's .fill()) -
+        // the popup then stays open with nothing to close it, and its
+        // content can end up overlapping and intercepting clicks on
+        // whatever's below (caught by
+        // tests/e2e/test_browser_flows.py::TestDeleteConfirmationModal,
+        // whose real-browser .fill() on a later field left this one's
+        // popup open, blocking the submit button underneath). Opening
+        // only on an explicit click (still handled by the library's
+        // own click binding, independent of this flag) is what every
+        // native date input already does.
+        openOnFocus: false,
         // Matches theme-manager.js, which sets data-theme="dark"/"light"
         // on <html> - a CSS-selector-shaped string ("tag[attribute]"),
         // not a bare attribute name. This is already the library's
@@ -159,6 +179,16 @@ export function initDatePicker(input) {
     // the rest of this module still knows the field's intended date/
     // datetime-local semantics after the switch.
     input.dataset.kairosNativeType = input.type;
+    // The native date/datetime-local picker supplied both a calendar
+    // icon and a "dd/mm/yyyy"-style placeholder for free; type="text"
+    // has neither, leaving an empty field with no hint it's a date
+    // field at all. A plain placeholder in the field's own storage
+    // format (the same one it'll actually display once a date is
+    // picked - see writeBackToInput) is the minimal fix; only set it
+    // if the template didn't already provide one.
+    if (!input.placeholder) {
+        input.placeholder = input.dataset.kairosNativeType === 'datetime-local' ? 'YYYY-MM-DDTHH:MM' : 'YYYY-MM-DD';
+    }
     input.type = 'text';
     const calendar = new Calendar(input, buildOptions(input));
     calendar.init();
