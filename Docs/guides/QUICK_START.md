@@ -23,9 +23,15 @@ docker compose up -d
 **Access**: http://localhost:5000
 
 > ⚠️ **The `nano .env` step** (at least `SECRET_KEY`/`DEFAULT_ADMIN_PASSWORD`)
-> is required: without `DEFAULT_ADMIN_PASSWORD`, the application generates
-> a random admin password on first startup (never displayed
-> anywhere) instead of the default `admin123` below.
+> is required for security, not to avoid an error: `docker/.env.example`
+> already ships with literal, publicly-known default values -
+> `SECRET_KEY=ta-cle-secrete-ici` and `DEFAULT_ADMIN_PASSWORD=admin123` -
+> so skipping this step does **not** make the app generate random values;
+> it starts up fine with these predictable, shared defaults, which is the
+> actual risk. (A random, never-displayed admin password is only
+> generated if `DEFAULT_ADMIN_PASSWORD` is entirely absent from the
+> environment - not the case here since the downloaded file already sets
+> it.)
 
 > **📖 Full details** (registry, volumes, variables):
 > [`deployment/docker.md`](../deployment/docker.md)
@@ -46,16 +52,25 @@ pip install -r requirements.txt
 # Copy the default configuration
 cp .env.example .env
 
-# Start
-python run.py
+# Start - see the warning below: plain `python run.py` does NOT read .env
+dotenv run -- python run.py
 ```
 
 **Access**: http://localhost:5000
 
-> ⚠️ **The `cp .env.example .env` step is required**: without it,
-> `DEFAULT_ADMIN_PASSWORD` is not set and the application generates a
-> random admin password on first startup (never displayed anywhere)
-> instead of the default `admin123` below.
+> ⚠️ **`.env` is not loaded automatically**: unlike the Docker path
+> above (where `env_file:` injects it into the container), a plain
+> `python run.py` never reads `.env` - there is no `load_dotenv()` call
+> anywhere in this app (confirmed by testing: a `SECRET_KEY` placed in
+> `.env` is silently ignored by `python run.py`, while `dotenv run --
+> python run.py` picks it up correctly). `dotenv` is the CLI tool that
+> ships with the `python-dotenv` package already in `requirements.txt`
+> (`pip install -r requirements.txt` installs it). Alternatively, export
+> the variables into your shell yourself, e.g. `set -a && source .env &&
+> set +a && python run.py`. Without either, the app falls back to a
+> freshly-generated random `SECRET_KEY` and a random, never-displayed
+> `DEFAULT_ADMIN_PASSWORD` on every start - not the `admin123` default
+> from `.env.example`.
 
 ---
 
@@ -81,7 +96,9 @@ If you use **Keycloak**, **Okta**, **Auth0** or another OIDC provider:
    OIDC_CLIENT_SECRET=votre-client-secret
    OIDC_REDIRECT_URI=http://localhost:5000/oidc/callback
    ```
-3. Restart the application: `python run.py`
+3. Restart the application: `docker compose up -d` (Docker) or
+   `dotenv run -- python run.py` (local install - plain `python run.py`
+   does not read `.env`, see the warning above)
 4. Log in via the **Log in with SSO** button
 
 > ⚠️ **Info**: See the [Administrator Guide](ADMIN_GUIDE.md) for complete SSO/OIDC configuration.
@@ -123,7 +140,7 @@ If you use **Keycloak**, **Okta**, **Auth0** or another OIDC provider:
 1. **Admin** > **Automation** > **Full generation**
 2. Configure the rotation order
 3. Select the period
-4. **Simulate** → **Generate**
+4. **Preview (Dry Run)** → **Generate**
 
 ---
 
@@ -140,7 +157,7 @@ If you use **Keycloak**, **Okta**, **Auth0** or another OIDC provider:
 
 #### 🔹 Export to Google Calendar
 1. **Profile** > **ICS Token**
-2. **Generate a new token**
+2. **Generate a token**
 3. Copy the URL: `http://localhost:5000/export/shifts?scope=my&token=YOUR_TOKEN`
 4. In Google Calendar: **Settings** > **Add calendar** > **From URL**
 
@@ -152,7 +169,7 @@ If you use **Keycloak**, **Okta**, **Auth0** or another OIDC provider:
 
 | Action | Path |
 |--------|--------|
-| Dashboard | `/` or `/index` |
+| Dashboard | `/` |
 | Schedule | `/schedule` |
 | On-call | `/oncall` |
 | Leave | `/leave` |

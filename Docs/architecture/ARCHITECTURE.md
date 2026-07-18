@@ -19,7 +19,7 @@ graph TB
         Repos["repositories/<br/>data access"]
         Models["models/<br/>SQLAlchemy ORM"]
         Auth["auth/<br/>decorators, OIDC, user management"]
-        Utils["utils/<br/>automation, cache, export, logging, security, health"]
+        Utils["utils/<br/>automation, export, logging, health"]
 
         Routes --> Services
         Services --> Repos
@@ -222,9 +222,10 @@ both flows.
   `csrf_token` field, JS `fetch()` calls send the
   `X-CSRFToken` header (read from a `<meta name="csrf-token">` tag in
   `base.html`).
-- **Talisman**: HTTP security headers (X-Content-Type-Options,
-  X-Frame-Options, etc.), enabled only when `TALISMAN_FORCE_HTTPS=true`
-  (see `app/config/`).
+- **Talisman**: HTTP security headers (CSP, X-Content-Type-Options,
+  X-Frame-Options, etc.) always active. `TALISMAN_FORCE_HTTPS` only
+  controls the HTTP→HTTPS redirect and HSTS, not the other headers —
+  only enable it behind a reverse proxy that terminates TLS.
 - **Passwords**: hashed via Werkzeug (`generate_password_hash`),
   never stored in plain text, never serialized (`User.to_dict()` explicitly
   excludes `password_hash` and `ics_token`).

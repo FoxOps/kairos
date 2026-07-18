@@ -38,12 +38,11 @@
 ### 1.2 Required Software
 | Software | Minimum Version | Description |
 |----------|------------------|-------------|
-| Python | 3.8+ | Programming language |
-| pip | 26.1+ | Python package manager |
+| Python | 3.11+ | Programming language (the codebase uses PEP 604 `X \| None` type hints, which require at least Python 3.10; `docker/Dockerfile` and `.gitlab-ci/.gitlab-ci.yml` both use 3.11, the only version this app is actually built/tested against) |
+| pip | 26.1.2+ | Python package manager (`requirements.txt` pins `pip>=26.1.2` for CVE fixes) |
 | Git | 2.20+ | Version control |
 | PostgreSQL | 12+ | Database (recommended) |
 | SQLite | 3.31+ | Embedded database (for development) |
-| Redis | 6.0+ | Cache (optional) |
 
 ### 1.3 Hardware Resources
 - **CPU**: 2 cores minimum (4 recommended)
@@ -79,12 +78,14 @@ venv\Scripts\activate
 
 ### 2.3 Install dependencies
 ```bash
-# Install base dependencies
+# Install base dependencies - already includes the PostgreSQL driver
+# (psycopg[binary]) and the MySQL/MariaDB driver (PyMySQL), both listed
+# in requirements.txt; no extra install step is needed for either
+# database. The app has no Redis/caching integration at all (caching is
+# handled outside the app, e.g. by a reverse proxy), so there is no
+# `redis` package to install either.
 pip install --upgrade pip
 pip install -r requirements.txt
-
-# Install optional dependencies (PostgreSQL, Redis)
-pip install psycopg[binary] redis
 ```
 
 ---
@@ -96,6 +97,11 @@ Create a `.env` file at the project root with the following variables:
 
 ```bash
 # Base configuration
+# Note: outside Docker, FLASK_ENV itself has no effect on the app - it
+# is read only by docker/entrypoint.sh to choose gunicorn vs `python
+# run.py`. For this bare-metal guide, that choice is simply whichever
+# command you run (see sections 4/5 below) - kept here mainly as a
+# documented convention some process managers still check.
 FLASK_ENV=production
 SECRET_KEY=your_secret_key_here_generated_with_secrets_token_urlsafe_32
 
@@ -113,20 +119,28 @@ DATABASE_URL=sqlite:///app.db
 SESSION_COOKIE_SECURE=True
 SESSION_COOKIE_HTTPONLY=True
 SESSION_COOKIE_SAMESITE=Lax
-REMEMBER_COOKIE_SECURE=True
-PREFERRED_URL_SCHEME=https
-WTF_CSRF_ENABLED=True
+# CSRF protection (Flask-WTF's CSRFProtect) and Gzip/Brotli response
+# compression (Flask-Compress) are both always on unconditionally
+# (app/__init__.py) - there is no WTF_CSRF_ENABLED/COMPRESS_ENABLED
+# switch read by the app, so neither variable is listed here.
+# REMEMBER_COOKIE_SECURE/PREFERRED_URL_SCHEME are likewise not read by
+# app/config/base.py - only REMEMBER_COOKIE_DURATION and
+# SESSION_PROTECTION are, for the "remember me" cookie.
 
 # Logging configuration
 LOG_LEVEL=WARNING
-LOG_DIR=./logs
+# LOG_DIR is not actually read by app/utils/logging/logger.py - the
+# app/error/http/audit log files always go to <current working
+# directory>/logs (hardcoded), regardless of this variable. Run the
+# app from the directory you want `logs/` created under (e.g. the
+# project root, matching the systemd WorkingDirectory in Appendix A.1
+# below) rather than relying on LOG_DIR.
 
 # Performance configuration
 RATE_LIMIT_ENABLED=True
-COMPRESS_ENABLED=True
 
 # Authentication configuration
-# LOGIN_DISABLED=False  # This option was removed for security reasons
+# LOGIN_DISABLED=False  # Never enable this in production
 ```
 
 ### 3.2 Generate a secret key
@@ -239,7 +253,9 @@ uwsgi --ini uwsgi.ini
 
 **Recommended method for the whole project** (see the warning
 at the top of this guide) - the actual `Dockerfile`/`docker-compose.yml` live
-under `docker/`, with the image published to a registry by CI. This guide
+under `docker/`, with the image meant to be pulled from a Harbor registry
+(there is currently no CI job that builds/publishes it automatically -
+see [`docker.md`](docker.md) for the details). This guide
 specifically covers bare-metal deployment (Gunicorn/uWSGI), so it does not
 maintain a separate copy of that configuration here.
 
@@ -362,7 +378,7 @@ DATABASE_URL=mysql://kairos_user:your_password@localhost:3306/kairos
 ```
 
 See also
-[`DEPLOYMENT_ADVANCED.md`](DEPLOYMENT_ADVANCED.md#-ajouter-mysqlmariadb-devtest-local)
+[`DEPLOYMENT_ADVANCED.md`](DEPLOYMENT_ADVANCED.md#-add-mysqlmariadb-local-devtest)
 for an optional docker-compose overlay equivalent to this local case.
 
 ---
@@ -372,29 +388,36 @@ for an optional docker-compose overlay equivalent to this local case.
 ### 8.1 Essential variables
 | Variable | Description | Default Value | Recommendation |
 |----------|-------------|----------------|----------------|
-| `FLASK_ENV` | Runtime environment | `default` | `production` |
+| `FLASK_ENV` | Not read by the app itself - only by `docker/entrypoint.sh` (Docker only) | n/a outside Docker | n/a outside Docker |
 | `SECRET_KEY` | Flask secret key | Random | **REQUIRED** |
 | `DATABASE_URL` | Database URL | `sqlite:///app.db` | PostgreSQL |
 | `LOG_LEVEL` | Logging level | `INFO` | `WARNING` |
 | `RATE_LIMIT_ENABLED` | Enable rate limiting | `True` | `True` |
-| `COMPRESS_ENABLED` | Enable compression | `True` | `True` |
 
 ### 8.2 Security variables
 | Variable | Description | Default Value | Recommendation |
 |----------|-------------|----------------|----------------|
-| `SESSION_COOKIE_SECURE` | HTTPS-only cookies | `True` | `True` |
+| `SESSION_COOKIE_SECURE` | HTTPS-only cookies | `False` | `True` |
 | `SESSION_COOKIE_HTTPONLY` | Cookies not accessible via JS | `True` | `True` |
 | `SESSION_COOKIE_SAMESITE` | SameSite policy | `Lax` | `Lax` or `Strict` |
-| `REMEMBER_COOKIE_SECURE` | Remember me HTTPS | `True` | `True` |
-| `WTF_CSRF_ENABLED` | Enable CSRF | `True` | `True` |
-| `PREFERRED_URL_SCHEME` | URL scheme | `https` | `https` |
+
+CSRF protection (Flask-WTF's `CSRFProtect`) and Gzip/Brotli response
+compression (Flask-Compress) are both unconditionally enabled in
+`app/__init__.py` - there is no `WTF_CSRF_ENABLED`/`COMPRESS_ENABLED`
+switch read anywhere in `app/config/base.py`, so neither has any effect
+if set. `REMEMBER_COOKIE_SECURE` and `PREFERRED_URL_SCHEME` are
+likewise not read by the app - the actual "remember me" cookie
+settings are `REMEMBER_COOKIE_DURATION` and `SESSION_PROTECTION`.
 
 ### 8.3 Performance variables
+There is no `DATABASE_POOL_SIZE`/`DATABASE_MAX_OVERFLOW`/
+`DATABASE_POOL_RECYCLE` triplet read by the app. The real mechanism is
+a single JSON-encoded `SQLALCHEMY_ENGINE_OPTIONS` variable, passed
+straight through to SQLAlchemy's `create_engine()`:
+
 | Variable | Description | Default Value | Recommendation |
 |----------|-------------|----------------|----------------|
-| `DATABASE_POOL_SIZE` | Connection pool size | `5` (SQLite), `10` (PostgreSQL) | 10-20 |
-| `DATABASE_MAX_OVERFLOW` | Pool overflow | `10` (SQLite), `20` (PostgreSQL) | 20-40 |
-| `DATABASE_POOL_RECYCLE` | Connection recycle (s) | `3600` | 3600 |
+| `SQLALCHEMY_ENGINE_OPTIONS` | JSON dict of SQLAlchemy engine options | `{}` | `{"pool_pre_ping": true, "pool_recycle": 3600}` for PostgreSQL/MySQL/MariaDB (see 7.3.1 above) |
 
 ---
 
@@ -479,7 +502,7 @@ systemctl status kairos
 
 # Check resource usage
 top
-h top
+htop
 ```
 
 ---

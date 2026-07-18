@@ -49,8 +49,8 @@ Check that:
 1. Your ICS token is valid (regenerate it from **Profile > ICS Token**
    if needed).
 2. The URL is correct (`scope=my` for your personal schedule,
-   `scope=all` for everyone — requires being an admin or having an
-   admin token to be useful).
+   `scope=all` for everyone — not restricted to admins, any valid token
+   can request it in the current version).
 3. Your calendar application supports ICS subscriptions by URL.
 
 ### How do I modify an existing shift/on-call/leave?
@@ -70,13 +70,25 @@ In the `.env` file:
 LOGIN_DISABLED=true
 ```
 
+Then start with `dotenv run -- python run.py` (or `docker compose up -d`,
+which loads `.env` automatically) - a plain `python run.py` does not read
+`.env` on its own, see "What is the default administrator password?"
+above.
+
 > ⚠️ **Never use this option in production!**
 
 ### What is the default administrator password?
 
-`admin@kairos.local` / `admin123` — **but only if you copied
-`.env.example` to `.env`** before the first startup (`cp .env.example .env`).
-Without this file, `DEFAULT_ADMIN_PASSWORD` is not set and the
+`admin@kairos.local` / `admin123` — **but only if `DEFAULT_ADMIN_PASSWORD`
+is actually present in the process environment** at first startup.
+Copying `docker/.env.example` to `.env` is enough for the Docker path
+(`env_file:` in `docker-compose.yml` loads it into the container). For a
+local, non-Docker `python run.py`, copying `.env.example` to `.env` is
+**not** enough by itself - the app never calls `load_dotenv()`, so `.env`
+is silently ignored unless you load it yourself, e.g. `dotenv run --
+python run.py` (the `dotenv` CLI ships with the `python-dotenv`
+dependency) or `set -a && source .env && set +a`. Without
+`DEFAULT_ADMIN_PASSWORD` actually reaching the environment, the
 application generates a random password at startup, never displayed
 anywhere. See
 [`guides/QUICK_START.md`](QUICK_START.md).

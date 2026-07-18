@@ -12,9 +12,17 @@
 
 ## 🚀 Quick start (recommended method)
 
-The image is built and published automatically by CI on every
-commit to the default branch (job `build_docker`, see
-`.gitlab-ci/.gitlab-ci.yml`), on a self-hosted Harbor registry.
+The image is meant to be pulled from a self-hosted Harbor registry
+(`harbor.leviia.com`). **Note**: as of this writing,
+`.gitlab-ci/.gitlab-ci.yml` has no job that builds/pushes this image -
+its `build` stage only runs `build_docs` (publishes `Docs/` as a
+GitLab Pages artifact) - and this repo is hosted on GitHub with no
+equivalent GitHub Actions workflow either (see `ROADMAP.md`), so no CI
+pipeline actually runs against it today. Until that automation exists,
+someone has to build and push the image to Harbor manually (e.g.
+`docker build -f docker/Dockerfile -t
+harbor.leviia.com/<HARBOR_PROJECT>/kairos:latest .` from the repo
+root, then `docker push`) before `KAIROS_IMAGE` below can be pulled.
 
 ### 1️⃣ Grab the two required files
 
@@ -39,9 +47,9 @@ nano .env
 **Minimal variables to change:**
 ```env
 # Image to pull from the Harbor registry - replace <HARBOR_PROJECT> with
-# the actual Harbor project name (see the CI_REGISTRY_IMAGE CI/CD
-# variable, configured to point to Harbor rather than the GitLab
-# registry).
+# the actual Harbor project name. No CI job currently sets/publishes
+# this automatically (see the note above) - whoever pushes the image
+# to Harbor must pick and communicate the project/tag used here.
 KAIROS_IMAGE=harbor.leviia.com/<HARBOR_PROJECT>/kairos:latest
 
 SECRET_KEY=your_secret_key
@@ -57,8 +65,10 @@ docker compose up -d
 `docker-compose.yml` (derived from `docker-compose.example.yml`) has no
 `build:` section - it can only pull the image from the registry, never
 build it locally. Development mode (Flask with reloader) or
-production (Gunicorn) depending on `FLASK_ENV` in `.env` (`development` by
-default).
+production (Gunicorn) depending on `FLASK_ENV` in `.env` (`production` by
+default in `docker/.env.example` - the image's own baked-in fallback,
+used only if the variable is unset entirely, is `development`, see
+`docker/Dockerfile`).
 
 ### 4️⃣ Access the application
 
@@ -163,10 +173,10 @@ credentials identical to the recommended section above).
 | Variable | Description | Default | Required |
 |----------|-------------|--------|--------|
 | `KAIROS_IMAGE` | Image to use (registry) | required in `docker/docker-compose.example.yml`; `kairos:dev` (local build) in `docker/docker-compose.yml` | ✅ / ❌ depending on the file |
-| `FLASK_ENV` | Mode (development/production) | development | ❌ |
+| `FLASK_ENV` | Mode (development/production) | `production` (set explicitly in `docker/.env.example`; the image's own baked-in fallback if unset is `development`) | ❌ |
 | `SECRET_KEY` | Flask secret key | required | ✅ |
 | `DATABASE_URL` | Database URL (see note below) | sqlite:////app/data/app.db | ❌ |
-| `TALISMAN_FORCE_HTTPS` | Force HTTPS - `false` without a TLS reverse proxy | `false` (dev/tests), `true` (prod) | ❌ |
+| `TALISMAN_FORCE_HTTPS` | Force HTTPS - `false` without a TLS reverse proxy | `false` (both in `docker/.env.example` and the app's own fallback in `app/config/base.py` when unset - there is no separate prod default; flip it to `true` yourself once a TLS-terminating reverse proxy is in place, see "In production" below) | ❌ |
 | `DEFAULT_ADMIN_PASSWORD` | Admin password | admin123 | ✅ |
 
 > **`DATABASE_URL` note**: four slashes (`sqlite:////app/data/app.db`),
@@ -208,7 +218,7 @@ DEFAULT_ADMIN_PASSWORD=your_secure_password
 
 ### docker/Dockerfile
 - **Base**: Python 3.11 Alpine (ultra-lightweight)
-- **Dependencies**: Installs `requirements.txt` + Gunicorn
+- **Dependencies**: Installs `docker/requirements.txt` (includes Gunicorn, `psycopg[binary]`, and `PyMySQL` - not the root `requirements.txt`)
 - **User**: `appuser` (non-root) for security
 - **Size**: Optimized with Alpine and cleanup of build dependencies
 - **Build context**: `..` (repo root) - the `Dockerfile` copies
@@ -239,7 +249,7 @@ DEFAULT_ADMIN_PASSWORD=your_secure_password
     without building if `KAIROS_IMAGE` is set and `--no-build` is passed - see
     above. And, if enabled, email reminders and/or
     backups - same container, see above - see
-    [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-configuration-des-notifications)
+    [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-notification-configuration)
     for the SMTP configuration and
     [`deployment/BACKUP_GUIDE.md`](BACKUP_GUIDE.md) for backups
 - **`oidc-mock` service**: optional, behind the `oidc-mock` Compose
@@ -309,13 +319,12 @@ This basic configuration uses **SQLite** and is optimized for:
 - **Portability**: Works anywhere with Docker
 - **Lightness**: ~150 MB image
 
-### Adding PostgreSQL and Redis
+### Adding PostgreSQL or MySQL/MariaDB
 
 See the advanced guide: [DEPLOYMENT_ADVANCED.md](DEPLOYMENT_ADVANCED.md)
 
 This guide explains how to extend this configuration to use:
-- **PostgreSQL** as the relational database
-- **Redis** as a cache
+- **PostgreSQL** or **MySQL/MariaDB** as the relational database
 - **Gunicorn with multiple workers** for better performance
 
 ⚠️ **Recommendation**: Master the basic SQLite deployment first before adding these components.
@@ -412,8 +421,8 @@ docker compose up -d
 
 ## 📞 Support
 
-For advanced configurations (PostgreSQL, Redis, etc.), see:
-- [Advanced Guide: PostgreSQL and Redis](DEPLOYMENT_ADVANCED.md)
+For advanced configurations (PostgreSQL, MySQL/MariaDB, etc.), see:
+- [Advanced Guide: PostgreSQL or MySQL/MariaDB](DEPLOYMENT_ADVANCED.md)
 
 For specific issues, check:
 1. The logs with `docker compose logs`

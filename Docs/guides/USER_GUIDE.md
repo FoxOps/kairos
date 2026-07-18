@@ -2,7 +2,7 @@
 
 > **Version**: 1.0.0 - User Documentation
 > **Last updated**: June 2026
-> **Application**: Kairos v1.0.0 (Development)
+> **Application**: Kairos v1.0.0-rc1 (`app/utils/health.py::APP_VERSION_DEFAULT`, also shown at `/version` and in the app footer)
 
 ---
 
@@ -89,7 +89,10 @@ pip install -r requirements.txt
 
 Copy the example file, which already contains working development values
 (including `DEFAULT_ADMIN_PASSWORD=admin123`, without which a random,
-unshown admin password would be generated):
+unshown admin password would be generated) - but see the important
+warning in step 5 below: this file must actually be *loaded* into the
+process environment, which a plain `python run.py` does not do on its
+own:
 
 ```bash
 cp .env.example .env
@@ -120,17 +123,29 @@ Full list of variables: see
 
 #### 5. Start the application
 
+> ⚠️ **`.env` is not loaded automatically by `python run.py`**: there is
+> no `load_dotenv()` call anywhere in this app, so a plain `python run.py`
+> silently ignores everything in `.env` (confirmed by testing: values
+> placed in `.env` are not seen by `Config`). Use the `dotenv` CLI that
+> ships with the `python-dotenv` dependency already in `requirements.txt`,
+> or export the variables into your shell yourself.
+
 ```bash
-python run.py
+dotenv run -- python run.py
+# or: set -a && source .env && set +a && python run.py
 ```
 
 > **Note**: The first run will automatically create (see
 > `run.py::create_default_data`):
 > - A default administrator user
 >   (email `DEFAULT_ADMIN_EMAIL`, password `DEFAULT_ADMIN_PASSWORD` —
->   `admin@kairos.local` / `admin123` with the values from `.env.example`)
+>   `admin@kairos.local` / `admin123` with the values from `.env.example`,
+>   **only if `.env` was actually loaded** as described above - otherwise
+>   both fall back to a freshly-generated random value, with the password
+>   never displayed anywhere)
 > - A default group
-> - Default shift types (morning, afternoon, evening)
+> - Default shift types (see "Shift Type Management" below for their real
+>   names/hours)
 
 The application will be accessible at: **http://localhost:5000**
 
@@ -150,10 +165,9 @@ The application will be accessible at: **http://localhost:5000**
    DATABASE_URL=postgresql://kairos_user:password@localhost/kairos
    ```
 
-3. Install the PostgreSQL driver:
-   ```bash
-   pip install psycopg2-binary
-   ```
+3. The PostgreSQL driver (`psycopg[binary]`, psycopg 3) is already included in
+   `requirements.txt` - no separate install step is needed if you followed
+   step 3 of the installation above.
 
 See also [`deployment/DEPLOYMENT_ADVANCED.md`](../deployment/DEPLOYMENT_ADVANCED.md)
 for a complete production PostgreSQL configuration.
@@ -226,7 +240,7 @@ Full list: [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIA
 To export your schedule to an external calendar:
 
 1. Go to **"Profile"** > **"ICS Token"**
-2. Click **"Generate a new token"**
+2. Click **"Generate a token"**
 3. Copy the generated token
 4. Use it in the export URL: `/export/shifts?scope=my&token=YOUR_TOKEN`
 
@@ -296,7 +310,7 @@ To export your schedule to an external calendar:
    - **Administrator**: Check to grant admin rights
 3. Click **"Save"**
 
-> 💡 **Tip**: If you don't specify a password, the user will have to change it on their first login.
+> 💡 **Tip**: If you don't specify a password, the user is created with the default password `password123` - there is no forced password-change prompt on first login, so communicate this password to the user and ask them to change it manually from their profile.
 
 ### Editing a user
 
@@ -379,9 +393,9 @@ The application automatically creates 3 shift types:
 
 | Name | Label | Start time | End time |
 |-----|---------|----------------|--------------|
-| `morning` | Morning | 8:00 AM | 12:00 PM |
-| `afternoon` | Afternoon | 12:00 PM | 6:00 PM |
-| `evening` | Evening | 6:00 PM | 10:00 PM |
+| `morning` | `07h-15h` | 7:00 AM | 3:00 PM |
+| `afternoon` | `09h-17h` | 9:00 AM | 5:00 PM |
+| `evening` | `13h-21h` | 1:00 PM | 9:00 PM |
 
 ### Listing shift types
 
@@ -431,9 +445,9 @@ A shift represents a work period assigned to a user for a specific day. It conta
 
 1. Go to the **Home** page
 2. You will see a calendar with:
-   - **Shifts**: Displayed in blue
-   - **On-Call**: Displayed in red
-   - **Leave**: Displayed in green
+   - **Shifts**: Displayed in purple (theme primary color)
+   - **On-Call**: Displayed in cyan (theme info color)
+   - **Leave**: Displayed in red (theme error/danger color)
 3. Navigate between months using the arrows
 4. Click an event for more details
 
@@ -530,7 +544,7 @@ An on-call period is a time during which a user is responsible and reachable out
 #### Method 1: Interactive calendar (Home page)
 
 1. Go to the **Home** page
-2. On-call periods are displayed in **red** in the calendar
+2. On-call periods are displayed in **cyan** in the calendar
 3. Hover over an on-call period to see the details
 
 #### Method 2: List of on-call periods
@@ -599,7 +613,7 @@ A leave period represents a period of absence for a user. It can be:
 #### Method 1: Interactive calendar (Home page)
 
 1. Go to the **Home** page
-2. Leave periods are displayed in **green** in the calendar
+2. Leave periods are displayed in **red** in the calendar
 3. Hover over a leave period to see the details
 
 #### Method 2: List of leave periods
@@ -683,7 +697,7 @@ The **iCalendar (ICS)** format is a standard for exchanging calendar information
 
 1. Log in to Kairos
 2. Go to **Profile** > **ICS Token**
-3. Click **"Generate a new token"**
+3. Click **"Generate a token"**
 4. Copy the generated token
 
 #### Step 2: Get the export URL
@@ -711,16 +725,16 @@ http://your-server:5000/export/oncall?scope=my&token=YOUR_TOKEN
 http://your-server:5000/export/leaves?scope=my&token=YOUR_TOKEN
 ```
 
-#### Exporting everything (Administrator)
+#### Exporting everything (any user, not admin-restricted)
 ```
 # All shifts
-http://your-server:5000/export/shifts?scope=all&token=YOUR_ADMIN_TOKEN
+http://your-server:5000/export/shifts?scope=all&token=YOUR_TOKEN
 
 # All on-call periods
-http://your-server:5000/export/oncall?scope=all&token=YOUR_ADMIN_TOKEN
+http://your-server:5000/export/oncall?scope=all&token=YOUR_TOKEN
 
 # All leave
-http://your-server:5000/export/leaves?scope=all&token=YOUR_ADMIN_TOKEN
+http://your-server:5000/export/leaves?scope=all&token=YOUR_TOKEN
 ```
 
 #### Step 3: Import into your calendar
@@ -751,15 +765,18 @@ http://your-server:5000/export/leaves?scope=all&token=YOUR_ADMIN_TOKEN
 3. Paste your Kairos export URL
 4. Click **"Subscribe"**
 
-### Exporting all schedules (Administrator)
+### Exporting all schedules
 
-As an administrator, you can export the schedules of all users:
+Any user, not just administrators, can export the schedules of all
+users - `scope=all` is not restricted by role in the current version:
 
 ```
-http://your-server:5000/export/shifts?scope=all&token=YOUR_ADMIN_TOKEN
+http://your-server:5000/export/shifts?scope=all&token=YOUR_TOKEN
 ```
 
-> ⚠️ **Warning**: This URL grants access to ALL schedules. Keep it secret!
+> ⚠️ **Warning**: This URL grants access to ALL schedules, and any valid
+> ICS token (not only an administrator's) can be used to request it.
+> Keep it secret!
 
 ### Automatic updates
 
@@ -806,68 +823,27 @@ Kairos offers a powerful automation system to automatically generate:
 2. You will see the list of users eligible for on-call
 3. For each user:
    - **Include in rotation**: Check to include the user
-   - **Position**: Set the rotation order (1 = first, 2 = second, etc.)
+   - **Order**: Drag and drop the user up/down in the list to set their
+     rotation position
 4. Click **"Save order"** to save
 
-#### Automatically generating on-call periods
+#### Automatically generating on-call periods and shifts
+
+There is no separate "Shifts" automation page - shift generation is not
+independently configurable (no per-day/per-shift-type headcount
+setting). A single **Full generation** screen generates both the
+on-call rotation and the shifts that follow from it in one operation:
 
 1. Go to **Admin** > **Automation** > **Full generation**
-2. Select the period:
+2. Configure the on-call rotation order (see above)
+3. Select the period:
    - **Start date**: First Friday of the period
    - **End date**: Last day of the period
-3. Click **"Simulate"** to see a preview (dry run)
-4. Check that the result suits you
-5. Click **"Generate"** to create the on-call periods
+4. Click **"Preview (Dry Run)"** to see a preview without saving anything
+5. Check that the result suits you
+6. Click **"Generate"** to create the on-call periods and the shifts
 
-> 💡 **Tip**: Always use **"Simulate"** mode before generating to verify the configuration is correct.
-
-### Automatic shift generation
-
-#### Configuring shift rules
-
-1. Go to **Admin** > **Automation** > **Shifts**
-2. Configure daily requirements:
-   - **Monday**: Number of people per shift type
-   - **Tuesday**: Number of people per shift type
-   - **Wednesday**: Number of people per shift type
-   - **Thursday**: Number of people per shift type
-   - **Friday**: Number of people per shift type
-3. For each day and each shift type (morning, afternoon, evening), specify the number of people needed
-
-Example configuration:
-```
-Monday:
-  - Morning: 2 people
-  - Afternoon: 2 people
-  - Evening: 1 person
-
-Tuesday:
-  - Morning: 2 people
-  - Afternoon: 2 people
-  - Evening: 1 person
-```
-
-#### Automatically generating shifts
-
-1. Go to **Admin** > **Automation** > **Shifts**
-2. Select the period:
-   - **Start date**: First day of the period
-   - **End date**: Last day of the period
-3. Click **"Simulate"** to see a preview
-4. Check that the result suits you
-5. Click **"Generate"** to create the shifts
-
-### Full generation (On-Call + Shifts)
-
-To generate both on-call periods and shifts in a single operation:
-
-1. Go to **Admin** > **Automation** > **Full generation**
-2. Configure the on-call rotation order
-3. Select the period
-4. Click **"Simulate"** to see a preview
-5. Click **"Generate"** to create the on-call periods and shifts
-
-> 💡 **Tip**: Full generation takes on-call periods into account to avoid conflicts with shifts.
+> 💡 **Tip**: Always use **"Preview (Dry Run)"** mode before generating to verify the configuration is correct.
 
 ### Refreshing existing shifts
 
@@ -887,13 +863,22 @@ Kairos uses the following rules by default:
 #### For on-call periods:
 - Rotation in the order of the list of eligible users
 - Each on-call period lasts 7 days (from Friday 9:00 PM to the following Friday 7:00 AM)
-- A user cannot be on call two weeks in a row
+- Minimum 2-week gap required between two on-calls for the same user
+  (stronger than "not two weeks in a row": after finishing an on-call, a
+  user is skipped for the next rotation too and can only return on the
+  third one)
 
-#### For shifts:
-- 2 people per shift (morning, afternoon, evening)
+#### For shifts (fixed rules, not configurable through the UI):
+- The 1pm-9pm slot is reserved for that week's on-call person, if they
+  belong to a schedule group
+- Slot rotation: whoever was on the 1pm-9pm slot one week must be on the
+  7am-3pm slot the following week
+- Everyone else defaults to the 9am-5pm slot (several people can share it)
+- If only 2 people are available on a given day, the one who is *not*
+  on-call is put on the 7am-3pm slot
 - Monday to Friday only
-- Fair distribution among eligible users
-- Respects leave and on-call periods
+- Respects leave and on-call periods (no shift is generated for a user on
+  leave that day)
 
 ---
 
@@ -914,6 +899,8 @@ The dashboard displays:
 - **Number of shifts**: Total shifts scheduled
 - **Number of on-call periods**: Total on-call periods scheduled
 - **Number of leave periods**: Total leave periods recorded
+- **Pending swap requests**: Number of shift swap requests awaiting admin
+  review
 
 ### Advanced statistics
 
@@ -924,8 +911,17 @@ The dashboard displays:
 From the dashboard, you can quickly access:
 - **Users**: Manage user accounts
 - **Groups**: Manage user groups
+- **Schedule**: View/manage shifts
 - **Shift Types**: Configure shift types
+- **On-Call**: View/manage on-call periods
+- **Leave**: View/manage leave periods
+- **Swaps**: Review pending shift swap requests
 - **Automation**: Configure and run automation
+- **Backups**: Trigger/download database backups
+- **Audit log**: Consult the who-did-what-when trail
+- **Notification targets**: Manage external (Slack/Discord/webhook...) notification destinations
+- **Service accounts**: Manage API keys for the public JSON API
+- **Settings**: Org-wide runtime settings (timezone, language, pagination, retention, etc.)
 
 ---
 
