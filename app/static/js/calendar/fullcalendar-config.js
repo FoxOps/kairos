@@ -28,6 +28,7 @@ import {
     focusElement,
 } from '../utils/accessibility.js';
 import { getString } from '../utils/i18n.js';
+import { initDatePicker, syncDatePicker } from '../utils/date-picker.js';
 
 document.addEventListener('DOMContentLoaded', function () {
     const calendarEl = document.getElementById('calendar');
@@ -521,10 +522,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 modal.addEventListener('cancel', () => {
                     announceToScreenReader(getString('shift_creation_cancelled'), 'polite');
                 });
+
+                // Bind the Vanilla Calendar Pro picker on the two
+                // datetime-local inputs - only reachable here, on first
+                // build: these inputs don't exist yet at page load, so
+                // the generic initDatePickers(document) call in main.js
+                // never sees them.
+                initDatePicker(modal.querySelector('#shift-start'));
+                initDatePicker(modal.querySelector('#shift-end'));
             } else {
-                // Update the values
-                modal.querySelector('#shift-start').value = formatDateForInput(start);
-                modal.querySelector('#shift-end').value = formatDateForInput(end);
+                // Update the values, then resync each picker's popup
+                // with the new value - setting .value directly (unlike a
+                // user's click on a day) doesn't go through the
+                // calendar's own change handler.
+                const startInput = modal.querySelector('#shift-start');
+                const endInput = modal.querySelector('#shift-end');
+                startInput.value = formatDateForInput(start);
+                endInput.value = formatDateForInput(end);
+                syncDatePicker(startInput);
+                syncDatePicker(endInput);
             }
 
             // Open the modal (showModal() natively handles the focus trap

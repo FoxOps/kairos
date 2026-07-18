@@ -39,6 +39,7 @@ import {
     copyUrlLeavesMy,
 } from './clipboard/copy-token.js';
 import { saveRotationOrder } from './automation/rotation-order.js';
+import { initDatePickers } from './utils/date-picker.js';
 
 let themeManager;
 let navbarMenu;
@@ -47,6 +48,12 @@ document.addEventListener('DOMContentLoaded', () => {
     navbarMenu = new NavbarMenu();
     initFlashMessages();
     initConfirmDeleteActions();
+    // Replaces every native <input type="date">/<input type="datetime-local">
+    // present at page load with the Vanilla Calendar Pro popup - see
+    // date-picker.js. Inputs created later (e.g. the dynamically-built
+    // shift-creation modal in fullcalendar-config.js) bind themselves
+    // separately, since they don't exist yet at this point.
+    initDatePickers();
 });
 
 // Export functions for the templates (inline onclick, FullCalendar callbacks)
