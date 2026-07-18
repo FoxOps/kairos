@@ -528,7 +528,7 @@ class AdvancedShiftAutomation:
 
             if oncall_periods_to_regenerate:
                 # Find the period to cover: from the first Friday before
-                # the leave to the last Friday after the leave ends + 7
+                # the leave to the last Friday after the leave ends + 30
                 # days (to cover the whole on-call)
 
                 # Find the first Friday before or during the leave
@@ -543,11 +543,11 @@ class AdvancedShiftAutomation:
 
                 # Extend the period to cover complete on-calls
                 shift_period_start = first_friday - timedelta(
-                    days=7
-                )  # Take one week before
+                    days=30
+                )  # Take 30 days before
                 shift_period_end = last_friday + timedelta(
-                    days=7
-                )  # Take one week after
+                    days=30
+                )  # Take 30 days after
 
             # Delete and regenerate shifts for the whole affected period
             current_date = shift_period_start
@@ -582,7 +582,7 @@ class AdvancedShiftAutomation:
 
                 # The deletion above only targets the leave's on-calls
                 # (leave.user_id); the period to regenerate is padded by
-                # ±7 days and can therefore overlap OTHER users' on-calls,
+                # ±30 days and can therefore overlap OTHER users' on-calls,
                 # which were never deleted. Since
                 # generate_oncall_schedule always creates new on-calls
                 # without checking what already exists, the whole slot

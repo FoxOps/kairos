@@ -587,7 +587,7 @@ class TestRebalanceAfterLeave:
         self, test_app, test_group, test_user, second_user
     ):
         """Regression test: the period regenerated after a leave is
-        extended by ±7 days (padding) around the affected Fridays, and
+        extended by ±30 days (padding) around the affected Fridays, and
         can therefore include on-calls for OTHER Fridays already
         assigned to other users. The old code only removed the leave
         owner's own on-calls (leave.user_id) before regenerating across
