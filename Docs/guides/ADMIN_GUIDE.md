@@ -130,17 +130,24 @@ Active across the entire application (`Flask-WTF` `CSRFProtect`) —
 nothing to configure on the admin side, but good to know if
 you script calls to the application (bulk import, third-party integration):
 any POST/PUT/PATCH/DELETE request without a valid CSRF token is rejected
-with `400 Bad Request`. See [`api/API.md`](../api/API.md#authentification)
+with `400 Bad Request`. See [`api/API.md`](../api/API.md#authentication)
 for the procedure to follow from a script.
 
 #### HTTP security headers (Talisman)
 
-`Flask-Talisman` (X-Content-Type-Options, X-Frame-Options, etc.) is only
-enabled if `TALISMAN_FORCE_HTTPS=true` in `.env` — relevant only behind a
-TLS reverse proxy (see
+`Flask-Talisman` is **always active** outside the test config (`app/__init__.py`)
+— it applies the CSP, `X-Content-Type-Options`, `X-Frame-Options`, etc. on
+every request regardless of `TALISMAN_FORCE_HTTPS`. `TALISMAN_FORCE_HTTPS`
+(`.env`, default `false`) only controls the HTTP→HTTPS redirect and HSTS
+header, not the rest of the headers — an earlier version of this app gated
+every Talisman header behind `TALISMAN_FORCE_HTTPS`, which left a
+TLS-terminated-upstream deployment with `TALISMAN_FORCE_HTTPS=false`
+entirely without security headers; this was fixed, so the headers are now
+unconditional. Set `TALISMAN_FORCE_HTTPS=false` for plain-HTTP setups
+(e.g. `python run.py` on `http://localhost:5000`, or Docker without a
+TLS-terminating reverse proxy yet) to avoid a redirect loop; set it to
+`true` once a TLS reverse proxy is actually in front of the app (see
 [`deployment/DEPLOYMENT_GUIDE.md`](../deployment/DEPLOYMENT_GUIDE.md)).
-Left disabled by default so as not to break plain HTTP access in
-development.
 
 ### SSO/OIDC Configuration
 
@@ -214,7 +221,7 @@ the URL reachable by the user's browser
 Full list of OIDC variables:
 [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md).
 Login flow details:
-[`architecture/SEQUENCE_DIAGRAMS.md`](../architecture/SEQUENCE_DIAGRAMS.md#connexion-oidcsso).
+[`architecture/SEQUENCE_DIAGRAMS.md`](../architecture/SEQUENCE_DIAGRAMS.md#oidcsso-login).
 
 ### Audit and Logging
 
@@ -252,7 +259,7 @@ LOG_LEVEL=DEBUG
 `logs/app.log`, `logs/error.log`, `logs/debug.log`, `logs/http_errors.log`,
 and `logs/audit.log` are created automatically on startup, with rotation
 (`LOG_MAX_BYTES` / `LOG_BACKUP_COUNT`, see
-[`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-configuration-du-logging)).
+[`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-logging-configuration)).
 `LOG_FILE` additionally lets you redirect the root output to an extra
 file:
 
@@ -362,24 +369,18 @@ To move a user to another group:
 
 | Name | Label | Start Time | End Time | Duration |
 |-----|---------|--------------|-----------|-------|
-| `morning` | Morning | 8:00 AM | 12:00 PM | 4h |
-| `afternoon` | Afternoon | 12:00 PM | 6:00 PM | 6h |
-| `evening` | Evening | 6:00 PM | 10:00 PM | 4h |
+| `morning` | `07h-15h` | 7:00 AM | 3:00 PM | 8h |
+| `afternoon` | `09h-17h` | 9:00 AM | 5:00 PM | 8h |
+| `evening` | `13h-21h` | 1:00 PM | 9:00 PM | 8h |
 
 ### Creating a Custom Shift Type
 
-#### Example 1: Night Shift
+> ⚠️ **Important**: shift types cannot cross midnight. Both the start and
+> end hour must be integers between 0 and 23, and the end hour must be
+> strictly greater than the start hour (`app/services/shift_type_service.py`) -
+> there is no way to encode e.g. a 22h-06h night shift.
 
-1. **Admin** > **Shift Types** > **Add**
-2. Name: `night`
-3. Label: `Night`
-4. Start time: `22`
-5. End time: `6`
-6. **Save**
-
-> ⚠️ **Warning**: A shift that crosses midnight must have an end time > start time (e.g., 22 to 6 = 22 to 30 for 8h).
-
-#### Example 2: Short Shift
+#### Example: Short Shift
 
 1. **Admin** > **Shift Types** > **Add**
 2. Name: `short_morning`
@@ -425,6 +426,7 @@ The administrator dashboard displays:
 - **Shifts**: Total number of scheduled shifts
 - **On-call**: Total number of on-call periods
 - **Leave**: Total number of leave requests
+- **Pending swaps**: Number of shift swap requests awaiting admin review
 
 ### Advanced Statistics
 
@@ -435,8 +437,17 @@ The administrator dashboard displays:
 From the dashboard, you can access:
 - **Users**: Full user management
 - **Groups**: Group configuration
+- **Schedule**: View/manage shifts
 - **Shift Types**: Shift type settings
+- **On-Call**: View/manage on-call periods
+- **Leave**: View/manage leave periods
+- **Swaps**: Review pending shift swap requests
 - **Automation**: Automation configuration
+- **Backups**: Trigger/download database backups
+- **Audit log**: Consult the who-did-what-when trail
+- **Notification targets**: Manage external (Slack/Discord/webhook...) notification destinations
+- **Service accounts**: Manage API keys for the public JSON API
+- **Settings**: Org-wide runtime settings
 
 ---
 
@@ -470,67 +481,50 @@ Kairos offers several levels of automation:
 1. Go to **Admin** > **Automation** > **Full generation**
 2. For each eligible user:
    - ✅ **Include in rotation**: Check to include
-   - **Position**: Set the order (1 = first)
+   - **Order**: Drag and drop the user up/down the list to set their
+     rotation position
 3. Click **Save order**
-
-Example rotation order:
-```
-Position 1: Jean Dupont
-Position 2: Marie Martin
-Position 3: Pierre Durand
-Position 4: Sophie Leroy
-```
 
 #### Step 2: Configure the period
 
 1. **Start date**: First Friday of the period
 2. **End date**: Last day of the period
-3. Click **Simulate** to preview
+3. Click **Preview (Dry Run)** to preview
 
 #### Step 3: Generate
 
-1. Check the simulation result
-2. Click **Generate** to create the on-call periods
+1. Check the preview result
+2. Click **Generate** to create the on-call periods and the shifts that
+   follow from it (see below - there is no separate step for shifts)
 
-### Configuring Automatic Shifts
+### Automatic Shift Generation
 
-#### Step 1: Define daily requirements
+There is no dedicated "Shifts" automation page and no configurable
+per-day/per-shift-type headcount setting. Shifts are generated
+automatically as part of **Full generation** above, from a fixed set of
+business rules implemented in `AdvancedShiftAutomation`
+(`app/utils/automation/advanced_shift_automation.py`):
 
-1. Go to **Admin** > **Automation** > **Shifts**
-2. For each day (Monday to Friday):
-   - **Morning**: Number of people needed
-   - **Afternoon**: Number of people needed
-   - **Evening**: Number of people needed
+- The 1pm-9pm slot is reserved for that week's on-call person, if they
+  belong to a schedule group
+- Slot rotation: whoever was on the 1pm-9pm slot one week must be on the
+  7am-3pm slot the following week
+- Everyone else defaults to the 9am-5pm slot (several people can share it)
+- If only 2 people are available on a given day, the one who is *not*
+  on-call is put on the 7am-3pm slot
+- Monday to Friday only, respecting existing leave and on-call periods
 
-Example configuration:
-```
-Monday:
-  - Morning: 2 people
-  - Afternoon: 2 people
-  - Evening: 1 person
-
-Tuesday to Friday: Same configuration
-```
-
-#### Step 2: Configure the period
-
-1. **Start date**: First day of the period
-2. **End date**: Last day of the period
-3. Click **Simulate** to preview
-
-#### Step 3: Generate
-
-1. Check the simulation result
-2. Click **Generate** to create the shifts
+If you need to regenerate shifts alone (on-call periods unchanged), use
+**Refresh Shifts** below instead of Full generation.
 
 ### Full Generation (On-Call + Shifts)
 
-To generate everything in a single operation:
+To generate both on-call periods and shifts in a single operation:
 
 1. Go to **Admin** > **Automation** > **Full generation**
 2. Configure the on-call rotation order
 3. Select the period
-4. Click **Simulate**
+4. Click **Preview (Dry Run)**
 5. Check that everything is correct
 6. Click **Generate**
 
@@ -548,36 +542,36 @@ If you have manually modified on-call periods:
 
 ### Business Rules
 
-#### Default rules for on-call
+These rules are **hardcoded** in the automation classes, not stored in a
+config file or database row you can inspect/edit. The only thing that is
+actually persisted and editable through the admin UI is the on-call
+**rotation order** (a plain list of user ids, `AutomationConfig` key
+`rotation_order`, set via **Admin > Automation > Full generation**, see
+above) - everything else below is a fixed constant in the code.
 
-```python
-{
-    "rotation_order": [1, 2, 3, 4],  # User order
-    "duration_days": 7,              # Duration in days
-    "start_hour": 21,               # Start time (21h = 9 PM)
-    "end_hour": 7,                 # End time (7h = 7 AM)
-    "start_day": 4                 # Day of the week (4 = Friday)
-}
-```
+#### On-call (`app/utils/automation/oncall_automation.py`)
 
-#### Default rules for shifts
+- Each on-call period always lasts 7 days, from Friday 9:00 PM (21h) to
+  the following Friday 7:00 AM (7h) - not configurable
+- Rotation follows the saved `rotation_order`
+- Minimum 2-week gap enforced between two on-calls for the same user
 
-```python
-{
-    "daily_requirements": {
-        "monday": {"morning": 2, "afternoon": 2, "evening": 1},
-        "tuesday": {"morning": 2, "afternoon": 2, "evening": 1},
-        "wednesday": {"morning": 2, "afternoon": 2, "evening": 1},
-        "thursday": {"morning": 2, "afternoon": 2, "evening": 1},
-        "friday": {"morning": 2, "afternoon": 2, "evening": 1}
-    },
-    "weekend_excluded": True
-}
-```
+#### Shifts (`app/utils/automation/advanced_shift_automation.py`)
+
+- Fixed time slots: `SHIFT_07_15` (7am-3pm), `SHIFT_09_17` (9am-5pm, the
+  default), `SHIFT_13_21` (1pm-9pm, reserved for that week's on-call
+  person)
+- Monday to Friday only ("weekend excluded" is not a toggle, it's simply
+  never generated)
+- No "number of people per shift type per day" setting exists anywhere
+  in the UI or config
 
 ### Customizing Rules
 
-You can customize the rules in the configuration file or via the automation interface.
+The rotation order is the only piece of this that's customizable from
+the UI (**Admin > Automation > Full generation**). Changing the fixed
+business rules above requires a code change to
+`app/utils/automation/`.
 
 ---
 
@@ -681,12 +675,16 @@ section 7.3 for a complete example.
 #### Development (built-in Flask server)
 
 ```bash
-python run.py
+dotenv run -- python run.py
 ```
 
-- **Port**: 5000
-- **Host**: localhost
-- **Debug**: Enabled
+- **Port**: 5000 (`FLASK_PORT`)
+- **Host**: `0.0.0.0` by default (`FLASK_HOST`) - listens on every
+  interface, not just localhost
+- **Debug**: Disabled by default (`FLASK_DEBUG`, default `false`) - see
+  "Enabling debug mode" under "Logs and Troubleshooting" below before
+  turning it on; it is a real code-execution risk if left on for a
+  reachable deployment
 
 #### Production (Gunicorn + Nginx)
 
@@ -707,6 +705,13 @@ python run.py
    ```bash
    gunicorn -w 4 -b 0.0.0.0:8000 wsgi:app
    ```
+
+> ⚠️ **SQLite warning**: Multiple workers (`-w 4`) require a database
+> that supports real concurrent writers (PostgreSQL or MariaDB/MySQL -
+> see "Database Configuration" below). With the default SQLite database,
+> use a single worker (`-w 1`) - this is exactly why
+> `docker/entrypoint.sh` runs `gunicorn --workers 1 --threads 4` by
+> default in the Docker image.
 
 4. Configure Nginx as a reverse proxy
 
@@ -730,7 +735,7 @@ ICS export is available via the URL:
 #### Generating an ICS token
 
 Token generation is **self-service** — each user generates their own
-from their own profile (**Profile > ICS Token > Generate a new token**,
+from their own profile (**Profile > ICS Token > Generate a token**,
 route `POST /profile/ics-token`). There is no admin workflow to generate
 another user's token from the **Admin > Users** screen.
 
@@ -780,13 +785,37 @@ Kairos offers three separate export endpoints:
 /export/leaves?scope=all&token=ADMIN_TOKEN
 ```
 
-### REST API (Coming soon)
+### Public REST API
 
-> 📌 **Planned feature**: A public REST API will be available in version 0.8.
+Shipped in v0.9.3 (this is no longer a planned feature) - a read-only
+JSON API for third-party integrations, distinct from the internal
+cookie-based `/api/*` routes used by the app's own frontend:
 
-### Webhooks (Coming soon)
+- Prefix `/api/v1/*` (`app/api/`), built with flask-smorest
+- Authenticated with a bearer token issued to a **service account**
+  (`Admin > Service accounts`, `/admin/service-accounts` - create,
+  regenerate, revoke), not a user session
+- Read-only: `GET` list (paginated) and `GET <id>` for shifts, on-call,
+  leave, users, and list-only for shift types - no write endpoints in v1
+- Auto-generated OpenAPI spec at `GET /api/v1/openapi.json` (no
+  interactive Swagger/Redoc UI is served, to avoid relaxing the CSP for a
+  CDN-hosted UI)
+- Rate-limited per service account
 
-> 📌 **Planned feature**: Webhooks will be available in version 0.8.
+See [`api/API.md`](../api/API.md) (documents the internal `/api/*`
+routes) and the auto-generated `/api/v1/openapi.json` spec for the public
+API's exact schema.
+
+### Webhooks
+
+There is no general-purpose outbound webhook system for arbitrary
+third-party event subscriptions. What does exist is narrower: **external
+notification targets** (`Admin > Notification targets`,
+`/admin/notification-targets`), which can point at a generic webhook URL
+(or Slack/Discord/Telegram/...) via [Apprise](https://github.com/caronc/apprise)
+service URLs, and receive notifications for a closed set of categories
+(`swap`, `backup`, `system`, `shift_weekly`, `oncall_weekly`) - not a
+mechanism for subscribing to arbitrary application events.
 
 ---
 
@@ -796,15 +825,21 @@ Kairos offers three separate export endpoints:
 
 #### Logo and Favicon
 
-Replace the files in `app/templates/`:
-- `favicon.ico`: The application's favicon
-- (Coming soon): Logo in the header
+Replace the file `app/static/images/favicon.png` (referenced by
+`app/templates/base.html`) to change the application's favicon. There is
+no image-logo slot in the header - the header currently shows the
+"Kairos" text brand only, no image is loaded there (coming soon).
 
 #### Custom CSS
 
-1. Create a file `app/static/css/custom.css`
-2. Add your custom styles
-3. The file will be loaded automatically
+There is no auto-loaded custom CSS hook - `app/static/css/custom.css` is
+not referenced anywhere and would not be picked up automatically. To add
+custom styles today, add a `<link rel="stylesheet">` for your file
+directly in `app/templates/base.html` alongside the other stylesheets, or
+edit the existing files under `app/static/css/` (see "Frontend" in
+`CLAUDE.md` for the current CSS structure - Tailwind/daisyUI via CDN,
+`theme-colors.css` for the Dracula/Alucard palette, a handful of custom
+files for FullCalendar/dashboard/rotation-order overrides).
 
 ### Email Notifications
 
@@ -823,7 +858,7 @@ and per user is sent (anti-duplicate safeguard in the database).
 #### Enabling notifications
 
 1. Configure the SMTP variables in `.env` (see
-   [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-configuration-des-notifications)):
+   [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-notification-configuration)):
    `NOTIFICATIONS_ENABLED=true`, `NOTIFICATION_FROM_EMAIL`, `SMTP_HOST`,
    `SMTP_PORT`, `SMTP_USERNAME`/`SMTP_PASSWORD` if your SMTP server
    requires authentication.
@@ -871,10 +906,10 @@ for the full structure.
 
 The built-in backup system (`scripts/backup_database.py`) handles local
 and/or S3/S3-compatible backups, compression, integrity verification,
-retention, and email alerts — see the [Backup Guide](BACKUP_GUIDE.md)
+retention, and email alerts — see the [Backup Guide](../deployment/BACKUP_GUIDE.md)
 for the full detail. Entirely driven by environment variables
 (`BACKUP_ENABLED` first and foremost, see
-[`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-configuration-des-sauvegardes))
+[`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-backup-configuration))
 — disabled by default.
 
 Two ways to trigger a backup:
@@ -883,7 +918,7 @@ Two ways to trigger a backup:
   local/S3 backups, on-demand creation, cleanup, download. Manual
   creation is refused if `BACKUP_ENABLED=false`.
 - **Cron** (recommended for automation): see [Automation with
-  Cron](BACKUP_GUIDE.md#-automatisation-avec-cron), or, in Docker,
+  Cron](../deployment/BACKUP_GUIDE.md#-automation-with-cron), or, in Docker,
   `BACKUP_ENABLED=true` is enough (same container as the application,
   schedule in `docker/crontabs/appuser`, see
   [`deployment/docker.md`](../deployment/docker.md)).
@@ -964,7 +999,9 @@ psql kairos -c "VACUUM ANALYZE;"
 
 **Cause**: Invalid credentials.
 
-**Solution**: Check your email and password. Use password reset if needed.
+**Solution**: Check your email and password. There is no self-service
+"forgot password" feature - an administrator must reset the password for
+you from **Admin > Users > Edit** (see "Resetting passwords" above).
 
 #### Error 500: Server error
 
@@ -980,16 +1017,22 @@ psql kairos -c "VACUUM ANALYZE;"
 
 #### Enabling debug mode
 
-In `run.py`:
-```python
-app.run(debug=True)
-```
+Set the `FLASK_DEBUG=true` environment variable (`.env`) - `run.py`
+reads it via `Config.DEBUG` and passes it to `app.run(debug=...)`.
+
+> ⚠️ **Do not hardcode `debug=True` in `run.py`**: `FLASK_DEBUG` defaults
+> to `false` specifically because Werkzeug's interactive debugger (shown
+> on any unhandled exception when debug is on) is a remote code
+> execution surface on a reachable deployment - hardcoding `debug=True`
+> would silently re-enable it regardless of what an admin sets in `.env`.
+> Only ever enable this on a local/trusted machine, never in production.
 
 #### Viewing logs
 
 ```bash
-# Run the application with logs
-python run.py
+# Run the application with logs (dotenv run so .env is actually applied -
+# see "Development (built-in Flask server)" above)
+dotenv run -- python run.py
 ```
 
 #### Database Issues

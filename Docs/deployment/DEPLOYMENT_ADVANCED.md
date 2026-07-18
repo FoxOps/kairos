@@ -1,6 +1,14 @@
-# Advanced Guide: Deploying with PostgreSQL, MySQL/MariaDB and Redis
+# Advanced Guide: Deploying with PostgreSQL or MySQL/MariaDB
 
-This guide explains how to extend the base Docker configuration to use **PostgreSQL** or **MySQL/MariaDB** as the database and **Redis** as the cache, once you're comfortable with the basic SQLite deployment.
+This guide explains how to extend the base Docker configuration to use **PostgreSQL** or **MySQL/MariaDB** as the database, once you're comfortable with the basic SQLite deployment.
+
+> **Note**: this guide previously also covered adding Redis as a
+> cache. The app has no caching integration at all - no `CACHE_TYPE`/
+> `CACHE_REDIS_URL` config is read anywhere, Flask-Limiter deliberately
+> uses in-memory storage (`app/__init__.py`), and there is no `redis`
+> package in `requirements.txt`/`docker/requirements.txt`. That section
+> has been removed rather than left describing a feature that doesn't
+> exist.
 
 ---
 
@@ -21,12 +29,12 @@ This guide explains how to extend the base Docker configuration to use **Postgre
 │  │                   Kairos (Gunicorn)                      │  │
 │  └─────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
-         │                          │
-         ▼                          ▼
-┌─────────────────┐   ┌─────────────────┐
-│   PostgreSQL     │   │     Redis       │
-│   (Production)   │   │   (Cache)       │
-└─────────────────┘   └─────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│   PostgreSQL     │
+│   (Production)   │
+└─────────────────┘
 ```
 
 ---
@@ -39,8 +47,6 @@ Create a new file in the `docker/` folder:
 
 ```yaml
 # docker/docker-compose.postgres.yml
-version: '3.8'
-
 services:
   db:
     image: postgres:15-alpine
@@ -53,7 +59,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - kairos-net
+      - kairos-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kairos} -d ${POSTGRES_DB:-kairos}"]
       interval: 10s
@@ -67,24 +73,28 @@ volumes:
     driver: local
 
 networks:
-  kairos-net:
+  kairos-network:
     external: true
 ```
 
-### 2. Modify the web service to use PostgreSQL
+### 2. Modify the `kairos` service to use PostgreSQL
 
-Edit your `docker/docker-compose.yml` to add the PostgreSQL dependency:
+Edit your `docker/docker-compose.yml` to add the PostgreSQL dependency.
+The service is named `kairos` there (not `web`) and the network is
+`kairos-network` (not `kairos-net`) - both must match the real
+`docker/docker-compose.yml` exactly, or `docker compose -f
+docker-compose.yml -f docker-compose.postgres.yml` merges the override
+into an unrelated new service/network instead of extending the
+existing one:
 
 ```yaml
 # docker/docker-compose.yml
-version: '3.8'
-
 services:
-  web:
+  kairos:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    container_name: kairos-web
+    container_name: kairos
     restart: unless-stopped
     ports:
       - "5000:5000"
@@ -100,10 +110,10 @@ services:
       db:
         condition: service_healthy
     networks:
-      - kairos-net
+      - kairos-network
 
 networks:
-  kairos-net:
+  kairos-network:
     driver: bridge
 ```
 
@@ -147,7 +157,7 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.postgres.ym
 docker compose logs db
 
 # Check that the application connects
-docker compose logs web
+docker compose logs kairos
 ```
 
 ---
@@ -166,8 +176,6 @@ variable in `.env` changes.
 
 ```yaml
 # docker/docker-compose.mysql.yml
-version: '3.8'
-
 services:
   db:
     image: mariadb:11
@@ -181,7 +189,7 @@ services:
     volumes:
       - mariadb_data:/var/lib/mysql
     networks:
-      - kairos-net
+      - kairos-network
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
@@ -195,7 +203,7 @@ volumes:
     driver: local
 
 networks:
-  kairos-net:
+  kairos-network:
     external: true
 ```
 
@@ -210,7 +218,7 @@ MARIADB_ROOT_PASSWORD=un_autre_mot_de_passe_sécurisé
 DATABASE_URL=mariadb://kairos:votre_mot_de_passe_sécurisé@db:3306/kairos
 ```
 
-No changes to the `Dockerfile`/the `kairos-web` image are
+No changes to the `Dockerfile`/the `kairos` image are
 necessary: the `PyMySQL` driver is already included in
 `docker/requirements.txt`, 100% pure Python, with no system dependency.
 
@@ -218,73 +226,6 @@ necessary: the `PyMySQL` driver is already included in
 
 ```bash
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.mysql.yml up -d
-```
-
----
-
-## 🔴 Add Redis for caching
-
-### 1. Create a `docker-compose.redis.yml` file
-
-```yaml
-# docker/docker-compose.redis.yml
-version: '3.8'
-
-services:
-  redis:
-    image: redis:7-alpine
-    container_name: kairos-redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
-    networks:
-      - kairos-net
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-volumes:
-  redis_data:
-    driver: local
-
-networks:
-  kairos-net:
-    external: true
-```
-
-### 2. Configure the application to use Redis
-
-Edit your `docker/docker-compose.yml` to add the Redis configuration:
-
-```yaml
-services:
-  web:
-    # ... existing configuration ...
-    environment:
-      - FLASK_ENV=${FLASK_ENV:-production}
-      - SECRET_KEY=${SECRET_KEY:-changez-moi}
-      - DATABASE_URL=${DATABASE_URL:-postgresql://kairos:changez-moi@db:5432/kairos}
-      - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-changez-moi}
-      - CACHE_TYPE=RedisCache
-      - CACHE_REDIS_URL=redis://redis:6379/0
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    # ... rest of the configuration ...
-```
-
-### 3. Start with Redis
-
-```bash
-# Start PostgreSQL, Redis and the application
-docker compose -f docker/docker-compose.yml \
-  -f docker/docker-compose.postgres.yml \
-  -f docker/docker-compose.redis.yml up -d
 ```
 
 ---
@@ -297,26 +238,24 @@ docker compose -f docker/docker-compose.yml \
 # Base configuration
 FLASK_ENV=production
 SECRET_KEY=votre_clé_secrète_générée
-PREFERRED_URL_SCHEME=https
 
 # PostgreSQL database
 POSTGRES_DB=kairos
 POSTGRES_USER=kairos
 POSTGRES_PASSWORD=votre_mot_de_passe_postgres
 DATABASE_URL=postgresql://kairos:votre_mot_de_passe_postgres@db:5432/kairos
+SQLALCHEMY_ENGINE_OPTIONS={"pool_pre_ping": true, "pool_recycle": 3600}
 
-# Redis cache
-CACHE_TYPE=RedisCache
-CACHE_REDIS_URL=redis://redis:6379/0
-
-# Security
+# Security - SESSION_COOKIE_SECURE/HTTPONLY/SAMESITE and
+# RATE_LIMIT_ENABLED are the only ones of these actually read by the
+# app (app/config/base.py); CSRF protection and response compression
+# are unconditionally on regardless of any env var, and
+# PREFERRED_URL_SCHEME/REMEMBER_COOKIE_SECURE/COMPRESS_ENABLED/
+# WTF_CSRF_ENABLED are not read anywhere, so they are omitted here.
 SESSION_COOKIE_SECURE=true
 SESSION_COOKIE_HTTPONLY=true
 SESSION_COOKIE_SAMESITE=Lax
-REMEMBER_COOKIE_SECURE=true
 RATE_LIMIT_ENABLED=true
-COMPRESS_ENABLED=true
-WTF_CSRF_ENABLED=true
 
 # Default data
 DEFAULT_ADMIN_EMAIL=admin@votre-domaine.com
@@ -328,8 +267,7 @@ DEFAULT_GROUP_NAME=Defaut
 
 ```bash
 docker compose -f docker/docker-compose.yml \
-  -f docker/docker-compose.postgres.yml \
-  -f docker/docker-compose.redis.yml up -d
+  -f docker/docker-compose.postgres.yml up -d
 ```
 
 ---
@@ -362,12 +300,11 @@ docker compose -f docker/docker-compose.yml build --no-cache
 
 ## 📊 Configuration Comparison
 
-| Configuration | Database | Cache | Gunicorn Workers | Complexity |
-|---------------|----------------|-------|------------------|------------|
-| **Basic** | SQLite | ❌ No | 1 | ⭐ Very simple |
-| **PostgreSQL** | PostgreSQL | ❌ No | 1 | ⭐⭐ Simple |
-| **PostgreSQL + Redis** | PostgreSQL | ✅ Redis | 4 | ⭐⭐⭐ Medium |
-| **Full production** | PostgreSQL | ✅ Redis | 4 | ⭐⭐⭐ Medium |
+| Configuration | Database | Gunicorn Workers | Complexity |
+|---------------|----------------|------------------|------------|
+| **Basic** | SQLite | 1 | ⭐ Very simple |
+| **PostgreSQL** | PostgreSQL | 1 (until `docker/entrypoint.sh` is edited, see below) | ⭐⭐ Simple |
+| **Full production** | PostgreSQL | 4 | ⭐⭐⭐ Medium |
 
 ---
 
@@ -381,9 +318,6 @@ services:
   db:
     ports:
       - "5432:5432"  # Exposes PostgreSQL on the network
-  redis:
-    ports:
-      - "6379:6379"  # Exposes Redis on the network
 ```
 
 ✅ **Recommended**:
@@ -391,8 +325,6 @@ services:
 services:
   db:
     # No exposed ports, accessible only via the Docker network
-  redis:
-    # No exposed ports
 ```
 
 ### 2. Use a reverse proxy
@@ -406,7 +338,7 @@ Example minimal Nginx configuration:
 
 ```nginx
 upstream kairos {
-    server web:5000;
+    server kairos:5000;
 }
 
 server {
@@ -478,16 +410,6 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.postgres.ym
   exec -T db psql -U kairos -d kairos < backups/kairos-20240101-120000.sql
 ```
 
-### Backing up Redis
-
-```bash
-# Manual backup
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.redis.yml \
-  exec redis redis-cli save
-
-# Data is already persisted in the redis_data volume
-```
-
 ### Automatic backup script
 
 Create a `backup.sh` script:
@@ -503,10 +425,6 @@ if [ -f docker/docker-compose.postgres.yml ]; then
     # Keep only the last 7 backups
     find backups -name "kairos-*.sql" -mtime +7 -delete
 fi
-
-# Back up Redis (already persistent via volume)
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.redis.yml \
-  exec redis redis-cli save
 ```
 
 Set up a cron job to run this script daily:
@@ -528,20 +446,17 @@ crontab -e
 ```bash
 # Stop the services
 docker compose -f docker/docker-compose.yml \
-  -f docker/docker-compose.postgres.yml \
-  -f docker/docker-compose.redis.yml down
+  -f docker/docker-compose.postgres.yml down
 
 # Update the code
 git pull origin main
 
 # Rebuild and restart
 docker compose -f docker/docker-compose.yml \
-  -f docker/docker-compose.postgres.yml \
-  -f docker/docker-compose.redis.yml build --no-cache
+  -f docker/docker-compose.postgres.yml build --no-cache
 
 docker compose -f docker/docker-compose.yml \
-  -f docker/docker-compose.postgres.yml \
-  -f docker/docker-compose.redis.yml up -d
+  -f docker/docker-compose.postgres.yml up -d
 ```
 
 ### Updating dependencies
@@ -588,7 +503,7 @@ docker compose -f docker/docker-compose.yml build --no-cache
 ### Issue: The application won't connect to PostgreSQL
 
 **Symptoms:**
-- Connection error in the `web` logs
+- Connection error in the `kairos` logs
 - Timeout or connection refused
 
 **Solutions:**
@@ -600,42 +515,15 @@ docker compose -f docker/docker-compose.yml build --no-cache
 
 2. **Check environment variables**:
    ```bash
-   docker compose exec web env | grep DATABASE_URL
+   docker compose exec kairos env | grep DATABASE_URL
    ```
 
 3. **Test the connection manually**:
    ```bash
-   docker compose exec web python -c "
+   docker compose exec kairos python -c "
    from sqlalchemy import create_engine
    engine = create_engine('${DATABASE_URL}')
    print(engine.connect())
-   "
-   ```
-
-### Issue: Redis is not responding
-
-**Symptoms:**
-- Cache errors in the application
-- Timeout on Redis
-
-**Solutions:**
-
-1. **Check that Redis is ready**:
-   ```bash
-   docker compose exec redis redis-cli ping
-   ```
-
-2. **Check the configuration**:
-   ```bash
-   docker compose exec web env | grep CACHE
-   ```
-
-3. **Test the connection manually**:
-   ```bash
-   docker compose exec web python -c "
-   import redis
-   r = redis.Redis.from_url('${CACHE_REDIS_URL}')
-   print(r.ping())
    "
    ```
 
@@ -644,7 +532,6 @@ docker compose -f docker/docker-compose.yml build --no-cache
 ## 📚 Useful Resources
 
 - [Official PostgreSQL documentation](https://www.postgresql.org/docs/)
-- [Official Redis documentation](https://redis.io/docs/)
 - [Docker Compose documentation](https://docs.docker.com/compose/)
 - [Gunicorn documentation](https://docs.gunicorn.org/)
 

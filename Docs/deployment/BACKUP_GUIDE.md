@@ -64,11 +64,11 @@ The Kairos automated backup system allows you to:
 ## 📦 Prerequisites
 
 ### For local backup
-- Python 3.8+
+- Python 3.11+ (matches `docker/Dockerfile`/`.gitlab-ci/.gitlab-ci.yml`; the codebase uses PEP 604 `X | None` type hints, which require at least Python 3.10)
 - Write access to the filesystem
 
 ### For S3 backup
-- Python 3.8+
+- Python 3.11+
 - `boto3` library:
   ```bash
   pip install boto3
@@ -152,7 +152,7 @@ The backup system uses the following environment variables:
 | `BACKUP_NOTIFICATION_EMAIL` | Alert recipient | `None` |
 
 Reuses the SMTP configuration from email notifications (see
-[`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-configuration-des-notifications)) -
+[`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-notification-configuration)) -
 so it's also subject to `NOTIFICATIONS_ENABLED`.
 
 ### JSON configuration file
