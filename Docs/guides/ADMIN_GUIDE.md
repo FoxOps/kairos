@@ -1,483 +1,478 @@
-# 🛡️ Guide Administrateur - Leviia Schedule
+# 🛡️ Administrator Guide - Kairos
 
-> **Version** : 1.1.0 | **Dernière mise à jour** : Juillet 2026
-> **Public** : Administrateurs Leviia Schedule uniquement
-
----
-
-## 📋 Table des Matières
-
-1. [🎯 Rôle de l'Administrateur](#-rôle-de-ladministrateur)
-2. [🔐 Gestion de la Sécurité](#-gestion-de-la-sécurité)
-3. [👥 Gestion Avancée des Utilisateurs](#-gestion-avancée-des-utilisateurs)
-4. [🏢 Architecture des Groupes](#-architecture-des-groupes)
-5. [⚙️ Configuration des Types de Shifts](#️-configuration-des-types-de-shifts)
-6. [📊 Tableau de Bord et Statistiques](#-tableau-de-bord-et-statistiques)
-7. [⚡ Automatisation Complète](#-automatisation-complète)
-8. [🔧 Configuration Technique](#-configuration-technique)
-9. [📤 Export et Intégrations](#-export-et-intégrations)
-10. [🎨 Personnalisation](#-personnalisation)
-11. [🔄 Maintenance et Sauvegardes](#-maintenance-et-sauvegardes)
-12. [🚨 Gestion des Erreurs](#-gestion-des-erreurs)
+> **Version**: 1.1.0 | **Last updated**: July 2026
+> **Audience**: Kairos administrators only
 
 ---
 
-## 🎯 Rôle de l'Administrateur
+## 📋 Table of Contents
 
-### Responsabilités
-
-En tant qu'administrateur Leviia Schedule, vous êtes responsable de :
-
-- ✅ **Gestion des utilisateurs** : Création, modification, suppression
-- ✅ **Configuration des groupes** : Organisation et permissions
-- ✅ **Paramétrage des shifts** : Types de shifts et règles métiers
-- ✅ **Planification** : Shifts, astreintes, congés
-- ✅ **Automatisation** : Configuration et supervision
-- ✅ **Sécurité** : Gestion des accès et des permissions
-- ✅ **Maintenance** : Sauvegardes et mises à jour
-
-### Bonnes Pratiques
-
-1. **Sécurité** : Changez toujours le mot de passe par défaut
-2. **Sauvegardes** : Effectuez des sauvegardes régulières de la base de données
-3. **Tests** : Testez les modifications dans un environnement de développement
-4. **Documentation** : Documentez les configurations spécifiques
-5. **Audit** : Vérifiez régulièrement les logs et les activités
+1. [🎯 Administrator Role](#-administrator-role)
+2. [🔐 Security Management](#-security-management)
+3. [👥 Advanced User Management](#-advanced-user-management)
+4. [🏢 Group Architecture](#-group-architecture)
+5. [⚙️ Shift Type Configuration](#️-shift-type-configuration)
+6. [📊 Dashboard and Statistics](#-dashboard-and-statistics)
+7. [⚡ Full Automation](#-full-automation)
+8. [🔧 Technical Configuration](#-technical-configuration)
+9. [📤 Export and Integrations](#-export-and-integrations)
+10. [🎨 Customization](#-customization)
+11. [🔄 Maintenance and Backups](#-maintenance-and-backups)
+12. [🚨 Error Handling](#-error-handling)
 
 ---
 
-## 🔐 Gestion de la Sécurité
+## 🎯 Administrator Role
 
-### Sécurité des Comptes
+### Responsibilities
 
-#### Mot de passe par défaut
+As a Kairos administrator, you are responsible for:
 
-**⚠️ CRITIQUE** : Le compte administrateur par défaut a les identifiants :
-- Email : `DEFAULT_ADMIN_EMAIL` (`.env`), `admin@leviia.local` par défaut
-- Mot de passe : `DEFAULT_ADMIN_PASSWORD` (`.env`), `admin123` par défaut
+- ✅ **User management**: Creation, modification, deletion
+- ✅ **Group configuration**: Organization and permissions
+- ✅ **Shift settings**: Shift types and business rules
+- ✅ **Scheduling**: Shifts, on-call rotations, leave
+- ✅ **Automation**: Configuration and supervision
+- ✅ **Security**: Access and permission management
+- ✅ **Maintenance**: Backups and updates
 
-**Action immédiate** : Changez ce mot de passe dès la première connexion.
-En production, définissez `DEFAULT_ADMIN_PASSWORD` à une valeur forte
-avant le tout premier démarrage plutôt que de compter sur le
-changement post-installation.
+### Best Practices
 
-#### Politique de mots de passe
+1. **Security**: Always change the default password
+2. **Backups**: Perform regular database backups
+3. **Testing**: Test changes in a development environment
+4. **Documentation**: Document specific configurations
+5. **Audit**: Regularly review logs and activity
 
-Recommandations :
-- Minimum 12 caractères
-- Mélange de majuscules, minuscules, chiffres et symboles
-- Pas de mots du dictionnaire
-- Unique pour chaque utilisateur
+---
 
-#### Réinitialisation des mots de passe
+## 🔐 Security Management
 
-Pour réinitialiser le mot de passe d'un utilisateur :
+### Account Security
 
-1. Allez dans **Admin** > **Utilisateurs**
-2. Cliquez sur **Modifier** pour l'utilisateur concerné
-3. Entrez un nouveau mot de passe dans le champ **Mot de passe**
-4. **Enregistrer**
+#### Default password
 
-> 💡 **Astuce** : Vous pouvez laisser le champ vide pour conserver le mot de passe actuel.
+**⚠️ CRITICAL**: The default administrator account has the following credentials:
+- Email: `DEFAULT_ADMIN_EMAIL` (`.env`), defaults to `admin@kairos.local`
+- Password: `DEFAULT_ADMIN_PASSWORD` (`.env`), defaults to `admin123`
 
-### Gestion des Permissions
+**Immediate action**: Change this password as soon as you log in for the first time.
+In production, set `DEFAULT_ADMIN_PASSWORD` to a strong value before the very first
+startup rather than relying on a post-installation change.
 
-#### Rôles
+#### Password policy
 
-| Rôle | Accès |
+Recommendations:
+- Minimum 12 characters
+- Mix of uppercase, lowercase, digits, and symbols
+- No dictionary words
+- Unique for each user
+
+#### Resetting passwords
+
+To reset a user's password:
+
+1. Go to **Admin** > **Users**
+2. Click **Edit** for the relevant user
+3. Enter a new password in the **Password** field
+4. **Save**
+
+> 💡 **Tip**: You can leave the field blank to keep the current password.
+
+### Permission Management
+
+#### Roles
+
+| Role | Access |
 |------|--------|
-| **Administrateur** | Accès complet à toutes les fonctionnalités |
-| **Utilisateur** | Accès limité à son propre planning et congés |
+| **Administrator** | Full access to all features |
+| **User** | Limited access to their own schedule and leave |
 
-#### Permissions par groupe
+#### Permissions per group
 
 | Permission | Description |
 |------------|-------------|
-| **Participe au planning** | Les membres peuvent avoir des shifts attribués |
-| **Participe aux astreintes** | Les membres peuvent être en astreinte |
+| **Participates in scheduling** | Members can be assigned shifts |
+| **Participates in on-call** | Members can be placed on on-call rotation |
 
-### Sécurité de l'Application
+### Application Security
 
-#### Variables d'environnement sensibles
+#### Sensitive environment variables
 
-| Variable | Sensibilité | Recommandation |
+| Variable | Sensitivity | Recommendation |
 |----------|-------------|----------------|
-| `SECRET_KEY` | ⭐⭐⭐⭐⭐ CRITIQUE | Générer une clé aléatoire de 32 octets |
-| `DATABASE_URL` | ⭐⭐⭐⭐ Élevée | Utiliser des identifiants DB sécurisés |
-| `LOGIN_DISABLED` | ⭐⭐⭐ Moyenne | Ne JAMAIS activer en production |
+| `SECRET_KEY` | ⭐⭐⭐⭐⭐ CRITICAL | Generate a random 32-byte key |
+| `DATABASE_URL` | ⭐⭐⭐⭐ High | Use secure DB credentials |
+| `LOGIN_DISABLED` | ⭐⭐⭐ Medium | NEVER enable in production |
 
-#### Générer une clé secrète sécurisée
+#### Generate a secure secret key
 
 ```bash
-# Méthode 1 : Python
+# Method 1: Python
 python -c "import secrets; print(secrets.token_hex(32))"
 
-# Méthode 2 : OpenSSL
+# Method 2: OpenSSL
 openssl rand -hex 32
 ```
 
-#### Désactiver l'authentification (DÉVELOPPEMENT UNIQUEMENT)
+#### Disable authentication (DEVELOPMENT ONLY)
 
-Dans `.env` :
+In `.env`:
 ```bash
 LOGIN_DISABLED=true
 ```
 
-> ⚠️ **DANGER** : Ne jamais utiliser cette option en production !
+> ⚠️ **DANGER**: Never use this option in production!
 
-#### Protection CSRF
+#### CSRF Protection
 
-Active sur toute l'application depuis la Phase 4 (`Flask-WTF`
-`CSRFProtect`) — rien à configurer côté admin, mais bon à savoir si vous
-scriptez des appels vers l'application (import en masse, intégration
-tierce) : toute requête POST/PUT/PATCH/DELETE sans jeton CSRF valide est
-rejetée avec `400 Bad Request`. Voir
-[`api/API.md`](../api/API.md#authentification) pour la marche à suivre
-côté script.
+Active across the entire application since Phase 4 (`Flask-WTF`
+`CSRFProtect`) — nothing to configure on the admin side, but good to know if
+you script calls to the application (bulk import, third-party integration):
+any POST/PUT/PATCH/DELETE request without a valid CSRF token is rejected
+with `400 Bad Request`. See [`api/API.md`](../api/API.md#authentification)
+for the procedure to follow from a script.
 
-#### En-têtes de sécurité HTTP (Talisman)
+#### HTTP security headers (Talisman)
 
-`Flask-Talisman` (X-Content-Type-Options, X-Frame-Options, etc.) n'est
-activé que si `TALISMAN_FORCE_HTTPS=true` dans `.env` — pertinent
-uniquement derrière un reverse proxy TLS (voir
+`Flask-Talisman` (X-Content-Type-Options, X-Frame-Options, etc.) is only
+enabled if `TALISMAN_FORCE_HTTPS=true` in `.env` — relevant only behind a
+TLS reverse proxy (see
 [`deployment/DEPLOYMENT_GUIDE.md`](../deployment/DEPLOYMENT_GUIDE.md)).
-Laissé désactivé par défaut pour ne pas casser un accès HTTP simple en
-développement.
+Left disabled by default so as not to break plain HTTP access in
+development.
 
-### Configuration SSO/OIDC
+### SSO/OIDC Configuration
 
-Leviia Schedule supporte l'authentification via un fournisseur OIDC
-(Keycloak, Okta, Auth0, ou tout fournisseur OpenID Connect standard),
-en complément ou à la place de l'authentification par mot de passe.
+Kairos supports authentication via an OIDC provider (Keycloak, Okta,
+Auth0, or any standard OpenID Connect provider), in addition to or
+instead of password authentication.
 
-#### Activer OIDC
+#### Enable OIDC
 
-Dans `.env` :
+In `.env`:
 
 ```bash
 OIDC_ENABLED=true
-OIDC_ISSUER=https://votre-fournisseur.com/realms/votre-realm
-OIDC_CLIENT_ID=votre-client-id
-OIDC_CLIENT_SECRET=votre-client-secret
+OIDC_ISSUER=https://your-provider.com/realms/your-realm
+OIDC_CLIENT_ID=your-client-id
+OIDC_CLIENT_SECRET=your-client-secret
 OIDC_REDIRECT_URI=http://localhost:5000/oidc/callback
 ```
 
-Côté fournisseur OIDC, enregistrez `OIDC_REDIRECT_URI` comme URL de
-callback autorisée pour le client.
+On the OIDC provider side, register `OIDC_REDIRECT_URI` as an authorized
+callback URL for the client.
 
-#### Désactiver l'authentification par mot de passe
+#### Disable password authentication
 
-Pour forcer tous les utilisateurs à passer par SSO (masque le
-formulaire email/mot de passe, `/login` redirige directement vers
-`/oidc/login`) :
+To force all users through SSO (hides the email/password form, `/login`
+redirects straight to `/oidc/login`):
 
 ```bash
 OIDC_DISABLE_BASIC_AUTH=true
 ```
 
-> ⚠️ Assurez-vous que la connexion OIDC fonctionne avant d'activer cette
-> option — sans authentification basique de secours, un problème de
-> configuration OIDC bloquerait tous les accès, y compris le vôtre.
+> ⚠️ Make sure OIDC login works before enabling this option — without a
+> fallback basic authentication, an OIDC configuration issue would lock
+> out all access, including your own.
 
-#### Déconnexion complète (RP-initiated logout)
+#### Full logout (RP-initiated logout)
 
-Sans configuration supplémentaire, `/logout` ne termine que la session
-locale : la session côté fournisseur OIDC reste active, donc la
-prochaine visite de `/login` ré-authentifie silencieusement via SSO.
-Pour une déconnexion complète, enregistrez une URL de redirection
-post-déconnexion côté fournisseur (ex. `PostLogoutRedirectUris` sur
-Keycloak) puis :
+Without additional configuration, `/logout` only ends the local session:
+the session on the OIDC provider's side remains active, so the next
+visit to `/login` silently re-authenticates via SSO. For a full logout,
+register a post-logout redirect URL on the provider side (e.g.
+`PostLogoutRedirectUris` on Keycloak) and then:
 
 ```bash
 OIDC_POST_LOGOUT_REDIRECT_URI=http://localhost:5000
 ```
 
-#### Mapper les claims du token
+#### Mapping token claims
 
-Si les noms de claims de votre fournisseur diffèrent des noms standards :
+If your provider's claim names differ from the standard names:
 
 ```bash
 OIDC_EMAIL_CLAIM=email
 OIDC_NAME_CLAIM=name
 OIDC_USERNAME_CLAIM=preferred_username
-OIDC_GROUPS_CLAIM=          # optionnel, synchronise les groupes locaux
-OIDC_ROLES_CLAIM=           # optionnel, synchronise is_admin
+OIDC_GROUPS_CLAIM=          # optional, syncs local groups
+OIDC_ROLES_CLAIM=           # optional, syncs is_admin
 ```
 
-#### Déploiement Docker : issuer interne vs. externe
+#### Docker deployment: internal vs. external issuer
 
-Si le fournisseur OIDC et l'application tournent tous deux dans Docker
-(ex. Keycloak sur le même réseau que le conteneur Leviia Schedule),
-l'URL joignable par le conteneur (`http://keycloak:8080/realms/...`)
-diffère souvent de l'URL joignable par le navigateur de l'utilisateur
-(`https://auth.exemple.com/realms/...`). Dans ce cas, définissez
-`OIDC_INTERNAL_ISSUER` avec l'URL joignable par le conteneur ;
-`OIDC_ISSUER` reste l'URL publique utilisée pour les redirections
-navigateur (authorization/logout endpoints).
+If the OIDC provider and the application both run in Docker (e.g.
+Keycloak on the same network as the Kairos container), the URL reachable
+by the container (`http://keycloak:8080/realms/...`) often differs from
+the URL reachable by the user's browser
+(`https://auth.example.com/realms/...`). In this case, set
+`OIDC_INTERNAL_ISSUER` to the URL reachable by the container;
+`OIDC_ISSUER` remains the public URL used for browser redirects
+(authorization/logout endpoints).
 
-Liste complète des variables OIDC :
+Full list of OIDC variables:
 [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md).
-Détail du flux de connexion :
+Login flow details:
 [`architecture/SEQUENCE_DIAGRAMS.md`](../architecture/SEQUENCE_DIAGRAMS.md#connexion-oidcsso).
 
-### Audit et Journalisation
+### Audit and Logging
 
-#### Historique des modifications (audit trail)
+#### Change history (audit trail)
 
-Depuis la version 0.9.0, `/admin/audit-log` (lien depuis le tableau de bord admin)
-liste chaque action métier significative : qui, quoi, quand, sur quelle ressource.
-Couverture : CRUD utilisateurs/groupes/shifts/astreintes/congés/types de shift,
-tout le cycle de vie des échanges de shifts (demande/annulation/approbation/
-rejet/annulation d'un échange approuvé/purge), modification des paramètres admin,
-et les événements de connexion (réussie, échouée, déconnexion, inscription,
-changement de mot de passe).
+Since version 0.9.0, `/admin/audit-log` (linked from the admin
+dashboard) lists every significant business action: who, what, when, on
+which resource. Coverage: CRUD on users/groups/shifts/on-call/leave/shift
+types, the entire shift-swap lifecycle (request/cancellation/approval/
+rejection/reverting an approved swap/purge), admin setting changes, and
+login events (success, failure, logout, registration, password change).
 
-La page permet de filtrer par auteur, domaine d'action (`shift`, `oncall`,
-`leave`, `swap`, `user`, `group`, `shift_type`, `setting`, `auth`, `profile`) et
-plage de dates. Chaque entrée est aussi écrite dans `logs/audit.log` (double
-écriture, défense en profondeur) — voir CLAUDE.md "Audit trail" pour le détail
-technique.
+The page allows filtering by actor, action domain (`shift`, `oncall`,
+`leave`, `swap`, `user`, `group`, `shift_type`, `setting`, `auth`,
+`profile`) and date range. Every entry is also written to
+`logs/audit.log` (dual write, defense in depth) — see CLAUDE.md "Audit
+trail" for the technical detail.
 
-**Purge** : le bouton "Purger selon la rétention" supprime les entrées plus
-anciennes que la durée configurée dans **Paramètres → Audit trail**
-(`/admin/settings`). Tant qu'aucune valeur n'y a été enregistrée, aucune purge
-n'est possible — l'historique est conservé indéfiniment par défaut, contrairement
-à la rétention des sauvegardes qui a un repli numérique.
+**Purge**: the "Purge according to retention" button deletes entries
+older than the duration configured in **Settings → Audit trail**
+(`/admin/settings`). As long as no value has been saved there, no purge
+is possible — the history is kept indefinitely by default, unlike backup
+retention, which has a numeric fallback.
 
-#### Activer le logging avancé
+#### Enable advanced logging
 
-Dans `.env` :
+In `.env`:
 ```bash
 LOG_LEVEL=DEBUG
 ```
 
-#### Fichiers de log
+#### Log files
 
-`logs/app.log`, `logs/error.log`, `logs/debug.log`, `logs/http_errors.log` et
-`logs/audit.log` sont créés automatiquement au démarrage, avec rotation
-(`LOG_MAX_BYTES` / `LOG_BACKUP_COUNT`, voir
+`logs/app.log`, `logs/error.log`, `logs/debug.log`, `logs/http_errors.log`,
+and `logs/audit.log` are created automatically on startup, with rotation
+(`LOG_MAX_BYTES` / `LOG_BACKUP_COUNT`, see
 [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-configuration-du-logging)).
-`LOG_FILE` permet en plus de rediriger la sortie racine vers un fichier
-supplémentaire :
+`LOG_FILE` additionally lets you redirect the root output to an extra
+file:
 
 ```bash
-LOG_FILE=leviia.log
+LOG_FILE=kairos.log
 ```
 
 ---
 
-## 👥 Gestion Avancée des Utilisateurs
+## 👥 Advanced User Management
 
-### Import/Export des Utilisateurs
+### User Import/Export
 
-> 📌 **Fonctionnalité à venir** : L'import/export CSV des utilisateurs sera disponible dans une future version.
+> 📌 **Upcoming feature**: CSV import/export for users will be available in a future version.
 
-### Gestion en Masse
+### Bulk Management
 
-#### Supprimer tous les utilisateurs d'un groupe
+#### Delete all users in a group
 
-1. Allez dans **Admin** > **Utilisateurs**
-2. Filtrez par groupe
-3. Pour chaque utilisateur, cliquez sur **Supprimer**
+1. Go to **Admin** > **Users**
+2. Filter by group
+3. For each user, click **Delete**
 
-> ⚠️ **Attention** : Vous devez d'abord supprimer les shifts, astreintes et congés associés.
+> ⚠️ **Warning**: You must first delete the associated shifts, on-call periods, and leave.
 
-#### Changer le groupe de plusieurs utilisateurs
+#### Change the group of multiple users
 
-1. Allez dans **Admin** > **Utilisateurs**
-2. Cliquez sur **Modifier** pour chaque utilisateur
-3. Changez le groupe
-4. **Enregistrer**
+1. Go to **Admin** > **Users**
+2. Click **Edit** for each user
+3. Change the group
+4. **Save**
 
-### Utilisateurs Système
+### System Users
 
-| Utilisateur | Rôle | Description |
+| User | Role | Description |
 |-------------|------|-------------|
-| `admin@leviia.local` | Administrateur | Compte par défaut, doit être renommé |
+| `admin@kairos.local` | Administrator | Default account, should be renamed |
 
-### Bonnes Pratiques
+### Best Practices
 
-1. **Nommage** : Utilisez des emails professionnels
-2. **Groupes** : Organisez les utilisateurs par équipe/département
-3. **Permissions** : Donnez uniquement les permissions nécessaires
-4. **Audit** : Vérifiez régulièrement la liste des utilisateurs
-
----
-
-## 🏢 Architecture des Groupes
-
-### Stratégie de Groupement
-
-#### Exemple 1 : Par Département
-
-```
-Groupe: Développement
-├── Participe au planning: ✅
-├── Participe aux astreintes: ✅
-└── Utilisateurs: Jean, Marie, Pierre
-
-Groupe: Support
-├── Participe au planning: ✅
-├── Participe aux astreintes: ✅
-└── Utilisateurs: Sophie, Thomas
-
-Groupe: Direction
-├── Participe au planning: ❌
-├── Participe aux astreintes: ❌
-└── Utilisateurs: Monsieur Dupont
-```
-
-#### Exemple 2 : Par Type de Contrat
-
-```
-Groupe: Temps Plein
-├── Participe au planning: ✅
-├── Participe aux astreintes: ✅
-└── Utilisateurs: ...
-
-Groupe: Temps Partiel
-├── Participe au planning: ✅
-├── Participe aux astreintes: ❌
-└── Utilisateurs: ...
-
-Groupe: Stagiaires
-├── Participe au planning: ✅
-├── Participe aux astreintes: ❌
-└── Utilisateurs: ...
-```
-
-### Migration des Utilisateurs
-
-Pour déplacer un utilisateur vers un autre groupe :
-
-1. Vérifiez que le nouveau groupe a les bonnes permissions
-2. Allez dans **Admin** > **Utilisateurs**
-3. Cliquez sur **Modifier** pour l'utilisateur
-4. Changez le groupe
-5. **Enregistrer**
-
-> ⚠️ **Attention** : Si le nouvel groupe n'a pas la permission de participer au planning, l'utilisateur perdra ses shifts.
+1. **Naming**: Use professional emails
+2. **Groups**: Organize users by team/department
+3. **Permissions**: Grant only the necessary permissions
+4. **Audit**: Regularly review the user list
 
 ---
 
-## ⚙️ Configuration des Types de Shifts
+## 🏢 Group Architecture
 
-### Types de Shifts par Défaut
+### Grouping Strategy
 
-| Nom | Libellé | Heure Début | Heure Fin | Durée |
+#### Example 1: By Department
+
+```
+Group: Development
+├── Participates in scheduling: ✅
+├── Participates in on-call: ✅
+└── Users: Jean, Marie, Pierre
+
+Group: Support
+├── Participates in scheduling: ✅
+├── Participates in on-call: ✅
+└── Users: Sophie, Thomas
+
+Group: Management
+├── Participates in scheduling: ❌
+├── Participates in on-call: ❌
+└── Users: Mr. Dupont
+```
+
+#### Example 2: By Contract Type
+
+```
+Group: Full-Time
+├── Participates in scheduling: ✅
+├── Participates in on-call: ✅
+└── Users: ...
+
+Group: Part-Time
+├── Participates in scheduling: ✅
+├── Participates in on-call: ❌
+└── Users: ...
+
+Group: Interns
+├── Participates in scheduling: ✅
+├── Participates in on-call: ❌
+└── Users: ...
+```
+
+### Moving Users
+
+To move a user to another group:
+
+1. Check that the new group has the right permissions
+2. Go to **Admin** > **Users**
+3. Click **Edit** for the user
+4. Change the group
+5. **Save**
+
+> ⚠️ **Warning**: If the new group doesn't have the permission to participate in scheduling, the user will lose their shifts.
+
+---
+
+## ⚙️ Shift Type Configuration
+
+### Default Shift Types
+
+| Name | Label | Start Time | End Time | Duration |
 |-----|---------|--------------|-----------|-------|
-| `morning` | Matin | 8h00 | 12h00 | 4h |
-| `afternoon` | Après-midi | 12h00 | 18h00 | 6h |
-| `evening` | Soirée | 18h00 | 22h00 | 4h |
+| `morning` | Morning | 8:00 AM | 12:00 PM | 4h |
+| `afternoon` | Afternoon | 12:00 PM | 6:00 PM | 6h |
+| `evening` | Evening | 6:00 PM | 10:00 PM | 4h |
 
-### Créer un Type de Shift Personnalisé
+### Creating a Custom Shift Type
 
-#### Exemple 1 : Shift de Nuit
+#### Example 1: Night Shift
 
-1. **Admin** > **Types de Shifts** > **Ajouter**
-2. Nom : `night`
-3. Libellé : `Nuit`
-4. Heure de début : `22`
-5. Heure de fin : `6`
-6. **Enregistrer**
+1. **Admin** > **Shift Types** > **Add**
+2. Name: `night`
+3. Label: `Night`
+4. Start time: `22`
+5. End time: `6`
+6. **Save**
 
-> ⚠️ **Attention** : Un shift qui passe minuit doit avoir une heure de fin > heure de début (ex: 22 à 6 = 22 à 30 pour 8h).
+> ⚠️ **Warning**: A shift that crosses midnight must have an end time > start time (e.g., 22 to 6 = 22 to 30 for 8h).
 
-#### Exemple 2 : Shift Court
+#### Example 2: Short Shift
 
-1. **Admin** > **Types de Shifts** > **Ajouter**
-2. Nom : `short_morning`
-3. Libellé : `Matin Court`
-4. Heure de début : `9`
-5. Heure de fin : `12`
-6. **Enregistrer**
+1. **Admin** > **Shift Types** > **Add**
+2. Name: `short_morning`
+3. Label: `Short Morning`
+4. Start time: `9`
+5. End time: `12`
+6. **Save**
 
-### Modifier un Type de Shift
+### Editing a Shift Type
 
-1. **Admin** > **Types de Shifts**
-2. Cliquez sur **Modifier** pour le type de shift
-3. Modifiez les champs nécessaires
-4. **Enregistrer**
+1. **Admin** > **Shift Types**
+2. Click **Edit** for the shift type
+3. Modify the necessary fields
+4. **Save**
 
-> ⚠️ **Attention** : La modification d'un type de shift affecte tous les shifts existants qui l'utilisent.
+> ⚠️ **Warning**: Editing a shift type affects all existing shifts that use it.
 
-### Supprimer un Type de Shift
+### Deleting a Shift Type
 
-1. **Admin** > **Types de Shifts**
-2. Cliquez sur **Supprimer** pour le type de shift
-3. Confirmez
+1. **Admin** > **Shift Types**
+2. Click **Delete** for the shift type
+3. Confirm
 
-> ⚠️ **Attention** : Vous ne pouvez pas supprimer un type de shift utilisé dans des shifts existants.
+> ⚠️ **Warning**: You cannot delete a shift type that is used by existing shifts.
 
-### Bonnes Pratiques
+### Best Practices
 
-1. **Nommage** : Utilisez des noms courts et descriptifs (sans espaces)
-2. **Libellés** : Utilisez des libellés clairs pour l'interface
-3. **Chevauchement** : Évitez les chevauchements d'horaires
-4. **Couverture** : Assurez-vous que tous les créneaux nécessaires sont couverts
-
----
-
-## 📊 Tableau de Bord et Statistiques
-
-### Vue d'Ensemble
-
-Le tableau de bord administrateur affiche :
-
-- **Utilisateurs** : Nombre total d'utilisateurs
-- **Groupes** : Nombre total de groupes
-- **Shifts** : Nombre total de shifts planifiés
-- **Astreintes** : Nombre total d'astreintes
-- **Congés** : Nombre total de congés
-
-### Statistiques Avancées
-
-> 📌 **À venir** : Des graphiques et rapports détaillés seront ajoutés.
-
-### Accès Rapide
-
-Depuis le tableau de bord, vous pouvez accéder à :
-- **Utilisateurs** : Gestion complète des utilisateurs
-- **Groupes** : Configuration des groupes
-- **Types de Shifts** : Paramétrage des types de shifts
-- **Automatisation** : Configuration de l'automatisation
+1. **Naming**: Use short, descriptive names (no spaces)
+2. **Labels**: Use clear labels for the interface
+3. **Overlap**: Avoid overlapping time slots
+4. **Coverage**: Make sure all required time slots are covered
 
 ---
 
-## ⚡ Automatisation Complète
+## 📊 Dashboard and Statistics
 
-### Architecture de l'Automatisation
+### Overview
 
-Leviia Schedule propose plusieurs niveaux d'automatisation :
+The administrator dashboard displays:
+
+- **Users**: Total number of users
+- **Groups**: Total number of groups
+- **Shifts**: Total number of scheduled shifts
+- **On-call**: Total number of on-call periods
+- **Leave**: Total number of leave requests
+
+### Advanced Statistics
+
+> 📌 **Coming soon**: Detailed charts and reports will be added.
+
+### Quick Access
+
+From the dashboard, you can access:
+- **Users**: Full user management
+- **Groups**: Group configuration
+- **Shift Types**: Shift type settings
+- **Automation**: Automation configuration
+
+---
+
+## ⚡ Full Automation
+
+### Automation Architecture
+
+Kairos offers several levels of automation:
 
 ```
 ┌─────────────────────────────────────────────────┐
-│                AUTOMATISATION                     │
+│                   AUTOMATION                      │
 ├─────────────────────────────────────────────────┤
 │  ┌──────────────┐    ┌──────────────┐          │
-│  │  Astreintes   │    │    Shifts     │          │
-│  │  (On-Call)    │    │              │          │
+│  │   On-Call     │    │    Shifts     │          │
+│  │               │    │              │          │
 │  └──────────────┘    └──────────────┘          │
 │         │                   │                 │
 │         ▼                   ▼                 │
 │  ┌─────────────────────────────────────────┐  │
-│  │         Génération Complète              │  │
-│  │   (Astreintes + Shifts en une fois)       │  │
+│  │             Full Generation               │  │
+│  │   (On-call + Shifts in a single pass)     │  │
 │  └─────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────┘
 ```
 
-### Configuration des Astreintes Automatiques
+### Configuring Automatic On-Call
 
-#### Étape 1 : Définir l'ordre de rotation
+#### Step 1: Define the rotation order
 
-1. Allez dans **Admin** > **Automatisation** > **Génération complète**
-2. Pour chaque utilisateur éligible :
-   - ✅ **Inclure dans la rotation** : Cochez pour inclure
-   - **Position** : Définissez l'ordre (1 = premier)
-3. Cliquez sur **Enregistrer l'ordre**
+1. Go to **Admin** > **Automation** > **Full generation**
+2. For each eligible user:
+   - ✅ **Include in rotation**: Check to include
+   - **Position**: Set the order (1 = first)
+3. Click **Save order**
 
-Exemple d'ordre de rotation :
+Example rotation order:
 ```
 Position 1: Jean Dupont
 Position 2: Marie Martin
@@ -485,86 +480,86 @@ Position 3: Pierre Durand
 Position 4: Sophie Leroy
 ```
 
-#### Étape 2 : Configurer la période
+#### Step 2: Configure the period
 
-1. **Date de début** : Premier vendredi de la période
-2. **Date de fin** : Dernier jour de la période
-3. Cliquez sur **Simuler** pour prévisualiser
+1. **Start date**: First Friday of the period
+2. **End date**: Last day of the period
+3. Click **Simulate** to preview
 
-#### Étape 3 : Générer
+#### Step 3: Generate
 
-1. Vérifiez le résultat de la simulation
-2. Cliquez sur **Générer** pour créer les astreintes
+1. Check the simulation result
+2. Click **Generate** to create the on-call periods
 
-### Configuration des Shifts Automatiques
+### Configuring Automatic Shifts
 
-#### Étape 1 : Définir les besoins quotidiens
+#### Step 1: Define daily requirements
 
-1. Allez dans **Admin** > **Automatisation** > **Shifts**
-2. Pour chaque jour (lundi à vendredi) :
-   - **Matin** : Nombre de personnes nécessaires
-   - **Après-midi** : Nombre de personnes nécessaires
-   - **Soirée** : Nombre de personnes nécessaires
+1. Go to **Admin** > **Automation** > **Shifts**
+2. For each day (Monday to Friday):
+   - **Morning**: Number of people needed
+   - **Afternoon**: Number of people needed
+   - **Evening**: Number of people needed
 
-Exemple de configuration :
+Example configuration:
 ```
-Lundi:
-  - Matin: 2 personnes
-  - Après-midi: 2 personnes
-  - Soirée: 1 personne
+Monday:
+  - Morning: 2 people
+  - Afternoon: 2 people
+  - Evening: 1 person
 
-Mardi à Vendredi: Même configuration
+Tuesday to Friday: Same configuration
 ```
 
-#### Étape 2 : Configurer la période
+#### Step 2: Configure the period
 
-1. **Date de début** : Premier jour de la période
-2. **Date de fin** : Dernier jour de la période
-3. Cliquez sur **Simuler** pour prévisualiser
+1. **Start date**: First day of the period
+2. **End date**: Last day of the period
+3. Click **Simulate** to preview
 
-#### Étape 3 : Générer
+#### Step 3: Generate
 
-1. Vérifiez le résultat de la simulation
-2. Cliquez sur **Générer** pour créer les shifts
+1. Check the simulation result
+2. Click **Generate** to create the shifts
 
-### Génération Complète (Astreintes + Shifts)
+### Full Generation (On-Call + Shifts)
 
-Pour générer tout en une seule opération :
+To generate everything in a single operation:
 
-1. Allez dans **Admin** > **Automatisation** > **Génération complète**
-2. Configurez l'ordre de rotation des astreintes
-3. Sélectionnez la période
-4. Cliquez sur **Simuler**
-5. Vérifiez que tout est correct
-6. Cliquez sur **Générer**
+1. Go to **Admin** > **Automation** > **Full generation**
+2. Configure the on-call rotation order
+3. Select the period
+4. Click **Simulate**
+5. Check that everything is correct
+6. Click **Generate**
 
-> 💡 **Astuce** : La génération complète prend en compte les astreintes pour éviter les conflits avec les shifts.
+> 💡 **Tip**: Full generation takes on-call periods into account to avoid conflicts with shifts.
 
-### Rafraîchir les Shifts
+### Refreshing Shifts
 
-Si vous avez modifié manuellement des astreintes :
+If you have manually modified on-call periods:
 
-1. Allez dans **Admin** > **Automatisation** > **Rafraîchir les shifts**
-2. Sélectionnez la période à recalculer
-3. Cliquez sur **Rafraîchir**
+1. Go to **Admin** > **Automation** > **Refresh shifts**
+2. Select the period to recalculate
+3. Click **Refresh**
 
-> ⚠️ **Attention** : Cette action supprimera tous les shifts existants pour la période sélectionnée !
+> ⚠️ **Warning**: This action will delete all existing shifts for the selected period!
 
-### Règles Métiers
+### Business Rules
 
-#### Règles par défaut pour les astreintes
+#### Default rules for on-call
 
 ```python
 {
-    "rotation_order": [1, 2, 3, 4],  # Ordre des utilisateurs
-    "duration_days": 7,              # Durée en jours
-    "start_hour": 21,               # Heure de début (21h = 9 PM)
-    "end_hour": 7,                 # Heure de fin (7h = 7 AM)
-    "start_day": 4                 # Jour de la semaine (4 = Vendredi)
+    "rotation_order": [1, 2, 3, 4],  # User order
+    "duration_days": 7,              # Duration in days
+    "start_hour": 21,               # Start time (21h = 9 PM)
+    "end_hour": 7,                 # End time (7h = 7 AM)
+    "start_day": 4                 # Day of the week (4 = Friday)
 }
 ```
 
-#### Règles par défaut pour les shifts
+#### Default rules for shifts
 
 ```python
 {
@@ -579,47 +574,45 @@ Si vous avez modifié manuellement des astreintes :
 }
 ```
 
-### Personnalisation des Règles
+### Customizing Rules
 
-Vous pouvez personnaliser les règles dans le fichier de configuration ou via l'interface d'automatisation.
+You can customize the rules in the configuration file or via the automation interface.
 
 ---
 
-## 🔧 Configuration Technique
+## 🔧 Technical Configuration
 
-### Paramètres administrables via l'UI (`/admin/settings`)
+### Settings configurable via the UI (`/admin/settings`)
 
-Depuis les versions 0.7.10 à 0.9.0, un ensemble croissant de réglages,
-auparavant uniquement des variables d'environnement, est éditable à chaud
-depuis `/admin/settings` sans redéploiement : fuseau horaire par défaut,
-langue par défaut (Français/Anglais), formats de date/heure par défaut,
-URL publique, pagination (éléments par page), notifications par email
-(activation globale), rétention des sauvegardes, durée d'expiration du
-token ICS, et rétention de l'audit trail. Chaque réglage suit la même
-règle : une valeur enregistrée en base l'emporte toujours ; tant
-qu'aucune valeur n'a été enregistrée, l'application se rabat en direct
-sur la variable d'environnement/valeur par défaut correspondante (donc un
-déploiement piloté uniquement par variables d'environnement continue de
-fonctionner à l'identique tant que personne ne passe par cette page).
-Chaque utilisateur peut aussi surcharger individuellement son fuseau
-horaire, sa langue, et ses formats de date/heure depuis `/profile/settings`
-(sinon la valeur par défaut de l'organisation s'applique).
+Since versions 0.7.10 through 0.9.0, a growing set of settings —
+previously environment variables only — is editable at runtime from
+`/admin/settings` without a redeploy: default timezone, default language
+(French/English), default date/time formats, public URL, pagination
+(items per page), email notifications (global toggle), backup retention,
+ICS token expiry duration, and audit trail retention. Each setting
+follows the same rule: a value saved in the database always wins; as
+long as no value has been saved, the application falls back live to the
+corresponding environment variable/default value (so a deployment driven
+solely by environment variables keeps behaving identically as long as no
+one goes through this page). Each user can also individually override
+their own timezone, language, and date/time formats from
+`/profile/settings` (otherwise the organization's default value
+applies).
 
-Chaque modification effectuée sur cette page (comme toute action métier)
-est enregistrée dans l'historique des modifications — voir "Audit et
-Journalisation" ci-dessus.
+Every change made on this page (like any business action) is recorded in
+the change history — see "Audit and Logging" above.
 
-### Fichier de Configuration
+### Configuration File
 
-La configuration active vit dans `app/config/` (`base.py`, `testing.py`),
-lue à partir des variables d'environnement (`.env`). `create_app()` charge
-toujours `app.config.base.Config` en production comme en développement
-(`FLASK_ENV` ne sélectionne qu'entre Gunicorn et le serveur de
-développement Flask, pas une classe de configuration) ; `TestingConfig`
-n'est utilisée que par la suite de tests.
+The active configuration lives in `app/config/` (`base.py`,
+`testing.py`), read from environment variables (`.env`). `create_app()`
+always loads `app.config.base.Config` in both production and development
+(`FLASK_ENV` only selects between Gunicorn and the Flask development
+server, not a configuration class); `TestingConfig` is only used by the
+test suite.
 
 ```python
-# app/config/base.py (extrait)
+# app/config/base.py (excerpt)
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or secrets.token_urlsafe(32)
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///app.db'
@@ -627,81 +620,81 @@ class Config:
     LOGIN_DISABLED = get_bool_from_env('LOGIN_DISABLED', False)
 ```
 
-### Variables d'Environnement
+### Environment Variables
 
-| Variable | Description | Valeur par défaut | Recommandation |
+| Variable | Description | Default value | Recommendation |
 |----------|-------------|------------------|----------------|
-| `SECRET_KEY` | Clé secrète pour la sécurité | Aléatoire si absente | ⭐⭐⭐⭐⭐ Générer une clé forte et la fixer explicitement |
-| `DATABASE_URL` | URI de la base de données | `sqlite:///app.db` | Utiliser PostgreSQL ou MariaDB en production |
-| `LOGIN_DISABLED` | Désactive l'authentification | `false` | ❌ Ne JAMAIS activer en production |
-| `LOG_LEVEL` | Niveau de journalisation | `INFO` | `DEBUG` pour le développement |
+| `SECRET_KEY` | Secret key for security | Random if absent | ⭐⭐⭐⭐⭐ Generate a strong key and set it explicitly |
+| `DATABASE_URL` | Database URI | `sqlite:///app.db` | Use PostgreSQL or MariaDB in production |
+| `LOGIN_DISABLED` | Disables authentication | `false` | ❌ NEVER enable in production |
+| `LOG_LEVEL` | Logging level | `INFO` | `DEBUG` for development |
 
-Liste complète : [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md).
+Full list: [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md).
 
-### Configuration de la Base de Données
+### Database Configuration
 
-Toutes les variantes se configurent via `DATABASE_URL` dans `.env` — pas
-de fichier Python à modifier.
+All variants are configured via `DATABASE_URL` in `.env` — no Python
+file to edit.
 
-#### SQLite (par défaut)
+#### SQLite (default)
 
 ```bash
 DATABASE_URL=sqlite:///app.db
 ```
 
-- **Avantages** : Simple, pas de serveur requis
-- **Inconvénients** : Pas adapté pour la production, pas de concurrency
+- **Advantages**: Simple, no server required
+- **Disadvantages**: Not suited for production, no concurrency
 
-#### PostgreSQL (recommandé pour la production)
+#### PostgreSQL (recommended for production)
 
 ```bash
-DATABASE_URL=postgresql://user:password@localhost/leviia
+DATABASE_URL=postgresql://user:password@localhost/kairos
 ```
 
-Le driver (`psycopg[binary]`, psycopg 3) est déjà inclus par défaut dans
-`requirements.txt` — aucune installation supplémentaire nécessaire. Voir
+The driver (`psycopg[binary]`, psycopg 3) is already included by default
+in `requirements.txt` — no extra installation needed. See
 [`deployment/DEPLOYMENT_ADVANCED.md`](../deployment/DEPLOYMENT_ADVANCED.md)
-pour une configuration complète.
+for a complete setup.
 
-- **Avantages** : Robuste, scalable, support de la concurrency
-- **Inconvénients** : Requiert un serveur PostgreSQL
+- **Advantages**: Robust, scalable, concurrency support
+- **Disadvantages**: Requires a PostgreSQL server
 
 #### MariaDB / MySQL
 
 ```bash
-DATABASE_URL=mariadb://user:password@localhost:3306/leviia
-# ou : DATABASE_URL=mysql://user:password@localhost:3306/leviia
+DATABASE_URL=mariadb://user:password@localhost:3306/kairos
+# or: DATABASE_URL=mysql://user:password@localhost:3306/kairos
 ```
 
-Déjà supporté (SQLAlchemy gère le choix du backend via l'URI). Le driver
-`PyMySQL` — 100% pur Python, aucune bibliothèque système requise — est
-déjà inclus par défaut dans `requirements.txt`, aucune installation
-supplémentaire nécessaire. C'est ce qui permet de connecter l'app à un
-serveur MySQL/MariaDB **externe** sans rien installer côté MySQL, ni sur
-la machine hôte ni dans l'image Docker. Voir
+Already supported (SQLAlchemy handles backend selection via the URI).
+The `PyMySQL` driver — 100% pure Python, no system library required — is
+already included by default in `requirements.txt`, no extra installation
+needed. This is what lets you connect the app to an **external**
+MySQL/MariaDB server without installing anything MySQL-related, either
+on the host machine or in the Docker image. See
 [`deployment/DEPLOYMENT_GUIDE.md`](../deployment/DEPLOYMENT_GUIDE.md#73-mysqlmariadb)
-section 7.3 pour un exemple complet.
+section 7.3 for a complete example.
 
-### Configuration du Serveur
+### Server Configuration
 
-#### Développement (Flask intégré)
+#### Development (built-in Flask server)
 
 ```bash
 python run.py
 ```
 
-- **Port** : 5000
-- **Host** : localhost
-- **Debug** : Activé
+- **Port**: 5000
+- **Host**: localhost
+- **Debug**: Enabled
 
 #### Production (Gunicorn + Nginx)
 
-1. Installer Gunicorn :
+1. Install Gunicorn:
    ```bash
    pip install gunicorn
    ```
 
-2. Créer un fichier `wsgi.py` :
+2. Create a `wsgi.py` file:
    ```python
    from app import app
    
@@ -709,383 +702,381 @@ python run.py
        app.run()
    ```
 
-3. Lancer Gunicorn :
+3. Run Gunicorn:
    ```bash
    gunicorn -w 4 -b 0.0.0.0:8000 wsgi:app
    ```
 
-4. Configurer Nginx comme reverse proxy
+4. Configure Nginx as a reverse proxy
 
 ---
 
-## 📤 Export et Intégrations
+## 📤 Export and Integrations
 
-### Export ICS
+### ICS Export
 
 #### Configuration
 
-L'export ICS est disponible via l'URL :
+ICS export is available via the URL:
 ```
 /export/shifts?scope={scope}&token={token}
 ```
 
-**Paramètres** :
-- `scope` : `my` (planning personnel) ou `all` (tous les plannings)
-- `token` : Token ICS de l'utilisateur
+**Parameters**:
+- `scope`: `my` (personal schedule) or `all` (all schedules)
+- `token`: The user's ICS token
 
-#### Générer un token ICS
+#### Generating an ICS token
 
-La génération de token est **en libre-service** — chaque utilisateur
-génère le sien depuis son propre profil (**Profil > Token ICS >
-Générer un nouveau token**, route `POST /profile/ics-token`). Il n'y a
-pas de workflow admin permettant de générer le token d'un autre
-utilisateur depuis l'écran **Admin > Utilisateurs**.
+Token generation is **self-service** — each user generates their own
+from their own profile (**Profile > ICS Token > Generate a new token**,
+route `POST /profile/ics-token`). There is no admin workflow to generate
+another user's token from the **Admin > Users** screen.
 
-#### Intégration avec Google Calendar
+#### Integration with Google Calendar
 
-1. Dans Google Calendar : **Paramètres** > **Ajouter un calendrier** > **À partir d'une URL**
-2. Collez l'URL : `http://votre-serveur/export/shifts?scope=my&token=VOTRE_TOKEN`
-3. **Ajouter un calendrier**
+1. In Google Calendar: **Settings** > **Add calendar** > **From URL**
+2. Paste the URL: `http://your-server/export/shifts?scope=my&token=YOUR_TOKEN`
+3. **Add calendar**
 
-#### Intégration avec Outlook
+#### Integration with Outlook
 
-1. Dans Outlook : **Fichier** > **Paramètres du compte** > **Paramètres du compte**
-2. **Nouveau** > **Calendrier Internet**
-3. Collez l'URL
-4. **Suivant**
+1. In Outlook: **File** > **Account Settings** > **Account Settings**
+2. **New** > **Internet Calendar**
+3. Paste the URL
+4. **Next**
 
-### Export Avancé
+### Advanced Export
 
-Leviia Schedule propose trois endpoints d'export distincts :
+Kairos offers three separate export endpoints:
 
-#### Endpoints disponibles
+#### Available endpoints
 
-| Endpoint | Description | Paramètres |
+| Endpoint | Description | Parameters |
 |----------|-------------|------------|
-| `/export/shifts` | Exporte les shifts (plannings de travail) | `scope`, `token` |
-| `/export/oncall` | Exporte les astreintes (on-call) | `scope`, `token` |
-| `/export/leaves` | Exporte les congés | `scope`, `token` |
+| `/export/shifts` | Exports shifts (work schedules) | `scope`, `token` |
+| `/export/oncall` | Exports on-call periods | `scope`, `token` |
+| `/export/leaves` | Exports leave | `scope`, `token` |
 
-#### Paramètres communs
+#### Common parameters
 
-| Paramètre | Valeurs possibles | Description |
+| Parameter | Possible values | Description |
 |-----------|-------------------|-------------|
-| `scope` | `my`, `all` | `my` = données de l'utilisateur, `all` = toutes les données (admin seulement) |
-| `token` | Token ICS | Token d'authentification généré dans le profil |
+| `scope` | `my`, `all` | `my` = the user's own data, `all` = all data (admin only) |
+| `token` | ICS token | Authentication token generated in the profile |
 
-#### Exemples d'URLs
+#### URL examples
 
 ```bash
-# Export personnel
-/export/shifts?scope=my&token=VOTRE_TOKEN
-/export/oncall?scope=my&token=VOTRE_TOKEN
-/export/leaves?scope=my&token=VOTRE_TOKEN
+# Personal export
+/export/shifts?scope=my&token=YOUR_TOKEN
+/export/oncall?scope=my&token=YOUR_TOKEN
+/export/leaves?scope=my&token=YOUR_TOKEN
 
-# Export complet (admin)
-/export/shifts?scope=all&token=TOKEN_ADMIN
-/export/oncall?scope=all&token=TOKEN_ADMIN
-/export/leaves?scope=all&token=TOKEN_ADMIN
+# Full export (admin)
+/export/shifts?scope=all&token=ADMIN_TOKEN
+/export/oncall?scope=all&token=ADMIN_TOKEN
+/export/leaves?scope=all&token=ADMIN_TOKEN
 ```
 
-### API REST (À venir)
+### REST API (Coming soon)
 
-> 📌 **Fonctionnalité prévue** : Une API REST publique sera disponible dans la version 0.8.
+> 📌 **Planned feature**: A public REST API will be available in version 0.8.
 
-### Webhooks (À venir)
+### Webhooks (Coming soon)
 
-> 📌 **Fonctionnalité prévue** : Les webhooks seront disponibles dans la version 0.8.
+> 📌 **Planned feature**: Webhooks will be available in version 0.8.
 
 ---
 
-## 🎨 Personnalisation
+## 🎨 Customization
 
-### Personnalisation de l'Interface
+### Interface Customization
 
-#### Logo et Favicon
+#### Logo and Favicon
 
-Remplacez les fichiers dans `app/templates/` :
-- `favicon.ico` : Favicon de l'application
-- (À venir) : Logo dans le header
+Replace the files in `app/templates/`:
+- `favicon.ico`: The application's favicon
+- (Coming soon): Logo in the header
 
-#### CSS Personnalisé
+#### Custom CSS
 
-1. Créez un fichier `app/static/css/custom.css`
-2. Ajoutez vos styles personnalisés
-3. Le fichier sera automatiquement chargé
+1. Create a file `app/static/css/custom.css`
+2. Add your custom styles
+3. The file will be loaded automatically
 
-### Notifications par Email
+### Email Notifications
 
-Leviia Schedule envoie des rappels hebdomadaires par email :
-- Un récapitulatif des shifts de la semaine à venir, envoyé le
-  **dimanche** (24h avant le début des shifts du lundi).
-- Un rappel d'astreinte, envoyé le **jeudi** (24h avant le début de
-  l'astreinte du vendredi 21h).
+Kairos sends weekly reminder emails:
+- A summary of the upcoming week's shifts, sent on **Sunday** (24h
+  before Monday's shifts start).
+- An on-call reminder, sent on **Thursday** (24h before Friday's 9 PM
+  on-call period starts).
 
-Ces emails sont envoyés par deux scripts autonomes
-(`scripts/send_shift_notifications.py` et
-`scripts/send_oncall_notifications.py`), déclenchés par une tâche cron
-externe - **pas** par l'application Flask elle-même. Un seul email est
-envoyé par semaine et par utilisateur (garde-fou anti-doublon en base).
+These emails are sent by two standalone scripts
+(`scripts/send_shift_notifications.py` and
+`scripts/send_oncall_notifications.py`), triggered by an external cron
+job — **not** by the Flask application itself. Only one email per week
+and per user is sent (anti-duplicate safeguard in the database).
 
-#### Activer les notifications
+#### Enabling notifications
 
-1. Configurez les variables SMTP dans `.env` (voir
-   [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-configuration-des-notifications)) :
+1. Configure the SMTP variables in `.env` (see
+   [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-configuration-des-notifications)):
    `NOTIFICATIONS_ENABLED=true`, `NOTIFICATION_FROM_EMAIL`, `SMTP_HOST`,
-   `SMTP_PORT`, `SMTP_USERNAME`/`SMTP_PASSWORD` si votre serveur SMTP
-   requiert une authentification.
-2. Ajoutez les deux entrées crontab (voir `scripts/cron_example.sh`
-   pour un exemple complet) :
+   `SMTP_PORT`, `SMTP_USERNAME`/`SMTP_PASSWORD` if your SMTP server
+   requires authentication.
+2. Add the two crontab entries (see `scripts/cron_example.sh` for a
+   complete example):
 
 ```bash
-# Dimanche 9h : rappel des shifts de la semaine
-0 9 * * 0 cd /chemin/vers/leviia-schedule && venv/bin/python scripts/send_shift_notifications.py >> /var/log/leviia-notifications.log 2>&1
+# Sunday 9am: weekly shift reminder
+0 9 * * 0 cd /path/to/kairos && venv/bin/python scripts/send_shift_notifications.py >> /var/log/kairos-notifications.log 2>&1
 
-# Jeudi 9h : rappel de l'astreinte du vendredi
-0 9 * * 4 cd /chemin/vers/leviia-schedule && venv/bin/python scripts/send_oncall_notifications.py >> /var/log/leviia-notifications.log 2>&1
+# Thursday 9am: Friday on-call reminder
+0 9 * * 4 cd /path/to/kairos && venv/bin/python scripts/send_oncall_notifications.py >> /var/log/kairos-notifications.log 2>&1
 ```
 
-Si `NOTIFICATIONS_ENABLED` n'est pas activé (ou si la config SMTP est
-incomplète), les scripts se terminent silencieusement sans rien
-envoyer - pas besoin de désactiver le cron pour couper les
-notifications, une seule variable d'environnement suffit.
+If `NOTIFICATIONS_ENABLED` is not enabled (or if the SMTP configuration
+is incomplete), the scripts terminate silently without sending anything
+— no need to disable the cron job to turn off notifications, a single
+environment variable is enough.
 
-#### Personnaliser le contenu des emails
+#### Customizing email content
 
-Les gabarits (HTML + texte) sont dans `app/templates/emails/` :
-`shift_weekly.html`/`.txt` et `oncall_weekly.html`/`.txt`. Ce sont des
-templates Jinja2 classiques - modifiez-les directement pour changer le
-contenu, la mise en forme ou la marque (logo, couleurs).
+The templates (HTML + text) are in `app/templates/emails/`:
+`shift_weekly.html`/`.txt` and `oncall_weekly.html`/`.txt`. These are
+standard Jinja2 templates — edit them directly to change the content,
+formatting, or branding (logo, colors).
 
-### Personnalisation des Règles Métiers
+### Customizing Business Rules
 
-Vous pouvez personnaliser les règles métiers dans :
-- `app/utils/automation/` : règles d'automatisation
+You can customize business rules in:
+- `app/utils/automation/`: automation rules
   (`advanced_shift_automation.py`, `oncall_automation.py`)
-- `app/utils/helpers/common_helpers.py` : fonctions de validation
+- `app/utils/helpers/common_helpers.py`: validation functions
   (`can_add_shift`, `can_add_leave`, `can_add_oncall`)
-- `app/auth/decorators.py` : décorateurs de garde de route
+- `app/auth/decorators.py`: route guard decorators
   (`@admin_required`, `@user_owns_resource`, etc.)
 
-Voir [`architecture/ARCHITECTURE.md`](../architecture/ARCHITECTURE.md)
-pour la structure complète.
+See [`architecture/ARCHITECTURE.md`](../architecture/ARCHITECTURE.md)
+for the full structure.
 
 ---
 
-## 🔄 Maintenance et Sauvegardes
+## 🔄 Maintenance and Backups
 
-### Sauvegarde de la Base de Données
+### Database Backup
 
-Le système de sauvegarde intégré (`scripts/backup_database.py`) gère la
-sauvegarde locale et/ou S3/S3-compatible, la compression, la
-vérification d'intégrité, la rétention et les alertes email - voir le
-[Guide de Sauvegarde](BACKUP_GUIDE.md) pour le détail complet. Piloté
-entièrement par variables d'environnement (`BACKUP_ENABLED` en premier
-lieu, voir [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-configuration-des-sauvegardes)) -
-désactivé par défaut.
+The built-in backup system (`scripts/backup_database.py`) handles local
+and/or S3/S3-compatible backups, compression, integrity verification,
+retention, and email alerts — see the [Backup Guide](BACKUP_GUIDE.md)
+for the full detail. Entirely driven by environment variables
+(`BACKUP_ENABLED` first and foremost, see
+[`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-configuration-des-sauvegardes))
+— disabled by default.
 
-Deux façons de déclencher une sauvegarde :
+Two ways to trigger a backup:
 
-- **Interface d'administration** (`/admin/backups`) : configuration
-  active, liste des sauvegardes locales/S3, création à la demande,
-  nettoyage, téléchargement. La création manuelle est refusée si
-  `BACKUP_ENABLED=false`.
-- **Cron** (recommandé pour l'automatisation) : voir
-  [Automatisation avec Cron](BACKUP_GUIDE.md#-automatisation-avec-cron)
-  ou, en Docker, `BACKUP_ENABLED=true` suffit (même conteneur que
-  l'application, planning dans `docker/crontabs/appuser`, voir
+- **Admin interface** (`/admin/backups`): active configuration, list of
+  local/S3 backups, on-demand creation, cleanup, download. Manual
+  creation is refused if `BACKUP_ENABLED=false`.
+- **Cron** (recommended for automation): see [Automation with
+  Cron](BACKUP_GUIDE.md#-automatisation-avec-cron), or, in Docker,
+  `BACKUP_ENABLED=true` is enough (same container as the application,
+  schedule in `docker/crontabs/appuser`, see
   [`deployment/docker.md`](../deployment/docker.md)).
 
-Pour une sauvegarde ponctuelle manuelle sans passer par ce système
-(dépannage, avant une opération risquée) :
+For a one-off manual backup without going through this system
+(troubleshooting, before a risky operation):
 
 ```bash
 # SQLite
 cp instance/app.db instance/app.db.backup-$(date +%Y%m%d)
 
 # PostgreSQL
-pg_dump leviia > leviia-backup-$(date +%Y%m%d).sql
+pg_dump kairos > kairos-backup-$(date +%Y%m%d).sql
 ```
 
-### Mise à Jour de l'Application
+### Updating the Application
 
-1. Sauvegardez la base de données
-2. Sauvegardez votre fichier `.env` (contient `SECRET_KEY` et les autres
-   secrets, non versionné)
-3. Mettez à jour le code :
+1. Back up the database
+2. Back up your `.env` file (contains `SECRET_KEY` and other secrets,
+   not version-controlled)
+3. Update the code:
    ```bash
    git pull origin main
    ```
-4. Installez les nouvelles dépendances :
+4. Install the new dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-5. Redémarrez l'application
+5. Restart the application
 
-### Nettoyage
+### Cleanup
 
-#### Supprimer les données obsolètes
+#### Removing obsolete data
 
-1. **Shifts passés** : Supprimez les shifts anciens pour améliorer les performances
-2. **Astreintes passées** : Supprimez les astreintes terminées
-3. **Congés passés** : Supprimez les congés terminés
+1. **Past shifts**: Delete old shifts to improve performance
+2. **Past on-call periods**: Delete finished on-call periods
+3. **Past leave**: Delete finished leave
 
-#### Optimisation de la Base de Données
+#### Database Optimization
 
-Pour SQLite :
+For SQLite:
 ```bash
-# Réorganiser la base de données
+# Reorganize the database
 sqlite3 instance/app.db "VACUUM;"
 ```
 
-Pour PostgreSQL :
+For PostgreSQL:
 ```bash
-# Réorganiser et analyser
-psql leviia -c "VACUUM ANALYZE;"
+# Reorganize and analyze
+psql kairos -c "VACUUM ANALYZE;"
 ```
 
 ---
 
-## 🚨 Gestion des Erreurs
+## 🚨 Error Handling
 
-### Erreurs Courantes et Solutions
+### Common Errors and Solutions
 
-#### Erreur : "Impossible de supprimer... des données sont associées"
+#### Error: "Cannot delete... data is associated"
 
-**Cause** : Vous essayez de supprimer un élément qui a des dépendances.
+**Cause**: You are trying to delete an item that has dependencies.
 
-**Solution** : Supprimez d'abord les données associées (shifts, astreintes, congés).
+**Solution**: First delete the associated data (shifts, on-call periods, leave).
 
-#### Erreur : "Format de date invalide"
+#### Error: "Invalid date format"
 
-**Cause** : La date n'est pas au format `AAAA-MM-JJ`.
+**Cause**: The date is not in `YYYY-MM-DD` format.
 
-**Solution** : Utilisez le format `2026-06-15`.
+**Solution**: Use the format `2026-06-15`.
 
-#### Erreur : "L'astreinte doit commencer un vendredi"
+#### Error: "On-call must start on a Friday"
 
-**Cause** : Vous essayez de créer une astreinte qui ne commence pas un vendredi.
+**Cause**: You are trying to create an on-call period that doesn't start on a Friday.
 
-**Solution** : Sélectionnez un vendredi comme date de début.
+**Solution**: Select a Friday as the start date.
 
-#### Erreur : "Email ou mot de passe incorrect"
+#### Error: "Incorrect email or password"
 
-**Cause** : Identifiants invalides.
+**Cause**: Invalid credentials.
 
-**Solution** : Vérifiez votre email et mot de passe. Utilisez la réinitialisation si nécessaire.
+**Solution**: Check your email and password. Use password reset if needed.
 
-#### Erreur 500 : Erreur serveur
+#### Error 500: Server error
 
-**Cause** : Problème interne du serveur.
+**Cause**: Internal server issue.
 
-**Solution** :
-1. Vérifiez les logs de l'application
-2. Vérifiez que la base de données est accessible
-3. Redémarrez l'application
-4. Contactez le support si le problème persiste
+**Solution**:
+1. Check the application logs
+2. Check that the database is accessible
+3. Restart the application
+4. Contact support if the problem persists
 
-### Logs et Dépannage
+### Logs and Troubleshooting
 
-#### Activer le mode debug
+#### Enabling debug mode
 
-Dans `run.py` :
+In `run.py`:
 ```python
 app.run(debug=True)
 ```
 
-#### Voir les logs
+#### Viewing logs
 
 ```bash
-# Lancer l'application avec logs
+# Run the application with logs
 python run.py
 ```
 
-#### Problèmes de Base de Données
+#### Database Issues
 
-**Symptôme** : L'application ne démarre pas, erreurs de connexion.
+**Symptom**: The application won't start, connection errors.
 
-**Solutions** :
-1. Vérifiez que le fichier `instance/app.db` existe
-2. Vérifiez les permissions : `chmod 666 instance/app.db`
-3. Vérifiez que SQLite est installé
-4. Pour PostgreSQL, vérifiez que le serveur est en cours d'exécution
+**Solutions**:
+1. Check that the `instance/app.db` file exists
+2. Check the permissions: `chmod 666 instance/app.db`
+3. Check that SQLite is installed
+4. For PostgreSQL, check that the server is running
 
 ---
 
-## 📚 Ressources pour Administrateurs
+## 📚 Resources for Administrators
 
 ### Documentation
 
-- [📖 Guide Utilisateur Complet](USER_GUIDE.md)
-- [🚀 Guide de Démarrage Rapide](QUICK_START.md)
+- [📖 Complete User Guide](USER_GUIDE.md)
+- [🚀 Quick Start Guide](QUICK_START.md)
 - [❓ FAQ](FAQ.md)
-- [🏗️ Architecture Technique](../architecture/ARCHITECTURE.md)
-- [🚀 Guide de Déploiement](../deployment/DEPLOYMENT_GUIDE.md)
-- [🗺️ Feuille de Route](../../ROADMAP.md)
-- [📋 README Technique](../../README.md)
+- [🏗️ Technical Architecture](../architecture/ARCHITECTURE.md)
+- [🚀 Deployment Guide](../deployment/DEPLOYMENT_GUIDE.md)
+- [🗺️ Roadmap](../../ROADMAP.md)
+- [📋 Technical README](../../README.md)
 
-### Outils
+### Tools
 
-- **SQLite Browser** : [https://sqlitebrowser.org/](https://sqlitebrowser.org/)
-- **PostgreSQL Admin** : pgAdmin, DBeaver
-- **Monitoring** : Prometheus, Grafana (pour la production)
+- **SQLite Browser**: [https://sqlitebrowser.org/](https://sqlitebrowser.org/)
+- **PostgreSQL Admin**: pgAdmin, DBeaver
+- **Monitoring**: Prometheus, Grafana (for production)
 
-### Communautés
+### Communities
 
-- **GitHub Issues** : [https://github.com/FoxOps/leviia-schedule/issues](https://github.com/FoxOps/leviia-schedule/issues)
-- **GitHub Discussions** : [https://github.com/FoxOps/leviia-schedule/discussions](https://github.com/FoxOps/leviia-schedule/discussions)
-
----
-
-## 📝 Checklist Administrateur
-
-### Après l'Installation
-
-- [ ] Changer le mot de passe administrateur par défaut
-- [ ] Configurer les groupes nécessaires
-- [ ] Ajouter les utilisateurs
-- [ ] Configurer les types de shifts
-- [ ] Tester l'application
-- [ ] Configurer les sauvegardes automatiques
-
-### Mensuellement
-
-- [ ] Vérifier les sauvegardes
-- [ ] Vérifier les logs pour les erreurs
-- [ ] Mettre à jour l'application
-- [ ] Vérifier l'espace disque
-- [ ] Auditer les utilisateurs et permissions
-
-### Trimestriellement
-
-- [ ] Tester la restauration des sauvegardes
-- [ ] Optimiser la base de données
-- [ ] Revoir les règles d'automatisation
-- [ ] Mettre à jour la documentation
+- **GitHub Issues**: [https://github.com/FoxOps/leviia-schedule/issues](https://github.com/FoxOps/leviia-schedule/issues)
+- **GitHub Discussions**: [https://github.com/FoxOps/leviia-schedule/discussions](https://github.com/FoxOps/leviia-schedule/discussions)
 
 ---
 
-## 📞 Support Administrateur
+## 📝 Administrator Checklist
 
-### Contacter le Support
+### After Installation
 
-1. **Issues GitHub** : Pour les bugs et demandes de fonctionnalités
-2. **Discussions GitHub** : Pour les questions générales
-3. **Documentation** : Consultez ce guide et les autres documents
+- [ ] Change the default administrator password
+- [ ] Configure the necessary groups
+- [ ] Add users
+- [ ] Configure shift types
+- [ ] Test the application
+- [ ] Configure automatic backups
 
-### Informations à Fournir
+### Monthly
 
-Lors de la signalisation d'un problème, fournissez :
-- Version de l'application
-- Type de base de données
-- Étapes pour reproduire
-- Logs d'erreur
-- Capture d'écran (si applicable)
+- [ ] Check backups
+- [ ] Check logs for errors
+- [ ] Update the application
+- [ ] Check disk space
+- [ ] Audit users and permissions
+
+### Quarterly
+
+- [ ] Test backup restoration
+- [ ] Optimize the database
+- [ ] Review automation rules
+- [ ] Update the documentation
 
 ---
 
-> **⚠️ Rappel** : En tant qu'administrateur, vous êtes responsable de la sécurité et de la bonne utilisation de l'application.
+## 📞 Administrator Support
+
+### Contacting Support
+
+1. **GitHub Issues**: For bugs and feature requests
+2. **GitHub Discussions**: For general questions
+3. **Documentation**: Refer to this guide and other documents
+
+### Information to Provide
+
+When reporting an issue, provide:
+- Application version
+- Database type
+- Steps to reproduce
+- Error logs
+- Screenshot (if applicable)
 
 ---
 
-*© 2026 Leviia Schedule - Tous droits réservés selon la licence CeCILL v2.1*
+> **⚠️ Reminder**: As an administrator, you are responsible for the security and proper use of the application.
+
+---
+
+*© 2026 FoxOps - All rights reserved under the CeCILL v2.1 license*

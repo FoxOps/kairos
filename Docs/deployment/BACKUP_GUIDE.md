@@ -1,99 +1,99 @@
-# Guide de Sauvegarde Automatique - Leviia Schedule
+# Automated Backup Guide - Kairos
 
-> **📖 Documentation complète pour la sauvegarde de la base de données**
+> **📖 Complete documentation for database backups**
 
-Ce guide explique comment configurer et utiliser le système de sauvegarde automatique pour Leviia Schedule.
+This guide explains how to configure and use the automated backup system for Kairos.
 
-## 📋 Table des matières
+## 📋 Table of Contents
 
 1. [Introduction](#-introduction)
-2. [Fonctionnalités](#-fonctionnalités)
-3. [Prérequis](#-prérequis)
+2. [Features](#-features)
+3. [Prerequisites](#-prerequisites)
 4. [Installation](#-installation)
 5. [Configuration](#-configuration)
-   - [Variables d'environnement](#variables-denvironnement)
-   - [Fichier de configuration JSON](#fichier-de-configuration-json)
-   - [Configuration pour AWS S3](#configuration-pour-aws-s3)
-   - [Configuration pour MinIO](#configuration-pour-minio)
-6. [Utilisation](#-utilisation)
-   - [Sauvegarde locale](#sauvegarde-locale)
-   - [Sauvegarde S3](#sauvegarde-s3)
-   - [Sauvegarde complète](#sauvegarde-complète)
-   - [Liste des sauvegardes](#liste-des-sauvegardes)
-   - [Restauration](#restauration)
-   - [Nettoyage](#nettoyage)
-7. [Automatisation avec Cron](#-automatisation-avec-cron)
-8. [Automatisation avec Systemd](#-automatisation-avec-systemd)
-9. [Interface d'administration](#️-interface-dadministration)
+   - [Environment variables](#environment-variables)
+   - [JSON configuration file](#json-configuration-file)
+   - [AWS S3 configuration](#aws-s3-configuration)
+   - [MinIO configuration](#minio-configuration)
+6. [Usage](#-usage)
+   - [Local backup](#local-backup)
+   - [S3 backup](#s3-backup)
+   - [Full backup](#full-backup)
+   - [List of backups](#list-of-backups)
+   - [Restoration](#restoration)
+   - [Cleanup](#cleanup)
+7. [Automation with Cron](#-automation-with-cron)
+8. [Automation with Systemd](#-automation-with-systemd)
+9. [Admin interface](#️-admin-interface)
 10. [Docker](#-docker)
-11. [Sécurité](#-sécurité)
-12. [Dépannage](#-dépannage)
-13. [Exemples de configuration](#-exemples-de-configuration)
+11. [Security](#-security)
+12. [Troubleshooting](#-troubleshooting)
+13. [Configuration examples](#-configuration-examples)
 
 ---
 
 ## 🎯 Introduction
 
-Le système de sauvegarde automatique de Leviia Schedule permet de :
+The Kairos automated backup system allows you to:
 
-- **Sauvegarder localement** la base de données SQLite
-- **Stocker sur S3 ou S3-compatible** (AWS S3, MinIO, DigitalOcean Spaces, etc.)
-- **Compresser** les sauvegardes pour économiser de l'espace
-- **Vérifier l'intégrité** des sauvegardes
-- **Nettoyer automatiquement** les anciennes sauvegardes
-- **Restaurer** une sauvegarde en cas de besoin
+- **Back up locally** the SQLite database
+- **Store on S3 or S3-compatible storage** (AWS S3, MinIO, DigitalOcean Spaces, etc.)
+- **Compress** backups to save space
+- **Verify the integrity** of backups
+- **Automatically clean up** old backups
+- **Restore** a backup when needed
 
-> **⚠️ IMPORTANT** : Les sauvegardes sont essentielles pour protéger vos données. Configurez-les avant de mettre l'application en production.
+> **⚠️ IMPORTANT**: Backups are essential to protect your data. Configure them before putting the application into production.
 
 ---
 
-## ✨ Fonctionnalités
+## ✨ Features
 
-| Fonctionnalité | Description | Activé par défaut |
+| Feature | Description | Enabled by default |
 |---------------|-------------|-------------------|
-| Sauvegarde locale | Copie du fichier SQLite | ✅ Oui |
-| Sauvegarde S3 | Upload vers un stockage S3 | ❌ Non |
-| Compression | Compression GZIP | ✅ Oui |
-| Vérification | Vérification de l'intégrité | ✅ Oui |
-| Nettoyage automatique | Suppression des anciennes sauvegardes | ❌ Non |
-| Restauration | Restauration depuis une sauvegarde | ✅ Oui |
-| Logging | Journaux détaillés | ✅ Oui |
+| Local backup | Copy of the SQLite file | ✅ Yes |
+| S3 backup | Upload to S3 storage | ❌ No |
+| Compression | GZIP compression | ✅ Yes |
+| Verification | Integrity check | ✅ Yes |
+| Automatic cleanup | Deletion of old backups | ❌ No |
+| Restoration | Restore from a backup | ✅ Yes |
+| Logging | Detailed logs | ✅ Yes |
 
 ---
 
-## 📦 Prérequis
+## 📦 Prerequisites
 
-### Pour la sauvegarde locale
+### For local backup
 - Python 3.8+
-- Accès en écriture au système de fichiers
+- Write access to the filesystem
 
-### Pour la sauvegarde S3
+### For S3 backup
 - Python 3.8+
-- Bibliothèque `boto3` :
+- `boto3` library:
   ```bash
   pip install boto3
   ```
-- Un compte S3 (AWS, MinIO, ou autre compatible)
-- Des identifiants d'accès (Access Key et Secret Key)
+- An S3 account (AWS, MinIO, or another compatible service)
+- Access credentials (Access Key and Secret Key)
 
 ---
 
 ## 🚀 Installation
 
-### 1. Installer les dépendances
+### 1. Install dependencies
 
 ```bash
-# Installer les dépendances de base
+# Install base dependencies
 make install
 
-# Installer boto3 pour les sauvegardes S3
+# Install boto3 for S3 backups
 pip install boto3
 ```
 
-### 2. Vérifier l'installation
+### 2. Verify the installation
 
 ```bash
-# Tester le script de sauvegarde
+# Test the backup script
 python scripts/backup_database.py --help
 ```
 
@@ -101,63 +101,63 @@ python scripts/backup_database.py --help
 
 ## ⚙️ Configuration
 
-### Variables d'environnement
+### Environment variables
 
-Le système de sauvegarde utilise les variables d'environnement suivantes :
+The backup system uses the following environment variables:
 
-#### Configuration générale
+#### General configuration
 
-| Variable | Description | Valeur par défaut |
+| Variable | Description | Default value |
 |----------|-------------|-------------------|
-| `BACKUP_ENABLED` | Activer/désactiver les sauvegardes (opt-in) | `false` |
-| `BACKUP_LOCAL_ENABLED` | Activer la sauvegarde locale | `true` |
-| `BACKUP_S3_ENABLED` | Activer la sauvegarde S3 | `false` |
-| `BACKUP_LOG_LEVEL` | Niveau de logging | `INFO` |
-| `BACKUP_LOG_FILE` | Fichier de log | `None` |
+| `BACKUP_ENABLED` | Enable/disable backups (opt-in) | `false` |
+| `BACKUP_LOCAL_ENABLED` | Enable local backup | `true` |
+| `BACKUP_S3_ENABLED` | Enable S3 backup | `false` |
+| `BACKUP_LOG_LEVEL` | Logging level | `INFO` |
+| `BACKUP_LOG_FILE` | Log file | `None` |
 
-#### Sauvegarde locale
+#### Local backup
 
-| Variable | Description | Valeur par défaut |
+| Variable | Description | Default value |
 |----------|-------------|-------------------|
-| `BACKUP_LOCAL_DIR` | Dossier de sauvegarde | `backups` |
-| `BACKUP_PREFIX` | Préfixe des fichiers | `leviia_backup` |
-| `BACKUP_COMPRESS` | Compresser les sauvegardes | `true` |
-| `BACKUP_VERIFY` | Vérifier l'intégrité | `true` |
+| `BACKUP_LOCAL_DIR` | Backup folder | `backups` |
+| `BACKUP_PREFIX` | File prefix | `kairos_backup` |
+| `BACKUP_COMPRESS` | Compress backups | `true` |
+| `BACKUP_VERIFY` | Verify integrity | `true` |
 
-#### Sauvegarde S3
+#### S3 backup
 
-| Variable | Description | Valeur par défaut |
+| Variable | Description | Default value |
 |----------|-------------|-------------------|
-| `BACKUP_S3_BUCKET` | Nom du bucket S3 | `None` |
-| `BACKUP_S3_ENDPOINT` | Endpoint S3 (pour S3-compatible) | `None` |
-| `BACKUP_S3_REGION` | Région S3 | `None` |
-| `BACKUP_S3_ACCESS_KEY` | Clé d'accès S3 | `None` |
-| `BACKUP_S3_SECRET_KEY` | Clé secrète S3 | `None` |
-| `BACKUP_S3_PREFIX` | Préfixe dans le bucket | `leviia-schedule` |
-| `BACKUP_S3_USE_SSL` | Utiliser SSL | `true` |
+| `BACKUP_S3_BUCKET` | S3 bucket name | `None` |
+| `BACKUP_S3_ENDPOINT` | S3 endpoint (for S3-compatible services) | `None` |
+| `BACKUP_S3_REGION` | S3 region | `None` |
+| `BACKUP_S3_ACCESS_KEY` | S3 access key | `None` |
+| `BACKUP_S3_SECRET_KEY` | S3 secret key | `None` |
+| `BACKUP_S3_PREFIX` | Prefix within the bucket | `kairos` |
+| `BACKUP_S3_USE_SSL` | Use SSL | `true` |
 
-#### Rétention
+#### Retention
 
-| Variable | Description | Valeur par défaut |
+| Variable | Description | Default value |
 |----------|-------------|-------------------|
-| `BACKUP_RETENTION_DAYS` | Nombre de jours à conserver | `30` |
-| `BACKUP_MAX_BACKUPS` | Nombre maximum de sauvegardes | `30` |
+| `BACKUP_RETENTION_DAYS` | Number of days to keep | `30` |
+| `BACKUP_MAX_BACKUPS` | Maximum number of backups | `30` |
 
-#### Notifications par email
+#### Email notifications
 
-| Variable | Description | Valeur par défaut |
+| Variable | Description | Default value |
 |----------|-------------|-------------------|
-| `BACKUP_NOTIFY_ON_SUCCESS` | Email en cas de succès | `false` |
-| `BACKUP_NOTIFY_ON_FAILURE` | Email en cas d'échec | `true` |
-| `BACKUP_NOTIFICATION_EMAIL` | Destinataire des alertes | `None` |
+| `BACKUP_NOTIFY_ON_SUCCESS` | Email on success | `false` |
+| `BACKUP_NOTIFY_ON_FAILURE` | Email on failure | `true` |
+| `BACKUP_NOTIFICATION_EMAIL` | Alert recipient | `None` |
 
-Réutilise la configuration SMTP des notifications par email (voir
+Reuses the SMTP configuration from email notifications (see
 [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-configuration-des-notifications)) -
-donc aussi soumis à `NOTIFICATIONS_ENABLED`.
+so it's also subject to `NOTIFICATIONS_ENABLED`.
 
-### Fichier de configuration JSON
+### JSON configuration file
 
-Vous pouvez créer un fichier de configuration JSON au lieu d'utiliser les variables d'environnement :
+You can create a JSON configuration file instead of using environment variables:
 
 ```json
 {
@@ -170,27 +170,27 @@ Vous pouvez créer un fichier de configuration JSON au lieu d'utiliser les varia
   "s3_region": "fr-par",
   "s3_access_key": "votre-access-key",
   "s3_secret_key": "votre-secret-key",
-  "s3_prefix": "leviia-schedule",
+  "s3_prefix": "kairos",
   "s3_use_ssl": true,
   "retention_days": 30,
   "max_backups": 30,
   "compress": true,
   "verify_backup": true,
-  "backup_prefix": "leviia_backup",
+  "backup_prefix": "kairos_backup",
   "log_level": "INFO"
 }
 ```
 
-Utilisation avec un fichier de configuration :
+Usage with a configuration file:
 
 ```bash
 python scripts/backup_database.py --config /chemin/vers/config.json
 ```
 
-### Configuration pour AWS S3
+### AWS S3 configuration
 
 ```bash
-# Variables d'environnement pour AWS S3
+# Environment variables for AWS S3
 export BACKUP_S3_ENABLED=true
 export BACKUP_S3_BUCKET=mon-bucket-aws
 export BACKUP_S3_REGION=eu-west-1
@@ -198,12 +198,12 @@ export BACKUP_S3_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE
 export BACKUP_S3_SECRET_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 ```
 
-### Configuration pour MinIO
+### MinIO configuration
 
 ```bash
-# Variables d'environnement pour MinIO
+# Environment variables for MinIO
 export BACKUP_S3_ENABLED=true
-export BACKUP_S3_BUCKET=leviia-backups
+export BACKUP_S3_BUCKET=kairos-backups
 export BACKUP_S3_ENDPOINT=http://localhost:9000
 export BACKUP_S3_ACCESS_KEY=minioadmin
 export BACKUP_S3_SECRET_KEY=minioadmin
@@ -212,195 +212,195 @@ export BACKUP_S3_USE_SSL=false
 
 ---
 
-## 🎮 Utilisation
+## 🎮 Usage
 
-### Sauvegarde locale
+### Local backup
 
-Crée une sauvegarde locale de la base de données :
+Creates a local backup of the database:
 
 ```bash
-# Méthode 1: Utiliser le script directement
+# Method 1: Use the script directly
 python scripts/backup_database.py --local
 
-# Méthode 2: Utiliser Makefile (équivalent à --local --verify)
+# Method 2: Use the Makefile (equivalent to --local --verify)
 make backup
 
-# Avec vérification
+# With verification
 python scripts/backup_database.py --local --verify
 
-# Avec vérification et nettoyage
+# With verification and cleanup
 python scripts/backup_database.py --local --verify --cleanup
 ```
 
-**Sortie attendue :**
+**Expected output:**
 ```
 ============================================================
-Leviia Schedule - Sauvegarde de la base de données
+Kairos - Database backup
 ============================================================
-INFO - Base de données détectée: /chemin/vers/instance/app.db
-INFO - Création de la sauvegarde locale: backups/leviia_backup_20240101_120000.db.gz
-INFO - Sauvegarde locale créée: backups/leviia_backup_20240101_120000.db.gz
-INFO - Vérification réussie (SHA256: abc123...)
+INFO - Database detected: /path/to/instance/app.db
+INFO - Creating local backup: backups/kairos_backup_20240101_120000.db.gz
+INFO - Local backup created: backups/kairos_backup_20240101_120000.db.gz
+INFO - Verification successful (SHA256: abc123...)
 
 ============================================================
-RÉSULTATS DE LA SAUVEGARDE:
+BACKUP RESULTS:
 ============================================================
-✓ Sauvegarde locale: Sauvegarde locale créée: backups/leviia_backup_20240101_120000.db.gz
-  Vérification: Vérification réussie (SHA256: abc123...)
+✓ Local backup: Local backup created: backups/kairos_backup_20240101_120000.db.gz
+  Verification: Verification successful (SHA256: abc123...)
 ```
 
-### Sauvegarde S3
+### S3 backup
 
-Crée une sauvegarde locale + S3 :
+Creates a local + S3 backup:
 
 ```bash
-# Sauvegarde locale + S3
+# Local + S3 backup
 python scripts/backup_database.py --local --s3
 
-# Sauvegarde complète (local + S3 + vérification + nettoyage)
+# Full backup (local + S3 + verification + cleanup)
 python scripts/backup_database.py --local --s3 --verify --cleanup
 ```
 
-> Le Makefile ne wrap que la sauvegarde locale par défaut (`make backup`) et la
-> restauration (`make backup-restore`) - les combinaisons S3/nettoyage/liste
-> ci-dessous s'invoquent directement via `scripts/backup_database.py`.
+> The Makefile only wraps the local backup by default (`make backup`) and the
+> restore (`make backup-restore`) - the S3/cleanup/list combinations
+> below are invoked directly via `scripts/backup_database.py`.
 
-**Sortie attendue :**
+**Expected output:**
 ```
 ============================================================
-Leviia Schedule - Sauvegarde de la base de données
+Kairos - Database backup
 ============================================================
-INFO - Base de données détectée: /chemin/vers/instance/app.db
-INFO - Création de la sauvegarde locale: backups/leviia_backup_20240101_120000.db.gz
-INFO - Sauvegarde locale créée: backups/leviia_backup_20240101_120000.db.gz
-INFO - Vérification réussie (SHA256: abc123...)
-INFO - Upload vers S3: mon-bucket/leviia-schedule/leviia_backup_20240101_120000.db.gz
-INFO - Upload S3 réussi: mon-bucket/leviia-schedule/leviia_backup_20240101_120000.db.gz (123456 octets)
+INFO - Database detected: /path/to/instance/app.db
+INFO - Creating local backup: backups/kairos_backup_20240101_120000.db.gz
+INFO - Local backup created: backups/kairos_backup_20240101_120000.db.gz
+INFO - Verification successful (SHA256: abc123...)
+INFO - Uploading to S3: mon-bucket/kairos/kairos_backup_20240101_120000.db.gz
+INFO - S3 upload successful: mon-bucket/kairos/kairos_backup_20240101_120000.db.gz (123456 bytes)
 
 ============================================================
-RÉSULTATS DE LA SAUVEGARDE:
+BACKUP RESULTS:
 ============================================================
-✓ Sauvegarde locale: Sauvegarde locale créée: backups/leviia_backup_20240101_120000.db.gz
-  Vérification: Vérification réussie (SHA256: abc123...)
-✓ Sauvegarde S3: Upload S3 réussi: mon-bucket/leviia-schedule/leviia_backup_20240101_120000.db.gz (123456 octets)
+✓ Local backup: Local backup created: backups/kairos_backup_20240101_120000.db.gz
+  Verification: Verification successful (SHA256: abc123...)
+✓ S3 backup: S3 upload successful: mon-bucket/kairos/kairos_backup_20240101_120000.db.gz (123456 bytes)
 ```
 
-### Liste des sauvegardes
+### List of backups
 
-Lister toutes les sauvegardes disponibles :
+List all available backups:
 
 ```bash
-# Lister les sauvegardes
+# List backups
 python scripts/backup_database.py --list
 ```
 
-**Sortie attendue :**
+**Expected output:**
 ```
 ============================================================
-SAUVEGARDES LOCALES:
+LOCAL BACKUPS:
 ============================================================
-  leviia_backup_20240101_120000.db.gz (123456 octets, 2024-01-01T12:00:00)
-  leviia_backup_20231231_120000.db.gz (123456 octets, 2023-12-31T12:00:00)
+  kairos_backup_20240101_120000.db.gz (123456 bytes, 2024-01-01T12:00:00)
+  kairos_backup_20231231_120000.db.gz (123456 bytes, 2023-12-31T12:00:00)
 
 ============================================================
-SAUVEGARDES S3:
+S3 BACKUPS:
 ============================================================
-  leviia-schedule/leviia_backup_20240101_120000.db.gz (123456 octets, 2024-01-01T12:00:00)
-  leviia-schedule/leviia_backup_20231231_120000.db.gz (123456 octets, 2023-12-31T12:00:00)
+  kairos/kairos_backup_20240101_120000.db.gz (123456 bytes, 2024-01-01T12:00:00)
+  kairos/kairos_backup_20231231_120000.db.gz (123456 bytes, 2023-12-31T12:00:00)
 ```
 
-### Restauration
+### Restoration
 
-Restaurer une sauvegarde :
+Restore a backup:
 
 ```bash
-# Restaurer depuis un fichier local
-python scripts/backup_database.py --restore backups/leviia_backup_20240101.db.gz
+# Restore from a local file
+python scripts/backup_database.py --restore backups/kairos_backup_20240101.db.gz
 
-# Restaurer depuis S3
-python scripts/backup_database.py --restore s3://mon-bucket/leviia-schedule/leviia_backup_20240101.db.gz
+# Restore from S3
+python scripts/backup_database.py --restore s3://mon-bucket/kairos/kairos_backup_20240101.db.gz
 
-# Avec Makefile (spécifier le fichier)
-make backup-restore BACKUP=backups/leviia_backup_20240101.db.gz
+# With Makefile (specify the file)
+make backup-restore BACKUP=backups/kairos_backup_20240101.db.gz
 ```
 
-> **⚠️ ATTENTION** : La restauration écrase la base de données actuelle. Assurez-vous d'avoir une sauvegarde récente avant de restaurer.
+> **⚠️ WARNING**: Restoring overwrites the current database. Make sure you have a recent backup before restoring.
 
-**Sortie attendue :**
+**Expected output:**
 ```
-INFO - Décompression de backups/leviia_backup_20240101.db.gz
-INFO - Restauration réussie: /chemin/vers/instance/app.db (123456 octets)
-Restauration terminée avec succès!
+INFO - Decompressing backups/kairos_backup_20240101.db.gz
+INFO - Restore successful: /path/to/instance/app.db (123456 bytes)
+Restore completed successfully!
 ```
 
-### Nettoyage
+### Cleanup
 
-Nettoyer les anciennes sauvegardes :
+Clean up old backups:
 
 ```bash
-# Nettoyer les sauvegardes locales et S3
+# Clean up local and S3 backups
 python scripts/backup_database.py --cleanup
 
-# Nettoyer uniquement les sauvegardes locales
+# Clean up local backups only
 python scripts/backup_database.py --local --cleanup
 ```
 
 ---
 
-## 📅 Automatisation avec Cron
+## 📅 Automation with Cron
 
-### Configuration de base
+### Basic configuration
 
-Pour automatiser les sauvegardes avec cron, ajoutez une entrée à votre crontab :
+To automate backups with cron, add an entry to your crontab:
 
 ```bash
-# Éditer le crontab
+# Edit the crontab
 crontab -e
 ```
 
-### Exemples de cron
+### Cron examples
 
-#### Sauvegarde quotidienne à 2h du matin
-
-```bash
-# Sauvegarde locale quotidienne
-0 2 * * * /chemin/vers/leviia-schedule/venv/bin/python /chemin/vers/leviia-schedule/scripts/backup_database.py --local --verify --cleanup >> /var/log/leviia-backup.log 2>&1
-```
-
-#### Sauvegarde quotidienne avec S3
+#### Daily backup at 2 AM
 
 ```bash
-# Sauvegarde locale + S3 quotidienne
-0 2 * * * /chemin/vers/leviia-schedule/venv/bin/python /chemin/vers/leviia-schedule/scripts/backup_database.py --local --s3 --verify --cleanup >> /var/log/leviia-backup.log 2>&1
+# Daily local backup
+0 2 * * * /chemin/vers/kairos/venv/bin/python /chemin/vers/kairos/scripts/backup_database.py --local --verify --cleanup >> /var/log/kairos-backup.log 2>&1
 ```
 
-#### Sauvegarde hebdomadaire le dimanche à 3h
+#### Daily backup with S3
 
 ```bash
-# Sauvegarde hebdomadaire
-0 3 * * 0 /chemin/vers/leviia-schedule/venv/bin/python /chemin/vers/leviia-schedule/scripts/backup_database.py --local --s3 --verify --cleanup >> /var/log/leviia-backup.log 2>&1
+# Daily local + S3 backup
+0 2 * * * /chemin/vers/kairos/venv/bin/python /chemin/vers/kairos/scripts/backup_database.py --local --s3 --verify --cleanup >> /var/log/kairos-backup.log 2>&1
 ```
 
-#### Sauvegarde mensuelle le 1er du mois à 4h
+#### Weekly backup on Sunday at 3 AM
 
 ```bash
-# Sauvegarde mensuelle
-0 4 1 * * /chemin/vers/leviia-schedule/venv/bin/python /chemin/vers/leviia-schedule/scripts/backup_database.py --local --s3 --verify --cleanup >> /var/log/leviia-backup.log 2>&1
+# Weekly backup
+0 3 * * 0 /chemin/vers/kairos/venv/bin/python /chemin/vers/kairos/scripts/backup_database.py --local --s3 --verify --cleanup >> /var/log/kairos-backup.log 2>&1
 ```
 
-### Configuration des variables d'environnement dans cron
-
-Pour utiliser les variables d'environnement dans cron, vous avez plusieurs options :
-
-#### Option 1: Définir les variables dans le crontab
+#### Monthly backup on the 1st of the month at 4 AM
 
 ```bash
-0 2 * * * BACKUP_S3_ENABLED=true BACKUP_S3_BUCKET=mon-bucket /chemin/vers/leviia-schedule/venv/bin/python /chemin/vers/leviia-schedule/scripts/backup_database.py --local --s3 >> /var/log/leviia-backup.log 2>&1
+# Monthly backup
+0 4 1 * * /chemin/vers/kairos/venv/bin/python /chemin/vers/kairos/scripts/backup_database.py --local --s3 --verify --cleanup >> /var/log/kairos-backup.log 2>&1
 ```
 
-#### Option 2: Utiliser un fichier .env
+### Configuring environment variables in cron
 
-Créez un fichier `/etc/leviia-backup.env` :
+To use environment variables in cron, you have several options:
+
+#### Option 1: Define the variables in the crontab
+
+```bash
+0 2 * * * BACKUP_S3_ENABLED=true BACKUP_S3_BUCKET=mon-bucket /chemin/vers/kairos/venv/bin/python /chemin/vers/kairos/scripts/backup_database.py --local --s3 >> /var/log/kairos-backup.log 2>&1
+```
+
+#### Option 2: Use a .env file
+
+Create a file `/etc/kairos-backup.env`:
 
 ```bash
 BACKUP_ENABLED=true
@@ -412,20 +412,20 @@ BACKUP_S3_SECRET_KEY=ma-cle-secrete
 BACKUP_S3_REGION=eu-west-1
 ```
 
-Puis modifiez votre crontab :
+Then edit your crontab:
 
 ```bash
-0 2 * * * source /etc/leviia-backup.env && /chemin/vers/leviia-schedule/venv/bin/python /chemin/vers/leviia-schedule/scripts/backup_database.py --local --s3 >> /var/log/leviia-backup.log 2>&1
+0 2 * * * source /etc/kairos-backup.env && /chemin/vers/kairos/venv/bin/python /chemin/vers/kairos/scripts/backup_database.py --local --s3 >> /var/log/kairos-backup.log 2>&1
 ```
 
-#### Option 3: Créer un script wrapper
+#### Option 3: Create a wrapper script
 
-Créez un fichier `/usr/local/bin/leviia-backup` :
+Create a file `/usr/local/bin/kairos-backup`:
 
 ```bash
 #!/bin/bash
 
-# Charger les variables d'environnement
+# Load environment variables
 export BACKUP_ENABLED=true
 export BACKUP_LOCAL_ENABLED=true
 export BACKUP_S3_ENABLED=true
@@ -434,44 +434,44 @@ export BACKUP_S3_ACCESS_KEY=ma-cle-access
 export BACKUP_S3_SECRET_KEY=ma-cle-secrete
 export BACKUP_S3_REGION=eu-west-1
 
-# Exécuter la sauvegarde
-/chemin/vers/leviia-schedule/venv/bin/python /chemin/vers/leviia-schedule/scripts/backup_database.py --local --s3 --verify --cleanup >> /var/log/leviia-backup.log 2>&1
+# Run the backup
+/chemin/vers/kairos/venv/bin/python /chemin/vers/kairos/scripts/backup_database.py --local --s3 --verify --cleanup >> /var/log/kairos-backup.log 2>&1
 ```
 
-Rendre le script exécutable :
+Make the script executable:
 
 ```bash
-chmod +x /usr/local/bin/leviia-backup
+chmod +x /usr/local/bin/kairos-backup
 ```
 
-Puis dans crontab :
+Then in crontab:
 
 ```bash
-0 2 * * * /usr/local/bin/leviia-backup
+0 2 * * * /usr/local/bin/kairos-backup
 ```
 
 ---
 
-## 🔧 Automatisation avec Systemd
+## 🔧 Automation with Systemd
 
-Pour les systèmes utilisant systemd (Ubuntu, Debian, CentOS, etc.), vous pouvez créer un service et un timer.
+For systems using systemd (Ubuntu, Debian, CentOS, etc.), you can create a service and a timer.
 
-### 1. Créer un fichier de service
+### 1. Create a service file
 
-Créez `/etc/systemd/system/leviia-backup.service` :
+Create `/etc/systemd/system/kairos-backup.service`:
 
 ```ini
 [Unit]
-Description=Leviia Schedule Database Backup
+Description=Kairos Database Backup
 After=network.target
 
 [Service]
 Type=oneshot
 User=appuser
 Group=appgroup
-EnvironmentFile=/etc/leviia-backup.env
-ExecStart=/chemin/vers/leviia-schedule/venv/bin/python /chemin/vers/leviia-schedule/scripts/backup_database.py --local --s3 --verify --cleanup
-WorkingDirectory=/chemin/vers/leviia-schedule
+EnvironmentFile=/etc/kairos-backup.env
+ExecStart=/chemin/vers/kairos/venv/bin/python /chemin/vers/kairos/scripts/backup_database.py --local --s3 --verify --cleanup
+WorkingDirectory=/chemin/vers/kairos
 StandardOutput=journal
 StandardError=journal
 
@@ -479,9 +479,9 @@ StandardError=journal
 WantedBy=multi-user.target
 ```
 
-### 2. Créer le fichier d'environnement
+### 2. Create the environment file
 
-Créez `/etc/leviia-backup.env` :
+Create `/etc/kairos-backup.env`:
 
 ```bash
 BACKUP_ENABLED=true
@@ -493,13 +493,13 @@ BACKUP_S3_SECRET_KEY=ma-cle-secrete
 BACKUP_S3_REGION=eu-west-1
 ```
 
-### 3. Créer un timer pour les sauvegardes quotidiennes
+### 3. Create a timer for daily backups
 
-Créez `/etc/systemd/system/leviia-backup.timer` :
+Create `/etc/systemd/system/kairos-backup.timer`:
 
 ```ini
 [Unit]
-Description=Timer pour les sauvegardes Leviia Schedule
+Description=Timer for Kairos backups
 
 [Timer]
 OnCalendar=*-*-* 02:00:00
@@ -509,99 +509,98 @@ Persistent=true
 WantedBy=timers.target
 ```
 
-### 4. Activer le service
+### 4. Enable the service
 
 ```bash
-# Recharger systemd
+# Reload systemd
 sudo systemctl daemon-reload
 
-# Activer le timer
-sudo systemctl enable leviia-backup.timer
-sudo systemctl start leviia-backup.timer
+# Enable the timer
+sudo systemctl enable kairos-backup.timer
+sudo systemctl start kairos-backup.timer
 
-# Vérifier le statut
-sudo systemctl status leviia-backup.timer
+# Check the status
+sudo systemctl status kairos-backup.timer
 
-# Voir les logs
-sudo journalctl -u leviia-backup.service -f
+# View the logs
+sudo journalctl -u kairos-backup.service -f
 ```
 
-### 5. Exécuter manuellement
+### 5. Run manually
 
 ```bash
-# Exécuter une sauvegarde manuellement
-sudo systemctl start leviia-backup.service
+# Run a backup manually
+sudo systemctl start kairos-backup.service
 
-# Voir le statut
-sudo systemctl status leviia-backup.service
+# Check the status
+sudo systemctl status kairos-backup.service
 ```
 
 ---
 
-## 🖥️ Interface d'administration
+## 🖥️ Admin interface
 
-En plus du script en ligne de commande, un tableau de bord est
-disponible sous `/admin/backups` (réservé aux comptes admin) :
+In addition to the command-line script, a dashboard is
+available at `/admin/backups` (restricted to admin accounts):
 
-- Aperçu de la configuration active (activation, dossier local, bucket S3, rétention)
-- Liste des sauvegardes locales et S3 (nom, taille, date)
-- Bouton **Créer une sauvegarde maintenant** (refusé si `BACKUP_ENABLED=false`,
-  même garde-fou que le script cron)
-- Bouton **Nettoyer les sauvegardes expirées** (applique `BACKUP_RETENTION_DAYS`/`BACKUP_MAX_BACKUPS`)
-- Téléchargement d'une sauvegarde : les fichiers locaux sont servis
-  directement, les fichiers S3 sont téléchargés côté serveur vers un
-  fichier temporaire puis diffusés au navigateur (pas d'URL présignée
-  exposée directement)
+- Overview of the active configuration (enabled state, local folder, S3 bucket, retention)
+- List of local and S3 backups (name, size, date)
+- **Create a backup now** button (refused if `BACKUP_ENABLED=false`,
+  same safeguard as the cron script)
+- **Clean up expired backups** button (applies `BACKUP_RETENTION_DAYS`/`BACKUP_MAX_BACKUPS`)
+- Downloading a backup: local files are served
+  directly, S3 files are downloaded server-side to a
+  temporary file then streamed to the browser (no presigned URL
+  exposed directly)
 
-La lecture (liste/téléchargement) reste possible même si
-`BACKUP_ENABLED=false` - seule la création de nouvelles sauvegardes est
-bloquée par cette variable.
+Reading (listing/downloading) remains possible even if
+`BACKUP_ENABLED=false` - only the creation of new backups is
+blocked by this variable.
 
 ---
 
 ## 🐳 Docker
 
-Si vous déployez avec `docker/docker-compose.yml`, réglez
-`BACKUP_ENABLED=true` dans `docker/.env` pour que `crond` (déjà
-utilisé pour les rappels par email) démarre également la tâche de
-sauvegarde quotidienne (planning dans `docker/crontabs/appuser`, 3h du
-matin). Pour que les sauvegardes locales survivent aux recréations du
-conteneur, réglez `BACKUP_LOCAL_DIR=/app/data/backups` (le volume
-`./data:/app/data` est déjà monté - pas de volume supplémentaire à
-ajouter). Voir [`deployment/docker.md`](docker.md) pour le détail de
-l'intégration.
+If you deploy with `docker/docker-compose.yml`, set
+`BACKUP_ENABLED=true` in `docker/.env` so that `crond` (already
+used for email reminders) also starts the daily backup
+job (schedule in `docker/crontabs/appuser`, 3 AM). For local backups
+to survive container recreation, set
+`BACKUP_LOCAL_DIR=/app/data/backups` (the `./data:/app/data` volume
+is already mounted - no additional volume needed). See
+[`deployment/docker.md`](docker.md) for integration details.
 
 ---
 
-## 🔒 Sécurité
+## 🔒 Security
 
-### Bonnes pratiques de sécurité
+### Security best practices
 
-1. **Protégez vos identifiants S3**
-   - Ne stockez jamais les identifiants dans le code source
-   - Utilisez des variables d'environnement ou des fichiers de configuration sécurisés
-   - Limitez les permissions IAM au strict minimum
+1. **Protect your S3 credentials**
+   - Never store credentials in source code
+   - Use environment variables or secured configuration files
+   - Limit IAM permissions to the strict minimum
 
-2. **Limitez l'accès aux sauvegardes**
-   - Stockez les sauvegardes dans un bucket privé
-   - Utilisez des politiques de bucket restrictives
-   - Côté interface d'administration, seuls les comptes admin
-     (`@admin_required`) peuvent lister/créer/télécharger des sauvegardes
+2. **Restrict access to backups**
+   - Store backups in a private bucket
+   - Use restrictive bucket policies
+   - On the admin interface side, only admin accounts
+     (`@admin_required`) can list/create/download backups
 
-3. **Utilisez HTTPS**
-   - Activez `BACKUP_S3_USE_SSL=true` (activé par défaut)
+3. **Use HTTPS**
+   - Enable `BACKUP_S3_USE_SSL=true` (enabled by default)
 
-4. **Rotation des clés**
-   - Changez régulièrement vos clés d'accès S3
-   - Utilisez IAM Roles pour AWS si possible
+4. **Key rotation**
+   - Rotate your S3 access keys regularly
+   - Use IAM Roles for AWS if possible
 
-5. **Sauvegardes locales**
-   - Stockez les sauvegardes locales dans un dossier sécurisé
-   - Limitez les permissions du dossier : `chmod 700 backups/`
+5. **Local backups**
+   - Store local backups in a secured folder
+   - Restrict folder permissions: `chmod 700 backups/`
 
-### Configuration IAM pour AWS S3
+### IAM configuration for AWS S3
 
-Exemple de politique IAM minimale pour les sauvegardes :
+Example of a minimal IAM policy for backups:
 
 ```json
 {
@@ -617,7 +616,7 @@ Exemple de politique IAM minimale pour les sauvegardes :
       ],
       "Resource": [
         "arn:aws:s3:::mon-bucket",
-        "arn:aws:s3:::mon-bucket/leviia-schedule/*"
+        "arn:aws:s3:::mon-bucket/kairos/*"
       ]
     }
   ]
@@ -626,74 +625,74 @@ Exemple de politique IAM minimale pour les sauvegardes :
 
 ---
 
-## 🐛 Dépannage
+## 🐛 Troubleshooting
 
-### Problèmes courants
+### Common issues
 
-#### 1. "Impossible de trouver la base de données"
+#### 1. "Unable to find the database"
 
-**Cause :** Le script ne trouve pas le fichier SQLite.
+**Cause:** The script cannot find the SQLite file.
 
-**Solutions :**
-- Vérifiez que la base de données existe : `ls instance/app.db`
-- Définissez explicitement le chemin : `export DATABASE_URL=sqlite:///chemin/vers/app.db`
-- Exécutez le script depuis la racine du projet
+**Solutions:**
+- Check that the database exists: `ls instance/app.db`
+- Explicitly set the path: `export DATABASE_URL=sqlite:///chemin/vers/app.db`
+- Run the script from the project root
 
-#### 2. "boto3 non installé"
+#### 2. "boto3 not installed"
 
-**Solution :**
+**Solution:**
 ```bash
 pip install boto3
 ```
 
-#### 3. "Identifiants S3 manquants"
+#### 3. "Missing S3 credentials"
 
-**Solution :**
-- Vérifiez que `BACKUP_S3_ACCESS_KEY` et `BACKUP_S3_SECRET_KEY` sont définis
-- Vérifiez que les variables sont accessibles dans l'environnement d'exécution
+**Solution:**
+- Check that `BACKUP_S3_ACCESS_KEY` and `BACKUP_S3_SECRET_KEY` are set
+- Check that the variables are accessible in the runtime environment
 
-#### 4. "Bucket introuvable"
+#### 4. "Bucket not found"
 
-**Solutions :**
-- Vérifiez que le bucket existe
-- Vérifiez que vous avez les permissions pour accéder au bucket
-- Vérifiez que la région est correcte
+**Solutions:**
+- Check that the bucket exists
+- Check that you have permission to access the bucket
+- Check that the region is correct
 
-#### 5. "Accès refusé au bucket"
+#### 5. "Access denied to the bucket"
 
-**Solutions :**
-- Vérifiez les permissions IAM
-- Vérifiez la politique du bucket
-- Vérifiez que les identifiants sont corrects
+**Solutions:**
+- Check IAM permissions
+- Check the bucket policy
+- Check that the credentials are correct
 
-#### 6. "Erreur de vérification"
+#### 6. "Verification error"
 
-**Solutions :**
-- Vérifiez que le fichier de sauvegarde n'est pas corrompu
-- Essayez sans compression : `BACKUP_COMPRESS=false`
-- Vérifiez l'espace disque disponible
+**Solutions:**
+- Check that the backup file is not corrupted
+- Try without compression: `BACKUP_COMPRESS=false`
+- Check available disk space
 
-### Journalisation
+### Logging
 
-Pour activer le logging détaillé :
+To enable detailed logging:
 
 ```bash
-# Niveau de log DEBUG
+# DEBUG log level
 export BACKUP_LOG_LEVEL=DEBUG
 
-# Fichier de log
-export BACKUP_LOG_FILE=/var/log/leviia-backup.log
+# Log file
+export BACKUP_LOG_FILE=/var/log/kairos-backup.log
 
-# Exécuter avec logging
+# Run with logging
 python scripts/backup_database.py --local --s3 --verify
 ```
 
-### Tester la connexion S3
+### Test the S3 connection
 
 ```python
 import boto3
 
-# Tester la connexion
+# Test the connection
 s3 = boto3.client(
     's3',
     endpoint_url='votre-endpoint',
@@ -702,34 +701,34 @@ s3 = boto3.client(
     region_name='votre-region'
 )
 
-# Lister les buckets
+# List buckets
 response = s3.list_buckets()
 print("Buckets:", [b['Name'] for b in response['Buckets']])
 ```
 
 ---
 
-## 📝 Exemples de configuration
+## 📝 Configuration examples
 
-### Configuration minimale (locale uniquement)
+### Minimal configuration (local only)
 
 ```bash
-# .env ou variables d'environnement
+# .env or environment variables
 export BACKUP_ENABLED=true
 export BACKUP_LOCAL_ENABLED=true
-export BACKUP_LOCAL_DIR=/var/backups/leviia
+export BACKUP_LOCAL_DIR=/var/backups/kairos
 export BACKUP_RETENTION_DAYS=30
 ```
 
-### Configuration complète (AWS S3)
+### Full configuration (AWS S3)
 
 ```bash
-# .env ou variables d'environnement
+# .env or environment variables
 export BACKUP_ENABLED=true
 export BACKUP_LOCAL_ENABLED=true
 export BACKUP_S3_ENABLED=true
-export BACKUP_LOCAL_DIR=/var/backups/leviia
-export BACKUP_S3_BUCKET=leviia-backups-prod
+export BACKUP_LOCAL_DIR=/var/backups/kairos
+export BACKUP_S3_BUCKET=kairos-backups-prod
 export BACKUP_S3_REGION=eu-west-1
 export BACKUP_S3_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE
 export BACKUP_S3_SECRET_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
@@ -739,49 +738,49 @@ export BACKUP_MAX_BACKUPS=60
 export BACKUP_COMPRESS=true
 export BACKUP_VERIFY=true
 export BACKUP_LOG_LEVEL=INFO
-export BACKUP_LOG_FILE=/var/log/leviia-backup.log
+export BACKUP_LOG_FILE=/var/log/kairos-backup.log
 ```
 
-### Configuration pour MinIO
+### MinIO configuration
 
 ```bash
-# .env ou variables d'environnement
+# .env or environment variables
 export BACKUP_ENABLED=true
 export BACKUP_LOCAL_ENABLED=true
 export BACKUP_S3_ENABLED=true
-export BACKUP_LOCAL_DIR=/var/backups/leviia
-export BACKUP_S3_BUCKET=leviia-backups
+export BACKUP_LOCAL_DIR=/var/backups/kairos
+export BACKUP_S3_BUCKET=kairos-backups
 export BACKUP_S3_ENDPOINT=http://minio.local:9000
 export BACKUP_S3_ACCESS_KEY=minioadmin
 export BACKUP_S3_SECRET_KEY=minioadmin
 export BACKUP_S3_USE_SSL=false
-export BACKUP_S3_PREFIX=leviia
+export BACKUP_S3_PREFIX=kairos
 export BACKUP_RETENTION_DAYS=30
 ```
 
-### Configuration pour DigitalOcean Spaces
+### DigitalOcean Spaces configuration
 
 ```bash
-# .env ou variables d'environnement
+# .env or environment variables
 export BACKUP_ENABLED=true
 export BACKUP_LOCAL_ENABLED=true
 export BACKUP_S3_ENABLED=true
-export BACKUP_LOCAL_DIR=/var/backups/leviia
-export BACKUP_S3_BUCKET=leviia-backups
+export BACKUP_LOCAL_DIR=/var/backups/kairos
+export BACKUP_S3_BUCKET=kairos-backups
 export BACKUP_S3_ENDPOINT=https://nyc3.digitaloceanspaces.com
 export BACKUP_S3_REGION=nyc3
 export BACKUP_S3_ACCESS_KEY=DO00ABCDEFGHIJKLMNOP
 export BACKUP_S3_SECRET_KEY=abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGH
-export BACKUP_S3_PREFIX=leviia
+export BACKUP_S3_PREFIX=kairos
 export BACKUP_RETENTION_DAYS=30
 ```
 
 ---
 
-## 📚 Documentation supplémentaire
+## 📚 Additional documentation
 
-- [Documentation AWS S3](https://docs.aws.amazon.com/s3/)
-- [Documentation boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)
+- [AWS S3 Documentation](https://docs.aws.amazon.com/s3/)
+- [boto3 Documentation](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)
 - [MinIO Documentation](https://min.io/docs/minio/linux/index.html)
 - [Cron Documentation](https://www.freebsd.org/cgi/man.cgi?crontab)
 - [Systemd Timers](https://www.freedesktop.org/software/systemd/man/systemd.timer.html)
@@ -790,12 +789,12 @@ export BACKUP_RETENTION_DAYS=30
 
 ## 🙏 Support
 
-Pour toute question ou problème, consultez :
+For any questions or issues, refer to:
 
-1. La section [Dépannage](#-dépannage) de ce guide
-2. Les logs du script de sauvegarde
-3. Ouvrez une issue sur le dépôt GitHub
+1. The [Troubleshooting](#-troubleshooting) section of this guide
+2. The backup script logs
+3. Open an issue on the GitHub repository
 
 ---
 
-> **⚠️ RAPPEL** : Testez toujours votre processus de sauvegarde et de restauration avant de dépendre d'un système de sauvegarde automatique en production.
+> **⚠️ REMINDER**: Always test your backup and restore process before relying on an automated backup system in production.

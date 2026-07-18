@@ -1,89 +1,89 @@
-# 🏢 Guide de Déploiement - Leviia Schedule
+# 🏢 Deployment Guide - Kairos
 
-> **Version** : 1.0  
-> **Derniere mise à jour** : Juin 2026  
-> **Statut** : Documentation pour la production
+> **Version**: 1.0  
+> **Last updated**: June 2026  
+> **Status**: Production documentation
 
-> ⚠️ **Méthode recommandée : Docker.** Ce guide couvre le déploiement
-> **sans Docker** (Gunicorn/uWSGI bare-metal) - une alternative pour les
-> cas où Docker n'est pas disponible ou pas souhaité. Pour la méthode
-> principale (image publiée sur le registry), voir
+> ⚠️ **Recommended method: Docker.** This guide covers deployment
+> **without Docker** (Gunicorn/uWSGI bare-metal) - an alternative for
+> cases where Docker is not available or not desired. For the main
+> method (image published to the registry), see
 > [`docker.md`](docker.md).
 
 ---
 
-## 📁 Sommaire
+## 📁 Table of Contents
 
-1. [Prérequis](#1-prérequis)
-2. [Préparation de l'environnement](#2-préparation-de-lenvironnement)
+1. [Prerequisites](#1-prerequisites)
+2. [Environment Setup](#2-environment-setup)
 3. [Configuration](#3-configuration)
-4. [Déploiement avec Gunicorn](#4-déploiement-avec-gunicorn)
-5. [Déploiement avec uWSGI](#5-déploiement-avec-uwsgi)
-6. [Déploiement avec Docker](#6-déploiement-avec-docker)
-7. [Configuration de la base de données](#7-configuration-de-la-base-de-données)
-8. [Configuration des variables d'environnement](#8-configuration-des-variables-denvironnement)
-9. [Sécurité en production](#9-sécurité-en-production)
+4. [Deploying with Gunicorn](#4-deploying-with-gunicorn)
+5. [Deploying with uWSGI](#5-deploying-with-uwsgi)
+6. [Deploying with Docker](#6-deploying-with-docker)
+7. [Database Configuration](#7-database-configuration)
+8. [Environment Variables Configuration](#8-environment-variables-configuration)
+9. [Production Security](#9-production-security)
 10. [Maintenance](#10-maintenance)
-11. [Dépannage](#11-dépannage)
+11. [Troubleshooting](#11-troubleshooting)
 
 ---
 
-## 1. 📁 Prérequis
+## 1. 📁 Prerequisites
 
-### 1.1 Système d'exploitation
+### 1.1 Operating System
 - Linux (Ubuntu 20.04/22.04, Debian 11/12, CentOS 8+)
 - macOS (10.15+)
-- Windows (10/11 avec WSL2 recommandé)
+- Windows (10/11 with WSL2 recommended)
 
-### 1.2 Logiciels requis
-| Logiciel | Version minimale | Description |
+### 1.2 Required Software
+| Software | Minimum Version | Description |
 |----------|------------------|-------------|
-| Python | 3.8+ | Langage de programmation |
-| pip | 26.1+ | Gestionnaire de paquets Python |
-| Git | 2.20+ | Contrôle de version |
-| PostgreSQL | 12+ | Base de données (recommandé) |
-| SQLite | 3.31+ | Base de données embarquée (pour le développement) |
-| Redis | 6.0+ | Cache (optionnel) |
+| Python | 3.8+ | Programming language |
+| pip | 26.1+ | Python package manager |
+| Git | 2.20+ | Version control |
+| PostgreSQL | 12+ | Database (recommended) |
+| SQLite | 3.31+ | Embedded database (for development) |
+| Redis | 6.0+ | Cache (optional) |
 
-### 1.3 Ressources matérielles
-- **CPU** : 2 cœurs minimum (4 recommandés)
-- **RAM** : 2 Go minimum (4 Go recommandés)
-- **Stockage** : 10 Go minimum (SSD recommandé)
+### 1.3 Hardware Resources
+- **CPU**: 2 cores minimum (4 recommended)
+- **RAM**: 2 GB minimum (4 GB recommended)
+- **Storage**: 10 GB minimum (SSD recommended)
 
 ---
 
-## 2. 📁 Préparation de l'environnement
+## 2. 📁 Environment Setup
 
-### 2.1 Cloner le dépôt
+### 2.1 Clone the repository
 ```bash
-# Cloner le dépôt GitHub
+# Clone the GitHub repository
 git clone https://github.com/FoxOps/leviia-schedule.git
 cd leviia-schedule
 
-# Basculer sur la dernière version stable
+# Switch to the latest stable version
 git checkout main
 ```
 
-### 2.2 Créer un environnement virtuel
+### 2.2 Create a virtual environment
 ```bash
-# Créer l'environnement virtuel
+# Create the virtual environment
 python -m venv venv
 
-# Activer l'environnement
-# Sur Linux/macOS
+# Activate the environment
+# On Linux/macOS
 source venv/bin/activate
 
-# Sur Windows
+# On Windows
 venv\Scripts\activate
 ```
 
-### 2.3 Installer les dépendances
+### 2.3 Install dependencies
 ```bash
-# Installer les dépendances de base
+# Install base dependencies
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# Installer les dépendances optionnelles (PostgreSQL, Redis)
+# Install optional dependencies (PostgreSQL, Redis)
 pip install psycopg[binary] redis
 ```
 
@@ -91,25 +91,25 @@ pip install psycopg[binary] redis
 
 ## 3. 📁 Configuration
 
-### 3.1 Fichier .env
-Créez un fichier `.env` à la racine du projet avec les variables suivantes :
+### 3.1 .env File
+Create a `.env` file at the project root with the following variables:
 
 ```bash
-# Configuration de base
+# Base configuration
 FLASK_ENV=production
-SECRET_KEY=votre_cle_secrete_ici_generée_avec_secrets_token_urlsafe_32
+SECRET_KEY=your_secret_key_here_generated_with_secrets_token_urlsafe_32
 
-# Base de données (choisir une option)
-# Option 1: SQLite (pour le développement)
+# Database (choose one option)
+# Option 1: SQLite (for development)
 DATABASE_URL=sqlite:///app.db
 
-# Option 2: PostgreSQL (recommandé pour la production)
-# DATABASE_URL=postgresql://user:password@localhost:5432/leviia
+# Option 2: PostgreSQL (recommended for production)
+# DATABASE_URL=postgresql://user:password@localhost:5432/kairos
 
 # Option 3: MySQL/MariaDB
-# DATABASE_URL=mysql://user:password@localhost:3306/leviia
+# DATABASE_URL=mysql://user:password@localhost:3306/kairos
 
-# Configuration de sécurité
+# Security configuration
 SESSION_COOKIE_SECURE=True
 SESSION_COOKIE_HTTPONLY=True
 SESSION_COOKIE_SAMESITE=Lax
@@ -117,42 +117,42 @@ REMEMBER_COOKIE_SECURE=True
 PREFERRED_URL_SCHEME=https
 WTF_CSRF_ENABLED=True
 
-# Configuration du logging
+# Logging configuration
 LOG_LEVEL=WARNING
 LOG_DIR=./logs
 
-# Configuration des performances
+# Performance configuration
 RATE_LIMIT_ENABLED=True
 COMPRESS_ENABLED=True
 
-# Configuration de l'authentification
-# LOGIN_DISABLED=False  # Cette option a été supprimée pour la sécurité
+# Authentication configuration
+# LOGIN_DISABLED=False  # This option was removed for security reasons
 ```
 
-### 3.2 Générer une clé secrète
+### 3.2 Generate a secret key
 ```bash
-# Utiliser Python pour générer une clé sécurisée
+# Use Python to generate a secure key
 python -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
 ---
 
-## 4. 📁 Déploiement avec Gunicorn
+## 4. 📁 Deploying with Gunicorn
 
 ### 4.1 Installation
 ```bash
 pip install gunicorn
 ```
 
-### 4.2 Configuration de base
+### 4.2 Basic configuration
 ```bash
-# Démarrer avec Gunicorn (4 workers, port 5000)
+# Start with Gunicorn (4 workers, port 5000)
 gunicorn -w 4 -b 0.0.0.0:5000 run:app
 ```
 
-### 4.3 Configuration recommandée pour la production
+### 4.3 Recommended configuration for production
 ```bash
-# Démarrer avec plus de workers et timeout plus long
+# Start with more workers and a longer timeout
 gunicorn \
   -w 8 \
   -b 0.0.0.0:5000 \
@@ -163,8 +163,8 @@ gunicorn \
   run:app
 ```
 
-### 4.4 Configuration avec fichier de configuration
-Créez un fichier `gunicorn.conf.py` :
+### 4.4 Configuration with a config file
+Create a `gunicorn.conf.py` file:
 
 ```python
 # gunicorn.conf.py
@@ -179,27 +179,27 @@ threads = 4
 keepalive = 2
 ```
 
-Puis démarrez avec :
+Then start with:
 ```bash
 gunicorn -c gunicorn.conf.py run:app
 ```
 
-### 4.5 Utiliser un socket Unix
+### 4.5 Using a Unix socket
 ```bash
-gunicorn -w 8 -b unix:/tmp/leviia.sock run:app
+gunicorn -w 8 -b unix:/tmp/kairos.sock run:app
 ```
 
 ---
 
-## 5. 📁 Déploiement avec uWSGI
+## 5. 📁 Deploying with uWSGI
 
 ### 5.1 Installation
 ```bash
 pip install uwsgi
 ```
 
-### 5.2 Configuration de base
-Créez un fichier `uwsgi.ini` :
+### 5.2 Basic configuration
+Create a `uwsgi.ini` file:
 
 ```ini
 [uwsgi]
@@ -211,64 +211,64 @@ chmod-socket = 660
 vacuum = true
 die-on-term = true
 
-# Configuration du socket
-socket = /tmp/leviia_uwsgi.sock
+# Socket configuration
+socket = /tmp/kairos_uwsgi.sock
 chown-socket = www-data:www-data
 chmod-socket = 660
 
-# Configuration HTTP (optionnelle)
+# HTTP configuration (optional)
 # http = 0.0.0.0:5000
 
-# Configuration des processus
+# Process configuration
 max-requests = 1000
 max-worker-lifetime = 3600
 reload-mercy = 30
 
-# Configuration de la mémoire
+# Memory configuration
 buffer-size = 32768
 ```
 
-### 5.3 Démarrer uWSGI
+### 5.3 Start uWSGI
 ```bash
 uwsgi --ini uwsgi.ini
 ```
 
 ---
 
-## 6. 📁 Déploiement avec Docker
+## 6. 📁 Deploying with Docker
 
-**Méthode recommandée pour l'ensemble du projet** (voir l'avertissement
-en tête de ce guide) - le vrai `Dockerfile`/`docker-compose.yml` vivent
-sous `docker/`, avec l'image publiée sur un registry par la CI. Ce guide
-couvre spécifiquement le déploiement bare-metal (Gunicorn/uWSGI), donc
-n'entretient pas de copie séparée de cette configuration ici.
+**Recommended method for the whole project** (see the warning
+at the top of this guide) - the actual `Dockerfile`/`docker-compose.yml` live
+under `docker/`, with the image published to a registry by CI. This guide
+specifically covers bare-metal deployment (Gunicorn/uWSGI), so it does not
+maintain a separate copy of that configuration here.
 
-👉 Voir [`docker.md`](docker.md) pour le détail complet : tirer l'image
-du registry (méthode recommandée), ou la construire soi-même/passer par
-Docker Compose (alternative dev).
+👉 See [`docker.md`](docker.md) for the full details: pulling the image
+from the registry (recommended method), or building it yourself/using
+Docker Compose (dev alternative).
 
 ---
 
-## 7. 📁 Configuration de la base de données
+## 7. 📁 Database Configuration
 
-### 7.1 SQLite (pour le développement)
+### 7.1 SQLite (for development)
 ```bash
-# SQLite est configuré par défaut
-# La base de données sera créée automatiquement au premier démarrage
+# SQLite is configured by default
+# The database will be created automatically on first startup
 
-# Pour initialiser manuellement
+# To initialize manually
 python run.py
 ```
 
-### 7.2 PostgreSQL (recommandé pour la production)
+### 7.2 PostgreSQL (recommended for production)
 
 #### 7.2.1 Installation
 ```bash
-# Sur Ubuntu/Debian
+# On Ubuntu/Debian
 sudo apt update
 sudo apt install postgresql postgresql-contrib
 
-# Sur CentOS/RHEL
+# On CentOS/RHEL
 sudo yum install postgresql-server postgresql-contrib
 sudo postgresql-setup --initdb
 sudo systemctl start postgresql
@@ -277,162 +277,162 @@ sudo systemctl enable postgresql
 
 #### 7.2.2 Configuration
 ```bash
-# Se connecter à PostgreSQL
+# Connect to PostgreSQL
 sudo -u postgres psql
 
-# Créer un utilisateur et une base de données
-CREATE USER leviia_user WITH PASSWORD 'votre_mot_de_passe';
-CREATE DATABASE leviia OWNER leviia_user;
-GRANT ALL PRIVILEGES ON DATABASE leviia TO leviia_user;
+# Create a user and a database
+CREATE USER kairos_user WITH PASSWORD 'your_password';
+CREATE DATABASE kairos OWNER kairos_user;
+GRANT ALL PRIVILEGES ON DATABASE kairos TO kairos_user;
 \q
 ```
 
-#### 7.2.3 Configuration dans Leviia
+#### 7.2.3 Configuration in Kairos
 ```bash
-# Dans votre fichier .env
-DATABASE_URL=postgresql://leviia_user:votre_mot_de_passe@localhost:5432/leviia
+# In your .env file
+DATABASE_URL=postgresql://kairos_user:your_password@localhost:5432/kairos
 ```
 
 ### 7.3 MySQL/MariaDB
 
-Leviia Schedule se connecte à tout serveur MySQL/MariaDB via SQLAlchemy +
-`PyMySQL` — un driver 100% pur Python, déjà inclus dans `requirements.txt`.
-Aucune bibliothèque système (`libmariadb-dev`/`libmysqlclient-dev`) n'est
-requise, ni à l'installation ni à l'exécution, ni sur l'hôte ni dans l'image
-Docker.
+Kairos connects to any MySQL/MariaDB server via SQLAlchemy +
+`PyMySQL` — a 100% pure Python driver, already included in `requirements.txt`.
+No system library (`libmariadb-dev`/`libmysqlclient-dev`) is
+required, either to install or to run it, neither on the host nor in the
+Docker image.
 
-#### 7.3.1 Cas recommandé : serveur MySQL/MariaDB externe
+#### 7.3.1 Recommended case: external MySQL/MariaDB server
 
-Si vous disposez déjà d'un serveur MySQL/MariaDB géré ailleurs (hébergeur
-managé, cluster existant, autre VM), il suffit de créer la base et
-l'utilisateur applicatif **sur ce serveur** (pas sur la machine qui exécute
-Leviia Schedule), puis de pointer `DATABASE_URL` dessus :
+If you already have a MySQL/MariaDB server managed elsewhere (managed
+hosting provider, existing cluster, another VM), you just need to create the
+database and application user **on that server** (not on the machine running
+Kairos), then point `DATABASE_URL` at it:
 
 ```bash
-# Sur le serveur MySQL/MariaDB externe (exécuté là-bas, pas ici)
-CREATE DATABASE leviia CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'leviia_user'@'%' IDENTIFIED BY 'votre_mot_de_passe';
-GRANT ALL PRIVILEGES ON leviia.* TO 'leviia_user'@'%';
+# On the external MySQL/MariaDB server (run there, not here)
+CREATE DATABASE kairos CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'kairos_user'@'%' IDENTIFIED BY 'your_password';
+GRANT ALL PRIVILEGES ON kairos.* TO 'kairos_user'@'%';
 FLUSH PRIVILEGES;
 ```
 
 ```bash
-# Dans le .env de Leviia Schedule (cette machine - aucun serveur MySQL
-# local requis, ni sur l'hôte ni dans l'image Docker)
-DATABASE_URL=mariadb://leviia_user:votre_mot_de_passe@mysql-externe.example.com:3306/leviia
+# In Kairos's .env (this machine - no local MySQL server
+# required, neither on the host nor in the Docker image)
+DATABASE_URL=mariadb://kairos_user:your_password@mysql-external.example.com:3306/kairos
 
-# Recommandé pour un serveur externe : les connexions inactives peuvent
-# être coupées côté serveur (wait_timeout MySQL par défaut ~8h, souvent
-# plus court sur une offre managée) - pool_pre_ping revalide la connexion
-# avant chaque emprunt au pool, pool_recycle la referme proactivement.
+# Recommended for an external server: idle connections may be
+# dropped server-side (MySQL's wait_timeout defaults to ~8h, often
+# shorter on a managed offering) - pool_pre_ping revalidates the connection
+# before each checkout from the pool, pool_recycle proactively closes it.
 SQLALCHEMY_ENGINE_OPTIONS={"pool_pre_ping": true, "pool_recycle": 3600}
 ```
 
-#### 7.3.2 Alternative : serveur MySQL/MariaDB local (dev/test)
+#### 7.3.2 Alternative: local MySQL/MariaDB server (dev/test)
 
-Pour héberger MariaDB directement sur la même machine (typiquement en
-développement) :
+To host MariaDB directly on the same machine (typically in
+development):
 
 ```bash
-# Sur Ubuntu/Debian
+# On Ubuntu/Debian
 sudo apt update
 sudo apt install mariadb-server
 sudo systemctl start mariadb
 sudo systemctl enable mariadb
 
-# Sécuriser MySQL
+# Secure MySQL
 sudo mysql_secure_installation
 ```
 
 ```bash
-# Se connecter à MySQL
+# Connect to MySQL
 sudo mysql -u root
 
-# Créer un utilisateur et une base de données
-CREATE USER 'leviia_user'@'localhost' IDENTIFIED BY 'votre_mot_de_passe';
-CREATE DATABASE leviia;
-GRANT ALL PRIVILEGES ON leviia.* TO 'leviia_user'@'localhost';
+# Create a user and a database
+CREATE USER 'kairos_user'@'localhost' IDENTIFIED BY 'your_password';
+CREATE DATABASE kairos;
+GRANT ALL PRIVILEGES ON kairos.* TO 'kairos_user'@'localhost';
 FLUSH PRIVILEGES;
 quit
 ```
 
 ```bash
-# Dans votre fichier .env
-DATABASE_URL=mysql://leviia_user:votre_mot_de_passe@localhost:3306/leviia
+# In your .env file
+DATABASE_URL=mysql://kairos_user:your_password@localhost:3306/kairos
 ```
 
-Voir aussi
+See also
 [`DEPLOYMENT_ADVANCED.md`](DEPLOYMENT_ADVANCED.md#-ajouter-mysqlmariadb-devtest-local)
-pour un overlay docker-compose optionnel équivalent à ce cas local.
+for an optional docker-compose overlay equivalent to this local case.
 
 ---
 
-## 8. 📁 Configuration des variables d'environnement
+## 8. 📁 Environment Variables Configuration
 
-### 8.1 Variables essentielles
-| Variable | Description | Valeur par défaut | Recommandation |
+### 8.1 Essential variables
+| Variable | Description | Default Value | Recommendation |
 |----------|-------------|----------------|----------------|
-| `FLASK_ENV` | Environnement d'exécution | `default` | `production` |
-| `SECRET_KEY` | Clé secrète Flask | Aléatoire | **OBLIGATOIRE** |
-| `DATABASE_URL` | URL de la base de données | `sqlite:///app.db` | PostgreSQL |
-| `LOG_LEVEL` | Niveau de logging | `INFO` | `WARNING` |
-| `RATE_LIMIT_ENABLED` | Activer le rate limiting | `True` | `True` |
-| `COMPRESS_ENABLED` | Activer la compression | `True` | `True` |
+| `FLASK_ENV` | Runtime environment | `default` | `production` |
+| `SECRET_KEY` | Flask secret key | Random | **REQUIRED** |
+| `DATABASE_URL` | Database URL | `sqlite:///app.db` | PostgreSQL |
+| `LOG_LEVEL` | Logging level | `INFO` | `WARNING` |
+| `RATE_LIMIT_ENABLED` | Enable rate limiting | `True` | `True` |
+| `COMPRESS_ENABLED` | Enable compression | `True` | `True` |
 
-### 8.2 Variables de sécurité
-| Variable | Description | Valeur par défaut | Recommandation |
+### 8.2 Security variables
+| Variable | Description | Default Value | Recommendation |
 |----------|-------------|----------------|----------------|
-| `SESSION_COOKIE_SECURE` | Cookies HTTPS uniquement | `True` | `True` |
-| `SESSION_COOKIE_HTTPONLY` | Cookies non accessibles via JS | `True` | `True` |
-| `SESSION_COOKIE_SAMESITE` | Politique SameSite | `Lax` | `Lax` ou `Strict` |
+| `SESSION_COOKIE_SECURE` | HTTPS-only cookies | `True` | `True` |
+| `SESSION_COOKIE_HTTPONLY` | Cookies not accessible via JS | `True` | `True` |
+| `SESSION_COOKIE_SAMESITE` | SameSite policy | `Lax` | `Lax` or `Strict` |
 | `REMEMBER_COOKIE_SECURE` | Remember me HTTPS | `True` | `True` |
-| `WTF_CSRF_ENABLED` | Activer CSRF | `True` | `True` |
-| `PREFERRED_URL_SCHEME` | Schéma URL | `https` | `https` |
+| `WTF_CSRF_ENABLED` | Enable CSRF | `True` | `True` |
+| `PREFERRED_URL_SCHEME` | URL scheme | `https` | `https` |
 
-### 8.3 Variables de performance
-| Variable | Description | Valeur par défaut | Recommandation |
+### 8.3 Performance variables
+| Variable | Description | Default Value | Recommendation |
 |----------|-------------|----------------|----------------|
-| `DATABASE_POOL_SIZE` | Taille du pool de connexions | `5` (SQLite), `10` (PostgreSQL) | 10-20 |
-| `DATABASE_MAX_OVERFLOW` | Overflow du pool | `10` (SQLite), `20` (PostgreSQL) | 20-40 |
-| `DATABASE_POOL_RECYCLE` | Recyclage des connexions (s) | `3600` | 3600 |
+| `DATABASE_POOL_SIZE` | Connection pool size | `5` (SQLite), `10` (PostgreSQL) | 10-20 |
+| `DATABASE_MAX_OVERFLOW` | Pool overflow | `10` (SQLite), `20` (PostgreSQL) | 20-40 |
+| `DATABASE_POOL_RECYCLE` | Connection recycle (s) | `3600` | 3600 |
 
 ---
 
-## 9. 📁 Sécurité en production
+## 9. 📁 Production Security
 
-### 9.1 Bonnes pratiques
-- â03 Utiliser **toujours** HTTPS en production
-- â03 Ne **jamais** exposer l'application sans authentification
-- â03 Maintenir les dépendances à jour (`pip install --upgrade -r requirements.txt`)
-- â03 Utiliser un WAF (Web Application Firewall) comme Cloudflare ou ModSecurity
-- â03 Configurer des sauvegardes régulières de la base de données
-- â03 Limiter l'accès à l'interface d'administration
+### 9.1 Best practices
+- **Always** use HTTPS in production
+- **Never** expose the application without authentication
+- Keep dependencies up to date (`pip install --upgrade -r requirements.txt`)
+- Use a WAF (Web Application Firewall) such as Cloudflare or ModSecurity
+- Configure regular database backups
+- Restrict access to the admin interface
 
-### 9.2 Configuration du pare-feu
+### 9.2 Firewall configuration
 ```bash
-# Autoriser uniquement les ports nécessaires
+# Only allow the necessary ports
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 sudo ufw allow 22/tcp  # SSH
 sudo ufw enable
 ```
 
-### 9.3 Configuration SSL/TLS
-Utilisez **Let's Encrypt** avec Certbot pour obtenir des certificats SSL gratuits :
+### 9.3 SSL/TLS configuration
+Use **Let's Encrypt** with Certbot to obtain free SSL certificates:
 
 ```bash
-# Installer Certbot
+# Install Certbot
 sudo apt install certbot python3-certbot-nginx
 
-# Obtenir un certificat
-sudo certbot --nginx -d votre-domaine.com
+# Obtain a certificate
+sudo certbot --nginx -d your-domain.com
 
-# Renouvellement automatique
+# Automatic renewal
 sudo certbot renew --dry-run
 ```
 
-### 9.4 Sécurité des headers HTTP
-Les headers de sécurité sont déjà configurés dans l'application :
+### 9.4 HTTP header security
+Security headers are already configured in the application:
 - Content-Security-Policy
 - X-Content-Type-Options
 - X-Frame-Options
@@ -444,124 +444,124 @@ Les headers de sécurité sont déjà configurés dans l'application :
 
 ## 10. 📁 Maintenance
 
-### 10.1 Mise à jour
+### 10.1 Update
 ```bash
-# Mettre à jour l'application
+# Update the application
 git pull origin main
 
-# Mettre à jour les dépendances
+# Update dependencies
 pip install --upgrade -r requirements.txt
 
-# Redémarrer l'application
-# systemctl restart leviia  # Si vous utilisez systemd
+# Restart the application
+# systemctl restart kairos  # If you use systemd
 ```
 
-### 10.2 Sauvegarde
+### 10.2 Backup
 ```bash
-# Sauvegarder la base de données SQLite
+# Back up the SQLite database
 cp app.db app.db.backup-$(date +%Y%m%d)
 
-# Sauvegarder PostgreSQL
-pg_dump leviia > leviia_backup_$(date +%Y%m%d).sql
+# Back up PostgreSQL
+pg_dump kairos > kairos_backup_$(date +%Y%m%d).sql
 
-# Sauvegarder le fichier de configuration
-cp .env leviia_config_backup_$(date +%Y%m%d)/
+# Back up the configuration file
+cp .env kairos_config_backup_$(date +%Y%m%d)/
 ```
 
 ### 10.3 Monitoring
 ```bash
-# Voir les logs
-tail -f logs/leviia-app.log
+# View the logs
+tail -f logs/kairos-app.log
 
-# Vérifier l'état de l'application
-# Si vous utilisez systemd
-systemctl status leviia
+# Check the application status
+# If you use systemd
+systemctl status kairos
 
-# Vérifier l'utilisation des ressources
+# Check resource usage
 top
 h top
 ```
 
 ---
 
-## 11. 📁 Dépannage
+## 11. 📁 Troubleshooting
 
-### 11.1 Problèmes courants
+### 11.1 Common issues
 
 #### 11.1.1 "Database is locked"
-**Cause** : SQLite ne supporte pas les accès concurrents.  
-**Solution** : 
-- Utiliser PostgreSQL pour la production
-- Ou configurer `SQLALCHEMY_ENGINE_OPTIONS` via `.env` (voir
+**Cause**: SQLite does not support concurrent access.  
+**Solution**: 
+- Use PostgreSQL for production
+- Or configure `SQLALCHEMY_ENGINE_OPTIONS` via `.env` (see
   Docs/reference/ENVIRONMENT_VARIABLES.md)
 
 #### 11.1.2 "502 Bad Gateway" (Nginx)
-**Cause** : Gunicorn/uWSGI ne répond pas.  
-**Solution** :
+**Cause**: Gunicorn/uWSGI is not responding.  
+**Solution**:
 ```bash
-# Vérifier que Gunicorn/uWSGI est en cours d'exécution
+# Check that Gunicorn/uWSGI is running
 ps aux | grep gunicorn
 ps aux | grep uwsgi
 
-# Redémarrer le service
-systemctl restart leviia
+# Restart the service
+systemctl restart kairos
 ```
 
 #### 11.1.3 "Connection refused" (PostgreSQL)
-**Cause** : PostgreSQL n'est pas en cours d'exécution ou la configuration est incorrecte.  
-**Solution** :
+**Cause**: PostgreSQL is not running or the configuration is incorrect.  
+**Solution**:
 ```bash
-# Vérifier que PostgreSQL est en cours d'exécution
+# Check that PostgreSQL is running
 sudo systemctl status postgresql
 
-# Tester la connexion
-psql -U leviia_user -d leviia -h localhost
+# Test the connection
+psql -U kairos_user -d kairos -h localhost
 ```
 
 #### 11.1.4 "ModuleNotFoundError"
-**Cause** : Les dépendances ne sont pas installées.  
-**Solution** :
+**Cause**: Dependencies are not installed.  
+**Solution**:
 ```bash
-# Activer l'environnement virtuel
+# Activate the virtual environment
 source venv/bin/activate
 
-# Installer les dépendances
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-### 11.2 Logs et diagnostic
+### 11.2 Logs and diagnostics
 
-#### 11.2.1 Voir les logs de l'application
+#### 11.2.1 View the application logs
 ```bash
-# Logs de l'application
-tail -f logs/leviia-app.log
+# Application logs
+tail -f logs/kairos-app.log
 
-# Logs des erreurs
-tail -f logs/leviia-errors.log
+# Error logs
+tail -f logs/kairos-errors.log
 
-# Logs HTTP
-tail -f logs/leviia-http-errors.log
+# HTTP logs
+tail -f logs/kairos-http-errors.log
 ```
 
-#### 11.2.2 Tester la connexion à la base de données
+#### 11.2.2 Test the database connection
 ```bash
-# Tester la connexion SQLite
+# Test the SQLite connection
 sqlite3 app.db "SELECT COUNT(*) FROM user;"
 
-# Tester la connexion PostgreSQL
-psql -U leviia_user -d leviia -c "SELECT COUNT(*) FROM user;"
+# Test the PostgreSQL connection
+psql -U kairos_user -d kairos -c "SELECT COUNT(*) FROM user;"
 ```
 
 ---
 
-## 📁 Annexes
+## 📁 Appendices
 
-### A.1 Configuration systemd
-Créez un fichier `/etc/systemd/system/leviia.service` :
+### A.1 systemd configuration
+Create a `/etc/systemd/system/kairos.service` file:
 
 ```ini
 [Unit]
-Description=Leviia Schedule Application
+Description=Kairos Application
 After=network.target postgresql.target
 
 [Service]
@@ -569,7 +569,7 @@ User=www-data
 Group=www-data
 WorkingDirectory=/var/www/leviia-schedule
 Environment="PATH=/var/www/leviia-schedule/venv/bin"
-ExecStart=/var/www/leviia-schedule/venv/bin/gunicorn -w 8 -b unix:/tmp/leviia.sock run:app
+ExecStart=/var/www/leviia-schedule/venv/bin/gunicorn -w 8 -b unix:/tmp/kairos.sock run:app
 Restart=always
 RestartSec=5
 
@@ -577,32 +577,32 @@ RestartSec=5
 WantedBy=multi-user.target
 ```
 
-Puis :
+Then:
 ```bash
-# Recharger systemd
+# Reload systemd
 sudo systemctl daemon-reload
 
-# Démarrer le service
-sudo systemctl start leviia
+# Start the service
+sudo systemctl start kairos
 
-# Activer au démarrage
-sudo systemctl enable leviia
+# Enable at startup
+sudo systemctl enable kairos
 
-# Vérifier l'état
-sudo systemctl status leviia
+# Check the status
+sudo systemctl status kairos
 ```
 
-### A.2 Configuration Nginx
-Créez un fichier `/etc/nginx/sites-available/leviia` :
+### A.2 Nginx configuration
+Create a `/etc/nginx/sites-available/kairos` file:
 
 ```nginx
 server {
     listen 80;
-    server_name votre-domaine.com;
+    server_name your-domain.com;
     
     location / {
         include proxy_params;
-        proxy_pass http://unix:/tmp/leviia.sock;
+        proxy_pass http://unix:/tmp/kairos.sock;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -616,15 +616,15 @@ server {
 }
 ```
 
-Puis :
+Then:
 ```bash
-# Activer le site
-sudo ln -s /etc/nginx/sites-available/leviia /etc/nginx/sites-enabled/
+# Enable the site
+sudo ln -s /etc/nginx/sites-available/kairos /etc/nginx/sites-enabled/
 
-# Tester la configuration
+# Test the configuration
 sudo nginx -t
 
-# Redémarrer Nginx
+# Restart Nginx
 sudo systemctl restart nginx
 ```
 
@@ -632,11 +632,11 @@ sudo systemctl restart nginx
 
 ## 📁 Support
 
-Pour toute question ou problème :
-- Consultez la [documentation complète](../README.md)
-- Ouvrez une **Issue** sur [GitHub](https://github.com/FoxOps/leviia-schedule/issues)
-- Consultez les [discussions](https://github.com/FoxOps/leviia-schedule/discussions)
+For any questions or issues:
+- See the [full documentation](../README.md)
+- Open an **Issue** on [GitHub](https://github.com/FoxOps/leviia-schedule/issues)
+- See the [discussions](https://github.com/FoxOps/leviia-schedule/discussions)
 
 ---
 
-> **⚠️ Note importante** : Ce guide suppose que vous avez une connaissance de base de l'administration système Linux. Pour un déploiement en production, il est fortement recommandé de faire appel à un administrateur système expérimenté.
+> **⚠️ Important note**: This guide assumes you have basic knowledge of Linux system administration. For a production deployment, it is strongly recommended to engage an experienced system administrator.
