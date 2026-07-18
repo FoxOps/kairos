@@ -1,24 +1,24 @@
-# Schéma entité-relation (ERD)
+# Entity-Relationship Diagram (ERD)
 
-Généré à partir de `app/models/*.py` (Phase 5, 2026-07, complété 2026-07-16
-avec `Setting`/`SwapRequest`/`AppNotification`/`AuditLog` — voir CLAUDE.md
-"Shift swaps"/"In-app notifications"/"Audit trail" pour le détail
-fonctionnel de chacun) — les champs `id`, `created_at`, `updated_at` sont
-hérités de `BaseModel` (`app/models/base.py`) et communs à toutes les
-tables ci-dessous.
+Generated from `app/models/*.py` (Phase 5, 2026-07, completed 2026-07-16
+with `Setting`/`SwapRequest`/`AppNotification`/`AuditLog` — see CLAUDE.md
+"Shift swaps"/"In-app notifications"/"Audit trail" for the functional
+detail of each) — the `id`, `created_at`, `updated_at` fields are
+inherited from `BaseModel` (`app/models/base.py`) and common to all
+tables below.
 
 ```mermaid
 erDiagram
-    GROUP ||--o{ USER : "a pour membres"
-    USER ||--o{ SHIFT : "assigné à"
-    USER ||--o{ ON_CALL : "assigné à"
-    USER ||--o{ LEAVE : "demande"
-    USER ||--o{ NOTIFICATION_LOG : "reçoit"
-    USER ||--o{ APP_NOTIFICATION : "reçoit"
+    GROUP ||--o{ USER : "has members"
+    USER ||--o{ SHIFT : "assigned to"
+    USER ||--o{ ON_CALL : "assigned to"
+    USER ||--o{ LEAVE : "requests"
+    USER ||--o{ NOTIFICATION_LOG : "receives"
+    USER ||--o{ APP_NOTIFICATION : "receives"
     USER ||--o{ SWAP_REQUEST : "requester/target_user/reviewer (3 FK)"
     SHIFT ||--o{ SWAP_REQUEST : "shift/target_shift (2 FK)"
-    USER ||--o{ AUDIT_LOG : "acteur (nullable)"
-    SHIFT_TYPE ||--o{ SHIFT : "définit le créneau de"
+    USER ||--o{ AUDIT_LOG : "actor (nullable)"
+    SHIFT_TYPE ||--o{ SHIFT : "defines the slot for"
 
     GROUP {
         int id PK
@@ -33,35 +33,35 @@ erDiagram
         int id PK
         string name
         string email UK
-        string password_hash "jamais sérialisé (to_dict)"
+        string password_hash "never serialized (to_dict)"
         bool is_admin
         int group_id FK
-        string ics_token UK "nullable, jamais sérialisé"
-        string timezone "nullable, repli sur Setting.default_timezone"
-        string language "nullable String(5), repli sur Setting.default_language"
-        string date_format "nullable, repli sur Setting.default_date_format"
-        string time_format "nullable, repli sur Setting.default_time_format"
-        bool shift_notifications_enabled "défaut true"
-        bool oncall_notifications_enabled "défaut true"
+        string ics_token UK "nullable, never serialized"
+        string timezone "nullable, falls back to Setting.default_timezone"
+        string language "nullable String(5), falls back to Setting.default_language"
+        string date_format "nullable, falls back to Setting.default_date_format"
+        string time_format "nullable, falls back to Setting.default_time_format"
+        bool shift_notifications_enabled "default true"
+        bool oncall_notifications_enabled "default true"
         datetime created_at
         datetime updated_at
     }
 
     SETTING {
         int id PK
-        string key UK "ex. default_timezone, notifications_enabled"
-        text value "sérialisé (str/bool/int)"
+        string key UK "e.g. default_timezone, notifications_enabled"
+        text value "serialized (str/bool/int)"
         datetime created_at
         datetime updated_at
     }
 
     SWAP_REQUEST {
         int id PK
-        int requester_id FK "vers user.id"
-        int target_user_id FK "vers user.id"
-        int reviewer_id FK "vers user.id, nullable tant que non traité"
-        int shift_id FK "vers shift.id"
-        int target_shift_id FK "vers shift.id, nullable (don simple)"
+        int requester_id FK "to user.id"
+        int target_user_id FK "to user.id"
+        int reviewer_id FK "to user.id, nullable until processed"
+        int shift_id FK "to shift.id"
+        int target_shift_id FK "to shift.id, nullable (one-way give-away)"
         string status "PENDING/APPROVED/REJECTED/CANCELLED/REVERTED"
         text admin_comment "nullable"
         datetime reviewed_at "nullable"
@@ -73,22 +73,22 @@ erDiagram
         int id PK
         int user_id FK
         string message
-        string link "nullable, ex. /admin/swaps"
-        bool is_read "défaut false"
+        string link "nullable, e.g. /admin/swaps"
+        bool is_read "default false"
         datetime created_at
         datetime updated_at
     }
 
     AUDIT_LOG {
         int id PK
-        int actor_id FK "nullable, vers user.id"
-        string action "namespacé domaine.verbe, ex. shift.create"
-        string resource_type "nullable, ex. Shift, User, Setting"
+        int actor_id FK "nullable, to user.id"
+        string action "namespaced domain.verb, e.g. shift.create"
+        string resource_type "nullable, e.g. Shift, User, Setting"
         int resource_id "nullable"
-        text details "résumé court, pas un diff structuré"
+        text details "short summary, not a structured diff"
         string ip_address "nullable, IPv6-safe"
         datetime created_at
-        datetime updated_at "hérité, jamais modifié - append-only"
+        datetime updated_at "inherited, never modified - append-only"
     }
 
     SHIFT_TYPE {
@@ -105,9 +105,9 @@ erDiagram
         int id PK
         int user_id FK
         int shift_type_id FK
-        datetime start_time "indexé"
-        datetime end_time "indexé"
-        date date "indexé"
+        datetime start_time "indexed"
+        datetime end_time "indexed"
+        date date "indexed"
         datetime created_at
         datetime updated_at
     }
@@ -115,8 +115,8 @@ erDiagram
     ON_CALL {
         int id PK
         int user_id FK
-        datetime start_time "indexé"
-        datetime end_time "indexé"
+        datetime start_time "indexed"
+        datetime end_time "indexed"
         datetime created_at
         datetime updated_at
     }
@@ -124,8 +124,8 @@ erDiagram
     LEAVE {
         int id PK
         int user_id FK
-        date start_date "indexé"
-        date end_date "indexé"
+        date start_date "indexed"
+        date end_date "indexed"
         datetime created_at
         datetime updated_at
     }
@@ -133,7 +133,7 @@ erDiagram
     AUTOMATION_CONFIG {
         int id PK
         string config_key UK
-        text config_value "JSON encodé"
+        text config_value "JSON encoded"
         datetime created_at
         datetime updated_at
     }
@@ -141,8 +141,8 @@ erDiagram
     NOTIFICATION_LOG {
         int id PK
         int user_id FK
-        string notification_type "shift_weekly ou oncall_weekly"
-        date period_start "UK avec user_id+notification_type"
+        string notification_type "shift_weekly or oncall_weekly"
+        date period_start "UK with user_id+notification_type"
         datetime created_at
         datetime updated_at
     }
@@ -150,55 +150,54 @@ erDiagram
 
 ## Notes
 
-- **`AutomationConfig`** n'a aucune relation avec les autres tables :
-  c'est un stockage clé/valeur générique (utilisé pour persister l'ordre
-  de rotation des astreintes entre redémarrages). Absent de toute
-  documentation précédente malgré son usage réel dans
+- **`AutomationConfig`** has no relationship to the other tables:
+  it's a generic key/value store (used to persist the on-call
+  rotation order across restarts). Absent from any previous
+  documentation despite its real use in
   `app/utils/automation/`.
-- **`Leave` n'a pas de champ `reason`** — l'ancienne documentation API
-  décrivait un champ `reason: string` sur les congés qui n'a jamais
-  existé dans le modèle.
-- **`NotificationLog`** : contrainte unique sur
-  `(user_id, notification_type, period_start)` - empêche un double
-  envoi si un script de notification (`scripts/send_*_notifications.py`)
-  est relancé pour une période déjà traitée.
-- **Index composites** (au-delà des index simples listés ci-dessus,
-  définis dans les classes de modèle) :
-  - `Shift(user_id, date)` et `Shift(date, start_time)`
+- **`Leave` has no `reason` field** — the old API documentation
+  described a `reason: string` field on leaves that never
+  existed in the model.
+- **`NotificationLog`**: unique constraint on
+  `(user_id, notification_type, period_start)` - prevents a duplicate
+  send if a notification script (`scripts/send_*_notifications.py`)
+  is rerun for an already-processed period.
+- **Composite indexes** (beyond the simple indexes listed above,
+  defined in the model classes):
+  - `Shift(user_id, date)` and `Shift(date, start_time)`
   - `OnCall(user_id, start_time, end_time)`
   - `Leave(user_id, start_date, end_date)`
 
-  Préservez ces index si vous modifiez les patterns de requête dans
+  Preserve these indexes if you modify the query patterns in
   `app/repositories/`.
-- **Suppression en cascade** : `Group.users`, `User.shifts`,
-  `User.on_calls` et `User.leaves` sont tous déclarés
-  `cascade="all, delete-orphan"` — supprimer un groupe supprime ses
-  utilisateurs, supprimer un utilisateur supprime tous ses shifts/
-  astreintes/congés.
-- **`Setting`** : store clé/valeur générique (même forme qu'`AutomationConfig`)
-  pour les réglages admin éditables à chaud depuis `/admin/settings`
-  (fuseau horaire, langue, formats de date/heure, URL publique,
-  pagination, notifications, rétention sauvegardes/audit, expiration
-  token ICS) — une ligne présente l'emporte toujours ; son absence fait
-  retomber en direct sur la variable d'environnement/valeur par défaut
-  correspondante (`SettingsService`, voir CLAUDE.md "Configuration:
+- **Cascade delete**: `Group.users`, `User.shifts`,
+  `User.on_calls` and `User.leaves` are all declared
+  `cascade="all, delete-orphan"` — deleting a group deletes its
+  users, deleting a user deletes all their shifts/
+  on-calls/leaves.
+- **`Setting`**: generic key/value store (same shape as `AutomationConfig`)
+  for admin settings editable at runtime from `/admin/settings`
+  (timezone, language, date/time formats, public URL,
+  pagination, notifications, backup/audit retention, ICS
+  token expiry) — a present row always wins; its absence falls
+  straight back to the corresponding environment variable/default value
+  (`SettingsService`, see CLAUDE.md "Configuration:
   two parallel systems").
-- **`SwapRequest`** : le premier modèle du projet avec plusieurs FK vers
-  la même table (`requester_id`/`target_user_id`/`reviewer_id` → `User`).
-  Délibérément **sans** `db.relationship()` (limite de typage des stubs
-  SQLAlchemy 2.0 sur les relations non configurées avec le plugin mypy
-  dédié) — `requester`/`target_user`/`reviewer`/`shift`/`target_shift`
-  sont de simples `@property` via `db.session.get(...)`.
-- **`AppNotification`** : la cloche de notification in-app (badge non-lu
-  dans la sidebar) — **à ne pas confondre** avec `NotificationLog`
-  (garde-fou anti-doublon des emails hebdomadaires, jamais affiché) ni
-  avec `AuditLog` ci-dessous.
-- **`AuditLog`** : append-only, jamais modifié après création
-  (`updated_at` hérité de `BaseModel` mais toujours égal à `created_at`
-  en pratique). `actor_id` nullable (aucune action de ce projet n'est
-  aujourd'hui attribuée à un appelant système/non-authentifié, mais la
-  colonne reste nullable par défaut prudent). Index composite sur
-  `(resource_type, resource_id)` en plus des index simples sur
-  `actor_id`/`action`. Seul point d'écriture : `AuditService.log()` — ne
-  jamais insérer directement via le repository depuis une route/un
-  service.
+- **`SwapRequest`**: the first model in the project with several FKs to
+  the same table (`requester_id`/`target_user_id`/`reviewer_id` → `User`).
+  Deliberately **without** `db.relationship()` (a typing limitation of
+  SQLAlchemy 2.0's stubs on relationships not configured with the
+  dedicated mypy plugin) — `requester`/`target_user`/`reviewer`/`shift`/`target_shift`
+  are plain `@property` lookups via `db.session.get(...)`.
+- **`AppNotification`**: the in-app notification bell (unread badge
+  in the sidebar) — **not to be confused** with `NotificationLog`
+  (anti-duplicate guard for weekly emails, never displayed) nor
+  with `AuditLog` below.
+- **`AuditLog`**: append-only, never modified after creation
+  (`updated_at` inherited from `BaseModel` but always equal to `created_at`
+  in practice). `actor_id` nullable (no action in this project is
+  currently attributed to a system/unauthenticated caller, but the
+  column stays nullable as a cautious default). Composite index on
+  `(resource_type, resource_id)` in addition to the simple indexes on
+  `actor_id`/`action`. Single write point: `AuditService.log()` — never
+  insert directly via the repository from a route/service.
