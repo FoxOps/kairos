@@ -1,10 +1,5 @@
 # Kairos Documentation
 
-> Reorganized in Phase 5 (2026-07): `docs/` → `Docs/`, split into
-> sub-folders by type. `SUMMARY.md` removed (redundant with this file +
-> `architecture/ARCHITECTURE.md` + `api/API.md`, no unique content -
-> see `report/Phase 5: DOCUMENTATION.md`).
-
 ## Where to start based on your role
 
 | Role | Start here |
@@ -62,10 +57,9 @@
 3. Submit a change: fork, branch, edit, Pull Request
 
 Main rule: **verify against the real code before writing**, not
-against the existing documentation - most of the inaccuracies fixed in
-Phase 5 came from documentation copied/extended without re-checking
-after a refactor. See `report/Phase 5: DOCUMENTATION.md` for the
-detail of what was found and fixed.
+against the existing documentation - copying or extending existing
+text without re-checking it against the current code is the most
+common source of inaccuracies.
 
 ## Support
 

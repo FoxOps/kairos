@@ -1,12 +1,5 @@
 # Technical Architecture
 
-> Fully rewritten in Phase 5 (2026-07) — the previous version
-> described `app/models.py` as a flat file and
-> `app/utils/decorators.py`/`helpers.py`/`ics_exporter.py`/`automation.py`
-> directly at the root of `app/utils/`; both of these structures were
-> replaced by packages starting in Phases 2-4 (see `report/Phase 2: Backend.md`
-> and the root-level `CLAUDE.md` for the history).
-
 ## Overview
 
 Kairos is a monolithic, layered Flask application:
@@ -45,9 +38,8 @@ graph TB
 
 ### Why a services/repositories layer
 
-Before Phase 2, all the logic (request parsing, business rules,
-SQL queries) lived directly in `app/main.py` (1287 lines) and
-`app/admin.py`. This was split into three distinct responsibilities:
+Request parsing, business rules, and SQL queries are split into three
+distinct responsibilities:
 
 - **`app/routes/`**: parses the HTTP request, calls a service, turns
   the result into a flash/redirect/JSON response. No SQL query or
@@ -91,8 +83,8 @@ graph LR
 app/
 ├── __init__.py           # create_app(): factory, extensions (db, login_manager,
 │                          # limiter, csrf, conditional Talisman), blueprints
-├── config/                # Active configuration: base.py, development.py,
-│                          # production.py, testing.py
+├── config/                # Active configuration: base.py (the only
+│                          # class actually used in production), testing.py
 ├── auth/                  # decorators.py (route guards), user_manager.py,
 │                          # oidc_auth.py (SSO via Authlib)
 ├── models/                 # BaseModel + Group, User, ShiftType, Shift, OnCall,
@@ -130,15 +122,13 @@ app/
 │   │                      # timezone_helpers.py, js_translations.py
 │   ├── logging/             # multi-handler logger: app.log, error.log,
 │   │                      # debug.log, http_errors.log, audit.log (all
-│   │                      # RotatingFileHandler) - no sql.log/auth.log/
-│   │                      # syslog, contrary to an older version of
-│   │                      # this doc. audit.log is fed by
-│   │                      # AuditService.log() (see CLAUDE.md "Audit trail")
+│   │                      # RotatingFileHandler, no sql.log/auth.log/
+│   │                      # syslog). audit.log is fed by AuditService.log()
 │   ├── notifications/       # email_sender.py (smtplib/email, stdlib) - called
 │   │                      # by NotificationService, no associated route
-│   ├── optimizations/       # eager_load (the only decorator left, Phase 4)
-│   ├── security/            # (empty since Phase 4 — encryption.py and
-│   │                      # token_manager.py removed, no real caller)
+│   ├── optimizations/       # eager_load (the only decorator here)
+│   ├── security/            # (empty - no security-specific utility has
+│   │                      # a real caller at the moment)
 │   ├── health.py            # /health, /ready, /version endpoints (k8s probes)
 │   └── prometheus_metrics.py # /metrics, gated by PROMETHEUS_ENABLED
 ├── static/
@@ -154,8 +144,8 @@ app/
 **Frontend** — Tailwind CSS 4 + daisyUI 5, loaded via `cdnjs.cloudflare.com`, zero
 build step (Tailwind runs as `tailwindcss-browser`, the official JIT compiler that
 scans classes directly in the browser - no `package.json`/npm in this project,
-a deliberate choice). Bulma fully removed (PR #108, Tailwind/daisyUI overhaul):
-no more vendor directory or download script, Font Awesome (7.2.0, SVG+JS mode -
+a deliberate choice). No Bulma or other legacy CSS framework: no vendor
+directory or download script, Font Awesome (7.2.0, SVG+JS mode -
 cdnjs's `.woff2` files for this version are corrupted, rejected by Chromium's
 font sanitizer) and FullCalendar (stayed on 6.1.21, loaded from `cdn.jsdelivr.net` -
 the one exception to "everything via cdnjs", since cdnjs doesn't host its locale
@@ -166,7 +156,7 @@ hosting issue) are also 100% CDN.
 stable application-level names (`--app-color-primary`, `--bg-primary`...) used
 by the small amount of remaining custom CSS.
 
-**Visual identity** (PR #110): official Dracula palette (dark theme) / Alucard
+**Visual identity**: official Dracula palette (dark theme) / Alucard
 (light theme), overridden in `app/static/css/theme-colors.css` on every daisyUI
 semantic color (`--color-primary/-secondary/-accent/-neutral/-info/-success/-warning/-error`
 and the three surface levels `base-100/200/300`) - values 100% sourced from
@@ -207,9 +197,9 @@ store as `AutomationConfig`, but for admin settings editable at
 runtime (`/admin/settings`). `SwapRequest` carries 3 FKs to `User`
 (requester/target_user/reviewer) and 2 to `Shift` (shift/target_shift).
 `AppNotification` (in-app bell) and `AuditLog` (change history,
-`/admin/audit-log`) are both 1:N from `User` but
-must not be confused with each other or with `NotificationLog` — see
-CLAUDE.md ("In-app notifications", "Audit trail") for the distinction.
+`/admin/audit-log`) are both 1:N from `User` but serve different
+purposes and must not be confused with each other or with
+`NotificationLog` (the email-reminder dedup table above).
 
 ## Authentication
 
@@ -228,8 +218,7 @@ both flows.
 ## Security
 
 - **CSRF**: `Flask-WTF` `CSRFProtect` active across the entire
-  application (added in Phase 4 — previously absent despite the
-  dependency being present). HTML forms embed a hidden
+  application. HTML forms embed a hidden
   `csrf_token` field, JS `fetch()` calls send the
   `X-CSRFToken` header (read from a `<meta name="csrf-token">` tag in
   `base.html`).
@@ -254,6 +243,6 @@ query patterns.
 
 ## Tests
 
-See `tests/` (`unit/`, `integration/`, `e2e/`, `fixtures/`) and
-`report/Phase 4: TEST IMPROVEMENT.md` for the structure and
-coverage history (81% as of Phase 5).
+See `tests/` (`unit/`, `integration/`, `e2e/`, `fixtures/`) for the
+structure. Run with `pytest tests/ --cov=app --cov-report=term-missing`
+for a current coverage report.

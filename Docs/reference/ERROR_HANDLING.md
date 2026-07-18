@@ -121,7 +121,7 @@ All error templates extend `base.html` and follow this structure:
 
 ## 🛡️ HTTP Error Handlers
 
-> **Added in Phase 4**: any POST/PUT/PATCH/DELETE request without a
+> Any POST/PUT/PATCH/DELETE request without a
 > valid CSRF token (`Flask-WTF` `CSRFProtect`, active app-wide) receives
 > a `400 Bad Request` before it even reaches the view — handled by
 > Flask-WTF, not by the `@app.errorhandler` handlers below. See

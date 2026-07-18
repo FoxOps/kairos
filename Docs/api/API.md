@@ -1,12 +1,5 @@
 # API
 
-> Fully rewritten in Phase 5 (2026-07). The old version
-> documented routes that never existed in the code
-> (`/leaves/my-leaves`, `/schedule/my-shifts`, `/oncall/my-oncalls`,
-> `/admin/users/generate-token/<id>`) and omitted almost all of the
-> real `/api/*` endpoints. Content verified line by line against
-> `app/routes/*.py`.
-
 For a complete machine-readable spec (schemas, error codes), see
 [`openapi.yaml`](openapi.yaml) — importable into Swagger UI, Postman,
 Insomnia, etc.

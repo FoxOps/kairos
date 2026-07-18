@@ -144,13 +144,10 @@ Full configuration guide:
 
 ## 📝 Logging Configuration
 
-> ⚠️ This section was corrected on July 16, 2026 (audit trail effort, see
-> CLAUDE.md "Audit trail"): it used to document a set of variables
-> (`LOG_DIR`, `LOG_FILE_SIZE`, `LOG_FILE_APP`/`LOG_FILE_ERRORS`/.../`LOG_LEVEL_*`,
-> `LOG_FORMAT`, `SYSLOG_*`, `LOG_FILTER_*`) that never existed in the code
-> (`app/utils/logging/logger.py`) — likely a leftover from an earlier
-> design that was never implemented. Only the 4 variables below are
-> actually read.
+> Only the 4 variables below are actually read by
+> `app/utils/logging/logger.py`. There is no `LOG_DIR`, `SYSLOG_*`, or
+> per-file `LOG_LEVEL_*`/`LOG_FORMAT` setting - logs always go to fixed
+> files under `logs/`.
 
 | Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
@@ -162,8 +159,8 @@ Full configuration guide:
 Sensitive-data filtering (masking `password=`/`token=`/`api_key=` in log
 messages, `SensitiveDataFilter`) is always active and cannot be disabled
 via an environment variable. `audit.log` (under `logs/`) is written to by
-`AuditService.log()` — see CLAUDE.md "Audit trail" for the DB + file dual
-write and how to browse it via `/admin/audit-log`.
+`AuditService.log()`, alongside a database copy browsable via
+`/admin/audit-log`.
 
 ---
 
@@ -321,20 +318,14 @@ DATA_CLEANUP_SCHEDULE="0 0 1 * *"
 > active (`app/utils/health.py`, registered unconditionally), regardless
 > of `PROMETHEUS_ENABLED`.
 
-### Removed variables (dead code removed in Phase 4)
+### Removed variables
 
-Previous versions of this document listed sections for **Cache**
-(`CACHE_TYPE`, `CACHE_DEFAULT_TIMEOUT`, `CACHE_REDIS_URL`,
+**Cache** (`CACHE_TYPE`, `CACHE_DEFAULT_TIMEOUT`, `CACHE_REDIS_URL`,
 `CACHE_ENABLED`), **Pagination**, **Lazy Loading**, **Query
 Optimization**, and **Performance Monitoring** (`PAGINATION_*`,
 `LAZY_LOAD*`, `QUERY_OPTIMIZATION_*`, `PERFORMANCE_MONITORING_ENABLED`,
-`SLOW_QUERY_THRESHOLD`, etc.). These variables are **removed from this
-documentation**: `app/utils/cache/` (including
-`cache_manager.init_cache()`) and `config_performance.py` were both
-removed as dead code (an exhaustive search confirmed zero remaining
-imports in `app/` or `run.py` — see CLAUDE.md "utils/ layout" and
-`report/Phase 4: AMÉLIORATION DES TESTS.md`). Setting them in `.env`
-today has **no effect**.
+`SLOW_QUERY_THRESHOLD`, etc.) are not read anywhere in the code.
+Setting them in `.env` today has **no effect**.
 
 ---
 
@@ -537,5 +528,4 @@ Boolean variables accept the following values (case-insensitive):
 
 ---
 
-*Last updated: 2026-07 (Phase 5)*
 *This file documents the environment variables actually read by the application. When in doubt, `.env.example` is authoritative.*
