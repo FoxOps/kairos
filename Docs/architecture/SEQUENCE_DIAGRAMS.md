@@ -87,8 +87,11 @@ sequenceDiagram
         LR->>DB: INSERT Leave
         LS->>DB: commit()
         LS->>ASA: rebalance_after_leave(leave, dry_run=False)
-        Note over ASA: Recalculates shifts affected by<br/>the absence (reassignment if needed)
-        ASA-->>LS: (regenerated_shifts, messages)
+        Note over ASA: Recalculates shifts (and on-calls,<br/>if the leave overlaps one) affected<br/>by the absence
+        ASA-->>LS: (regenerated_shifts, messages, unfilled_oncall_dates)
+        opt unfilled_oncall_dates is non-empty
+            Note over LS: No user could be assigned within the<br/>legal 2-week on-call spacing rule -<br/>notifies admins instead of forcing an assignment
+        end
         LS-->>R: (leave, regenerated_shifts)
         R-->>U: Flash "Leave added, N shifts recalculated"
     end
