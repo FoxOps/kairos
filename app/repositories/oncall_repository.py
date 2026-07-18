@@ -1,5 +1,5 @@
 """
-OnCall repository for Leviia Schedule.
+OnCall repository for Kairos.
 
 Data access layer for the OnCall model - no business logic, no Flask
 request/response handling, just queries.

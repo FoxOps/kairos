@@ -1,4 +1,4 @@
-# Makefile pour Leviia Schedule
+# Makefile pour Kairos
 # Exécutez `make help` pour voir les commandes disponibles
 #
 # Objectif : ne garder que l'essentiel. Toute variante ponctuelle (un
@@ -92,7 +92,7 @@ backup: ## Crée une sauvegarde locale de la base de données
 backup-restore: ## Restaure une sauvegarde (spécifiez BACKUP=chemin/vers/fichier)
 	@if [ -z "$(BACKUP)" ]; then \
 		echo "$(RED)Erreur: Veuillez spécifier le fichier de sauvegarde avec BACKUP=chemin/vers/fichier$(NC)"; \
-		echo "Exemple: make backup-restore BACKUP=backups/leviia_backup_20240101.db.gz"; \
+		echo "Exemple: make backup-restore BACKUP=backups/kairos_backup_20240101.db.gz"; \
 		exit 1; \
 	fi
 	@echo "$(YELLOW)Restauration de la sauvegarde: $(BACKUP)$(NC)"

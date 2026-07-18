@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script de validation de la configuration pour Leviia Schedule.
+Script de validation de la configuration pour Kairos.
 
 Ce script vérifie que toutes les variables d'environnement nécessaires sont définies
 et que leurs valeurs sont valides.
@@ -338,7 +338,7 @@ class ConfigValidator:
     def print_results(self):
         """Affiche les résultats de la validation."""
         print("\n" + "=" * 70)
-        print("VALIDATION DE LA CONFIGURATION - LEVIIA SCHEDULE")
+        print("VALIDATION DE LA CONFIGURATION - KAIROS")
         print("=" * 70)
 
         # Afficher les informations
@@ -386,9 +386,7 @@ class ConfigValidator:
 
 def main():
     """Point d'entrée principal."""
-    parser = argparse.ArgumentParser(
-        description="Valider la configuration de Leviia Schedule"
-    )
+    parser = argparse.ArgumentParser(description="Valider la configuration de Kairos")
     parser.add_argument(
         "--env-file",
         type=str,

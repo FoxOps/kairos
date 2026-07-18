@@ -42,8 +42,8 @@ class TestPrometheusMetricsEndpoint:
         assert resp.status_code == 200
         assert resp.headers["Content-Type"].startswith("text/plain")
         body = resp.data.decode("utf-8")
-        assert "leviia_shifts_total" in body
-        assert "leviia_users_total" in body
+        assert "kairos_shifts_total" in body
+        assert "kairos_users_total" in body
 
     def test_requests_are_tracked_without_crashing(self, prometheus_app):
         """Regression test: after_request used to reference `request`
@@ -62,8 +62,8 @@ class TestPrometheusMetricsEndpoint:
         resp = client.get("/metrics")
         body = resp.data.decode("utf-8")
         assert (
-            'leviia_requests_total{endpoint="/login"' in body
-            or "leviia_requests_total" in body
+            'kairos_requests_total{endpoint="/login"' in body
+            or "kairos_requests_total" in body
         )
 
 

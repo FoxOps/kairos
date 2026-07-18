@@ -1,8 +1,8 @@
 /**
- * Leviia Schedule - JavaScript entry point
+ * Kairos - JavaScript entry point
  * =============================================
  *
- * Loads the app's ES6 modules and exposes `window.Leviia` for the
+ * Loads the app's ES6 modules and exposes `window.Kairos` for the
  * templates' inline event handlers (onclick=...) and the FullCalendar
  * callbacks.
  */
@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Export functions for the templates (inline onclick, FullCalendar callbacks)
-window.Leviia = {
+window.Kairos = {
     ThemeManager,
     showNotification,
     confirmAction,

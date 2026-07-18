@@ -1,5 +1,5 @@
 """
-Test configuration for Leviia Schedule.
+Test configuration for Kairos.
 
 This version uses create_app() to build a fresh app instance for the
 tests, which allows disabling Talisman before it initializes.

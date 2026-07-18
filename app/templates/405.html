@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "macros/errors.html" import error_page with context %}
 
-{% block title %}{{ _("Méthode non autorisée") }} - Leviia{% endblock %}
+{% block title %}{{ _("Méthode non autorisée") }} - Kairos{% endblock %}
 
 {% block content %}
 {% call error_page(code=405, title=_("Méthode non autorisée"), subtitle=_("La méthode HTTP utilisée n'est pas autorisée pour cette ressource."), color="text-warning", secondary=[{"onclick": "history.back()", "icon": "fa-arrow-left", "label": _("Retour en arrière")}]) %}

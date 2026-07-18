@@ -1,5 +1,5 @@
 """
-Backup service for Leviia Schedule.
+Backup service for Kairos.
 
 Wraps the pure functions in scripts/backup_database.py (deliberately
 framework-agnostic - see that module's docstring) so the admin UI can
@@ -32,7 +32,7 @@ class BackupService:
 
     @staticmethod
     def _logger() -> logging.Logger:
-        return logging.getLogger("leviia.backup")
+        return logging.getLogger("kairos.backup")
 
     @staticmethod
     def get_config() -> BackupConfig:

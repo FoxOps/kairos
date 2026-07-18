@@ -1,52 +1,53 @@
-# Optimisation des performances
+# Performance optimization
 
-> Réécrit intégralement en Phase 5 (2026-07). La version précédente
-> (1397 lignes) documentait en détail trois systèmes qui n'existent plus
-> dans le code : pagination avancée (`app/utils/pagination/`), lazy
-> loading (`app/utils/lazy_loading.py`, 785 lignes), et un module de
-> monitoring de performance (`PerformanceMonitor`) qui — d'après l'audit
-> mené en Phase 4 — **n'a en réalité jamais existé** : le décorateur
-> `measure_time` qui prétendait s'en servir importait un module
-> (`app.utils.performance_monitor`) introuvable, preuve qu'il n'avait
-> jamais tourné. Les trois ont été supprimés comme code mort confirmé en
-> Phase 4 (voir `report/Phase 4: AMÉLIORATION DES TESTS.md`). Ce qui
-> suit ne documente que ce qui reste réellement dans le code.
+> Fully rewritten in Phase 5 (2026-07). The previous version (1397 lines)
+> documented in detail three systems that no longer exist in the code:
+> advanced pagination (`app/utils/pagination/`), lazy loading
+> (`app/utils/lazy_loading.py`, 785 lines), and a performance monitoring
+> module (`PerformanceMonitor`) which — according to the audit conducted
+> in Phase 4 — **never actually existed**: the `measure_time` decorator
+> that claimed to use it imported a module (`app.utils.performance_monitor`)
+> that could not be found, proof it had never run. All three were removed
+> as confirmed dead code in Phase 4 (see `report/Phase 4: AMÉLIORATION
+> DES TESTS.md`). What follows only documents what actually remains in
+> the code.
 
 ## Cache
 
-`app/utils/cache/` fournit un cache applicatif simple, initialisé
-inconditionnellement au démarrage (`init_cache(app)` dans
+`app/utils/cache/` provides a simple application-level cache,
+unconditionally initialized at startup (`init_cache(app)` in
 `app/__init__.py`).
 
 ```bash
 # .env
-CACHE_TYPE=simple   # ou redis
+CACHE_TYPE=simple   # or redis
 CACHE_DEFAULT_TIMEOUT=300
-CACHE_REDIS_URL=redis://localhost:6379/0   # si CACHE_TYPE=redis
+CACHE_REDIS_URL=redis://localhost:6379/0   # if CACHE_TYPE=redis
 ```
 
-- `simple` : `flask_caching.backends.SimpleCache` si `Flask-Caching` est
-  installé, sinon repli automatique sur `SimpleDictCache`
-  (`app/utils/cache/cache_manager.py`) — un cache dictionnaire en
-  mémoire minimal, visible dans les logs
+- `simple`: `flask_caching.backends.SimpleCache` if `Flask-Caching` is
+  installed, otherwise an automatic fallback to `SimpleDictCache`
+  (`app/utils/cache/cache_manager.py`) — a minimal in-memory dictionary
+  cache, visible in the logs
   (`Flask-Caching not available, using simple dictionary cache`).
-- `redis` : `flask_caching.backends.RedisCache`, nécessite
-  `Flask-Caching` installé et un serveur Redis joignable.
+- `redis`: `flask_caching.backends.RedisCache`, requires `Flask-Caching`
+  installed and a reachable Redis server.
 
-Le cache est initialisé mais **rien dans le code actuel ne l'utilise
-activement** (aucune route ni service n'appelle `get_cache()` pour
-lire/écrire une entrée) — les décorateurs qui l'exploitaient
-(`cached_route`, `cache_result`) ont été supprimés en Phase 4 comme code
-mort (zéro appelant, et leur import `from app.utils.cache import cache`
-n'a d'ailleurs jamais correspondu à un export réel du module). C'est une
-infrastructure prête à être rebranchée si un besoin de cache applicatif
-réel se présente, pas une optimisation actuellement en service.
+The cache is initialized but **nothing in the current code actively uses
+it** (no route or service calls `get_cache()` to read/write an entry) —
+the decorators that used to exploit it (`cached_route`, `cache_result`)
+were removed in Phase 4 as dead code (zero callers, and their import
+`from app.utils.cache import cache` never actually matched a real export
+of the module anyway). This is infrastructure ready to be reconnected if
+a real application-caching need arises, not an optimization currently in
+service.
 
-## Éviter le N+1 : `eager_load`
+## Avoiding N+1: `eager_load`
 
-Seul décorateur de `app/utils/optimizations/__init__.py` (réduit de 14
-décorateurs à 1 en Phase 4, voir le même rapport) — charge une ou
-plusieurs relations SQLAlchemy en une requête plutôt qu'en N :
+The only decorator remaining in `app/utils/optimizations/__init__.py`
+(reduced from 14 decorators down to 1 in Phase 4, see the same report) —
+loads one or more SQLAlchemy relationships in a single query instead of
+N:
 
 ```python
 from app.utils.optimizations import eager_load
@@ -56,23 +57,23 @@ def get_shifts():
     return Shift.query...
 ```
 
-Utilisé dans `app/routes/dashboard_routes.py` (page d'accueil) et dans
-plusieurs routes admin (`admin_user_routes.py`, `admin_group_routes.py`,
+Used in `app/routes/dashboard_routes.py` (home page) and in several
+admin routes (`admin_user_routes.py`, `admin_group_routes.py`,
 `admin_shift_type_routes.py`).
 
-Les repositories utilisent aussi directement `joinedload()` de
-SQLAlchemy sans passer par ce décorateur — voir par exemple
-`ShiftRepository.list_paginated()` dans `app/repositories/shift_repository.py`,
-qui charge `user` et `shift_type` en une requête. Un test dédié
-(`tests/integration/test_performance.py`) vérifie que le nombre de
-requêtes SQL ne croît pas avec le nombre de shifts affichés — voir ce
-fichier pour la méthode si vous voulez vérifier une autre route.
+The repositories also use SQLAlchemy's `joinedload()` directly without
+going through this decorator — see for example
+`ShiftRepository.list_paginated()` in
+`app/repositories/shift_repository.py`, which loads `user` and
+`shift_type` in a single query. A dedicated test
+(`tests/integration/test_performance.py`) verifies that the number of
+SQL queries doesn't grow with the number of shifts displayed — see that
+file for the method if you want to verify another route.
 
-## Index de base de données
+## Database indexes
 
-Index composites définis directement dans les modèles
-(`app/models/*.py`), à préserver si vous modifiez les patterns de
-requête dans `app/repositories/` :
+Composite indexes defined directly on the models (`app/models/*.py`), to
+be preserved if you modify query patterns in `app/repositories/`:
 
 | Table | Index |
 |---|---|
@@ -80,23 +81,22 @@ requête dans `app/repositories/` :
 | `OnCall` | `(user_id, start_time, end_time)` |
 | `Leave` | `(user_id, start_date, end_date)` |
 
-Voir [`architecture/ERD.md`](../architecture/ERD.md) pour le schéma
-complet.
+See [`architecture/ERD.md`](../architecture/ERD.md) for the full schema.
 
 ## Pagination
 
-Pas de système de pagination avancée configurable par variables
-d'environnement (contrairement à ce que documentait la version
-précédente de ce fichier). Les listes paginées (`/schedule`, `/oncall`,
-`/leave`) utilisent directement la pagination de Flask-SQLAlchemy
-(`Query.paginate(page=, per_page=)`), avec un choix de taille de page
-fixe côté route (`5, 10, 25, 50, 100` ou "tout afficher").
+No advanced, environment-variable-configurable pagination system
+(contrary to what the previous version of this file documented). Paginated
+lists (`/schedule`, `/oncall`, `/leave`) directly use Flask-SQLAlchemy's
+own pagination (`Query.paginate(page=, per_page=)`), with a fixed page
+size choice on the route side (`5, 10, 25, 50, 100` or "show all").
 
-## Ce qui n'existe pas (encore)
+## What doesn't exist (yet)
 
-Pas de mise en cache active des requêtes, pas de lazy loading côté
-frontend (chargement par lots au scroll), pas de dashboard de monitoring
-de performance intégré. Pour du monitoring en production, voir
+No active query caching, no frontend lazy loading (batch loading on
+scroll), no built-in performance monitoring dashboard. For production
+monitoring, see
 [`app/utils/prometheus_metrics.py`](../../app/utils/prometheus_metrics.py)
-(gated par `PROMETHEUS_ENABLED`, expose `/metrics` au format Prometheus)
-et [`app/utils/health.py`](../../app/utils/health.py) (`/health`, `/ready`).
+(gated by `PROMETHEUS_ENABLED`, exposes `/metrics` in Prometheus format)
+and [`app/utils/health.py`](../../app/utils/health.py) (`/health`,
+`/ready`).

@@ -1,73 +1,74 @@
-# Dockerisation de Leviia Schedule (Version Simplifiée)
+# Dockerizing Kairos (Simplified Version)
 
-> **Méthode recommandée** : deux fichiers à récupérer
-> (`docker/docker-compose.example.yml` + `docker/.env.example`), une
-> image déjà construite sur le registry - pas de clone du dépôt, pas de
-> build local, pas de mock OIDC (dev only). Construire l'image soi-même
-> ou cloner le dépôt pour un environnement de dev complet (`docker/`)
-> sont des alternatives réservées au développement ou à des cas
-> particuliers - voir plus bas.
+> **Recommended method**: two files to grab
+> (`docker/docker-compose.example.yml` + `docker/.env.example`), an
+> already-built image from the registry - no repo clone, no
+> local build, no OIDC mock (dev only). Building the image yourself
+> or cloning the repo for a full dev environment (`docker/`)
+> are alternatives reserved for development or special
+> cases - see below.
 
 ---
 
-## 🚀 Démarrage rapide (méthode recommandée)
+## 🚀 Quick start (recommended method)
 
-L'image est construite et publiée automatiquement par la CI sur chaque
-commit de la branche par défaut (job `build_docker`, voir
-`.gitlab-ci/.gitlab-ci.yml`), sur un registry Harbor auto-hébergé.
+The image is built and published automatically by CI on every
+commit to the default branch (job `build_docker`, see
+`.gitlab-ci/.gitlab-ci.yml`), on a self-hosted Harbor registry.
 
-### 1️⃣ Récupérer les deux fichiers nécessaires
+### 1️⃣ Grab the two required files
 
-Pas besoin de cloner le dépôt entier - seuls deux fichiers sont
-nécessaires, tous deux déjà adaptés à une exécution Docker (chemins
-absolus sous `/app/data`, `TALISMAN_FORCE_HTTPS=false` par défaut - pas
-de reverse proxy TLS dans cette stack minimale) :
+No need to clone the entire repo - only two files are
+needed, both already adapted for Docker execution (absolute
+paths under `/app/data`, `TALISMAN_FORCE_HTTPS=false` by default - no
+TLS reverse proxy in this minimal stack):
 
 ```bash
-mkdir leviia-schedule && cd leviia-schedule
+mkdir kairos && cd kairos
 
 curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/docker-compose.example.yml
 curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/.env.example
 ```
 
-### 2️⃣ Configurer
+### 2️⃣ Configure
 
 ```bash
 nano .env
 ```
 
-**Variables minimales à changer :**
+**Minimal variables to change:**
 ```env
-# Image à tirer du registry Harbor - remplacez <HARBOR_PROJECT> par le
-# nom du projet Harbor réel (voir la variable CI/CD CI_REGISTRY_IMAGE,
-# configurée pour pointer vers Harbor plutôt que le registry GitLab).
-LEVIIA_IMAGE=harbor.leviia.com/<HARBOR_PROJECT>/leviia-schedule:latest
+# Image to pull from the Harbor registry - replace <HARBOR_PROJECT> with
+# the actual Harbor project name (see the CI_REGISTRY_IMAGE CI/CD
+# variable, configured to point to Harbor rather than the GitLab
+# registry).
+KAIROS_IMAGE=harbor.leviia.com/<HARBOR_PROJECT>/kairos:latest
 
-SECRET_KEY=votre_clé_secrète
-DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe
+SECRET_KEY=your_secret_key
+DEFAULT_ADMIN_PASSWORD=your_password
 ```
 
-### 3️⃣ Démarrer
+### 3️⃣ Start
 
 ```bash
 docker compose up -d
 ```
 
-`docker-compose.yml` (issu de `docker-compose.example.yml`) n'a pas de
-section `build:` - il ne peut que tirer l'image du registry, jamais la
-construire localement. Mode développement (Flask avec reloader) ou
-production (Gunicorn) selon `FLASK_ENV` dans `.env` (`development` par
-défaut).
+`docker-compose.yml` (derived from `docker-compose.example.yml`) has no
+`build:` section - it can only pull the image from the registry, never
+build it locally. Development mode (Flask with reloader) or
+production (Gunicorn) depending on `FLASK_ENV` in `.env` (`development` by
+default).
 
-### 4️⃣ Accéder à l'application
+### 4️⃣ Access the application
 
-Ouvrez votre navigateur : [http://localhost:5000](http://localhost:5000)
+Open your browser: [http://localhost:5000](http://localhost:5000)
 
-**Identifiants par défaut :**
-- Email : `admin@leviia.local`
-- Mot de passe : `admin123` (ou celui que vous avez configuré dans `.env`)
+**Default credentials:**
+- Email: `admin@kairos.local`
+- Password: `admin123` (or whichever you configured in `.env`)
 
-### Mettre à jour
+### Update
 
 ```bash
 docker compose pull
@@ -76,334 +77,334 @@ docker compose up -d
 
 ---
 
-## 🛠️ Alternatives : développement et cas particuliers
+## 🛠️ Alternatives: development and special cases
 
-Réservé aux cas où l'image du registry ne suffit pas : contribuer au
-code, tester une modification du `Dockerfile`, exercer le flux SSO/OIDC
-en local (mock optionnel). Nécessite de cloner le dépôt entier :
+Reserved for cases where the registry image isn't enough: contributing to
+the code, testing a `Dockerfile` change, exercising the SSO/OIDC flow
+locally (optional mock). Requires cloning the entire repo:
 
 ```bash
 git clone https://github.com/FoxOps/leviia-schedule.git
 cd leviia-schedule/docker
 ```
 
-Structure de `docker/` (chemins relatifs `.env`/`data`/`logs` résolus
-par rapport à `docker/docker-compose.yml`, donc tous sous `docker/`) :
+Structure of `docker/` (relative `.env`/`data`/`logs` paths resolved
+relative to `docker/docker-compose.yml`, so all under `docker/`):
 
 ```
 leviia-schedule/
 └── docker/
-    ├── Dockerfile          # Image Docker ultra-légère
-    ├── entrypoint.sh       # Script de démarrage (serveur web + crond conditionnel)
-    ├── crontabs/appuser    # Planification des rappels email et sauvegardes (crond)
-    ├── docker-compose.yml  # Service applicatif (build local ou registry) + mock OIDC optionnel (profil)
-    ├── .env                # Variables d'environnement (à créer, non committé)
-    ├── data/                # Données SQLite persistantes
+    ├── Dockerfile          # Ultra-lightweight Docker image
+    ├── entrypoint.sh       # Startup script (web server + conditional crond)
+    ├── crontabs/appuser    # Email reminder and backup scheduling (crond)
+    ├── docker-compose.yml  # App service (local build or registry) + optional OIDC mock (profile)
+    ├── .env                # Environment variables (to create, not committed)
+    ├── data/                # Persistent SQLite data
     └── logs/                # Logs
 ```
 
-Toutes les commandes ci-dessous s'exécutent **depuis le dossier `docker/`**.
+All commands below run **from the `docker/` folder**.
 
-### Configurer l'environnement
+### Configure the environment
 
 ```bash
 cp .env.example .env
 nano .env
 ```
 
-Mêmes variables que la méthode recommandée ci-dessus (`SECRET_KEY`,
+Same variables as the recommended method above (`SECRET_KEY`,
 `DEFAULT_ADMIN_PASSWORD`, `DATABASE_URL`, `TALISMAN_FORCE_HTTPS`).
-`LEVIIA_IMAGE` reste utilisable ici aussi (voir plus bas).
+`KAIROS_IMAGE` can also be used here (see below).
 
-### Construire l'image soi-même (`docker build` de base, sans Compose)
+### Build the image yourself (plain `docker build`, no Compose)
 
 ```bash
-docker build -f Dockerfile -t leviia-schedule:dev ..
+docker build -f Dockerfile -t kairos:dev ..
 ```
 
-Le `Dockerfile` a besoin du reste du dépôt comme contexte de build
-(`..`) - la commande elle-même s'exécute dans `docker/`, pas depuis la
-racine.
+The `Dockerfile` needs the rest of the repo as its build
+context (`..`) - the command itself runs from `docker/`, not from the
+repo root.
 
-### Construire et démarrer via Compose
+### Build and start via Compose
 
-Sans `LEVIIA_IMAGE` dans `.env` (ou en le retirant), `docker/docker-compose.yml`
-retombe sur son tag de build local par défaut (`leviia-schedule:dev`) :
+Without `KAIROS_IMAGE` in `.env` (or if removed), `docker/docker-compose.yml`
+falls back to its default local build tag (`kairos:dev`):
 
 ```bash
 docker compose build
 docker compose up -d
 ```
 
-Avec `LEVIIA_IMAGE` défini, `docker compose pull leviia-schedule` puis
-`docker compose up -d --no-build` utilise l'image du registry sans
-jamais déclencher de build local - utile pour tester la stack de dev
-(mock OIDC compris) contre une image déjà publiée.
+With `KAIROS_IMAGE` set, `docker compose pull kairos` then
+`docker compose up -d --no-build` uses the registry image without
+ever triggering a local build - useful for testing the dev stack
+(including the OIDC mock) against an already-published image.
 
-### Tester le flux SSO/OIDC en local (mock)
+### Test the SSO/OIDC flow locally (mock)
 
-`docker/docker-compose.yml` inclut un fournisseur OIDC de test
-(`ghcr.io/soluto/oidc-server-mock`), démarré uniquement via son profil
-Compose dédié - jamais par un `docker compose up -d` normal :
+`docker/docker-compose.yml` includes a test OIDC provider
+(`ghcr.io/soluto/oidc-server-mock`), started only via its dedicated
+Compose profile - never by a plain `docker compose up -d`:
 
 ```bash
 docker compose --profile oidc-mock up -d
 ```
 
-Accès : [http://localhost:5000](http://localhost:5000) (identifiants par
-défaut identiques à la section recommandée ci-dessus).
+Access: [http://localhost:5000](http://localhost:5000) (default
+credentials identical to the recommended section above).
 
 ---
 
 ## ⚙️ Configuration
 
-### Variables d'environnement
+### Environment variables
 
-| Variable | Description | Défaut | Requis |
+| Variable | Description | Default | Required |
 |----------|-------------|--------|--------|
-| `LEVIIA_IMAGE` | Image à utiliser (registry) | requis dans `docker/docker-compose.example.yml` ; `leviia-schedule:dev` (build local) dans `docker/docker-compose.yml` | ✅ / ❌ selon le fichier |
+| `KAIROS_IMAGE` | Image to use (registry) | required in `docker/docker-compose.example.yml`; `kairos:dev` (local build) in `docker/docker-compose.yml` | ✅ / ❌ depending on the file |
 | `FLASK_ENV` | Mode (development/production) | development | ❌ |
-| `SECRET_KEY` | Clé secrète Flask | requis | ✅ |
-| `DATABASE_URL` | URL de la base de données (voir note ci-dessous) | sqlite:////app/data/app.db | ❌ |
-| `TALISMAN_FORCE_HTTPS` | Forcer HTTPS - `false` sans reverse proxy TLS | `false` (dev/tests), `true` (prod) | ❌ |
-| `DEFAULT_ADMIN_PASSWORD` | Mot de passe admin | admin123 | ✅ |
+| `SECRET_KEY` | Flask secret key | required | ✅ |
+| `DATABASE_URL` | Database URL (see note below) | sqlite:////app/data/app.db | ❌ |
+| `TALISMAN_FORCE_HTTPS` | Force HTTPS - `false` without a TLS reverse proxy | `false` (dev/tests), `true` (prod) | ❌ |
+| `DEFAULT_ADMIN_PASSWORD` | Admin password | admin123 | ✅ |
 
-> **Note `DATABASE_URL`** : quatre slashs (`sqlite:////app/data/app.db`),
-> pas trois - c'est un chemin absolu (`/app/data/app.db`) résolu sur le
-> volume monté, pas un chemin relatif.
+> **`DATABASE_URL` note**: four slashes (`sqlite:////app/data/app.db`),
+> not three - it's an absolute path (`/app/data/app.db`) resolved on the
+> mounted volume, not a relative one.
 
-### Exemple de `.env` complet
+### Full `.env` example
 
 ```env
-# Image du registry - obligatoire avec docker/docker-compose.example.yml
-LEVIIA_IMAGE=harbor.leviia.com/<HARBOR_PROJECT>/leviia-schedule:latest
+# Registry image - mandatory with docker/docker-compose.example.yml
+KAIROS_IMAGE=harbor.leviia.com/<HARBOR_PROJECT>/kairos:latest
 
-# Configuration de base
+# Basic configuration
 FLASK_ENV=development
-SECRET_KEY=votre_clé_secrète_générée
+SECRET_KEY=your_generated_secret_key
 
-# Base de données - chemin absolu sur le volume monté (./data:/app/data)
+# Database - absolute path on the mounted volume (./data:/app/data)
 DATABASE_URL=sqlite:////app/data/app.db
 
-# Pas de reverse proxy TLS devant ce service par défaut
+# No TLS reverse proxy in front of this service by default
 TALISMAN_FORCE_HTTPS=false
 
-# Mot de passe admin
-DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe_sécurisé
+# Admin password
+DEFAULT_ADMIN_PASSWORD=your_secure_password
 ```
 
 ---
 
-## 📦 Fichiers Expliqués
+## 📦 Files Explained
 
 ### docker/docker-compose.example.yml
-- **Méthode recommandée** : un seul service, pas de `build:` - tire
-  toujours `LEVIIA_IMAGE` depuis le registry. À copier en
-  `docker-compose.yml` dans le dossier où vous déployez (voir
-  Démarrage rapide).
-- **Volumes** : `./data:/app/data`, `./logs:/app/logs` (créés
-  automatiquement par Docker au premier démarrage si absents)
-- **Port** : 5000 exposé
+- **Recommended method**: a single service, no `build:` - always pulls
+  `KAIROS_IMAGE` from the registry. Copy it to
+  `docker-compose.yml` in the folder where you deploy (see
+  Quick start).
+- **Volumes**: `./data:/app/data`, `./logs:/app/logs` (created
+  automatically by Docker on first startup if missing)
+- **Port**: 5000 exposed
 
 ### docker/Dockerfile
-- **Base** : Python 3.11 Alpine (ultra-léger)
-- **Dépendances** : Installe `requirements.txt` + Gunicorn
-- **Utilisateur** : `appuser` (non-root) pour la sécurité
-- **Taille** : Optimisée avec Alpine et nettoyage des dépendances de build
-- **Contexte de build** : `..` (racine du dépôt) - le `Dockerfile` copie
-  `docker/requirements.txt`, `docker/entrypoint.sh` et le code applicatif
-  (`COPY . .`), donc le contexte doit englober tout le dépôt même si la
-  commande `docker build` est lancée depuis `docker/`. Non pertinent si
-  vous utilisez l'image du registry (méthode recommandée).
+- **Base**: Python 3.11 Alpine (ultra-lightweight)
+- **Dependencies**: Installs `requirements.txt` + Gunicorn
+- **User**: `appuser` (non-root) for security
+- **Size**: Optimized with Alpine and cleanup of build dependencies
+- **Build context**: `..` (repo root) - the `Dockerfile` copies
+  `docker/requirements.txt`, `docker/entrypoint.sh`, and the application code
+  (`COPY . .`), so the context has to cover the whole repo even though the
+  `docker build` command is run from `docker/`. Not relevant if
+  you use the registry image (recommended method).
 
 ### docker/entrypoint.sh
-- **Initialisation** : Crée la base de données SQLite si elle n'existe pas
-- **Données par défaut** : Crée les types de shifts, le groupe et l'admin
-- **Notifications par email et sauvegardes** : si `NOTIFICATIONS_ENABLED=true`
-  et/ou `BACKUP_ENABLED=true` (voir `.env`), démarre `crond` (busybox,
-  déjà présent dans l'image Alpine, pas de paquet supplémentaire) en
-  arrière-plan avant de lancer le serveur web - planning dans
-  `docker/crontabs/appuser`. Rien de plus à configurer : une variable
-  d'environnement par fonctionnalité, aucun service Docker supplémentaire
-  à gérer. Pour que les sauvegardes locales survivent aux recréations du
-  conteneur, réglez `BACKUP_LOCAL_DIR=/app/data/backups` (le volume
-  `./data:/app/data` est déjà monté).
-- **Sélection serveur** :
-  - `development` → `python run.py` (avec reloader)
-  - `production` → `gunicorn` (1 worker pour SQLite)
+- **Initialization**: Creates the SQLite database if it doesn't exist
+- **Default data**: Creates the shift types, the group, and the admin
+- **Email notifications and backups**: if `NOTIFICATIONS_ENABLED=true`
+  and/or `BACKUP_ENABLED=true` (see `.env`), starts `crond` (busybox,
+  already present in the Alpine image, no extra package needed) in the
+  background before launching the web server - schedule in
+  `docker/crontabs/appuser`. Nothing else to configure: one environment
+  variable per feature, no extra Docker service
+  to manage. For local backups to survive container recreation,
+  set `BACKUP_LOCAL_DIR=/app/data/backups` (the `./data:/app/data`
+  volume is already mounted).
+- **Server selection**:
+  - `development` → `python run.py` (with reloader)
+  - `production` → `gunicorn` (1 worker for SQLite)
 
-### docker/docker-compose.yml (environnement de dev, clone requis)
-- **Service applicatif** (`leviia-schedule`) : `image: ${LEVIIA_IMAGE:-leviia-schedule:dev}`
-  - build local par défaut (`build: context: ..`), ou image du registry
-    sans build si `LEVIIA_IMAGE` est défini et `--no-build` passé - voir
-    ci-dessus. Et, si activé, les rappels par email et/ou les
-    sauvegardes - même conteneur, voir ci-dessus - voir
+### docker/docker-compose.yml (dev environment, clone required)
+- **App service** (`kairos`): `image: ${KAIROS_IMAGE:-kairos:dev}`
+  - local build by default (`build: context: ..`), or registry image
+    without building if `KAIROS_IMAGE` is set and `--no-build` is passed - see
+    above. And, if enabled, email reminders and/or
+    backups - same container, see above - see
     [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md#-configuration-des-notifications)
-    pour la configuration SMTP et
-    [`deployment/BACKUP_GUIDE.md`](BACKUP_GUIDE.md) pour les sauvegardes
-- **Service `oidc-mock`** : optionnel, derrière le profil Compose
-  `oidc-mock` - ne démarre jamais avec un `docker compose up -d` normal
-  (voir Alternatives ci-dessus)
-- **Volumes** : Persistance des données et logs
-- **Ports** : 5000 exposé (+ 8080 pour `oidc-mock` si son profil est activé)
+    for the SMTP configuration and
+    [`deployment/BACKUP_GUIDE.md`](BACKUP_GUIDE.md) for backups
+- **`oidc-mock` service**: optional, behind the `oidc-mock` Compose
+  profile - never starts with a plain `docker compose up -d`
+  (see Alternatives above)
+- **Volumes**: Data and log persistence
+- **Ports**: 5000 exposed (+ 8080 for `oidc-mock` if its profile is enabled)
 
 ---
 
-## 🎯 Commandes
+## 🎯 Commands
 
-### Recommandé (deux fichiers récupérés, sans clone)
+### Recommended (two files downloaded, no clone)
 
-| Commande | Description |
+| Command | Description |
 |----------|-------------|
-| `docker compose up -d` | Tirer l'image et démarrer |
-| `docker compose pull` | Mettre à jour l'image |
-| `docker compose logs -f leviia-schedule` | Voir les logs |
-| `docker compose exec leviia-schedule sh` | Shell dans le conteneur |
-| `docker compose down` | Arrêter |
+| `docker compose up -d` | Pull the image and start |
+| `docker compose pull` | Update the image |
+| `docker compose logs -f kairos` | View logs |
+| `docker compose exec kairos sh` | Shell into the container |
+| `docker compose down` | Stop |
 
-### Alternatives dev (clone requis, depuis `docker/`)
+### Dev alternatives (clone required, from `docker/`)
 
-| Commande | Description |
+| Command | Description |
 |----------|-------------|
-| `docker build -f Dockerfile -t leviia-schedule:dev ..` | Construire l'image (docker build de base, sans Compose) |
-| `docker compose build` | Construire l'image localement via Compose |
-| `docker compose up -d` | Démarrer avec l'image construite localement |
-| `docker compose --profile oidc-mock up -d` | Démarrer avec le mock OIDC en plus (test SSO local) |
+| `docker build -f Dockerfile -t kairos:dev ..` | Build the image (plain docker build, no Compose) |
+| `docker compose build` | Build the image locally via Compose |
+| `docker compose up -d` | Start with the locally built image |
+| `docker compose --profile oidc-mock up -d` | Start with the OIDC mock as well (local SSO testing) |
 
 ---
 
-## 🔒 Sécurité de Base
+## 🔒 Basic Security
 
-### 1. Générer une clé secrète
+### 1. Generate a secret key
 
 ```bash
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-### 2. Générer un mot de passe admin
+### 2. Generate an admin password
 
 ```bash
 python -c "import secrets; print(secrets.token_urlsafe(16))"
 ```
 
-### 3. Ne jamais commiter `.env`
+### 3. Never commit `.env`
 
 ```bash
 echo ".env" >> .gitignore
 ```
 
-### 4. En production
+### 4. In production
 
-- Mettre `FLASK_ENV=production` dans `.env`, puis `docker compose up -d`
-- Changer `SECRET_KEY` et `DEFAULT_ADMIN_PASSWORD`
-- Configurer un reverse proxy (Nginx, Traefik) pour HTTPS, puis repasser
-  `TALISMAN_FORCE_HTTPS=true` (ou retirer la ligne) dans `.env`
-
----
-
-## 🌐 Pour aller plus loin
-
-Cette configuration de base utilise **SQLite** et est optimisée pour :
-- **Simplicité** : Un seul conteneur, facile à déployer
-- **Portabilité** : Fonctionne partout avec Docker
-- **Légèreté** : Image de ~150 Mo
-
-### Pour ajouter PostgreSQL et Redis
-
-Consultez le guide avancé : [DEPLOYMENT_ADVANCED.md](DEPLOYMENT_ADVANCED.md)
-
-Ce guide explique comment étendre cette configuration pour utiliser :
-- **PostgreSQL** comme base de données relationnelle
-- **Redis** comme cache
-- **Gunicorn avec plusieurs workers** pour de meilleures performances
-
-⚠️ **Recommandation** : Maîtrisez d'abord le déploiement de base avec SQLite avant d'ajouter ces composants.
+- Set `FLASK_ENV=production` in `.env`, then `docker compose up -d`
+- Change `SECRET_KEY` and `DEFAULT_ADMIN_PASSWORD`
+- Set up a reverse proxy (Nginx, Traefik) for HTTPS, then switch
+  `TALISMAN_FORCE_HTTPS=true` back on (or remove the line) in `.env`
 
 ---
 
-## 🐛 Dépannage
+## 🌐 Going further
 
-### Problème : Le conteneur ne démarre pas
+This basic configuration uses **SQLite** and is optimized for:
+- **Simplicity**: A single container, easy to deploy
+- **Portability**: Works anywhere with Docker
+- **Lightness**: ~150 MB image
 
-**Vérifier les logs :**
+### Adding PostgreSQL and Redis
+
+See the advanced guide: [DEPLOYMENT_ADVANCED.md](DEPLOYMENT_ADVANCED.md)
+
+This guide explains how to extend this configuration to use:
+- **PostgreSQL** as the relational database
+- **Redis** as a cache
+- **Gunicorn with multiple workers** for better performance
+
+⚠️ **Recommendation**: Master the basic SQLite deployment first before adding these components.
+
+---
+
+## 🐛 Troubleshooting
+
+### Problem: The container doesn't start
+
+**Check the logs:**
 ```bash
-docker compose logs leviia-schedule
+docker compose logs kairos
 ```
 
-**Vérifier l'image :**
+**Check the image:**
 ```bash
 docker compose pull
 ```
 
-### Problème : Erreur de permissions
+### Problem: Permission error
 
-**Solution :**
+**Solution:**
 ```bash
-# Donner les permissions à l'utilisateur courant
+# Give ownership to the current user
 sudo chown -R $USER:$USER data logs
 
-# Créer les répertoires nécessaires si absents
+# Create the required directories if missing
 mkdir -p data logs
 chmod -R 755 data logs
 ```
 
-### Problème : Base de données non initialisée
+### Problem: Database not initialized
 
-**Solution :**
+**Solution:**
 ```bash
-# Supprimer la base de données existante
+# Remove the existing database
 rm -f data/app.db
 
-# Redémarrer le conteneur
+# Restart the container
 docker compose down && docker compose up -d
 ```
 
-### Problème : Port 5000 déjà utilisé
+### Problem: Port 5000 already in use
 
-**Solution :**
+**Solution:**
 ```bash
-# Trouver le processus
+# Find the process
 sudo lsof -i :5000
 
-# Tuer le processus
+# Kill the process
 kill <PID>
 
-# Ou changer le port dans docker-compose.yml
+# Or change the port in docker-compose.yml
 ```
 
 ---
 
-## 📚 Exemples
+## 📚 Examples
 
-### Déploiement rapide (registry, sans clone)
+### Quick deployment (registry, no clone)
 
 ```bash
-mkdir leviia-schedule && cd leviia-schedule
+mkdir kairos && cd kairos
 curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/docker-compose.example.yml
 curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/.env.example
 
-nano .env  # LEVIIA_IMAGE, SECRET_KEY, DEFAULT_ADMIN_PASSWORD, DATABASE_URL, TALISMAN_FORCE_HTTPS
+nano .env  # KAIROS_IMAGE, SECRET_KEY, DEFAULT_ADMIN_PASSWORD, DATABASE_URL, TALISMAN_FORCE_HTTPS
 
 docker compose up -d
 
-# Accéder à l'application
+# Access the application
 # http://localhost:5000
 ```
 
-### Déploiement en production simple
+### Simple production deployment
 
 ```bash
-mkdir leviia-schedule && cd leviia-schedule
+mkdir kairos && cd kairos
 curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/docker-compose.example.yml
 curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/.env.example
 
-nano .env  # LEVIIA_IMAGE, SECRET_KEY, DEFAULT_ADMIN_PASSWORD, DATABASE_URL, FLASK_ENV=production
+nano .env  # KAIROS_IMAGE, SECRET_KEY, DEFAULT_ADMIN_PASSWORD, DATABASE_URL, FLASK_ENV=production
 
-# Le mode production - Gunicorn - est piloté par FLASK_ENV dans .env,
-# pas par une commande séparée
+# Production mode - Gunicorn - is driven by FLASK_ENV in .env,
+# not a separate command
 docker compose up -d
 
-# Accéder à l'application
+# Access the application
 # http://localhost:5000
 ```
 
@@ -411,14 +412,14 @@ docker compose up -d
 
 ## 📞 Support
 
-Pour des configurations avancées (PostgreSQL, Redis, etc.), consultez :
-- [Guide Avancé : PostgreSQL et Redis](DEPLOYMENT_ADVANCED.md)
+For advanced configurations (PostgreSQL, Redis, etc.), see:
+- [Advanced Guide: PostgreSQL and Redis](DEPLOYMENT_ADVANCED.md)
 
-Pour des problèmes spécifiques, vérifiez :
-1. Les logs avec `docker compose logs`
-2. La configuration dans `.env`
-3. Les permissions des fichiers
+For specific issues, check:
+1. The logs with `docker compose logs`
+2. The configuration in `.env`
+3. File permissions
 
 ---
 
-*Documentation simplifiée pour Leviia Schedule - Dockerisation de base*
+*Simplified documentation for Kairos - Basic Dockerization*

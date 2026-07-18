@@ -1,175 +1,175 @@
-# 🎯 **Guide de Chasse au Bug - Leviia Schedule**
+# 🎯 **Bug Hunt Guide - Kairos**
 
-*Comment utiliser les outils de chasse au bug pour améliorer la qualité du code*
+*How to use bug hunting tools to improve code quality*
 
 ---
 
-## 🚀 **Démarrage Rapide**
+## 🚀 **Quick Start**
 
-### 1. Installer les dépendances
+### 1. Install dependencies
 
 ```bash
-# Installer les dépendances du projet
+# Install the project dependencies
 make install
 
-# Installer les outils de chasse au bug (déjà inclus dans requirements.txt)
+# Install the bug hunting tools (already included in requirements.txt)
 pip install ruff bandit safety pytest pytest-cov
 ```
 
-### 2. Exécuter une analyse complète
+### 2. Run a full analysis
 
 ```bash
-# Méthode 1: Utiliser le script principal
+# Method 1: Use the main script
 ./scripts/bug_hunt.sh --full --report
 
-# Méthode 2: Utiliser Makefile
+# Method 2: Use the Makefile
 make bug-hunt-full
 
-# Méthode 3: Exécuter manuellement
+# Method 3: Run manually
 ./scripts/bug_hunt.sh --security --lint --test --duplicate --report
 ```
 
-### 3. Voir les résultats
+### 3. View the results
 
-Tous les rapports sont générés dans le répertoire `reports/` :
-- `bandit-results.json` - Résultats de l'analyse de sécurité
-- `safety-results.json` - Vulnérabilités des dépendances
-- `ruff-results.json` - Erreurs de linter
-- `duplicates-results.txt` - Code dupliqué
-- `bug-hunt-report-*.md` - Rapport complet
+All reports are generated in the `reports/` directory:
+- `bandit-results.json` - Security analysis results
+- `safety-results.json` - Dependency vulnerabilities
+- `ruff-results.json` - Linter errors
+- `duplicates-results.txt` - Duplicate code
+- `bug-hunt-report-*.md` - Full report
 
 ---
 
-## 🛠️ **Commandes Disponibles**
+## 🛠️ **Available Commands**
 
-### **Analyse Complète**
+### **Full Analysis**
 
-| Commande | Description | Durée |
+| Command | Description | Duration |
 |----------|-------------|-------|
-| `make bug-hunt-full` | Exécute tous les checks | ~5-10 min |
-| `./scripts/bug_hunt.sh --full` | Idem, avec plus d'options | ~5-10 min |
-| `make all` | Tests + Linting + Formatage + Sécurité | ~5 min |
+| `make bug-hunt-full` | Runs all checks | ~5-10 min |
+| `./scripts/bug_hunt.sh --full` | Same, with more options | ~5-10 min |
+| `make all` | Tests + Linting + Formatting + Security | ~5 min |
 
-### **Analyse par Catégorie**
+### **Analysis by Category**
 
-#### **Sécurité**
+#### **Security**
 ```bash
-# Analyse complète de sécurité
+# Full security analysis
 make bug-hunt-security
 ./scripts/bug_hunt.sh --security
 
-# Bandit uniquement (analyse statique du code)
+# Bandit only (static code analysis)
 bandit -r app/ -f json -o reports/bandit-results.json
 
-# Safety uniquement (vulnérabilités des dépendances)
+# Safety only (dependency vulnerabilities)
 safety check --json --output reports/safety-results.json
 ```
 
-#### **Qualité du Code**
+#### **Code Quality**
 ```bash
-# Vérification du linter
+# Linter check
 make bug-hunt-lint
 ./scripts/bug_hunt.sh --lint
 ruff check app/ --output-file=reports/ruff-results.json
 
-# Vérification du formatage
+# Formatting check
 make format
 black --check . --exclude=".git|__pycache__|instance|venv"
 
-# Correction du formatage
+# Fix formatting
 make format-fix
 black . --exclude=".git|__pycache__|instance|venv"
 ```
 
 #### **Tests**
 ```bash
-# Exécuter tous les tests
+# Run all tests
 make bug-hunt-tests
 ./scripts/bug_hunt.sh --test
 python -m pytest tests/ -v --tb=short
 
-# Tests avec couverture
+# Tests with coverage
 make test-coverage
 python -m pytest tests/ --cov=app --cov=config --cov-report=html
 
-# Tests rapides
+# Quick tests
 make test-quick
 python -m pytest tests/ --tb=no -q
 ```
 
-#### **Code Dupliqué**
+#### **Duplicate Code**
 ```bash
-# Recherche de code dupliqué
+# Search for duplicate code
 make bug-hunt-duplicates
 ./scripts/bug_hunt.sh --duplicate
 python scripts/find_duplicates.py --check-imports
 
-# Recherche complète (inclut code similaire)
+# Full search (includes similar code)
 python scripts/find_duplicates.py --check-imports --check-similar
 ```
 
-### **Analyse Rapide**
+### **Quick Analysis**
 
 ```bash
-# Sécurité + Linter (rapide)
+# Security + Linter (fast)
 make bug-hunt-quick
 ./scripts/bug_hunt.sh --quick
 
-# Générer un rapport
+# Generate a report
 make bug-hunt-report
 ./scripts/bug_hunt.sh --full --report
 ```
 
 ---
 
-## 📊 **Interprétation des Résultats**
+## 📊 **Interpreting the Results**
 
-### **Score Global**
+### **Overall Score**
 
-Le script `bug_hunt.sh` calcule un score global basé sur :
+The `bug_hunt.sh` script calculates an overall score based on:
 
-| Critère | Poids | Impact sur le Score |
+| Criterion | Weight | Impact on Score |
 |---------|--------|---------------------|
-| Sécurité (Bandit) | 40% | -10 points par problème |
-| Sécurité (Safety) | 40% | -10 points par vulnérabilité |
-| Linter (Ruff) | 30% | -15 points si erreurs |
-| Tests | 20% | -20 points si échecs |
-| Code Dupliqué | 10% | -10 points si duplications |
+| Security (Bandit) | 40% | -10 points per issue |
+| Security (Safety) | 40% | -10 points per vulnerability |
+| Linter (Ruff) | 30% | -15 points if errors |
+| Tests | 20% | -20 points if failures |
+| Duplicate Code | 10% | -10 points if duplication |
 
-**Score :**
-- 90-100 : A ✅ Excellent
-- 80-89 : B ✅ Bon
-- 70-79 : C ⚠️ Moyen
-- 60-69 : D ⚠️ À améliorer
-- 0-59 : F ❌ Critique
+**Score:**
+- 90-100: A ✅ Excellent
+- 80-89: B ✅ Good
+- 70-79: C ⚠️ Average
+- 60-69: D ⚠️ Needs improvement
+- 0-59: F ❌ Critical
 
-### **Niveaux de Sévérité**
+### **Severity Levels**
 
-| Niveau | Couleur | Description | Action |
+| Level | Color | Description | Action |
 |--------|---------|-------------|--------|
-| 🔴 Critique | Rouge | Problèmes bloquants | Corriger IMMEDIATEMENT |
-| 🟡 Moyen | Jaune | Problèmes importants | Corriger rapidement |
-| 🟢 Faible | Vert | Problèmes mineurs | Corriger si possible |
+| 🔴 Critical | Red | Blocking issues | Fix IMMEDIATELY |
+| 🟡 Medium | Yellow | Important issues | Fix quickly |
+| 🟢 Low | Green | Minor issues | Fix if possible |
 
 ---
 
-## 🎯 **Correction des Problèmes**
+## 🎯 **Fixing Issues**
 
-### **1. Code Dupliqué**
+### **1. Duplicate Code**
 
-#### **Problème :** Fonctions `_make_cache_key` dupliquées
+#### **Problem:** Duplicate `_make_cache_key` functions
 
-**Fichiers :**
+**Files:**
 - `app/utils/cache.py:732`
 - `app/utils/optimizations.py:125, 218`
 
-**Solution :**
+**Solution:**
 ```python
-# Créer un nouveau fichier : app/utils/cache_helpers.py
+# Create a new file: app/utils/cache_helpers.py
 
 def make_cache_key(f: Callable, args: tuple, kwargs: dict, 
                   key_prefix: str = '', vary_on: Optional[list] = None) -> str:
-    """Fonction unifiée pour générer des clés de cache."""
+    """Unified function to generate cache keys."""
     import hashlib
     from flask import current_app
     from flask_login import current_user
@@ -194,31 +194,31 @@ def make_cache_key(f: Callable, args: tuple, kwargs: dict,
     return hashlib.sha256(key_string.encode('utf-8')).hexdigest()
 ```
 
-**Puis remplacer dans tous les fichiers :**
+**Then replace in all files:**
 ```python
-# Avant
+# Before
 from app.utils.cache import _make_cache_key
 
-# Après
+# After
 from app.utils.cache_helpers import make_cache_key
 ```
 
-#### **Problème :** Fonctions `get_bool` et `get_int` dupliquées
+#### **Problem:** Duplicate `get_bool` and `get_int` functions
 
-**Fichiers :** 4 fichiers différents
+**Files:** 4 different files
 
-**Solution :**
+**Solution:**
 ```python
-# Créer : app/utils/env_helpers.py
+# Create: app/utils/env_helpers.py
 
 def get_bool(env_var: str, default: bool = False) -> bool:
-    """Récupère une variable d'environnement booléenne."""
+    """Retrieve a boolean environment variable."""
     import os
     value = os.environ.get(env_var, str(default)).lower()
     return value in ('true', '1', 'yes', 'on')
 
 def get_int(env_var: str, default: int = 0) -> int:
-    """Récupère une variable d'environnement entière."""
+    """Retrieve an integer environment variable."""
     import os
     try:
         return int(os.environ.get(env_var, str(default)))
@@ -226,52 +226,52 @@ def get_int(env_var: str, default: int = 0) -> int:
         return default
 ```
 
-### **2. Problèmes de Sécurité**
+### **2. Security Issues**
 
-#### **Problème :** Clé secrète par défaut faible
+#### **Problem:** Weak default secret key
 
-**Fichier :** `config.py`
+**File:** `config.py`
 
-**Solution :**
+**Solution:**
 ```python
-# Avant
+# Before
 SECRET_KEY = os.environ.get("SECRET_KEY") or "ta-cle-secrete-ici"
 
-# Après
+# After
 import secrets
 SECRET_KEY = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 ```
 
-#### **Problème :** CSRF désactivé
+#### **Problem:** CSRF disabled
 
-**Fichier :** `config.py`
+**File:** `config.py`
 
-**Solution :**
+**Solution:**
 ```python
-# Dans ProductionConfig
+# In ProductionConfig
 WTF_CSRF_ENABLED = True
-WTF_CSRF_TIME_LIMIT = 3600  # 1 heure
+WTF_CSRF_TIME_LIMIT = 3600  # 1 hour
 ```
 
-#### **Problème :** Authentification désactivable
+#### **Problem:** Authentication can be disabled
 
-**Fichier :** `config.py`
+**File:** `config.py`
 
-**Solution :**
+**Solution:**
 ```python
-# Supprimer ou commenter
+# Remove or comment out
 # LOGIN_DISABLED = get_bool_from_env("LOGIN_DISABLED", False)
 ```
 
-### **3. Erreurs de Linter**
+### **3. Linter Errors**
 
-#### **Problème :** Imports non utilisés
+#### **Problem:** Unused imports
 
-**Fichier :** `app/__init__.py`
+**File:** `app/__init__.py`
 
-**Solution :**
+**Solution:**
 ```python
-# Avant
+# Before
 from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -287,7 +287,7 @@ import traceback
 import re
 from datetime import datetime
 
-# Après
+# After
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -295,37 +295,37 @@ import logging
 import os
 ```
 
-#### **Problème :** Guillemets simples
+#### **Problem:** Single quotes
 
-**Solution :** Remplacer tous les guillemets simples par des guillemets doubles :
+**Solution:** Replace all single quotes with double quotes:
 ```bash
-# Utiliser un script de remplacement
+# Use a replacement script
 find app/ -name "*.py" -exec sed -i 's/'\''/"/g' {} \;
-# Puis corriger manuellement les cas où les guillemets simples sont nécessaires
+# Then manually fix the cases where single quotes are required
 ```
 
-### **4. Tests Échoués**
+### **4. Failed Tests**
 
-#### **Problème :** Fonction `create_app` manquante
+#### **Problem:** Missing `create_app` function
 
-**Fichier :** `app/__init__.py`
+**File:** `app/__init__.py`
 
-**Solution :**
+**Solution:**
 ```python
-# Ajouter à la fin de app/__init__.py
+# Add at the end of app/__init__.py
 def create_app(config_object="config.Config"):
     """Factory function to create and configure the Flask app."""
     app = Flask(__name__)
     app.config.from_object(config_object)
     
-    # Initialiser les extensions
+    # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
     
-    # Initialiser le cache
+    # Initialize the cache
     init_cache(app)
     
-    # Importer les routes
+    # Import routes
     from app.routes import main, admin, export, auth
     app.register_blueprint(main.bp)
     app.register_blueprint(admin.bp)
@@ -337,56 +337,56 @@ def create_app(config_object="config.Config"):
 
 ---
 
-## 📈 **Bonnes Pratiques**
+## 📈 **Best Practices**
 
-### **1. Écrire du Code Maintenable**
+### **1. Writing Maintainable Code**
 
-✅ **À faire :**
-- Utiliser des noms de fonctions et variables clairs
-- Commenter le code complexe
-- Éviter le code dupliqué (principe DRY)
-- Garder les fonctions courtes (< 50 lignes)
+✅ **Do:**
+- Use clear function and variable names
+- Comment complex code
+- Avoid duplicate code (DRY principle)
+- Keep functions short (< 50 lines)
 
-❌ **À éviter :**
-- Code dupliqué
-- Fonctions trop longues
-- Commentaires inutiles
-- Noms de variables ambiguës
+❌ **Avoid:**
+- Duplicate code
+- Overly long functions
+- Unnecessary comments
+- Ambiguous variable names
 
-### **2. Sécurité**
+### **2. Security**
 
-✅ **À faire :**
-- Toujours valider les entrées utilisateur
-- Utiliser des mots de passe forts
-- Chiffrer les données sensibles
-- Limiter les permissions
+✅ **Do:**
+- Always validate user input
+- Use strong passwords
+- Encrypt sensitive data
+- Limit permissions
 
-❌ **À éviter :**
-- Mots de passe en clair
-- Clés secrètes dans le code
-- Confiance aveugle dans les entrées utilisateur
-- Désactivation des protections de sécurité
+❌ **Avoid:**
+- Plaintext passwords
+- Secret keys in code
+- Blind trust in user input
+- Disabling security protections
 
 ### **3. Tests**
 
-✅ **À faire :**
-- Tester les cas positifs et négatifs
-- Tester les cas limites
-- Maintenir une bonne couverture (> 80%)
-- Exécuter les tests régulièrement
+✅ **Do:**
+- Test positive and negative cases
+- Test edge cases
+- Maintain good coverage (> 80%)
+- Run tests regularly
 
-❌ **À éviter :**
-- Tests qui dépendent de l'ordre d'exécution
-- Tests trop lents
-- Tests qui ne testent rien
+❌ **Avoid:**
+- Tests that depend on execution order
+- Overly slow tests
+- Tests that don't test anything
 
 ---
 
-## 🔧 **Automatisation**
+## 🔧 **Automation**
 
-### **1. Intégration Continue (CI)**
+### **1. Continuous Integration (CI)**
 
-Créer un fichier `.github/workflows/bug-hunt.yml` :
+Create a `.github/workflows/bug-hunt.yml` file:
 
 ```yaml
 name: Bug Hunt
@@ -424,9 +424,9 @@ jobs:
         path: reports/
 ```
 
-### **2. Pré-commit Hooks**
+### **2. Pre-commit Hooks**
 
-Créer un fichier `.pre-commit-config.yaml` :
+Create a `.pre-commit-config.yaml` file:
 
 ```yaml
 repos:
@@ -451,7 +451,7 @@ repos:
       - id: check-added-large-files
 ```
 
-Installer les hooks :
+Install the hooks:
 ```bash
 pip install pre-commit
 pre-commit install
@@ -459,22 +459,22 @@ pre-commit install
 
 ---
 
-## 📚 **Ressources**
+## 📚 **Resources**
 
 ### **Documentation**
-- [Rapport Complet de Chasse au Bug](BUG_HUNT_REPORT.md)
-- [Résumé de la Chasse au Bug](BUG_HUNT_SUMMARY.md)
-- [Rapport d'Audit de Sécurité](SECURITY_AUDIT_REPORT.md)
-- [Résumé des Tests](TESTING_SUMMARY.md)
+- [Full Bug Hunt Report](BUG_HUNT_REPORT.md)
+- [Bug Hunt Summary](BUG_HUNT_SUMMARY.md)
+- [Security Audit Report](SECURITY_AUDIT_REPORT.md)
+- [Testing Summary](TESTING_SUMMARY.md)
 
-### **Outils**
-- [Ruff](https://docs.astral.sh/ruff/) - Linter rapide
-- [Bandit](https://bandit.readthedocs.io/) - Analyse de sécurité
-- [Safety](https://getsafety.com/) - Vulnérabilités des dépendances
-- [pytest](https://docs.pytest.org/) - Framework de test
-- [Black](https://black.readthedocs.io/) - Formateur de code
+### **Tools**
+- [Ruff](https://docs.astral.sh/ruff/) - Fast linter
+- [Bandit](https://bandit.readthedocs.io/) - Security analysis
+- [Safety](https://getsafety.com/) - Dependency vulnerabilities
+- [pytest](https://docs.pytest.org/) - Testing framework
+- [Black](https://black.readthedocs.io/) - Code formatter
 
-### **Bonnes Pratiques**
+### **Best Practices**
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 - [Flask Security Best Practices](https://flask.palletsprojects.com/en/2.3.x/security/)
 - [Python Security](https://wiki.python.org/moin/Security)
@@ -482,20 +482,20 @@ pre-commit install
 
 ---
 
-## 🎉 **Checklist de Chasse au Bug**
+## 🎉 **Bug Hunt Checklist**
 
-- [ ] Exécuter `make bug-hunt-full`
-- [ ] Corriger les problèmes critiques (🔴)
-- [ ] Corriger les problèmes moyens (🟡)
-- [ ] Corriger les problèmes mineurs (🟢)
-- [ ] Vérifier que tous les tests passent
-- [ ] Atteindre 80%+ de couverture
-- [ ] Exécuter un nouvel audit de sécurité
-- [ ] Documenter les corrections
-- [ ] Mettre à jour le rapport de chasse au bug
+- [ ] Run `make bug-hunt-full`
+- [ ] Fix critical issues (🔴)
+- [ ] Fix medium issues (🟡)
+- [ ] Fix minor issues (🟢)
+- [ ] Verify that all tests pass
+- [ ] Reach 80%+ coverage
+- [ ] Run a new security audit
+- [ ] Document the fixes
+- [ ] Update the bug hunt report
 
 ---
 
-*"La qualité du code est la responsabilité de tous." - Kent Beck*
+*"Code quality is everyone's responsibility." - Kent Beck*
 
-*Guide généré automatiquement par Vibe Code - Agent de Chasse au Bug*
+*Guide automatically generated by Vibe Code - Bug Hunting Agent*

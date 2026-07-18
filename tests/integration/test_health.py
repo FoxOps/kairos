@@ -17,7 +17,7 @@ class TestHealthEndpoint:
         assert resp.status_code == 200
         data = resp.get_json()
         assert data["status"] == "ok"
-        assert data["application"] == "Leviia Schedule"
+        assert data["application"] == "Kairos"
         assert "timestamp" in data
 
 
@@ -43,7 +43,7 @@ class TestVersionEndpoint:
         resp = client.get("/version")
         assert resp.status_code == 200
         data = resp.get_json()
-        assert data["application"] == "Leviia Schedule"
+        assert data["application"] == "Kairos"
         assert "version" in data
         assert "environment" in data
 

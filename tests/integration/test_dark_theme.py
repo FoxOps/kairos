@@ -1,5 +1,5 @@
 """
-Tests for Leviia Schedule's dark theme.
+Tests for Kairos's dark theme.
 
 These tests check that:
 1. The dark theme's CSS loads correctly
@@ -81,7 +81,7 @@ class TestDarkThemeCSS:
             assert '[data-theme="dark"]' in dark
 
     def test_daisyui_variable_mapping(self, test_app):
-        """Test that Leviia's variables are correctly mapped to daisyUI."""
+        """Test that Kairos's variables are correctly mapped to daisyUI."""
         with test_app.app_context():
             content = read_css("variables.css")
 

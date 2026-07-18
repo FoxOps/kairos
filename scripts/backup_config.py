@@ -1,5 +1,5 @@
 """
-Leviia Schedule - Configuration de sauvegarde
+Kairos - Configuration de sauvegarde
 ==============================================
 
 Ce module contient la configuration pour les sauvegardes de la base de données.
@@ -51,7 +51,7 @@ class BackupConfig:
     s3_region: str | None = None
     s3_access_key: str | None = None
     s3_secret_key: str | None = None
-    s3_prefix: str = "leviia-schedule"
+    s3_prefix: str = "kairos"
     s3_use_ssl: bool = True
 
     # Rétention
@@ -66,7 +66,7 @@ class BackupConfig:
     timestamp_format: str = "%Y%m%d_%H%M%S"
 
     # Nom du fichier
-    backup_prefix: str = "leviia_backup"
+    backup_prefix: str = "kairos_backup"
 
     # Base de données
     db_path: str | None = None  # Chemin vers le fichier SQLite
@@ -140,7 +140,7 @@ class BackupConfig:
             s3_region=get_str("BACKUP_S3_REGION"),
             s3_access_key=get_str("BACKUP_S3_ACCESS_KEY"),
             s3_secret_key=get_str("BACKUP_S3_SECRET_KEY"),
-            s3_prefix=get_str_default("BACKUP_S3_PREFIX", "leviia-schedule"),
+            s3_prefix=get_str_default("BACKUP_S3_PREFIX", "kairos"),
             s3_use_ssl=get_bool("BACKUP_S3_USE_SSL", True),
             retention_days=get_int("BACKUP_RETENTION_DAYS", 30),
             max_backups=get_int("BACKUP_MAX_BACKUPS", 30),
@@ -149,7 +149,7 @@ class BackupConfig:
             timestamp_format=get_str_default(
                 "BACKUP_TIMESTAMP_FORMAT", "%Y%m%d_%H%M%S"
             ),
-            backup_prefix=get_str_default("BACKUP_PREFIX", "leviia_backup"),
+            backup_prefix=get_str_default("BACKUP_PREFIX", "kairos_backup"),
             db_path=db_path,
             db_uri=db_uri,
             notify_on_success=get_bool("BACKUP_NOTIFY_ON_SUCCESS", False),

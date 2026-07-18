@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="{% block meta_description %}{{ _("Leviia Schedule - Gestion des plannings, astreintes et congés d'équipe.") }}{% endblock %}">
+    <meta name="description" content="{% block meta_description %}{{ _("Kairos - Gestion des plannings, astreintes et congés d'équipe.") }}{% endblock %}">
     <meta name="robots" content="noindex, nofollow">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{% block title %}Leviia{% endblock %}</title>
+    <title>{% block title %}Kairos{% endblock %}</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
 
     <!-- Sets data-theme before any rendering happens (avoids a
@@ -164,7 +164,7 @@
                     </button>
                 </div>
                 <div class="navbar-center">
-                    <a class="text-lg font-extrabold text-primary" href="{{ url_for("main.index") }}" aria-label="{{ _("Accueil - Leviia") }}">Leviia</a>
+                    <a class="text-lg font-extrabold text-primary" href="{{ url_for("main.index") }}" aria-label="{{ _("Accueil - Kairos") }}">Kairos</a>
                 </div>
                 <div class="navbar-end w-10"></div>
             </header>
@@ -196,8 +196,8 @@
             <footer class="footer footer-center bg-base-200 text-base-content p-3 text-sm" role="contentinfo">
                 <div>
                     <p>
-                        <strong>Leviia Schedule</strong> - {{ _("Gestion des plannings, astreintes et congés d'équipe.") }}
-                        {{ _("Version %(app_version)s | (c) 2026 Leviia", app_version=app_version) }}
+                        <strong>Kairos</strong> - {{ _("Gestion des plannings, astreintes et congés d'équipe.") }}
+                        {{ _("Version %(app_version)s | © 2026 FoxOps", app_version=app_version) }}
                     </p>
                 </div>
             </footer>
@@ -208,8 +208,8 @@
             <label for="mobile-drawer" aria-label="{{ _("Fermer le menu") }}" class="drawer-overlay lg:hidden"></label>
             <aside class="bg-base-200 text-base-content min-h-full w-64 flex flex-col" role="navigation" aria-label="{{ _("Navigation principale") }}">
                 <div class="p-4">
-                    <a href="{{ url_for("main.index") }}" class="text-lg font-extrabold text-primary flex items-center gap-2" aria-label="{{ _("Accueil - Leviia") }}">
-                        <i class="fas fa-calendar-alt" aria-hidden="true"></i> Leviia
+                    <a href="{{ url_for("main.index") }}" class="text-lg font-extrabold text-primary flex items-center gap-2" aria-label="{{ _("Accueil - Kairos") }}">
+                        <i class="fas fa-calendar-alt" aria-hidden="true"></i> Kairos
                     </a>
                 </div>
 

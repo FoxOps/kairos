@@ -1,5 +1,5 @@
 """
-AutomationConfig model for Leviia Schedule.
+AutomationConfig model for Kairos.
 
 This module contains the AutomationConfig model for storing automation
 configuration settings.

@@ -1,4 +1,4 @@
-# Exemple de configuration Docker Compose pour Leviia Schedule - méthode
+# Exemple de configuration Docker Compose pour Kairos - méthode
 # recommandée, image déjà construite sur le registry (pas de clone du
 # dépôt, pas de build local).
 #
@@ -6,7 +6,7 @@
 # 1. Copiez ce fichier en docker-compose.yml
 # 2. Copiez docker/.env.example (pas le .env.example à la racine du
 #    dépôt, celui-ci est pour un lancement hors Docker) en .env et
-#    modifiez-le selon vos besoins (LEVIIA_IMAGE, SECRET_KEY,
+#    modifiez-le selon vos besoins (KAIROS_IMAGE, SECRET_KEY,
 #    DEFAULT_ADMIN_PASSWORD au minimum - voir la section CONFIGURATION
 #    OIDC/SSO pour activer l'authentification OIDC - désactivée par défaut)
 # 3. Lancez avec: docker compose up -d
@@ -16,9 +16,9 @@
 # à la place, dans un clone du dépôt.
 
 services:
-  leviia-schedule:
-    image: ${LEVIIA_IMAGE:-harbor.leviia.com/<HARBOR_PROJECT>/leviia-schedule:latest}
-    container_name: leviia-schedule
+  kairos:
+    image: ${KAIROS_IMAGE:-harbor.leviia.com/<HARBOR_PROJECT>/kairos:latest}
+    container_name: kairos
     ports:
       - "5000:5000"
     user: "1000:1000"
@@ -28,8 +28,8 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
     networks:
-      - leviia-network
+      - kairos-network
 
 networks:
-  leviia-network:
+  kairos-network:
     driver: bridge

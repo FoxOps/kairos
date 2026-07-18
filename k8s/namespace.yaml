@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: leviia-schedule
+  name: kairos
   labels:
-    app: leviia-schedule
+    app: kairos
     environment: production
     team: operations

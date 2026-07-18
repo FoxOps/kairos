@@ -77,7 +77,7 @@ class TestAuthRoutes:
                 follow_redirects=True,
             )
             assert response.status_code == 200
-            assert b"Leviia" in response.data or b"Schedule" in response.data
+            assert b"Kairos" in response.data or b"Schedule" in response.data
 
     def test_login_post_invalid_credentials(self, client):
         """Test logging in with invalid credentials."""
@@ -139,7 +139,7 @@ class TestAuthRoutes:
         response = logged_in_client.get("/logout", follow_redirects=True)
         assert response.status_code == 200
         # After logging out, we're redirected to the index
-        assert b"Leviia" in response.data or b"Schedule" in response.data
+        assert b"Kairos" in response.data or b"Schedule" in response.data
 
     def test_register_disabled(self, client):
         """Test that public registration is disabled."""
@@ -218,7 +218,7 @@ class TestShiftRoutes:
         response = logged_in_client.get("/schedule/add", follow_redirects=True)
         assert response.status_code == 200
         # The user is redirected to the index or sees a message
-        assert b"Leviia" in response.data or b"Schedule" in response.data
+        assert b"Kairos" in response.data or b"Schedule" in response.data
 
     def test_add_shift_get_admin(self, logged_in_client):
         """Test that an admin can access the add-shift form."""
@@ -303,7 +303,7 @@ class TestOnCallRoutes:
         response = logged_in_client.get("/oncall/add", follow_redirects=True)
         assert response.status_code == 200
         # The user is redirected
-        assert b"Leviia" in response.data or b"Schedule" in response.data
+        assert b"Kairos" in response.data or b"Schedule" in response.data
 
     def test_add_oncall_get_admin(self, logged_in_client):
         """Test that an admin can access the add-on-call form."""
@@ -453,7 +453,7 @@ class TestAdminRoutes:
         response = logged_in_client.get("/admin", follow_redirects=True)
         assert response.status_code == 200
         # The user is redirected
-        assert b"Leviia" in response.data or b"Schedule" in response.data
+        assert b"Kairos" in response.data or b"Schedule" in response.data
 
     def test_list_groups(self, logged_in_client):
         """Test rendering the group list."""

@@ -1,5 +1,5 @@
 """
-NotificationTarget repository for Leviia Schedule.
+NotificationTarget repository for Kairos.
 
 Data access layer for the NotificationTarget model - no business logic,
 no Flask request/response handling, just queries. See

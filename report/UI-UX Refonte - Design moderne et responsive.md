@@ -1,227 +1,220 @@
-# 📋 Rapport - Refonte UI/UX : Design moderne et responsive
+# 📋 Report - UI/UX Overhaul: Modern, Responsive Design
 
-**Branche** : `feature/ui-ux-refonte`
-**PR** : [#103](https://github.com/FoxOps/leviia-schedule/pull/103) (draft)
-**Date de début** : 2026-07-12
-**Statut** : 🟢 Plan terminé + vérification visuelle réelle faite (Playwright/Chromium, voir Journal)
-**Base** : `main` (post refonte Phases 1-6, commit `ae1c091`)
+**Branch**: `feature/ui-ux-refonte`
+**PR**: [#103](https://github.com/FoxOps/leviia-schedule/pull/103) (draft)
+**Start date**: 2026-07-12
+**Status**: 🟢 Plan complete + real visual verification done (Playwright/Chromium, see Log)
+**Base**: `main` (post overhaul Phases 1-6, commit `ae1c091`)
 
 ---
 
-## 🎯 Portée (validée avec l'utilisateur)
+## 🎯 Scope (validated with the user)
 
-- Garder Bulma 1.0.4 (déjà récent, pas de bug technique justifiant un
-  changement de framework) mais aller au-delà des simples corrections :
-  refonte visuelle profonde (palette, typographie, layout, cards,
-  espacements) — pas juste des fixes ciblés.
-- Corriger en priorité le vrai bug responsive trouvé à l'audit : menu de
-  navigation mobile inutilisable (voir ci-dessous).
-- Audit complet des breakpoints sur toutes les pages, pas seulement la
-  navbar.
+- Keep Bulma 1.0.4 (already recent, no technical bug justifying a
+  framework change) but go beyond simple fixes: a deep visual overhaul
+  (palette, typography, layout, cards, spacing) — not just targeted
+  fixes.
+- Prioritize fixing the real responsive bug found during the audit:
+  unusable mobile navigation menu (see below).
+- Full breakpoint audit across all pages, not just the navbar.
 
-## 🔍 Audit initial
+## 🔍 Initial audit
 
-### Bug réel trouvé : navbar mobile inutilisable
+### Real bug found: unusable mobile navbar
 
-`app/templates/base.html` a un `<nav class="navbar ...">` avec
-`.navbar-menu` (7 liens + dropdown utilisateur) mais **aucun bouton
-`.navbar-burger`** nulle part dans le template, ni logique JS pour
-toggle `is-active`. Or Bulma masque `.navbar-menu` par défaut sous
-1024px (`display: none`) tant que `.navbar-menu.is-active` n'est pas
-appliqué. Résultat : sur mobile/tablette, le menu de navigation est
-**invisible et totalement inaccessible** - aucun moyen d'atteindre
-Shifts/Astreintes/Congés/Admin/Profil/Déconnexion. Confirmé par
-recherche exhaustive (`grep -n "burger" base.html app/static/js/`) :
-zéro résultat.
+`app/templates/base.html` has a `<nav class="navbar ...">` with
+`.navbar-menu` (7 links + user dropdown) but **no `.navbar-burger`
+button** anywhere in the template, nor any JS logic to toggle
+`is-active`. Yet Bulma hides `.navbar-menu` by default below 1024px
+(`display: none`) until `.navbar-menu.is-active` is applied. Result:
+on mobile/tablet, the navigation menu is **invisible and completely
+inaccessible** - no way to reach Shifts/On-call/Leave/Admin/Profile/
+Logout. Confirmed by exhaustive search
+(`grep -n "burger" base.html app/static/js/`): zero results.
 
-### État du design system
+### State of the design system
 
-- `app/static/css/variables.css` ne fait que mapper les `--bulma-*`
-  vers des noms d'app (`--color-primary`, etc.) sans aucune
-  personnalisation - couleur primaire = turquoise par défaut de Bulma
-  (`--bulma-primary-h: 171deg`), pas de palette de marque.
-- Pas d'échelle d'espacement (spacing scale) ni de rayons de bordure
-  cohérents définis en dehors des défauts Bulma bruts.
-- Bulma 1.0.4 charge déjà `Inter` comme police par défaut
-  (`--bulma-family-primary`), mais aucun fichier de police n'est
-  vendorisé (`app/static/vendor/webfonts/` ne contient que Font
-  Awesome) - `Inter` retombe donc silencieusement sur les polices
-  système (SF Pro/Segoe UI/Roboto selon l'OS). Pas un bug (dégradation
-  propre), mais noté : vendoriser Inter serait un vrai gain visuel,
-  hors périmètre de cette passe (ajout d'assets, licence à vérifier) -
-  **reporté**, voir section Reporté plus bas.
-- CSS déjà bien organisée en couches (`base`, `components/`, `layout/`,
-  `pages/`, `themes/dark.css`, `utilities.css`) - la structure est
-  gardée telle quelle, seul le contenu est retouché.
-- Bulma 1.x re-thème via 3 variables HSL (`--bulma-primary-h/-s/-l`),
-  toutes les nuances dérivées (00 à 100, invert, etc.) sont calculées
-  automatiquement par Bulma - c'est la bonne façon d'overrider,
-  beaucoup plus robuste que de redéfinir chaque nuance à la main.
+- `app/static/css/variables.css` only maps `--bulma-*` to app-level
+  names (`--color-primary`, etc.) with no customization at all -
+  primary color = Bulma's default turquoise
+  (`--bulma-primary-h: 171deg`), no brand palette.
+- No spacing scale or consistent border radii defined beyond raw
+  Bulma defaults.
+- Bulma 1.0.4 already loads `Inter` as the default font
+  (`--bulma-family-primary`), but no font file is vendored
+  (`app/static/vendor/webfonts/` only contains Font Awesome) - `Inter`
+  therefore silently falls back to system fonts (SF Pro/Segoe UI/
+  Roboto depending on the OS). Not a bug (clean degradation), but
+  noted: vendoring Inter would be a real visual win, out of scope for
+  this pass (adding assets, license to check) - **deferred**, see the
+  Deferred section below.
+- CSS already well organized into layers (`base`, `components/`,
+  `layout/`, `pages/`, `themes/dark.css`, `utilities.css`) - the
+  structure is kept as-is, only the content is touched.
+- Bulma 1.x re-themes via 3 HSL variables (`--bulma-primary-h/-s/-l`),
+  all derived shades (00 to 100, invert, etc.) are computed
+  automatically by Bulma - this is the right way to override, much
+  more robust than redefining each shade by hand.
 
 ## 📐 Plan
 
-1. [x] Corriger le burger menu mobile (bug bloquant, priorité 1)
-2. [x] Nouvelle palette de marque (HSL override du primary Bulma -
-   révisée en vert/teal doux après feedback), échelle de rayons plus
-   arrondie
-3. [x] Rafraîchir les composants : boutons, cards, formulaires, tables,
-   modales (ombres, rayons, espacements cohérents avec la nouvelle
-   palette)
-4. [x] Vérifier la cohérence du thème sombre avec la nouvelle palette -
-   Bulma dérive les nuances dark-mode depuis les mêmes variables HSL de
-   base, aucun changement supplémentaire requis
-5. [x] Audit responsive complet (tables sur mobile, dashboard,
-   formulaires, calendrier) sur les pages principales (index, schedule,
-   oncall, leave, admin) - a débouché sur la découverte des 2 pages
-   cassées par la CSP Phase 6 (voir Journal)
-6. [x] Polish layout (header, footer, spacing global, fallbacks de
-   couleur obsolètes dans fullcalendar-overrides.css)
+1. [x] Fix the mobile burger menu (blocking bug, priority 1)
+2. [x] New brand palette (HSL override of Bulma's primary - revised
+   to a softer green/teal after feedback), rounder radius scale
+3. [x] Refresh components: buttons, cards, forms, tables, modals
+   (shadows, radii, spacing consistent with the new palette)
+4. [x] Verify dark theme consistency with the new palette - Bulma
+   derives dark-mode shades from the same base HSL variables, no
+   additional change required
+5. [x] Full responsive audit (tables on mobile, dashboard, forms,
+   calendar) across the main pages (index, schedule, oncall, leave,
+   admin) - led to the discovery of the 2 pages broken by the Phase 6
+   CSP (see Log)
+6. [x] Layout polish (header, footer, global spacing, stale color
+   fallbacks in fullcalendar-overrides.css)
 
-## ⚠️ Limite de vérification
+## ⚠️ Verification limitation
 
-Aucun outil de rendu/capture d'écran de navigateur disponible dans cet
-environnement. Vérification faite par : serveur de développement réel +
-`curl` (statut HTTP, présence des classes/attributs attendus dans le
-HTML rendu), validité syntaxique CSS/JS, cohérence des variables. **Pas
-de vérification visuelle pixel par pixel** - à faire manuellement dans
-un navigateur avant merge.
+No browser rendering/screenshot tool available in this environment.
+Verification was done via: a real dev server + `curl` (HTTP status,
+presence of expected classes/attributes in the rendered HTML), CSS/JS
+syntactic validity, variable consistency. **No pixel-by-pixel visual
+verification** - to be done manually in a browser before merging.
 
 ---
 
-## 📝 Journal
+## 📝 Log
 
-### Menu mobile navbar (commit `6ffbdd5`)
+### Mobile navbar menu (commit `6ffbdd5`)
 
-Bouton `.navbar-burger` ajouté + module `NavbarMenu`
-(`app/static/js/navbar/navbar-menu.js`) qui toggle `is-active`/
-`aria-expanded`, ferme au clic sur un lien et à Escape. Vérifié en réel
-(HTML rendu contient burger + id `navbar-menu` reliés, JS chargé 200).
+`.navbar-burger` button added + `NavbarMenu` module
+(`app/static/js/navbar/navbar-menu.js`) that toggles `is-active`/
+`aria-expanded`, closes on link click and on Escape. Verified for
+real (rendered HTML contains the burger correctly linked to the
+`navbar-menu` id, JS loaded with 200 status).
 
-### Palette de marque (commit `043f9f7`, révisée en `7700a10`)
+### Brand palette (commit `043f9f7`, revised in `7700a10`)
 
-Première passe : indigo (243deg 75% 58%). **Feedback utilisateur : trop
-agressif aux yeux.** Retour dans la famille verte/teal de l'original
-Bulma (171deg 100% 41%) mais désaturé pour rester doux : **168deg 70%
-42%**. RGB dérivé (32, 182, 152) répercuté partout où la couleur était
-dupliquée en dur (focus-ring, survol de tableau, fallback CSS).
-Rayons de bordure adoucis (0.375/0.5/1rem), ombres passées à des ombres
-diffuses en plusieurs couches (`--shadow-sm/md/lg`).
+First pass: indigo (243deg 75% 58%). **User feedback: too aggressive
+on the eyes.** Returned to Bulma's original green/teal family
+(171deg 100% 41%) but desaturated to stay soft: **168deg 70% 42%**.
+Derived RGB (32, 182, 152) propagated everywhere the color was
+duplicated in hard-coded form (focus ring, table hover, CSS
+fallback). Softened border radii (0.375/0.5/1rem), shadows changed to
+diffuse multi-layer shadows (`--shadow-sm/md/lg`).
 
-### Composants (commit `dd2f6e9`)
+### Components (commit `dd2f6e9`)
 
-Boutons, cards, formulaires, tables, modales : rayons/ombres cohérents
-avec `variables.css`. Bugs trouvés en cours de route : focus-ring des
-inputs avait le RGB de l'ancien turquoise en dur (incohérent avec la
-nouvelle palette) ; `.modal-card` sans largeur responsive sous 600px ni
-`overflow: hidden` (les fonds carrés de head/foot dépassaient du bord
-arrondi de la card).
+Buttons, cards, forms, tables, modals: radii/shadows made consistent
+with `variables.css`. Bugs found along the way: input focus ring had
+the old turquoise's RGB hard-coded (inconsistent with the new
+palette); `.modal-card` had no responsive width below 600px nor
+`overflow: hidden` (the squared-off head/foot backgrounds overflowed
+the card's rounded edge).
 
 ### Dashboard + header/footer (commit `36c418d`)
 
-**Bug réel trouvé** : `.chart-container` (graphique "Répartition par
-type de shift") n'avait **aucune règle CSS**. `.chart-item` avait
-`flex: 1` mais sans `display: flex` sur le parent ça ne servait à
-rien - les barres s'empilaient verticalement en pleine largeur au lieu
-de former un graphique côte à côte, et le `height: X%` inline de
-`.chart-bar` ne pouvait rien résoudre sans hauteur de référence sur le
-parent direct. Corrigé (hauteur fixe + `align-items: stretch` par
-défaut + `overflow-x: auto` si trop de types). Audit `.level` (Bulma) :
-l'override du projet ne touche pas `flex-direction`, le stacking mobile
-natif de Bulma reste donc intact - pas de bug. Aucune largeur fixe
-dangereuse trouvée ailleurs (grep systématique).
+**Real bug found**: `.chart-container` (the "Breakdown by shift type"
+chart) had **no CSS rule at all**. `.chart-item` had `flex: 1` but
+without `display: flex` on the parent that was useless - the bars
+stacked vertically at full width instead of forming a side-by-side
+chart, and `.chart-bar`'s inline `height: X%` couldn't resolve
+anything without a reference height on the direct parent. Fixed
+(fixed height + `align-items: stretch` by default + `overflow-x: auto`
+if there are too many types). `.level` (Bulma) audit: the project's
+override doesn't touch `flex-direction`, so Bulma's native mobile
+stacking remains intact - not a bug. No dangerous fixed width found
+elsewhere (systematic grep).
 
-### Audit large : 2 pages cassées en prod par la CSP Phase 6 (commit `a6fadf8`)
+### Broad audit: 2 pages broken in production by the Phase 6 CSP (commit `a6fadf8`)
 
-**Découverte majeure en auditant le responsive** : la CSP `script-src
-'self'` stricte (Phase 6) bloque silencieusement (erreur console,
-**pas** d'erreur HTTP) tout `<script>` inline exécutable. Le test de
-régression de Phase 6 n'avait vérifié qu'`index.html`. Balayage statique
-(regex sur tous les templates) : **2 autres pages avaient encore un
-`<script>` inline**, cassées en production sans que rien ne le
-signale :
+**Major discovery while auditing responsiveness**: the strict
+`script-src 'self'` CSP (Phase 6) silently blocks (console error,
+**no** HTTP error) any executable inline `<script>`. Phase 6's
+regression test had only checked `index.html`. Static scan (regex
+across all templates): **2 other pages still had an inline
+`<script>`**, broken in production with nothing flagging it:
 
-- `auth/ics_token.html` : tous les boutons "Copier" (token + 6 URLs
-  d'export ICS) étaient no-op silencieux. Externalisé vers
-  `static/js/clipboard/copy-token.js` (7 fonctions dédupliquées en un
-  helper `copyInputValue`), exposé via `window.Leviia`.
-- `admin/automation/full.html` : glisser-déposer de l'ordre de rotation
-  d'astreinte entièrement cassé. Bonus : `saveRotationOrder()` était
-  définie à l'intérieur du listener `DOMContentLoaded`, donc
-  `onclick="saveRotationOrder()"` était **déjà cassé avant même la
-  CSP** (portée de fonction incorrecte). Externalisé vers
-  `static/js/automation/rotation-order.js`, corrige les deux bugs d'un
-  coup.
+- `auth/ics_token.html`: every "Copy" button (token + 6 ICS export
+  URLs) was a silent no-op. Externalized to
+  `static/js/clipboard/copy-token.js` (7 functions deduplicated into
+  a single `copyInputValue` helper), exposed via `window.Kairos`.
+- `admin/automation/full.html`: on-call rotation order drag-and-drop
+  entirely broken. Bonus: `saveRotationOrder()` was defined inside the
+  `DOMContentLoaded` listener, so `onclick="saveRotationOrder()"` was
+  **already broken even before the CSP** (incorrect function scope).
+  Externalized to `static/js/automation/rotation-order.js`, fixing
+  both bugs at once.
 
-Test de régression étendu : balayage paramétré sur 8 pages
-représentatives (`test_page_has_no_inline_executable_script`) au lieu
-d'une seule, pour empêcher ce type de régression de repasser inaperçu.
-Vérifié avec CSP réellement active (Talisman, pas juste TestingConfig).
-781 tests passent (8 nouveaux).
+Regression test extended: a parameterized scan across 8 representative
+pages (`test_page_has_no_inline_executable_script`) instead of a
+single one, to prevent this type of regression from going unnoticed
+again. Verified with CSP actually active (Talisman, not just
+TestingConfig). 781 tests pass (8 new).
 
 ---
 
-### Audit calendrier + fallbacks obsolètes (commit `b49d56b`)
+### Calendar audit + stale fallbacks (commit `b49d56b`)
 
-Audit schedule/oncall/leave/admin : tables déjà dans `.table-container`
-(overflow-x:auto), `.field.is-horizontal` déjà géré nativement par
-Bulma (stack mobile sous 769px), `.level.is-mobile` correct,
-`.column.is-one-fifth` (dashboard admin) stack déjà en pleine largeur
-sous 769px. Aucun bug bloquant supplémentaire trouvé - la navbar et le
-graphique dashboard étaient les deux vrais problèmes structurels de
-l'app. `fullcalendar-overrides.css` avait les mêmes fallbacks de
-couleur obsolètes (`#00D1B2`) et rayons 4px en dur que le reste de
-l'app avant cette passe - corrigés pour cohérence.
+Schedule/oncall/leave/admin audit: tables already inside
+`.table-container` (overflow-x:auto), `.field.is-horizontal` already
+natively handled by Bulma (stacks below 769px), `.level.is-mobile`
+correct, `.column.is-one-fifth` (admin dashboard) already stacks at
+full width below 769px. No additional blocking bug found - the navbar
+and the dashboard chart were the app's two real structural issues.
+`fullcalendar-overrides.css` had the same stale color fallbacks
+(`#00D1B2`) and hard-coded 4px radii as the rest of the app before
+this pass - fixed for consistency.
 
-### Corrections post-feedback utilisateur (commits `5aea4ef`, `3d3fc63`)
+### Post-user-feedback fixes (commits `5aea4ef`, `3d3fc63`)
 
-Retours visuels directs de l'utilisateur, deux bugs réels confirmés :
-1. Icône `.empty-state i` décalée à gauche au lieu d'être centrée -
-   régression de mon propre commit `36c418d` (`display: block` empêche
-   le `text-align: center` du parent de s'appliquer). Corrigé en
+Direct visual feedback from the user, two confirmed real bugs:
+1. `.empty-state i` icon offset to the left instead of centered -
+   regression from my own commit `36c418d` (`display: block` prevents
+   the parent's `text-align: center` from applying). Fixed with
    `inline-block`.
-2. `/admin` : aucun espace entre les lignes de boxs qui wrappent
-   (7 cards `is-one-fifth` sur 2 lignes). `grid.css` mettait
-   `padding: 0 0.75rem` sur `.column` (horizontal seulement), écrasant
-   le padding vertical par défaut de Bulma. Restauré.
+2. `/admin`: no gap between box rows that wrap (7 `is-one-fifth`
+   cards across 2 rows). `grid.css` set `padding: 0 0.75rem` on
+   `.column` (horizontal only), overriding Bulma's default vertical
+   padding. Restored.
 
-Version app synchronisée avec l'avancement (0.6.0 -> 0.7.0, les deux
-items Haute priorité de la Version 0.7 du ROADMAP - Refonte UI/UX et
-Calendrier interactif - sont maintenant faits). Bug annexe trouvé au
-passage : deux défauts `APP_VERSION` dupliqués (`health.py` et
-`__init__.py`), seul le premier avait été bumpé, le footer restait
-figé sur l'ancienne valeur - unifié en une seule constante.
+App version synced with progress (0.6.0 -> 0.7.0, both High priority
+items of ROADMAP Version 0.7 - UI/UX overhaul and interactive
+calendar - are now done). Side bug found along the way: two
+duplicated `APP_VERSION` defaults (`health.py` and `__init__.py`),
+only the first had been bumped, the footer stayed stuck on the old
+value - unified into a single constant.
 
-### Vérification visuelle réelle (Playwright/Chromium, commit `6fd3de1`)
+### Real visual verification (Playwright/Chromium, commit `6fd3de1`)
 
-Sur demande explicite de l'utilisateur : installation d'un
-environnement Playwright + Chromium isolé (venv jetable dans le
-scratchpad, ne touche pas les dépendances du projet), lancement d'un
-vrai serveur de dev, connexion admin réelle, captures d'écran desktop
-et mobile de `/`, `/dashboard`, `/admin`, plus vérification de la
-console navigateur (pas seulement le HTML rendu).
+At the user's explicit request: set up an isolated Playwright +
+Chromium environment (disposable venv in the scratchpad, doesn't
+touch the project's dependencies), launched a real dev server, real
+admin login, desktop and mobile screenshots of `/`, `/dashboard`,
+`/admin`, plus browser console verification (not just the rendered
+HTML).
 
-**3e bug CSP trouvé** - indétectable par le balayage textuel utilisé
-jusqu'ici (`<script>` inline) car il s'agit de `font-src`, pas de
-`script-src` : FullCalendar embarque sa police d'icônes (flèches
-précédent/suivant) en `@font-face` `data:` URI dans son propre CSS.
-Sans directive `font-src` explicite, CSP retombe sur
-`default-src 'self'`, qui bloque le `data:` - confirmé par l'erreur
-console exacte. Les boutons de navigation du calendrier étaient rendus
-comme des rectangles vides, sans chevron. Corrigé (`font-src 'self'
-data:` ajouté à `CSP_POLICY`), reconfirmé visuellement après fix (0
-erreur console, chevrons visibles).
+**3rd CSP bug found** - undetectable by the textual scan used so far
+(inline `<script>`) since it involves `font-src`, not `script-src`:
+FullCalendar embeds its icon font (previous/next arrows) as an
+`@font-face` `data:` URI in its own CSS. Without an explicit
+`font-src` directive, CSP falls back to `default-src 'self'`, which
+blocks `data:` - confirmed by the exact console error. The calendar
+navigation buttons rendered as empty rectangles, with no chevron.
+Fixed (`font-src 'self' data:` added to `CSP_POLICY`), reconfirmed
+visually after the fix (0 console errors, chevrons visible).
 
-Screenshots confirment aussi visuellement : palette teal/verte douce
-correcte, footer à jour (0.7.0), empty-state centré, espacement /admin
-correct, calendrier fonctionnel.
+Screenshots also visually confirm: correct soft teal/green palette,
+up-to-date footer (0.7.0), centered empty-state, correct /admin
+spacing, working calendar.
 
-Environnement Playwright entièrement supprimé après usage (pas une
-dépendance du projet - `.venv/`, `requirements.txt` non touchés).
+Playwright environment fully removed after use (not a project
+dependency - `.venv/`, `requirements.txt` untouched).
 
 ---
 
-*Dernière mise à jour : 2026-07-12 — plan terminé (13 commits) : burger
-mobile, palette (révisée après feedback), composants, dashboard, audit
-CSP (3 pages/éléments cassés trouvés et fixés au total, dont 1 via
-vérification visuelle réelle en navigateur), audit responsive complet,
-version app synchronisée. Prêt pour revue humaine finale avant merge.*
+*Last updated: 2026-07-12 — plan complete (13 commits): mobile burger,
+palette (revised after feedback), components, dashboard, CSP audit (3
+pages/elements broken found and fixed in total, including 1 via real
+browser visual verification), full responsive audit, app version
+synced. Ready for final human review before merge.*

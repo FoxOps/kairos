@@ -1,58 +1,58 @@
-# Configuration Kubernetes pour Leviia Schedule
+# Kubernetes Configuration for Kairos
 
-Ce dossier contient les fichiers nécessaires pour déployer Leviia Schedule sur un cluster Kubernetes.
+This folder contains the files needed to deploy Kairos on a Kubernetes cluster.
 
-## Prérequis
+## Requirements
 
-- Un cluster Kubernetes (Minikube, EKS, AKS, GKE, etc.)
-- `kubectl` configuré pour accéder au cluster
-- Un registry Docker accessible (pour l'image de l'application)
-- Un gestionnaire de secrets (optionnel mais recommandé)
+- A Kubernetes cluster (Minikube, EKS, AKS, GKE, etc.)
+- `kubectl` configured to access the cluster
+- An accessible Docker registry (for the application image)
+- A secrets manager (optional but recommended)
 
 ## Structure
 
 ```
 k8s/
-├── namespace.yaml          # Namespace dédié pour l'application
-├── configmap.yaml         # Configuration de l'application
-├── secret.yaml            # Secrets (à ne pas commiter !)
-├── deployment.yaml        # Déploiement de l'application
-├── service.yaml           # Service pour exposer l'application
-├── ingress.yaml           # Routage HTTP (optionnel)
-├── hpa.yaml               # Auto-scaling horizontal (optionnel)
-└── pdb.yaml               # Pod Disruption Budget (optionnel)
+├── namespace.yaml          # Dedicated namespace for the application
+├── configmap.yaml         # Application configuration
+├── secret.yaml            # Secrets (do not commit!)
+├── deployment.yaml        # Application deployment
+├── service.yaml           # Service exposing the application
+├── ingress.yaml           # HTTP routing (optional)
+├── hpa.yaml               # Horizontal auto-scaling (optional)
+└── pdb.yaml               # Pod Disruption Budget (optional)
 ```
 
-## Déploiement
+## Deployment
 
-### 1. Créer le namespace
+### 1. Create the namespace
 
 ```bash
 kubectl apply -f namespace.yaml
 ```
 
-### 2. Configurer les secrets
+### 2. Configure the secrets
 
-**⚠️ IMPORTANT : Ne pas commiter le fichier `secret.yaml` avec des valeurs réelles !**
+**⚠️ IMPORTANT: Do not commit the `secret.yaml` file with real values!**
 
-Créer le fichier `secret.yaml` à partir du template :
+Create the `secret.yaml` file from the template:
 
 ```bash
 cp secret.yaml.template secret.yaml
-# Éditer secret.yaml avec vos valeurs
+# Edit secret.yaml with your values
 ```
 
-Ou créer les secrets directement avec kubectl :
+Or create the secrets directly with kubectl:
 
 ```bash
-kubectl create secret generic leviia-secrets \
-  --namespace=leviia-schedule \
+kubectl create secret generic kairos-secrets \
+  --namespace=kairos \
   --from-literal=SECRET_KEY=$(openssl rand -hex 32) \
-  --from-literal=DATABASE_URL=postgresql://user:pass@postgres:5432/leviia \
+  --from-literal=DATABASE_URL=postgresql://user:pass@postgres:5432/kairos \
   --from-literal=ADMIN_PASSWORD=your-admin-password
 ```
 
-### 3. Déployer l'application
+### 3. Deploy the application
 
 ```bash
 kubectl apply -f configmap.yaml
@@ -61,74 +61,74 @@ kubectl apply -f deployment.yaml
 kubectl apply -f service.yaml
 ```
 
-### 4. (Optionnel) Configurer l'ingress
+### 4. (Optional) Configure the ingress
 
 ```bash
 kubectl apply -f ingress.yaml
 ```
 
-### 5. (Optionnel) Configurer l'auto-scaling
+### 5. (Optional) Configure auto-scaling
 
 ```bash
 kubectl apply -f hpa.yaml
 ```
 
-## Vérification
+## Verification
 
-### Voir les pods
-
-```bash
-kubectl get pods -n leviia-schedule
-```
-
-### Voir les logs
+### View the pods
 
 ```bash
-kubectl logs -n leviia-schedule deployment/leviia-schedule -f
+kubectl get pods -n kairos
 ```
 
-### Accéder à l'application
-
-Si vous utilisez l'ingress :
-```bash
-kubectl get ingress -n leviia-schedule
-```
-
-Sinon, utiliser le port-forward :
-```bash
-kubectl port-forward -n leviia-schedule svc/leviia-schedule 5000:5000
-# Puis accéder à http://localhost:5000
-```
-
-## Mise à jour
-
-Pour mettre à jour l'application :
+### View the logs
 
 ```bash
-# Mettre à jour l'image dans le deployment
-kubectl set image -n leviia-schedule deployment/leviia-schedule leviia-schedule=your-registry/leviia-schedule:latest
-
-# Voir le statut du rollout
-kubectl rollout status -n leviia-schedule deployment/leviia-schedule
+kubectl logs -n kairos deployment/kairos -f
 ```
 
-## Nettoyage
+### Access the application
+
+If you're using the ingress:
+```bash
+kubectl get ingress -n kairos
+```
+
+Otherwise, use port-forward:
+```bash
+kubectl port-forward -n kairos svc/kairos 5000:5000
+# Then access http://localhost:5000
+```
+
+## Updating
+
+To update the application:
+
+```bash
+# Update the image in the deployment
+kubectl set image -n kairos deployment/kairos kairos=your-registry/kairos:latest
+
+# View the rollout status
+kubectl rollout status -n kairos deployment/kairos
+```
+
+## Cleanup
 
 ```bash
 kubectl delete -f k8s/ --ignore-not-found
 ```
 
-## Configuration recommandée
+## Recommended configuration
 
-### Ressources
-- CPU : 500m - 1000m
-- Mémoire : 512Mi - 1Gi
+### Resources
+- CPU: 500m - 1000m
+- Memory: 512Mi - 1Gi
 
-### Réplicas
-- Minimum : 2 (pour la haute disponibilité)
-- Maximum : 10 (selon la charge)
+### Replicas
+- Minimum: 2 (for high availability)
+- Maximum: 10 (depending on load)
 
 ### Auto-scaling
-- CPU target : 70%
-- Minimum replicas : 2
-- Maximum replicas : 5
+- CPU target: 70%
+- Minimum replicas: 2
+- Maximum replicas: 5

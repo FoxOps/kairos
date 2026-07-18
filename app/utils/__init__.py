@@ -1,5 +1,5 @@
 """
-Utilities module for Leviia Schedule.
+Utilities module for Kairos.
 
 This module contains utility functions and helpers organized by category.
 Nothing is re-exported here - every caller imports directly from the

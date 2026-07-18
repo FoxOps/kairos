@@ -1,5 +1,5 @@
 """
-Export service for Leviia Schedule.
+Export service for Kairos.
 
 Business logic for ICS export: resolving the exporting user (session or
 ICS token), applying the all/my scope filter, and generating the ICS
@@ -46,7 +46,7 @@ class ExportService:
         )
         return export_to_ics(
             shifts,
-            f"Leviia Schedule - Shifts ({'All' if scope == 'all' else 'My'})",
+            f"Kairos - Shifts ({'All' if scope == 'all' else 'My'})",
             tz_name=SettingsService.get_default_timezone(),
         )
 
@@ -59,7 +59,7 @@ class ExportService:
         )
         return export_to_ics(
             on_calls,
-            f"Leviia Schedule - OnCall ({'All' if scope == 'all' else 'My'})",
+            f"Kairos - OnCall ({'All' if scope == 'all' else 'My'})",
             tz_name=SettingsService.get_default_timezone(),
         )
 
@@ -72,6 +72,6 @@ class ExportService:
         )
         return export_to_ics(
             leaves,
-            f"Leviia Schedule - Leaves ({'All' if scope == 'all' else 'My'})",
+            f"Kairos - Leaves ({'All' if scope == 'all' else 'My'})",
             tz_name=SettingsService.get_default_timezone(),
         )

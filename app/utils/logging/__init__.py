@@ -1,5 +1,5 @@
 """
-Logging utilities for Leviia Schedule.
+Logging utilities for Kairos.
 
 This module provides centralized logging configuration for the application.
 """

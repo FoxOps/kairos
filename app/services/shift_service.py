@@ -1,5 +1,5 @@
 """
-Shift service for Leviia Schedule.
+Shift service for Kairos.
 
 Business logic for shift creation/update/deletion. Routes stay thin:
 they parse the request, call this service, and turn the result into a

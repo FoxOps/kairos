@@ -1,13 +1,13 @@
 {
-  "title": "Leviia Schedule",
-  "uid": "leviia-schedule",
+  "title": "Kairos",
+  "uid": "kairos",
   "schemaVersion": 39,
   "version": 1,
   "editable": true,
   "timezone": "browser",
   "time": { "from": "now-6h", "to": "now" },
   "refresh": "30s",
-  "tags": ["leviia-schedule"],
+  "tags": ["kairos"],
   "templating": {
     "list": [
       {
@@ -27,7 +27,7 @@
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "targets": [
         {
-          "expr": "sum by (endpoint, http_status) (rate(leviia_requests_total[5m]))",
+          "expr": "sum by (endpoint, http_status) (rate(kairos_requests_total[5m]))",
           "legendFormat": "{{endpoint}} [{{http_status}}]"
         }
       ]
@@ -40,7 +40,7 @@
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
       "targets": [
         {
-          "expr": "sum by (error_type) (rate(leviia_errors_total[5m]))",
+          "expr": "sum by (error_type) (rate(kairos_errors_total[5m]))",
           "legendFormat": "{{error_type}}"
         }
       ]
@@ -54,7 +54,7 @@
       "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le, endpoint) (rate(leviia_request_latency_seconds_bucket[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, endpoint) (rate(kairos_request_latency_seconds_bucket[5m])))",
           "legendFormat": "{{endpoint}}"
         }
       ]
@@ -68,7 +68,7 @@
       "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(leviia_db_query_time_seconds_bucket[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(kairos_db_query_time_seconds_bucket[5m])))",
           "legendFormat": "p95"
         }
       ]
@@ -80,8 +80,8 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
       "targets": [
-        { "expr": "leviia_active_users", "legendFormat": "Utilisateurs actifs" },
-        { "expr": "leviia_active_sessions", "legendFormat": "Sessions actives" }
+        { "expr": "kairos_active_users", "legendFormat": "Utilisateurs actifs" },
+        { "expr": "kairos_active_sessions", "legendFormat": "Sessions actives" }
       ]
     },
     {
@@ -91,11 +91,11 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
       "targets": [
-        { "expr": "leviia_shifts_total", "legendFormat": "Shifts" },
-        { "expr": "leviia_oncalls_total", "legendFormat": "Astreintes" },
-        { "expr": "leviia_leaves_total", "legendFormat": "Congés" },
-        { "expr": "leviia_users_total", "legendFormat": "Utilisateurs" },
-        { "expr": "leviia_groups_total", "legendFormat": "Groupes" }
+        { "expr": "kairos_shifts_total", "legendFormat": "Shifts" },
+        { "expr": "kairos_oncalls_total", "legendFormat": "Astreintes" },
+        { "expr": "kairos_leaves_total", "legendFormat": "Congés" },
+        { "expr": "kairos_users_total", "legendFormat": "Utilisateurs" },
+        { "expr": "kairos_groups_total", "legendFormat": "Groupes" }
       ]
     },
     {
@@ -105,7 +105,7 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 8, "x": 0, "y": 24 },
       "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
-      "targets": [{ "expr": "leviia_cpu_usage_percent" }]
+      "targets": [{ "expr": "kairos_cpu_usage_percent" }]
     },
     {
       "id": 8,
@@ -114,7 +114,7 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 8, "x": 8, "y": 24 },
       "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
-      "targets": [{ "expr": "leviia_memory_usage_bytes" }]
+      "targets": [{ "expr": "kairos_memory_usage_bytes" }]
     },
     {
       "id": 9,
@@ -123,7 +123,7 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "gridPos": { "h": 8, "w": 8, "x": 16, "y": 24 },
       "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
-      "targets": [{ "expr": "leviia_disk_usage_bytes" }]
+      "targets": [{ "expr": "kairos_disk_usage_bytes" }]
     }
   ]
 }

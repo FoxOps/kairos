@@ -213,7 +213,7 @@ class TestIcsTokenCopyButton:
 
 
 class TestDeleteConfirmationModal:
-    """Regression test: onclick="return Leviia.confirmActionAccessible(...)"
+    """Regression test: onclick="return Kairos.confirmActionAccessible(...)"
     used to call an async (opened, never blocking) modal and therefore
     returned undefined - the link/form's default navigation/submission
     fired immediately, before the user even clicked Confirm/Cancel in
@@ -285,7 +285,7 @@ class TestServiceAccountCreationFlow:
         token_input = page.locator("#full-token")
         assert token_input.count() == 1
         token_value = token_input.input_value()
-        assert token_value.startswith("lsak_")
+        assert token_value.startswith("ksak_")
 
         page.goto(f"{live_server_url}/admin/service-accounts")
         page.wait_for_load_state("networkidle")

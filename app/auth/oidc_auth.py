@@ -1,5 +1,5 @@
 """
-OIDC/SSO authentication for Leviia Schedule using Authlib.
+OIDC/SSO authentication for Kairos using Authlib.
 
 This module implements authentication via OpenID Connect with providers
 like Keycloak, Okta, Auth0, etc. using the Authlib library.

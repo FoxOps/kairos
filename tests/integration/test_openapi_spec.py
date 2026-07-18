@@ -12,7 +12,7 @@ class TestOpenApiJson:
         assert response.status_code == 200
         data = response.get_json()
         assert data["openapi"] == "3.0.3"
-        assert data["info"]["title"] == "Leviia Schedule Public API"
+        assert data["info"]["title"] == "Kairos Public API"
 
     def test_no_session_cookie_required(self, client):
         # No login performed - the spec itself must stay reachable

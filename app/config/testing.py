@@ -1,5 +1,5 @@
 """
-Testing configuration for Leviia Schedule.
+Testing configuration for Kairos.
 
 This configuration is used during testing and includes:
 - In-memory database

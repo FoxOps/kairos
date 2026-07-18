@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Leviia Schedule - Envoi du rappel d'astreinte par email
+Kairos - Envoi du rappel d'astreinte par email
 =========================================================
 
 Envoie un email à l'utilisateur d'astreinte pour la période démarrant

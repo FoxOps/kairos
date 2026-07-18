@@ -1,5 +1,5 @@
 """
-AuditService for Leviia Schedule.
+AuditService for Kairos.
 
 Single write path for the audit trail (app/models/audit_log.py) - every
 business-relevant mutation and auth event goes through

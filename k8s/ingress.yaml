@@ -1,10 +1,10 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: leviia-schedule
-  namespace: leviia-schedule
+  name: kairos
+  namespace: kairos
   labels:
-    app: leviia-schedule
+    app: kairos
   annotations:
     # Annotations pour le contrôleur Ingress
     # Exemple pour Nginx Ingress Controller
@@ -60,7 +60,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: leviia-schedule
+            name: kairos
             port:
               number: 80
   
@@ -68,17 +68,17 @@ spec:
   # tls:
   # - hosts:
   #   - schedule.yourdomain.com
-  #   secretName: leviia-schedule-tls
+  #   secretName: kairos-tls
 
 ---
 # Ingress pour l'API (optionnel, si vous voulez séparer l'API)
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: leviia-schedule-api
-  namespace: leviia-schedule
+  name: kairos-api
+  namespace: kairos
   labels:
-    app: leviia-schedule
+    app: kairos
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /$1
     nginx.ingress.kubernetes.io/proxy-body-size: "16m"
@@ -93,6 +93,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: leviia-schedule
+            name: kairos
             port:
               number: 80

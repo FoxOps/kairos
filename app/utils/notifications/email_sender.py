@@ -1,5 +1,5 @@
 """
-Low-level SMTP email sending for Leviia Schedule notifications.
+Low-level SMTP email sending for Kairos notifications.
 
 Deliberately built on smtplib/email (stdlib) rather than adding a mail
 dependency (Flask-Mail etc.) - a single outgoing-mail call is all that's

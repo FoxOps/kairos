@@ -97,13 +97,13 @@ class TestBackupConfigFromEnv:
         clear_backup_env(monkeypatch)
         monkeypatch.setenv("BACKUP_NOTIFY_ON_SUCCESS", "true")
         monkeypatch.setenv("BACKUP_NOTIFY_ON_FAILURE", "false")
-        monkeypatch.setenv("BACKUP_NOTIFICATION_EMAIL", "ops@leviia.local")
+        monkeypatch.setenv("BACKUP_NOTIFICATION_EMAIL", "ops@kairos.local")
 
         config = BackupConfig.from_env()
 
         assert config.notify_on_success is True
         assert config.notify_on_failure is False
-        assert config.notification_email == "ops@leviia.local"
+        assert config.notification_email == "ops@kairos.local"
 
     def test_detects_sqlite_db_path_from_database_url(self, monkeypatch, tmp_path):
         clear_backup_env(monkeypatch)
@@ -149,9 +149,9 @@ class TestBackupConfigFilenames:
         assert path.startswith(local_dir)
 
     def test_get_s3_key_with_prefix(self):
-        config = BackupConfig(s3_prefix="leviia-schedule", backup_prefix="test")
+        config = BackupConfig(s3_prefix="kairos", backup_prefix="test")
         key = config.get_s3_key(datetime(2026, 7, 13, 12, 0, 0))
-        assert key.startswith("leviia-schedule/")
+        assert key.startswith("kairos/")
 
     def test_get_s3_key_without_prefix(self):
         config = BackupConfig(s3_prefix="", backup_prefix="test")

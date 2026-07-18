@@ -1,144 +1,141 @@
 # FAQ
 
-> Contenu vérifié contre le code réel en Phase 5 (2026-07). Anciennement
-> une section de `USER_GUIDE.md`, extraite ici pour éviter la
-> duplication et corrigée sur plusieurs points inexacts (voir notes
-> inline).
+> Content verified against the actual code in Phase 5 (2026-07). Formerly
+> a section of `USER_GUIDE.md`, extracted here to avoid duplication and
+> corrected on several inaccurate points (see inline notes).
 
-## Questions fréquentes
+## Frequently Asked Questions
 
-### Comment réinitialiser mon mot de passe ?
+### How do I reset my password?
 
-Contactez votre administrateur — il n'y a pas de fonctionnalité de
-réinitialisation en libre-service (pas de "mot de passe oublié"). Un
-administrateur peut définir un nouveau mot de passe via
-**Admin > Utilisateurs > Modifier**.
+Contact your administrator — there is no self-service reset feature (no
+"forgot password"). An administrator can set a new password via
+**Admin > Users > Edit**.
 
-### Je ne vois pas mes shifts dans le calendrier
+### I don't see my shifts on the calendar
 
-Vérifiez que :
-1. Vous êtes connecté avec le bon compte.
-2. Vos shifts sont bien attribués à votre utilisateur.
-3. La période sélectionnée couvre vos shifts — le calendrier de la page
-   d'accueil affiche une fenêtre de ±180 jours autour d'aujourd'hui ; la
-   page **Planning** liste tout, avec pagination.
+Check that:
+1. You are logged in with the correct account.
+2. Your shifts are actually assigned to your user.
+3. The selected period covers your shifts — the home page calendar
+   displays a ±180-day window around today; the **Schedule** page
+   lists everything, with pagination.
 
-### Je ne peux pas ajouter un shift pour un utilisateur
+### I can't add a shift for a user
 
-Vérifiez que :
-1. L'utilisateur appartient à un groupe qui participe au planning
+Check that:
+1. The user belongs to a group that participates in the schedule
    (`is_part_of_schedule`).
-2. Vous êtes administrateur — seuls les admins peuvent ajouter des
-   shifts (`/schedule/add`).
-3. Le type de shift existe bien.
-4. La période ne tombe pas uniquement sur un week-end — les shifts ne
-   sont créés que pour les jours ouvrés (lundi-vendredi).
+2. You are an administrator — only admins can add shifts
+   (`/schedule/add`).
+3. The shift type actually exists.
+4. The period doesn't fall only on a weekend — shifts are only created
+   for business days (Monday-Friday).
 
-### Je ne peux pas ajouter un congé
+### I can't add a leave
 
-Vérifiez que :
-1. Vous êtes administrateur, ou vous ajoutez le congé pour vous-même
-   (un non-admin ne peut créer un congé que pour son propre compte).
-2. Les dates sont valides (début ≤ fin).
-3. Le congé ne chevauche pas un **autre congé existant** du même
-   utilisateur.
+Check that:
+1. You are an administrator, or you are adding the leave for yourself
+   (a non-admin can only create a leave for their own account).
+2. The dates are valid (start ≤ end).
+3. The leave doesn't overlap with an **other existing leave** for the
+   same user.
 
-> **Correction** : contrairement à ce que documentaient les versions
-> précédentes de ce guide, un congé qui chevauche un shift ou une
-> astreinte existants **n'est pas bloqué** — l'application rééquilibre
-> automatiquement les shifts concernés à la place. Les dates dans le
-> passé sont également acceptées (aucune vérification de date future).
+> **Correction**: contrary to what previous versions of this guide
+> documented, a leave that overlaps with an existing shift or on-call
+> assignment **is not blocked** — the application automatically
+> rebalances the affected shifts instead. Dates in the past are also
+> accepted (no future-date check).
 
-### L'export ICS ne fonctionne pas
+### ICS export isn't working
 
-Vérifiez que :
-1. Votre token ICS est valide (régénérez-le depuis **Profil > Token ICS**
-   si besoin).
-2. L'URL est correcte (`scope=my` pour votre planning personnel,
-   `scope=all` pour tout le monde — nécessite d'être admin ou d'avoir
-   un token admin pour être utile).
-3. Votre application de calendrier supporte les abonnements ICS par URL.
+Check that:
+1. Your ICS token is valid (regenerate it from **Profile > ICS Token**
+   if needed).
+2. The URL is correct (`scope=my` for your personal schedule,
+   `scope=all` for everyone — requires being an admin or having an
+   admin token to be useful).
+3. Your calendar application supports ICS subscriptions by URL.
 
-### Comment modifier un shift/une astreinte/un congé existant ?
+### How do I modify an existing shift/on-call/leave?
 
-Il n'y a pas de formulaire de modification dédié. Deux options :
-1. **Glisser-déposer sur le calendrier** (page d'accueil), en mode
-   édition — **réservé aux administrateurs**, y compris pour les congés
-   d'un utilisateur normal.
-2. Supprimer l'entrée et en recréer une nouvelle via le formulaire
-   d'ajout correspondant.
+There is no dedicated edit form. Two options:
+1. **Drag and drop on the calendar** (home page), in edit mode —
+   **restricted to administrators**, including for a regular user's
+   leaves.
+2. Delete the entry and recreate a new one via the corresponding add
+   form.
 
-### Comment désactiver l'authentification pour le développement ?
+### How do I disable authentication for development?
 
-Dans le fichier `.env` :
+In the `.env` file:
 
 ```bash
 LOGIN_DISABLED=true
 ```
 
-> ⚠️ **Ne jamais utiliser cette option en production !**
+> ⚠️ **Never use this option in production!**
 
-### Quel est le mot de passe administrateur par défaut ?
+### What is the default administrator password?
 
-`admin@leviia.local` / `admin123` — **mais seulement si vous avez copié
-`.env.example` vers `.env`** avant le premier démarrage (`cp .env.example .env`).
-Sans ce fichier, `DEFAULT_ADMIN_PASSWORD` n'est pas défini et
-l'application génère un mot de passe aléatoire au démarrage, jamais
-affiché nulle part. Voir
+`admin@kairos.local` / `admin123` — **but only if you copied
+`.env.example` to `.env`** before the first startup (`cp .env.example .env`).
+Without this file, `DEFAULT_ADMIN_PASSWORD` is not set and the
+application generates a random password at startup, never displayed
+anywhere. See
 [`guides/QUICK_START.md`](QUICK_START.md).
 
-## Problèmes techniques
+## Technical Issues
 
-### Erreur 404 (Page non trouvée)
+### 404 Error (Page not found)
 
-- Vérifiez que l'URL est correcte.
-- Vérifiez que vous êtes connecté.
-- Vérifiez que vous avez les permissions nécessaires (certaines pages
-  sont réservées aux administrateurs).
+- Check that the URL is correct.
+- Check that you are logged in.
+- Check that you have the necessary permissions (some pages are
+  restricted to administrators).
 
-### Erreur 500 (Erreur serveur)
+### 500 Error (Server error)
 
-- Vérifiez les logs de l'application (`logs/` en local, voir
+- Check the application logs (`logs/` locally, see
   [`reference/ERROR_HANDLING.md`](../reference/ERROR_HANDLING.md)).
-- Contactez l'administrateur.
-- Signalez le bug sur GitHub avec les étapes de reproduction.
+- Contact the administrator.
+- Report the bug on GitHub with reproduction steps.
 
-### La base de données ne se crée pas
+### The database is not being created
 
-- Vérifiez que le dossier `instance/` existe et est accessible en
-  écriture : `mkdir -p instance`.
-- Vérifiez que vous avez bien copié `.env.example` en `.env`.
+- Check that the `instance/` folder exists and is writable:
+  `mkdir -p instance`.
+- Check that you actually copied `.env.example` to `.env`.
 
-### Les modifications ne sont pas enregistrées
+### Changes are not being saved
 
-- Vérifiez que vous avez cliqué sur **"Enregistrer"**.
-- Vérifiez que vous avez les permissions nécessaires.
-- Vérifiez qu'il n'y a pas d'erreur de validation affichée (champ
-  obligatoire manquant, format invalide).
+- Check that you clicked **"Save"**.
+- Check that you have the necessary permissions.
+- Check that no validation error is displayed (missing required
+  field, invalid format).
 
-### Une requête POST échoue avec "Bad Request" / erreur 400 inattendue
+### A POST request fails with "Bad Request" / unexpected 400 error
 
-Depuis la Phase 4, toute requête d'écriture (formulaire ou appel API)
-nécessite un jeton CSRF valide. Si vous scriptez des appels vers
-l'application (curl, requêtes automatisées) plutôt que d'utiliser
-l'interface, vous devez d'abord récupérer un jeton CSRF (champ caché
-`csrf_token` du formulaire, ou balise `<meta name="csrf-token">`) et
-l'inclure dans votre requête. Voir
-[`api/API.md`](../api/API.md#authentification).
+Since Phase 4, every write request (form or API call) requires a
+valid CSRF token. If you are scripting calls to the application (curl,
+automated requests) instead of using the interface, you must first
+retrieve a CSRF token (hidden `csrf_token` field of the form, or
+`<meta name="csrf-token">` tag) and include it in your request. See
+[`api/API.md`](../api/API.md#authentication).
 
-## Messages d'erreur courants
+## Common Error Messages
 
 | Message | Cause | Solution |
 |---|---|---|
-| "Tous les champs sont obligatoires" | Un champ requis est vide | Remplissez tous les champs marqués comme obligatoires |
-| "Format de date invalide" | La date n'est pas au format AAAA-MM-JJ | Utilisez le format `2026-06-15` |
-| "L'astreinte doit commencer un vendredi" | La date de début n'est pas un vendredi | Sélectionnez un vendredi |
-| "Impossible de supprimer... des données sont associées" | L'élément a des dépendances (ex : utilisateur avec des shifts) | Supprimez d'abord les données associées |
-| "Email ou mot de passe incorrect" | Identifiants invalides | Vérifiez votre email et mot de passe |
-| "Vous ne pouvez ajouter des congés que pour vous-même" | Tentative d'ajout de congé pour un autre utilisateur (non-admin) | Connectez-vous en tant qu'admin, ou ajoutez le congé pour vous-même |
+| "All fields are required" | A required field is empty | Fill in all fields marked as required |
+| "Invalid date format" | The date is not in YYYY-MM-DD format | Use the format `2026-06-15` |
+| "On-call must start on a Friday" | The start date is not a Friday | Select a Friday |
+| "Cannot delete... associated data exists" | The item has dependencies (e.g. a user with shifts) | Delete the associated data first |
+| "Incorrect email or password" | Invalid credentials | Check your email and password |
+| "You can only add leaves for yourself" | Attempt to add a leave for another user (non-admin) | Log in as an admin, or add the leave for yourself |
 
-## Voir aussi
+## See Also
 
-- [Guide de démarrage rapide](QUICK_START.md)
-- [Guide utilisateur](USER_GUIDE.md)
-- [Guide administrateur](ADMIN_GUIDE.md)
+- [Quick Start Guide](QUICK_START.md)
+- [User Guide](USER_GUIDE.md)
+- [Administrator Guide](ADMIN_GUIDE.md)

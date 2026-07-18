@@ -1,184 +1,184 @@
-# Guide de test pour le Dockerfile optimisé
+# Test guide for the optimized Dockerfile
 
-## 🐳 Tester le Dockerfile optimisé localement
+## 🐳 Testing the optimized Dockerfile locally
 
-### 1. Construire l'image
+### 1. Build the image
 
 ```bash
 cd /workspace/FoxOps__leviia-schedule
-docker build -t leviia-schedule:optimized -f docker/Dockerfile.optimized .
+docker build -t kairos:optimized -f docker/Dockerfile.optimized .
 ```
 
-**Si vous obtenez une erreur de permission sur /var/run/docker.sock :**
+**If you get a permission error on /var/run/docker.sock:**
 
 ```bash
-# Sur Linux
+# On Linux
 sudo usermod -aG docker $USER
 newgrp docker
 
-# Ou utiliser sudo
-sudo docker build -t leviia-schedule:optimized -f docker/Dockerfile.optimized .
+# Or use sudo
+sudo docker build -t kairos:optimized -f docker/Dockerfile.optimized .
 ```
 
-### 2. Exécuter le conteneur
+### 2. Run the container
 
 ```bash
 docker run -d \
-  --name leviia-test \
+  --name kairos-test \
   -p 5000:5000 \
   -v $(pwd)/data:/app/data \
   -e FLASK_ENV=production \
   -e DATABASE_URL=sqlite:////app/data/app.db \
-  leviia-schedule:optimized
+  kairos:optimized
 ```
 
-### 3. Vérifier que le conteneur fonctionne
+### 3. Verify the container is running
 
 ```bash
-# Voir les logs
-docker logs leviia-test
+# View logs
+docker logs kairos-test
 
-# Vérifier le statut
+# Check status
 docker ps
 
-# Tester l'application
+# Test the application
 curl http://localhost:5000/health
 ```
 
-### 4. Accéder à l'application
+### 4. Access the application
 
-Ouvrez votre navigateur à : http://localhost:5000
+Open your browser at: http://localhost:5000
 
-### 5. Tester les endpoints de monitoring
+### 5. Test the monitoring endpoints
 
 ```bash
-# Métriques Prometheus
+# Prometheus metrics
 curl http://localhost:5000/metrics
 
-# Statut de santé
+# Health status
 curl http://localhost:5000/health
 
-# Statut de prêt
+# Readiness status
 curl http://localhost:5000/ready
 ```
 
-## 🔍 Comparaison avec le Dockerfile actuel
+## 🔍 Comparison with the current Dockerfile
 
-### Construire avec le Dockerfile actuel
-
-```bash
-docker build -t leviia-schedule:current -f docker/Dockerfile .
-```
-
-### Comparer les tailles
+### Build with the current Dockerfile
 
 ```bash
-# Voir la taille des images
-docker images | grep leviia-schedule
-
-# Ou plus détaillé
-docker image inspect leviia-schedule:optimized | grep -i size
-docker image inspect leviia-schedule:current | grep -i size
+docker build -t kairos:current -f docker/Dockerfile .
 ```
 
-### Exemple de sortie attendue
+### Compare sizes
 
-```
-REPOSITORY              TAG        IMAGE ID       CREATED         SIZE
-leviia-schedule        optimized  abc123...   2 minutes ago   120MB
-leviia-schedule        current    def456...   2 minutes ago   150MB
-```
-
-## ⚠️ Problèmes courants et solutions
-
-### Problème 1: "No such file or directory: 'docker/requirements.txt'"
-
-**Cause :** Le chemin dans le Dockerfile était incorrect.
-
-**Solution :** Ce problème a été corrigé dans la version actuelle du Dockerfile.optimized. Assurez-vous d'utiliser la dernière version.
-
-### Problème 2: "Permission denied" lors de la construction
-
-**Solution :**
 ```bash
-# Donner les permissions sur le Dockerfile
+# View image sizes
+docker images | grep kairos
+
+# Or more detailed
+docker image inspect kairos:optimized | grep -i size
+docker image inspect kairos:current | grep -i size
+```
+
+### Expected output example
+
+```
+REPOSITORY   TAG        IMAGE ID       CREATED         SIZE
+kairos       optimized  abc123...   2 minutes ago   120MB
+kairos       current    def456...   2 minutes ago   150MB
+```
+
+## ⚠️ Common issues and solutions
+
+### Issue 1: "No such file or directory: 'docker/requirements.txt'"
+
+**Cause:** The path in the Dockerfile was incorrect.
+
+**Solution:** This issue has been fixed in the current version of Dockerfile.optimized. Make sure you're using the latest version.
+
+### Issue 2: "Permission denied" during the build
+
+**Solution:**
+```bash
+# Grant permissions on the Dockerfile
 chmod +x docker/Dockerfile.optimized
 
-# Ou utiliser sudo
-sudo docker build -t leviia-schedule:optimized -f docker/Dockerfile.optimized .
+# Or use sudo
+sudo docker build -t kairos:optimized -f docker/Dockerfile.optimized .
 ```
 
-### Problème 3: "ERROR: Could not open requirements file"
+### Issue 3: "ERROR: Could not open requirements file"
 
-**Cause :** Le fichier requirements.txt n'existe pas dans le contexte de build.
+**Cause:** The requirements.txt file doesn't exist in the build context.
 
-**Solution :** Vérifiez que vous êtes dans le bon répertoire et que le fichier existe :
+**Solution:** Verify that you're in the right directory and that the file exists:
 ```bash
 ls -la docker/requirements.txt
 ```
 
-### Problème 4: Erreurs d'installation de dépendances
+### Issue 4: Dependency installation errors
 
-**Solution :** Certaines dépendances peuvent nécessiter des dépendances système. Le Dockerfile optimisé inclut déjà :
+**Solution:** Some dependencies may require system libraries. The optimized Dockerfile already includes:
 - gcc
 - musl-dev
 - libpq-dev
 - postgresql-dev
 
-Si vous avez besoin d'autres dépendances, modifiez le Dockerfile :
+If you need other dependencies, edit the Dockerfile:
 ```dockerfile
 RUN apk add --no-cache --virtual .build-deps \
     gcc \
     musl-dev \
     libpq-dev \
     postgresql-dev \
-    # Ajoutez ici d'autres dépendances si nécessaire
+    # Add other dependencies here if needed
 ```
 
-## 📊 Vérification de l'optimisation
+## 📊 Verifying the optimization
 
-### 1. Vérifier le multi-stage build
+### 1. Check the multi-stage build
 
 ```bash
-# Voir les layers de l'image
-docker history leviia-schedule:optimized
+# View the image layers
+docker history kairos:optimized
 ```
 
-Vous devriez voir que l'image finale ne contient pas les dépendances de build (gcc, etc.).
+You should see that the final image doesn't contain the build dependencies (gcc, etc.).
 
-### 2. Vérifier le health check
+### 2. Check the health check
 
 ```bash
-# Voir le statut de santé
-docker inspect --format='{{json .State.Health}}' leviia-test
+# View the health status
+docker inspect --format='{{json .State.Health}}' kairos-test
 ```
 
-### 3. Vérifier l'utilisateur
+### 3. Check the user
 
 ```bash
-# Vérifier que le conteneur s'exécute avec l'utilisateur non-root
-docker exec leviia-test whoami
-# Doit afficher : appuser
+# Verify the container runs as the non-root user
+docker exec kairos-test whoami
+# Should display: appuser
 ```
 
-## 🎯 Prochaines étapes
+## 🎯 Next steps
 
-Une fois que vous avez validé que le Dockerfile optimisé fonctionne correctement :
+Once you've confirmed the optimized Dockerfile works correctly:
 
-1. **Remplacer le Dockerfile actuel** (optionnel) :
+1. **Replace the current Dockerfile** (optional):
    ```bash
    cp docker/Dockerfile.optimized docker/Dockerfile
    ```
 
-2. **Mettre à jour le Makefile** pour utiliser le nouveau Dockerfile
+2. **Update the Makefile** to use the new Dockerfile
 
-3. **Pousser les changements** et merger la PR
+3. **Push the changes** and merge the PR
 
 ## 📝 Notes
 
-- Le Dockerfile optimisé utilise **Alpine Linux** pour une image plus légère
-- Le **multi-stage build** réduit la taille finale en ne gardant que les fichiers nécessaires
-- Le **health check** permet à Kubernetes de surveiller la santé du conteneur
-- L'**utilisateur non-root** améliore la sécurité
+- The optimized Dockerfile uses **Alpine Linux** for a lighter image
+- The **multi-stage build** reduces the final size by keeping only the necessary files
+- The **health check** allows Kubernetes to monitor the container's health
+- The **non-root user** improves security
 
-Si vous avez des questions ou des problèmes, n'hésitez pas à demander !
+If you have any questions or issues, feel free to ask!

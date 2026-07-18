@@ -1,5 +1,5 @@
 """
-User and Group models for Leviia Schedule.
+User and Group models for Kairos.
 
 This module contains the User and Group models for user management
 and authentication.

@@ -1,5 +1,5 @@
 """
-User and Group repositories for Leviia Schedule.
+User and Group repositories for Kairos.
 
 Data access layer for User and Group models - no business logic, no
 Flask request/response handling, just queries.

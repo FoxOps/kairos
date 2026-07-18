@@ -1,42 +1,42 @@
-# Variables d'Environnement - Leviia Schedule
+# Environment Variables - Kairos
 
-> **Documentation complète de toutes les variables d'environnement disponibles pour configurer Leviia Schedule**
-
----
-
-## 📋 Table des Matières
-
-- [🔐 Configuration de Base Flask](#-configuration-de-base-flask)
-- [🗄️ Configuration de la Base de Données](#️-configuration-de-la-base-de-données)
-- [🔒 Configuration d'Authentification](#-configuration-dauthentification)
-- [⚠️ Configuration des Erreurs](#️-configuration-des-erreurs)
-- [📝 Configuration du Logging](#-configuration-du-logging)
-- [🔒 Configuration de Sécurité](#-configuration-de-sécurité)
-- [📊 Configuration des Données par Défaut](#-configuration-des-données-par-défaut)
-- [📅 Configuration des Types de Shifts](#-configuration-des-types-de-shifts)
-- [📤 Configuration de l'Export ICS](#-configuration-de-lexport-ics)
-- [📧 Configuration des Notifications](#-configuration-des-notifications)
-- [💾 Configuration des Sauvegardes](#-configuration-des-sauvegardes)
-- [🧹 Configuration du Nettoyage Automatique](#-configuration-du-nettoyage-automatique)
-- [📈 Configuration du Monitoring](#-configuration-du-monitoring)
-- [🎯 Configuration par Environnement](#-configuration-par-environnement)
-- [📝 Exemples de Configuration](#-exemples-de-configuration)
-- [⚠️ Bonnes Pratiques](#️-bonnes-pratiques)
+> **Complete documentation of every environment variable available to configure Kairos**
 
 ---
 
-## 🔐 Configuration de Base Flask
+## 📋 Table of Contents
 
-| Variable | Type | Défaut | Description | Obligatoire |
+- [🔐 Basic Flask Configuration](#-basic-flask-configuration)
+- [🗄️ Database Configuration](#️-database-configuration)
+- [🔒 Authentication Configuration](#-authentication-configuration)
+- [⚠️ Error Configuration](#️-error-configuration)
+- [📝 Logging Configuration](#-logging-configuration)
+- [🔒 Security Configuration](#-security-configuration)
+- [📊 Default Data Configuration](#-default-data-configuration)
+- [📅 Shift Type Configuration](#-shift-type-configuration)
+- [📤 ICS Export Configuration](#-ics-export-configuration)
+- [📧 Notification Configuration](#-notification-configuration)
+- [💾 Backup Configuration](#-backup-configuration)
+- [🧹 Automatic Cleanup Configuration](#-automatic-cleanup-configuration)
+- [📈 Monitoring Configuration](#-monitoring-configuration)
+- [🎯 Configuration by Environment](#-configuration-by-environment)
+- [📝 Configuration Examples](#-configuration-examples)
+- [⚠️ Best Practices](#️-best-practices)
+
+---
+
+## 🔐 Basic Flask Configuration
+
+| Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
-| `SECRET_KEY` | string | `ta-cle-secrete-ici` | Clé secrète pour Flask. **Doit être longue, aléatoire et gardée secrète en production**. Générez avec : `python -c "import secrets; print(secrets.token_hex(32))"` | ✅ Oui |
-| `FLASK_ENV` | string | `development` | Environnement Flask. Valeurs possibles : `development`, `production`, `testing` | ❌ Non |
-| `FLASK_TESTING` | booléen | `false` | Mode test activé. Utilisé pour les tests unitaires | ❌ Non |
-| `PUBLIC_BASE_URL` | string | (vide) | URL publique de l'app derrière un reverse proxy (ex: `https://schedule.example.com`). Sert de repli pour les liens absolus (export ICS) quand le proxy ne transmet pas `X-Forwarded-Host` correctement à `ProxyFix` — sinon ces liens exposent l'IP/le nom interne du backend au lieu du bon domaine. Laisser vide pour utiliser `request.host_url` (comportement par défaut) | ❌ Non |
+| `SECRET_KEY` | string | `ta-cle-secrete-ici` | Secret key for Flask. **Must be long, random, and kept secret in production**. Generate with: `python -c "import secrets; print(secrets.token_hex(32))"` | ✅ Yes |
+| `FLASK_ENV` | string | `development` | Flask environment. Possible values: `development`, `production`, `testing` | ❌ No |
+| `FLASK_TESTING` | boolean | `false` | Test mode enabled. Used for unit tests | ❌ No |
+| `PUBLIC_BASE_URL` | string | (empty) | Public URL of the app behind a reverse proxy (e.g. `https://schedule.example.com`). Used as a fallback for absolute links (ICS export) when the proxy doesn't correctly pass `X-Forwarded-Host` to `ProxyFix` — otherwise these links leak the backend's internal IP/hostname instead of the correct domain. Leave empty to use `request.host_url` (default behavior) | ❌ No |
 
-**Exemple :**
+**Example:**
 ```bash
-SECRET_KEY=ma_cle_secrete_generée_avec_python_secrets
+SECRET_KEY=my_secret_key_generated_with_python_secrets
 FLASK_ENV=production
 FLASK_TESTING=false
 PUBLIC_BASE_URL=https://schedule.example.com
@@ -44,160 +44,161 @@ PUBLIC_BASE_URL=https://schedule.example.com
 
 ---
 
-## 🗄️ Configuration de la Base de Données
+## 🗄️ Database Configuration
 
-| Variable | Type | Défaut | Description | Obligatoire |
+| Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
-| `DATABASE_URL` | string | `sqlite:///app.db` | URI de la base de données. Formats supportés : SQLite, PostgreSQL, MySQL | ✅ Oui |
-| `SQLALCHEMY_TRACK_MODIFICATIONS` | booléen | `false` | Désactive le suivi des modifications SQLAlchemy (recommandé : `false`) | ❌ Non |
-| `SQLALCHEMY_ECHO` | booléen | `false` | Affiche les requêtes SQL dans les logs (utile pour le débogage) | ❌ Non |
-| `SQLALCHEMY_ENGINE_OPTIONS` | JSON | `{}` | Options du moteur SQLAlchemy au format JSON. Exemple : `{"connect_args": {"timeout": 30}, "pool_pre_ping": true, "pool_recycle": 3600}` | ❌ Non |
-| `DATABASE_POOL_SIZE` | entier | `5` | Taille du pool de connexions à la base de données | ❌ Non |
-| `DATABASE_MAX_OVERFLOW` | entier | `10` | Nombre maximal de connexions supplémentaires | ❌ Non |
-| `DATABASE_CONNECT_TIMEOUT` | entier | `30` | Délai d'attente pour la connexion à la base de données (en secondes) | ❌ Non |
-| `DATABASE_POOL_RECYCLE` | entier | `3600` | Recycle les connexions après ce nombre de secondes | ❌ Non |
+| `DATABASE_URL` | string | `sqlite:///app.db` | Database URI. Supported formats: SQLite, PostgreSQL, MySQL | ✅ Yes |
+| `SQLALCHEMY_TRACK_MODIFICATIONS` | boolean | `false` | Disables SQLAlchemy modification tracking (recommended: `false`) | ❌ No |
+| `SQLALCHEMY_ECHO` | boolean | `false` | Prints SQL queries to the logs (useful for debugging) | ❌ No |
+| `SQLALCHEMY_ENGINE_OPTIONS` | JSON | `{}` | SQLAlchemy engine options in JSON format. Example: `{"connect_args": {"timeout": 30}, "pool_pre_ping": true, "pool_recycle": 3600}` | ❌ No |
+| `DATABASE_POOL_SIZE` | integer | `5` | Database connection pool size | ❌ No |
+| `DATABASE_MAX_OVERFLOW` | integer | `10` | Maximum number of extra connections | ❌ No |
+| `DATABASE_CONNECT_TIMEOUT` | integer | `30` | Timeout for the database connection (in seconds) | ❌ No |
+| `DATABASE_POOL_RECYCLE` | integer | `3600` | Recycles connections after this many seconds | ❌ No |
 
-**Formats DATABASE_URL :**
+**DATABASE_URL formats:**
 ```bash
-# SQLite (par défaut)
-DATABASE_URL=sqlite:///chemin/vers/app.db
+# SQLite (default)
+DATABASE_URL=sqlite:///path/to/app.db
 
-# PostgreSQL (recommandé pour la production)
-DATABASE_URL=postgresql://utilisateur:motdepasse@hote:port/base_de_donnees
+# PostgreSQL (recommended for production)
+DATABASE_URL=postgresql://user:password@host:port/database
 
 # MySQL / MariaDB
-DATABASE_URL=mysql://utilisateur:motdepasse@hote:port/base_de_donnees
-DATABASE_URL=mariadb://utilisateur:motdepasse@hote:port/base_de_donnees
+DATABASE_URL=mysql://user:password@host:port/database
+DATABASE_URL=mariadb://user:password@host:port/database
 
-# SQLite en mémoire (pour les tests)
+# In-memory SQLite (for tests)
 DATABASE_URL=sqlite:///:memory:
 ```
 
-**Drivers requis (déjà inclus par défaut dans `requirements.txt`, rien à installer) :**
-- SQLite : intégré à Python (module `sqlite3`, bibliothèque standard)
-- PostgreSQL : `psycopg[binary]` (psycopg 3)
-- MySQL / MariaDB : `PyMySQL` — driver 100% pur Python, aucune bibliothèque
-  système requise (`libmariadb-dev`/`libmysqlclient-dev`), ni à
-  l'installation ni à l'exécution, ni sur l'hôte ni dans l'image Docker
+**Required drivers (already included by default in `requirements.txt`, nothing to install):**
+- SQLite: built into Python (`sqlite3` module, standard library)
+- PostgreSQL: `psycopg[binary]` (psycopg 3)
+- MySQL / MariaDB: `PyMySQL` — a 100% pure-Python driver, no system library
+  required (`libmariadb-dev`/`libmysqlclient-dev`), neither at install time
+  nor at runtime, neither on the host nor in the Docker image
 
-Les formats ci-dessus (sans suffixe `+driver` explicite) sont automatiquement
-routés vers le bon driver — l'app réécrit `mysql://`/`mariadb://` vers
-`mysql+pymysql://`/`mariadb+pymysql://` et `postgres(ql)://` vers
-`postgresql+psycopg://` en interne (voir `app/config/base.py::normalize_database_uri()`),
-car les préfixes nus de SQLAlchemy pointent par défaut vers les drivers
-classiques (`mysqlclient`, `psycopg2`) qui ne sont volontairement pas
-installés ici. `SQLALCHEMY_ENGINE_OPTIONS` (ci-dessus) est particulièrement
-utile avec un serveur MySQL/PostgreSQL externe : `pool_pre_ping`/`pool_recycle`
-évitent une erreur de connexion périmée quand le serveur ferme les connexions
-inactives (`wait_timeout` MySQL, souvent réduit sur les offres managées).
+The formats above (without an explicit `+driver` suffix) are automatically
+routed to the correct driver — the app rewrites `mysql://`/`mariadb://` to
+`mysql+pymysql://`/`mariadb+pymysql://` and `postgres(ql)://` to
+`postgresql+psycopg://` internally (see
+`app/config/base.py::normalize_database_uri()`), because SQLAlchemy's bare
+prefixes default to the classic drivers (`mysqlclient`, `psycopg2`), which
+are deliberately not installed here. `SQLALCHEMY_ENGINE_OPTIONS` (above) is
+particularly useful with an external MySQL/PostgreSQL server:
+`pool_pre_ping`/`pool_recycle` avoid a stale-connection error when the
+server closes idle connections (MySQL's `wait_timeout`, often reduced on
+managed offerings).
 
 ---
 
-## 🔒 Configuration d'Authentification
+## 🔒 Authentication Configuration
 
-| Variable | Type | Défaut | Description | Obligatoire |
+| Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
-| `LOGIN_DISABLED` | booléen | `false` | **DANGER** : Désactive complètement l'authentification. Ne jamais activer en production ! | ❌ Non |
-| `REMEMBER_COOKIE_DURATION` | entier | `86400` | Durée du cookie "se souvenir de moi" en secondes (par défaut : 1 jour = 86400) | ❌ Non |
-| `SESSION_PROTECTION` | string | `strong` | Niveau de protection de session. Valeurs possibles : `none`, `basic`, `strong` | ❌ Non |
-| `WTF_CSRF_ENABLED` | booléen | `true` | Active la protection CSRF pour les formulaires | ❌ Non |
-| `WTF_CSRF_TIME_LIMIT` | entier | `3600` | Durée de validité du token CSRF en secondes (par défaut : 1 heure) | ❌ Non |
-| `SESSION_COOKIE_SECURE` | booléen | `false` | Active le flag Secure pour les cookies de session (recommandé : `true` en production avec HTTPS) | ❌ Non |
-| `SESSION_COOKIE_HTTPONLY` | booléen | `true` | Active le flag HttpOnly pour les cookies de session | ❌ Non |
-| `SESSION_COOKIE_SAMESITE` | string | `Lax` | Politique SameSite pour les cookies. Valeurs possibles : `Lax`, `Strict`, `None` | ❌ Non |
-| `REMEMBER_COOKIE_SECURE` | booléen | `false` | Active le flag Secure pour le cookie "se souvenir de moi" | ❌ Non |
-| `PREFERRED_URL_SCHEME` | string | `http` | Schéma URL préféré. Valeurs possibles : `http`, `https` | ❌ Non |
+| `LOGIN_DISABLED` | boolean | `false` | **DANGER**: Completely disables authentication. Never enable in production! | ❌ No |
+| `REMEMBER_COOKIE_DURATION` | integer | `86400` | Duration of the "remember me" cookie in seconds (default: 1 day = 86400) | ❌ No |
+| `SESSION_PROTECTION` | string | `strong` | Session protection level. Possible values: `none`, `basic`, `strong` | ❌ No |
+| `WTF_CSRF_ENABLED` | boolean | `true` | Enables CSRF protection for forms | ❌ No |
+| `WTF_CSRF_TIME_LIMIT` | integer | `3600` | Validity duration of the CSRF token in seconds (default: 1 hour) | ❌ No |
+| `SESSION_COOKIE_SECURE` | boolean | `false` | Enables the Secure flag for session cookies (recommended: `true` in production with HTTPS) | ❌ No |
+| `SESSION_COOKIE_HTTPONLY` | boolean | `true` | Enables the HttpOnly flag for session cookies | ❌ No |
+| `SESSION_COOKIE_SAMESITE` | string | `Lax` | SameSite policy for cookies. Possible values: `Lax`, `Strict`, `None` | ❌ No |
+| `REMEMBER_COOKIE_SECURE` | boolean | `false` | Enables the Secure flag for the "remember me" cookie | ❌ No |
+| `PREFERRED_URL_SCHEME` | string | `http` | Preferred URL scheme. Possible values: `http`, `https` | ❌ No |
 
-### SSO/OIDC (optionnel)
+### SSO/OIDC (optional)
 
-| Variable | Description | Obligatoire |
+| Variable | Description | Required |
 |----------|-------------|-------------|
-| `OIDC_ENABLED` | Active l'authentification OIDC (`true`/`false`) | ❌ Non |
-| `OIDC_ISSUER` | URL du fournisseur OIDC (ex. Keycloak realm) | ✅ Si `OIDC_ENABLED=true` |
-| `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | Identifiants du client OIDC | ✅ Si `OIDC_ENABLED=true` |
-| `OIDC_REDIRECT_URI` | URL de callback, doit être enregistrée côté fournisseur | ✅ Si `OIDC_ENABLED=true` |
-| `OIDC_POST_LOGOUT_REDIRECT_URI` | URL de redirection après déconnexion RP-initiated | ❌ Non |
-| `OIDC_DISABLE_BASIC_AUTH` | Masque le formulaire email/mot de passe (`true`/`false`) | ❌ Non |
-| `OIDC_EMAIL_CLAIM` / `OIDC_NAME_CLAIM` / `OIDC_USERNAME_CLAIM` | Mapping des claims du token (défauts : `email`, `name`, `preferred_username`) | ❌ Non |
-| `OIDC_GROUPS_CLAIM` / `OIDC_ROLES_CLAIM` | Synchronisation optionnelle des groupes/rôles locaux | ❌ Non |
-| `OIDC_SIGNATURE_ALGORITHMS` | Algorithme de signature du token (défaut `RS256`) | ❌ Non |
-| `OIDC_SCOPE` | Scope demandé (défaut `openid profile email`) | ❌ Non |
-| `OIDC_INTERNAL_ISSUER` | URL de l'issuer joignable par le conteneur, si différente de `OIDC_ISSUER` (déploiement Docker avec IdP sur le même réseau) | ❌ Non |
+| `OIDC_ENABLED` | Enables OIDC authentication (`true`/`false`) | ❌ No |
+| `OIDC_ISSUER` | URL of the OIDC provider (e.g. Keycloak realm) | ✅ If `OIDC_ENABLED=true` |
+| `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | OIDC client credentials | ✅ If `OIDC_ENABLED=true` |
+| `OIDC_REDIRECT_URI` | Callback URL, must be registered on the provider side | ✅ If `OIDC_ENABLED=true` |
+| `OIDC_POST_LOGOUT_REDIRECT_URI` | Redirect URL after RP-initiated logout | ❌ No |
+| `OIDC_DISABLE_BASIC_AUTH` | Hides the email/password form (`true`/`false`) | ❌ No |
+| `OIDC_EMAIL_CLAIM` / `OIDC_NAME_CLAIM` / `OIDC_USERNAME_CLAIM` | Token claim mapping (defaults: `email`, `name`, `preferred_username`) | ❌ No |
+| `OIDC_GROUPS_CLAIM` / `OIDC_ROLES_CLAIM` | Optional sync of local groups/roles | ❌ No |
+| `OIDC_SIGNATURE_ALGORITHMS` | Token signature algorithm (default `RS256`) | ❌ No |
+| `OIDC_SCOPE` | Requested scope (default `openid profile email`) | ❌ No |
+| `OIDC_INTERNAL_ISSUER` | Issuer URL reachable by the container, if different from `OIDC_ISSUER` (Docker deployment with the IdP on the same network) | ❌ No |
 
-Guide de configuration complet :
-[`guides/ADMIN_GUIDE.md`](../guides/ADMIN_GUIDE.md#configuration-ssooidc).
+Full configuration guide:
+[`guides/ADMIN_GUIDE.md`](../guides/ADMIN_GUIDE.md#ssooidc-configuration).
 
 ---
 
-## ⚠️ Configuration des Erreurs
+## ⚠️ Error Configuration
 
-| Variable | Type | Défaut | Description | Obligatoire |
+| Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
-| `DEBUG_ERRORS` | booléen | `false` | **DANGER** : Affiche les détails des erreurs (stack traces). Ne jamais activer en production ! | ❌ Non |
-| `SHOW_CUSTOM_ERROR_PAGES` | booléen | `true` | Affiche les pages d'erreur personnalisées | ❌ Non |
-| `ERROR_500_MESSAGE` | string | `"Une erreur interne du serveur s'est produite. Veuillez reessayer plus tard."` | Message personnalisé pour les erreurs 500 | ❌ Non |
-| `ERROR_503_MESSAGE` | string | `"Service temporairement indisponible. Veuillez reessayer dans quelques instants."` | Message personnalisé pour les erreurs 503 | ❌ Non |
-| `ERROR_503_RETRY_AFTER` | entier | `300` | Délai de réessai pour les erreurs 503 (en secondes) | ❌ Non |
+| `DEBUG_ERRORS` | boolean | `false` | **DANGER**: Shows error details (stack traces). Never enable in production! | ❌ No |
+| `SHOW_CUSTOM_ERROR_PAGES` | boolean | `true` | Shows custom error pages | ❌ No |
+| `ERROR_500_MESSAGE` | string | `"Une erreur interne du serveur s'est produite. Veuillez reessayer plus tard."` | Custom message for 500 errors | ❌ No |
+| `ERROR_503_MESSAGE` | string | `"Service temporairement indisponible. Veuillez reessayer dans quelques instants."` | Custom message for 503 errors | ❌ No |
+| `ERROR_503_RETRY_AFTER` | integer | `300` | Retry delay for 503 errors (in seconds) | ❌ No |
 
 ---
 
-## 📝 Configuration du Logging
+## 📝 Logging Configuration
 
-> ⚠️ Cette section a été corrigée le 16 juillet 2026 (chantier audit trail, voir
-> CLAUDE.md "Audit trail") : elle documentait un ensemble de variables
+> ⚠️ This section was corrected on July 16, 2026 (audit trail effort, see
+> CLAUDE.md "Audit trail"): it used to document a set of variables
 > (`LOG_DIR`, `LOG_FILE_SIZE`, `LOG_FILE_APP`/`LOG_FILE_ERRORS`/.../`LOG_LEVEL_*`,
-> `LOG_FORMAT`, `SYSLOG_*`, `LOG_FILTER_*`) qui n'ont jamais existé dans le code
-> (`app/utils/logging/logger.py`) — probablement un reliquat d'une conception
-> antérieure jamais implémentée. Seules les 4 variables ci-dessous sont
-> réellement lues.
+> `LOG_FORMAT`, `SYSLOG_*`, `LOG_FILTER_*`) that never existed in the code
+> (`app/utils/logging/logger.py`) — likely a leftover from an earlier
+> design that was never implemented. Only the 4 variables below are
+> actually read.
 
-| Variable | Type | Défaut | Description | Obligatoire |
+| Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
-| `LOG_LEVEL` | string | `INFO` | Niveau de log principal. Valeurs possibles : `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` | ❌ Non |
-| `LOG_FILE` | string | *(aucun)* | Chemin d'un fichier de log racine optionnel, en plus des fichiers `app.log`/`error.log`/`debug.log`/`http_errors.log`/`audit.log` toujours créés dans `logs/` (dossier fixe, non configurable) | ❌ Non |
-| `LOG_MAX_BYTES` | entier | `10485760` (10 Mo) | Taille maximale de chaque fichier de log avant rotation (`RotatingFileHandler`, s'applique à tous les fichiers de `logs/`, y compris `audit.log`) | ❌ Non |
-| `LOG_BACKUP_COUNT` | entier | `5` | Nombre de fichiers de backup conservés après rotation (`app.log.1`, `app.log.2`, ...) | ❌ Non |
+| `LOG_LEVEL` | string | `INFO` | Main log level. Possible values: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` | ❌ No |
+| `LOG_FILE` | string | *(none)* | Path to an optional root log file, in addition to the `app.log`/`error.log`/`debug.log`/`http_errors.log`/`audit.log` files always created under `logs/` (fixed directory, not configurable) | ❌ No |
+| `LOG_MAX_BYTES` | integer | `10485760` (10 MB) | Maximum size of each log file before rotation (`RotatingFileHandler`, applies to every file under `logs/`, including `audit.log`) | ❌ No |
+| `LOG_BACKUP_COUNT` | integer | `5` | Number of backup files kept after rotation (`app.log.1`, `app.log.2`, ...) | ❌ No |
 
-Le filtrage des données sensibles (masquage de `password=`/`token=`/`api_key=` dans
-les messages de log, `SensitiveDataFilter`) est toujours actif et n'est pas
-désactivable par variable d'environnement. `audit.log` (dans `logs/`) est
-alimenté par `AuditService.log()` — voir CLAUDE.md "Audit trail" pour la
-double écriture DB + fichier et la consultation via `/admin/audit-log`.
+Sensitive-data filtering (masking `password=`/`token=`/`api_key=` in log
+messages, `SensitiveDataFilter`) is always active and cannot be disabled
+via an environment variable. `audit.log` (under `logs/`) is written to by
+`AuditService.log()` — see CLAUDE.md "Audit trail" for the DB + file dual
+write and how to browse it via `/admin/audit-log`.
 
 ---
 
-## 🔒 Configuration de Sécurité
+## 🔒 Security Configuration
 
-| Variable | Type | Défaut | Description | Obligatoire |
+| Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
-| `SEND_FILE_MAX_AGE_DEFAULT` | entier | `0` | Désactive le cache pour les pages d'erreur (recommandé : `0`) | ❌ Non |
-| `CORS_ENABLED` | booléen | `false` | Active CORS (Cross-Origin Resource Sharing) | ❌ Non |
-| `RATE_LIMIT_ENABLED` | booléen | `true` | Active la limitation de débit (rate limiting) | ❌ Non |
-| `RATE_LIMIT_DEFAULT` | string | `"200 per day, 50 per hour"` | Limites de débit par défaut au format Flask-Limiter | ❌ Non |
-| `COMPRESS_ENABLED` | booléen | `true` | Active la compression Gzip des réponses | ❌ Non |
-| `COMPRESS_MIMETYPES` | liste | Voir code | Types MIME à compresser. Par défaut : `['text/html', 'text/css', 'text/xml', 'application/json', 'application/javascript']` | ❌ Non |
+| `SEND_FILE_MAX_AGE_DEFAULT` | integer | `0` | Disables caching for error pages (recommended: `0`) | ❌ No |
+| `CORS_ENABLED` | boolean | `false` | Enables CORS (Cross-Origin Resource Sharing) | ❌ No |
+| `RATE_LIMIT_ENABLED` | boolean | `true` | Enables rate limiting | ❌ No |
+| `RATE_LIMIT_DEFAULT` | string | `"200 per day, 50 per hour"` | Default rate limits in Flask-Limiter format | ❌ No |
+| `COMPRESS_ENABLED` | boolean | `true` | Enables Gzip compression of responses | ❌ No |
+| `COMPRESS_MIMETYPES` | list | See code | MIME types to compress. Default: `['text/html', 'text/css', 'text/xml', 'application/json', 'application/javascript']` | ❌ No |
 
 ---
 
-## 📊 Configuration des Données par Défaut
+## 📊 Default Data Configuration
 
-| Variable | Type | Défaut | Description | Obligatoire |
+| Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
-| `DEFAULT_ADMIN_EMAIL` | string | `admin@leviia.local` | Email de l'utilisateur admin par défaut | ❌ Non |
-| `DEFAULT_ADMIN_PASSWORD` | string | `admin123` | **DANGER** : Mot de passe de l'utilisateur admin par défaut. **Changez cette valeur après la première connexion !** | ❌ Non |
-| `DEFAULT_GROUP_NAME` | string | `Defaut` | Nom du groupe par défaut | ❌ Non |
-| `DEFAULT_GROUP_IN_SCHEDULE` | booléen | `true` | Le groupe par défaut fait partie du planning | ❌ Non |
-| `DEFAULT_GROUP_IN_ONCALL` | booléen | `true` | Le groupe par défaut fait partie des astreintes | ❌ Non |
+| `DEFAULT_ADMIN_EMAIL` | string | `admin@kairos.local` | Email of the default admin user | ❌ No |
+| `DEFAULT_ADMIN_PASSWORD` | string | `admin123` | **DANGER**: Password of the default admin user. **Change this value after the first login!** | ❌ No |
+| `DEFAULT_GROUP_NAME` | string | `Defaut` | Name of the default group | ❌ No |
+| `DEFAULT_GROUP_IN_SCHEDULE` | boolean | `true` | The default group is part of the schedule | ❌ No |
+| `DEFAULT_GROUP_IN_ONCALL` | boolean | `true` | The default group is part of the on-call rotation | ❌ No |
 
 ---
 
-## 📅 Configuration des Types de Shifts
+## 📅 Shift Type Configuration
 
-| Variable | Type | Défaut | Description | Obligatoire |
+| Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
-| `DEFAULT_SHIFT_TYPES` | JSON | Voir code | Types de shifts par défaut au format JSON. Exemple : `[{"name": "morning", "label": "07h-15h", "start_hour": 7, "end_hour": 15}, {"name": "afternoon", "label": "09h-17h", "start_hour": 9, "end_hour": 17}]` | ❌ Non |
+| `DEFAULT_SHIFT_TYPES` | JSON | See code | Default shift types in JSON format. Example: `[{"name": "morning", "label": "07h-15h", "start_hour": 7, "end_hour": 15}, {"name": "afternoon", "label": "09h-17h", "start_hour": 9, "end_hour": 17}]` | ❌ No |
 
-**Valeur par défaut :**
+**Default value:**
 ```json
 [
     {"name": "morning", "label": "07h-15h", "start_hour": 7, "end_hour": 15},
@@ -208,149 +209,147 @@ double écriture DB + fichier et la consultation via `/admin/audit-log`.
 
 ---
 
-## 📤 Configuration de l'Export ICS
+## 📤 ICS Export Configuration
 
-| Variable | Type | Défaut | Description | Obligatoire |
+| Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
-| `ICS_TOKEN_EXPIRY_DAYS` | entier | `365` | Durée de validité du token ICS en jours | ❌ Non |
+| `ICS_TOKEN_EXPIRY_DAYS` | integer | `365` | Validity duration of the ICS token in days | ❌ No |
 
-Les URL d'abonnement ICS affichées à l'utilisateur (page `/profile/ics-token`)
-utilisent `PUBLIC_BASE_URL` si définie (voir
-[🔐 Configuration de Base Flask](#-configuration-de-base-flask)), sinon
-`request.host_url` — pertinent derrière un reverse proxy.
+The ICS subscription URLs shown to the user (`/profile/ics-token` page)
+use `PUBLIC_BASE_URL` if set (see
+[🔐 Basic Flask Configuration](#-basic-flask-configuration)), otherwise
+`request.host_url` — relevant behind a reverse proxy.
 
 ---
 
-## 📧 Configuration des Notifications
+## 📧 Notification Configuration
 
-Rappels hebdomadaires par email (shifts + astreintes), envoyés par les
-scripts autonomes `scripts/send_shift_notifications.py` (dimanche, 24h
-avant le début des shifts du lundi) et
-`scripts/send_oncall_notifications.py` (jeudi, 24h avant le début de
-l'astreinte du vendredi 21h) - à déclencher via cron, pas par
-l'application Flask elle-même (voir `scripts/cron_example.sh`). Un seul
-email par semaine et par utilisateur (table `notification_log` en base,
-empêche les doublons si un script est relancé).
+Weekly email reminders (shifts + on-call), sent by the standalone scripts
+`scripts/send_shift_notifications.py` (Sunday, 24h before Monday's shifts
+start) and `scripts/send_oncall_notifications.py` (Thursday, 24h before
+Friday's 9 PM on-call start) — to be triggered via cron, not by the Flask
+application itself (see `scripts/cron_example.sh`). One email per week
+per user (`notification_log` table in the database, prevents duplicates
+if a script is rerun).
 
-| Variable | Type | Défaut | Description | Obligatoire |
+| Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
-| `NOTIFICATIONS_ENABLED` | booléen | `false` | Active l'envoi des notifications par email | ❌ Non |
-| `NOTIFICATION_FROM_EMAIL` | string | `""` | Adresse email de l'expéditeur | ❌ Non (requis si activé) |
-| `SMTP_HOST` | string | `""` | Serveur SMTP | ❌ Non (requis si activé) |
-| `SMTP_PORT` | entier | `587` | Port SMTP | ❌ Non |
-| `SMTP_USERNAME` | string | `""` | Nom d'utilisateur SMTP | ❌ Non |
-| `SMTP_PASSWORD` | string | `""` | Mot de passe SMTP | ❌ Non |
-| `SMTP_USE_TLS` | booléen | `true` | Utiliser TLS pour la connexion SMTP | ❌ Non |
-| `SMTP_TIMEOUT` | entier | `10` | Délai d'attente de connexion SMTP en secondes | ❌ Non |
-| `NOTIFICATION_APP_BASE_URL` | string | `""` | URL de base de l'app, pour le lien "voir le planning"/"voir les astreintes" dans les emails (omis si vide) | ❌ Non |
+| `NOTIFICATIONS_ENABLED` | boolean | `false` | Enables sending email notifications | ❌ No |
+| `NOTIFICATION_FROM_EMAIL` | string | `""` | Sender email address | ❌ No (required if enabled) |
+| `SMTP_HOST` | string | `""` | SMTP server | ❌ No (required if enabled) |
+| `SMTP_PORT` | integer | `587` | SMTP port | ❌ No |
+| `SMTP_USERNAME` | string | `""` | SMTP username | ❌ No |
+| `SMTP_PASSWORD` | string | `""` | SMTP password | ❌ No |
+| `SMTP_USE_TLS` | boolean | `true` | Use TLS for the SMTP connection | ❌ No |
+| `SMTP_TIMEOUT` | integer | `10` | SMTP connection timeout in seconds | ❌ No |
+| `NOTIFICATION_APP_BASE_URL` | string | `""` | Base URL of the app, for the "view schedule"/"view on-call" link in emails (omitted if empty) | ❌ No |
 
-Si `NOTIFICATIONS_ENABLED=false`, ou si `NOTIFICATION_FROM_EMAIL`/
-`SMTP_HOST` manquent, les deux scripts se terminent silencieusement
-sans rien envoyer (code de sortie 0).
+If `NOTIFICATIONS_ENABLED=false`, or if `NOTIFICATION_FROM_EMAIL`/
+`SMTP_HOST` are missing, both scripts exit silently without sending
+anything (exit code 0).
 
 ---
 
-## 💾 Configuration des Sauvegardes
+## 💾 Backup Configuration
 
-Sauvegarde de la base de données (locale et/ou S3/S3-compatible), gérée
-par `scripts/backup_database.py` - à déclencher via cron (voir
-`scripts/cron_example.sh`) ou depuis l'interface d'administration
-(`/admin/backups`). Voir [`deployment/BACKUP_GUIDE.md`](../deployment/BACKUP_GUIDE.md)
-pour le détail.
+Database backup (local and/or S3/S3-compatible), managed by
+`scripts/backup_database.py` — to be triggered via cron (see
+`scripts/cron_example.sh`) or from the admin interface
+(`/admin/backups`). See [`deployment/BACKUP_GUIDE.md`](../deployment/BACKUP_GUIDE.md)
+for details.
 
-| Variable | Type | Défaut | Description | Obligatoire |
+| Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
-| `BACKUP_ENABLED` | booléen | `false` | Active les sauvegardes (script cron *et* création manuelle depuis l'admin) | ❌ Non |
-| `BACKUP_LOCAL_ENABLED` | booléen | `true` | Active la sauvegarde locale | ❌ Non |
-| `BACKUP_LOCAL_DIR` | string | `backups` | Dossier de sauvegarde locale (en Docker, utilisez un chemin sous `/app/data` pour la persistance) | ❌ Non |
-| `BACKUP_S3_ENABLED` | booléen | `false` | Active la sauvegarde S3/S3-compatible (nécessite `boto3`) | ❌ Non |
-| `BACKUP_S3_BUCKET` | string | `""` | Nom du bucket S3 | ❌ Non (requis si activé) |
-| `BACKUP_S3_ENDPOINT` | string | `""` | Endpoint S3-compatible (MinIO, etc.) - vide pour AWS S3 | ❌ Non |
-| `BACKUP_S3_REGION` | string | `eu-west-1` | Région S3 | ❌ Non |
-| `BACKUP_S3_ACCESS_KEY` | string | `""` | Clé d'accès S3 | ❌ Non |
-| `BACKUP_S3_SECRET_KEY` | string | `""` | Clé secrète S3 | ❌ Non |
-| `BACKUP_S3_PREFIX` | string | `leviia-schedule` | Préfixe des clés S3 | ❌ Non |
-| `BACKUP_S3_USE_SSL` | booléen | `true` | Utiliser SSL pour la connexion S3 | ❌ Non |
-| `BACKUP_RETENTION_DAYS` | entier | `30` | Nombre de jours de rétention | ❌ Non |
-| `BACKUP_MAX_BACKUPS` | entier | `30` | Nombre maximal de sauvegardes conservées | ❌ Non |
-| `BACKUP_COMPRESS` | booléen | `true` | Compresser les sauvegardes locales (gzip) | ❌ Non |
-| `BACKUP_VERIFY` | booléen | `true` | Vérifier l'intégrité après création | ❌ Non |
-| `BACKUP_NOTIFY_ON_SUCCESS` | booléen | `false` | Envoyer un email en cas de succès (réutilise la config SMTP ci-dessus) | ❌ Non |
-| `BACKUP_NOTIFY_ON_FAILURE` | booléen | `true` | Envoyer un email en cas d'échec | ❌ Non |
-| `BACKUP_NOTIFICATION_EMAIL` | string | `""` | Destinataire des alertes de sauvegarde | ❌ Non (requis si notify activé) |
+| `BACKUP_ENABLED` | boolean | `false` | Enables backups (cron script *and* manual creation from the admin UI) | ❌ No |
+| `BACKUP_LOCAL_ENABLED` | boolean | `true` | Enables local backups | ❌ No |
+| `BACKUP_LOCAL_DIR` | string | `backups` | Local backup directory (in Docker, use a path under `/app/data` for persistence) | ❌ No |
+| `BACKUP_S3_ENABLED` | boolean | `false` | Enables S3/S3-compatible backups (requires `boto3`) | ❌ No |
+| `BACKUP_S3_BUCKET` | string | `""` | S3 bucket name | ❌ No (required if enabled) |
+| `BACKUP_S3_ENDPOINT` | string | `""` | S3-compatible endpoint (MinIO, etc.) — empty for AWS S3 | ❌ No |
+| `BACKUP_S3_REGION` | string | `eu-west-1` | S3 region | ❌ No |
+| `BACKUP_S3_ACCESS_KEY` | string | `""` | S3 access key | ❌ No |
+| `BACKUP_S3_SECRET_KEY` | string | `""` | S3 secret key | ❌ No |
+| `BACKUP_S3_PREFIX` | string | `kairos` | S3 key prefix | ❌ No |
+| `BACKUP_S3_USE_SSL` | boolean | `true` | Use SSL for the S3 connection | ❌ No |
+| `BACKUP_RETENTION_DAYS` | integer | `30` | Number of days of retention | ❌ No |
+| `BACKUP_MAX_BACKUPS` | integer | `30` | Maximum number of backups kept | ❌ No |
+| `BACKUP_COMPRESS` | boolean | `true` | Compress local backups (gzip) | ❌ No |
+| `BACKUP_VERIFY` | boolean | `true` | Verify integrity after creation | ❌ No |
+| `BACKUP_NOTIFY_ON_SUCCESS` | boolean | `false` | Send an email on success (reuses the SMTP config above) | ❌ No |
+| `BACKUP_NOTIFY_ON_FAILURE` | boolean | `true` | Send an email on failure | ❌ No |
+| `BACKUP_NOTIFICATION_EMAIL` | string | `""` | Recipient of backup alerts | ❌ No (required if notify is enabled) |
 
-Si `BACKUP_ENABLED=false`, le script cron se termine silencieusement
-(code de sortie 0) et l'interface d'administration refuse la création
-de nouvelles sauvegardes - les sauvegardes déjà existantes restent
-consultables/téléchargeables. Les alertes email réutilisent la
-configuration SMTP de la section Notifications ci-dessus, donc aussi
-soumises à `NOTIFICATIONS_ENABLED`.
+If `BACKUP_ENABLED=false`, the cron script exits silently (exit code 0)
+and the admin interface refuses to create new backups — existing backups
+remain viewable/downloadable. Email alerts reuse the SMTP configuration
+from the Notifications section above, so they're also subject to
+`NOTIFICATIONS_ENABLED`.
 
 ---
 
-## 🧹 Configuration du Nettoyage Automatique
+## 🧹 Automatic Cleanup Configuration
 
-| Variable | Type | Défaut | Description | Obligatoire |
+| Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
-| `DATA_CLEANUP_ENABLED` | booléen | `false` | **Désactivé par défaut pour la sécurité**. Active le nettoyage automatique des données | ❌ Non |
-| `DATA_CLEANUP_RETENTION` | string | `"365d"` | Durée de rétention des données. Formats supportés : `1y` (1 an), `6m` (6 mois), `30d` (30 jours), ou un nombre de jours | ❌ Non |
-| `DATA_CLEANUP_RETENTION_DAYS` | entier | `365` | Durée de rétention en jours (alternative à DATA_CLEANUP_RETENTION) | ❌ Non |
-| `DATA_CLEANUP_BATCH_SIZE` | entier | `1000` | Taille des lots pour la suppression | ❌ Non |
-| `DATA_CLEANUP_SCHEDULE` | string | `"0 0 * * *"` | Planification cron pour le nettoyage (par défaut : tous les jours à minuit) | ❌ Non |
+| `DATA_CLEANUP_ENABLED` | boolean | `false` | **Disabled by default for safety**. Enables automatic data cleanup | ❌ No |
+| `DATA_CLEANUP_RETENTION` | string | `"365d"` | Data retention duration. Supported formats: `1y` (1 year), `6m` (6 months), `30d` (30 days), or a plain number of days | ❌ No |
+| `DATA_CLEANUP_RETENTION_DAYS` | integer | `365` | Retention duration in days (alternative to DATA_CLEANUP_RETENTION) | ❌ No |
+| `DATA_CLEANUP_BATCH_SIZE` | integer | `1000` | Batch size for deletion | ❌ No |
+| `DATA_CLEANUP_SCHEDULE` | string | `"0 0 * * *"` | Cron schedule for cleanup (default: every day at midnight) | ❌ No |
 
-**Exemples de planification cron :**
+**Cron schedule examples:**
 ```bash
-# Tous les jours à minuit
+# Every day at midnight
 DATA_CLEANUP_SCHEDULE="0 0 * * *"
 
-# Tous les lundis à 2h
+# Every Monday at 2 AM
 DATA_CLEANUP_SCHEDULE="0 2 * * 1"
 
-# Tous les 1er du mois à minuit
+# The 1st of every month at midnight
 DATA_CLEANUP_SCHEDULE="0 0 1 * *"
 ```
 
 ---
 
-## 📈 Configuration du Monitoring
+## 📈 Monitoring Configuration
 
-| Variable | Type | Défaut | Description | Obligatoire |
+| Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
-| `PROMETHEUS_ENABLED` | booléen | `false` | Active le blueprint `app/utils/prometheus_metrics.py` (endpoint `/metrics` au format Prometheus). Désactivé par défaut | ❌ Non |
+| `PROMETHEUS_ENABLED` | boolean | `false` | Enables the `app/utils/prometheus_metrics.py` blueprint (`/metrics` endpoint in Prometheus format). Disabled by default | ❌ No |
 
-> Liveness/readiness pour Kubernetes : `/health` et `/ready` sont
-> toujours actifs (`app/utils/health.py`, enregistrés
-> inconditionnellement), indépendamment de `PROMETHEUS_ENABLED`.
+> Liveness/readiness for Kubernetes: `/health` and `/ready` are always
+> active (`app/utils/health.py`, registered unconditionally), regardless
+> of `PROMETHEUS_ENABLED`.
 
-### Variables supprimées (code mort retiré en Phase 4)
+### Removed variables (dead code removed in Phase 4)
 
-Les versions précédentes de ce document listaient des sections
-**Cache** (`CACHE_TYPE`, `CACHE_DEFAULT_TIMEOUT`, `CACHE_REDIS_URL`,
-`CACHE_ENABLED`), **Pagination**, **Lazy Loading**, **Optimisation des
-Requêtes** et **Monitoring des Performances** (`PAGINATION_*`,
+Previous versions of this document listed sections for **Cache**
+(`CACHE_TYPE`, `CACHE_DEFAULT_TIMEOUT`, `CACHE_REDIS_URL`,
+`CACHE_ENABLED`), **Pagination**, **Lazy Loading**, **Query
+Optimization**, and **Performance Monitoring** (`PAGINATION_*`,
 `LAZY_LOAD*`, `QUERY_OPTIMIZATION_*`, `PERFORMANCE_MONITORING_ENABLED`,
-`SLOW_QUERY_THRESHOLD`, etc.). Ces variables sont **retirées de cette
-documentation** : `app/utils/cache/` (dont `cache_manager.init_cache()`)
-et `config_performance.py` ont tous deux été supprimés comme code mort
-(recherche exhaustive confirmant zéro import restant dans `app/` ou
-`run.py` — voir CLAUDE.md "utils/ layout" et `report/Phase 4:
-AMÉLIORATION DES TESTS.md`). Les définir dans `.env` n'a aujourd'hui
-**aucun effet**.
+`SLOW_QUERY_THRESHOLD`, etc.). These variables are **removed from this
+documentation**: `app/utils/cache/` (including
+`cache_manager.init_cache()`) and `config_performance.py` were both
+removed as dead code (an exhaustive search confirmed zero remaining
+imports in `app/` or `run.py` — see CLAUDE.md "utils/ layout" and
+`report/Phase 4: AMÉLIORATION DES TESTS.md`). Setting them in `.env`
+today has **no effect**.
 
 ---
 
-## 🎯 Configuration par Environnement
+## 🎯 Configuration by Environment
 
-`create_app()` (`app/__init__.py`) charge une seule classe de configuration réelle,
-`app.config.base.Config`, quel que soit `FLASK_ENV` — cette variable ne sert qu'à
-`docker/entrypoint.sh` pour choisir entre Gunicorn (`FLASK_ENV=production`) et le
-serveur de développement Flask (toute autre valeur), elle ne sélectionne aucune
-classe de configuration. Tous les réglages (`DEBUG`, `LOG_LEVEL`,
-`SQLALCHEMY_ECHO`, etc.) se pilotent donc directement via leurs propres variables
-d'environnement respectives (voir tableau ci-dessus), pas via un profil
-développement/production prédéfini.
+`create_app()` (`app/__init__.py`) loads a single real configuration
+class, `app.config.base.Config`, regardless of `FLASK_ENV` — this
+variable is only used by `docker/entrypoint.sh` to choose between
+Gunicorn (`FLASK_ENV=production`) and the Flask development server
+(any other value); it does not select any configuration class. All
+settings (`DEBUG`, `LOG_LEVEL`, `SQLALCHEMY_ECHO`, etc.) are therefore
+controlled directly via their own respective environment variables (see
+table above), not via a predefined development/production profile.
 
-### Test (`TestingConfig`)
+### Testing (`TestingConfig`)
 - `TESTING = True`
 - `SQLALCHEMY_DATABASE_URI = sqlite:///:memory:`
 - `WTF_CSRF_ENABLED = False`
@@ -359,31 +358,31 @@ développement/production prédéfini.
 - `RATE_LIMIT_ENABLED = False`
 - `COMPRESS_ENABLED = False`
 
-**Activation :**
+**Activation:**
 ```bash
 FLASK_ENV=testing
 ```
 
 ---
 
-## 📝 Exemples de Configuration
+## 📝 Configuration Examples
 
-### Configuration pour la Production avec PostgreSQL
+### Production configuration with PostgreSQL
 
 ```bash
-# Configuration de base
+# Base configuration
 FLASK_ENV=production
-SECRET_KEY=votre_cle_secrete_aleatoire_ici
+SECRET_KEY=your_random_secret_key_here
 
-# Base de données PostgreSQL
-DATABASE_URL=postgresql://leviia_user:motdepasse_secure@localhost:5432/leviia_db
+# PostgreSQL database
+DATABASE_URL=postgresql://kairos_user:secure_password@localhost:5432/kairos_db
 
 # Logging
 LOG_LEVEL=WARNING
 SYSLOG_ENABLED=true
 SYSLOG_ADDRESS=/dev/log
 
-# Sécurité
+# Security
 SESSION_COOKIE_SECURE=true
 SESSION_COOKIE_HTTPONLY=true
 SESSION_COOKIE_SAMESITE=Lax
@@ -394,45 +393,45 @@ DEBUG_ERRORS=false
 CACHE_TYPE=redis
 CACHE_REDIS_URL=redis://localhost:6379/0
 
-# Nettoyage automatique (optionnel)
+# Automatic cleanup (optional)
 DATA_CLEANUP_ENABLED=true
 DATA_CLEANUP_RETENTION=1y
 DATA_CLEANUP_SCHEDULE="0 0 * * *"
 ```
 
-### Configuration pour le Développement
+### Development configuration
 
 ```bash
 FLASK_ENV=development
 SECRET_KEY=dev_secret_key
 
-# Base de données SQLite
+# SQLite database
 DATABASE_URL=sqlite:///app.db
 
-# Logging détaillé
+# Verbose logging
 LOG_LEVEL=DEBUG
 SQLALCHEMY_ECHO=true
 DEBUG_ERRORS=true
 
-# Désactiver la sécurité pour le développement
+# Disable security for development
 SESSION_COOKIE_SECURE=false
 CORS_ENABLED=true
 
-# Désactiver le cache en développement
+# Disable cache in development
 CACHE_ENABLED=false
 ```
 
-### Configuration pour les Tests
+### Test configuration
 
 ```bash
 FLASK_ENV=testing
 FLASK_TESTING=true
 SECRET_KEY=test_secret_key
 
-# Base de données en mémoire
+# In-memory database
 DATABASE_URL=sqlite:///:memory:
 
-# Désactiver les fonctionnalités de production
+# Disable production features
 WTF_CSRF_ENABLED=false
 RATE_LIMIT_ENABLED=false
 COMPRESS_ENABLED=false
@@ -443,7 +442,7 @@ LOG_LEVEL=DEBUG
 DEBUG_ERRORS=true
 ```
 
-### Configuration avec Redis
+### Configuration with Redis
 
 ```bash
 CACHE_TYPE=redis
@@ -453,90 +452,90 @@ CACHE_DEFAULT_TIMEOUT=300
 
 ---
 
-## ⚠️ Bonnes Pratiques
+## ⚠️ Best Practices
 
-### 🔐 Sécurité
+### 🔐 Security
 
-1. **SECRET_KEY** : Toujours utiliser une clé longue et aléatoire en production. Ne jamais commiter cette valeur dans Git.
+1. **SECRET_KEY**: Always use a long, random key in production. Never commit this value to Git.
    ```bash
-   # Générer une clé sécurisée
+   # Generate a secure key
    python -c "import secrets; print(secrets.token_hex(32))"
    ```
 
-2. **DEFAULT_ADMIN_PASSWORD** : Toujours changer le mot de passe admin après la première connexion.
+2. **DEFAULT_ADMIN_PASSWORD**: Always change the admin password after the first login.
 
-3. **Base de données** : En production, ne jamais utiliser SQLite avec plusieurs processus workers. Utilisez PostgreSQL ou MySQL.
+3. **Database**: In production, never use SQLite with multiple worker processes. Use PostgreSQL or MySQL.
 
-4. **Variables sensibles** : Ne jamais stocker de mots de passe ou clés secrètes dans le fichier `.env` commité dans Git. Utilisez les variables d'environnement du système ou un service de gestion des secrets.
+4. **Sensitive variables**: Never store passwords or secret keys in a `.env` file committed to Git. Use system environment variables or a secrets management service.
 
-5. **HTTPS** : En production, toujours utiliser HTTPS et activer `SESSION_COOKIE_SECURE=true`.
+5. **HTTPS**: In production, always use HTTPS and enable `SESSION_COOKIE_SECURE=true`.
 
-### 📁 Fichier .env
+### 📁 .env file
 
-1. **Création** : Copiez le fichier `.env.example` en `.env` et modifiez les valeurs :
+1. **Creation**: Copy the `.env.example` file to `.env` and edit the values:
    ```bash
    cp .env.example .env
    ```
 
-2. **Git** : Ajoutez `.env` à votre fichier `.gitignore` pour éviter de commiter des informations sensibles.
+2. **Git**: Add `.env` to your `.gitignore` file to avoid committing sensitive information.
 
-3. **Production** : En production, il est recommandé de définir les variables directement dans l'environnement du système plutôt que d'utiliser un fichier `.env`.
+3. **Production**: In production, it's recommended to set variables directly in the system environment rather than using a `.env` file.
 
 ### 🐳 Docker
 
-Pour les environnements Docker, vous pouvez :
+For Docker environments, you can:
 
-1. **Monter le fichier .env** :
+1. **Mount the .env file**:
    ```yaml
    # docker-compose.yml
    services:
      app:
-       image: leviia-schedule
+       image: kairos
        env_file:
          - .env
    ```
 
-2. **Passer les variables directement** :
+2. **Pass the variables directly**:
    ```yaml
    # docker-compose.yml
    services:
      app:
-       image: leviia-schedule
+       image: kairos
        environment:
-         - SECRET_KEY=votre_cle
-         - DATABASE_URL=postgresql://user:pass@db:5432/leviia
+         - SECRET_KEY=your_key
+         - DATABASE_URL=postgresql://user:pass@db:5432/kairos
    ```
 
-3. **Utiliser Docker secrets** pour les informations sensibles.
+3. **Use Docker secrets** for sensitive information.
 
-### 🔄 Variables Booléennes
+### 🔄 Boolean Variables
 
-Les variables booléennes acceptent les valeurs suivantes (insensibles à la casse) :
-- Vrai : `true`, `True`, `TRUE`, `1`, `yes`, `Yes`, `YES`, `y`, `on`
-- Faux : `false`, `False`, `FALSE`, `0`, `no`, `No`, `NO`, `n`, `off`
+Boolean variables accept the following values (case-insensitive):
+- True: `true`, `True`, `TRUE`, `1`, `yes`, `Yes`, `YES`, `y`, `on`
+- False: `false`, `False`, `FALSE`, `0`, `no`, `No`, `NO`, `n`, `off`
 
-### 📊 Types de Données
+### 📊 Data Types
 
-| Type | Format | Exemple |
+| Type | Format | Example |
 |------|--------|---------|
-| Booléen | true/false, 1/0, yes/no | `true`, `false`, `1`, `0` |
-| Entier | Nombre entier | `300`, `86400` |
-| Float | Nombre décimal | `0.75`, `1.5` |
-| String | Texte | `"leviia:"`, `"INFO"` |
-| JSON | Objet ou tableau JSON | `{"key": "value"}`, `[1, 2, 3]` |
-| Liste | Valeurs séparées par des virgules | `"password,secret,token"` |
+| Boolean | true/false, 1/0, yes/no | `true`, `false`, `1`, `0` |
+| Integer | Whole number | `300`, `86400` |
+| Float | Decimal number | `0.75`, `1.5` |
+| String | Text | `"kairos:"`, `"INFO"` |
+| JSON | JSON object or array | `{"key": "value"}`, `[1, 2, 3]` |
+| List | Comma-separated values | `"password,secret,token"` |
 
 ---
 
-## 📚 Références
+## 📚 References
 
-- [Documentation Flask](https://flask.palletsprojects.com/)
-- [Documentation SQLAlchemy](https://www.sqlalchemy.org/)
-- [Documentation python-dotenv](https://saurabh-kumar.com/python-dotenv/)
-- [`app/config/`](../../app/config/) — configuration active, chargée par `create_app()`
-- [`.env.example`](../../.env.example) — référence canonique, toujours à jour
+- [Flask Documentation](https://flask.palletsprojects.com/)
+- [SQLAlchemy Documentation](https://www.sqlalchemy.org/)
+- [python-dotenv Documentation](https://saurabh-kumar.com/python-dotenv/)
+- [`app/config/`](../../app/config/) — active configuration, loaded by `create_app()`
+- [`.env.example`](../../.env.example) — canonical reference, always up to date
 
 ---
 
-*Dernière mise à jour : 2026-07 (Phase 5)*
-*Ce fichier documente les variables d'environnement effectivement lues par l'application. En cas de doute, `.env.example` fait foi.*
+*Last updated: 2026-07 (Phase 5)*
+*This file documents the environment variables actually read by the application. When in doubt, `.env.example` is authoritative.*

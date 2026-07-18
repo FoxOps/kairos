@@ -1,5 +1,5 @@
 """
-Configuration module for Leviia Schedule.
+Configuration module for Kairos.
 
 Config is the only class create_app() actually loads in practice (default
 when no config_object is passed - see app/__init__.py). TestingConfig is

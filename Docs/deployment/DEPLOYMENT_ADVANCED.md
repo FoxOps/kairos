@@ -1,24 +1,24 @@
-# Guide Avancé : Déploiement avec PostgreSQL, MySQL/MariaDB et Redis
+# Advanced Guide: Deploying with PostgreSQL, MySQL/MariaDB and Redis
 
-Ce guide explique comment étendre la configuration Docker de base pour utiliser **PostgreSQL** ou **MySQL/MariaDB** comme base de données et **Redis** comme cache, une fois que vous maîtrisez le déploiement de base avec SQLite.
-
----
-
-## 📋 Prérequis
-
-- Avoir déployé avec succès Leviia Schedule avec SQLite (voir [docs/docker.md](docker.md))
-- Comprendre les concepts de base de Docker et Docker Compose
-- Avoir accès à un serveur avec Docker installé
+This guide explains how to extend the base Docker configuration to use **PostgreSQL** or **MySQL/MariaDB** as the database and **Redis** as the cache, once you're comfortable with the basic SQLite deployment.
 
 ---
 
-## 🏗️ Architecture Étendue
+## 📋 Prerequisites
+
+- Successfully deployed Kairos with SQLite (see [docs/docker.md](docker.md))
+- Understand basic Docker and Docker Compose concepts
+- Have access to a server with Docker installed
+
+---
+
+## 🏗️ Extended Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        Application Web                         │
+│                        Web Application                        │
 │  ┌─────────────────────────────────────────────────────────┐  │
-│  │              Leviia Schedule (Gunicorn)                 │  │
+│  │                   Kairos (Gunicorn)                      │  │
 │  └─────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
          │                          │
@@ -31,11 +31,11 @@ Ce guide explique comment étendre la configuration Docker de base pour utiliser
 
 ---
 
-## 📦 Étapes pour ajouter PostgreSQL
+## 📦 Steps to add PostgreSQL
 
-### 1. Créer un fichier `docker-compose.postgres.yml`
+### 1. Create a `docker-compose.postgres.yml` file
 
-Créez un nouveau fichier dans le dossier `docker/` :
+Create a new file in the `docker/` folder:
 
 ```yaml
 # docker/docker-compose.postgres.yml
@@ -44,18 +44,18 @@ version: '3.8'
 services:
   db:
     image: postgres:15-alpine
-    container_name: leviia-db
+    container_name: kairos-db
     restart: unless-stopped
     environment:
-      - POSTGRES_DB=${POSTGRES_DB:-leviia}
-      - POSTGRES_USER=${POSTGRES_USER:-leviia}
+      - POSTGRES_DB=${POSTGRES_DB:-kairos}
+      - POSTGRES_USER=${POSTGRES_USER:-kairos}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changez-moi}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - leviia-net
+      - kairos-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-leviia} -d ${POSTGRES_DB:-leviia}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kairos} -d ${POSTGRES_DB:-kairos}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -67,13 +67,13 @@ volumes:
     driver: local
 
 networks:
-  leviia-net:
+  kairos-net:
     external: true
 ```
 
-### 2. Modifier le service web pour utiliser PostgreSQL
+### 2. Modify the web service to use PostgreSQL
 
-Modifiez votre `docker/docker-compose.yml` pour ajouter la dépendance à PostgreSQL :
+Edit your `docker/docker-compose.yml` to add the PostgreSQL dependency:
 
 ```yaml
 # docker/docker-compose.yml
@@ -84,14 +84,14 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    container_name: leviia-web
+    container_name: kairos-web
     restart: unless-stopped
     ports:
       - "5000:5000"
     environment:
       - FLASK_ENV=${FLASK_ENV:-production}
       - SECRET_KEY=${SECRET_KEY:-changez-moi}
-      - DATABASE_URL=${DATABASE_URL:-postgresql://leviia:changez-moi@db:5432/leviia}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://kairos:changez-moi@db:5432/kairos}
       - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-changez-moi}
     volumes:
       - ../data:/app/data
@@ -100,69 +100,69 @@ services:
       db:
         condition: service_healthy
     networks:
-      - leviia-net
+      - kairos-net
 
 networks:
-  leviia-net:
+  kairos-net:
     driver: bridge
 ```
 
-### 3. Configurer les variables d'environnement
+### 3. Configure environment variables
 
-Ajoutez ces variables à votre fichier `.env` :
+Add these variables to your `.env` file:
 
 ```env
-# Configuration PostgreSQL
-POSTGRES_DB=leviia
-POSTGRES_USER=leviia
+# PostgreSQL configuration
+POSTGRES_DB=kairos
+POSTGRES_USER=kairos
 POSTGRES_PASSWORD=votre_mot_de_passe_sécurisé
-DATABASE_URL=postgresql://leviia:votre_mot_de_passe_sécurisé@db:5432/leviia
+DATABASE_URL=postgresql://kairos:votre_mot_de_passe_sécurisé@db:5432/kairos
 
-# Configuration production
+# Production configuration
 FLASK_ENV=production
 SECRET_KEY=votre_clé_secrète
 DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe_admin
 ```
 
-⚠️ **Important** : Générez des mots de passe sécurisés :
+⚠️ **Important**: Generate secure passwords:
 ```bash
-# Générer un mot de passe PostgreSQL
+# Generate a PostgreSQL password
 python -c "import secrets; print(secrets.token_urlsafe(24))"
 
-# Générer une clé secrète Flask
+# Generate a Flask secret key
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-### 4. Démarrer les services
+### 4. Start the services
 
 ```bash
-# Démarrer PostgreSQL et l'application
+# Start PostgreSQL and the application
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.postgres.yml up -d
 ```
 
-### 5. Vérifier le fonctionnement
+### 5. Verify it's working
 
 ```bash
-# Vérifier que PostgreSQL est prêt
+# Check that PostgreSQL is ready
 docker compose logs db
 
-# Vérifier que l'application se connecte
+# Check that the application connects
 docker compose logs web
 ```
 
 ---
 
-## 🐬 Ajouter MySQL/MariaDB (dev/test local)
+## 🐬 Add MySQL/MariaDB (local dev/test)
 
-Ce guide couvre le cas d'un MySQL/MariaDB **local géré par Docker Compose**,
-utile en développement/test — en miroir de la section PostgreSQL ci-dessus.
-Pour se connecter à un serveur MySQL/MariaDB **externe déjà existant** (le
-cas le plus courant en production), voir directement
-[`DEPLOYMENT_GUIDE.md` section 7.3.1](DEPLOYMENT_GUIDE.md#731-cas-recommandé--serveur-mysqlmariadb-externe) —
-aucun overlay Docker n'est nécessaire dans ce cas, seule la variable
-`DATABASE_URL` du `.env` change.
+This guide covers the case of a **locally Docker-Compose-managed** MySQL/MariaDB,
+useful for development/testing — mirroring the PostgreSQL section above.
+To connect to an **already existing external** MySQL/MariaDB server (the
+most common case in production), see directly
+[`DEPLOYMENT_GUIDE.md` section 7.3.1](DEPLOYMENT_GUIDE.md#731-recommended-case-external-mysqlmariadb-server) —
+no Docker overlay is necessary in that case, only the `DATABASE_URL`
+variable in `.env` changes.
 
-### 1. Créer un fichier `docker-compose.mysql.yml`
+### 1. Create a `docker-compose.mysql.yml` file
 
 ```yaml
 # docker/docker-compose.mysql.yml
@@ -171,17 +171,17 @@ version: '3.8'
 services:
   db:
     image: mariadb:11
-    container_name: leviia-db
+    container_name: kairos-db
     restart: unless-stopped
     environment:
-      - MARIADB_DATABASE=${MARIADB_DATABASE:-leviia}
-      - MARIADB_USER=${MARIADB_USER:-leviia}
+      - MARIADB_DATABASE=${MARIADB_DATABASE:-kairos}
+      - MARIADB_USER=${MARIADB_USER:-kairos}
       - MARIADB_PASSWORD=${MARIADB_PASSWORD:-changez-moi}
       - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD:-changez-moi-aussi}
     volumes:
       - mariadb_data:/var/lib/mysql
     networks:
-      - leviia-net
+      - kairos-net
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
@@ -195,26 +195,26 @@ volumes:
     driver: local
 
 networks:
-  leviia-net:
+  kairos-net:
     external: true
 ```
 
-### 2. Configurer les variables d'environnement
+### 2. Configure environment variables
 
 ```env
-# Configuration MariaDB
-MARIADB_DATABASE=leviia
-MARIADB_USER=leviia
+# MariaDB configuration
+MARIADB_DATABASE=kairos
+MARIADB_USER=kairos
 MARIADB_PASSWORD=votre_mot_de_passe_sécurisé
 MARIADB_ROOT_PASSWORD=un_autre_mot_de_passe_sécurisé
-DATABASE_URL=mariadb://leviia:votre_mot_de_passe_sécurisé@db:3306/leviia
+DATABASE_URL=mariadb://kairos:votre_mot_de_passe_sécurisé@db:3306/kairos
 ```
 
-Aucune modification du `Dockerfile`/de l'image `leviia-web` n'est
-nécessaire : le driver `PyMySQL` est déjà inclus dans
-`docker/requirements.txt`, 100% pur Python, sans dépendance système.
+No changes to the `Dockerfile`/the `kairos-web` image are
+necessary: the `PyMySQL` driver is already included in
+`docker/requirements.txt`, 100% pure Python, with no system dependency.
 
-### 3. Démarrer les services
+### 3. Start the services
 
 ```bash
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.mysql.yml up -d
@@ -222,9 +222,9 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.mysql.yml u
 
 ---
 
-## 🔴 Ajouter Redis pour le cache
+## 🔴 Add Redis for caching
 
-### 1. Créer un fichier `docker-compose.redis.yml`
+### 1. Create a `docker-compose.redis.yml` file
 
 ```yaml
 # docker/docker-compose.redis.yml
@@ -233,13 +233,13 @@ version: '3.8'
 services:
   redis:
     image: redis:7-alpine
-    container_name: leviia-redis
+    container_name: kairos-redis
     restart: unless-stopped
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
     networks:
-      - leviia-net
+      - kairos-net
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -251,22 +251,22 @@ volumes:
     driver: local
 
 networks:
-  leviia-net:
+  kairos-net:
     external: true
 ```
 
-### 2. Configurer l'application pour utiliser Redis
+### 2. Configure the application to use Redis
 
-Modifiez votre `docker/docker-compose.yml` pour ajouter la configuration Redis :
+Edit your `docker/docker-compose.yml` to add the Redis configuration:
 
 ```yaml
 services:
   web:
-    # ... configuration existante ...
+    # ... existing configuration ...
     environment:
       - FLASK_ENV=${FLASK_ENV:-production}
       - SECRET_KEY=${SECRET_KEY:-changez-moi}
-      - DATABASE_URL=${DATABASE_URL:-postgresql://leviia:changez-moi@db:5432/leviia}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://kairos:changez-moi@db:5432/kairos}
       - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-changez-moi}
       - CACHE_TYPE=RedisCache
       - CACHE_REDIS_URL=redis://redis:6379/0
@@ -275,13 +275,13 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    # ... reste de la configuration ...
+    # ... rest of the configuration ...
 ```
 
-### 3. Démarrer avec Redis
+### 3. Start with Redis
 
 ```bash
-# Démarrer PostgreSQL, Redis et l'application
+# Start PostgreSQL, Redis and the application
 docker compose -f docker/docker-compose.yml \
   -f docker/docker-compose.postgres.yml \
   -f docker/docker-compose.redis.yml up -d
@@ -289,27 +289,27 @@ docker compose -f docker/docker-compose.yml \
 
 ---
 
-## 🌐 Configuration Complète de Production
+## 🌐 Full Production Configuration
 
-### Fichier `.env` pour la production
+### `.env` file for production
 
 ```env
-# Configuration de base
+# Base configuration
 FLASK_ENV=production
 SECRET_KEY=votre_clé_secrète_générée
 PREFERRED_URL_SCHEME=https
 
-# Base de données PostgreSQL
-POSTGRES_DB=leviia
-POSTGRES_USER=leviia
+# PostgreSQL database
+POSTGRES_DB=kairos
+POSTGRES_USER=kairos
 POSTGRES_PASSWORD=votre_mot_de_passe_postgres
-DATABASE_URL=postgresql://leviia:votre_mot_de_passe_postgres@db:5432/leviia
+DATABASE_URL=postgresql://kairos:votre_mot_de_passe_postgres@db:5432/kairos
 
-# Cache Redis
+# Redis cache
 CACHE_TYPE=RedisCache
 CACHE_REDIS_URL=redis://redis:6379/0
 
-# Sécurité
+# Security
 SESSION_COOKIE_SECURE=true
 SESSION_COOKIE_HTTPONLY=true
 SESSION_COOKIE_SAMESITE=Lax
@@ -318,13 +318,13 @@ RATE_LIMIT_ENABLED=true
 COMPRESS_ENABLED=true
 WTF_CSRF_ENABLED=true
 
-# Données par défaut
+# Default data
 DEFAULT_ADMIN_EMAIL=admin@votre-domaine.com
 DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe_admin_sécurisé
 DEFAULT_GROUP_NAME=Defaut
 ```
 
-### Commande de démarrage complète
+### Full startup command
 
 ```bash
 docker compose -f docker/docker-compose.yml \
@@ -334,25 +334,25 @@ docker compose -f docker/docker-compose.yml \
 
 ---
 
-## 🔧 Configuration de Gunicorn pour la Production
+## 🔧 Gunicorn Configuration for Production
 
-Par défaut, l'image utilise Gunicorn avec 1 worker pour SQLite. Pour PostgreSQL, vous pouvez augmenter le nombre de workers.
+By default, the image uses Gunicorn with 1 worker for SQLite. For PostgreSQL, you can increase the number of workers.
 
-### Modifier le script d'entrée
+### Modify the entrypoint script
 
-Éditez `docker/entrypoint.sh` et modifiez la section production :
+Edit `docker/entrypoint.sh` and modify the production section:
 
 ```bash
 if [ "$FLASK_ENV" = "production" ]; then
-    # Pour PostgreSQL avec plus de workers
+    # For PostgreSQL with more workers
     exec gunicorn --bind 0.0.0.0:5000 --workers 4 --threads 2 --timeout 120 run:app
     
-    # Pour SQLite (1 worker max)
+    # For SQLite (1 worker max)
     # exec gunicorn --bind 0.0.0.0:5000 --workers 1 --threads 4 --timeout 120 run:app
 fi
 ```
 
-### Reconstruire l'image
+### Rebuild the image
 
 ```bash
 docker compose -f docker/docker-compose.yml build --no-cache
@@ -360,70 +360,70 @@ docker compose -f docker/docker-compose.yml build --no-cache
 
 ---
 
-## 📊 Comparaison des Configurations
+## 📊 Configuration Comparison
 
-| Configuration | Base de données | Cache | Workers Gunicorn | Complexité |
+| Configuration | Database | Cache | Gunicorn Workers | Complexity |
 |---------------|----------------|-------|------------------|------------|
-| **De base** | SQLite | ❌ Non | 1 | ⭐ Très simple |
-| **PostgreSQL** | PostgreSQL | ❌ Non | 1 | ⭐⭐ Simple |
-| **PostgreSQL + Redis** | PostgreSQL | ✅ Redis | 4 | ⭐⭐⭐ Moyenne |
-| **Production complète** | PostgreSQL | ✅ Redis | 4 | ⭐⭐⭐ Moyenne |
+| **Basic** | SQLite | ❌ No | 1 | ⭐ Very simple |
+| **PostgreSQL** | PostgreSQL | ❌ No | 1 | ⭐⭐ Simple |
+| **PostgreSQL + Redis** | PostgreSQL | ✅ Redis | 4 | ⭐⭐⭐ Medium |
+| **Full production** | PostgreSQL | ✅ Redis | 4 | ⭐⭐⭐ Medium |
 
 ---
 
-## 🔒 Sécurité en Production
+## 🔒 Production Security
 
-### 1. Ne jamais exposer les ports des services internes
+### 1. Never expose internal service ports
 
-❌ **À éviter** :
+❌ **To avoid**:
 ```yaml
 services:
   db:
     ports:
-      - "5432:5432"  # Expose PostgreSQL sur le réseau
+      - "5432:5432"  # Exposes PostgreSQL on the network
   redis:
     ports:
-      - "6379:6379"  # Expose Redis sur le réseau
+      - "6379:6379"  # Exposes Redis on the network
 ```
 
-✅ **Recommandé** :
+✅ **Recommended**:
 ```yaml
 services:
   db:
-    # Pas de ports exposés, accessible uniquement via le réseau Docker
+    # No exposed ports, accessible only via the Docker network
   redis:
-    # Pas de ports exposés
+    # No exposed ports
 ```
 
-### 2. Utiliser un reverse proxy
+### 2. Use a reverse proxy
 
-Configurez **Nginx** ou **Traefik** comme reverse proxy pour :
-- Terminer SSL/HTTPS
-- Gérer les requêtes HTTP/HTTPS
-- Ajouter des headers de sécurité
+Configure **Nginx** or **Traefik** as a reverse proxy to:
+- Terminate SSL/HTTPS
+- Handle HTTP/HTTPS requests
+- Add security headers
 
-Exemple de configuration Nginx minimale :
+Example minimal Nginx configuration:
 
 ```nginx
-upstream leviia {
+upstream kairos {
     server web:5000;
 }
 
 server {
     listen 80;
-    server_name leviia.votre-domaine.com;
+    server_name kairos.votre-domaine.com;
     return 301 https://$host$request_uri;
 }
 
 server {
     listen 443 ssl;
-    server_name leviia.votre-domaine.com;
+    server_name kairos.votre-domaine.com;
     
-    ssl_certificate /etc/letsencrypt/live/leviia.votre-domaine.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/leviia.votre-domaine.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/kairos.votre-domaine.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/kairos.votre-domaine.com/privkey.pem;
     
     location / {
-        proxy_pass http://leviia;
+        proxy_pass http://kairos;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -432,109 +432,109 @@ server {
 }
 ```
 
-Ce `proxy_set_header Host $host` suffit en général : l'app fait déjà
-confiance à un unique reverse proxy via `ProxyFix` (voir `app/__init__.py`).
-Si votre topologie ajoute des sauts supplémentaires (ingress Kubernetes,
-load balancer) qui ne transmettent pas correctement le Host/domaine
-d'origine, définissez `PUBLIC_BASE_URL` (ex: `https://leviia.votre-domaine.com`)
-pour forcer le domaine utilisé dans les liens absolus générés par l'app
-(export ICS) — voir [ENVIRONMENT_VARIABLES.md](../reference/ENVIRONMENT_VARIABLES.md).
+This `proxy_set_header Host $host` is generally sufficient: the app already
+trusts a single reverse proxy via `ProxyFix` (see `app/__init__.py`).
+If your topology adds extra hops (Kubernetes ingress,
+load balancer) that don't correctly forward the original Host/domain,
+set `PUBLIC_BASE_URL` (e.g. `https://kairos.votre-domaine.com`)
+to force the domain used in absolute links generated by the app
+(ICS export) — see [ENVIRONMENT_VARIABLES.md](../reference/ENVIRONMENT_VARIABLES.md).
 
-### 3. Configurer HTTPS
+### 3. Configure HTTPS
 
-Utilisez **Let's Encrypt** pour obtenir des certificats SSL gratuits :
+Use **Let's Encrypt** to get free SSL certificates:
 
 ```bash
-# Installer Certbot
+# Install Certbot
 sudo apt-get install certbot python3-certbot-nginx
 
-# Obtenir un certificat
-sudo certbot --nginx -d leviia.votre-domaine.com
+# Get a certificate
+sudo certbot --nginx -d kairos.votre-domaine.com
 
-# Configurer le renouvellement automatique
+# Configure automatic renewal
 sudo certbot renew --dry-run
 ```
 
-### 4. Sécuriser les accès
+### 4. Secure access
 
-- **Ne jamais utiliser l'admin par défaut en production**
-- **Changer tous les mots de passe** dans `.env`
-- **Limiter l'accès** au serveur
-- **Configurer un firewall** (ufw, iptables)
+- **Never use the default admin account in production**
+- **Change all passwords** in `.env`
+- **Restrict access** to the server
+- **Configure a firewall** (ufw, iptables)
 
 ---
 
-## 📁 Sauvegardes
+## 📁 Backups
 
-### Sauvegarder PostgreSQL
+### Backing up PostgreSQL
 
 ```bash
-# Sauvegarde manuelle
+# Manual backup
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.postgres.yml \
-  exec db pg_dump -U leviia -d leviia > backups/leviia-$(date +%Y%m%d-%H%M%S).sql
+  exec db pg_dump -U kairos -d kairos > backups/kairos-$(date +%Y%m%d-%H%M%S).sql
 
-# Restaurer une sauvegarde
+# Restore a backup
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.postgres.yml \
-  exec -T db psql -U leviia -d leviia < backups/leviia-20240101-120000.sql
+  exec -T db psql -U kairos -d kairos < backups/kairos-20240101-120000.sql
 ```
 
-### Sauvegarder Redis
+### Backing up Redis
 
 ```bash
-# Sauvegarde manuelle
+# Manual backup
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.redis.yml \
   exec redis redis-cli save
 
-# Les données sont déjà persistées dans le volume redis_data
+# Data is already persisted in the redis_data volume
 ```
 
-### Script de sauvegarde automatique
+### Automatic backup script
 
-Créez un script `backup.sh` :
+Create a `backup.sh` script:
 
 ```bash
 #!/bin/bash
 
-# Sauvegarder PostgreSQL
+# Back up PostgreSQL
 if [ -f docker/docker-compose.postgres.yml ]; then
     docker compose -f docker/docker-compose.yml -f docker/docker-compose.postgres.yml \
-      exec db pg_dump -U leviia -d leviia > backups/leviia-$(date +%Y%m%d-%H%M%S).sql
+      exec db pg_dump -U kairos -d kairos > backups/kairos-$(date +%Y%m%d-%H%M%S).sql
     
-    # Garder seulement les 7 dernières sauvegardes
-    find backups -name "leviia-*.sql" -mtime +7 -delete
+    # Keep only the last 7 backups
+    find backups -name "kairos-*.sql" -mtime +7 -delete
 fi
 
-# Sauvegarder Redis (déjà persistant via volume)
+# Back up Redis (already persistent via volume)
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.redis.yml \
   exec redis redis-cli save
 ```
 
-Configurez une tâche cron pour exécuter ce script quotidiennement :
+Set up a cron job to run this script daily:
 
 ```bash
-# Éditer la crontab
+# Edit the crontab
 crontab -e
 
-# Ajouter cette ligne pour une sauvegarde à 2h du matin
-0 2 * * * /chemin/vers/leviia-schedule/backup.sh
+# Add this line for a backup at 2am
+0 2 * * * /chemin/vers/kairos/backup.sh
 ```
 
 ---
 
-## 🔄 Mises à jour
+## 🔄 Updates
 
-### Mettre à jour l'application
+### Updating the application
 
 ```bash
-# Arrêter les services
+# Stop the services
 docker compose -f docker/docker-compose.yml \
   -f docker/docker-compose.postgres.yml \
   -f docker/docker-compose.redis.yml down
 
-# Mettre à jour le code
+# Update the code
 git pull origin main
 
-# Reconstruire et redémarrer
+# Rebuild and restart
 docker compose -f docker/docker-compose.yml \
   -f docker/docker-compose.postgres.yml \
   -f docker/docker-compose.redis.yml build --no-cache
@@ -544,66 +544,66 @@ docker compose -f docker/docker-compose.yml \
   -f docker/docker-compose.redis.yml up -d
 ```
 
-### Mettre à jour les dépendances
+### Updating dependencies
 
 ```bash
-# Dans le conteneur
-docker compose -f docker/docker-compose.yml exec leviia-schedule sh
+# Inside the container
+docker compose -f docker/docker-compose.yml exec kairos sh
 
-# Mettre à jour requirements.txt
+# Update requirements.txt
 pip freeze > requirements.txt
 
-# Reconstruire l'image
+# Rebuild the image
 docker compose -f docker/docker-compose.yml build --no-cache
 ```
 
 ---
 
-## 🐛 Dépannage
+## 🐛 Troubleshooting
 
-### Problème : PostgreSQL ne démarre pas
+### Issue: PostgreSQL won't start
 
-**Symptômes :**
-- Le conteneur `db` crash
-- Erreur de permissions sur `/var/lib/postgresql/data`
+**Symptoms:**
+- The `db` container crashes
+- Permission error on `/var/lib/postgresql/data`
 
-**Solutions :**
+**Solutions:**
 
-1. **Vérifier les logs** :
+1. **Check the logs**:
    ```bash
    docker compose logs db
    ```
 
-2. **Supprimer le volume et redémarrer** :
+2. **Remove the volume and restart**:
    ```bash
-   docker volume rm leviia-schedule_postgres_data
+   docker volume rm kairos_postgres_data
    docker compose up -d
    ```
 
-3. **Vérifier les permissions** :
+3. **Check permissions**:
    ```bash
    docker compose exec db ls -la /var/lib/postgresql/data
    ```
 
-### Problème : L'application ne se connecte pas à PostgreSQL
+### Issue: The application won't connect to PostgreSQL
 
-**Symptômes :**
-- Erreur de connexion dans les logs de `web`
-- Timeout ou refus de connexion
+**Symptoms:**
+- Connection error in the `web` logs
+- Timeout or connection refused
 
-**Solutions :**
+**Solutions:**
 
-1. **Vérifier que PostgreSQL est prêt** :
+1. **Check that PostgreSQL is ready**:
    ```bash
-   docker compose exec db pg_isready -U leviia -d leviia
+   docker compose exec db pg_isready -U kairos -d kairos
    ```
 
-2. **Vérifier les variables d'environnement** :
+2. **Check environment variables**:
    ```bash
    docker compose exec web env | grep DATABASE_URL
    ```
 
-3. **Tester la connexion manuellement** :
+3. **Test the connection manually**:
    ```bash
    docker compose exec web python -c "
    from sqlalchemy import create_engine
@@ -612,25 +612,25 @@ docker compose -f docker/docker-compose.yml build --no-cache
    "
    ```
 
-### Problème : Redis ne répond pas
+### Issue: Redis is not responding
 
-**Symptômes :**
-- Erreurs de cache dans l'application
-- Timeout sur Redis
+**Symptoms:**
+- Cache errors in the application
+- Timeout on Redis
 
-**Solutions :**
+**Solutions:**
 
-1. **Vérifier que Redis est prêt** :
+1. **Check that Redis is ready**:
    ```bash
    docker compose exec redis redis-cli ping
    ```
 
-2. **Vérifier la configuration** :
+2. **Check the configuration**:
    ```bash
    docker compose exec web env | grep CACHE
    ```
 
-3. **Tester la connexion manuellement** :
+3. **Test the connection manually**:
    ```bash
    docker compose exec web python -c "
    import redis
@@ -641,22 +641,22 @@ docker compose -f docker/docker-compose.yml build --no-cache
 
 ---
 
-## 📚 Ressources Utiles
+## 📚 Useful Resources
 
-- [Documentation officielle de PostgreSQL](https://www.postgresql.org/docs/)
-- [Documentation officielle de Redis](https://redis.io/docs/)
-- [Documentation Docker Compose](https://docs.docker.com/compose/)
-- [Gunicorn Documentation](https://docs.gunicorn.org/)
+- [Official PostgreSQL documentation](https://www.postgresql.org/docs/)
+- [Official Redis documentation](https://redis.io/docs/)
+- [Docker Compose documentation](https://docs.docker.com/compose/)
+- [Gunicorn documentation](https://docs.gunicorn.org/)
 
 ---
 
 ## 🤝 Support
 
-Si vous rencontrez des problèmes avec cette configuration avancée :
+If you run into problems with this advanced configuration:
 
-1. **Vérifiez les logs** : `docker compose logs`
-2. **Testez les connexions** manuellement
-3. **Consultez la documentation** officielle
-4. **Revenez à la configuration SQLite** si nécessaire
+1. **Check the logs**: `docker compose logs`
+2. **Test the connections** manually
+3. **Check the official documentation**
+4. **Revert to the SQLite configuration** if necessary
 
-Pour une assistance plus poussée, envisagez de faire appel à un administrateur système expérimenté.
+For further assistance, consider engaging an experienced system administrator.

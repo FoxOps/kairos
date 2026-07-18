@@ -1,5 +1,5 @@
 """
-Routes module for Leviia Schedule.
+Routes module for Kairos.
 
 This module contains all the Flask blueprints and route handlers for the
 application. Routes are organized by functional area.

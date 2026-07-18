@@ -24,7 +24,7 @@ class TestUpdateProfile:
     def test_empty_name_rejected(self, test_app, logged_in_client):
         resp = logged_in_client.post(
             "/profile/update",
-            data={"name": "", "email": "admin@leviia.local"},
+            data={"name": "", "email": "admin@kairos.local"},
             follow_redirects=True,
         )
         assert resp.status_code == 200

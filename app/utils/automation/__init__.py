@@ -1,5 +1,5 @@
 """
-Automation utilities for Leviia Schedule.
+Automation utilities for Kairos.
 
 This module provides automation functionality for shifts and on-call rotations.
 """

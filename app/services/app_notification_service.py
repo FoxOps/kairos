@@ -1,5 +1,5 @@
 """
-AppNotificationService for Leviia Schedule.
+AppNotificationService for Kairos.
 
 In-app notifications (bell icon in the sidebar) - creation is triggered
 synchronously by other services on domain events (SwapService: new

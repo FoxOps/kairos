@@ -1,4 +1,4 @@
-# Dependances Python pour Leviia Schedule (production)
+# Dependances Python pour Kairos (production)
 # Ce fichier contient uniquement les librairies necessaires pour l'application
 
 # Framework web

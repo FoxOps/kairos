@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: leviia-schedule
-  namespace: leviia-schedule
+  name: kairos
+  namespace: kairos
   labels:
-    app: leviia-schedule
+    app: kairos
 spec:
   selector:
-    app: leviia-schedule
+    app: kairos
   ports:
   - name: http
     port: 80
@@ -20,13 +20,13 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: leviia-schedule-external
-  namespace: leviia-schedule
+  name: kairos-external
+  namespace: kairos
   labels:
-    app: leviia-schedule
+    app: kairos
 spec:
   selector:
-    app: leviia-schedule
+    app: kairos
   ports:
   - name: http
     port: 80

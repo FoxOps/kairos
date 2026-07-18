@@ -1,5 +1,5 @@
 """
-NotificationTarget model for Leviia Schedule.
+NotificationTarget model for Kairos.
 
 Admin-managed destinations (Slack, Discord, Telegram, generic webhooks...)
 for outbound external notifications sent via the Apprise library - see

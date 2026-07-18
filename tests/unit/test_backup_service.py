@@ -112,7 +112,7 @@ class TestCleanupNow:
 
 class TestGetLocalBackupPath:
     def test_returns_none_for_missing_file(self):
-        assert BackupService.get_local_backup_path("leviia_backup_x.sqlite.gz") is None
+        assert BackupService.get_local_backup_path("kairos_backup_x.sqlite.gz") is None
 
     def test_returns_none_for_wrong_prefix(self, tmp_path, monkeypatch):
         local_dir = tmp_path / "backups"
@@ -128,17 +128,17 @@ class TestGetLocalBackupPath:
         monkeypatch.setenv("BACKUP_LOCAL_DIR", str(local_dir))
         (tmp_path / "secret.txt").write_text("secret")
 
-        traversal_name = "leviia_backup_x/../../secret.txt"
+        traversal_name = "kairos_backup_x/../../secret.txt"
         assert BackupService.get_local_backup_path(traversal_name) is None
 
     def test_returns_path_for_existing_backup(self, tmp_path, monkeypatch):
         local_dir = tmp_path / "backups"
         local_dir.mkdir()
-        backup_file = local_dir / "leviia_backup_1.sqlite.gz"
+        backup_file = local_dir / "kairos_backup_1.sqlite.gz"
         backup_file.write_bytes(b"x")
         monkeypatch.setenv("BACKUP_LOCAL_DIR", str(local_dir))
 
-        result = BackupService.get_local_backup_path("leviia_backup_1.sqlite.gz")
+        result = BackupService.get_local_backup_path("kairos_backup_1.sqlite.gz")
         assert result is not None
         assert os.path.samefile(result, backup_file)
 

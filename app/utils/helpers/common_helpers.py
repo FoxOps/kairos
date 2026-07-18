@@ -1,5 +1,5 @@
 """
-Common helper functions for Leviia Schedule.
+Common helper functions for Kairos.
 
 This module provides general utility functions used throughout the application.
 """

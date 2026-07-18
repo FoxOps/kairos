@@ -1,5 +1,5 @@
 """
-Shift and ShiftType models for Leviia Schedule.
+Shift and ShiftType models for Kairos.
 
 This module contains the Shift and ShiftType models for shift management.
 """

@@ -1,5 +1,5 @@
 """
-Schedule (calendar) service for Leviia Schedule.
+Schedule (calendar) service for Kairos.
 
 Aggregates shifts, on-calls and leaves into the event list consumed by
 the FullCalendar-based views (index page, /api/shifts).

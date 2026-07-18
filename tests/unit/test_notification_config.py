@@ -46,7 +46,7 @@ class TestNotificationConfigFromEnv:
     def test_reads_all_variables(self, monkeypatch):
         clear_notification_env(monkeypatch)
         monkeypatch.setenv("NOTIFICATIONS_ENABLED", "true")
-        monkeypatch.setenv("NOTIFICATION_FROM_EMAIL", "noreply@leviia.local")
+        monkeypatch.setenv("NOTIFICATION_FROM_EMAIL", "noreply@kairos.local")
         monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
         monkeypatch.setenv("SMTP_PORT", "2525")
         monkeypatch.setenv("SMTP_USERNAME", "user")
@@ -58,7 +58,7 @@ class TestNotificationConfigFromEnv:
         config = NotificationConfig.from_env()
 
         assert config.enabled is True
-        assert config.from_email == "noreply@leviia.local"
+        assert config.from_email == "noreply@kairos.local"
         assert config.smtp_host == "smtp.example.com"
         assert config.smtp_port == 2525
         assert config.smtp_username == "user"
@@ -78,7 +78,7 @@ class TestNotificationConfigIsConfigured:
     def test_configured_when_enabled_with_from_email_and_host(self, monkeypatch):
         clear_notification_env(monkeypatch)
         monkeypatch.setenv("NOTIFICATIONS_ENABLED", "true")
-        monkeypatch.setenv("NOTIFICATION_FROM_EMAIL", "noreply@leviia.local")
+        monkeypatch.setenv("NOTIFICATION_FROM_EMAIL", "noreply@kairos.local")
         monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
         config = NotificationConfig.from_env()
         assert config.is_configured() is True
@@ -86,7 +86,7 @@ class TestNotificationConfigIsConfigured:
     def test_not_configured_when_enabled_but_missing_smtp_host(self, monkeypatch):
         clear_notification_env(monkeypatch)
         monkeypatch.setenv("NOTIFICATIONS_ENABLED", "true")
-        monkeypatch.setenv("NOTIFICATION_FROM_EMAIL", "noreply@leviia.local")
+        monkeypatch.setenv("NOTIFICATION_FROM_EMAIL", "noreply@kairos.local")
         config = NotificationConfig.from_env()
         assert config.is_configured() is False
 

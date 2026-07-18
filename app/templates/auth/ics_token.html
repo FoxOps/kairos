@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _("Token ICS") }} - Leviia{% endblock %}
+{% block title %}{{ _("Token ICS") }} - Kairos{% endblock %}
 
 {% block content %}
 <div class="flex justify-center px-4 py-12">
@@ -32,7 +32,7 @@
                     <label class="label">{{ _("Votre token") }}</label>
                     <div class="join w-full">
                         <input class="input join-item flex-1" type="text" value="{{ token }}" id="tokenInput" readonly>
-                        <button class="btn btn-primary join-item no-hover-transform" onclick="Leviia.copyToken(event)">
+                        <button class="btn btn-primary join-item no-hover-transform" onclick="Kairos.copyToken(event)">
                             <i class="fas fa-copy"></i>
                             <span>{{ _("Copier") }}</span>
                         </button>
@@ -46,7 +46,7 @@
                         <input class="input join-item flex-1" type="text"
                                value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('shifts', 'all') }}"
                                id="urlShiftsAllInput" readonly>
-                        <button class="btn btn-primary join-item no-hover-transform" onclick="Leviia.copyUrlShiftsAll(event)">
+                        <button class="btn btn-primary join-item no-hover-transform" onclick="Kairos.copyUrlShiftsAll(event)">
                             <i class="fas fa-copy"></i>
                             <span>{{ _("Copier") }}</span>
                         </button>
@@ -62,7 +62,7 @@
                         <input class="input join-item flex-1" type="text"
                                value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('shifts', 'my') }}"
                                id="urlShiftsMyInput" readonly>
-                        <button class="btn btn-primary join-item no-hover-transform" onclick="Leviia.copyUrlShiftsMy(event)">
+                        <button class="btn btn-primary join-item no-hover-transform" onclick="Kairos.copyUrlShiftsMy(event)">
                             <i class="fas fa-copy"></i>
                             <span>{{ _("Copier") }}</span>
                         </button>
@@ -79,7 +79,7 @@
                         <input class="input join-item flex-1" type="text"
                                value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('oncall', 'all') }}"
                                id="urlOncallAllInput" readonly>
-                        <button class="btn btn-primary join-item no-hover-transform" onclick="Leviia.copyUrlOncallAll(event)">
+                        <button class="btn btn-primary join-item no-hover-transform" onclick="Kairos.copyUrlOncallAll(event)">
                             <i class="fas fa-copy"></i>
                             <span>{{ _("Copier") }}</span>
                         </button>
@@ -95,7 +95,7 @@
                         <input class="input join-item flex-1" type="text"
                                value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('oncall', 'my') }}"
                                id="urlOncallMyInput" readonly>
-                        <button class="btn btn-primary join-item no-hover-transform" onclick="Leviia.copyUrlOncallMy(event)">
+                        <button class="btn btn-primary join-item no-hover-transform" onclick="Kairos.copyUrlOncallMy(event)">
                             <i class="fas fa-copy"></i>
                             <span>{{ _("Copier") }}</span>
                         </button>
@@ -112,7 +112,7 @@
                         <input class="input join-item flex-1" type="text"
                                value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('leaves', 'all') }}"
                                id="urlLeavesAllInput" readonly>
-                        <button class="btn btn-primary join-item no-hover-transform" onclick="Leviia.copyUrlLeavesAll(event)">
+                        <button class="btn btn-primary join-item no-hover-transform" onclick="Kairos.copyUrlLeavesAll(event)">
                             <i class="fas fa-copy"></i>
                             <span>{{ _("Copier") }}</span>
                         </button>
@@ -128,7 +128,7 @@
                         <input class="input join-item flex-1" type="text"
                                value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('leaves', 'my') }}"
                                id="urlLeavesMyInput" readonly>
-                        <button class="btn btn-primary join-item no-hover-transform" onclick="Leviia.copyUrlLeavesMy(event)">
+                        <button class="btn btn-primary join-item no-hover-transform" onclick="Kairos.copyUrlLeavesMy(event)">
                             <i class="fas fa-copy"></i>
                             <span>{{ _("Copier") }}</span>
                         </button>

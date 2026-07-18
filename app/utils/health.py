@@ -1,5 +1,5 @@
 """
-Health check endpoints for Leviia Schedule.
+Health check endpoints for Kairos.
 
 This module provides health check endpoints for monitoring and Kubernetes
 liveness/readiness probes.
@@ -16,7 +16,7 @@ from sqlalchemy import text
 # so /version and the footer never show two different values (this
 # already happened once: the footer stayed stuck on "0.6.0" after a
 # bump here).
-APP_VERSION_DEFAULT = "1.0.0"
+APP_VERSION_DEFAULT = "1.0.0-rc1"
 
 
 def register_health_endpoints(app: Flask) -> None:
@@ -45,7 +45,7 @@ def register_health_endpoints(app: Flask) -> None:
                 {
                     "status": "ok",
                     "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "application": "Leviia Schedule",
+                    "application": "Kairos",
                 }
             ),
             200,
@@ -104,7 +104,7 @@ def register_health_endpoints(app: Flask) -> None:
         return (
             jsonify(
                 {
-                    "application": "Leviia Schedule",
+                    "application": "Kairos",
                     "version": os.environ.get("APP_VERSION", APP_VERSION_DEFAULT),
                     "environment": os.environ.get("FLASK_ENV", "development"),
                     "timestamp": datetime.now(timezone.utc).isoformat(),

@@ -1,334 +1,334 @@
-# 🎯 **Chasse au Bug - Leviia Schedule**
+# 🎯 **Bug Hunt - Kairos**
 
-*Organisée le 30 juin 2026*
-
----
-
-## 📋 **Résumé de la Chasse au Bug**
-
-J'ai organisé une **chasse au bug complète** pour le projet Leviia Schedule. Voici ce qui a été fait :
+*Organized on June 30, 2026*
 
 ---
 
-## 🎯 **Objectifs de la Chasse au Bug**
+## 📋 **Bug Hunt Summary**
 
-1. ✅ **Trouver le code dupliqué**
-2. ✅ **Identifier les problèmes de sécurité**
-3. ✅ **Vérifier les erreurs de linter**
-4. ✅ **Exécuter et analyser les tests**
-5. ✅ **Analyser les logs d'erreur**
-6. ✅ **Créer des outils automatisés**
+I organized a **complete bug hunt** for the Kairos project. Here is what was done:
 
 ---
 
-## 📊 **Résultats Obtenus**
+## 🎯 **Bug Hunt Objectives**
 
-### **1. Code Dupliqué** 🔍
+1. ✅ **Find duplicated code**
+2. ✅ **Identify security issues**
+3. ✅ **Check linter errors**
+4. ✅ **Run and analyze tests**
+5. ✅ **Analyze error logs**
+6. ✅ **Create automated tools**
 
-**8 instances de code dupliqué identifiées** :
+---
 
-| Fonction | Occurrences | Fichiers | Impact |
+## 📊 **Results Obtained**
+
+### **1. Duplicated Code** 🔍
+
+**8 instances of duplicated code identified**:
+
+| Function | Occurrences | Files | Impact |
 |----------|-------------|---------|--------|
-| `_make_cache_key` | 3 | cache.py, optimizations.py | 🔴 Critique |
-| `get_bool` | 4 | 4 fichiers | 🟡 Moyen |
-| `get_int` | 5 | 5 fichiers | 🟡 Moyen |
-| `admin_dashboard` | 3 | admin.py, decorators.py | 🟡 Moyen |
-| `delete_leave` | 4 | main.py, decorators.py | 🟡 Moyen |
-| `delete_shift` | 2 | main.py, decorators.py | 🟡 Moyen |
+| `_make_cache_key` | 3 | cache.py, optimizations.py | 🔴 Critical |
+| `get_bool` | 4 | 4 files | 🟡 Medium |
+| `get_int` | 5 | 5 files | 🟡 Medium |
+| `admin_dashboard` | 3 | admin.py, decorators.py | 🟡 Medium |
+| `delete_leave` | 4 | main.py, decorators.py | 🟡 Medium |
+| `delete_shift` | 2 | main.py, decorators.py | 🟡 Medium |
 
-**Score :** ❌ 0/10 - *Beaucoup de code dupliqué à factoriser*
+**Score:** ❌ 0/10 - *A lot of duplicated code to factor out*
 
 ---
 
-### **2. Problèmes de Sécurité** 🔒
+### **2. Security Issues** 🔒
 
-**15 problèmes identifiés** (d'après SECURITY_AUDIT_REPORT.md) :
+**15 issues identified** (per SECURITY_AUDIT_REPORT.md):
 
-| ID | Titre | Sévérité | Statut |
+| ID | Title | Severity | Status |
 |----|-------|----------|--------|
-| SEC-001 | Vulnérabilités cryptography | 🔴 Critique | ⚠️ Partiellement |
-| SEC-002 | Utilisation de MD5 | 🔴 Critique | ✅ Corrigé |
-| SEC-003 | CSRF désactivé | 🟡 Moyen | ❌ Non corrigé |
-| SEC-004 | Clé secrète faible | 🟡 Moyen | ❌ Non corrigé |
-| SEC-005 | Authentification désactivable | 🟡 Moyen | ❌ Non corrigé |
-| SEC-006 | Mot de passe admin faible | 🟡 Moyen | ❌ Non corrigé |
-| SEC-007 | Pas de rate limiting | 🟡 Moyen | ❌ Non corrigé |
-| SEC-008 | Pas d'en-têtes de sécurité | 🟡 Moyen | ❌ Non corrigé |
-| SEC-009 | CORS non configuré | 🟡 Moyen | ❌ Non corrigé |
-| SEC-010 | Tokens ICS persistants | 🟡 Moyen | ❌ Non corrigé |
+| SEC-001 | cryptography vulnerabilities | 🔴 Critical | ⚠️ Partially |
+| SEC-002 | Use of MD5 | 🔴 Critical | ✅ Fixed |
+| SEC-003 | CSRF disabled | 🟡 Medium | ❌ Not fixed |
+| SEC-004 | Weak secret key | 🟡 Medium | ❌ Not fixed |
+| SEC-005 | Authentication can be disabled | 🟡 Medium | ❌ Not fixed |
+| SEC-006 | Weak admin password | 🟡 Medium | ❌ Not fixed |
+| SEC-007 | No rate limiting | 🟡 Medium | ❌ Not fixed |
+| SEC-008 | No security headers | 🟡 Medium | ❌ Not fixed |
+| SEC-009 | CORS not configured | 🟡 Medium | ❌ Not fixed |
+| SEC-010 | Persistent ICS tokens | 🟡 Medium | ❌ Not fixed |
 
-**Nouveaux problèmes détectés par Bandit :** 2 (try/except/pass)
+**New issues detected by Bandit:** 2 (try/except/pass)
 
-**Score :** ⚠️ 5/10 - *Problèmes critiques à corriger*
+**Score:** ⚠️ 5/10 - *Critical issues to fix*
 
 ---
 
-### **3. Erreurs de Linter (Ruff)** 📝
+### **3. Linter Errors (Ruff)** 📝
 
-**279+ erreurs/avertissements** :
+**279+ errors/warnings**:
 
-| Type | Occurrences | Exemples |
+| Type | Occurrences | Examples |
 |------|-------------|----------|
-| Imports non utilisés | 50+ | `render_template`, `request`, `jsonify` |
-| Imports non triés | 20+ | `app/__init__.py` |
-| Guillemets simples | 100+ | Partout |
-| Lignes trop longues | 50+ | Partout |
-| Espaces en fin de ligne | 20+ | Partout |
+| Unused imports | 50+ | `render_template`, `request`, `jsonify` |
+| Unsorted imports | 20+ | `app/__init__.py` |
+| Single quotes | 100+ | Everywhere |
+| Lines too long | 50+ | Everywhere |
+| Trailing whitespace | 20+ | Everywhere |
 
-**Score :** ❌ 2/10 - *Beaucoup de nettoyage nécessaire*
+**Score:** ❌ 2/10 - *A lot of cleanup needed*
 
 ---
 
 ### **4. Tests** 🧪
 
-**522 tests exécutés** :
+**522 tests run**:
 
-| Catégorie | Total | Passés | Échoués | Taux |
+| Category | Total | Passed | Failed | Rate |
 |----------|-------|--------|---------|------|
-| Tous les tests | 522 | 515 | 2 | 98.7% |
+| All tests | 522 | 515 | 2 | 98.7% |
 | test_automation_full.py | 12 | 10 | 2 | 83.3% |
 
-**Couverture :** ~66%
+**Coverage:** ~66%
 
-**Problème identifié :** La fonction `create_app` n'existe pas dans `app/__init__.py`, ce qui fait échouer les tests de `test_automation_full.py`.
+**Identified issue:** The `create_app` function does not exist in `app/__init__.py`, which causes the `test_automation_full.py` tests to fail.
 
-**Score :** ✅ 9/10 - *Excellente couverture, 2 tests à corriger*
+**Score:** ✅ 9/10 - *Excellent coverage, 2 tests to fix*
 
 ---
 
-### **5. Logs d'Erreur** 📜
+### **5. Error Logs** 📜
 
-**44+ appels à logger.error/warning** :
+**44+ calls to logger.error/warning**:
 
-| Fichier | Nombre | Type |
+| File | Count | Type |
 |--------|--------|------|
-| `app/auth/oidc_auth.py` | 20+ | Erreurs OIDC |
-| `app/utils/cache.py` | 12+ | Erreurs Redis/Memcached |
-| `app/utils/automation.py` | 6+ | Erreurs de nettoyage |
-| `app/utils/performance_monitor.py` | 2+ | Avertissements de performance |
+| `app/auth/oidc_auth.py` | 20+ | OIDC errors |
+| `app/utils/cache.py` | 12+ | Redis/Memcached errors |
+| `app/utils/automation.py` | 6+ | Cleanup errors |
+| `app/utils/performance_monitor.py` | 2+ | Performance warnings |
 
-**Score :** ✅ 8/10 - *Gestion des erreurs correcte*
+**Score:** ✅ 8/10 - *Proper error handling*
 
 ---
 
-## 📈 **Score Global**
+## 📈 **Overall Score**
 
-| Catégorie | Score | Poids | Note |
+| Category | Score | Weight | Note |
 |-----------|-------|--------|------|
-| Sécurité | 5/10 | 40% | 2.0 |
-| Qualité du Code | 2/10 | 30% | 0.6 |
+| Security | 5/10 | 40% | 2.0 |
+| Code Quality | 2/10 | 30% | 0.6 |
 | Tests | 9/10 | 20% | 1.8 |
 | Maintenance | 8/10 | 10% | 0.8 |
 | **Total** | | **100%** | **5.2/10** |
 
-**Score Global :** ⚠️ **52/100** - *Améliorations urgentes nécessaires*
+**Overall Score:** ⚠️ **52/100** - *Urgent improvements needed*
 
 ---
 
-## 🛠️ **Outils Créés**
+## 🛠️ **Tools Created**
 
 ### **1. Scripts**
 
 | Script | Description | Usage |
 |--------|-------------|-------|
-| `scripts/bug_hunt.sh` | Script principal de chasse au bug | `./scripts/bug_hunt.sh --full` |
-| `scripts/find_duplicates.py` | Trouve le code dupliqué | `python scripts/find_duplicates.py app` |
+| `scripts/bug_hunt.sh` | Main bug hunt script | `./scripts/bug_hunt.sh --full` |
+| `scripts/find_duplicates.py` | Finds duplicated code | `python scripts/find_duplicates.py app` |
 
-### **2. Rapports**
+### **2. Reports**
 
-| Rapport | Description | Contenu |
+| Report | Description | Content |
 |---------|-------------|---------|
-| `BUG_HUNT_REPORT.md` | Rapport complet | Toutes les découvertes détaillées |
-| `BUG_HUNT_SUMMARY.md` | Résumé | Top 10 des problèmes, scores |
-| `BUG_HUNT_GUIDE.md` | Guide | Comment utiliser les outils |
+| `BUG_HUNT_REPORT.md` | Full report | All detailed findings |
+| `BUG_HUNT_SUMMARY.md` | Summary | Top 10 issues, scores |
+| `BUG_HUNT_GUIDE.md` | Guide | How to use the tools |
 
-### **3. Intégration Makefile**
+### **3. Makefile Integration**
 
-Nouvelles cibles ajoutées au Makefile :
-- `make bug-hunt-full` - Analyse complète
-- `make bug-hunt-security` - Sécurité uniquement
-- `make bug-hunt-lint` - Linter uniquement
-- `make bug-hunt-tests` - Tests uniquement
-- `make bug-hunt-duplicates` - Code dupliqué uniquement
-- `make bug-hunt-quick` - Analyse rapide
-- `make bug-hunt-report` - Générer un rapport
-- `make find-duplicates` - Trouver les doublons
-
----
-
-## 🎯 **Top 5 des Problèmes à Corriger en Priorité**
-
-### **🥇 1. Fonction `create_app` manquante**
-- **Impact :** Tous les tests de `test_automation_full.py` échouent
-- **Fichier :** `app/__init__.py`
-- **Solution :** Créer une factory function
-- **Priorité :** 🔴🔴🔴
-
-### **🥈 2. Code dupliqué dans les fonctions de cache**
-- **Impact :** Maintenance difficile, risque d'incohérence
-- **Fichiers :** `app/utils/cache.py`, `app/utils/optimizations.py`
-- **Solution :** Factoriser dans un module commun
-- **Priorité :** 🔴🔴🔴
-
-### **🥉 3. 279+ erreurs de linter**
-- **Impact :** Code non standardisé, difficile à maintenir
-- **Fichiers :** Tous les fichiers dans `app/`
-- **Solution :** Nettoyer les imports et standardiser le style
-- **Priorité :** 🔴🔴
-
-### **4. Vulnérabilités dans `cryptography`**
-- **Impact :** Accès non autorisé, exécution de code arbitraire
-- **CVE :** CVE-2026-34073, CVE-2026-39892, CVE-2026-26007
-- **Solution :** `pip install --upgrade cryptography>=46.0.7`
-- **Priorité :** 🔴🔴
-
-### **5. Clé secrète par défaut faible**
-- **Impact :** Session hijacking possible
-- **Fichier :** `config.py`
-- **Solution :** `secrets.token_hex(32)`
-- **Priorité :** 🔴🔴
+New targets added to the Makefile:
+- `make bug-hunt-full` - Full analysis
+- `make bug-hunt-security` - Security only
+- `make bug-hunt-lint` - Linter only
+- `make bug-hunt-tests` - Tests only
+- `make bug-hunt-duplicates` - Duplicated code only
+- `make bug-hunt-quick` - Quick analysis
+- `make bug-hunt-report` - Generate a report
+- `make find-duplicates` - Find duplicates
 
 ---
 
-## 📋 **Checklist de Correction**
+## 🎯 **Top 5 Priority Issues to Fix**
 
-### **Phase 1 : Corrections Critiques (1-2 jours)**
+### **🥇 1. Missing `create_app` function**
+- **Impact:** All tests in `test_automation_full.py` fail
+- **File:** `app/__init__.py`
+- **Solution:** Create a factory function
+- **Priority:** 🔴🔴🔴
 
-- [ ] ✅ Créer la fonction `create_app` dans `app/__init__.py`
-- [ ] ✅ Corriger les imports dans `app/__init__.py`
-- [ ] ✅ Mettre à jour `cryptography` vers >=46.0.7
-- [ ] ✅ Configurer les clés sécurisées par défaut
-- [ ] ✅ Activer CSRF en production
+### **🥈 2. Duplicated code in cache functions**
+- **Impact:** Difficult maintenance, risk of inconsistency
+- **Files:** `app/utils/cache.py`, `app/utils/optimizations.py`
+- **Solution:** Factor out into a common module
+- **Priority:** 🔴🔴🔴
 
-### **Phase 2 : Amélioration de la Qualité (3-5 jours)**
+### **🥉 3. 279+ linter errors**
+- **Impact:** Non-standardized code, hard to maintain
+- **Files:** All files under `app/`
+- **Solution:** Clean up imports and standardize style
+- **Priority:** 🔴🔴
 
-- [ ] 🔧 Éliminer le code dupliqué (fonctions de cache, get_bool, get_int)
-- [ ] 🔧 Corriger les erreurs de linter (Ruff)
-- [ ] 🔧 Standardiser le style de code
-- [ ] 🔧 Implémenter le rate limiting
-- [ ] 🔧 Configurer les en-têtes de sécurité
+### **4. Vulnerabilities in `cryptography`**
+- **Impact:** Unauthorized access, arbitrary code execution
+- **CVE:** CVE-2026-34073, CVE-2026-39892, CVE-2026-26007
+- **Solution:** `pip install --upgrade cryptography>=46.0.7`
+- **Priority:** 🔴🔴
 
-### **Phase 3 : Sécurité Avancée (1 semaine)**
-
-- [ ] 🔧 Configurer CORS avec origines spécifiques
-- [ ] 🔧 Limiter la durée des tokens ICS à 30 jours
-- [ ] 🔧 Implémenter la validation d'entrée
-- [ ] 🔧 Chiffrer les données sensibles
-- [ ] 🔧 Implémenter l'authentification 2FA
-
-### **Phase 4 : Tests et Validation (2-3 jours)**
-
-- [ ] 🔧 Corriger les 2 tests échoués
-- [ ] 🔧 Ajouter des tests pour les cas limites
-- [ ] 🔧 Atteindre 80%+ de couverture
-- [ ] 🔧 Exécuter un nouvel audit de sécurité
+### **5. Weak default secret key**
+- **Impact:** Session hijacking possible
+- **File:** `config.py`
+- **Solution:** `secrets.token_hex(32)`
+- **Priority:** 🔴🔴
 
 ---
 
-## 🚀 **Comment Utiliser les Outils**
+## 📋 **Fix Checklist**
 
-### **1. Exécuter une analyse complète**
+### **Phase 1: Critical Fixes (1-2 days)**
+
+- [ ] ✅ Create the `create_app` function in `app/__init__.py`
+- [ ] ✅ Fix imports in `app/__init__.py`
+- [ ] ✅ Upgrade `cryptography` to >=46.0.7
+- [ ] ✅ Configure secure defaults for keys
+- [ ] ✅ Enable CSRF in production
+
+### **Phase 2: Quality Improvements (3-5 days)**
+
+- [ ] 🔧 Eliminate duplicated code (cache functions, get_bool, get_int)
+- [ ] 🔧 Fix linter errors (Ruff)
+- [ ] 🔧 Standardize code style
+- [ ] 🔧 Implement rate limiting
+- [ ] 🔧 Configure security headers
+
+### **Phase 3: Advanced Security (1 week)**
+
+- [ ] 🔧 Configure CORS with specific origins
+- [ ] 🔧 Limit ICS token lifetime to 30 days
+- [ ] 🔧 Implement input validation
+- [ ] 🔧 Encrypt sensitive data
+- [ ] 🔧 Implement 2FA authentication
+
+### **Phase 4: Tests and Validation (2-3 days)**
+
+- [ ] 🔧 Fix the 2 failing tests
+- [ ] 🔧 Add tests for edge cases
+- [ ] 🔧 Reach 80%+ coverage
+- [ ] 🔧 Run a new security audit
+
+---
+
+## 🚀 **How to Use the Tools**
+
+### **1. Run a full analysis**
 
 ```bash
-# Méthode 1: Utiliser Makefile
+# Method 1: Use Makefile
 make bug-hunt-full
 
-# Méthode 2: Utiliser le script
+# Method 2: Use the script
 ./scripts/bug_hunt.sh --full --report
 
-# Méthode 3: Exécuter manuellement
+# Method 3: Run manually
 ./scripts/bug_hunt.sh --security --lint --test --duplicate --report
 ```
 
-### **2. Vérifier un aspect spécifique**
+### **2. Check a specific aspect**
 
 ```bash
-# Sécurité uniquement
+# Security only
 make bug-hunt-security
 
-# Linter uniquement
+# Linter only
 make bug-hunt-lint
 
-# Tests uniquement
+# Tests only
 make bug-hunt-tests
 
-# Code dupliqué uniquement
+# Duplicated code only
 make bug-hunt-duplicates
 ```
 
-### **3. Trouver le code dupliqué**
+### **3. Find duplicated code**
 
 ```bash
-# Recherche de base
+# Basic search
 python scripts/find_duplicates.py app
 
-# Recherche complète (inclut imports et code similaire)
+# Full search (includes imports and similar code)
 python scripts/find_duplicates.py app --check-imports --check-similar
 ```
 
 ---
 
-## 📊 **Comparaison Avant/Après**
+## 📊 **Before/After Comparison**
 
-| Métrique | Avant | Après | Amélioration |
+| Metric | Before | After | Improvement |
 |----------|-------|-------|--------------|
-| Code dupliqué | Inconnu | 8 instances | ✅ Identifié |
-| Problèmes de sécurité | 15 | 15 (1 corrigé) | ✅ 1 corrigé |
-| Erreurs de linter | Inconnu | 279+ | ✅ Identifié |
-| Tests échoués | 2 | 2 (cause identifiée) | ✅ Cause trouvée |
-| Couverture | ~66% | ~66% | ➖ Pas de changement |
-| Score global | Inconnu | 52/100 | ✅ Évalué |
+| Duplicated code | Unknown | 8 instances | ✅ Identified |
+| Security issues | 15 | 15 (1 fixed) | ✅ 1 fixed |
+| Linter errors | Unknown | 279+ | ✅ Identified |
+| Failing tests | 2 | 2 (cause identified) | ✅ Cause found |
+| Coverage | ~66% | ~66% | ➖ No change |
+| Overall score | Unknown | 52/100 | ✅ Assessed |
 
 ---
 
 ## 🎉 **Conclusion**
 
-La chasse au bug a été un **succès** ! Nous avons :
+The bug hunt was a **success**! We:
 
-✅ **Identifié 300+ problèmes** dans le code
-✅ **Créé des outils automatisés** pour la détection
-✅ **Classé les problèmes par priorité**
-✅ **Fournis des solutions concrètes**
-✅ **Documenté toutes les découvertes**
+✅ **Identified 300+ issues** in the code
+✅ **Created automated tools** for detection
+✅ **Ranked issues by priority**
+✅ **Provided concrete solutions**
+✅ **Documented all findings**
 
-### **Prochaines Étapes**
+### **Next Steps**
 
-1. **Corriger les problèmes critiques** (Phase 1)
-2. **Améliorer la qualité du code** (Phase 2)
-3. **Renforcer la sécurité** (Phase 3)
-4. **Valider avec des tests** (Phase 4)
-5. **Exécuter une nouvelle chasse au bug** pour vérifier les corrections
+1. **Fix the critical issues** (Phase 1)
+2. **Improve code quality** (Phase 2)
+3. **Strengthen security** (Phase 3)
+4. **Validate with tests** (Phase 4)
+5. **Run a new bug hunt** to verify the fixes
 
-### **Objectif**
+### **Objective**
 
-Atteindre un **score de 90/100** en corrigeant tous les problèmes identifiés.
+Reach a **score of 90/100** by fixing all identified issues.
 
 ---
 
-## 📚 **Fichiers Créés**
+## 📚 **Files Created**
 
-| Fichier | Taille | Description |
+| File | Size | Description |
 |---------|--------|-------------|
-| `BUG_HUNT_REPORT.md` | 15.7 KB | Rapport complet de la chasse au bug |
-| `BUG_HUNT_SUMMARY.md` | 10.0 KB | Résumé des découvertes |
-| `BUG_HUNT_GUIDE.md` | 12.4 KB | Guide d'utilisation des outils |
-| `scripts/bug_hunt.sh` | 16.1 KB | Script principal de chasse au bug |
-| `scripts/find_duplicates.py` | 11.1 KB | Script de détection de code dupliqué |
+| `BUG_HUNT_REPORT.md` | 15.7 KB | Full bug hunt report |
+| `BUG_HUNT_SUMMARY.md` | 10.0 KB | Summary of findings |
+| `BUG_HUNT_GUIDE.md` | 12.4 KB | Tool usage guide |
+| `scripts/bug_hunt.sh` | 16.1 KB | Main bug hunt script |
+| `scripts/find_duplicates.py` | 11.1 KB | Duplicated code detection script |
 
-**Total :** ~65.3 KB de documentation et outils
+**Total:** ~65.3 KB of documentation and tools
 
 ---
 
-## 🔗 **Liens Utiles**
+## 🔗 **Useful Links**
 
-- [Rapport Complet](BUG_HUNT_REPORT.md)
-- [Résumé](BUG_HUNT_SUMMARY.md)
+- [Full Report](BUG_HUNT_REPORT.md)
+- [Summary](BUG_HUNT_SUMMARY.md)
 - [Guide](BUG_HUNT_GUIDE.md)
-- [Rapport de Sécurité](SECURITY_AUDIT_REPORT.md)
-- [Résumé des Tests](TESTING_SUMMARY.md)
+- [Security Report](SECURITY_AUDIT_REPORT.md)
+- [Testing Summary](TESTING_SUMMARY.md)
 
 ---
 
-*"La qualité n'est pas un acte, mais une habitude." - Aristote*
+*"Quality is not an act, it is a habit." - Aristotle*
 
-*Chasse au bug organisée et documentée par Vibe Code*
+*Bug hunt organized and documented by Vibe Code*

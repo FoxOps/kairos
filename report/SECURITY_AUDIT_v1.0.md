@@ -1,237 +1,235 @@
-# Audit de sécurité v1.0
+# Security audit v1.0
 
-> Réalisé dans le cadre de la stabilisation v1.0 (voir le plan en 6 PR
-> thématiques). Périmètre : configuration HTTP/session, authentification,
-> gestion des secrets, injection SQL, analyse statique (Bandit), scan de
-> dépendances (Safety), CI/CD. Ne remplace pas un pentest ou un audit tiers
-> — c'est une revue de code + configuration, avec vérification directe
-> (exécution réelle des scanners, pas seulement lecture du code).
+> Conducted as part of the v1.0 stabilization effort (see the plan across 6
+> themed PRs). Scope: HTTP/session configuration, authentication, secrets
+> management, SQL injection, static analysis (Bandit), dependency scanning
+> (Safety), CI/CD. Does not replace a pentest or a third-party audit — this
+> is a code + configuration review, with direct verification (actually
+> running the scanners, not just reading the code).
 
-## Résumé
+## Summary
 
-Aucune vulnérabilité critique ou haute trouvée dans le code applicatif
-(`app/`). Deux vraies faiblesses corrigées pendant cet audit (voir
-"Corrections apportées"). Le reste de ce document est principalement une
-**confirmation** de protections déjà en place (CSRF, CSP, hachage des mots
-de passe, etc.), avec preuve à l'appui plutôt qu'une supposition.
+No critical or high vulnerability found in the application code (`app/`).
+Two real weaknesses fixed during this audit (see "Fixes applied"). The rest
+of this document is mostly a **confirmation** of protections already in
+place (CSRF, CSP, password hashing, etc.), backed by evidence rather than
+assumption.
 
-## Corrections apportées pendant cet audit
+## Fixes applied during this audit
 
-### 1. Bandit B105/B107/B104 — faux positifs non annotés côté Bandit
+### 1. Bandit B105/B107/B104 — false positives not annotated on the Bandit side
 
-`ruff` (règle `S105`/`S107`, flake8-bandit) et `bandit` détectent des
-patterns proches mais utilisent des mécanismes de suppression **différents**
-(`# noqa: S105` pour ruff, `# nosec BXXX` pour bandit) — un `# noqa: S105`
-existant ne supprime pas l'avertissement bandit équivalent. Trois faux
-positifs déjà revus côté ruff n'avaient donc jamais été explicitement
-marqués comme acceptés côté bandit :
+`ruff` (rule `S105`/`S107`, flake8-bandit) and `bandit` detect similar
+patterns but use **different** suppression mechanisms (`# noqa: S105` for
+ruff, `# nosec BXXX` for bandit) — an existing `# noqa: S105` does not
+suppress the equivalent bandit warning. Three false positives already
+reviewed on the ruff side had therefore never been explicitly marked as
+accepted on the bandit side:
 
-- `app/services/settings_service.py:38` — `ICS_TOKEN_EXPIRY_DAYS_KEY`, un
-  nom de clé `Setting`, pas un secret (B105).
-- `app/services/user_service.py:50,71` — paramètre `password: str = ""`
-  (valeur par défaut vide, pas un mot de passe en dur) sur
+- `app/services/settings_service.py:38` — `ICS_TOKEN_EXPIRY_DAYS_KEY`, a
+  `Setting` key name, not a secret (B105).
+- `app/services/user_service.py:50,71` — `password: str = ""` parameter
+  (empty default value, not a hard-coded password) on
   `UserService.create()`/`update()` (B107 x2).
 
-Ajout de `# nosec BXXX` explicites avec justification en commentaire.
-`bandit -r app/` : **0 finding** après correction (3 avant).
+Added explicit `# nosec BXXX` with a justification comment. `bandit -r
+app/`: **0 findings** after the fix (3 before).
 
-### 2. Bandit B104 — bind 0.0.0.0
+### 2. Bandit B104 — 0.0.0.0 bind
 
-`app/config/base.py:HOST` — bind sur toutes les interfaces, signalé par
-Bandit comme risque potentiel. **Faux positif documenté** : l'app tourne
-toujours en conteneur ou derrière un reverse proxy en production —
-`127.0.0.1` casserait silencieusement toute exposition. Annoté `# nosec
-B104` avec justification (exposition réseau contrôlée par le déploiement,
-pas par l'app).
+`app/config/base.py:HOST` — binds on all interfaces, flagged by Bandit as
+a potential risk. **Documented false positive**: the app always runs in a
+container or behind a reverse proxy in production —
+`127.0.0.1` would silently break any exposure. Annotated `# nosec
+B104` with justification (network exposure controlled by the deployment,
+not by the app).
 
-### 3. Bandit B324 — MD5 dans `scripts/find_duplicates.py`
+### 3. Bandit B324 — MD5 in `scripts/find_duplicates.py`
 
-Usage non cryptographique (empreinte de similarité de code, pas un besoin
-de sécurité). Corrigé avec `usedforsecurity=False` (le correctif suggéré
-par Bandit lui-même) plutôt qu'un changement d'algorithme inutile.
+Non-cryptographic usage (code-similarity fingerprint, not a security
+need). Fixed with `usedforsecurity=False` (the fix suggested by Bandit
+itself) rather than an unnecessary algorithm change.
 
-### 4. Bug réel trouvé en creusant B104 : `PROMETHEUS_ENABLED` jamais câblé
+### 4. Real bug found while digging into B104: `PROMETHEUS_ENABLED` never wired up
 
-Pas une vulnérabilité de sécurité à proprement parler, mais documenté ici
-car trouvé pendant cette passe et corrigé dans la même PR : `app/__init__.py`
-teste `app.config.get("PROMETHEUS_ENABLED", False)`, mais cette clé n'était
-**jamais lue depuis l'environnement** dans `app/config/base.py::Config` —
-la fonctionnalité `/metrics` était donc structurellement inatteignable en
-déploiement réel, quel que soit l'env var positionné, masqué par un test
-qui forçait `app.config["PROMETHEUS_ENABLED"] = True` directement au lieu
-de passer par le vrai chemin `create_app()`. Voir `report/BUG_HUNT_v1.0.md`
-pour le détail complet et la correction (câblage ajouté + suppression des
-routes `/health`/`/ready` dupliquées et bugguées dans ce même module, déjà
-correctement servies par `app/utils/health.py`).
+Not strictly a security vulnerability, but documented here since it was
+found during this pass and fixed in the same PR: `app/__init__.py` checks
+`app.config.get("PROMETHEUS_ENABLED", False)`, but this key was **never
+read from the environment** in `app/config/base.py::Config` — the
+`/metrics` feature was therefore structurally unreachable in a real
+deployment, regardless of the env var set, masked by a test that forced
+`app.config["PROMETHEUS_ENABLED"] = True` directly instead of going
+through the real `create_app()` path. See `report/BUG_HUNT_v1.0.md`
+for the full detail and the fix (wiring added + removal of the
+duplicated and buggy `/health`/`/ready` routes in that same module,
+already correctly served by `app/utils/health.py`).
 
-## Ce qui a été vérifié et confirmé sain
+## What was checked and confirmed sound
 
 ### CSRF
 
-`Flask-WTF CSRFProtect` actif sur toute l'application (`app/__init__.py`).
-Seule exemption : les blueprints `app/api/resources/*` (API publique
-`/api/v1/*`), exemptés via `csrf.exempt(blp)` — justifié : cette API
-n'accepte jamais l'authentification par cookie (bearer token uniquement,
-`ServiceAccount`), donc le risque que CSRF protège (requête cross-site
-avec cookie de session valide) ne s'applique pas.
+`Flask-WTF CSRFProtect` active across the whole application
+(`app/__init__.py`). The only exemption: the `app/api/resources/*`
+blueprints (public API `/api/v1/*`), exempted via `csrf.exempt(blp)` —
+justified: this API never accepts cookie-based authentication (bearer
+token only, `ServiceAccount`), so the risk CSRF protects against
+(cross-site request with a valid session cookie) doesn't apply here.
 
-### En-têtes de sécurité HTTP (Talisman + CSP)
+### HTTP security headers (Talisman + CSP)
 
-`Flask-Talisman` actif partout sauf en `TESTING`.
+`Flask-Talisman` active everywhere except in `TESTING`.
 `TALISMAN_FORCE_HTTPS`/`TALISMAN_STRICT_TRANSPORT_SECURITY`
-configurables par env, activés par défaut. CSP (`CSP_POLICY`,
-`app/__init__.py`) : `default-src 'self'`, `object-src 'none'`, pas de
-`'unsafe-inline'` sur `script-src` (seulement sur `script-src-attr`, pour
-les attributs `onclick=""` du HTML statique écrit par les développeurs —
-jamais de données utilisateur — et sur `style-src`, pour un seul style
-dynamique de largeur de barre sur le dashboard). Domaines externes
-whitelistés (`cdnjs.cloudflare.com`, `cdn.jsdelivr.net`) documentés et
-justifiés un par un dans le code (CDN pour Tailwind/daisyUI/Font
-Awesome/FullCalendar — l'app n'a pas de pipeline de build JS/CSS, voir
-CLAUDE.md "Frontend").
+configurable via env, enabled by default. CSP (`CSP_POLICY`,
+`app/__init__.py`): `default-src 'self'`, `object-src 'none'`, no
+`'unsafe-inline'` on `script-src` (only on `script-src-attr`, for the
+`onclick=""` attributes in developer-written static HTML — never user
+data — and on `style-src`, for a single dynamic dashboard bar-width
+style). External whitelisted domains (`cdnjs.cloudflare.com`,
+`cdn.jsdelivr.net`) documented and justified one by one in the code (CDN
+for Tailwind/daisyUI/Font Awesome/FullCalendar — the app has no JS/CSS
+build pipeline, see CLAUDE.md "Frontend").
 
-### Cookies de session
+### Session cookies
 
-`SESSION_COOKIE_HTTPONLY=True` par défaut, `SESSION_COOKIE_SAMESITE=Lax`,
-`SESSION_PROTECTION="strong"` (Flask-Login réinvalide la session si
-l'IP/user-agent change). `SESSION_COOKIE_SECURE` est `False` par défaut
-dans `Config` (nécessaire pour un premier lancement local sans TLS) mais
-`True` par défaut dans `docker/.env.example`
-(`TALISMAN_FORCE_HTTPS`/déploiement derrière proxy TLS) — cohérent avec
-l'architecture documentée.
+`SESSION_COOKIE_HTTPONLY=True` by default, `SESSION_COOKIE_SAMESITE=Lax`,
+`SESSION_PROTECTION="strong"` (Flask-Login re-invalidates the session if
+the IP/user-agent changes). `SESSION_COOKIE_SECURE` is `False` by default
+in `Config` (needed for a first local run without TLS) but
+`True` by default in `docker/.env.example`
+(`TALISMAN_FORCE_HTTPS`/deployment behind a TLS proxy) — consistent with
+the documented architecture.
 
 ### `ProxyFix`
 
-`ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)` — fait confiance à
-exactement **un** hop de proxy. Correct pour la topologie documentée (un
-seul reverse proxy devant l'app) ; une chaîne de proxies plus longue sans
-ajuster ces valeurs laisserait un client usurper son IP dans les logs
-d'audit, mais ce n'est pas la topologie de déploiement documentée.
+`ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)` — trusts exactly
+**one** proxy hop. Correct for the documented topology (a single reverse
+proxy in front of the app); a longer proxy chain without adjusting these
+values would let a client spoof its IP in audit logs, but that is not the
+documented deployment topology.
 
-### Mots de passe
+### Passwords
 
-`werkzeug.security.generate_password_hash()` (scrypt par défaut).
-`User.password_hash` est `String(255)` (élargi cette session, voir
-CLAUDE.md — bug réel trouvé et corrigé en construisant le support
-MySQL : la valeur par défaut de 128 caractères tronquait silencieusement
-un hash scrypt de ~162 caractères sous SQLite, et le rejetait
-explicitement sous MySQL/PostgreSQL).
+`werkzeug.security.generate_password_hash()` (scrypt by default).
+`User.password_hash` is `String(255)` (widened this session, see
+CLAUDE.md — real bug found and fixed while building
+MySQL support: the default 128-character length silently truncated a
+~162-character scrypt hash under SQLite, and rejected it outright
+under MySQL/PostgreSQL).
 
-### Jetons d'API (`ServiceAccount`)
+### API tokens (`ServiceAccount`)
 
-`token_hash` en SHA-256 (pas de hash lent type PBKDF2/bcrypt) —
-délibéré et documenté : le token a 256 bits d'entropie
-(`secrets.token_urlsafe(32)`), contrairement à un mot de passe humain à
-faible entropie, donc un hash lent n'ajouterait que de la latence sans
-bénéfice de sécurité réel. Le token complet n'est **jamais persisté**
-(affiché une seule fois, à la création/régénération — UX identique à un
-PAT GitHub).
+`token_hash` in SHA-256 (no slow hash like PBKDF2/bcrypt) —
+deliberate and documented: the token has 256 bits of entropy
+(`secrets.token_urlsafe(32)`), unlike a low-entropy human password, so a
+slow hash would only add latency with no real security benefit. The full
+token is **never persisted** (shown only once, at creation/regeneration —
+same UX as a GitHub PAT).
 
-### Injection SQL
+### SQL injection
 
-Aucune requête SQL brute construite par concaténation trouvée dans
-`app/`. Les deux seuls appels `.execute()` avec du SQL textuel utilisent
-`sqlalchemy.text()` correctement (`app/utils/health.py`) — le seul
-contre-exemple (`app/utils/prometheus_metrics.py`, chaîne brute sans
-`text()`) était du code mort inatteignable, supprimé (voir "Bug réel
-trouvé" ci-dessus) plutôt que juste corrigé, puisqu'il dupliquait déjà
-une route existante correcte.
+No raw SQL query built by string concatenation found in
+`app/`. The only two `.execute()` calls with textual SQL use
+`sqlalchemy.text()` correctly (`app/utils/health.py`) — the only
+counter-example (`app/utils/prometheus_metrics.py`, raw string without
+`text()`) was unreachable dead code, removed (see "Real bug
+found" above) rather than merely fixed, since it already duplicated an
+existing, correct route.
 
-### Secrets par défaut
+### Default secrets
 
-`SECRET_KEY`/`SECURITY_PASSWORD_SALT` : si non définis via env,
-générés aléatoirement via `secrets.token_urlsafe()` au démarrage — pas
-de valeur statique en dur qui finirait dans un dépôt public. Effet de
-bord documenté ailleurs (pas un bug de sécurité) : sans `SECRET_KEY`
-fixé explicitement, chaque redémarrage invalide les sessions actives —
-c'est pourquoi `docker/.env.example`/`.env.example` documentent
-explicitement de générer et fixer une vraie valeur.
+`SECRET_KEY`/`SECURITY_PASSWORD_SALT`: if not set via env,
+randomly generated via `secrets.token_urlsafe()` at startup — no
+hard-coded static value that would end up in a public repo. Side effect
+documented elsewhere (not a security bug): without an explicitly fixed
+`SECRET_KEY`, every restart invalidates active sessions —
+which is why `docker/.env.example`/`.env.example` explicitly document
+generating and fixing a real value.
 
-### Webhooks Apprise
+### Apprise webhooks
 
-`NotificationTarget.apprise_url` traité comme un secret : jamais dans
-`AuditService` `details`, jamais dans la vue liste (`/admin/notification-targets`,
-seulement pré-rempli sur le formulaire d'édition), jamais interpolé dans
-un message de log (voir CLAUDE.md "External notifications (Apprise)" pour
-le détail — y compris la limite documentée du filtre anti-données-sensibles
-des logs sur ce point précis, mitigée par discipline aux points d'appel
-plutôt que par une regex qui ne peut pas couvrir toutes les formes d'URL
-Apprise).
+`NotificationTarget.apprise_url` treated as a secret: never in
+`AuditService` `details`, never in the list view (`/admin/notification-targets`,
+only pre-filled in the edit form), never interpolated into
+a log message (see CLAUDE.md "External notifications (Apprise)" for
+the detail — including the documented limitation of the log
+sensitive-data filter on this specific point, mitigated by discipline at
+the call sites rather than by a regex that cannot cover every Apprise
+URL shape).
 
-### Path traversal (sauvegardes)
+### Path traversal (backups)
 
-`BackupService` (téléchargement de backups locaux) : garde
-préfixe + containment check sur le chemin résolu avant tout accès
-fichier (`app/services/backup_service.py`, voir CLAUDE.md "Database
+`BackupService` (local backup download): prefix guard
++ containment check on the resolved path before any file access
+(`app/services/backup_service.py`, see CLAUDE.md "Database
 backups").
 
-### Traçabilité (audit trail)
+### Audit trail
 
-`AuditService.log()` capture acteur/IP/action/ressource pour les
-domaines sensibles (`auth.*`, `user.*`, `setting.*`, etc.) — écriture
-DB + fichier, échoue de façon silencieuse et journalisée (jamais
-bloquant pour l'action métier qu'il enregistre), avec un test de
-régression dédié (`test_failure_writing_entry_does_not_raise`).
+`AuditService.log()` captures actor/IP/action/resource for the
+sensitive domains (`auth.*`, `user.*`, `setting.*`, etc.) — DB
++ file write, fails silently and gets logged (never blocking for the
+business action it records), with a dedicated regression test
+(`test_failure_writing_entry_does_not_raise`).
 
-## Bandit — état final
+## Bandit — final status
 
 ```
-bandit -r app/     -> 0 finding (3 avant correction)
-bandit -r scripts/ -> 0 finding bloquant (findings Low restants : B101
-                       assert dans un script, B110 try/except/pass déjà
-                       délibéré dans find_duplicates.py — hygiène de script,
-                       pas une surface d'attaque)
+bandit -r app/     -> 0 finding (3 before the fix)
+bandit -r scripts/ -> 0 blocking finding (remaining Low findings: B101
+                       assert in a script, B110 try/except/pass already
+                       deliberate in find_duplicates.py - script
+                       hygiene, not an attack surface)
 ```
 
-## Safety (scan de dépendances) — non exécuté en CI, gap documenté
+## Safety (dependency scan) — not run in CI, gap documented
 
-`safety check` (l'ancienne commande, utilisée jusqu'ici par
-`.gitlab-ci/.gitlab-ci.yml`) est **non supportée depuis mai 2024** — la
-CI l'appelait avec une syntaxe déjà invalide pour la version installée
-(`safety==3.8.1`). Son remplaçant, `safety scan`, nécessite soit
-`safety auth login` (interactif), soit une clé `SAFETY_API_KEY` — confirmé
-par test direct : sans clé, `safety scan` bloque indéfiniment en attendant
-un prompt de connexion, ce qui **bloquerait tout pipeline CI**
-indéfiniment plutôt que d'échouer proprement. La CI (voir
-"CI/CD" ci-dessous) exécute maintenant `safety scan` seulement si
-`SAFETY_API_KEY` est configurée (CI/CD > Variables), et l'ignore
-explicitement sinon (message clair, pas un `|| true` qui masque
-silencieusement l'absence de scan).
+`safety check` (the old command, used until now by
+`.gitlab-ci/.gitlab-ci.yml`) has been **unsupported since May 2024** — CI
+was calling it with syntax already invalid for the installed version
+(`safety==3.8.1`). Its replacement, `safety scan`, requires either
+`safety auth login` (interactive) or a `SAFETY_API_KEY` key — confirmed
+by direct testing: without a key, `safety scan` hangs indefinitely
+waiting for a login prompt, which **would block the entire CI pipeline**
+indefinitely instead of failing cleanly. CI (see
+"CI/CD" below) now only runs `safety scan` if
+`SAFETY_API_KEY` is configured (CI/CD > Variables), and explicitly skips
+it otherwise (a clear message, not a `|| true` silently masking the
+absence of a scan).
 
-**Action recommandée, non faite ici** (nécessite un compte
-platform.safetycli.com, décision hors du périmètre code) : configurer
-`SAFETY_API_KEY` pour activer réellement le scan de dépendances en CI.
+**Recommended action, not done here** (requires a
+platform.safetycli.com account, a decision outside code scope): configure
+`SAFETY_API_KEY` to actually enable dependency scanning in CI.
 
-## CI/CD — jobs bloquants
+## CI/CD — blocking jobs
 
-`.gitlab-ci/.gitlab-ci.yml` : `run_linting` et `run_security` étaient
-tous les deux non-bloquants (`|| true` sur chaque commande), donc une
-régression de lint/type-check/format/sécurité ne faisait jamais échouer
-le pipeline. Corrigé : `run_linting` (ruff/mypy/black) est maintenant
-strictement aligné sur `make lint`/`make format-check` (mêmes commandes
-exactes) et bloquant ; `run_security` (`bandit`) est bloquant, `safety`
-reste conditionnel pour les raisons ci-dessus.
+`.gitlab-ci/.gitlab-ci.yml`: `run_linting` and `run_security` were
+both non-blocking (`|| true` on every command), so a
+lint/type-check/format/security regression never failed the pipeline.
+Fixed: `run_linting` (ruff/mypy/black) is now strictly aligned with
+`make lint`/`make format-check` (the exact same commands) and blocking;
+`run_security` (`bandit`) is blocking, `safety`
+remains conditional for the reasons above.
 
-**Point important non résolu par cette PR** : ce dépôt est hébergé sur
-GitHub (`FoxOps/leviia-schedule`), mais `.gitlab-ci/.gitlab-ci.yml` est
-une configuration **GitLab CI** — il n'existe **aucun workflow GitHub
-Actions** (`.github/workflows/` n'existe pas). Rendre ce fichier
-bloquant améliore sa qualité intrinsèque mais n'a, en l'état, **aucun
-effet réel sur les pull requests GitHub de ce dépôt** puisqu'aucune CI ne
-s'exécute dessus (confirmé : `gh pr checks` ne remonte aucun check sur
-les PR de cette série). Décision à prendre par l'équipe : soit ce fichier
-sert un mirroring GitLab existant en dehors de ce que ce dépôt Git seul
-peut confirmer, soit un vrai workflow GitHub Actions équivalent doit être
-ajouté pour qu'un gate de qualité s'applique réellement aux PR de ce
-dépôt.
+**Important point not resolved by this PR**: this repository is hosted on
+GitHub (`FoxOps/leviia-schedule`), but `.gitlab-ci/.gitlab-ci.yml` is a
+**GitLab CI** configuration — there is **no GitHub
+Actions workflow at all** (`.github/workflows/` does not exist). Making
+this file blocking improves its intrinsic quality but, as it stands, has
+**no real effect on this repo's GitHub pull requests**
+since no CI actually runs against them (confirmed: `gh pr checks` reports
+no checks at all on this series' PRs). Decision for the team to make:
+either this file serves an existing GitLab mirroring setup outside what
+this Git repo alone can confirm, or a real, equivalent GitHub Actions
+workflow needs to be added for a quality gate to actually apply to this
+repo's PRs.
 
 ## Verdict
 
-Aucune vulnérabilité applicative critique/haute trouvée. Les protections
-structurelles (CSRF, CSP, hachage des mots de passe, jetons API,
-protection session, audit trail) sont en place et cohérentes avec leur
-documentation. Les deux gaps réels identifiés sont opérationnels, pas
-applicatifs : (1) le scan de dépendances (Safety) n'est pas actif faute
-de clé API — décision d'équipe, pas un correctif de code — et (2) aucune
-CI ne s'exécute réellement sur ce dépôt GitHub. Ni l'un ni l'autre
-n'indique une faille dans le code de l'application elle-même.
+No critical/high application vulnerability found. The structural
+protections (CSRF, CSP, password hashing, API tokens,
+session protection, audit trail) are in place and consistent with their
+documentation. The two real gaps identified are operational, not
+application-level: (1) the dependency scan (Safety) is not active for
+lack of an API key — a team decision, not a code fix — and (2) no
+CI actually runs against this GitHub repo. Neither one
+indicates a flaw in the application code itself.

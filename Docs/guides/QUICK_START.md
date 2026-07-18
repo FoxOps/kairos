@@ -1,39 +1,39 @@
-# 🚀 Guide de Démarrage Rapide - Leviia Schedule
+# 🚀 Quick Start Guide - Kairos
 
-> **Version** : 1.0.0 | **Dernière mise à jour** : Juin 2026
+> **Version**: 1.0.0 | **Last updated**: June 2026
 
 ---
 
-## 🎯 En 5 Minutes
+## 🎯 In 5 Minutes
 
-### 1️⃣ Installation (méthode recommandée : Docker Compose)
+### 1️⃣ Installation (recommended method: Docker Compose)
 
-Pas besoin de cloner le dépôt - deux fichiers suffisent :
+No need to clone the repository - two files are enough:
 
 ```bash
-mkdir leviia-schedule && cd leviia-schedule
+mkdir kairos && cd kairos
 curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/docker-compose.example.yml
 curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/.env.example
 
-nano .env  # LEVIIA_IMAGE=harbor.leviia.com/<HARBOR_PROJECT>/leviia-schedule:latest, SECRET_KEY, DEFAULT_ADMIN_PASSWORD
+nano .env  # KAIROS_IMAGE=harbor.leviia.com/<HARBOR_PROJECT>/kairos:latest, SECRET_KEY, DEFAULT_ADMIN_PASSWORD
 
 docker compose up -d
 ```
 
-**Accès** : http://localhost:5000
+**Access**: http://localhost:5000
 
-> ⚠️ **L'étape `nano .env`** (au moins `SECRET_KEY`/`DEFAULT_ADMIN_PASSWORD`)
-> est indispensable : sans `DEFAULT_ADMIN_PASSWORD`, l'application génère
-> un mot de passe admin aléatoire au premier démarrage (jamais affiché
-> nulle part) au lieu du `admin123` par défaut ci-dessous.
+> ⚠️ **The `nano .env` step** (at least `SECRET_KEY`/`DEFAULT_ADMIN_PASSWORD`)
+> is required: without `DEFAULT_ADMIN_PASSWORD`, the application generates
+> a random admin password on first startup (never displayed
+> anywhere) instead of the default `admin123` below.
 
-> **📖 Détail complet** (registry, volumes, variables) :
+> **📖 Full details** (registry, volumes, variables):
 > [`deployment/docker.md`](../deployment/docker.md)
 
-### Alternative : installation locale (développement / cas particuliers)
+### Alternative: local installation (development / special cases)
 
-Réservé au développement sur le code ou aux cas où Docker n'est pas
-disponible - l'image Docker ci-dessus reste la méthode principale.
+Reserved for developing on the code or for cases where Docker is not
+available - the Docker image above remains the primary method.
 
 ```bash
 git clone https://github.com/FoxOps/leviia-schedule.git
@@ -43,37 +43,37 @@ source venv/bin/activate  # Linux/macOS
 # venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 
-# Copier la configuration par défaut
+# Copy the default configuration
 cp .env.example .env
 
-# Démarrer
+# Start
 python run.py
 ```
 
-**Accès** : http://localhost:5000
+**Access**: http://localhost:5000
 
-> ⚠️ **L'étape `cp .env.example .env` est indispensable** : sans elle,
-> `DEFAULT_ADMIN_PASSWORD` n'est pas défini et l'application génère un
-> mot de passe admin aléatoire au premier démarrage (jamais affiché nulle
-> part) au lieu du `admin123` par défaut ci-dessous.
-
----
-
-### 2️⃣ Première Connexion
-
-- **Email** : `admin@leviia.local`
-- **Mot de passe** : `admin123`
-
-> ⚠️ **Changez immédiatement le mot de passe !**
+> ⚠️ **The `cp .env.example .env` step is required**: without it,
+> `DEFAULT_ADMIN_PASSWORD` is not set and the application generates a
+> random admin password on first startup (never displayed anywhere)
+> instead of the default `admin123` below.
 
 ---
 
-### 2️⃣ Authentification SSO/OIDC (Optionnelle)
+### 2️⃣ First Login
 
-Si vous utilisez **Keycloak**, **Okta**, **Auth0** ou un autre fournisseur OIDC :
+- **Email**: `admin@kairos.local`
+- **Password**: `admin123`
 
-1. Configurez votre fournisseur OIDC avec l'URL de callback : `http://localhost:5000/oidc/callback`
-2. Ajoutez les variables d'environnement dans votre fichier `.env` :
+> ⚠️ **Change the password immediately!**
+
+---
+
+### 2️⃣ SSO/OIDC Authentication (Optional)
+
+If you use **Keycloak**, **Okta**, **Auth0** or another OIDC provider:
+
+1. Configure your OIDC provider with the callback URL: `http://localhost:5000/oidc/callback`
+2. Add the environment variables to your `.env` file:
    ```bash
    OIDC_ENABLED=true
    OIDC_ISSUER=https://votre-fournisseur.com/realms/votre-realm
@@ -81,130 +81,130 @@ Si vous utilisez **Keycloak**, **Okta**, **Auth0** ou un autre fournisseur OIDC 
    OIDC_CLIENT_SECRET=votre-client-secret
    OIDC_REDIRECT_URI=http://localhost:5000/oidc/callback
    ```
-3. Redémarrez l'application : `python run.py`
-4. Connectez-vous via le bouton **Se connecter avec SSO**
+3. Restart the application: `python run.py`
+4. Log in via the **Log in with SSO** button
 
-> ⚠️ **Info** : Consultez le [Guide Administrateur](ADMIN_GUIDE.md) pour une configuration complète SSO/OIDC.
-
----
-
-### 3️⃣ Configuration de Base
-
-#### Créer un groupe
-1. **Admin** > **Groupes** > **Ajouter**
-2. Nom : `Équipe Technique`
-3. ✅ Participe au planning
-4. ✅ Participe aux astreintes
-
-#### Ajouter un utilisateur
-1. **Admin** > **Utilisateurs** > **Ajouter**
-2. Nom : `Jean Dupont`
-3. Email : `jean@entreprise.com`
-4. Groupe : `Équipe Technique`
-5. Mot de passe : `monmotdepasse123`
+> ⚠️ **Info**: See the [Administrator Guide](ADMIN_GUIDE.md) for complete SSO/OIDC configuration.
 
 ---
 
-## 📅 Utilisation Quotidienne
+### 3️⃣ Basic Configuration
 
-### Pour les Administrateurs
+#### Create a group
+1. **Admin** > **Groups** > **Add**
+2. Name: `Technical Team`
+3. ✅ Participates in scheduling
+4. ✅ Participates in on-call rotations
 
-#### 🔹 Ajouter un shift
-1. **Planning** > **Ajouter un shift**
-2. Sélectionnez : Utilisateur + Type de shift + Date
-3. **Enregistrer**
-
-#### 🔹 Planifier une astreinte
-1. **Astreintes** > **Ajouter une astreinte**
-2. Sélectionnez : Utilisateur + **Vendredi** comme date de début
-3. **Enregistrer**
-
-#### 🔹 Configurer l'automatisation
-1. **Admin** > **Automatisation** > **Génération complète**
-2. Configurez l'ordre de rotation
-3. Sélectionnez la période
-4. **Simuler** → **Générer**
+#### Add a user
+1. **Admin** > **Users** > **Add**
+2. Name: `Jean Dupont`
+3. Email: `jean@company.com`
+4. Group: `Technical Team`
+5. Password: `mypassword123`
 
 ---
 
-### Pour les Utilisateurs
+## 📅 Daily Usage
 
-#### 🔹 Consulter son planning
-- **Accueil** : Calendrier interactif
-- **Planning** : Liste de tous vos shifts
+### For Administrators
 
-#### 🔹 Prendre un congé
-1. **Congés** > **Ajouter un congé**
-2. Sélectionnez : Date de début + Date de fin
-3. **Enregistrer**
+#### 🔹 Add a shift
+1. **Schedule** > **Add a shift**
+2. Select: User + Shift type + Date
+3. **Save**
 
-#### 🔹 Exporter vers Google Calendar
-1. **Profil** > **Token ICS**
-2. **Générer un nouveau token**
-3. Copiez l'URL : `http://localhost:5000/export/shifts?scope=my&token=VOTRE_TOKEN`
-4. Dans Google Calendar : **Paramètres** > **Ajouter un calendrier** > **À partir d'une URL**
+#### 🔹 Schedule an on-call rotation
+1. **On-call** > **Add an on-call**
+2. Select: User + **Friday** as the start date
+3. **Save**
+
+#### 🔹 Configure automation
+1. **Admin** > **Automation** > **Full generation**
+2. Configure the rotation order
+3. Select the period
+4. **Simulate** → **Generate**
 
 ---
 
-## ⚡ Astuces Rapides
+### For Users
 
-### Raccourcis
+#### 🔹 View your schedule
+- **Home**: Interactive calendar
+- **Schedule**: List of all your shifts
 
-| Action | Chemin |
+#### 🔹 Request leave
+1. **Leave** > **Add leave**
+2. Select: Start date + End date
+3. **Save**
+
+#### 🔹 Export to Google Calendar
+1. **Profile** > **ICS Token**
+2. **Generate a new token**
+3. Copy the URL: `http://localhost:5000/export/shifts?scope=my&token=YOUR_TOKEN`
+4. In Google Calendar: **Settings** > **Add calendar** > **From URL**
+
+---
+
+## ⚡ Quick Tips
+
+### Shortcuts
+
+| Action | Path |
 |--------|--------|
-| Tableau de bord | `/` ou `/index` |
-| Planning | `/schedule` |
-| Astreintes | `/oncall` |
-| Congés | `/leave` |
+| Dashboard | `/` or `/index` |
+| Schedule | `/schedule` |
+| On-call | `/oncall` |
+| Leave | `/leave` |
 | Admin | `/admin` |
-| Profil | `/profile` |
+| Profile | `/profile` |
 
-### Commandes Utiles
+### Useful Commands
 
 ```bash
-# Lancer les tests
+# Run the tests
 make test
 
-# Vérifier la qualité du code
+# Check code quality
 make lint
 
-# Formater le code
+# Format the code
 make format-fix
 
-# Tout en une fois
+# All at once
 make all
 ```
 
 ---
 
-## 🆘 Dépannage Express
+## 🆘 Quick Troubleshooting
 
-| Problème | Solution |
+| Problem | Solution |
 |----------|----------|
-| **Erreur 404** | Vérifiez l'URL et vos permissions |
-| **Connexion échouée** | Vérifiez email/mot de passe |
-| **Shifts non visibles** | Vérifiez la période dans le calendrier |
-| **Export ICS ne fonctionne pas** | Régénérez votre token |
-| **Base de données manquante** | `mkdir -p instance` puis relancez |
+| **404 Error** | Check the URL and your permissions |
+| **Login failed** | Check your email/password |
+| **Shifts not visible** | Check the period in the calendar |
+| **ICS export not working** | Regenerate your token |
+| **Missing database** | `mkdir -p instance` then restart |
 
 ---
 
-## 📚 Documentation Complète
+## 📚 Full Documentation
 
-- [📖 Guide Utilisateur Complet](USER_GUIDE.md)
-- [🛡️ Guide Administrateur](ADMIN_GUIDE.md)
+- [📖 Complete User Guide](USER_GUIDE.md)
+- [🛡️ Administrator Guide](ADMIN_GUIDE.md)
 - [❓ FAQ](FAQ.md)
-- [🗺️ Feuille de Route](../../ROADMAP.md)
-- [📋 README Technique](../../README.md)
+- [🗺️ Roadmap](../../ROADMAP.md)
+- [📋 Technical README](../../README.md)
 
 ---
 
 ## 📞 Support
 
-- **Issues** : [GitHub Issues](https://github.com/FoxOps/leviia-schedule/issues)
-- **Discussions** : [GitHub Discussions](https://github.com/FoxOps/leviia-schedule/discussions)
-- **Licence** : CeCILL v2.1
+- **Issues**: [GitHub Issues](https://github.com/FoxOps/leviia-schedule/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/FoxOps/leviia-schedule/discussions)
+- **License**: CeCILL v2.1
 
 ---
 
-*© 2026 Leviia Schedule - Tous droits réservés*
+*© 2026 FoxOps - All rights reserved*

@@ -32,20 +32,20 @@ class TestGenerateToken:
 class TestIsValid:
     def test_active_no_expiry_is_valid(self):
         sa = ServiceAccount(
-            name="Test", token_prefix="lsak_test", token_hash="x", is_active=True
+            name="Test", token_prefix="ksak_test", token_hash="x", is_active=True
         )
         assert sa.is_valid() is True
 
     def test_inactive_is_invalid(self):
         sa = ServiceAccount(
-            name="Test", token_prefix="lsak_test", token_hash="x", is_active=False
+            name="Test", token_prefix="ksak_test", token_hash="x", is_active=False
         )
         assert sa.is_valid() is False
 
     def test_active_future_expiry_is_valid(self):
         sa = ServiceAccount(
             name="Test",
-            token_prefix="lsak_test",
+            token_prefix="ksak_test",
             token_hash="x",
             is_active=True,
             expires_at=datetime.now(timezone.utc).replace(tzinfo=None)
@@ -56,7 +56,7 @@ class TestIsValid:
     def test_active_past_expiry_is_invalid(self):
         sa = ServiceAccount(
             name="Test",
-            token_prefix="lsak_test",
+            token_prefix="ksak_test",
             token_hash="x",
             is_active=True,
             expires_at=datetime.now(timezone.utc).replace(tzinfo=None)
@@ -68,14 +68,14 @@ class TestIsValid:
 class TestToDict:
     def test_to_dict_never_exposes_token_hash(self):
         sa = ServiceAccount(
-            name="Test", token_prefix="lsak_test", token_hash="secret-hash"
+            name="Test", token_prefix="ksak_test", token_hash="secret-hash"
         )
         data = sa.to_dict()
         assert "token_hash" not in data
 
     def test_to_dict_exposes_token_prefix(self):
         sa = ServiceAccount(
-            name="Test", token_prefix="lsak_test", token_hash="secret-hash"
+            name="Test", token_prefix="ksak_test", token_hash="secret-hash"
         )
         data = sa.to_dict()
-        assert data["token_prefix"] == "lsak_test"
+        assert data["token_prefix"] == "ksak_test"

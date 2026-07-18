@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: leviia-schedule
-  namespace: leviia-schedule
+  name: kairos
+  namespace: kairos
   labels:
-    app: leviia-schedule
+    app: kairos
     version: v1
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: leviia-schedule
+      app: kairos
       version: v1
   strategy:
     type: RollingUpdate
@@ -20,7 +20,7 @@ spec:
   template:
     metadata:
       labels:
-        app: leviia-schedule
+        app: kairos
         version: v1
       # Pas d'annotations checksum/config-secret ici : ce manifest est
       # appliqué tel quel via `kubectl apply -f k8s/` (voir .gitlab-ci.yml,
@@ -28,20 +28,20 @@ spec:
       # qui existait avant n'était jamais interprétée, c'était du texte
       # littéral dans l'annotation, donc le rolling restart automatique sur
       # changement de ConfigMap/Secret ne s'est jamais produit. Si besoin,
-      # déclencher `kubectl rollout restart deployment/leviia-schedule -n
-      # leviia-schedule` explicitement en CI après un changement de config.
+      # déclencher `kubectl rollout restart deployment/kairos -n
+      # kairos` explicitement en CI après un changement de config.
     spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
       containers:
-      - name: leviia-schedule
+      - name: kairos
         # Placeholder remplacé en CI (voir .gitlab-ci.yml, job
         # deploy_production) par $CI_REGISTRY_IMAGE:latest avant `kubectl
         # apply` - l'image réellement poussée par build_docker. Pour un
         # apply manuel hors CI, remplacer par le registre réel avant usage.
-        image: your-registry/leviia-schedule:latest
+        image: your-registry/kairos:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 5000
@@ -49,9 +49,9 @@ spec:
           protocol: TCP
         envFrom:
         - configMapRef:
-            name: leviia-config
+            name: kairos-config
         - secretRef:
-            name: leviia-secrets
+            name: kairos-secrets
         resources:
           requests:
             cpu: 500m
@@ -93,7 +93,7 @@ spec:
       volumes:
       - name: data
         persistentVolumeClaim:
-          claimName: leviia-data
+          claimName: kairos-data
       - name: logs
         emptyDir: {}
       - name: instance

@@ -1,5 +1,5 @@
 """
-Automation admin service for Leviia Schedule.
+Automation admin service for Kairos.
 
 Business logic supporting the admin automation screens: clearing an
 existing period before regeneration and persisting the rotation order.

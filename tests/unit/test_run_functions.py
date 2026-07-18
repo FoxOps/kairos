@@ -174,7 +174,7 @@ class TestCreateDefaultData:
             user = User.query.first()
             assert user is not None
             assert user.name == "Administrateur"
-            assert user.email == "admin@leviia.local"
+            assert user.email == "admin@kairos.local"
             assert user.is_admin is True
 
             # Check that the password is correct
@@ -195,7 +195,7 @@ class TestCreateDefaultData:
 
             user = User(
                 name="Admin",
-                email="admin@leviia.local",
+                email="admin@kairos.local",
                 is_admin=True,
                 group_id=group.id,
             )

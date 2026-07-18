@@ -1,5 +1,5 @@
 """
-Flask application initialization for Leviia Schedule.
+Flask application initialization for Kairos.
 
 This version uses a modular approach with a factory function to create
 and configure the application. The global _app variable is kept for

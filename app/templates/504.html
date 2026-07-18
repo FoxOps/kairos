@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "macros/errors.html" import error_page with context %}
 
-{% block title %}{{ _("Temps d'attente dépassé") }} - Leviia{% endblock %}
+{% block title %}{{ _("Temps d'attente dépassé") }} - Kairos{% endblock %}
 
 {% block content %}
 {% call error_page(code=504, title=_("Temps d'attente dépassé"), subtitle=_("Le serveur n'a pas répondu à temps."), color="text-warning", secondary=[{"onclick": "location.reload()", "icon": "fa-sync-alt", "label": _("Actualiser")}]) %}

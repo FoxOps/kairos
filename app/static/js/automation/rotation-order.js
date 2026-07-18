@@ -8,7 +8,7 @@
  * saveRotationOrder() was also originally defined inside the
  * DOMContentLoaded listener, making it unreachable from
  * onclick="saveRotationOrder()" even before the strict CSP - it's now
- * exposed via window.Leviia like the other inline callbacks.
+ * exposed via window.Kairos like the other inline callbacks.
  */
 
 let sortableList;

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-17 16:17+0200\n"
+"POT-Creation-Date: 2026-07-18 02:55+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -41,42 +41,54 @@ msgstr ""
 msgid "%(count)s entrée(s) d'historique purgée(s)."
 msgstr ""
 
-#: app/routes/admin_automation_routes.py:85
+#: app/routes/admin_automation_routes.py:89
 #, python-format
 msgid "Erreur lors de la sauvegarde de l'ordre : %(error)s"
 msgstr ""
 
-#: app/routes/admin_automation_routes.py:93
+#: app/routes/admin_automation_routes.py:97
 msgid ""
 "Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour "
 "appliquer."
 msgstr ""
 
-#: app/routes/admin_automation_routes.py:112
+#: app/routes/admin_automation_routes.py:116
 #, python-format
 msgid "%(oncalls_deleted)s astreintes existantes supprimées pour la période"
 msgstr ""
 
-#: app/routes/admin_automation_routes.py:120
+#: app/routes/admin_automation_routes.py:124
 #, python-format
 msgid "%(shifts_deleted)s shifts existants supprimés pour la période"
 msgstr ""
 
-#: app/routes/admin_automation_routes.py:177
+#: app/routes/admin_automation_routes.py:187 app/services/leave_service.py:166
+msgid "Génération d'astreintes incomplète"
+msgstr ""
+
+#: app/routes/admin_automation_routes.py:189
+#, python-format
+msgid ""
+"Aucun utilisateur disponible dans le respect du délai légal de 2 semaines"
+" pour : %(dates)s. Assignation manuelle nécessaire dans "
+"/admin/automation."
+msgstr ""
+
+#: app/routes/admin_automation_routes.py:202
 #, python-format
 msgid ""
 "Régénération complète terminée pour la période du %(strftime)s au "
 "%(strftime1)s"
 msgstr ""
 
-#: app/routes/admin_automation_routes.py:186
-#: app/routes/admin_automation_routes.py:260
+#: app/routes/admin_automation_routes.py:211
+#: app/routes/admin_automation_routes.py:285
 #, python-format
 msgid "Format de date invalide : %(val0)s"
 msgstr ""
 
-#: app/routes/admin_automation_routes.py:188
-#: app/routes/admin_automation_routes.py:263
+#: app/routes/admin_automation_routes.py:213
+#: app/routes/admin_automation_routes.py:288
 #: app/routes/admin_group_routes.py:47 app/routes/admin_group_routes.py:78
 #: app/routes/admin_group_routes.py:97
 #: app/routes/admin_notification_target_routes.py:82
@@ -96,12 +108,12 @@ msgstr ""
 msgid "Erreur : %(val0)s"
 msgstr ""
 
-#: app/routes/admin_automation_routes.py:241
+#: app/routes/admin_automation_routes.py:266
 #, python-format
 msgid "%(deleted)s shifts existants supprimés pour la période"
 msgstr ""
 
-#: app/routes/admin_automation_routes.py:254
+#: app/routes/admin_automation_routes.py:279
 #, python-format
 msgid "%(val0)s shifts régénérés avec succès !"
 msgstr ""
@@ -601,60 +613,68 @@ msgstr ""
 msgid "%(count)s demande(s) terminée(s) supprimée(s) de votre historique."
 msgstr ""
 
-#: app/services/app_notification_service.py:36
+#: app/services/app_notification_service.py:40
 msgid "Cette notification ne vous appartient pas"
 msgstr ""
 
-#: app/services/app_notification_service.py:70
+#: app/services/app_notification_service.py:74
 #, python-format
 msgid "%(requester)s vous propose un échange de shift, à confirmer."
 msgstr ""
 
-#: app/services/app_notification_service.py:87
+#: app/services/app_notification_service.py:91
 #, python-format
 msgid "%(name)s n'a pas retenu votre proposition d'échange."
 msgstr ""
 
-#: app/services/app_notification_service.py:91
-#: app/services/app_notification_service.py:147
+#: app/services/app_notification_service.py:95
+#: app/services/app_notification_service.py:151
 #, python-format
 msgid " Motif : %(comment)s"
 msgstr ""
 
-#: app/services/app_notification_service.py:108
+#: app/services/app_notification_service.py:112
 #, python-format
 msgid ""
 "%(requester)s propose un échange de shift à %(target)s, en attente de "
 "validation."
 msgstr ""
 
-#: app/services/app_notification_service.py:124
+#: app/services/app_notification_service.py:128
 #, python-format
 msgid "Votre demande d'échange avec %(name)s a été approuvée."
 msgstr ""
 
-#: app/services/app_notification_service.py:129
+#: app/services/app_notification_service.py:133
 #, python-format
 msgid "%(name)s et vous avez échangé un shift (approuvé par l'administrateur)."
 msgstr ""
 
-#: app/services/app_notification_service.py:142
+#: app/services/app_notification_service.py:146
 #, python-format
 msgid "Votre demande d'échange avec %(name)s a été rejetée."
 msgstr ""
 
-#: app/services/app_notification_service.py:155
+#: app/services/app_notification_service.py:159
 #, python-format
 msgid ""
 "L'échange approuvé avec %(name)s a été annulé par l'administrateur, vos "
 "shifts d'origine sont restaurés."
 msgstr ""
 
-#: app/services/app_notification_service.py:161
+#: app/services/app_notification_service.py:165
 #, python-format
 msgid ""
 "L'échange avec %(name)s a été annulé par l'administrateur, vos shifts "
 "d'origine sont restaurés."
+msgstr ""
+
+#: app/services/app_notification_service.py:195
+#, python-format
+msgid ""
+"Astreinte(s) non générée(s) automatiquement (aucun utilisateur ne "
+"respecte le délai légal de 2 semaines) : %(dates)s. Assignation manuelle "
+"nécessaire."
 msgstr ""
 
 #: app/services/apprise_notification_service.py:87
@@ -662,7 +682,7 @@ msgid "URL Apprise invalide."
 msgstr ""
 
 #: app/services/apprise_notification_service.py:90
-msgid "Test de notification - Leviia Schedule"
+msgid "Test de notification - Kairos"
 msgstr ""
 
 #: app/services/apprise_notification_service.py:92
@@ -714,23 +734,31 @@ msgstr ""
 msgid "Impossible de supprimer ce groupe : des utilisateurs y sont associés."
 msgstr ""
 
-#: app/services/leave_service.py:91
+#: app/services/leave_service.py:93
 msgid "Congé non trouvé"
 msgstr ""
 
-#: app/services/leave_service.py:94
+#: app/services/leave_service.py:96
 msgid "La date de fin doit être après la date de début"
 msgstr ""
 
-#: app/services/leave_service.py:103
+#: app/services/leave_service.py:105
 #, python-format
 msgid "Un congé existe déjà pour %(name)s pendant cette période"
 msgstr ""
 
-#: app/services/leave_service.py:115
+#: app/services/leave_service.py:117
 msgid ""
 "Impossible : l'effectif disponible tomberait à 0 sur au moins un jour de "
 "cette période"
+msgstr ""
+
+#: app/services/leave_service.py:168
+#, python-format
+msgid ""
+"Aucun utilisateur disponible dans le respect du délai légal de 2 semaines"
+" pour : %(dates)s (rééquilibrage après congé). Assignation manuelle "
+"nécessaire dans /admin/automation."
 msgstr ""
 
 #: app/services/notification_service.py:112
@@ -1549,114 +1577,109 @@ msgid "Envoyer la demande"
 msgstr ""
 
 #: app/templates/base.html:6
-msgid "Leviia Schedule - Gestion des plannings, astreintes et congés d'équipe."
+msgid "Kairos - Gestion des plannings, astreintes et congés d'équipe."
 msgstr ""
 
-#: app/templates/base.html:70
+#: app/templates/base.html:82
 msgid "Sauter la navigation"
 msgstr ""
 
-#: app/templates/base.html:73 app/templates/index.html:3
+#: app/templates/base.html:85 app/templates/index.html:3
 msgid "Accueil"
 msgstr ""
 
-#: app/templates/base.html:74 app/templates/dashboard.html:3
+#: app/templates/base.html:86 app/templates/dashboard.html:3
 msgid "Tableau de bord"
 msgstr ""
 
 #: app/templates/admin/automation/full_dry_run.html:61
 #: app/templates/admin/automation/full_dry_run.html:141
-#: app/templates/admin/dashboard.html:32 app/templates/base.html:75
+#: app/templates/admin/dashboard.html:32 app/templates/base.html:87
 #: app/templates/index.html:130
 msgid "Shifts"
 msgstr ""
 
 #: app/templates/admin/automation/full_dry_run.html:24
 #: app/templates/admin/automation/full_dry_run.html:127
-#: app/templates/admin/dashboard.html:54 app/templates/base.html:76
+#: app/templates/admin/dashboard.html:54 app/templates/base.html:88
 #: app/templates/dashboard.html:28 app/templates/index.html:131
 #: app/templates/oncall.html:3 app/templates/oncall.html:8
 msgid "Astreintes"
 msgstr ""
 
-#: app/templates/admin/dashboard.html:65 app/templates/base.html:77
+#: app/templates/admin/dashboard.html:65 app/templates/base.html:89
 #: app/templates/dashboard.html:36 app/templates/index.html:132
 #: app/templates/leave.html:3 app/templates/leave.html:8
 msgid "Congés"
 msgstr ""
 
-#: app/templates/base.html:78
+#: app/templates/base.html:90
 msgid "Échanges"
 msgstr ""
 
-#: app/templates/base.html:109
+#: app/templates/base.html:123
 msgid "Basculer entre le thème clair et sombre"
 msgstr ""
 
-#: app/templates/base.html:139
+#: app/templates/base.html:162
 msgid "Menu"
 msgstr ""
 
-#: app/templates/base.html:144 app/templates/base.html:186
-msgid "Accueil - Leviia"
-msgstr ""
-
-#: app/templates/base.html:159
-msgid "Fermer cette notification"
-msgstr ""
-
-#: app/templates/base.html:175
-msgid "Gestion des plannings, astreintes et congés d'équipe."
-msgstr ""
-
-#: app/templates/base.html:176
-#, python-format
-msgid "Version %(app_version)s | (c) 2026 Leviia"
+#: app/templates/base.html:167 app/templates/base.html:211
+msgid "Accueil - Kairos"
 msgstr ""
 
 #: app/templates/base.html:183
+msgid "Fermer cette notification"
+msgstr ""
+
+#: app/templates/base.html:199
+msgid "Gestion des plannings, astreintes et congés d'équipe."
+msgstr ""
+
+#: app/templates/base.html:200
+#, python-format
+msgid "Version %(app_version)s | © 2026 FoxOps"
+msgstr ""
+
+#: app/templates/base.html:208
 msgid "Fermer le menu"
 msgstr ""
 
-#: app/templates/base.html:184
+#: app/templates/base.html:209
 msgid "Navigation principale"
 msgstr ""
 
-#: app/templates/base.html:197
+#: app/templates/base.html:221
 #, python-format
 msgid "Notifications (%(count)s non lues)"
 msgstr ""
 
-#: app/templates/base.html:197 app/templates/base.html:198
+#: app/templates/base.html:221 app/templates/base.html:222
 #: app/templates/notifications.html:3 app/templates/notifications.html:8
 msgid "Notifications"
 msgstr ""
 
-#: app/templates/base.html:206
+#: app/templates/base.html:229
 msgid "Administration"
 msgstr ""
 
 #: app/templates/admin/dashboard.html:10 app/templates/admin/users.html:10
-#: app/templates/base.html:207
+#: app/templates/base.html:230
 msgid "Utilisateurs"
 msgstr ""
 
-#: app/templates/base.html:208 app/templates/index.html:96
+#: app/templates/base.html:231 app/templates/index.html:96
 msgid "Admin"
 msgstr ""
 
-#: app/templates/base.html:214
+#: app/templates/base.html:236
 #, python-format
 msgid "Mon profil - %(name)s"
 msgstr ""
 
-#: app/templates/base.html:223
+#: app/templates/base.html:245
 msgid "Déconnexion"
-msgstr ""
-
-#: app/templates/auth/login.html:3 app/templates/auth/login.html:10
-#: app/templates/base.html:227 app/templates/base.html:228
-msgid "Connexion"
 msgstr ""
 
 #: app/templates/confirm_swap.html:3
@@ -1863,7 +1886,7 @@ msgid "Aucun shift récent"
 msgstr ""
 
 #: app/templates/index.html:13
-msgid "Calendrier - Leviia"
+msgid "Calendrier - Kairos"
 msgstr ""
 
 #: app/templates/index.html:26
@@ -4415,6 +4438,10 @@ msgstr ""
 msgid "Vous n'avez pas encore de token. Générez-en un ci-dessus."
 msgstr ""
 
+#: app/templates/auth/login.html:3 app/templates/auth/login.html:10
+msgid "Connexion"
+msgstr ""
+
 #: app/templates/auth/login.html:14
 msgid "Erreur :"
 msgstr ""
@@ -4784,19 +4811,19 @@ msgstr ""
 msgid "Une erreur est survenue lors de la création du shift."
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:69
+#: app/utils/helpers/js_translations.py:68
 msgid "Une erreur est survenue lors du chargement des données."
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:71
+#: app/utils/helpers/js_translations.py:69
 msgid "Thème sombre activé"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:72
+#: app/utils/helpers/js_translations.py:70
 msgid "Thème clair activé"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:73
+#: app/utils/helpers/js_translations.py:71
 msgid "Copié !"
 msgstr ""
 
@@ -4822,5 +4849,20 @@ msgstr ""
 #~ msgstr ""
 
 #~ msgid "Aucune demande d'échange en attente."
+#~ msgstr ""
+
+#~ msgid "Test de notification - Leviia Schedule"
+#~ msgstr ""
+
+#~ msgid "Leviia Schedule - Gestion des plannings, astreintes et congés d'équipe."
+#~ msgstr ""
+
+#~ msgid "Accueil - Leviia"
+#~ msgstr ""
+
+#~ msgid "Version %(app_version)s | (c) 2026 Leviia"
+#~ msgstr ""
+
+#~ msgid "Calendrier - Leviia"
 #~ msgstr ""
 

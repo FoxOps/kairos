@@ -1,269 +1,269 @@
-# Analyse du Frontend - Leviia Schedule
+# Frontend Analysis - Kairos
 
-## Sommaire
-- [Problèmes de duplication](#problèmes-de-duplication)
-- [Incohérences](#incohérences)
-- [Améliorations possibles](#améliorations-possibles)
-- [Corrections apportées](#corrections-apportées)
+## Summary
+- [Duplication issues](#duplication-issues)
+- [Inconsistencies](#inconsistencies)
+- [Possible improvements](#possible-improvements)
+- [Fixes applied](#fixes-applied)
 
 ---
 
-## Problèmes de duplication
+## Duplication issues
 
-### 1. CSS - Classes utilitaires dupliquées
+### 1. CSS - Duplicated utility classes
 
-**Fichiers concernés :**
-- `app/static/css/base-styles.css` (lignes 400-450)
-- `app/static/css/dark-theme.css` (lignes 40-60)
+**Files involved:**
+- `app/static/css/base-styles.css` (lines 400-450)
+- `app/static/css/dark-theme.css` (lines 40-60)
 
-**Problème :**
-Les classes utilitaires suivantes sont définies dans les deux fichiers :
-- `.gap-0` à `.gap-5`
+**Problem:**
+The following utility classes are defined in both files:
+- `.gap-0` to `.gap-5`
 - `.min-w-80`, `.min-w-140`, `.min-w-150`, `.min-w-180`, `.min-w-200`
 - `.w-80`, `.w-100`
-- `.mb-0` à `.mb-5`
+- `.mb-0` to `.mb-5`
 - `.d-none`, `.d-block`, `.d-flex`, `.d-inline`, `.d-inline-block`
 - `.visible`, `.invisible`
 
-**Solution :**
-Conserver ces classes uniquement dans `base-styles.css` et les supprimer de `dark-theme.css`.
+**Solution:**
+Keep these classes only in `base-styles.css` and remove them from `dark-theme.css`.
 
-### 2. CSS - Styles de focus dupliqués
+### 2. CSS - Duplicated focus styles
 
-**Fichiers concernés :**
-- `app/static/css/base-styles.css` (lignes 30-80)
-- `app/static/css/dark-theme.css` (lignes 200-230)
+**Files involved:**
+- `app/static/css/base-styles.css` (lines 30-80)
+- `app/static/css/dark-theme.css` (lines 200-230)
 
-**Problème :**
-Les styles pour `:focus-visible` sont définis dans les deux fichiers avec des sélecteurs similaires.
+**Problem:**
+`:focus-visible` styles are defined in both files with similar selectors.
 
-**Solution :**
-Centraliser tous les styles de focus dans `base-styles.css` et ne garder dans `dark-theme.css` que les surcharges spécifiques au thème sombre.
+**Solution:**
+Centralize all focus styles in `base-styles.css` and keep only dark-theme-specific overrides in `dark-theme.css`.
 
-### 3. CSS - Styles de notification dupliqués
+### 3. CSS - Duplicated notification styles
 
-**Fichiers concernés :**
-- `app/static/css/base-styles.css` (lignes 200-220, 500-520)
-- `app/static/css/dark-theme.css` (lignes 100-130)
+**Files involved:**
+- `app/static/css/base-styles.css` (lines 200-220, 500-520)
+- `app/static/css/dark-theme.css` (lines 100-130)
 
-**Problème :**
-Les styles pour `.notification` apparaissent deux fois dans `base-styles.css` et sont aussi dans `dark-theme.css`.
+**Problem:**
+`.notification` styles appear twice in `base-styles.css` and are also present in `dark-theme.css`.
 
-**Solution :**
-Supprimer les doublons dans `base-styles.css` et garder une seule définition cohérente.
+**Solution:**
+Remove the duplicates in `base-styles.css` and keep a single consistent definition.
 
-### 4. HTML - Légendes des actions dupliquées
+### 4. HTML - Duplicated action legends
 
-**Fichiers concernés :**
-- `app/templates/schedule.html` (lignes 135-148)
-- `app/templates/oncall.html` (lignes 95-107)
-- `app/templates/leave.html` (lignes 70-77)
+**Files involved:**
+- `app/templates/schedule.html` (lines 135-148)
+- `app/templates/oncall.html` (lines 95-107)
+- `app/templates/leave.html` (lines 70-77)
 
-**Problème :**
-Chaque template a une section "Légende des actions" très similaire avec des boutons d'exemple.
+**Problem:**
+Each template has a very similar "Action legend" section with example buttons.
 
-**Solution :**
-Créer un template partiel `_action_legend.html` réutilisable.
+**Solution:**
+Create a reusable partial template `_action_legend.html`.
 
-### 5. HTML - Boutons d'export ICS dupliqués
+### 5. HTML - Duplicated ICS export buttons
 
-**Fichiers concernés :**
-- `app/templates/index.html` (lignes 25-35)
-- `app/templates/schedule.html` (lignes 20-26)
-- `app/templates/oncall.html` (lignes 19-25)
-- `app/templates/leave.html` (lignes 19-25)
-- `app/templates/admin/dashboard.html` (lignes 92-100)
+**Files involved:**
+- `app/templates/index.html` (lines 25-35)
+- `app/templates/schedule.html` (lines 20-26)
+- `app/templates/oncall.html` (lines 19-25)
+- `app/templates/leave.html` (lines 19-25)
+- `app/templates/admin/dashboard.html` (lines 92-100)
 
-**Problème :**
-Les boutons d'export ICS sont dupliqués dans plusieurs templates avec des variations mineures.
+**Problem:**
+ICS export buttons are duplicated across several templates with minor variations.
 
-**Solution :**
-Créer un template partiel `_ics_export_buttons.html` réutilisable.
+**Solution:**
+Create a reusable partial template `_ics_export_buttons.html`.
 
-### 6. HTML - Structure des tableaux similaire
+### 6. HTML - Similar table structure
 
-**Fichiers concernés :**
+**Files involved:**
 - `app/templates/schedule.html`
 - `app/templates/oncall.html`
 - `app/templates/leave.html`
 
-**Problème :**
-La structure des tableaux (conteneur, caption, thead, tbody) est très similaire.
+**Problem:**
+The table structure (container, caption, thead, tbody) is very similar.
 
-**Solution :**
-Créer des classes CSS communes et éventuellement un macro Jinja2 pour les tableaux.
+**Solution:**
+Create common CSS classes and possibly a Jinja2 macro for tables.
 
-### 7. JavaScript - Code dupliqué dans les confirmations
+### 7. JavaScript - Duplicated confirmation code
 
-**Fichier concerné :**
-- `app/templates/schedule.html` (lignes 90-130)
-- `app/templates/oncall.html` (lignes 70-85)
-- `app/templates/leave.html` (ligne 57)
+**File involved:**
+- `app/templates/schedule.html` (lines 90-130)
+- `app/templates/oncall.html` (lines 70-85)
+- `app/templates/leave.html` (line 57)
 
-**Problème :**
-Les appels à `confirm()` ou `Leviia.confirmActionAccessible()` sont dupliqués avec des messages similaires.
+**Problem:**
+Calls to `confirm()` or `Kairos.confirmActionAccessible()` are duplicated with similar messages.
 
-**Solution :**
-Utiliser systématiquement `Leviia.confirmActionAccessible()` et standardiser les messages.
-
----
-
-## Incohérences
-
-### 1. Utilisation de `aria-label`
-
-**Problème :**
-- Certains boutons ont `aria-label`
-- D'autres ont `title`
-- Certains n'ont ni l'un ni l'autre
-
-**Exemples :**
-- `schedule.html` ligne 15 : `aria-label="Ajouter un nouveau shift"`
-- `schedule.html` ligne 21 : `aria-label="Exporter tous les shifts au format iCalendar"`
-- `leave.html` ligne 20 : `title="Exporter tous les congés"` (pas de aria-label)
-
-**Solution :**
-Standardiser sur `aria-label` pour tous les éléments interactifs et ajouter `title` comme fallback.
-
-### 2. Classes Bulma incohérentes
-
-**Problème :**
-- Certains templates utilisent `is-flex` + `is-flex-wrap-wrap`
-- D'autres utilisent `is-flex is-flex-wrap-nowrap`
-- Certains n'utilisent pas les classes Bulma du tout
-
-**Solution :**
-Standardiser sur l'utilisation des classes Bulma natives.
-
-### 3. Structure HTML incohérente
-
-**Problème :**
-- Certains templates ont `<main role="main">`
-- D'autres non
-- Certains ont des sections avec `aria-labelledby`
-- D'autres non
-
-**Solution :**
-Standardiser la structure HTML avec des rôles ARIA cohérents.
-
-### 4. Utilisation de `role="group"`
-
-**Problème :**
-- `schedule.html` utilise `role="group"` pour les boutons
-- `oncall.html` ne l'utilise pas
-- `leave.html` ne l'utilise pas
-
-**Solution :**
-Ajouter `role="group"` à tous les groupes de boutons.
-
-### 5. Messages de confirmation incohérents
-
-**Problème :**
-- Certains utilisent `confirm()` natif
-- D'autres utilisent `Leviia.confirmActionAccessible()`
-- Les messages varient (majuscules, ponctuation)
-
-**Exemples :**
-- `oncall.html` ligne 29 : `confirm('Êtes-vous SÛR de vouloir supprimer TOUTES les astreintes ?')`
-- `schedule.html` ligne 32 : `Leviia.confirmActionAccessible('Êtes-vous SÛR de vouloir supprimer TOUS les shifts ?')`
-
-**Solution :**
-Utiliser systématiquement `Leviia.confirmActionAccessible()` avec des messages standardisés.
+**Solution:**
+Systematically use `Kairos.confirmActionAccessible()` and standardize the messages.
 
 ---
 
-## Améliorations possibles
+## Inconsistencies
+
+### 1. Use of `aria-label`
+
+**Problem:**
+- Some buttons have `aria-label`
+- Others have `title`
+- Some have neither
+
+**Examples:**
+- `schedule.html` line 15: `aria-label="Add a new shift"`
+- `schedule.html` line 21: `aria-label="Export all shifts as iCalendar"`
+- `leave.html` line 20: `title="Export all leave"` (no aria-label)
+
+**Solution:**
+Standardize on `aria-label` for every interactive element and add `title` as a fallback.
+
+### 2. Inconsistent Bulma classes
+
+**Problem:**
+- Some templates use `is-flex` + `is-flex-wrap-wrap`
+- Others use `is-flex is-flex-wrap-nowrap`
+- Some don't use Bulma classes at all
+
+**Solution:**
+Standardize on the use of native Bulma classes.
+
+### 3. Inconsistent HTML structure
+
+**Problem:**
+- Some templates have `<main role="main">`
+- Others don't
+- Some have sections with `aria-labelledby`
+- Others don't
+
+**Solution:**
+Standardize the HTML structure with consistent ARIA roles.
+
+### 4. Use of `role="group"`
+
+**Problem:**
+- `schedule.html` uses `role="group"` for buttons
+- `oncall.html` doesn't use it
+- `leave.html` doesn't use it
+
+**Solution:**
+Add `role="group"` to every button group.
+
+### 5. Inconsistent confirmation messages
+
+**Problem:**
+- Some use the native `confirm()`
+- Others use `Kairos.confirmActionAccessible()`
+- Messages vary (capitalization, punctuation)
+
+**Examples:**
+- `oncall.html` line 29: `confirm('Are you SURE you want to delete ALL on-call shifts?')`
+- `schedule.html` line 32: `Kairos.confirmActionAccessible('Are you SURE you want to delete ALL shifts?')`
+
+**Solution:**
+Systematically use `Kairos.confirmActionAccessible()` with standardized messages.
+
+---
+
+## Possible improvements
 
 ### 1. CSS
 
-1. **Centraliser les variables CSS**
-   - Créer un fichier `_variables.css` avec toutes les variables
-   - Importer ce fichier dans tous les autres fichiers CSS
+1. **Centralize CSS variables**
+   - Create a `_variables.css` file with every variable
+   - Import this file into every other CSS file
 
-2. **Organiser le CSS par composants**
-   - Créer des fichiers séparés pour :
+2. **Organize CSS by component**
+   - Create separate files for:
      - `buttons.css`
      - `tables.css`
      - `forms.css`
      - `cards.css`
      - `modals.css`
 
-3. **Utiliser des mixins Sass**
-   - Convertir le CSS en SCSS pour utiliser des mixins
-   - Réduire la duplication de code
+3. **Use Sass mixins**
+   - Convert the CSS to SCSS to use mixins
+   - Reduce code duplication
 
 ### 2. HTML/Templates
 
-1. **Créer des templates partiels**
+1. **Create partial templates**
    - `_action_legend.html`
    - `_ics_export_buttons.html`
    - `_table_container.html`
-   - `_pagination.html` (déjà existe)
+   - `_pagination.html` (already exists)
 
-2. **Utiliser des macros Jinja2**
-   - Pour les formulaires répétitifs
-   - Pour les tableaux
-   - Pour les cartes de statistiques
+2. **Use Jinja2 macros**
+   - For repetitive forms
+   - For tables
+   - For stat cards
 
-3. **Améliorer l'accessibilité**
-   - Ajouter `aria-label` à tous les éléments interactifs
-   - Ajouter `aria-describedby` où nécessaire
-   - Vérifier l'ordre de tabulation
+3. **Improve accessibility**
+   - Add `aria-label` to every interactive element
+   - Add `aria-describedby` where needed
+   - Check the tab order
 
 ### 3. JavaScript
 
-1. **Centraliser la logique de confirmation**
-   - Utiliser systématiquement `Leviia.confirmActionAccessible()`
-   - Standardiser les messages
+1. **Centralize confirmation logic**
+   - Systematically use `Kairos.confirmActionAccessible()`
+   - Standardize the messages
 
-2. **Améliorer la gestion des erreurs**
-   - Utiliser `Leviia.announceToScreenReader()` pour toutes les erreurs
-   - Standardiser les messages d'erreur
+2. **Improve error handling**
+   - Use `Kairos.announceToScreenReader()` for every error
+   - Standardize error messages
 
-3. **Optimiser les écouteurs d'événements**
-   - Utiliser la délégation d'événements où possible
-   - Éviter les duplications de code
+3. **Optimize event listeners**
+   - Use event delegation where possible
+   - Avoid code duplication
 
 ---
 
-## Corrections apportées
+## Fixes applied
 
 ### 1. CSS
 
-- [ ] Suppression des classes utilitaires dupliquées dans `dark-theme.css`
-- [ ] Suppression des styles de notification dupliqués dans `base-styles.css`
-- [ ] Centralisation des styles de focus dans `base-styles.css`
-- [ ] Organisation du CSS par sections claires
+- [ ] Removed duplicated utility classes in `dark-theme.css`
+- [ ] Removed duplicated notification styles in `base-styles.css`
+- [ ] Centralized focus styles in `base-styles.css`
+- [ ] Organized CSS into clear sections
 
 ### 2. HTML/Templates
 
-- [ ] Création de `_action_legend.html`
-- [ ] Création de `_ics_export_buttons.html`
-- [ ] Standardisation de l'utilisation de `aria-label`
-- [ ] Standardisation de l'utilisation de `role="group"`
-- [ ] Standardisation de la structure HTML
+- [ ] Created `_action_legend.html`
+- [ ] Created `_ics_export_buttons.html`
+- [ ] Standardized use of `aria-label`
+- [ ] Standardized use of `role="group"`
+- [ ] Standardized HTML structure
 
 ### 3. JavaScript
 
-- [ ] Remplacement de tous les `confirm()` par `Leviia.confirmActionAccessible()`
-- [ ] Standardisation des messages de confirmation
-- [ ] Optimisation des écouteurs d'événements
+- [ ] Replaced every `confirm()` with `Kairos.confirmActionAccessible()`
+- [ ] Standardized confirmation messages
+- [ ] Optimized event listeners
 
 ---
 
-## Statistiques
+## Statistics
 
-- **Fichiers HTML analysés :** 46
-- **Lignes de code HTML :** ~4676
-- **Fichiers CSS analysés :** 3
-- **Lignes de code CSS :** ~24843
-- **Fichiers JS analysés :** 1
-- **Lignes de code JS :** 673
+- **HTML files analyzed:** 46
+- **Lines of HTML code:** ~4676
+- **CSS files analyzed:** 3
+- **Lines of CSS code:** ~24843
+- **JS files analyzed:** 1
+- **Lines of JS code:** 673
 
 ---
 
-## Outils utilisés
+## Tools used
 
-- `grep` pour rechercher les duplications
-- `wc` pour compter les lignes
-- Analyse manuelle des fichiers
+- `grep` to search for duplication
+- `wc` to count lines
+- Manual file analysis

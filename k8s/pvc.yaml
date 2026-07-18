@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: leviia-data
-  namespace: leviia-schedule
+  name: kairos-data
+  namespace: kairos
   labels:
-    app: leviia-schedule
+    app: kairos
 spec:
   accessModes:
     - ReadWriteOnce
@@ -22,10 +22,10 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: leviia-logs
-  namespace: leviia-schedule
+  name: kairos-logs
+  namespace: kairos
   labels:
-    app: leviia-schedule
+    app: kairos
 spec:
   accessModes:
     - ReadWriteOnce

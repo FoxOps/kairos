@@ -1,5 +1,5 @@
 """
-Public REST API for Leviia Schedule (flask-smorest).
+Public REST API for Kairos (flask-smorest).
 
 Distinct from app/routes/ (session-cookie/Flask-Login, HTML/legacy JSON
 responses): every blueprint registered here is authenticated by a
@@ -32,7 +32,7 @@ def init_api(app: Flask) -> None:
     per-blueprint setup calls, api.register_blueprint() (a thin wrapper
     around Flask's own app.register_blueprint()) is meant to run once
     per app instance, not once per process."""
-    app.config.setdefault("API_TITLE", "Leviia Schedule Public API")
+    app.config.setdefault("API_TITLE", "Kairos Public API")
     app.config.setdefault("API_VERSION", "v1")
     app.config.setdefault("OPENAPI_VERSION", "3.0.3")
     app.config.setdefault("OPENAPI_URL_PREFIX", "/api/v1")

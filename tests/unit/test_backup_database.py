@@ -46,7 +46,7 @@ def make_sqlite_file(path):
 class TestSendBackupNotification:
     SMTP_ENV = {
         "NOTIFICATIONS_ENABLED": "true",
-        "NOTIFICATION_FROM_EMAIL": "noreply@leviia.local",
+        "NOTIFICATION_FROM_EMAIL": "noreply@kairos.local",
         "SMTP_HOST": "smtp.example.com",
     }
 
@@ -69,7 +69,7 @@ class TestSendBackupNotification:
         config = BackupConfig(
             notify_on_failure=True,
             notify_on_success=False,
-            notification_email="ops@leviia.local",
+            notification_email="ops@kairos.local",
         )
         results = {
             "success": False,
@@ -86,7 +86,7 @@ class TestSendBackupNotification:
 
         instance.sendmail.assert_called_once()
         to_addr = instance.sendmail.call_args[0][1]
-        assert to_addr == ["ops@leviia.local"]
+        assert to_addr == ["ops@kairos.local"]
 
     def test_does_not_send_on_success_when_only_failure_configured(
         self, monkeypatch, logger
@@ -95,7 +95,7 @@ class TestSendBackupNotification:
         config = BackupConfig(
             notify_on_failure=True,
             notify_on_success=False,
-            notification_email="ops@leviia.local",
+            notification_email="ops@kairos.local",
         )
         results = {
             "success": True,
@@ -134,7 +134,7 @@ class TestSendBackupNotification:
         monkeypatch.delenv("NOTIFICATIONS_ENABLED", raising=False)
         monkeypatch.setenv("NOTIFICATIONS_ENABLED", "false")
         config = BackupConfig(
-            notify_on_failure=True, notification_email="ops@leviia.local"
+            notify_on_failure=True, notification_email="ops@kairos.local"
         )
         results = {
             "success": False,
@@ -253,7 +253,7 @@ class TestCleanupLocalBackups:
     def test_deletes_backups_older_than_retention(self, tmp_path, logger):
         local_dir = tmp_path / "backups"
         local_dir.mkdir()
-        old_file = local_dir / "leviia_backup_old.sqlite.gz"
+        old_file = local_dir / "kairos_backup_old.sqlite.gz"
         old_file.write_bytes(b"x")
         old_time = (datetime.now() - timedelta(days=100)).timestamp()
         import os
@@ -265,7 +265,7 @@ class TestCleanupLocalBackups:
             local_dir=str(local_dir),
             retention_days=30,
             max_backups=100,
-            backup_prefix="leviia_backup",
+            backup_prefix="kairos_backup",
         )
 
         deleted_count, message = cleanup_local_backups(config, logger)
@@ -276,7 +276,7 @@ class TestCleanupLocalBackups:
     def test_keeps_recent_backups(self, tmp_path, logger):
         local_dir = tmp_path / "backups"
         local_dir.mkdir()
-        recent_file = local_dir / "leviia_backup_recent.sqlite.gz"
+        recent_file = local_dir / "kairos_backup_recent.sqlite.gz"
         recent_file.write_bytes(b"x")
 
         config = BackupConfig(
@@ -284,7 +284,7 @@ class TestCleanupLocalBackups:
             local_dir=str(local_dir),
             retention_days=30,
             max_backups=100,
-            backup_prefix="leviia_backup",
+            backup_prefix="kairos_backup",
         )
 
         deleted_count, message = cleanup_local_backups(config, logger)
@@ -302,14 +302,14 @@ class TestListBackups:
     def test_lists_local_backups(self, tmp_path, logger):
         local_dir = tmp_path / "backups"
         local_dir.mkdir()
-        (local_dir / "leviia_backup_1.sqlite.gz").write_bytes(b"x")
-        (local_dir / "leviia_backup_2.sqlite.gz").write_bytes(b"yy")
+        (local_dir / "kairos_backup_1.sqlite.gz").write_bytes(b"x")
+        (local_dir / "kairos_backup_2.sqlite.gz").write_bytes(b"yy")
         (local_dir / "not_a_backup.txt").write_bytes(b"z")
 
         config = BackupConfig(
             local_enabled=True,
             local_dir=str(local_dir),
-            backup_prefix="leviia_backup",
+            backup_prefix="kairos_backup",
             s3_enabled=False,
         )
 

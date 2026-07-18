@@ -1,5 +1,5 @@
 """
-Leave model for Leviia Schedule.
+Leave model for Kairos.
 
 This module contains the Leave model for leave management.
 """

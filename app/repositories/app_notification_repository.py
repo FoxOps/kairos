@@ -1,5 +1,5 @@
 """
-AppNotification repository for Leviia Schedule.
+AppNotification repository for Kairos.
 
 Data access layer for the AppNotification model - no business logic, no
 Flask request/response handling, just queries.

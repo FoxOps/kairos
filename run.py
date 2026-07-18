@@ -112,7 +112,7 @@ def create_default_data():
         db.session.commit()
 
     # Create the default admin user
-    default_admin_email = os.environ.get("DEFAULT_ADMIN_EMAIL") or "admin@leviia.local"
+    default_admin_email = os.environ.get("DEFAULT_ADMIN_EMAIL") or "admin@kairos.local"
     default_admin_password = os.environ.get(
         "DEFAULT_ADMIN_PASSWORD"
     ) or secrets.token_urlsafe(16)

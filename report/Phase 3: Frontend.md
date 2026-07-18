@@ -1,249 +1,249 @@
-# 📋 Rapport de Refactorisation - Phase 3: Frontend
-**Branche** : `refacto/phase3`
-**PR** : [#99](https://github.com/FoxOps/leviia-schedule/pull/99)
-**Date de début** : 2026-07-11
-**Statut** : 🟢 Terminée
-**Base** : `main` (inclut Phase 1 + Phase 2, PR #98 mergée)
+# 📋 Refactoring Report - Phase 3: Frontend
+**Branch**: `refacto/phase3`
+**PR**: [#99](https://github.com/FoxOps/leviia-schedule/pull/99)
+**Start date**: 2026-07-11
+**Status**: 🟢 Complete
+**Base**: `main` (includes Phase 1 + Phase 2, PR #98 merged)
 
 ---
 
-## 📈 État des lieux (avant restructuration)
+## 📈 Current state (before restructuring)
 
-| Fichier | Lignes | Note |
+| File | Lines | Note |
 |---|---|---|
 | `app/static/css/base-styles.css` | 660 | |
-| `app/static/css/dark-theme.css` | 337 | duplication connue avec base-styles.css |
+| `app/static/css/dark-theme.css` | 337 | known duplication with base-styles.css |
 | `app/static/css/fullcalendar-styles.css` | 188 | |
 | `app/static/js/script.js` | 673 | |
 
-**Correction par rapport au plan initial** : le plan mentionnait `script.js`
-à *21 724 lignes*. Le fichier réel fait **673 lignes**. Un monolithe
-mono-fichier reste à découper par souci de clarté, mais ce n'est pas
-l'énorme fichier décrit initialement — la découpe en modules ES6 sera
-proportionnée à la taille réelle plutôt qu'à l'estimation d'origine.
+**Correction relative to the initial plan**: the plan mentioned `script.js`
+at *21,724 lines*. The actual file is **673 lines**. A single monolithic
+file still needs to be split up for clarity, but it's not the huge file
+originally described — the split into ES6 modules will be proportionate
+to the actual size rather than to the original estimate.
 
-`app/static/vendor/` (Bulma, Font Awesome, FullCalendar) est déjà géré
-séparément par `scripts/download_vendor_assets.py` (téléchargement local,
-pas de CDN en prod — contrainte validée en Phase 1) : **non touché** par
-cette phase, reste à la racine de `static/vendor/`.
+`app/static/vendor/` (Bulma, Font Awesome, FullCalendar) is already
+managed separately by `scripts/download_vendor_assets.py` (local download,
+no CDN in production — a constraint validated in Phase 1): **not touched**
+by this phase, stays at the root of `static/vendor/`.
 
-**Hors scope** (décision validée en amont) : amélioration accessibilité
-WCAG 2.1 AA — mise de côté, cause trop de problèmes UI/UX actuellement.
+**Out of scope** (decision validated upstream): WCAG 2.1 AA accessibility
+improvements — set aside, currently causes too many UI/UX issues.
 
 ---
 
-## 🎯 Plan de travail
+## 🎯 Work plan
 
 ### 3.1 CSS
-- [x] `variables.css` : variables CSS globales (mapping Bulma, couleurs)
-- [x] `base.css` : reset + styles de base (skip-link, focus-visible, sr-only)
-- [x] `utilities.css` : classes utilitaires (`.mt-*`, `.gap-*`, `.min-w-*`, `.d-*`)
-- [x] `components/` : buttons, cards, forms, tables, modals
-- [x] `layout/` : header, footer, grid
-- [x] `pages/` : dashboard (seule page avec CSS dédié pour l'instant)
-- [x] `themes/dark.css` (élimine la duplication base-styles.css /
-      dark-theme.css / fullcalendar-styles.css — tout le mode sombre
-      consolidé en un seul fichier)
-- [x] `vendor/fullcalendar-overrides.css` : overrides FullCalendar par
-      défaut (hors thème sombre), séparés du reste du vendor
-- [ ] Minification en production
+- [x] `variables.css`: global CSS variables (Bulma mapping, colors)
+- [x] `base.css`: reset + base styles (skip-link, focus-visible, sr-only)
+- [x] `utilities.css`: utility classes (`.mt-*`, `.gap-*`, `.min-w-*`, `.d-*`)
+- [x] `components/`: buttons, cards, forms, tables, modals
+- [x] `layout/`: header, footer, grid
+- [x] `pages/`: dashboard (the only page with dedicated CSS for now)
+- [x] `themes/dark.css` (eliminates the base-styles.css /
+      dark-theme.css / fullcalendar-styles.css duplication — all dark
+      mode consolidated into a single file)
+- [x] `vendor/fullcalendar-overrides.css`: default FullCalendar overrides
+      (outside the dark theme), separated from the rest of vendor
+- [ ] Minification in production
 
 ### 3.2 JavaScript
-- [x] `main.js` : point d'entrée
+- [x] `main.js`: entry point
 - [x] `theme/theme-manager.js`
-- [ ] ~~`calendar/` : fullcalendar-config.js, event-handlers.js~~ — n'existe pas
-      en tant que module séparé, cf. note ci-dessous
-- [ ] ~~`forms/` : validation.js, submission.js~~ — idem, hors scope pour
-      l'instant (validation de formulaire déjà couverte par
-      `validateFormAccessible` dans `utils/accessibility.js`)
+- [ ] ~~`calendar/`: fullcalendar-config.js, event-handlers.js~~ — does not
+      exist as a separate module, see note below
+- [ ] ~~`forms/`: validation.js, submission.js~~ — same, out of scope for
+      now (form validation already covered by `validateFormAccessible`
+      in `utils/accessibility.js`)
 - [x] `notifications/toast.js`
-- [x] `utils/` : dom.js, date.js, accessibility.js (pas de api.js —
-      aucun appel fetch/API centralisé n'existait dans script.js)
-- [x] Modules ES6 (import/export)
-- [x] JSDoc (conservé depuis script.js, pas de format supplémentaire ajouté)
-- [ ] Tests unitaires (Jest ou Vitest) — pas de setup JS existant dans le
-      projet (aucun package.json/node_modules pour du tooling front), non
-      fait faute de temps
+- [x] `utils/`: dom.js, date.js, accessibility.js (no api.js —
+      no centralized fetch/API call existed in script.js)
+- [x] ES6 modules (import/export)
+- [x] JSDoc (kept from script.js, no additional format added)
+- [ ] Unit tests (Jest or Vitest) — no existing JS setup in the
+      project (no package.json/node_modules for front-end tooling), not
+      done for lack of time
 
 ### 3.3 Templates
-- [x] Macros Jinja2 réutilisables (`macros/errors.html` — 9 pages d'erreur
-      400/401/403/404/405/500/502/503/504 dédupliquées)
-- [x] Structure HTML standardisée (405.html alignée sur le même squelette
-      `<main role="main">` + attributs aria que les 8 autres pages d'erreur)
-- [x] Meta tags SEO (description + robots noindex, app interne pas
-      destinée à être indexée)
-- [x] Optimisation du chargement des ressources (cf. note ci-dessous —
-      périmètre limité, honnêtement documenté)
-- ~~Accessibilité WCAG 2.1 AA~~ — hors scope (cf. ci-dessus)
+- [x] Reusable Jinja2 macros (`macros/errors.html` — 9 error pages
+      400/401/403/404/405/500/502/503/504 deduplicated)
+- [x] Standardized HTML structure (405.html aligned on the same
+      `<main role="main">` skeleton + aria attributes as the other 8 error pages)
+- [x] SEO meta tags (description + robots noindex, internal app not
+      meant to be indexed)
+- [x] Resource-loading optimization (see note below —
+      limited scope, honestly documented)
+- ~~WCAG 2.1 AA accessibility~~ — out of scope (see above)
 
 ---
 
-## 📝 Journal
+## 📝 Log
 
-*(mis à jour à chaque étape)*
+*(updated at each step)*
 
-### 2026-07-11 — 3.1 CSS terminé
+### 2026-07-11 — 3.1 CSS complete
 
-Restructuration complète de `app/static/css/` : les 3 anciens fichiers
-(`base-styles.css` 660 lignes, `dark-theme.css` 337 lignes,
-`fullcalendar-styles.css` 188 lignes) sont **supprimés** et remplacés par :
+Complete restructuring of `app/static/css/`: the 3 old files
+(`base-styles.css` 660 lines, `dark-theme.css` 337 lines,
+`fullcalendar-styles.css` 188 lines) are **deleted** and replaced by:
 
 ```
 css/
-├── variables.css                      (mapping Bulma, thème-agnostique)
+├── variables.css                      (Bulma mapping, theme-agnostic)
 ├── base.css
 ├── utilities.css
 ├── components/{buttons,cards,forms,tables,modals}.css
 ├── layout/{header,footer,grid}.css
 ├── pages/dashboard.css
-├── themes/dark.css                    ([data-theme="dark"] / .dark-mode uniquement)
-└── vendor/fullcalendar-overrides.css  (styles FullCalendar par défaut)
+├── themes/dark.css                    ([data-theme="dark"] / .dark-mode only)
+└── vendor/fullcalendar-overrides.css  (default FullCalendar styles)
 ```
 
-Pas de `themes/light.css` séparé : le thème clair est simplement l'état
-par défaut de Bulma + `variables.css`, il n'y a rien à surcharger.
+No separate `themes/light.css`: the light theme is simply Bulma's
+default state + `variables.css`, there is nothing to override.
 
-**Duplication éliminée** : `fullcalendar-styles.css` répétait dans son
-propre bloc `[data-theme="dark"]` la quasi-totalité des règles déjà
-présentes dans `dark-theme.css` (`.fc`, `.fc-today`, `.fc-header-toolbar`,
-`.fc-col-header-cell`, `.fc-day`, etc.). Tout est maintenant consolidé une
-seule fois dans `themes/dark.css`.
+**Duplication eliminated**: `fullcalendar-styles.css` repeated in its
+own `[data-theme="dark"]` block almost all the rules already present
+in `dark-theme.css` (`.fc`, `.fc-today`, `.fc-header-toolbar`,
+`.fc-col-header-cell`, `.fc-day`, etc.). Everything is now consolidated
+once in `themes/dark.css`.
 
-**Bugs évités en cours de route** (repérés avant validation, corrigés
-avant commit) :
-- `components/cards.css` : j'avais substitué `box-shadow: var(--shadow-md)`
-  sur `.box:hover` à la place de la valeur littérale d'origine
-  `0 4px 6px rgba(0,0,0,0.1)` — ce ne sont pas les mêmes valeurs (blur/offset
-  différents), ça aurait changé le rendu. Remis la valeur exacte.
-- `components/buttons.css` : j'avais fusionné la règle générale
-  `.icon { vertical-align: middle; }` dans `.button .icon { min-width/height }`,
-  ce qui aurait limité la règle générale aux boutons uniquement. Séparé en
-  deux règles distinctes.
+**Bugs avoided along the way** (spotted before validation, fixed
+before commit):
+- `components/cards.css`: I had substituted `box-shadow: var(--shadow-md)`
+  on `.box:hover` in place of the original literal value
+  `0 4px 6px rgba(0,0,0,0.1)` — these are not the same values (different
+  blur/offset), it would have changed the rendering. Restored the exact value.
+- `components/buttons.css`: I had merged the general rule
+  `.icon { vertical-align: middle; }` into `.button .icon { min-width/height }`,
+  which would have restricted the general rule to buttons only. Split back
+  into two separate rules.
 
-**Tests mis à jour** : `tests/test_dark_theme.py` et
-`tests/test_theme_fixes.py` référençaient en dur les 3 anciens noms de
-fichiers dans ~20 assertions. Réécrits pour pointer vers les nouveaux
-fichiers, en gardant l'intention de chaque test (ex : le test de
-contraste des boutons `.is-warning` en mode sombre vérifie maintenant
-`themes/dark.css` au lieu de `dark-theme.css`). `tests/manual_test_theme.py`
-n'est pas ramassé par pytest (nom de fichier hors convention `test_*.py`) —
-laissé tel quel pour l'instant, pas bloquant.
+**Tests updated**: `tests/test_dark_theme.py` and
+`tests/test_theme_fixes.py` hard-coded the 3 old file names in
+~20 assertions. Rewritten to point to the new files, keeping the
+intent of each test (e.g. the `.is-warning` button contrast test
+in dark mode now checks `themes/dark.css` instead of `dark-theme.css`).
+`tests/manual_test_theme.py` is not picked up by pytest (file name
+outside the `test_*.py` convention) — left as-is for now, not blocking.
 
-Un test (`test_dark_theme_css_content`) vérifiait la présence de la
-chaîne `prefers-color-scheme: dark`, qui ne correspondait en réalité qu'à
-un commentaire dans l'ancien fichier (pas de vraie règle `@media` — Bulma
-gère ça nativement via ses propres variables). Assertion retirée plutôt
-que reproduite artificiellement : elle ne testait rien de réel.
+One test (`test_dark_theme_css_content`) checked for the presence of the
+string `prefers-color-scheme: dark`, which in reality only matched a
+comment in the old file (no real `@media` rule — Bulma handles that
+natively via its own variables). Assertion removed rather than
+artificially reproduced: it wasn't testing anything real.
 
-Suite complète : **511 tests passent, 0 échec**. Vérifié en conditions
-réelles (serveur Flask dev, login, dashboard, page shifts) : les 14
-fichiers CSS se chargent tous en 200, thème sombre et FullCalendar
-inchangés visuellement.
+Full suite: **511 tests pass, 0 failures**. Verified under real
+conditions (Flask dev server, login, dashboard, shifts page): all
+14 CSS files load with 200, dark theme and FullCalendar visually
+unchanged.
 
-### 2026-07-11 — 3.2 JavaScript terminé (périmètre réel)
+### 2026-07-11 — 3.2 JavaScript complete (actual scope)
 
-`app/static/js/script.js` (673 lignes) supprimé, remplacé par :
+`app/static/js/script.js` (673 lines) removed, replaced by:
 
 ```
 js/
-├── main.js                    (point d'entrée, expose window.Leviia)
-├── theme/theme-manager.js     (classe ThemeManager)
+├── main.js                    (entry point, exposes window.Kairos)
+├── theme/theme-manager.js     (ThemeManager class)
 ├── utils/
 │   ├── dom.js                 (toggle/show/hide/addClass/removeClass/toggleClass)
 │   ├── date.js                (formatDate/formatTime/formatDateTime)
-│   └── accessibility.js       (annonces lecteur d'écran, focus, navigation
-│                                clavier, validation de formulaire, modale
-│                                de confirmation accessible)
+│   └── accessibility.js       (screen reader announcements, focus, keyboard
+│                                navigation, form validation, accessible
+│                                confirmation modal)
 └── notifications/toast.js     (showNotification, confirmAction)
 ```
 
-`base.html` charge `main.js` en `<script type="module">` au lieu du
-`<script>` classique.
+`base.html` loads `main.js` as `<script type="module">` instead of the
+classic `<script>`.
 
-**Correction par rapport au plan initial (comme pour l'estimation de
-lignes)** : le plan prévoyait un dossier `calendar/` (config FullCalendar,
-handlers d'événements) et un dossier `forms/`. Ça n'existe pas dans
-`script.js` — la config FullCalendar (~576 lignes) est un `<script>` inline
-dans `index.html`, fortement templaté Jinja2 (URLs `{{ url_for(...) }}`,
-CSRF token, données utilisateur injectées côté serveur). L'extraire en
-module statique demanderait de faire transiter ces données via des
-attributs `data-*` ou un blob JSON — un chantier séparé et plus risqué,
-volontairement laissé de côté ici plutôt que bâclé. `utils/api.js` n'a pas
-été créé non plus : `script.js` ne contenait aucun appel `fetch` centralisé
-à extraire.
+**Correction relative to the initial plan (same as for the line-count
+estimate)**: the plan called for a `calendar/` folder (FullCalendar
+config, event handlers) and a `forms/` folder. This doesn't exist in
+`script.js` — the FullCalendar config (~576 lines) is an inline
+`<script>` in `index.html`, heavily templated with Jinja2 (`{{ url_for(...) }}`
+URLs, CSRF token, server-injected user data). Extracting it into a
+static module would require passing that data through `data-*`
+attributes or a JSON blob — a separate and riskier undertaking,
+deliberately left aside here rather than rushed. `utils/api.js` was
+also not created: `script.js` contained no centralized `fetch` call
+to extract.
 
-**Vérification d'innocuité avant conversion en module** : les 35 usages de
-`Leviia.*` dans les templates (`onclick="Leviia.confirmActionAccessible(...)"`
-etc.) sont soit des attributs `onclick` (exécutés seulement au clic
-utilisateur, bien après le chargement complet de la page), soit des
-callbacks FullCalendar asynchrones dans `index.html` — aucun appel
-synchrone pendant le parsing du HTML. Un `<script type="module">` est
-différé (comme `defer`) : ça ne casse donc aucun de ces appels.
+**Safety check before converting to a module**: the 35 uses of
+`Kairos.*` in templates (`onclick="Kairos.confirmActionAccessible(...)"`
+etc.) are either `onclick` attributes (executed only on user click,
+well after the page has fully loaded) or asynchronous FullCalendar
+callbacks in `index.html` — no synchronous call during HTML parsing.
+A `<script type="module">` is deferred (like `defer`): so it doesn't
+break any of these calls.
 
-Vérifié : tous les fichiers JS renvoient `Content-Type: text/javascript`
-(requis pour que le navigateur accepte les modules ES6), la chaîne
-d'imports résout correctement (`main.js` → `theme-manager.js` →
-`accessibility.js`, etc.), `node --check` ne remonte aucune erreur de
-syntaxe sur les 6 fichiers. `tests/manual_test_theme.py` mis à jour en
-parallèle des tests pytest (mêmes anciens chemins en dur).
+Verified: all JS files return `Content-Type: text/javascript`
+(required for the browser to accept ES6 modules), the import chain
+resolves correctly (`main.js` → `theme-manager.js` →
+`accessibility.js`, etc.), `node --check` reports no syntax error on
+the 6 files. `tests/manual_test_theme.py` updated alongside the pytest
+tests (same old hard-coded paths).
 
-Suite complète : **511 tests passent, 0 échec**.
+Full suite: **511 tests pass, 0 failures**.
 
-### 2026-07-11 — 3.3 Templates terminé (sans WCAG, comme demandé)
+### 2026-07-11 — 3.3 Templates complete (without WCAG, as requested)
 
-**Macros Jinja2** : les 9 pages d'erreur (`400.html` à `504.html`) étaient
-quasi-identiques (même squelette `<main>`/`box`/titre/sous-titre/boutons,
-~50-70 lignes chacune, ~450 lignes cumulées de duplication réelle).
-Extraites dans `app/templates/macros/errors.html` — une macro `error_page`
-paramétrée (code, titre, sous-titre, couleur, bouton principal, boutons
-secondaires optionnels, toggle connexion) avec un bloc `{% call %}` pour le
-contenu spécifique à chaque page. Chaque page passe de ~50-70 lignes à
-~10-20 lignes.
+**Jinja2 macros**: the 9 error pages (`400.html` through `504.html`)
+were nearly identical (same `<main>`/`box`/title/subtitle/buttons
+skeleton, ~50-70 lines each, ~450 cumulative lines of actual
+duplication). Extracted into `app/templates/macros/errors.html` — a
+parameterized `error_page` macro (code, title, subtitle, color, primary
+button, optional secondary buttons, login toggle) with a `{% call %}`
+block for content specific to each page. Each page goes from ~50-70
+lines to ~10-20 lines.
 
-**Structure HTML standardisée** : `405.html` était la seule page d'erreur
-à ne pas suivre le même squelette (`<div>` nu au lieu de
-`<main role="main">`, pas d'attributs `aria-labelledby`/`aria-describedby`,
-boutons sans `aria-label`). En la faisant passer par la macro commune,
-elle a maintenant la même structure que les 8 autres — pas un audit WCAG,
-juste la cohérence inter-pages demandée par ce ticket.
+**Standardized HTML structure**: `405.html` was the only error page
+not following the same skeleton (a bare `<div>` instead of
+`<main role="main">`, no `aria-labelledby`/`aria-describedby`
+attributes, buttons without `aria-label`). By routing it through the
+common macro, it now has the same structure as the other 8 — not a
+WCAG audit, just the cross-page consistency requested by this ticket.
 
-**Bug réel attrapé par les tests avant commit** : les macros importées via
-`{% from "macros/errors.html" import error_page %}` n'ont PAS accès au
-contexte du template appelant par défaut en Jinja2 (comportement standard,
-pas un bug Flask) — `current_user` était `undefined` dans la macro alors
-qu'il est injecté par Flask-Login dans le contexte de rendu. Corrigé avec
-`{% from "macros/errors.html" import error_page with context %}` sur les 9
-pages. Sans `tests/test_error_handlers.py` (qui rend chaque template
-directement), ce bug serait passé inaperçu jusqu'à ce qu'une vraie page
-d'erreur soit servie en prod.
+**Real bug caught by the tests before commit**: macros imported via
+`{% from "macros/errors.html" import error_page %}` do NOT have access
+to the calling template's context by default in Jinja2 (standard
+behavior, not a Flask bug) — `current_user` was `undefined` inside the
+macro even though it's injected by Flask-Login into the render context.
+Fixed with `{% from "macros/errors.html" import error_page with context %}`
+on all 9 pages. Without `tests/test_error_handlers.py` (which renders
+each template directly), this bug would have gone unnoticed until a
+real error page was served in production.
 
-**Meta tags SEO** : `base.html` avait un `<head>` minimal (charset,
-viewport, title, favicon) sans aucune balise `<meta name="description">`
-ni directive robots. Ajout d'un bloc `meta_description` surchargeable
-(valeur par défaut générique) et de `<meta name="robots" content="noindex,
-nofollow">` — c'est une app de planning interne à une équipe, pas destinée
-à apparaître dans un moteur de recherche.
+**SEO meta tags**: `base.html` had a minimal `<head>` (charset,
+viewport, title, favicon) with no `<meta name="description">` tag and
+no robots directive. Added an overridable `meta_description` block
+(generic default value) and `<meta name="robots" content="noindex,
+nofollow">` — this is a team-internal scheduling app, not meant to
+appear in a search engine.
 
-**Optimisation du chargement des ressources — périmètre honnête** : pas de
-pipeline de build (webpack/vite) dans ce projet, donc pas de bundling/
-minification possible sans l'ajouter (already flagged comme non fait dans
-le point Minification de 3.1). La vraie optimisation faisable sans outillage
-supplémentaire — vendor assets déjà servis localement (acquis Phase 1),
-scripts déjà placés en fin de `<body>`, `main.js` déjà chargé en module
-différé — était déjà en place avant cette étape. Le découpage CSS/JS des
-étapes 3.1/3.2 a mécaniquement augmenté le nombre de requêtes (12 CSS + 6
-JS au lieu de 3 CSS + 1 JS) ; HTTP/2 (déjà utilisé en prod selon la config
-Talisman existante) multiplexe ces requêtes sur une seule connexion, donc
-impact réel probablement négligeable, mais pas mesuré ici faute d'outil de
-profiling en place. Documenté plutôt que laissé sous silence.
+**Resource-loading optimization — honest scope**: no build pipeline
+(webpack/vite) in this project, so no bundling/minification possible
+without adding one (already flagged as not done in the Minification
+item of 3.1). The real optimization achievable without additional
+tooling — vendor assets already served locally (achieved in Phase 1),
+scripts already placed at the end of `<body>`, `main.js` already loaded
+as a deferred module — was already in place before this step. The
+CSS/JS splitting in steps 3.1/3.2 mechanically increased the number of
+requests (12 CSS + 6 JS instead of 3 CSS + 1 JS); HTTP/2 (already used
+in production per the existing Talisman config) multiplexes these
+requests over a single connection, so the real impact is likely
+negligible, but not measured here for lack of a profiling tool in
+place. Documented rather than left unmentioned.
 
-Suite complète : **511 tests passent, 0 échec**. Vérifié en conditions
-réelles (serveur Flask dev) : page 404 réelle rendue correctement avec la
-macro.
+Full suite: **511 tests pass, 0 failures**. Verified under real
+conditions (Flask dev server): actual 404 page rendered correctly with
+the macro.
 
-Phase 3 terminée : 3.1 CSS, 3.2 JavaScript, 3.3 Templates — tous faits,
-WCAG 2.1 AA exclu comme validé en amont.
+Phase 3 complete: 3.1 CSS, 3.2 JavaScript, 3.3 Templates — all done,
+WCAG 2.1 AA excluded as validated upstream.
 
 ---
 
-*Dernière mise à jour : 2026-07-11*
+*Last updated: 2026-07-11*

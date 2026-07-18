@@ -1,245 +1,247 @@
-# 📋 Rapport de Refactorisation - Phase 6: Optimisations Supplémentaires
-**Branche** : `refacto/phase6`
-**PR** : [#102](https://github.com/FoxOps/leviia-schedule/pull/102)
-**Date de début** : 2026-07-12
-**Statut** : 🟢 Prêt pour revue
-**Base** : `main` (inclut Phases 1 à 5, PR #101 mergée)
+# 📋 Refactoring Report - Phase 6: Additional Optimizations
+**Branch**: `refacto/phase6`
+**PR**: [#102](https://github.com/FoxOps/leviia-schedule/pull/102)
+**Start date**: 2026-07-12
+**Status**: 🟢 Ready for review
+**Base**: `main` (includes Phases 1 to 5, PR #101 merged)
 
 ---
 
-## 📈 État des lieux
+## 📈 Current state
 
-Audit en cours de l'état réel de chaque sous-point avant de coder quoi
-que ce soit — plusieurs phases précédentes ont montré que la doc/le plan
-d'origine décrit parfois des choses déjà faites, déjà mortes, ou
-inapplicables sans un changement d'outillage majeur (bundler JS,
-infra Kubernetes réelle, etc.). Détail à suivre dans le Journal.
+Auditing the real status of each sub-item before writing any code —
+several previous phases showed that the original doc/plan sometimes
+describes things that are already done, already dead, or inapplicable
+without a major tooling change (JS bundler, real Kubernetes infra,
+etc.). Details follow in the Log.
 
 ---
 
-## 🎯 Plan de travail
+## 🎯 Work plan
 
 ### 6.1 Performance
-- [x] Lazy loading des images — non applicable, voir Journal
-- [ ] Code splitting JS — documenté, reporté (pas de bundler)
-- [ ] Tree shaking CSS/JS — documenté, reporté (pas de bundler)
-- [x] Compression Gzip/Brotli
+- [x] Image lazy loading — not applicable, see Log
+- [ ] JS code splitting — documented, deferred (no bundler)
+- [ ] CSS/JS tree shaking — documented, deferred (no bundler)
+- [x] Gzip/Brotli compression
 
-### 6.2 Sécurité
+### 6.2 Security
 - [x] CSP (Content Security Policy)
 - [x] Security headers
-- [x] Audit régulier des dépendances — bandit/safety déjà en CI, cadence documentée
+- [x] Regular dependency audit — bandit/safety already in CI, cadence documented
 
 ### 6.3 DevOps
-- [x] CI/CD amélioré (GitLab, futur dépôt)
-- [x] Docker optimisé
+- [x] Improved CI/CD (GitLab, future repo)
+- [x] Optimized Docker
 - [x] Kubernetes ready
 - [x] Monitoring (Prometheus, Grafana)
 
 ---
 
-## 📝 Journal
+## 📝 Log
 
-### CSP + security headers toujours actifs (commit `6764d19`)
+### CSP + security headers always active (commit `6764d19`)
 
-**Bug réel trouvé et corrigé** : dans `app/__init__.py`, Talisman n'était
-initialisé que si `TALISMAN_FORCE_HTTPS` était vrai. Or ce flag ne devrait
-contrôler que la redirection HTTP->HTTPS et HSTS, pas les autres en-têtes
-(CSP, X-Content-Type-Options, X-Frame-Options...). Conséquence concrète :
-`docker/docker-compose.yml` met `TALISMAN_FORCE_HTTPS=false` (pas de TLS
-terminé dans le conteneur, un reverse proxy s'en charge) — ce déploiement
-n'avait donc **aucun** en-tête de sécurité du tout. Corrigé : Talisman est
-maintenant toujours initialisé sauf en `TESTING`.
+**Real bug found and fixed**: in `app/__init__.py`, Talisman was only
+initialized if `TALISMAN_FORCE_HTTPS` was true. Yet this flag should
+only control the HTTP->HTTPS redirect and HSTS, not the other headers
+(CSP, X-Content-Type-Options, X-Frame-Options...). Concrete
+consequence: `docker/docker-compose.yml` sets
+`TALISMAN_FORCE_HTTPS=false` (no TLS termination inside the container,
+a reverse proxy handles it) — this deployment therefore had **no**
+security header at all. Fixed: Talisman is now always initialized
+except in `TESTING`.
 
-**CSP stricte ajoutée** (`CSP_POLICY` dans `app/__init__.py`) :
-`script-src 'self'` (bloque tout `<script>` injecté), `object-src 'none'`,
-`style-src 'self' 'unsafe-inline'` (un seul style dynamique dans
-`dashboard.html`, largeur de barre de graphique), `script-src-attr
-'unsafe-inline'` (21 attributs `onclick=""` restants dans les templates —
-contenu statique écrit par les développeurs, jamais de données
-utilisateur ; `script-src-attr` est une directive CSP niveau 3 distincte
-de `script-src`, les nonces ne couvrent pas les attributs d'événements).
+**Strict CSP added** (`CSP_POLICY` in `app/__init__.py`):
+`script-src 'self'` (blocks any injected `<script>`), `object-src
+'none'`, `style-src 'self' 'unsafe-inline'` (a single dynamic style in
+`dashboard.html`, chart bar width), `script-src-attr 'unsafe-inline'`
+(21 remaining `onclick=""` attributes in templates — static content
+written by developers, never user data; `script-src-attr` is a
+distinct level-3 CSP directive from `script-src`, nonces don't cover
+event attributes).
 
-Pour permettre `script-src 'self'` sans `unsafe-inline` ni nonce, le
-script inline de ~576 lignes de `index.html` (config FullCalendar : drag
-& drop, création de shift via modal, etc.) a été externalisé vers
-`app/static/js/calendar/fullcalendar-config.js` (module ES6). Les données
-serveur (liste d'événements, `is_admin`, token CSRF) passent maintenant
-par des attributs `data-*` et un bloc `<script type="application/json">`
-plutôt que par de l'interpolation Jinja dans du JS inline.
+To allow `script-src 'self'` without `unsafe-inline` or a nonce, the
+~576-line inline script in `index.html` (FullCalendar config: drag &
+drop, shift creation via modal, etc.) was externalized to
+`app/static/js/calendar/fullcalendar-config.js` (ES6 module). Server
+data (event list, `is_admin`, CSRF token) now passes through `data-*`
+attributes and a `<script type="application/json">` block rather than
+Jinja interpolation inside inline JS.
 
-4 tests de régression ajoutés dans `tests/integration/test_security.py`
-(gating même sans `TALISMAN_FORCE_HTTPS`, contenu exact de la CSP, absence
-de script inline exécutable sur `/`). 771 tests passent.
+4 regression tests added in `tests/integration/test_security.py`
+(gating even without `TALISMAN_FORCE_HTTPS`, exact CSP content, no
+executable inline script on `/`). 771 tests pass.
 
-### Compression Gzip/Brotli (flask-compress)
+### Gzip/Brotli compression (flask-compress)
 
-**Bug réel trouvé et corrigé** : `flask-compress==1.24` est une
-dépendance déclarée avec sa config (`COMPRESS_REGISTER`,
-`COMPRESS_MIMETYPES`) dans `app/config/production.py`, mais `Compress`
-n'était importé ni instancié nulle part dans `app/__init__.py`. La
-compression ne faisait donc **rien** en pratique, peu importe
-l'environnement — la config existait mais l'extension n'avait jamais été
-branchée à l'application.
+**Real bug found and fixed**: `flask-compress==1.24` is a declared
+dependency with its config (`COMPRESS_REGISTER`,
+`COMPRESS_MIMETYPES`) in `app/config/production.py`, but `Compress`
+was neither imported nor instantiated anywhere in `app/__init__.py`.
+Compression therefore did **nothing** in practice, regardless of
+environment — the config existed but the extension had never actually
+been wired to the application.
 
-Corrigé : instance `compress = Compress()` au niveau module (même
-pattern que `db`/`login_manager`/`csrf`), `compress.init_app(app)` appelé
-dans `create_app()`, désactivé en `TESTING` (le client de test ne décode
-pas `Content-Encoding`, casserait les assertions texte sur `resp.data`
-dans le reste de la suite).
+Fixed: `compress = Compress()` instance at module level (same
+pattern as `db`/`login_manager`/`csrf`), `compress.init_app(app)`
+called in `create_app()`, disabled in `TESTING` (the test client
+doesn't decode `Content-Encoding`, which would break the text
+assertions on `resp.data` across the rest of the suite).
 
-Vérifié sur un serveur réel (`curl -H "Accept-Encoding: gzip" ...`) :
-`/login` → `Content-Encoding: gzip`, taille réduite. Les fichiers
-statiques servis en streaming (`fullcalendar-config.js`, 27 Ko) utilisent
-br/zstd plutôt que gzip (comportement par défaut de flask-compress pour
-les réponses streamées — gzip est exclu de `COMPRESS_ALGORITHM_STREAMING`
-en amont) : 27 166 → 5 099 octets en br, 5 407 en zstd.
+Verified on a real server (`curl -H "Accept-Encoding: gzip" ...`):
+`/login` → `Content-Encoding: gzip`, reduced size. Static files served
+via streaming (`fullcalendar-config.js`, 27 KB) use br/zstd rather
+than gzip (flask-compress's default behavior for streamed responses —
+gzip is excluded from `COMPRESS_ALGORITHM_STREAMING` upstream): 27,166
+→ 5,099 bytes in br, 5,407 in zstd.
 
-2 tests de régression ajoutés dans `tests/integration/test_performance.py`
-(`TestCompression`) : réponse compressée si `Accept-Encoding: gzip`,
-non compressée sinon.
+2 regression tests added in `tests/integration/test_performance.py`
+(`TestCompression`): compressed response if `Accept-Encoding: gzip`,
+uncompressed otherwise.
 
-### Lazy loading des images — non applicable
+### Image lazy loading — not applicable
 
-Audit (`find app/static/images app/templates -iname "*.png" -o ...`) :
-la seule image du projet est `app/static/images/favicon.png`. Aucune
-image de contenu à lazy-loader. Rien à faire.
+Audit (`find app/static/images app/templates -iname "*.png" -o ...`):
+the project's only image is `app/static/images/favicon.png`. No
+content image to lazy-load. Nothing to do.
 
-### Code splitting / tree shaking JS — documenté, reporté
+### JS code splitting / tree shaking — documented, deferred
 
-Aucun bundler dans le projet (`package.json`, `webpack.config.js`,
-`vite.config.js`, `rollup.config.js` : tous absents). Le JS est servi tel
-quel en fichiers statiques (vanilla ES6 modules, vendor libs en local).
-Introduire un bundler (Vite/esbuild/Rollup) pour permettre code
-splitting + tree shaking serait un changement d'outillage majeur (build
-step, config, CI à adapter) hors du périmètre "optimisations" de cette
-phase — décision utilisateur : documenter et reporter plutôt
-qu'introduire un bundler dans cette phase.
+No bundler in the project (`package.json`, `webpack.config.js`,
+`vite.config.js`, `rollup.config.js`: all absent). JS is served as-is
+as static files (vanilla ES6 modules, local vendor libs). Introducing
+a bundler (Vite/esbuild/Rollup) to enable code splitting + tree
+shaking would be a major tooling change (build step, config, CI to
+adapt) outside the "optimizations" scope of this phase — user
+decision: document and defer rather than introduce a bundler in this
+phase.
 
-### Audit régulier des dépendances
+### Regular dependency audit
 
-`bandit` et `safety` tournaient déjà (job `run_security` en CI, cible
-`make security` en local) mais uniquement sur push/MR — jamais de cadence
-indépendante des commits (une dépendance peut devenir vulnérable sans
-qu'aucun code ne change). Un pipeline GitLab planifié (CI/CD > Schedules,
-propriété du projet GitLab, pas configurable depuis le YAML du repo) est
-la façon standard de couvrir ça ; commentaire ajouté dans
-`.gitlab-ci.yml` documentant comment le brancher (`$CI_PIPELINE_SOURCE ==
-"schedule"`) une fois le dépôt GitLab en place.
+`bandit` and `safety` were already running (job `run_security` in CI,
+local `make security` target) but only on push/MR — never on a
+cadence independent of commits (a dependency can become vulnerable
+without any code changing). A scheduled GitLab pipeline (CI/CD >
+Schedules, a GitLab project property, not configurable from the
+repo's YAML) is the standard way to cover this; a comment was added in
+`.gitlab-ci.yml` documenting how to wire it up
+(`$CI_PIPELINE_SOURCE == "schedule"`) once the GitLab repo is in
+place.
 
 ### CI/CD (.gitlab-ci.yml) — commit `4ce3c5c`
 
-- `.python-template` installait les dépendances deux fois : une fois
-  avant `python -m venv .venv` (dans le python système du conteneur,
-  perdu ensuite), une fois après. Réordonné pour n'installer qu'une fois,
-  dans le venv.
-- `run_tests` déclarait `artifacts.reports.junit: junit.xml` et une regex
-  de coverage (`coverage: '/^TOTAL...'`) sans jamais passer `--junitxml`
-  ni `--cov` à pytest — les deux étaient cassés depuis toujours (aucun
-  fichier généré, aucune ligne à matcher). Corrigé.
-- `deploy_swarm` déployait via `docker stack deploy -c
-  docker-compose.prod.yml`, fichier introuvable n'importe où dans le
-  repo (confirmé par recherche exhaustive) — job mort. Supprimé (k8s via
-  `deploy_production` est le vrai chemin de déploiement).
-- `deploy_production` : `kubectl rollout status ... -n production` visait
-  un namespace qui n'existe dans aucun manifest `k8s/` (tous déclarent
-  `namespace: leviia-schedule`) — aurait échoué en "not found". Corrigé.
-  Le job ne déployait de toute façon jamais l'image tout juste construite
-  par `build_docker` : `k8s/deployment.yaml` a un placeholder
-  `your-registry/leviia-schedule:latest` en dur. Ajout d'un `sed` pour le
-  remplacer par `$CI_REGISTRY_IMAGE:latest` avant `kubectl apply`.
+- `.python-template` installed dependencies twice: once before
+  `python -m venv .venv` (into the container's system Python, then
+  lost), once after. Reordered to install only once, inside the venv.
+- `run_tests` declared `artifacts.reports.junit: junit.xml` and a
+  coverage regex (`coverage: '/^TOTAL...'`) without ever passing
+  `--junitxml` or `--cov` to pytest — both had been broken from the
+  start (no file generated, no line to match). Fixed.
+- `deploy_swarm` deployed via `docker stack deploy -c
+  docker-compose.prod.yml`, a file not found anywhere in the repo
+  (confirmed by exhaustive search) — dead job. Removed (k8s via
+  `deploy_production` is the real deployment path).
+- `deploy_production`: `kubectl rollout status ... -n production`
+  targeted a namespace that doesn't exist in any `k8s/` manifest (all
+  of them declare `namespace: kairos`) — would have failed with "not
+  found". Fixed. The job never actually deployed the image just built
+  by `build_docker` anyway: `k8s/deployment.yaml` has a hard-coded
+  `your-registry/kairos:latest` placeholder. Added a `sed` to replace
+  it with `$CI_REGISTRY_IMAGE:latest` before `kubectl apply`.
 
-### Docker optimisé — commit `4ce3c5c`
+### Optimized Docker — commit `4ce3c5c`
 
-`docker/Dockerfile.optimized` (multi-stage, créé en Phase 1 mais jamais
-branché nulle part — ni CI, ni docker-compose.yml, ni Makefile) a été
-construit et lancé localement pour validation (`docker build` +
-`docker run` + `curl /health`), comme point de départ avant de le
-promouvoir. Premier essai : `ModuleNotFoundError: No module named
-'flask'` au démarrage malgré une image qui build sans erreur — bug réel :
-`pip install --user` dans le stage builder installe dans
-`/root/.local`, qui hérite du mode `700` de `/root` dans l'image de
-base ; une fois `USER appuser` (non-root) actif, ce répertoire est
-illisible, `--chown` sur le seul contenu copié ne change rien puisque
-c'est `/root` lui-même qui bloque la traversée. Corrigé en installant
-avec `pip install --prefix=/install` puis en copiant vers `/usr/local`
-(déjà dans le `sys.path` par défaut de l'image `python:3.11-alpine`,
-déjà `755`). Re-testé avec succès : `/health` répond `200`, `docker exec
-whoami` renvoie `appuser`, mode développement (`python run.py`) et
-production (`FLASK_ENV=production` → Gunicorn) vérifiés tous les deux.
+`docker/Dockerfile.optimized` (multi-stage, created in Phase 1 but
+never wired up anywhere — not CI, not docker-compose.yml, not the
+Makefile) was built and run locally for validation (`docker build` +
+`docker run` + `curl /health`), as a starting point before promoting
+it. First attempt: `ModuleNotFoundError: No module named 'flask'` at
+startup despite an image that builds without error — real bug:
+`pip install --user` in the builder stage installs into
+`/root/.local`, which inherits the base image's `700` mode on
+`/root`; once `USER appuser` (non-root) is active, that directory is
+unreadable, and `--chown` on just the copied content changes nothing
+since it's `/root` itself blocking traversal. Fixed by installing with
+`pip install --prefix=/install` then copying to `/usr/local`
+(already in the `python:3.11-alpine` image's default `sys.path`,
+already `755`). Retested successfully: `/health` returns `200`,
+`docker exec whoami` returns `appuser`, both development mode
+(`python run.py`) and production mode (`FLASK_ENV=production` →
+Gunicorn) verified.
 
-Taille comparée avec `docker images` : 415 Mo (optimisé, multi-stage)
-contre 926 Mo (ancien Dockerfile, mono-stage) — un peu plus de 2x plus
-léger. `docker/Dockerfile.optimized` a remplacé `docker/Dockerfile`
-(promotion suivant le plan déjà écrit dans
-`report/DOCKER_OPTIMIZED_TEST.md` §"Prochaines étapes"), l'ancien
-fichier supprimé pour éviter la dérive entre deux Dockerfiles.
-`FLASK_ENV` par défaut remis à `development` dans l'image (l'optimisé
-avait `production` par défaut, ce qui aurait fait tourner Gunicorn par
-défaut dans le stack `docker-compose.yml` de dev, qui ne définit pas
-`FLASK_ENV`).
+Size compared with `docker images`: 415 MB (optimized, multi-stage)
+vs. 926 MB (old Dockerfile, single-stage) — a bit more than 2x
+lighter. `docker/Dockerfile.optimized` replaced `docker/Dockerfile`
+(promotion following the plan already written in
+`report/DOCKER_OPTIMIZED_TEST.md` §"Next steps"), the old file
+removed to avoid drift between two Dockerfiles.
+Default `FLASK_ENV` reset to `development` in the image (the
+optimized one had `production` by default, which would have run
+Gunicorn by default in the dev `docker-compose.yml` stack, which
+doesn't set `FLASK_ENV`).
 
-Bugs annexes trouvés et corrigés dans la foulée :
-- `docker-compose.yml` n'avait aucune clé `build:` — `docker compose
-  build` ne pouvait rien construire. Ajoutée (`context: ..`, `dockerfile:
-  docker/Dockerfile`), vérifiée avec un vrai `docker compose build`.
-- `docker/Makefile` : `up-prod` utilisait `up -d -e FLASK_ENV=production`
-  — `-e` n'est pas un flag valide pour `docker compose up` (c'est un flag
-  de `docker run`). Corrigé en `FLASK_ENV=production docker compose ...
-  up -d`, et ajout de `FLASK_ENV=${FLASK_ENV:-development}` dans
-  `docker-compose.yml` pour que la variable d'environnement shell
-  atteigne réellement le conteneur.
-- `docker/Makefile` : `shell` ciblait `exec web sh`, un service qui
-  n'existe pas dans `docker-compose.yml` (le service s'appelle
-  `leviia-schedule`). Corrigé.
-- `docker/setup-env.sh` cherchait `.env.example` dans le répertoire
-  courant, alors que ce fichier est à la racine du repo et que le script
-  vit dans `docker/` — cassé quel que soit le répertoire depuis lequel il
-  était lancé (personne ne l'appelle nulle part actuellement, script
-  orphelin, mais autant le corriger). `cd` vers son propre répertoire en
-  entrée de script + référence `../.env.example`.
+Side bugs found and fixed along the way:
+- `docker-compose.yml` had no `build:` key at all — `docker compose
+  build` couldn't build anything. Added (`context: ..`, `dockerfile:
+  docker/Dockerfile`), verified with a real `docker compose build`.
+- `docker/Makefile`: `up-prod` used `up -d -e FLASK_ENV=production`
+  — `-e` is not a valid flag for `docker compose up` (it's a `docker
+  run` flag). Fixed to `FLASK_ENV=production docker compose ...
+  up -d`, and added `FLASK_ENV=${FLASK_ENV:-development}` in
+  `docker-compose.yml` so the shell environment variable actually
+  reaches the container.
+- `docker/Makefile`: `shell` targeted `exec web sh`, a service that
+  doesn't exist in `docker-compose.yml` (the service is called
+  `kairos`). Fixed.
+- `docker/setup-env.sh` looked for `.env.example` in the current
+  directory, whereas that file lives at the repo root and the script
+  lives in `docker/` — broken regardless of which directory it was
+  run from (nothing currently calls it anywhere, an orphaned script,
+  but worth fixing anyway). `cd` to its own directory at script entry
+  + reference `../.env.example`.
 
-Non touché : l'IP codée en dur (`192.168.1.169`) dans la config OIDC mock
-de `docker-compose.yml`. C'est un contournement délibéré d'un problème
-déjà réglé par un commit dédié de cette branche de travail
-(accessibilité de l'issuer OIDC à la fois depuis le conteneur et le
-navigateur hôte) — le retoucher risquerait de réintroduire ce bug-là,
-hors du périmètre de cette phase.
+Not touched: the hard-coded IP (`192.168.1.169`) in the mock OIDC
+config in `docker-compose.yml`. This is a deliberate workaround for a
+problem already solved by a dedicated commit on this work branch
+(OIDC issuer reachability from both the container and the host
+browser) — touching it again would risk reintroducing that bug, out
+of scope for this phase.
 
 ### Kubernetes ready — commit `4ce3c5c`
 
-`k8s/deployment.yaml` avait des annotations `checksum/config` /
-`checksum/secret` en syntaxe Helm (`{{ include (print ...) | sha256sum
-}}`) sur un manifest appliqué tel quel via `kubectl apply -f k8s/` (pas
-de Helm dans ce projet, confirmé par recherche `find` — aucun `Chart.yaml`
-nulle part) : cette syntaxe n'était jamais interprétée, restait du texte
-littéral dans l'annotation. Le but (forcer un rolling restart des pods
-quand la ConfigMap ou le Secret change) ne s'est donc jamais produit.
-Annotations mortes supprimées, alternative documentée en commentaire
-(`kubectl rollout restart` explicite).
+`k8s/deployment.yaml` had `checksum/config` / `checksum/secret`
+annotations in Helm syntax (`{{ include (print ...) | sha256sum }}`)
+on a manifest applied as-is via `kubectl apply -f k8s/` (no Helm in
+this project, confirmed by `find` search — no `Chart.yaml` anywhere):
+this syntax was never interpreted, remaining literal text in the
+annotation. The intended purpose (forcing a rolling restart of pods
+when the ConfigMap or Secret changes) therefore never happened. Dead
+annotations removed, alternative documented in a comment (explicit
+`kubectl rollout restart`).
 
-Les manifests eux-mêmes (probes `/health`/`/ready`, Service, Ingress,
-ConfigMap, Secret template, PVC, HPA, PDB, Namespace) existaient déjà et
-sont corrects (probes déjà vérifiées en Phase 4). Validation YAML de
-tous les fichiers `k8s/*.yaml` faite avec `yaml.safe_load_all` (pas de
-`kubectl` disponible dans cet environnement pour un `--dry-run=client`
-réel).
+The manifests themselves (probes `/health`/`/ready`, Service, Ingress,
+ConfigMap, Secret template, PVC, HPA, PDB, Namespace) already existed
+and are correct (probes already verified in Phase 4). YAML validation
+of all `k8s/*.yaml` files done with `yaml.safe_load_all` (no
+`kubectl` available in this environment for a real
+`--dry-run=client`).
 
 ### Monitoring — Grafana — commit `4ce3c5c`
 
-Aucun artefact Grafana n'existait dans le repo (`find` exhaustif, zéro
-résultat). Créé `grafana/leviia-schedule-dashboard.json` (importable
-tel quel, datasource Prometheus paramétrable via variable de template) :
-requêtes/s et erreurs/s par endpoint, latence p95, temps requêtes SQL
-p95, utilisateurs/sessions actifs, volumétrie métier (shifts/astreintes/
-congés/utilisateurs/groupes), CPU/mémoire/disque. Chaque nom de métrique
-utilisé dans le dashboard vérifié un par un contre
-`app/utils/prometheus_metrics.py` (grep croisé des deux listes). JSON
-validé syntaxiquement. Dashboard **non** testé contre une instance
-Grafana réelle — aucune disponible dans cet environnement, indiqué
-explicitement dans `grafana/README.md`.
+No Grafana artifact existed in the repo (exhaustive `find`, zero
+results). Created `grafana/kairos-dashboard.json` (importable
+as-is, Prometheus datasource configurable via a template variable):
+requests/s and errors/s per endpoint, p95 latency, p95 SQL query time,
+active users/sessions, business volume (shifts/on-call/leave/users/
+groups), CPU/memory/disk. Every metric name used in the dashboard
+verified one by one against
+`app/utils/prometheus_metrics.py` (cross-grep of both lists). JSON
+syntactically validated. Dashboard **not** tested against a real
+Grafana instance — none available in this environment, explicitly
+noted in `grafana/README.md`.
 
 ---
 
-*Dernière mise à jour : 2026-07-12 — Phase 6 complète : 6.1 Performance,
-6.2 Sécurité, 6.3 DevOps tous traités. Reste : revue finale avant merge.*
+*Last updated: 2026-07-12 — Phase 6 complete: 6.1 Performance,
+6.2 Security, 6.3 DevOps all handled. Remaining: final review before merge.*

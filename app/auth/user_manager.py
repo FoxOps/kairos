@@ -2,7 +2,7 @@
 User management for OIDC authentication.
 
 This module handles syncing users between the OIDC provider and
-Leviia Schedule's local database.
+Kairos's local database.
 """
 
 import logging

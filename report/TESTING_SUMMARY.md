@@ -1,66 +1,66 @@
-# TESTING_SUMMARY.md - Stratégie de Tests Leviia Schedule
+# TESTING_SUMMARY.md - Kairos Testing Strategy
 
-## 📊 Aperçu Global
+## 📊 Global Overview
 
-- **Date de mise à jour** : 17 juillet 2026 (stabilisation v1.0, PR #122-#127)
-- **Nombre total de tests** : 1314
-- **Tests réussis** : 1314 ✅
-- **Tests échoués** : 0
-- **Couverture de code** : **~92%** (`--cov=app`)
-- **Lint (ruff)** : propre - **0 erreur**
-- **Types (mypy)** : propre - **0 erreur**
-- **Formatage (black)** : conforme
+- **Last updated**: July 17, 2026 (v1.0 stabilization, PR #122-#127)
+- **Total number of tests**: 1314
+- **Tests passing**: 1314 ✅
+- **Tests failing**: 0
+- **Code coverage**: **~92%** (`--cov=app`)
+- **Lint (ruff)**: clean - **0 errors**
+- **Types (mypy)**: clean - **0 errors**
+- **Formatting (black)**: compliant
 
 ---
 
-## 🎯 Stratégie de Tests
+## 🎯 Testing Strategy
 
-### Philosophie : quatre couches, pas trois
+### Philosophy: four layers, not three
 
-1. **Tests unitaires** (`tests/unit/`) : composants isolés (modèles, config,
-   automatisation, helpers, décorateurs) - pas de client HTTP.
-2. **Tests d'intégration** (`tests/integration/`) : routes Flask via le
-   client de test (`client`, `logged_in_client`), CSRF/CSP/permissions,
-   pas de navigateur réel.
-3. **Tests E2E - client de test** (`tests/e2e/test_user_flows.py`) :
-   parcours utilisateur complets (login → action → vérification →
-   logout), toujours via le client de test Flask.
-4. **Tests E2E - navigateur réel** (`tests/e2e/test_browser_flows.py`,
-   `test_oidc_browser_flow.py`) : Playwright + Chromium, **optionnel**
-   (voir section dédiée plus bas). Existe précisément parce que les
-   trois couches précédentes n'exécutent jamais de JS ni n'appliquent
-   CSS/CSP - une catégorie de bug entière (3 vrais bugs CSP trouvés en
-   PR #103) leur est structurellement invisible.
+1. **Unit tests** (`tests/unit/`): isolated components (models, config,
+   automation, helpers, decorators) - no HTTP client.
+2. **Integration tests** (`tests/integration/`): Flask routes via the
+   test client (`client`, `logged_in_client`), CSRF/CSP/permissions,
+   no real browser.
+3. **E2E tests - test client** (`tests/e2e/test_user_flows.py`):
+   full user journeys (login → action → verification →
+   logout), always via the Flask test client.
+4. **E2E tests - real browser** (`tests/e2e/test_browser_flows.py`,
+   `test_oidc_browser_flow.py`): Playwright + Chromium, **optional**
+   (see dedicated section below). Exists precisely because the
+   three previous layers never execute JS nor apply
+   CSS/CSP - an entire category of bugs (3 real CSP bugs found in
+   PR #103) is structurally invisible to them.
 
-### Outils utilisés
+### Tools used
 
-- **Framework** : `pytest` (+ `pytest-flask`, `pytest-cov`)
-- **Fixtures** : `tests/conftest.py` (chaîne `test_app`/`client`/
-  `logged_in_client`) + `tests/fixtures/` (modèles : user, group, shift,
+- **Framework**: `pytest` (+ `pytest-flask`, `pytest-cov`)
+- **Fixtures**: `tests/conftest.py` (`test_app`/`client`/
+  `logged_in_client` chain) + `tests/fixtures/` (models: user, group, shift,
   leave, oncall, swap)
-- **Navigateur réel (optionnel)** : `pytest-playwright` + Chromium, voir
+- **Real browser (optional)**: `pytest-playwright` + Chromium, see
   `requirements-e2e.txt`
-- **CI** : GitLab CI (`.gitlab-ci/.gitlab-ci.yml`) - `run_tests` (client
-  de test, bloquant), `run_e2e_browser` (Playwright, `allow_failure:
-  true` tant que non éprouvé en CI)
+- **CI**: GitLab CI (`.gitlab-ci/.gitlab-ci.yml`) - `run_tests` (test
+  client, blocking), `run_e2e_browser` (Playwright, `allow_failure:
+  true` until proven in CI)
 
 ---
 
-## 📁 Structure des tests
+## 📁 Test structure
 
 ```
 tests/
-├── conftest.py                      # Fixture chain : test_app, client, logged_in_client
+├── conftest.py                      # Fixture chain: test_app, client, logged_in_client
 ├── fixtures/                        # test_user, test_group, test_shift, test_leave, test_oncall...
 │
-├── unit/                            # 662 tests - composants isolés, pas de HTTP
-│   ├── test_service_account_model.py     # ServiceAccount : jeton/hash SHA-256, is_valid()
+├── unit/                            # 662 tests - isolated components, no HTTP
+│   ├── test_service_account_model.py     # ServiceAccount: SHA-256 token/hash, is_valid()
 │   ├── test_service_account_repository.py
 │   ├── test_service_account_service.py   # create/revoke/regenerate + audit trail
 │   ├── test_models.py               # User, Group, Shift, OnCall, Leave, ShiftType, NotificationLog
-│   ├── test_repositories.py         # Couche accès aux données
-│   ├── test_services.py             # Couche logique métier
-│   ├── test_automation*.py          # Règles métier shifts/astreintes (3 fichiers)
+│   ├── test_repositories.py         # Data access layer
+│   ├── test_services.py             # Business logic layer
+│   ├── test_automation*.py          # Shift/on-call business rules (3 files)
 │   ├── test_advanced_shift_automation.py
 │   ├── test_shift_rotation_fix.py
 │   ├── test_decorators_unit.py
@@ -70,454 +70,464 @@ tests/
 │   ├── test_config.py               # DATABASE_URL, normalize_database_uri() (MySQL/PostgreSQL
 │   │                                 #   driver rewrite), get_database_type(), SQLALCHEMY_ENGINE_OPTIONS
 │   ├── test_run_functions.py        # setup_database/create_default_data
-│   ├── test_vendor_assets.py        # Bulma/FontAwesome/FullCalendar vendorisés
+│   ├── test_vendor_assets.py        # Vendored Bulma/FontAwesome/FullCalendar
 │   ├── test_oidc_config.py          # OIDCConfig (25 tests)
-│   ├── test_oidc_auth.py            # OIDCAuthLib, réseau mocké (31 tests)
-│   ├── test_user_manager_oidc_sync.py  # Sync utilisateur OIDC (12 tests)
+│   ├── test_oidc_auth.py            # OIDCAuthLib, mocked network (31 tests)
+│   ├── test_user_manager_oidc_sync.py  # OIDC user sync (12 tests)
 │   ├── test_notification_config.py  # NotificationConfig (SMTP via env vars)
-│   ├── test_email_sender.py         # Envoi SMTP bas niveau, mocké
-│   ├── test_notification_service.py # Rappels hebdo shifts/astreinte, idempotence
+│   ├── test_email_sender.py         # Low-level SMTP sending, mocked
+│   ├── test_notification_service.py # Weekly shift/on-call reminders, idempotency
 │   ├── test_backup_config.py        # BackupConfig (SMTP/S3 via env vars)
-│   ├── test_backup_database.py      # scripts/backup_database.py (indépendant de app/)
-│   ├── test_backup_service.py       # BackupService (couche support /admin/backups)
-│   └── test_settings_service.py     # SettingsService (fuseau horaire, langue, formats date/heure...)
+│   ├── test_backup_database.py      # scripts/backup_database.py (independent of app/)
+│   ├── test_backup_service.py       # BackupService (/admin/backups support layer)
+│   └── test_settings_service.py     # SettingsService (timezone, language, date/time formats...)
 │
-├── integration/                     # 615 tests - routes Flask, client de test
+├── integration/                     # 615 tests - Flask routes, test client
 │   ├── test_routes.py, test_*_priority.py, test_*_coverage.py
-│   ├── test_admin_*.py              # Routes admin (users/groups/shift-types/automation/backups,
+│   ├── test_admin_*.py              # Admin routes (users/groups/shift-types/automation/backups,
 │   │                                 #   service accounts)
-│   ├── test_service_account_auth.py # resolve_service_account() : header manquant/invalide/expiré/révoqué
-│   ├── test_api_v1_routes.py        # Endpoints /api/v1/* (shifts/oncall/leave/users/shift-types)
-│   ├── test_api_csrf_exemption.py   # Blueprints app/api/ exemptés de CSRFProtect
-│   └── test_openapi_spec.py         # /api/v1/openapi.json généré, pas d'UI Swagger servie
-│   ├── test_security.py             # CSP, CSRF, Talisman, contrôle d'accès
+│   ├── test_service_account_auth.py # resolve_service_account(): missing/invalid/expired/revoked header
+│   ├── test_api_v1_routes.py        # /api/v1/* endpoints (shifts/oncall/leave/users/shift-types)
+│   ├── test_api_csrf_exemption.py   # app/api/ blueprints exempted from CSRFProtect
+│   └── test_openapi_spec.py         # /api/v1/openapi.json generated, no Swagger UI served
+│   ├── test_security.py             # CSP, CSRF, Talisman, access control
 │   ├── test_oidc_routes.py          # /login, /oidc/login, /oidc/callback, /logout (13 tests)
-│   ├── test_performance.py          # Temps de réponse, N+1, compression
-│   ├── test_i18n.py                 # get_locale(), <html lang>, catalogue en.po (round-trip)
+│   ├── test_performance.py          # Response time, N+1, compression
+│   ├── test_i18n.py                 # get_locale(), <html lang>, en.po catalog (round-trip)
 │   ├── test_prometheus_metrics.py, test_health.py
 │   ├── test_dark_theme.py, test_theme_fixes.py
 │   └── test_error_handlers.py
 │
 └── e2e/                             # 32 tests
-    ├── test_user_flows.py           # 6 tests, client de test Flask
+    ├── test_user_flows.py           # 6 tests, Flask test client
     ├── conftest.py                  # live_server_url, oidc_live_servers (Playwright)
-    ├── test_browser_flows.py        # 20 tests, Chromium réel (optionnel) - dont la création
-    │                                 #   d'un compte de service (jeton affiché une fois)
-    ├── oidc_mock_provider.py        # Faux fournisseur OIDC réel (Flask, pas Docker)
-    └── test_oidc_browser_flow.py    # 6 tests, flux SSO complet en navigateur réel (optionnel)
+    ├── test_browser_flows.py        # 20 tests, real Chromium (optional) - including the creation
+    │                                 #   of a service account (token shown once)
+    ├── oidc_mock_provider.py        # Real fake OIDC provider (Flask, not Docker)
+    └── test_oidc_browser_flow.py    # 6 tests, full SSO flow in a real browser (optional)
 ```
 
 ---
 
-## 🧪 Tests E2E navigateur réel (Playwright) - optionnels
+## 🧪 Real browser E2E tests (Playwright) - optional
 
-**Ne sont PAS installés par défaut** (`requirements.txt` seul suffit à
-faire tourner toute l'app et le reste de la suite). Pour les activer :
+**NOT installed by default** (`requirements.txt` alone is enough to
+run the whole app and the rest of the suite). To enable them:
 
 ```bash
 pip install -r requirements-e2e.txt
 playwright install chromium
 ```
 
-Sans ça, `pytest tests/` skippe proprement les deux modules concernés
-(`pytest.importorskip("playwright")` en tête de fichier) - visible comme
-`skipped` dans le résumé, jamais comme échec ni erreur de collecte.
-Vérifié explicitement : sans playwright installé, la suite E2E devient
-6 passent + 2 skippés (au lieu de 24 passent).
+Without this, `pytest tests/` cleanly skips the two modules involved
+(`pytest.importorskip("playwright")` at the top of the file) - shown as
+`skipped` in the summary, never as a failure or a collection error.
+Explicitly verified: without playwright installed, the E2E suite becomes
+6 passing + 2 skipped (instead of 24 passing).
 
-Ce que cette couche vérifie et qu'aucune autre ne peut :
-- **Zéro erreur console** sur 8 pages clés (`TestNoConsoleErrors`) -
-  généralise en garde-fou permanent l'audit manuel qui a trouvé 3 bugs
-  CSP réels lors de la refonte UI/UX (script inline bloqué sur 2 pages,
-  police d'icônes FullCalendar bloquée par `font-src` manquant)
-- Menu burger mobile (toggle `is-active`/`aria-expanded`, JS pur)
-- Thème sombre (persistance `localStorage`, inexistant côté serveur)
-- Bouton copier presse-papiers (retour visuel réel)
-- **Flux SSO complet** contre un vrai faux fournisseur OIDC
-  (`oidc_mock_provider.py`, une vraie appli Flask sur un port séparé,
-  pas un mock Python) : redirection navigateur, vraie page de login IdP
-  avec un clic, échanges serveur-à-serveur réels (découverte, token,
-  userinfo), session établie et invalidée pour de vrai. A permis de
-  trouver et corriger un bug réel bloquant (boucle de redirection
-  infinie `/login` ↔ `/oidc/login` sur tout échec SSO forcé).
+What this layer verifies that no other layer can:
+- **Zero console errors** on 8 key pages (`TestNoConsoleErrors`) -
+  generalizes into a permanent safeguard the manual audit that found 3 real
+  CSP bugs during the UI/UX overhaul (inline script blocked on 2 pages,
+  FullCalendar icon font blocked by a missing `font-src`)
+- Mobile burger menu (`is-active`/`aria-expanded` toggle, pure JS)
+- Dark theme (`localStorage` persistence, nonexistent server-side)
+- Copy-to-clipboard button (real visual feedback)
+- **Full SSO flow** against a real fake OIDC provider
+  (`oidc_mock_provider.py`, a real Flask app on a separate port,
+  not a Python mock): browser redirect, real IdP login page
+  with an actual click, real server-to-server exchanges (discovery, token,
+  userinfo), session actually established and invalidated. Allowed
+  finding and fixing a real blocking bug (infinite redirect loop
+  `/login` ↔ `/oidc/login` on any forced SSO failure).
 
-Détail complet : `report/E2E Playwright - Tests navigateur réel.md`.
+Full detail: `report/E2E Playwright - Tests navigateur réel.md`.
 
 ---
 
-## 🔐 Tests OIDC/SSO
+## 🔐 OIDC/SSO Tests
 
-Zéro test existant avant le 13 juillet 2026 malgré ~450 lignes de logique
+Zero tests existed before July 13, 2026 despite ~450 lines of logic
 (`config_oidc.py`, `app/auth/oidc_auth.py`, `app/auth/user_manager.py`).
-Trois niveaux, volontairement complémentaires (voir
-`report/E2E Playwright - Tests navigateur réel.md` pour la justification) :
+Three levels, deliberately complementary (see
+`report/E2E Playwright - Tests navigateur réel.md` for the rationale):
 
-1. **Unitaire** (68 tests) : chaque méthode isolée, appels réseau
-   (`requests.get/post`) mockés, JWT de test non signé (le code ne
-   vérifie jamais de signature, seulement l'expiration).
-2. **Intégration** (13 tests) : câblage des routes, `oidc_auth` mocké à
-   la frontière du module de routes. **A trouvé un bug réel bloquant** :
-   boucle de redirection infinie sur tout échec OIDC quand le SSO est
-   forcé (`OIDC_DISABLE_BASIC_AUTH=true`) - corrigé.
-3. **E2E navigateur réel** (5 tests) : voir section précédente.
+1. **Unit** (68 tests): each method isolated, network calls
+   (`requests.get/post`) mocked, unsigned test JWT (the code never
+   verifies a signature, only expiration).
+2. **Integration** (13 tests): route wiring, `oidc_auth` mocked at
+   the routes module boundary. **Found a real blocking bug**:
+   infinite redirect loop on any OIDC failure when SSO is
+   forced (`OIDC_DISABLE_BASIC_AUTH=true`) - fixed.
+3. **Real browser E2E** (5 tests): see previous section.
 
 ---
 
-## 🔧 Commandes de test
+## 🔧 Test commands
 
 ```bash
-# Tout (test -> lint -> format -> security)
+# Everything (test -> lint -> format -> security)
 make all
 
-# Tests seuls
-python -m pytest tests/ -v --tb=short         # tout (make test)
-python -m pytest tests/unit/ -v               # une couche
-python -m pytest tests/test_models.py -v      # un fichier
-python -m pytest tests/unit/test_models.py::TestUserModel::test_user_creation -v  # un test
+# Tests only
+python -m pytest tests/ -v --tb=short         # everything (make test)
+python -m pytest tests/unit/ -v               # one layer
+python -m pytest tests/test_models.py -v      # one file
+python -m pytest tests/unit/test_models.py::TestUserModel::test_user_creation -v  # one test
 
-# Couverture
+# Coverage
 python -m pytest tests/ --cov=app --cov=config --cov-report=term-missing
 python -m pytest tests/ --cov=app --cov=config --cov-report=html
 
-# E2E navigateur réel (optionnel, voir section dédiée)
+# Real browser E2E (optional, see dedicated section)
 pip install -r requirements-e2e.txt && playwright install chromium
 python -m pytest tests/e2e/test_browser_flows.py tests/e2e/test_oidc_browser_flow.py -v
 
-# Qualité de code
+# Code quality
 ruff check . --config=.ruff.toml
 mypy app/ tests/ --ignore-missing-imports --allow-untyped-decorators
 black --check . --exclude=".git|__pycache__|instance|venv"
 
-# Sécurité (non bloquant, || true dans le Makefile)
+# Security (non-blocking, || true in the Makefile)
 bandit -r app/ tests/
-safety scan --full-report   # nécessite un compte Safety CLI (login interactif)
+safety scan --full-report   # requires a Safety CLI account (interactive login)
 ```
 
 ---
 
-## 📝 Bonnes pratiques établies dans ce projet
+## 📝 Best practices established in this project
 
-1. **Réutiliser les fixtures existantes** (`test_app`, `client`,
-   `logged_in_client`, `test_user`, `test_group`, etc.) plutôt que de
-   construire des instances d'app à la main - sauf besoin explicite
-   d'une config différente (Talisman/CSRF réactivés, OIDC configuré),
-   auquel cas construire un fixture dédié qui `monkeypatch` par-dessus
-   `test_app` plutôt que dupliquer `create_app()`.
-2. **Nommage clair** : `test_login_route_redirects_to_dashboard()`, pas
+1. **Reuse existing fixtures** (`test_app`, `client`,
+   `logged_in_client`, `test_user`, `test_group`, etc.) rather than
+   building app instances by hand - except for an explicit need
+   for a different config (Talisman/CSRF re-enabled, OIDC configured),
+   in which case build a dedicated fixture that `monkeypatch`es on top
+   of `test_app` rather than duplicating `create_app()`.
+2. **Clear naming**: `test_login_route_redirects_to_dashboard()`, not
    `test_login()`.
-3. **Isolation** : `test_app` recrée toutes les tables à chaque test
-   (function-scoped). État global (`OIDCConfig`, singletons `oidc_auth`)
-   sauvegardé/restauré explicitement quand un test le modifie (voir
+3. **Isolation**: `test_app` recreates all tables for every test
+   (function-scoped). Global state (`OIDCConfig`, `oidc_auth`
+   singletons) explicitly saved/restored whenever a test modifies it (see
    `tests/unit/test_oidc_config.py::clean_oidc_env`,
    `tests/integration/test_oidc_routes.py::oidc_mode`).
-4. **Vérifier, ne pas supposer** : un test qui n'a jamais été vu échouer
-   n'est pas un garde-fou. Avant de faire confiance à un nouveau test de
-   régression, casser volontairement le code qu'il est censé protéger et
-   confirmer qu'il échoue avec le bon message (pattern appliqué à
-   `TestNoConsoleErrors` : `font-src` retiré temporairement de
-   `CSP_POLICY`, test rouge confirmé, remis en place).
-5. **Mocker à la bonne frontière** : mocker les appels réseau
-   (`requests.get/post`) dans les tests unitaires, mocker les méthodes
-   du module appelant (`app.routes.auth.oidc_auth.X`) dans les tests
-   d'intégration, ne rien mocker en E2E navigateur (vrai serveur, vrai
-   faux fournisseur OIDC).
-6. **Un seul client HTTP authentifié par test** : combiner
-   `logged_in_client` et `non_admin_client` (ou simplement deux
-   `test_app.test_client()`) dans le même test fait finir par partager
-   leur cookiejar - un client jamais connecté hérite silencieusement de
-   la session du premier login effectué dans le test (artefact du
-   harnais de test, pas un bug applicatif). Pour tester une permission
-   après une action admin, préparer l'état voulu directement via le
-   service (ex: `SwapService.approve_swap(...)` en `app_context()`)
-   plutôt que via une seconde requête HTTP authentifiée différemment.
-7. **Ne jamais imbriquer `with test_app.app_context():` quand un test
-   mute puis re-vérifie un objet de fixture via une requête fraîche** :
-   `test_app` a déjà un contexte actif pour toute la durée du test (voir
-   `tests/conftest.py`). En pousser un second fait résoudre `db.session`
-   vers une **session SQLAlchemy différente** de celle utilisée par les
-   fixtures - confirmé via l'erreur SQLAlchemy elle-même : `"Object ...
-   is already attached to session 'N' (this is 'M')"`. Un objet créé par
-   une fixture (attaché à la session N) mute normalement en mémoire dans
-   le bloc imbriqué (session M), mais `db.session.commit()` dans ce bloc
-   ne committe RIEN pour cet objet - il reste invisible même en SQL brut
-   après coup. Inoffensif tant qu'un test ne vérifie que l'attribut
-   Python en mémoire (`objet.champ == valeur`, la quasi-totalité des
-   tests de ce fichier) ; silencieusement faux dès qu'on vérifie l'état
-   réellement persisté (`Model.query.count()` après un bulk `.delete()`,
-   par exemple - voir `TestPurgeSwaps` dans `test_swap_service.py`, où
-   ça a fait échouer un test de façon 100% reproductible malgré un code
-   applicatif correct). Un objet **créé** à l'intérieur du bloc imbriqué
-   (pas depuis une fixture) n'est pas concerné, puisqu'il est ajouté
-   directement à la session M. L'app réelle n'est jamais affectée : une
-   requête HTTP a un unique contexte, jamais imbriqué.
+4. **Verify, don't assume**: a test that has never been seen to fail
+   is not a safeguard. Before trusting a new regression test,
+   deliberately break the code it's supposed to protect and
+   confirm it fails with the right message (pattern applied to
+   `TestNoConsoleErrors`: `font-src` temporarily removed from
+   `CSP_POLICY`, red test confirmed, then restored).
+5. **Mock at the right boundary**: mock network calls
+   (`requests.get/post`) in unit tests, mock the calling module's
+   methods (`app.routes.auth.oidc_auth.X`) in integration
+   tests, mock nothing in browser E2E (real server, real
+   fake OIDC provider).
+6. **Only one authenticated HTTP client per test**: combining
+   `logged_in_client` and `non_admin_client` (or simply two
+   `test_app.test_client()`) in the same test ends up sharing
+   their cookiejar - a client that never logged in silently inherits
+   the session of whichever login happened first in the test (an artifact
+   of the test harness, not an application bug). To test a permission
+   after an admin action, set up the desired state directly via the
+   service (e.g. `SwapService.approve_swap(...)` inside `app_context()`)
+   rather than via a second, differently-authenticated HTTP request.
+7. **Never nest `with test_app.app_context():` when a test
+   mutates then re-verifies a fixture object via a fresh query**:
+   `test_app` already has an active context for the entire duration of the test (see
+   `tests/conftest.py`). Pushing a second one makes `db.session` resolve
+   to a **different** SQLAlchemy session than the one used by the
+   fixtures - confirmed by SQLAlchemy's own error: `"Object ...
+   is already attached to session 'N' (this is 'M')"`. An object created by
+   a fixture (attached to session N) mutates normally in memory inside
+   the nested block (session M), but `db.session.commit()` in that block
+   commits NOTHING for that object - it stays invisible even against raw
+   SQL afterwards. Harmless as long as a test only checks the in-memory
+   Python attribute (`object.field == value`, the vast majority of the
+   tests in this file); silently wrong as soon as it checks
+   actually-persisted state (`Model.query.count()` after a bulk
+   `.delete()`, for example - see `TestPurgeSwaps` in
+   `test_swap_service.py`, where this caused a test to fail
+   100% reproducibly despite correct application code). An object
+   **created** inside the nested block (not from a fixture) is not
+   affected, since it's added directly to session M. The real
+   app is never affected: an HTTP request has a single context, never
+   nested.
 
 ---
 
-## 📈 Historique
+## 📈 History
 
-- **26 juin 2026** : 522 tests (515 passent, 2 échouent, 7 ignorés),
-  couverture ~66%, structure plate (`tests/test_*.py`), pas de CI.
-- **13 juillet 2026** : 881 tests (0 échec), couverture ~88%, structure
-  en 4 couches (`unit/`/`integration/`/`e2e/` + navigateur réel
-  optionnel), CI GitLab, suite OIDC complète, `make all` (test + lint
-  ruff/mypy + format black) intégralement propre.
-- **13 juillet 2026 (suite)** : 891 tests (0 échec). Amélioration du
-  moteur d'automatisation shifts/astreintes (PR #105 : retrait du moteur
-  générique mort, dry-run réparé, rééquilibrage atomique, nouvelle règle
-  effectif minimum, correctifs confirmations de suppression/astreintes
-  en double/rechargement calendrier) puis mise en place des
-  notifications par email hebdomadaires (rappels shifts/astreinte,
-  `NotificationLog` anti-doublon, SMTP via variables d'environnement,
-  scripts cron autonomes).
-- **13 juillet 2026 (suite)** : 944 tests (0 échec). Refonte du système
-  de sauvegarde (PR #107) : retrait de la scaffolding morte
-  (`encrypt`/`encryption_key`/`frequency`), `BACKUP_ENABLED` opt-in
-  (`false` par défaut), alertes email de succès/échec réutilisant le
-  système de notifications, `BackupService` + interface d'administration
-  (`/admin/backups` : liste, création, nettoyage, téléchargement avec
-  protection contre la traversée de chemin), intégration Docker (crond
-  conditionnel partagé avec les notifications).
-- **13 juillet 2026 (suite)** : 931 tests (0 échec). Refonte UI/UX complète
-  Bulma → Tailwind CSS 4 + daisyUI 5 via CDN cdnjs (PR #108) : suppression
-  du vendoring local (`app/static/vendor/`, `scripts/download_vendor_assets.py`,
-  `tests/unit/test_vendor_assets.py`), Font Awesome en mode SVG+JS (les
-  `.woff2` cdnjs de la 7.2.0 sont corrompus, rejetés par le sanitizer de
-  police de Chromium), FullCalendar maintenu en 6.1.21 via jsDelivr (la
-  7.0.0 lève une erreur d'exécution réelle dans son propre code Preact
-  compilé, confirmée via trois stratégies CDN différentes - bug amont, pas
-  un problème d'hébergement). Baisse nette du nombre de tests par rapport à
-  l'entrée précédente : suppression de `test_vendor_assets.py` et des tests
-  spécifiques aux variables/classes Bulma désormais obsolètes, compensée
-  partiellement par de nouveaux tests de thème (`test_dark_theme.py`
-  réécrit). Suite complète (unit + integration + e2e navigateur réel) verte,
-  y compris un bug JS réel trouvé en test manuel (pas par la suite
-  automatisée) : le bascule de thème plantait après la conversion Font
-  Awesome SVG+JS (`querySelector('i')` ne matchait plus), corrigé en ciblant
-  par classe (`.fa-moon, .fa-sun`) plutôt que par balise.
-- **14 juillet 2026** : 933 tests (0 échec). Refonte visuelle Dracula
-  (thème sombre) / Alucard (thème clair) sur la base Tailwind/daisyUI de
-  PR #108 (PR #110) : palette 100% issue du spec officiel
-  draculatheme.com/spec, menu mobile converti en `drawer` daisyUI natif
-  (remplace le toggle `hidden` maison), modale de création de shift
-  réécrite en `<dialog>` natif (`showModal()`/`close()`) avec échappement
-  HTML ajouté sur les données interpolées, composants daisyUI natifs
-  adoptés là où le CSS était bricolé (`stats`, `list`, `avatar`,
-  `breadcrumbs`, `tooltip`, `collapse`, `hero`, `swap`). Suite E2E
-  navigateur réel mise à jour pour le nouveau mécanisme de menu mobile
-  (case à cocher plutôt que classe `hidden`) et enrichie d'un test de
-  bascule au clavier ; bug réel trouvé en test manuel (composant
-  `avatar-placeholder` de daisyUI qui cible ses styles de centrage sur un
-  `<div>` enfant, pas un `<span>` - corrigé).
-- **14 juillet 2026** : 975 tests (0 échec, +42). Échange de shifts entre
-  utilisateurs (`SwapRequest` : demande, don simple ou réciproque,
-  validation/rejet admin) - nouvelle couche modèle/repository/service/
-  routes (user + admin) sans précédent d'approbation dans ce repo (les
-  congés n'en ont pas, et le restent). Nouveaux tests : modèle
+- **June 26, 2026**: 522 tests (515 passing, 2 failing, 7 skipped),
+  ~66% coverage, flat structure (`tests/test_*.py`), no CI.
+- **July 13, 2026**: 881 tests (0 failing), ~88% coverage, 4-layer
+  structure (`unit/`/`integration/`/`e2e/` + optional real browser),
+  GitLab CI, complete OIDC suite, `make all` (test + lint
+  ruff/mypy + black formatting) fully clean.
+- **July 13, 2026 (continued)**: 891 tests (0 failing). Improvement of
+  the shift/on-call automation engine (PR #105: removal of the dead
+  generic engine, fixed dry-run, atomic rebalancing, new minimum-staffing
+  rule, fixes to delete confirmations/duplicate on-calls/
+  calendar reload) followed by rollout of weekly email
+  notifications (shift/on-call reminders, `NotificationLog`
+  anti-duplicate guard, SMTP via environment variables,
+  standalone cron scripts).
+- **July 13, 2026 (continued)**: 944 tests (0 failing). Backup system
+  overhaul (PR #107): removal of dead scaffolding
+  (`encrypt`/`encryption_key`/`frequency`), opt-in `BACKUP_ENABLED`
+  (`false` by default), success/failure email alerts reusing the
+  notifications system, `BackupService` + admin interface
+  (`/admin/backups`: list, create, cleanup, download with
+  path-traversal protection), Docker integration (conditional crond
+  shared with notifications).
+- **July 13, 2026 (continued)**: 931 tests (0 failing). Full UI/UX
+  overhaul, Bulma → Tailwind CSS 4 + daisyUI 5 via cdnjs CDN (PR #108):
+  removal of local vendoring (`app/static/vendor/`,
+  `scripts/download_vendor_assets.py`,
+  `tests/unit/test_vendor_assets.py`), Font Awesome in SVG+JS mode (the
+  cdnjs 7.2.0 `.woff2` files are corrupted, rejected by Chromium's
+  font sanitizer), FullCalendar kept at 6.1.21 via jsDelivr (7.0.0
+  raises a real runtime error in its own compiled Preact code,
+  confirmed via three different CDN strategies - an upstream bug, not
+  a hosting issue). Net drop in test count compared to the
+  previous entry: removal of `test_vendor_assets.py` and tests
+  specific to now-obsolete Bulma variables/classes, partially
+  offset by new theme tests (`test_dark_theme.py`
+  rewritten). Full suite (unit + integration + real browser e2e) green,
+  including a real JS bug found in manual testing (not by the
+  automated suite): the theme toggle broke after the Font
+  Awesome SVG+JS conversion (`querySelector('i')` no longer matched),
+  fixed by targeting by class (`.fa-moon, .fa-sun`) instead of by tag.
+- **July 14, 2026**: 933 tests (0 failing). Dracula (dark theme) /
+  Alucard (light theme) visual overhaul on top of the Tailwind/daisyUI
+  base from PR #108 (PR #110): palette sourced 100% from the official
+  draculatheme.com/spec spec, mobile menu converted to a native daisyUI
+  `drawer` (replacing the homemade `hidden` toggle), shift creation
+  modal rewritten as a native `<dialog>` (`showModal()`/`close()`) with
+  HTML escaping added for interpolated data, native daisyUI
+  components adopted wherever the CSS was hand-rolled (`stats`,
+  `list`, `avatar`, `breadcrumbs`, `tooltip`, `collapse`, `hero`,
+  `swap`). Real browser E2E suite updated for the new mobile menu
+  mechanism (checkbox instead of `hidden` class) and enriched with a
+  keyboard-toggle test; real bug found in manual testing (daisyUI's
+  `avatar-placeholder` component targeting its centering styles at a
+  child `<div>`, not a `<span>` - fixed).
+- **July 14, 2026**: 975 tests (0 failing, +42). Shift swaps between
+  users (`SwapRequest`: request, one-way give-away or reciprocal,
+  admin approval/rejection) - new model/repository/service/
+  routes layer (user + admin) with no prior approval-workflow
+  precedent in this repo (leave requests have none, and stay that way).
+  New tests: model
   (`TestSwapRequestModel`), service (`TestRequestSwap`/`TestCancelSwap`/
-  `TestApproveSwap`/`TestRejectSwap` - couvre notamment la revalidation
-  métier à l'approbation, pas seulement à la création), routes
-  utilisateur et admin (`tests/integration/test_swap_routes.py`,
-  permissions admin vs non-admin incluses). Complété le même jour par
-  `revert_swap` (annulation d'un échange *après* approbation par
-  l'admin, statut `REVERTED` distinct de `CANCELLED` qui reste réservé à
-  l'auto-annulation par le demandeur avant validation) - `/admin/swaps`
-  affiche maintenant aussi les échanges déjà approuvés, pas seulement en
-  attente (`TestRevertSwap`, tests routes associés). Piège de test
-  découvert au passage : combiner `logged_in_client` et
-  `non_admin_client` (ou deux `test_app.test_client()`) dans un même
-  test fait finir par partager leur cookiejar - artefact du harnais de
-  test, pas un bug applicatif ; toujours isoler un seul client HTTP
-  authentifié par test (préparer l'état "déjà approuvé" via le service
-  directement si besoin, pas via une seconde requête HTTP admin).
-- **14 juillet 2026** : 994 tests (0 échec, +19). Notifications internes
-  à l'app (bell icon sidebar, badge non-lu) : `AppNotification` -
-  distinct de `NotificationLog` qui reste réservé aux rappels email
-  hebdo et n'est jamais affiché. `AppNotificationService` déclenché
-  synchroniquement par `SwapService` (nouvelle demande -> tous les
-  admins ; approbation/annulation -> demandeur + destinataire ; rejet ->
-  demandeur seul). Bug réel trouvé et corrigé *avant* qu'il ne casse la
-  prod : le nouveau `context_processor` (badge non-lu) accédait à
-  `current_user.is_authenticated` sans vérifier `has_request_context()`
-  - `NotificationService` (emails hebdo) rend ses templates via un
-  simple `app_context()` (scripts cron, jamais de requête HTTP), où
-  `current_user` résout à `None` plutôt que de lever une exception ;
-  résultat : `'NoneType' object has no attribute 'is_authenticated'` sur
-  **chaque** email de rappel, silencieusement avalé dans
-  `NotificationBatchResult.failed`. Détecté par la suite existante
-  (`tests/unit/test_notification_service.py`, 5 tests rouges) en
-  relançant la suite complète après la feature - pas par un test écrit
-  pour ce bug précis. Rappel qu'un `context_processor` s'exécute pour
-  *tout* rendu de template de l'app, y compris hors requête HTTP.
-- **14 juillet 2026** : 1006 tests (0 échec, +12). Corrections retours
-  utilisateur sur l'échange de shifts + notifications : badge de statut
-  `REVERTED` simplifié en "Annulée" (au lieu de "Annulée après
-  approbation") côté page utilisateur ; flash "Échange rejeté." passé de
-  `success` (vert) à `warning` (orange), un rejet n'étant pas un succès
-  côté demandeur. Purge ajoutée des deux côtés : notifications lues
-  (`AppNotificationService.purge_read`, garde les non-lues) et demandes
-  d'échange terminées/non-pending (`SwapService.purge_resolved_for_user`
-  côté utilisateur - matché comme demandeur *ou* destinataire, donc peut
-  faire disparaître une ligne encore visible pour l'autre partie, un seul
-  enregistrement historique partagé ; `purge_all_resolved` côté admin,
-  tous utilisateurs). Découverte majeure au passage, documentée en detail
-  dans "Bonnes pratiques" ci-dessous (point 7) : imbriquer
-  `with test_app.app_context():` dans un test dont `test_app` a déjà un
-  contexte actif fait résoudre `db.session` vers une session SQLAlchemy
-  différente de celle des fixtures - un commit dans le bloc imbriqué ne
-  persiste alors rien pour un objet de fixture, silencieusement, tant
-  qu'on ne vérifie pas l'état via une requête fraîche. A fait échouer un
-  nouveau test de purge de façon 100% reproductible en isolation malgré
-  un code applicatif correct (confirmé via les tests de routes HTTP
-  équivalents, eux non affectés) - probablement latent et invisible dans
-  le reste de la suite jusqu'ici car la quasi-totalité des tests
-  existants ne vérifient que l'attribut Python en mémoire après une
-  action, jamais un état fraîchement requêté.
-- **16 juillet 2026** : 1099 tests (0 échec, +93). Deux features livrées
-  (PR #115 puis #116, même architecture Setting/User réutilisée pour
-  chacune) :
-  - **i18n Français/Anglais** (Flask-Babel) : `User.language` +
-    `SettingsService.default_language`, retrofit complet de tout le texte
-    utilisateur (55 templates, tous les `flash()`, erreurs de services, JS
-    codé en dur via un mécanisme JSON server→JS car pas de build step,
-    4 templates email rendus dans la langue de chaque destinataire via
-    `force_locale()`), catalogue `en.po` traduit intégralement (806
-    chaînes), `fr.po` gardé à `msgstr` vides à dessein (repli standard sur
-    le français, comportement inchangé pour la suite existante).
-    Nouveau `tests/integration/test_i18n.py`, dont un test round-trip
-    dédié (`TestEnCatalogTranslation`) qui rend une page avec
-    `default_language="en"` et vérifie que l'anglais apparaît vraiment -
-    attrape à la fois "chaîne jamais traduite" et "catalogue jamais
-    compilé". Nouvelle fixture pytest session-scope autouse
-    (`tests/conftest.py::_compile_babel_catalogs`) : sans elle un
-    checkout frais n'a pas de `.mo` (gitignorés, artefacts de build) et
-    gettext retombe silencieusement sur le français même en anglais.
-  - **Formats de date/heure configurables** : même pattern
-    (`User.date_format`/`time_format` + `SettingsService.default_date_format`/
-    `default_time_format`), 3 formats de date / 2 formats d'heure,
-    retrofit des `strftime()` d'affichage vers 3 nouveaux filtres Jinja
-    (`format_date`/`format_time`/`format_datetime`). Bug réel trouvé et
-    corrigé en cours de route : régression N+1
-    (`test_schedule_query_count_stable_across_dataset_size`, déjà présent
-    dans la suite avant cette session) - les nouveaux résolveurs de
-    format n'avaient pas le cache par requête dont bénéficie `get_locale()`
-    via `flask_babel` en interne, donc chaque cellule date/heure d'un
-    tableau déclenchait sa propre requête `Setting.get()` ; fix par cache
-    sur `flask.g`.
-  - Après coup, en relançant la suite complète : 2 tests trouvés cassés
-    depuis la scission `/profile/update` → `/profile/settings` (session
-    antérieure, migration timezone) - `TestApiCreateShiftTimezoneConversion`
-    et `TestApiUpdateOncall::test_update_converts_viewer_tz_to_org_tz_for_storage`
-    postaient encore `timezone` vers `/profile/update`, une route qui ne
-    lit que nom/email/mot de passe ; le POST était silencieusement ignoré
-    et aucune conversion de fuseau horaire n'avait lieu. Longtemps
-    mal-diagnostiqués en cours de session comme "bug DST préexistant" avant
-    lecture attentive du code des deux routes - corrigés en pointant vers
-    `/profile/settings`.
-- **16 juillet 2026** : 1133 tests (0 échec, +34). Audit trail (PR #117) :
-  modèle `AuditLog` (append-only) + `AuditLogRepository` + `AuditService.log()`
-  comme point d'écriture unique, double écriture DB + `logs/audit.log`.
-  Avant cette PR, `log_audit_action()` existait dans le code depuis
-  longtemps mais n'était appelé nulle part en dehors des tests - confirmé
-  par grep sur `app/routes/`/`app/services/`, zéro résultat. Retrofit de
-  tout le CRUD métier (utilisateurs, groupes, shifts, astreintes, congés,
-  types de shift, tout le cycle de vie des échanges, paramètres admin) et
-  des événements d'authentification (connexion réussie/échouée,
-  déconnexion, inscription, changement de mot de passe). Tests
-  représentatifs par domaine (pas une duplication systématique par
-  méthode, le pattern d'appel est identique partout) plus une suite dédiée
-  pour `AuditLogRepository`/`AuditService` (résolution d'acteur explicite
-  vs `current_user` vs aucun, non-propagation d'exception si l'écriture
-  échoue - `test_failure_writing_entry_does_not_raise`) et pour la route
-  admin `/admin/audit-log` (filtres, pagination, permission admin-only,
-  purge avec/sans rétention configurée). Un test s'est cassé en cours de
-  route (`test_resolves_actor_from_current_user_in_request_context`) :
-  il comptait *toutes* les lignes `AuditLog` de la table, mais la
-  connexion réelle effectuée par le fixture `logged_in_client` écrit
-  désormais elle-même une entrée `auth.login_success` - corrigé en
-  filtrant sur l'action testée plutôt qu'en comptant la table entière.
-- **16 juillet 2026** : 1176 tests (0 échec, +43). Notifications externes
-  via Apprise (Slack/Discord/Telegram/webhooks génériques) : nouveau
-  modèle `NotificationTarget` (catégories JSON encodées, `subscribes_to()`
-  avec la règle "liste vide = toutes catégories") + `AppriseNotificationService`,
-  deux points d'entrée testés séparément - `notify()` (fire-and-forget,
-  jamais d'exception propagée même si le repository échoue, une cible en
-  échec n'empêche pas les autres d'être notifiées) et `send_test()`
-  (retourne le vrai succès/échec pour le bouton "Tester" de l'admin).
-  `apprise.Apprise` parle réseau, donc entièrement mocké
-  (`unittest.mock.patch` sur le point d'import du service) - aucun appel
-  réseau réel dans la suite. Tests représentatifs pour chaque site
-  d'appel retrofit (`SwapService.request_swap()` déclenche bien
-  `notify("swap", ...)`, mocké) plutôt qu'une duplication par méthode.
-  Suite complète pour `/admin/notification-targets` : CRUD, permission
-  admin-only, toggle global, action de test avec succès/échec mockés.
-- **16 juillet 2026** : 1183 tests (0 échec, +7). Ajout de deux
-  catégories Apprise dédiées (`shift_weekly`/`oncall_weekly`) qui
-  relaient chaque envoi hebdomadaire réussi (pas seulement les échecs
-  comme la catégorie `system`), avec un opt-out par utilisateur
-  indépendant de celui des emails (`User.apprise_shift_notifications_enabled`/
-  `apprise_oncall_notifications_enabled`, nouvelle migration), visible
-  et modifiable dans `/profile/settings` dans sa propre section (même
-  garde "n'applique les cases cochées que si la section était visible"
-  que pour la section email). Tests : relais déclenché sur succès,
-  relais absent si le toggle utilisateur est désactivé (`NotificationService`),
-  section masquée/visible selon le toggle global, persistance/ignorance
-  des cases selon le toggle global (`/profile/settings`).
-- **16 juillet 2026** : 1193 tests (0 échec, +10). Retour utilisateur :
-  le simple booléen `apprise_shift_notifications_enabled`/
-  `apprise_oncall_notifications_enabled` remplacé par une vraie
-  sélection de cibles (`User.apprise_shift_target_ids`/
-  `apprise_oncall_target_ids`, liste JSON encodée d'ids `NotificationTarget`,
-  même migration modifiée en place car pas encore mergée). Nouvelle
-  méthode `AppriseNotificationService.notify_to_targets(target_ids, ...)`
-  (fire-and-forget, resout chaque id à l'envoi et ignore silencieusement
-  une cible supprimée/désactivée depuis la sélection). `/profile/settings`
-  n'affiche et n'accepte que les cibles activées ET abonnées à la
-  catégorie correspondante (`NotificationTargetRepository.list_enabled_for_category`)
-  - un id soumis hors de cette liste éligible est silencieusement
-  ignoré (testé explicitement). Lien de documentation Apprise pointé
-  vers appriseit.com/services.
-- **16 juillet 2026** : 1224 tests (0 échec, +31). Trois chantiers
-  indépendants sur une même branche :
-  - **Sécurité** : la boucle `nav_links` de `base.html` (Accueil/
-    Tableau de bord/Shifts/Astreintes/Congés/Échanges) était la seule
-    section de la sidebar sans garde `current_user.is_authenticated`
-    - corrige d'un coup `/login` et toutes les pages d'erreur 400-504
-    (même layout partagé). Fuite d'information (structure interne de
-    l'app), pas un bypass fonctionnel (toutes les routes ciblées
-    restent `@login_required`).
-  - **Workflow d'échange de shifts en 2 temps** : nouvel état
-    `AWAITING_ADMIN` entre la demande (`PENDING`) et la validation
-    admin - le destinataire choisit désormais lui-même son shift à
-    échanger (ou aucun) au moment de confirmer, ou refuse directement,
-    avant même qu'un admin ne voie la demande. Aucune migration
-    nécessaire (`status` reste un `String(20)` libre,
-    `target_shift_id` déjà nullable). Retrofit complet des tests
-    existants (nouvelle fixture `confirmed_swap_request` pour les tests
-    d'approbation/rejet/annulation admin, qui ne partent plus
-    directement de `PENDING`) + nouveaux tests `TestConfirmSwap`/
-    `TestTargetRejectSwap`. `/api/swaps/target-shifts` et
-    `swap-form.js` devenus morts (le demandeur ne choisit plus le
-    shift retour) - supprimés, ainsi que `app/static/js/utils/date.js`
-    (plus aucun appelant réel une fois `swap-form.js` retiré).
-  - **Makefile** : 39 cibles réduites à 15 (suppression du bloc
-    `bug-hunt`/`scripts/bug_hunt.sh`, confirmé jamais exécuté dans ce
-    repo - `reports/` n'existait pas - et déjà divergent de la vraie
-    config `ruff`/`.ruff.toml` ; fusion des variantes `test-*`/
-    `backup-*` redondantes en invocations directes documentées).
-    `find-duplicates` gardé seul, unique apport réel de l'ancien bloc
-    bug-hunt.
-- **17 juillet 2026** : 1314 tests (0 échec). Stabilisation v1.0 (PR
-  #122-#127, 6 PR thématiques) : hygiène Docker/dépendances, code mort
-  (`config.py`/`ProductionConfig`/`DevelopmentConfig`/`get_database_type()`),
-  optimisation SQL (N+1 Apprise, bulk delete, `joinedload` manquant),
-  audit sécurité complet + chasse aux bugs ciblée + CI bloquante, i18n
-  (chaînes JS + placeholders + 206 chaînes `en.po` en retard rattrapées),
-  test de charge. Deux tests de régression ajoutés pour deux bugs réels
-  trouvés *pendant le test de charge* : `run.py` forçait `debug=True` sur
-  le serveur de développement Flask quel que soit `FLASK_DEBUG` (risque
-  RCE via le débogueur Werkzeug), et Flask-Talisman force
-  `SESSION_COOKIE_SECURE=True` indépendamment de `TALISMAN_FORCE_HTTPS`
-  (cassait la connexion sur tout déploiement HTTP simple, le mode par
-  défaut documenté) - les deux étaient couplés et corrigés ensemble. Voir
-  `report/SECURITY_AUDIT_v1.0.md`, `report/BUG_HUNT_v1.0.md`,
-  `report/LOAD_TEST_v1.0.md` pour le détail complet.
+  `TestApproveSwap`/`TestRejectSwap` - notably covering business-rule
+  re-validation at approval time, not just at creation), user and
+  admin routes (`tests/integration/test_swap_routes.py`, including
+  admin vs non-admin permissions). Completed the same day with
+  `revert_swap` (undoing a swap *after* admin approval, a distinct
+  `REVERTED` status separate from `CANCELLED`, which stays reserved
+  for the requester self-cancelling before validation) -
+  `/admin/swaps` now also shows already-approved swaps, not just
+  pending ones (`TestRevertSwap`, associated route tests). Test
+  pitfall discovered along the way: combining `logged_in_client` and
+  `non_admin_client` (or two `test_app.test_client()`) in the same
+  test ends up sharing their cookiejar - an artifact of the test
+  harness, not an application bug; always isolate a single
+  authenticated HTTP client per test (set up the "already approved"
+  state directly via the service if needed, not via a second
+  admin-authenticated HTTP request).
+- **July 14, 2026**: 994 tests (0 failing, +19). In-app
+  notifications (sidebar bell icon, unread badge): `AppNotification` -
+  distinct from `NotificationLog`, which stays reserved for weekly
+  email reminders and is never displayed. `AppNotificationService`
+  triggered synchronously by `SwapService` (new request -> all
+  admins; approval/cancellation -> requester + recipient; rejection ->
+  requester only). Real bug found and fixed *before* it broke
+  production: the new `context_processor` (unread badge) accessed
+  `current_user.is_authenticated` without checking
+  `has_request_context()` - `NotificationService` (weekly emails)
+  renders its templates via a plain `app_context()` (cron scripts,
+  never an HTTP request), where `current_user` resolves to `None`
+  rather than raising an exception; result:
+  `'NoneType' object has no attribute 'is_authenticated'` on
+  **every** reminder email, silently swallowed into
+  `NotificationBatchResult.failed`. Caught by the existing suite
+  (`tests/unit/test_notification_service.py`, 5 red tests) when
+  rerunning the full suite after the feature landed - not by a test
+  written specifically for this bug. A reminder that a
+  `context_processor` runs for *every* template render in the app,
+  including outside an HTTP request.
+- **July 14, 2026**: 1006 tests (0 failing, +12). User feedback
+  fixes on shift swaps + notifications: `REVERTED` status badge
+  simplified to "Cancelled" (instead of "Cancelled after
+  approval") on the user-facing page; the "Swap rejected." flash
+  changed from `success` (green) to `warning` (orange), a rejection
+  not being a success from the requester's point of view. Purging
+  added on both sides: read notifications
+  (`AppNotificationService.purge_read`, keeps unread ones) and
+  completed/non-pending swap requests
+  (`SwapService.purge_resolved_for_user` on the user side - matched
+  as requester *or* recipient, so it can make a row disappear that's
+  still visible to the other party, a single shared historical
+  record; `purge_all_resolved` on the admin side, for every user).
+  Major discovery along the way, documented in detail under "Best
+  practices" above (item 7): nesting
+  `with test_app.app_context():` inside a test whose `test_app`
+  already has an active context makes `db.session` resolve to a
+  different SQLAlchemy session than the fixtures' - a commit inside
+  the nested block then silently persists nothing for a fixture
+  object, unless the state is checked via a fresh query. This made
+  a new purge test fail 100% reproducibly in isolation despite
+  correct application code (confirmed via the equivalent HTTP route
+  tests, which were unaffected) - probably latent and invisible in
+  the rest of the suite until now, since almost all existing tests
+  only check the in-memory Python attribute after an action, never
+  freshly-queried state.
+- **July 16, 2026**: 1099 tests (0 failing, +93). Two features shipped
+  (PR #115 then #116, same Setting/User architecture reused for
+  each):
+  - **French/English i18n** (Flask-Babel): `User.language` +
+    `SettingsService.default_language`, full retrofit of all
+    user-facing text (55 templates, every `flash()`, service
+    errors, hardcoded JS via a server→JS JSON mechanism since there's
+    no build step, 4 email templates rendered in each recipient's
+    language via `force_locale()`), fully translated `en.po` catalog
+    (806 strings), `fr.po` deliberately left with empty `msgstr`
+    (standard fallback to French, unchanged behavior for the existing
+    suite). New `tests/integration/test_i18n.py`, including a dedicated
+    round-trip test (`TestEnCatalogTranslation`) that renders a page
+    with `default_language="en"` and verifies that English actually
+    appears - catching both "string never translated" and "catalog
+    never compiled". New session-scoped autouse pytest fixture
+    (`tests/conftest.py::_compile_babel_catalogs`): without it a
+    fresh checkout has no `.mo` files (gitignored, build artifacts) and
+    gettext silently falls back to French even in English.
+  - **Configurable date/time formats**: same pattern
+    (`User.date_format`/`time_format` +
+    `SettingsService.default_date_format`/`default_time_format`), 3
+    date formats / 2 time formats, retrofit of display-facing
+    `strftime()` calls into 3 new Jinja filters
+    (`format_date`/`format_time`/`format_datetime`). Real bug found
+    and fixed along the way: N+1 regression
+    (`test_schedule_query_count_stable_across_dataset_size`, already
+    present in the suite before this session) - the new format
+    resolvers didn't have the per-request cache that `get_locale()`
+    benefits from internally via `flask_babel`, so every date/time
+    cell in a table triggered its own `Setting.get()` query; fixed by
+    caching on `flask.g`.
+  - Afterwards, when rerunning the full suite: 2 tests found broken
+    since the `/profile/update` → `/profile/settings` split (earlier
+    session, timezone migration) - `TestApiCreateShiftTimezoneConversion`
+    and `TestApiUpdateOncall::test_update_converts_viewer_tz_to_org_tz_for_storage`
+    were still posting `timezone` to `/profile/update`, a route that
+    only reads name/email/password; the POST was silently ignored and
+    no timezone conversion took place. Long misdiagnosed during the
+    session as a "pre-existing DST bug" before a careful read of both
+    routes' code - fixed by pointing at `/profile/settings`.
+- **July 16, 2026**: 1133 tests (0 failing, +34). Audit trail (PR #117):
+  `AuditLog` model (append-only) + `AuditLogRepository` +
+  `AuditService.log()` as the single write point, dual write to DB +
+  `logs/audit.log`. Before this PR, `log_audit_action()` had existed
+  in the code for a long time but was never called outside the tests -
+  confirmed by grepping `app/routes/`/`app/services/`, zero results.
+  Retrofit of all business CRUD (users, groups, shifts, on-calls,
+  leave, shift types, the entire swap lifecycle, admin settings) and
+  authentication events (successful/failed login,
+  logout, registration, password change). Representative tests
+  per domain (not systematic per-method duplication, the call
+  pattern is identical everywhere) plus a dedicated suite for
+  `AuditLogRepository`/`AuditService` (explicit actor resolution
+  vs `current_user` vs none, no exception propagation if the write
+  fails - `test_failure_writing_entry_does_not_raise`) and for the
+  admin route `/admin/audit-log` (filters, pagination, admin-only
+  permission, purge with/without configured retention). A test broke
+  along the way (`test_resolves_actor_from_current_user_in_request_context`):
+  it was counting *all* `AuditLog` rows in the table, but the real
+  login performed by the `logged_in_client` fixture now itself writes
+  an `auth.login_success` entry - fixed by filtering on the tested
+  action instead of counting the whole table.
+- **July 16, 2026**: 1176 tests (0 failing, +43). External notifications
+  via Apprise (Slack/Discord/Telegram/generic webhooks): new
+  `NotificationTarget` model (JSON-encoded categories, `subscribes_to()`
+  with the "empty list = all categories" rule) + `AppriseNotificationService`,
+  two entry points tested separately - `notify()` (fire-and-forget,
+  never propagates an exception even if the repository fails, one
+  target failing doesn't prevent the others from being notified) and
+  `send_test()` (returns the real success/failure for the admin's
+  "Test" button). `apprise.Apprise` talks over the network, so fully
+  mocked (`unittest.mock.patch` at the service's import point) - no
+  real network call in the suite. Representative tests for each
+  retrofitted call site (`SwapService.request_swap()` does trigger
+  `notify("swap", ...)`, mocked) rather than per-method duplication.
+  Full suite for `/admin/notification-targets`: CRUD, admin-only
+  permission, global toggle, test action with mocked success/failure.
+- **July 16, 2026**: 1183 tests (0 failing, +7). Added two dedicated
+  Apprise categories (`shift_weekly`/`oncall_weekly`) that relay every
+  successful weekly send (not just failures like the `system`
+  category), with a per-user opt-out independent of the email one
+  (`User.apprise_shift_notifications_enabled`/
+  `apprise_oncall_notifications_enabled`, new migration), visible
+  and editable in `/profile/settings` in its own section (same
+  "only apply the checked boxes if the section was actually visible"
+  guard as the email section). Tests: relay triggered on success,
+  relay absent if the user toggle is disabled (`NotificationService`),
+  section hidden/shown depending on the global toggle,
+  persistence/ignoring of the checkboxes depending on the global
+  toggle (`/profile/settings`).
+- **July 16, 2026**: 1193 tests (0 failing, +10). User feedback:
+  the simple boolean `apprise_shift_notifications_enabled`/
+  `apprise_oncall_notifications_enabled` replaced with actual
+  target selection (`User.apprise_shift_target_ids`/
+  `apprise_oncall_target_ids`, JSON-encoded list of `NotificationTarget`
+  ids, same migration modified in place since not yet merged). New
+  `AppriseNotificationService.notify_to_targets(target_ids, ...)`
+  method (fire-and-forget, resolves each id at send time and
+  silently skips a target deleted/disabled since it was selected).
+  `/profile/settings` only displays and accepts targets that are
+  enabled AND subscribed to the matching category
+  (`NotificationTargetRepository.list_enabled_for_category`)
+  - an id submitted outside this eligible set is silently
+  ignored (explicitly tested). Apprise documentation link pointed
+  to appriseit.com/services.
+- **July 16, 2026**: 1224 tests (0 failing, +31). Three independent
+  workstreams on the same branch:
+  - **Security**: the `nav_links` loop in `base.html` (Home/
+    Dashboard/Shifts/On-call/Leave/Swaps) was the only sidebar
+    section without a `current_user.is_authenticated` guard - fixes
+    `/login` and every 400-504 error page in one go (same shared
+    layout). Information leak (internal app structure), not a
+    functional bypass (all targeted routes remain `@login_required`).
+  - **Two-step shift swap workflow**: new `AWAITING_ADMIN` state
+    between the request (`PENDING`) and admin validation - the
+    recipient now chooses their own swap shift (or none) at
+    confirmation time, or declines directly, before an admin even
+    sees the request. No migration needed (`status` stays a free
+    `String(20)`, `target_shift_id` already nullable). Full retrofit
+    of existing tests (new `confirmed_swap_request` fixture for
+    admin approval/rejection/cancellation tests, which no longer
+    start directly from `PENDING`) + new `TestConfirmSwap`/
+    `TestTargetRejectSwap` tests. `/api/swaps/target-shifts` and
+    `swap-form.js` became dead code (the requester no longer chooses
+    the return shift) - removed, along with
+    `app/static/js/utils/date.js` (no real caller left once
+    `swap-form.js` was removed).
+  - **Makefile**: 39 targets reduced to 15 (removal of the
+    `bug-hunt`/`scripts/bug_hunt.sh` block, confirmed never actually
+    run in this repo - `reports/` didn't exist - and already
+    diverged from the real `ruff`/`.ruff.toml` config; merging of
+    redundant `test-*`/`backup-*` variants into documented direct
+    invocations). `find-duplicates` kept as the only genuinely
+    useful piece of the old bug-hunt block.
+- **July 17, 2026**: 1314 tests (0 failing). v1.0 stabilization (PR
+  #122-#127, 6 themed PRs): Docker/dependency hygiene, dead code
+  removal (`config.py`/`ProductionConfig`/`DevelopmentConfig`/
+  `get_database_type()`), SQL optimization (Apprise N+1, bulk delete,
+  missing `joinedload`), full security audit + targeted bug hunt +
+  blocking CI, i18n (JS strings + placeholders + 206 backlogged
+  `en.po` strings caught up), load test. Two regression tests added
+  for two real bugs found *during the load test*: `run.py` was
+  forcing `debug=True` on the Flask development server regardless of
+  `FLASK_DEBUG` (RCE risk via the Werkzeug debugger), and Flask-Talisman
+  forces `SESSION_COOKIE_SECURE=True` independently of
+  `TALISMAN_FORCE_HTTPS` (broke login on any plain-HTTP deployment,
+  the documented default mode) - both were coupled and fixed
+  together. See `report/SECURITY_AUDIT_v1.0.md`,
+  `report/BUG_HUNT_v1.0.md`, `report/LOAD_TEST_v1.0.md` for the full
+  detail.

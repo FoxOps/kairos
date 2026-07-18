@@ -1,5 +1,5 @@
 """
-Optimizations module for Leviia Schedule.
+Optimizations module for Kairos.
 
 Only one active decorator: eager_load, used by the dashboard to avoid
 N+1 by loading SQLAlchemy relationships in a single query (has no

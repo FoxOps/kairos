@@ -9,7 +9,7 @@ set -e
 # à son propre emplacement, donc docker/data et docker/logs).
 cd "$(dirname "$0")"
 
-echo "🔧 Préparation de l'environnement Docker pour Leviia Schedule"
+echo "🔧 Préparation de l'environnement Docker pour Kairos"
 
 # Créer les répertoires nécessaires
 mkdir -p data logs

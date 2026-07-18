@@ -1,5 +1,5 @@
 """
-Automation status utilities for Leviia Schedule.
+Automation status utilities for Kairos.
 
 This module provides functions to check the current status of automation.
 """

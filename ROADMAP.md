@@ -1,404 +1,402 @@
-# 🗺️ Feuille de Route - Leviia Schedule
+# 🗺️ Roadmap - Kairos
 
-> **Version** : 6.0.0 - Stabilisation v1.0 (PR #122-#127 : dépendances/Docker,
-> code mort/legacy, optimisation SQL, audit sécurité + chasse aux bugs +
-> CI bloquante, i18n, documentation/version)
-> **Version app** : 1.0.0 (`/version`) - Hérite du support MySQL/MariaDB
-> (v0.9.4), de l'API REST publique (flask-smorest, v0.9.3), de la sécurité
-> sidebar/workflow d'échange en 2 temps (v0.9.2), des notifications
-> externes via Apprise (v0.9.1), de l'audit trail (historique des
-> modifications, `/admin/audit-log`, PR #117), du multi-fuseau horaire +
-> page `/admin/settings` DB-backed (PR #114), du support multi-langues
-> Français/Anglais (Flask-Babel, PR #115), des formats de date/heure
-> configurables (PR #116), de l'échange de shifts entre utilisateurs
-> (demande, don simple ou réciproque, validation/annulation admin, modèle
-> `SwapRequest`) + notifications internes à l'app (bell icon, modèle
-> `AppNotification`, PR #111) et de la refonte visuelle Tailwind/daisyUI
-> (PR #108, #110) : palette officielle Dracula (thème sombre) / Alucard
-> (thème clair), drawer mobile natif, composants daisyUI (stats,
-> breadcrumbs, avatar, tooltip, collapse, hero, swap), modale de création
-> de shift en `<dialog>` natif
-> **Dernière mise à jour** : 17 juillet 2026
-> **Statut** : v1.0 - voir "Verdict de stabilité v1.0" ci-dessous pour le
-> détail de ce que ça couvre (et ne couvre pas) - **suite de tests
-> complète, voir `make test`** ✅
-> **Branche** : `main`
+> **Version**: 6.0.0 - v1.0 Stabilization (PR #122-#127: dependencies/Docker,
+> dead/legacy code, SQL optimization, security audit + bug hunt +
+> blocking CI, i18n, documentation/version)
+> **App version**: 1.0.0-rc1 (`/version`) - Inherits MySQL/MariaDB support
+> (v0.9.4), the public REST API (flask-smorest, v0.9.3), sidebar security /
+> 2-step swap workflow (v0.9.2), external notifications via Apprise
+> (v0.9.1), the audit trail (change history, `/admin/audit-log`, PR #117),
+> multi-timezone support + the DB-backed `/admin/settings` page (PR #114),
+> French/English multi-language support (Flask-Babel, PR #115), configurable
+> date/time formats (PR #116), shift swaps between users (request, one-way
+> give-away or reciprocal, admin approval/cancellation, `SwapRequest` model)
+> + in-app notifications (bell icon, `AppNotification` model, PR #111), and
+> the Tailwind/daisyUI visual overhaul (PR #108, #110): official Dracula
+> (dark theme) / Alucard (light theme) palette, native mobile drawer,
+> daisyUI components (stats, breadcrumbs, avatar, tooltip, collapse, hero,
+> swap), native `<dialog>` shift-creation modal
+> **Last updated**: July 17, 2026
+> **Status**: 1.0.0-rc1 - see "v1.0 Stability Verdict" below for the
+> details of what it covers (and doesn't cover) - **full test suite, see
+> `make test`** ✅
+> **Branch**: `main`
 >
-> ℹ️ Ne pas confondre avec les « Phases » de refonte (`report/Phase 1` à
-> `report/Phase 6`, un chantier qualité/infra achevé) et les « Phases » de
-> cette feuille de route ci-dessous (roadmap fonctionnelle v0.1 → v3.0,
-> numérotation indépendante).
+> ℹ️ Not to be confused with the revamp "Phases" (`report/Phase 1` through
+> `report/Phase 6`, a completed quality/infra effort) and the "Phases" of
+> this roadmap below (functional roadmap v0.1 → v3.0, independent
+> numbering).
 
 ---
 
-## 📌 Vue d'ensemble
+## 📌 Overview
 
-Cette feuille de route présente les étapes clés, l'état actuel et les priorités de développement pour **Leviia Schedule**, une application web complète de gestion des plannings, des astreintes et des congés.
+This roadmap presents the key milestones, current status, and development
+priorities for **Kairos**, a comprehensive web application for shift
+scheduling, on-call rotation, and leave management.
 
-## 🎯 Objectifs principaux
+## 🎯 Main objectives
 
-- ✅ **Fonctionnalités de base** : Implémentation complète de toutes les fonctionnalités principales
-- ✅ **Tests complets** : **1314 tests**, 0 échec, couverture ~92%
-- ✅ **Automatisation avancée** : Règles métiers complexes implémentées
-- ✅ **Documentation complète** : Documentation technique, API et utilisateur
-- ✅ **Stabilisation** : Refonte Phases 1-6 terminée (architecture, sécurité, DevOps)
-- ✅ **Multi-langues, multi-fuseau, audit trail, notifications externes** : i18n FR/EN, fuseau
-  horaire et formats de date/heure personnalisables, historique complet des modifications,
-  notifications Slack/Discord/Telegram/webhooks via Apprise, échange de shifts en 2 temps
-  avec confirmation du destinataire (v0.7.10 → v0.9.2)
-- ✅ **Production Ready v1.0** : support MySQL/MariaDB, audit sécurité, chasse aux bugs,
-  test de charge, i18n complet - voir "Verdict de stabilité v1.0" ci-dessous
-- 📈 **Améliorations** : Fonctionnalités avancées et intégrations (Phase 5/7 roadmap, à venir)
+- ✅ **Core features**: Full implementation of all core features
+- ✅ **Comprehensive tests**: **1314 tests**, 0 failures, ~92% coverage
+- ✅ **Advanced automation**: Complex business rules implemented
+- ✅ **Complete documentation**: Technical, API, and user documentation
+- ✅ **Stabilization**: Phases 1-6 overhaul completed (architecture,
+  security, DevOps)
+- ✅ **Multi-language, multi-timezone, audit trail, external notifications**:
+  FR/EN i18n, customizable timezone and date/time formats, full change
+  history, Slack/Discord/Telegram/webhook notifications via Apprise,
+  2-step shift swap with recipient confirmation (v0.7.10 → v0.9.2)
+- ✅ **Production Ready v1.0**: MySQL/MariaDB support, security audit, bug
+  hunt, load test, complete i18n - see "v1.0 Stability Verdict" below
+- 📈 **Enhancements**: Advanced features and integrations (Phase 5/7
+  roadmap, upcoming)
 
 ---
 
-## 📊 État actuel du projet
+## 📊 Current project status
 
-### ✅ **Fonctionnalités implémentées et testées**
+### ✅ **Implemented and tested features**
 
-| Catégorie | Élément | Statut | Détails |
+| Category | Item | Status | Details |
 |----------|---------|--------|---------|
-| **Cœur** | Gestion des utilisateurs | ✅ | CRUD complet + authentification + rôles |
-| **Cœur** | Gestion des groupes | ✅ | Avec permissions schedule/oncall |
-| **Cœur** | Gestion des types de shifts | ✅ | Configuration des horaires personnalisables |
-| **Cœur** | Gestion des shifts | ✅ | Attribution et visualisation jour/semaine/mois |
-| **Cœur** | Gestion des astreintes (On-Call) | ✅ | Rotations automatiques (Vendredi 21h, 7 jours) |
-| **Cœur** | Gestion des congés | ✅ | Avec gestion des conflits et visualisation |
-| **Export** | Export ICS (shifts) | ✅ | Format iCalendar pour intégration externe |
-| **Export** | Export ICS (astreintes) | ✅ | Format iCalendar |
-| **Export** | Export ICS (congés) | ✅ | Format iCalendar |
-| **Export** | Authentification par token | ✅ | Accès sans session pour l'export |
-| **Sécurité** | Authentification Flask-Login | ✅ | Avec "remember me" et gestion de session |
-| **Sécurité** | Authentification OIDC/SSO | ✅ | Authlib, Keycloak/Okta/Auth0-compatible |
-| **Sécurité** | Gestion des permissions | ✅ | Décorateurs (admin_required, role_required, etc.) |
-| **Sécurité** | Gestion des erreurs | ✅ | Pages personnalisées 400-504 |
-| **Sécurité** | Logging complet | ✅ | Rotation (`RotatingFileHandler`), filtrage des données sensibles - pas de syslog (voir ENVIRONMENT_VARIABLES.md) |
-| **Sécurité** | CSP + security headers | ✅ | Talisman toujours actif (Phase 6), CSP stricte |
-| **Sécurité** | Audit de sécurité | ✅ | Rapport complet (report/SECURITY_AUDIT_REPORT.md) + audit legacy/perf/sécurité (PR #113) |
-| **Sécurité** | Historique des modifications (audit trail) | ✅ | Modèle `AuditLog`, double écriture DB + `logs/audit.log`, UI `/admin/audit-log` (PR #117, v0.9.0) |
-| **Intégrations** | Notifications externes (Apprise) | ✅ | Slack/Discord/Telegram/webhooks génériques, `/admin/notification-targets`, catégories swap/backup/system (v0.9.1) |
-| **Automatisation** | Règles métiers shifts | ✅ | **5 règles complexes** implémentées |
-| **Automatisation** | Rotation astreintes | ✅ | Algorithme automatique avec contraintes |
-| **Automatisation** | Gestion des conflits | ✅ | Congés vs shifts vs astreintes |
-| **Automatisation** | Module advanced_shift_automation | ✅ | Logique avancée de rotation |
-| **Architecture** | Couche Repositories | ✅ | Accès aux données isolé (app/repositories/) |
-| **Architecture** | Couche Services | ✅ | Logique métier isolée (app/services/) |
-| **Performance** | Optimisation des requêtes SQL | ✅ | Index composites, joinedload (eager_load), N+1/bulk delete corrigés (PR #124, v1.0) |
-| **Performance** | Pagination | ✅ | Pagination complète |
-| **Performance** | Compression Gzip/Brotli/Zstd | ✅ | flask-compress, activé Phase 6 |
-| **Tests** | Tests unitaires + intégration | ✅ | **1314 tests passent**, couverture ~92% |
-| **i18n** | Multi-langues (Français/Anglais) | ✅ | Flask-Babel, préférence par utilisateur + défaut org (PR #115, v0.7.11) |
-| **Personnalisation** | Fuseau horaire, formats date/heure | ✅ | Par utilisateur + défaut org, `SettingsService`/`/admin/settings` (PR #114 et #116, v0.7.10-v0.8.0) |
-| **Tests** | Tests d'intégration | ✅ | Scénarios utilisateurs complets (e2e/) |
-| **Tests** | Tests des gestionnaires d'erreurs | ✅ | Toutes les erreurs HTTP (400-504) |
-| **Tests** | Tests d'export | ✅ | ICS, routes d'export |
-| **Tests** | Tests d'automatisation | ✅ | Règles métiers et rotations |
-| **Tests** | Tests des décorateurs | ✅ | Permissions et accès |
-| **Tests** | Tests du thème sombre | ✅ | Tests dédiés |
-| **Tests** | Tests de sécurité | ✅ | CSP, CSRF, Talisman, contrôle d'accès |
-| **Tests** | Tests de performance | ✅ | Temps de réponse, N+1, compression |
-| **Qualité** | Linting (Ruff) | ✅ | Configuration .ruff.toml |
-| **Qualité** | Vérification types (mypy) | ✅ | Configuration complète |
-| **Qualité** | Formatage (Black) | ✅ | Configuration complète |
-| **Qualité** | Analyse sécurité (Bandit) | ✅ | `bandit -r app/` : 0 finding (3 faux positifs non annotés côté bandit corrigés en PR #125, v1.0) |
-| **Qualité** | Scan vulnérabilités (Safety) | ⚠️ | `safety scan` nécessite une clé API (`SAFETY_API_KEY`) non configurée - scan conditionnel en CI, voir `report/SECURITY_AUDIT_v1.0.md` |
-| **Infrastructure** | Configuration flexible | ✅ | `app/config/` (`base.py`/`testing.py` - `production.py`/`development.py` retirés comme code mort jamais instancié, PR #123, v1.0) |
-| **Infrastructure** | Support SQLite | ✅ | Par défaut, fonctionnel |
-| **Infrastructure** | Support PostgreSQL | ✅ | `psycopg[binary]`, `normalize_database_uri()` corrige un bug réel de driver par défaut (voir MySQL/MariaDB ci-dessous, même correctif) |
-| **Infrastructure** | Support MySQL/MariaDB | ✅ | `PyMySQL`, vérifié bout en bout contre un conteneur MariaDB réel (PR #121, v0.9.4) |
+| **Core** | User management | ✅ | Full CRUD + authentication + roles |
+| **Core** | Group management | ✅ | With schedule/oncall permissions |
+| **Core** | Shift type management | ✅ | Configurable shift-time settings |
+| **Core** | Shift management | ✅ | Assignment and day/week/month view |
+| **Core** | On-call management | ✅ | Automatic rotations (Friday 9 PM, 7 days) |
+| **Core** | Leave management | ✅ | With conflict handling and viewing |
+| **Export** | ICS export (shifts) | ✅ | iCalendar format for external integration |
+| **Export** | ICS export (on-call) | ✅ | iCalendar format |
+| **Export** | ICS export (leave) | ✅ | iCalendar format |
+| **Export** | Token-based authentication | ✅ | Session-less access for export |
+| **Security** | Flask-Login authentication | ✅ | With "remember me" and session handling |
+| **Security** | OIDC/SSO authentication | ✅ | Authlib, Keycloak/Okta/Auth0-compatible |
+| **Security** | Permission management | ✅ | Decorators (admin_required, role_required, etc.) |
+| **Security** | Error handling | ✅ | Custom 400-504 pages |
+| **Security** | Comprehensive logging | ✅ | Rotation (`RotatingFileHandler`), sensitive-data filtering - no syslog (see ENVIRONMENT_VARIABLES.md) |
+| **Security** | CSP + security headers | ✅ | Talisman always active (Phase 6), strict CSP |
+| **Security** | Security audit | ✅ | Full report (report/SECURITY_AUDIT_REPORT.md) + legacy/perf/security audit (PR #113) |
+| **Security** | Change history (audit trail) | ✅ | `AuditLog` model, dual DB + `logs/audit.log` write, `/admin/audit-log` UI (PR #117, v0.9.0) |
+| **Integrations** | External notifications (Apprise) | ✅ | Slack/Discord/Telegram/generic webhooks, `/admin/notification-targets`, swap/backup/system categories (v0.9.1) |
+| **Automation** | Shift business rules | ✅ | **5 complex rules** implemented |
+| **Automation** | On-call rotation | ✅ | Automatic algorithm with constraints |
+| **Automation** | Conflict handling | ✅ | Leave vs shifts vs on-call |
+| **Automation** | advanced_shift_automation module | ✅ | Advanced rotation logic |
+| **Architecture** | Repository layer | ✅ | Isolated data access (app/repositories/) |
+| **Architecture** | Service layer | ✅ | Isolated business logic (app/services/) |
+| **Performance** | SQL query optimization | ✅ | Composite indexes, joinedload (eager_load), N+1/bulk delete fixed (PR #124, v1.0) |
+| **Performance** | Pagination | ✅ | Full pagination |
+| **Performance** | Gzip/Brotli/Zstd compression | ✅ | flask-compress, enabled in Phase 6 |
+| **Tests** | Unit + integration tests | ✅ | **1314 tests passing**, ~92% coverage |
+| **i18n** | Multi-language (French/English) | ✅ | Flask-Babel, per-user preference + org default (PR #115, v0.7.11) |
+| **Customization** | Timezone, date/time formats | ✅ | Per-user + org default, `SettingsService`/`/admin/settings` (PR #114 and #116, v0.7.10-v0.8.0) |
+| **Tests** | Integration tests | ✅ | Full user scenarios (e2e/) |
+| **Tests** | Error handler tests | ✅ | All HTTP errors (400-504) |
+| **Tests** | Export tests | ✅ | ICS, export routes |
+| **Tests** | Automation tests | ✅ | Business rules and rotations |
+| **Tests** | Decorator tests | ✅ | Permissions and access |
+| **Tests** | Dark theme tests | ✅ | Dedicated tests |
+| **Tests** | Security tests | ✅ | CSP, CSRF, Talisman, access control |
+| **Tests** | Performance tests | ✅ | Response times, N+1, compression |
+| **Quality** | Linting (Ruff) | ✅ | `.ruff.toml` configuration |
+| **Quality** | Type checking (mypy) | ✅ | Full configuration |
+| **Quality** | Formatting (Black) | ✅ | Full configuration |
+| **Quality** | Security analysis (Bandit) | ✅ | `bandit -r app/`: 0 findings (3 unannotated false positives on bandit's side fixed in PR #125, v1.0) |
+| **Quality** | Vulnerability scan (Safety) | ⚠️ | `safety scan` requires an API key (`SAFETY_API_KEY`) not configured - conditional scan in CI, see `report/SECURITY_AUDIT_v1.0.md` |
+| **Infrastructure** | Flexible configuration | ✅ | `app/config/` (`base.py`/`testing.py` - `production.py`/`development.py` removed as dead code, never instantiated, PR #123, v1.0) |
+| **Infrastructure** | SQLite support | ✅ | Default, functional |
+| **Infrastructure** | PostgreSQL support | ✅ | `psycopg[binary]`, `normalize_database_uri()` fixes a real default-driver bug (see MySQL/MariaDB below, same fix) |
+| **Infrastructure** | MySQL/MariaDB support | ✅ | `PyMySQL`, verified end-to-end against a real MariaDB container (PR #121, v0.9.4) |
 | **Infrastructure** | Makefile | ✅ | test, lint, format, security, all, backup-*, babel-* |
-| **Infrastructure** | Scripts de backup | ✅ | backup_database.py, backup_config.py |
-| **Infrastructure** | Dockerisation | ✅ | Build multi-stage optimisé, `.dockerignore` corrigé (fuite `instance/app.db`/`.claude/` trouvée et corrigée en PR #122, v1.0) |
-| **Infrastructure** | CI/CD Pipeline | ⚠️ | `.gitlab-ci/.gitlab-ci.yml` bloquant (PR #125, v1.0) mais ce dépôt est hébergé sur GitHub sans workflow GitHub Actions - aucune CI ne s'exécute réellement sur les PR de ce dépôt tant que ce n'est pas résolu (voir `report/SECURITY_AUDIT_v1.0.md`) |
-| **Infrastructure** | Kubernetes ready | ✅ | Manifests complets (k8s/), probes /health /ready |
-| **Infrastructure** | Monitoring (Prometheus/Grafana) | ✅ | `/metrics` + dashboard importable (grafana/) - `PROMETHEUS_ENABLED` jamais câblé depuis l'env (fonctionnalité entièrement inatteignable), trouvé et corrigé en PR #125 (v1.0) |
-| **Documentation** | README.md | ✅ | Complète et à jour |
-| **Documentation** | ROADMAP.md | ✅ | Feuille de route détaillée |
-| **Documentation** | Docs/architecture/ARCHITECTURE.md | ✅ | Architecture technique + diagrammes Mermaid |
-| **Documentation** | Docs/api/API.md + openapi.yaml | ✅ | Documentation API + spec OpenAPI |
-| **Documentation** | Docs/guides/ADMIN_GUIDE.md | ✅ | Guide administrateur |
-| **Documentation** | Docs/guides/USER_GUIDE.md | ✅ | Guide utilisateur |
-| **Documentation** | Docs/guides/QUICK_START.md | ✅ | Guide de démarrage rapide |
-| **Documentation** | Docs/guides/FAQ.md | ✅ | Foire aux questions |
-| **Documentation** | Docs/reference/ERROR_HANDLING.md | ✅ | Gestion des erreurs |
-| **Documentation** | Docs/reference/PERFORMANCE_OPTIMIZATION.md | ✅ | Optimisations |
-| **Documentation** | Docs/deployment/BACKUP_GUIDE.md | ✅ | Guide de sauvegarde |
-| **Documentation** | Docs/reference/ENVIRONMENT_VARIABLES.md | ✅ | Variables d'environnement |
-| **UI/UX** | Thème sombre | ✅ | CSS complet + accessibilité |
-| **UI/UX** | Templates Jinja2 | ✅ | 30+ templates |
-| **UI/UX** | Skip link | ✅ | Accessibilité WCAG |
-| **UI/UX** | Calendrier interactif | ✅ | FullCalendar, drag & drop (module ES6 externalisé) |
+| **Infrastructure** | Backup scripts | ✅ | backup_database.py, backup_config.py |
+| **Infrastructure** | Dockerization | ✅ | Optimized multi-stage build, `.dockerignore` fixed (`instance/app.db`/`.claude/` leak found and fixed in PR #122, v1.0) |
+| **Infrastructure** | CI/CD Pipeline | ⚠️ | `.gitlab-ci/.gitlab-ci.yml` is blocking (PR #125, v1.0) but this repo is hosted on GitHub with no GitHub Actions workflow - no CI actually runs on this repo's PRs until this is resolved (see `report/SECURITY_AUDIT_v1.0.md`) |
+| **Infrastructure** | Kubernetes ready | ✅ | Full manifests (k8s/), /health /ready probes |
+| **Infrastructure** | Monitoring (Prometheus/Grafana) | ✅ | `/metrics` + importable dashboard (grafana/) - `PROMETHEUS_ENABLED` was never wired from the env (feature entirely unreachable), found and fixed in PR #125 (v1.0) |
+| **Documentation** | README.md | ✅ | Complete and up to date |
+| **Documentation** | ROADMAP.md | ✅ | Detailed roadmap |
+| **Documentation** | Docs/architecture/ARCHITECTURE.md | ✅ | Technical architecture + Mermaid diagrams |
+| **Documentation** | Docs/api/API.md + openapi.yaml | ✅ | API documentation + OpenAPI spec |
+| **Documentation** | Docs/guides/ADMIN_GUIDE.md | ✅ | Administrator guide |
+| **Documentation** | Docs/guides/USER_GUIDE.md | ✅ | User guide |
+| **Documentation** | Docs/guides/QUICK_START.md | ✅ | Quick start guide |
+| **Documentation** | Docs/guides/FAQ.md | ✅ | Frequently asked questions |
+| **Documentation** | Docs/reference/ERROR_HANDLING.md | ✅ | Error handling |
+| **Documentation** | Docs/reference/PERFORMANCE_OPTIMIZATION.md | ✅ | Optimizations |
+| **Documentation** | Docs/deployment/BACKUP_GUIDE.md | ✅ | Backup guide |
+| **Documentation** | Docs/reference/ENVIRONMENT_VARIABLES.md | ✅ | Environment variables |
+| **UI/UX** | Dark theme | ✅ | Full CSS + accessibility |
+| **UI/UX** | Jinja2 templates | ✅ | 30+ templates |
+| **UI/UX** | Skip link | ✅ | WCAG accessibility |
+| **UI/UX** | Interactive calendar | ✅ | FullCalendar, drag & drop (externalized ES6 module) |
 
 ---
 
-## ✅ Verdict de stabilité v1.0
+## ✅ v1.0 Stability Verdict
 
-**Oui, la base de code est prête pour une mise en production**, sous
-réserve des deux points opérationnels ci-dessous (qui ne sont pas des
-défauts de code, mais des décisions à prendre par l'équipe déployant
-l'app) :
+**Yes, the codebase is ready for production deployment**, subject to the
+two operational points below (which are not code defects, but decisions
+to be made by the team deploying the app):
 
-- **Ce qui a été vérifié et corrigé** : 1314 tests passent, 0 finding
-  Bandit sur `app/`, 0 erreur sur un test de charge réel (gunicorn en
-  config production exacte), 6 bugs réels trouvés et corrigés pendant
-  cette stabilisation - dont 2 sérieux découverts *pendant le test de
-  charge lui-même* : le débogueur Werkzeug interactif toujours actif sur
-  `python run.py` (une vraie surface RCE) et le cookie de session forcé
-  `Secure` par Flask-Talisman cassant la connexion sur tout déploiement
-  HTTP simple (le mode par défaut documenté). Les deux étaient couplés -
-  corriger l'un sans l'autre aurait cassé la connexion locale - et ont
-  été corrigés ensemble, vérifiés de bout en bout avant d'être considérés
-  clos.
-- **Ce qui reste à trancher avant un vrai déploiement** (pas un blocage
-  technique, une décision d'équipe) :
-  1. **CI qui ne s'exécute pas réellement** : `.gitlab-ci/.gitlab-ci.yml`
-     est maintenant bloquant, mais ce dépôt est sur GitHub sans workflow
-     GitHub Actions équivalent - aucun gate n'empêche réellement de
-     merger une régression tant que ce n'est pas résolu.
-  2. **Scan de dépendances (Safety) inactif** faute de `SAFETY_API_KEY`.
-  3. **3 findings du bug hunt volontairement non corrigés** (verrouillage
-     optimiste du workflow d'échange sous concurrence réelle, atomicité
-     de `SettingsService.set_pagination()`, sémantique d'expiration des
-     clés API) - risque faible, mais à trancher explicitement.
-- **Ce qui n'a délibérément pas été testé** : écritures concurrentes sous
-  forte charge (le test de charge v1.0 ne couvre que des routes en
-  lecture), PostgreSQL/MySQL sous charge (le test de charge a tourné sur
-  SQLite).
+- **What was verified and fixed**: 1314 tests pass, 0 Bandit findings on
+  `app/`, 0 errors on a real load test (gunicorn in exact production
+  config), 6 real bugs found and fixed during this stabilization -
+  including 2 serious ones discovered *during the load test itself*: the
+  interactive Werkzeug debugger still active on `python run.py` (a real
+  RCE surface) and the session cookie forced to `Secure` by
+  Flask-Talisman, breaking login on any plain-HTTP deployment (the
+  documented default mode). The two were coupled - fixing one without the
+  other would have broken local login - and were fixed together, verified
+  end-to-end before being considered closed.
+- **What remains to be decided before a real deployment** (not a
+  technical blocker, a team decision):
+  1. **CI that doesn't actually run**: `.gitlab-ci/.gitlab-ci.yml` is now
+     blocking, but this repo is on GitHub with no equivalent GitHub
+     Actions workflow - no gate actually prevents merging a regression
+     until this is resolved.
+  2. **Dependency scan (Safety) inactive** due to missing `SAFETY_API_KEY`.
+  3. **3 bug hunt findings deliberately left unfixed** (optimistic
+     locking of the swap workflow under real concurrency, atomicity of
+     `SettingsService.set_pagination()`, API key expiry semantics) - low
+     risk, but to be explicitly decided.
+- **What was deliberately not tested**: concurrent writes under heavy
+  load (the v1.0 load test only covers read routes), PostgreSQL/MySQL
+  under load (the load test ran on SQLite).
 
-En résumé : le code lui-même est sain, les correctifs de cette
-stabilisation étaient réels (pas du travail cosmétique pour combler un
-plan), et les deux bugs les plus sérieux trouvés (débogueur actif, cookie
-de session cassé) l'ont été en testant en conditions réelles plutôt qu'en
-se fiant aux tests automatisés seuls. Les points restants sont documentés
-précisément (pas vagues) pour que l'équipe puisse les trancher en
-connaissance de cause plutôt que découvrir un jour que "v1.0" cachait un
-angle mort.
+In summary: the code itself is sound, the fixes from this stabilization
+were real (not cosmetic work to fill out a plan), and the two most
+serious bugs found (active debugger, broken session cookie) were caught
+by testing under real conditions rather than relying on automated tests
+alone. The remaining points are documented precisely (not vaguely) so the
+team can decide on them with full knowledge, rather than one day
+discovering that "v1.0" was hiding a blind spot.
 
 ---
 
-## 📅 Phases de développement
+## 📅 Development phases
 
-### Phase 1 : ✅ Fondations (Terminé - v0.1-v0.3)
+### Phase 1: ✅ Foundations (Completed - v0.1-v0.3)
 
-**Objectif** : Mise en place de l'architecture de base et des fonctionnalités principales
+**Objective**: Set up the core architecture and main features
 
-| Élément | Statut | Priorité | Livraison | Détails |
+| Item | Status | Priority | Delivery | Details |
 |---------|--------|----------|-----------|---------|
-| Architecture Flask + SQLAlchemy | ✅ | Haute | v0.1 | Structure du projet et configuration |
-| Modèles de données (6 modèles) | ✅ | Haute | v0.1 | User, Group, ShiftType, Shift, OnCall, Leave |
-| Système d'authentification | ✅ | Haute | v0.1 | Flask-Login avec rôles admin/utilisateur |
-| Gestion des types de shifts | ✅ | Haute | v0.1 | Configuration des horaires |
-| Planning des shifts | ✅ | Haute | v0.2 | Attribution et visualisation |
-| Gestion des astreintes (On-Call) | ✅ | Haute | v0.2 | Rotations et notifications |
-| Gestion des congés | ✅ | Haute | v0.2 | Saisie et visualisation |
-| Export ICS | ✅ | Moyenne | v0.3 | Intégration calendrier externe |
-| Système de logging avancé | ✅ | Haute | v0.3 | Rotation, syslog, filtrage |
-| Gestion des erreurs personnalisées | ✅ | Haute | v0.3 | Pages 400-504 |
+| Flask + SQLAlchemy architecture | ✅ | High | v0.1 | Project structure and configuration |
+| Data models (6 models) | ✅ | High | v0.1 | User, Group, ShiftType, Shift, OnCall, Leave |
+| Authentication system | ✅ | High | v0.1 | Flask-Login with admin/user roles |
+| Shift type management | ✅ | High | v0.1 | Shift-time configuration |
+| Shift scheduling | ✅ | High | v0.2 | Assignment and viewing |
+| On-call management | ✅ | High | v0.2 | Rotations and notifications |
+| Leave management | ✅ | High | v0.2 | Entry and viewing |
+| ICS export | ✅ | Medium | v0.3 | External calendar integration |
+| Advanced logging system | ✅ | High | v0.3 | Rotation, syslog, filtering |
+| Custom error handling | ✅ | High | v0.3 | 400-504 pages |
 
-### Phase 2 : ✅ Tests et Qualité (Terminé - v0.4)
+### Phase 2: ✅ Tests and Quality (Completed - v0.4)
 
-**Objectif** : Assurer la qualité du code et la couverture des tests
+**Objective**: Ensure code quality and test coverage
 
-| Élément | Statut | Priorité | Livraison | Détails |
+| Item | Status | Priority | Delivery | Details |
 |---------|--------|----------|-----------|---------|
-| **Tests unitaires complets** | ⚠️ | **Haute** | v0.4 | **515 tests** - Couverture ~66%, 2 échecs à corriger |
-| **Tests d'intégration** | ✅ | Haute | v0.4 | Scénarios utilisateurs complets |
-| **Tests des gestionnaires d'erreurs** | ✅ | Moyenne | v0.4 | Toutes les erreurs HTTP |
-| **Tests de l'export ICS** | ✅ | Moyenne | v0.4 | Shifts, astreintes, congés |
-| **Tests de l'automatisation** | ✅ | Moyenne | v0.4 | Règles métiers complexes |
-| **Tests des décorateurs** | ✅ | Moyenne | v0.4 | Permissions et accès (2 fichiers de tests) |
-| **Tests du thème sombre** | ✅ | Moyenne | v0.4 | 11 tests dédiés |
-| Optimisation des requêtes SQL | ✅ | Moyenne | v0.4 | Index composites, joinedload |
-| Gestion des erreurs améliorée | ✅ | Moyenne | v0.4 | Pages d'erreur personnalisées |
-| Journalisation (Logging) | ✅ | Moyenne | v0.4 | Configuration complète |
+| **Comprehensive unit tests** | ⚠️ | **High** | v0.4 | **515 tests** - ~66% coverage, 2 failures to fix |
+| **Integration tests** | ✅ | High | v0.4 | Full user scenarios |
+| **Error handler tests** | ✅ | Medium | v0.4 | All HTTP errors |
+| **ICS export tests** | ✅ | Medium | v0.4 | Shifts, on-call, leave |
+| **Automation tests** | ✅ | Medium | v0.4 | Complex business rules |
+| **Decorator tests** | ✅ | Medium | v0.4 | Permissions and access (2 test files) |
+| **Dark theme tests** | ✅ | Medium | v0.4 | 11 dedicated tests |
+| SQL query optimization | ✅ | Medium | v0.4 | Composite indexes, joinedload |
+| Improved error handling | ✅ | Medium | v0.4 | Custom error pages |
+| Logging | ✅ | Medium | v0.4 | Full configuration |
 
-### Phase 3 : ✅ Automatisation Avancée (Terminé - v0.5)
+### Phase 3: ✅ Advanced Automation (Completed - v0.5)
 
-**Objectif** : Implémentation des règles métiers complexes
+**Objective**: Implement complex business rules
 
-| Élément | Statut | Priorité | Livraison | Détails |
+| Item | Status | Priority | Delivery | Details |
 |---------|--------|----------|-----------|---------|
-| **Règles métiers shifts** | ✅ | **Haute** | v0.5 | 5 règles complexes |
-| **Automatisation des astreintes** | ✅ | **Haute** | v0.5 | Rotation automatique |
-| **Gestion des conflits** | ✅ | **Haute** | v0.5 | Congés vs shifts vs astreintes |
-| **Module advanced_shift_automation** | ✅ | **Haute** | v0.5 | Règles spécifiques |
-| **Contrainte légale** | ✅ | **Haute** | v0.5 | Pas 2 astreintes de suite |
+| **Shift business rules** | ✅ | **High** | v0.5 | 5 complex rules |
+| **On-call automation** | ✅ | **High** | v0.5 | Automatic rotation |
+| **Conflict handling** | ✅ | **High** | v0.5 | Leave vs shifts vs on-call |
+| **advanced_shift_automation module** | ✅ | **High** | v0.5 | Dedicated rules |
+| **Legal constraint** | ✅ | **High** | v0.5 | No 2 consecutive on-call periods |
 
-**Règles métiers implémentées dans `advanced_shift_automation.py` :**
-1. ✅ Créneau 13h-21h : Réservé à la personne d'astreinte SI elle fait partie d'un groupe schedule
-2. ✅ Rotation des créneaux : Si une personne était sur 13h-21h une semaine, elle doit être sur 07h-15h la semaine suivante
-3. ✅ Créneau par défaut : 09h-17h pour tous les autres cas (plusieurs personnes peuvent être sur ce créneau)
-4. ✅ Cas des congés : Si seulement 2 personnes disponibles, la personne NON d'astreinte doit être sur 07h-15h
-5. ✅ Contrainte légale : Pas 2 astreintes de suite - minimum 2 semaines sans astreinte entre deux astreintes
+**Business rules implemented in `advanced_shift_automation.py`:**
+1. ✅ 1 PM-9 PM slot: Reserved for the on-call person IF they belong to a schedule group
+2. ✅ Slot rotation: If a person was on the 1 PM-9 PM slot one week, they must be on the 7 AM-3 PM slot the following week
+3. ✅ Default slot: 9 AM-5 PM for all other cases (several people can be on this slot)
+4. ✅ Leave case: If only 2 people are available, the person NOT on call must be on the 7 AM-3 PM slot
+5. ✅ Legal constraint: No 2 consecutive on-call periods - minimum 2 weeks without on-call between two on-call periods
 
-**Modules d'automatisation :**
-- `automation.py` (991 lignes) : Logique principale de rotation
-- `advanced_shift_automation.py` (19,242 lignes) : Règles métiers complexes
-- `cache.py` (19,242 lignes) : Système de cache
-- `lazy_loading.py` (26,729 lignes) : Chargement paresseux
-- `optimizations.py` (28,152 lignes) : Optimisations des performances
-- `pagination.py` (734 lignes) : Pagination
-- `performance_monitor.py` (875 lignes) : Monitoring des performances
+**Automation modules:**
+- `automation.py` (991 lines): Main rotation logic
+- `advanced_shift_automation.py` (19,242 lines): Complex business rules
+- `cache.py` (19,242 lines): Caching system
+- `lazy_loading.py` (26,729 lines): Lazy loading
+- `optimizations.py` (28,152 lines): Performance optimizations
+- `pagination.py` (734 lines): Pagination
+- `performance_monitor.py` (875 lines): Performance monitoring
 
-### Phase 4 : ✅ Stabilisation et Pré-production (Terminé - v0.6)
+### Phase 4: ✅ Stabilization and Pre-production (Completed - v0.6)
 
-**Objectif** : Préparation pour le déploiement en production
+**Objective**: Preparation for production deployment
 
-| Élément | Statut | Priorité | Livraison | Détails |
+| Item | Status | Priority | Delivery | Details |
 |---------|--------|----------|-----------|---------|
-| **Correction des bugs critiques** | ✅ | **Haute** | v0.6 | Refonte Phases 1-6 (voir report/) - **773 tests passent** |
-| **Support PostgreSQL complet** | ⚠️ | **Haute** | v0.6 | Configuration possible (psycopg), tests CI toujours à ajouter |
-| **Dockerisation** | ✅ | **Haute** | v0.6 | Build multi-stage optimisé (report/Phase 6, 415 Mo) |
-| **CI/CD Pipeline** | ✅ | **Haute** | v0.6 | GitLab CI (`.gitlab-ci/.gitlab-ci.yml`, futur dépôt du projet) |
-| **Configuration via environnement** | ✅ | Haute | v0.5 | Variables d'environnement complètes (ENVIRONMENT_VARIABLES.md) |
-| **Documentation technique** | ✅ | Moyenne | v0.6 | Docs/architecture/, Docs/api/ |
-| **Documentation utilisateur** | ✅ | Moyenne | v0.6 | Docs/guides/USER_GUIDE.md, Docs/guides/ADMIN_GUIDE.md |
-| **Optimisation des performances** | ✅ | Moyenne | v0.6 | Cache, pagination, eager loading, compression Gzip/Brotli/Zstd |
-| **Audit de sécurité** | ✅ | **Haute** | v0.5 | report/SECURITY_AUDIT_REPORT.md + CSP stricte (Phase 6) |
-| **Backup automatique** | ✅ | Moyenne | v0.6 | Scripts backup_database.py et backup_config.py |
-| **Refonte des assets statiques** | ✅ | Moyenne | v0.6 | CSS/FullCalendar + externalisation JS (CSP, Phase 6) |
-| **Architecture en couches** | ✅ | Haute | v0.6 | repositories/ + services/ (report/Phase 2) |
-| **Kubernetes ready** | ✅ | Moyenne | v0.6 | Manifests k8s/ complets (report/Phase 6) |
-| **Monitoring Prometheus/Grafana** | ✅ | Moyenne | v0.6 | /metrics + dashboard importable (report/Phase 6) |
+| **Critical bug fixes** | ✅ | **High** | v0.6 | Phases 1-6 overhaul (see report/) - **773 tests passing** |
+| **Full PostgreSQL support** | ⚠️ | **High** | v0.6 | Configuration possible (psycopg), CI tests still to be added |
+| **Dockerization** | ✅ | **High** | v0.6 | Optimized multi-stage build (report/Phase 6, 415 MB) |
+| **CI/CD Pipeline** | ✅ | **High** | v0.6 | GitLab CI (`.gitlab-ci/.gitlab-ci.yml`, project's future repository) |
+| **Environment-based configuration** | ✅ | High | v0.5 | Full environment variables (ENVIRONMENT_VARIABLES.md) |
+| **Technical documentation** | ✅ | Medium | v0.6 | Docs/architecture/, Docs/api/ |
+| **User documentation** | ✅ | Medium | v0.6 | Docs/guides/USER_GUIDE.md, Docs/guides/ADMIN_GUIDE.md |
+| **Performance optimization** | ✅ | Medium | v0.6 | Cache, pagination, eager loading, Gzip/Brotli/Zstd compression |
+| **Security audit** | ✅ | **High** | v0.5 | report/SECURITY_AUDIT_REPORT.md + strict CSP (Phase 6) |
+| **Automatic backup** | ✅ | Medium | v0.6 | backup_database.py and backup_config.py scripts |
+| **Static asset overhaul** | ✅ | Medium | v0.6 | CSS/FullCalendar + JS externalization (CSP, Phase 6) |
+| **Layered architecture** | ✅ | High | v0.6 | repositories/ + services/ (report/Phase 2) |
+| **Kubernetes ready** | ✅ | Medium | v0.6 | Full k8s/ manifests (report/Phase 6) |
+| **Prometheus/Grafana monitoring** | ✅ | Medium | v0.6 | /metrics + importable dashboard (report/Phase 6) |
 
-### Phase 5 : 📈 Améliorations majeures (Prévu - v0.7-v0.8)
+### Phase 5: 📈 Major enhancements (Planned - v0.7-v0.8)
 
-**Objectif** : Ajout de fonctionnalités avancées et amélioration de l'expérience utilisateur
+**Objective**: Add advanced features and improve user experience
 
-#### 5.1 Interface et Expérience Utilisateur
+#### 5.1 Interface and User Experience
 
-| Élément | Statut | Priorité | Livraison estimée | Détails |
+| Item | Status | Priority | Estimated delivery | Details |
 |---------|--------|----------|-------------------|---------|
-| **Refonte de l'UI/UX** | ✅ | Haute | v0.7 | Design moderne et responsive (PR #103) : palette, burger mobile, composants, audit responsive |
-| **Calendrier interactif** | ✅ | Haute | v0.7 | Drag & drop pour les shifts (FullCalendar, Phase 6) |
-| **Tableau de bord utilisateur** | ✅ | Moyenne | v0.7 | Existe déjà (dashboard.html), rafraîchi visuellement en PR #103 |
-| **Thème sombre/clair** | ✅ | Basse | v0.5 | **Déjà implémenté** (dark-theme.css) |
-| **Accessibilité (WCAG)** | ⚠️ | Moyenne | v0.8 | Partiellement implémenté (skip link) |
+| **UI/UX overhaul** | ✅ | High | v0.7 | Modern, responsive design (PR #103): palette, mobile burger, components, responsive audit |
+| **Interactive calendar** | ✅ | High | v0.7 | Drag & drop for shifts (FullCalendar, Phase 6) |
+| **User dashboard** | ✅ | Medium | v0.7 | Already existed (dashboard.html), visually refreshed in PR #103 |
+| **Dark/light theme** | ✅ | Low | v0.5 | **Already implemented** (dark-theme.css) |
+| **Accessibility (WCAG)** | ⚠️ | Medium | v0.8 | Partially implemented (skip link) |
 
-#### 5.2 Fonctionnalités avancées
+#### 5.2 Advanced features
 
-| Élément | Statut | Priorité | Livraison estimée | Détails |
+| Item | Status | Priority | Estimated delivery | Details |
 |---------|--------|----------|-------------------|---------|
-| **Notifications par email** | ✅ | **Haute** | v0.7 | Rappels hebdomadaires shifts (dimanche) et astreinte (jeudi), SMTP via variables d'environnement, scripts cron autonomes (PR #106) |
-| **Échanges de shifts entre utilisateurs** | ✅ | Moyenne | v0.7 | Demande (don simple ou réciproque) + validation admin, modèle `SwapRequest` |
-| **Multi-langues (i18n)** | ✅ | Moyenne | v0.7.11 | Français, Anglais (Flask-Babel) - Espagnol non fait |
-| **Gestion des fuseaux horaires** | ✅ | Moyenne | v0.7.10 | Multi-timezone par utilisateur + défaut org (`SettingsService`) |
-| **Formats de date/heure configurables** | ✅ | Moyenne | v0.8.0 | Par utilisateur + défaut org, filtres Jinja dédiés |
-| **Historique des modifications** | ✅ | Basse | v0.9.0 | Audit trail des changements (`AuditLog`, `/admin/audit-log`) |
+| **Email notifications** | ✅ | **High** | v0.7 | Weekly reminders for shifts (Sunday) and on-call (Thursday), SMTP via environment variables, standalone cron scripts (PR #106) |
+| **Shift swaps between users** | ✅ | Medium | v0.7 | Request (one-way give-away or reciprocal) + admin approval, `SwapRequest` model |
+| **Multi-language (i18n)** | ✅ | Medium | v0.7.11 | French, English (Flask-Babel) - Spanish not done |
+| **Timezone management** | ✅ | Medium | v0.7.10 | Multi-timezone per user + org default (`SettingsService`) |
+| **Configurable date/time formats** | ✅ | Medium | v0.8.0 | Per user + org default, dedicated Jinja filters |
+| **Change history** | ✅ | Low | v0.9.0 | Audit trail of changes (`AuditLog`, `/admin/audit-log`) |
 
-#### 5.3 Intégrations externes
+#### 5.3 External integrations
 
-| Élément | Statut | Priorité | Livraison estimée | Détails |
+| Item | Status | Priority | Estimated delivery | Details |
 |---------|--------|----------|-------------------|---------|
-| **Webhooks** | ✅ | Basse | v0.9.1 | Notifications vers des services externes (Slack/Discord/Telegram/webhooks génériques) via Apprise, `/admin/notification-targets` |
-| **API REST publique** | ✅ | Moyenne | v0.9.3 | flask-smorest, `/api/v1/*`, comptes de service, lecture seule |
+| **Webhooks** | ✅ | Low | v0.9.1 | Notifications to external services (Slack/Discord/Telegram/generic webhooks) via Apprise, `/admin/notification-targets` |
+| **Public REST API** | ✅ | Medium | v0.9.3 | flask-smorest, `/api/v1/*`, service accounts, read-only |
 
-### Phase 6 : 🚀 Production Ready (Terminé - v1.0)
+### Phase 6: 🚀 Production Ready (Completed - v1.0)
 
-**Objectif** : Préparation finale pour le déploiement en production
+**Objective**: Final preparation for production deployment
 
-| Élément | Statut | Priorité | Livraison estimée | Détails |
+| Item | Status | Priority | Estimated delivery | Details |
 |---------|--------|----------|-------------------|---------|
-| **Support MySQL/MariaDB** | ✅ | Moyenne | v0.9.4 | Alternative à PostgreSQL, `PyMySQL`, vérifié bout en bout |
-| **Monitoring et métriques** | ✅ | Moyenne | v0.6 (câblage réel corrigé v1.0) | Prometheus (/metrics) + dashboard Grafana - `PROMETHEUS_ENABLED` était jamais lu depuis l'env (fonctionnalité inatteignable), corrigé PR #125 |
-| **Documentation finale** | ✅ | Moyenne | v1.0 | Docs/, CLAUDE.md, ROADMAP.md, README.md repassés contre le code réel (PR #127) |
-| **Version stable** | ✅ | **Haute** | v1.0 | Voir "Verdict de stabilité v1.0" ci-dessous |
-| **Tests de charge** | ✅ | Moyenne | v1.0 | `scripts/load_test.sh` + `report/LOAD_TEST_v1.0.md` - zéro erreur, a mené à la découverte et correction de 2 bugs réels (débogueur Werkzeug toujours actif, cookie de session forcé Secure cassant la connexion en HTTP simple) |
-| **Audit sécurité complet** | ✅ | **Haute** | v1.0 | `report/SECURITY_AUDIT_v1.0.md` - aucune vulnérabilité critique/haute, 2 gaps opérationnels documentés (Safety sans clé API, CI GitLab sur dépôt GitHub) |
-| **Chasse aux bugs** | ✅ | **Haute** | v1.0 | `report/BUG_HUNT_v1.0.md` - 1 bug HIGH corrigé (suppression de shift référencé par un échange faisait planter 3 pages), 2 MEDIUM/LOW corrigés, 3 findings documentés et volontairement non corrigés |
-| **i18n complet** | ✅ | Moyenne | v1.0 | `en.po` 100% traduit (206 chaînes de retard rattrapées), chaînes JS + placeholders restants routés via `getString()`/`{{ _(...) }}` (PR #126) |
+| **MySQL/MariaDB support** | ✅ | Medium | v0.9.4 | Alternative to PostgreSQL, `PyMySQL`, verified end-to-end |
+| **Monitoring and metrics** | ✅ | Medium | v0.6 (real wiring fixed in v1.0) | Prometheus (/metrics) + Grafana dashboard - `PROMETHEUS_ENABLED` was never read from the env (feature unreachable), fixed in PR #125 |
+| **Final documentation** | ✅ | Medium | v1.0 | Docs/, CLAUDE.md, ROADMAP.md, README.md re-checked against the actual code (PR #127) |
+| **Stable release** | ✅ | **High** | v1.0 | See "v1.0 Stability Verdict" below |
+| **Load tests** | ✅ | Medium | v1.0 | `scripts/load_test.sh` + `report/LOAD_TEST_v1.0.md` - zero errors, led to the discovery and fix of 2 real bugs (Werkzeug debugger still active, session cookie forced to Secure breaking login on plain HTTP) |
+| **Full security audit** | ✅ | **High** | v1.0 | `report/SECURITY_AUDIT_v1.0.md` - no critical/high vulnerabilities, 2 operational gaps documented (Safety without an API key, GitLab CI on a GitHub repo) |
+| **Bug hunt** | ✅ | **High** | v1.0 | `report/BUG_HUNT_v1.0.md` - 1 HIGH bug fixed (deleting a shift referenced by a swap crashed 3 pages), 2 MEDIUM/LOW fixed, 3 findings documented and deliberately left unfixed |
+| **Full i18n** | ✅ | Medium | v1.0 | `en.po` 100% translated (206 lagging strings caught up), remaining JS strings + placeholders routed through `getString()`/`{{ _(...) }}` (PR #126) |
 
-### Phase 7 : 🌟 Fonctionnalités futures (Prévu - v1.5-v3.0)
+### Phase 7: 🌟 Future features (Planned - v1.5-v3.0)
 
-**Objectif** : Innovations et extensions du produit
+**Objective**: Product innovations and extensions
 
-| Élément | Statut | Priorité | Livraison estimée | Détails |
+| Item | Status | Priority | Estimated delivery | Details |
 |---------|--------|----------|-------------------|---------|
-| **Application mobile** | ❌ | Basse | v2.0 | React Native ou Flutter |
-| **Module de reporting** | ❌ | Moyenne | v1.5 | Statistiques et analytics |
-| **API GraphQL** | ❌ | Basse | v1.5 | Alternative à l'API REST |
+| **Mobile app** | ❌ | Low | v2.0 | React Native or Flutter |
+| **Reporting module** | ❌ | Medium | v1.5 | Statistics and analytics |
+| **GraphQL API** | ❌ | Low | v1.5 | Alternative to the REST API |
 
 ---
 
-## 📊 Priorités par version
+## 📊 Priorities by version
 
-### Version 0.5 (Automatisation - **Terminé**)
-- ✅ Tests unitaires complets (515 tests)
-- ✅ Automatisation avancée (règles métiers)
-- ✅ Gestion des conflits
-- ✅ Contrainte légale (pas 2 astreintes de suite)
-- ✅ Module advanced_shift_automation
+### Version 0.5 (Automation - **Completed**)
+- ✅ Comprehensive unit tests (515 tests)
+- ✅ Advanced automation (business rules)
+- ✅ Conflict handling
+- ✅ Legal constraint (no 2 consecutive on-call periods)
+- ✅ advanced_shift_automation module
 
-### Version 0.6 (Stabilisation - **Terminé**)
-- ✅ Configuration avancée (variables d'environnement)
-- ✅ Documentation technique complète
-- ✅ Audit de sécurité + CSP stricte
-- ✅ Scripts de backup
-- ✅ Refonte des assets statiques + externalisation JS
-- ✅ Architecture en couches (repositories/services)
-- ✅ Dockerisation (build multi-stage optimisé)
+### Version 0.6 (Stabilization - **Completed**)
+- ✅ Advanced configuration (environment variables)
+- ✅ Complete technical documentation
+- ✅ Security audit + strict CSP
+- ✅ Backup scripts
+- ✅ Static asset overhaul + JS externalization
+- ✅ Layered architecture (repositories/services)
+- ✅ Dockerization (optimized multi-stage build)
 - ✅ CI/CD Pipeline (GitLab CI)
-- ✅ Kubernetes ready (manifests k8s/)
-- ✅ Monitoring (Prometheus + dashboard Grafana)
-- ✅ 773 tests passent, couverture ~82%
-- ⚠️ Support PostgreSQL (configuration possible, tests CI à ajouter)
+- ✅ Kubernetes ready (k8s/ manifests)
+- ✅ Monitoring (Prometheus + Grafana dashboard)
+- ✅ 773 tests passing, ~82% coverage
+- ⚠️ PostgreSQL support (configuration possible, CI tests to add)
 
-### Version 0.7 (Fonctionnalités avancées - **Terminé**)
-- ✅ Refonte UI/UX (PR #103, #108, #110 : Tailwind/daisyUI, palette Dracula/Alucard, burger mobile, composants, dashboard, audit responsive)
-- ✅ Calendrier interactif (drag & drop, FullCalendar)
-- ✅ Notifications par email (PR #106)
-- ✅ Échanges de shifts entre utilisateurs + notifications internes (PR #111)
-- ✅ Audit legacy/perf/sécurité + Alembic + traduction des commentaires (PR #113)
-- ✅ Multi-fuseau horaire + page `/admin/settings` DB-backed (PR #114)
-- ✅ Multi-langues i18n Français/Anglais (PR #115)
+### Version 0.7 (Advanced features - **Completed**)
+- ✅ UI/UX overhaul (PR #103, #108, #110: Tailwind/daisyUI, Dracula/Alucard palette, mobile burger, components, dashboard, responsive audit)
+- ✅ Interactive calendar (drag & drop, FullCalendar)
+- ✅ Email notifications (PR #106)
+- ✅ Shift swaps between users + in-app notifications (PR #111)
+- ✅ Legacy/perf/security audit + Alembic + comment translation (PR #113)
+- ✅ Multi-timezone support + DB-backed `/admin/settings` page (PR #114)
+- ✅ French/English i18n multi-language support (PR #115)
 
-### Version 0.8 (Personnalisation - **Terminé**)
-- ✅ Formats de date/heure configurables (PR #116)
-- ❌ Accessibilité WCAG complète
-- ❌ API REST publique
+### Version 0.8 (Customization - **Completed**)
+- ✅ Configurable date/time formats (PR #116)
+- ❌ Full WCAG accessibility
+- ❌ Public REST API
 
-### Version 0.9 (Audit trail + Webhooks - **Terminé**)
-- ✅ Historique des modifications (audit trail, PR #117)
-- ✅ Webhooks / notifications externes (Apprise, v0.9.1)
-- ✅ Support MySQL/MariaDB (v0.9.4)
-- ✅ API REST publique (v0.9.3)
+### Version 0.9 (Audit trail + Webhooks - **Completed**)
+- ✅ Change history (audit trail, PR #117)
+- ✅ Webhooks / external notifications (Apprise, v0.9.1)
+- ✅ MySQL/MariaDB support (v0.9.4)
+- ✅ Public REST API (v0.9.3)
 
-### Version 1.0 (Lancement - **Terminé**)
-- ✅ Version stable pour la production - voir "Verdict de stabilité v1.0" ci-dessous
-- ✅ Support complet de toutes les bases de données (SQLite, PostgreSQL, MySQL/MariaDB)
-- ✅ Documentation repassée contre le code réel (README, ROADMAP, CLAUDE.md, Docs/)
-- ✅ Tous les tests passent (**1314 tests**, largement au-delà de l'objectif initial de 500+)
-- ✅ Audit de sécurité complet (`report/SECURITY_AUDIT_v1.0.md`)
-- ✅ Chasse aux bugs ciblée (`report/BUG_HUNT_v1.0.md`)
-- ✅ Test de charge (`report/LOAD_TEST_v1.0.md`)
-- ✅ Couverture des tests ~92% (objectif ≥80% dépassé)
+### Version 1.0 (Launch - **Completed**)
+- ✅ Stable release for production - see "v1.0 Stability Verdict" below
+- ✅ Full support for all databases (SQLite, PostgreSQL, MySQL/MariaDB)
+- ✅ Documentation re-checked against the actual code (README, ROADMAP, CLAUDE.md, Docs/)
+- ✅ All tests passing (**1314 tests**, far beyond the initial goal of 500+)
+- ✅ Full security audit (`report/SECURITY_AUDIT_v1.0.md`)
+- ✅ Targeted bug hunt (`report/BUG_HUNT_v1.0.md`)
+- ✅ Load test (`report/LOAD_TEST_v1.0.md`)
+- ✅ ~92% test coverage (≥80% goal exceeded)
 
 ---
 
-## 🔍 Analyse du dépôt (Juillet 2026)
+## 🔍 Repository analysis (July 2026)
 
-### Statistiques du projet
+### Project statistics
 
-| Métrique | Valeur | Détails |
+| Metric | Value | Details |
 |----------|--------|---------|
-| **Tests** | **1314 passent** | 0 échec (voir `python -m pytest tests/ -v`) |
-| **Couverture de code** | **~92%** | `--cov=app`, objectif ≥80% largement dépassé |
-| **Modèles de données** | 14 | User, Group, ShiftType, Shift, OnCall, Leave, AutomationConfig, NotificationLog, Setting, SwapRequest, AppNotification, AuditLog, NotificationTarget, ServiceAccount (app/models/, package - voir Docs/architecture/ERD.md) |
-| **Architecture** | 3 couches | routes/ → services/ → repositories/ (report/Phase 2) |
-| **Modules de routes** | Multiples fichiers/blueprint | main, admin, auth, export - chacun splité en plusieurs fichiers (ex: shift_routes.py, admin_user_routes.py, admin_audit_routes.py) |
-| **Modules utilitaires** | app/utils/, par sous-package | automation/, export/, security/ (vide), logging/, optimizations/, helpers/, health.py, prometheus_metrics.py - cache/ entièrement retiré (code mort confirmé, PR #113) |
-| **Gestionnaires d'erreurs** | 9 | 400, 401, 403, 404, 405, 500, 502, 503, 504 + ValueError/TypeError |
+| **Tests** | **1314 passing** | 0 failures (see `python -m pytest tests/ -v`) |
+| **Code coverage** | **~92%** | `--cov=app`, ≥80% goal far exceeded |
+| **Data models** | 14 | User, Group, ShiftType, Shift, OnCall, Leave, AutomationConfig, NotificationLog, Setting, SwapRequest, AppNotification, AuditLog, NotificationTarget, ServiceAccount (app/models/, package - see Docs/architecture/ERD.md) |
+| **Architecture** | 3 layers | routes/ → services/ → repositories/ (report/Phase 2) |
+| **Route modules** | Multiple files/blueprint | main, admin, auth, export - each split across several files (e.g. shift_routes.py, admin_user_routes.py, admin_audit_routes.py) |
+| **Utility modules** | app/utils/, by sub-package | automation/, export/, security/ (empty), logging/, optimizations/, helpers/, health.py, prometheus_metrics.py - cache/ removed entirely (confirmed dead code, PR #113) |
+| **Error handlers** | 9 | 400, 401, 403, 404, 405, 500, 502, 503, 504 + ValueError/TypeError |
 | **Templates** | 30+ | Jinja2 templates (app/templates/) |
-| **Fichiers de configuration** | app/config/ (package) | `base.py`, `testing.py` + `config_oidc.py` - `production.py`/`development.py` retirés comme code mort jamais instancié (PR #123, v1.0) |
+| **Configuration files** | app/config/ (package) | `base.py`, `testing.py` + `config_oidc.py` - `production.py`/`development.py` removed as dead code, never instantiated (PR #123, v1.0) |
 | **Scripts** | scripts/ | backup_database.py, backup_config.py, validate_config.py, find_duplicates.py, send_shift_notifications.py, send_oncall_notifications.py, load_test.sh |
-| **Infrastructure** | docker/, k8s/, grafana/, .gitlab-ci/ | build multi-stage, manifests k8s complets, dashboard Grafana, pipeline GitLab CI (voir la limite documentée dans le tableau "État actuel" ci-dessus) |
+| **Infrastructure** | docker/, k8s/, grafana/, .gitlab-ci/ | multi-stage build, full k8s manifests, Grafana dashboard, GitLab CI pipeline (see the documented limitation in the "Current status" table above) |
 
-### Structure du projet
+### Project structure
 
 ```
-leviia-schedule/
+kairos/
 ├── app/
-│   ├── __init__.py              # Factory create_app() + instance globale
+│   ├── __init__.py              # create_app() factory + module-level instance
 │   ├── auth/                    # decorators.py, user_manager.py, oidc_auth.py
 │   ├── config/                  # base.py, testing.py
 │   ├── models/                  # base.py (BaseModel) + user, shift, oncall, leave,
@@ -417,315 +415,328 @@ leviia-schedule/
 │   │                             # SettingsService, AppNotificationService,
 │   │                             # AuditService, NotificationService, BackupService,
 │   │                             # AppriseNotificationService
-│   ├── routes/                  # blueprints auth/main/admin/export, chacun
-│   │                             # splité en plusieurs fichiers (shift_routes.py,
+│   ├── routes/                  # auth/main/admin/export blueprints, each
+│   │                             # split across several files (shift_routes.py,
 │   │                             # admin_audit_routes.py, admin_notification_target_routes.py, etc.)
 │   ├── utils/
 │   │   ├── automation/          # OnCallAutomation, AdvancedShiftAutomation
-│   │   ├── export/ (ics_exporter.py, zoneinfo), security/ (vide),
+│   │   ├── export/ (ics_exporter.py, zoneinfo), security/ (empty),
 │   │   │   logging/ (RotatingFileHandler), optimizations/ (eager_load), helpers/
-│   │   ├── health.py            # endpoints k8s /health /ready /version
+│   │   ├── health.py            # k8s endpoints /health /ready /version
 │   │   └── prometheus_metrics.py
-│   ├── static/                  # css/, js/ (modules ES6) - CDN cdnjs/jsdelivr, pas de vendoring local
-│   └── templates/                # 30+ templates Jinja2
-├── config_oidc.py                # config OIDC standalone chargée directement
-├── run.py                       # Point d'entrée (setup DB + migrations Alembic + app.run)
+│   ├── static/                  # css/, js/ (ES6 modules) - CDN cdnjs/jsdelivr, no local vendoring
+│   └── templates/                # 30+ Jinja2 templates
+├── config_oidc.py                # standalone OIDC config, loaded directly
+├── run.py                       # Entry point (DB setup + Alembic migrations + app.run)
 ├── requirements.txt
 ├── tests/                       # unit/, integration/, e2e/ - 1314 tests
 ├── Docs/                        # architecture/, api/, guides/, reference/, deployment/
-├── report/                      # rapports d'audit + refonte Phases 1-6 + stabilisation v1.0
+├── report/                      # audit reports + Phases 1-6 overhaul + v1.0 stabilization
 ├── docker/                      # Dockerfile (multi-stage), docker-compose.yml, Makefile,
-│                                 # .env.example (adapté Docker, distinct du .env.example racine)
+│                                 # .env.example (Docker-adapted, distinct from the root .env.example)
 ├── k8s/                         # deployment, service, ingress, configmap, secret,
 │                                 # pvc, hpa, pdb, namespace
-├── grafana/                     # dashboard JSON importable
-├── .gitlab-ci/.gitlab-ci.yml    # pipeline CI/CD GitLab - dépôt hébergé sur GitHub,
-│                                 # aucun workflow GitHub Actions équivalent (voir
+├── grafana/                     # importable dashboard JSON
+├── .gitlab-ci/.gitlab-ci.yml    # GitLab CI/CD pipeline - repo hosted on GitHub,
+│                                 # no equivalent GitHub Actions workflow (see
 │                                 # report/SECURITY_AUDIT_v1.0.md)
-├── migrations/                  # Alembic (Flask-Migrate), appliquées au démarrage
+├── migrations/                  # Alembic (Flask-Migrate), applied at startup
 └── scripts/                     # backup_database.py, backup_config.py,
                                   # validate_config.py, find_duplicates.py,
                                   # send_shift_notifications.py, send_oncall_notifications.py,
                                   # load_test.sh
 ```
 
-### Stabilisation v1.0 (PR #122-#127)
+### v1.0 Stabilization (PR #122-#127)
 
-Six PR thématiques successives, chacune sur sa propre branche, revue et
-mergée indépendamment :
+Six successive themed PRs, each on its own branch, reviewed and merged
+independently:
 
-- **PR #122** : hygiène Docker + dépendances. Bug réel trouvé et corrigé :
-  `.dockerignore` vivait dans `docker/` alors que le contexte de build réel
-  est la racine du dépôt (`context: ..` dans `docker/docker-compose.yml`) -
-  jamais lu par Docker, l'image embarquait `instance/app.db`, `.claude/`,
-  des rapports d'analyse statique. `.env.example` scindé (racine = hors
-  Docker, `docker/.env.example` = adapté Docker).
-- **PR #123** : code mort/legacy. `config.py` (racine), `ProductionConfig`/
-  `DevelopmentConfig` (jamais instanciés par aucun `create_app()` réel) et
-  `get_database_type()` (zéro appelant) supprimés.
-- **PR #124** : optimisation SQL. N+1 corrigé dans
-  `AppriseNotificationService.notify_to_targets()`, suppressions en masse
-  au lieu de boucles ligne par ligne (`ShiftRepository.delete_in_date_range()`,
-  `OnCallRepository.delete_overlapping_range()`), `joinedload(user)` manquant
-  aligné sur le reste des repositories.
-- **PR #125** : audit sécurité + chasse aux bugs + CI bloquante. Bug HIGH
-  trouvé et corrigé (suppression de shift référencé par un échange actif
-  faisait planter 3 pages) + bug de câblage `PROMETHEUS_ENABLED` (fonctionnalité
-  Prometheus entièrement inatteignable) + CI (`run_linting`/`run_security`)
-  rendue bloquante. Détail complet : `report/SECURITY_AUDIT_v1.0.md`,
-  `report/BUG_HUNT_v1.0.md`.
-- **PR #126** : i18n. Chaînes JS hardcodées (22 dans `fullcalendar-config.js`)
-  et 16 placeholders de formulaire routés vers `getString()`/`{{ _(...) }}` ;
-  retard de 206 chaînes jamais extraites dans `en.po` découvert et rattrapé
-  (100% traduit).
-- **PR #127** (cette PR) : test de charge (`scripts/load_test.sh`,
-  `report/LOAD_TEST_v1.0.md` - a mené à la découverte de 2 bugs
-  supplémentaires, voir ce rapport), documentation complète repassée contre
-  le code réel, version app 0.9.4 → 1.0.0.
+- **PR #122**: Docker hygiene + dependencies. Real bug found and fixed:
+  `.dockerignore` lived in `docker/` while the real build context is the
+  repo root (`context: ..` in `docker/docker-compose.yml`) - never read
+  by Docker, so the image bundled `instance/app.db`, `.claude/`, static
+  analysis reports. `.env.example` split (root = non-Docker,
+  `docker/.env.example` = Docker-adapted).
+- **PR #123**: dead/legacy code. `config.py` (root), `ProductionConfig`/
+  `DevelopmentConfig` (never instantiated by any real `create_app()`),
+  and `get_database_type()` (zero callers) removed.
+- **PR #124**: SQL optimization. N+1 fixed in
+  `AppriseNotificationService.notify_to_targets()`, bulk deletes instead
+  of row-by-row loops (`ShiftRepository.delete_in_date_range()`,
+  `OnCallRepository.delete_overlapping_range()`), missing
+  `joinedload(user)` aligned with the rest of the repositories.
+- **PR #125**: security audit + bug hunt + blocking CI. HIGH bug found
+  and fixed (deleting a shift referenced by an active swap crashed 3
+  pages) + `PROMETHEUS_ENABLED` wiring bug (Prometheus feature entirely
+  unreachable) + CI (`run_linting`/`run_security`) made blocking. Full
+  detail: `report/SECURITY_AUDIT_v1.0.md`, `report/BUG_HUNT_v1.0.md`.
+- **PR #126**: i18n. Hardcoded JS strings (22 in `fullcalendar-config.js`)
+  and 16 form placeholders routed to `getString()`/`{{ _(...) }}`; a
+  206-string backlog never extracted into `en.po` discovered and caught
+  up (100% translated).
+- **PR #127** (this PR): load test (`scripts/load_test.sh`,
+  `report/LOAD_TEST_v1.0.md` - led to the discovery of 2 additional
+  bugs, see that report), complete documentation re-checked against the
+  actual code, app version 0.9.4 → 1.0.0.
 
-**Impact cumulé** : 1314 tests passent (couverture ~92%), 0 finding Bandit
-sur `app/`, `en.po` 100% traduit, 6 bugs réels trouvés et corrigés en
-creusant (pas seulement des refactors cosmétiques).
+**Cumulative impact**: 1314 tests passing (~92% coverage), 0 Bandit
+findings on `app/`, `en.po` 100% translated, 6 real bugs found and fixed
+by digging deep (not just cosmetic refactors).
 
 ---
 
-## 🔍 Suivi des dépendances
+## 🔍 Dependency tracking
 
-### Dépendances actuelles (requirements.txt)
+### Current dependencies (requirements.txt)
 
-| Dépendance | Version | Rôle |
+| Dependency | Version | Role |
 |------------|---------|------|
-| Flask | 3.1.3 | Framework web |
-| Werkzeug | 3.1.8 | WSGI (dépendance Flask) |
+| Flask | 3.1.3 | Web framework |
+| Werkzeug | 3.1.8 | WSGI (Flask dependency) |
 | SQLAlchemy | 2.0.51 | ORM |
-| Flask-SQLAlchemy | 3.1.1 | Intégration Flask/SQLAlchemy |
+| Flask-SQLAlchemy | 3.1.1 | Flask/SQLAlchemy integration |
 | Flask-Migrate | 4.1.0 | Migrations (Alembic) |
-| alembic | 1.18.5 | Moteur de migrations |
-| Flask-Login | 0.6.3 | Authentification/session |
-| Flask-WTF | 1.3.0 | Formulaires + CSRF |
-| Flask-Talisman | 1.1.0 | En-têtes de sécurité HTTP, CSP |
+| alembic | 1.18.5 | Migration engine |
+| Flask-Login | 0.6.3 | Authentication/session |
+| Flask-WTF | 1.3.0 | Forms + CSRF |
+| Flask-Talisman | 1.1.0 | HTTP security headers, CSP |
 | Flask-Babel | 4.0.0 | i18n (FR/EN) |
-| flask-compress | 1.24 | Compression Gzip/Brotli/Zstd |
+| flask-compress | 1.24 | Gzip/Brotli/Zstd compression |
 | flask-limiter | 4.1.1 | Rate limiting |
 | flask-cors | 6.0.5 | CORS |
-| flask-smorest | 0.47.0 | API REST publique (`/api/v1/*`), spec OpenAPI auto-générée |
-| marshmallow | 4.3.0 | Schémas de sérialisation (flask-smorest) |
+| flask-smorest | 0.47.0 | Public REST API (`/api/v1/*`), auto-generated OpenAPI spec |
+| marshmallow | 4.3.0 | Serialization schemas (flask-smorest) |
 | Authlib | 1.7.2 | OIDC/SSO |
-| requests | 2.34.2 | Requis par Authlib/OIDC |
-| apprise | 1.12.0 | Notifications externes (Slack/Discord/Telegram/webhooks) |
-| icalendar | 7.2.0 | Export ICS |
-| python-dateutil | 2.9.0.post0 | Utilitaires de dates |
-| tzdata | 2026.3 | Base IANA pour `zoneinfo` (requis sous Alpine/musl) |
-| psycopg[binary] | ≥3.3.4 | Driver PostgreSQL (optionnel) |
-| PyMySQL | 1.2.0 | Driver MySQL/MariaDB, 100% pur Python (optionnel) |
-| prometheus-client | 0.25.0 | Métriques `/metrics` (optionnel, `PROMETHEUS_ENABLED`) |
-| psutil | 7.2.2 | Métriques système (Prometheus) |
-| cryptography | ≥49.0.0 | Version plancher pour corriger des CVE |
-| python-dotenv | 1.2.2 | Chargement `.env` en développement |
+| requests | 2.34.2 | Required by Authlib/OIDC |
+| apprise | 1.12.0 | External notifications (Slack/Discord/Telegram/webhooks) |
+| icalendar | 7.2.0 | ICS export |
+| python-dateutil | 2.9.0.post0 | Date utilities |
+| tzdata | 2026.3 | IANA base for `zoneinfo` (required under Alpine/musl) |
+| psycopg[binary] | ≥3.3.4 | PostgreSQL driver (optional) |
+| PyMySQL | 1.2.0 | MySQL/MariaDB driver, 100% pure Python (optional) |
+| prometheus-client | 0.25.0 | `/metrics` metrics (optional, `PROMETHEUS_ENABLED`) |
+| psutil | 7.2.2 | System metrics (Prometheus) |
+| cryptography | ≥49.0.0 | Floor version to fix CVEs |
+| python-dotenv | 1.2.2 | `.env` loading in development |
 
-Pas de `redis` (retiré avec `app/utils/cache/`, code mort confirmé) ; pas
-de `pytz` en dépendance directe (uniquement transitive via Flask-Babel, ce
-projet utilise `zoneinfo` partout ailleurs).
+No `redis` (removed along with `app/utils/cache/`, confirmed dead code);
+no `pytz` as a direct dependency (only transitive via Flask-Babel, this
+project uses `zoneinfo` everywhere else).
 
-### Dépendances de développement (requirements.txt)
+### Development dependencies (requirements.txt)
 
-| Dépendance | Version | Rôle |
+| Dependency | Version | Role |
 |------------|---------|------|
-| pytest | 9.1.1 | Suite de tests |
-| pytest-flask | 1.3.0 | Fixtures Flask pour pytest |
-| pytest-cov | 7.1.0 | Couverture de code |
+| pytest | 9.1.1 | Test suite |
+| pytest-flask | 1.3.0 | Flask fixtures for pytest |
+| pytest-cov | 7.1.0 | Code coverage |
 | Ruff | 0.15.22 | Linting |
-| mypy | 2.3.0 | Vérification de types |
-| Black | 26.5.1 | Formatage |
-| Bandit | 1.9.4 | Analyse de sécurité statique |
-| Safety | 3.8.1 | Scan de vulnérabilités (nécessite `SAFETY_API_KEY`, voir `report/SECURITY_AUDIT_v1.0.md`) |
+| mypy | 2.3.0 | Type checking |
+| Black | 26.5.1 | Formatting |
+| Bandit | 1.9.4 | Static security analysis |
+| Safety | 3.8.1 | Vulnerability scan (requires `SAFETY_API_KEY`, see `report/SECURITY_AUDIT_v1.0.md`) |
 
-### Dépendances docker/requirements.txt (production, en plus de ce qui précède)
+### docker/requirements.txt dependencies (production, in addition to the above)
 
-| Dépendance | Version | Rôle |
+| Dependency | Version | Role |
 |------------|---------|------|
-| gunicorn | 26.0.0 | Serveur WSGI de production |
-| boto3 / botocore | ≥1.43.0 | Sauvegardes S3/S3-compatible (optionnel, `BACKUP_S3_ENABLED`) |
+| gunicorn | 26.0.0 | Production WSGI server |
+| boto3 / botocore | ≥1.43.0 | S3/S3-compatible backups (optional, `BACKUP_S3_ENABLED`) |
 
 ---
 
-## 📝 Méthodologie
+## 📝 Methodology
 
-### Processus de développement
+### Development process
 
-1. **Planification** : Les fonctionnalités sont priorisées selon leur impact et leur complexité
-2. **Développement** : Branches de fonctionnalités (`feature/*`) avec revues de code
-3. **Tests** : Tests unitaires et d'intégration obligatoires pour chaque PR
-4. **Revue** : Revue par au moins un autre contributeur avant merge
-5. **Documentation** : Mise à jour de la documentation pour chaque nouvelle fonctionnalité
-6. **Validation** : Tous les tests doivent passer avant merge (`make test`)
+1. **Planning**: Features are prioritized by impact and complexity
+2. **Development**: Feature branches (`feature/*`) with code reviews
+3. **Testing**: Unit and integration tests required for every PR
+4. **Review**: Review by at least one other contributor before merge
+5. **Documentation**: Documentation updated for every new feature
+6. **Validation**: All tests must pass before merge (`make test`)
 
-### Critères d'acceptation
+### Acceptance criteria
 
-- [x] Code respectant les standards PEP 8 (vérifié par Ruff)
-- [x] Tests unitaires avec couverture ≥ 80% (actuellement **773 tests passent, couverture ~82%**)
-- [x] Documentation mise à jour
-- [x] Pas de régression sur les fonctionnalités existantes
-- [x] Revue de sécurité pour les changements critiques
-- [x] Audit de sécurité complet (report/SECURITY_AUDIT_REPORT.md) + CSP stricte
-- [x] Couverture des tests ≥ 80% (atteint, Phase 6)
-- [x] Documentation utilisateur complète (report/Phase 5)
-- [x] CI/CD Pipeline fonctionnel (GitLab CI, report/Phase 6)
+- [x] Code follows PEP 8 standards (checked by Ruff)
+- [x] Unit tests with ≥ 80% coverage (currently **773 tests passing, ~82% coverage**)
+- [x] Documentation up to date
+- [x] No regression on existing features
+- [x] Security review for critical changes
+- [x] Full security audit (report/SECURITY_AUDIT_REPORT.md) + strict CSP
+- [x] Test coverage ≥ 80% (achieved, Phase 6)
+- [x] Complete user documentation (report/Phase 5)
+- [x] Working CI/CD Pipeline (GitLab CI, report/Phase 6)
 
-### Commandes utiles
+### Useful commands
 
 ```bash
-# Exécuter tous les tests
+# Run all tests
 make test
 
-# Exécuter avec couverture de code
+# Run with code coverage
 pytest tests/ --cov=app --cov=config --cov-report=term-missing
 
 # Linting
 make lint
 
-# Formatage
+# Formatting
 make format
 
-# Sécurité
+# Security
 make security
 
-# Tout vérifier
+# Check everything
 make all
 ```
 
 ---
 
-## 🤝 Contribution
+## 🤝 Contributing
 
-Les contributions sont les bienvenues ! Consultez la section
-[Contribution](README.md#-contribution) du README pour :
+Contributions are welcome! See the
+[Contributing](README.md#-contributing) section of the README for:
 
-- Signaler un bug
-- Proposer une nouvelle fonctionnalité
-- Soumettre une Pull Request
-- Participer aux discussions
+- Reporting a bug
+- Proposing a new feature
+- Submitting a Pull Request
+- Joining discussions
 
-### Comment contribuer à la feuille de route ?
+### How to contribute to the roadmap?
 
-1. **Ouvrez une Issue** pour discuter d'une nouvelle fonctionnalité
-2. **Ouvrez une Discussion** pour proposer des améliorations
-3. **Soumettez une Pull Request** avec vos implémentations
-4. **Assurez-vous que tous les tests passent** (`make test`)
-5. **Respectez les conventions de code** (`make lint`, `make format`)
+1. **Open an Issue** to discuss a new feature
+2. **Open a Discussion** to propose improvements
+3. **Submit a Pull Request** with your implementation
+4. **Make sure all tests pass** (`make test`)
+5. **Follow the code conventions** (`make lint`, `make format`)
 
-### Bonnes pratiques
+### Best practices
 
-- Suivez les conventions de nommage existantes
-- Ajoutez des tests pour chaque nouvelle fonctionnalité
-- Mettez à jour la documentation
-- Utilisez les décorateurs de permissions appropriés
-- Respectez les principes SOLID
+- Follow existing naming conventions
+- Add tests for every new feature
+- Update the documentation
+- Use the appropriate permission decorators
+- Follow SOLID principles
 
 ---
 
 ## 📞 Contact
 
-Pour toute question concernant la feuille de route :
-- Ouvrez une **Issue** sur GitHub
-- Ouvrez une **Discussion** sur GitHub
-- Contactez l'équipe via les canaux officiels
+For any question regarding the roadmap:
+- Open an **Issue** on GitHub
+- Open a **Discussion** on GitHub
+- Contact the team via the official channels
 
 ---
 
-## 📄 Historique des versions de la feuille de route
+## 📄 Roadmap version history
 
-| Version | Date | Auteur | Changements |
+| Version | Date | Author | Changes |
 |---------|------|--------|-------------|
-| 6.0.0 | 17 juillet 2026 | Claude Code | **Stabilisation v1.0** (PR #122-#127, 6 PR thématiques séquentielles). Test de charge (`scripts/load_test.sh`, `report/LOAD_TEST_v1.0.md`) - a mené à la découverte et correction de 2 bugs réels et couplés : (1) `run.py` forçait `debug=True` sur le serveur de développement Flask quel que soit `FLASK_DEBUG`/`Config.DEBUG` - `python run.py` (méthode documentée hors Docker) exposait toujours le débogueur interactif Werkzeug, une vraie surface RCE sur toute exception non gérée ; (2) Flask-Talisman a son propre défaut indépendant `session_cookie_secure=True` (non lié à `force_https`) et réécrit `SESSION_COOKIE_SECURE` à chaque requête dès que `app.debug` est `False` - dans la configuration par défaut documentée (`TALISMAN_FORCE_HTTPS=false`, pas de proxy TLS), le cookie de session était marqué `Secure` et donc jamais renvoyé par le navigateur en HTTP simple, cassant la connexion. Le premier bug masquait accidentellement le second en local (le débogueur toujours actif exemptait `app.debug` du hook de Talisman) - corriger uniquement le premier sans le second aurait cassé la connexion locale, les deux corrigés ensemble et vérifiés de bout en bout (connexion réelle via gunicorn, cookie inspecté). Documentation complète repassée contre le code réel (README, ROADMAP, CLAUDE.md déjà à jour au fil des PR précédentes). Version app 0.9.4 -> 1.0.0. 1314 tests (+2). |
-| 5.19.0 | 17 juillet 2026 | Claude Code | i18n (PR #126) : chaînes JS hardcodées contournant `getString()` routées (22 appels `announceToScreenReader()` dans `fullcalendar-config.js`, message de `theme-manager.js`, bouton "Copié !" de `copy-token.js` - 15 nouvelles clés dans `js_translations.py`), 16 `placeholder="..."` en français en dur wrappés en `{{ _(...) }}`. La piste "~20 commentaires insider" du plan initial vérifiée et invalidée (aucune trace dans `app/**/*.py`) - pas de faux travail inventé. Découverte en vérifiant la complétude de `en.po` : retard réel de 206 chaînes jamais extraites (`make babel-update` pas relancé depuis les fonctionnalités notification-targets/service-accounts/swap/audit-log/backups) - 212 entrées traduites en anglais réel, `en.po` 100% après correction (0% avant sur les nouvelles). Version app inchangée. 1314 tests (+6). |
-| 5.18.0 | 17 juillet 2026 | Claude Code | Audit sécurité + chasse aux bugs + CI bloquante (PR #125). Bandit : 3 faux positifs B105/B107 jamais annotés côté bandit (`# noqa` ruff ≠ `# nosec` bandit) + B104 (bind `0.0.0.0`, faux positif documenté) + B324 MD5 non-cryptographique (`usedforsecurity=False`) - `bandit -r app/` 0 finding après (3 avant). Bug réel trouvé en creusant B104 : `PROMETHEUS_ENABLED` jamais lu depuis l'environnement - `/metrics` structurellement inatteignable en déploiement réel, masqué par un test qui forçait `app.config` directement. `.gitlab-ci/.gitlab-ci.yml` `run_linting`/`run_security` rendus bloquants (retrait des `\|\| true`) ; `safety` reste conditionnel (`SAFETY_API_KEY`, `safety check` non supporté depuis mai 2024, `safety scan` bloque indéfiniment sans clé). Chasse aux bugs : 1 HIGH corrigé (suppression de shift référencé par un `SwapRequest` actif faisait planter `/swaps`/`/admin/swaps`/`/swaps/<id>/confirm`), 1 MEDIUM (filtre audit log ignorait `service_account`/`notification_target`), 1 LOW (`get_public_base_url()` violait la règle "Setting présent gagne toujours"), 3 findings documentés et volontairement non corrigés (verrouillage optimiste swap, atomicité `set_pagination()`, sémantique expiration clé API). Version app inchangée. 1314 tests (+6). |
-| 5.17.0 | 17 juillet 2026 | Claude Code | Optimisation SQL (PR #124) : N+1 réel dans `AppriseNotificationService.notify_to_targets()` (un `get_by_id()` par cible au lieu d'un `.in_()` groupé) corrigé via `NotificationTargetRepository.get_by_ids()`. `ShiftRepository.delete_in_date_range()`/`OnCallRepository.delete_overlapping_range()` chargeaient toutes les lignes en objets ORM puis les supprimaient une par une - remplacé par un `DELETE ... WHERE` en masse (`synchronize_session="evaluate"`, pas `False`, pour ne pas casser un appelant gardant une instance déjà chargée - `ObjectDeletedError` détecté et corrigé pendant le développement). `joinedload(user)` manquant sur 3 méthodes `list_for_user()`, alignées sur le reste des repositories. Un 4e candidat (pagination de `/api/v1/users`) écarté : choix délibéré déjà documenté, pas un bug. Version app inchangée. 1308 tests (+6). |
-| 5.16.0 | 17 juillet 2026 | Claude Code | Code mort/legacy (PR #123) : `config.py` (racine, dupliquait `app/config/base.py`) supprimé, son seul vrai consommateur (`scripts/validate_config.py`) repointé ; tests utiles migrés vers `app.config.base.Config` plutôt que perdus. `ProductionConfig`/`DevelopmentConfig` (`app/config/production.py`/`development.py`) supprimés - jamais instanciés par aucun `create_app()` réel, `FLASK_ENV` ne sélectionne que Gunicorn vs serveur de dev Flask. `get_database_type()` (les deux copies) supprimé - zéro appelant dans `app/`. Ligne "Scalabilité horizontale" retirée de cette feuille de route (demande explicite). Version app inchangée. 1302 tests (-7, tests redondants retirés avec `config.py`). |
-| 5.15.0 | 17 juillet 2026 | Claude Code | Hygiène Docker + dépendances (PR #122). Bug critique réel trouvé et corrigé : `.dockerignore` vivait dans `docker/.dockerignore`, jamais lu par Docker puisque le contexte de build réel est la racine du dépôt (`context: ..` dans `docker/docker-compose.yml`) - l'image embarquait `instance/app.db` (base SQLite locale), `.claude/` (métadonnées de session), des rapports d'analyse statique. Déplacé à la racine + liste d'exclusions étendue, vérifié par reconstruction réelle et inspection directe du contenu de l'image. `.env.example` scindé en deux fichiers indépendants et complets (racine = hors Docker uniquement, `docker/.env.example` = adapté Docker, chemins absolus `/app/data/...`). `docker-compose.example.yml` déplacé dans `docker/`. `ruff` 0.15.21 -> 0.15.22, `requirements-backup.txt` (doublon pur de `boto3`/`botocore`) supprimé. Version app inchangée. 1309 tests. |
-| 5.14.0 | 17 juillet 2026 | Claude Code | Support MySQL/MariaDB comme moteur de base de données alternatif, via `PyMySQL` (100% pur Python, choisi plutôt que `mysqlclient` qui nécessite les headers MySQL/MariaDB au build) - un admin peut connecter l'app à un serveur MySQL/MariaDB **externe** sans installer quoi que ce soit côté MySQL, ni sur l'hôte ni dans l'image Docker (confirmé en comparant les étapes `apk add` du Dockerfile avant/après). Deux bugs réels trouvés en vérifiant de bout en bout sur un vrai conteneur MariaDB (pas seulement en théorie) : (1) une `DATABASE_URL=mysql://...`/`postgresql://...` sans suffixe `+driver` explicite - le format documenté partout dans ce repo - résolvait vers le driver "classique" (`mysqlclient`/`psycopg2`, ni l'un ni l'autre installé), cassant le démarrage avec `ModuleNotFoundError` malgré un driver fonctionnel déjà présent - corrigé par `normalize_database_uri()` (réécrit vers `+pymysql`/`+psycopg`) ; (2) `User.password_hash` (`String(128)`) trop court pour un hash Werkzeug moderne (scrypt, ~162 caractères) - invisible sur SQLite (pas de contrainte de longueur), fatal sur MySQL/PostgreSQL dès la création du premier admin - élargi à `String(255)` (migration `6ff493358d9e`). Corrige au passage `SQLALCHEMY_ENGINE_OPTIONS` (jamais réellement appliqué, nom en minuscule ignoré par `app.config.from_object()`) et le regex de `scripts/validate_config.py` (rejetait `mariadb://` alors que reconnu partout ailleurs). Documentation restructurée pour distinguer le cas d'usage principal (serveur externe déjà géré) du cas local dev/test (overlay docker-compose optionnel, en miroir du support PostgreSQL existant). Version app 0.9.3 -> 0.9.4. 1309 tests (+17). |
-| 5.13.0 | 17 juillet 2026 | Claude Code | API REST publique pour intégrations tierces (flask-smorest, choisi plutôt que FastAPI - ASGI, aurait nécessité un second process pour cette app 100% WSGI synchrone - ou Flask-RESTful - pas de génération OpenAPI native). Nouveau modèle `ServiceAccount` (jeton bearer `lsak_...`, hashé en SHA-256 - pas PBKDF2 comme `password_hash`, coût CPU inutile pour un secret à haute entropie - affiché en clair une seule fois à la création/régénération). Nouvelle app `app/api/` (préfixe `/api/v1/*`, distinct de l'API interne `/api/*` cookie-based) : endpoints en lecture seule (shifts/oncall/leave/users/shift-types), paginés, réutilisant les repositories/services existants sans dupliquer la logique métier. Auth par `Authorization: Bearer`, toujours JSON en cas d'échec (401 scopé par blueprint, jamais de redirect HTML) - a nécessité de comprendre et contourner l'ordre de résolution des handlers d'erreur Flask (blueprint+code > app+code > blueprint+class > app+class), confirmé par test direct plutôt que supposé. Rate limiting par identité de compte de service plutôt que par IP (première utilisation de `@limiter.limit()` par route dans ce repo). Spec OpenAPI générée automatiquement (`/api/v1/openapi.json`) depuis les schémas marshmallow - pas d'UI Swagger interactive servie (CSP stricte). Nouvelle page admin `/admin/service-accounts` (CRUD, révocation, régénération). Version app 0.9.2 -> 0.9.3. 1292 tests (+68, dont un test navigateur réel Playwright). |
-| 5.12.0 | 16 juillet 2026 | Claude Code | Trois chantiers indépendants : (1) **Sécurité** - la boucle `nav_links` de `base.html` (Accueil/Tableau de bord/Shifts/Astreintes/Congés/Échanges) était la seule section de la sidebar sans garde `current_user.is_authenticated`, corrige d'un coup `/login` et toutes les pages d'erreur 400-504 (fuite d'information de structure interne, pas un bypass - toutes les routes restent `@login_required`). (2) **Workflow d'échange de shifts en 2 temps** - nouvel état `AWAITING_ADMIN` entre la demande (`PENDING`) et la validation admin : le destinataire choisit désormais lui-même son shift à échanger (ou refuse directement) avant qu'un admin ne voie la demande, le demandeur ne pré-choisit plus rien. Aucune migration nécessaire. `/api/swaps/target-shifts`, `swap-form.js` et `app/static/js/utils/date.js` supprimés (code mort une fois le formulaire de demande simplifié). (3) **Makefile** - 39 cibles réduites à 15 (bloc `bug-hunt`/`scripts/bug_hunt.sh` confirmé jamais exécuté et divergent de la vraie config `ruff`, supprimé ; `find-duplicates` gardé seul). Version app 0.9.1 -> 0.9.2. 1224 tests (+31). |
-| 5.11.0 | 16 juillet 2026 | Claude Code | Notifications externes via Apprise (Slack/Discord/Telegram/webhooks génériques) : nouveau modèle `NotificationTarget` (CRUD, catégories JSON encodées `swap`/`backup`/`system`, `subscribes_to()`), `AppriseNotificationService` avec deux points d'entrée (`notify()` fire-and-forget jamais bloquant, `send_test()` qui remonte le vrai succès/échec pour le bouton "Tester" admin), câblé sur le cycle de vie des échanges de shifts (`SwapService`), les sauvegardes déclenchées depuis l'UI admin (`BackupService.create_now()`/`cleanup_now()` - pas le script cron, isolation `scripts/` préservée) et les échecs d'envoi des rappels email hebdomadaires (`NotificationService`). Page d'admin dédiée `/admin/notification-targets` (pas une section de `/admin/settings`), toggle global `SettingsService.apprise_notifications_enabled` (opt-in, pas de repli env). L'URL Apprise traitée comme un secret : jamais dans l'audit trail/les logs, jamais affichée en clair dans la liste. Version app 0.9.0 -> 0.9.1. |
-| 5.10.0 | 16 juillet 2026 | Claude Code | Audit trail - historique des modifications (PR #117) : modèle `AuditLog` append-only + `AuditService.log()` (point d'écriture unique, double écriture DB + `logs/audit.log`), retrofit de tout le CRUD métier et des événements d'authentification, UI `/admin/audit-log` (filtres auteur/domaine/dates, purge basée sur une rétention configurable dans `/admin/settings`, sans repli numérique par défaut), rotation de tous les fichiers de logs (`RotatingFileHandler`, `LOG_MAX_BYTES`/`LOG_BACKUP_COUNT`). Avant cette PR le logger `"audit"` existait dans le code depuis longtemps sans jamais être appelé - `logs/audit.log` ne contenait aucune activité réelle. Version app 0.8.0 -> 0.9.0. 1133 tests (couverture ~92%) |
-| 5.9.0 | 16 juillet 2026 | Claude Code | Formats de date/heure configurables (PR #116) : même architecture Setting/User que le multi-fuseau horaire, 3 formats de date / 2 formats d'heure, 3 nouveaux filtres Jinja (`format_date`/`format_time`/`format_datetime`) remplaçant les `strftime()` d'affichage. Bug N+1 réel trouvé et corrigé (cache `flask.g` manquant sur les résolveurs de format). Version app 0.7.11 -> 0.8.0. 1099 tests |
-| 5.8.0 | 16 juillet 2026 | Claude Code | Support multi-langues Français/Anglais (PR #115) : Flask-Babel, `User.language` + `SettingsService.default_language`, retrofit complet du texte utilisateur (55 templates, flash messages, erreurs de services, chaînes JS via injection JSON), `en.po` traduit intégralement (806 chaînes), `fr.po` gardé vide à dessein (repli standard sur le français). Version app 0.7.10 -> 0.7.11 |
-| 5.7.0 | 15 juillet 2026 | Claude Code | Multi-fuseau horaire + page `/admin/settings` DB-backed (PR #114) : modèle `Setting` (clé/valeur générique), `SettingsService` (règle "Setting présent l'emporte, sinon repli live sur env/config"), `User.timezone`/`effective_timezone()`, conversion réelle org-tz/perso-tz dans le calendrier FullCalendar, correction du bug ICS "temps flottant" (TZID réel + VTIMEZONE), préférences de notification par utilisateur. Version app 0.7.9 -> 0.7.10 |
-| 5.5.4 | 14 juillet 2026 | Claude Code | Corrections diverses : dashboard, flash messages, export ICS, OIDC (PR #112). Version app 0.7.7 -> 0.7.8 |
-| 5.5.3 | 14 juillet 2026 | Claude Code | Échange de shifts entre utilisateurs + notifications internes (PR #111) : demande (don simple ou réciproque), validation/rejet/revert admin, modèle `SwapRequest` (premier modèle avec plusieurs FK vers la même table `User`), `AppNotification` (cloche in-app, badge non-lu). Version app 0.7.6 -> 0.7.7 |
-| 5.5.2 | 14 juillet 2026 | Claude Code | Refonte visuelle : palette officielle Dracula (thème sombre) / Alucard (thème clair, PR #110), surcharge complète des couleurs sémantiques daisyUI depuis draculatheme.com/spec, drawer mobile natif, modale de création de shift en `<dialog>` natif. Version app 0.7.5 -> 0.7.6 |
-| 5.5.1 | 13-14 juillet 2026 | Claude Code | Refonte UI/UX : Bulma -> Tailwind CSS 4 + daisyUI 5, vendor -> CDN cdnjs (PR #108) ; retrait du Makefile wrapper Docker, doc registry Harbor (PR #109). Version app -> 0.7.5 |
-| 5.6.0 | 15 juillet 2026 | Claude Code | Audit sécurité/perf/legacy + traduction des commentaires + Alembic (PR #113) : sécurité P0 (XSS stockée, CSRF sur suppressions GET, open redirect), bugs P1 (revalidation congé sur drag & drop), performance P2 (élimination N+1 sur SwapRequest/dashboard/congés/astreintes), nettoyage P3 (code mort confirmé et retiré : `cache/` en entier, `security/token_manager.py`/`encryption.py`, `optimizations/` réduit à `eager_load`), traduction intégrale des commentaires/docstrings en anglais (10 phases), migrations Alembic + contraintes uniques fermant la race condition TOCTOU shift/astreinte. Version app 0.7.8 -> 0.7.9 |
-| 5.5.0 | Juillet 2026 | Claude Code | Refonte du système de sauvegarde (PR #107) : activation/configuration entièrement par variables d'environnement (`BACKUP_ENABLED`, opt-in comme les notifications), retrait de la scaffolding jamais consommée (`encrypt`/`encryption_key`/`frequency`), alertes email de succès/échec réutilisant le système de notifications existant (`BACKUP_NOTIFICATION_EMAIL`, soumis à `NOTIFICATIONS_ENABLED`), `BackupService` + interface d'administration (`/admin/backups` : configuration, liste local/S3, création à la demande, nettoyage, téléchargement avec protection contre la traversée de chemin), intégration Docker (crond conditionnel sur `BACKUP_ENABLED`, planning dans `docker/crontabs/appuser`, même conteneur que l'application - pas de service Docker séparé). Documentation mise à jour (ENVIRONMENT_VARIABLES.md, BACKUP_GUIDE.md, ADMIN_GUIDE.md, docker.md) et références obsolètes à `BACKUP_ENCRYPT`/`BACKUP_ENCRYPTION_KEY` corrigées au passage. Version app 0.7.3 -> 0.7.4. 916 tests |
-| 5.4.0 | Juillet 2026 | Claude Code | Notifications par email (PR #106) : rappel hebdomadaire des shifts (dimanche, 24h avant le lundi) et de l'astreinte (jeudi, 24h avant le vendredi 21h), un email par semaine et par utilisateur (`NotificationLog` anti-doublon), SMTP configurable via variables d'environnement, deux scripts cron autonomes (`send_shift_notifications.py`/`send_oncall_notifications.py`, pattern `backup_database.py`), gabarits HTML + texte. Documentation mise à jour (README, CLAUDE.md, ADMIN_GUIDE.md, ARCHITECTURE.md, ERD.md, ENVIRONMENT_VARIABLES.md) et références obsolètes à `ShiftAutomation`/`business_rules.py`/`security/token_manager.py` (retirés en PR #105) corrigées au passage. Version app 0.7.2 -> 0.7.3. 891 tests |
-| 5.3.0 | Juillet 2026 | Claude Code | Retouches de textes UI (PR #105) : titre calendrier index ("Calendrier interactif" -> "Calendrier"), description footer (l'app ne gère pas les "organisations"), boutons "Retour à l'admin" ajoutés sur /admin/users et /admin/automation (renommés depuis "Retour au tableau de bord" sur /admin/groups pour éviter la confusion avec le tableau de bord utilisateur), occurrences de "nouvelles règles métiers" nettoyées sur /admin/automation. Version app 0.7.1 -> 0.7.2 |
-| 5.2.0 | Juillet 2026 | Claude Code | Amélioration génération automatique shifts/astreintes (PR #105) : retrait du moteur ShiftAutomation mort, dry-run "Génération complète" réparé, ordre de rotation respecté après congé, rééquilibrage après congé rendu atomique, nouvelle règle métier effectif minimum 1 personne, corrections confirmations de suppression (race condition JS), bouton "Sauvegarder l'ordre", astreintes en double sur vendredis adjacents, rechargement complet du calendrier remplacé par un rafraîchissement ciblé. Version app 0.7.0 -> 0.7.1. 862 tests (dont 27 E2E navigateur réel) |
-| 5.1.0 | Juillet 2026 | Claude Code | Refonte UI/UX terminée et mergée (PR #103) : burger mobile (bug bloquant corrigé), palette teal/vert douce, composants rafraîchis, bug graphique dashboard corrigé, 3 bugs CSP trouvés et corrigés (2 pages avec script inline cassées - copie ICS, drag&drop rotation - + icônes calendrier invisibles, font-src manquant, trouvé via vérification réelle en navigateur/Playwright), audit responsive. Version app 0.6.0 -> 0.7.0. 781 tests |
-| 5.0.0 | Juillet 2026 | Claude Code | Refonte Phases 1-6 terminée (report/) : architecture repositories/services, 773 tests (couverture ~82%), CSP stricte + Talisman toujours actif, compression Gzip/Brotli/Zstd, Docker multi-stage réparé et promu, CI/CD GitLab corrigée, k8s ready, dashboard Grafana. Commit 6e25cc2 (PR #102) |
-| 4.0.0 | Juin 2026 | Vibe Code | Mise à jour après PR #85 : 522 tests (515 passent, 2 échouent, 7 ignorés), correction des assets statiques, commit 0adf3cc |
-| 3.0.0 | Juin 2026 | Vibe Code | Analyse complète du dépôt, mise à jour des statistiques, ajout des détails techniques |
-| 2.0.0 | Juin 2026 | Vibe Code | Mise à jour complète avec l'état actuel (403 tests, automatisation avancée) |
-| 1.0.0 | Juin 2026 | Vibe Code | Création initiale de la feuille de route |
+| 6.0.0 | July 17, 2026 | Claude Code | **v1.0 Stabilization** (PR #122-#127, 6 sequential themed PRs). Load test (`scripts/load_test.sh`, `report/LOAD_TEST_v1.0.md`) - led to the discovery and fix of 2 real, coupled bugs: (1) `run.py` forced `debug=True` on the Flask development server regardless of `FLASK_DEBUG`/`Config.DEBUG` - `python run.py` (the documented method outside Docker) always exposed the interactive Werkzeug debugger, a real RCE surface on any unhandled exception; (2) Flask-Talisman has its own independent default `session_cookie_secure=True` (unrelated to `force_https`) and rewrites `SESSION_COOKIE_SECURE` on every request as soon as `app.debug` is `False` - under the documented default configuration (`TALISMAN_FORCE_HTTPS=false`, no TLS proxy), the session cookie was marked `Secure` and therefore never sent back by the browser over plain HTTP, breaking login. The first bug accidentally masked the second locally (the debugger being always active exempted `app.debug` from Talisman's hook) - fixing only the first without the second would have broken local login; both were fixed together and verified end-to-end (real login via gunicorn, cookie inspected). Full documentation re-checked against the actual code (README, ROADMAP, CLAUDE.md already up to date from previous PRs). App version 0.9.4 -> 1.0.0. 1314 tests (+2). |
+| 5.19.0 | July 17, 2026 | Claude Code | i18n (PR #126): hardcoded JS strings bypassing `getString()` routed (22 `announceToScreenReader()` calls in `fullcalendar-config.js`, a `theme-manager.js` message, the "Copied!" button in `copy-token.js` - 15 new keys in `js_translations.py`), 16 hardcoded French `placeholder="..."` wrapped in `{{ _(...) }}`. The "~20 insider comments" lead from the initial plan checked and invalidated (no trace found in `app/**/*.py`) - no invented busywork. Discovered while checking `en.po` completeness: a real backlog of 206 strings never extracted (`make babel-update` not rerun since the notification-targets/service-accounts/swap/audit-log/backups features) - 212 entries translated into real English, `en.po` 100% after the fix (0% before on the new ones). App version unchanged. 1314 tests (+6). |
+| 5.18.0 | July 17, 2026 | Claude Code | Security audit + bug hunt + blocking CI (PR #125). Bandit: 3 unannotated B105/B107 false positives (ruff's `# noqa` ≠ bandit's `# nosec`) + B104 (bind to `0.0.0.0`, documented false positive) + B324 non-cryptographic MD5 (`usedforsecurity=False`) - `bandit -r app/` 0 findings after (3 before). Real bug found while digging into B104: `PROMETHEUS_ENABLED` never read from the environment - `/metrics` structurally unreachable in a real deployment, masked by a test that forced `app.config` directly. `.gitlab-ci/.gitlab-ci.yml` `run_linting`/`run_security` made blocking (`\|\| true` removed); `safety` stays conditional (`SAFETY_API_KEY`, `safety check` unsupported since May 2024, `safety scan` hangs indefinitely without a key). Bug hunt: 1 HIGH fixed (deleting a shift referenced by an active `SwapRequest` crashed `/swaps`/`/admin/swaps`/`/swaps/<id>/confirm`), 1 MEDIUM (audit log filter ignored `service_account`/`notification_target`), 1 LOW (`get_public_base_url()` violated the "Setting present always wins" rule), 3 findings documented and deliberately left unfixed (optimistic swap locking, `set_pagination()` atomicity, API key expiry semantics). App version unchanged. 1314 tests (+6). |
+| 5.17.0 | July 17, 2026 | Claude Code | SQL optimization (PR #124): real N+1 in `AppriseNotificationService.notify_to_targets()` (one `get_by_id()` per target instead of a grouped `.in_()`) fixed via `NotificationTargetRepository.get_by_ids()`. `ShiftRepository.delete_in_date_range()`/`OnCallRepository.delete_overlapping_range()` loaded every row as ORM objects then deleted them one by one - replaced with a bulk `DELETE ... WHERE` (`synchronize_session="evaluate"`, not `False`, so as not to break a caller holding an already-loaded instance - `ObjectDeletedError` caught and fixed during development). Missing `joinedload(user)` on 3 `list_for_user()` methods, aligned with the rest of the repositories. A 4th candidate (`/api/v1/users` pagination) dismissed: a deliberate, already-documented choice, not a bug. App version unchanged. 1308 tests (+6). |
+| 5.16.0 | July 17, 2026 | Claude Code | Dead/legacy code (PR #123): `config.py` (root, duplicated `app/config/base.py`) removed, its only real consumer (`scripts/validate_config.py`) repointed; useful tests migrated to `app.config.base.Config` rather than lost. `ProductionConfig`/`DevelopmentConfig` (`app/config/production.py`/`development.py`) removed - never instantiated by any real `create_app()`, `FLASK_ENV` only selects Gunicorn vs the Flask dev server. `get_database_type()` (both copies) removed - zero callers in `app/`. "Horizontal scalability" line removed from this roadmap (explicit request). App version unchanged. 1302 tests (-7, redundant tests removed along with `config.py`). |
+| 5.15.0 | July 17, 2026 | Claude Code | Docker hygiene + dependencies (PR #122). Real critical bug found and fixed: `.dockerignore` lived at `docker/.dockerignore`, never read by Docker since the real build context is the repo root (`context: ..` in `docker/docker-compose.yml`) - the image bundled `instance/app.db` (local SQLite database), `.claude/` (session metadata), static analysis reports. Moved to the root + expanded exclusion list, verified by an actual rebuild and direct inspection of the image contents. `.env.example` split into two independent, complete files (root = non-Docker only, `docker/.env.example` = Docker-adapted, absolute `/app/data/...` paths). `docker-compose.example.yml` moved into `docker/`. `ruff` 0.15.21 -> 0.15.22, `requirements-backup.txt` (a pure duplicate of `boto3`/`botocore`) removed. App version unchanged. 1309 tests. |
+| 5.14.0 | July 17, 2026 | Claude Code | MySQL/MariaDB support as an alternative database engine, via `PyMySQL` (100% pure Python, chosen over `mysqlclient` which requires MySQL/MariaDB headers at build time) - an admin can connect the app to an **external** MySQL/MariaDB server without installing anything MySQL-related, neither on the host nor in the Docker image (confirmed by comparing the Dockerfile's `apk add` steps before/after). Two real bugs found by verifying end-to-end against a real MariaDB container (not just in theory): (1) a `DATABASE_URL=mysql://...`/`postgresql://...` without an explicit `+driver` suffix - the format documented everywhere in this repo - resolved to the "classic" driver (`mysqlclient`/`psycopg2`, neither installed), breaking startup with `ModuleNotFoundError` despite a working driver already being present - fixed by `normalize_database_uri()` (rewrites to `+pymysql`/`+psycopg`); (2) `User.password_hash` (`String(128)`) too short for a modern Werkzeug hash (scrypt, ~162 characters) - invisible on SQLite (no length constraint), fatal on MySQL/PostgreSQL right from creating the first admin - widened to `String(255)` (migration `6ff493358d9e`). Also fixes `SQLALCHEMY_ENGINE_OPTIONS` (never actually applied, lowercase name ignored by `app.config.from_object()`) and the `scripts/validate_config.py` regex (rejected `mariadb://` even though it was recognized everywhere else). Documentation restructured to distinguish the primary use case (already-managed external server) from the local dev/test case (optional docker-compose overlay, mirroring the existing PostgreSQL support). App version 0.9.3 -> 0.9.4. 1309 tests (+17). |
+| 5.13.0 | July 17, 2026 | Claude Code | Public REST API for third-party integrations (flask-smorest, chosen over FastAPI - ASGI, would have required a second process for this 100% synchronous WSGI app - or Flask-RESTful - no native OpenAPI generation). New `ServiceAccount` model (bearer token `ksak_...`, hashed with SHA-256 - not PBKDF2 like `password_hash`, unnecessary CPU cost for an already high-entropy secret - shown in clear only once at creation/regeneration). New `app/api/` app (`/api/v1/*` prefix, distinct from the internal cookie-based `/api/*` API): read-only endpoints (shifts/oncall/leave/users/shift-types), paginated, reusing the existing repositories/services without duplicating business logic. Auth via `Authorization: Bearer`, always JSON on failure (401 scoped per blueprint, never an HTML redirect) - required understanding and working around Flask's error-handler resolution order (blueprint+code > app+code > blueprint+class > app+class), confirmed by direct testing rather than assumed. Rate limiting by service account identity rather than IP (first per-route use of `@limiter.limit()` in this repo). Auto-generated OpenAPI spec (`/api/v1/openapi.json`) from the marshmallow schemas - no interactive Swagger UI served (strict CSP). New `/admin/service-accounts` admin page (CRUD, revocation, regeneration). App version 0.9.2 -> 0.9.3. 1292 tests (+68, including one real Playwright browser test). |
+| 5.12.0 | July 16, 2026 | Claude Code | Three independent efforts: (1) **Security** - the `nav_links` loop in `base.html` (Home/Dashboard/Shifts/On-call/Leave/Swaps) was the only sidebar section without a `current_user.is_authenticated` guard, fixed at once on `/login` and every 400-504 error page (internal-structure information leak, not a bypass - every route stays `@login_required`). (2) **2-step shift swap workflow** - new `AWAITING_ADMIN` state between the request (`PENDING`) and admin approval: the recipient now picks which of their own shifts to swap back (or declines outright) before an admin ever sees the request, the requester no longer pre-selects anything. No migration required. `/api/swaps/target-shifts`, `swap-form.js`, and `app/static/js/utils/date.js` removed (dead code once the request form was simplified). (3) **Makefile** - 39 targets reduced to 15 (the `bug-hunt`/`scripts/bug_hunt.sh` block confirmed never run and diverged from the real `ruff` config, removed; `find-duplicates` kept on its own). App version 0.9.1 -> 0.9.2. 1224 tests (+31). |
+| 5.11.0 | July 16, 2026 | Claude Code | External notifications via Apprise (Slack/Discord/Telegram/generic webhooks): new `NotificationTarget` model (CRUD, JSON-encoded `swap`/`backup`/`system` categories, `subscribes_to()`), `AppriseNotificationService` with two entry points (`notify()` fire-and-forget, never blocking, `send_test()` which surfaces the real success/failure for the admin "Test" button), wired into the shift swap lifecycle (`SwapService`), admin-UI-triggered backups (`BackupService.create_now()`/`cleanup_now()` - not the cron script, `scripts/` isolation preserved) and weekly email reminder failures (`NotificationService`). Dedicated admin page `/admin/notification-targets` (not a section of `/admin/settings`), global toggle `SettingsService.apprise_notifications_enabled` (opt-in, no env fallback). The Apprise URL treated as a secret: never in the audit trail/logs, never shown in clear in the list view. App version 0.9.0 -> 0.9.1. |
+| 5.10.0 | July 16, 2026 | Claude Code | Audit trail - change history (PR #117): append-only `AuditLog` model + `AuditService.log()` (single write point, dual DB + `logs/audit.log` write), retrofit across all business CRUD and authentication events, `/admin/audit-log` UI (actor/domain/date filters, purge based on a configurable retention setting in `/admin/settings`, with no numeric default fallback), rotation of every log file (`RotatingFileHandler`, `LOG_MAX_BYTES`/`LOG_BACKUP_COUNT`). Before this PR the `"audit"` logger had existed in the code for a long time without ever being called - `logs/audit.log` held no real activity. App version 0.8.0 -> 0.9.0. 1133 tests (~92% coverage) |
+| 5.9.0 | July 16, 2026 | Claude Code | Configurable date/time formats (PR #116): same Setting/User architecture as the multi-timezone feature, 3 date formats / 2 time formats, 3 new Jinja filters (`format_date`/`format_time`/`format_datetime`) replacing display-facing `strftime()` calls. Real N+1 bug found and fixed (missing `flask.g` cache on the format resolvers). App version 0.7.11 -> 0.8.0. 1099 tests |
+| 5.8.0 | July 16, 2026 | Claude Code | French/English multi-language support (PR #115): Flask-Babel, `User.language` + `SettingsService.default_language`, full retrofit of user-facing text (55 templates, flash messages, service errors, JS strings via JSON injection), `en.po` fully translated (806 strings), `fr.po` deliberately kept empty (standard fallback to French). App version 0.7.10 -> 0.7.11 |
+| 5.7.0 | July 15, 2026 | Claude Code | Multi-timezone support + DB-backed `/admin/settings` page (PR #114): `Setting` model (generic key/value), `SettingsService` (rule: "Setting present wins, otherwise live fallback to env/config"), `User.timezone`/`effective_timezone()`, real org-tz/personal-tz conversion in the FullCalendar calendar, fixed the ICS "floating time" bug (real TZID + VTIMEZONE), per-user notification preferences. App version 0.7.9 -> 0.7.10 |
+| 5.5.4 | July 14, 2026 | Claude Code | Various fixes: dashboard, flash messages, ICS export, OIDC (PR #112). App version 0.7.7 -> 0.7.8 |
+| 5.5.3 | July 14, 2026 | Claude Code | Shift swaps between users + in-app notifications (PR #111): request (one-way give-away or reciprocal), admin approve/reject/revert, `SwapRequest` model (first model with multiple FKs to the same `User` table), `AppNotification` (in-app bell icon, unread badge). App version 0.7.6 -> 0.7.7 |
+| 5.5.2 | July 14, 2026 | Claude Code | Visual overhaul: official Dracula (dark theme) / Alucard (light theme, PR #110) palette, full override of daisyUI semantic colors sourced from draculatheme.com/spec, native mobile drawer, native `<dialog>` shift-creation modal. App version 0.7.5 -> 0.7.6 |
+| 5.5.1 | July 13-14, 2026 | Claude Code | UI/UX overhaul: Bulma -> Tailwind CSS 4 + daisyUI 5, vendor -> cdnjs CDN (PR #108); removed the Docker wrapper Makefile, Harbor registry doc (PR #109). App version -> 0.7.5 |
+| 5.6.0 | July 15, 2026 | Claude Code | Security/perf/legacy audit + comment translation + Alembic (PR #113): P0 security (stored XSS, CSRF on GET deletes, open redirect), P1 bugs (leave revalidation on drag & drop), P2 performance (N+1 elimination on SwapRequest/dashboard/leave/on-call), P3 cleanup (confirmed dead code removed: `cache/` entirely, `security/token_manager.py`/`encryption.py`, `optimizations/` reduced to `eager_load`), full comment/docstring translation to English (10 phases), Alembic migrations + unique constraints closing the shift/on-call TOCTOU race condition. App version 0.7.8 -> 0.7.9 |
+| 5.5.0 | July 2026 | Claude Code | Backup system overhaul (PR #107): activation/configuration entirely via environment variables (`BACKUP_ENABLED`, opt-in like notifications), removed never-consumed scaffolding (`encrypt`/`encryption_key`/`frequency`), success/failure email alerts reusing the existing notification system (`BACKUP_NOTIFICATION_EMAIL`, subject to `NOTIFICATIONS_ENABLED`), `BackupService` + admin interface (`/admin/backups`: configuration, local/S3 listing, on-demand creation, cleanup, download with path-traversal protection), Docker integration (crond conditional on `BACKUP_ENABLED`, scheduled in `docker/crontabs/appuser`, same container as the app - no separate Docker service). Documentation updated (ENVIRONMENT_VARIABLES.md, BACKUP_GUIDE.md, ADMIN_GUIDE.md, docker.md) and stale references to `BACKUP_ENCRYPT`/`BACKUP_ENCRYPTION_KEY` fixed along the way. App version 0.7.3 -> 0.7.4. 916 tests |
+| 5.4.0 | July 2026 | Claude Code | Email notifications (PR #106): weekly reminder for shifts (Sunday, 24h before Monday) and on-call (Thursday, 24h before Friday 9 PM), one email per week per user (`NotificationLog` anti-duplicate guard), SMTP configurable via environment variables, two standalone cron scripts (`send_shift_notifications.py`/`send_oncall_notifications.py`, `backup_database.py` pattern), HTML + text templates. Documentation updated (README, CLAUDE.md, ADMIN_GUIDE.md, ARCHITECTURE.md, ERD.md, ENVIRONMENT_VARIABLES.md) and stale references to `ShiftAutomation`/`business_rules.py`/`security/token_manager.py` (removed in PR #105) fixed along the way. App version 0.7.2 -> 0.7.3. 891 tests |
+| 5.3.0 | July 2026 | Claude Code | UI text tweaks (PR #105): calendar index title ("Interactive calendar" -> "Calendar"), footer description (the app doesn't manage "organizations"), "Back to admin" buttons added on /admin/users and /admin/automation (renamed from "Back to dashboard" on /admin/groups to avoid confusion with the user dashboard), "new business rules" occurrences cleaned up on /admin/automation. App version 0.7.1 -> 0.7.2 |
+| 5.2.0 | July 2026 | Claude Code | Improved automatic shift/on-call generation (PR #105): removed the dead ShiftAutomation engine, fixed the "Full generation" dry-run, rotation order respected after leave, rebalancing after leave made atomic, new minimum-1-person-staffed business rule, delete-confirmation fixes (JS race condition), "Save order" button, duplicate on-call on adjacent Fridays fixed, full calendar reload replaced with a targeted refresh. App version 0.7.0 -> 0.7.1. 862 tests (including 27 real-browser E2E) |
+| 5.1.0 | July 2026 | Claude Code | UI/UX overhaul completed and merged (PR #103): mobile burger (blocking bug fixed), soft teal/green palette, refreshed components, dashboard chart bug fixed, 3 CSP bugs found and fixed (2 pages broken by inline scripts - ICS copy, rotation drag & drop - + invisible calendar icons, missing font-src, found via real browser/Playwright verification), responsive audit. App version 0.6.0 -> 0.7.0. 781 tests |
+| 5.0.0 | July 2026 | Claude Code | Phases 1-6 overhaul completed (report/): repositories/services architecture, 773 tests (~82% coverage), strict CSP + Talisman always active, Gzip/Brotli/Zstd compression, multi-stage Docker fixed and promoted, GitLab CI/CD fixed, k8s ready, Grafana dashboard. Commit 6e25cc2 (PR #102) |
+| 4.0.0 | June 2026 | Vibe Code | Update after PR #85: 522 tests (515 passing, 2 failing, 7 skipped), static asset fixes, commit 0adf3cc |
+| 3.0.0 | June 2026 | Vibe Code | Full repository analysis, updated statistics, added technical details |
+| 2.0.0 | June 2026 | Vibe Code | Full update with current status (403 tests, advanced automation) |
+| 1.0.0 | June 2026 | Vibe Code | Initial roadmap creation |
 
 ---
 
-## 🎯 Prochaines étapes prioritaires
+## 🎯 Priority next steps
 
-### À court terme (1-2 semaines)
-1. **Décider du sort de `.gitlab-ci/.gitlab-ci.yml`** : ce dépôt est hébergé
-   sur GitHub sans workflow GitHub Actions équivalent - soit ajouter un
-   vrai workflow GitHub Actions (miroir de la config GitLab, maintenant
-   bloquante), soit confirmer qu'un mirroring GitLab existe ailleurs (voir
+### Short term (1-2 weeks)
+1. **Decide the fate of `.gitlab-ci/.gitlab-ci.yml`**: this repo is
+   hosted on GitHub with no equivalent GitHub Actions workflow - either
+   add a real GitHub Actions workflow (mirroring the GitLab config, now
+   blocking), or confirm that GitLab mirroring exists elsewhere (see
    `report/SECURITY_AUDIT_v1.0.md`)
-2. **Configurer `SAFETY_API_KEY`** pour activer réellement le scan de
-   dépendances en CI (actuellement conditionnel, faute de clé)
-3. **Tester le dashboard Grafana** contre une instance réelle (créé mais non testé en environnement live)
-4. **Statuer sur les 3 findings non corrigés du bug hunt v1.0** (verrouillage
-   optimiste du workflow d'échange, atomicité de `SettingsService.set_pagination()`,
-   sémantique d'expiration des clés API) - voir `report/BUG_HUNT_v1.0.md`
+2. **Configure `SAFETY_API_KEY`** to actually enable the dependency scan
+   in CI (currently conditional, for lack of a key)
+3. **Test the Grafana dashboard** against a real instance (created but
+   untested in a live environment)
+4. **Decide on the 3 unfixed v1.0 bug hunt findings** (optimistic
+   locking of the swap workflow, `SettingsService.set_pagination()`
+   atomicity, API key expiry semantics) - see `report/BUG_HUNT_v1.0.md`
 
-### À moyen terme (1 mois)
-1. **Améliorer l'accessibilité WCAG** (partiellement fait : skip link,
-   focus-visible, aria - refonte UI/UX terminée mais audit WCAG complet
-   pas encore fait)
-2. **Ajouter l'espagnol** au support i18n (infra Flask-Babel déjà en place
-   pour FR/EN, `SettingsService.SUPPORTED_LANGUAGES` à étendre)
-3. **Décider de la mise à jour de la stratégie CI** une fois le point 1
-   ci-dessus tranché (job E2E navigateur en `allow_failure: true` à retirer
-   une fois sa stabilité confirmée sur quelques pipelines)
+### Medium term (1 month)
+1. **Improve WCAG accessibility** (partially done: skip link,
+   focus-visible, aria - UI/UX overhaul completed but full WCAG audit not
+   yet done)
+2. **Add Spanish** to i18n support (Flask-Babel infra already in place
+   for FR/EN, `SettingsService.SUPPORTED_LANGUAGES` to extend)
+3. **Decide on updating the CI strategy** once point 1 above is settled
+   (browser E2E job with `allow_failure: true` to remove once its
+   stability is confirmed over a few pipelines)
 
-### À long terme (3-6 mois)
-1. **Scénarios d'écriture concurrente** pour le test de charge (création/
-   modification de shifts sous forte concurrence - hors périmètre du
-   premier test de charge v1.0, voir `report/LOAD_TEST_v1.0.md`)
-2. **Module de reporting/statistiques** (voir Phase 7 ci-dessus)
-
----
-
-## ⚠️ Notes importantes
-
-1. **Statut** : v1.0 atteinte - voir "Verdict de stabilité v1.0" ci-dessous
-   pour ce que ça couvre précisément (et ne couvre pas).
-2. **Sécurité** : Audit de sécurité complet réalisé pour v1.0
-   (`report/SECURITY_AUDIT_v1.0.md`, complète `report/SECURITY_AUDIT_REPORT.md`
-   et l'audit legacy/perf/sécurité de la PR #113) - aucune vulnérabilité
-   critique/haute dans le code applicatif, 2 gaps opérationnels documentés
-   (scan Safety sans clé API, CI GitLab sur dépôt GitHub). CSP stricte et
-   en-têtes de sécurité toujours actifs depuis Phase 6.
-3. **Chasse aux bugs** : passe ciblée sur les fonctionnalités les plus
-   récentes réalisée pour v1.0 (`report/BUG_HUNT_v1.0.md`) - 1 bug HIGH
-   corrigé, 2 MEDIUM/LOW corrigés, 3 findings documentés et volontairement
-   non corrigés (décisions produit/architecture plus larges).
-4. **Tests** : **1314 tests passent**, 0 échec, couverture ~92% (objectif ≥80% largement dépassé).
-5. **Documentation** : repassée contre le code réel pour v1.0 (README,
-   ROADMAP, CLAUDE.md, `Docs/`) - voir PR #127.
-6. **Refonte Phases 1-6** : Un chantier qualité/infra en 6 phases (dépendances, backend, frontend, tests, documentation, optimisations) est terminé — voir `report/Phase 1` à `report/Phase 6` pour le détail de chaque bug trouvé et corrigé.
-7. **Historique des modifications** : depuis la v0.9.0, chaque action métier (et pas seulement les logs applicatifs) est tracée et consultable dans `/admin/audit-log` — voir CLAUDE.md "Audit trail".
-8. **Notifications externes** : depuis la v0.9.1, des cibles Slack/Discord/Telegram/webhooks génériques peuvent être configurées dans `/admin/notification-targets` pour recevoir les événements d'échange de shifts et les alertes système (sauvegardes, échecs d'envoi d'email) — désactivé par défaut (opt-in), voir CLAUDE.md "External notifications (Apprise)".
-
-> **⚠️ Rappel** : Cette feuille de route est évolutive et peut être ajustée en fonction des priorités, des retours utilisateurs et des contraintes techniques. Les dates de livraison sont indicatives et peuvent varier.
+### Long term (3-6 months)
+1. **Concurrent-write scenarios** for the load test (shift creation/
+   modification under heavy concurrency - out of scope for the first
+   v1.0 load test, see `report/LOAD_TEST_v1.0.md`)
+2. **Reporting/statistics module** (see Phase 7 above)
 
 ---
 
-*Document généré après analyse complète du dépôt - Dernière synchronisation : 17 juillet 2026*
-*Stabilisation v1.0 : PR #122-#127 (dépendances/Docker, code mort/legacy, optimisation SQL, audit sécurité + chasse aux bugs + CI bloquante, i18n, documentation/test de charge/version)*
+## ⚠️ Important notes
+
+1. **Status**: v1.0 reached - see "v1.0 Stability Verdict" below for
+   exactly what it covers (and doesn't cover).
+2. **Security**: Full security audit performed for v1.0
+   (`report/SECURITY_AUDIT_v1.0.md`, complementing
+   `report/SECURITY_AUDIT_REPORT.md` and the PR #113 legacy/perf/security
+   audit) - no critical/high vulnerability in the application code, 2
+   operational gaps documented (Safety scan without an API key, GitLab CI
+   on a GitHub repo). Strict CSP and security headers have been active
+   since Phase 6.
+3. **Bug hunt**: a targeted pass on the most recent features performed
+   for v1.0 (`report/BUG_HUNT_v1.0.md`) - 1 HIGH bug fixed, 2 MEDIUM/LOW
+   fixed, 3 findings documented and deliberately left unfixed (broader
+   product/architecture decisions).
+4. **Tests**: **1314 tests passing**, 0 failures, ~92% coverage (≥80%
+   goal far exceeded).
+5. **Documentation**: re-checked against the actual code for v1.0
+   (README, ROADMAP, CLAUDE.md, `Docs/`) - see PR #127.
+6. **Phases 1-6 overhaul**: A 6-phase quality/infra effort (dependencies,
+   backend, frontend, tests, documentation, optimizations) is complete —
+   see `report/Phase 1` through `report/Phase 6` for the detail of each
+   bug found and fixed.
+7. **Change history**: since v0.9.0, every business action (not just
+   application logs) is tracked and viewable at `/admin/audit-log` — see
+   CLAUDE.md "Audit trail".
+8. **External notifications**: since v0.9.1, Slack/Discord/Telegram/
+   generic webhook targets can be configured at
+   `/admin/notification-targets` to receive shift-swap events and system
+   alerts (backups, email send failures) — disabled by default (opt-in),
+   see CLAUDE.md "External notifications (Apprise)".
+
+> **⚠️ Reminder**: This roadmap is a living document and may be adjusted
+based on priorities, user feedback, and technical constraints. Delivery
+dates are indicative and may vary.
+
+---
+
+*Document generated after a full repository analysis - Last sync: July 17, 2026*
+*v1.0 Stabilization: PR #122-#127 (dependencies/Docker, dead/legacy code, SQL optimization, security audit + bug hunt + blocking CI, i18n, documentation/load test/version)*

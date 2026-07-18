@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "macros/errors.html" import error_page with context %}
 
-{% block title %}{{ _("Requête incorrecte") }} - Leviia{% endblock %}
+{% block title %}{{ _("Requête incorrecte") }} - Kairos{% endblock %}
 
 {% block content %}
 {% call error_page(code=400, title=_("Requête incorrecte"), subtitle=_("La requête envoyée est mal formée ou invalide."), color="text-warning", secondary=[{"onclick": "history.back()", "icon": "fa-arrow-left", "label": _("Retour en arrière")}]) %}

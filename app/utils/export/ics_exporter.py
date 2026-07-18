@@ -1,5 +1,5 @@
 """
-ICS export functionality for Leviia Schedule.
+ICS export functionality for Kairos.
 
 This module provides functions to export shifts, on-call duties, and leaves
 to ICS format for calendar integration.
@@ -11,16 +11,14 @@ from zoneinfo import ZoneInfo
 from icalendar import Calendar, Event
 
 
-def generate_ics_standard(
-    events, calendar_name="Leviia Schedule", tz_name="Europe/Paris"
-):
+def generate_ics_standard(events, calendar_name="Kairos", tz_name="Europe/Paris"):
     """
     Generate a standard ICS file from a list of events.
     Supports Shift, OnCall, and Leave objects.
 
     Args:
         events: List of objects (Shift, OnCall or Leave) with required attributes.
-        calendar_name: Name of the calendar (default: "Leviia Schedule").
+        calendar_name: Name of the calendar (default: "Kairos").
         tz_name: IANA timezone name the stored naive datetimes should be
             interpreted in - always the organization's canonical timezone
             (SettingsService.get_default_timezone()), never a viewer's
@@ -34,7 +32,7 @@ def generate_ics_standard(
     tz = ZoneInfo(tz_name)
 
     cal = Calendar()
-    cal.add("prodid", "-//Leviia Schedule//fr")
+    cal.add("prodid", "-//Kairos//fr")
     cal.add("version", "2.0")
     cal.add("calscale", "GREGORIAN")
     cal.add("method", "PUBLISH")
@@ -101,9 +99,7 @@ def generate_ics_standard(
     return cal.to_ical().decode("utf-8")
 
 
-def export_to_ics(
-    events, calendar_name="Leviia Schedule", tz_name="Europe/Paris"
-) -> str:
+def export_to_ics(events, calendar_name="Kairos", tz_name="Europe/Paris") -> str:
     """
     Export events to ICS format.
 

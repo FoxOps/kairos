@@ -1,5 +1,5 @@
 """
-Export utilities for Leviia Schedule.
+Export utilities for Kairos.
 
 This module provides export functionality (ICS, etc.).
 """

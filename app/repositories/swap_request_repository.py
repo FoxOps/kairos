@@ -1,5 +1,5 @@
 """
-SwapRequest repository for Leviia Schedule.
+SwapRequest repository for Kairos.
 
 Data access layer for the SwapRequest model - no business logic, no Flask
 request/response handling, just queries.

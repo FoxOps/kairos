@@ -12,14 +12,14 @@ class TestCreate:
     def test_creates_service_account(self, test_app):
         with test_app.app_context():
             sa = ServiceAccountRepository.create(
-                "Zapier", "Third-party integration", "lsak_abcd1234", "hash1"
+                "Zapier", "Third-party integration", "ksak_abcd1234", "hash1"
             )
             db.session.commit()
 
             fetched = db.session.get(ServiceAccount, sa.id)
             assert fetched.name == "Zapier"
             assert fetched.description == "Third-party integration"
-            assert fetched.token_prefix == "lsak_abcd1234"
+            assert fetched.token_prefix == "ksak_abcd1234"
             assert fetched.token_hash == "hash1"
             assert fetched.is_active is True
             assert fetched.expires_at is None
@@ -28,7 +28,7 @@ class TestCreate:
 class TestGetByTokenHash:
     def test_finds_matching_hash(self, test_app):
         with test_app.app_context():
-            ServiceAccountRepository.create("Zapier", None, "lsak_abcd", "hash1")
+            ServiceAccountRepository.create("Zapier", None, "ksak_abcd", "hash1")
             db.session.commit()
 
             found = ServiceAccountRepository.get_by_token_hash("hash1")
@@ -43,8 +43,8 @@ class TestGetByTokenHash:
 class TestGetAll:
     def test_orders_by_name(self, test_app):
         with test_app.app_context():
-            ServiceAccountRepository.create("Zeta", None, "lsak_z", "hz")
-            ServiceAccountRepository.create("Alpha", None, "lsak_a", "ha")
+            ServiceAccountRepository.create("Zeta", None, "ksak_z", "hz")
+            ServiceAccountRepository.create("Alpha", None, "ksak_a", "ha")
             db.session.commit()
 
             accounts = ServiceAccountRepository.get_all()
@@ -54,7 +54,7 @@ class TestGetAll:
 class TestDelete:
     def test_deletes_service_account(self, test_app):
         with test_app.app_context():
-            sa = ServiceAccountRepository.create("Zapier", None, "lsak_a", "hash1")
+            sa = ServiceAccountRepository.create("Zapier", None, "ksak_a", "hash1")
             db.session.commit()
             sa_id = sa.id
 
@@ -67,7 +67,7 @@ class TestDelete:
 class TestTouchLastUsed:
     def test_sets_last_used_at(self, test_app):
         with test_app.app_context():
-            sa = ServiceAccountRepository.create("Zapier", None, "lsak_a", "hash1")
+            sa = ServiceAccountRepository.create("Zapier", None, "ksak_a", "hash1")
             db.session.commit()
             assert sa.last_used_at is None
 
