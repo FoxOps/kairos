@@ -206,16 +206,25 @@ class TestCalendarFunctions:
         from app.services.schedule_service import ScheduleService
 
         start_time = datetime.now() + timedelta(days=1)
-        shift = Shift(
-            user_id=test_user.id,
-            shift_type_id=test_shift_type.id,
-            start_time=start_time,
-            end_time=start_time + timedelta(hours=8),
-            date=start_time.date(),
-            user=test_user,
-            shift_type=test_shift_type,
-        )
+        # no_autoflush: shift is a transient object (never added to the
+        # session) but user=/shift_type= set the relationship backref on
+        # test_user/test_shift_type, which are session-bound - any query
+        # run afterward (build_calendar_events() queries Setting
+        # internally) triggers autoflush against that dangling
+        # relationship state and raises a SAWarning. Wrap the whole
+        # sequence, not just the construction.
+        with db.session.no_autoflush:
+            shift = Shift(
+                user_id=test_user.id,
+                shift_type_id=test_shift_type.id,
+                start_time=start_time,
+                end_time=start_time + timedelta(hours=8),
+                date=start_time.date(),
+                user=test_user,
+                shift_type=test_shift_type,
+            )
 
-        events = ScheduleService.build_calendar_events([shift], [], [], test_user)
+            events = ScheduleService.build_calendar_events([shift], [], [], test_user)
+
         assert len(events) == 1
         assert events[0]["title"] == f"{test_user.name} - {test_shift_type.label}"
