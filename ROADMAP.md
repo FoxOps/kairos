@@ -36,7 +36,8 @@ automated tests), and used for real team scheduling.
 
 **Security**
 - Static code analysis (Bandit) and dependency vulnerability scanning
-  (pip-audit, no API key required) on every push
+  (pip-audit, no API key required), run automatically on GitHub Actions
+  before every release, once a week, or on demand
 
 **Operations**
 - Multi-language (French/English) and multi-timezone, per user or
@@ -47,14 +48,6 @@ automated tests), and used for real team scheduling.
   triggered from the admin UI
 - Prometheus metrics and Kubernetes health/readiness endpoints
 - Docker image and Kubernetes manifests provided for deployment
-
-## 🔜 Left to do
-
-- **CI on GitHub.** The GitLab CI config in this repo
-  (`.gitlab-ci/.gitlab-ci.yml`) doesn't execute against this
-  GitHub-hosted repository — there is no equivalent GitHub Actions
-  workflow yet. Needed before any change can be verified
-  automatically on every push/PR.
 
 ## 🔭 Future ideas
 

@@ -14,12 +14,16 @@ Kairos is a Flask web app for team shift scheduling, on-call rotations, and leav
 management, with ICS calendar export. Active development, French-language docs/commit history.
 v1.0 stabilization complete (security audit, targeted bug hunt, load test — see
 `report/SECURITY_AUDIT_v1.0.md`, `report/BUG_HUNT_v1.0.md`, `report/LOAD_TEST_v1.0.md`, and
-ROADMAP.md's "Left to do" section); one operational gap remains to be decided by whoever
-deploys it, not a code defect: the GitLab CI config (`.gitlab-ci/.gitlab-ci.yml`) doesn't actually
-run against this GitHub-hosted repo (no equivalent GitHub Actions workflow exists). The dependency
-vulnerability scan (`pip-audit`, replacing the former `safety scan` which required a
-`SAFETY_API_KEY`) needs no key and runs unconditionally/blocking in both `make security` and the
-GitLab CI job.
+ROADMAP.md's "Done" section). CI runs on GitHub Actions (`.github/workflows/ci.yml`, the
+GitLab CI config this repo used to carry was removed — GitLab never actually executed against this
+GitHub-hosted repo). Deliberately **not** triggered on every push/PR: the repository is currently
+private, where GitHub Actions minutes are metered and billed past a monthly quota (unlike a public
+repo, where they're unlimited/free) — the workflow instead runs on a tag push (`v*`, just before a
+release is published), once a week (`schedule`, catches dependencies that turn vulnerable without
+any code change), or on demand (`workflow_dispatch`). Revisit this trigger set once the repo goes
+public. The dependency vulnerability scan (`pip-audit`, replacing the former `safety scan` which
+required a `SAFETY_API_KEY`) needs no key and runs unconditionally/blocking in both `make security`
+and the `security` CI job.
 
 ## Commands
 

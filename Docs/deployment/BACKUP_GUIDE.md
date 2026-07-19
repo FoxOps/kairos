@@ -64,7 +64,7 @@ The Kairos automated backup system allows you to:
 ## 📦 Prerequisites
 
 ### For local backup
-- Python 3.11+ (matches `docker/Dockerfile`/`.gitlab-ci/.gitlab-ci.yml`; the codebase uses PEP 604 `X | None` type hints, which require at least Python 3.10)
+- Python 3.11+ (matches `docker/Dockerfile`/`.github/workflows/ci.yml`; the codebase uses PEP 604 `X | None` type hints, which require at least Python 3.10)
 - Write access to the filesystem
 
 ### For S3 backup
