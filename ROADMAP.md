@@ -40,7 +40,8 @@ automated tests), and used for real team scheduling.
 
 **Operations**
 - Multi-language (French/English) and multi-timezone, per user or
-  organization-wide
+  organization-wide, including on-call status computed in the
+  organization's own timezone rather than the server's
 - An audit trail of who changed what, browsable by admins
 - Database backups (local or S3-compatible), schedulable via cron or
   triggered from the admin UI
@@ -54,9 +55,6 @@ automated tests), and used for real team scheduling.
   GitHub-hosted repository — there is no equivalent GitHub Actions
   workflow yet. Needed before any change can be verified
   automatically on every push/PR.
-- **Fix a pre-existing timezone edge case** in `OnCall.is_active()`:
-  it compares a stored UTC timestamp against local server time, which
-  can be off by the server's UTC offset.
 
 ## 🔭 Future ideas
 

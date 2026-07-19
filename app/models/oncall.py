@@ -4,8 +4,6 @@ OnCall model for Kairos.
 This module contains the OnCall model for on-call duty management.
 """
 
-from datetime import datetime
-
 from app import db
 from app.models.base import BaseModel
 
@@ -54,10 +52,19 @@ class OnCall(BaseModel):
     def is_active(self) -> bool:
         """Check if this on-call period is currently active.
 
+        start_time/end_time are naive wall-clock datetimes meaning "local
+        time in the organization's default_timezone" (see CLAUDE.md's
+        "Multi-timezone support" section) - compared against org_now(),
+        not datetime.now() (the server process's own local time, which
+        can differ from the org's configured timezone by the server's
+        UTC offset).
+
         Returns:
             True if the current time is within the on-call period
         """
-        now = datetime.now()
+        from app.utils.helpers.timezone_helpers import org_now
+
+        now = org_now()
         return self.start_time <= now <= self.end_time
 
     def __repr__(self) -> str:

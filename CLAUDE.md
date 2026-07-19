@@ -733,10 +733,15 @@ mechanisms consume it, with different rules — don't conflate them:
   modal's comments if you touch this file. `Leave` dates have no time component and need no
   conversion in either mechanism.
 
-Known, deliberately unaddressed by this feature: `OnCall.is_active()` (`app/models/oncall.py`)
-compares the naive-UTC value written by `BaseModel`'s `created_at`/`updated_at` pattern against a
-naive-*local* `datetime.now()` — a pre-existing bug unrelated to per-user timezones, left alone
-here to avoid folding an unrelated behavior change into this feature. `ICS_TOKEN_EXPIRY_DAYS`
+`OnCall.is_active()` (`app/models/oncall.py`) compares `start_time`/`end_time` (naive, org-local
+wall-clock, like every other `Shift`/`OnCall` datetime — see above) against
+`timezone_helpers.org_now()`, not `datetime.now()` — a previous bug: `datetime.now()` returns the
+*server process's own local time*, which can differ from the organization's configured
+`default_timezone` by the server's UTC offset, giving a wrong answer whenever the two differ (e.g.
+a server running with `TZ=UTC`, the common Docker default, against an org configured for
+`Europe/Paris`). `org_now()` (`app/utils/helpers/timezone_helpers.py`) is a small addition to that
+same module: "now", in the same naive org-local representation `start_time`/`end_time` already use,
+so the comparison is apples-to-apples. `ICS_TOKEN_EXPIRY_DAYS`
 (a `Setting`, scope consistency with the other backup/notification settings) **is** enforced:
 `User.ics_token_created_at` (migration `5735938f1832`) records when a token was last (re)generated,
 `User.is_ics_token_expired()` compares it against `SettingsService.get_ics_token_expiry_days()`, and
