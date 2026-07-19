@@ -71,23 +71,6 @@ def get_int_from_env(env_var: str, default: int = 0) -> int:
         return default
 
 
-def get_str_from_env(env_var: str, default: str = "") -> str:
-    """
-    Get a string environment variable.
-
-    Args:
-        env_var: Environment variable name
-        default: Default value if variable is not set
-
-    Returns:
-        String value of the environment variable
-    """
-    value = os.environ.get(env_var)
-    if value is None or value.strip() == "":
-        return default
-    return value.strip()
-
-
 def get_json_from_env(env_var: str, default: Any | None = None) -> Any:
     """
     Convert an environment variable to a Python object via JSON.
@@ -274,29 +257,6 @@ class Config:
     SQLALCHEMY_ENGINE_OPTIONS: dict[str, Any] = (
         get_json_from_env("SQLALCHEMY_ENGINE_OPTIONS") or {}
     )
-
-    # ---------------------------------------------------------------------------
-    # Configuration Validation
-    # ---------------------------------------------------------------------------
-
-    @staticmethod
-    def validate() -> bool:
-        """
-        Validate the configuration.
-
-        Returns:
-            True if configuration is valid, False otherwise
-        """
-        # Check required configurations
-        if not Config.SECRET_KEY:
-            logging.error("SECRET_KEY is not set!")
-            return False
-
-        if not Config.SQLALCHEMY_DATABASE_URI:
-            logging.error("SQLALCHEMY_DATABASE_URI is not set!")
-            return False
-
-        return True
 
     # ---------------------------------------------------------------------------
     # Utility Methods
