@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-18 02:55+0200\n"
+"POT-Creation-Date: 2026-07-19 10:48+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -65,9 +65,8 @@ msgid "%(shifts_deleted)s shifts existants supprimés pour la période"
 msgstr "%(shifts_deleted)s existing shifts deleted for the period"
 
 #: app/routes/admin_automation_routes.py:187 app/services/leave_service.py:166
-#, fuzzy
 msgid "Génération d'astreintes incomplète"
-msgstr "Full generation"
+msgstr "Incomplete on-call generation"
 
 #: app/routes/admin_automation_routes.py:189
 #, python-format
@@ -76,6 +75,8 @@ msgid ""
 " pour : %(dates)s. Assignation manuelle nécessaire dans "
 "/admin/automation."
 msgstr ""
+"No user available within the legal 2-week spacing constraint for: "
+"%(dates)s. Manual assignment required in /admin/automation."
 
 #: app/routes/admin_automation_routes.py:202
 #, python-format
@@ -691,6 +692,8 @@ msgid ""
 "respecte le délai légal de 2 semaines) : %(dates)s. Assignation manuelle "
 "nécessaire."
 msgstr ""
+"On-call(s) not generated automatically (no user meets the legal 2-week "
+"spacing constraint): %(dates)s. Manual assignment required."
 
 #: app/services/apprise_notification_service.py:87
 msgid "URL Apprise invalide."
@@ -777,6 +780,9 @@ msgid ""
 " pour : %(dates)s (rééquilibrage après congé). Assignation manuelle "
 "nécessaire dans /admin/automation."
 msgstr ""
+"No user available within the legal 2-week spacing constraint for: "
+"%(dates)s (rebalancing after a leave). Manual assignment required in "
+"/admin/automation."
 
 #: app/services/notification_service.py:112
 #, python-format
@@ -874,7 +880,7 @@ msgstr "Retention values must be positive"
 msgid "La durée de rétention doit être positive"
 msgstr "The retention period must be positive"
 
-#: app/services/settings_service.py:361
+#: app/services/settings_service.py:362
 msgid "La durée d'expiration doit être positive"
 msgstr "The expiry duration must be positive"
 
@@ -4154,7 +4160,7 @@ msgstr ""
 "call person, slot rotation, etc.)."
 
 #: app/templates/admin/automation/full.html:199
-#: app/templates/auth/ics_token.html:144
+#: app/templates/auth/ics_token.html:150
 msgid "Note :"
 msgstr "Note:"
 
@@ -4492,62 +4498,67 @@ msgstr "This token allows access to ALL shifts (scope=all). Use it with caution.
 msgid "Votre token"
 msgstr "Your token"
 
-#: app/templates/auth/ics_token.html:37 app/templates/auth/ics_token.html:51
-#: app/templates/auth/ics_token.html:67 app/templates/auth/ics_token.html:84
-#: app/templates/auth/ics_token.html:100 app/templates/auth/ics_token.html:117
-#: app/templates/auth/ics_token.html:133
+#: app/templates/auth/ics_token.html:37 app/templates/auth/ics_token.html:57
+#: app/templates/auth/ics_token.html:73 app/templates/auth/ics_token.html:90
+#: app/templates/auth/ics_token.html:106 app/templates/auth/ics_token.html:123
+#: app/templates/auth/ics_token.html:139
 msgid "Copier"
 msgstr "Copy"
 
-#: app/templates/auth/ics_token.html:44
+#: app/templates/auth/ics_token.html:43
+#, python-format
+msgid "Expire le %(date)s - régénérez le token pour prolonger son accès."
+msgstr "Expires on %(date)s - regenerate the token to extend its access."
+
+#: app/templates/auth/ics_token.html:50
 msgid "URL Shifts (Tous)"
 msgstr "Shifts URL (All)"
 
-#: app/templates/auth/ics_token.html:55
+#: app/templates/auth/ics_token.html:61
 msgid "URL pour exporter TOUS les shifts (scope=all)"
 msgstr "URL to export ALL shifts (scope=all)"
 
-#: app/templates/auth/ics_token.html:60
+#: app/templates/auth/ics_token.html:66
 msgid "URL Shifts (Perso)"
 msgstr "Shifts URL (Personal)"
 
-#: app/templates/auth/ics_token.html:71
+#: app/templates/auth/ics_token.html:77
 msgid "URL pour exporter uniquement vos shifts (scope=my)"
 msgstr "URL to export only your shifts (scope=my)"
 
-#: app/templates/auth/ics_token.html:77
+#: app/templates/auth/ics_token.html:83
 msgid "URL Astreintes (Tous)"
 msgstr "On-calls URL (All)"
 
-#: app/templates/auth/ics_token.html:88
+#: app/templates/auth/ics_token.html:94
 msgid "URL pour exporter TOUTES les astreintes (scope=all)"
 msgstr "URL to export ALL on-calls (scope=all)"
 
-#: app/templates/auth/ics_token.html:93
+#: app/templates/auth/ics_token.html:99
 msgid "URL Astreintes (Perso)"
 msgstr "On-calls URL (Personal)"
 
-#: app/templates/auth/ics_token.html:104
+#: app/templates/auth/ics_token.html:110
 msgid "URL pour exporter uniquement vos astreintes (scope=my)"
 msgstr "URL to export only your on-calls (scope=my)"
 
-#: app/templates/auth/ics_token.html:110
+#: app/templates/auth/ics_token.html:116
 msgid "URL Congés (Tous)"
 msgstr "Leaves URL (All)"
 
-#: app/templates/auth/ics_token.html:121
+#: app/templates/auth/ics_token.html:127
 msgid "URL pour exporter TOUS les congés (scope=all)"
 msgstr "URL to export ALL leaves (scope=all)"
 
-#: app/templates/auth/ics_token.html:126
+#: app/templates/auth/ics_token.html:132
 msgid "URL Congés (Perso)"
 msgstr "Leaves URL (Personal)"
 
-#: app/templates/auth/ics_token.html:137
+#: app/templates/auth/ics_token.html:143
 msgid "URL pour exporter uniquement vos congés (scope=my)"
 msgstr "URL to export only your leaves (scope=my)"
 
-#: app/templates/auth/ics_token.html:144
+#: app/templates/auth/ics_token.html:150
 msgid ""
 "Certains logiciels de calendrier (comme Thunderbird) peuvent nécessiter "
 "de rafraîchir manuellement le calendrier après des modifications."
@@ -4555,19 +4566,19 @@ msgstr ""
 "Some calendar software (such as Thunderbird) may require manually "
 "refreshing the calendar after changes."
 
-#: app/templates/auth/ics_token.html:155
+#: app/templates/auth/ics_token.html:161
 msgid "Régénérer le token"
 msgstr "Regenerate the token"
 
-#: app/templates/auth/ics_token.html:155
+#: app/templates/auth/ics_token.html:161
 msgid "Générer un token"
 msgstr "Generate a token"
 
-#: app/templates/auth/ics_token.html:159
+#: app/templates/auth/ics_token.html:165
 msgid "Retour au profil"
 msgstr "Back to profile"
 
-#: app/templates/auth/ics_token.html:165
+#: app/templates/auth/ics_token.html:171
 msgid "Vous n'avez pas encore de token. Générez-en un ci-dessus."
 msgstr "You do not have a token yet. Generate one above."
 
@@ -4824,6 +4835,78 @@ msgstr "View the schedule: %(url)s"
 #: app/templates/macros/errors.html:58
 msgid "Se déconnecter"
 msgstr "Log out"
+
+#: app/utils/automation/advanced_shift_automation.py:274
+#: app/utils/automation/advanced_shift_automation.py:439
+#, python-format
+msgid "⏭️ Pas de shift généré pour le %(date)s (week-end)"
+msgstr "⏭️ No shift generated for %(date)s (weekend)"
+
+#: app/utils/automation/advanced_shift_automation.py:284
+#, python-format
+msgid "⚠️ Aucun utilisateur disponible pour le %(date)s"
+msgstr "⚠️ No user available for %(date)s"
+
+#: app/utils/automation/advanced_shift_automation.py:321
+#: app/utils/automation/advanced_shift_automation.py:368
+#: app/utils/automation/advanced_shift_automation.py:422
+#, python-format
+msgid "❌ Erreur : %(error)s"
+msgstr "❌ Error: %(error)s"
+
+#: app/utils/automation/advanced_shift_automation.py:328
+#, python-format
+msgid "✅ 1 shift généré pour le %(date)s (effectif minimum : %(name)s)"
+msgstr "✅ 1 shift generated for %(date)s (minimum staffing: %(name)s)"
+
+#: app/utils/automation/advanced_shift_automation.py:431
+#, python-format
+msgid "✅ %(count)s shifts générés pour le %(date)s"
+msgstr "✅ %(count)s shifts generated for %(date)s"
+
+#: app/utils/automation/advanced_shift_automation.py:446
+#, python-format
+msgid "⚠️ Aucun shift généré pour le %(date)s"
+msgstr "⚠️ No shift generated for %(date)s"
+
+#: app/utils/automation/advanced_shift_automation.py:546
+#, python-format
+msgid "🗑️ %(count)s astreintes supprimées pour l'utilisateur %(user_id)s"
+msgstr "🗑️ %(count)s on-calls deleted for user %(user_id)s"
+
+#: app/utils/automation/advanced_shift_automation.py:592
+#, python-format
+msgid "🗑️ %(count)s shifts supprimés pour le %(date)s"
+msgstr "🗑️ %(count)s shifts deleted for %(date)s"
+
+#: app/utils/automation/advanced_shift_automation.py:631
+#, python-format
+msgid ""
+"🗑️ %(count)s astreinte(s) supplémentaire(s) supprimée(s) dans la période "
+"étendue avant régénération"
+msgstr ""
+"🗑️ %(count)s extra on-call(s) deleted in the extended period before "
+"regeneration"
+
+#: app/utils/automation/advanced_shift_automation.py:651
+#, python-format
+msgid "🔄 %(count)s astreintes régénérées pour la période %(start)s - %(end)s"
+msgstr "🔄 %(count)s on-calls regenerated for the period %(start)s - %(end)s"
+
+#: app/utils/automation/oncall_automation.py:289
+#, python-format
+msgid ""
+"⚠️ Aucune astreinte générée pour le %(date)s (aucun utilisateur ne "
+"respecte le délai légal de 2 semaines entre deux astreintes) - "
+"assignation manuelle nécessaire."
+msgstr ""
+"⚠️ No on-call generated for %(date)s (no user meets the legal 2-week "
+"spacing constraint between two on-calls) - manual assignment required."
+
+#: app/utils/automation/oncall_automation.py:330
+#, python-format
+msgid "✅ %(count)s astreintes générées."
+msgstr "✅ %(count)s on-calls generated."
 
 #: app/utils/helpers/js_translations.py:21
 msgid "Désactiver le mode édition"

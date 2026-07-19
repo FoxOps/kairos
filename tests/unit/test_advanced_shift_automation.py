@@ -391,6 +391,23 @@ class TestGenerateDailyShifts:
             assert len(shifts) == 0
             assert any("week-end" in msg.lower() for msg in messages)
 
+    def test_generate_daily_shifts_weekend_message_translates_to_english(
+        self, test_app
+    ):
+        """Regression guard: automation messages used to be raw French
+        f-strings, never wrapped in _(), so they ignored the acting
+        admin's language preference entirely."""
+        from flask_babel import force_locale
+
+        with test_app.app_context(), force_locale("en"):
+            saturday = date(2023, 12, 2)  # Saturday
+            _shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(
+                saturday, dry_run=True
+            )
+
+            assert any("weekend" in msg.lower() for msg in messages)
+            assert not any("week-end" in msg.lower() for msg in messages)
+
     def test_generate_daily_shifts_no_available_users(self, test_app, test_group):
         """Test that no shift is generated when no user is available."""
         with test_app.app_context():
