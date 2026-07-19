@@ -509,6 +509,68 @@ class TestOnCallModel:
             assert test_oncall.user is not None
             assert test_oncall in test_oncall.user.on_calls
 
+    def test_is_active_uses_org_timezone_not_server_time(
+        self, test_app, test_user, monkeypatch
+    ):
+        """Regression guard: is_active() used to compare against
+        datetime.now() (server process local time) instead of the org's
+        configured timezone - wrong whenever the two differ. Mocks
+        org_now() to a fixed value far outside the real current wall
+        clock: only passes if is_active() actually calls org_now(),
+        not datetime.now()."""
+        from app.utils.helpers import timezone_helpers
+
+        with test_app.app_context():
+            fixed_now = datetime(2020, 1, 1, 12, 0)
+            monkeypatch.setattr(timezone_helpers, "org_now", lambda: fixed_now)
+
+            oncall = OnCall(
+                user_id=test_user.id,
+                start_time=datetime(2020, 1, 1, 11, 0),
+                end_time=datetime(2020, 1, 1, 13, 0),
+            )
+            db.session.add(oncall)
+            db.session.commit()
+
+            assert oncall.is_active() is True
+
+    def test_is_active_false_outside_window_via_org_now(
+        self, test_app, test_user, monkeypatch
+    ):
+        from app.utils.helpers import timezone_helpers
+
+        with test_app.app_context():
+            fixed_now = datetime(2020, 1, 1, 12, 0)
+            monkeypatch.setattr(timezone_helpers, "org_now", lambda: fixed_now)
+
+            oncall = OnCall(
+                user_id=test_user.id,
+                start_time=datetime(2020, 1, 2, 11, 0),
+                end_time=datetime(2020, 1, 2, 13, 0),
+            )
+            db.session.add(oncall)
+            db.session.commit()
+
+            assert oncall.is_active() is False
+
+    def test_is_active_boundaries_are_inclusive(self, test_app, test_user, monkeypatch):
+        from app.utils.helpers import timezone_helpers
+
+        with test_app.app_context():
+            start_time = datetime(2020, 1, 1, 11, 0)
+            end_time = datetime(2020, 1, 1, 13, 0)
+            oncall = OnCall(
+                user_id=test_user.id, start_time=start_time, end_time=end_time
+            )
+            db.session.add(oncall)
+            db.session.commit()
+
+            monkeypatch.setattr(timezone_helpers, "org_now", lambda: start_time)
+            assert oncall.is_active() is True
+
+            monkeypatch.setattr(timezone_helpers, "org_now", lambda: end_time)
+            assert oncall.is_active() is True
+
 
 class TestLeaveModel:
     """Tests for the Leave model."""

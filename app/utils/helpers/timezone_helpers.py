@@ -1,18 +1,19 @@
 """
-Timezone conversion helpers for the FullCalendar JSON API (schedule/
-on-call read and write via drag & drop).
+Timezone helpers for the naive wall-clock datetimes Shift/OnCall store.
 
 Shifts/on-calls are stored as naive wall-clock datetimes meaning "local
-time in the organization's default_timezone" (see CLAUDE.md's
-"Multi-timezone support" section) - these functions translate between
-that canonical value and a specific viewer's effective_timezone(), for
-display and for interpreting drag & drop input from the browser.
+time in the organization's default_timezone" - never UTC, never the
+server's own local time. `to_viewer_timezone`/`to_org_timezone` translate
+that canonical value to/from a specific viewer's effective_timezone(),
+for the FullCalendar JSON API (display and drag & drop input). `org_now()`
+gives "now" in that same canonical representation, for "is this happening
+right now" comparisons.
 
 FullCalendar itself is configured with `timeZone: 'UTC'`
 (fullcalendar-config.js) so it never reinterprets these numbers against
 the browser's own system clock - the server does all the real
 conversion via zoneinfo, avoiding the need for a moment-timezone/luxon
-plugin (this app is CDN-only, see CLAUDE.md's Frontend section).
+plugin (this app has no JS build step / bundled npm dependencies).
 """
 
 from datetime import datetime
@@ -39,3 +40,13 @@ def to_org_timezone(dt: datetime, viewer) -> datetime:
     viewer_tz = ZoneInfo(viewer.effective_timezone())
     localized = dt.replace(tzinfo=viewer_tz)
     return localized.astimezone(_org_timezone()).replace(tzinfo=None)
+
+
+def org_now() -> datetime:
+    """Current time as a naive org-tz wall clock datetime - the same
+    representation Shift/OnCall store, for "is this happening right now"
+    comparisons like OnCall.is_active(). Deliberately not `datetime.now()`
+    (the server process's own local time, which can differ from the
+    organization's configured default_timezone by the server's UTC
+    offset - the bug this function exists to avoid reintroducing)."""
+    return datetime.now(_org_timezone()).replace(tzinfo=None)

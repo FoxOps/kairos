@@ -350,8 +350,7 @@ class SettingsService:
         """Falls back to the ICS_TOKEN_EXPIRY_DAYS env var (documented in
         .env.example, not part of app.config) when no DB override exists.
         Enforced by User.is_ics_token_expired(), checked from
-        ExportService.resolve_user() - see CLAUDE.md's "Multi-timezone
-        support" section."""
+        ExportService.resolve_user()."""
         value = Setting.get(ICS_TOKEN_EXPIRY_DAYS_KEY)
         if value is not None:
             return int(value)

@@ -645,3 +645,39 @@ class TestOverlappingShiftAndOnCallHelpers:
                 test_user.id, date(2026, 7, 9), date(2026, 7, 16)
             )
             assert result is None
+
+
+class TestOrgNow:
+    """Tests for app.utils.helpers.timezone_helpers.org_now()."""
+
+    def test_returns_naive_datetime(self, test_app):
+        from app.utils.helpers.timezone_helpers import org_now
+
+        with test_app.app_context():
+            assert org_now().tzinfo is None
+
+    def test_matches_org_timezone_not_utc(self, test_app):
+        """Regression guard for the bug this function exists to fix
+        (OnCall.is_active() used to compare against server-local time):
+        with default_timezone set to a zone with a large, unambiguous
+        UTC offset, org_now() must reflect that offset, not UTC/system
+        time."""
+        from zoneinfo import ZoneInfo
+
+        from app.services.settings_service import SettingsService
+        from app.utils.helpers.timezone_helpers import org_now
+
+        with test_app.app_context():
+            SettingsService.set_default_timezone("Pacific/Kiritimati")  # UTC+14
+            org_wall_clock = org_now()
+
+            from datetime import datetime as dt
+
+            real_utc_now = dt.now(ZoneInfo("UTC"))
+            expected_wall_clock = real_utc_now.astimezone(
+                ZoneInfo("Pacific/Kiritimati")
+            ).replace(tzinfo=None)
+
+            # Allow a small delta for the time elapsed between the two
+            # datetime.now() calls above.
+            assert abs((org_wall_clock - expected_wall_clock).total_seconds()) < 5
