@@ -735,9 +735,16 @@ Known, deliberately unaddressed by this feature: `OnCall.is_active()` (`app/mode
 compares the naive-UTC value written by `BaseModel`'s `created_at`/`updated_at` pattern against a
 naive-*local* `datetime.now()` — a pre-existing bug unrelated to per-user timezones, left alone
 here to avoid folding an unrelated behavior change into this feature. `ICS_TOKEN_EXPIRY_DAYS`
-(migrated to `Setting` for scope consistency with the other backup/notification settings) has no
-enforcement point anywhere in `app/` — it's a documented no-op, not wired to any actual token
-expiry check.
+(a `Setting`, scope consistency with the other backup/notification settings) **is** enforced:
+`User.ics_token_created_at` (migration `5735938f1832`) records when a token was last (re)generated,
+`User.is_ics_token_expired()` compares it against `SettingsService.get_ics_token_expiry_days()`, and
+`ExportService.resolve_user()` is the single enforcement point — a token past its expiry resolves to
+no user, same 401/redirect path as an invalid token, never a special case in the export routes
+themselves. A token issued before this migration ran gets backfilled with `now()` (a fresh full
+expiry window from deploy day) rather than instantly invalidated; a token that somehow has no
+creation timestamp at all is treated as expired, not indefinitely valid — the safer default.
+Expiry only ever gates the anonymous-token path (`ExportService.resolve_user`'s `token` branch); an
+authenticated session user hitting `/export/*` is never subject to it.
 
 ### Multi-language support (i18n)
 

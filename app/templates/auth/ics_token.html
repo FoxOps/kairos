@@ -37,6 +37,12 @@
                             <span>{{ _("Copier") }}</span>
                         </button>
                     </div>
+                    {% set expires_at = user.ics_token_expires_at() %}
+                    {% if expires_at %}
+                    <p class="text-sm text-base-content/60 mt-1">
+                        {{ _("Expire le %(date)s - régénérez le token pour prolonger son accès.", date=expires_at|format_date) }}
+                    </p>
+                    {% endif %}
                 </div>
 
                 <!-- Shift URLs -->

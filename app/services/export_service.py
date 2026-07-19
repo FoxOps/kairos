@@ -30,11 +30,15 @@ class ExportService:
     @staticmethod
     def resolve_user(token: str | None) -> User | None:
         """User for the export: authenticated session takes priority,
-        otherwise the ICS token."""
+        otherwise the ICS token - rejected if past
+        SettingsService.get_ics_token_expiry_days()."""
         if current_user.is_authenticated:
             return current_user
         if token:
-            return UserRepository.get_by_ics_token(token)
+            user = UserRepository.get_by_ics_token(token)
+            if user and user.is_ics_token_expired():
+                return None
+            return user
         return None
 
     @staticmethod
