@@ -2,18 +2,18 @@
 Timezone helpers for the naive wall-clock datetimes Shift/OnCall store.
 
 Shifts/on-calls are stored as naive wall-clock datetimes meaning "local
-time in the organization's default_timezone" (see CLAUDE.md's
-"Multi-timezone support" section). `to_viewer_timezone`/`to_org_timezone`
-translate that canonical value to/from a specific viewer's
-effective_timezone(), for the FullCalendar JSON API (display and drag &
-drop input). `org_now()` gives "now" in that same canonical
-representation, for "is this happening right now" comparisons.
+time in the organization's default_timezone" - never UTC, never the
+server's own local time. `to_viewer_timezone`/`to_org_timezone` translate
+that canonical value to/from a specific viewer's effective_timezone(),
+for the FullCalendar JSON API (display and drag & drop input). `org_now()`
+gives "now" in that same canonical representation, for "is this happening
+right now" comparisons.
 
 FullCalendar itself is configured with `timeZone: 'UTC'`
 (fullcalendar-config.js) so it never reinterprets these numbers against
 the browser's own system clock - the server does all the real
 conversion via zoneinfo, avoiding the need for a moment-timezone/luxon
-plugin (this app is CDN-only, see CLAUDE.md's Frontend section).
+plugin (this app has no JS build step / bundled npm dependencies).
 """
 
 from datetime import datetime

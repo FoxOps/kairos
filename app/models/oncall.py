@@ -53,11 +53,10 @@ class OnCall(BaseModel):
         """Check if this on-call period is currently active.
 
         start_time/end_time are naive wall-clock datetimes meaning "local
-        time in the organization's default_timezone" (see CLAUDE.md's
-        "Multi-timezone support" section) - compared against org_now(),
-        not datetime.now() (the server process's own local time, which
-        can differ from the org's configured timezone by the server's
-        UTC offset).
+        time in the organization's default_timezone" - compared against
+        org_now(), not datetime.now() (the server process's own local
+        time, which can differ from the org's configured timezone by
+        the server's UTC offset).
 
         Returns:
             True if the current time is within the on-call period
