@@ -15,6 +15,7 @@ graph TB
     subgraph Flask["Flask application (app/)"]
         direction TB
         Routes["routes/<br/>blueprints: auth, main, admin, export"]
+        Api["api/<br/>flask-smorest, /api/v1/*"]
         Services["services/<br/>business logic"]
         Repos["repositories/<br/>data access"]
         Models["models/<br/>SQLAlchemy ORM"]
@@ -22,6 +23,7 @@ graph TB
         Utils["utils/<br/>automation, export, logging, health"]
 
         Routes --> Services
+        Api --> Repos
         Services --> Repos
         Repos --> Models
         Routes --> Auth
@@ -30,8 +32,10 @@ graph TB
 
     DB[(SQLite / PostgreSQL)]
     IdP[OIDC provider<br/>Keycloak / Okta / Auth0]
+    Client[Third-party client<br/>bearer token / ServiceAccount]
 
     UI -->|HTTP + CSRF token| Routes
+    Client -->|HTTP + Bearer token| Api
     Models --> DB
     Auth -->|optional SSO| IdP
 ```
@@ -126,7 +130,6 @@ app/
 │   │                      # syslog). audit.log is fed by AuditService.log()
 │   ├── notifications/       # email_sender.py (smtplib/email, stdlib) - called
 │   │                      # by NotificationService, no associated route
-│   ├── optimizations/       # eager_load (the only decorator here)
 │   ├── security/            # (empty - no security-specific utility has
 │   │                      # a real caller at the moment)
 │   ├── health.py            # /health, /ready, /version endpoints (k8s probes)
@@ -140,6 +143,49 @@ app/
 └── templates/                # Jinja2, macros/errors.html for error pages,
                               # emails/ for notification templates (HTML + text)
 ```
+
+### Public API v1 (`app/api/`)
+
+A second, independent JSON surface for third-party integrations
+(Zapier, external scripts, reporting tools), separate from both the
+Jinja2-rendered pages and the session-cookie-based internal `/api/*`
+routes under `app/routes/`. Built with **flask-smorest** (marshmallow
+schemas double as OpenAPI generation input), mounted at **`/api/v1/*`**.
+
+```
+app/api/
+├── __init__.py     # init_api(): registers each resource Blueprint
+├── setup.py         # configure_blueprint(): one-time auth-hook wiring,
+│                    # called at import time (see below)
+├── errors.py         # per-status-code error handlers for 401/403/...
+├── rate_limit.py      # service_account_key(): Flask-Limiter keyed by
+│                    # ServiceAccount.id instead of IP
+├── resources/         # one flask-smorest Blueprint + MethodView pair
+│                    # per resource: shifts, oncall, leave, users,
+│                    # shift_types
+└── schemas/           # one marshmallow Schema per resource - response
+                       # serialization AND OpenAPI spec generation
+```
+
+Authenticated by a bearer token tied to a `ServiceAccount`
+(`app/models/service_account.py`), not by `current_user`/Flask-Login -
+`app/auth/service_account_auth.py::resolve_service_account()` reads
+`Authorization: Bearer <token>`, hashes it (SHA-256), and looks it up.
+Admin CRUD for these credentials lives at `/admin/service-accounts`.
+
+**v1 is read-only**: paginated `GET` list and `GET <id>` for
+shifts/oncall/leave/users, list-only for shift-types - reusing the
+same repositories/services as the internal routes, no business logic
+duplicated. Write endpoints are a deliberate omission, not an
+oversight.
+
+`GET /api/v1/openapi.json` is generated automatically from the
+marshmallow schemas on every app start, so - unlike the hand-maintained
+[`api/openapi.yaml`](../api/openapi.yaml) covering the internal
+`/api/*` routes - it structurally cannot drift out of date. No
+interactive Swagger UI/Redoc is served (would need relaxing the CSP
+for a CDN it isn't otherwise allowed to load from) - import the raw
+spec into an external tool instead.
 
 **Frontend** — Tailwind CSS 4 + daisyUI 5, loaded via `cdnjs.cloudflare.com`, zero
 build step (Tailwind runs as `tailwindcss-browser`, the official JIT compiler that
@@ -232,6 +278,27 @@ both flows.
 - **ICS export**: accessible either via an authenticated session or via
   a bearer token (`ics_token`, `secrets.token_urlsafe(32)`) passed as a
   URL parameter — see [`api/API.md`](../api/API.md).
+- **Every JSON/data endpoint in this app requires authentication of
+  some form** - there is no anonymous, unauthenticated surface. The
+  three groups above use three different mechanisms because they serve
+  three different callers, not because some are "secured" and others
+  aren't:
+  - the internal `/api/*` routes (`app/routes/`) are called by this
+    app's own frontend JS (calendar drag & drop, inline edit/delete)
+    and require a logged-in session + CSRF token, exactly like the
+    HTML pages;
+  - `/export/*` additionally accepts the `ics_token` bearer token
+    above, since a calendar client (Google Calendar, Outlook) can't
+    hold a browser session;
+  - `/api/v1/*` (`app/api/`) is for external, non-browser integrations
+    and uses a `ServiceAccount` bearer token instead, since there's no
+    session to attach to.
+
+  A `ServiceAccount` token is not a drop-in replacement for a session:
+  it identifies a service, not a user, and v1 is read-only by design
+  (see "Public API v1" above) - requiring it on the internal routes
+  would mean re-authenticating every browser action against a
+  service-account credential the browser was never issued.
 
 ## Database
 

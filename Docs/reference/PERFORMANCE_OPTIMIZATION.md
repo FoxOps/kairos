@@ -5,31 +5,34 @@ system, no advanced pagination, and no lazy-loading system in this
 application. Caching, if needed, is expected to be handled externally
 (reverse proxy / dedicated cache), not by the app itself.
 
-## Avoiding N+1: `eager_load`
+## Avoiding N+1
 
-The only decorator in `app/utils/optimizations/__init__.py` — loads one
-or more SQLAlchemy relationships in a single query instead of N:
-
-```python
-from app.utils.optimizations import eager_load
-
-@eager_load(Shift, ['user', 'shift_type'])
-def get_shifts():
-    return Shift.query...
-```
-
-Used in `app/routes/dashboard_routes.py` (home page) and in several
-admin routes (`admin_user_routes.py`, `admin_group_routes.py`,
-`admin_shift_type_routes.py`).
-
-The repositories also use SQLAlchemy's `joinedload()` directly without
-going through this decorator — see for example
+There is no decorator-based eager-loading helper — an earlier
+`app/utils/optimizations/eager_load` decorator was removed once it was
+confirmed to be a no-op on its only remaining call site (`index()` in
+`app/routes/dashboard_routes.py` returns a rendered template, and the
+decorator only acted on a returned `Query`/model instance). N+1
+avoidance instead lives directly in the repository layer, via
+SQLAlchemy's `joinedload()` — see for example
 `ShiftRepository.list_paginated()` in
 `app/repositories/shift_repository.py`, which loads `user` and
-`shift_type` in a single query. A dedicated test
-(`tests/integration/test_performance.py`) verifies that the number of
-SQL queries doesn't grow with the number of shifts displayed — see that
-file for the method if you want to verify another route.
+`shift_type` in a single query, or `AuditLogRepository.list_paginated()`
+(`app/repositories/audit_log_repository.py`), which bulk-preloads
+`AuditLog.actor` (a plain `@property`, not a real `db.relationship()`,
+so it can't use `joinedload()` — see `architecture/ERD.md`) since one
+`db.session.get()` per row would otherwise run once per page. A
+dedicated test suite (`tests/integration/test_performance.py`) verifies
+that the number of SQL queries doesn't grow with the size of the
+dataset displayed — see that file for the pattern if you want to verify
+another route.
+
+A related pattern, not about query count but about repeated identical
+queries within a single request: `SettingsService.get_default_timezone()`
+and `app/__init__.py`'s `get_date_format()`/`get_time_format()` cache
+their resolved `Setting` lookup on `flask.g` for the lifetime of the
+request — without it, rendering a page with many shifts/on-calls would
+run one `Setting.get()` per row instead of one per request, since these
+resolvers are called once per displayed item.
 
 ## Database indexes
 

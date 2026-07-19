@@ -34,6 +34,7 @@ erDiagram
         bool is_admin
         int group_id FK
         string ics_token UK "nullable, never serialized"
+        datetime ics_token_created_at "nullable, drives ICS_TOKEN_EXPIRY_DAYS enforcement"
         string timezone "nullable, falls back to Setting.default_timezone"
         string language "nullable String(5), falls back to Setting.default_language"
         string date_format "nullable, falls back to Setting.default_date_format"
@@ -58,7 +59,7 @@ erDiagram
         int id PK
         int requester_id FK "to user.id"
         int target_user_id FK "to user.id"
-        int reviewer_id FK "to user.id, nullable until processed"
+        int reviewed_by_id FK "to user.id, nullable until processed"
         int shift_id FK "to shift.id"
         int target_shift_id FK "to shift.id, nullable (one-way give-away)"
         string status "PENDING/AWAITING_ADMIN/APPROVED/REJECTED/CANCELLED/REVERTED"
@@ -71,9 +72,10 @@ erDiagram
     APP_NOTIFICATION {
         int id PK
         int user_id FK
-        string message
+        string notification_type "e.g. swap_request_created, swap_approved"
+        text message
         string link "nullable, e.g. /admin/swaps"
-        bool is_read "default false"
+        datetime read_at "nullable, null = unread"
         datetime created_at
         datetime updated_at
     }
@@ -213,7 +215,7 @@ erDiagram
   straight back to the corresponding environment variable/default value
   (`SettingsService`).
 - **`SwapRequest`**: the first model in the project with several FKs to
-  the same table (`requester_id`/`target_user_id`/`reviewer_id` → `User`).
+  the same table (`requester_id`/`target_user_id`/`reviewed_by_id` → `User`).
   Deliberately **without** `db.relationship()` (a typing limitation of
   SQLAlchemy 2.0's stubs on relationships not configured with the
   dedicated mypy plugin) — `requester`/`target_user`/`reviewer`/`shift`/`target_shift`

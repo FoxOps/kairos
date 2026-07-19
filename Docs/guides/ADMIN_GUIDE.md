@@ -457,21 +457,16 @@ From the dashboard, you can access:
 
 Kairos offers several levels of automation:
 
-```
-┌─────────────────────────────────────────────────┐
-│                   AUTOMATION                      │
-├─────────────────────────────────────────────────┤
-│  ┌──────────────┐    ┌──────────────┐          │
-│  │   On-Call     │    │    Shifts     │          │
-│  │               │    │              │          │
-│  └──────────────┘    └──────────────┘          │
-│         │                   │                 │
-│         ▼                   ▼                 │
-│  ┌─────────────────────────────────────────┐  │
-│  │             Full Generation               │  │
-│  │   (On-call + Shifts in a single pass)     │  │
-│  └─────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph Automation["AUTOMATION"]
+        OnCall["On-Call"]
+        Shifts["Shifts"]
+        Full["Full Generation<br/>(On-call + Shifts in a single pass)"]
+
+        OnCall --> Full
+        Shifts --> Full
+    end
 ```
 
 ### Configuring Automatic On-Call

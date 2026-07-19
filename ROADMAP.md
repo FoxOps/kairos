@@ -1,6 +1,6 @@
 # Roadmap
 
-**Current version: 1.0.0-rc1** — feature-complete, tested (1300+
+**Current version: 1.0.0-rc1** — feature-complete, tested (1340+
 automated tests), and used for real team scheduling.
 
 ## ✅ Done
@@ -48,6 +48,17 @@ automated tests), and used for real team scheduling.
   triggered from the admin UI
 - Prometheus metrics and Kubernetes health/readiness endpoints
 - Docker image and Kubernetes manifests provided for deployment
+
+## 🔧 In progress
+
+**Production-readiness audit** — a systematic pass over the whole
+codebase ahead of a stable 1.0 release: dependency updates, dead-code
+removal, N+1/SQL query optimization, i18n completeness (French *and*
+English), documentation accuracy (this file included — every doc is
+being re-verified against the actual code, not assumed correct),
+security audit, load testing, and a dedicated bug hunt. Landing as a
+series of themed, individually reviewed pull requests rather than one
+large change. Version stays `1.0.0-rc1` throughout.
 
 ## 🔭 Future ideas
 
