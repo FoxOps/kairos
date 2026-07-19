@@ -396,3 +396,38 @@ class TestNPlusOneQueries:
             f"{len(long_queries)} for {len(oncalls_long)} on-calls - "
             "possible N+1 (broken AvailabilityIndex?)"
         )
+
+    def test_audit_log_repository_preloads_actor(self, test_app, test_group):
+        """AuditLog.actor is a plain @property (see app/models/audit_log.py),
+        not a real relationship - AuditLogRepository.list_paginated()
+        must bulk-preload it (same idea as SwapRequestRepository) or
+        /admin/audit-log's `entry.actor.name` triggers one query per
+        distinct actor on the page."""
+        from app.repositories.audit_log_repository import AuditLogRepository
+
+        users = []
+        for i in range(10):
+            user = User(
+                name=f"Audit Actor {i}",
+                email=f"audit-actor-{i}@test.com",
+                group_id=test_group.id,
+            )
+            user.set_password("pw")
+            db.session.add(user)
+            users.append(user)
+        db.session.flush()
+
+        for user in users:
+            AuditLogRepository.create(actor_id=user.id, action="shift.create")
+        db.session.commit()
+
+        db.session.expire_all()
+        with count_queries() as queries:
+            page = AuditLogRepository.list_paginated(page=1, per_page=50)
+            for entry in page.items:
+                _ = entry.actor.name
+
+        assert len(queries) <= 3, (
+            f"{len(queries)} queries to list 10 audit log entries with "
+            "distinct actors - actor preload doesn't seem to be working"
+        )
