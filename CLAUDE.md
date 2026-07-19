@@ -678,16 +678,18 @@ Schema migrations are handled by Alembic (`migrations/`, via Flask-Migrate). `ru
 calls `flask_migrate.upgrade()` unconditionally on every start (both the plain `python run.py` path
 and `docker/entrypoint.sh` → `docker/init_database.py`, which now delegates to `setup_database()`
 instead of calling `db.create_all()` directly) — safe to run every time: on a fully up-to-date
-database it's a no-op. On a database predating Alembic's adoption (tables already created by the old
-`db.create_all()`-only path, no `alembic_version` table yet), `setup_database()` first runs
-`db.create_all()` once more to backfill anything still missing (idempotent), then stamps the
-baseline revision (`run.py::BASELINE_REVISION`, matching `migrations/versions/da2c4dfc1024_*.py`)
-so `upgrade()` only applies what comes after it — no manual `alembic stamp`/`upgrade` step required
-on deploy, on a fresh install or an existing one. `check_database_integrity()` in `run.py` remains a
-separate, simpler table-existence check (used by tests), no longer part of the startup path.
-`TestingConfig` bypasses migrations entirely — `tests/conftest.py`'s `test_app` fixture calls
-`db.drop_all()`/`db.create_all()` directly for speed, since tests don't need to exercise the upgrade
-path itself.
+database it's a no-op, and on a brand-new one every migration applies in order, Alembic creating its
+own `alembic_version` table along the way. A previous version of this function also had a fallback
+path for a database predating Alembic's adoption (tables already created by the old
+`db.create_all()`-only setup, no `alembic_version` table) — removed once no such deployment remained
+(every real database, including the future production one, was confirmed to already be on Alembic).
+Some individual migrations still guard their own `ADD COLUMN` with an `inspector.get_columns()` check
+(e.g. `8b6f0e5b1c7a_add_user_timezone_column.py`) — a leftover from that now-removed path, harmless
+dead code on an already-Alembic-tracked database, left as-is in already-shipped migration files rather
+than edited after the fact. `check_database_integrity()` in `run.py` remains a separate, simpler
+table-existence check (used by tests), no longer part of the startup path. `TestingConfig` bypasses
+migrations entirely — `tests/conftest.py`'s `test_app` fixture calls `db.drop_all()`/`db.create_all()`
+directly for speed, since tests don't need to exercise the upgrade path itself.
 
 ### Multi-timezone support
 
