@@ -38,7 +38,7 @@
 ### 1.2 Required Software
 | Software | Minimum Version | Description |
 |----------|------------------|-------------|
-| Python | 3.11+ | Programming language (the codebase uses PEP 604 `X \| None` type hints, which require at least Python 3.10; `docker/Dockerfile` and `.gitlab-ci/.gitlab-ci.yml` both use 3.11, the only version this app is actually built/tested against) |
+| Python | 3.11+ | Programming language (the codebase uses PEP 604 `X \| None` type hints, which require at least Python 3.10; `docker/Dockerfile` and `.github/workflows/ci.yml` both use 3.11, the only version this app is actually built/tested against) |
 | pip | 26.1.2+ | Python package manager (`requirements.txt` pins `pip>=26.1.2` for CVE fixes) |
 | Git | 2.20+ | Version control |
 | PostgreSQL | 12+ | Database (recommended) |

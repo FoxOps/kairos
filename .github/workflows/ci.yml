@@ -1,0 +1,96 @@
+name: CI
+
+# Deliberately not triggered on every push/PR: GitHub Actions minutes are
+# metered and billed on a private repository past the free monthly quota,
+# so this only runs at moments that actually need a full verification -
+# right before a release is published (tag push), once a week (catches
+# dependencies that turn vulnerable without any code change), or on
+# demand. See workflow_dispatch below to run it manually from the
+# Actions tab.
+on:
+  push:
+    tags:
+      - "v*"
+  schedule:
+    - cron: "0 3 * * 1" # every Monday, 03:00 UTC
+  workflow_dispatch: {}
+
+env:
+  DATABASE_URL: "sqlite:///:memory:"
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+      - run: pip install -r requirements.txt
+      - run: pip install -r docker/requirements.txt
+      - run: pytest tests/ -v --tb=short --junitxml=junit.xml --cov=app --cov-report=term-missing
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: junit-results
+          path: junit.xml
+
+  # New/not yet proven stable in CI - reports its results without blocking
+  # the workflow. Remove continue-on-error once confirmed stable across a
+  # few runs (same rationale the previous GitLab job had for
+  # allow_failure: true).
+  e2e:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    container:
+      image: mcr.microsoft.com/playwright/python:v1.61.0-jammy
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -r requirements.txt
+      - run: pip install -r requirements-e2e.txt
+      - run: pytest tests/e2e/test_browser_flows.py -v --tb=short --junitxml=junit-e2e.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: junit-e2e-results
+          path: junit-e2e.xml
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+      - run: pip install -r requirements.txt
+      - run: pip install -r docker/requirements.txt
+      - run: ruff check . --config=.ruff.toml
+      - run: mypy app/ tests/ --ignore-missing-imports --allow-untyped-decorators
+      - run: black --check . --exclude=".git|__pycache__|instance|venv"
+
+  # bandit and pip-audit both run without a continue-on-error: neither
+  # needs an external service/auth (pip-audit queries PyPI/OSV
+  # anonymously), so a real finding fails the workflow like any other
+  # check.
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+      - run: pip install -r requirements.txt
+      - run: pip install -r docker/requirements.txt
+      - run: bandit -r app/ -f json -o bandit-report.json
+      - run: pip-audit -r requirements.txt -f json -o pip-audit-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            pip-audit-report.json

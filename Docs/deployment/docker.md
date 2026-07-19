@@ -13,12 +13,9 @@
 ## 🚀 Quick start (recommended method)
 
 The image is meant to be pulled from a self-hosted Harbor registry
-(`harbor.leviia.com`). **Note**: as of this writing,
-`.gitlab-ci/.gitlab-ci.yml` has no job that builds/pushes this image -
-its `build` stage only runs `build_docs` (publishes `Docs/` as a
-GitLab Pages artifact) - and this repo is hosted on GitHub with no
-equivalent GitHub Actions workflow either (see `ROADMAP.md`), so no CI
-pipeline actually runs against it today. Until that automation exists,
+(`harbor.leviia.com`). **Note**: as of this writing, the CI workflow
+(`.github/workflows/ci.yml`) runs tests/lint/security but has no job
+that builds/pushes this image anywhere. Until that automation exists,
 someone has to build and push the image to Harbor manually (e.g.
 `docker build -f docker/Dockerfile -t
 harbor.leviia.com/<HARBOR_PROJECT>/kairos:latest .` from the repo
