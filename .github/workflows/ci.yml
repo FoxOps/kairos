@@ -23,15 +23,15 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
       - run: pip install -r requirements.txt
       - run: pip install -r docker/requirements.txt
       - run: pytest tests/ -v --tb=short --junitxml=junit.xml --cov=app --cov-report=term-missing
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: junit-results
@@ -47,11 +47,11 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright/python:v1.61.0-jammy
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: pip install -r requirements.txt
       - run: pip install -r requirements-e2e.txt
       - run: pytest tests/e2e/test_browser_flows.py -v --tb=short --junitxml=junit-e2e.xml
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: junit-e2e-results
@@ -60,8 +60,8 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
@@ -78,8 +78,8 @@ jobs:
   security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
@@ -87,7 +87,7 @@ jobs:
       - run: pip install -r docker/requirements.txt
       - run: bandit -r app/ -f json -o bandit-report.json
       - run: pip-audit -r requirements.txt -f json -o pip-audit-report.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: security-reports
