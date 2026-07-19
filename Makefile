@@ -55,11 +55,11 @@ format-fix: ## Applique le formatage avec Black
 	black . --exclude=".git|__pycache__|instance|venv"
 	@echo "$(GREEN)✓ Formatage appliqué$(NC)"
 
-security: ## Exécute Bandit et Safety pour vérifier les vulnérabilités
+security: ## Exécute Bandit et pip-audit pour vérifier les vulnérabilités
 	@echo "$(YELLOW)Analyse de sécurité avec Bandit...$(NC)"
 	bandit -r app/ tests/ -f json -o bandit-results.json || true
-	@echo "$(YELLOW)Analyse de sécurité avec Safety...$(NC)"
-	safety scan --full-report || true
+	@echo "$(YELLOW)Analyse des dépendances avec pip-audit...$(NC)"
+	pip-audit -r requirements.txt || true
 	@echo "$(GREEN)✓ Analyse de sécurité terminée$(NC)"
 
 all: test lint format security ## Exécute tous les tests, linting, formatage et analyses de sécurité

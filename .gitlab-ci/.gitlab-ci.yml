@@ -98,37 +98,27 @@ run_linting:
 # seul si besoin. Pas configurable depuis ce fichier YAML (propriété du
 # projet GitLab, pas du repo).
 #
-# bandit is blocking (no `|| true`): it needs no external service/auth,
-# so a real finding must fail the pipeline like any other check. safety
-# is a deliberate exception: `safety check` (the old command this job
-# used to run) has been fully unsupported since May 2024, and its
-# replacement, `safety scan`, requires either an interactive `safety
-# auth login` or a $SAFETY_API_KEY (https://platform.safetycli.com) -
-# neither is available in a fresh clone of this repo's CI. Confirmed by
-# direct testing: `safety scan` with no key blocks on stdin waiting for
-# a login prompt, which would hang every pipeline indefinitely rather
-# than just report findings. The job below only runs it when
-# $SAFETY_API_KEY is configured (CI/CD > Variables) and fails the
-# pipeline on findings in that case; otherwise it skips with an explicit
-# message instead of silently swallowing a broken command.
+# bandit et pip-audit tournent tous les deux sans `|| true` : aucun des
+# deux n'a besoin de service externe ni d'authentification (pip-audit
+# interroge PyPI/OSV en anonyme), donc une vraie faille fait échouer le
+# pipeline comme n'importe quelle autre vérification. pip-audit remplace
+# ici `safety scan`, qui exigeait un $SAFETY_API_KEY (platform.safetycli.com)
+# absent d'un clone fraîchement cloné de ce repo et bloquait le pipeline en
+# attendant un login interactif sans cette clé - incompatible avec une CI
+# publique.
 run_security:
   extends: .python-template
   stage: security
   script:
     - echo "Running bandit..."
     - bandit -r app/ -f json -o bandit-report.json
-    - |
-      if [ -n "$SAFETY_API_KEY" ]; then
-        echo "Running safety..."
-        safety scan --output json --save-as json safety-report.json
-      else
-        echo "SAFETY_API_KEY non configurée (CI/CD > Variables) - scan safety ignoré. Voir le commentaire de ce job."
-      fi
+    - echo "Running pip-audit..."
+    - pip-audit -r requirements.txt -f json -o pip-audit-report.json
   artifacts:
     when: always
     paths:
       - bandit-report.json
-      - safety-report.json
+      - pip-audit-report.json
 
 # Job: Documentation
 build_docs:
