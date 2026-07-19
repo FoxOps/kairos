@@ -38,8 +38,8 @@ pytest_plugins = [
 def _compile_babel_catalogs():
     """
     Compiles app/translations/*/LC_MESSAGES/*.po into .mo before any test
-    runs. The .mo files are build artifacts (gitignored, see "Multi-language
-    support" in CLAUDE.md) - without this, a fresh checkout has no en.mo,
+    runs. The .mo files are build artifacts (gitignored) - without this,
+    a fresh checkout has no en.mo,
     so gettext silently falls back to the French msgid even when a test
     sets default_language="en", masking real translation bugs (extraction
     done but msgstr never filled, or catalog never compiled) instead of

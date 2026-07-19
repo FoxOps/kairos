@@ -4,8 +4,7 @@ Apprise external notification service for Kairos.
 Sends outbound notifications to admin-configured external destinations
 (Slack, Discord, Telegram, generic webhooks...) via the Apprise library.
 Not to be confused with NotificationService (weekly reminder emails,
-cron-only) or AppNotificationService (in-app bell icon) - see CLAUDE.md
-"External notifications (Apprise)".
+cron-only) or AppNotificationService (in-app bell icon).
 """
 
 import apprise

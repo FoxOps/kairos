@@ -43,7 +43,8 @@ FALLBACK_DEFAULT_TIMEZONE = "Europe/Paris"
 # configurable concept before this Setting existed. This hardcoded "fr"
 # is also load-bearing for test stability: it's what keeps every
 # existing test's assertions on French response text passing unchanged
-# (see app/__init__.py::get_locale() and CLAUDE.md's i18n section).
+# (see app/__init__.py::get_locale(), which falls back here whenever no
+# per-request locale can be resolved).
 FALLBACK_DEFAULT_LANGUAGE = "fr"
 SUPPORTED_LANGUAGES = ("fr", "en")
 

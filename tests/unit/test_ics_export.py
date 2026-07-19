@@ -297,8 +297,7 @@ class TestICSTimezoneCorrectness:
         """The tz_name always reflects the organization's canonical
         timezone (SettingsService.get_default_timezone()) - never a
         viewer's personal preference, since attaching the wrong tzinfo
-        would relabel the instant instead of translating it (see
-        CLAUDE.md's "Multi-timezone support" section)."""
+        would relabel the instant instead of translating it."""
         with test_app.app_context():
             shift_date = datetime(2023, 12, 1).date()
             start_time = datetime.combine(shift_date, datetime.min.time()).replace(

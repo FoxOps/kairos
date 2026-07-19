@@ -6,8 +6,7 @@ when no config_object is passed - see app/__init__.py). TestingConfig is
 used explicitly by the test suite. ProductionConfig/DevelopmentConfig were
 removed as dead code: nothing in this repo ever passed them to create_app()
 (FLASK_ENV only selects gunicorn vs the Flask dev server in
-docker/entrypoint.sh, it never selects a config class) - see CLAUDE.md
-"Configuration: two parallel systems".
+docker/entrypoint.sh, it never selects a config class).
 """
 
 from app.config.base import Config

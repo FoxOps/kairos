@@ -4,9 +4,11 @@ AuditService for Kairos.
 Single write path for the audit trail (app/models/audit_log.py) - every
 business-relevant mutation and auth event goes through
 AuditService.log(), which writes to both the AuditLog table (consultable
-at /admin/audit-log) and logs/audit.log (defense in depth, see
-CLAUDE.md's "Audit trail" section for the full architecture and the
-naming convention for `action` values).
+at /admin/audit-log) and logs/audit.log (defense in depth: a bug here
+must never break the business action it's recording, so failures are
+caught and logged, never raised). `action` values are namespaced
+"<domain>.<verb>" strings, e.g. shift.create, swap.approve,
+auth.login_failure.
 """
 
 import logging

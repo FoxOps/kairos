@@ -4,7 +4,7 @@ Bearer-token authentication for the public API (app/api/, /api/v1/*).
 Not to be confused with app/auth/decorators.py (session-cookie based,
 HTML redirects on failure) - this module never touches Flask-Login or
 current_user, and always fails with a JSON body, matching the public
-API's contract. See CLAUDE.md's "API publique (flask-smorest)" section.
+API's contract.
 """
 
 from flask import g, request

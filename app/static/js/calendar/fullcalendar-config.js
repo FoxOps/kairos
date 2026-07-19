@@ -140,8 +140,8 @@ document.addEventListener('DOMContentLoaded', function () {
         // FullCalendar to display those digits literally instead of
         // reinterpreting them against the browser's own system clock,
         // which would double-convert. No moment-timezone/luxon plugin
-        // needed (this app is CDN-only, see CLAUDE.md's Frontend
-        // section) - the server does all the real zoneinfo conversion.
+        // needed (this app has no build step, CSS/JS loaded via CDN
+        // only) - the server does all the real zoneinfo conversion.
         // Every other Date getter/constructor in this file must stay
         // consistent with this (UTC getters, no `new Date(str)` on a
         // timezone-less string) - see formatDateForInput and the

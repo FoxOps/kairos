@@ -1,7 +1,6 @@
 """
 Tests for the application configuration (app/config/base.py::Config - the
-class actually loaded by create_app() in every real deployment, see
-CLAUDE.md "Configuration: two parallel systems").
+class actually loaded by create_app() in every real deployment).
 """
 
 

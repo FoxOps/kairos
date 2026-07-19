@@ -4,9 +4,9 @@ AuditLog model for Kairos.
 Append-only record of "who did what, when, to which resource" across
 the app (user/group/shift/oncall/leave/shift_type/swap CRUD, settings
 changes, auth events) - see AuditService (app/services/audit_service.py)
-for the single write path and CLAUDE.md's "Audit trail" section for the
-full architecture. Not to be confused with NotificationLog (email
-send-dedup only) or AppNotification (in-app bell icon, swap-only scope).
+for the single write path. Not to be confused with NotificationLog
+(email send-dedup only) or AppNotification (in-app bell icon,
+swap-only scope).
 """
 
 from typing import TYPE_CHECKING, cast
@@ -30,15 +30,14 @@ class AuditLog(BaseModel):
             non-authenticated/system caller, but the column stays
             nullable as the safe default (same as User.timezone/language).
         action: Namespaced "<domain>.<verb>" string, e.g. "shift.create",
-            "swap.approve", "auth.login_failure" - see CLAUDE.md for the
-            full naming convention and the list of values in use.
+            "swap.approve", "auth.login_failure".
         resource_type: Model class name the action applies to (e.g.
             "Shift", "User", "Setting"), or None for actions with no
             single target resource (e.g. auth.login_failure).
         resource_id: Primary key of the affected row, or None.
         details: Short human-readable summary (e.g. "Jean Dupont
             <jean@example.com>") - deliberately not a structured
-            field-by-field before/after diff, see CLAUDE.md.
+            field-by-field before/after diff.
         ip_address: Request IP at the time of the action (IPv6-safe
             length), mainly useful for auth.* entries.
     """

@@ -1,7 +1,6 @@
 """
 Tests for app/__init__.py::get_locale() locale resolution, and <html
-lang="..."> reflecting it. See CLAUDE.md's Multi-language support
-section for the full architecture.
+lang="..."> reflecting it.
 """
 
 from app import db

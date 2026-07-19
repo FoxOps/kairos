@@ -5,10 +5,10 @@ SettingsService.get_notifications_enabled() (DB override, falls back to
 the NOTIFICATIONS_ENABLED env var) is checked alongside SMTP
 completeness, inside the scripts' own app.app_context().
 
-Deliberately narrow (per CLAUDE.md's testing conventions for these cron
-entry points, which have no existing test layer beyond config parsing):
-only the "disabled -> short-circuits, service never called" path is
-covered here - it needs no real DB access, unlike the full-send path.
+Deliberately narrow: these cron entry points have no existing test
+layer beyond config parsing, so only the "disabled -> short-circuits,
+service never called" path is covered here - it needs no real DB
+access, unlike the full-send path.
 """
 
 from unittest.mock import patch

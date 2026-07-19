@@ -17,9 +17,8 @@
  * format the input's *original* type expects (ISO "YYYY-MM-DD" for
  * `date`, "YYYY-MM-DDTHH:MM" for `datetime-local`) - the same contract
  * Flask's forms and `date_str=...`/`datetime-local` value parsing
- * already rely on (see CLAUDE.md's "Date/time display format"
- * section), so no template or backend change is needed: this only
- * replaces the picker UI, never the value format.
+ * already rely on, so no template or backend change is needed: this
+ * only replaces the picker UI, never the value format.
  *
  * The CDN build must be the real ES module (`index.mjs`) - the
  * "index.min.js" jsDelivr resolves by default for this package is a
@@ -47,9 +46,8 @@ function nativeType(input) {
 
 function currentLocale() {
     // <html lang="{{ get_locale() }}"> - see base.html/app/__init__.py's
-    // get_locale(). Only "fr"/"en" are supported catalogs (see
-    // CLAUDE.md's "Multi-language support"); Vanilla Calendar Pro
-    // resolves both natively via Intl.
+    // get_locale(). Only "fr"/"en" are supported catalogs; Vanilla
+    // Calendar Pro resolves both natively via Intl.
     return document.documentElement.lang === 'en' ? 'en' : 'fr';
 }
 
@@ -155,7 +153,7 @@ function buildOptions(input) {
         // against a future default change.
         themeAttrDetect: 'html[data-theme]',
         locale: currentLocale(),
-        firstWeekday: 1, // Monday - matches the app's Monday-anchored week (see CLAUDE.md)
+        firstWeekday: 1, // Monday - matches the app's Monday-anchored week (shift schedule, rotation order)
         selectionTimeMode: nativeType(input) === 'datetime-local' ? 24 : false,
         selectedDates,
         selectedTime,

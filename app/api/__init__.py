@@ -8,8 +8,6 @@ cookie, and always returns JSON (see app/api/errors.py for why that
 needs an explicit per-blueprint error handler). URL prefix is
 /api/v1/*, deliberately distinct from the internal /api/* routes
 (app/routes/shift_routes.py etc., cookie-based) to avoid any collision.
-See CLAUDE.md's "API publique (flask-smorest)" section for the full
-picture.
 
 OPENAPI_SWAGGER_UI_PATH/OPENAPI_REDOC_PATH/OPENAPI_RAPIDOC_PATH are
 deliberately left unset: flask-smorest's default UIs pull their JS/CSS

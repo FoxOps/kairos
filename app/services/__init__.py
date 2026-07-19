@@ -29,14 +29,13 @@ Services:
   notifications toggle, backup retention, ICS token expiry. DB row wins
   when present, falls back live to app.config/env otherwise.
 - audit_service: Single write path for the audit trail (AuditLog model +
-  logs/audit.log dual-write) - see CLAUDE.md's "Audit trail" section.
+  logs/audit.log dual-write), namespaced "<domain>.<verb>" action strings.
 - apprise_notification_service: Outbound notifications to external
   services (Slack/Discord/Telegram/webhooks) via Apprise - not to be
   confused with notification_service (emails) or app_notification_service
-  (bell icon) - see CLAUDE.md's "External notifications (Apprise)" section.
+  (bell icon).
 - service_account_service: Admin-managed bearer credentials for the
-  public REST API (app/api/) - creation/revocation/secret regeneration,
-  see CLAUDE.md's "API publique (flask-smorest)" section.
+  public REST API (app/api/) - creation/revocation/secret regeneration.
 """
 
 from app.services.app_notification_service import AppNotificationService

@@ -5,7 +5,7 @@ base.html's flash block already prepends a Font Awesome icon based on
 the flash category (success/danger/warning/info) - a message text that
 also starts with an emoji (✅/❌/⚠️/etc.) renders two icons side by side.
 Font Awesome is this project's only icon convention; emoji are never
-used alongside or instead of it (see CLAUDE.md's Frontend section).
+used alongside or instead of it.
 
 Scans source rather than rendering routes: cheaper, and catches the bug
 at the only place it can be introduced (a flash() call embedding an
