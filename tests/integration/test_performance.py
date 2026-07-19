@@ -162,6 +162,34 @@ class TestNPlusOneQueries:
             "possible N+1 (broken joinedload?)"
         )
 
+    def test_calendar_api_query_count_stable_across_dataset_size(
+        self, test_app, test_group, logged_in_client
+    ):
+        """Regression guard: ScheduleService.build_calendar_events()
+        calls to_viewer_timezone() twice per shift/on-call (start+end),
+        which used to re-resolve SettingsService.get_default_timezone()
+        via an uncached Setting.get() on every single call - a real N+1
+        on the calendar's own hot path (/, /api/shifts). Fixed by
+        caching the resolved timezone on flask.g for the request (see
+        SettingsService.get_default_timezone())."""
+        with logged_in_client.application.app_context():
+            _seed_shifts(test_group, 5)
+        with count_queries() as small_queries:
+            resp_small = logged_in_client.get("/api/shifts")
+        assert resp_small.status_code == 200
+
+        with logged_in_client.application.app_context():
+            _seed_shifts(test_group, 25, offset=200)
+        with count_queries() as big_queries:
+            resp_big = logged_in_client.get("/api/shifts")
+        assert resp_big.status_code == 200
+
+        assert len(big_queries) <= len(small_queries) + 5, (
+            f"{len(small_queries)} queries for 5 shifts, "
+            f"{len(big_queries)} for 25 additional shifts - "
+            "possible N+1 (timezone resolution not cached?)"
+        )
+
     def test_shift_repository_list_paginated_uses_eager_load(
         self, test_app, test_group
     ):
