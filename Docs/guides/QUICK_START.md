@@ -15,7 +15,7 @@ mkdir kairos && cd kairos
 curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/docker-compose.example.yml
 curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/.env.example
 
-nano .env  # KAIROS_IMAGE=harbor.leviia.com/<HARBOR_PROJECT>/kairos:latest, SECRET_KEY, DEFAULT_ADMIN_PASSWORD
+nano .env  # KAIROS_IMAGE=ghcr.io/foxops/kairos:latest, SECRET_KEY, DEFAULT_ADMIN_PASSWORD
 
 docker compose up -d
 ```

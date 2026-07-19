@@ -17,7 +17,7 @@
 
 services:
   kairos:
-    image: ${KAIROS_IMAGE:-harbor.leviia.com/<HARBOR_PROJECT>/kairos:latest}
+    image: ${KAIROS_IMAGE:-ghcr.io/foxops/kairos:latest}
     container_name: kairos
     ports:
       - "5000:5000"
