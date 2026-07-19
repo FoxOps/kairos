@@ -27,7 +27,6 @@ import {
     confirmActionAccessible,
     initConfirmDeleteActions,
 } from './utils/accessibility.js';
-import { showNotification, confirmAction } from './notifications/toast.js';
 import { initFlashMessages } from './notifications/flash-messages.js';
 import {
     copyToken,
@@ -59,8 +58,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // Export functions for the templates (inline onclick, FullCalendar callbacks)
 window.Kairos = {
     ThemeManager,
-    showNotification,
-    confirmAction,
     confirmActionAccessible,
     toggleVisibility,
     showElement,
