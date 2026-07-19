@@ -18,10 +18,10 @@ from app.repositories.user_repository import UserRepository
 from app.routes.admin import admin_bp
 from app.services import SettingsService
 
-# Domain prefixes in use across AuditService.log() call sites - see
-# CLAUDE.md's "Audit trail" section for the full "<domain>.<verb>" naming
-# convention. Kept here as a plain list (not derived at runtime) since
-# it only drives the filter dropdown, not validation.
+# Domain prefixes in use across AuditService.log() call sites
+# ("<domain>.<verb>" action strings, e.g. "shift.create"). Kept here as
+# a plain list (not derived at runtime) since it only drives the filter
+# dropdown, not validation.
 ACTION_DOMAINS = [
     "auth",
     "group",

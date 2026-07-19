@@ -109,8 +109,7 @@ class TestBuildCalendarEventsTimezoneConversion:
     be translated to the viewer's own effective_timezone before being
     serialized - this is what makes the /profile/update timezone
     preference actually visible in the calendar (not just in ICS
-    exports, which always stay in the org's canonical timezone - see
-    CLAUDE.md's "Multi-timezone support" section)."""
+    exports, which always stay in the org's canonical timezone)."""
 
     def test_shift_translated_to_viewer_timezone(
         self, test_app, test_user, test_shift_type

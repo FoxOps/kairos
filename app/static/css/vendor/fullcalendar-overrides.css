@@ -1,8 +1,9 @@
 /* ============================================
    FULLCALENDAR OVERRIDES (light / default theme)
    ============================================
-   FullCalendar is loaded from a CDN (see CLAUDE.md's Frontend section)
-   and has no separate CSS file - its style is bundled into its JS. This
+   FullCalendar is loaded from cdn.jsdelivr.net (kept at 6.1.21, not
+   cdnjs like the rest of this app's CDN assets) and has no separate
+   CSS file - its style is bundled into its JS. This
    file holds only OUR overrides to fit it into the app. Dark-theme-
    specific overrides live in themes/dark.css. Hex fallbacks = Alucard
    (light theme) values from the Dracula/Alucard palette - purely

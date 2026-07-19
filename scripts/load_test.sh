@@ -4,7 +4,7 @@
 # ============================================================================
 #
 # Wrapper autour de wrk (préféré) ou hey - pas de dépendance Python
-# supplémentaire (voir CLAUDE.md, philosophie "peu de dépendances").
+# supplémentaire, ces deux outils sont des binaires autonomes.
 #
 # Prérequis : une instance de l'app déjà lancée (python run.py, ou
 # docker compose up) et accessible à l'URL cible, avec un compte de test

@@ -1,8 +1,7 @@
 """
 Tests for the auto-generated OpenAPI spec (app/api/, flask-smorest) -
 the public API's documentation, distinct from the hand-maintained
-Docs/api/openapi.yaml (internal /api/* routes, session cookie). See
-CLAUDE.md's "API publique (flask-smorest)" section.
+Docs/api/openapi.yaml (internal /api/* routes, session cookie).
 """
 
 

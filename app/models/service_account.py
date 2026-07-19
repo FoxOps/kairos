@@ -4,9 +4,7 @@ ServiceAccount model for Kairos.
 Admin-generated bearer credentials for third-party integrations
 consuming the public API (app/api/, /api/v1/*) - never a human login,
 no session cookie/Flask-Login involved. See
-app/auth/service_account_auth.py for the auth mechanism and
-CLAUDE.md's "API publique (flask-smorest)" section for the full
-architecture.
+app/auth/service_account_auth.py for the auth mechanism.
 """
 
 import hashlib
@@ -35,7 +33,7 @@ class ServiceAccount(BaseModel):
             by design against low-entropy human passwords): this token
             has 256 bits of entropy from secrets.token_urlsafe(32), so a
             fast deterministic hash is the correct trade-off for a
-            credential checked on every API call - see CLAUDE.md.
+            credential checked on every API call.
         is_active: Revocation switch, independent of expires_at.
         expires_at: Optional hard expiry (nullable = never expires).
         last_used_at: Best-effort last-auth timestamp for the admin UI

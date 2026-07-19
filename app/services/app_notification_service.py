@@ -184,8 +184,9 @@ class AppNotificationService:
         leaves them unassigned rather than assigning someone in
         violation of the legal constraint. Manual admin assignment is
         needed. Call only after the triggering generation's own commit
-        has actually succeeded (same rule as every other call site in
-        this app - see CLAUDE.md "In-app notifications")."""
+        has actually succeeded - a notification that fires ahead of a
+        failed/rolled-back action would be wrong, same rule as every
+        other call site in this app."""
         if not dates:
             return
         dates_str = ", ".join(d.strftime("%d/%m/%Y") for d in dates)

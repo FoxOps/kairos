@@ -23,8 +23,9 @@ def generate_ics_standard(events, calendar_name="Kairos", tz_name="Europe/Paris"
             interpreted in - always the organization's canonical timezone
             (SettingsService.get_default_timezone()), never a viewer's
             personal preference: attaching the wrong tzinfo would relabel
-            the instant instead of translating it. See CLAUDE.md's
-            "Multi-timezone support" section.
+            the instant instead of translating it - translation to the
+            viewer's own timezone is the receiving calendar client's
+            job, standard RFC 5545 behavior, not this exporter's.
 
     Returns:
         str: Content of the ICS file.

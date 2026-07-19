@@ -99,8 +99,8 @@ def get_json_from_env(env_var: str, default: Any | None = None) -> Any:
 # for that dialect: MySQLdb (mysqlclient) for mysql/mariadb, psycopg2 for
 # postgres/postgresql. Neither is installed in this project on purpose -
 # requirements.txt ships PyMySQL and psycopg[binary] (psycopg 3) instead,
-# specifically because they don't require compiled system libraries (see
-# CLAUDE.md "Configuration: two parallel systems"). Left unrewritten, a
+# specifically because they don't require compiled system libraries,
+# either at install time or at runtime. Left unrewritten, a
 # bare DATABASE_URL=mysql://... or postgresql://... fails at engine
 # creation with ModuleNotFoundError even though a perfectly good driver
 # IS installed - confirmed by direct testing (create_engine() against

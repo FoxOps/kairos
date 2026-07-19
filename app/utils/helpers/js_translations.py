@@ -3,8 +3,7 @@ Server-side translations for the handful of user-facing strings that
 are hardcoded directly in JS files (aria-labels, confirm() dialogs) -
 most JS-adjacent user-facing text (onclick="confirm('...')" attributes)
 lives directly in Jinja templates instead and is translated there via
-the normal {{ _('...') }} mechanism, see CLAUDE.md's Multi-language
-support section.
+the normal {{ _('...') }} mechanism.
 
 Injected into every page via base.html's #i18n-strings JSON script tag
 (app/__init__.py::inject_js_translations) and read at runtime by

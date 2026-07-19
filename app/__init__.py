@@ -386,8 +386,7 @@ def create_app(config_object: str | None = None):
     app.register_blueprint(export_bp)
 
     # Public REST API (flask-smorest, bearer-token/ServiceAccount auth,
-    # /api/v1/*) - see app/api/ and CLAUDE.md's "API publique
-    # (flask-smorest)" section. CSRF-exempt: this blueprint never
+    # /api/v1/*, see app/api/). CSRF-exempt: this blueprint never
     # accepts cookie-based auth, so the usual CSRF risk (a browser
     # silently attaching a valid session cookie to a cross-site
     # request) doesn't apply here.
@@ -509,8 +508,8 @@ def create_app(config_object: str | None = None):
 
     app.jinja_env.filters["date_fr"] = format_date_fr
     # Viewer/org-configurable date & time display format (see
-    # get_date_format()/get_time_format() above and "Multi-language
-    # support" in CLAUDE.md for the equivalent per-user Setting pattern).
+    # get_date_format()/get_time_format() above - same org-default +
+    # personal-override Setting pattern as the locale resolution below).
     app.jinja_env.filters["format_date"] = format_date
     app.jinja_env.filters["format_time"] = format_time
     app.jinja_env.filters["format_datetime"] = format_datetime
