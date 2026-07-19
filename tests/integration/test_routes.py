@@ -3,7 +3,7 @@ Tests for the Flask routes.
 """
 
 from app import db
-from app.models import AuditLog, Group, Leave, OnCall, Shift, ShiftType, User
+from app.models import AuditLog, Leave, OnCall, Shift, ShiftType
 
 
 class TestRolePermissions:
@@ -440,54 +440,15 @@ class TestLeaveRoutes:
 
 
 class TestAdminRoutes:
-    """Tests for the admin routes."""
+    """Tests for the admin routes.
 
-    def test_admin_dashboard(self, logged_in_client):
-        """Test accessing the admin dashboard."""
-        response = logged_in_client.get("/admin")
-        assert response.status_code == 200
-        assert b"Dashboard" in response.data or b"admin" in response.data.lower()
-
-    def test_admin_dashboard_unauthorized(self, logged_in_client):
-        """Test that a regular user can't access the admin dashboard."""
-        response = logged_in_client.get("/admin", follow_redirects=True)
-        assert response.status_code == 200
-        # The user is redirected
-        assert b"Kairos" in response.data or b"Schedule" in response.data
-
-    def test_list_groups(self, logged_in_client):
-        """Test rendering the group list."""
-        response = logged_in_client.get("/admin/groups")
-        assert response.status_code == 200
-        assert (
-            b"Gestion des groupes" in response.data
-            or b"groups" in response.data.lower()
-        )
-
-    def test_add_group_post_valid(self, logged_in_client):
-        """Test adding a valid group."""
-        data = {
-            "name": "Nouveau Groupe",
-            "is_part_of_schedule": "on",
-            "is_part_of_oncall": "on",
-        }
-        response = logged_in_client.post(
-            "/admin/groups/add", data=data, follow_redirects=True
-        )
-        assert response.status_code == 200
-        assert b"Groupe ajoute" in response.data or b"succes" in response.data
-
-        group = Group.query.filter_by(name="Nouveau Groupe").first()
-        assert group is not None
-
-    def test_add_group_post_invalid(self, logged_in_client):
-        """Test adding a group without a name."""
-        data = {"name": "", "is_part_of_schedule": "on", "is_part_of_oncall": "on"}
-        response = logged_in_client.post(
-            "/admin/groups/add", data=data, follow_redirects=True
-        )
-        assert response.status_code == 200
-        assert b"Le nom du groupe est obligatoire" in response.data
+    The dashboard/list/add-group/add-user/add-shift-type happy-path and
+    validation cases are covered more precisely by
+    test_admin_lists.py (exact-count/exact-field assertions instead of
+    this file's loose `or`-chained substring checks) - only the
+    delete-related cases below, which test_admin_lists.py doesn't
+    cover, remain here.
+    """
 
     def test_delete_group_post(self, logged_in_client, test_group):
         """Test deleting a group."""
@@ -514,40 +475,6 @@ class TestAdminRoutes:
             or b"groups" in response.data.lower()
             or b"Impossible" in response.data
         )
-
-    def test_list_users(self, logged_in_client):
-        """Test rendering the user list."""
-        response = logged_in_client.get("/admin/users")
-        assert response.status_code == 200
-        assert (
-            b"Gestion des utilisateurs" in response.data
-            or b"users" in response.data.lower()
-        )
-
-    def test_add_user_post_valid(self, logged_in_client, test_group):
-        """Test adding a valid user."""
-        data = {
-            "name": "Nouvel Utilisateur",
-            "email": "nouvel@example.com",
-            "group_id": test_group.id,
-        }
-        response = logged_in_client.post(
-            "/admin/users/add", data=data, follow_redirects=True
-        )
-        assert response.status_code == 200
-        assert b"Utilisateur ajoute" in response.data or b"succes" in response.data
-
-        user = User.query.filter_by(email="nouvel@example.com").first()
-        assert user is not None
-
-    def test_add_user_post_invalid(self, logged_in_client):
-        """Test adding a user with missing fields."""
-        data = {"name": "", "email": "", "group_id": ""}
-        response = logged_in_client.post(
-            "/admin/users/add", data=data, follow_redirects=True
-        )
-        assert response.status_code == 200
-        assert b"Tous les champs sont obligatoires" in response.data
 
     def test_delete_user_post(self, logged_in_client, test_user):
         """Test deleting a user."""
@@ -577,31 +504,13 @@ class TestAdminRoutes:
 
 
 class TestShiftTypeRoutes:
-    """Tests for the shift-type routes."""
+    """Tests for the shift-type routes.
 
-    def test_list_shift_types(self, logged_in_client):
-        """Test rendering the shift-type list."""
-        response = logged_in_client.get("/admin/shift-types")
-        assert response.status_code == 200
-        assert b"Types de shifts" in response.data or b"shift" in response.data.lower()
-
-    def test_add_shift_type_post_valid(self, logged_in_client):
-        """Test adding a valid shift type."""
-        data = {"name": "night", "label": "Nuit", "start_hour": "22", "end_hour": "6"}
-        response = logged_in_client.post(
-            "/admin/shift-types/add", data=data, follow_redirects=True
-        )
-        assert response.status_code == 200
-        # Check that the type was added or that a message is shown
-        assert (
-            b"Type" in response.data
-            or b"shift" in response.data.lower()
-            or b"succes" in response.data
-        )
-
-        shift_type = ShiftType.query.filter_by(name="night").first()
-        if shift_type:
-            assert shift_type.name == "night"
+    The list/add happy-path is covered more precisely by
+    test_admin_lists.py::TestListShiftTypes/TestAddShiftType - only the
+    validation and delete cases below, which that file doesn't cover,
+    remain here.
+    """
 
     def test_add_shift_type_post_invalid_hours(self, logged_in_client):
         """Test adding a shift type with invalid hours."""
