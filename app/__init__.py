@@ -14,7 +14,6 @@ New structure:
 """
 
 import os
-import warnings
 
 from flask import Flask, render_template
 from flask_babel import Babel
@@ -29,15 +28,6 @@ from flask_talisman import Talisman
 from flask_wtf import CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-# Flask-Limiter warns on every init without a shared backend (redis/memcached).
-# Deliberate choice: in-memory storage (single process).
-warnings.filterwarnings(
-    "ignore",
-    message="Using the in-memory storage",
-    category=UserWarning,
-    module="flask_limiter",
-)
-
 # ---------------------------------------------------------------------------
 # Extension initialization
 # ---------------------------------------------------------------------------
@@ -46,7 +36,10 @@ db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
 login_manager.login_message_category = "danger"
-limiter = Limiter(key_func=get_remote_address)
+# storage_uri set explicitly (single-process deployment, see
+# docker/entrypoint.sh's gunicorn --workers 1) so Flask-Limiter doesn't
+# fall back to its own default and warn about it on every init.
+limiter = Limiter(key_func=get_remote_address, storage_uri="memory://")
 csrf = CSRFProtect()
 compress = Compress()
 babel = Babel()
