@@ -38,7 +38,7 @@
 | Document | Content |
 |---|---|
 | [`docker.md`](deployment/docker.md) | **Recommended method**: running the image published on the registry (Docker) |
-| [`DEPLOYMENT_ADVANCED.md`](deployment/DEPLOYMENT_ADVANCED.md) | Advanced Docker: PostgreSQL, Redis, Nginx |
+| [`DEPLOYMENT_ADVANCED.md`](deployment/DEPLOYMENT_ADVANCED.md) | Advanced Docker: PostgreSQL, MySQL/MariaDB, Nginx |
 | [`DEPLOYMENT_GUIDE.md`](deployment/DEPLOYMENT_GUIDE.md) | Non-Docker alternative: bare-metal Gunicorn/uWSGI, database, production security |
 | [`BACKUP_GUIDE.md`](deployment/BACKUP_GUIDE.md) | Database backup and restore |
 

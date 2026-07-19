@@ -22,19 +22,15 @@ This guide explains how to extend the base Docker configuration to use **Postgre
 
 ## 🏗️ Extended Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        Web Application                        │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │                   Kairos (Gunicorn)                      │  │
-│  └─────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-         │
-         ▼
-┌─────────────────┐
-│   PostgreSQL     │
-│   (Production)   │
-└─────────────────┘
+```mermaid
+graph TB
+    subgraph WebApp["Web Application"]
+        Kairos["Kairos (Gunicorn)"]
+    end
+
+    DB[("PostgreSQL<br/>(Production)")]
+
+    Kairos --> DB
 ```
 
 ---
@@ -55,7 +51,7 @@ services:
     environment:
       - POSTGRES_DB=${POSTGRES_DB:-kairos}
       - POSTGRES_USER=${POSTGRES_USER:-kairos}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changez-moi}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-change-me}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -100,9 +96,9 @@ services:
       - "5000:5000"
     environment:
       - FLASK_ENV=${FLASK_ENV:-production}
-      - SECRET_KEY=${SECRET_KEY:-changez-moi}
-      - DATABASE_URL=${DATABASE_URL:-postgresql://kairos:changez-moi@db:5432/kairos}
-      - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-changez-moi}
+      - SECRET_KEY=${SECRET_KEY:-change-me}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://kairos:change-me@db:5432/kairos}
+      - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-change-me}
     volumes:
       - ../data:/app/data
       - ../logs:/app/logs
@@ -125,13 +121,13 @@ Add these variables to your `.env` file:
 # PostgreSQL configuration
 POSTGRES_DB=kairos
 POSTGRES_USER=kairos
-POSTGRES_PASSWORD=votre_mot_de_passe_sécurisé
-DATABASE_URL=postgresql://kairos:votre_mot_de_passe_sécurisé@db:5432/kairos
+POSTGRES_PASSWORD=your_secure_password
+DATABASE_URL=postgresql://kairos:your_secure_password@db:5432/kairos
 
 # Production configuration
 FLASK_ENV=production
-SECRET_KEY=votre_clé_secrète
-DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe_admin
+SECRET_KEY=your_secret_key
+DEFAULT_ADMIN_PASSWORD=your_admin_password
 ```
 
 ⚠️ **Important**: Generate secure passwords:
@@ -184,8 +180,8 @@ services:
     environment:
       - MARIADB_DATABASE=${MARIADB_DATABASE:-kairos}
       - MARIADB_USER=${MARIADB_USER:-kairos}
-      - MARIADB_PASSWORD=${MARIADB_PASSWORD:-changez-moi}
-      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD:-changez-moi-aussi}
+      - MARIADB_PASSWORD=${MARIADB_PASSWORD:-change-me}
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD:-change-me-too}
     volumes:
       - mariadb_data:/var/lib/mysql
     networks:
@@ -213,9 +209,9 @@ networks:
 # MariaDB configuration
 MARIADB_DATABASE=kairos
 MARIADB_USER=kairos
-MARIADB_PASSWORD=votre_mot_de_passe_sécurisé
-MARIADB_ROOT_PASSWORD=un_autre_mot_de_passe_sécurisé
-DATABASE_URL=mariadb://kairos:votre_mot_de_passe_sécurisé@db:3306/kairos
+MARIADB_PASSWORD=your_secure_password
+MARIADB_ROOT_PASSWORD=another_secure_password
+DATABASE_URL=mariadb://kairos:your_secure_password@db:3306/kairos
 ```
 
 No changes to the `Dockerfile`/the `kairos` image are
@@ -237,13 +233,13 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.mysql.yml u
 ```env
 # Base configuration
 FLASK_ENV=production
-SECRET_KEY=votre_clé_secrète_générée
+SECRET_KEY=your_generated_secret_key
 
 # PostgreSQL database
 POSTGRES_DB=kairos
 POSTGRES_USER=kairos
-POSTGRES_PASSWORD=votre_mot_de_passe_postgres
-DATABASE_URL=postgresql://kairos:votre_mot_de_passe_postgres@db:5432/kairos
+POSTGRES_PASSWORD=your_postgres_password
+DATABASE_URL=postgresql://kairos:your_postgres_password@db:5432/kairos
 SQLALCHEMY_ENGINE_OPTIONS={"pool_pre_ping": true, "pool_recycle": 3600}
 
 # Security - SESSION_COOKIE_SECURE/HTTPONLY/SAMESITE and
@@ -258,8 +254,8 @@ SESSION_COOKIE_SAMESITE=Lax
 RATE_LIMIT_ENABLED=true
 
 # Default data
-DEFAULT_ADMIN_EMAIL=admin@votre-domaine.com
-DEFAULT_ADMIN_PASSWORD=votre_mot_de_passe_admin_sécurisé
+DEFAULT_ADMIN_EMAIL=admin@your-domain.com
+DEFAULT_ADMIN_PASSWORD=your_secure_admin_password
 DEFAULT_GROUP_NAME=Defaut
 ```
 
@@ -343,16 +339,16 @@ upstream kairos {
 
 server {
     listen 80;
-    server_name kairos.votre-domaine.com;
+    server_name kairos.your-domain.com;
     return 301 https://$host$request_uri;
 }
 
 server {
     listen 443 ssl;
-    server_name kairos.votre-domaine.com;
+    server_name kairos.your-domain.com;
     
-    ssl_certificate /etc/letsencrypt/live/kairos.votre-domaine.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/kairos.votre-domaine.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/kairos.your-domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/kairos.your-domain.com/privkey.pem;
     
     location / {
         proxy_pass http://kairos;
@@ -368,7 +364,7 @@ This `proxy_set_header Host $host` is generally sufficient: the app already
 trusts a single reverse proxy via `ProxyFix` (see `app/__init__.py`).
 If your topology adds extra hops (Kubernetes ingress,
 load balancer) that don't correctly forward the original Host/domain,
-set `PUBLIC_BASE_URL` (e.g. `https://kairos.votre-domaine.com`)
+set `PUBLIC_BASE_URL` (e.g. `https://kairos.your-domain.com`)
 to force the domain used in absolute links generated by the app
 (ICS export) — see [ENVIRONMENT_VARIABLES.md](../reference/ENVIRONMENT_VARIABLES.md).
 
@@ -381,7 +377,7 @@ Use **Let's Encrypt** to get free SSL certificates:
 sudo apt-get install certbot python3-certbot-nginx
 
 # Get a certificate
-sudo certbot --nginx -d kairos.votre-domaine.com
+sudo certbot --nginx -d kairos.your-domain.com
 
 # Configure automatic renewal
 sudo certbot renew --dry-run
@@ -434,7 +430,7 @@ Set up a cron job to run this script daily:
 crontab -e
 
 # Add this line for a backup at 2am
-0 2 * * * /chemin/vers/kairos/backup.sh
+0 2 * * * /path/to/kairos/backup.sh
 ```
 
 ---

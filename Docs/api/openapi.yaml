@@ -2,23 +2,22 @@ openapi: 3.0.3
 info:
   title: Kairos API
   description: |
-    Surface JSON réelle de Kairos. La grande majorité des routes
-    de l'application rendent du HTML côté serveur (Jinja2) — seules les
-    routes listées ici renvoient du JSON, plus les 3 endpoints d'export
-    ICS (`text/calendar`).
+    Kairos's real JSON surface. The vast majority of the application's
+    routes render server-side HTML (Jinja2) — only the routes listed
+    here return JSON, plus the 3 ICS export endpoints (`text/calendar`).
 
-    Documente uniquement cette API interne (`/api/*`, cookie de
-    session) - la spec de l'API publique v1 pour intégrations tierces
-    (`/api/v1/*`, jeton bearer/compte de service) est générée
-    automatiquement, pas maintenue ici : voir `GET /api/v1/openapi.json`
-    et la section "API publique v1" de `API.md`.
+    Documents only this internal API (`/api/*`, session cookie) - the
+    spec for the public v1 API for third-party integrations
+    (`/api/v1/*`, bearer token/service account) is generated
+    automatically, not maintained here: see `GET /api/v1/openapi.json`
+    and the "Public API v1" section of `API.md`.
   version: "1.0"
   license:
     name: CeCILL v2.1
 
 servers:
   - url: http://localhost:5000
-    description: Développement local
+    description: Local development
 
 security:
   - sessionCookie: []
@@ -30,46 +29,47 @@ components:
       in: cookie
       name: session
       description: >
-        Session Flask-Login (créée par POST /login ou le flux OIDC).
-        Toutes les routes de ce document nécessitent une session
-        authentifiée sauf mention contraire (export ICS accepte aussi un
-        token porteur en paramètre de requête).
+        Flask-Login session (created by POST /login or the OIDC flow).
+        Every route in this document requires an authenticated session
+        unless stated otherwise (ICS export also accepts a bearer
+        token as a query parameter).
     icsToken:
       type: apiKey
       in: query
       name: token
       description: >
-        Token porteur (User.ics_token, généré via POST /profile/ics-token)
-        permettant l'accès anonyme aux 3 endpoints /export/* — pensé pour
-        les abonnements calendrier externes (Google Calendar, Outlook)
-        qui ne portent pas de cookie de session.
+        Bearer token (User.ics_token, generated via POST
+        /profile/ics-token) allowing anonymous access to the 3
+        /export/* endpoints — designed for external calendar
+        subscriptions (Google Calendar, Outlook) that don't carry a
+        session cookie.
   parameters:
     csrfHeader:
       name: X-CSRFToken
       in: header
       required: true
       description: >
-        Requis sur toute requête POST/PUT/PATCH/DELETE (Flask-WTF
-        CSRFProtect, actif app-wide). Valeur lue côté client depuis
-        `<meta name="csrf-token">` dans le HTML rendu par le serveur.
+        Required on every POST/PUT/PATCH/DELETE request (Flask-WTF
+        CSRFProtect, active app-wide). Value read client-side from
+        `<meta name="csrf-token">` in the server-rendered HTML.
       schema:
         type: string
   schemas:
     CalendarEvent:
       type: object
-      description: Format consommé par FullCalendar (shifts, astreintes, congés fusionnés).
+      description: Format consumed by FullCalendar (shifts, on-calls, leaves merged together).
       properties:
         id: { type: string, example: "shift-42" }
-        title: { type: string, example: "Alice Martin - Matin" }
+        title: { type: string, example: "Alice Martin - Morning" }
         start: { type: string, format: date-time }
         end: { type: string, format: date-time }
         className: { type: string, enum: [fc-event-shift, fc-event-oncall, fc-event-leave] }
-        allDay: { type: boolean, description: "Présent (true) uniquement pour les congés" }
+        allDay: { type: boolean, description: "Present (true) only for leaves" }
         extendedProps:
           type: object
           properties:
             type: { type: string, enum: [shift, oncall, leave] }
-            resourceId: { type: integer, description: "ID réel de l'enregistrement Shift/OnCall/Leave" }
+            resourceId: { type: integer, description: "Real id of the underlying Shift/OnCall/Leave record" }
     ApiError:
       type: object
       properties:
@@ -98,22 +98,22 @@ components:
 paths:
   /api/shifts:
     get:
-      summary: Liste des événements calendrier (shifts + astreintes + congés)
+      summary: List calendar events (shifts + on-calls + leaves)
       description: >
-        Malgré le nom, ne renvoie pas que des shifts : agrège shifts,
-        astreintes et congés sur une fenêtre de ±180 jours autour
-        d'aujourd'hui, au format attendu par FullCalendar.
+        Despite the name, does not return only shifts: aggregates
+        shifts, on-calls, and leaves over a ±180-day window around
+        today, in the format FullCalendar expects.
       operationId: getCalendarEvents
       responses:
         "200":
-          description: Liste d'événements
+          description: List of events
           content:
             application/json:
               schema:
                 type: array
                 items: { $ref: "#/components/schemas/CalendarEvent" }
     post:
-      summary: Créer un shift (glisser-déposer FullCalendar)
+      summary: Create a shift (FullCalendar drag & drop)
       operationId: createShift
       security: [{ sessionCookie: [] }]
       parameters:
@@ -129,10 +129,10 @@ paths:
                 userId: { type: integer }
                 shiftTypeId: { type: integer }
                 start: { type: string, format: date-time }
-                end: { type: string, format: date-time, description: "Optionnel, sinon = start" }
+                end: { type: string, format: date-time, description: "Optional, defaults to start" }
       responses:
         "200":
-          description: Shift créé
+          description: Shift created
           content:
             application/json:
               schema:
@@ -152,16 +152,16 @@ paths:
                           shiftTypeId: { type: integer }
         "400":
           description: >
-            Données manquantes, format de date invalide, week-end
-            (les shifts ne peuvent pas être créés le samedi/dimanche),
-            ou conflit détecté (l'utilisateur a déjà un shift ce jour-là)
+            Missing data, invalid date format, weekend
+            (shifts cannot be created on Saturday/Sunday),
+            or a conflict detected (the user already has a shift that day)
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ApiError" }
         "403":
-          description: Non-admin
+          description: Not an admin
         "404":
-          description: Utilisateur ou type de shift introuvable
+          description: User or shift type not found
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ApiError" }
@@ -173,7 +173,7 @@ paths:
         required: true
         schema: { type: integer }
     patch:
-      summary: Déplacer/redimensionner un shift (glisser-déposer)
+      summary: Move/resize a shift (drag & drop)
       operationId: updateShift
       security: [{ sessionCookie: [] }]
       parameters:
@@ -187,35 +187,35 @@ paths:
               required: [start]
               properties:
                 start: { type: string, format: date-time }
-                end: { type: string, format: date-time, description: "Optionnel : conserve la durée d'origine si absent" }
+                end: { type: string, format: date-time, description: "Optional: keeps the original duration if absent" }
       responses:
-        "200": { description: Shift mis à jour }
+        "200": { description: Shift updated }
         "400":
-          description: Date invalide, week-end, ou conflit avec un shift existant
+          description: Invalid date, weekend, or conflict with an existing shift
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ApiError" }
-        "404": { description: Shift introuvable }
+        "404": { description: Shift not found }
     delete:
-      summary: Supprimer un shift
+      summary: Delete a shift
       operationId: deleteShift
       security: [{ sessionCookie: [] }]
       parameters:
         - $ref: "#/components/parameters/csrfHeader"
       responses:
-        "200": { description: Supprimé }
-        "404": { description: Shift introuvable }
+        "200": { description: Deleted }
+        "404": { description: Shift not found }
 
   /api/users:
     get:
-      summary: Liste des utilisateurs visibles pour le planning
+      summary: List users visible for the schedule
       description: >
-        Un admin voit tous les utilisateurs du planning ; un utilisateur
-        normal ne se voit que lui-même (UserService.visible_users_for_schedule).
+        An admin sees every user on the schedule; a regular user only
+        sees themselves (UserService.visible_users_for_schedule).
       operationId: listUsers
       responses:
         "200":
-          description: Liste d'utilisateurs
+          description: List of users
           content:
             application/json:
               schema:
@@ -224,11 +224,11 @@ paths:
 
   /api/shift-types:
     get:
-      summary: Liste des types de shift
+      summary: List shift types
       operationId: listShiftTypes
       responses:
         "200":
-          description: Liste des types de shift
+          description: List of shift types
           content:
             application/json:
               schema:
@@ -242,7 +242,7 @@ paths:
         required: true
         schema: { type: integer }
     patch:
-      summary: Déplacer une astreinte (admin uniquement)
+      summary: Move an on-call shift (admin only)
       operationId: updateOncall
       security: [{ sessionCookie: [] }]
       parameters:
@@ -255,27 +255,27 @@ paths:
               type: object
               required: [start]
               properties:
-                start: { type: string, format: date-time, description: "Doit tomber un vendredi" }
+                start: { type: string, format: date-time, description: "Must fall on a Friday" }
                 end: { type: string, format: date-time }
       responses:
-        "200": { description: Astreinte mise à jour }
+        "200": { description: On-call shift updated }
         "400":
-          description: "Pas un vendredi, ou conflit avec une astreinte existante"
+          description: "Not a Friday, or conflict with an existing on-call shift"
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ApiError" }
-        "403": { description: Non-admin }
-        "404": { description: Astreinte introuvable }
+        "403": { description: Not an admin }
+        "404": { description: On-call shift not found }
     delete:
-      summary: Supprimer une astreinte (admin uniquement)
+      summary: Delete an on-call shift (admin only)
       operationId: deleteOncall
       security: [{ sessionCookie: [] }]
       parameters:
         - $ref: "#/components/parameters/csrfHeader"
       responses:
-        "200": { description: Supprimée }
-        "403": { description: Non-admin }
-        "404": { description: Astreinte introuvable }
+        "200": { description: Deleted }
+        "403": { description: Not an admin }
+        "404": { description: On-call shift not found }
 
   /api/leave/{leaveId}:
     parameters:
@@ -284,10 +284,10 @@ paths:
         required: true
         schema: { type: integer }
     patch:
-      summary: Modifier les dates d'un congé
+      summary: Change the dates of a leave
       description: >
-        Accessible à tout utilisateur connecté, mais restreint à ses
-        propres congés (403 sinon) sauf pour un admin.
+        Accessible to any logged-in user, but restricted to their own
+        leaves (403 otherwise) unless they're an admin.
       operationId: updateLeave
       security: [{ sessionCookie: [] }]
       parameters:
@@ -301,31 +301,31 @@ paths:
               required: [start]
               properties:
                 start: { type: string, format: date-time }
-                end: { type: string, format: date-time, description: "Optionnel : conserve la durée d'origine si absent" }
+                end: { type: string, format: date-time, description: "Optional: keeps the original duration if absent" }
       responses:
-        "200": { description: Congé mis à jour }
+        "200": { description: Leave updated }
         "400":
-          description: Date invalide ou conflit avec un congé existant
+          description: Invalid date or conflict with an existing leave
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ApiError" }
-        "403": { description: "Tentative de modifier le congé d'un autre utilisateur (non-admin)" }
-        "404": { description: Congé introuvable }
+        "403": { description: "Attempted to modify another user's leave (non-admin)" }
+        "404": { description: Leave not found }
     delete:
-      summary: Supprimer un congé
-      description: Accessible à tout utilisateur connecté pour ses propres congés (ou un admin pour tous).
+      summary: Delete a leave
+      description: Accessible to any logged-in user for their own leaves (or an admin for any).
       operationId: deleteLeave
       security: [{ sessionCookie: [] }]
       parameters:
         - $ref: "#/components/parameters/csrfHeader"
       responses:
-        "200": { description: Supprimé }
-        "403": { description: "Tentative de supprimer le congé d'un autre utilisateur (non-admin)" }
-        "404": { description: Congé introuvable }
+        "200": { description: Deleted }
+        "403": { description: "Attempted to delete another user's leave (non-admin)" }
+        "404": { description: Leave not found }
 
   /export/shifts:
     get:
-      summary: Export ICS des shifts
+      summary: ICS export of shifts
       operationId: exportShifts
       security:
         - sessionCookie: []
@@ -337,20 +337,20 @@ paths:
         - name: token
           in: query
           required: false
-          description: "Requis si non authentifié par session (User.ics_token)"
+          description: "Required if not authenticated by session (User.ics_token)"
           schema: { type: string }
       responses:
         "200":
-          description: Fichier ICS
+          description: ICS file
           content:
             text/calendar:
               schema: { type: string }
         "401":
-          description: "Ni session ni token valide (réponse 401 pour clients JSON/calendrier, redirect /login sinon)"
+          description: "Neither a session nor a valid token (401 response for JSON/calendar clients, redirect to /login otherwise)"
 
   /export/oncall:
     get:
-      summary: Export ICS des astreintes
+      summary: ICS export of on-call shifts
       operationId: exportOncall
       security: [{ sessionCookie: [] }, { icsToken: [] }]
       parameters:
@@ -363,15 +363,15 @@ paths:
           schema: { type: string }
       responses:
         "200":
-          description: Fichier ICS
+          description: ICS file
           content:
             text/calendar:
               schema: { type: string }
-        "401": { description: "Ni session ni token valide" }
+        "401": { description: "Neither a session nor a valid token" }
 
   /export/leaves:
     get:
-      summary: Export ICS des congés
+      summary: ICS export of leaves
       operationId: exportLeaves
       security: [{ sessionCookie: [] }, { icsToken: [] }]
       parameters:
@@ -384,8 +384,8 @@ paths:
           schema: { type: string }
       responses:
         "200":
-          description: Fichier ICS
+          description: ICS file
           content:
             text/calendar:
               schema: { type: string }
-        "401": { description: "Ni session ni token valide" }
+        "401": { description: "Neither a session nor a valid token" }

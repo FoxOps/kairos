@@ -2,11 +2,11 @@
 
 ## 📊 Global Overview
 
-- **Last updated**: July 17, 2026 (v1.0 stabilization, PR #122-#127)
-- **Total number of tests**: 1314
-- **Tests passing**: 1314 ✅
+- **Last updated**: July 19, 2026 (production-readiness audit, batch 1)
+- **Total number of tests**: 1343 (682 unit + 629 integration + 32 e2e)
+- **Tests passing**: 1343 ✅
 - **Tests failing**: 0
-- **Code coverage**: **~92%** (`--cov=app`)
+- **Code coverage**: **94%** (`--cov=app`)
 - **Lint (ruff)**: clean - **0 errors**
 - **Types (mypy)**: clean - **0 errors**
 - **Formatting (black)**: compliant
@@ -40,9 +40,15 @@
   leave, oncall, swap)
 - **Real browser (optional)**: `pytest-playwright` + Chromium, see
   `requirements-e2e.txt`
-- **CI**: GitLab CI (`.gitlab-ci/.gitlab-ci.yml`) - `run_tests` (test
-  client, blocking), `run_e2e_browser` (Playwright, `allow_failure:
-  true` until proven in CI)
+- **CI**: GitHub Actions (`.github/workflows/ci.yml`, 4 jobs: test,
+  e2e, lint, security) — deliberately **not** run on every push/PR
+  while the repo is private (GitHub Actions minutes are metered on a
+  private repo, unlike a public one). Triggers: a version tag push
+  (`v*`, just before a release), weekly (`schedule`, catches
+  dependencies turning vulnerable with no code change), or on demand
+  (`workflow_dispatch`). The former GitLab CI config
+  (`.gitlab-ci/.gitlab-ci.yml`) was removed — GitLab never actually
+  executed against this GitHub-hosted repo.
 
 ---
 
@@ -53,7 +59,7 @@ tests/
 ├── conftest.py                      # Fixture chain: test_app, client, logged_in_client
 ├── fixtures/                        # test_user, test_group, test_shift, test_leave, test_oncall...
 │
-├── unit/                            # 662 tests - isolated components, no HTTP
+├── unit/                            # 682 tests - isolated components, no HTTP
 │   ├── test_service_account_model.py     # ServiceAccount: SHA-256 token/hash, is_valid()
 │   ├── test_service_account_repository.py
 │   ├── test_service_account_service.py   # create/revoke/regenerate + audit trail
@@ -66,11 +72,9 @@ tests/
 │   ├── test_decorators_unit.py
 │   ├── test_helpers.py
 │   ├── test_ics_export.py
-│   ├── test_cache_manager.py
 │   ├── test_config.py               # DATABASE_URL, normalize_database_uri() (MySQL/PostgreSQL
-│   │                                 #   driver rewrite), get_database_type(), SQLALCHEMY_ENGINE_OPTIONS
+│   │                                 #   driver rewrite), SQLALCHEMY_ENGINE_OPTIONS
 │   ├── test_run_functions.py        # setup_database/create_default_data
-│   ├── test_vendor_assets.py        # Vendored Bulma/FontAwesome/FullCalendar
 │   ├── test_oidc_config.py          # OIDCConfig (25 tests)
 │   ├── test_oidc_auth.py            # OIDCAuthLib, mocked network (31 tests)
 │   ├── test_user_manager_oidc_sync.py  # OIDC user sync (12 tests)
@@ -82,7 +86,7 @@ tests/
 │   ├── test_backup_service.py       # BackupService (/admin/backups support layer)
 │   └── test_settings_service.py     # SettingsService (timezone, language, date/time formats...)
 │
-├── integration/                     # 615 tests - Flask routes, test client
+├── integration/                     # 629 tests - Flask routes, test client
 │   ├── test_routes.py, test_*_priority.py, test_*_coverage.py
 │   ├── test_admin_*.py              # Admin routes (users/groups/shift-types/automation/backups,
 │   │                                 #   service accounts)
@@ -188,9 +192,9 @@ ruff check . --config=.ruff.toml
 mypy app/ tests/ --ignore-missing-imports --allow-untyped-decorators
 black --check . --exclude=".git|__pycache__|instance|venv"
 
-# Security (non-blocking, || true in the Makefile)
+# Security (blocking, part of `make security` and the CI `security` job)
 bandit -r app/ tests/
-safety scan --full-report   # requires a Safety CLI account (interactive login)
+pip-audit -r requirements.txt   # no API key required (replaced `safety scan`)
 ```
 
 ---
@@ -531,3 +535,24 @@ safety scan --full-report   # requires a Safety CLI account (interactive login)
   together. See `report/SECURITY_AUDIT_v1.0.md`,
   `report/BUG_HUNT_v1.0.md`, `report/LOAD_TEST_v1.0.md` for the full
   detail.
+- **July 19, 2026**: 1343 tests (0 failing, +29), coverage ~92% → 94%.
+  Production-readiness audit, batch 1 (PR #145): translated the
+  automation engine's hardcoded French messages
+  (`advanced_shift_automation.py`/`oncall_automation.py`) through
+  `gettext`, completed `en.po` (12 new msgids + 4 pre-existing
+  untranslated/wrongly-fuzzy entries); cached
+  `SettingsService.get_default_timezone()` on `flask.g` (was a real
+  N+1, one `Setting.get()` per shift/on-call rendered on the
+  calendar); bulk-preloaded `AuditLog.actor` in
+  `AuditLogRepository.list_paginated()` (same N+1 shape, up to
+  `per_page` extra queries on `/admin/audit-log`); removed 3
+  confirmed-dead functions (`ShiftRepository.list_in_date_range()`,
+  `Config.validate()`, `get_str_from_env()`) and the entire
+  `app/utils/optimizations/` module (its one decorator, `@eager_load`,
+  was a no-op on its last remaining call site); fixed
+  `test_log_http_error` and 4 related assertions in
+  `tests/integration/test_error_handlers.py`, all of which were using
+  the module-level `app` singleton instead of the `test_app` fixture -
+  a source of test-order-dependent flakiness. Also switched CI from
+  GitLab (never actually run against this GitHub-hosted repo) to
+  GitHub Actions.

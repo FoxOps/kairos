@@ -12,14 +12,16 @@
 
 ## 🚀 Quick start (recommended method)
 
-The image is meant to be pulled from a self-hosted Harbor registry
-(`harbor.leviia.com`). **Note**: as of this writing, the CI workflow
-(`.github/workflows/ci.yml`) runs tests/lint/security but has no job
-that builds/pushes this image anywhere. Until that automation exists,
-someone has to build and push the image to Harbor manually (e.g.
+The image is meant to be pulled from the **GitHub Container Registry**
+(`ghcr.io`), alongside the rest of this project's GitHub-hosted
+tooling (Actions, releases). **Note**: as of this writing, the CI
+workflow (`.github/workflows/ci.yml`) runs tests/lint/security but has
+no job that builds/pushes this image anywhere. Until that automation
+exists, someone has to build and push the image manually (e.g.
 `docker build -f docker/Dockerfile -t
-harbor.leviia.com/<HARBOR_PROJECT>/kairos:latest .` from the repo
-root, then `docker push`) before `KAIROS_IMAGE` below can be pulled.
+ghcr.io/foxops/kairos:latest .` from the repo root, then
+`docker push`, after `docker login ghcr.io` with a PAT that has
+`write:packages` scope) before `KAIROS_IMAGE` below can be pulled.
 
 ### 1️⃣ Grab the two required files
 
@@ -43,11 +45,11 @@ nano .env
 
 **Minimal variables to change:**
 ```env
-# Image to pull from the Harbor registry - replace <HARBOR_PROJECT> with
-# the actual Harbor project name. No CI job currently sets/publishes
-# this automatically (see the note above) - whoever pushes the image
-# to Harbor must pick and communicate the project/tag used here.
-KAIROS_IMAGE=harbor.leviia.com/<HARBOR_PROJECT>/kairos:latest
+# Image to pull from the GitHub Container Registry. No CI job
+# currently sets/publishes this automatically (see the note above) -
+# whoever pushes the image to ghcr.io must pick and communicate the
+# tag used here.
+KAIROS_IMAGE=ghcr.io/foxops/kairos:latest
 
 SECRET_KEY=your_secret_key
 DEFAULT_ADMIN_PASSWORD=your_password
@@ -184,7 +186,7 @@ credentials identical to the recommended section above).
 
 ```env
 # Registry image - mandatory with docker/docker-compose.example.yml
-KAIROS_IMAGE=harbor.leviia.com/<HARBOR_PROJECT>/kairos:latest
+KAIROS_IMAGE=ghcr.io/foxops/kairos:latest
 
 # Basic configuration
 FLASK_ENV=development

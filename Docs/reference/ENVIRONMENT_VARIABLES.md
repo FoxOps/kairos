@@ -205,7 +205,7 @@ after first run from `/admin/shift-types` instead.
 
 | Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
-| `ICS_TOKEN_EXPIRY_DAYS` | integer | `365` | Intended validity duration of the ICS subscription token, in days. **Not currently enforced anywhere** — documented here because the setting exists and is admin-editable at `/admin/settings`, but no code path actually checks or expires a token based on it yet | ❌ No |
+| `ICS_TOKEN_EXPIRY_DAYS` | integer | `365` | Validity duration of the ICS subscription token, in days — enforced by `User.is_ics_token_expired()`, checked on every anonymous export request by `ExportService.resolve_user()`. Admin-editable at `/admin/settings` (a saved `Setting` always wins over this env var). Only gates the token-based path — an authenticated session hitting `/export/*` is never subject to it | ❌ No |
 
 The ICS subscription URLs shown to the user (`/profile/ics-token` page)
 use `PUBLIC_BASE_URL` if set (see [🔐 Flask Configuration](#-flask-configuration)), otherwise
