@@ -323,6 +323,76 @@ class TestUserModel:
             assert test_user.apprise_shift_target_ids is None
             assert test_user.get_apprise_shift_target_ids() == []
 
+    def test_generate_ics_token_sets_created_at(self, test_app, test_user):
+        with test_app.app_context():
+            assert test_user.ics_token_created_at is None
+
+            test_user.generate_ics_token()
+            db.session.commit()
+
+            assert test_user.ics_token_created_at is not None
+
+    def test_regenerate_ics_token_resets_created_at(self, test_app, test_user):
+        with test_app.app_context():
+            test_user.generate_ics_token()
+            test_user.ics_token_created_at = datetime.utcnow() - timedelta(days=400)
+            db.session.commit()
+            assert test_user.is_ics_token_expired() is True
+
+            test_user.generate_ics_token()
+            db.session.commit()
+
+            assert test_user.is_ics_token_expired() is False
+
+    def test_is_ics_token_expired_no_token(self, test_app, test_user):
+        with test_app.app_context():
+            assert test_user.ics_token is None
+            assert test_user.is_ics_token_expired() is True
+
+    def test_is_ics_token_expired_no_created_at(self, test_app, test_user):
+        """A token with no timestamp (pre-feature, not backfilled) is
+        treated as expired, not indefinitely valid."""
+        with test_app.app_context():
+            test_user.ics_token = "legacy-token"
+            test_user.ics_token_created_at = None
+            db.session.commit()
+
+            assert test_user.is_ics_token_expired() is True
+
+    def test_is_ics_token_expired_within_window(self, test_app, test_user):
+        with test_app.app_context():
+            test_user.generate_ics_token()
+            test_user.ics_token_created_at = datetime.utcnow() - timedelta(days=1)
+            db.session.commit()
+
+            assert test_user.is_ics_token_expired() is False
+
+    def test_is_ics_token_expired_past_window(self, test_app, test_user):
+        with test_app.app_context():
+            test_user.generate_ics_token()
+            test_user.ics_token_created_at = datetime.utcnow() - timedelta(days=400)
+            db.session.commit()
+
+            assert test_user.is_ics_token_expired() is True
+
+    def test_ics_token_expires_at_none_without_token(self, test_app, test_user):
+        with test_app.app_context():
+            assert test_user.ics_token_expires_at() is None
+
+    def test_ics_token_expires_at_computed_from_created_at(self, test_app, test_user):
+        from app.services.settings_service import SettingsService
+
+        with test_app.app_context():
+            SettingsService.set_ics_token_expiry_days(30)
+            created = datetime.utcnow() - timedelta(days=5)
+            test_user.generate_ics_token()
+            test_user.ics_token_created_at = created
+            db.session.commit()
+
+            expires_at = test_user.ics_token_expires_at()
+            assert expires_at is not None
+            assert abs((expires_at - (created + timedelta(days=30))).total_seconds()) < 1
+
 
 class TestShiftTypeModel:
     """Tests for the ShiftType model."""
