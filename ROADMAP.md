@@ -33,6 +33,10 @@ automated tests), and used for real team scheduling.
 - Outbound notifications to Slack/Discord/Telegram/webhooks (via
   Apprise), plus in-app and email reminders
 
+**Security**
+- Static code analysis (Bandit) and dependency vulnerability scanning
+  (pip-audit, no API key required) on every push
+
 **Operations**
 - Multi-language (French/English) and multi-timezone, per user or
   organization-wide
@@ -49,10 +53,6 @@ automated tests), and used for real team scheduling.
   GitHub-hosted repository — there is no equivalent GitHub Actions
   workflow yet. Needed before any change can be verified
   automatically on every push/PR.
-- **Activate the Safety dependency scanner** — it requires a
-  `SAFETY_API_KEY` that isn't configured out of the box, so dependency
-  vulnerability scanning is currently a manual/local step, not a
-  gate.
 - **Write support on the public API v1.** `/api/v1/*` is deliberately
   read-only today (listing shifts/on-call/leave/users) — adding
   create/update/delete would mean re-validating the same

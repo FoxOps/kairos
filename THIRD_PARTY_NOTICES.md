@@ -65,7 +65,7 @@ or statically linked, which keeps it clear of source-disclosure obligations.
 | mypy | MIT | [python/mypy](https://github.com/python/mypy) |
 | Black | MIT | [psf/black](https://github.com/psf/black) |
 | Bandit | Apache-2.0 | [PyCQA/bandit](https://github.com/PyCQA/bandit) |
-| Safety | MIT | [pyupio/safety](https://github.com/pyupio/safety) |
+| pip-audit | Apache-2.0 | [pypa/pip-audit](https://github.com/pypa/pip-audit) |
 | Playwright (Python) | Apache-2.0 | [microsoft/playwright-python](https://github.com/microsoft/playwright-python) |
 | pytest-playwright | Apache-2.0 | [microsoft/playwright-pytest](https://github.com/microsoft/playwright-pytest) |
 

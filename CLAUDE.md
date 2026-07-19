@@ -14,10 +14,12 @@ Kairos is a Flask web app for team shift scheduling, on-call rotations, and leav
 management, with ICS calendar export. Active development, French-language docs/commit history.
 v1.0 stabilization complete (security audit, targeted bug hunt, load test — see
 `report/SECURITY_AUDIT_v1.0.md`, `report/BUG_HUNT_v1.0.md`, `report/LOAD_TEST_v1.0.md`, and
-ROADMAP.md's "Verdict de stabilité v1.0"); two operational gaps remain to be decided by whoever
-deploys it, not code defects: the GitLab CI config (`.gitlab-ci/.gitlab-ci.yml`) doesn't actually
-run against this GitHub-hosted repo (no equivalent GitHub Actions workflow exists), and the Safety
-dependency scan is inactive without a `SAFETY_API_KEY`.
+ROADMAP.md's "Left to do" section); one operational gap remains to be decided by whoever
+deploys it, not a code defect: the GitLab CI config (`.gitlab-ci/.gitlab-ci.yml`) doesn't actually
+run against this GitHub-hosted repo (no equivalent GitHub Actions workflow exists). The dependency
+vulnerability scan (`pip-audit`, replacing the former `safety scan` which required a
+`SAFETY_API_KEY`) needs no key and runs unconditionally/blocking in both `make security` and the
+GitLab CI job.
 
 ## Commands
 
@@ -47,7 +49,7 @@ black . --exclude=".git|__pycache__|instance|venv"   # apply formatting
 
 # Security scans
 bandit -r app/ tests/
-safety scan --full-report
+pip-audit -r requirements.txt
 
 # All of the above
 make all

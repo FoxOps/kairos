@@ -41,7 +41,7 @@ black==26.5.1
 
 # Sécurité
 bandit==1.9.4
-safety==3.8.1
+pip-audit==2.10.1
 
 # Rate limiting et CORS
 flask-limiter==4.1.1
