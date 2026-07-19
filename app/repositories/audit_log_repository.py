@@ -9,11 +9,36 @@ for the single write path (routes/services never call create() directly).
 from datetime import date, datetime, timedelta
 
 from app import db
-from app.models import AuditLog
+from app.models import AuditLog, User
 
 
 class AuditLogRepository:
     """Data access for the AuditLog model."""
+
+    @staticmethod
+    def _preload_related(entries: list[AuditLog]) -> list[AuditLog]:
+        """AuditLog.actor is a plain @property (see app/models/audit_log.py,
+        same pattern as SwapRequest) - without this, /admin/audit-log's
+        `entry.actor.name` triggers one db.session.get(User, ...) per
+        row on the page (up to `per_page` distinct actors). Same
+        bulk-preload-then-stash approach as
+        SwapRequestRepository._preload_related()."""
+        if not entries:
+            return entries
+
+        actor_ids = {e.actor_id for e in entries if e.actor_id is not None}
+        users_by_id = (
+            {u.id: u for u in User.query.filter(User.id.in_(actor_ids)).all()}
+            if actor_ids
+            else {}
+        )
+
+        for entry in entries:
+            entry._cached_actor = (
+                users_by_id.get(entry.actor_id) if entry.actor_id is not None else None
+            )
+
+        return entries
 
     @staticmethod
     def create(
@@ -61,7 +86,9 @@ class AuditLogRepository:
                 < datetime.combine(date_to, datetime.min.time()) + timedelta(days=1)
             )
 
-        return query.paginate(page=page, per_page=per_page, error_out=False)
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        AuditLogRepository._preload_related(pagination.items)
+        return pagination
 
     @staticmethod
     def delete_older_than(cutoff: datetime) -> int:

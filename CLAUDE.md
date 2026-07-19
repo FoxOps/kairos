@@ -231,7 +231,6 @@ setup: `app.log`/`error.log`/`debug.log`/`http_errors.log`/`audit.log` — no `s
 support despite an earlier version of this doc claiming otherwise; every handler is a
 `RotatingFileHandler` (`LOG_MAX_BYTES`/`LOG_BACKUP_COUNT` env vars, defaults 10 MiB / 5 backups) —
 see "Audit trail" below for `audit.log`'s actual writer, sensitive-data filtering),
-`optimizations/` (single decorator `eager_load`, actively used by admin/dashboard routes),
 `helpers/` (`common_helpers.py` — actively used; `timezone_helpers.py` — `to_viewer_timezone()`/
 `to_org_timezone()`, the FullCalendar JSON API conversion, see "Multi-timezone support" below),
 plus `health.py` (k8s health endpoints) and `prometheus_metrics.py` (gated by
@@ -245,10 +244,16 @@ of the subpackage — `cache_manager.py`'s `init_cache()` was called at startup 
 from the cache it built: `get_cache()`/`cache_key()`/the `cached_route` decorator were themselves
 already-confirmed-dead removals from an earlier pass, leaving `init_cache()` with no real caller
 either. Caching is handled externally now (reverse proxy / dedicated cache), not by the app).
-`optimizations/__init__.py` was trimmed from 14 decorators to just
-`eager_load` — the other 13 (`cached_route`, `paginated_route`, `lazy_route`, `measure_time`, etc.)
-were never imported outside that file; `measure_time` even imported a module
-(`app.utils.performance_monitor`) that didn't exist, confirming it had never actually run.
+`optimizations/__init__.py` was trimmed from 14 decorators to just `eager_load` in an earlier pass
+— the other 13 (`cached_route`, `paginated_route`, `lazy_route`, `measure_time`, etc.) were never
+imported outside that file; `measure_time` even imported a module
+(`app.utils.performance_monitor`) that didn't exist, confirming it had never actually run. The
+whole `optimizations/` subpackage was then removed outright in a later production-readiness pass:
+`eager_load`'s only remaining call site was `index()` in `dashboard_routes.py` (`/`), and it was a
+no-op there — the decorator only acts when the decorated function returns a SQLAlchemy `Query` or
+a bare model instance, but `index()` returns a rendered template. The real N+1 protection on that
+route already came from `ShiftRepository.list_in_window()`/`OnCallRepository.list_in_window()`/
+`LeaveRepository.list_in_window()`'s own `joinedload()`, unrelated to this decorator.
 
 ### Auth
 

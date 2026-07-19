@@ -8,6 +8,8 @@ from collections import defaultdict
 from collections.abc import Iterable
 from datetime import date, datetime, timedelta
 
+from flask_babel import gettext as _
+
 from app.models import Group, Leave, OnCall, User
 
 
@@ -283,9 +285,12 @@ class OnCallAutomation:
                 # responsible for notifying admins once its own commit
                 # has succeeded (see unfilled_dates in the return value).
                 messages.append(
-                    f"⚠️ Aucune astreinte générée pour le {current_friday.strftime('%d/%m/%Y')} "
-                    "(aucun utilisateur ne respecte le délai légal de 2 semaines entre deux "
-                    "astreintes) - assignation manuelle nécessaire."
+                    _(
+                        "⚠️ Aucune astreinte générée pour le %(date)s "
+                        "(aucun utilisateur ne respecte le délai légal de 2 semaines entre deux "
+                        "astreintes) - assignation manuelle nécessaire.",
+                        date=current_friday.strftime("%d/%m/%Y"),
+                    )
                 )
                 unfilled_dates.append(current_friday)
                 current_friday += timedelta(days=7)
@@ -322,5 +327,5 @@ class OnCallAutomation:
         # default_category ("danger" for on-call messages), which
         # rendered this line as a red flash despite being a plain
         # success summary.
-        messages.append(f"✅ {len(oncalls)} astreintes générées.")
+        messages.append(_("✅ %(count)s astreintes générées.", count=len(oncalls)))
         return oncalls, messages, unfilled_dates

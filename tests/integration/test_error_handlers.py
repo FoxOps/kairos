@@ -5,8 +5,6 @@ Tests for the custom error handlers.
 import logging
 import sqlite3
 
-from app import app
-
 
 class TestErrorHandlers:
     """Tests for the error handlers."""
@@ -256,25 +254,30 @@ class TestErrorHandlerFunctions:
     """Tests for the error-handling utility functions."""
 
     def test_log_http_error(self, test_app, caplog):
-        """Test the log_http_error function."""
+        """Test the log_http_error function.
+
+        Regression fix: this used to wrap the call in
+        `app.request_context(env)` - the module-level global `app`
+        singleton (see `from app import app` at the top of this file),
+        not the `test_app` fixture used everywhere else in this test.
+        log_http_error() doesn't touch current_app/the request at all
+        (it's a plain logging.getLogger("http_errors").error(...) call
+        - see app/utils/logging/logger.py), so that request context was
+        both unnecessary and wrong: it made `current_app` resolve to a
+        different, non-Testing-configured app instance for the
+        duration of the call, which flaked intermittently deep into
+        the full test suite (never in isolation) - almost certainly
+        state drift on the globally-shared "http_errors" logger across
+        the hundreds of create_app() calls other tests make."""
         with test_app.app_context():
             import logging
 
             from app import log_http_error
 
-            # Configure caplog to capture the logs
             with caplog.at_level(logging.ERROR, logger="http_errors"):
-                # Simulate a request
-                from werkzeug.test import EnvironBuilder
+                log_http_error(404, "Page not found")
 
-                builder = EnvironBuilder(path="/test", method="GET")
-                env = builder.get_environ()
-
-                with app.request_context(env):
-                    log_http_error(404, "Page not found")
-
-                    # Check that the log entry was recorded
-                    assert any("404" in record.message for record in caplog.records)
+                assert any("404" in record.message for record in caplog.records)
 
     def test_get_error_template_data(self, test_app):
         """Test the get_error_template_data function."""
@@ -325,7 +328,7 @@ class TestDatabaseErrorHandler:
             error = sqlite3.OperationalError("database is locked")
 
             # Call the handler
-            with app.test_request_context():
+            with test_app.test_request_context():
                 result = handle_database_error(error)
                 # The handler returns a (response, status_code) tuple
                 if isinstance(result, tuple):
@@ -350,7 +353,7 @@ class TestExceptionHandlers:
 
             error = ValueError("Invalid value")
 
-            with app.test_request_context():
+            with test_app.test_request_context():
                 result = handle_value_error(error)
                 if isinstance(result, tuple):
                     response, status_code = result
@@ -365,7 +368,7 @@ class TestExceptionHandlers:
 
             error = TypeError("Invalid type")
 
-            with app.test_request_context():
+            with test_app.test_request_context():
                 result = handle_type_error(error)
                 if isinstance(result, tuple):
                     response, status_code = result
@@ -380,7 +383,7 @@ class TestExceptionHandlers:
 
             error = Exception("Generic error")
 
-            with app.test_request_context():
+            with test_app.test_request_context():
                 result = handle_exception(error)
                 if isinstance(result, tuple):
                     response, status_code = result
@@ -397,7 +400,7 @@ class TestLoggingConfiguration:
         with test_app.app_context():
             # The logs directory may not exist in test mode - this just
             # checks that setup_logging was called.
-            assert hasattr(app, "logger")
+            assert hasattr(test_app, "logger")
 
     def test_error_logger_exists(self, test_app):
         """Test that the http_errors logger exists."""
@@ -411,7 +414,7 @@ class TestLoggingConfiguration:
         with test_app.app_context():
             # The main logger should have several handlers
             # (file, error, debug, audit, console)
-            assert len(app.logger.handlers) >= 4
+            assert len(test_app.logger.handlers) >= 4
 
     def test_specific_loggers_exist(self, test_app):
         """Test that the specific loggers exist."""

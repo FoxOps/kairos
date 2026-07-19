@@ -15,14 +15,10 @@ from app.models import Leave, OnCall, Shift, ShiftType
 from app.routes.main import main_bp
 from app.services import ScheduleService
 from app.utils.helpers import build_shift_type_color_map
-from app.utils.optimizations import eager_load
 
 
 @main_bp.route("/")
 @login_required
-@eager_load(Shift, ["user", "shift_type"])
-@eager_load(OnCall, ["user"])
-@eager_load(Leave, ["user"])
 def index():
     """Home page - only accessible to logged-in users."""
     events = ScheduleService.get_calendar_events(current_user)

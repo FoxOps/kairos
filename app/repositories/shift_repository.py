@@ -120,12 +120,6 @@ class ShiftRepository:
         return Shift.query.filter_by(shift_type_id=shift_type_id).first() is not None
 
     @staticmethod
-    def list_in_date_range(start_date: date, end_date: date) -> list[Shift]:
-        return Shift.query.filter(
-            Shift.date >= start_date, Shift.date <= end_date
-        ).all()
-
-    @staticmethod
     def list_in_date_range_with_user(start_date: date, end_date: date) -> list[Shift]:
         return (
             Shift.query.options(joinedload(Shift.user), joinedload(Shift.shift_type))

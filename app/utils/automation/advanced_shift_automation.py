@@ -5,6 +5,8 @@
 from datetime import date
 from typing import TYPE_CHECKING
 
+from flask_babel import gettext as _
+
 if TYPE_CHECKING:
     # Models imported only for type annotations (as strings in this
     # file) - never at runtime, to avoid the circular import that the
@@ -268,14 +270,20 @@ class AdvancedShiftAutomation:
 
         if date.weekday() >= 5:
             return [], [
-                f"⏭️ Pas de shift généré pour le {date.strftime('%d/%m/%Y')} (week-end)"
+                _(
+                    "⏭️ Pas de shift généré pour le %(date)s (week-end)",
+                    date=date.strftime("%d/%m/%Y"),
+                )
             ]
 
         available_users = AdvancedShiftAutomation.get_available_users_for_date(date)
 
         if not available_users:
             return [], [
-                f"⚠️ Aucun utilisateur disponible pour le {date.strftime('%d/%m/%Y')}"
+                _(
+                    "⚠️ Aucun utilisateur disponible pour le %(date)s",
+                    date=date.strftime("%d/%m/%Y"),
+                )
             ]
 
         # Rule 6: minimum headcount of 1 person. When only one person is
@@ -310,13 +318,17 @@ class AdvancedShiftAutomation:
                         db.session.commit()
                     except Exception as e:
                         db.session.rollback()
-                        messages.append(f"❌ Erreur : {str(e)}")
+                        messages.append(_("❌ Erreur : %(error)s", error=str(e)))
                         return [], messages
                 else:
                     db.session.flush()
 
             messages.append(
-                f"✅ 1 shift généré pour le {date.strftime('%d/%m/%Y')} (effectif minimum : {sole_user.name})"
+                _(
+                    "✅ 1 shift généré pour le %(date)s (effectif minimum : %(name)s)",
+                    date=date.strftime("%d/%m/%Y"),
+                    name=sole_user.name,
+                )
             )
             return generated_shifts, messages
 
@@ -353,7 +365,7 @@ class AdvancedShiftAutomation:
                             db.session.commit()
                         except Exception as e:
                             db.session.rollback()
-                            messages.append(f"❌ Erreur : {str(e)}")
+                            messages.append(_("❌ Erreur : %(error)s", error=str(e)))
                             return [], messages
                     else:
                         db.session.flush()
@@ -407,7 +419,7 @@ class AdvancedShiftAutomation:
                     db.session.commit()
                 except Exception as e:
                     db.session.rollback()
-                    messages.append(f"❌ Erreur : {str(e)}")
+                    messages.append(_("❌ Erreur : %(error)s", error=str(e)))
                     return [], messages
             else:
                 db.session.flush()
@@ -415,14 +427,26 @@ class AdvancedShiftAutomation:
         # Return a summary instead of detailed messages
         if generated_shifts:
             return generated_shifts, [
-                f"✅ {len(generated_shifts)} shifts générés pour le {date.strftime('%d/%m/%Y')}"
+                _(
+                    "✅ %(count)s shifts générés pour le %(date)s",
+                    count=len(generated_shifts),
+                    date=date.strftime("%d/%m/%Y"),
+                )
             ]
         elif date.weekday() >= 5:
             return [], [
-                f"⏭️ Pas de shift généré pour le {date.strftime('%d/%m/%Y')} (week-end)"
+                _(
+                    "⏭️ Pas de shift généré pour le %(date)s (week-end)",
+                    date=date.strftime("%d/%m/%Y"),
+                )
             ]
         else:
-            return [], [f"⚠️ Aucun shift généré pour le {date.strftime('%d/%m/%Y')}"]
+            return [], [
+                _(
+                    "⚠️ Aucun shift généré pour le %(date)s",
+                    date=date.strftime("%d/%m/%Y"),
+                )
+            ]
 
     @staticmethod
     def generate_full_schedule(
@@ -518,7 +542,11 @@ class AdvancedShiftAutomation:
                     db.session.delete(oncall)
                 db.session.flush()
                 messages.append(
-                    f"🗑️ {len(overlapping_oncalls)} astreintes supprimées pour l'utilisateur {leave.user_id}"
+                    _(
+                        "🗑️ %(count)s astreintes supprimées pour l'utilisateur %(user_id)s",
+                        count=len(overlapping_oncalls),
+                        user_id=leave.user_id,
+                    )
                 )
 
             # Determine the full period to recompute
@@ -560,7 +588,11 @@ class AdvancedShiftAutomation:
                             db.session.delete(shift)
                         db.session.flush()
                         messages.append(
-                            f"🗑️ {len(existing_shifts)} shifts supprimés pour le {current_date.strftime('%d/%m/%Y')}"
+                            _(
+                                "🗑️ %(count)s shifts supprimés pour le %(date)s",
+                                count=len(existing_shifts),
+                                date=current_date.strftime("%d/%m/%Y"),
+                            )
                         )
 
                     # Regenerate shifts with the advanced business rules
@@ -595,8 +627,11 @@ class AdvancedShiftAutomation:
                 if other_oncalls_deleted:
                     db.session.flush()
                     messages.append(
-                        f"🗑️ {other_oncalls_deleted} astreinte(s) supplémentaire(s) "
-                        f"supprimée(s) dans la période étendue avant régénération"
+                        _(
+                            "🗑️ %(count)s astreinte(s) supplémentaire(s) "
+                            "supprimée(s) dans la période étendue avant régénération",
+                            count=other_oncalls_deleted,
+                        )
                     )
 
                 oncalls, oncall_messages, oncall_unfilled_dates = (
@@ -612,7 +647,12 @@ class AdvancedShiftAutomation:
                 messages.extend(oncall_messages)
                 unfilled_oncall_dates.extend(oncall_unfilled_dates)
                 messages.append(
-                    f"🔄 {len(oncalls)} astreintes régénérées pour la période {shift_period_start.strftime('%d/%m/%Y')} - {shift_period_end.strftime('%d/%m/%Y')}"
+                    _(
+                        "🔄 %(count)s astreintes régénérées pour la période %(start)s - %(end)s",
+                        count=len(oncalls),
+                        start=shift_period_start.strftime("%d/%m/%Y"),
+                        end=shift_period_end.strftime("%d/%m/%Y"),
+                    )
                 )
 
             if not dry_run:

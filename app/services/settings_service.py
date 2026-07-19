@@ -65,10 +65,27 @@ class SettingsService:
 
     @staticmethod
     def get_default_timezone() -> str:
-        value = Setting.get(DEFAULT_TIMEZONE_KEY)
-        if value:
-            return str(value)
-        return FALLBACK_DEFAULT_TIMEZONE
+        """Cached on flask.g for the lifetime of the request, same
+        pattern/rationale as app/__init__.py's get_date_format()/
+        get_time_format(): every shift/on-call converted for the
+        calendar (ScheduleService.build_calendar_events, via
+        timezone_helpers.py) calls this at least once - without the
+        cache, that's a real N+1 (one Setting.get() per shift/on-call
+        per render) rather than one query for the whole request. Safe
+        to cache: the setting cannot change mid-request."""
+        from flask import g, has_request_context
+
+        if not has_request_context():
+            value = Setting.get(DEFAULT_TIMEZONE_KEY)
+            return str(value) if value else FALLBACK_DEFAULT_TIMEZONE
+
+        if not hasattr(g, "_resolved_default_timezone"):
+            value = Setting.get(DEFAULT_TIMEZONE_KEY)
+            g._resolved_default_timezone = (
+                str(value) if value else FALLBACK_DEFAULT_TIMEZONE
+            )
+
+        return g._resolved_default_timezone
 
     @staticmethod
     def set_default_timezone(tz_name: str) -> str | None:

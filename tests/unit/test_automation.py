@@ -159,6 +159,25 @@ class TestOnCallAutomation:
                     days=7
                 )
 
+    def test_generate_oncall_schedule_summary_message_translates_to_english(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Regression guard: OnCallAutomation's summary message used to
+        be a raw French f-string, never wrapped in _(), so it ignored
+        the acting admin's language preference entirely."""
+        from flask_babel import force_locale
+
+        with test_app.app_context(), force_locale("en"):
+            start_date = date(2024, 1, 5)  # Friday
+            end_date = date(2024, 1, 19)
+
+            _oncalls, messages, _unfilled = OnCallAutomation.generate_oncall_schedule(
+                start_date, end_date, dry_run=True
+            )
+
+            assert any("on-call" in msg.lower() for msg in messages)
+            assert not any("astreinte" in msg.lower() for msg in messages)
+
     def test_generate_oncall_schedule_with_rotation(
         self, test_app, test_group, test_user, second_user
     ):
