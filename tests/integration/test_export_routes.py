@@ -534,3 +534,69 @@ class TestExportRoutesTokenAuth:
         content = response.data.decode("utf-8")
         # Should not contain second_user's shift
         assert second_user.name not in content
+
+
+class TestIcsTokenExpiry:
+    """Tests for ICS token expiry enforcement (ExportService.resolve_user)."""
+
+    def test_fresh_token_is_not_expired(self, client, test_user, test_app):
+        with test_app.app_context():
+            token = test_user.generate_ics_token()
+            db.session.commit()
+
+        response = client.get(f"/export/shifts?scope=my&token={token}")
+        assert response.status_code == 200
+
+    def test_token_past_expiry_days_is_rejected(self, client, test_user, test_app):
+        with test_app.app_context():
+            token = test_user.generate_ics_token()
+            test_user.ics_token_created_at = datetime.utcnow() - timedelta(days=400)
+            db.session.commit()
+
+        response = client.get(f"/export/shifts?scope=my&token={token}")
+        assert response.status_code in (401, 302)
+
+    def test_token_with_no_created_at_is_rejected(self, client, test_user, test_app):
+        """A token issued before this feature (not yet backfilled) must not
+        grant indefinite access."""
+        with test_app.app_context():
+            test_user.ics_token = "legacy-token-no-timestamp"
+            test_user.ics_token_created_at = None
+            db.session.commit()
+
+        response = client.get("/export/shifts?scope=my&token=legacy-token-no-timestamp")
+        assert response.status_code in (401, 302)
+
+    def test_regenerating_token_resets_expiry_clock(self, client, test_user, test_app):
+        with test_app.app_context():
+            test_user.generate_ics_token()
+            test_user.ics_token_created_at = datetime.utcnow() - timedelta(days=400)
+            db.session.commit()
+
+            new_token = test_user.generate_ics_token()
+            db.session.commit()
+
+        response = client.get(f"/export/shifts?scope=my&token={new_token}")
+        assert response.status_code == 200
+
+    def test_admin_configured_expiry_days_is_respected(
+        self, client, test_user, test_app
+    ):
+        from app.services.settings_service import SettingsService
+
+        with test_app.app_context():
+            token = test_user.generate_ics_token()
+            test_user.ics_token_created_at = datetime.utcnow() - timedelta(days=10)
+            db.session.commit()
+            SettingsService.set_ics_token_expiry_days(5)
+
+        response = client.get(f"/export/shifts?scope=my&token={token}")
+        assert response.status_code in (401, 302)
+
+    def test_authenticated_session_ignores_token_expiry(
+        self, logged_in_client, test_app
+    ):
+        """Session-based access must never be gated by ics_token expiry -
+        it doesn't even use the token."""
+        response = logged_in_client.get("/export/shifts?scope=my")
+        assert response.status_code == 200

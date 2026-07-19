@@ -12,7 +12,7 @@ from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db
-from app.models.base import BaseModel
+from app.models.base import BaseModel, _utcnow
 
 
 class Group(BaseModel):
@@ -52,6 +52,8 @@ class User(BaseModel, UserMixin):
         is_admin: Whether the user has administrator privileges
         group_id: Foreign key to Group
         ics_token: Unique token for ICS export
+        ics_token_created_at: When ics_token was (re)generated - used to
+            compute expiry against SettingsService.get_ics_token_expiry_days()
         timezone: Optional personal IANA timezone (e.g. "Europe/Paris"); None
             means "use the organization's default_timezone setting"
         language: Optional personal UI language ("fr"/"en"); None means
@@ -97,6 +99,7 @@ class User(BaseModel, UserMixin):
         db.Integer, db.ForeignKey("groups.id"), nullable=False, default=1, index=True
     )
     ics_token = db.Column(db.String(64), unique=True, nullable=True)
+    ics_token_created_at = db.Column(db.DateTime, nullable=True)
     timezone = db.Column(db.String(64), nullable=True)
     language = db.Column(db.String(5), nullable=True)
     date_format = db.Column(db.String(20), nullable=True)
@@ -164,11 +167,48 @@ class User(BaseModel, UserMixin):
     def generate_ics_token(self) -> str:
         """Generate a unique token for ICS export.
 
+        Also resets ics_token_created_at, restarting the expiry clock
+        used by is_ics_token_expired().
+
         Returns:
             The generated token
         """
         self.ics_token = secrets.token_urlsafe(32)
+        self.ics_token_created_at = _utcnow()
         return self.ics_token
+
+    def is_ics_token_expired(self) -> bool:
+        """Whether ics_token is past SettingsService.get_ics_token_expiry_days().
+
+        Only meaningful for a user resolved via ics_token
+        (ExportService.resolve_user) - self.ics_token is guaranteed set on
+        that path, since that's how the user was even found. A missing
+        ics_token_created_at (a token issued before this check existed,
+        not yet backfilled by the migration) is treated as expired -
+        forces a fresh regeneration rather than silently granting
+        indefinite access.
+        """
+        if not self.ics_token_created_at:
+            return True
+        from datetime import timedelta, timezone
+
+        from app.services import SettingsService
+
+        expiry_days = SettingsService.get_ics_token_expiry_days()
+        created_at = self.ics_token_created_at.replace(tzinfo=timezone.utc)
+        return _utcnow() > created_at + timedelta(days=expiry_days)
+
+    def ics_token_expires_at(self):
+        """Datetime ics_token becomes invalid, or None if there's no token
+        or no creation timestamp yet. Display-only (e.g. /profile/ics-token)."""
+        if not self.ics_token or not self.ics_token_created_at:
+            return None
+        from datetime import timedelta
+
+        from app.services import SettingsService
+
+        expiry_days = SettingsService.get_ics_token_expiry_days()
+        return self.ics_token_created_at + timedelta(days=expiry_days)
 
     def get_ics_export_url(
         self, export_type: str = "shifts", scope: str = "all"

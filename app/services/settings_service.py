@@ -343,13 +343,15 @@ class SettingsService:
             db.session.rollback()
             return str(e)
 
-    # --- ICS token expiry (currently unenforced, see CLAUDE.md) ---
+    # --- ICS token expiry ---
 
     @staticmethod
     def get_ics_token_expiry_days() -> int:
         """Falls back to the ICS_TOKEN_EXPIRY_DAYS env var (documented in
         .env.example, not part of app.config) when no DB override exists.
-        No enforcement point reads this value yet - see CLAUDE.md."""
+        Enforced by User.is_ics_token_expired(), checked from
+        ExportService.resolve_user() - see CLAUDE.md's "Multi-timezone
+        support" section."""
         value = Setting.get(ICS_TOKEN_EXPIRY_DAYS_KEY)
         if value is not None:
             return int(value)

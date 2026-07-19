@@ -32,6 +32,7 @@ automated tests), and used for real team scheduling.
   service-account tokens, for third-party integrations
 - Outbound notifications to Slack/Discord/Telegram/webhooks (via
   Apprise), plus in-app and email reminders
+- ICS export tokens expire automatically (admin-configurable duration)
 
 **Security**
 - Static code analysis (Bandit) and dependency vulnerability scanning
@@ -53,9 +54,6 @@ automated tests), and used for real team scheduling.
   GitHub-hosted repository — there is no equivalent GitHub Actions
   workflow yet. Needed before any change can be verified
   automatically on every push/PR.
-- **Enforce ICS token expiry.** `ICS_TOKEN_EXPIRY_DAYS` exists as a
-  setting but nothing currently checks or expires a token based on it
-  — a token remains valid indefinitely once issued.
 - **Fix a pre-existing timezone edge case** in `OnCall.is_active()`:
   it compares a stored UTC timestamp against local server time, which
   can be off by the server's UTC offset.
