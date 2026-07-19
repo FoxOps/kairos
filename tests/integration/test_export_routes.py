@@ -564,9 +564,7 @@ class TestIcsTokenExpiry:
             test_user.ics_token_created_at = None
             db.session.commit()
 
-        response = client.get(
-            "/export/shifts?scope=my&token=legacy-token-no-timestamp"
-        )
+        response = client.get("/export/shifts?scope=my&token=legacy-token-no-timestamp")
         assert response.status_code in (401, 302)
 
     def test_regenerating_token_resets_expiry_clock(self, client, test_user, test_app):

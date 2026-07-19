@@ -28,8 +28,17 @@ depends_on = None
 
 
 def upgrade():
-    with op.batch_alter_table("user", schema=None) as batch_op:
-        batch_op.add_column(sa.Column("ics_token_created_at", sa.DateTime(), nullable=True))
+    # Same guard as 8b6f0e5b1c7a/e7f4a9c2b6d1/etc: run.py::setup_database()'s
+    # legacy-DB backfill path (db.create_all() with current model metadata,
+    # which already includes User.ics_token_created_at) can leave this
+    # column already present by the time this migration runs.
+    inspector = sa.inspect(op.get_bind())
+    existing_columns = [col["name"] for col in inspector.get_columns("user")]
+    if "ics_token_created_at" not in existing_columns:
+        with op.batch_alter_table("user", schema=None) as batch_op:
+            batch_op.add_column(
+                sa.Column("ics_token_created_at", sa.DateTime(), nullable=True)
+            )
 
     user = sa.table(
         "user",

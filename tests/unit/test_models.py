@@ -391,7 +391,9 @@ class TestUserModel:
 
             expires_at = test_user.ics_token_expires_at()
             assert expires_at is not None
-            assert abs((expires_at - (created + timedelta(days=30))).total_seconds()) < 1
+            assert (
+                abs((expires_at - (created + timedelta(days=30))).total_seconds()) < 1
+            )
 
 
 class TestShiftTypeModel:
