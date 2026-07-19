@@ -225,7 +225,7 @@ class TestFileStructure:
                 "js/theme/theme-manager.js",
                 "js/utils/dom.js",
                 "js/utils/accessibility.js",
-                "js/notifications/toast.js",
+                "js/notifications/flash-messages.js",
             ]
             for js_file in required_js:
                 js_path = os.path.join(static_folder, js_file)
