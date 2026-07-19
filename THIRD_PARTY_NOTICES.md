@@ -54,6 +54,16 @@ or statically linked, which keeps it clear of source-disclosure obligations.
 | FullCalendar | MIT | [fullcalendar/fullcalendar](https://github.com/fullcalendar/fullcalendar) |
 | Vanilla Calendar Pro | MIT | [uvarov-frontend/vanilla-calendar-pro](https://github.com/uvarov-frontend/vanilla-calendar-pro) |
 
+## Design (color palette, not a code dependency)
+
+`app/static/css/theme-colors.css` sources its dark/light palette 1:1 from the
+official Dracula/Alucard spec (see `CLAUDE.md`'s "Frontend" section) - no
+invented or computed hues.
+
+| Asset | License | Source |
+|---|---|---|
+| Dracula Theme (color spec) | MIT | [dracula/dracula-theme](https://github.com/dracula/dracula-theme) |
+
 ## Development & testing tools (not shipped in the running app)
 
 | Tool | License | Source |

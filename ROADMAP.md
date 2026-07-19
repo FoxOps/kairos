@@ -53,18 +53,33 @@ automated tests), and used for real team scheduling.
   GitHub-hosted repository — there is no equivalent GitHub Actions
   workflow yet. Needed before any change can be verified
   automatically on every push/PR.
-- **Write support on the public API v1.** `/api/v1/*` is deliberately
-  read-only today (listing shifts/on-call/leave/users) — adding
-  create/update/delete would mean re-validating the same
-  conflict/weekend/leave rules already enforced by the internal
-  session-based routes, without duplicating that logic. A real
-  candidate for a v2, not started yet.
 - **Enforce ICS token expiry.** `ICS_TOKEN_EXPIRY_DAYS` exists as a
   setting but nothing currently checks or expires a token based on it
   — a token remains valid indefinitely once issued.
 - **Fix a pre-existing timezone edge case** in `OnCall.is_active()`:
   it compares a stored UTC timestamp against local server time, which
   can be off by the server's UTC offset.
+
+## 🔭 Future ideas
+
+Larger features, not yet started, not committed to a timeline.
+
+- **Configurable automation rules.** Rules used to generate shifts and
+  on-call rotations (weekend handling, minimum staffing, rest periods)
+  are currently hardcoded in Python — a config file or an admin UI
+  would let each team adapt them without touching code.
+- **On-call intervention reports.** A way to log what happened during
+  an on-call shift (time spent, actions taken) — useful both for
+  payroll and as an audit trail of interventions.
+- **New access-control roles**, beyond today's admin/user split (e.g.
+  HR, auditor) — for people who need to see scheduling data without
+  being able to change it.
+- **Write support on the public API v1.** `/api/v1/*` is deliberately
+  read-only today (listing shifts/on-call/leave/users) — adding
+  create/update/delete would mean re-validating the same
+  conflict/weekend/leave rules already enforced by the internal
+  session-based routes, without duplicating that logic. A real
+  candidate for a v2, not started yet.
 
 ## Contributing
 
