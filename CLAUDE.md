@@ -14,8 +14,10 @@ Kairos is a Flask web app for team shift scheduling, on-call rotations, and leav
 management, with ICS calendar export. Active development, French-language docs/commit history.
 v1.0 stabilization complete (security audit, targeted bug hunt, load test — see
 `report/SECURITY_AUDIT_v1.0.md`, `report/BUG_HUNT_v1.0.md`, `report/LOAD_TEST_v1.0.md`, and
-ROADMAP.md's "Done" section). CI runs on GitHub Actions (`.github/workflows/ci.yml`, the
-GitLab CI config this repo used to carry was removed — GitLab never actually executed against this
+ROADMAP.md's "Done" section). Tests run on GitHub Actions
+(`.github/workflows/tests.yml`, named `Tests` — not `ci.yml`/`CI`, renamed to say what it actually
+does now that Docker publishing lives in its own separate workflow, see below — the GitLab CI config
+this repo used to carry was removed — GitLab never actually executed against this
 GitHub-hosted repo). Deliberately **not** triggered on every push/PR: the repository is currently
 private, where GitHub Actions minutes are metered and billed past a monthly quota (unlike a public
 repo, where they're unlimited/free) — the workflow instead runs on a tag push (`v*`, just before a
@@ -23,7 +25,11 @@ release is published), once a week (`schedule`, catches dependencies that turn v
 any code change), or on demand (`workflow_dispatch`). Revisit this trigger set once the repo goes
 public. The dependency vulnerability scan (`pip-audit`, replacing the former `safety scan` which
 required a `SAFETY_API_KEY`) needs no key and runs unconditionally/blocking in both `make security`
-and the `security` CI job.
+and the `security` job of that workflow. Building and publishing the Docker image to
+`ghcr.io/foxops/kairos` is a separate workflow (`.github/workflows/docker-release.yml`),
+deliberately **manual-only** (`workflow_dispatch`, never triggered by a tag push or by the tests
+workflow completing) — run it yourself from the Actions tab after confirming the tests workflow
+already passed for the ref you're about to release. See `Docs/deployment/docker.md`.
 
 ## Commands
 

@@ -38,7 +38,7 @@
 ### 1.2 Required Software
 | Software | Minimum Version | Description |
 |----------|------------------|-------------|
-| Python | 3.11+ | Programming language (the codebase uses PEP 604 `X \| None` type hints, which require at least Python 3.10; `docker/Dockerfile` and `.github/workflows/ci.yml` both use 3.11, the only version this app is actually built/tested against) |
+| Python | 3.11+ | Programming language (the codebase uses PEP 604 `X \| None` type hints, which require at least Python 3.10; `docker/Dockerfile` and `.github/workflows/tests.yml` both use 3.11, the only version this app is actually built/tested against) |
 | pip | 26.1.2+ | Python package manager (`requirements.txt` pins `pip>=26.1.2` for CVE fixes) |
 | Git | 2.20+ | Version control |
 | PostgreSQL | 12+ | Database (recommended) |
@@ -253,9 +253,9 @@ uwsgi --ini uwsgi.ini
 
 **Recommended method for the whole project** (see the warning
 at the top of this guide) - the actual `Dockerfile`/`docker-compose.yml` live
-under `docker/`, with the image meant to be pulled from the GitHub
-Container Registry (`ghcr.io`) - there is currently no CI job that builds/publishes it automatically -
-see [`docker.md`](docker.md) for the details). This guide
+under `docker/`, with the image pulled from the GitHub Container Registry
+(`ghcr.io`), built and pushed via a manual-only GitHub Actions workflow
+(`docker-release.yml`) - see [`docker.md`](docker.md) for the details. This guide
 specifically covers bare-metal deployment (Gunicorn/uWSGI), so it does not
 maintain a separate copy of that configuration here.
 

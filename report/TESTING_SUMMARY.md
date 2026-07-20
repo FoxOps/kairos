@@ -40,15 +40,17 @@
   leave, oncall, swap)
 - **Real browser (optional)**: `pytest-playwright` + Chromium, see
   `requirements-e2e.txt`
-- **CI**: GitHub Actions (`.github/workflows/ci.yml`, 4 jobs: test,
-  e2e, lint, security) — deliberately **not** run on every push/PR
+- **Tests workflow**: GitHub Actions (`.github/workflows/tests.yml`, 4
+  jobs: test, e2e, lint, security) — deliberately **not** run on every push/PR
   while the repo is private (GitHub Actions minutes are metered on a
   private repo, unlike a public one). Triggers: a version tag push
   (`v*`, just before a release), weekly (`schedule`, catches
   dependencies turning vulnerable with no code change), or on demand
   (`workflow_dispatch`). The former GitLab CI config
   (`.gitlab-ci/.gitlab-ci.yml`) was removed — GitLab never actually
-  executed against this GitHub-hosted repo.
+  executed against this GitHub-hosted repo. Docker build/push is a
+  separate, manual-only workflow
+  (`.github/workflows/docker-release.yml`), not part of this one.
 
 ---
 
