@@ -57,9 +57,10 @@ class TestOnCallAutomationCheckConstraint:
         """Test that check_oncall_constraint returns True with no previous on-call."""
         with test_app.app_context():
             start_time = datetime.now() + timedelta(days=30)
+            end_time = start_time + timedelta(days=7, hours=-14)
             index = AvailabilityIndex([test_user.id])
             result = OnCallAutomation.check_oncall_constraint(
-                test_user, start_time, index
+                test_user, start_time, end_time, index
             )
             assert result is True
 
@@ -78,9 +79,10 @@ class TestOnCallAutomationCheckConstraint:
 
             # Test with a date that's too close (less than 2 weeks after)
             start_time = now - timedelta(days=12)
+            end_time = start_time + timedelta(days=7, hours=-14)
             index = AvailabilityIndex([test_user.id])
             result = OnCallAutomation.check_oncall_constraint(
-                test_user, start_time, index
+                test_user, start_time, end_time, index
             )
             assert result is False
 
@@ -99,9 +101,10 @@ class TestOnCallAutomationCheckConstraint:
 
             # Test with a date far enough in the future
             start_time = now + timedelta(days=15)
+            end_time = start_time + timedelta(days=7, hours=-14)
             index = AvailabilityIndex([test_user.id])
             result = OnCallAutomation.check_oncall_constraint(
-                test_user, start_time, index
+                test_user, start_time, end_time, index
             )
             assert result is True
 

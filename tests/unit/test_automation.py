@@ -347,3 +347,163 @@ class TestEdgeCases:
             # Clean up
             db.session.delete(leave)
             db.session.commit()
+
+
+class TestOnCallMaxFillSearch:
+    """Regression tests for the bug report: a plain greedy left-to-right
+    pass can leave a week empty even though a different (still legal)
+    assignment of the *other* weeks would have kept it fillable -
+    generate_oncall_schedule() must only leave a week empty once no
+    permutation of the period's assignments can fill it (see
+    _solve_max_filled_weeks() in oncall_automation.py)."""
+
+    def test_fills_a_week_that_greedy_would_leave_empty(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """3 users A/B/C, rotation order [A, B, C]. C is on leave only
+        during week 3 (2024-01-19), every other week is conflict-free
+        for everyone. The old greedy algorithm assigns A->week1,
+        B->week2 (both the first available candidate in rotation
+        order), leaving nobody free for week3 (A and B were both just
+        used, C is on leave) - a real gap even though A->week1,
+        C->week2, B->week3, A->week4, C->week5, B->week6 fills every
+        single week and is just as legal. This asserts all 6 weeks get
+        filled, not 5."""
+        with test_app.app_context():
+            user_c = User(
+                name="Third User",
+                email="third@test.com",
+                password_hash="third123",
+                is_admin=False,
+                group_id=test_group.id,
+            )
+            db.session.add(user_c)
+            db.session.commit()
+
+            # A single day strictly inside week 3's on-call span
+            # (Jan 19 21h -> Jan 26 07h) that doesn't touch the
+            # Jan 19/Jan 26 boundary dates shared with weeks 2 and 4 -
+            # blocks user_c for week 3 only.
+            leave = Leave(
+                user_id=user_c.id,
+                start_date=date(2024, 1, 22),
+                end_date=date(2024, 1, 22),
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            start_date = date(2024, 1, 5)  # Friday (week 1)
+            end_date = date(2024, 2, 9)  # Friday (week 6)
+            rotation_order = [test_user.id, second_user.id, user_c.id]
+
+            oncalls, messages, unfilled_dates = (
+                OnCallAutomation.generate_oncall_schedule(
+                    start_date, end_date, rotation_order, dry_run=True
+                )
+            )
+
+            assert unfilled_dates == []
+            assert len(oncalls) == 6
+            # user_c must never have been assigned week 3 itself.
+            week3_oncall = next(
+                o for o in oncalls if o.start_time.date() == date(2024, 1, 19)
+            )
+            assert week3_oncall.user_id != user_c.id
+            assert not any("Aucune astreinte générée" in msg for msg in messages)
+
+    def test_genuinely_unfillable_week_stays_empty(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """With only 2 rotating users, the 2-week legal spacing means
+        each user can be reused only every 3rd week at best - so at
+        most 2 out of every 3 weeks can ever be filled, regardless of
+        which permutation is tried. The search must still report a gap
+        here (not paper over a genuine impossibility)."""
+        with test_app.app_context():
+            start_date = date(2024, 1, 5)  # Friday
+            end_date = date(2024, 1, 26)  # 4 Fridays, 2 users
+            rotation_order = [test_user.id, second_user.id]
+
+            oncalls, _messages, unfilled_dates = (
+                OnCallAutomation.generate_oncall_schedule(
+                    start_date, end_date, rotation_order, dry_run=True
+                )
+            )
+
+            assert len(unfilled_dates) >= 1
+            assert len(oncalls) + len(unfilled_dates) == 4
+
+
+class TestFillOnCallGaps:
+    """Tests for OnCallAutomation.fill_oncall_gaps() - the "combler les
+    trous d'astreintes seulement" mode used by the "Rafraîchir" admin
+    action: unlike generate_oncall_schedule(), it must never touch a
+    Friday that already has an on-call (even a manually-assigned one),
+    only create ones for Fridays that have none."""
+
+    def test_leaves_existing_oncalls_untouched(
+        self, test_app, test_group, test_user, second_user
+    ):
+        with test_app.app_context():
+            user3 = User(
+                name="Third User",
+                email="third@test.com",
+                password_hash="third123",
+                is_admin=False,
+                group_id=test_group.id,
+            )
+            db.session.add(user3)
+            db.session.commit()
+
+            rotation_order = [test_user.id, second_user.id, user3.id]
+
+            # A manually-assigned on-call for week 1, deliberately
+            # *not* the user rotation would have picked.
+            week1_friday = date(2024, 1, 5)
+            start_time = datetime.combine(
+                week1_friday, datetime.min.time()
+            ).replace(hour=21)
+            end_time = start_time + timedelta(days=7, hours=-14)
+            manual_oncall = OnCall(
+                user_id=user3.id, start_time=start_time, end_time=end_time
+            )
+            db.session.add(manual_oncall)
+            db.session.commit()
+
+            oncalls, _messages, unfilled_dates = OnCallAutomation.fill_oncall_gaps(
+                date(2024, 1, 5), date(2024, 1, 19), rotation_order, dry_run=False
+            )
+
+            assert unfilled_dates == []
+            # Only weeks 2 and 3 were actually missing - week 1 must
+            # not appear among the newly created on-calls.
+            assert {o.start_time.date() for o in oncalls} == {
+                date(2024, 1, 12),
+                date(2024, 1, 19),
+            }
+            # The manual assignment for week 1 is untouched.
+            still_there = OnCall.query.filter_by(id=manual_oncall.id).first()
+            assert still_there is not None
+            assert still_there.user_id == user3.id
+
+    def test_no_op_when_nothing_missing(
+        self, test_app, test_group, test_user, second_user
+    ):
+        with test_app.app_context():
+            rotation_order = [test_user.id, second_user.id]
+            OnCallAutomation.generate_oncall_schedule(
+                date(2024, 1, 5),
+                date(2024, 1, 12),
+                rotation_order,
+                dry_run=False,
+            )
+            count_before = OnCall.query.count()
+
+            oncalls, messages, unfilled_dates = OnCallAutomation.fill_oncall_gaps(
+                date(2024, 1, 5), date(2024, 1, 12), rotation_order, dry_run=False
+            )
+
+            assert oncalls == []
+            assert unfilled_dates == []
+            assert OnCall.query.count() == count_before
+            assert any("Aucune astreinte manquante" in msg for msg in messages)

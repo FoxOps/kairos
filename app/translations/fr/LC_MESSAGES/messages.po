@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-20 18:08+0200\n"
+"POT-Creation-Date: 2026-07-20 21:57+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -41,24 +41,44 @@ msgstr ""
 msgid "%(count)s entrée(s) d'historique purgée(s)."
 msgstr ""
 
-#: app/routes/admin_automation_routes.py:100
+#: app/routes/admin_automation_routes.py:65
+#: app/routes/admin_automation_routes.py:310 app/services/leave_service.py:179
+msgid "Génération d'astreintes incomplète"
+msgstr ""
+
+#: app/routes/admin_automation_routes.py:67
+#: app/routes/admin_automation_routes.py:312
+#, python-format
+msgid ""
+"Aucun utilisateur disponible dans le respect du délai légal de 2 semaines"
+" pour : %(dates)s. Assignation manuelle nécessaire dans "
+"/admin/automation."
+msgstr ""
+
+#: app/routes/admin_automation_routes.py:149
+#: app/routes/admin_automation_routes.py:239
+#, python-format
+msgid "%(oncalls_deleted)s astreintes existantes supprimées pour la période"
+msgstr ""
+
+#: app/routes/admin_automation_routes.py:176
 #, python-format
 msgid "%(deleted)s shifts existants supprimés pour la période"
 msgstr ""
 
-#: app/routes/admin_automation_routes.py:113
+#: app/routes/admin_automation_routes.py:189
 #, python-format
 msgid "%(val0)s shifts régénérés avec succès !"
 msgstr ""
 
-#: app/routes/admin_automation_routes.py:117
-#: app/routes/admin_automation_routes.py:258
+#: app/routes/admin_automation_routes.py:193
+#: app/routes/admin_automation_routes.py:334
 #, python-format
 msgid "Format de date invalide : %(val0)s"
 msgstr ""
 
-#: app/routes/admin_automation_routes.py:120
-#: app/routes/admin_automation_routes.py:260
+#: app/routes/admin_automation_routes.py:196
+#: app/routes/admin_automation_routes.py:336
 #: app/routes/admin_group_routes.py:47 app/routes/admin_group_routes.py:78
 #: app/routes/admin_group_routes.py:97
 #: app/routes/admin_notification_target_routes.py:82
@@ -78,40 +98,23 @@ msgstr ""
 msgid "Erreur : %(val0)s"
 msgstr ""
 
-#: app/routes/admin_automation_routes.py:136
+#: app/routes/admin_automation_routes.py:212
 #, python-format
 msgid "Erreur lors de la sauvegarde de l'ordre : %(error)s"
 msgstr ""
 
-#: app/routes/admin_automation_routes.py:144
+#: app/routes/admin_automation_routes.py:220
 msgid ""
 "Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour "
 "appliquer."
 msgstr ""
 
-#: app/routes/admin_automation_routes.py:163
-#, python-format
-msgid "%(oncalls_deleted)s astreintes existantes supprimées pour la période"
-msgstr ""
-
-#: app/routes/admin_automation_routes.py:171
+#: app/routes/admin_automation_routes.py:247
 #, python-format
 msgid "%(shifts_deleted)s shifts existants supprimés pour la période"
 msgstr ""
 
-#: app/routes/admin_automation_routes.py:234 app/services/leave_service.py:179
-msgid "Génération d'astreintes incomplète"
-msgstr ""
-
-#: app/routes/admin_automation_routes.py:236
-#, python-format
-msgid ""
-"Aucun utilisateur disponible dans le respect du délai légal de 2 semaines"
-" pour : %(dates)s. Assignation manuelle nécessaire dans "
-"/admin/automation."
-msgstr ""
-
-#: app/routes/admin_automation_routes.py:249
+#: app/routes/admin_automation_routes.py:325
 #, python-format
 msgid ""
 "Régénération complète terminée pour la période du %(strftime)s au "
@@ -1197,7 +1200,7 @@ msgid ""
 "etc.) qui n'est pas supportée pour cette URL."
 msgstr ""
 
-#: app/templates/405.html:17 app/templates/admin/automation/full.html:164
+#: app/templates/405.html:17 app/templates/admin/automation/full.html:157
 msgid "Vérifiez que :"
 msgstr ""
 
@@ -1708,16 +1711,16 @@ msgstr ""
 msgid "Utilisateurs"
 msgstr ""
 
-#: app/templates/base.html:231 app/templates/index.html:96
-msgid "Admin"
-msgstr ""
-
 #: app/templates/admin/automation/dashboard.html:8
 #: app/templates/admin/automation/dashboard.html:11
 #: app/templates/admin/automation/full.html:12
 #: app/templates/admin/automation/full_dry_run.html:8
-#: app/templates/admin/dashboard.html:87 app/templates/base.html:232
+#: app/templates/admin/dashboard.html:87 app/templates/base.html:231
 msgid "Automatisation"
+msgstr ""
+
+#: app/templates/base.html:232 app/templates/index.html:96
+msgid "Admin"
 msgstr ""
 
 #: app/templates/base.html:237
@@ -2039,12 +2042,12 @@ msgstr ""
 msgid "Actions rapides"
 msgstr ""
 
-#: app/templates/admin/automation/full.html:174 app/templates/index.html:89
+#: app/templates/admin/automation/full.html:167 app/templates/index.html:89
 #: app/templates/index.html:90
 msgid "Gérer les utilisateurs"
 msgstr ""
 
-#: app/templates/admin/automation/full.html:171 app/templates/index.html:92
+#: app/templates/admin/automation/full.html:164 app/templates/index.html:92
 #: app/templates/index.html:93
 msgid "Gérer les groupes"
 msgstr ""
@@ -3958,141 +3961,166 @@ msgstr ""
 msgid "Prévisualiser (Dry Run)"
 msgstr ""
 
-#: app/templates/admin/automation/full.html:152
-#: app/templates/admin/automation/full.html:183
-msgid "Rafraîchir les shifts"
-msgstr ""
-
-#: app/templates/admin/automation/full.html:157
-msgid ""
-"\"Rafraîchir les shifts\" recalcule uniquement les shifts d'après les "
-"astreintes déjà en base (même modifiées manuellement), sans toucher aux "
-"astreintes elles-mêmes."
-msgstr ""
-
-#: app/templates/admin/automation/full.html:163
+#: app/templates/admin/automation/full.html:156
 msgid "Aucun utilisateur éligible trouvé pour les astreintes."
 msgstr ""
 
-#: app/templates/admin/automation/full.html:166
+#: app/templates/admin/automation/full.html:159
 msgid "Des utilisateurs existent"
 msgstr ""
 
-#: app/templates/admin/automation/full.html:167
+#: app/templates/admin/automation/full.html:160
 msgid "Les utilisateurs appartiennent à un groupe configuré dans"
 msgstr ""
 
-#: app/templates/admin/automation/full.html:167
+#: app/templates/admin/automation/full.html:160
 msgid "la configuration"
 msgstr ""
 
-#: app/templates/admin/automation/full.html:181
+#: app/templates/admin/automation/full.html:178
+#: app/templates/admin/automation/full.html:207
+msgid "Rafraîchir les shifts"
+msgstr ""
+
+#: app/templates/admin/automation/full.html:179
 msgid ""
-"Pas d'utilisateur éligible pour les astreintes, mais vous pouvez tout de "
-"même recalculer les shifts d'après les astreintes déjà en base :"
+"Recalcule les shifts d'après les astreintes en base, en choisissant ci-"
+"dessous comment traiter les astreintes elles-mêmes."
+msgstr ""
+
+#: app/templates/admin/automation/full.html:185
+msgid "Ne pas toucher aux astreintes"
+msgstr ""
+
+#: app/templates/admin/automation/full.html:186
+msgid ""
+"Recalcule seulement les shifts, en tenant compte des astreintes actuelles"
+" (même modifiées manuellement)."
 msgstr ""
 
 #: app/templates/admin/automation/full.html:192
+msgid "Combler les trous d'astreintes"
+msgstr ""
+
+#: app/templates/admin/automation/full.html:193
+msgid ""
+"Assigne une astreinte uniquement aux semaines qui n'en ont aucune - les "
+"astreintes déjà assignées (même modifiées manuellement) ne sont jamais "
+"touchées."
+msgstr ""
+
+#: app/templates/admin/automation/full.html:199
+msgid "Régénérer entièrement les astreintes"
+msgstr ""
+
+#: app/templates/admin/automation/full.html:200
+msgid ""
+"Supprime et régénère toutes les astreintes de la période selon l'ordre de"
+" rotation configuré - écrase les modifications manuelles."
+msgstr ""
+
+#: app/templates/admin/automation/full.html:215
 #: app/templates/auth/profile.html:54
 msgid "Retour"
 msgstr ""
 
-#: app/templates/admin/automation/full.html:199
+#: app/templates/admin/automation/full.html:222
 msgid "Comment ça marche ?"
 msgstr ""
 
-#: app/templates/admin/automation/full.html:200
+#: app/templates/admin/automation/full.html:223
 msgid "Génération complète :"
 msgstr ""
 
-#: app/templates/admin/automation/full.html:202
+#: app/templates/admin/automation/full.html:225
 msgid ""
 "Définissez l'ordre de rotation en glissant-déposant les utilisateurs, et "
 "cochez ceux à inclure."
 msgstr ""
 
-#: app/templates/admin/automation/full.html:203
+#: app/templates/admin/automation/full.html:226
 msgid "Choisissez la période (date de début et de fin)."
 msgstr ""
 
-#: app/templates/admin/automation/full.html:204
+#: app/templates/admin/automation/full.html:227
 msgid ""
 "Utilisez \"Prévisualiser\" pour voir ce qui sera généré sans rien "
 "sauvegarder."
 msgstr ""
 
-#: app/templates/admin/automation/full.html:205
+#: app/templates/admin/automation/full.html:228
 msgid ""
 "Cliquez sur \"Générer les astreintes et shifts\" pour créer astreintes et"
 " shifts en base de données. Les astreintes et shifts existants sur la "
 "période sont remplacés."
 msgstr ""
 
-#: app/templates/admin/automation/full.html:207
+#: app/templates/admin/automation/full.html:230
 msgid "Rafraîchir les shifts :"
 msgstr ""
 
-#: app/templates/admin/automation/full.html:207
+#: app/templates/admin/automation/full.html:230
 msgid ""
-"recalcule les shifts d'après les astreintes déjà en base (même modifiées "
-"manuellement), sans toucher aux astreintes elles-mêmes."
+"recalcule les shifts d'après les astreintes en base. Choisissez comment "
+"traiter les astreintes elles-mêmes : ne pas y toucher, combler uniquement"
+" les trous, ou les régénérer entièrement."
 msgstr ""
 
-#: app/templates/admin/automation/full.html:208
+#: app/templates/admin/automation/full.html:231
 msgid "Règles appliquées à la génération des astreintes :"
 msgstr ""
 
-#: app/templates/admin/automation/full.html:210
+#: app/templates/admin/automation/full.html:233
 msgid "Chaque astreinte commence selon la configuration (par défaut"
 msgstr ""
 
-#: app/templates/admin/automation/full.html:210
+#: app/templates/admin/automation/full.html:233
 msgid "vendredi à 21h"
 msgstr ""
 
-#: app/templates/admin/automation/full.html:210
+#: app/templates/admin/automation/full.html:233
 msgid "et se termine selon la configuration (par défaut"
 msgstr ""
 
-#: app/templates/admin/automation/full.html:210
+#: app/templates/admin/automation/full.html:233
 msgid "vendredi suivant à 07h"
 msgstr ""
 
-#: app/templates/admin/automation/full.html:211
+#: app/templates/admin/automation/full.html:234
 msgid ""
 "La rotation suit l'ordre que vous avez défini et sauvegardé. Cet ordre "
 "est stocké dans la configuration et sera réutilisé pour les prochaines "
 "générations."
 msgstr ""
 
-#: app/templates/admin/automation/full.html:212
+#: app/templates/admin/automation/full.html:235
 msgid ""
 "Si un utilisateur n'est pas disponible (congé, astreinte existante), le "
 "système passe au suivant dans la rotation."
 msgstr ""
 
-#: app/templates/admin/automation/full.html:213
+#: app/templates/admin/automation/full.html:236
 msgid ""
 "Un message d'avertissement est affiché si aucun utilisateur n'est "
 "disponible pour une période."
 msgstr ""
 
-#: app/templates/admin/automation/full.html:214
+#: app/templates/admin/automation/full.html:237
 msgid "Les shifts sont générés automatiquement"
 msgstr ""
 
-#: app/templates/admin/automation/full.html:214
+#: app/templates/admin/automation/full.html:237
 msgid ""
 "après les astreintes selon les règles métiers (13h-21h pour l'astreinte, "
 "rotation des créneaux, etc.)."
 msgstr ""
 
-#: app/templates/admin/automation/full.html:217
+#: app/templates/admin/automation/full.html:240
 #: app/templates/auth/ics_token.html:150
 msgid "Note :"
 msgstr ""
 
-#: app/templates/admin/automation/full.html:217
+#: app/templates/admin/automation/full.html:240
 msgid ""
 "L'ordre de rotation est sauvegardé automatiquement dans la base de "
 "données lorsque vous cliquez sur \"Sauvegarder l'ordre\"."
@@ -4721,7 +4749,7 @@ msgid ""
 "modifiées, action manuelle nécessaire"
 msgstr ""
 
-#: app/utils/automation/oncall_automation.py:289
+#: app/utils/automation/oncall_automation.py:310
 #, python-format
 msgid ""
 "⚠️ Aucune astreinte générée pour le %(date)s (aucun utilisateur ne "
@@ -4729,9 +4757,13 @@ msgid ""
 "assignation manuelle nécessaire."
 msgstr ""
 
-#: app/utils/automation/oncall_automation.py:330
+#: app/utils/automation/oncall_automation.py:337
 #, python-format
 msgid "✅ %(count)s astreintes générées."
+msgstr ""
+
+#: app/utils/automation/oncall_automation.py:586
+msgid "✅ Aucune astreinte manquante sur cette période."
 msgstr ""
 
 #: app/utils/helpers/js_translations.py:20
@@ -5118,5 +5150,27 @@ msgstr ""
 #~ msgstr ""
 
 #~ msgid "Retour au tableau de bord"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "\"Rafraîchir les shifts\" recalcule uniquement"
+#~ " les shifts d'après les astreintes "
+#~ "déjà en base (même modifiées "
+#~ "manuellement), sans toucher aux astreintes "
+#~ "elles-mêmes."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Pas d'utilisateur éligible pour les "
+#~ "astreintes, mais vous pouvez tout de "
+#~ "même recalculer les shifts d'après les"
+#~ " astreintes déjà en base :"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "recalcule les shifts d'après les "
+#~ "astreintes déjà en base (même modifiées"
+#~ " manuellement), sans toucher aux astreintes"
+#~ " elles-mêmes."
 #~ msgstr ""
 

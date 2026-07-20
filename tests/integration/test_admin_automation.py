@@ -2,10 +2,10 @@
 Tests for the automation routes in admin.py.
 """
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from app import db
-from app.models import AppNotification, Group
+from app.models import AppNotification, Group, OnCall
 
 
 class TestAutomationDashboard:
@@ -243,4 +243,139 @@ class TestAutomationFullRefreshMode:
             b"invalide" in response.data
             or b"invalid" in response.data
             or b"Erreur" in response.data
+        )
+
+
+class TestAutomationFullRefreshOncallMode:
+    """Tests for the oncall_mode field of the "refresh_shifts" action on
+    /admin/automation/full (default "none" leaves on-calls untouched,
+    "fill_gaps" only fills empty weeks, "regenerate" fully replaces
+    on-calls in the period)."""
+
+    def test_default_mode_does_not_touch_oncalls(self, logged_in_client, test_user):
+        """Regression test: omitting oncall_mode entirely must behave
+        exactly like the original refresh (shifts only)."""
+        today = date.today()
+        end_date = today + timedelta(days=7)
+        oncall = OnCall(
+            user_id=test_user.id,
+            start_time=datetime.combine(today, datetime.min.time()),
+            end_time=datetime.combine(end_date, datetime.min.time()),
+        )
+        db.session.add(oncall)
+        db.session.commit()
+        oncall_id = oncall.id
+
+        logged_in_client.post(
+            "/admin/automation/full",
+            data={
+                "action": "refresh_shifts",
+                "start_date": today.strftime("%Y-%m-%d"),
+                "end_date": end_date.strftime("%Y-%m-%d"),
+            },
+        )
+
+        assert db.session.get(OnCall, oncall_id) is not None
+
+    def test_fill_gaps_mode_creates_missing_oncalls(
+        self, logged_in_client, test_user, second_user
+    ):
+        count_before = OnCall.query.count()
+        today = date.today()
+        start_date = today
+        while start_date.weekday() != 4:
+            start_date += timedelta(days=1)
+        end_date = start_date + timedelta(days=14)
+
+        response = logged_in_client.post(
+            "/admin/automation/full",
+            data={
+                "action": "refresh_shifts",
+                "start_date": start_date.strftime("%Y-%m-%d"),
+                "end_date": end_date.strftime("%Y-%m-%d"),
+                "oncall_mode": "fill_gaps",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert OnCall.query.count() > count_before
+
+    def test_fill_gaps_mode_does_not_touch_existing_oncall(
+        self, logged_in_client, test_user, second_user
+    ):
+        """A manually-assigned on-call must survive a fill_gaps refresh."""
+        today = date.today()
+        start_date = today
+        while start_date.weekday() != 4:
+            start_date += timedelta(days=1)
+        end_date = start_date + timedelta(days=14)
+
+        manual_oncall = OnCall(
+            user_id=second_user.id,
+            start_time=datetime.combine(start_date, datetime.min.time()).replace(
+                hour=21
+            ),
+            end_time=datetime.combine(
+                start_date + timedelta(days=7), datetime.min.time()
+            ).replace(hour=7),
+        )
+        db.session.add(manual_oncall)
+        db.session.commit()
+        manual_id = manual_oncall.id
+
+        logged_in_client.post(
+            "/admin/automation/full",
+            data={
+                "action": "refresh_shifts",
+                "start_date": start_date.strftime("%Y-%m-%d"),
+                "end_date": end_date.strftime("%Y-%m-%d"),
+                "oncall_mode": "fill_gaps",
+            },
+        )
+
+        preserved = db.session.get(OnCall, manual_id)
+        assert preserved is not None
+        assert preserved.user_id == second_user.id
+
+    def test_regenerate_mode_replaces_oncalls(
+        self, logged_in_client, test_user, second_user
+    ):
+        today = date.today()
+        start_date = today
+        while start_date.weekday() != 4:
+            start_date += timedelta(days=1)
+        end_date = start_date + timedelta(days=14)
+
+        manual_start_time = datetime.combine(start_date, datetime.min.time()).replace(
+            hour=21
+        )
+        manual_oncall = OnCall(
+            user_id=second_user.id,
+            start_time=manual_start_time,
+            end_time=datetime.combine(
+                start_date + timedelta(days=7), datetime.min.time()
+            ).replace(hour=7),
+        )
+        db.session.add(manual_oncall)
+        db.session.commit()
+
+        response = logged_in_client.post(
+            "/admin/automation/full",
+            data={
+                "action": "refresh_shifts",
+                "start_date": start_date.strftime("%Y-%m-%d"),
+                "end_date": end_date.strftime("%Y-%m-%d"),
+                "oncall_mode": "regenerate",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        # The manual assignment itself is gone (the row may have been
+        # replaced by a freshly generated one reusing the same primary
+        # key, so check the assignment, not row survival by id).
+        assert (
+            OnCall.query.filter_by(
+                user_id=second_user.id, start_time=manual_start_time
+            ).first()
+            is None
         )
