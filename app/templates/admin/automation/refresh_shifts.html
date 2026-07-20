@@ -19,7 +19,7 @@
         <div>
             <p>
                 <i class="fas fa-info-circle"></i>
-                {{ _("Cette page permet de recalculer tous les shifts pour une période donnée en tenant compte des") }} <strong>{{ _("astreintes actuelles") }}</strong> ({{ _("même modifiées manuellement") }}).
+                {{ _("Cette page permet de recalculer tous les shifts pour une période donnée, et éventuellement les astreintes selon le mode choisi ci-dessous.") }}
             </p>
             <p>
                 {{ _("Les nouvelles règles métiers seront appliquées :") }}
@@ -50,6 +50,33 @@
                         <input class="input w-full" type="date" name="end_date"
                                value="{{ end_date_default.strftime('%Y-%m-%d') }}" required>
                     </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="label">{{ _("Astreintes") }}</label>
+                <div class="flex flex-col gap-2">
+                    <label class="label cursor-pointer justify-start gap-3">
+                        <input type="radio" name="oncall_mode" value="none" class="radio" checked>
+                        <span>
+                            <strong>{{ _("Ne pas toucher aux astreintes") }}</strong>
+                            <span class="block text-sm text-base-content/60">{{ _("Recalcule seulement les shifts, en tenant compte des astreintes actuelles (même modifiées manuellement).") }}</span>
+                        </span>
+                    </label>
+                    <label class="label cursor-pointer justify-start gap-3">
+                        <input type="radio" name="oncall_mode" value="fill_gaps" class="radio">
+                        <span>
+                            <strong>{{ _("Combler les trous d'astreintes") }}</strong>
+                            <span class="block text-sm text-base-content/60">{{ _("Assigne une astreinte uniquement aux semaines qui n'en ont aucune - les astreintes déjà assignées (même modifiées manuellement) ne sont jamais touchées.") }}</span>
+                        </span>
+                    </label>
+                    <label class="label cursor-pointer justify-start gap-3">
+                        <input type="radio" name="oncall_mode" value="regenerate" class="radio">
+                        <span>
+                            <strong>{{ _("Régénérer entièrement les astreintes") }}</strong>
+                            <span class="block text-sm text-base-content/60">{{ _("Supprime et régénère toutes les astreintes de la période selon l'ordre de rotation configuré - écrase les modifications manuelles.") }}</span>
+                        </span>
+                    </label>
                 </div>
             </div>
 

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-20 11:20+0200\n"
+"POT-Creation-Date: 2026-07-20 21:37+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -43,32 +43,35 @@ msgstr ""
 msgid "%(count)s entrée(s) d'historique purgée(s)."
 msgstr "%(count)s history entry(ies) purged."
 
-#: app/routes/admin_automation_routes.py:89
+#: app/routes/admin_automation_routes.py:91
 #, python-format
 msgid "Erreur lors de la sauvegarde de l'ordre : %(error)s"
 msgstr "Error saving the order: %(error)s"
 
-#: app/routes/admin_automation_routes.py:97
+#: app/routes/admin_automation_routes.py:99
 msgid ""
 "Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour "
 "appliquer."
 msgstr "Rotation order saved! Use the 'Generate' button to apply it."
 
-#: app/routes/admin_automation_routes.py:116
+#: app/routes/admin_automation_routes.py:118
+#: app/routes/admin_automation_routes.py:308
 #, python-format
 msgid "%(oncalls_deleted)s astreintes existantes supprimées pour la période"
 msgstr "%(oncalls_deleted)s existing on-calls deleted for the period"
 
-#: app/routes/admin_automation_routes.py:124
+#: app/routes/admin_automation_routes.py:126
 #, python-format
 msgid "%(shifts_deleted)s shifts existants supprimés pour la période"
 msgstr "%(shifts_deleted)s existing shifts deleted for the period"
 
-#: app/routes/admin_automation_routes.py:187 app/services/leave_service.py:179
+#: app/routes/admin_automation_routes.py:189
+#: app/routes/admin_automation_routes.py:270 app/services/leave_service.py:179
 msgid "Génération d'astreintes incomplète"
 msgstr "Incomplete on-call generation"
 
-#: app/routes/admin_automation_routes.py:189
+#: app/routes/admin_automation_routes.py:191
+#: app/routes/admin_automation_routes.py:272
 #, python-format
 msgid ""
 "Aucun utilisateur disponible dans le respect du délai légal de 2 semaines"
@@ -78,7 +81,7 @@ msgstr ""
 "No user available within the legal 2-week spacing constraint for: "
 "%(dates)s. Manual assignment required in /admin/automation."
 
-#: app/routes/admin_automation_routes.py:202
+#: app/routes/admin_automation_routes.py:204
 #, python-format
 msgid ""
 "Régénération complète terminée pour la période du %(strftime)s au "
@@ -87,14 +90,14 @@ msgstr ""
 "Full regeneration completed for the period from %(strftime)s to "
 "%(strftime1)s"
 
-#: app/routes/admin_automation_routes.py:211
-#: app/routes/admin_automation_routes.py:285
+#: app/routes/admin_automation_routes.py:213
+#: app/routes/admin_automation_routes.py:351
 #, python-format
 msgid "Format de date invalide : %(val0)s"
 msgstr "Invalid date format: %(val0)s"
 
-#: app/routes/admin_automation_routes.py:213
-#: app/routes/admin_automation_routes.py:288
+#: app/routes/admin_automation_routes.py:215
+#: app/routes/admin_automation_routes.py:354
 #: app/routes/admin_group_routes.py:47 app/routes/admin_group_routes.py:78
 #: app/routes/admin_group_routes.py:97
 #: app/routes/admin_notification_target_routes.py:82
@@ -114,12 +117,12 @@ msgstr "Invalid date format: %(val0)s"
 msgid "Erreur : %(val0)s"
 msgstr "Error: %(val0)s"
 
-#: app/routes/admin_automation_routes.py:266
+#: app/routes/admin_automation_routes.py:332
 #, python-format
 msgid "%(deleted)s shifts existants supprimés pour la période"
 msgstr "%(deleted)s existing shifts deleted for the period"
 
-#: app/routes/admin_automation_routes.py:279
+#: app/routes/admin_automation_routes.py:345
 #, python-format
 msgid "%(val0)s shifts régénérés avec succès !"
 msgstr "%(val0)s shifts successfully regenerated!"
@@ -713,8 +716,8 @@ msgid ""
 "modifiées. Assignation manuelle nécessaire."
 msgstr ""
 "Automatic on-call regeneration failed for the period from %(start)s to "
-"%(end)s. The on-calls for this period were not changed. Manual "
-"assignment required."
+"%(end)s. The on-calls for this period were not changed. Manual assignment"
+" required."
 
 #: app/services/apprise_notification_service.py:86
 msgid "URL Apprise invalide."
@@ -1692,6 +1695,7 @@ msgstr "Shifts"
 
 #: app/templates/admin/automation/full_dry_run.html:24
 #: app/templates/admin/automation/full_dry_run.html:127
+#: app/templates/admin/automation/refresh_shifts.html:57
 #: app/templates/admin/dashboard.html:54 app/templates/base.html:88
 #: app/templates/dashboard.html:28 app/templates/index.html:131
 #: app/templates/oncall.html:3 app/templates/oncall.html:8
@@ -4307,7 +4311,7 @@ msgstr "Back to configuration"
 
 #: app/templates/admin/automation/refresh_shifts.html:3
 #: app/templates/admin/automation/refresh_shifts.html:15
-#: app/templates/admin/automation/refresh_shifts.html:59
+#: app/templates/admin/automation/refresh_shifts.html:86
 msgid "Rafraîchir les Shifts"
 msgstr "Refresh Shifts"
 
@@ -4317,19 +4321,11 @@ msgstr "Refresh shifts"
 
 #: app/templates/admin/automation/refresh_shifts.html:22
 msgid ""
-"Cette page permet de recalculer tous les shifts pour une période donnée "
-"en tenant compte des"
+"Cette page permet de recalculer tous les shifts pour une période donnée, "
+"et éventuellement les astreintes selon le mode choisi ci-dessous."
 msgstr ""
-"This page allows you to recalculate all shifts for a given period, taking"
-" into account"
-
-#: app/templates/admin/automation/refresh_shifts.html:22
-msgid "astreintes actuelles"
-msgstr "current on-calls"
-
-#: app/templates/admin/automation/refresh_shifts.html:22
-msgid "même modifiées manuellement"
-msgstr "even if manually modified"
+"This page allows you to recalculate all shifts for a given period, and "
+"optionally the on-calls too depending on the mode chosen below."
 
 #: app/templates/admin/automation/refresh_shifts.html:25
 msgid "Les nouvelles règles métiers seront appliquées :"
@@ -4361,7 +4357,44 @@ msgstr "Legal constraint: 2 weeks minimum between two on-calls"
 msgid "Période"
 msgstr "Period"
 
+#: app/templates/admin/automation/refresh_shifts.html:62
+msgid "Ne pas toucher aux astreintes"
+msgstr "Don't touch the on-calls"
+
 #: app/templates/admin/automation/refresh_shifts.html:63
+msgid ""
+"Recalcule seulement les shifts, en tenant compte des astreintes actuelles"
+" (même modifiées manuellement)."
+msgstr ""
+"Only recalculates shifts, taking current on-calls into account (even if "
+"manually modified)."
+
+#: app/templates/admin/automation/refresh_shifts.html:69
+msgid "Combler les trous d'astreintes"
+msgstr "Fill on-call gaps"
+
+#: app/templates/admin/automation/refresh_shifts.html:70
+msgid ""
+"Assigne une astreinte uniquement aux semaines qui n'en ont aucune - les "
+"astreintes déjà assignées (même modifiées manuellement) ne sont jamais "
+"touchées."
+msgstr ""
+"Assigns an on-call only to weeks that have none - on-calls already "
+"assigned (even manually modified) are never touched."
+
+#: app/templates/admin/automation/refresh_shifts.html:76
+msgid "Régénérer entièrement les astreintes"
+msgstr "Fully regenerate the on-calls"
+
+#: app/templates/admin/automation/refresh_shifts.html:77
+msgid ""
+"Supprime et régénère toutes les astreintes de la période selon l'ordre de"
+" rotation configuré - écrase les modifications manuelles."
+msgstr ""
+"Deletes and regenerates every on-call for the period according to the "
+"configured rotation order - overwrites manual changes."
+
+#: app/templates/admin/automation/refresh_shifts.html:90
 #: app/templates/admin/automation/status.html:51
 msgid "Retour au tableau de bord"
 msgstr "Back to dashboard"
@@ -4975,10 +5008,10 @@ msgid ""
 "modifiées, action manuelle nécessaire"
 msgstr ""
 "❌ Failed to regenerate on-calls for the period %(start)s - %(end)s: "
-"%(error)s - the on-calls for this period were not changed, manual "
-"action required"
+"%(error)s - the on-calls for this period were not changed, manual action "
+"required"
 
-#: app/utils/automation/oncall_automation.py:289
+#: app/utils/automation/oncall_automation.py:310
 #, python-format
 msgid ""
 "⚠️ Aucune astreinte générée pour le %(date)s (aucun utilisateur ne "
@@ -4988,10 +5021,14 @@ msgstr ""
 "⚠️ No on-call generated for %(date)s (no user meets the legal 2-week "
 "spacing constraint between two on-calls) - manual assignment required."
 
-#: app/utils/automation/oncall_automation.py:330
+#: app/utils/automation/oncall_automation.py:337
 #, python-format
 msgid "✅ %(count)s astreintes générées."
 msgstr "✅ %(count)s on-calls generated."
+
+#: app/utils/automation/oncall_automation.py:586
+msgid "✅ Aucune astreinte manquante sur cette période."
+msgstr "✅ No missing on-calls for this period."
 
 #: app/utils/helpers/js_translations.py:20
 msgid "Désactiver le mode édition"
@@ -5148,4 +5185,10 @@ msgstr "Copied!"
 
 #~ msgid "Leviia Schedule - Gestion des plannings, astreintes et congés d'équipe."
 #~ msgstr "Leviia Schedule - Team shift, on-call, and leave management."
+
+#~ msgid "astreintes actuelles"
+#~ msgstr "current on-calls"
+
+#~ msgid "même modifiées manuellement"
+#~ msgstr "even if manually modified"
 

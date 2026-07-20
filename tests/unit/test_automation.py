@@ -432,3 +432,78 @@ class TestOnCallMaxFillSearch:
 
             assert len(unfilled_dates) >= 1
             assert len(oncalls) + len(unfilled_dates) == 4
+
+
+class TestFillOnCallGaps:
+    """Tests for OnCallAutomation.fill_oncall_gaps() - the "combler les
+    trous d'astreintes seulement" mode used by the "Rafraîchir" admin
+    action: unlike generate_oncall_schedule(), it must never touch a
+    Friday that already has an on-call (even a manually-assigned one),
+    only create ones for Fridays that have none."""
+
+    def test_leaves_existing_oncalls_untouched(
+        self, test_app, test_group, test_user, second_user
+    ):
+        with test_app.app_context():
+            user3 = User(
+                name="Third User",
+                email="third@test.com",
+                password_hash="third123",
+                is_admin=False,
+                group_id=test_group.id,
+            )
+            db.session.add(user3)
+            db.session.commit()
+
+            rotation_order = [test_user.id, second_user.id, user3.id]
+
+            # A manually-assigned on-call for week 1, deliberately
+            # *not* the user rotation would have picked.
+            week1_friday = date(2024, 1, 5)
+            start_time = datetime.combine(
+                week1_friday, datetime.min.time()
+            ).replace(hour=21)
+            end_time = start_time + timedelta(days=7, hours=-14)
+            manual_oncall = OnCall(
+                user_id=user3.id, start_time=start_time, end_time=end_time
+            )
+            db.session.add(manual_oncall)
+            db.session.commit()
+
+            oncalls, _messages, unfilled_dates = OnCallAutomation.fill_oncall_gaps(
+                date(2024, 1, 5), date(2024, 1, 19), rotation_order, dry_run=False
+            )
+
+            assert unfilled_dates == []
+            # Only weeks 2 and 3 were actually missing - week 1 must
+            # not appear among the newly created on-calls.
+            assert {o.start_time.date() for o in oncalls} == {
+                date(2024, 1, 12),
+                date(2024, 1, 19),
+            }
+            # The manual assignment for week 1 is untouched.
+            still_there = OnCall.query.filter_by(id=manual_oncall.id).first()
+            assert still_there is not None
+            assert still_there.user_id == user3.id
+
+    def test_no_op_when_nothing_missing(
+        self, test_app, test_group, test_user, second_user
+    ):
+        with test_app.app_context():
+            rotation_order = [test_user.id, second_user.id]
+            OnCallAutomation.generate_oncall_schedule(
+                date(2024, 1, 5),
+                date(2024, 1, 12),
+                rotation_order,
+                dry_run=False,
+            )
+            count_before = OnCall.query.count()
+
+            oncalls, messages, unfilled_dates = OnCallAutomation.fill_oncall_gaps(
+                date(2024, 1, 5), date(2024, 1, 12), rotation_order, dry_run=False
+            )
+
+            assert oncalls == []
+            assert unfilled_dates == []
+            assert OnCall.query.count() == count_before
+            assert any("Aucune astreinte manquante" in msg for msg in messages)

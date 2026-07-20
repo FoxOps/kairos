@@ -11,6 +11,8 @@ from flask_babel import gettext as _
 
 from app import db
 from app.auth.decorators import admin_required
+from app.models import AutomationConfig
+from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository
 from app.routes.admin import admin_bp
 from app.services import (
@@ -242,22 +244,86 @@ def automation_status():
 @admin_required
 def refresh_shifts():
     """
-    Refresh shifts by checking the current on-calls.
+    Refresh shifts (and, depending on oncall_mode, on-calls too) for a
+    period.
 
-    This route recomputes all shifts for a given period, taking the
-    current on-calls into account (even if manually modified).
+    oncall_mode (form field, default "none"):
+    - "none": on-calls are left completely untouched (the original
+      behaviour) - shifts are recomputed from whatever on-calls already
+      exist, even manually modified ones.
+    - "fill_gaps": before recomputing shifts, fills any Friday in the
+      period that has no on-call at all (OnCallAutomation.
+      fill_oncall_gaps) - existing on-calls, including manually
+      assigned ones, are never touched or reassigned, only genuinely
+      empty weeks get a new one.
+    - "regenerate": deletes and fully regenerates on-calls for the
+      period (like automation_full's "generate" action) before
+      recomputing shifts - overwrites manual on-call edits.
     """
+
+    def notify_oncall_gap_if_any(unfilled_dates):
+        if not unfilled_dates:
+            return
+        AppNotificationService.notify_admins_oncall_gap(unfilled_dates)
+        AppriseNotificationService.notify(
+            "system",
+            _("Génération d'astreintes incomplète"),
+            _(
+                "Aucun utilisateur disponible dans le respect du "
+                "délai légal de 2 semaines pour : %(dates)s. "
+                "Assignation manuelle nécessaire dans "
+                "/admin/automation.",
+                dates=", ".join(d.strftime("%d/%m/%Y") for d in unfilled_dates),
+            ),
+        )
+
     if request.method == "POST":
         start_date_str = request.form.get("start_date")
         end_date_str = request.form.get("end_date")
+        oncall_mode = request.form.get("oncall_mode", "none")
 
         try:
             start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
             end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
 
-            # Only deletes shifts (not on-calls, unlike automation_full):
-            # this only regenerates shifts, taking existing on-calls into
-            # account.
+            if oncall_mode == "fill_gaps":
+                _filled, oncall_messages, oncall_unfilled_dates = (
+                    OnCallAutomation.fill_oncall_gaps(
+                        start_date,
+                        end_date,
+                        rotation_order_ids=AutomationConfig.get_rotation_order(),
+                        dry_run=False,
+                    )
+                )
+                _flash_automation_messages(oncall_messages, default_category="info")
+                notify_oncall_gap_if_any(oncall_unfilled_dates)
+            elif oncall_mode == "regenerate":
+                oncalls_deleted = OnCallRepository.delete_overlapping_range(
+                    start_date, end_date
+                )
+                if oncalls_deleted:
+                    db.session.commit()
+                    flash(
+                        _(
+                            "%(oncalls_deleted)s astreintes existantes supprimées pour la période",
+                            oncalls_deleted=oncalls_deleted,
+                        ),
+                        "info",
+                    )
+                _regenerated, oncall_messages, oncall_unfilled_dates = (
+                    OnCallAutomation.generate_oncall_schedule(
+                        start_date,
+                        end_date,
+                        rotation_order_ids=AutomationConfig.get_rotation_order(),
+                        dry_run=False,
+                    )
+                )
+                _flash_automation_messages(oncall_messages, default_category="danger")
+                notify_oncall_gap_if_any(oncall_unfilled_dates)
+
+            # Only deletes shifts (never on-calls beyond what oncall_mode
+            # above already handled): this recomputes shifts, taking
+            # whatever on-calls now exist into account.
             deleted = ShiftRepository.delete_in_date_range(start_date, end_date)
             if deleted:
                 db.session.commit()

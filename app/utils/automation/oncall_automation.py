@@ -234,6 +234,110 @@ def _solve_max_filled_weeks(
     return best_assignment
 
 
+def _fridays_in_range(start_date: date, end_date: date) -> list[date]:
+    """Every Friday from the first one on/after start_date through
+    end_date, inclusive."""
+    days_ahead = (4 - start_date.weekday()) % 7
+    current_friday = start_date + timedelta(days=days_ahead)
+    fridays = []
+    while current_friday <= end_date:
+        fridays.append(current_friday)
+        current_friday += timedelta(days=7)
+    return fridays
+
+
+def _generate_for_fridays(
+    fridays: list[date],
+    rotation_order: list[User],
+    index: AvailabilityIndex,
+    dry_run: bool,
+    commit: bool,
+) -> tuple[list[OnCall], list[str], list[date]]:
+    """Shared by generate_oncall_schedule() (every Friday in a period)
+    and fill_oncall_gaps() (only the Fridays missing an on-call) - runs
+    the branch-and-bound search (_solve_max_filled_weeks) over exactly
+    the given Fridays and creates OnCall objects for whichever ones it
+    manages to fill."""
+    from app import db
+
+    weeks: list[tuple[date, datetime, datetime]] = []
+    for friday in fridays:
+        start_time = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+        end_time = start_time + timedelta(days=7, hours=-14)
+        weeks.append((friday, start_time, end_time))
+
+    # Per-week candidates, pre-filtered for the *static* constraints
+    # (existing on-call / leave conflicts - independent of what gets
+    # assigned to other weeks in this run). Each week's preference
+    # order rotates the base rotation order by its own index, the same
+    # simple round-robin baseline a plain greedy pass produces when
+    # nothing forces a deviation from it - the search below only
+    # deviates from this preference when required to fill a week that
+    # would otherwise stay empty.
+    week_candidates: list[list[User]] = []
+    for week_index, (_friday, start_time, end_time) in enumerate(weeks):
+        offset = week_index % len(rotation_order)
+        preferred_order = rotation_order[offset:] + rotation_order[:offset]
+        week_candidates.append(
+            [
+                user
+                for user in preferred_order
+                if not index.has_oncall_conflict(user.id, start_time, end_time)
+                and not index.has_leave_conflict(
+                    user.id, start_time.date(), end_time.date()
+                )
+            ]
+        )
+
+    assignment = _solve_max_filled_weeks(weeks, week_candidates, index)
+
+    oncalls = []
+    messages = []
+    unfilled_dates = []
+
+    for week_index, (friday, start_time, end_time) in enumerate(weeks):
+        assigned_user = assignment.get(week_index)
+
+        if assigned_user is None:
+            # Deliberately left unassigned - no fallback that ignores
+            # the legal 2-week spacing constraint, and only after the
+            # search above confirmed no permutation of this period's
+            # assignments could fill it either. The caller is
+            # responsible for notifying admins once its own commit has
+            # actually succeeded (see unfilled_dates below).
+            messages.append(
+                _(
+                    "⚠️ Aucune astreinte générée pour le %(date)s "
+                    "(aucun utilisateur ne respecte le délai légal de 2 semaines entre deux "
+                    "astreintes) - assignation manuelle nécessaire.",
+                    date=friday.strftime("%d/%m/%Y"),
+                )
+            )
+            unfilled_dates.append(friday)
+            continue
+
+        oncall = OnCall(
+            user_id=assigned_user.id,
+            start_time=start_time,
+            end_time=end_time,
+        )
+        oncalls.append(oncall)
+        if not dry_run:
+            db.session.add(oncall)
+        # Essential even in dry_run: subsequent readers of `index`
+        # within the same generation run see this assignment.
+        index.record_assignment(assigned_user.id, start_time, end_time)
+
+    if not dry_run and oncalls:
+        if commit:
+            db.session.commit()
+        else:
+            db.session.flush()
+
+    messages.append(_("✅ %(count)s astreintes générées.", count=len(oncalls)))
+    return oncalls, messages, unfilled_dates
+
+
 class OnCallAutomation:
     """
     Class managing on-call automation.
@@ -401,8 +505,6 @@ class OnCallAutomation:
             about these once the caller's own commit has actually
             succeeded, never before).
         """
-        from app import db
-
         eligible_users = OnCallAutomation.get_eligible_users()
         if not eligible_users:
             return [], ["Aucun utilisateur éligible pour les astreintes."], []
@@ -415,99 +517,74 @@ class OnCallAutomation:
         # queries per candidate tested each week - see AvailabilityIndex.
         index = AvailabilityIndex(user.id for user in eligible_users)
 
-        days_ahead = (4 - start_date.weekday()) % 7
-        current_friday = start_date + timedelta(days=days_ahead)
-
         # end_date inclusive, like AdvancedShiftAutomation.generate_full_schedule
         # (`current_date <= end_date`) - both receive the same period
         # from admin_automation_routes.py::automation_full, they must
         # treat end_date the same way. Before: `<` ignored the week
         # whose Friday landed exactly on end_date.
-        weeks: list[tuple[date, datetime, datetime]] = []
-        while current_friday <= end_date:
-            start_time = datetime.combine(current_friday, datetime.min.time()).replace(
-                hour=21
-            )
-            end_time = start_time + timedelta(days=7, hours=-14)
-            weeks.append((current_friday, start_time, end_time))
-            current_friday += timedelta(days=7)
+        fridays = _fridays_in_range(start_date, end_date)
 
-        # Per-week candidates, pre-filtered for the *static* constraints
-        # (existing on-call / leave conflicts - independent of what gets
-        # assigned to other weeks in this run). Each week's preference
-        # order rotates the base rotation order by its own index, the
-        # same simple round-robin baseline the previous greedy version
-        # produced when nothing forces a deviation from it - the search
-        # below only deviates from this preference when required to
-        # fill a week that would otherwise stay empty.
-        week_candidates: list[list[User]] = []
-        for week_index, (_friday, start_time, end_time) in enumerate(weeks):
-            offset = week_index % len(rotation_order)
-            preferred_order = rotation_order[offset:] + rotation_order[:offset]
-            week_candidates.append(
-                [
-                    user
-                    for user in preferred_order
-                    if not index.has_oncall_conflict(user.id, start_time, end_time)
-                    and not index.has_leave_conflict(
-                        user.id, start_time.date(), end_time.date()
-                    )
-                ]
-            )
+        return _generate_for_fridays(
+            fridays, rotation_order, index, dry_run=dry_run, commit=commit
+        )
 
-        assignment = _solve_max_filled_weeks(weeks, week_candidates, index)
+    @staticmethod
+    def fill_oncall_gaps(
+        start_date,
+        end_date,
+        rotation_order_ids: list[int] | None = None,
+        dry_run: bool = True,
+        commit: bool = True,
+    ):
+        """
+        Like generate_oncall_schedule(), but only ever *creates*
+        on-calls for Fridays in the period that don't already have one
+        - existing on-calls (even manually edited, or previously
+        generated) are left completely untouched, never deleted or
+        reassigned. Used by the "Rafraîchir" action's "combler les
+        trous d'astreintes seulement" mode - unlike generate_oncall_
+        schedule() (which is meant to be used after clearing the
+        period first), this is for filling gaps in an otherwise-already
+        -planned schedule without disturbing what's already there.
 
-        oncalls = []
-        messages = []
-        unfilled_dates = []
+        Returns the same 3-tuple shape as generate_oncall_schedule():
+        (list of newly created OnCall objects, messages,
+        list of Friday dates still left unassigned).
+        """
+        eligible_users = OnCallAutomation.get_eligible_users()
+        if not eligible_users:
+            return [], ["Aucun utilisateur éligible pour les astreintes."], []
 
-        for week_index, (friday, start_time, end_time) in enumerate(weeks):
-            assigned_user = assignment.get(week_index)
+        rotation_order = OnCallAutomation.get_rotation_order(rotation_order_ids)
+        if not rotation_order:
+            return [], ["Impossible de déterminer l'ordre de rotation."], []
 
-            if assigned_user is None:
-                # Deliberately left unassigned - no fallback that ignores
-                # the legal 2-week spacing constraint, and only after
-                # the search above confirmed no permutation of this
-                # period's assignments could fill it either. The caller
-                # is responsible for notifying admins once its own
-                # commit has succeeded (see unfilled_dates below).
-                messages.append(
-                    _(
-                        "⚠️ Aucune astreinte générée pour le %(date)s "
-                        "(aucun utilisateur ne respecte le délai légal de 2 semaines entre deux "
-                        "astreintes) - assignation manuelle nécessaire.",
-                        date=friday.strftime("%d/%m/%Y"),
-                    )
-                )
-                unfilled_dates.append(friday)
-                continue
+        index = AvailabilityIndex(user.id for user in eligible_users)
 
-            oncall = OnCall(
-                user_id=assigned_user.id,
-                start_time=start_time,
-                end_time=end_time,
-            )
-            oncalls.append(oncall)
-            if not dry_run:
-                db.session.add(oncall)
-            # Essential even in dry_run: subsequent readers of `index`
-            # within the same generation run (there are none after this
-            # point today, but keeps the index consistent with what was
-            # actually decided) see this assignment.
-            index.record_assignment(assigned_user.id, start_time, end_time)
+        # AvailabilityIndex doesn't expose "which Fridays already have
+        # *someone* assigned" (its intervals are keyed per user, not
+        # per slot) - a direct query is simplest and correct here.
+        from app.models import OnCall as OnCallModel
 
-        if not dry_run and oncalls:
-            if commit:
-                db.session.commit()
-            else:
-                db.session.flush()
+        already_covered = {
+            oncall.start_time.date()
+            for oncall in OnCallModel.query.filter(
+                OnCallModel.start_time
+                >= datetime.combine(start_date, datetime.min.time()),
+                OnCallModel.start_time
+                <= datetime.combine(end_date, datetime.max.time()),
+            ).all()
+        }
 
-        # ✅ prefix: matches AdvancedShiftAutomation's own summary
-        # messages (e.g. "✅ N shifts générés pour le ...") - without a
-        # recognized emoji, _classify_automation_message() in
-        # admin_automation_routes.py falls through to the caller's
-        # default_category ("danger" for on-call messages), which
-        # rendered this line as a red flash despite being a plain
-        # success summary.
-        messages.append(_("✅ %(count)s astreintes générées.", count=len(oncalls)))
-        return oncalls, messages, unfilled_dates
+        missing_fridays = [
+            friday
+            for friday in _fridays_in_range(start_date, end_date)
+            if friday not in already_covered
+        ]
+
+        if not missing_fridays:
+            return [], [_("✅ Aucune astreinte manquante sur cette période.")], []
+
+        return _generate_for_fridays(
+            missing_fridays, rotation_order, index, dry_run=dry_run, commit=commit
+        )
