@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-20 21:37+0200\n"
+"POT-Creation-Date: 2026-07-20 21:57+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -43,35 +43,13 @@ msgstr ""
 msgid "%(count)s entrée(s) d'historique purgée(s)."
 msgstr "%(count)s history entry(ies) purged."
 
-#: app/routes/admin_automation_routes.py:91
-#, python-format
-msgid "Erreur lors de la sauvegarde de l'ordre : %(error)s"
-msgstr "Error saving the order: %(error)s"
-
-#: app/routes/admin_automation_routes.py:99
-msgid ""
-"Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour "
-"appliquer."
-msgstr "Rotation order saved! Use the 'Generate' button to apply it."
-
-#: app/routes/admin_automation_routes.py:118
-#: app/routes/admin_automation_routes.py:308
-#, python-format
-msgid "%(oncalls_deleted)s astreintes existantes supprimées pour la période"
-msgstr "%(oncalls_deleted)s existing on-calls deleted for the period"
-
-#: app/routes/admin_automation_routes.py:126
-#, python-format
-msgid "%(shifts_deleted)s shifts existants supprimés pour la période"
-msgstr "%(shifts_deleted)s existing shifts deleted for the period"
-
-#: app/routes/admin_automation_routes.py:189
-#: app/routes/admin_automation_routes.py:270 app/services/leave_service.py:179
+#: app/routes/admin_automation_routes.py:65
+#: app/routes/admin_automation_routes.py:310 app/services/leave_service.py:179
 msgid "Génération d'astreintes incomplète"
 msgstr "Incomplete on-call generation"
 
-#: app/routes/admin_automation_routes.py:191
-#: app/routes/admin_automation_routes.py:272
+#: app/routes/admin_automation_routes.py:67
+#: app/routes/admin_automation_routes.py:312
 #, python-format
 msgid ""
 "Aucun utilisateur disponible dans le respect du délai légal de 2 semaines"
@@ -81,23 +59,30 @@ msgstr ""
 "No user available within the legal 2-week spacing constraint for: "
 "%(dates)s. Manual assignment required in /admin/automation."
 
-#: app/routes/admin_automation_routes.py:204
+#: app/routes/admin_automation_routes.py:149
+#: app/routes/admin_automation_routes.py:239
 #, python-format
-msgid ""
-"Régénération complète terminée pour la période du %(strftime)s au "
-"%(strftime1)s"
-msgstr ""
-"Full regeneration completed for the period from %(strftime)s to "
-"%(strftime1)s"
+msgid "%(oncalls_deleted)s astreintes existantes supprimées pour la période"
+msgstr "%(oncalls_deleted)s existing on-calls deleted for the period"
 
-#: app/routes/admin_automation_routes.py:213
-#: app/routes/admin_automation_routes.py:351
+#: app/routes/admin_automation_routes.py:176
+#, python-format
+msgid "%(deleted)s shifts existants supprimés pour la période"
+msgstr "%(deleted)s existing shifts deleted for the period"
+
+#: app/routes/admin_automation_routes.py:189
+#, python-format
+msgid "%(val0)s shifts régénérés avec succès !"
+msgstr "%(val0)s shifts successfully regenerated!"
+
+#: app/routes/admin_automation_routes.py:193
+#: app/routes/admin_automation_routes.py:334
 #, python-format
 msgid "Format de date invalide : %(val0)s"
 msgstr "Invalid date format: %(val0)s"
 
-#: app/routes/admin_automation_routes.py:215
-#: app/routes/admin_automation_routes.py:354
+#: app/routes/admin_automation_routes.py:196
+#: app/routes/admin_automation_routes.py:336
 #: app/routes/admin_group_routes.py:47 app/routes/admin_group_routes.py:78
 #: app/routes/admin_group_routes.py:97
 #: app/routes/admin_notification_target_routes.py:82
@@ -117,15 +102,30 @@ msgstr "Invalid date format: %(val0)s"
 msgid "Erreur : %(val0)s"
 msgstr "Error: %(val0)s"
 
-#: app/routes/admin_automation_routes.py:332
+#: app/routes/admin_automation_routes.py:212
 #, python-format
-msgid "%(deleted)s shifts existants supprimés pour la période"
-msgstr "%(deleted)s existing shifts deleted for the period"
+msgid "Erreur lors de la sauvegarde de l'ordre : %(error)s"
+msgstr "Error saving the order: %(error)s"
 
-#: app/routes/admin_automation_routes.py:345
+#: app/routes/admin_automation_routes.py:220
+msgid ""
+"Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour "
+"appliquer."
+msgstr "Rotation order saved! Use the 'Generate' button to apply it."
+
+#: app/routes/admin_automation_routes.py:247
 #, python-format
-msgid "%(val0)s shifts régénérés avec succès !"
-msgstr "%(val0)s shifts successfully regenerated!"
+msgid "%(shifts_deleted)s shifts existants supprimés pour la période"
+msgstr "%(shifts_deleted)s existing shifts deleted for the period"
+
+#: app/routes/admin_automation_routes.py:325
+#, python-format
+msgid ""
+"Régénération complète terminée pour la période du %(strftime)s au "
+"%(strftime1)s"
+msgstr ""
+"Full regeneration completed for the period from %(strftime)s to "
+"%(strftime1)s"
 
 #: app/routes/admin_backup_routes.py:39
 msgid "Sauvegarde créée avec succès."
@@ -1248,7 +1248,7 @@ msgstr ""
 "The server received a request with a method (GET, POST, PUT, DELETE, "
 "etc.) that is not supported for this URL."
 
-#: app/templates/405.html:17 app/templates/admin/automation/full.html:158
+#: app/templates/405.html:17 app/templates/admin/automation/full.html:157
 msgid "Vérifiez que :"
 msgstr "Check that:"
 
@@ -1480,8 +1480,7 @@ msgid "Sélectionnez l'utilisateur pour ce congé"
 msgstr "Select the user for this leave"
 
 #: app/templates/add_leave.html:27 app/templates/add_shift.html:39
-#: app/templates/admin/automation/full.html:125
-#: app/templates/admin/automation/refresh_shifts.html:44
+#: app/templates/admin/automation/full.html:30
 msgid "Date de début"
 msgstr "Start date"
 
@@ -1490,8 +1489,7 @@ msgid "Date de début du congé"
 msgstr "Leave start date"
 
 #: app/templates/add_leave.html:33 app/templates/add_shift.html:45
-#: app/templates/admin/automation/full.html:131
-#: app/templates/admin/automation/refresh_shifts.html:49
+#: app/templates/admin/automation/full.html:36
 msgid "Date de fin"
 msgstr "End date"
 
@@ -1695,7 +1693,6 @@ msgstr "Shifts"
 
 #: app/templates/admin/automation/full_dry_run.html:24
 #: app/templates/admin/automation/full_dry_run.html:127
-#: app/templates/admin/automation/refresh_shifts.html:57
 #: app/templates/admin/dashboard.html:54 app/templates/base.html:88
 #: app/templates/dashboard.html:28 app/templates/index.html:131
 #: app/templates/oncall.html:3 app/templates/oncall.html:8
@@ -1764,16 +1761,24 @@ msgstr "Administration"
 msgid "Utilisateurs"
 msgstr "Users"
 
-#: app/templates/base.html:231 app/templates/index.html:96
+#: app/templates/admin/automation/dashboard.html:8
+#: app/templates/admin/automation/dashboard.html:11
+#: app/templates/admin/automation/full.html:12
+#: app/templates/admin/automation/full_dry_run.html:8
+#: app/templates/admin/dashboard.html:87 app/templates/base.html:231
+msgid "Automatisation"
+msgstr "Automation"
+
+#: app/templates/base.html:232 app/templates/index.html:96
 msgid "Admin"
 msgstr "Admin"
 
-#: app/templates/base.html:236
+#: app/templates/base.html:237
 #, python-format
 msgid "Mon profil - %(name)s"
 msgstr "My profile - %(name)s"
 
-#: app/templates/base.html:245
+#: app/templates/base.html:246
 msgid "Déconnexion"
 msgstr "Logout"
 
@@ -2091,12 +2096,12 @@ msgstr "Interactive calendar"
 msgid "Actions rapides"
 msgstr "Quick actions"
 
-#: app/templates/admin/automation/full.html:168 app/templates/index.html:89
+#: app/templates/admin/automation/full.html:167 app/templates/index.html:89
 #: app/templates/index.html:90
 msgid "Gérer les utilisateurs"
 msgstr "Manage users"
 
-#: app/templates/admin/automation/full.html:165 app/templates/index.html:92
+#: app/templates/admin/automation/full.html:164 app/templates/index.html:92
 #: app/templates/index.html:93
 msgid "Gérer les groupes"
 msgstr "Manage groups"
@@ -2851,8 +2856,6 @@ msgstr "Change history"
 #: app/templates/admin/automation/dashboard.html:5
 #: app/templates/admin/automation/full.html:9
 #: app/templates/admin/automation/full_dry_run.html:5
-#: app/templates/admin/automation/refresh_shifts.html:7
-#: app/templates/admin/automation/status.html:5
 #: app/templates/admin/backups/dashboard.html:5
 #: app/templates/admin/groups.html:7
 #: app/templates/admin/notification_targets.html:7
@@ -3024,16 +3027,6 @@ msgstr "Pending: %(count)s"
 #: app/templates/admin/dashboard.html:79
 msgid "Voir les demandes d'échange"
 msgstr "View swap requests"
-
-#: app/templates/admin/automation/dashboard.html:8
-#: app/templates/admin/automation/dashboard.html:11
-#: app/templates/admin/automation/full.html:12
-#: app/templates/admin/automation/full_dry_run.html:8
-#: app/templates/admin/automation/refresh_shifts.html:10
-#: app/templates/admin/automation/status.html:8
-#: app/templates/admin/dashboard.html:87
-msgid "Automatisation"
-msgstr "Automation"
 
 #: app/templates/admin/dashboard.html:88
 msgid "Génération automatique"
@@ -3914,71 +3907,62 @@ msgstr ""
 "This module automatically generates on-calls. Shifts are automatically "
 "generated after on-calls according to the business rules."
 
-#: app/templates/admin/automation/dashboard.html:27
-#: app/templates/admin/automation/full.html:13
+#: app/templates/admin/automation/dashboard.html:26
 #: app/templates/admin/automation/full.html:16
-msgid "Génération complète"
-msgstr "Full generation"
+msgid "Générer / rafraîchir le planning"
+msgstr "Generate / refresh the schedule"
 
-#: app/templates/admin/automation/dashboard.html:28
+#: app/templates/admin/automation/dashboard.html:27
 msgid ""
-"Générer les astreintes. Les shifts seront automatiquement générés selon "
-"les règles métiers."
+"Générer les astreintes et les shifts, prévisualiser le résultat, ou "
+"recalculer uniquement les shifts en conservant les astreintes actuelles."
 msgstr ""
-"Generate on-calls. Shifts will be automatically generated according to "
-"the business rules."
+"Generate on-calls and shifts, preview the result, or only recalculate "
+"shifts while keeping current on-calls."
 
-#: app/templates/admin/automation/dashboard.html:31
+#: app/templates/admin/automation/dashboard.html:30
 msgid "Lancer"
-msgstr "Run"
+msgstr "Launch"
 
-#: app/templates/admin/automation/dashboard.html:39
-msgid "Rafraîchir Shifts"
-msgstr "Refresh Shifts"
-
-#: app/templates/admin/automation/dashboard.html:40
-msgid ""
-"Recalculer les shifts en tenant compte des astreintes actuelles (même "
-"modifiées manuellement)."
-msgstr ""
-"Recalculate shifts taking current on-calls into account (even if manually"
-" modified)."
-
-#: app/templates/admin/automation/dashboard.html:43
-msgid "Rafraîchir"
-msgstr "Refresh"
-
-#: app/templates/admin/automation/dashboard.html:52
+#: app/templates/admin/automation/dashboard.html:38
 #: app/templates/admin/automation/full_dry_run.html:105
 msgid "Total astreintes"
 msgstr "Total on-calls"
 
-#: app/templates/admin/automation/dashboard.html:56
+#: app/templates/admin/automation/dashboard.html:42
 #: app/templates/admin/automation/full_dry_run.html:109
 msgid "Total shifts"
 msgstr "Total shifts"
 
-#: app/templates/admin/automation/dashboard.html:60
+#: app/templates/admin/automation/dashboard.html:46
 msgid "Utilisateurs astreintes"
 msgstr "On-call users"
 
-#: app/templates/admin/automation/dashboard.html:64
+#: app/templates/admin/automation/dashboard.html:50
 msgid "Utilisateurs shifts"
 msgstr "Shift users"
 
-#: app/templates/admin/automation/dashboard.html:70
+#: app/templates/admin/automation/dashboard.html:54
+msgid "Prochaine astreinte disponible"
+msgstr "Next available on-call"
+
+#: app/templates/admin/automation/dashboard.html:59
+msgid "Aucune date disponible trouvée"
+msgstr "No available date found"
+
+#: app/templates/admin/automation/dashboard.html:65
 msgid "Afficher/masquer l'aide"
 msgstr "Show/hide help"
 
-#: app/templates/admin/automation/dashboard.html:72
+#: app/templates/admin/automation/dashboard.html:67
 msgid "Aide"
 msgstr "Help"
 
-#: app/templates/admin/automation/dashboard.html:76
+#: app/templates/admin/automation/dashboard.html:71
 msgid "Rotation des astreintes :"
 msgstr "On-call rotation:"
 
-#: app/templates/admin/automation/dashboard.html:76
+#: app/templates/admin/automation/dashboard.html:71
 msgid ""
 "Une rotation simple où chaque semaine un membre différent est désigné. "
 "Utilisez \"Génération complète\" pour configurer l'ordre de rotation."
@@ -3986,11 +3970,11 @@ msgstr ""
 "A simple rotation where a different member is designated each week. Use "
 "\"Full generation\" to configure the rotation order."
 
-#: app/templates/admin/automation/dashboard.html:77
+#: app/templates/admin/automation/dashboard.html:72
 msgid "Génération automatique des shifts :"
 msgstr "Automatic shift generation:"
 
-#: app/templates/admin/automation/dashboard.html:77
+#: app/templates/admin/automation/dashboard.html:72
 msgid ""
 "Après la génération des astreintes, les shifts sont automatiquement créés"
 " selon les règles métiers (13h-21h pour l'astreinte, rotation des "
@@ -4000,66 +3984,82 @@ msgstr ""
 "to the business rules (1pm-9pm for the on-call person, slot rotation, "
 "etc.)."
 
-#: app/templates/admin/automation/dashboard.html:78
+#: app/templates/admin/automation/dashboard.html:73
 msgid "Rafraîchissement manuel :"
 msgstr "Manual refresh:"
 
-#: app/templates/admin/automation/dashboard.html:78
+#: app/templates/admin/automation/dashboard.html:73
 msgid ""
-"Utilisez \"Rafraîchir Shifts\" pour recalculer les shifts si vous avez "
-"modifié manuellement les astreintes."
+"Utilisez le bouton \"Rafraîchir les shifts\" pour recalculer les shifts "
+"si vous avez modifié manuellement les astreintes, sans relancer toute la "
+"rotation."
 msgstr ""
-"Use \"Refresh Shifts\" to recalculate shifts if you have manually "
-"modified on-calls."
+"Use the \"Refresh shifts\" button to recalculate shifts if you have "
+"manually modified on-calls, without relaunching the whole rotation."
 
-#: app/templates/admin/automation/dashboard.html:79
+#: app/templates/admin/automation/dashboard.html:74
 msgid "Période par défaut :"
 msgstr "Default period:"
 
-#: app/templates/admin/automation/dashboard.html:79
+#: app/templates/admin/automation/dashboard.html:74
 msgid "6 mois à l'avance."
 msgstr "6 months ahead."
 
+#: app/templates/admin/automation/full.html:13
+msgid "Générer / rafraîchir"
+msgstr "Generate / refresh"
+
 #: app/templates/admin/automation/full.html:19
 msgid ""
-"Configurez l'ordre de rotation et générez automatiquement les astreintes."
-" Les shifts seront générés automatiquement après selon les nouvelles "
-"règles métiers."
+"Générez les astreintes et les shifts, prévisualisez le résultat avant de "
+"l'appliquer, ou recalculez uniquement les shifts en conservant les "
+"astreintes actuelles."
 msgstr ""
-"Configure the rotation order and automatically generate on-calls. Shifts "
-"will be automatically generated afterward according to the new business "
-"rules."
+"Generate on-calls and shifts, preview the result before applying it, or "
+"only recalculate shifts while keeping current on-calls."
 
-#: app/templates/admin/automation/full.html:24
+#: app/templates/admin/automation/full.html:27
+msgid "Période"
+msgstr "Period"
+
+#: app/templates/admin/automation/full.html:33
+msgid "Premier vendredi à partir de cette date"
+msgstr "First Friday from this date"
+
+#: app/templates/admin/automation/full.html:39
+msgid "Dernier jour de la période (6 mois par défaut)"
+msgstr "Last day of the period (6 months by default)"
+
+#: app/templates/admin/automation/full.html:47
 msgid "Utilisateurs éligibles pour les astreintes"
-msgstr "Users eligible for on-calls"
+msgstr "Eligible users for on-calls"
 
-#: app/templates/admin/automation/full.html:28
+#: app/templates/admin/automation/full.html:51
 #, python-format
 msgid "%(count)s utilisateur(s) éligible(s) trouvé(s)"
 msgstr "%(count)s eligible user(s) found"
 
-#: app/templates/admin/automation/full.html:33
+#: app/templates/admin/automation/full.html:56
 msgid "Ordre de rotation actuel :"
 msgstr "Current rotation order:"
 
-#: app/templates/admin/automation/full.html:42
+#: app/templates/admin/automation/full.html:65
 msgid "Glissez-déposez les utilisateurs ci-dessous pour modifier l'ordre."
 msgstr "Drag and drop the users below to change the order."
 
-#: app/templates/admin/automation/full.html:50
+#: app/templates/admin/automation/full.html:69
 msgid "Ordre de rotation"
 msgstr "Rotation order"
 
-#: app/templates/admin/automation/full.html:50
+#: app/templates/admin/automation/full.html:69
 msgid "Glissez-déposez pour réorganiser, cochez pour inclure dans la rotation"
 msgstr "Drag and drop to reorder, check to include in the rotation"
 
-#: app/templates/admin/automation/full.html:52
+#: app/templates/admin/automation/full.html:71
 msgid "Définissez l'ordre de rotation"
 msgstr "Set the rotation order"
 
-#: app/templates/admin/automation/full.html:52
+#: app/templates/admin/automation/full.html:71
 msgid ""
 "en glissant-déposant les utilisateurs. La rotation se fera dans l'ordre "
 "affiché."
@@ -4067,132 +4067,165 @@ msgstr ""
 "by dragging and dropping the users. The rotation will follow the "
 "displayed order."
 
-#: app/templates/admin/automation/full.html:71
-#: app/templates/admin/automation/full.html:92
-#: app/templates/admin/automation/full.html:112
+#: app/templates/admin/automation/full.html:90
+#: app/templates/admin/automation/full.html:111
+#: app/templates/admin/automation/full.html:131
 msgid "Inclure"
 msgstr "Include"
 
-#: app/templates/admin/automation/full.html:128
-msgid "Premier vendredi à partir de cette date"
-msgstr "First Friday from this date"
-
-#: app/templates/admin/automation/full.html:134
-msgid "Dernier jour de la période (6 mois par défaut)"
-msgstr "Last day of the period (6 months by default)"
-
-#: app/templates/admin/automation/full.html:140
+#: app/templates/admin/automation/full.html:143
 msgid "Sauvegarder l'ordre"
 msgstr "Save the order"
 
-#: app/templates/admin/automation/full.html:143
+#: app/templates/admin/automation/full.html:146
 msgid "Générer les astreintes et shifts"
 msgstr "Generate on-calls and shifts"
 
-#: app/templates/admin/automation/full.html:146
+#: app/templates/admin/automation/full.html:149
 msgid "Prévisualiser (Dry Run)"
 msgstr "Preview (Dry Run)"
 
-#: app/templates/admin/automation/full.html:149
+#: app/templates/admin/automation/full.html:156
+msgid "Aucun utilisateur éligible trouvé pour les astreintes."
+msgstr "No eligible user found for on-calls."
+
+#: app/templates/admin/automation/full.html:159
+msgid "Des utilisateurs existent"
+msgstr "Users exist"
+
+#: app/templates/admin/automation/full.html:160
+msgid "Les utilisateurs appartiennent à un groupe configuré dans"
+msgstr "Users belong to a group configured in"
+
+#: app/templates/admin/automation/full.html:160
+msgid "la configuration"
+msgstr "the configuration"
+
+#: app/templates/admin/automation/full.html:178
+#: app/templates/admin/automation/full.html:207
+msgid "Rafraîchir les shifts"
+msgstr "Refresh shifts"
+
+#: app/templates/admin/automation/full.html:179
+msgid ""
+"Recalcule les shifts d'après les astreintes en base, en choisissant ci-"
+"dessous comment traiter les astreintes elles-mêmes."
+msgstr ""
+"Recalculates shifts from the on-calls in the database, choosing below "
+"how to handle the on-calls themselves."
+
+#: app/templates/admin/automation/full.html:185
+msgid "Ne pas toucher aux astreintes"
+msgstr "Don't touch the on-calls"
+
+#: app/templates/admin/automation/full.html:186
+msgid ""
+"Recalcule seulement les shifts, en tenant compte des astreintes actuelles"
+" (même modifiées manuellement)."
+msgstr ""
+"Only recalculates shifts, taking current on-calls into account (even if "
+"manually modified)."
+
+#: app/templates/admin/automation/full.html:192
+msgid "Combler les trous d'astreintes"
+msgstr "Fill on-call gaps"
+
+#: app/templates/admin/automation/full.html:193
+msgid ""
+"Assigne une astreinte uniquement aux semaines qui n'en ont aucune - les "
+"astreintes déjà assignées (même modifiées manuellement) ne sont jamais "
+"touchées."
+msgstr ""
+"Assigns an on-call only to weeks that have none - on-calls already "
+"assigned (even manually modified) are never touched."
+
+#: app/templates/admin/automation/full.html:199
+msgid "Régénérer entièrement les astreintes"
+msgstr "Fully regenerate the on-calls"
+
+#: app/templates/admin/automation/full.html:200
+msgid ""
+"Supprime et régénère toutes les astreintes de la période selon l'ordre de"
+" rotation configuré - écrase les modifications manuelles."
+msgstr ""
+"Deletes and regenerates every on-call for the period according to the "
+"configured rotation order - overwrites manual changes."
+
+#: app/templates/admin/automation/full.html:215
 #: app/templates/auth/profile.html:54
 msgid "Retour"
 msgstr "Back"
 
-#: app/templates/admin/automation/full.html:157
-msgid "Aucun utilisateur éligible trouvé pour les astreintes."
-msgstr "No eligible user found for on-calls."
-
-#: app/templates/admin/automation/full.html:160
-msgid "Des utilisateurs existent"
-msgstr "Users exist"
-
-#: app/templates/admin/automation/full.html:161
-msgid "Les utilisateurs appartiennent à un groupe configuré dans"
-msgstr "Users belong to a group configured in"
-
-#: app/templates/admin/automation/full.html:161
-msgid "la configuration"
-msgstr "the configuration"
-
-#: app/templates/admin/automation/full.html:171
-msgid "Configurer les groupes éligibles"
-msgstr "Configure eligible groups"
-
-#: app/templates/admin/automation/full.html:182
+#: app/templates/admin/automation/full.html:222
 msgid "Comment ça marche ?"
 msgstr "How does it work?"
 
-#: app/templates/admin/automation/full.html:184
-msgid "Définissez l'ordre de rotation :"
-msgstr "Set the rotation order:"
+#: app/templates/admin/automation/full.html:223
+msgid "Génération complète :"
+msgstr "Full generation:"
 
-#: app/templates/admin/automation/full.html:184
+#: app/templates/admin/automation/full.html:225
 msgid ""
-"Attribuez une position (1, 2, 3, ...) à chaque utilisateur pour définir "
-"l'ordre dans lequel ils seront désignés pour les astreintes."
+"Définissez l'ordre de rotation en glissant-déposant les utilisateurs, et "
+"cochez ceux à inclure."
 msgstr ""
-"Assign a position (1, 2, 3, ...) to each user to define the order in "
-"which they will be designated for on-calls."
+"Set the rotation order by dragging and dropping users, and check those to"
+" include."
 
-#: app/templates/admin/automation/full.html:185
-msgid "Cochez les utilisateurs :"
-msgstr "Check the users:"
+#: app/templates/admin/automation/full.html:226
+msgid "Choisissez la période (date de début et de fin)."
+msgstr "Choose the period (start and end date)."
 
-#: app/templates/admin/automation/full.html:185
-msgid "Sélectionnez quels utilisateurs inclure dans la rotation."
-msgstr "Select which users to include in the rotation."
-
-#: app/templates/admin/automation/full.html:186
-msgid "Choisissez la période :"
-msgstr "Choose the period:"
-
-#: app/templates/admin/automation/full.html:186
-msgid "Sélectionnez la date de début et de fin pour la génération."
-msgstr "Select the start and end date for the generation."
-
-#: app/templates/admin/automation/full.html:187
-msgid "Prévisualisez :"
-msgstr "Preview:"
-
-#: app/templates/admin/automation/full.html:187
+#: app/templates/admin/automation/full.html:227
 msgid ""
-"Utilisez le bouton \"Prévisualiser\" pour voir ce qui sera généré sans "
+"Utilisez \"Prévisualiser\" pour voir ce qui sera généré sans rien "
 "sauvegarder."
 msgstr "Use the \"Preview\" button to see what will be generated without saving."
 
-#: app/templates/admin/automation/full.html:188
-msgid "Générez :"
-msgstr "Generate:"
-
-#: app/templates/admin/automation/full.html:188
+#: app/templates/admin/automation/full.html:228
 msgid ""
-"Cliquez sur \"Générer les astreintes et shifts\" pour créer les "
-"astreintes et les shifts en base de données."
+"Cliquez sur \"Générer les astreintes et shifts\" pour créer astreintes et"
+" shifts en base de données. Les astreintes et shifts existants sur la "
+"période sont remplacés."
 msgstr ""
 "Click \"Generate on-calls and shifts\" to create the on-calls and shifts "
-"in the database."
+"in the database. Existing on-calls and shifts on the period are replaced."
 
-#: app/templates/admin/automation/full.html:190
-msgid "Règles appliquées :"
-msgstr "Applied rules:"
+#: app/templates/admin/automation/full.html:230
+msgid "Rafraîchir les shifts :"
+msgstr "Refresh shifts:"
 
-#: app/templates/admin/automation/full.html:192
+#: app/templates/admin/automation/full.html:230
+msgid ""
+"recalcule les shifts d'après les astreintes en base. Choisissez comment "
+"traiter les astreintes elles-mêmes : ne pas y toucher, combler uniquement"
+" les trous, ou les régénérer entièrement."
+msgstr ""
+"recalculates shifts from the on-calls in the database. Choose how to "
+"handle the on-calls themselves: don't touch them, only fill gaps, or "
+"fully regenerate them."
+
+#: app/templates/admin/automation/full.html:231
+msgid "Règles appliquées à la génération des astreintes :"
+msgstr "Rules applied to on-call generation:"
+
+#: app/templates/admin/automation/full.html:233
 msgid "Chaque astreinte commence selon la configuration (par défaut"
 msgstr "Each on-call starts according to the configuration (by default"
 
-#: app/templates/admin/automation/full.html:192
+#: app/templates/admin/automation/full.html:233
 msgid "vendredi à 21h"
 msgstr "Friday at 9pm"
 
-#: app/templates/admin/automation/full.html:192
+#: app/templates/admin/automation/full.html:233
 msgid "et se termine selon la configuration (par défaut"
 msgstr "and ends according to the configuration (by default"
 
-#: app/templates/admin/automation/full.html:192
+#: app/templates/admin/automation/full.html:233
 msgid "vendredi suivant à 07h"
 msgstr "the following Friday at 7am"
 
-#: app/templates/admin/automation/full.html:193
+#: app/templates/admin/automation/full.html:234
 msgid ""
 "La rotation suit l'ordre que vous avez défini et sauvegardé. Cet ordre "
 "est stocké dans la configuration et sera réutilisé pour les prochaines "
@@ -4201,7 +4234,7 @@ msgstr ""
 "The rotation follows the order you defined and saved. This order is "
 "stored in the configuration and will be reused for future generations."
 
-#: app/templates/admin/automation/full.html:194
+#: app/templates/admin/automation/full.html:235
 msgid ""
 "Si un utilisateur n'est pas disponible (congé, astreinte existante), le "
 "système passe au suivant dans la rotation."
@@ -4209,30 +4242,30 @@ msgstr ""
 "If a user is not available (leave, existing on-call), the system moves to"
 " the next one in the rotation."
 
-#: app/templates/admin/automation/full.html:195
+#: app/templates/admin/automation/full.html:236
 msgid ""
 "Un message d'avertissement est affiché si aucun utilisateur n'est "
 "disponible pour une période."
 msgstr "A warning message is displayed if no user is available for a period."
 
-#: app/templates/admin/automation/full.html:196
+#: app/templates/admin/automation/full.html:237
 msgid "Les shifts sont générés automatiquement"
 msgstr "Shifts are automatically generated"
 
-#: app/templates/admin/automation/full.html:196
+#: app/templates/admin/automation/full.html:237
 msgid ""
-"après les astreintes selon les nouvelles règles métiers (13h-21h pour "
-"l'astreinte, rotation des créneaux, etc.)."
+"après les astreintes selon les règles métiers (13h-21h pour l'astreinte, "
+"rotation des créneaux, etc.)."
 msgstr ""
-"after on-calls according to the new business rules (1pm-9pm for the on-"
-"call person, slot rotation, etc.)."
+"after on-calls according to the business rules (1pm-9pm for the on-call "
+"person, slot rotation, etc.)."
 
-#: app/templates/admin/automation/full.html:199
+#: app/templates/admin/automation/full.html:240
 #: app/templates/auth/ics_token.html:150
 msgid "Note :"
 msgstr "Note:"
 
-#: app/templates/admin/automation/full.html:199
+#: app/templates/admin/automation/full.html:240
 msgid ""
 "L'ordre de rotation est sauvegardé automatiquement dans la base de "
 "données lorsque vous cliquez sur \"Sauvegarder l'ordre\"."
@@ -4308,132 +4341,6 @@ msgstr "Confirm and save everything"
 #: app/templates/admin/automation/full_dry_run.html:172
 msgid "Retour à la configuration"
 msgstr "Back to configuration"
-
-#: app/templates/admin/automation/refresh_shifts.html:3
-#: app/templates/admin/automation/refresh_shifts.html:15
-#: app/templates/admin/automation/refresh_shifts.html:86
-msgid "Rafraîchir les Shifts"
-msgstr "Refresh Shifts"
-
-#: app/templates/admin/automation/refresh_shifts.html:11
-msgid "Rafraîchir les shifts"
-msgstr "Refresh shifts"
-
-#: app/templates/admin/automation/refresh_shifts.html:22
-msgid ""
-"Cette page permet de recalculer tous les shifts pour une période donnée, "
-"et éventuellement les astreintes selon le mode choisi ci-dessous."
-msgstr ""
-"This page allows you to recalculate all shifts for a given period, and "
-"optionally the on-calls too depending on the mode chosen below."
-
-#: app/templates/admin/automation/refresh_shifts.html:25
-msgid "Les nouvelles règles métiers seront appliquées :"
-msgstr "The new business rules will be applied:"
-
-#: app/templates/admin/automation/refresh_shifts.html:28
-msgid ""
-"Créneau 13h-21h pour la personne d'astreinte (si elle fait partie d'un "
-"groupe schedule)"
-msgstr "1pm-9pm slot for the on-call person (if part of a schedule group)"
-
-#: app/templates/admin/automation/refresh_shifts.html:29
-msgid "Rotation : 13h-21h → 07h-15h la semaine suivante"
-msgstr "Rotation: 1pm-9pm → 7am-3pm the following week"
-
-#: app/templates/admin/automation/refresh_shifts.html:30
-msgid "09h-17h par défaut pour les autres"
-msgstr "9am-5pm by default for others"
-
-#: app/templates/admin/automation/refresh_shifts.html:31
-msgid "Cas spécial avec 2 personnes : la non-astreinte passe en 07h-15h"
-msgstr "Special case with 2 people: the person not on-call switches to 7am-3pm"
-
-#: app/templates/admin/automation/refresh_shifts.html:32
-msgid "Contrainte légale : 2 semaines minimum entre deux astreintes"
-msgstr "Legal constraint: 2 weeks minimum between two on-calls"
-
-#: app/templates/admin/automation/refresh_shifts.html:41
-msgid "Période"
-msgstr "Period"
-
-#: app/templates/admin/automation/refresh_shifts.html:62
-msgid "Ne pas toucher aux astreintes"
-msgstr "Don't touch the on-calls"
-
-#: app/templates/admin/automation/refresh_shifts.html:63
-msgid ""
-"Recalcule seulement les shifts, en tenant compte des astreintes actuelles"
-" (même modifiées manuellement)."
-msgstr ""
-"Only recalculates shifts, taking current on-calls into account (even if "
-"manually modified)."
-
-#: app/templates/admin/automation/refresh_shifts.html:69
-msgid "Combler les trous d'astreintes"
-msgstr "Fill on-call gaps"
-
-#: app/templates/admin/automation/refresh_shifts.html:70
-msgid ""
-"Assigne une astreinte uniquement aux semaines qui n'en ont aucune - les "
-"astreintes déjà assignées (même modifiées manuellement) ne sont jamais "
-"touchées."
-msgstr ""
-"Assigns an on-call only to weeks that have none - on-calls already "
-"assigned (even manually modified) are never touched."
-
-#: app/templates/admin/automation/refresh_shifts.html:76
-msgid "Régénérer entièrement les astreintes"
-msgstr "Fully regenerate the on-calls"
-
-#: app/templates/admin/automation/refresh_shifts.html:77
-msgid ""
-"Supprime et régénère toutes les astreintes de la période selon l'ordre de"
-" rotation configuré - écrase les modifications manuelles."
-msgstr ""
-"Deletes and regenerates every on-call for the period according to the "
-"configured rotation order - overwrites manual changes."
-
-#: app/templates/admin/automation/refresh_shifts.html:90
-#: app/templates/admin/automation/status.html:51
-msgid "Retour au tableau de bord"
-msgstr "Back to dashboard"
-
-#: app/templates/admin/automation/status.html:9
-msgid "État"
-msgstr "Status"
-
-#: app/templates/admin/automation/status.html:12
-msgid "État de l'automatisation"
-msgstr "Automation status"
-
-#: app/templates/admin/automation/status.html:16
-msgid "Astreintes existantes"
-msgstr "Existing on-calls"
-
-#: app/templates/admin/automation/status.html:20
-msgid "Shifts existants"
-msgstr "Existing shifts"
-
-#: app/templates/admin/automation/status.html:24
-msgid "Utilisateurs éligibles (astreintes)"
-msgstr "Eligible users (on-calls)"
-
-#: app/templates/admin/automation/status.html:28
-msgid "Utilisateurs éligibles (shifts)"
-msgstr "Eligible users (shifts)"
-
-#: app/templates/admin/automation/status.html:35
-msgid "Prochaine astreinte disponible"
-msgstr "Next available on-call"
-
-#: app/templates/admin/automation/status.html:39
-msgid "La prochaine astreinte peut être générée à partir du"
-msgstr "The next on-call can be generated starting from"
-
-#: app/templates/admin/automation/status.html:43
-msgid "Aucune date disponible trouvée."
-msgstr "No available date found."
 
 #: app/templates/admin/backups/dashboard.html:13
 msgid "Actions sauvegardes"
@@ -5186,9 +5093,192 @@ msgstr "Copied!"
 #~ msgid "Leviia Schedule - Gestion des plannings, astreintes et congés d'équipe."
 #~ msgstr "Leviia Schedule - Team shift, on-call, and leave management."
 
+#~ msgid ""
+#~ "Générer les astreintes. Les shifts "
+#~ "seront automatiquement générés selon les "
+#~ "règles métiers."
+#~ msgstr ""
+#~ "Generate on-calls. Shifts will be "
+#~ "automatically generated according to the "
+#~ "business rules."
+
+#~ msgid "Lancer"
+#~ msgstr "Run"
+
+#~ msgid ""
+#~ "Configurez l'ordre de rotation et "
+#~ "générez automatiquement les astreintes. Les"
+#~ " shifts seront générés automatiquement "
+#~ "après selon les nouvelles règles "
+#~ "métiers."
+#~ msgstr ""
+#~ "Configure the rotation order and "
+#~ "automatically generate on-calls. Shifts "
+#~ "will be automatically generated afterward "
+#~ "according to the new business rules."
+
+#~ msgid "Utilisateurs éligibles pour les astreintes"
+#~ msgstr "Users eligible for on-calls"
+
+#~ msgid "Configurer les groupes éligibles"
+#~ msgstr "Configure eligible groups"
+
+#~ msgid "Définissez l'ordre de rotation :"
+#~ msgstr "Set the rotation order:"
+
+#~ msgid ""
+#~ "Attribuez une position (1, 2, 3, "
+#~ "...) à chaque utilisateur pour définir"
+#~ " l'ordre dans lequel ils seront "
+#~ "désignés pour les astreintes."
+#~ msgstr ""
+#~ "Assign a position (1, 2, 3, ...)"
+#~ " to each user to define the "
+#~ "order in which they will be "
+#~ "designated for on-calls."
+
+#~ msgid "Cochez les utilisateurs :"
+#~ msgstr "Check the users:"
+
+#~ msgid "Sélectionnez quels utilisateurs inclure dans la rotation."
+#~ msgstr "Select which users to include in the rotation."
+
+#~ msgid "Sélectionnez la date de début et de fin pour la génération."
+#~ msgstr "Select the start and end date for the generation."
+
+#~ msgid "Prévisualisez :"
+#~ msgstr "Preview:"
+
+#~ msgid "Générez :"
+#~ msgstr "Generate:"
+
+#~ msgid "Règles appliquées :"
+#~ msgstr "Applied rules:"
+
+#~ msgid "Rafraîchir les Shifts"
+#~ msgstr "Refresh Shifts"
+
+#~ msgid "Les nouvelles règles métiers seront appliquées :"
+#~ msgstr "The new business rules will be applied:"
+
+#~ msgid "Contrainte légale : 2 semaines minimum entre deux astreintes"
+#~ msgstr "Legal constraint: 2 weeks minimum between two on-calls"
+
+#~ msgid "Génération complète"
+#~ msgstr "Full generation"
+
+#~ msgid "Rafraîchir shifts"
+#~ msgstr "Refresh shifts"
+
+#~ msgid ""
+#~ "Choisissez un mode ci-dessous : "
+#~ "génération complète (astreintes + shifts) "
+#~ "ou rafraîchissement des shifts uniquement "
+#~ "en conservant les astreintes actuelles."
+#~ msgstr ""
+#~ "Choose a mode below: full generation "
+#~ "(on-calls + shifts) or shifts-only"
+#~ " refresh, keeping current on-calls."
+
+#~ msgid ""
+#~ "Génère les astreintes selon l'ordre de"
+#~ " rotation défini ci-dessous, puis "
+#~ "génère automatiquement les shifts selon "
+#~ "les règles métiers. Les astreintes et"
+#~ " shifts existants sur la période sont"
+#~ " remplacés."
+#~ msgstr ""
+#~ "Generates on-calls according to the "
+#~ "rotation order defined below, then "
+#~ "automatically generates shifts according to"
+#~ " the business rules. Existing on-"
+#~ "calls and shifts on the period are"
+#~ " replaced."
+
+#~ msgid "Rafraîchir shifts uniquement"
+#~ msgstr "Refresh shifts only"
+
+#~ msgid "Recalcule uniquement les shifts sur la période, en tenant compte des"
+#~ msgstr "Only recalculates shifts for the period, taking into account"
+
 #~ msgid "astreintes actuelles"
 #~ msgstr "current on-calls"
 
 #~ msgid "même modifiées manuellement"
 #~ msgstr "even if manually modified"
+
+#~ msgid "Les astreintes elles-mêmes ne sont pas touchées."
+#~ msgstr "On-calls themselves are not touched."
+
+#~ msgid ""
+#~ "Utile après avoir modifié une astreinte"
+#~ " à la main, sans vouloir régénérer"
+#~ " toute la rotation."
+#~ msgstr ""
+#~ "Useful after manually editing an on-"
+#~ "call, without wanting to regenerate the"
+#~ " whole rotation."
+
+#~ msgid ""
+#~ "Créneau 13h-21h pour la personne "
+#~ "d'astreinte (si elle fait partie d'un"
+#~ " groupe schedule)"
+#~ msgstr "1pm-9pm slot for the on-call person (if part of a schedule group)"
+
+#~ msgid "Rotation : 13h-21h → 07h-15h la semaine suivante"
+#~ msgstr "Rotation: 1pm-9pm → 7am-3pm the following week"
+
+#~ msgid "09h-17h par défaut pour les autres"
+#~ msgstr "9am-5pm by default for others"
+
+#~ msgid "Cas spécial avec 2 personnes : la non-astreinte passe en 07h-15h"
+#~ msgstr "Special case with 2 people: the person not on-call switches to 7am-3pm"
+
+#~ msgid "Rafraîchir shifts uniquement :"
+#~ msgstr "Refresh shifts only:"
+
+#~ msgid "État"
+#~ msgstr "Status"
+
+#~ msgid "État de l'automatisation"
+#~ msgstr "Automation status"
+
+#~ msgid "Astreintes existantes"
+#~ msgstr "Existing on-calls"
+
+#~ msgid "Shifts existants"
+#~ msgstr "Existing shifts"
+
+#~ msgid "Utilisateurs éligibles (shifts)"
+#~ msgstr "Eligible users (shifts)"
+
+#~ msgid "La prochaine astreinte peut être générée à partir du"
+#~ msgstr "The next on-call can be generated starting from"
+
+#~ msgid "Retour au tableau de bord"
+#~ msgstr "Back to dashboard"
+
+#~ msgid ""
+#~ "\"Rafraîchir les shifts\" recalcule uniquement"
+#~ " les shifts d'après les astreintes "
+#~ "déjà en base (même modifiées "
+#~ "manuellement), sans toucher aux astreintes "
+#~ "elles-mêmes."
+#~ msgstr ""
+#~ "\"Refresh shifts\" only recalculates shifts"
+#~ " from the on-calls already in "
+#~ "the database (even if manually "
+#~ "modified), without touching the on-calls"
+#~ " themselves."
+
+#~ msgid ""
+#~ "Pas d'utilisateur éligible pour les "
+#~ "astreintes, mais vous pouvez tout de "
+#~ "même recalculer les shifts d'après les"
+#~ " astreintes déjà en base :"
+#~ msgstr ""
+#~ "No eligible user for on-calls, but"
+#~ " you can still recalculate shifts "
+#~ "from the on-calls already in the"
+#~ " database:"
 

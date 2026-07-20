@@ -228,6 +228,7 @@
                     {% if current_user.is_admin %}
                     <li class="menu-title mt-3">{{ _("Administration") }}</li>
                     <li><a href="{{ url_for('admin.list_users') }}" aria-label="{{ _("Utilisateurs") }}" class="{{ 'menu-active' if request.path == url_for('admin.list_users') else '' }}"><i class="fas fa-users" aria-hidden="true"></i> {{ _("Utilisateurs") }}</a></li>
+                    <li><a href="{{ url_for('admin.automation_dashboard') }}" aria-label="{{ _("Automatisation") }}" class="{{ 'menu-active' if request.path.startswith('/admin/automation') else '' }}"><i class="fas fa-robot" aria-hidden="true"></i> {{ _("Automatisation") }}</a></li>
                     <li><a href="{{ url_for('admin.admin_dashboard') }}" aria-label="{{ _("Admin") }}" class="{{ 'menu-active' if request.path == url_for('admin.admin_dashboard') else '' }}"><i class="fas fa-cog" aria-hidden="true"></i> {{ _("Admin") }}</a></li>
                     {% endif %}
                 </ul>

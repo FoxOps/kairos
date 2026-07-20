@@ -170,34 +170,46 @@ class TestAutomationFull:
         assert gap_notifs[0].link == "/admin/automation"
 
 
-class TestAutomationStatus:
-    """Tests for /admin/automation/status."""
+class TestAutomationStatusMergedIntoDashboard:
+    """The old standalone /admin/automation/status page was never linked
+    from anywhere in the UI and duplicated 4 of the 5 stats already
+    shown on /admin/automation - its one unique piece of information
+    (next available on-call date) was folded into the dashboard's own
+    stats block instead, and the page was dropped rather than kept as a
+    second, unreachable-except-by-URL copy of the same numbers."""
 
-    def test_automation_status_get(self, logged_in_client):
-        """Test rendering the automation status."""
+    def test_automation_status_old_url_is_gone(self, logged_in_client):
         response = logged_in_client.get("/admin/automation/status")
-        assert response.status_code == 200
-        # Just check that the page loads successfully
-        assert b"<!DOCTYPE" in response.data or b"<html" in response.data
+        assert response.status_code == 404
 
-    def test_automation_status_unauthenticated(self, client):
-        """Test that the status page requires authentication."""
-        response = client.get("/admin/automation/status", follow_redirects=True)
-        assert b"Connexion" in response.data
-
-
-class TestRefreshShifts:
-    """Tests for /admin/automation/refresh-shifts."""
-
-    def test_refresh_shifts_get(self, logged_in_client):
-        """Test rendering the shift-refresh page."""
-        response = logged_in_client.get("/admin/automation/refresh-shifts")
+    def test_dashboard_shows_next_available_oncall_date(self, logged_in_client):
+        response = logged_in_client.get("/admin/automation")
         assert response.status_code == 200
         assert (
-            b"rafra" in response.data.lower()
-            or b"refresh" in response.data.lower()
-            or b"shifts" in response.data.lower()
+            b"Prochaine astreinte disponible" in response.data
+            or b"Next available on-call" in response.data
         )
+
+
+class TestRefreshShiftsOldUrlRemoved:
+    """The old standalone /admin/automation/refresh-shifts URL was
+    dropped outright (not kept as a redirect) when it was merged into
+    /admin/automation/full as a "Rafraîchir les shifts" button next to
+    Dry Run (see TestAutomationFullRefreshMode below) - user feedback was
+    that nobody had it bookmarked/understood it as a separate page, so
+    there was nothing worth preserving a redirect for."""
+
+    def test_refresh_shifts_old_url_is_gone(self, logged_in_client):
+        response = logged_in_client.get("/admin/automation/refresh-shifts")
+        assert response.status_code == 404
+
+
+class TestAutomationFullRefreshMode:
+    """Tests for the "refresh_shifts" action on /admin/automation/full
+    (a "Rafraîchir les shifts" button next to Dry Run, replacing the old
+    separate /admin/automation/refresh-shifts page - see
+    admin_automation_routes.py::automation_full's docstring for why the
+    two pages were merged)."""
 
     def test_refresh_shifts_post(self, logged_in_client):
         """Test refreshing shifts."""
@@ -205,8 +217,9 @@ class TestRefreshShifts:
         end_date = today + timedelta(days=7)
 
         response = logged_in_client.post(
-            "/admin/automation/refresh-shifts",
+            "/admin/automation/full",
             data={
+                "action": "refresh_shifts",
                 "start_date": today.strftime("%Y-%m-%d"),
                 "end_date": end_date.strftime("%Y-%m-%d"),
             },
@@ -217,8 +230,9 @@ class TestRefreshShifts:
     def test_refresh_shifts_post_invalid_date(self, logged_in_client):
         """Test refreshing shifts with invalid dates."""
         response = logged_in_client.post(
-            "/admin/automation/refresh-shifts",
+            "/admin/automation/full",
             data={
+                "action": "refresh_shifts",
                 "start_date": "invalid-date",
                 "end_date": "invalid-date",
             },
@@ -231,16 +245,12 @@ class TestRefreshShifts:
             or b"Erreur" in response.data
         )
 
-    def test_refresh_shifts_unauthenticated(self, client):
-        """Test that the refresh page requires authentication."""
-        response = client.get("/admin/automation/refresh-shifts", follow_redirects=True)
-        assert b"Connexion" in response.data
 
-
-class TestRefreshShiftsOncallMode:
-    """Tests for the oncall_mode field on /admin/automation/refresh-shifts
-    (default "none" leaves on-calls untouched, "fill_gaps" only fills
-    empty weeks, "regenerate" fully replaces on-calls in the period)."""
+class TestAutomationFullRefreshOncallMode:
+    """Tests for the oncall_mode field of the "refresh_shifts" action on
+    /admin/automation/full (default "none" leaves on-calls untouched,
+    "fill_gaps" only fills empty weeks, "regenerate" fully replaces
+    on-calls in the period)."""
 
     def test_default_mode_does_not_touch_oncalls(self, logged_in_client, test_user):
         """Regression test: omitting oncall_mode entirely must behave
@@ -257,8 +267,9 @@ class TestRefreshShiftsOncallMode:
         oncall_id = oncall.id
 
         logged_in_client.post(
-            "/admin/automation/refresh-shifts",
+            "/admin/automation/full",
             data={
+                "action": "refresh_shifts",
                 "start_date": today.strftime("%Y-%m-%d"),
                 "end_date": end_date.strftime("%Y-%m-%d"),
             },
@@ -277,8 +288,9 @@ class TestRefreshShiftsOncallMode:
         end_date = start_date + timedelta(days=14)
 
         response = logged_in_client.post(
-            "/admin/automation/refresh-shifts",
+            "/admin/automation/full",
             data={
+                "action": "refresh_shifts",
                 "start_date": start_date.strftime("%Y-%m-%d"),
                 "end_date": end_date.strftime("%Y-%m-%d"),
                 "oncall_mode": "fill_gaps",
@@ -312,8 +324,9 @@ class TestRefreshShiftsOncallMode:
         manual_id = manual_oncall.id
 
         logged_in_client.post(
-            "/admin/automation/refresh-shifts",
+            "/admin/automation/full",
             data={
+                "action": "refresh_shifts",
                 "start_date": start_date.strftime("%Y-%m-%d"),
                 "end_date": end_date.strftime("%Y-%m-%d"),
                 "oncall_mode": "fill_gaps",
@@ -347,8 +360,9 @@ class TestRefreshShiftsOncallMode:
         db.session.commit()
 
         response = logged_in_client.post(
-            "/admin/automation/refresh-shifts",
+            "/admin/automation/full",
             data={
+                "action": "refresh_shifts",
                 "start_date": start_date.strftime("%Y-%m-%d"),
                 "end_date": end_date.strftime("%Y-%m-%d"),
                 "oncall_mode": "regenerate",

@@ -56,6 +56,23 @@ def _flash_automation_messages(messages, default_category="info"):
         flash(stripped_msg, category)
 
 
+def _notify_oncall_gap_if_any(unfilled_dates):
+    if not unfilled_dates:
+        return
+    AppNotificationService.notify_admins_oncall_gap(unfilled_dates)
+    AppriseNotificationService.notify(
+        "system",
+        _("Génération d'astreintes incomplète"),
+        _(
+            "Aucun utilisateur disponible dans le respect du "
+            "délai légal de 2 semaines pour : %(dates)s. "
+            "Assignation manuelle nécessaire dans "
+            "/admin/automation.",
+            dates=", ".join(d.strftime("%d/%m/%Y") for d in unfilled_dates),
+        ),
+    )
+
+
 @admin_bp.route("/admin/automation")
 @admin_required
 def automation_dashboard():
@@ -71,9 +88,113 @@ def automation_dashboard():
 @admin_bp.route("/admin/automation/full", methods=["GET", "POST"])
 @admin_required
 def automation_full():
-    """Full generation (on-calls + shifts)."""
+    """Single-page automation UI: full generation (on-calls + shifts,
+    "generate"/"dry_run"/"save_order" actions) and shifts-only refresh
+    ("refresh_shifts" action) sit as buttons on the same form, sharing
+    one date range. Used to be two separate pages/routes
+    (automation_full + the now-removed refresh_shifts), which user
+    feedback flagged as confusing (unclear which page to use, easy to
+    forget the other one exists) - an intermediate design put the two
+    modes on two tabs of this same page, but user feedback on that too
+    was that it should just be one more button next to "Dry Run",
+    no tabs.
+
+    refresh_shifts recomputes shifts from whatever on-calls exist,
+    optionally also touching the on-calls themselves first depending
+    on oncall_mode (form field, default "none" - left to the admin's
+    judgment, not a single fixed choice):
+    - "none": on-calls are left completely untouched (the original
+      behaviour) - shifts are recomputed from whatever on-calls already
+      exist, even manually modified ones.
+    - "fill_gaps": before recomputing shifts, fills any Friday in the
+      period that has no on-call at all (OnCallAutomation.
+      fill_oncall_gaps) - existing on-calls, including manually
+      assigned ones, are never touched or reassigned, only genuinely
+      empty weeks get a new one.
+    - "regenerate": deletes and fully regenerates on-calls for the
+      period (like the "generate" action above) before recomputing
+      shifts - overwrites manual on-call edits.
+    """
     if request.method == "POST":
         action = request.form.get("action")
+
+        if action == "refresh_shifts":
+            start_date_str = request.form.get("start_date")
+            end_date_str = request.form.get("end_date")
+            oncall_mode = request.form.get("oncall_mode", "none")
+
+            try:
+                start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+
+                if oncall_mode == "fill_gaps":
+                    _filled, oncall_messages, oncall_unfilled_dates = (
+                        OnCallAutomation.fill_oncall_gaps(
+                            start_date,
+                            end_date,
+                            rotation_order_ids=AutomationConfig.get_rotation_order(),
+                            dry_run=False,
+                        )
+                    )
+                    _flash_automation_messages(oncall_messages, default_category="info")
+                    _notify_oncall_gap_if_any(oncall_unfilled_dates)
+                elif oncall_mode == "regenerate":
+                    oncalls_deleted = OnCallRepository.delete_overlapping_range(
+                        start_date, end_date
+                    )
+                    if oncalls_deleted:
+                        db.session.commit()
+                        flash(
+                            _(
+                                "%(oncalls_deleted)s astreintes existantes supprimées pour la période",
+                                oncalls_deleted=oncalls_deleted,
+                            ),
+                            "info",
+                        )
+                    _regenerated, oncall_messages, oncall_unfilled_dates = (
+                        OnCallAutomation.generate_oncall_schedule(
+                            start_date,
+                            end_date,
+                            rotation_order_ids=AutomationConfig.get_rotation_order(),
+                            dry_run=False,
+                        )
+                    )
+                    _flash_automation_messages(
+                        oncall_messages, default_category="danger"
+                    )
+                    _notify_oncall_gap_if_any(oncall_unfilled_dates)
+
+                # Only deletes shifts (never on-calls beyond what
+                # oncall_mode above already handled): this recomputes
+                # shifts, taking whatever on-calls now exist into
+                # account.
+                deleted = ShiftRepository.delete_in_date_range(start_date, end_date)
+                if deleted:
+                    db.session.commit()
+                    flash(
+                        _(
+                            "%(deleted)s shifts existants supprimés pour la période",
+                            deleted=deleted,
+                        ),
+                        "info",
+                    )
+
+                shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
+                    start_date, end_date, dry_run=False
+                )
+
+                _flash_automation_messages(messages, default_category="info")
+
+                flash(
+                    _("%(val0)s shifts régénérés avec succès !", val0=len(shifts)),
+                    "success",
+                )
+            except ValueError as e:
+                flash(_("Format de date invalide : %(val0)s", val0=str(e)), "danger")
+            except Exception as e:
+                db.session.rollback()
+                flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
+            return redirect(url_for("admin.automation_full", mode="refresh"))
 
         if action in ["generate", "dry_run", "save_order"]:
             start_date_str = request.form.get("start_date")
@@ -229,136 +350,4 @@ def automation_full():
         start_date_default=start_date_default,
         end_date_default=end_date_default,
         current_rotation_order=current_rotation_order,
-    )
-
-
-@admin_bp.route("/admin/automation/status")
-@admin_required
-def automation_status():
-    """Show the current automation status."""
-    status = get_automation_status()
-    return render_template("admin/automation/status.html", status=status)
-
-
-@admin_bp.route("/admin/automation/refresh-shifts", methods=["GET", "POST"])
-@admin_required
-def refresh_shifts():
-    """
-    Refresh shifts (and, depending on oncall_mode, on-calls too) for a
-    period.
-
-    oncall_mode (form field, default "none"):
-    - "none": on-calls are left completely untouched (the original
-      behaviour) - shifts are recomputed from whatever on-calls already
-      exist, even manually modified ones.
-    - "fill_gaps": before recomputing shifts, fills any Friday in the
-      period that has no on-call at all (OnCallAutomation.
-      fill_oncall_gaps) - existing on-calls, including manually
-      assigned ones, are never touched or reassigned, only genuinely
-      empty weeks get a new one.
-    - "regenerate": deletes and fully regenerates on-calls for the
-      period (like automation_full's "generate" action) before
-      recomputing shifts - overwrites manual on-call edits.
-    """
-
-    def notify_oncall_gap_if_any(unfilled_dates):
-        if not unfilled_dates:
-            return
-        AppNotificationService.notify_admins_oncall_gap(unfilled_dates)
-        AppriseNotificationService.notify(
-            "system",
-            _("Génération d'astreintes incomplète"),
-            _(
-                "Aucun utilisateur disponible dans le respect du "
-                "délai légal de 2 semaines pour : %(dates)s. "
-                "Assignation manuelle nécessaire dans "
-                "/admin/automation.",
-                dates=", ".join(d.strftime("%d/%m/%Y") for d in unfilled_dates),
-            ),
-        )
-
-    if request.method == "POST":
-        start_date_str = request.form.get("start_date")
-        end_date_str = request.form.get("end_date")
-        oncall_mode = request.form.get("oncall_mode", "none")
-
-        try:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-
-            if oncall_mode == "fill_gaps":
-                _filled, oncall_messages, oncall_unfilled_dates = (
-                    OnCallAutomation.fill_oncall_gaps(
-                        start_date,
-                        end_date,
-                        rotation_order_ids=AutomationConfig.get_rotation_order(),
-                        dry_run=False,
-                    )
-                )
-                _flash_automation_messages(oncall_messages, default_category="info")
-                notify_oncall_gap_if_any(oncall_unfilled_dates)
-            elif oncall_mode == "regenerate":
-                oncalls_deleted = OnCallRepository.delete_overlapping_range(
-                    start_date, end_date
-                )
-                if oncalls_deleted:
-                    db.session.commit()
-                    flash(
-                        _(
-                            "%(oncalls_deleted)s astreintes existantes supprimées pour la période",
-                            oncalls_deleted=oncalls_deleted,
-                        ),
-                        "info",
-                    )
-                _regenerated, oncall_messages, oncall_unfilled_dates = (
-                    OnCallAutomation.generate_oncall_schedule(
-                        start_date,
-                        end_date,
-                        rotation_order_ids=AutomationConfig.get_rotation_order(),
-                        dry_run=False,
-                    )
-                )
-                _flash_automation_messages(oncall_messages, default_category="danger")
-                notify_oncall_gap_if_any(oncall_unfilled_dates)
-
-            # Only deletes shifts (never on-calls beyond what oncall_mode
-            # above already handled): this recomputes shifts, taking
-            # whatever on-calls now exist into account.
-            deleted = ShiftRepository.delete_in_date_range(start_date, end_date)
-            if deleted:
-                db.session.commit()
-                flash(
-                    _(
-                        "%(deleted)s shifts existants supprimés pour la période",
-                        deleted=deleted,
-                    ),
-                    "info",
-                )
-
-            shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
-                start_date, end_date, dry_run=False
-            )
-
-            _flash_automation_messages(messages, default_category="info")
-
-            flash(
-                _("%(val0)s shifts régénérés avec succès !", val0=len(shifts)),
-                "success",
-            )
-            return redirect(url_for("admin.refresh_shifts"))
-
-        except ValueError as e:
-            flash(_("Format de date invalide : %(val0)s", val0=str(e)), "danger")
-        except Exception as e:
-            db.session.rollback()
-            flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
-
-    today = date.today()
-    end_date_default = today + timedelta(days=180)
-    start_date_default = today
-
-    return render_template(
-        "admin/automation/refresh_shifts.html",
-        start_date_default=start_date_default,
-        end_date_default=end_date_default,
     )
