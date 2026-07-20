@@ -755,6 +755,74 @@ class TestRebalanceAfterLeave:
                 test_user.id,
             ]
 
+    def test_rebalance_after_leave_does_not_lock_out_window_on_future_oncalls(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Regression test for a real production incident: rebalance_
+        after_leave() only regenerates a ±30-day window around the
+        leave, leaving on-calls *outside* that window (including ones
+        further in the future than the window itself) untouched. A
+        version of AvailabilityIndex/meets_spacing_constraint that only
+        tracked "the single most recently created on-call" per user
+        (rather than checking every known interval, both before and
+        after) would treat one of those future on-calls as if it were
+        the immediately preceding one - computing a nonsensical
+        negative gap that failed the 2-week spacing check for every
+        candidate on every week of the whole window, even with zero
+        real leave conflicts. Confirmed against a real deployment's
+        data (4 eligible users, one mid-window leave) before this fix:
+        100% of the window (12/12 weeks) came back unfilled."""
+        with test_app.app_context():
+            user3 = User(
+                name="Third User",
+                email="third@test.com",
+                password_hash="third123",
+                is_admin=False,
+                group_id=test_group.id,
+            )
+            user4 = User(
+                name="Fourth User",
+                email="fourth@test.com",
+                password_hash="fourth123",
+                is_admin=False,
+                group_id=test_group.id,
+            )
+            db.session.add_all([user3, user4])
+            db.session.commit()
+
+            rotation_order = [test_user.id, second_user.id, user3.id, user4.id]
+            AutomationConfig.set_rotation_order(rotation_order)
+
+            # A clean, conflict-free schedule already exists across a
+            # wide span - crucially including on-calls *after* the leave
+            # below's ±30-day rebalance window, left untouched by it.
+            OnCallAutomation.generate_oncall_schedule(
+                date(2023, 11, 3),
+                date(2024, 5, 31),
+                rotation_order_ids=rotation_order,
+                dry_run=False,
+                commit=True,
+            )
+
+            # Leave roughly in the middle of that schedule - its own
+            # ±30-day rebalance window won't reach the tail end of the
+            # existing future on-calls, which is exactly the scenario
+            # that exposed the bug (on-calls existing *after* the
+            # window, not just before it).
+            leave = Leave(
+                user_id=test_user.id,
+                start_date=date(2024, 1, 3),
+                end_date=date(2024, 1, 18),
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            _shifts, _messages, unfilled_oncall_dates, _failed, _failed_oncall = (
+                AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
+            )
+
+            assert unfilled_oncall_dates == []
+
     def test_rebalance_after_leave_no_overlap(self, test_app, test_group, test_user):
         """Test rebalancing with a leave that overlaps nothing."""
         with test_app.app_context():

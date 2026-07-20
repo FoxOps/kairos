@@ -35,7 +35,6 @@ class AvailabilityIndex:
         self._oncall_intervals: dict[int, list[tuple[datetime, datetime]]] = (
             defaultdict(list)
         )
-        self._last_oncall_end: dict[int, datetime] = {}
         self._leave_intervals: dict[int, list[tuple[date, date]]] = defaultdict(list)
 
         if not user_id_set:
@@ -45,9 +44,6 @@ class AvailabilityIndex:
             self._oncall_intervals[oncall.user_id].append(
                 (oncall.start_time, oncall.end_time)
             )
-            current_last = self._last_oncall_end.get(oncall.user_id)
-            if current_last is None or oncall.end_time > current_last:
-                self._last_oncall_end[oncall.user_id] = oncall.end_time
 
         for leave in Leave.query.filter(Leave.user_id.in_(user_id_set)).all():
             self._leave_intervals[leave.user_id].append(
@@ -70,27 +66,51 @@ class AvailabilityIndex:
             for leave_start, leave_end in self._leave_intervals.get(user_id, [])
         )
 
-    def meets_spacing_constraint(self, user_id: int, start_time: datetime) -> bool:
-        last_end = self._last_oncall_end.get(user_id)
-        if last_end is None:
-            return True
-        gap_days = (start_time - last_end).days
-        return gap_days / 7 >= 2
+    def meets_spacing_constraint(
+        self, user_id: int, start_time: datetime, end_time: datetime
+    ) -> bool:
+        """2-week minimum gap to EVERY existing/assigned on-call for
+        this user - chronologically before *or* after the prospective
+        interval, not just "the single most recently created one".
+
+        This matters because a rebalance (AdvancedShiftAutomation.
+        rebalance_after_leave) regenerates only a ±30-day window around
+        a leave while leaving on-calls *outside* that window untouched
+        - including ones scheduled further in the future than the
+        window itself. A version of this method that only tracked the
+        latest on-call end time ever seen for a user (a single "last
+        end" value) would treat a future on-call as if it were the most
+        recent *past* one, computing a nonsensical negative gap that
+        fails the constraint for every candidate on every week of the
+        window - a real production incident (confirmed against a real
+        deployment's data: 4 eligible users, zero live leave conflicts
+        in the window, still 100% unfilled) - not just a theoretical
+        edge case.
+        """
+        for existing_start, existing_end in self._oncall_intervals.get(user_id, []):
+            if existing_end <= start_time:
+                gap_days = (start_time - existing_end).days
+            elif existing_start >= end_time:
+                gap_days = (existing_start - end_time).days
+            else:
+                # Overlaps the prospective interval - a conflict
+                # (has_oncall_conflict's concern), not a spacing issue.
+                continue
+            if gap_days / 7 < 2:
+                return False
+        return True
 
     def record_assignment(
         self, user_id: int, start_time: datetime, end_time: datetime
     ) -> None:
         self._oncall_intervals[user_id].append((start_time, end_time))
-        current_last = self._last_oncall_end.get(user_id)
-        if current_last is None or end_time > current_last:
-            self._last_oncall_end[user_id] = end_time
 
-    def get_last_end(self, user_id: int) -> datetime | None:
-        """End of the user's most recent on-call known to this index
-        (pre-existing in the DB, or recorded via record_assignment) -
-        used to seed the spacing-constraint search in
-        _solve_max_filled_weeks() below."""
-        return self._last_oncall_end.get(user_id)
+    def get_intervals(self, user_id: int) -> list[tuple[datetime, datetime]]:
+        """All on-calls (pre-existing in the DB, or recorded via
+        record_assignment) known to this index for the user - used to
+        seed the spacing-constraint search in _solve_max_filled_weeks()
+        below."""
+        return list(self._oncall_intervals.get(user_id, []))
 
 
 # Hard cap on search nodes for _solve_max_filled_weeks() below - a safety
@@ -143,24 +163,37 @@ def _solve_max_filled_weeks(
     assignment found within the node budget.
     """
     total_weeks = len(weeks)
-    last_end: dict[int, datetime] = {}
+
+    # Every user's known on-calls (pre-existing in the DB, anywhere in
+    # time - not just inside this window) - seeded once, then appended
+    # to/popped from as the search tries and backtracks assignments.
+    # Checking against the *full* interval list (both chronologically
+    # before and after a candidate week), not a single "last end"
+    # value, is what makes this correct when on-calls exist *after*
+    # this window too (see AvailabilityIndex.meets_spacing_constraint's
+    # docstring for why that distinction is essential here).
+    intervals: dict[int, list[tuple[datetime, datetime]]] = {}
     for candidates in week_candidates:
         for user in candidates:
-            if user.id not in last_end:
-                existing = index.get_last_end(user.id)
-                if existing is not None:
-                    last_end[user.id] = existing
+            if user.id not in intervals:
+                intervals[user.id] = index.get_intervals(user.id)
 
     best_count = 0
     best_assignment: dict[int, User] = {}
     current: dict[int, User] = {}
     nodes_explored = 0
 
-    def meets_spacing(user_id: int, start_time: datetime) -> bool:
-        prev_end = last_end.get(user_id)
-        if prev_end is None:
-            return True
-        return (start_time - prev_end).days / 7 >= 2
+    def meets_spacing(user_id: int, start_time: datetime, end_time: datetime) -> bool:
+        for existing_start, existing_end in intervals.get(user_id, []):
+            if existing_end <= start_time:
+                gap_days = (start_time - existing_end).days
+            elif existing_start >= end_time:
+                gap_days = (existing_start - end_time).days
+            else:
+                continue
+            if gap_days / 7 < 2:
+                return False
+        return True
 
     def recurse(week_index: int, filled_count: int) -> None:
         nonlocal nodes_explored, best_count, best_assignment
@@ -181,20 +214,16 @@ def _solve_max_filled_weeks(
 
         _friday, start_time, end_time = weeks[week_index]
         for user in week_candidates[week_index]:
-            if not meets_spacing(user.id, start_time):
+            if not meets_spacing(user.id, start_time, end_time):
                 continue
 
-            previous_end = last_end.get(user.id)
-            last_end[user.id] = end_time
+            intervals[user.id].append((start_time, end_time))
             current[week_index] = user
 
             recurse(week_index + 1, filled_count + 1)
 
             del current[week_index]
-            if previous_end is None:
-                del last_end[user.id]
-            else:
-                last_end[user.id] = previous_end
+            intervals[user.id].pop()
 
         # Try leaving this week unfilled too - explored last so the
         # depth-first search finds a full/near-full solution first,
@@ -270,7 +299,7 @@ class OnCallAutomation:
 
     @staticmethod
     def check_oncall_constraint(
-        user: User, start_time: datetime, index: AvailabilityIndex
+        user: User, start_time: datetime, end_time: datetime, index: AvailabilityIndex
     ) -> bool:
         """
         Check the legal minimum spacing constraint (2 weeks) between two
@@ -279,13 +308,15 @@ class OnCallAutomation:
         Args:
             user: User to check
             start_time: Start of the prospective new on-call
+            end_time: End of the prospective new on-call
             index: In-memory view of existing on-calls/leaves (see
                 AvailabilityIndex) - avoids a DB query per call.
 
         Returns:
-            True if there's no previous on-call or the spacing is sufficient.
+            True if there's no conflicting on-call or the spacing is
+            sufficient on both sides (before *and* after).
         """
-        return index.meets_spacing_constraint(user.id, start_time)
+        return index.meets_spacing_constraint(user.id, start_time, end_time)
 
     @staticmethod
     def find_next_available_user(
@@ -315,7 +346,9 @@ class OnCallAutomation:
             if index.has_leave_conflict(user.id, start_time.date(), end_time.date()):
                 continue
 
-            if not OnCallAutomation.check_oncall_constraint(user, start_time, index):
+            if not OnCallAutomation.check_oncall_constraint(
+                user, start_time, end_time, index
+            ):
                 continue
 
             return user
