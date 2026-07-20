@@ -17,6 +17,22 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v7
+      # github.ref_name is whatever branch/tag was picked in the "Use
+      # workflow from" selector - since this workflow can be run from
+      # any ref (not just a version tag), that's not reliably a version
+      # number (e.g. "main"). Read the real app version straight from
+      # the source of truth instead (app/utils/health.py's
+      # APP_VERSION_DEFAULT, the same fallback /version and the footer
+      # use at runtime when APP_VERSION isn't set in the environment).
+      - name: Extract app version
+        id: version
+        run: |
+          version=$(grep -oP '(?<=APP_VERSION_DEFAULT = ")[^"]+' app/utils/health.py)
+          if [ -z "$version" ]; then
+            echo "Could not extract APP_VERSION_DEFAULT from app/utils/health.py" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -35,7 +51,7 @@ jobs:
           # throughout Docs/deployment/docker.md and both .env.example
           # files.
           tags: |
-            ghcr.io/foxops/kairos:${{ github.ref_name }}
+            ghcr.io/foxops/kairos:${{ steps.version.outputs.version }}
             ghcr.io/foxops/kairos:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
