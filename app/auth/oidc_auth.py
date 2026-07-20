@@ -321,7 +321,20 @@ class OIDCAuthLib:
         return True
 
     def extract_user_info_from_token(self, token_data, user_info=None):
-        """Extract user information from the OIDC token."""
+        """Extract user information from the verified userinfo-endpoint
+        response.
+
+        Deliberately does NOT fall back to decoding the id_token/access_token
+        JWT payload directly: this class calls the provider's endpoints with
+        plain `requests` rather than Authlib's own JWKS-verifying helpers, so
+        it has no way to check a JWT's signature here. Trusting an unverified
+        payload would let anyone who can influence what's inside that JWT
+        (e.g. a network attacker on a misconfigured, non-TLS issuer) forge
+        arbitrary claims - including an admin role - since a JWT's payload is
+        only base64, not encrypted or tamper-evident without signature
+        verification. If `user_info` couldn't be obtained from the real,
+        authenticated userinfo endpoint, the login fails closed instead
+        (see handle_oauth_callback below)."""
         user_data = {}
 
         if user_info:
@@ -344,43 +357,6 @@ class OIDCAuthLib:
             roles_claim = OIDCConfig.ROLES_CLAIM
             if roles_claim and roles_claim in user_info:
                 user_data["roles"] = user_info[roles_claim]
-
-        elif token_data:
-            import base64
-            import json
-
-            id_token = token_data.get("id_token") or token_data.get("access_token")
-            if id_token:
-                try:
-                    parts = id_token.split(".")
-                    if len(parts) >= 2:
-                        payload = parts[1]
-                        payload += "=" * (4 - len(payload) % 4)
-                        decoded = base64.urlsafe_b64decode(payload)
-                        token_payload = json.loads(decoded)
-
-                        email_claim = OIDCConfig.EMAIL_CLAIM
-                        if email_claim in token_payload:
-                            user_data["email"] = token_payload[email_claim]
-
-                        name_claim = OIDCConfig.NAME_CLAIM
-                        if name_claim in token_payload:
-                            user_data["name"] = token_payload[name_claim]
-
-                        username_claim = OIDCConfig.USERNAME_CLAIM
-                        if username_claim in token_payload:
-                            user_data["username"] = token_payload[username_claim]
-
-                        groups_claim = OIDCConfig.GROUPS_CLAIM
-                        if groups_claim and groups_claim in token_payload:
-                            user_data["groups"] = token_payload[groups_claim]
-
-                        roles_claim = OIDCConfig.ROLES_CLAIM
-                        if roles_claim and roles_claim in token_payload:
-                            user_data["roles"] = token_payload[roles_claim]
-
-                except Exception as e:
-                    logger.error(f"Error decoding the token: {e}")
 
         return user_data
 
