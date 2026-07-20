@@ -3,6 +3,7 @@ Tests pour scripts/backup_config.py (chargement de la config sauvegardes
 depuis les variables d'environnement).
 """
 
+import os
 from datetime import datetime
 
 import pytest
@@ -12,11 +13,8 @@ from scripts.backup_config import BackupConfig
 
 @pytest.fixture(autouse=True)
 def _isolate_cwd(tmp_path, monkeypatch):
-    """BackupConfig.__post_init__ runs os.makedirs(local_dir) as soon as
-    local_enabled=True (the default) - with local_dir="backups" (relative,
-    also the default), that would create a real backups/ directory at the
-    repo root on every instantiation. Isolates the CWD in a temp
-    directory for every test in this module."""
+    """Keeps every test in this module off the real repo CWD regardless
+    of what BackupConfig does or doesn't touch on disk."""
     monkeypatch.chdir(tmp_path)
 
 
@@ -74,6 +72,23 @@ class TestBackupConfigDefaults:
         assert not hasattr(config, "encrypt")
         assert not hasattr(config, "encryption_key")
         assert not hasattr(config, "frequency")
+
+    def test_construction_never_touches_disk(self, monkeypatch):
+        """Regression test: BackupConfig() used to os.makedirs(local_dir)
+        in __post_init__ on every instantiation, including read-only
+        call sites that only want the config values for display (e.g.
+        admin_settings_routes.py's settings_dashboard() calling
+        BackupConfig.from_env() just to show env defaults). In a
+        container where only specific paths are writable (e.g. Docker's
+        /app/data, /app/logs) and the CWD is not, this crashed the whole
+        route with a PermissionError before a single backup was ever
+        requested. Directory creation belongs at actual write time
+        (scripts/backup_database.py's create_backup(), which already
+        os.makedirs(os.path.dirname(...)) itself), not at config
+        construction."""
+        monkeypatch.chdir("/")
+        BackupConfig(local_enabled=True, local_dir="backups")
+        assert not os.path.exists("/backups")
 
 
 class TestBackupConfigFromEnv:
