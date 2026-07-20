@@ -154,3 +154,30 @@ class TestSyncUserFromOidcExistingUser:
         )
 
         assert user.is_admin is True
+
+    def test_existing_admin_role_is_revoked_via_oidc_sync(
+        self, test_app, test_group, user_manager, monkeypatch
+    ):
+        """Security regression test: sync_user_from_oidc runs on every
+        login, so an admin role removed at the IdP must actually revoke
+        local admin rights on the user's next login - not leave a prior
+        grant in place indefinitely."""
+        monkeypatch.setattr(OIDCConfig, "ROLES_CLAIM", "roles")
+        existing = User(
+            name="Demoted User",
+            email="demoted@example.com",
+            group_id=test_group.id,
+            is_admin=True,
+        )
+        db.session.add(existing)
+        db.session.commit()
+
+        user = user_manager.sync_user_from_oidc(
+            {
+                "email": "demoted@example.com",
+                "name": "Demoted User",
+                "roles": ["viewer"],
+            }
+        )
+
+        assert user.is_admin is False

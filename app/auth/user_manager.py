@@ -109,6 +109,11 @@ class UserManager:
     def _sync_user_roles(self, user, oidc_roles):
         """Sync the user's roles with their OIDC roles.
 
+        Runs on every login, so this must set is_admin both ways, not just
+        grant it: an admin role removed at the IdP has to actually revoke
+        local admin rights on the user's next login, not just leave the
+        privilege from a prior sync in place indefinitely.
+
         Args:
             user: User to sync
             oidc_roles: List of the user's OIDC roles
@@ -116,10 +121,12 @@ class UserManager:
         if not isinstance(oidc_roles, list):
             oidc_roles = [oidc_roles]
 
-        # Check whether the user has the admin role
-        if "admin" in [role.lower() for role in oidc_roles]:
-            user.is_admin = True
+        has_admin_role = "admin" in [role.lower() for role in oidc_roles]
+        if has_admin_role and not user.is_admin:
             logger.info(f"Admin role granted to {user.email} via OIDC")
+        elif user.is_admin and not has_admin_role:
+            logger.info(f"Admin role revoked from {user.email} via OIDC")
+        user.is_admin = has_admin_role
 
         logger.info(f"OIDC roles for {user.email}: {oidc_roles}")
 

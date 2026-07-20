@@ -56,9 +56,8 @@ def oidc_config_values(monkeypatch, test_app):
 
 
 def _fake_jwt(payload: dict) -> str:
-    """An unsigned JWT, good enough for these tests: oidc_auth.py
-    decodes the payload manually (base64) without ever checking the
-    signature."""
+    """An unsigned JWT shape, used only to prove extract_user_info_from_token()
+    never decodes it - see test_does_not_trust_unverified_id_token_payload."""
     header = base64.urlsafe_b64encode(b'{"alg":"none"}').rstrip(b"=").decode()
     body = base64.urlsafe_b64encode(json.dumps(payload).encode()).rstrip(b"=").decode()
     return f"{header}.{body}.fakesignature"
@@ -213,22 +212,19 @@ class TestExtractUserInfoFromToken:
         assert data["groups"] == ["team-a"]
         assert data["roles"] == ["admin"]
 
-    def test_from_id_token_payload_when_no_userinfo(self):
+    def test_does_not_trust_unverified_id_token_payload(self):
+        """Security regression test: this class calls the OIDC provider's
+        endpoints with plain `requests`, not Authlib's JWKS-verifying
+        helpers, so it has no way to check a JWT's signature. It must never
+        trust claims decoded straight out of the id_token/access_token
+        payload - including a forged "admin" role - when the real,
+        authenticated userinfo endpoint didn't supply them."""
         auth = OIDCAuthLib()
-        id_token = _fake_jwt({"email": "bob@example.com", "name": "Bob"})
+        forged_token = _fake_jwt({"email": "attacker@example.com", "roles": ["admin"]})
         data = auth.extract_user_info_from_token(
-            token_data={"id_token": id_token}, user_info=None
+            token_data={"id_token": forged_token}, user_info=None
         )
-        assert data["email"] == "bob@example.com"
-        assert data["name"] == "Bob"
-
-    def test_falls_back_to_access_token_if_no_id_token(self):
-        auth = OIDCAuthLib()
-        access_token = _fake_jwt({"email": "carol@example.com"})
-        data = auth.extract_user_info_from_token(
-            token_data={"access_token": access_token}, user_info=None
-        )
-        assert data["email"] == "carol@example.com"
+        assert data == {}
 
     def test_malformed_token_returns_empty_dict(self):
         auth = OIDCAuthLib()
@@ -298,6 +294,35 @@ class TestHandleOauthCallback:
 
             session["oidc_state"] = "s1"
             with patch("requests.post", side_effect=Exception("boom")):
+                assert (
+                    configured_auth.handle_oauth_callback(__import__("flask").request)
+                    is None
+                )
+
+    def test_fails_closed_when_userinfo_endpoint_unreachable(
+        self, configured_auth, test_app
+    ):
+        """Security regression test: a token exchange can succeed (the
+        provider issued a real, authenticated id_token) while the
+        subsequent userinfo call still fails (network hiccup, provider
+        outage). The login must fail rather than falling back to trusting
+        the unverified id_token payload - see
+        extract_user_info_from_token()'s docstring."""
+        id_token = _fake_jwt({"email": "dave@example.com", "roles": ["admin"]})
+        token_response = MagicMock()
+        token_response.json.return_value = {
+            "access_token": "at-1",
+            "id_token": id_token,
+        }
+        token_response.raise_for_status.return_value = None
+
+        with test_app.test_request_context("/oidc/callback?state=s1&code=abc"):
+            from flask import session
+
+            session["oidc_state"] = "s1"
+            with patch("requests.post", return_value=token_response), patch(
+                "requests.get", side_effect=Exception("userinfo endpoint down")
+            ):
                 assert (
                     configured_auth.handle_oauth_callback(__import__("flask").request)
                     is None
