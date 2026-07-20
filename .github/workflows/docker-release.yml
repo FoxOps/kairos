@@ -2,10 +2,10 @@ name: Docker Release
 
 # Manual only, deliberately - never triggered by a tag push or by the
 # Tests workflow completing. Run from the Actions tab (or `gh workflow
-# run docker-release.yml --ref 1.0.0-RC2`), picking the tag/branch to
-# build from in the "Use workflow from" selector. Run `tests.yml` (or
-# check it already passed for that ref) yourself first - this workflow
-# does not verify that on its own.
+# run docker-release.yml --ref main`), picking the branch/tag to build
+# from in the "Use workflow from" selector. Run `tests.yml` (or check it
+# already passed for that ref) yourself first - this workflow does not
+# verify that on its own.
 on:
   workflow_dispatch: {}
 
@@ -16,14 +16,24 @@ jobs:
       contents: read
       packages: write
     steps:
+      # main is the only source of truth for a release - dev branches
+      # (e.g. 1.0.0-RC2) merge into it before a release build happens,
+      # never the other way around. Fails loudly rather than silently
+      # skipping, so whoever triggered this from the wrong ref in the
+      # "Use workflow from" selector gets a clear reason instead of a
+      # job that just didn't run.
+      - name: Require main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::docker-release.yml must be run from main (got '${{ github.ref_name }}'). Merge into main first, then re-run this workflow with 'main' selected in 'Use workflow from'." >&2
+          exit 1
       - uses: actions/checkout@v7
-      # github.ref_name is whatever branch/tag was picked in the "Use
-      # workflow from" selector - since this workflow can be run from
-      # any ref (not just a version tag), that's not reliably a version
-      # number (e.g. "main"). Read the real app version straight from
-      # the source of truth instead (app/utils/health.py's
-      # APP_VERSION_DEFAULT, the same fallback /version and the footer
-      # use at runtime when APP_VERSION isn't set in the environment).
+      # github.ref_name is always "main" at this point (enforced above).
+      # Read the real app version straight from the source of truth
+      # instead (app/utils/health.py's APP_VERSION_DEFAULT, the same
+      # fallback /version and the footer use at runtime when
+      # APP_VERSION isn't set in the environment) rather than deriving
+      # it from the ref.
       - name: Extract app version
         id: version
         run: |

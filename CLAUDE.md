@@ -28,8 +28,10 @@ required a `SAFETY_API_KEY`) needs no key and runs unconditionally/blocking in b
 and the `security` job of that workflow. Building and publishing the Docker image to
 `ghcr.io/foxops/kairos` is a separate workflow (`.github/workflows/docker-release.yml`),
 deliberately **manual-only** (`workflow_dispatch`, never triggered by a tag push or by the tests
-workflow completing) — run it yourself from the Actions tab after confirming the tests workflow
-already passed for the ref you're about to release. See `Docs/deployment/docker.md`.
+workflow completing) and restricted to `main` (fails loudly if run from any other ref) — `main` is
+the single source of truth for releases, dev branches merge into it first, never the other way
+around. Run it yourself from the Actions tab after confirming the tests workflow already passed on
+`main`. See `Docs/deployment/docker.md`.
 
 ## Commands
 
