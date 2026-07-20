@@ -150,11 +150,24 @@ class LeaveService:
 
     @staticmethod
     def _rebalance_after_leave(leave: Leave) -> list | None:
-        """Rebalance the shifts affected by a leave. None on failure."""
+        """Rebalance the shifts affected by a leave. None on failure.
+
+        A per-day/per-section failure inside rebalance_after_leave (e.g.
+        a unique-constraint race on one specific day) no longer aborts
+        the whole ±30-day rebalance - it's isolated to that day/section
+        alone (see rebalance_after_leave's own docstring) and reported
+        back via failed_shift_dates instead of raising. The except
+        branch below is therefore only reached by a failure in
+        rebalance_after_leave's own setup step, before anything was
+        generated."""
         try:
-            regenerated_shifts, _messages, unfilled_oncall_dates = (
-                AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
-            )
+            (
+                regenerated_shifts,
+                _messages,
+                unfilled_oncall_dates,
+                failed_shift_dates,
+                failed_oncall_period,
+            ) = AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
             # rebalance_after_leave's own commit() already succeeded at
             # this point (an exception would have skipped straight to
             # the except branch below) - safe to notify now, never
@@ -172,6 +185,38 @@ class LeaveService:
                         dates=", ".join(
                             d.strftime("%d/%m/%Y") for d in unfilled_oncall_dates
                         ),
+                    ),
+                )
+            if failed_shift_dates:
+                AppNotificationService.notify_admins_shift_gap(failed_shift_dates)
+                AppriseNotificationService.notify(
+                    "system",
+                    _("Régénération de shifts incomplète"),
+                    _(
+                        "Échec de la régénération automatique des shifts pour : "
+                        "%(dates)s (rééquilibrage après congé). Ces jours n'ont "
+                        "pas été modifiés. Assignation manuelle nécessaire dans "
+                        "/admin/automation.",
+                        dates=", ".join(
+                            d.strftime("%d/%m/%Y") for d in failed_shift_dates
+                        ),
+                    ),
+                )
+            if failed_oncall_period:
+                period_start, period_end = failed_oncall_period
+                AppNotificationService.notify_admins_oncall_regen_failure(
+                    period_start, period_end
+                )
+                AppriseNotificationService.notify(
+                    "system",
+                    _("Régénération d'astreintes échouée"),
+                    _(
+                        "Échec de la régénération automatique des astreintes "
+                        "pour la période du %(start)s au %(end)s (rééquilibrage "
+                        "après congé). Ces astreintes n'ont pas été modifiées. "
+                        "Assignation manuelle nécessaire dans /admin/automation.",
+                        start=period_start.strftime("%d/%m/%Y"),
+                        end=period_end.strftime("%d/%m/%Y"),
                     ),
                 )
             return regenerated_shifts

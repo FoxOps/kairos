@@ -202,3 +202,57 @@ class AppNotificationService:
                 admin.id, "oncall_generation_gap", message, "/admin/automation"
             )
         db.session.commit()
+
+    @staticmethod
+    def notify_admins_shift_gap(dates: list[date]) -> None:
+        """Regenerating shifts for one or more of these dates raised an
+        unexpected error (AdvancedShiftAutomation.rebalance_after_leave(),
+        called automatically after a leave is added/modified) - each
+        failing date is isolated in its own SAVEPOINT so it doesn't roll
+        back the days that regenerated successfully, but that date's
+        schedule is left exactly as it was before the attempt. Manual
+        admin assignment is needed. Same "call only after the triggering
+        generation's own commit has actually succeeded" rule as
+        notify_admins_oncall_gap() above."""
+        if not dates:
+            return
+        dates_str = ", ".join(d.strftime("%d/%m/%Y") for d in dates)
+        for admin in UserRepository.list_admins():
+            with force_locale(admin.effective_language()):
+                message = _(
+                    "Échec de la régénération automatique des shifts pour : "
+                    "%(dates)s. Le planning de ces jours n'a pas été modifié. "
+                    "Assignation manuelle nécessaire.",
+                    dates=dates_str,
+                )
+            AppNotificationService._notify(
+                admin.id, "shift_generation_gap", message, "/admin/automation"
+            )
+        db.session.commit()
+
+    @staticmethod
+    def notify_admins_oncall_regen_failure(
+        period_start: date, period_end: date
+    ) -> None:
+        """The on-call regeneration section of
+        AdvancedShiftAutomation.rebalance_after_leave() raised an
+        unexpected error for this period - isolated in its own SAVEPOINT
+        so it doesn't roll back the shift days regenerated alongside it,
+        but the on-calls for this period are left exactly as they were
+        before the attempt. Manual admin assignment is needed. Same
+        "call only after the triggering generation's own commit has
+        actually succeeded" rule as notify_admins_oncall_gap() above."""
+        for admin in UserRepository.list_admins():
+            with force_locale(admin.effective_language()):
+                message = _(
+                    "Échec de la régénération automatique des astreintes pour "
+                    "la période du %(start)s au %(end)s. Les astreintes de "
+                    "cette période n'ont pas été modifiées. Assignation "
+                    "manuelle nécessaire.",
+                    start=period_start.strftime("%d/%m/%Y"),
+                    end=period_end.strftime("%d/%m/%Y"),
+                )
+            AppNotificationService._notify(
+                admin.id, "oncall_generation_gap", message, "/admin/automation"
+            )
+        db.session.commit()

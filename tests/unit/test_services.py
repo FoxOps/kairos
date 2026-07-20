@@ -472,7 +472,7 @@ class TestLeaveService:
         gap_date = date(2026, 8, 21)
         with patch(
             "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
-            return_value=([], ["some message"], [gap_date]),
+            return_value=([], ["some message"], [gap_date], [], []),
         ):
             LeaveService.add_leave(
                 test_user, date.today(), date.today() + timedelta(days=2)
@@ -483,6 +483,58 @@ class TestLeaveService:
         ).all()
         assert len(notifs) == 1
         assert "21/08/2026" in notifs[0].message
+
+    def test_add_leave_notifies_admins_on_failed_shift_dates(
+        self, test_app, admin_user, test_user, second_user
+    ):
+        """Bug hunt regression: a per-day shift regeneration failure
+        (isolated to that day, see AdvancedShiftAutomation.
+        rebalance_after_leave's docstring) must still reach admins,
+        distinctly from the "no eligible user" oncall-gap case above -
+        this one means an unexpected error happened, not just a
+        legal-constraint gap."""
+        from app.models import AppNotification
+
+        failed_date = date(2026, 8, 21)
+        with patch(
+            "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
+            return_value=([], ["some message"], [], [failed_date], []),
+        ):
+            LeaveService.add_leave(
+                test_user, date.today(), date.today() + timedelta(days=2)
+            )
+
+        notifs = AppNotification.query.filter_by(
+            user_id=admin_user.id, notification_type="shift_generation_gap"
+        ).all()
+        assert len(notifs) == 1
+        assert "21/08/2026" in notifs[0].message
+
+    def test_add_leave_notifies_admins_on_failed_oncall_period(
+        self, test_app, admin_user, test_user, second_user
+    ):
+        """Bug hunt regression: a failure in the on-call regeneration
+        section itself (isolated from the shift days, see
+        AdvancedShiftAutomation.rebalance_after_leave's docstring) must
+        still reach admins."""
+        from app.models import AppNotification
+
+        period_start = date(2026, 8, 1)
+        period_end = date(2026, 9, 1)
+        with patch(
+            "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
+            return_value=([], ["some message"], [], [], [period_start, period_end]),
+        ):
+            LeaveService.add_leave(
+                test_user, date.today(), date.today() + timedelta(days=2)
+            )
+
+        notifs = AppNotification.query.filter_by(
+            user_id=admin_user.id, notification_type="oncall_generation_gap"
+        ).all()
+        assert len(notifs) == 1
+        assert "01/08/2026" in notifs[0].message
+        assert "01/09/2026" in notifs[0].message
 
     def test_add_leave_conflict_returns_none(self, test_app, test_user, test_leave):
         leave, regenerated = LeaveService.add_leave(
