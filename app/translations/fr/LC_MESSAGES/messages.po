@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-20 05:46+0200\n"
+"POT-Creation-Date: 2026-07-20 11:20+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -62,7 +62,7 @@ msgstr ""
 msgid "%(shifts_deleted)s shifts existants supprimés pour la période"
 msgstr ""
 
-#: app/routes/admin_automation_routes.py:187 app/services/leave_service.py:166
+#: app/routes/admin_automation_routes.py:187 app/services/leave_service.py:179
 msgid "Génération d'astreintes incomplète"
 msgstr ""
 
@@ -677,6 +677,22 @@ msgid ""
 "nécessaire."
 msgstr ""
 
+#: app/services/app_notification_service.py:223
+#, python-format
+msgid ""
+"Échec de la régénération automatique des shifts pour : %(dates)s. Le "
+"planning de ces jours n'a pas été modifié. Assignation manuelle "
+"nécessaire."
+msgstr ""
+
+#: app/services/app_notification_service.py:248
+#, python-format
+msgid ""
+"Échec de la régénération automatique des astreintes pour la période du "
+"%(start)s au %(end)s. Les astreintes de cette période n'ont pas été "
+"modifiées. Assignation manuelle nécessaire."
+msgstr ""
+
 #: app/services/apprise_notification_service.py:86
 msgid "URL Apprise invalide."
 msgstr ""
@@ -753,12 +769,37 @@ msgid ""
 "cette période"
 msgstr ""
 
-#: app/services/leave_service.py:168
+#: app/services/leave_service.py:181
 #, python-format
 msgid ""
 "Aucun utilisateur disponible dans le respect du délai légal de 2 semaines"
 " pour : %(dates)s (rééquilibrage après congé). Assignation manuelle "
 "nécessaire dans /admin/automation."
+msgstr ""
+
+#: app/services/leave_service.py:194
+msgid "Régénération de shifts incomplète"
+msgstr ""
+
+#: app/services/leave_service.py:196
+#, python-format
+msgid ""
+"Échec de la régénération automatique des shifts pour : %(dates)s "
+"(rééquilibrage après congé). Ces jours n'ont pas été modifiés. "
+"Assignation manuelle nécessaire dans /admin/automation."
+msgstr ""
+
+#: app/services/leave_service.py:212
+msgid "Régénération d'astreintes échouée"
+msgstr ""
+
+#: app/services/leave_service.py:214
+#, python-format
+msgid ""
+"Échec de la régénération automatique des astreintes pour la période du "
+"%(start)s au %(end)s (rééquilibrage après congé). Ces astreintes n'ont "
+"pas été modifiées. Assignation manuelle nécessaire dans "
+"/admin/automation."
 msgstr ""
 
 #: app/services/notification_service.py:112
@@ -4736,26 +4777,42 @@ msgstr ""
 msgid "⚠️ Aucun shift généré pour le %(date)s"
 msgstr ""
 
-#: app/utils/automation/advanced_shift_automation.py:546
+#: app/utils/automation/advanced_shift_automation.py:566
 #, python-format
 msgid "🗑️ %(count)s astreintes supprimées pour l'utilisateur %(user_id)s"
 msgstr ""
 
-#: app/utils/automation/advanced_shift_automation.py:592
+#: app/utils/automation/advanced_shift_automation.py:612
+#: app/utils/automation/advanced_shift_automation.py:643
 #, python-format
 msgid "🗑️ %(count)s shifts supprimés pour le %(date)s"
 msgstr ""
 
-#: app/utils/automation/advanced_shift_automation.py:631
+#: app/utils/automation/advanced_shift_automation.py:660
+#, python-format
+msgid ""
+"❌ Échec de la régénération du %(date)s : %(error)s - ce jour n'a pas été "
+"modifié, action manuelle nécessaire"
+msgstr ""
+
+#: app/utils/automation/advanced_shift_automation.py:702
 #, python-format
 msgid ""
 "🗑️ %(count)s astreinte(s) supplémentaire(s) supprimée(s) dans la période "
 "étendue avant régénération"
 msgstr ""
 
-#: app/utils/automation/advanced_shift_automation.py:651
+#: app/utils/automation/advanced_shift_automation.py:722
 #, python-format
 msgid "🔄 %(count)s astreintes régénérées pour la période %(start)s - %(end)s"
+msgstr ""
+
+#: app/utils/automation/advanced_shift_automation.py:732
+#, python-format
+msgid ""
+"❌ Échec de la régénération des astreintes pour la période %(start)s - "
+"%(end)s : %(error)s - les astreintes de cette période n'ont pas été "
+"modifiées, action manuelle nécessaire"
 msgstr ""
 
 #: app/utils/automation/oncall_automation.py:289

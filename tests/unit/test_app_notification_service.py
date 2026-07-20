@@ -247,3 +247,69 @@ class TestNotifyAdminsOncallGap:
                 ).count()
                 == 0
             )
+
+
+class TestNotifyAdminsShiftGap:
+    """Bug hunt regression: a per-day shift regeneration failure inside
+    AdvancedShiftAutomation.rebalance_after_leave() is now isolated to
+    that day (SAVEPOINT) instead of discarding the whole ±30-day
+    rebalance - admins still need to know which day needs manual
+    attention."""
+
+    def test_notifies_every_admin(self, test_app, admin_user, test_user):
+        with test_app.app_context():
+            failed_date = date(2026, 8, 21)
+            AppNotificationService.notify_admins_shift_gap([failed_date])
+
+            notifs = AppNotification.query.filter_by(
+                user_id=admin_user.id, notification_type="shift_generation_gap"
+            ).all()
+            assert len(notifs) == 1
+            assert notifs[0].link == "/admin/automation"
+            assert "21/08/2026" in notifs[0].message
+
+            assert (
+                AppNotification.query.filter_by(
+                    user_id=test_user.id, notification_type="shift_generation_gap"
+                ).count()
+                == 0
+            )
+
+    def test_empty_dates_notifies_nobody(self, test_app, admin_user):
+        with test_app.app_context():
+            AppNotificationService.notify_admins_shift_gap([])
+            assert (
+                AppNotification.query.filter_by(
+                    notification_type="shift_generation_gap"
+                ).count()
+                == 0
+            )
+
+
+class TestNotifyAdminsOncallRegenFailure:
+    """Bug hunt regression: a failure in the on-call regeneration
+    section of AdvancedShiftAutomation.rebalance_after_leave() is now
+    isolated (SAVEPOINT) from the shift days regenerated alongside it -
+    admins still need to know the on-call period needs manual
+    attention."""
+
+    def test_notifies_every_admin(self, test_app, admin_user, test_user):
+        with test_app.app_context():
+            AppNotificationService.notify_admins_oncall_regen_failure(
+                date(2026, 8, 1), date(2026, 9, 1)
+            )
+
+            notifs = AppNotification.query.filter_by(
+                user_id=admin_user.id, notification_type="oncall_generation_gap"
+            ).all()
+            assert len(notifs) == 1
+            assert notifs[0].link == "/admin/automation"
+            assert "01/08/2026" in notifs[0].message
+            assert "01/09/2026" in notifs[0].message
+
+            assert (
+                AppNotification.query.filter_by(
+                    user_id=test_user.id, notification_type="oncall_generation_gap"
+                ).count()
+                == 0
+            )
