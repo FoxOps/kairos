@@ -78,6 +78,16 @@ unilaterally.
 
 ### 3. No login-specific brute-force throttling
 
+> **Correction (see `PENTEST_v1.md`)**: this finding assumed the app-wide
+> default rate limit was actually being enforced. A live pentest found it
+> wasn't — a real ordering bug (`app.config["RATELIMIT_DEFAULT"]` was set
+> *after* `limiter.init_app(app)` had already run, so Flask-Limiter never
+> saw it) meant **no rate limit was enforced anywhere in the app**, not
+> even the 50/hour bound this finding describes below. That bug is now
+> fixed (`app/__init__.py`, verified live: 50 requests succeed, the 51st+
+> get `429`). The observation below (no *login-specific*, stricter limit
+> on top of the generic default) still stands as a recommendation.
+
 `/login` is only covered by the app-wide default rate limit
 (`RATE_LIMIT_DEFAULT`, 200/day · 50/hour per IP) — there is no
 login-specific stricter limit and no account lockout after repeated
