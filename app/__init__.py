@@ -269,6 +269,25 @@ def create_app(config_object: str | None = None):
 
     configure_logging(app)
 
+    # Configure rate limiting if enabled - must happen BEFORE
+    # limiter.init_app() below: Flask-Limiter reads RATELIMIT_DEFAULT from
+    # app.config at init_app() time to build its default-limit rules
+    # (confirmed by reading flask_limiter.Limiter.init_app()'s source -
+    # `conf_limits = config.get(ConfigVars.DEFAULT_LIMITS, None)`, read
+    # once, used to populate self.limit_manager._default_limits if
+    # truthy). Setting this key afterward has no effect: the default
+    # limit is silently never applied, found via a live pentest - 60
+    # back-to-back GET /login requests all returned 200 despite
+    # RATE_LIMIT_ENABLED=true and RATE_LIMIT_DEFAULT="200 per day, 50 per
+    # hour" both set in app.config.
+    if app.config.get("RATE_LIMIT_ENABLED", True):
+        limiter.enabled = True
+        app.config["RATELIMIT_DEFAULT"] = app.config.get(
+            "RATE_LIMIT_DEFAULT", "200 per day, 50 per hour"
+        )
+    else:
+        limiter.enabled = False
+
     # Initialize the extensions
     db.init_app(app)
     migrate.init_app(app, db)
@@ -283,15 +302,6 @@ def create_app(config_object: str | None = None):
     app.jinja_env.globals["get_locale"] = get_locale
     app.jinja_env.globals["get_date_format"] = get_date_format
     app.jinja_env.globals["get_time_format"] = get_time_format
-
-    # Configure rate limiting if enabled
-    if app.config.get("RATE_LIMIT_ENABLED", True):
-        limiter.enabled = True
-        app.config["RATELIMIT_DEFAULT"] = app.config.get(
-            "RATE_LIMIT_DEFAULT", "200 per day, 50 per hour"
-        )
-    else:
-        limiter.enabled = False
 
     # OIDC configuration - load before configuring login_manager
     from config_oidc import OIDCConfig
