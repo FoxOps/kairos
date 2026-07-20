@@ -27,11 +27,12 @@ public. The dependency vulnerability scan (`pip-audit`, replacing the former `sa
 required a `SAFETY_API_KEY`) needs no key and runs unconditionally/blocking in both `make security`
 and the `security` job of that workflow. Building and publishing the Docker image to
 `ghcr.io/foxops/kairos` is a separate workflow (`.github/workflows/docker-release.yml`),
-deliberately **manual-only** (`workflow_dispatch`, never triggered by a tag push or by the tests
-workflow completing) and restricted to `main` (fails loudly if run from any other ref) — `main` is
-the single source of truth for releases, dev branches merge into it first, never the other way
-around. Run it yourself from the Actions tab after confirming the tests workflow already passed on
-`main`. See `Docs/deployment/docker.md`.
+deliberately **manual-only** (`workflow_dispatch`, never triggered by a tag push) and restricted to
+`main` (a `require-main` job fails loudly if run from any other ref) — `main` is the single source
+of truth for releases, dev branches merge into it first, never the other way around. Calls
+`tests.yml` directly as a reusable workflow (`workflow_call`) and only proceeds to build/push if it
+passes (`needs:`) — not a "run that first yourself" note, an enforced dependency. Run it from the
+Actions tab. See `Docs/deployment/docker.md`.
 
 ## Commands
 

@@ -19,6 +19,12 @@ on:
   schedule:
     - cron: "0 3 * * 1" # every Monday, 03:00 UTC
   workflow_dispatch: {}
+  # Lets docker-release.yml call this workflow as a job (`uses:
+  # ./.github/workflows/tests.yml`) and gate the actual build/push on
+  # its result (`needs:`) - the release workflow no longer just
+  # documents "run this first", it actually won't build without it
+  # passing.
+  workflow_call: {}
 
 env:
   DATABASE_URL: "sqlite:///:memory:"
@@ -102,6 +108,6 @@ jobs:
 
 # Docker build/push lives in its own workflow (docker-release.yml),
 # deliberately separate from this one and deliberately manual-only
-# (workflow_dispatch, never triggered by this workflow or by a tag push)
-# - run it yourself from the Actions tab once you've confirmed this
-# workflow passed for the ref you're about to release.
+# (workflow_dispatch, never triggered by a tag push) - it calls this
+# workflow itself (workflow_call above) and only builds if it passes,
+# so there's no separate "run this first" step to remember.

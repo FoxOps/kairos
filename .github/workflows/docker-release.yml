@@ -1,39 +1,50 @@
 name: Docker Release
 
-# Manual only, deliberately - never triggered by a tag push or by the
-# Tests workflow completing. Run from the Actions tab (or `gh workflow
-# run docker-release.yml --ref main`), picking the branch/tag to build
-# from in the "Use workflow from" selector. Run `tests.yml` (or check it
-# already passed for that ref) yourself first - this workflow does not
-# verify that on its own.
+# Manual only, deliberately - never triggered by a tag push. Run from
+# the Actions tab (or `gh workflow run docker-release.yml --ref main`),
+# picking the branch/tag to build from in the "Use workflow from"
+# selector - always "main", enforced by the require-main job below.
+# Actually calls tests.yml (workflow_call) and only builds/pushes if it
+# passes - not just a "run that first yourself" note.
 on:
   workflow_dispatch: {}
 
 jobs:
-  docker-build-push:
+  # main is the only source of truth for a release - dev branches (e.g.
+  # 1.0.0-RC2) merge into it before a release build happens, never the
+  # other way around. Fails loudly rather than silently skipping, so
+  # whoever triggered this from the wrong ref in the "Use workflow from"
+  # selector gets a clear reason instead of a job that just didn't run.
+  # Runs before the tests below too, so a wrong ref fails fast instead
+  # of burning CI minutes on a full test run that was never going to be
+  # allowed to build anyway.
+  require-main:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
-      # main is the only source of truth for a release - dev branches
-      # (e.g. 1.0.0-RC2) merge into it before a release build happens,
-      # never the other way around. Fails loudly rather than silently
-      # skipping, so whoever triggered this from the wrong ref in the
-      # "Use workflow from" selector gets a clear reason instead of a
-      # job that just didn't run.
       - name: Require main
         if: github.ref != 'refs/heads/main'
         run: |
           echo "::error::docker-release.yml must be run from main (got '${{ github.ref_name }}'). Merge into main first, then re-run this workflow with 'main' selected in 'Use workflow from'." >&2
           exit 1
+
+  run-tests:
+    needs: require-main
+    uses: ./.github/workflows/tests.yml
+
+  docker-build-push:
+    needs: run-tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
       - uses: actions/checkout@v7
-      # github.ref_name is always "main" at this point (enforced above).
       # Read the real app version straight from the source of truth
-      # instead (app/utils/health.py's APP_VERSION_DEFAULT, the same
-      # fallback /version and the footer use at runtime when
-      # APP_VERSION isn't set in the environment) rather than deriving
-      # it from the ref.
+      # (app/utils/health.py's APP_VERSION_DEFAULT, the same fallback
+      # /version and the footer use at runtime when APP_VERSION isn't
+      # set in the environment) rather than deriving it from the ref -
+      # github.ref_name is always "main" at this point anyway (enforced
+      # by require-main above), which wouldn't be a version number.
       - name: Extract app version
         id: version
         run: |

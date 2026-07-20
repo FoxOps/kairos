@@ -19,13 +19,15 @@ builds and pushes both `ghcr.io/foxops/kairos:latest` and a
 version-tagged `ghcr.io/foxops/kairos:<version>` - the version is read
 straight from `app/utils/health.py`'s `APP_VERSION_DEFAULT` at build
 time. Kept **manual-only** (`workflow_dispatch`, never triggered by a
-tag push or by `tests.yml` completing) so an image is only ever
-published as a deliberate action, and restricted to `main` (the
-workflow's first step fails loudly if run from any other ref) - `main`
-is the single source of truth for releases, dev branches (e.g.
-`1.0.0-RC2`) merge into it first, never the other way around. Run it
-from the Actions tab (or `gh workflow run docker-release.yml --ref
-main`), after confirming `tests.yml` already passed on `main`. The same
+tag push) so an image is only ever published as a deliberate action,
+restricted to `main` (a `require-main` job fails loudly if run from any
+other ref - `main` is the single source of truth for releases, dev
+branches like `1.0.0-RC2` merge into it first, never the other way
+around), and gated on `tests.yml` actually passing: it calls that
+workflow directly (`workflow_call`) and only proceeds to build/push if
+it succeeds - not a "remember to run that first" note, an enforced
+dependency (`needs:`). Run it from the Actions tab (or `gh workflow run
+docker-release.yml --ref main`). The same
 build can also be run entirely outside GitHub Actions: `docker build -f
 docker/Dockerfile -t ghcr.io/foxops/kairos:latest .` from the repo
 root, then `docker push`, after `docker login ghcr.io` with a PAT that
