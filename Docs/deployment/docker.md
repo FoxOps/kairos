@@ -23,7 +23,7 @@ can differ, since this workflow can be run from any ref). Kept
 **manual-only** (`workflow_dispatch`, never triggered by a tag push or
 by `tests.yml` completing) so an image is only ever published as a
 deliberate action: run it from the Actions tab (or `gh workflow run
-docker-release.yml --ref v1.0.0-rc1`), picking the branch/tag to build
+docker-release.yml --ref 1.0.0-RC2`), picking the branch/tag to build
 from, after confirming `tests.yml` already passed for that ref. The same
 build can also be run entirely outside GitHub Actions: `docker build -f
 docker/Dockerfile -t ghcr.io/foxops/kairos:latest .` from the repo

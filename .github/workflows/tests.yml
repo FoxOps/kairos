@@ -11,6 +11,11 @@ on:
   push:
     tags:
       - "v*"
+      # Real tags pushed so far (e.g. "1.0.0-RC1") don't start with "v" -
+      # without this pattern too, this workflow silently never ran on a
+      # tag push at all, confirmed by checking that tag's push history
+      # against this trigger.
+      - "[0-9]*"
   schedule:
     - cron: "0 3 * * 1" # every Monday, 03:00 UTC
   workflow_dispatch: {}

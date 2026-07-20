@@ -2,7 +2,7 @@ name: Docker Release
 
 # Manual only, deliberately - never triggered by a tag push or by the
 # Tests workflow completing. Run from the Actions tab (or `gh workflow
-# run docker-release.yml --ref v1.0.0-rc1`), picking the tag/branch to
+# run docker-release.yml --ref 1.0.0-RC2`), picking the tag/branch to
 # build from in the "Use workflow from" selector. Run `tests.yml` (or
 # check it already passed for that ref) yourself first - this workflow
 # does not verify that on its own.
