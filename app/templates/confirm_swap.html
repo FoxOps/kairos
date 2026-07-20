@@ -5,13 +5,13 @@
 {% block content %}
 <section class="p-3 md:p-4 max-w-2xl mx-auto">
     <h1 class="text-2xl font-bold mb-4">
-        <i class="fas fa-right-left" aria-hidden="true"></i> {{ _("Confirmer l'échange proposé par %(name)s", name=swap_request.requester.name) }}
+        <i class="fas fa-right-left" aria-hidden="true"></i> {{ _("Confirmer l'échange proposé par %(name)s", name=swap_request.requester.name if swap_request.requester else _("un utilisateur supprimé")) }}
     </h1>
 
     <div class="card card-sm bg-base-100 shadow-md mb-4">
         <div class="card-body gap-2">
             <p>
-                {{ _("%(name)s vous propose d'échanger ce shift :", name=swap_request.requester.name) }}
+                {{ _("%(name)s vous propose d'échanger ce shift :", name=swap_request.requester.name if swap_request.requester else _("un utilisateur supprimé")) }}
                 {% if swap_request.shift %}
                 <strong>{{ swap_request.shift.date|format_date }} - {{ swap_request.shift.shift_type.label }}</strong>
                 {% else %}

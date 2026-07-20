@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-19 10:48+0200\n"
+"POT-Creation-Date: 2026-07-20 05:46+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -669,7 +669,7 @@ msgid ""
 "d'origine sont restaurés."
 msgstr ""
 
-#: app/services/app_notification_service.py:195
+#: app/services/app_notification_service.py:196
 #, python-format
 msgid ""
 "Astreinte(s) non générée(s) automatiquement (aucun utilisateur ne "
@@ -677,21 +677,21 @@ msgid ""
 "nécessaire."
 msgstr ""
 
-#: app/services/apprise_notification_service.py:87
+#: app/services/apprise_notification_service.py:86
 msgid "URL Apprise invalide."
 msgstr ""
 
-#: app/services/apprise_notification_service.py:90
+#: app/services/apprise_notification_service.py:89
 msgid "Test de notification - Kairos"
 msgstr ""
 
-#: app/services/apprise_notification_service.py:92
+#: app/services/apprise_notification_service.py:91
 msgid ""
 "Ceci est une notification de test envoyée depuis /admin/notification-"
 "targets."
 msgstr ""
 
-#: app/services/apprise_notification_service.py:98
+#: app/services/apprise_notification_service.py:97
 msgid "Échec de l'envoi (voir les logs pour le détail)."
 msgstr ""
 
@@ -819,43 +819,43 @@ msgstr ""
 msgid "%(name)s est en congé pendant cette période"
 msgstr ""
 
-#: app/services/settings_service.py:76
+#: app/services/settings_service.py:94
 #, python-format
 msgid "Fuseau horaire invalide : %(tz_name)s"
 msgstr ""
 
-#: app/services/settings_service.py:101
+#: app/services/settings_service.py:119
 #, python-format
 msgid "Langue invalide : %(lang_code)s"
 msgstr ""
 
-#: app/services/settings_service.py:127
+#: app/services/settings_service.py:145
 #, python-format
 msgid "Format de date invalide : %(date_format)s"
 msgstr ""
 
-#: app/services/settings_service.py:152
+#: app/services/settings_service.py:170
 #, python-format
 msgid "Format d'heure invalide : %(time_format)s"
 msgstr ""
 
-#: app/services/settings_service.py:216
+#: app/services/settings_service.py:234
 msgid "Les valeurs de pagination doivent être positives"
 msgstr ""
 
-#: app/services/settings_service.py:218
+#: app/services/settings_service.py:236
 msgid "items_per_page ne peut pas dépasser max_per_page"
 msgstr ""
 
-#: app/services/settings_service.py:276
+#: app/services/settings_service.py:294
 msgid "Les valeurs de rétention doivent être positives"
 msgstr ""
 
-#: app/services/settings_service.py:306
+#: app/services/settings_service.py:324
 msgid "La durée de rétention doit être positive"
 msgstr ""
 
-#: app/services/settings_service.py:362
+#: app/services/settings_service.py:380
 msgid "La durée d'expiration doit être positive"
 msgstr ""
 
@@ -1374,12 +1374,12 @@ msgstr ""
 #: app/templates/admin/automation/full_dry_run.html:75
 #: app/templates/auth/profile.html:34 app/templates/leave.html:40
 #: app/templates/oncall.html:52 app/templates/schedule.html:54
-#: app/utils/helpers/js_translations.py:44
+#: app/utils/helpers/js_translations.py:43
 msgid "Utilisateur"
 msgstr ""
 
 #: app/templates/add_leave.html:18 app/templates/add_oncall.html:18
-#: app/utils/helpers/js_translations.py:45
+#: app/utils/helpers/js_translations.py:44
 msgid "Sélectionnez un utilisateur"
 msgstr ""
 
@@ -1466,7 +1466,7 @@ msgstr ""
 #: app/templates/auth/profile_settings.html:134
 #: app/templates/auth/update_profile.html:53 app/templates/confirm_swap.html:46
 #: app/templates/confirm_swap.html:47 app/templates/swaps.html:65
-#: app/utils/helpers/js_translations.py:30
+#: app/utils/helpers/js_translations.py:29
 msgid "Annuler"
 msgstr ""
 
@@ -1509,7 +1509,7 @@ msgid "Sélectionnez l'utilisateur pour ce shift"
 msgstr ""
 
 #: app/templates/add_shift.html:27 app/templates/schedule.html:55
-#: app/utils/helpers/js_translations.py:46
+#: app/utils/helpers/js_translations.py:45
 msgid "Type de shift"
 msgstr ""
 
@@ -1691,6 +1691,11 @@ msgstr ""
 msgid "Confirmer l'échange proposé par %(name)s"
 msgstr ""
 
+#: app/templates/admin/swaps.html:103 app/templates/confirm_swap.html:8
+#: app/templates/confirm_swap.html:14 app/templates/swaps.html:112
+msgid "un utilisateur supprimé"
+msgstr ""
+
 #: app/templates/confirm_swap.html:14
 #, python-format
 msgid "%(name)s vous propose d'échanger ce shift :"
@@ -1734,7 +1739,7 @@ msgid "Confirmer l'échange"
 msgstr ""
 
 #: app/templates/confirm_swap.html:44 app/templates/swaps.html:115
-#: app/utils/helpers/js_translations.py:39
+#: app/utils/helpers/js_translations.py:38
 msgid "Confirmer"
 msgstr ""
 
@@ -1898,23 +1903,23 @@ msgid "Options du calendrier"
 msgstr ""
 
 #: app/templates/index.html:32 app/templates/index.html:54
-#: app/utils/helpers/js_translations.py:20
+#: app/utils/helpers/js_translations.py:19
 msgid "Mode édition désactivé"
 msgstr ""
 
-#: app/templates/index.html:34 app/utils/helpers/js_translations.py:22
+#: app/templates/index.html:34 app/utils/helpers/js_translations.py:21
 msgid "Activer le mode édition"
 msgstr ""
 
-#: app/templates/index.html:35 app/utils/helpers/js_translations.py:24
+#: app/templates/index.html:35 app/utils/helpers/js_translations.py:23
 msgid "Activer l'édition"
 msgstr ""
 
-#: app/templates/index.html:37 app/utils/helpers/js_translations.py:26
+#: app/templates/index.html:37 app/utils/helpers/js_translations.py:25
 msgid "Afficher les conseils"
 msgstr ""
 
-#: app/templates/index.html:38 app/utils/helpers/js_translations.py:28
+#: app/templates/index.html:38 app/utils/helpers/js_translations.py:27
 msgid "Afficher conseils"
 msgstr ""
 
@@ -1926,7 +1931,7 @@ msgstr ""
 msgid "Conseils d'utilisation :"
 msgstr ""
 
-#: app/templates/index.html:50 app/utils/helpers/js_translations.py:19
+#: app/templates/index.html:50 app/utils/helpers/js_translations.py:18
 msgid "Mode édition activé"
 msgstr ""
 
@@ -2377,6 +2382,13 @@ msgstr ""
 msgid "Statut"
 msgstr ""
 
+#: app/templates/admin/swaps.html:44 app/templates/admin/swaps.html:52
+#: app/templates/admin/swaps.html:85 app/templates/admin/swaps.html:93
+#: app/templates/admin/swaps.html:156 app/templates/admin/swaps.html:164
+#: app/templates/swaps.html:49 app/templates/swaps.html:94
+msgid "Utilisateur supprimé"
+msgstr ""
+
 #: app/templates/swaps.html:63
 msgid "Annuler la demande"
 msgstr ""
@@ -2583,7 +2595,7 @@ msgid ""
 msgstr ""
 
 #: app/templates/admin/add_service_account.html:40
-#: app/utils/helpers/js_translations.py:48
+#: app/utils/helpers/js_translations.py:47
 msgid "Créer"
 msgstr ""
 
@@ -4759,144 +4771,144 @@ msgstr ""
 msgid "✅ %(count)s astreintes générées."
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:21
+#: app/utils/helpers/js_translations.py:20
 msgid "Désactiver le mode édition"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:23
+#: app/utils/helpers/js_translations.py:22
 msgid "Désactiver l'édition"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:25
+#: app/utils/helpers/js_translations.py:24
 msgid "Cacher les conseils"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:27
+#: app/utils/helpers/js_translations.py:26
 msgid "Cacher conseils"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:29
+#: app/utils/helpers/js_translations.py:28
 msgid "Fermer"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:31
+#: app/utils/helpers/js_translations.py:30
 msgid "Créer le shift"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:32
+#: app/utils/helpers/js_translations.py:31
 msgid "Voulez-vous supprimer ce shift ?"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:33
+#: app/utils/helpers/js_translations.py:32
 msgid "Voulez-vous supprimer cette astreinte ?"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:34
+#: app/utils/helpers/js_translations.py:33
 msgid "Voulez-vous supprimer ce congé ?"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:35
+#: app/utils/helpers/js_translations.py:34
 msgid "Champ non nommé"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:36
+#: app/utils/helpers/js_translations.py:35
 #, python-format
 msgid "Le champ %(field)s est obligatoire."
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:37
+#: app/utils/helpers/js_translations.py:36
 msgid "Tableau de données"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:38
+#: app/utils/helpers/js_translations.py:37
 msgid "Confirmation"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:40
+#: app/utils/helpers/js_translations.py:39
 msgid "Êtes-vous sûr ?"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:41
+#: app/utils/helpers/js_translations.py:40
 msgid "Créer un nouveau shift"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:42
+#: app/utils/helpers/js_translations.py:41
 msgid "Date et heure de début"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:43
+#: app/utils/helpers/js_translations.py:42
 msgid "Date et heure de fin"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:47
+#: app/utils/helpers/js_translations.py:46
 msgid "Sélectionnez un type de shift"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:50
+#: app/utils/helpers/js_translations.py:49
 msgid ""
 "Événement mis à jour, mais le rééquilibrage automatique des shifts a "
 "échoué."
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:52
+#: app/utils/helpers/js_translations.py:51
 msgid "Erreur: "
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:53
+#: app/utils/helpers/js_translations.py:52
 msgid "Une erreur est survenue lors de la mise à jour."
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:54
+#: app/utils/helpers/js_translations.py:53
 msgid "Une erreur est survenue lors du redimensionnement."
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:55
+#: app/utils/helpers/js_translations.py:54
 msgid "Événement supprimé avec succès."
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:56
+#: app/utils/helpers/js_translations.py:55
 msgid "Une erreur est survenue lors de la suppression."
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:57
+#: app/utils/helpers/js_translations.py:56
 msgid "Suppression annulée."
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:59
+#: app/utils/helpers/js_translations.py:58
 msgid ""
 "Les shifts ne peuvent pas être créés ou déplacés vers les week-ends "
 "(samedi/dimanche)."
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:62
+#: app/utils/helpers/js_translations.py:61
 msgid "Création de shift annulée."
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:63
+#: app/utils/helpers/js_translations.py:62
 msgid "Veuillez remplir tous les champs obligatoires."
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:64
+#: app/utils/helpers/js_translations.py:63
 msgid "Shift créé avec succès."
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:66
+#: app/utils/helpers/js_translations.py:65
 msgid "Une erreur est survenue lors de la création du shift."
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:68
+#: app/utils/helpers/js_translations.py:67
 msgid "Une erreur est survenue lors du chargement des données."
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:69
+#: app/utils/helpers/js_translations.py:68
 msgid "Thème sombre activé"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:70
+#: app/utils/helpers/js_translations.py:69
 msgid "Thème clair activé"
 msgstr ""
 
-#: app/utils/helpers/js_translations.py:71
+#: app/utils/helpers/js_translations.py:70
 msgid "Copié !"
 msgstr ""
 

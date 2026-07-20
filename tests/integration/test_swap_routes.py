@@ -5,8 +5,8 @@ admin side (admin_swap_routes.py).
 """
 
 from app import db
-from app.models import Shift, SwapRequest
-from app.services import SwapService
+from app.models import Shift, SwapRequest, User
+from app.services import SwapService, UserService
 
 
 class TestUserSwapRoutes:
@@ -393,3 +393,67 @@ class TestUserPurgeSwaps:
         assert resp.status_code == 200
         with test_app.app_context():
             assert SwapRequest.query.count() == 1
+
+
+class TestSwapRequestSurvivesUserDeletion:
+    """Bug hunt regression: SwapRequest.requester_id/target_user_id are
+    plain FKs with no db.relationship() (see app/models/swap_request.py),
+    so deleting a User has no cascade and no block on their swap history -
+    UserService.delete() only checks Shift/OnCall/Leave, not SwapRequest.
+    A one-way give-away already APPROVED leaves the requester with zero
+    shifts of their own (the shift's ownership moved to the target), so
+    UserService.delete() happily allows it, leaving requester_id dangling.
+    swap.requester then evaluates to None at render time - the templates
+    must show a fallback rather than leaving the cell blank (Jinja's
+    default Undefined swallows None.name into an empty string silently,
+    not a crash, but still a real loss of who requested/received the swap
+    in a resolved-history page an admin may need to audit)."""
+
+    def test_admin_swaps_page_shows_fallback_for_deleted_requester(
+        self, test_app, logged_in_client, test_group, test_shift_type
+    ):
+        with test_app.app_context():
+            requester = User(
+                name="Alice Repro",
+                email="alice-repro@example.com",
+                group_id=test_group.id,
+            )
+            requester.set_password("x")
+            target = User(
+                name="Bob Repro", email="bob-repro@example.com", group_id=test_group.id
+            )
+            target.set_password("x")
+            db.session.add_all([requester, target])
+            db.session.commit()
+
+            from datetime import datetime
+
+            shift = Shift(
+                user_id=requester.id,
+                shift_type_id=test_shift_type.id,
+                start_time=datetime(2026, 8, 3, 7, 0),
+                end_time=datetime(2026, 8, 3, 15, 0),
+                date=datetime(2026, 8, 3).date(),
+            )
+            db.session.add(shift)
+            db.session.commit()
+
+            swap = SwapRequest(
+                requester_id=requester.id,
+                target_user_id=target.id,
+                shift_id=shift.id,
+                status=SwapRequest.APPROVED,
+            )
+            db.session.add(swap)
+            # One-way give-away approval: ownership moves to the target,
+            # so the requester now has zero shifts of their own.
+            shift.user_id = target.id
+            db.session.commit()
+
+            ok, error = UserService.delete(requester.id)
+            assert ok is True, error
+            assert swap.requester is None
+
+        resp = logged_in_client.get("/admin/swaps")
+        assert resp.status_code == 200
+        assert "Utilisateur supprimé".encode() in resp.data
