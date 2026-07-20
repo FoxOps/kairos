@@ -363,6 +363,39 @@ class OnCallAutomation:
         )
 
     @staticmethod
+    def detect_oncall_gaps() -> list[date]:
+        """
+        Fridays with no on-call at all, strictly *between* the earliest
+        and latest existing on-call in the database - i.e. real gaps in
+        an otherwise-generated schedule, not "not generated yet" future
+        weeks (which aren't a bug, just scheduling that hasn't happened
+        yet).
+
+        Exists to proactively surface gaps on the automation pages
+        instead of relying on an admin correctly guessing which date
+        range to widen the "Période" fields to in order to reach them -
+        a real point of confusion: an admin ran "Combler les trous
+        d'astreintes" with the page's default dates (which start at
+        today, not in the past) and concluded the feature "did nothing"
+        because the actual gap predated the range they'd left selected.
+        """
+        first_oncall = OnCall.query.order_by(OnCall.start_time.asc()).first()
+        last_oncall = OnCall.query.order_by(OnCall.start_time.desc()).first()
+        if not first_oncall or not last_oncall:
+            return []
+
+        covered = {oncall.start_time.date() for oncall in OnCall.query.all()}
+
+        gaps = []
+        current_friday = first_oncall.start_time.date() + timedelta(days=7)
+        last_friday = last_oncall.start_time.date()
+        while current_friday < last_friday:
+            if current_friday not in covered:
+                gaps.append(current_friday)
+            current_friday += timedelta(days=7)
+        return gaps
+
+    @staticmethod
     def get_rotation_order(rotation_order_ids: list[int] | None = None) -> list[User]:
         """
         Fetch the users' rotation order.
