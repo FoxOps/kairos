@@ -186,18 +186,28 @@ class TestAutomationStatus:
         assert b"Connexion" in response.data
 
 
-class TestRefreshShifts:
-    """Tests for /admin/automation/refresh-shifts."""
+class TestRefreshShiftsOldUrl:
+    """Tests for the old standalone /admin/automation/refresh-shifts URL,
+    now merged into /admin/automation/full as a "refresh_shifts" action
+    on its "refresh" tab (see TestAutomationFullRefreshMode below) - this
+    route is kept only as a redirect for old bookmarks/links."""
 
-    def test_refresh_shifts_get(self, logged_in_client):
-        """Test rendering the shift-refresh page."""
+    def test_refresh_shifts_get_redirects_to_merged_page(self, logged_in_client):
         response = logged_in_client.get("/admin/automation/refresh-shifts")
-        assert response.status_code == 200
-        assert (
-            b"rafra" in response.data.lower()
-            or b"refresh" in response.data.lower()
-            or b"shifts" in response.data.lower()
-        )
+        assert response.status_code == 302
+        assert response.location == "/admin/automation/full?mode=refresh"
+
+    def test_refresh_shifts_unauthenticated(self, client):
+        """Test that the redirect still requires authentication."""
+        response = client.get("/admin/automation/refresh-shifts", follow_redirects=True)
+        assert b"Connexion" in response.data
+
+
+class TestAutomationFullRefreshMode:
+    """Tests for the "refresh_shifts" action on /admin/automation/full
+    (the merged shifts-only-refresh mode, replacing the old separate
+    /admin/automation/refresh-shifts page - see admin_automation_routes.
+    py::automation_full's docstring for why the two pages were merged)."""
 
     def test_refresh_shifts_post(self, logged_in_client):
         """Test refreshing shifts."""
@@ -205,8 +215,9 @@ class TestRefreshShifts:
         end_date = today + timedelta(days=7)
 
         response = logged_in_client.post(
-            "/admin/automation/refresh-shifts",
+            "/admin/automation/full",
             data={
+                "action": "refresh_shifts",
                 "start_date": today.strftime("%Y-%m-%d"),
                 "end_date": end_date.strftime("%Y-%m-%d"),
             },
@@ -217,8 +228,9 @@ class TestRefreshShifts:
     def test_refresh_shifts_post_invalid_date(self, logged_in_client):
         """Test refreshing shifts with invalid dates."""
         response = logged_in_client.post(
-            "/admin/automation/refresh-shifts",
+            "/admin/automation/full",
             data={
+                "action": "refresh_shifts",
                 "start_date": "invalid-date",
                 "end_date": "invalid-date",
             },
@@ -230,8 +242,3 @@ class TestRefreshShifts:
             or b"invalid" in response.data
             or b"Erreur" in response.data
         )
-
-    def test_refresh_shifts_unauthenticated(self, client):
-        """Test that the refresh page requires authentication."""
-        response = client.get("/admin/automation/refresh-shifts", follow_redirects=True)
-        assert b"Connexion" in response.data

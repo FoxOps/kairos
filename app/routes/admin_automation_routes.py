@@ -69,9 +69,53 @@ def automation_dashboard():
 @admin_bp.route("/admin/automation/full", methods=["GET", "POST"])
 @admin_required
 def automation_full():
-    """Full generation (on-calls + shifts)."""
+    """Single-page automation UI: full generation (on-calls + shifts,
+    "generate"/"dry_run"/"save_order" actions) and shifts-only refresh
+    ("refresh_shifts" action) - two daisyUI tabs of the same form, sharing
+    one date range. Used to be two separate pages/routes
+    (automation_full + the now-removed refresh_shifts), which user
+    feedback flagged as confusing (unclear which page to use, easy to
+    forget the other one exists). refresh_shifts only regenerates
+    shifts, taking existing on-calls into account (even if manually
+    modified) - unlike "generate"/"dry_run", it never touches on-calls."""
     if request.method == "POST":
         action = request.form.get("action")
+
+        if action == "refresh_shifts":
+            start_date_str = request.form.get("start_date")
+            end_date_str = request.form.get("end_date")
+
+            try:
+                start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+
+                deleted = ShiftRepository.delete_in_date_range(start_date, end_date)
+                if deleted:
+                    db.session.commit()
+                    flash(
+                        _(
+                            "%(deleted)s shifts existants supprimés pour la période",
+                            deleted=deleted,
+                        ),
+                        "info",
+                    )
+
+                shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
+                    start_date, end_date, dry_run=False
+                )
+
+                _flash_automation_messages(messages, default_category="info")
+
+                flash(
+                    _("%(val0)s shifts régénérés avec succès !", val0=len(shifts)),
+                    "success",
+                )
+            except ValueError as e:
+                flash(_("Format de date invalide : %(val0)s", val0=str(e)), "danger")
+            except Exception as e:
+                db.session.rollback()
+                flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
+            return redirect(url_for("admin.automation_full", mode="refresh"))
 
         if action in ["generate", "dry_run", "save_order"]:
             start_date_str = request.form.get("start_date")
@@ -241,58 +285,7 @@ def automation_status():
 @admin_bp.route("/admin/automation/refresh-shifts", methods=["GET", "POST"])
 @admin_required
 def refresh_shifts():
-    """
-    Refresh shifts by checking the current on-calls.
-
-    This route recomputes all shifts for a given period, taking the
-    current on-calls into account (even if manually modified).
-    """
-    if request.method == "POST":
-        start_date_str = request.form.get("start_date")
-        end_date_str = request.form.get("end_date")
-
-        try:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-
-            # Only deletes shifts (not on-calls, unlike automation_full):
-            # this only regenerates shifts, taking existing on-calls into
-            # account.
-            deleted = ShiftRepository.delete_in_date_range(start_date, end_date)
-            if deleted:
-                db.session.commit()
-                flash(
-                    _(
-                        "%(deleted)s shifts existants supprimés pour la période",
-                        deleted=deleted,
-                    ),
-                    "info",
-                )
-
-            shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
-                start_date, end_date, dry_run=False
-            )
-
-            _flash_automation_messages(messages, default_category="info")
-
-            flash(
-                _("%(val0)s shifts régénérés avec succès !", val0=len(shifts)),
-                "success",
-            )
-            return redirect(url_for("admin.refresh_shifts"))
-
-        except ValueError as e:
-            flash(_("Format de date invalide : %(val0)s", val0=str(e)), "danger")
-        except Exception as e:
-            db.session.rollback()
-            flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
-
-    today = date.today()
-    end_date_default = today + timedelta(days=180)
-    start_date_default = today
-
-    return render_template(
-        "admin/automation/refresh_shifts.html",
-        start_date_default=start_date_default,
-        end_date_default=end_date_default,
-    )
+    """Old standalone shifts-only-refresh page, merged into
+    automation_full() (see its docstring). Kept as a redirect so old
+    bookmarks/links still land on the right page, on its "refresh" tab."""
+    return redirect(url_for("admin.automation_full", mode="refresh"))

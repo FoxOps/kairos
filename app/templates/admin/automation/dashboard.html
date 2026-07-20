@@ -21,28 +21,17 @@
         <p><i class="fas fa-info-circle"></i> {{ _("Ce module permet de générer automatiquement les astreintes. Les shifts sont générés automatiquement après les astreintes selon les règles métiers.") }}</p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
-        <div class="card card-sm bg-base-100 shadow-md">
-            <div class="card-body">
-                <h2 class="text-lg font-semibold"><i class="fas fa-cogs" aria-hidden="true"></i> {{ _("Génération complète") }}</h2>
-                <p>{{ _("Générer les astreintes. Les shifts seront automatiquement générés selon les règles métiers.") }}</p>
-                <div class="mt-3">
-                    <a class="btn btn-success btn-sm" href="{{ url_for('admin.automation_full') }}">
-                        <i class="fas fa-play"></i> {{ _("Lancer") }}
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="card card-sm bg-base-100 shadow-md">
-            <div class="card-body">
-                <h2 class="text-lg font-semibold"><i class="fas fa-sync-alt" aria-hidden="true"></i> {{ _("Rafraîchir Shifts") }}</h2>
-                <p>{{ _("Recalculer les shifts en tenant compte des astreintes actuelles (même modifiées manuellement).") }}</p>
-                <div class="mt-3">
-                    <a class="btn btn-warning btn-sm" href="{{ url_for('admin.refresh_shifts') }}">
-                        <i class="fas fa-sync"></i> {{ _("Rafraîchir") }}
-                    </a>
-                </div>
+    <div class="card card-sm bg-base-100 shadow-md mb-6">
+        <div class="card-body">
+            <h2 class="text-lg font-semibold"><i class="fas fa-cogs" aria-hidden="true"></i> {{ _("Générer / rafraîchir le planning") }}</h2>
+            <p>{{ _("Générer les astreintes et les shifts, ou recalculer uniquement les shifts en conservant les astreintes actuelles.") }}</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+                <a class="btn btn-success btn-sm" href="{{ url_for('admin.automation_full') }}">
+                    <i class="fas fa-play"></i> {{ _("Génération complète") }}
+                </a>
+                <a class="btn btn-warning btn-sm" href="{{ url_for('admin.automation_full', mode='refresh') }}">
+                    <i class="fas fa-sync"></i> {{ _("Rafraîchir shifts") }}
+                </a>
             </div>
         </div>
     </div>
@@ -75,7 +64,7 @@
             <div class="flex flex-col gap-2">
                 <p><strong>{{ _("Rotation des astreintes :") }}</strong> {{ _("Une rotation simple où chaque semaine un membre différent est désigné. Utilisez \"Génération complète\" pour configurer l'ordre de rotation.") }}</p>
                 <p><strong>{{ _("Génération automatique des shifts :") }}</strong> {{ _("Après la génération des astreintes, les shifts sont automatiquement créés selon les règles métiers (13h-21h pour l'astreinte, rotation des créneaux, etc.).") }}</p>
-                <p><strong>{{ _("Rafraîchissement manuel :") }}</strong> {{ _("Utilisez \"Rafraîchir Shifts\" pour recalculer les shifts si vous avez modifié manuellement les astreintes.") }}</p>
+                <p><strong>{{ _("Rafraîchissement manuel :") }}</strong> {{ _("Utilisez l'onglet \"Rafraîchir shifts uniquement\" pour recalculer les shifts si vous avez modifié manuellement les astreintes.") }}</p>
                 <p><strong>{{ _("Période par défaut :") }}</strong> {{ _("6 mois à l'avance.") }}</p>
             </div>
         </div>

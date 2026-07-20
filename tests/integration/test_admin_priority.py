@@ -216,6 +216,10 @@ class TestAutomationRoutes:
         assert response.status_code == 200
 
     def test_automation_refresh_shifts(self, logged_in_client):
-        """Test rendering the shift-refresh page."""
-        response = logged_in_client.get("/admin/automation/refresh-shifts")
+        """Old standalone URL, now merged into /admin/automation/full
+        (see admin_automation_routes.py::refresh_shifts) - just redirects
+        there."""
+        response = logged_in_client.get(
+            "/admin/automation/refresh-shifts", follow_redirects=True
+        )
         assert response.status_code == 200
