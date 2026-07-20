@@ -1,4 +1,4 @@
-name: CI
+name: Tests
 
 # Deliberately not triggered on every push/PR: GitHub Actions minutes are
 # metered and billed on a private repository past the free monthly quota,
