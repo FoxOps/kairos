@@ -253,9 +253,9 @@ uwsgi --ini uwsgi.ini
 
 **Recommended method for the whole project** (see the warning
 at the top of this guide) - the actual `Dockerfile`/`docker-compose.yml` live
-under `docker/`, with the image meant to be pulled from the GitHub
-Container Registry (`ghcr.io`) - there is currently no CI job that builds/publishes it automatically -
-see [`docker.md`](docker.md) for the details). This guide
+under `docker/`, with the image pulled from the GitHub Container Registry
+(`ghcr.io`), built and pushed automatically by CI on every version tag
+push - see [`docker.md`](docker.md) for the details. This guide
 specifically covers bare-metal deployment (Gunicorn/uWSGI), so it does not
 maintain a separate copy of that configuration here.
 

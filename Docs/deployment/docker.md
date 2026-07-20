@@ -14,14 +14,15 @@
 
 The image is meant to be pulled from the **GitHub Container Registry**
 (`ghcr.io`), alongside the rest of this project's GitHub-hosted
-tooling (Actions, releases). **Note**: as of this writing, the CI
-workflow (`.github/workflows/ci.yml`) runs tests/lint/security but has
-no job that builds/pushes this image anywhere. Until that automation
-exists, someone has to build and push the image manually (e.g.
-`docker build -f docker/Dockerfile -t
-ghcr.io/foxops/kairos:latest .` from the repo root, then
-`docker push`, after `docker login ghcr.io` with a PAT that has
-`write:packages` scope) before `KAIROS_IMAGE` below can be pulled.
+tooling (Actions, releases). The `docker-build-push` job in
+`.github/workflows/ci.yml` builds and pushes
+`ghcr.io/foxops/kairos:<tag>` and `:latest` automatically on every
+version tag push (`v*`), once the test/lint/security jobs pass - no
+manual build/push step needed for a tagged release. To build and push a
+one-off image yourself outside that flow (e.g. testing an unreleased
+commit): `docker build -f docker/Dockerfile -t
+ghcr.io/foxops/kairos:latest .` from the repo root, then `docker push`,
+after `docker login ghcr.io` with a PAT that has `write:packages` scope.
 
 ### 1️⃣ Grab the two required files
 
