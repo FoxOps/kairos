@@ -46,7 +46,7 @@
                         <span class="text-base-content/60">{{ _("Shift supprimé") }}</span>
                         {% endif %}
                     </td>
-                    <td>{{ swap.target_user.name }}</td>
+                    <td>{{ swap.target_user.name if swap.target_user else _("Utilisateur supprimé") }}</td>
                     <td>
                         {% if swap.target_shift %}
                         {{ swap.target_shift.date|format_date }} - {{ swap.target_shift.shift_type.label }}
@@ -91,7 +91,7 @@
             <tbody>
                 {% for swap in received %}
                 <tr>
-                    <td>{{ swap.requester.name }}</td>
+                    <td>{{ swap.requester.name if swap.requester else _("Utilisateur supprimé") }}</td>
                     <td>
                         {% if swap.shift %}
                         {{ swap.shift.date|format_date }} - {{ swap.shift.shift_type.label }}
@@ -109,7 +109,7 @@
                     <td>{% include "_swap_status_badge.html" %}</td>
                     <td>
                         {% if swap.is_awaiting_target() %}
-                        <div class="flex flex-nowrap gap-2" role="group" aria-label="{{ _("Actions pour la demande de %(name)s", name=swap.requester.name) }}">
+                        <div class="flex flex-nowrap gap-2" role="group" aria-label="{{ _("Actions pour la demande de %(name)s", name=swap.requester.name if swap.requester else _("un utilisateur supprimé")) }}">
                             <a class="btn btn-success btn-sm" href="{{ url_for('main.confirm_swap', swap_request_id=swap.id) }}"
                                aria-label="{{ _("Confirmer l'échange") }}" title="{{ _("Confirmer l'échange") }}">
                                 <i class="fas fa-check" aria-hidden="true"></i> {{ _("Confirmer") }}
