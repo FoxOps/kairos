@@ -88,12 +88,6 @@ class BackupConfig:
     # Vérification
     verify_backup: bool = True
 
-    def __post_init__(self):
-        """Initialisation après création de l'objet."""
-        # Créer le dossier local s'il n'existe pas
-        if self.local_enabled and self.local_dir:
-            os.makedirs(self.local_dir, exist_ok=True)
-
     @classmethod
     def from_env(cls) -> "BackupConfig":
         """Charge la configuration depuis les variables d'environnement."""
