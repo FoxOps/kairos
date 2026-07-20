@@ -347,3 +347,88 @@ class TestEdgeCases:
             # Clean up
             db.session.delete(leave)
             db.session.commit()
+
+
+class TestOnCallMaxFillSearch:
+    """Regression tests for the bug report: a plain greedy left-to-right
+    pass can leave a week empty even though a different (still legal)
+    assignment of the *other* weeks would have kept it fillable -
+    generate_oncall_schedule() must only leave a week empty once no
+    permutation of the period's assignments can fill it (see
+    _solve_max_filled_weeks() in oncall_automation.py)."""
+
+    def test_fills_a_week_that_greedy_would_leave_empty(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """3 users A/B/C, rotation order [A, B, C]. C is on leave only
+        during week 3 (2024-01-19), every other week is conflict-free
+        for everyone. The old greedy algorithm assigns A->week1,
+        B->week2 (both the first available candidate in rotation
+        order), leaving nobody free for week3 (A and B were both just
+        used, C is on leave) - a real gap even though A->week1,
+        C->week2, B->week3, A->week4, C->week5, B->week6 fills every
+        single week and is just as legal. This asserts all 6 weeks get
+        filled, not 5."""
+        with test_app.app_context():
+            user_c = User(
+                name="Third User",
+                email="third@test.com",
+                password_hash="third123",
+                is_admin=False,
+                group_id=test_group.id,
+            )
+            db.session.add(user_c)
+            db.session.commit()
+
+            # A single day strictly inside week 3's on-call span
+            # (Jan 19 21h -> Jan 26 07h) that doesn't touch the
+            # Jan 19/Jan 26 boundary dates shared with weeks 2 and 4 -
+            # blocks user_c for week 3 only.
+            leave = Leave(
+                user_id=user_c.id,
+                start_date=date(2024, 1, 22),
+                end_date=date(2024, 1, 22),
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            start_date = date(2024, 1, 5)  # Friday (week 1)
+            end_date = date(2024, 2, 9)  # Friday (week 6)
+            rotation_order = [test_user.id, second_user.id, user_c.id]
+
+            oncalls, messages, unfilled_dates = (
+                OnCallAutomation.generate_oncall_schedule(
+                    start_date, end_date, rotation_order, dry_run=True
+                )
+            )
+
+            assert unfilled_dates == []
+            assert len(oncalls) == 6
+            # user_c must never have been assigned week 3 itself.
+            week3_oncall = next(
+                o for o in oncalls if o.start_time.date() == date(2024, 1, 19)
+            )
+            assert week3_oncall.user_id != user_c.id
+            assert not any("Aucune astreinte générée" in msg for msg in messages)
+
+    def test_genuinely_unfillable_week_stays_empty(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """With only 2 rotating users, the 2-week legal spacing means
+        each user can be reused only every 3rd week at best - so at
+        most 2 out of every 3 weeks can ever be filled, regardless of
+        which permutation is tried. The search must still report a gap
+        here (not paper over a genuine impossibility)."""
+        with test_app.app_context():
+            start_date = date(2024, 1, 5)  # Friday
+            end_date = date(2024, 1, 26)  # 4 Fridays, 2 users
+            rotation_order = [test_user.id, second_user.id]
+
+            oncalls, _messages, unfilled_dates = (
+                OnCallAutomation.generate_oncall_schedule(
+                    start_date, end_date, rotation_order, dry_run=True
+                )
+            )
+
+            assert len(unfilled_dates) >= 1
+            assert len(oncalls) + len(unfilled_dates) == 4

@@ -85,6 +85,125 @@ class AvailabilityIndex:
         if current_last is None or end_time > current_last:
             self._last_oncall_end[user_id] = end_time
 
+    def get_last_end(self, user_id: int) -> datetime | None:
+        """End of the user's most recent on-call known to this index
+        (pre-existing in the DB, or recorded via record_assignment) -
+        used to seed the spacing-constraint search in
+        _solve_max_filled_weeks() below."""
+        return self._last_oncall_end.get(user_id)
+
+
+# Hard cap on search nodes for _solve_max_filled_weeks() below - a safety
+# valve against pathological inputs (many weeks, many candidates, few
+# real conflicts so the branch-and-bound bound rarely prunes), not a
+# limit expected to be hit in realistic use (few eligible users, and
+# real conflicts are localized to a handful of weeks around a leave).
+# If ever hit, the search still returns the best assignment found so
+# far - deterministic, since candidate order and exploration order are
+# both deterministic (no randomness), never worse than the previous
+# pure-greedy algorithm.
+_MAX_SEARCH_NODES = 200_000
+
+
+def _solve_max_filled_weeks(
+    weeks: list[tuple[date, datetime, datetime]],
+    week_candidates: list[list[User]],
+    index: AvailabilityIndex,
+) -> dict[int, User]:
+    """
+    Branch-and-bound search that maximizes the number of on-call weeks
+    that can be filled, respecting the 2-week legal spacing constraint.
+
+    Why this exists: a plain greedy pass (try the first available
+    candidate for week 1, then week 2, ...) can commit to a locally-fine
+    choice that turns out to block a *later* week from ever being
+    filled, even though a different (still valid, still non-repeating)
+    assignment of the earlier weeks would have left that later week
+    fillable too. Concretely: 3 users A/B/C, C on leave only during
+    week 3, weeks 1-6 otherwise conflict-free. Greedy assigns A→week1,
+    B→week2, and now nobody is free for week3 (A and B were both just
+    used, C is on leave) - week3 is greedily reported unfillable even
+    though A→week1, C→week2, B→week3, A→week4, C→week5, B→week6 fills
+    every single week. This search finds that second assignment instead
+    of settling for the first one that merely avoids raising an error.
+
+    week_candidates[i] must already be pre-filtered for the *static*
+    per-week constraints (existing on-call / leave conflicts) - this
+    function only searches the *dynamic* constraint (2-week spacing
+    against other weeks being decided in the same run), since that's
+    the only constraint that actually interacts across weeks.
+
+    Explores "assign candidate" branches (in each week's rotation-order
+    preference) before the "leave this week unfilled" branch, so a
+    full or near-full solution is typically found almost immediately -
+    after that, the branch-and-bound bound (filled_so_far +
+    weeks_remaining <= best_found) prunes nearly everything else quickly.
+
+    Returns: {week_index: User} for the best (most weeks filled)
+    assignment found within the node budget.
+    """
+    total_weeks = len(weeks)
+    last_end: dict[int, datetime] = {}
+    for candidates in week_candidates:
+        for user in candidates:
+            if user.id not in last_end:
+                existing = index.get_last_end(user.id)
+                if existing is not None:
+                    last_end[user.id] = existing
+
+    best_count = 0
+    best_assignment: dict[int, User] = {}
+    current: dict[int, User] = {}
+    nodes_explored = 0
+
+    def meets_spacing(user_id: int, start_time: datetime) -> bool:
+        prev_end = last_end.get(user_id)
+        if prev_end is None:
+            return True
+        return (start_time - prev_end).days / 7 >= 2
+
+    def recurse(week_index: int, filled_count: int) -> None:
+        nonlocal nodes_explored, best_count, best_assignment
+
+        if filled_count > best_count:
+            best_count = filled_count
+            best_assignment = dict(current)
+
+        nodes_explored += 1
+        if week_index == total_weeks or nodes_explored > _MAX_SEARCH_NODES:
+            return
+
+        weeks_remaining = total_weeks - week_index
+        if filled_count + weeks_remaining <= best_count:
+            # No assignment of the remaining weeks could beat the best
+            # found so far, even filling every single one of them.
+            return
+
+        _friday, start_time, end_time = weeks[week_index]
+        for user in week_candidates[week_index]:
+            if not meets_spacing(user.id, start_time):
+                continue
+
+            previous_end = last_end.get(user.id)
+            last_end[user.id] = end_time
+            current[week_index] = user
+
+            recurse(week_index + 1, filled_count + 1)
+
+            del current[week_index]
+            if previous_end is None:
+                del last_end[user.id]
+            else:
+                last_end[user.id] = previous_end
+
+        # Try leaving this week unfilled too - explored last so the
+        # depth-first search finds a full/near-full solution first,
+        # making the bound above effective from early on.
+        recurse(week_index + 1, filled_count)
+
+    recurse(0, 0)
+    return best_assignment
+
 
 class OnCallAutomation:
     """
@@ -215,13 +334,22 @@ class OnCallAutomation:
         Generate an on-call schedule for a given period.
 
         On-calls start on Friday at 9pm and end the following Friday at
-        7am. Users are assigned according to the rotation order,
-        respecting leaves, existing on-calls, and the minimum 2-week
-        legal spacing. If no user satisfies all three rules, that week is
-        deliberately left unassigned rather than assigning someone in
-        violation of the legal spacing constraint - the caller is
-        responsible for notifying admins (see unfilled_dates in the
-        return value) so the gap can be filled manually.
+        7am. Users are assigned respecting leaves, existing on-calls,
+        and the minimum 2-week legal spacing - but not via a single
+        greedy left-to-right pass. A plain greedy pass can commit to a
+        locally-fine choice for one week that turns out to block a
+        *later* week from ever being filled, even though a different
+        (still legal) assignment of the earlier weeks would have kept
+        that later week fillable too - see
+        _solve_max_filled_weeks()'s docstring for a concrete example.
+        This method instead runs a branch-and-bound search
+        (_solve_max_filled_weeks) that tries every relevant permutation
+        of assignments (bounded by a node budget for pathological
+        inputs, see _MAX_SEARCH_NODES) to find the assignment that
+        leaves the *fewest* weeks empty - a week is only ever left
+        unassigned once no permutation of the whole period's
+        assignments can fill it, never merely because the first
+        left-to-right attempt happened not to.
 
         Args:
             start_date: Start date
@@ -235,8 +363,9 @@ class OnCallAutomation:
         Returns:
             Tuple: (list of generated on-calls (OnCall objects), log
             messages, list of Friday dates left unassigned because no
-            user satisfied the legal spacing constraint - only notify
-            admins about these once the caller's own commit has actually
+            permutation of the period's assignments could satisfy the
+            legal spacing constraint for that week - only notify admins
+            about these once the caller's own commit has actually
             succeeded, never before).
         """
         from app import db
@@ -256,44 +385,68 @@ class OnCallAutomation:
         days_ahead = (4 - start_date.weekday()) % 7
         current_friday = start_date + timedelta(days=days_ahead)
 
-        oncalls = []
-        messages = []
-        unfilled_dates = []
-        rotation_index = 0
-
         # end_date inclusive, like AdvancedShiftAutomation.generate_full_schedule
         # (`current_date <= end_date`) - both receive the same period
         # from admin_automation_routes.py::automation_full, they must
         # treat end_date the same way. Before: `<` ignored the week
         # whose Friday landed exactly on end_date.
+        weeks: list[tuple[date, datetime, datetime]] = []
         while current_friday <= end_date:
             start_time = datetime.combine(current_friday, datetime.min.time()).replace(
                 hour=21
             )
             end_time = start_time + timedelta(days=7, hours=-14)
+            weeks.append((current_friday, start_time, end_time))
+            current_friday += timedelta(days=7)
 
-            ordered_candidates = (
-                rotation_order[rotation_index:] + rotation_order[:rotation_index]
+        # Per-week candidates, pre-filtered for the *static* constraints
+        # (existing on-call / leave conflicts - independent of what gets
+        # assigned to other weeks in this run). Each week's preference
+        # order rotates the base rotation order by its own index, the
+        # same simple round-robin baseline the previous greedy version
+        # produced when nothing forces a deviation from it - the search
+        # below only deviates from this preference when required to
+        # fill a week that would otherwise stay empty.
+        week_candidates: list[list[User]] = []
+        for week_index, (_friday, start_time, end_time) in enumerate(weeks):
+            offset = week_index % len(rotation_order)
+            preferred_order = rotation_order[offset:] + rotation_order[:offset]
+            week_candidates.append(
+                [
+                    user
+                    for user in preferred_order
+                    if not index.has_oncall_conflict(user.id, start_time, end_time)
+                    and not index.has_leave_conflict(
+                        user.id, start_time.date(), end_time.date()
+                    )
+                ]
             )
-            assigned_user = OnCallAutomation.find_next_available_user(
-                ordered_candidates, start_time, end_time, index
-            )
+
+        assignment = _solve_max_filled_weeks(weeks, week_candidates, index)
+
+        oncalls = []
+        messages = []
+        unfilled_dates = []
+
+        for week_index, (friday, start_time, end_time) in enumerate(weeks):
+            assigned_user = assignment.get(week_index)
 
             if assigned_user is None:
                 # Deliberately left unassigned - no fallback that ignores
-                # the legal 2-week spacing constraint. The caller is
-                # responsible for notifying admins once its own commit
-                # has succeeded (see unfilled_dates in the return value).
+                # the legal 2-week spacing constraint, and only after
+                # the search above confirmed no permutation of this
+                # period's assignments could fill it either. The caller
+                # is responsible for notifying admins once its own
+                # commit has succeeded (see unfilled_dates below).
                 messages.append(
                     _(
                         "⚠️ Aucune astreinte générée pour le %(date)s "
                         "(aucun utilisateur ne respecte le délai légal de 2 semaines entre deux "
                         "astreintes) - assignation manuelle nécessaire.",
-                        date=current_friday.strftime("%d/%m/%Y"),
+                        date=friday.strftime("%d/%m/%Y"),
                     )
                 )
-                unfilled_dates.append(current_friday)
-                current_friday += timedelta(days=7)
+                unfilled_dates.append(friday)
                 continue
 
             oncall = OnCall(
@@ -304,15 +457,11 @@ class OnCallAutomation:
             oncalls.append(oncall)
             if not dry_run:
                 db.session.add(oncall)
-            # Essential even in dry_run: the following weeks of this same
-            # generation run must see this assignment to respect the
-            # legal spacing and avoid duplicates.
+            # Essential even in dry_run: subsequent readers of `index`
+            # within the same generation run (there are none after this
+            # point today, but keeps the index consistent with what was
+            # actually decided) see this assignment.
             index.record_assignment(assigned_user.id, start_time, end_time)
-
-            rotation_index = (rotation_order.index(assigned_user) + 1) % len(
-                rotation_order
-            )
-            current_friday += timedelta(days=7)
 
         if not dry_run and oncalls:
             if commit:
