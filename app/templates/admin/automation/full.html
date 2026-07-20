@@ -16,7 +16,7 @@
     <h1 class="text-2xl font-bold mb-4"><i class="fas fa-cogs" aria-hidden="true"></i> {{ _("Générer / rafraîchir le planning") }}</h1>
 
     <div class="alert alert-info mb-4">
-        <p><i class="fas fa-info-circle"></i> {{ _("Choisissez un mode ci-dessous : génération complète (astreintes + shifts) ou rafraîchissement des shifts uniquement en conservant les astreintes actuelles.") }}</p>
+        <p><i class="fas fa-info-circle"></i> {{ _("Générez les astreintes et les shifts, prévisualisez le résultat avant de l'appliquer, ou recalculez uniquement les shifts en conservant les astreintes actuelles.") }}</p>
     </div>
 
     <form method="POST" action="{{ url_for('admin.automation_full') }}">
@@ -42,11 +42,9 @@
             </div>
         </div>
 
-        <div role="tablist" class="tabs tabs-box mb-4">
-            <input type="radio" name="automation_mode_tab" class="tab" aria-label="{{ _("Génération complète") }}"
-                   {% if request.args.get('mode') != 'refresh' %}checked{% endif %} />
-            <div class="tab-content border-base-300 bg-base-100 p-4">
-                <p class="mb-3">{{ _("Génère les astreintes selon l'ordre de rotation défini ci-dessous, puis génère automatiquement les shifts selon les règles métiers. Les astreintes et shifts existants sur la période sont remplacés.") }}</p>
+        <div class="card card-sm bg-base-100 shadow-md mb-4">
+            <div class="card-body">
+                <h2 class="text-lg font-semibold"><i class="fas fa-users" aria-hidden="true"></i> {{ _("Utilisateurs éligibles pour les astreintes") }}</h2>
 
                 {% if oncall_users %}
                 <div class="alert alert-success mb-3">
@@ -150,7 +148,14 @@
                     <button type="submit" name="action" value="dry_run" class="btn btn-info">
                         <i class="fas fa-eye"></i> {{ _("Prévisualiser (Dry Run)") }}
                     </button>
+                    <button type="submit" name="action" value="refresh_shifts" class="btn btn-warning">
+                        <i class="fas fa-sync-alt" aria-hidden="true"></i> {{ _("Rafraîchir les shifts") }}
+                    </button>
                 </div>
+                <p class="text-sm text-base-content/60 mt-2">
+                    <i class="fas fa-info-circle" aria-hidden="true"></i>
+                    {{ _("\"Rafraîchir les shifts\" recalcule uniquement les shifts d'après les astreintes déjà en base (même modifiées manuellement), sans toucher aux astreintes elles-mêmes.") }}
+                </p>
 
                 {% else %}
                 <div class="alert alert-warning">
@@ -171,31 +176,14 @@
                         </div>
                     </div>
                 </div>
-                {% endif %}
-            </div>
 
-            <input type="radio" name="automation_mode_tab" class="tab" aria-label="{{ _("Rafraîchir shifts uniquement") }}"
-                   {% if request.args.get('mode') == 'refresh' %}checked{% endif %} />
-            <div class="tab-content border-base-300 bg-base-100 p-4">
-                <div class="alert alert-info mb-3">
-                    <div>
-                        <p>
-                            <i class="fas fa-info-circle"></i>
-                            {{ _("Recalcule uniquement les shifts sur la période, en tenant compte des") }} <strong>{{ _("astreintes actuelles") }}</strong> ({{ _("même modifiées manuellement") }}). {{ _("Les astreintes elles-mêmes ne sont pas touchées.") }}
-                        </p>
-                        <p class="mt-2">{{ _("Utile après avoir modifié une astreinte à la main, sans vouloir régénérer toute la rotation.") }}</p>
-                        <ul class="list-disc list-inside mt-2">
-                            <li>{{ _("Créneau 13h-21h pour la personne d'astreinte (si elle fait partie d'un groupe schedule)") }}</li>
-                            <li>{{ _("Rotation : 13h-21h → 07h-15h la semaine suivante") }}</li>
-                            <li>{{ _("09h-17h par défaut pour les autres") }}</li>
-                            <li>{{ _("Cas spécial avec 2 personnes : la non-astreinte passe en 07h-15h") }}</li>
-                        </ul>
-                    </div>
+                <div class="mt-4">
+                    <p class="text-sm text-base-content/60 mb-2">{{ _("Pas d'utilisateur éligible pour les astreintes, mais vous pouvez tout de même recalculer les shifts d'après les astreintes déjà en base :") }}</p>
+                    <button type="submit" name="action" value="refresh_shifts" class="btn btn-warning">
+                        <i class="fas fa-sync-alt" aria-hidden="true"></i> {{ _("Rafraîchir les shifts") }}
+                    </button>
                 </div>
-
-                <button type="submit" name="action" value="refresh_shifts" class="btn btn-warning">
-                    <i class="fas fa-sync-alt" aria-hidden="true"></i> {{ _("Rafraîchir les shifts") }}
-                </button>
+                {% endif %}
             </div>
         </div>
 
@@ -216,7 +204,7 @@
                 <li>{{ _("Utilisez \"Prévisualiser\" pour voir ce qui sera généré sans rien sauvegarder.") }}</li>
                 <li>{{ _("Cliquez sur \"Générer les astreintes et shifts\" pour créer astreintes et shifts en base de données. Les astreintes et shifts existants sur la période sont remplacés.") }}</li>
             </ol>
-            <p class="mt-4"><strong>{{ _("Rafraîchir shifts uniquement :") }}</strong> {{ _("recalcule les shifts d'après les astreintes déjà en base (même modifiées manuellement), sans toucher aux astreintes elles-mêmes.") }}</p>
+            <p class="mt-4"><strong>{{ _("Rafraîchir les shifts :") }}</strong> {{ _("recalcule les shifts d'après les astreintes déjà en base (même modifiées manuellement), sans toucher aux astreintes elles-mêmes.") }}</p>
             <p class="mt-4"><strong>{{ _("Règles appliquées à la génération des astreintes :") }}</strong></p>
             <ul class="list-disc list-inside flex flex-col gap-1">
                 <li>{{ _("Chaque astreinte commence selon la configuration (par défaut") }} <strong>{{ _("vendredi à 21h") }}</strong>) {{ _("et se termine selon la configuration (par défaut") }} <strong>{{ _("vendredi suivant à 07h") }}</strong>).</li>

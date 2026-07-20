@@ -210,16 +210,18 @@ class TestAutomationRoutes:
         response = logged_in_client.get("/admin/automation/full")
         assert response.status_code == 200
 
-    def test_automation_status(self, logged_in_client):
-        """Test rendering the automation status page."""
+    def test_automation_status_old_url_removed(self, logged_in_client):
+        """Old standalone URL, never linked from anywhere - its one
+        unique stat (next available on-call date) was folded into
+        /admin/automation's own stats block instead (see
+        test_admin_automation.py::TestAutomationStatusMergedIntoDashboard)."""
         response = logged_in_client.get("/admin/automation/status")
-        assert response.status_code == 200
+        assert response.status_code == 404
 
-    def test_automation_refresh_shifts(self, logged_in_client):
-        """Old standalone URL, now merged into /admin/automation/full
-        (see admin_automation_routes.py::refresh_shifts) - just redirects
-        there."""
-        response = logged_in_client.get(
-            "/admin/automation/refresh-shifts", follow_redirects=True
-        )
-        assert response.status_code == 200
+    def test_automation_refresh_shifts_old_url_removed(self, logged_in_client):
+        """Old standalone URL, merged into /admin/automation/full as a
+        "Rafraîchir les shifts" button next to Dry Run - dropped outright
+        rather than kept as a redirect (see
+        test_admin_automation.py::TestRefreshShiftsOldUrlRemoved)."""
+        response = logged_in_client.get("/admin/automation/refresh-shifts")
+        assert response.status_code == 404

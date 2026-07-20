@@ -71,13 +71,16 @@ def automation_dashboard():
 def automation_full():
     """Single-page automation UI: full generation (on-calls + shifts,
     "generate"/"dry_run"/"save_order" actions) and shifts-only refresh
-    ("refresh_shifts" action) - two daisyUI tabs of the same form, sharing
+    ("refresh_shifts" action) sit as buttons on the same form, sharing
     one date range. Used to be two separate pages/routes
     (automation_full + the now-removed refresh_shifts), which user
     feedback flagged as confusing (unclear which page to use, easy to
-    forget the other one exists). refresh_shifts only regenerates
-    shifts, taking existing on-calls into account (even if manually
-    modified) - unlike "generate"/"dry_run", it never touches on-calls."""
+    forget the other one exists) - an intermediate design put the two
+    modes on two tabs of this same page, but user feedback on that too
+    was that it should just be one more button next to "Dry Run",
+    no tabs. refresh_shifts only regenerates shifts, taking existing
+    on-calls into account (even if manually modified) - unlike
+    "generate"/"dry_run", it never touches on-calls."""
     if request.method == "POST":
         action = request.form.get("action")
 
@@ -272,20 +275,3 @@ def automation_full():
         end_date_default=end_date_default,
         current_rotation_order=current_rotation_order,
     )
-
-
-@admin_bp.route("/admin/automation/status")
-@admin_required
-def automation_status():
-    """Show the current automation status."""
-    status = get_automation_status()
-    return render_template("admin/automation/status.html", status=status)
-
-
-@admin_bp.route("/admin/automation/refresh-shifts", methods=["GET", "POST"])
-@admin_required
-def refresh_shifts():
-    """Old standalone shifts-only-refresh page, merged into
-    automation_full() (see its docstring). Kept as a redirect so old
-    bookmarks/links still land on the right page, on its "refresh" tab."""
-    return redirect(url_for("admin.automation_full", mode="refresh"))

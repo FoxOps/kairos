@@ -170,44 +170,46 @@ class TestAutomationFull:
         assert gap_notifs[0].link == "/admin/automation"
 
 
-class TestAutomationStatus:
-    """Tests for /admin/automation/status."""
+class TestAutomationStatusMergedIntoDashboard:
+    """The old standalone /admin/automation/status page was never linked
+    from anywhere in the UI and duplicated 4 of the 5 stats already
+    shown on /admin/automation - its one unique piece of information
+    (next available on-call date) was folded into the dashboard's own
+    stats block instead, and the page was dropped rather than kept as a
+    second, unreachable-except-by-URL copy of the same numbers."""
 
-    def test_automation_status_get(self, logged_in_client):
-        """Test rendering the automation status."""
+    def test_automation_status_old_url_is_gone(self, logged_in_client):
         response = logged_in_client.get("/admin/automation/status")
+        assert response.status_code == 404
+
+    def test_dashboard_shows_next_available_oncall_date(self, logged_in_client):
+        response = logged_in_client.get("/admin/automation")
         assert response.status_code == 200
-        # Just check that the page loads successfully
-        assert b"<!DOCTYPE" in response.data or b"<html" in response.data
-
-    def test_automation_status_unauthenticated(self, client):
-        """Test that the status page requires authentication."""
-        response = client.get("/admin/automation/status", follow_redirects=True)
-        assert b"Connexion" in response.data
+        assert (
+            b"Prochaine astreinte disponible" in response.data
+            or b"Next available on-call" in response.data
+        )
 
 
-class TestRefreshShiftsOldUrl:
-    """Tests for the old standalone /admin/automation/refresh-shifts URL,
-    now merged into /admin/automation/full as a "refresh_shifts" action
-    on its "refresh" tab (see TestAutomationFullRefreshMode below) - this
-    route is kept only as a redirect for old bookmarks/links."""
+class TestRefreshShiftsOldUrlRemoved:
+    """The old standalone /admin/automation/refresh-shifts URL was
+    dropped outright (not kept as a redirect) when it was merged into
+    /admin/automation/full as a "Rafraîchir les shifts" button next to
+    Dry Run (see TestAutomationFullRefreshMode below) - user feedback was
+    that nobody had it bookmarked/understood it as a separate page, so
+    there was nothing worth preserving a redirect for."""
 
-    def test_refresh_shifts_get_redirects_to_merged_page(self, logged_in_client):
+    def test_refresh_shifts_old_url_is_gone(self, logged_in_client):
         response = logged_in_client.get("/admin/automation/refresh-shifts")
-        assert response.status_code == 302
-        assert response.location == "/admin/automation/full?mode=refresh"
-
-    def test_refresh_shifts_unauthenticated(self, client):
-        """Test that the redirect still requires authentication."""
-        response = client.get("/admin/automation/refresh-shifts", follow_redirects=True)
-        assert b"Connexion" in response.data
+        assert response.status_code == 404
 
 
 class TestAutomationFullRefreshMode:
     """Tests for the "refresh_shifts" action on /admin/automation/full
-    (the merged shifts-only-refresh mode, replacing the old separate
-    /admin/automation/refresh-shifts page - see admin_automation_routes.
-    py::automation_full's docstring for why the two pages were merged)."""
+    (a "Rafraîchir les shifts" button next to Dry Run, replacing the old
+    separate /admin/automation/refresh-shifts page - see
+    admin_automation_routes.py::automation_full's docstring for why the
+    two pages were merged)."""
 
     def test_refresh_shifts_post(self, logged_in_client):
         """Test refreshing shifts."""
