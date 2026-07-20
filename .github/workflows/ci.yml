@@ -95,41 +95,8 @@ jobs:
             bandit-report.json
             pip-audit-report.json
 
-  # Builds and pushes the Docker image to the GitHub Container Registry -
-  # only on an actual version tag push (never on the weekly schedule or a
-  # manual workflow_dispatch, which have no tag to name the image after),
-  # and only once the other 3 jobs pass (never publish a broken image).
-  # Closes the gap documented in Docs/deployment/docker.md: previously no
-  # CI job published this image anywhere, so KAIROS_IMAGE had to be built
-  # and pushed by hand before docker-compose.example.yml could pull it.
-  docker-build-push:
-    runs-on: ubuntu-latest
-    needs: [test, lint, security]
-    if: startsWith(github.ref, 'refs/tags/v')
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v7
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: docker/Dockerfile
-          push: true
-          # ghcr.io requires a lowercase path - github.repository_owner
-          # is "FoxOps" (mixed case) and GitHub Actions expressions have
-          # no built-in lower() function, so this is hardcoded rather
-          # than derived, matching ghcr.io/foxops/kairos already used
-          # throughout Docs/deployment/docker.md and both .env.example
-          # files.
-          tags: |
-            ghcr.io/foxops/kairos:${{ github.ref_name }}
-            ghcr.io/foxops/kairos:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+# Docker build/push lives in its own workflow (docker-release.yml),
+# deliberately separate from this one and deliberately manual-only
+# (workflow_dispatch, never triggered by this workflow or by a tag push)
+# - run it yourself from the Actions tab once you've confirmed this
+# workflow passed for the ref you're about to release.
