@@ -100,6 +100,23 @@ class TestEditShiftType:
 class TestDeleteGroup:
     """Tests for /admin/groups/delete/<group_id>."""
 
+    def test_delete_button_is_a_post_form_not_a_get_link(
+        self, logged_in_client, group_not_in_schedule
+    ):
+        """Regression test: the delete button used to be a plain <a
+        href="..."> - .js-confirm-delete's handler for non-<button>
+        triggers does `window.location.href = href` (a GET navigation),
+        but the delete route only accepts POST, so confirming the
+        deletion 405'd instead of deleting anything. Rendered as a real
+        <form method="POST"> + <button type="submit"> now, matching
+        every other delete action in this app (shift types, service
+        accounts, etc.)."""
+        response = logged_in_client.get("/admin/groups")
+        html = response.data.decode()
+        delete_url = f"/admin/groups/delete/{group_not_in_schedule.id}"
+        assert f'action="{delete_url}"' in html
+        assert f'href="{delete_url}"' not in html
+
     def test_delete_group_without_users(self, logged_in_client, group_not_in_schedule):
         """Test deleting a group with no users."""
         initial_count = Group.query.count()
@@ -123,6 +140,17 @@ class TestDeleteGroup:
 
 class TestDeleteUser:
     """Tests for /admin/users/delete/<user_id>."""
+
+    def test_delete_button_is_a_post_form_not_a_get_link(
+        self, logged_in_client, second_user
+    ):
+        """Same regression as TestDeleteGroup's equivalent test - the
+        user-delete button had the identical <a href> bug."""
+        response = logged_in_client.get("/admin/users")
+        html = response.data.decode()
+        delete_url = f"/admin/users/delete/{second_user.id}"
+        assert f'action="{delete_url}"' in html
+        assert f'href="{delete_url}"' not in html
 
     def test_delete_user_without_resources(self, logged_in_client, second_user):
         """Test deleting a user with no resources."""
