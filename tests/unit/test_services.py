@@ -66,18 +66,32 @@ class TestUserService:
         assert visible == [test_user]
 
     def test_create_success(self, test_app, test_group):
-        user, error = UserService.create(
-            "New", "new-svc@test.com", test_group.id, "pw123"
+        user, error, generated_password = UserService.create(
+            "New", "new-svc@test.com", test_group.id, "Correct-Horse-9"
         )
         assert error is None
         assert user is not None
+        assert generated_password is None
         assert UserRepository.get_by_email("new-svc@test.com") is not None
+
+    def test_create_generates_password_when_blank(self, test_app, test_group):
+        """A blank password no longer silently falls back to the old
+        hardcoded "password123" - a strong random one is generated
+        instead, returned once for the admin to hand to the user."""
+        user, error, generated_password = UserService.create(
+            "New", "generated-pw@test.com", test_group.id
+        )
+        assert error is None
+        assert generated_password is not None
+        assert len(generated_password) >= 16
+        assert user.check_password(generated_password)
+        assert user.must_change_password is True
 
     def test_create_writes_audit_log_entry(self, test_app, test_group):
         from app.models import AuditLog
 
-        user, error = UserService.create(
-            "New", "audit-create@test.com", test_group.id, "pw123"
+        user, error, _generated_password = UserService.create(
+            "New", "audit-create@test.com", test_group.id, "Correct-Horse-9"
         )
         assert error is None
         entry = AuditLog.query.filter_by(action="user.create").first()
@@ -86,9 +100,18 @@ class TestUserService:
         assert entry.details == "audit-create@test.com"
 
     def test_create_rejects_duplicate_email(self, test_app, test_user, test_group):
-        user, error = UserService.create("Dup", test_user.email, test_group.id)
+        user, error, _generated_password = UserService.create(
+            "Dup", test_user.email, test_group.id
+        )
         assert user is None
         assert error == "Un utilisateur avec cet email existe déjà."
+
+    def test_create_rejects_weak_password(self, test_app, test_group):
+        user, error, _generated_password = UserService.create(
+            "New", "weak-pw@test.com", test_group.id, "short1"
+        )
+        assert user is None
+        assert error is not None
 
     def test_update_success(self, test_app, test_user, test_group):
         updated, error = UserService.update(
@@ -113,6 +136,35 @@ class TestUserService:
         )
         assert updated is None
         assert error is None
+
+    def test_update_rejects_weak_password(self, test_app, test_user, test_group):
+        updated, error = UserService.update(
+            test_user.id,
+            test_user.name,
+            test_user.email,
+            test_group.id,
+            False,
+            "short1",
+        )
+        assert updated is None
+        assert error is not None
+
+    def test_update_password_forces_change_on_next_login(
+        self, test_app, test_user, test_group
+    ):
+        """An admin resetting someone else's password is choosing it for
+        them, unlike auth.update_profile's self-service change - must be
+        forced to pick their own on next login."""
+        updated, error = UserService.update(
+            test_user.id,
+            test_user.name,
+            test_user.email,
+            test_group.id,
+            False,
+            "Correct-Horse-9",
+        )
+        assert error is None
+        assert updated.must_change_password is True
 
     def test_delete_success(self, test_app, test_user):
         ok, error = UserService.delete(test_user.id)
@@ -472,7 +524,7 @@ class TestLeaveService:
         gap_date = date(2026, 8, 21)
         with patch(
             "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
-            return_value=([], ["some message"], [gap_date]),
+            return_value=([], ["some message"], [gap_date], [], []),
         ):
             LeaveService.add_leave(
                 test_user, date.today(), date.today() + timedelta(days=2)
@@ -483,6 +535,58 @@ class TestLeaveService:
         ).all()
         assert len(notifs) == 1
         assert "21/08/2026" in notifs[0].message
+
+    def test_add_leave_notifies_admins_on_failed_shift_dates(
+        self, test_app, admin_user, test_user, second_user
+    ):
+        """Bug hunt regression: a per-day shift regeneration failure
+        (isolated to that day, see AdvancedShiftAutomation.
+        rebalance_after_leave's docstring) must still reach admins,
+        distinctly from the "no eligible user" oncall-gap case above -
+        this one means an unexpected error happened, not just a
+        legal-constraint gap."""
+        from app.models import AppNotification
+
+        failed_date = date(2026, 8, 21)
+        with patch(
+            "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
+            return_value=([], ["some message"], [], [failed_date], []),
+        ):
+            LeaveService.add_leave(
+                test_user, date.today(), date.today() + timedelta(days=2)
+            )
+
+        notifs = AppNotification.query.filter_by(
+            user_id=admin_user.id, notification_type="shift_generation_gap"
+        ).all()
+        assert len(notifs) == 1
+        assert "21/08/2026" in notifs[0].message
+
+    def test_add_leave_notifies_admins_on_failed_oncall_period(
+        self, test_app, admin_user, test_user, second_user
+    ):
+        """Bug hunt regression: a failure in the on-call regeneration
+        section itself (isolated from the shift days, see
+        AdvancedShiftAutomation.rebalance_after_leave's docstring) must
+        still reach admins."""
+        from app.models import AppNotification
+
+        period_start = date(2026, 8, 1)
+        period_end = date(2026, 9, 1)
+        with patch(
+            "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
+            return_value=([], ["some message"], [], [], [period_start, period_end]),
+        ):
+            LeaveService.add_leave(
+                test_user, date.today(), date.today() + timedelta(days=2)
+            )
+
+        notifs = AppNotification.query.filter_by(
+            user_id=admin_user.id, notification_type="oncall_generation_gap"
+        ).all()
+        assert len(notifs) == 1
+        assert "01/08/2026" in notifs[0].message
+        assert "01/09/2026" in notifs[0].message
 
     def test_add_leave_conflict_returns_none(self, test_app, test_user, test_leave):
         leave, regenerated = LeaveService.add_leave(

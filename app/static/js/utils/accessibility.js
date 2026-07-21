@@ -125,8 +125,8 @@ export function displayFormErrorsAccessible(errors) {
     // Announce the error count
     const errorCount = Object.keys(errors).length;
     const errorMessage = errorCount === 1
-        ? '1 erreur de formulaire. Veuillez la corriger.'
-        : `${errorCount} erreurs de formulaire. Veuillez les corriger.`;
+        ? getString('form_error_singular')
+        : getString('form_error_plural').replace('%(count)s', errorCount);
     announceToScreenReader(errorMessage, 'assertive');
 
     // Focus the first field in error

@@ -674,8 +674,8 @@ class TestRebalanceAfterLeave:
             initial_count = Shift.query.count()
 
             # Run the rebalance in dry_run
-            shifts, messages, _unfilled = AdvancedShiftAutomation.rebalance_after_leave(
-                leave, dry_run=True
+            shifts, messages, _unfilled, _failed, _failed_oncall = (
+                AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=True)
             )
 
             # No change should be committed
@@ -704,8 +704,8 @@ class TestRebalanceAfterLeave:
             db.session.commit()
 
             # Run the rebalance
-            shifts, messages, _unfilled = AdvancedShiftAutomation.rebalance_after_leave(
-                leave, dry_run=True
+            shifts, messages, _unfilled, _failed, _failed_oncall = (
+                AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=True)
             )
 
             # Should mention the removal of the on-call or shifts
@@ -755,6 +755,74 @@ class TestRebalanceAfterLeave:
                 test_user.id,
             ]
 
+    def test_rebalance_after_leave_does_not_lock_out_window_on_future_oncalls(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Regression test for a real production incident: rebalance_
+        after_leave() only regenerates a ±30-day window around the
+        leave, leaving on-calls *outside* that window (including ones
+        further in the future than the window itself) untouched. A
+        version of AvailabilityIndex/meets_spacing_constraint that only
+        tracked "the single most recently created on-call" per user
+        (rather than checking every known interval, both before and
+        after) would treat one of those future on-calls as if it were
+        the immediately preceding one - computing a nonsensical
+        negative gap that failed the 2-week spacing check for every
+        candidate on every week of the whole window, even with zero
+        real leave conflicts. Confirmed against a real deployment's
+        data (4 eligible users, one mid-window leave) before this fix:
+        100% of the window (12/12 weeks) came back unfilled."""
+        with test_app.app_context():
+            user3 = User(
+                name="Third User",
+                email="third@test.com",
+                password_hash="third123",
+                is_admin=False,
+                group_id=test_group.id,
+            )
+            user4 = User(
+                name="Fourth User",
+                email="fourth@test.com",
+                password_hash="fourth123",
+                is_admin=False,
+                group_id=test_group.id,
+            )
+            db.session.add_all([user3, user4])
+            db.session.commit()
+
+            rotation_order = [test_user.id, second_user.id, user3.id, user4.id]
+            AutomationConfig.set_rotation_order(rotation_order)
+
+            # A clean, conflict-free schedule already exists across a
+            # wide span - crucially including on-calls *after* the leave
+            # below's ±30-day rebalance window, left untouched by it.
+            OnCallAutomation.generate_oncall_schedule(
+                date(2023, 11, 3),
+                date(2024, 5, 31),
+                rotation_order_ids=rotation_order,
+                dry_run=False,
+                commit=True,
+            )
+
+            # Leave roughly in the middle of that schedule - its own
+            # ±30-day rebalance window won't reach the tail end of the
+            # existing future on-calls, which is exactly the scenario
+            # that exposed the bug (on-calls existing *after* the
+            # window, not just before it).
+            leave = Leave(
+                user_id=test_user.id,
+                start_date=date(2024, 1, 3),
+                end_date=date(2024, 1, 18),
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            _shifts, _messages, unfilled_oncall_dates, _failed, _failed_oncall = (
+                AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
+            )
+
+            assert unfilled_oncall_dates == []
+
     def test_rebalance_after_leave_no_overlap(self, test_app, test_group, test_user):
         """Test rebalancing with a leave that overlaps nothing."""
         with test_app.app_context():
@@ -767,20 +835,26 @@ class TestRebalanceAfterLeave:
             db.session.add(leave)
             db.session.commit()
 
-            shifts, messages, _unfilled = AdvancedShiftAutomation.rebalance_after_leave(
-                leave, dry_run=True
+            shifts, messages, _unfilled, _failed, _failed_oncall = (
+                AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=True)
             )
 
             # Should generate messages but no deletion
             assert len(messages) > 0
 
-    def test_rebalance_after_leave_rolls_back_fully_on_failure(
+    def test_rebalance_after_leave_isolates_oncall_regen_failure_from_shifts(
         self, test_app, test_group, test_user, second_user
     ):
-        """Regression test: if regenerating the on-calls fails at the
-        end of the rebalance, the already-deleted on-call (flushed, not
-        committed) and the already-regenerated shifts must be rolled
-        back - no partially modified schedule."""
+        """Bug hunt: the on-call regeneration section runs in its own
+        SAVEPOINT (see rebalance_after_leave's docstring) - a failure
+        there must no longer discard the shifts already regenerated by
+        the day loop above it, and must no longer raise (the caller,
+        LeaveService, can't distinguish 'total failure' from 'partial
+        success with a flagged gap' if this still raised). Superseded
+        the old test_rebalance_after_leave_rolls_back_fully_on_failure,
+        which asserted the opposite (full rollback, exception
+        propagated) - that was the bug being fixed here, not a
+        contract worth preserving."""
         with test_app.app_context():
             friday = date(2023, 12, 15)
             start_time = datetime.combine(friday, datetime.min.time()).replace(hour=21)
@@ -798,24 +872,86 @@ class TestRebalanceAfterLeave:
             db.session.add(leave)
             db.session.commit()
 
-            oncall_count_before = OnCall.query.count()
             shift_count_before = Shift.query.count()
 
             with patch(
                 "app.utils.automation.OnCallAutomation.generate_oncall_schedule",
                 side_effect=RuntimeError("boom"),
             ):
-                raised = False
-                try:
+                _shifts, messages, _unfilled, _failed, failed_oncall_period = (
                     AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
-                except RuntimeError:
-                    raised = True
+                )
 
-            assert raised is True
-            # Full rollback: the on-call deleted via flush must be back,
-            # and no regenerated shift should have survived.
-            assert OnCall.query.count() == oncall_count_before
-            assert Shift.query.count() == shift_count_before
+            # No exception propagated - the failure is reported, not raised.
+            assert len(failed_oncall_period) == 2
+            assert any("astreintes" in m.lower() for m in messages)
+            # The shifts regenerated by the day loop still got committed
+            # despite the on-call section failing afterward.
+            assert Shift.query.count() > shift_count_before
+            # The leave owner's own on-call was still removed (correct:
+            # they're on leave) - just never replaced, a gap flagged for
+            # manual admin action rather than silently left stale.
+            assert (
+                OnCall.query.filter_by(
+                    user_id=test_user.id, start_time=start_time
+                ).first()
+                is None
+            )
+
+    def test_rebalance_after_leave_isolates_one_failing_shift_day(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """The core bug report this fix addresses: a failure regenerating
+        ONE day's shifts inside the ±30-day window must not wipe out
+        every other day already regenerated in the same window - only
+        that one day is left unfilled/unchanged and flagged in
+        failed_shift_dates, the rest of the window still gets its
+        shifts."""
+        with test_app.app_context():
+            friday = date(2023, 12, 15)
+            start_time = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+            end_time = start_time + timedelta(days=7, hours=-14)
+            oncall = OnCall(
+                user_id=test_user.id, start_time=start_time, end_time=end_time
+            )
+            db.session.add(oncall)
+
+            leave = Leave(
+                user_id=test_user.id,
+                start_date=date(2023, 12, 16),
+                end_date=date(2023, 12, 18),
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            failing_day = date(2023, 12, 20)
+            real_generate_daily_shifts = AdvancedShiftAutomation.generate_daily_shifts
+
+            def flaky_generate_daily_shifts(target_date, *args, **kwargs):
+                if target_date == failing_day:
+                    raise RuntimeError("boom")
+                return real_generate_daily_shifts(target_date, *args, **kwargs)
+
+            with patch.object(
+                AdvancedShiftAutomation,
+                "generate_daily_shifts",
+                side_effect=flaky_generate_daily_shifts,
+            ):
+                _shifts, messages, _unfilled, failed_shift_dates, _failed_oncall = (
+                    AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
+                )
+
+            assert failed_shift_dates == [failing_day]
+            assert any(
+                failing_day.strftime("%d/%m/%Y") in m and "❌" in m for m in messages
+            )
+            # Every other weekday in the window still got a shift - the
+            # single failing day didn't take the rest down with it.
+            other_weekday = date(2023, 12, 19)  # Tuesday, in the same window
+            assert Shift.query.filter_by(date=other_weekday).first() is not None
+            # The failing day itself was left exactly as it was before
+            # the attempt (no partially-written shift for it either).
+            assert Shift.query.filter_by(date=failing_day).count() == 0
 
     def test_rebalance_after_leave_commits_once_on_success(
         self, test_app, test_group, test_user, second_user
@@ -840,7 +976,7 @@ class TestRebalanceAfterLeave:
             db.session.add(leave)
             db.session.commit()
 
-            regenerated_shifts, messages, _unfilled = (
+            regenerated_shifts, messages, _unfilled, _failed, _failed_oncall = (
                 AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
             )
 

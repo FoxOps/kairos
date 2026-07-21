@@ -149,7 +149,7 @@ def api_delete_leave(leave_id):
     """API endpoint to delete a leave."""
     leave_obj = LeaveRepository.get_by_id(leave_id)
     if not leave_obj:
-        return jsonify({"success": False, "error": "Congé non trouvé"}), 404
+        return jsonify({"success": False, "error": _("Congé non trouvé")}), 404
 
     # Permission check: a regular user may only delete their own leave
     if not current_user.is_admin and current_user.id != leave_obj.user_id:
@@ -157,7 +157,7 @@ def api_delete_leave(leave_id):
             jsonify(
                 {
                     "success": False,
-                    "error": "Vous ne pouvez supprimer que vos propres congés",
+                    "error": _("Vous ne pouvez supprimer que vos propres congés"),
                 }
             ),
             403,
@@ -172,7 +172,10 @@ def api_delete_leave(leave_id):
         return jsonify(response)
     except Exception as e:
         db.session.rollback()
-        return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
+        return (
+            jsonify({"success": False, "error": _("Erreur: %(val0)s", val0=str(e))}),
+            500,
+        )
 
 
 @main_bp.route("/api/leave/<int:leave_id>", methods=["PATCH", "PUT"])
@@ -181,7 +184,7 @@ def api_update_leave(leave_id):
     """API endpoint to update a leave via drag & drop."""
     leave_obj = LeaveRepository.get_by_id(leave_id)
     if not leave_obj:
-        return jsonify({"success": False, "error": "Congé non trouvé"}), 404
+        return jsonify({"success": False, "error": _("Congé non trouvé")}), 404
 
     # Permission check: a regular user may only modify their own leave
     if not current_user.is_admin and current_user.id != leave_obj.user_id:
@@ -189,7 +192,7 @@ def api_update_leave(leave_id):
             jsonify(
                 {
                     "success": False,
-                    "error": "Vous ne pouvez modifier que vos propres congés",
+                    "error": _("Vous ne pouvez modifier que vos propres congés"),
                 }
             ),
             403,
@@ -197,14 +200,17 @@ def api_update_leave(leave_id):
 
     data = request.get_json()
     if not data:
-        return jsonify({"success": False, "error": "Aucune donnée reçue"}), 400
+        return jsonify({"success": False, "error": _("Aucune donnée reçue")}), 400
 
     try:
         new_start_str = data.get("start")
         new_end_str = data.get("end")
 
         if not new_start_str:
-            return jsonify({"success": False, "error": "Date de début manquante"}), 400
+            return (
+                jsonify({"success": False, "error": _("Date de début manquante")}),
+                400,
+            )
 
         new_start = datetime.fromisoformat(new_start_str.replace("Z", "+00:00"))
 
@@ -241,9 +247,17 @@ def api_update_leave(leave_id):
     except ValueError as e:
         db.session.rollback()
         return (
-            jsonify({"success": False, "error": f"Format de date invalide: {str(e)}"}),
+            jsonify(
+                {
+                    "success": False,
+                    "error": _("Format de date invalide: %(val0)s", val0=str(e)),
+                }
+            ),
             400,
         )
     except Exception as e:
         db.session.rollback()
-        return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
+        return (
+            jsonify({"success": False, "error": _("Erreur: %(val0)s", val0=str(e))}),
+            500,
+        )

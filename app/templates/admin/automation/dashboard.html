@@ -21,28 +21,35 @@
         <p><i class="fas fa-info-circle"></i> {{ _("Ce module permet de générer automatiquement les astreintes. Les shifts sont générés automatiquement après les astreintes selon les règles métiers.") }}</p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
-        <div class="card card-sm bg-base-100 shadow-md">
-            <div class="card-body">
-                <h2 class="text-lg font-semibold"><i class="fas fa-cogs" aria-hidden="true"></i> {{ _("Génération complète") }}</h2>
-                <p>{{ _("Générer les astreintes. Les shifts seront automatiquement générés selon les règles métiers.") }}</p>
-                <div class="mt-3">
-                    <a class="btn btn-success btn-sm" href="{{ url_for('admin.automation_full') }}">
-                        <i class="fas fa-play"></i> {{ _("Lancer") }}
-                    </a>
-                </div>
+    {% if oncall_gaps %}
+    <div class="alert alert-warning mb-4">
+        <div>
+            <p>
+                <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                <strong>{{ _("%(count)s semaine(s) sans astreinte détectée(s) :", count=oncall_gaps|length) }}</strong>
+                {{ oncall_gaps|map('format_date')|join(', ') }}
+            </p>
+            <p class="text-sm mt-1">
+                {{ _("Ces trous peuvent être en dehors de la période affichée par défaut sur la page de génération (qui part d'aujourd'hui) - le lien ci-dessous ouvre directement la bonne période, mode \"Combler les trous d'astreintes\" présélectionné.") }}
+            </p>
+            <div class="mt-2">
+                <a class="btn btn-warning btn-sm"
+                   href="{{ url_for('admin.automation_full', start_date=oncall_gaps[0].strftime('%Y-%m-%d'), end_date=oncall_gaps[-1].strftime('%Y-%m-%d'), oncall_mode='fill_gaps') }}">
+                    <i class="fas fa-wrench" aria-hidden="true"></i> {{ _("Combler ces trous") }}
+                </a>
             </div>
         </div>
+    </div>
+    {% endif %}
 
-        <div class="card card-sm bg-base-100 shadow-md">
-            <div class="card-body">
-                <h2 class="text-lg font-semibold"><i class="fas fa-sync-alt" aria-hidden="true"></i> {{ _("Rafraîchir Shifts") }}</h2>
-                <p>{{ _("Recalculer les shifts en tenant compte des astreintes actuelles (même modifiées manuellement).") }}</p>
-                <div class="mt-3">
-                    <a class="btn btn-warning btn-sm" href="{{ url_for('admin.refresh_shifts') }}">
-                        <i class="fas fa-sync"></i> {{ _("Rafraîchir") }}
-                    </a>
-                </div>
+    <div class="card card-sm bg-base-100 shadow-md mb-6">
+        <div class="card-body">
+            <h2 class="text-lg font-semibold"><i class="fas fa-cogs" aria-hidden="true"></i> {{ _("Générer / rafraîchir le planning") }}</h2>
+            <p>{{ _("Générer les astreintes et les shifts, prévisualiser le résultat, ou recalculer uniquement les shifts en conservant les astreintes actuelles.") }}</p>
+            <div class="mt-3">
+                <a class="btn btn-success btn-sm" href="{{ url_for('admin.automation_full') }}">
+                    <i class="fas fa-play"></i> {{ _("Lancer") }}
+                </a>
             </div>
         </div>
     </div>
@@ -64,6 +71,15 @@
             <div class="stat-title">{{ _("Utilisateurs shifts") }}</div>
             <div class="stat-value text-warning">{{ status.shift_eligible_users }}</div>
         </div>
+        <div class="stat">
+            <div class="stat-title">{{ _("Prochaine astreinte disponible") }}</div>
+            {% if status.next_available_oncall_date %}
+            <div class="stat-value text-accent text-2xl">{{ status.next_available_oncall_date }}</div>
+            {% else %}
+            <div class="stat-value text-2xl">—</div>
+            <div class="stat-desc">{{ _("Aucune date disponible trouvée") }}</div>
+            {% endif %}
+        </div>
     </div>
 
     <div class="collapse collapse-arrow bg-base-100 shadow-md">
@@ -75,7 +91,7 @@
             <div class="flex flex-col gap-2">
                 <p><strong>{{ _("Rotation des astreintes :") }}</strong> {{ _("Une rotation simple où chaque semaine un membre différent est désigné. Utilisez \"Génération complète\" pour configurer l'ordre de rotation.") }}</p>
                 <p><strong>{{ _("Génération automatique des shifts :") }}</strong> {{ _("Après la génération des astreintes, les shifts sont automatiquement créés selon les règles métiers (13h-21h pour l'astreinte, rotation des créneaux, etc.).") }}</p>
-                <p><strong>{{ _("Rafraîchissement manuel :") }}</strong> {{ _("Utilisez \"Rafraîchir Shifts\" pour recalculer les shifts si vous avez modifié manuellement les astreintes.") }}</p>
+                <p><strong>{{ _("Rafraîchissement manuel :") }}</strong> {{ _("Utilisez le bouton \"Rafraîchir les shifts\" pour recalculer les shifts si vous avez modifié manuellement les astreintes, sans relancer toute la rotation.") }}</p>
                 <p><strong>{{ _("Période par défaut :") }}</strong> {{ _("6 mois à l'avance.") }}</p>
             </div>
         </div>

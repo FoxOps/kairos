@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-20 05:46+0200\n"
+"POT-Creation-Date: 2026-07-21 15:56+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -17,6 +17,11 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
+
+#: app/__init__.py:447 app/routes/auth.py:235
+#: app/templates/auth/update_profile.html:15
+msgid "Vous devez choisir un nouveau mot de passe avant de continuer."
+msgstr "You must choose a new password before continuing."
 
 #: app/auth/decorators.py:44
 msgid "Accès refusé : vous devez être administrateur."
@@ -43,32 +48,13 @@ msgstr ""
 msgid "%(count)s entrée(s) d'historique purgée(s)."
 msgstr "%(count)s history entry(ies) purged."
 
-#: app/routes/admin_automation_routes.py:89
-#, python-format
-msgid "Erreur lors de la sauvegarde de l'ordre : %(error)s"
-msgstr "Error saving the order: %(error)s"
-
-#: app/routes/admin_automation_routes.py:97
-msgid ""
-"Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour "
-"appliquer."
-msgstr "Rotation order saved! Use the 'Generate' button to apply it."
-
-#: app/routes/admin_automation_routes.py:116
-#, python-format
-msgid "%(oncalls_deleted)s astreintes existantes supprimées pour la période"
-msgstr "%(oncalls_deleted)s existing on-calls deleted for the period"
-
-#: app/routes/admin_automation_routes.py:124
-#, python-format
-msgid "%(shifts_deleted)s shifts existants supprimés pour la période"
-msgstr "%(shifts_deleted)s existing shifts deleted for the period"
-
-#: app/routes/admin_automation_routes.py:187 app/services/leave_service.py:166
+#: app/routes/admin_automation_routes.py:65
+#: app/routes/admin_automation_routes.py:312 app/services/leave_service.py:179
 msgid "Génération d'astreintes incomplète"
 msgstr "Incomplete on-call generation"
 
-#: app/routes/admin_automation_routes.py:189
+#: app/routes/admin_automation_routes.py:67
+#: app/routes/admin_automation_routes.py:314
 #, python-format
 msgid ""
 "Aucun utilisateur disponible dans le respect du délai légal de 2 semaines"
@@ -78,32 +64,39 @@ msgstr ""
 "No user available within the legal 2-week spacing constraint for: "
 "%(dates)s. Manual assignment required in /admin/automation."
 
-#: app/routes/admin_automation_routes.py:202
+#: app/routes/admin_automation_routes.py:151
+#: app/routes/admin_automation_routes.py:241
 #, python-format
-msgid ""
-"Régénération complète terminée pour la période du %(strftime)s au "
-"%(strftime1)s"
-msgstr ""
-"Full regeneration completed for the period from %(strftime)s to "
-"%(strftime1)s"
+msgid "%(oncalls_deleted)s astreintes existantes supprimées pour la période"
+msgstr "%(oncalls_deleted)s existing on-calls deleted for the period"
 
-#: app/routes/admin_automation_routes.py:211
-#: app/routes/admin_automation_routes.py:285
+#: app/routes/admin_automation_routes.py:178
+#, python-format
+msgid "%(deleted)s shifts existants supprimés pour la période"
+msgstr "%(deleted)s existing shifts deleted for the period"
+
+#: app/routes/admin_automation_routes.py:191
+#, python-format
+msgid "%(val0)s shifts régénérés avec succès !"
+msgstr "%(val0)s shifts successfully regenerated!"
+
+#: app/routes/admin_automation_routes.py:195
+#: app/routes/admin_automation_routes.py:336
 #, python-format
 msgid "Format de date invalide : %(val0)s"
 msgstr "Invalid date format: %(val0)s"
 
-#: app/routes/admin_automation_routes.py:213
-#: app/routes/admin_automation_routes.py:288
+#: app/routes/admin_automation_routes.py:198
+#: app/routes/admin_automation_routes.py:338
 #: app/routes/admin_group_routes.py:47 app/routes/admin_group_routes.py:78
 #: app/routes/admin_group_routes.py:97
 #: app/routes/admin_notification_target_routes.py:82
 #: app/routes/admin_notification_target_routes.py:126
 #: app/routes/admin_shift_type_routes.py:52
 #: app/routes/admin_shift_type_routes.py:94
-#: app/routes/admin_shift_type_routes.py:113 app/routes/admin_user_routes.py:54
-#: app/routes/admin_user_routes.py:88 app/routes/admin_user_routes.py:107
-#: app/routes/auth.py:414 app/routes/leave_routes.py:109
+#: app/routes/admin_shift_type_routes.py:113 app/routes/admin_user_routes.py:71
+#: app/routes/admin_user_routes.py:105 app/routes/admin_user_routes.py:124
+#: app/routes/auth.py:438 app/routes/leave_routes.py:109
 #: app/routes/leave_routes.py:142 app/routes/oncall_routes.py:86
 #: app/routes/oncall_routes.py:105 app/routes/oncall_routes.py:128
 #: app/routes/oncall_routes.py:156 app/routes/shift_routes.py:121
@@ -114,15 +107,30 @@ msgstr "Invalid date format: %(val0)s"
 msgid "Erreur : %(val0)s"
 msgstr "Error: %(val0)s"
 
-#: app/routes/admin_automation_routes.py:266
+#: app/routes/admin_automation_routes.py:214
 #, python-format
-msgid "%(deleted)s shifts existants supprimés pour la période"
-msgstr "%(deleted)s existing shifts deleted for the period"
+msgid "Erreur lors de la sauvegarde de l'ordre : %(error)s"
+msgstr "Error saving the order: %(error)s"
 
-#: app/routes/admin_automation_routes.py:279
+#: app/routes/admin_automation_routes.py:222
+msgid ""
+"Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour "
+"appliquer."
+msgstr "Rotation order saved! Use the 'Generate' button to apply it."
+
+#: app/routes/admin_automation_routes.py:249
 #, python-format
-msgid "%(val0)s shifts régénérés avec succès !"
-msgstr "%(val0)s shifts successfully regenerated!"
+msgid "%(shifts_deleted)s shifts existants supprimés pour la période"
+msgstr "%(shifts_deleted)s existing shifts deleted for the period"
+
+#: app/routes/admin_automation_routes.py:327
+#, python-format
+msgid ""
+"Régénération complète terminée pour la période du %(strftime)s au "
+"%(strftime1)s"
+msgstr ""
+"Full regeneration completed for the period from %(strftime)s to "
+"%(strftime1)s"
 
 #: app/routes/admin_backup_routes.py:39
 msgid "Sauvegarde créée avec succès."
@@ -291,7 +299,7 @@ msgstr "ICS expiry duration saved"
 
 #: app/routes/admin_shift_type_routes.py:33
 #: app/routes/admin_shift_type_routes.py:69 app/routes/admin_user_routes.py:41
-#: app/routes/admin_user_routes.py:73 app/routes/oncall_routes.py:54
+#: app/routes/admin_user_routes.py:90 app/routes/oncall_routes.py:54
 #: app/routes/shift_routes.py:56
 msgid "Tous les champs sont obligatoires."
 msgstr "All fields are required."
@@ -330,100 +338,111 @@ msgstr "Swap rejected."
 msgid "%(count)s demande(s) terminée(s) supprimée(s) (tous utilisateurs)."
 msgstr "%(count)s completed request(s) deleted (all users)."
 
-#: app/routes/admin_user_routes.py:50
+#: app/routes/admin_user_routes.py:52
 msgid "Utilisateur ajouté avec succès !"
 msgstr "User successfully added!"
 
-#: app/routes/admin_user_routes.py:84
+#: app/routes/admin_user_routes.py:60
+#, python-format
+msgid ""
+"Mot de passe généré automatiquement : %(password)s (à communiquer à "
+"l'utilisateur - il devra le changer à sa première connexion, ce mot de "
+"passe ne sera plus jamais affiché)."
+msgstr ""
+"Automatically generated password: %(password)s (share it with the user - "
+"they will have to change it on their first login, this password will "
+"never be shown again)."
+
+#: app/routes/admin_user_routes.py:101
 msgid "Utilisateur modifié avec succès !"
 msgstr "User successfully updated!"
 
-#: app/routes/admin_user_routes.py:104
+#: app/routes/admin_user_routes.py:121
 msgid "Utilisateur supprimé avec succès !"
 msgstr "User successfully deleted!"
 
-#: app/routes/auth.py:61
+#: app/routes/auth.py:62
 msgid "L'inscription publique est désactivée. Utilisez l'authentification OIDC."
 msgstr "Public registration is disabled. Use OIDC authentication."
 
-#: app/routes/auth.py:68
+#: app/routes/auth.py:69
 msgid "L'inscription publique est désactivée. Contactez l'administrateur."
 msgstr "Public registration is disabled. Contact the administrator."
 
-#: app/routes/auth.py:97
+#: app/routes/auth.py:98
 msgid "Email et mot de passe sont obligatoires."
 msgstr "Email and password are required."
 
-#: app/routes/auth.py:110
+#: app/routes/auth.py:111
 msgid "Connexion réussie !"
 msgstr "Login successful!"
 
-#: app/routes/auth.py:124
+#: app/routes/auth.py:125
 msgid "Email ou mot de passe incorrect."
 msgstr "Incorrect email or password."
 
-#: app/routes/auth.py:143
+#: app/routes/auth.py:144
 msgid "La connexion OIDC n'est pas disponible pour le moment."
 msgstr "OIDC login is not available at the moment."
 
-#: app/routes/auth.py:167
+#: app/routes/auth.py:168
 msgid "La connexion OIDC a échoué. Veuillez réessayer."
 msgstr "OIDC login failed. Please try again."
 
-#: app/routes/auth.py:177
+#: app/routes/auth.py:178
 msgid "Connexion OIDC réussie !"
 msgstr "OIDC login successful!"
 
-#: app/routes/auth.py:202
+#: app/routes/auth.py:203
 msgid "Vous avez été déconnecté."
 msgstr "You have been logged out."
 
-#: app/routes/auth.py:226
+#: app/routes/auth.py:242
 msgid "Le nom et l'email sont obligatoires."
 msgstr "Name and email are required."
 
-#: app/routes/auth.py:235
+#: app/routes/auth.py:251
 msgid "Cet email est déjà utilisé par un autre utilisateur."
 msgstr "This email is already used by another user."
 
-#: app/routes/auth.py:248
+#: app/routes/auth.py:264
 msgid "Le mot de passe actuel est obligatoire pour changer de mot de passe."
 msgstr "The current password is required to change your password."
 
-#: app/routes/auth.py:255
+#: app/routes/auth.py:271
 msgid "Le mot de passe actuel est incorrect."
 msgstr "The current password is incorrect."
 
-#: app/routes/auth.py:259
+#: app/routes/auth.py:275
 msgid "Les nouveaux mots de passe ne correspondent pas."
 msgstr "The new passwords do not match."
 
-#: app/routes/auth.py:271
+#: app/routes/auth.py:295
 msgid "Votre profil a été mis à jour avec succès !"
 msgstr "Your profile has been successfully updated!"
 
-#: app/routes/auth.py:297
+#: app/routes/auth.py:321
 msgid "Fuseau horaire invalide."
 msgstr "Invalid timezone."
 
-#: app/routes/auth.py:303
+#: app/routes/auth.py:327
 msgid "Langue invalide."
 msgstr "Invalid language."
 
-#: app/routes/auth.py:309 app/routes/shift_routes.py:222
+#: app/routes/auth.py:333 app/routes/shift_routes.py:222
 #: app/routes/shift_routes.py:258
 msgid "Format de date invalide."
 msgstr "Invalid date format."
 
-#: app/routes/auth.py:315
+#: app/routes/auth.py:339
 msgid "Format d'heure invalide."
 msgstr "Invalid time format."
 
-#: app/routes/auth.py:364
+#: app/routes/auth.py:388
 msgid "Vos paramètres ont été mis à jour avec succès !"
 msgstr "Your settings have been successfully updated!"
 
-#: app/routes/auth.py:411
+#: app/routes/auth.py:435
 msgid "Token ICS régénéré avec succès !"
 msgstr "ICS token successfully regenerated!"
 
@@ -482,6 +501,43 @@ msgstr "Leave deleted. No shifts to recalculate."
 msgid "Conge supprime avec succes !"
 msgstr "Leave successfully deleted!"
 
+#: app/routes/leave_routes.py:152 app/routes/leave_routes.py:187
+#: app/services/leave_service.py:93
+msgid "Congé non trouvé"
+msgstr "Leave not found"
+
+#: app/routes/leave_routes.py:160
+msgid "Vous ne pouvez supprimer que vos propres congés"
+msgstr "You can only delete your own leave"
+
+#: app/routes/leave_routes.py:176 app/routes/leave_routes.py:261
+#: app/routes/oncall_routes.py:174 app/routes/oncall_routes.py:254
+#: app/routes/shift_routes.py:353 app/routes/shift_routes.py:434
+#: app/routes/shift_routes.py:453
+#, python-format
+msgid "Erreur: %(val0)s"
+msgstr "Error: %(val0)s"
+
+#: app/routes/leave_routes.py:195
+msgid "Vous ne pouvez modifier que vos propres congés"
+msgstr "You can only modify your own leave"
+
+#: app/routes/leave_routes.py:203 app/routes/oncall_routes.py:190
+#: app/routes/shift_routes.py:275 app/routes/shift_routes.py:369
+msgid "Aucune donnée reçue"
+msgstr "No data received"
+
+#: app/routes/leave_routes.py:211 app/routes/oncall_routes.py:198
+#: app/routes/shift_routes.py:377
+msgid "Date de début manquante"
+msgstr "Missing start date"
+
+#: app/routes/leave_routes.py:253 app/routes/oncall_routes.py:246
+#: app/routes/shift_routes.py:426
+#, python-format
+msgid "Format de date invalide: %(val0)s"
+msgstr "Invalid date format: %(val0)s"
+
 #: app/routes/notification_routes.py:48
 #, python-format
 msgid "%(count)s notification(s) lue(s) supprimée(s)."
@@ -515,6 +571,11 @@ msgid ""
 "Toutes les %(count)s astreintes de %(name)s ont été supprimées avec "
 "succès !"
 msgstr "All %(count)s on-calls for %(name)s were successfully deleted!"
+
+#: app/routes/oncall_routes.py:166 app/routes/oncall_routes.py:186
+#: app/services/oncall_service.py:128
+msgid "Astreinte non trouvée"
+msgstr "On-call not found"
 
 #: app/routes/shift_routes.py:62
 msgid "Type de shift invalide."
@@ -589,6 +650,28 @@ msgid ""
 msgstr ""
 "All %(count)s shifts for the week of %(strftime)s were successfully "
 "deleted!"
+
+#: app/routes/shift_routes.py:284
+msgid "Données manquantes"
+msgstr "Missing data"
+
+#: app/routes/shift_routes.py:292
+msgid "Utilisateur non trouvé"
+msgstr "User not found"
+
+#: app/routes/shift_routes.py:299
+msgid "Type de shift non trouvé"
+msgstr "Shift type not found"
+
+#: app/routes/shift_routes.py:346
+#, python-format
+msgid "Format invalide: %(val0)s"
+msgstr "Invalid format: %(val0)s"
+
+#: app/routes/shift_routes.py:365 app/routes/shift_routes.py:445
+#: app/services/shift_service.py:169
+msgid "Shift non trouvé"
+msgstr "Shift not found"
 
 #: app/routes/swap_routes.py:38
 msgid "Sélectionnez un shift à échanger et un destinataire."
@@ -695,6 +778,27 @@ msgstr ""
 "On-call(s) not generated automatically (no user meets the legal 2-week "
 "spacing constraint): %(dates)s. Manual assignment required."
 
+#: app/services/app_notification_service.py:223
+#, python-format
+msgid ""
+"Échec de la régénération automatique des shifts pour : %(dates)s. Le "
+"planning de ces jours n'a pas été modifié. Assignation manuelle "
+"nécessaire."
+msgstr ""
+"Automatic shift regeneration failed for: %(dates)s. The schedule for "
+"these days was not changed. Manual assignment required."
+
+#: app/services/app_notification_service.py:248
+#, python-format
+msgid ""
+"Échec de la régénération automatique des astreintes pour la période du "
+"%(start)s au %(end)s. Les astreintes de cette période n'ont pas été "
+"modifiées. Assignation manuelle nécessaire."
+msgstr ""
+"Automatic on-call regeneration failed for the period from %(start)s to "
+"%(end)s. The on-calls for this period were not changed. Manual assignment"
+" required."
+
 #: app/services/apprise_notification_service.py:86
 msgid "URL Apprise invalide."
 msgstr "Invalid Apprise URL."
@@ -752,10 +856,6 @@ msgstr "A group with this name already exists."
 msgid "Impossible de supprimer ce groupe : des utilisateurs y sont associés."
 msgstr "Unable to delete this group: users are associated with it."
 
-#: app/services/leave_service.py:93
-msgid "Congé non trouvé"
-msgstr "Leave not found"
-
 #: app/services/leave_service.py:96
 msgid "La date de fin doit être après la date de début"
 msgstr "The end date must be after the start date"
@@ -773,7 +873,7 @@ msgstr ""
 "Not possible: available staff would drop to 0 on at least one day of this"
 " period"
 
-#: app/services/leave_service.py:168
+#: app/services/leave_service.py:181
 #, python-format
 msgid ""
 "Aucun utilisateur disponible dans le respect du délai légal de 2 semaines"
@@ -783,6 +883,37 @@ msgstr ""
 "No user available within the legal 2-week spacing constraint for: "
 "%(dates)s (rebalancing after a leave). Manual assignment required in "
 "/admin/automation."
+
+#: app/services/leave_service.py:194
+msgid "Régénération de shifts incomplète"
+msgstr "Incomplete shift regeneration"
+
+#: app/services/leave_service.py:196
+#, python-format
+msgid ""
+"Échec de la régénération automatique des shifts pour : %(dates)s "
+"(rééquilibrage après congé). Ces jours n'ont pas été modifiés. "
+"Assignation manuelle nécessaire dans /admin/automation."
+msgstr ""
+"Automatic shift regeneration failed for: %(dates)s (rebalancing after a "
+"leave). These days were not changed. Manual assignment required in "
+"/admin/automation."
+
+#: app/services/leave_service.py:212
+msgid "Régénération d'astreintes échouée"
+msgstr "On-call regeneration failed"
+
+#: app/services/leave_service.py:214
+#, python-format
+msgid ""
+"Échec de la régénération automatique des astreintes pour la période du "
+"%(start)s au %(end)s (rééquilibrage après congé). Ces astreintes n'ont "
+"pas été modifiées. Assignation manuelle nécessaire dans "
+"/admin/automation."
+msgstr ""
+"Automatic on-call regeneration failed for the period from %(start)s to "
+"%(end)s (rebalancing after a leave). These on-calls were not changed. "
+"Manual assignment required in /admin/automation."
 
 #: app/services/notification_service.py:112
 #, python-format
@@ -826,10 +957,6 @@ msgstr ""
 "Unable to add this on-call (period already covered or leave during this "
 "period)."
 
-#: app/services/oncall_service.py:128
-msgid "Astreinte non trouvée"
-msgstr "On-call not found"
-
 #: app/services/oncall_service.py:131
 msgid "L'astreinte doit commencer un vendredi"
 msgstr "The on-call must start on a Friday"
@@ -843,6 +970,16 @@ msgstr "An on-call already exists for %(name)s during this period"
 #, python-format
 msgid "%(name)s est en congé pendant cette période"
 msgstr "%(name)s is on leave during this period"
+
+#: app/services/schedule_service.py:71 app/utils/export/ics_exporter.py:71
+#, python-format
+msgid "Astreinte - %(name)s"
+msgstr "On-call - %(name)s"
+
+#: app/services/schedule_service.py:83 app/utils/export/ics_exporter.py:76
+#, python-format
+msgid "Congé - %(name)s"
+msgstr "Leave - %(name)s"
 
 #: app/services/settings_service.py:94
 #, python-format
@@ -891,10 +1028,6 @@ msgstr "Unable to create a shift for a weekend"
 #: app/services/shift_service.py:148
 msgid "Conflit détecté pour ce shift"
 msgstr "Conflict detected for this shift"
-
-#: app/services/shift_service.py:169
-msgid "Shift non trouvé"
-msgstr "Shift not found"
 
 #: app/services/shift_service.py:173
 msgid "Impossible de déplacer vers un week-end (samedi/dimanche)"
@@ -1076,11 +1209,11 @@ msgstr "Shift swap rejected"
 msgid "%(requester)s <-> %(target)s : demande rejetée par %(admin)s."
 msgstr "%(requester)s <-> %(target)s: request rejected by %(admin)s."
 
-#: app/services/user_service.py:54 app/services/user_service.py:78
+#: app/services/user_service.py:66 app/services/user_service.py:101
 msgid "Un utilisateur avec cet email existe déjà."
 msgstr "A user with this email already exists."
 
-#: app/services/user_service.py:106
+#: app/services/user_service.py:139
 msgid ""
 "Impossible de supprimer cet utilisateur : il a des shifts, astreintes ou "
 "congés associés."
@@ -1193,7 +1326,7 @@ msgstr ""
 "The server received a request with a method (GET, POST, PUT, DELETE, "
 "etc.) that is not supported for this URL."
 
-#: app/templates/405.html:17 app/templates/admin/automation/full.html:158
+#: app/templates/405.html:17 app/templates/admin/automation/full.html:157
 msgid "Vérifiez que :"
 msgstr "Check that:"
 
@@ -1425,8 +1558,7 @@ msgid "Sélectionnez l'utilisateur pour ce congé"
 msgstr "Select the user for this leave"
 
 #: app/templates/add_leave.html:27 app/templates/add_shift.html:39
-#: app/templates/admin/automation/full.html:125
-#: app/templates/admin/automation/refresh_shifts.html:44
+#: app/templates/admin/automation/full.html:30
 msgid "Date de début"
 msgstr "Start date"
 
@@ -1435,8 +1567,7 @@ msgid "Date de début du congé"
 msgstr "Leave start date"
 
 #: app/templates/add_leave.html:33 app/templates/add_shift.html:45
-#: app/templates/admin/automation/full.html:131
-#: app/templates/admin/automation/refresh_shifts.html:49
+#: app/templates/admin/automation/full.html:36
 msgid "Date de fin"
 msgstr "End date"
 
@@ -1501,7 +1632,7 @@ msgstr "Cancel and return to the list"
 #: app/templates/admin/edit_user.html:58 app/templates/admin/edit_user.html:59
 #: app/templates/admin/swaps.html:179
 #: app/templates/auth/profile_settings.html:134
-#: app/templates/auth/update_profile.html:53 app/templates/confirm_swap.html:46
+#: app/templates/auth/update_profile.html:77 app/templates/confirm_swap.html:46
 #: app/templates/confirm_swap.html:47 app/templates/swaps.html:65
 #: app/utils/helpers/js_translations.py:29
 msgid "Annuler"
@@ -1708,16 +1839,24 @@ msgstr "Administration"
 msgid "Utilisateurs"
 msgstr "Users"
 
-#: app/templates/base.html:231 app/templates/index.html:96
+#: app/templates/admin/automation/dashboard.html:8
+#: app/templates/admin/automation/dashboard.html:11
+#: app/templates/admin/automation/full.html:12
+#: app/templates/admin/automation/full_dry_run.html:8
+#: app/templates/admin/dashboard.html:87 app/templates/base.html:231
+msgid "Automatisation"
+msgstr "Automation"
+
+#: app/templates/base.html:232 app/templates/index.html:96
 msgid "Admin"
 msgstr "Admin"
 
-#: app/templates/base.html:236
+#: app/templates/base.html:237
 #, python-format
 msgid "Mon profil - %(name)s"
 msgstr "My profile - %(name)s"
 
-#: app/templates/base.html:245
+#: app/templates/base.html:246
 msgid "Déconnexion"
 msgstr "Logout"
 
@@ -2035,12 +2174,12 @@ msgstr "Interactive calendar"
 msgid "Actions rapides"
 msgstr "Quick actions"
 
-#: app/templates/admin/automation/full.html:168 app/templates/index.html:89
+#: app/templates/admin/automation/full.html:167 app/templates/index.html:89
 #: app/templates/index.html:90
 msgid "Gérer les utilisateurs"
 msgstr "Manage users"
 
-#: app/templates/admin/automation/full.html:165 app/templates/index.html:92
+#: app/templates/admin/automation/full.html:164 app/templates/index.html:92
 #: app/templates/index.html:93
 msgid "Gérer les groupes"
 msgstr "Manage groups"
@@ -2525,7 +2664,7 @@ msgstr "Add a notification target"
 #: app/templates/admin/notification_targets.html:45
 #: app/templates/admin/service_accounts.html:36
 #: app/templates/admin/shift_types.html:31 app/templates/admin/users.html:38
-#: app/templates/auth/profile.html:14 app/templates/auth/update_profile.html:15
+#: app/templates/auth/profile.html:14 app/templates/auth/update_profile.html:22
 msgid "Nom"
 msgstr "Name"
 
@@ -2767,16 +2906,21 @@ msgid "Mot de passe"
 msgstr "Password"
 
 #: app/templates/admin/add_user.html:53
-msgid "Laisser vide pour un mot de passe par défaut"
-msgstr "Leave empty for a default password"
+msgid "Laisser vide pour générer un mot de passe"
+msgstr "Leave empty to generate a password"
 
 #: app/templates/admin/add_user.html:55
 msgid ""
-"Si vous ne spécifiez pas de mot de passe, un mot de passe par défaut sera"
-" généré (password123)."
+"Au moins 12 caractères, avec au moins 3 des 4 types suivants : "
+"minuscules, majuscules, chiffres, caractères spéciaux. Si vous laissez ce"
+" champ vide, un mot de passe aléatoire sera généré et affiché une seule "
+"fois. Dans tous les cas, l'utilisateur devra le changer à sa première "
+"connexion."
 msgstr ""
-"If you do not specify a password, a default password will be generated "
-"(password123)."
+"At least 12 characters, with at least 3 of the following 4 types: "
+"lowercase, uppercase, digits, special characters. If you leave this field"
+" blank, a random password will be generated and shown once. Either way, "
+"the user will have to change it on their first login."
 
 #: app/templates/admin/add_user.html:60
 msgid "Enregistrer l'utilisateur"
@@ -2795,8 +2939,6 @@ msgstr "Change history"
 #: app/templates/admin/automation/dashboard.html:5
 #: app/templates/admin/automation/full.html:9
 #: app/templates/admin/automation/full_dry_run.html:5
-#: app/templates/admin/automation/refresh_shifts.html:7
-#: app/templates/admin/automation/status.html:5
 #: app/templates/admin/backups/dashboard.html:5
 #: app/templates/admin/groups.html:7
 #: app/templates/admin/notification_targets.html:7
@@ -2969,16 +3111,6 @@ msgstr "Pending: %(count)s"
 msgid "Voir les demandes d'échange"
 msgstr "View swap requests"
 
-#: app/templates/admin/automation/dashboard.html:8
-#: app/templates/admin/automation/dashboard.html:11
-#: app/templates/admin/automation/full.html:12
-#: app/templates/admin/automation/full_dry_run.html:8
-#: app/templates/admin/automation/refresh_shifts.html:10
-#: app/templates/admin/automation/status.html:8
-#: app/templates/admin/dashboard.html:87
-msgid "Automatisation"
-msgstr "Automation"
-
 #: app/templates/admin/dashboard.html:88
 msgid "Génération automatique"
 msgstr "Automatic generation"
@@ -3073,7 +3205,7 @@ msgstr "Unique group name"
 #: app/templates/admin/edit_shift_type.html:40
 #: app/templates/admin/edit_user.html:55
 #: app/templates/auth/profile_settings.html:131
-#: app/templates/auth/update_profile.html:50
+#: app/templates/auth/update_profile.html:73
 msgid "Enregistrer les modifications"
 msgstr "Save changes"
 
@@ -3125,19 +3257,27 @@ msgid "Oui, cet utilisateur est administrateur"
 msgstr "Yes, this user is an administrator"
 
 #: app/templates/admin/edit_user.html:47
-#: app/templates/auth/update_profile.html:36
+#: app/templates/auth/update_profile.html:48
 msgid "Nouveau mot de passe"
 msgstr "New password"
 
 #: app/templates/admin/edit_user.html:48
-#: app/templates/auth/update_profile.html:38
-#: app/templates/auth/update_profile.html:44
+#: app/templates/auth/update_profile.html:52
+#: app/templates/auth/update_profile.html:66
 msgid "Laisser vide pour ne pas changer"
 msgstr "Leave empty to keep unchanged"
 
 #: app/templates/admin/edit_user.html:50
-msgid "Laisser vide pour conserver le mot de passe actuel."
-msgstr "Leave empty to keep the current password."
+msgid ""
+"Laisser vide pour conserver le mot de passe actuel. Sinon, au moins 12 "
+"caractères avec au moins 3 des 4 types suivants : minuscules, majuscules,"
+" chiffres, caractères spéciaux - l'utilisateur devra le changer à sa "
+"prochaine connexion."
+msgstr ""
+"Leave empty to keep the current password. Otherwise, at least 12 "
+"characters with at least 3 of the following 4 types: lowercase, "
+"uppercase, digits, special characters - the user will have to change it "
+"on their next login."
 
 #: app/templates/admin/groups.html:3 app/templates/admin/groups.html:14
 msgid "Gestion des groupes"
@@ -3196,7 +3336,7 @@ msgid "Actions pour le groupe %(name)s"
 msgstr "Actions for group %(name)s"
 
 #: app/templates/admin/groups.html:63 app/templates/admin/groups.html:65
-#: app/templates/admin/groups.html:86
+#: app/templates/admin/groups.html:89
 msgid "Modifier le groupe"
 msgstr "Edit the group"
 
@@ -3205,40 +3345,40 @@ msgstr "Edit the group"
 msgid "Modifier le groupe %(name)s"
 msgstr "Edit group %(name)s"
 
-#: app/templates/admin/groups.html:69 app/templates/admin/groups.html:72
-#: app/templates/admin/groups.html:87
+#: app/templates/admin/groups.html:69 app/templates/admin/groups.html:74
+#: app/templates/admin/groups.html:90
 msgid "Supprimer le groupe"
 msgstr "Delete the group"
 
-#: app/templates/admin/groups.html:71
+#: app/templates/admin/groups.html:73
 #, python-format
 msgid "Êtes-vous sûr de vouloir supprimer le groupe %(name)s ?"
 msgstr "Are you sure you want to delete group %(name)s?"
 
-#: app/templates/admin/groups.html:72
+#: app/templates/admin/groups.html:74
 #, python-format
 msgid "Supprimer le groupe %(name)s"
 msgstr "Delete group %(name)s"
 
-#: app/templates/admin/groups.html:86
+#: app/templates/admin/groups.html:89
 #: app/templates/admin/notification_targets.html:76
 #: app/templates/admin/notification_targets.html:78
 #: app/templates/admin/notification_targets.html:111
 #: app/templates/admin/service_accounts.html:62
 #: app/templates/admin/service_accounts.html:64
 #: app/templates/admin/service_accounts.html:97
-#: app/templates/admin/shift_types.html:73 app/templates/admin/users.html:91
+#: app/templates/admin/shift_types.html:73 app/templates/admin/users.html:94
 msgid "Modifier"
 msgstr "Edit"
 
-#: app/templates/admin/groups.html:87
+#: app/templates/admin/groups.html:90
 #: app/templates/admin/notification_targets.html:91
 #: app/templates/admin/notification_targets.html:96
 #: app/templates/admin/notification_targets.html:113
 #: app/templates/admin/service_accounts.html:78
 #: app/templates/admin/service_accounts.html:83
 #: app/templates/admin/service_accounts.html:99
-#: app/templates/admin/shift_types.html:74 app/templates/admin/users.html:92
+#: app/templates/admin/shift_types.html:74 app/templates/admin/users.html:95
 msgid "Supprimer"
 msgstr "Delete"
 
@@ -3821,7 +3961,7 @@ msgid "Actions pour l'utilisateur %(name)s"
 msgstr "Actions for user %(name)s"
 
 #: app/templates/admin/users.html:68 app/templates/admin/users.html:70
-#: app/templates/admin/users.html:91
+#: app/templates/admin/users.html:94
 msgid "Modifier l'utilisateur"
 msgstr "Edit the user"
 
@@ -3830,17 +3970,17 @@ msgstr "Edit the user"
 msgid "Modifier l'utilisateur %(name)s"
 msgstr "Edit user %(name)s"
 
-#: app/templates/admin/users.html:74 app/templates/admin/users.html:77
-#: app/templates/admin/users.html:92
+#: app/templates/admin/users.html:74 app/templates/admin/users.html:79
+#: app/templates/admin/users.html:95
 msgid "Supprimer l'utilisateur"
 msgstr "Delete the user"
 
-#: app/templates/admin/users.html:76
+#: app/templates/admin/users.html:78
 #, python-format
 msgid "Êtes-vous sûr de vouloir supprimer l'utilisateur %(name)s ?"
 msgstr "Are you sure you want to delete user %(name)s?"
 
-#: app/templates/admin/users.html:77
+#: app/templates/admin/users.html:79
 #, python-format
 msgid "Supprimer l'utilisateur %(name)s"
 msgstr "Delete user %(name)s"
@@ -3858,71 +3998,82 @@ msgstr ""
 "This module automatically generates on-calls. Shifts are automatically "
 "generated after on-calls according to the business rules."
 
-#: app/templates/admin/automation/dashboard.html:27
-#: app/templates/admin/automation/full.html:13
+#: app/templates/admin/automation/dashboard.html:29
+#, python-format
+msgid "%(count)s semaine(s) sans astreinte détectée(s) :"
+msgstr "%(count)s week(s) with no on-call detected:"
+
+#: app/templates/admin/automation/dashboard.html:33
+msgid ""
+"Ces trous peuvent être en dehors de la période affichée par défaut sur la"
+" page de génération (qui part d'aujourd'hui) - le lien ci-dessous ouvre "
+"directement la bonne période, mode \"Combler les trous d'astreintes\" "
+"présélectionné."
+msgstr ""
+"These gaps may be outside the period shown by default on the generation "
+"page (which starts today) - the link below opens the right period "
+"directly, with \"Fill on-call gaps\" mode preselected."
+
+#: app/templates/admin/automation/dashboard.html:38
+msgid "Combler ces trous"
+msgstr "Fill these gaps"
+
+#: app/templates/admin/automation/dashboard.html:47
 #: app/templates/admin/automation/full.html:16
-msgid "Génération complète"
-msgstr "Full generation"
+msgid "Générer / rafraîchir le planning"
+msgstr "Generate / refresh the schedule"
 
-#: app/templates/admin/automation/dashboard.html:28
+#: app/templates/admin/automation/dashboard.html:48
 msgid ""
-"Générer les astreintes. Les shifts seront automatiquement générés selon "
-"les règles métiers."
+"Générer les astreintes et les shifts, prévisualiser le résultat, ou "
+"recalculer uniquement les shifts en conservant les astreintes actuelles."
 msgstr ""
-"Generate on-calls. Shifts will be automatically generated according to "
-"the business rules."
+"Generate on-calls and shifts, preview the result, or only recalculate "
+"shifts while keeping current on-calls."
 
-#: app/templates/admin/automation/dashboard.html:31
+#: app/templates/admin/automation/dashboard.html:51
 msgid "Lancer"
-msgstr "Run"
+msgstr "Launch"
 
-#: app/templates/admin/automation/dashboard.html:39
-msgid "Rafraîchir Shifts"
-msgstr "Refresh Shifts"
-
-#: app/templates/admin/automation/dashboard.html:40
-msgid ""
-"Recalculer les shifts en tenant compte des astreintes actuelles (même "
-"modifiées manuellement)."
-msgstr ""
-"Recalculate shifts taking current on-calls into account (even if manually"
-" modified)."
-
-#: app/templates/admin/automation/dashboard.html:43
-msgid "Rafraîchir"
-msgstr "Refresh"
-
-#: app/templates/admin/automation/dashboard.html:52
+#: app/templates/admin/automation/dashboard.html:59
 #: app/templates/admin/automation/full_dry_run.html:105
 msgid "Total astreintes"
 msgstr "Total on-calls"
 
-#: app/templates/admin/automation/dashboard.html:56
+#: app/templates/admin/automation/dashboard.html:63
 #: app/templates/admin/automation/full_dry_run.html:109
 msgid "Total shifts"
 msgstr "Total shifts"
 
-#: app/templates/admin/automation/dashboard.html:60
+#: app/templates/admin/automation/dashboard.html:67
 msgid "Utilisateurs astreintes"
 msgstr "On-call users"
 
-#: app/templates/admin/automation/dashboard.html:64
+#: app/templates/admin/automation/dashboard.html:71
 msgid "Utilisateurs shifts"
 msgstr "Shift users"
 
-#: app/templates/admin/automation/dashboard.html:70
+#: app/templates/admin/automation/dashboard.html:75
+msgid "Prochaine astreinte disponible"
+msgstr "Next available on-call"
+
+#: app/templates/admin/automation/dashboard.html:80
+msgid "Aucune date disponible trouvée"
+msgstr "No available date found"
+
+#: app/templates/admin/automation/dashboard.html:86
 msgid "Afficher/masquer l'aide"
 msgstr "Show/hide help"
 
-#: app/templates/admin/automation/dashboard.html:72
+#: app/templates/admin/automation/dashboard.html:88
 msgid "Aide"
 msgstr "Help"
 
-#: app/templates/admin/automation/dashboard.html:76
+#: app/templates/admin/automation/dashboard.html:92
 msgid "Rotation des astreintes :"
 msgstr "On-call rotation:"
 
-#: app/templates/admin/automation/dashboard.html:76
+#: app/templates/admin/automation/dashboard.html:92
 msgid ""
 "Une rotation simple où chaque semaine un membre différent est désigné. "
 "Utilisez \"Génération complète\" pour configurer l'ordre de rotation."
@@ -3930,11 +4081,11 @@ msgstr ""
 "A simple rotation where a different member is designated each week. Use "
 "\"Full generation\" to configure the rotation order."
 
-#: app/templates/admin/automation/dashboard.html:77
+#: app/templates/admin/automation/dashboard.html:93
 msgid "Génération automatique des shifts :"
 msgstr "Automatic shift generation:"
 
-#: app/templates/admin/automation/dashboard.html:77
+#: app/templates/admin/automation/dashboard.html:93
 msgid ""
 "Après la génération des astreintes, les shifts sont automatiquement créés"
 " selon les règles métiers (13h-21h pour l'astreinte, rotation des "
@@ -3944,66 +4095,82 @@ msgstr ""
 "to the business rules (1pm-9pm for the on-call person, slot rotation, "
 "etc.)."
 
-#: app/templates/admin/automation/dashboard.html:78
+#: app/templates/admin/automation/dashboard.html:94
 msgid "Rafraîchissement manuel :"
 msgstr "Manual refresh:"
 
-#: app/templates/admin/automation/dashboard.html:78
+#: app/templates/admin/automation/dashboard.html:94
 msgid ""
-"Utilisez \"Rafraîchir Shifts\" pour recalculer les shifts si vous avez "
-"modifié manuellement les astreintes."
+"Utilisez le bouton \"Rafraîchir les shifts\" pour recalculer les shifts "
+"si vous avez modifié manuellement les astreintes, sans relancer toute la "
+"rotation."
 msgstr ""
-"Use \"Refresh Shifts\" to recalculate shifts if you have manually "
-"modified on-calls."
+"Use the \"Refresh shifts\" button to recalculate shifts if you have "
+"manually modified on-calls, without relaunching the whole rotation."
 
-#: app/templates/admin/automation/dashboard.html:79
+#: app/templates/admin/automation/dashboard.html:95
 msgid "Période par défaut :"
 msgstr "Default period:"
 
-#: app/templates/admin/automation/dashboard.html:79
+#: app/templates/admin/automation/dashboard.html:95
 msgid "6 mois à l'avance."
 msgstr "6 months ahead."
 
+#: app/templates/admin/automation/full.html:13
+msgid "Générer / rafraîchir"
+msgstr "Generate / refresh"
+
 #: app/templates/admin/automation/full.html:19
 msgid ""
-"Configurez l'ordre de rotation et générez automatiquement les astreintes."
-" Les shifts seront générés automatiquement après selon les nouvelles "
-"règles métiers."
+"Générez les astreintes et les shifts, prévisualisez le résultat avant de "
+"l'appliquer, ou recalculez uniquement les shifts en conservant les "
+"astreintes actuelles."
 msgstr ""
-"Configure the rotation order and automatically generate on-calls. Shifts "
-"will be automatically generated afterward according to the new business "
-"rules."
+"Generate on-calls and shifts, preview the result before applying it, or "
+"only recalculate shifts while keeping current on-calls."
 
-#: app/templates/admin/automation/full.html:24
+#: app/templates/admin/automation/full.html:27
+msgid "Période"
+msgstr "Period"
+
+#: app/templates/admin/automation/full.html:33
+msgid "Premier vendredi à partir de cette date"
+msgstr "First Friday from this date"
+
+#: app/templates/admin/automation/full.html:39
+msgid "Dernier jour de la période (6 mois par défaut)"
+msgstr "Last day of the period (6 months by default)"
+
+#: app/templates/admin/automation/full.html:47
 msgid "Utilisateurs éligibles pour les astreintes"
-msgstr "Users eligible for on-calls"
+msgstr "Eligible users for on-calls"
 
-#: app/templates/admin/automation/full.html:28
+#: app/templates/admin/automation/full.html:51
 #, python-format
 msgid "%(count)s utilisateur(s) éligible(s) trouvé(s)"
 msgstr "%(count)s eligible user(s) found"
 
-#: app/templates/admin/automation/full.html:33
+#: app/templates/admin/automation/full.html:56
 msgid "Ordre de rotation actuel :"
 msgstr "Current rotation order:"
 
-#: app/templates/admin/automation/full.html:42
+#: app/templates/admin/automation/full.html:65
 msgid "Glissez-déposez les utilisateurs ci-dessous pour modifier l'ordre."
 msgstr "Drag and drop the users below to change the order."
 
-#: app/templates/admin/automation/full.html:50
+#: app/templates/admin/automation/full.html:69
 msgid "Ordre de rotation"
 msgstr "Rotation order"
 
-#: app/templates/admin/automation/full.html:50
+#: app/templates/admin/automation/full.html:69
 msgid "Glissez-déposez pour réorganiser, cochez pour inclure dans la rotation"
 msgstr "Drag and drop to reorder, check to include in the rotation"
 
-#: app/templates/admin/automation/full.html:52
+#: app/templates/admin/automation/full.html:71
 msgid "Définissez l'ordre de rotation"
 msgstr "Set the rotation order"
 
-#: app/templates/admin/automation/full.html:52
+#: app/templates/admin/automation/full.html:71
 msgid ""
 "en glissant-déposant les utilisateurs. La rotation se fera dans l'ordre "
 "affiché."
@@ -4011,132 +4178,165 @@ msgstr ""
 "by dragging and dropping the users. The rotation will follow the "
 "displayed order."
 
-#: app/templates/admin/automation/full.html:71
-#: app/templates/admin/automation/full.html:92
-#: app/templates/admin/automation/full.html:112
+#: app/templates/admin/automation/full.html:90
+#: app/templates/admin/automation/full.html:111
+#: app/templates/admin/automation/full.html:131
 msgid "Inclure"
 msgstr "Include"
 
-#: app/templates/admin/automation/full.html:128
-msgid "Premier vendredi à partir de cette date"
-msgstr "First Friday from this date"
-
-#: app/templates/admin/automation/full.html:134
-msgid "Dernier jour de la période (6 mois par défaut)"
-msgstr "Last day of the period (6 months by default)"
-
-#: app/templates/admin/automation/full.html:140
+#: app/templates/admin/automation/full.html:143
 msgid "Sauvegarder l'ordre"
 msgstr "Save the order"
 
-#: app/templates/admin/automation/full.html:143
+#: app/templates/admin/automation/full.html:146
 msgid "Générer les astreintes et shifts"
 msgstr "Generate on-calls and shifts"
 
-#: app/templates/admin/automation/full.html:146
+#: app/templates/admin/automation/full.html:149
 msgid "Prévisualiser (Dry Run)"
 msgstr "Preview (Dry Run)"
 
-#: app/templates/admin/automation/full.html:149
+#: app/templates/admin/automation/full.html:156
+msgid "Aucun utilisateur éligible trouvé pour les astreintes."
+msgstr "No eligible user found for on-calls."
+
+#: app/templates/admin/automation/full.html:159
+msgid "Des utilisateurs existent"
+msgstr "Users exist"
+
+#: app/templates/admin/automation/full.html:160
+msgid "Les utilisateurs appartiennent à un groupe configuré dans"
+msgstr "Users belong to a group configured in"
+
+#: app/templates/admin/automation/full.html:160
+msgid "la configuration"
+msgstr "the configuration"
+
+#: app/templates/admin/automation/full.html:178
+#: app/templates/admin/automation/full.html:207
+msgid "Rafraîchir les shifts"
+msgstr "Refresh shifts"
+
+#: app/templates/admin/automation/full.html:179
+msgid ""
+"Recalcule les shifts d'après les astreintes en base, en choisissant ci-"
+"dessous comment traiter les astreintes elles-mêmes."
+msgstr ""
+"Recalculates shifts from the on-calls in the database, choosing below how"
+" to handle the on-calls themselves."
+
+#: app/templates/admin/automation/full.html:185
+msgid "Ne pas toucher aux astreintes"
+msgstr "Don't touch the on-calls"
+
+#: app/templates/admin/automation/full.html:186
+msgid ""
+"Recalcule seulement les shifts, en tenant compte des astreintes actuelles"
+" (même modifiées manuellement)."
+msgstr ""
+"Only recalculates shifts, taking current on-calls into account (even if "
+"manually modified)."
+
+#: app/templates/admin/automation/full.html:192
+msgid "Combler les trous d'astreintes"
+msgstr "Fill on-call gaps"
+
+#: app/templates/admin/automation/full.html:193
+msgid ""
+"Assigne une astreinte uniquement aux semaines qui n'en ont aucune - les "
+"astreintes déjà assignées (même modifiées manuellement) ne sont jamais "
+"touchées."
+msgstr ""
+"Assigns an on-call only to weeks that have none - on-calls already "
+"assigned (even manually modified) are never touched."
+
+#: app/templates/admin/automation/full.html:199
+msgid "Régénérer entièrement les astreintes"
+msgstr "Fully regenerate the on-calls"
+
+#: app/templates/admin/automation/full.html:200
+msgid ""
+"Supprime et régénère toutes les astreintes de la période selon l'ordre de"
+" rotation configuré - écrase les modifications manuelles."
+msgstr ""
+"Deletes and regenerates every on-call for the period according to the "
+"configured rotation order - overwrites manual changes."
+
+#: app/templates/admin/automation/full.html:215
 #: app/templates/auth/profile.html:54
 msgid "Retour"
 msgstr "Back"
 
-#: app/templates/admin/automation/full.html:157
-msgid "Aucun utilisateur éligible trouvé pour les astreintes."
-msgstr "No eligible user found for on-calls."
-
-#: app/templates/admin/automation/full.html:160
-msgid "Des utilisateurs existent"
-msgstr "Users exist"
-
-#: app/templates/admin/automation/full.html:161
-msgid "Les utilisateurs appartiennent à un groupe configuré dans"
-msgstr "Users belong to a group configured in"
-
-#: app/templates/admin/automation/full.html:161
-msgid "la configuration"
-msgstr "the configuration"
-
-#: app/templates/admin/automation/full.html:171
-msgid "Configurer les groupes éligibles"
-msgstr "Configure eligible groups"
-
-#: app/templates/admin/automation/full.html:182
+#: app/templates/admin/automation/full.html:222
 msgid "Comment ça marche ?"
 msgstr "How does it work?"
 
-#: app/templates/admin/automation/full.html:184
-msgid "Définissez l'ordre de rotation :"
-msgstr "Set the rotation order:"
+#: app/templates/admin/automation/full.html:223
+msgid "Génération complète :"
+msgstr "Full generation:"
 
-#: app/templates/admin/automation/full.html:184
+#: app/templates/admin/automation/full.html:225
 msgid ""
-"Attribuez une position (1, 2, 3, ...) à chaque utilisateur pour définir "
-"l'ordre dans lequel ils seront désignés pour les astreintes."
+"Définissez l'ordre de rotation en glissant-déposant les utilisateurs, et "
+"cochez ceux à inclure."
 msgstr ""
-"Assign a position (1, 2, 3, ...) to each user to define the order in "
-"which they will be designated for on-calls."
+"Set the rotation order by dragging and dropping users, and check those to"
+" include."
 
-#: app/templates/admin/automation/full.html:185
-msgid "Cochez les utilisateurs :"
-msgstr "Check the users:"
+#: app/templates/admin/automation/full.html:226
+msgid "Choisissez la période (date de début et de fin)."
+msgstr "Choose the period (start and end date)."
 
-#: app/templates/admin/automation/full.html:185
-msgid "Sélectionnez quels utilisateurs inclure dans la rotation."
-msgstr "Select which users to include in the rotation."
-
-#: app/templates/admin/automation/full.html:186
-msgid "Choisissez la période :"
-msgstr "Choose the period:"
-
-#: app/templates/admin/automation/full.html:186
-msgid "Sélectionnez la date de début et de fin pour la génération."
-msgstr "Select the start and end date for the generation."
-
-#: app/templates/admin/automation/full.html:187
-msgid "Prévisualisez :"
-msgstr "Preview:"
-
-#: app/templates/admin/automation/full.html:187
+#: app/templates/admin/automation/full.html:227
 msgid ""
-"Utilisez le bouton \"Prévisualiser\" pour voir ce qui sera généré sans "
+"Utilisez \"Prévisualiser\" pour voir ce qui sera généré sans rien "
 "sauvegarder."
 msgstr "Use the \"Preview\" button to see what will be generated without saving."
 
-#: app/templates/admin/automation/full.html:188
-msgid "Générez :"
-msgstr "Generate:"
-
-#: app/templates/admin/automation/full.html:188
+#: app/templates/admin/automation/full.html:228
 msgid ""
-"Cliquez sur \"Générer les astreintes et shifts\" pour créer les "
-"astreintes et les shifts en base de données."
+"Cliquez sur \"Générer les astreintes et shifts\" pour créer astreintes et"
+" shifts en base de données. Les astreintes et shifts existants sur la "
+"période sont remplacés."
 msgstr ""
 "Click \"Generate on-calls and shifts\" to create the on-calls and shifts "
-"in the database."
+"in the database. Existing on-calls and shifts on the period are replaced."
 
-#: app/templates/admin/automation/full.html:190
-msgid "Règles appliquées :"
-msgstr "Applied rules:"
+#: app/templates/admin/automation/full.html:230
+msgid "Rafraîchir les shifts :"
+msgstr "Refresh shifts:"
 
-#: app/templates/admin/automation/full.html:192
+#: app/templates/admin/automation/full.html:230
+msgid ""
+"recalcule les shifts d'après les astreintes en base. Choisissez comment "
+"traiter les astreintes elles-mêmes : ne pas y toucher, combler uniquement"
+" les trous, ou les régénérer entièrement."
+msgstr ""
+"recalculates shifts from the on-calls in the database. Choose how to "
+"handle the on-calls themselves: don't touch them, only fill gaps, or "
+"fully regenerate them."
+
+#: app/templates/admin/automation/full.html:231
+msgid "Règles appliquées à la génération des astreintes :"
+msgstr "Rules applied to on-call generation:"
+
+#: app/templates/admin/automation/full.html:233
 msgid "Chaque astreinte commence selon la configuration (par défaut"
 msgstr "Each on-call starts according to the configuration (by default"
 
-#: app/templates/admin/automation/full.html:192
+#: app/templates/admin/automation/full.html:233
 msgid "vendredi à 21h"
 msgstr "Friday at 9pm"
 
-#: app/templates/admin/automation/full.html:192
+#: app/templates/admin/automation/full.html:233
 msgid "et se termine selon la configuration (par défaut"
 msgstr "and ends according to the configuration (by default"
 
-#: app/templates/admin/automation/full.html:192
+#: app/templates/admin/automation/full.html:233
 msgid "vendredi suivant à 07h"
 msgstr "the following Friday at 7am"
 
-#: app/templates/admin/automation/full.html:193
+#: app/templates/admin/automation/full.html:234
 msgid ""
 "La rotation suit l'ordre que vous avez défini et sauvegardé. Cet ordre "
 "est stocké dans la configuration et sera réutilisé pour les prochaines "
@@ -4145,7 +4345,7 @@ msgstr ""
 "The rotation follows the order you defined and saved. This order is "
 "stored in the configuration and will be reused for future generations."
 
-#: app/templates/admin/automation/full.html:194
+#: app/templates/admin/automation/full.html:235
 msgid ""
 "Si un utilisateur n'est pas disponible (congé, astreinte existante), le "
 "système passe au suivant dans la rotation."
@@ -4153,30 +4353,30 @@ msgstr ""
 "If a user is not available (leave, existing on-call), the system moves to"
 " the next one in the rotation."
 
-#: app/templates/admin/automation/full.html:195
+#: app/templates/admin/automation/full.html:236
 msgid ""
 "Un message d'avertissement est affiché si aucun utilisateur n'est "
 "disponible pour une période."
 msgstr "A warning message is displayed if no user is available for a period."
 
-#: app/templates/admin/automation/full.html:196
+#: app/templates/admin/automation/full.html:237
 msgid "Les shifts sont générés automatiquement"
 msgstr "Shifts are automatically generated"
 
-#: app/templates/admin/automation/full.html:196
+#: app/templates/admin/automation/full.html:237
 msgid ""
-"après les astreintes selon les nouvelles règles métiers (13h-21h pour "
-"l'astreinte, rotation des créneaux, etc.)."
+"après les astreintes selon les règles métiers (13h-21h pour l'astreinte, "
+"rotation des créneaux, etc.)."
 msgstr ""
-"after on-calls according to the new business rules (1pm-9pm for the on-"
-"call person, slot rotation, etc.)."
+"after on-calls according to the business rules (1pm-9pm for the on-call "
+"person, slot rotation, etc.)."
 
-#: app/templates/admin/automation/full.html:199
+#: app/templates/admin/automation/full.html:240
 #: app/templates/auth/ics_token.html:150
 msgid "Note :"
 msgstr "Note:"
 
-#: app/templates/admin/automation/full.html:199
+#: app/templates/admin/automation/full.html:240
 msgid ""
 "L'ordre de rotation est sauvegardé automatiquement dans la base de "
 "données lorsque vous cliquez sur \"Sauvegarder l'ordre\"."
@@ -4252,103 +4452,6 @@ msgstr "Confirm and save everything"
 #: app/templates/admin/automation/full_dry_run.html:172
 msgid "Retour à la configuration"
 msgstr "Back to configuration"
-
-#: app/templates/admin/automation/refresh_shifts.html:3
-#: app/templates/admin/automation/refresh_shifts.html:15
-#: app/templates/admin/automation/refresh_shifts.html:59
-msgid "Rafraîchir les Shifts"
-msgstr "Refresh Shifts"
-
-#: app/templates/admin/automation/refresh_shifts.html:11
-msgid "Rafraîchir les shifts"
-msgstr "Refresh shifts"
-
-#: app/templates/admin/automation/refresh_shifts.html:22
-msgid ""
-"Cette page permet de recalculer tous les shifts pour une période donnée "
-"en tenant compte des"
-msgstr ""
-"This page allows you to recalculate all shifts for a given period, taking"
-" into account"
-
-#: app/templates/admin/automation/refresh_shifts.html:22
-msgid "astreintes actuelles"
-msgstr "current on-calls"
-
-#: app/templates/admin/automation/refresh_shifts.html:22
-msgid "même modifiées manuellement"
-msgstr "even if manually modified"
-
-#: app/templates/admin/automation/refresh_shifts.html:25
-msgid "Les nouvelles règles métiers seront appliquées :"
-msgstr "The new business rules will be applied:"
-
-#: app/templates/admin/automation/refresh_shifts.html:28
-msgid ""
-"Créneau 13h-21h pour la personne d'astreinte (si elle fait partie d'un "
-"groupe schedule)"
-msgstr "1pm-9pm slot for the on-call person (if part of a schedule group)"
-
-#: app/templates/admin/automation/refresh_shifts.html:29
-msgid "Rotation : 13h-21h → 07h-15h la semaine suivante"
-msgstr "Rotation: 1pm-9pm → 7am-3pm the following week"
-
-#: app/templates/admin/automation/refresh_shifts.html:30
-msgid "09h-17h par défaut pour les autres"
-msgstr "9am-5pm by default for others"
-
-#: app/templates/admin/automation/refresh_shifts.html:31
-msgid "Cas spécial avec 2 personnes : la non-astreinte passe en 07h-15h"
-msgstr "Special case with 2 people: the person not on-call switches to 7am-3pm"
-
-#: app/templates/admin/automation/refresh_shifts.html:32
-msgid "Contrainte légale : 2 semaines minimum entre deux astreintes"
-msgstr "Legal constraint: 2 weeks minimum between two on-calls"
-
-#: app/templates/admin/automation/refresh_shifts.html:41
-msgid "Période"
-msgstr "Period"
-
-#: app/templates/admin/automation/refresh_shifts.html:63
-#: app/templates/admin/automation/status.html:51
-msgid "Retour au tableau de bord"
-msgstr "Back to dashboard"
-
-#: app/templates/admin/automation/status.html:9
-msgid "État"
-msgstr "Status"
-
-#: app/templates/admin/automation/status.html:12
-msgid "État de l'automatisation"
-msgstr "Automation status"
-
-#: app/templates/admin/automation/status.html:16
-msgid "Astreintes existantes"
-msgstr "Existing on-calls"
-
-#: app/templates/admin/automation/status.html:20
-msgid "Shifts existants"
-msgstr "Existing shifts"
-
-#: app/templates/admin/automation/status.html:24
-msgid "Utilisateurs éligibles (astreintes)"
-msgstr "Eligible users (on-calls)"
-
-#: app/templates/admin/automation/status.html:28
-msgid "Utilisateurs éligibles (shifts)"
-msgstr "Eligible users (shifts)"
-
-#: app/templates/admin/automation/status.html:35
-msgid "Prochaine astreinte disponible"
-msgstr "Next available on-call"
-
-#: app/templates/admin/automation/status.html:39
-msgid "La prochaine astreinte peut être générée à partir du"
-msgstr "The next on-call can be generated starting from"
-
-#: app/templates/admin/automation/status.html:43
-msgid "Aucune date disponible trouvée."
-msgstr "No available date found."
 
 #: app/templates/admin/backups/dashboard.html:13
 msgid "Actions sauvegardes"
@@ -4627,8 +4730,8 @@ msgid "Votre mot de passe"
 msgstr "Your password"
 
 #: app/templates/auth/login.html:46
-msgid "Votre mot de passe doit contenir au moins 8 caractères."
-msgstr "Your password must contain at least 8 characters."
+msgid "Votre mot de passe doit contenir au moins 12 caractères."
+msgstr "Your password must contain at least 12 characters."
 
 #: app/templates/auth/login.html:52
 msgid "Se souvenir de moi"
@@ -4753,19 +4856,32 @@ msgstr "External notifications are currently disabled organization-wide."
 msgid "Modifier mon profil"
 msgstr "Edit my profile"
 
-#: app/templates/auth/update_profile.html:27
+#: app/templates/auth/update_profile.html:35
 msgid "Mot de passe actuel"
 msgstr "Current password"
 
-#: app/templates/auth/update_profile.html:29
+#: app/templates/auth/update_profile.html:39
 msgid "Obligatoire pour changer le mot de passe"
 msgstr "Required to change the password"
 
-#: app/templates/auth/update_profile.html:31
+#: app/templates/auth/update_profile.html:42
 msgid "Obligatoire si vous souhaitez changer votre mot de passe"
 msgstr "Required if you want to change your password"
 
-#: app/templates/auth/update_profile.html:42
+#: app/templates/auth/update_profile.html:52
+#: app/templates/auth/update_profile.html:66
+msgid "Obligatoire"
+msgstr "Required"
+
+#: app/templates/auth/update_profile.html:56
+msgid ""
+"Au moins 12 caractères, avec au moins 3 des 4 types suivants : "
+"minuscules, majuscules, chiffres, caractères spéciaux."
+msgstr ""
+"At least 12 characters, with at least 3 of the following 4 types: "
+"lowercase, uppercase, digits, special characters."
+
+#: app/templates/auth/update_profile.html:62
 msgid "Confirmer le mot de passe"
 msgstr "Confirm password"
 
@@ -4881,17 +4997,46 @@ msgstr "✅ %(count)s shifts generated for %(date)s"
 msgid "⚠️ Aucun shift généré pour le %(date)s"
 msgstr "⚠️ No shift generated for %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:546
+#: app/utils/automation/advanced_shift_automation.py:478
+#, python-format
+msgid ""
+"📋 Prévisualisation : %(count)s shifts seraient générés pour la période du"
+" %(start)s au %(end)s"
+msgstr ""
+"📋 Preview: %(count)s shifts would be generated for the period %(start)s "
+"to %(end)s"
+
+#: app/utils/automation/advanced_shift_automation.py:485
+#, python-format
+msgid "🎉 %(count)s shifts générés pour la période du %(start)s au %(end)s"
+msgstr "🎉 %(count)s shifts generated for the period %(start)s to %(end)s"
+
+#: app/utils/automation/advanced_shift_automation.py:492
+#, python-format
+msgid "(%(with_shifts)s jours avec shifts, %(skipped)s jours sans)"
+msgstr "(%(with_shifts)s days with shifts, %(skipped)s days without)"
+
+#: app/utils/automation/advanced_shift_automation.py:582
 #, python-format
 msgid "🗑️ %(count)s astreintes supprimées pour l'utilisateur %(user_id)s"
 msgstr "🗑️ %(count)s on-calls deleted for user %(user_id)s"
 
-#: app/utils/automation/advanced_shift_automation.py:592
+#: app/utils/automation/advanced_shift_automation.py:628
+#: app/utils/automation/advanced_shift_automation.py:659
 #, python-format
 msgid "🗑️ %(count)s shifts supprimés pour le %(date)s"
 msgstr "🗑️ %(count)s shifts deleted for %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:631
+#: app/utils/automation/advanced_shift_automation.py:676
+#, python-format
+msgid ""
+"❌ Échec de la régénération du %(date)s : %(error)s - ce jour n'a pas été "
+"modifié, action manuelle nécessaire"
+msgstr ""
+"❌ Failed to regenerate %(date)s: %(error)s - this day was not changed, "
+"manual action required"
+
+#: app/utils/automation/advanced_shift_automation.py:718
 #, python-format
 msgid ""
 "🗑️ %(count)s astreinte(s) supplémentaire(s) supprimée(s) dans la période "
@@ -4900,12 +5045,23 @@ msgstr ""
 "🗑️ %(count)s extra on-call(s) deleted in the extended period before "
 "regeneration"
 
-#: app/utils/automation/advanced_shift_automation.py:651
+#: app/utils/automation/advanced_shift_automation.py:738
 #, python-format
 msgid "🔄 %(count)s astreintes régénérées pour la période %(start)s - %(end)s"
 msgstr "🔄 %(count)s on-calls regenerated for the period %(start)s - %(end)s"
 
-#: app/utils/automation/oncall_automation.py:289
+#: app/utils/automation/advanced_shift_automation.py:748
+#, python-format
+msgid ""
+"❌ Échec de la régénération des astreintes pour la période %(start)s - "
+"%(end)s : %(error)s - les astreintes de cette période n'ont pas été "
+"modifiées, action manuelle nécessaire"
+msgstr ""
+"❌ Failed to regenerate on-calls for the period %(start)s - %(end)s: "
+"%(error)s - the on-calls for this period were not changed, manual action "
+"required"
+
+#: app/utils/automation/oncall_automation.py:310
 #, python-format
 msgid ""
 "⚠️ Aucune astreinte générée pour le %(date)s (aucun utilisateur ne "
@@ -4915,10 +5071,40 @@ msgstr ""
 "⚠️ No on-call generated for %(date)s (no user meets the legal 2-week "
 "spacing constraint between two on-calls) - manual assignment required."
 
-#: app/utils/automation/oncall_automation.py:330
+#: app/utils/automation/oncall_automation.py:337
 #, python-format
 msgid "✅ %(count)s astreintes générées."
 msgstr "✅ %(count)s on-calls generated."
+
+#: app/utils/automation/oncall_automation.py:543
+#: app/utils/automation/oncall_automation.py:589
+msgid "Aucun utilisateur éligible pour les astreintes."
+msgstr "No eligible user for on-calls."
+
+#: app/utils/automation/oncall_automation.py:547
+#: app/utils/automation/oncall_automation.py:593
+msgid "Impossible de déterminer l'ordre de rotation."
+msgstr "Unable to determine the rotation order."
+
+#: app/utils/automation/oncall_automation.py:619
+msgid "✅ Aucune astreinte manquante sur cette période."
+msgstr "✅ No missing on-calls for this period."
+
+#: app/utils/export/ics_exporter.py:60
+#, python-format
+msgid "Shift %(type)s - %(name)s"
+msgstr "Shift %(type)s - %(name)s"
+
+#: app/utils/export/ics_exporter.py:65
+#, python-format
+msgid "Type: %(type)s"
+msgstr "Type: %(type)s"
+
+#: app/utils/export/ics_exporter.py:66 app/utils/export/ics_exporter.py:72
+#: app/utils/export/ics_exporter.py:77
+#, python-format
+msgid "Utilisateur: %(name)s"
+msgstr "User: %(name)s"
 
 #: app/utils/helpers/js_translations.py:20
 msgid "Désactiver le mode édition"
@@ -5061,6 +5247,55 @@ msgstr "Light theme enabled"
 msgid "Copié !"
 msgstr "Copied!"
 
+#: app/utils/helpers/js_translations.py:71
+msgid "1 erreur de formulaire. Veuillez la corriger."
+msgstr "1 form error. Please fix it."
+
+#: app/utils/helpers/js_translations.py:73
+#, python-format
+msgid "%(count)s erreurs de formulaire. Veuillez les corriger."
+msgstr "%(count)s form errors. Please fix them."
+
+#: app/utils/helpers/password_helpers.py:123
+#, python-format
+msgid "Le mot de passe doit contenir au moins %(min_length)s caractères."
+msgstr "The password must contain at least %(min_length)s characters."
+
+#: app/utils/helpers/password_helpers.py:128
+#, python-format
+msgid "Le mot de passe ne doit pas dépasser %(max_length)s caractères."
+msgstr "The password must not exceed %(max_length)s characters."
+
+#: app/utils/helpers/password_helpers.py:138
+msgid ""
+"Le mot de passe doit contenir au moins 3 des 4 types de caractères "
+"suivants : minuscules, majuscules, chiffres, caractères spéciaux."
+msgstr ""
+"The password must contain at least 3 of the following 4 character types: "
+"lowercase, uppercase, digits, special characters."
+
+#: app/utils/helpers/password_helpers.py:147
+msgid ""
+"Ce mot de passe est trop courant et facilement devinable. Choisissez-en "
+"un autre."
+msgstr "This password is too common and easily guessable. Choose another one."
+
+#: app/utils/helpers/password_helpers.py:153
+msgid ""
+"Le mot de passe ne doit pas contenir de suite de caractères évidente (ex "
+": 1234, azerty, abcd)."
+msgstr ""
+"The password must not contain an obvious character sequence (e.g. 1234, "
+"azerty, abcd)."
+
+#: app/utils/helpers/password_helpers.py:160
+msgid "Le mot de passe ne doit pas contenir votre nom."
+msgstr "The password must not contain your name."
+
+#: app/utils/helpers/password_helpers.py:165
+msgid "Le mot de passe ne doit pas contenir votre adresse email."
+msgstr "The password must not contain your email address."
+
 #~ msgid "En attente"
 #~ msgstr "Pending"
 
@@ -5075,4 +5310,205 @@ msgstr "Copied!"
 
 #~ msgid "Leviia Schedule - Gestion des plannings, astreintes et congés d'équipe."
 #~ msgstr "Leviia Schedule - Team shift, on-call, and leave management."
+
+#~ msgid ""
+#~ "Générer les astreintes. Les shifts "
+#~ "seront automatiquement générés selon les "
+#~ "règles métiers."
+#~ msgstr ""
+#~ "Generate on-calls. Shifts will be "
+#~ "automatically generated according to the "
+#~ "business rules."
+
+#~ msgid "Lancer"
+#~ msgstr "Run"
+
+#~ msgid ""
+#~ "Configurez l'ordre de rotation et "
+#~ "générez automatiquement les astreintes. Les"
+#~ " shifts seront générés automatiquement "
+#~ "après selon les nouvelles règles "
+#~ "métiers."
+#~ msgstr ""
+#~ "Configure the rotation order and "
+#~ "automatically generate on-calls. Shifts "
+#~ "will be automatically generated afterward "
+#~ "according to the new business rules."
+
+#~ msgid "Utilisateurs éligibles pour les astreintes"
+#~ msgstr "Users eligible for on-calls"
+
+#~ msgid "Configurer les groupes éligibles"
+#~ msgstr "Configure eligible groups"
+
+#~ msgid "Définissez l'ordre de rotation :"
+#~ msgstr "Set the rotation order:"
+
+#~ msgid ""
+#~ "Attribuez une position (1, 2, 3, "
+#~ "...) à chaque utilisateur pour définir"
+#~ " l'ordre dans lequel ils seront "
+#~ "désignés pour les astreintes."
+#~ msgstr ""
+#~ "Assign a position (1, 2, 3, ...)"
+#~ " to each user to define the "
+#~ "order in which they will be "
+#~ "designated for on-calls."
+
+#~ msgid "Cochez les utilisateurs :"
+#~ msgstr "Check the users:"
+
+#~ msgid "Sélectionnez quels utilisateurs inclure dans la rotation."
+#~ msgstr "Select which users to include in the rotation."
+
+#~ msgid "Sélectionnez la date de début et de fin pour la génération."
+#~ msgstr "Select the start and end date for the generation."
+
+#~ msgid "Prévisualisez :"
+#~ msgstr "Preview:"
+
+#~ msgid "Générez :"
+#~ msgstr "Generate:"
+
+#~ msgid "Règles appliquées :"
+#~ msgstr "Applied rules:"
+
+#~ msgid "Rafraîchir les Shifts"
+#~ msgstr "Refresh Shifts"
+
+#~ msgid "Les nouvelles règles métiers seront appliquées :"
+#~ msgstr "The new business rules will be applied:"
+
+#~ msgid "Contrainte légale : 2 semaines minimum entre deux astreintes"
+#~ msgstr "Legal constraint: 2 weeks minimum between two on-calls"
+
+#~ msgid "Génération complète"
+#~ msgstr "Full generation"
+
+#~ msgid "Rafraîchir shifts"
+#~ msgstr "Refresh shifts"
+
+#~ msgid ""
+#~ "Choisissez un mode ci-dessous : "
+#~ "génération complète (astreintes + shifts) "
+#~ "ou rafraîchissement des shifts uniquement "
+#~ "en conservant les astreintes actuelles."
+#~ msgstr ""
+#~ "Choose a mode below: full generation "
+#~ "(on-calls + shifts) or shifts-only"
+#~ " refresh, keeping current on-calls."
+
+#~ msgid ""
+#~ "Génère les astreintes selon l'ordre de"
+#~ " rotation défini ci-dessous, puis "
+#~ "génère automatiquement les shifts selon "
+#~ "les règles métiers. Les astreintes et"
+#~ " shifts existants sur la période sont"
+#~ " remplacés."
+#~ msgstr ""
+#~ "Generates on-calls according to the "
+#~ "rotation order defined below, then "
+#~ "automatically generates shifts according to"
+#~ " the business rules. Existing on-"
+#~ "calls and shifts on the period are"
+#~ " replaced."
+
+#~ msgid "Rafraîchir shifts uniquement"
+#~ msgstr "Refresh shifts only"
+
+#~ msgid "Recalcule uniquement les shifts sur la période, en tenant compte des"
+#~ msgstr "Only recalculates shifts for the period, taking into account"
+
+#~ msgid "astreintes actuelles"
+#~ msgstr "current on-calls"
+
+#~ msgid "même modifiées manuellement"
+#~ msgstr "even if manually modified"
+
+#~ msgid "Les astreintes elles-mêmes ne sont pas touchées."
+#~ msgstr "On-calls themselves are not touched."
+
+#~ msgid ""
+#~ "Utile après avoir modifié une astreinte"
+#~ " à la main, sans vouloir régénérer"
+#~ " toute la rotation."
+#~ msgstr ""
+#~ "Useful after manually editing an on-"
+#~ "call, without wanting to regenerate the"
+#~ " whole rotation."
+
+#~ msgid ""
+#~ "Créneau 13h-21h pour la personne "
+#~ "d'astreinte (si elle fait partie d'un"
+#~ " groupe schedule)"
+#~ msgstr "1pm-9pm slot for the on-call person (if part of a schedule group)"
+
+#~ msgid "Rotation : 13h-21h → 07h-15h la semaine suivante"
+#~ msgstr "Rotation: 1pm-9pm → 7am-3pm the following week"
+
+#~ msgid "09h-17h par défaut pour les autres"
+#~ msgstr "9am-5pm by default for others"
+
+#~ msgid "Cas spécial avec 2 personnes : la non-astreinte passe en 07h-15h"
+#~ msgstr "Special case with 2 people: the person not on-call switches to 7am-3pm"
+
+#~ msgid "Rafraîchir shifts uniquement :"
+#~ msgstr "Refresh shifts only:"
+
+#~ msgid "État"
+#~ msgstr "Status"
+
+#~ msgid "État de l'automatisation"
+#~ msgstr "Automation status"
+
+#~ msgid "Astreintes existantes"
+#~ msgstr "Existing on-calls"
+
+#~ msgid "Shifts existants"
+#~ msgstr "Existing shifts"
+
+#~ msgid "Utilisateurs éligibles (shifts)"
+#~ msgstr "Eligible users (shifts)"
+
+#~ msgid "La prochaine astreinte peut être générée à partir du"
+#~ msgstr "The next on-call can be generated starting from"
+
+#~ msgid "Retour au tableau de bord"
+#~ msgstr "Back to dashboard"
+
+#~ msgid ""
+#~ "\"Rafraîchir les shifts\" recalcule uniquement"
+#~ " les shifts d'après les astreintes "
+#~ "déjà en base (même modifiées "
+#~ "manuellement), sans toucher aux astreintes "
+#~ "elles-mêmes."
+#~ msgstr ""
+#~ "\"Refresh shifts\" only recalculates shifts"
+#~ " from the on-calls already in "
+#~ "the database (even if manually "
+#~ "modified), without touching the on-calls"
+#~ " themselves."
+
+#~ msgid ""
+#~ "Pas d'utilisateur éligible pour les "
+#~ "astreintes, mais vous pouvez tout de "
+#~ "même recalculer les shifts d'après les"
+#~ " astreintes déjà en base :"
+#~ msgstr ""
+#~ "No eligible user for on-calls, but"
+#~ " you can still recalculate shifts "
+#~ "from the on-calls already in the"
+#~ " database:"
+
+#~ msgid "Laisser vide pour un mot de passe par défaut"
+#~ msgstr "Leave empty for a default password"
+
+#~ msgid ""
+#~ "Si vous ne spécifiez pas de mot"
+#~ " de passe, un mot de passe par"
+#~ " défaut sera généré (password123)."
+#~ msgstr ""
+#~ "If you do not specify a password,"
+#~ " a default password will be generated"
+#~ " (password123)."
 

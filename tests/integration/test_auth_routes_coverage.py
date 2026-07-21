@@ -49,8 +49,8 @@ class TestUpdateProfile:
             data={
                 "name": "Admin",
                 "email": "login@example.com",
-                "new_password": "newpass123",
-                "confirm_password": "newpass123",
+                "new_password": "Correct-Horse-9",
+                "confirm_password": "Correct-Horse-9",
             },
             follow_redirects=True,
         )
@@ -64,8 +64,8 @@ class TestUpdateProfile:
                 "name": "Admin",
                 "email": "login@example.com",
                 "current_password": "wrong-password",
-                "new_password": "newpass123",
-                "confirm_password": "newpass123",
+                "new_password": "Correct-Horse-9",
+                "confirm_password": "Correct-Horse-9",
             },
             follow_redirects=True,
         )
@@ -94,8 +94,8 @@ class TestUpdateProfile:
                 "name": "Admin Renamed",
                 "email": "login@example.com",
                 "current_password": "loginpassword",
-                "new_password": "newpass123",
-                "confirm_password": "newpass123",
+                "new_password": "Correct-Horse-9",
+                "confirm_password": "Correct-Horse-9",
             },
             follow_redirects=True,
         )
@@ -109,8 +109,8 @@ class TestUpdateProfile:
                 "name": "Admin",
                 "email": "login@example.com",
                 "current_password": "loginpassword",
-                "new_password": "newpass123",
-                "confirm_password": "newpass123",
+                "new_password": "Correct-Horse-9",
+                "confirm_password": "Correct-Horse-9",
             },
             follow_redirects=True,
         )

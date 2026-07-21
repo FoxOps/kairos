@@ -42,6 +42,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // app.get_time_format() and base.html's <body data-time-format>) -
     // drives FullCalendar's own event/slot time rendering below.
     const hour12 = (document.body.dataset.timeFormat || '').includes('%I');
+    // <html lang="..."> reflects get_locale() (base.html) - "en" needs no
+    // extra asset (FullCalendar's own default), "fr" needs the locale
+    // file loaded in index.html (locales/fr.global.min.js). Same
+    // fallback rule as date-picker.js's currentLocale().
+    const calendarLocale = document.documentElement.lang === 'en' ? 'en' : 'fr';
     const eventsDataEl = document.getElementById('calendar-events-data');
     const events = eventsDataEl ? JSON.parse(eventsDataEl.textContent) : [];
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
@@ -154,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function () {
             right: 'dayGridMonth,timeGridWeek,timeGridDay'
         },
         events: events,
-        locale: 'fr',
+        locale: calendarLocale,
         firstDay: 1,
         eventTimeFormat: {
             hour: '2-digit',

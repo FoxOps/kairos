@@ -56,7 +56,7 @@ class TestAdminCreatesUserAndAssignsShift:
                 "name": "Employé E2E",
                 "email": "employe-e2e@test.com",
                 "group_id": str(group_id),
-                "password": "motdepasse123",
+                "password": "Correct-Horse-9",
             },
             follow_redirects=True,
         )
@@ -91,11 +91,30 @@ class TestAdminCreatesUserAndAssignsShift:
         assert resp.status_code == 200
         assert b"Shifts ajoutes avec succes" in resp.data or b"ajout" in resp.data
 
-        # 4. Log out of the admin account, log in as the employee
+        # 4. Log out of the admin account, log in as the employee - an
+        # admin-created account is forced through a password change on
+        # first login (ANSSI-PG-078 section 4: a password chosen *for*
+        # the user, not by them, must be replaced - see
+        # User.must_change_password), so this has to happen before the
+        # employee can reach anything else.
         client.get("/logout", follow_redirects=True)
         resp = client.post(
             "/login",
-            data={"email": "employe-e2e@test.com", "password": "motdepasse123"},
+            data={"email": "employe-e2e@test.com", "password": "Correct-Horse-9"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        assert b"nouveau mot de passe avant de continuer" in resp.data
+
+        resp = client.post(
+            "/profile/update",
+            data={
+                "name": "Employé E2E",
+                "email": "employe-e2e@test.com",
+                "current_password": "Correct-Horse-9",
+                "new_password": "Even-Stronger-42",
+                "confirm_password": "Even-Stronger-42",
+            },
             follow_redirects=True,
         )
         assert resp.status_code == 200

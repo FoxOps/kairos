@@ -7,6 +7,8 @@ the FullCalendar-based views (index page, /api/shifts).
 
 from datetime import datetime, timedelta
 
+from flask_babel import gettext as _
+
 from app.repositories.leave_repository import LeaveRepository
 from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository
@@ -66,7 +68,7 @@ class ScheduleService:
             events.append(
                 {
                     "id": f"oncall-{oncall.id}",
-                    "title": f"Astreinte - {oncall.user.name}",
+                    "title": _("Astreinte - %(name)s", name=oncall.user.name),
                     "start": to_viewer_timezone(oncall.start_time, viewer).isoformat(),
                     "end": to_viewer_timezone(oncall.end_time, viewer).isoformat(),
                     "className": "fc-event-oncall",
@@ -78,7 +80,7 @@ class ScheduleService:
             events.append(
                 {
                     "id": f"leave-{leave.id}",
-                    "title": f"Conge - {leave.user.name}",
+                    "title": _("Congé - %(name)s", name=leave.user.name),
                     "start": leave.start_date.isoformat(),
                     "end": (leave.end_date + timedelta(days=1)).isoformat(),
                     "className": "fc-event-leave",

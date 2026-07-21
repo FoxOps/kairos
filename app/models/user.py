@@ -77,6 +77,13 @@ class User(BaseModel, UserMixin):
             SettingsService.get_apprise_notifications_enabled() is on.
         apprise_oncall_target_ids: Same as above, for the weekly
             on-call reminder
+        must_change_password: Forces the user through auth.update_profile
+            before any other page on their next login - set whenever a
+            password is chosen *for* the user rather than by them (default
+            admin bootstrap, an admin creating/resetting an account). Only
+            meaningful for local (basic-auth) accounts: OIDC users never
+            have a local password to change, and nothing in the OIDC sync
+            path ever sets this flag - see app/auth/user_manager.py.
         shifts: Relationship to Shift model
         on_calls: Relationship to OnCall model
         leaves: Relationship to Leave model
@@ -94,6 +101,7 @@ class User(BaseModel, UserMixin):
     # (confirmed: DataError "Data too long for column" on MariaDB, even
     # for the very first default-admin creation on a fresh install).
     password_hash = db.Column(db.String(255))
+    must_change_password = db.Column(db.Boolean, nullable=False, default=False)
     is_admin = db.Column(db.Boolean, default=False)
     group_id = db.Column(
         db.Integer, db.ForeignKey("groups.id"), nullable=False, default=1, index=True

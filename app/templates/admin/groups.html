@@ -67,11 +67,14 @@
                                 </a>
                             </div>
                             <div class="tooltip" data-tip="{{ _("Supprimer le groupe") }}">
-                                <a class="btn btn-error btn-sm js-confirm-delete" href="{{ url_for('admin.delete_group', group_id=group.id) }}"
-                                   data-confirm-message="{{ _("Êtes-vous sûr de vouloir supprimer le groupe %(name)s ?", name=group.name) }}"
-                                   aria-label="{{ _("Supprimer le groupe %(name)s", name=group.name) }}" title="{{ _("Supprimer le groupe") }}">
-                                    <i class="fas fa-trash" aria-hidden="true"></i>
-                                </a>
+                                <form method="POST" action="{{ url_for('admin.delete_group', group_id=group.id) }}" class="mb-0">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-error btn-sm js-confirm-delete"
+                                            data-confirm-message="{{ _("Êtes-vous sûr de vouloir supprimer le groupe %(name)s ?", name=group.name) }}"
+                                            aria-label="{{ _("Supprimer le groupe %(name)s", name=group.name) }}" title="{{ _("Supprimer le groupe") }}">
+                                        <i class="fas fa-trash" aria-hidden="true"></i>
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </td>

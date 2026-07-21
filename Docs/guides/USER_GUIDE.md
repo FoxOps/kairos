@@ -2,7 +2,7 @@
 
 > **Version**: 1.0.0 - User Documentation
 > **Last updated**: June 2026
-> **Application**: Kairos v1.0.0-rc1 (`app/utils/health.py::APP_VERSION_DEFAULT`, also shown at `/version` and in the app footer)
+> **Application**: Kairos v1.0.0-rc2 (`app/utils/health.py::APP_VERSION_DEFAULT`, also shown at `/version` and in the app footer)
 
 ---
 
@@ -231,9 +231,16 @@ Full list: [`reference/ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIA
    - **Name**: Your full name
    - **Email**: Your email address
    - **Current password**: Required to change your password
-   - **New password**: New password (optional)
+   - **New password**: New password (optional, unless you're asked to
+     change it - see below; must be at least 12 characters with a mix of
+     3 of the 4 character types: lowercase/uppercase/digits/symbols)
    - **Confirm password**: Confirmation of the new password
 3. Click **"Save"**
+
+> ⚠️ If your account was just created or reset by an administrator, you
+> must set a new password before you can use any other page - this form
+> is where you do it, and in that case the password fields are mandatory,
+> not optional. Only applies to local accounts, not SSO/OIDC logins.
 
 #### Generating an ICS Token
 

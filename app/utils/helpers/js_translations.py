@@ -68,4 +68,8 @@ def get_js_translations() -> dict[str, str]:
         "dark_theme_enabled": _("Thème sombre activé"),
         "light_theme_enabled": _("Thème clair activé"),
         "copied": _("Copié !"),
+        "form_error_singular": _("1 erreur de formulaire. Veuillez la corriger."),
+        "form_error_plural": _(
+            "%(count)s erreurs de formulaire. Veuillez les corriger."
+        ),
     }

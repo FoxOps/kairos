@@ -42,12 +42,29 @@ def add_user():
             return render_template("admin/add_user.html", groups=groups)
 
         try:
-            user, error = UserService.create(name, email, int(group_id), password)
+            user, error, generated_password = UserService.create(
+                name, email, int(group_id), password
+            )
             if error:
                 flash(error, "danger")
                 return render_template("admin/add_user.html", groups=groups)
 
             flash(_("Utilisateur ajouté avec succès !"), "success")
+            if generated_password:
+                # One-time reveal, same pattern as ServiceAccount tokens
+                # (see admin_service_account_routes.py) - this value is
+                # never stored anywhere else, so this flash is the only
+                # chance to hand it to the admin.
+                flash(
+                    _(
+                        "Mot de passe généré automatiquement : %(password)s "
+                        "(à communiquer à l'utilisateur - il devra le "
+                        "changer à sa première connexion, ce mot de passe "
+                        "ne sera plus jamais affiché).",
+                        password=generated_password,
+                    ),
+                    "warning",
+                )
             return redirect(url_for("admin.list_users"))
         except Exception as e:
             db.session.rollback()

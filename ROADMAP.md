@@ -1,6 +1,6 @@
 # Roadmap
 
-**Current version: 1.0.0-rc1** — feature-complete, tested (1340+
+**Current version: 1.0.0-rc2** — feature-complete, tested (1390+
 automated tests), and used for real team scheduling.
 
 ## ✅ Done
@@ -51,14 +51,27 @@ automated tests), and used for real team scheduling.
 
 ## 🔧 In progress
 
-**Production-readiness audit** — a systematic pass over the whole
-codebase ahead of a stable 1.0 release: dependency updates, dead-code
-removal, N+1/SQL query optimization, i18n completeness (French *and*
-English), documentation accuracy (this file included — every doc is
-being re-verified against the actual code, not assumed correct),
-security audit, load testing, and a dedicated bug hunt. Landing as a
-series of themed, individually reviewed pull requests rather than one
-large change. Version stays `1.0.0-rc1` throughout.
+**1.0.0-rc2** — addressing feedback reported against `1.0.0-rc1`
+(tagged, see the `1.0.0-RC1` tag/release). The `1.0.0-rc1` production-readiness
+audit itself is done: dependency updates, dead-code removal, N+1/SQL
+query optimization, i18n completeness (French *and* English),
+documentation accuracy, a full security audit plus a live penetration
+test (2 real findings fixed — see `report/SECURITY_AUDIT_v1.1.md` and
+`report/PENTEST_v1.md`), load testing, and a dedicated bug hunt — landed
+as a series of themed, individually reviewed pull requests.
+
+Since then, landed on `1.0.0-RC2` from real user feedback (PR #159-165):
+per-day SAVEPOINT isolation so one bad day in a leave rebalance no longer
+blanks the whole ±30-day window; a backtracking on-call scheduler that
+maximizes filled weeks instead of a first-fit greedy pick, plus a fixed
+spacing-check bug that broke on partial-window regeneration; a merged
+automation dashboard with a proactive on-call gap alert; an ANSSI-PG-078
+password policy (local auth only, forced change on first login); a fixed
+405 on user/group deletion; and a full i18n audit (10 hardcoded-string
+sites fixed, `fr.po` now fully populated instead of relying on gettext's
+empty-string fallback). Re-validated with a fresh full test run (1394
+tests), lint/type/format checks, a bandit + pip-audit security pass, and
+a load-test re-run (`report/LOAD_TEST_v1.2.md`) — no regression found.
 
 ## 🔭 Future ideas
 

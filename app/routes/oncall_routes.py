@@ -163,14 +163,17 @@ def delete_all_oncalls_for_user(user_id):
 def api_delete_oncall(oncall_id):
     """API endpoint to delete an on-call."""
     if not OnCallRepository.get_by_id(oncall_id):
-        return jsonify({"success": False, "error": "Astreinte non trouvée"}), 404
+        return jsonify({"success": False, "error": _("Astreinte non trouvée")}), 404
 
     try:
         OnCallService.api_delete(oncall_id)
         return jsonify({"success": True, "message": "Astreinte supprimée avec succès"})
     except Exception as e:
         db.session.rollback()
-        return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
+        return (
+            jsonify({"success": False, "error": _("Erreur: %(val0)s", val0=str(e))}),
+            500,
+        )
 
 
 @main_bp.route("/api/oncall/<int:oncall_id>", methods=["PATCH", "PUT"])
@@ -180,18 +183,21 @@ def api_update_oncall(oncall_id):
     """API endpoint to update an on-call via drag & drop."""
     oncall_obj = OnCallRepository.get_by_id(oncall_id)
     if not oncall_obj:
-        return jsonify({"success": False, "error": "Astreinte non trouvée"}), 404
+        return jsonify({"success": False, "error": _("Astreinte non trouvée")}), 404
 
     data = request.get_json()
     if not data:
-        return jsonify({"success": False, "error": "Aucune donnée reçue"}), 400
+        return jsonify({"success": False, "error": _("Aucune donnée reçue")}), 400
 
     try:
         new_start_str = data.get("start")
         new_end_str = data.get("end")
 
         if not new_start_str:
-            return jsonify({"success": False, "error": "Date de début manquante"}), 400
+            return (
+                jsonify({"success": False, "error": _("Date de début manquante")}),
+                400,
+            )
 
         # FullCalendar's timeZone: 'UTC' (fullcalendar-config.js) means
         # these strings carry the viewer's own wall-clock digits, not a
@@ -234,9 +240,17 @@ def api_update_oncall(oncall_id):
     except ValueError as e:
         db.session.rollback()
         return (
-            jsonify({"success": False, "error": f"Format de date invalide: {str(e)}"}),
+            jsonify(
+                {
+                    "success": False,
+                    "error": _("Format de date invalide: %(val0)s", val0=str(e)),
+                }
+            ),
             400,
         )
     except Exception as e:
         db.session.rollback()
-        return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
+        return (
+            jsonify({"success": False, "error": _("Erreur: %(val0)s", val0=str(e))}),
+            500,
+        )

@@ -72,11 +72,14 @@
                                 </a>
                             </div>
                             <div class="tooltip" data-tip="{{ _("Supprimer l'utilisateur") }}">
-                                <a class="btn btn-error btn-sm js-confirm-delete" href="{{ url_for('admin.delete_user', user_id=user.id) }}"
-                                   data-confirm-message="{{ _("Êtes-vous sûr de vouloir supprimer l'utilisateur %(name)s ?", name=user.name) }}"
-                                   aria-label="{{ _("Supprimer l'utilisateur %(name)s", name=user.name) }}" title="{{ _("Supprimer l'utilisateur") }}">
-                                    <i class="fas fa-trash" aria-hidden="true"></i>
-                                </a>
+                                <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}" class="mb-0">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-error btn-sm js-confirm-delete"
+                                            data-confirm-message="{{ _("Êtes-vous sûr de vouloir supprimer l'utilisateur %(name)s ?", name=user.name) }}"
+                                            aria-label="{{ _("Supprimer l'utilisateur %(name)s", name=user.name) }}" title="{{ _("Supprimer l'utilisateur") }}">
+                                        <i class="fas fa-trash" aria-hidden="true"></i>
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </td>
