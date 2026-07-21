@@ -43,6 +43,7 @@ or statically linked, which keeps it clear of source-disclosure obligations.
 | Apprise | BSD-2-Clause | [caronc/apprise](https://github.com/caronc/apprise) |
 | flask-smorest | MIT | [marshmallow-code/flask-smorest](https://github.com/marshmallow-code/flask-smorest) |
 | marshmallow | MIT | [marshmallow-code/marshmallow](https://github.com/marshmallow-code/marshmallow) |
+| polib | MIT | [izimobil/polib](https://github.com/izimobil/polib) |
 
 ## Frontend (CDN, no bundler - see `app/templates/base.html`)
 

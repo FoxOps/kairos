@@ -118,7 +118,14 @@ If you use **Keycloak**, **Okta**, **Auth0** or another OIDC provider:
 2. Name: `Jean Dupont`
 3. Email: `jean@company.com`
 4. Group: `Technical Team`
-5. Password: `mypassword123`
+5. Password: `Str0ng&Secure99` (or leave blank to auto-generate one - see
+   "Password policy" below), then **Save**
+
+> ⚠️ **Password policy**: passwords must be at least 12 characters and mix
+> 3 of the 4 character types (lowercase/uppercase/digits/symbols). The new
+> user must change it on their first login. This applies to local
+> accounts only - not when OIDC/SSO is enabled (see the [Administrator
+> Guide](ADMIN_GUIDE.md#password-policy)).
 
 ---
 
