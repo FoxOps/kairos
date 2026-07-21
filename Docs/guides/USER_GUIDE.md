@@ -2,7 +2,7 @@
 
 > **Version**: 1.0.0 - User Documentation
 > **Last updated**: June 2026
-> **Application**: Kairos v1.0.0-rc2 (`app/utils/health.py::APP_VERSION_DEFAULT`, also shown at `/version` and in the app footer)
+> **Application**: Kairos v1.0.0-rc3 (`app/utils/health.py::APP_VERSION_DEFAULT`, also shown at `/version` and in the app footer)
 
 ---
 
