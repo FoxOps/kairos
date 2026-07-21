@@ -56,17 +56,33 @@ As a Kairos administrator, you are responsible for:
 - Email: `DEFAULT_ADMIN_EMAIL` (`.env`), defaults to `admin@kairos.local`
 - Password: `DEFAULT_ADMIN_PASSWORD` (`.env`), defaults to `admin123`
 
-**Immediate action**: Change this password as soon as you log in for the first time.
-In production, set `DEFAULT_ADMIN_PASSWORD` to a strong value before the very first
-startup rather than relying on a post-installation change.
+This bootstrap password is set programmatically and bypasses the password
+policy below (it's not typed through the change-password form), but the
+account is created with a forced-change flag - **you cannot use the app
+past login without setting a new, policy-compliant password first**, no
+manual reminder needed. In production, set `DEFAULT_ADMIN_PASSWORD` to a
+strong value before the very first startup anyway, rather than relying on
+this forced first-login change.
 
 #### Password policy
 
-Recommendations:
-- Minimum 12 characters
-- Mix of uppercase, lowercase, digits, and symbols
-- No dictionary words
-- Unique for each user
+**Enforced** (not just a recommendation) for every password created or
+changed through the app - based on the [ANSSI-PG-078
+guide](https://cyber.gouv.fr/), section 4 ("Facteur de connaissance"):
+
+- Minimum 12 characters (no maximum beyond a 128-character DoS guard)
+- At least 3 of the 4 character classes: lowercase, uppercase, digits,
+  symbols
+- Rejected if it matches a common/weak password list, or contains the
+  account's own name/email
+- **Every account must change its password on first login** - enforced
+  app-wide, not just recommended (a banner blocks every other page until
+  done)
+
+**Applies to local (basic-auth) accounts only.** When OIDC/SSO is enabled,
+password management is entirely delegated to the upstream identity
+provider - OIDC users have no local password at all, and none of the
+above applies to them.
 
 #### Resetting passwords
 
@@ -455,17 +471,25 @@ From the dashboard, you can access:
 
 ### Automation Architecture
 
-Kairos offers several levels of automation:
+A single sidebar entry, **Admin > Automation**, covers everything below -
+there is no separate "Shifts" page and no separate "Refresh shifts" page
+anymore (older versions had two pages here; they were merged into one for
+clarity). It opens on a dashboard with at-a-glance stats and, when
+relevant, a proactive alert (see "Gap alert" below); the **Générer /
+rafraîchir le planning** button on that dashboard takes you to the
+actual generation/refresh page.
 
 ```mermaid
 graph TB
-    subgraph Automation["AUTOMATION"]
-        OnCall["On-Call"]
+    subgraph Automation["AUTOMATION (single page)"]
+        OnCall["On-Call rotation"]
         Shifts["Shifts"]
-        Full["Full Generation<br/>(On-call + Shifts in a single pass)"]
+        Full["Generate<br/>(On-call + Shifts in a single pass)"]
+        Refresh["Refresh shifts<br/>(on-calls untouched / gaps filled / regenerated)"]
 
         OnCall --> Full
         Shifts --> Full
+        Full --> Refresh
     end
 ```
 
@@ -473,30 +497,39 @@ graph TB
 
 #### Step 1: Define the rotation order
 
-1. Go to **Admin** > **Automation** > **Full generation**
+1. Go to **Admin** > **Automation**, then **Générer / rafraîchir le
+   planning**
 2. For each eligible user:
    - ✅ **Include in rotation**: Check to include
    - **Order**: Drag and drop the user up/down the list to set their
      rotation position
-3. Click **Save order**
+3. Click **Sauvegarder l'ordre**
 
 #### Step 2: Configure the period
 
 1. **Start date**: First Friday of the period
 2. **End date**: Last day of the period
-3. Click **Preview (Dry Run)** to preview
+3. Click **Prévisualiser (Dry Run)** to preview
 
 #### Step 3: Generate
 
 1. Check the preview result
-2. Click **Generate** to create the on-call periods and the shifts that
-   follow from it (see below - there is no separate step for shifts)
+2. Click **Générer les astreintes et shifts** to create the on-call
+   periods and the shifts that follow from it (there is no separate step
+   for shifts)
+
+On-call generation searches for the assignment that **maximizes the
+number of filled weeks** (backtracking, not a first-fit greedy pick) - a
+week is only left empty for admin follow-up when no legal permutation of
+the rotation order can cover it (e.g. every eligible user is on leave or
+would break the minimum-rest rule that week), never just because an
+earlier, avoidable choice used up the wrong person.
 
 ### Automatic Shift Generation
 
 There is no dedicated "Shifts" automation page and no configurable
 per-day/per-shift-type headcount setting. Shifts are generated
-automatically as part of **Full generation** above, from a fixed set of
+automatically as part of **Generate** above, from a fixed set of
 business rules implemented in `AdvancedShiftAutomation`
 (`app/utils/automation/advanced_shift_automation.py`):
 
@@ -509,31 +542,53 @@ business rules implemented in `AdvancedShiftAutomation`
   on-call is put on the 7am-3pm slot
 - Monday to Friday only, respecting existing leave and on-call periods
 
-If you need to regenerate shifts alone (on-call periods unchanged), use
-**Refresh Shifts** below instead of Full generation.
+If you need to touch shifts without regenerating on-call periods, use
+**Refresh Shifts** below instead of **Generate**.
 
-### Full Generation (On-Call + Shifts)
+### Generate (On-Call + Shifts)
 
 To generate both on-call periods and shifts in a single operation:
 
-1. Go to **Admin** > **Automation** > **Full generation**
+1. Go to **Admin** > **Automation** > **Générer / rafraîchir le planning**
 2. Configure the on-call rotation order
 3. Select the period
-4. Click **Preview (Dry Run)**
+4. Click **Prévisualiser (Dry Run)**
 5. Check that everything is correct
-6. Click **Generate**
+6. Click **Générer les astreintes et shifts**
 
-> 💡 **Tip**: Full generation takes on-call periods into account to avoid conflicts with shifts.
+> 💡 **Tip**: Generation takes on-call periods into account to avoid conflicts with shifts.
+> This replaces all on-calls and shifts already on the selected period.
 
 ### Refreshing Shifts
 
-If you have manually modified on-call periods:
+Same page, separate section ("Rafraîchir les shifts"): recalculates
+shifts from the on-calls already in the database, without discarding and
+regenerating on-call periods themselves by default. Choose how on-calls
+themselves are treated via a radio choice before clicking **Rafraîchir
+les shifts**:
 
-1. Go to **Admin** > **Automation** > **Refresh shifts**
-2. Select the period to recalculate
-3. Click **Refresh**
+- **Ne pas y toucher** - only shifts are recalculated, on-calls are left
+  exactly as they are (manual edits included)
+- **Combler les trous d'astreintes** - creates on-calls only for weeks
+  in the period that don't have one yet; existing on-calls (manual or
+  previously generated) are never deleted or reassigned
+- **Régénérer entièrement** - discards and regenerates every on-call in
+  the period, then recalculates shifts
 
-> ⚠️ **Warning**: This action will delete all existing shifts for the selected period!
+> ⚠️ **Warning**: shifts on the selected period are always replaced by this
+> action, regardless of which on-call option you pick.
+
+### Gap alert
+
+The **Admin > Automation** dashboard (the page you land on before
+"Générer / rafraîchir le planning") shows a banner when on-calls are
+missing on Fridays strictly between the earliest and latest on-call
+currently in the database - a case easy to miss because the generation
+page's own default period starts from *today*, which may not reach a gap
+sitting in the past. The banner's **Combler ces trous** button opens the
+generation page with the exact affected date range and "Combler les
+trous d'astreintes" already selected, so there's no manual date entry to
+figure out.
 
 ### Business Rules
 
@@ -541,15 +596,20 @@ These rules are **hardcoded** in the automation classes, not stored in a
 config file or database row you can inspect/edit. The only thing that is
 actually persisted and editable through the admin UI is the on-call
 **rotation order** (a plain list of user ids, `AutomationConfig` key
-`rotation_order`, set via **Admin > Automation > Full generation**, see
-above) - everything else below is a fixed constant in the code.
+`rotation_order`, set via **Admin > Automation > Générer / rafraîchir le
+planning**, see above) - everything else below is a fixed constant in
+the code.
 
 #### On-call (`app/utils/automation/oncall_automation.py`)
 
 - Each on-call period always lasts 7 days, from Friday 9:00 PM (21h) to
   the following Friday 7:00 AM (7h) - not configurable
-- Rotation follows the saved `rotation_order`
-- Minimum 2-week gap enforced between two on-calls for the same user
+- Rotation follows the saved `rotation_order`, chosen by a backtracking
+  search that maximizes the number of filled weeks (see "Step 3:
+  Generate" above), not a first-available-candidate greedy pick
+- Minimum 2-week gap enforced between two on-calls for the same user,
+  checked against every on-call the user has (past and future), not just
+  their single most recent one
 
 #### Shifts (`app/utils/automation/advanced_shift_automation.py`)
 
@@ -564,8 +624,8 @@ above) - everything else below is a fixed constant in the code.
 ### Customizing Rules
 
 The rotation order is the only piece of this that's customizable from
-the UI (**Admin > Automation > Full generation**). Changing the fixed
-business rules above requires a code change to
+the UI (**Admin > Automation > Générer / rafraîchir le planning**).
+Changing the fixed business rules above requires a code change to
 `app/utils/automation/`.
 
 ---

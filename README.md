@@ -24,8 +24,8 @@ docker compose up -d
 ```
 
 Open **http://localhost:5000**, log in with `admin@kairos.local` /
-`admin123` (or whatever you set in `.env`), and change that password
-immediately.
+`admin123` (or whatever you set in `.env`) - you'll be required to set a
+new, stronger password before you can do anything else.
 
 Full install options (bare-metal, PostgreSQL/MySQL, Kubernetes, reverse
 proxy): [Docs/deployment/](Docs/deployment/). First five minutes as a new

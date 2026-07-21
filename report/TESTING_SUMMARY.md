@@ -2,14 +2,17 @@
 
 ## 📊 Global Overview
 
-- **Last updated**: July 19, 2026 (production-readiness audit, batch 1)
-- **Total number of tests**: 1343 (682 unit + 629 integration + 32 e2e)
-- **Tests passing**: 1343 ✅
+- **Last updated**: July 21, 2026 (1.0.0-RC2 full validation pass)
+- **Total number of tests**: 1394 (720 unit + 642 integration + 32 e2e)
+- **Tests passing**: 1394 ✅
 - **Tests failing**: 0
 - **Code coverage**: **94%** (`--cov=app`)
 - **Lint (ruff)**: clean - **0 errors**
 - **Types (mypy)**: clean - **0 errors**
 - **Formatting (black)**: compliant
+- **Security (bandit)**: 0 findings in `app/` (all flagged items are test-only fixture literals - mock passwords/tokens)
+- **Dependencies (pip-audit)**: 0 known vulnerabilities
+- **Duplicate code (`find_duplicates.py`)**: none detected
 
 ---
 
@@ -558,3 +561,24 @@ pip-audit -r requirements.txt   # no API key required (replaced `safety scan`)
   a source of test-order-dependent flakiness. Also switched CI from
   GitLab (never actually run against this GitHub-hosted repo) to
   GitHub Actions.
+- **July 21, 2026**: 1394 tests (0 failing, +51), coverage steady at
+  94%. 1.0.0-RC2 batch (PR #159-165, see `ROADMAP.md`): per-day/
+  per-section SAVEPOINT isolation for `rebalance_after_leave` (a
+  failure on one day no longer wipes the whole ±30-day window);
+  `BackupConfig` no longer eagerly `os.makedirs()`s on every
+  instantiation (fixed a crash on `/admin/settings` in a read-only
+  container); on-call generation replaced with a backtracking search
+  maximizing filled weeks, plus a bidirectional interval-based
+  spacing check (`AvailabilityIndex`) replacing a scalar "last on-call
+  end time" that broke on partial-window regeneration; merged the
+  automation dashboard/refresh pages into one, with a proactive gap-
+  detection banner; ANSSI-PG-078 password policy (12+ characters, 3-
+  of-4 character classes, weak-password rejection) plus forced
+  password change on first login, local auth only - never applied to
+  OIDC accounts; fixed a real 405 on user/group deletion (`<a href>`
+  GET link against a POST-only route); full i18n audit of templates/
+  routes/services/JS (10 hardcoded-string sites fixed); `fr.po` policy
+  reversed to explicit `msgstr` (was empty + gettext fallback), now
+  automated via `scripts/fill_fr_catalog.py`. See `report/
+  LOAD_TEST_v1.2.md` for this batch's load-test re-run (zero
+  regression, zero errors).
