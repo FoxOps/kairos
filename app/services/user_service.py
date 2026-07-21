@@ -6,6 +6,8 @@ from (admins see everyone relevant, regular users only see themselves),
 plus admin CRUD on users.
 """
 
+import secrets
+
 from flask_babel import gettext as _
 
 from app import db
@@ -15,6 +17,7 @@ from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository
 from app.repositories.user_repository import UserRepository
 from app.services.audit_service import AuditService
+from app.utils.helpers.password_helpers import check_password_strength
 
 
 class UserService:
@@ -49,17 +52,37 @@ class UserService:
     @staticmethod
     def create(
         name: str, email: str, group_id: int, password: str = ""  # nosec B107
-    ) -> tuple[User | None, str | None]:
+    ) -> tuple[User | None, str | None, str | None]:
+        """Returns (user, error, generated_password). generated_password
+        is set only when the caller left `password` blank - a random
+        strong password is generated instead of the old hardcoded
+        "password123" fallback (itself now too weak to pass
+        check_password_strength()), shown to the admin exactly once
+        (same one-time-reveal pattern as ServiceAccount tokens) so they
+        can hand it to the new user. Either way the account is created
+        with must_change_password=True: a password chosen *for* the
+        user, not by them, must be replaced on first login."""
         if UserRepository.email_taken(email):
-            return None, _("Un utilisateur avec cet email existe déjà.")
+            return None, _("Un utilisateur avec cet email existe déjà."), None
+
+        generated_password = None
+        effective_password = password
+        if password:
+            error = check_password_strength(password, name=name, email=email)
+            if error:
+                return None, error, None
+        else:
+            generated_password = secrets.token_urlsafe(16)
+            effective_password = generated_password
 
         user = UserRepository.create(name, email, group_id)
-        user.set_password(password or "password123")
+        user.set_password(effective_password)
+        user.must_change_password = True
         db.session.commit()
         AuditService.log(
             "user.create", resource_type="User", resource_id=user.id, details=email
         )
-        return user, None
+        return user, None, generated_password
 
     @staticmethod
     def update(
@@ -77,12 +100,22 @@ class UserService:
         if UserRepository.email_taken(email, exclude_id=user_id):
             return None, _("Un utilisateur avec cet email existe déjà.")
 
+        if password:
+            error = check_password_strength(password, name=name, email=email)
+            if error:
+                return None, error
+
         user.name = name
         user.email = email
         user.group_id = group_id
         user.is_admin = is_admin
         if password:
             user.set_password(password)
+            # An admin is choosing this password on the user's behalf
+            # (unlike auth.update_profile's self-service change, which
+            # clears the flag itself right after) - force them to pick
+            # their own on next login.
+            user.must_change_password = True
         db.session.commit()
         AuditService.log(
             "user.update", resource_type="User", resource_id=user.id, details=email

@@ -9,6 +9,13 @@
             <div class="card-body">
                 <h1 class="text-2xl font-bold text-center mb-4">{{ _("Modifier mon profil") }}</h1>
 
+                {% if user.must_change_password %}
+                <div class="alert alert-warning mb-4">
+                    <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+                    <span>{{ _("Vous devez choisir un nouveau mot de passe avant de continuer.") }}</span>
+                </div>
+                {% endif %}
+
                 <form method="POST" action="{{ url_for('auth.update_profile') }}" class="flex flex-col gap-4">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div>
@@ -35,7 +42,10 @@
                     <div>
                         <label class="label" for="new_password">{{ _("Nouveau mot de passe") }}</label>
                         <input class="input w-full" type="password" id="new_password" name="new_password"
-                               placeholder="{{ _("Laisser vide pour ne pas changer") }}">
+                               placeholder="{{ _("Laisser vide pour ne pas changer") }}" aria-describedby="new-password-help">
+                        <p class="text-sm text-base-content/60" id="new-password-help">
+                            {{ _("Au moins 12 caractères, avec au moins 3 des 4 types suivants : minuscules, majuscules, chiffres, caractères spéciaux.") }}
+                        </p>
                     </div>
 
                     <div>
@@ -49,9 +59,11 @@
                             <i class="fas fa-save" aria-hidden="true"></i>
                             <span>{{ _("Enregistrer les modifications") }}</span>
                         </button>
+                        {% if not user.must_change_password %}
                         <a href="{{ url_for('auth.profile') }}" class="btn btn-ghost">
                             {{ _("Annuler") }}
                         </a>
+                        {% endif %}
                     </div>
                 </form>
             </div>

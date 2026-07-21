@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-20 22:41+0200\n"
+"POT-Creation-Date: 2026-07-21 10:46+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -17,6 +17,11 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
+
+#: app/__init__.py:447 app/routes/auth.py:235
+#: app/templates/auth/update_profile.html:15
+msgid "Vous devez choisir un nouveau mot de passe avant de continuer."
+msgstr ""
 
 #: app/auth/decorators.py:44
 msgid "Accès refusé : vous devez être administrateur."
@@ -85,9 +90,9 @@ msgstr ""
 #: app/routes/admin_notification_target_routes.py:126
 #: app/routes/admin_shift_type_routes.py:52
 #: app/routes/admin_shift_type_routes.py:94
-#: app/routes/admin_shift_type_routes.py:113 app/routes/admin_user_routes.py:54
-#: app/routes/admin_user_routes.py:88 app/routes/admin_user_routes.py:107
-#: app/routes/auth.py:414 app/routes/leave_routes.py:109
+#: app/routes/admin_shift_type_routes.py:113 app/routes/admin_user_routes.py:71
+#: app/routes/admin_user_routes.py:105 app/routes/admin_user_routes.py:124
+#: app/routes/auth.py:438 app/routes/leave_routes.py:109
 #: app/routes/leave_routes.py:142 app/routes/oncall_routes.py:86
 #: app/routes/oncall_routes.py:105 app/routes/oncall_routes.py:128
 #: app/routes/oncall_routes.py:156 app/routes/shift_routes.py:121
@@ -286,7 +291,7 @@ msgstr ""
 
 #: app/routes/admin_shift_type_routes.py:33
 #: app/routes/admin_shift_type_routes.py:69 app/routes/admin_user_routes.py:41
-#: app/routes/admin_user_routes.py:73 app/routes/oncall_routes.py:54
+#: app/routes/admin_user_routes.py:90 app/routes/oncall_routes.py:54
 #: app/routes/shift_routes.py:56
 msgid "Tous les champs sont obligatoires."
 msgstr ""
@@ -325,100 +330,108 @@ msgstr ""
 msgid "%(count)s demande(s) terminée(s) supprimée(s) (tous utilisateurs)."
 msgstr ""
 
-#: app/routes/admin_user_routes.py:50
+#: app/routes/admin_user_routes.py:52
 msgid "Utilisateur ajouté avec succès !"
 msgstr ""
 
-#: app/routes/admin_user_routes.py:84
+#: app/routes/admin_user_routes.py:60
+#, python-format
+msgid ""
+"Mot de passe généré automatiquement : %(password)s (à communiquer à "
+"l'utilisateur - il devra le changer à sa première connexion, ce mot de "
+"passe ne sera plus jamais affiché)."
+msgstr ""
+
+#: app/routes/admin_user_routes.py:101
 msgid "Utilisateur modifié avec succès !"
 msgstr ""
 
-#: app/routes/admin_user_routes.py:104
+#: app/routes/admin_user_routes.py:121
 msgid "Utilisateur supprimé avec succès !"
 msgstr ""
 
-#: app/routes/auth.py:61
+#: app/routes/auth.py:62
 msgid "L'inscription publique est désactivée. Utilisez l'authentification OIDC."
 msgstr ""
 
-#: app/routes/auth.py:68
+#: app/routes/auth.py:69
 msgid "L'inscription publique est désactivée. Contactez l'administrateur."
 msgstr ""
 
-#: app/routes/auth.py:97
+#: app/routes/auth.py:98
 msgid "Email et mot de passe sont obligatoires."
 msgstr ""
 
-#: app/routes/auth.py:110
+#: app/routes/auth.py:111
 msgid "Connexion réussie !"
 msgstr ""
 
-#: app/routes/auth.py:124
+#: app/routes/auth.py:125
 msgid "Email ou mot de passe incorrect."
 msgstr ""
 
-#: app/routes/auth.py:143
+#: app/routes/auth.py:144
 msgid "La connexion OIDC n'est pas disponible pour le moment."
 msgstr ""
 
-#: app/routes/auth.py:167
+#: app/routes/auth.py:168
 msgid "La connexion OIDC a échoué. Veuillez réessayer."
 msgstr ""
 
-#: app/routes/auth.py:177
+#: app/routes/auth.py:178
 msgid "Connexion OIDC réussie !"
 msgstr ""
 
-#: app/routes/auth.py:202
+#: app/routes/auth.py:203
 msgid "Vous avez été déconnecté."
 msgstr ""
 
-#: app/routes/auth.py:226
+#: app/routes/auth.py:242
 msgid "Le nom et l'email sont obligatoires."
 msgstr ""
 
-#: app/routes/auth.py:235
+#: app/routes/auth.py:251
 msgid "Cet email est déjà utilisé par un autre utilisateur."
 msgstr ""
 
-#: app/routes/auth.py:248
+#: app/routes/auth.py:264
 msgid "Le mot de passe actuel est obligatoire pour changer de mot de passe."
 msgstr ""
 
-#: app/routes/auth.py:255
+#: app/routes/auth.py:271
 msgid "Le mot de passe actuel est incorrect."
 msgstr ""
 
-#: app/routes/auth.py:259
+#: app/routes/auth.py:275
 msgid "Les nouveaux mots de passe ne correspondent pas."
 msgstr ""
 
-#: app/routes/auth.py:271
+#: app/routes/auth.py:295
 msgid "Votre profil a été mis à jour avec succès !"
 msgstr ""
 
-#: app/routes/auth.py:297
+#: app/routes/auth.py:321
 msgid "Fuseau horaire invalide."
 msgstr ""
 
-#: app/routes/auth.py:303
+#: app/routes/auth.py:327
 msgid "Langue invalide."
 msgstr ""
 
-#: app/routes/auth.py:309 app/routes/shift_routes.py:222
+#: app/routes/auth.py:333 app/routes/shift_routes.py:222
 #: app/routes/shift_routes.py:258
 msgid "Format de date invalide."
 msgstr ""
 
-#: app/routes/auth.py:315
+#: app/routes/auth.py:339
 msgid "Format d'heure invalide."
 msgstr ""
 
-#: app/routes/auth.py:364
+#: app/routes/auth.py:388
 msgid "Vos paramètres ont été mis à jour avec succès !"
 msgstr ""
 
-#: app/routes/auth.py:411
+#: app/routes/auth.py:435
 msgid "Token ICS régénéré avec succès !"
 msgstr ""
 
@@ -1087,11 +1100,11 @@ msgstr ""
 msgid "%(requester)s <-> %(target)s : demande rejetée par %(admin)s."
 msgstr ""
 
-#: app/services/user_service.py:54 app/services/user_service.py:78
+#: app/services/user_service.py:66 app/services/user_service.py:101
 msgid "Un utilisateur avec cet email existe déjà."
 msgstr ""
 
-#: app/services/user_service.py:106
+#: app/services/user_service.py:139
 msgid ""
 "Impossible de supprimer cet utilisateur : il a des shifts, astreintes ou "
 "congés associés."
@@ -1506,7 +1519,7 @@ msgstr ""
 #: app/templates/admin/edit_user.html:58 app/templates/admin/edit_user.html:59
 #: app/templates/admin/swaps.html:179
 #: app/templates/auth/profile_settings.html:134
-#: app/templates/auth/update_profile.html:53 app/templates/confirm_swap.html:46
+#: app/templates/auth/update_profile.html:64 app/templates/confirm_swap.html:46
 #: app/templates/confirm_swap.html:47 app/templates/swaps.html:65
 #: app/utils/helpers/js_translations.py:29
 msgid "Annuler"
@@ -2528,7 +2541,7 @@ msgstr ""
 #: app/templates/admin/notification_targets.html:45
 #: app/templates/admin/service_accounts.html:36
 #: app/templates/admin/shift_types.html:31 app/templates/admin/users.html:38
-#: app/templates/auth/profile.html:14 app/templates/auth/update_profile.html:15
+#: app/templates/auth/profile.html:14 app/templates/auth/update_profile.html:22
 msgid "Nom"
 msgstr ""
 
@@ -2755,13 +2768,16 @@ msgid "Mot de passe"
 msgstr ""
 
 #: app/templates/admin/add_user.html:53
-msgid "Laisser vide pour un mot de passe par défaut"
+msgid "Laisser vide pour générer un mot de passe"
 msgstr ""
 
 #: app/templates/admin/add_user.html:55
 msgid ""
-"Si vous ne spécifiez pas de mot de passe, un mot de passe par défaut sera"
-" généré (password123)."
+"Au moins 12 caractères, avec au moins 3 des 4 types suivants : "
+"minuscules, majuscules, chiffres, caractères spéciaux. Si vous laissez ce"
+" champ vide, un mot de passe aléatoire sera généré et affiché une seule "
+"fois. Dans tous les cas, l'utilisateur devra le changer à sa première "
+"connexion."
 msgstr ""
 
 #: app/templates/admin/add_user.html:60
@@ -3047,7 +3063,7 @@ msgstr ""
 #: app/templates/admin/edit_shift_type.html:40
 #: app/templates/admin/edit_user.html:55
 #: app/templates/auth/profile_settings.html:131
-#: app/templates/auth/update_profile.html:50
+#: app/templates/auth/update_profile.html:60
 msgid "Enregistrer les modifications"
 msgstr ""
 
@@ -3097,18 +3113,22 @@ msgid "Oui, cet utilisateur est administrateur"
 msgstr ""
 
 #: app/templates/admin/edit_user.html:47
-#: app/templates/auth/update_profile.html:36
+#: app/templates/auth/update_profile.html:43
 msgid "Nouveau mot de passe"
 msgstr ""
 
 #: app/templates/admin/edit_user.html:48
-#: app/templates/auth/update_profile.html:38
-#: app/templates/auth/update_profile.html:44
+#: app/templates/auth/update_profile.html:45
+#: app/templates/auth/update_profile.html:54
 msgid "Laisser vide pour ne pas changer"
 msgstr ""
 
 #: app/templates/admin/edit_user.html:50
-msgid "Laisser vide pour conserver le mot de passe actuel."
+msgid ""
+"Laisser vide pour conserver le mot de passe actuel. Sinon, au moins 12 "
+"caractères avec au moins 3 des 4 types suivants : minuscules, majuscules,"
+" chiffres, caractères spéciaux - l'utilisateur devra le changer à sa "
+"prochaine connexion."
 msgstr ""
 
 #: app/templates/admin/groups.html:3 app/templates/admin/groups.html:14
@@ -4480,7 +4500,7 @@ msgid "Votre mot de passe"
 msgstr ""
 
 #: app/templates/auth/login.html:46
-msgid "Votre mot de passe doit contenir au moins 8 caractères."
+msgid "Votre mot de passe doit contenir au moins 12 caractères."
 msgstr ""
 
 #: app/templates/auth/login.html:52
@@ -4602,19 +4622,25 @@ msgstr ""
 msgid "Modifier mon profil"
 msgstr ""
 
-#: app/templates/auth/update_profile.html:27
+#: app/templates/auth/update_profile.html:34
 msgid "Mot de passe actuel"
 msgstr ""
 
-#: app/templates/auth/update_profile.html:29
+#: app/templates/auth/update_profile.html:36
 msgid "Obligatoire pour changer le mot de passe"
 msgstr ""
 
-#: app/templates/auth/update_profile.html:31
+#: app/templates/auth/update_profile.html:38
 msgid "Obligatoire si vous souhaitez changer votre mot de passe"
 msgstr ""
 
-#: app/templates/auth/update_profile.html:42
+#: app/templates/auth/update_profile.html:47
+msgid ""
+"Au moins 12 caractères, avec au moins 3 des 4 types suivants : "
+"minuscules, majuscules, chiffres, caractères spéciaux."
+msgstr ""
+
+#: app/templates/auth/update_profile.html:52
 msgid "Confirmer le mot de passe"
 msgstr ""
 
@@ -4924,6 +4950,42 @@ msgstr ""
 msgid "Copié !"
 msgstr ""
 
+#: app/utils/helpers/password_helpers.py:123
+#, python-format
+msgid "Le mot de passe doit contenir au moins %(min_length)s caractères."
+msgstr ""
+
+#: app/utils/helpers/password_helpers.py:128
+#, python-format
+msgid "Le mot de passe ne doit pas dépasser %(max_length)s caractères."
+msgstr ""
+
+#: app/utils/helpers/password_helpers.py:138
+msgid ""
+"Le mot de passe doit contenir au moins 3 des 4 types de caractères "
+"suivants : minuscules, majuscules, chiffres, caractères spéciaux."
+msgstr ""
+
+#: app/utils/helpers/password_helpers.py:147
+msgid ""
+"Ce mot de passe est trop courant et facilement devinable. Choisissez-en "
+"un autre."
+msgstr ""
+
+#: app/utils/helpers/password_helpers.py:153
+msgid ""
+"Le mot de passe ne doit pas contenir de suite de caractères évidente (ex "
+": 1234, azerty, abcd)."
+msgstr ""
+
+#: app/utils/helpers/password_helpers.py:160
+msgid "Le mot de passe ne doit pas contenir votre nom."
+msgstr ""
+
+#: app/utils/helpers/password_helpers.py:165
+msgid "Le mot de passe ne doit pas contenir votre adresse email."
+msgstr ""
+
 #~ msgid "Demande d'échange envoyée, en attente de validation admin."
 #~ msgstr ""
 
@@ -5189,5 +5251,20 @@ msgstr ""
 #~ "astreintes déjà en base (même modifiées"
 #~ " manuellement), sans toucher aux astreintes"
 #~ " elles-mêmes."
+#~ msgstr ""
+
+#~ msgid "Laisser vide pour un mot de passe par défaut"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Si vous ne spécifiez pas de mot"
+#~ " de passe, un mot de passe par"
+#~ " défaut sera généré (password123)."
+#~ msgstr ""
+
+#~ msgid "Laisser vide pour conserver le mot de passe actuel."
+#~ msgstr ""
+
+#~ msgid "Votre mot de passe doit contenir au moins 8 caractères."
 #~ msgstr ""
 
