@@ -252,12 +252,26 @@ def _generate_for_fridays(
     index: AvailabilityIndex,
     dry_run: bool,
     commit: bool,
+    preferred_assignments: dict[date, int] | None = None,
 ) -> tuple[list[OnCall], list[str], list[date]]:
     """Shared by generate_oncall_schedule() (every Friday in a period)
     and fill_oncall_gaps() (only the Fridays missing an on-call) - runs
     the branch-and-bound search (_solve_max_filled_weeks) over exactly
     the given Fridays and creates OnCall objects for whichever ones it
-    manages to fill."""
+    manages to fill.
+
+    preferred_assignments (optional): {friday: user_id} of who was
+    on-call for that Friday *before* the caller wiped the window -
+    when given, that user is tried first for that week instead of
+    blindly replaying the rotation order, so a week that already had a
+    valid assignment keeps it rather than being needlessly reshuffled.
+    Passed by AdvancedShiftAutomation.rebalance_after_leave() and the
+    "Rafraîchir > Régénérer entièrement" action only (see
+    OnCallAutomation.capture_existing_assignments()) - every other
+    caller leaves this None, exactly today's behavior. Still subject to
+    the same conflict filtering as any other candidate below (a
+    preferred user with a real conflict - e.g. it's their own leave
+    week - is filtered out like anyone else, no special-casing)."""
     from app import db
 
     weeks: list[tuple[date, datetime, datetime]] = []
@@ -273,11 +287,25 @@ def _generate_for_fridays(
     # simple round-robin baseline a plain greedy pass produces when
     # nothing forces a deviation from it - the search below only
     # deviates from this preference when required to fill a week that
-    # would otherwise stay empty.
+    # would otherwise stay empty. If preferred_assignments names a
+    # (still-eligible) user for this week, they're moved to the front
+    # of that baseline instead, minimizing how much of an
+    # already-working schedule gets reshuffled on each rebalance.
+    rotation_by_id = {user.id: user for user in rotation_order}
     week_candidates: list[list[User]] = []
-    for week_index, (_friday, start_time, end_time) in enumerate(weeks):
+    for week_index, (friday, start_time, end_time) in enumerate(weeks):
         offset = week_index % len(rotation_order)
         preferred_order = rotation_order[offset:] + rotation_order[:offset]
+
+        preferred_user_id = (
+            preferred_assignments.get(friday) if preferred_assignments else None
+        )
+        preferred_user = rotation_by_id.get(preferred_user_id)  # type: ignore[arg-type]
+        if preferred_user is not None:
+            preferred_order = [preferred_user] + [
+                user for user in preferred_order if user.id != preferred_user_id
+            ]
+
         week_candidates.append(
             [
                 user
@@ -499,6 +527,7 @@ class OnCallAutomation:
         rotation_order_ids: list[int] | None = None,
         dry_run: bool = True,
         commit: bool = True,
+        preferred_assignments: dict[date, int] | None = None,
     ):
         """
         Generate an on-call schedule for a given period.
@@ -529,6 +558,10 @@ class OnCallAutomation:
             commit: If False (used by rebalance_after_leave to make the
                 whole rebalance atomic), flush() instead of commit() -
                 lets the caller decide when to commit/rollback.
+            preferred_assignments: see _generate_for_fridays()'s
+                docstring - only rebalance_after_leave() and the
+                "Rafraîchir > Régénérer entièrement" action pass this,
+                every other caller leaves it None.
 
         Returns:
             Tuple: (list of generated on-calls (OnCall objects), log
@@ -558,8 +591,42 @@ class OnCallAutomation:
         fridays = _fridays_in_range(start_date, end_date)
 
         return _generate_for_fridays(
-            fridays, rotation_order, index, dry_run=dry_run, commit=commit
+            fridays,
+            rotation_order,
+            index,
+            dry_run=dry_run,
+            commit=commit,
+            preferred_assignments=preferred_assignments,
         )
+
+    @staticmethod
+    def capture_existing_assignments(start_date, end_date) -> dict[date, int]:
+        """{friday: user_id} of on-calls already overlapping
+        [start_date, end_date] (same overlap definition as
+        OnCallRepository.list_overlapping_range()/delete_overlapping_range()
+        - reused here, not reimplemented) - must be called *before* the
+        caller wipes that range, otherwise the information is already
+        gone. Used to feed generate_oncall_schedule()'s
+        preferred_assignments so a rebalance/regenerate prefers keeping
+        a week's existing occupant over blindly replaying the rotation
+        order - see _generate_for_fridays()'s docstring.
+
+        Deliberately does **not** take a user id to exclude (e.g. a
+        leave rebalance's own leave.user_id): a user going on leave
+        only conflicts with *their own* specific week(s) -
+        has_leave_conflict() in _generate_for_fridays() already filters
+        that out precisely, without touching this dict. Pre-excluding
+        that user's id here would strip *every* week they're on in the
+        window, including ones with no actual conflict - directly
+        working against the "minimal perturbation" goal for those other
+        weeks (confirmed while building this: a 4-user, 2-month window
+        with the leave user also validly on-call twice more later in
+        that same window lost both of those unrelated preferences to a
+        blanket exclude)."""
+        from app.repositories.oncall_repository import OnCallRepository
+
+        oncalls = OnCallRepository.list_overlapping_range(start_date, end_date)
+        return {oncall.start_time.date(): oncall.user_id for oncall in oncalls}
 
     @staticmethod
     def fill_oncall_gaps(

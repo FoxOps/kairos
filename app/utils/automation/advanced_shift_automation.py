@@ -732,6 +732,24 @@ class AdvancedShiftAutomation:
                         # before regenerating, otherwise
                         # duplicate/overlapping on-calls would appear on
                         # the adjacent Fridays.
+                        # Captured before the wipe below, so the search
+                        # can prefer keeping each week's existing
+                        # occupant instead of blindly replaying the
+                        # rotation order - minimizes how much of an
+                        # already-working schedule gets reshuffled on
+                        # each rebalance. The leave user's own
+                        # now-conflicting week is naturally excluded by
+                        # has_leave_conflict() further down, not here -
+                        # see capture_existing_assignments()'s docstring
+                        # for why pre-excluding them here would be
+                        # wrong (it would also drop their other,
+                        # unrelated weeks in the same window).
+                        preferred_assignments = (
+                            OnCallAutomation.capture_existing_assignments(
+                                shift_period_start, shift_period_end
+                            )
+                        )
+
                         other_oncalls_deleted = (
                             OnCallRepository.delete_overlapping_range(
                                 shift_period_start, shift_period_end
@@ -754,6 +772,7 @@ class AdvancedShiftAutomation:
                                 rotation_order_ids=AutomationConfig.get_rotation_order(),
                                 dry_run=False,
                                 commit=False,
+                                preferred_assignments=preferred_assignments,
                             )
                         )
                         regenerated_oncalls.extend(oncalls)
