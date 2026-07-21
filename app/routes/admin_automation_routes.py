@@ -73,6 +73,22 @@ def _notify_oncall_gap_if_any(unfilled_dates):
     )
 
 
+def _notify_shift_unfilled_if_any(unfilled_dates):
+    if not unfilled_dates:
+        return
+    AppNotificationService.notify_admins_shift_unfilled(unfilled_dates)
+    AppriseNotificationService.notify(
+        "system",
+        _("Génération de shifts incomplète"),
+        _(
+            "Aucun utilisateur disponible pour générer un shift pour : "
+            "%(dates)s. Assignation manuelle nécessaire dans "
+            "/admin/automation.",
+            dates=", ".join(d.strftime("%d/%m/%Y") for d in unfilled_dates),
+        ),
+    )
+
+
 @admin_bp.route("/admin/automation")
 @admin_required
 def automation_dashboard():
@@ -181,11 +197,14 @@ def automation_full():
                         "info",
                     )
 
-                shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
-                    start_date, end_date, dry_run=False
+                shifts, messages, shift_unfilled_dates = (
+                    AdvancedShiftAutomation.generate_full_schedule(
+                        start_date, end_date, dry_run=False
+                    )
                 )
 
                 _flash_automation_messages(messages, default_category="info")
+                _notify_shift_unfilled_if_any(shift_unfilled_dates)
 
                 flash(
                     _("%(val0)s shifts régénérés avec succès !", val0=len(shifts)),
@@ -264,7 +283,7 @@ def automation_full():
                     # dry_run above doesn't save anything) - it can
                     # therefore differ from the final result if no
                     # on-call exists yet for this period.
-                    shifts, shift_messages = (
+                    shifts, shift_messages, _shift_unfilled_dates = (
                         AdvancedShiftAutomation.generate_full_schedule(
                             start_date, end_date, dry_run=True
                         )
@@ -292,7 +311,7 @@ def automation_full():
                         rotation_order_ids=rotation_order_ids,
                     )
                 else:
-                    shifts, shift_messages = (
+                    shifts, shift_messages, shift_unfilled_dates = (
                         AdvancedShiftAutomation.generate_full_schedule(
                             start_date, end_date, dry_run=False
                         )
@@ -303,24 +322,8 @@ def automation_full():
                     )
                     _flash_automation_messages(shift_messages, default_category="info")
 
-                    if oncall_unfilled_dates:
-                        AppNotificationService.notify_admins_oncall_gap(
-                            oncall_unfilled_dates
-                        )
-                        AppriseNotificationService.notify(
-                            "system",
-                            _("Génération d'astreintes incomplète"),
-                            _(
-                                "Aucun utilisateur disponible dans le respect du "
-                                "délai légal de 2 semaines pour : %(dates)s. "
-                                "Assignation manuelle nécessaire dans "
-                                "/admin/automation.",
-                                dates=", ".join(
-                                    d.strftime("%d/%m/%Y")
-                                    for d in oncall_unfilled_dates
-                                ),
-                            ),
-                        )
+                    _notify_oncall_gap_if_any(oncall_unfilled_dates)
+                    _notify_shift_unfilled_if_any(shift_unfilled_dates)
 
                     flash(
                         _(

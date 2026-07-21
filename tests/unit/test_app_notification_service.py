@@ -227,7 +227,10 @@ class TestNotifyAdminsOncallGap:
                 user_id=admin_user.id, notification_type="oncall_generation_gap"
             ).all()
             assert len(notifs) == 1
-            assert notifs[0].link == "/admin/automation"
+            assert notifs[0].link == (
+                "/admin/automation/full?start_date=2026-08-21"
+                "&end_date=2026-08-21&oncall_mode=fill_gaps"
+            )
             assert "21/08/2026" in notifs[0].message
 
             # A non-admin is never notified.
@@ -265,7 +268,9 @@ class TestNotifyAdminsShiftGap:
                 user_id=admin_user.id, notification_type="shift_generation_gap"
             ).all()
             assert len(notifs) == 1
-            assert notifs[0].link == "/admin/automation"
+            assert notifs[0].link == (
+                "/admin/automation/full?start_date=2026-08-21&end_date=2026-08-21"
+            )
             assert "21/08/2026" in notifs[0].message
 
             assert (
@@ -278,6 +283,47 @@ class TestNotifyAdminsShiftGap:
     def test_empty_dates_notifies_nobody(self, test_app, admin_user):
         with test_app.app_context():
             AppNotificationService.notify_admins_shift_gap([])
+            assert (
+                AppNotification.query.filter_by(
+                    notification_type="shift_generation_gap"
+                ).count()
+                == 0
+            )
+
+
+class TestNotifyAdminsShiftUnfilled:
+    """Real user report: when shift automation can't find anyone
+    available for a day (a business-rule case, not an exception -
+    AdvancedShiftAutomation.generate_daily_shifts()'s own "⚠️ Aucun
+    shift généré" case), admins were never notified at all - only
+    notify_admins_shift_gap() (the *exception* case) existed, so a
+    silent "nobody available" gap had no admin-facing signal anywhere,
+    unlike the equivalent on-call case (notify_admins_oncall_gap)."""
+
+    def test_notifies_every_admin(self, test_app, admin_user, test_user):
+        with test_app.app_context():
+            unfilled_date = date(2026, 8, 21)
+            AppNotificationService.notify_admins_shift_unfilled([unfilled_date])
+
+            notifs = AppNotification.query.filter_by(
+                user_id=admin_user.id, notification_type="shift_generation_gap"
+            ).all()
+            assert len(notifs) == 1
+            assert notifs[0].link == (
+                "/admin/automation/full?start_date=2026-08-21&end_date=2026-08-21"
+            )
+            assert "21/08/2026" in notifs[0].message
+
+            assert (
+                AppNotification.query.filter_by(
+                    user_id=test_user.id, notification_type="shift_generation_gap"
+                ).count()
+                == 0
+            )
+
+    def test_empty_dates_notifies_nobody(self, test_app, admin_user):
+        with test_app.app_context():
+            AppNotificationService.notify_admins_shift_unfilled([])
             assert (
                 AppNotification.query.filter_by(
                     notification_type="shift_generation_gap"
@@ -303,7 +349,10 @@ class TestNotifyAdminsOncallRegenFailure:
                 user_id=admin_user.id, notification_type="oncall_generation_gap"
             ).all()
             assert len(notifs) == 1
-            assert notifs[0].link == "/admin/automation"
+            assert notifs[0].link == (
+                "/admin/automation/full?start_date=2026-08-01"
+                "&end_date=2026-09-01&oncall_mode=regenerate"
+            )
             assert "01/08/2026" in notifs[0].message
             assert "01/09/2026" in notifs[0].message
 

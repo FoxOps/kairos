@@ -451,11 +451,23 @@ class AdvancedShiftAutomation:
     @staticmethod
     def generate_full_schedule(
         start_date: "date", end_date: "date", dry_run: bool = False
-    ) -> "tuple[list, list]":
-        """Generate the shifts for an entire period."""
+    ) -> "tuple[list, list, list]":
+        """Generate the shifts for an entire period.
+
+        Returns (all_shifts, messages, unfilled_shift_dates).
+        unfilled_shift_dates lists weekdays where generate_daily_shifts()
+        produced zero shifts because no one was available (the "⚠️ Aucun
+        shift généré" business-rule case, not an exception) - previously
+        silently folded into the "days_skipped" count alongside ordinary
+        weekends, with no way for the caller to tell the two apart or
+        know *which* dates need manual attention. The caller is
+        responsible for notifying admins once this method's own
+        generation has actually completed, same rule as every other
+        notify-worthy list in this module."""
         all_shifts = []
         days_with_shifts = 0
         days_skipped = 0
+        unfilled_shift_dates = []
         from datetime import timedelta
 
         current_date = start_date
@@ -468,6 +480,8 @@ class AdvancedShiftAutomation:
                 days_with_shifts += 1
             else:
                 days_skipped += 1
+                if current_date.weekday() < 5:
+                    unfilled_shift_dates.append(current_date)
             current_date += timedelta(days=1)
 
         # Return a summary
@@ -493,12 +507,12 @@ class AdvancedShiftAutomation:
                 with_shifts=days_with_shifts,
                 skipped=days_skipped,
             )
-        return all_shifts, [msg]
+        return all_shifts, [msg], unfilled_shift_dates
 
     @staticmethod
     def rebalance_after_leave(
         leave: "Leave", dry_run: bool = False
-    ) -> "tuple[list, list, list, list, list]":
+    ) -> "tuple[list, list, list, list, list, list]":
         """
         Rebalance shifts and on-calls after a leave is added/modified.
         Called automatically when a leave is added. Leaves take
@@ -524,18 +538,25 @@ class AdvancedShiftAutomation:
         week around a leave" bug report.
 
         Returns (regenerated_shifts, messages, unfilled_oncall_dates,
-        failed_shift_dates, failed_oncall_period). unfilled_oncall_dates
-        is passed through from OnCallAutomation.generate_oncall_schedule()
-        (Friday dates left unassigned because no user respects the legal
-        spacing constraint - not an error, a business rule already
-        handled gracefully with no retry needed). failed_shift_dates
-        lists days whose shift regeneration actually raised and was
-        rolled back to its pre-attempt state. failed_oncall_period is
-        `[period_start, period_end]` if the on-call regeneration section
-        itself raised (empty list otherwise) - at most one such period
-        per call, since there's only one on-call regeneration section.
-        All three are meant for the caller to notify admins once this
-        method's own commit has actually succeeded.
+        failed_shift_dates, failed_oncall_period, unfilled_shift_dates).
+        unfilled_oncall_dates is passed through from
+        OnCallAutomation.generate_oncall_schedule() (Friday dates left
+        unassigned because no user respects the legal spacing
+        constraint - not an error, a business rule already handled
+        gracefully with no retry needed). failed_shift_dates lists days
+        whose shift regeneration actually raised and was rolled back to
+        its pre-attempt state. failed_oncall_period is `[period_start,
+        period_end]` if the on-call regeneration section itself raised
+        (empty list otherwise) - at most one such period per call, since
+        there's only one on-call regeneration section. unfilled_shift_dates
+        lists weekdays that regenerated with zero shifts because no one
+        was available - same business-rule case as unfilled_oncall_dates
+        (no exception, nothing to roll back), previously invisible to
+        the caller (folded into a plain log message, never surfaced for
+        notification - see the "shift automation gap notification"
+        report). All four date-bearing lists are meant for the caller to
+        notify admins once this method's own commit has actually
+        succeeded.
         """
         from datetime import datetime, timedelta
 
@@ -549,6 +570,7 @@ class AdvancedShiftAutomation:
         unfilled_oncall_dates: list = []
         failed_shift_dates: list = []
         failed_oncall_period: list = []
+        unfilled_shift_dates: list = []
 
         try:
             # Find the on-call period to recompute
@@ -637,6 +659,8 @@ class AdvancedShiftAutomation:
                         )
                         regenerated_shifts.extend(shifts)
                         messages.extend(date_messages)
+                        if not shifts:
+                            unfilled_shift_dates.append(current_date)
                     else:
                         # A failure on this specific day (e.g. a
                         # unique-constraint race) must not discard every
@@ -669,6 +693,8 @@ class AdvancedShiftAutomation:
                                 )
                                 regenerated_shifts.extend(shifts)
                                 messages.extend(date_messages)
+                                if not shifts:
+                                    unfilled_shift_dates.append(current_date)
                         except Exception as e:
                             failed_shift_dates.append(current_date)
                             messages.append(
@@ -772,4 +798,5 @@ class AdvancedShiftAutomation:
             unfilled_oncall_dates,
             failed_shift_dates,
             failed_oncall_period,
+            unfilled_shift_dates,
         )

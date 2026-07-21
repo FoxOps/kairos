@@ -537,8 +537,10 @@ class TestGenerateFullSchedule:
         with test_app.app_context():
             start_date = date(2023, 12, 15)
             end_date = date(2023, 12, 15)
-            shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
-                start_date, end_date, dry_run=True
+            shifts, messages, _unfilled_shifts = (
+                AdvancedShiftAutomation.generate_full_schedule(
+                    start_date, end_date, dry_run=True
+                )
             )
 
             assert len(shifts) > 0
@@ -550,8 +552,10 @@ class TestGenerateFullSchedule:
         with test_app.app_context():
             start_date = date(2023, 12, 15)
             end_date = date(2023, 12, 20)
-            shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
-                start_date, end_date, dry_run=True
+            shifts, messages, _unfilled_shifts = (
+                AdvancedShiftAutomation.generate_full_schedule(
+                    start_date, end_date, dry_run=True
+                )
             )
 
             # Should generate shifts for every business day
@@ -575,8 +579,10 @@ class TestGenerateFullSchedule:
 
             start_date = date(2023, 12, 15)
             end_date = date(2023, 12, 20)
-            shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
-                start_date, end_date, dry_run=True
+            shifts, messages, _unfilled_shifts = (
+                AdvancedShiftAutomation.generate_full_schedule(
+                    start_date, end_date, dry_run=True
+                )
             )
 
             final_count = Shift.query.count()
@@ -589,8 +595,10 @@ class TestGenerateFullSchedule:
 
             start_date = date(2023, 12, 15)
             end_date = date(2023, 12, 20)
-            shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
-                start_date, end_date, dry_run=False
+            shifts, messages, _unfilled_shifts = (
+                AdvancedShiftAutomation.generate_full_schedule(
+                    start_date, end_date, dry_run=False
+                )
             )
 
             final_count = Shift.query.count()
@@ -674,7 +682,7 @@ class TestRebalanceAfterLeave:
             initial_count = Shift.query.count()
 
             # Run the rebalance in dry_run
-            shifts, messages, _unfilled, _failed, _failed_oncall = (
+            shifts, messages, _unfilled, _failed, _failed_oncall, _unfilled_shifts = (
                 AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=True)
             )
 
@@ -704,7 +712,7 @@ class TestRebalanceAfterLeave:
             db.session.commit()
 
             # Run the rebalance
-            shifts, messages, _unfilled, _failed, _failed_oncall = (
+            shifts, messages, _unfilled, _failed, _failed_oncall, _unfilled_shifts = (
                 AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=True)
             )
 
@@ -817,9 +825,14 @@ class TestRebalanceAfterLeave:
             db.session.add(leave)
             db.session.commit()
 
-            _shifts, _messages, unfilled_oncall_dates, _failed, _failed_oncall = (
-                AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
-            )
+            (
+                _shifts,
+                _messages,
+                unfilled_oncall_dates,
+                _failed,
+                _failed_oncall,
+                _unfilled_shifts,
+            ) = AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
 
             assert unfilled_oncall_dates == []
 
@@ -835,7 +848,7 @@ class TestRebalanceAfterLeave:
             db.session.add(leave)
             db.session.commit()
 
-            shifts, messages, _unfilled, _failed, _failed_oncall = (
+            shifts, messages, _unfilled, _failed, _failed_oncall, _unfilled_shifts = (
                 AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=True)
             )
 
@@ -878,9 +891,14 @@ class TestRebalanceAfterLeave:
                 "app.utils.automation.OnCallAutomation.generate_oncall_schedule",
                 side_effect=RuntimeError("boom"),
             ):
-                _shifts, messages, _unfilled, _failed, failed_oncall_period = (
-                    AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
-                )
+                (
+                    _shifts,
+                    messages,
+                    _unfilled,
+                    _failed,
+                    failed_oncall_period,
+                    _unfilled_shifts,
+                ) = AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
 
             # No exception propagated - the failure is reported, not raised.
             assert len(failed_oncall_period) == 2
@@ -937,9 +955,14 @@ class TestRebalanceAfterLeave:
                 "generate_daily_shifts",
                 side_effect=flaky_generate_daily_shifts,
             ):
-                _shifts, messages, _unfilled, failed_shift_dates, _failed_oncall = (
-                    AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
-                )
+                (
+                    _shifts,
+                    messages,
+                    _unfilled,
+                    failed_shift_dates,
+                    _failed_oncall,
+                    _unfilled_shifts,
+                ) = AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
 
             assert failed_shift_dates == [failing_day]
             assert any(
@@ -976,9 +999,14 @@ class TestRebalanceAfterLeave:
             db.session.add(leave)
             db.session.commit()
 
-            regenerated_shifts, messages, _unfilled, _failed, _failed_oncall = (
-                AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
-            )
+            (
+                regenerated_shifts,
+                messages,
+                _unfilled,
+                _failed,
+                _failed_oncall,
+                _unfilled_shifts,
+            ) = AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
 
             # test_user's old on-call for this period was indeed deleted
             # and that deletion persisted (not just flush()'d then lost

@@ -237,8 +237,10 @@ class TestFullScheduleGeneration:
             # AdvancedShiftAutomation.generate_full_schedule only
             # generates shifts (business days); on-calls are generated
             # separately by OnCallAutomation.generate_oncall_schedule.
-            shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
-                start_date, end_date, dry_run=True
+            shifts, messages, _unfilled_shifts = (
+                AdvancedShiftAutomation.generate_full_schedule(
+                    start_date, end_date, dry_run=True
+                )
             )
 
             assert len(shifts) > 0

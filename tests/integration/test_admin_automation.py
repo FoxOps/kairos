@@ -222,7 +222,83 @@ class TestAutomationFull:
             notification_type="oncall_generation_gap"
         ).all()
         assert len(gap_notifs) >= 1
-        assert gap_notifs[0].link == "/admin/automation"
+        # Deep-links straight to the generation page with the affected
+        # period pre-filled and "combler les trous" pre-selected, same
+        # convention as the dashboard's own gap-detection banner - not
+        # just a plain "/admin/automation" the admin then has to
+        # manually re-navigate from.
+        assert gap_notifs[0].link.startswith("/admin/automation/full?start_date=")
+        assert "oncall_mode=fill_gaps" in gap_notifs[0].link
+
+        # The notification must actually be visible on /notifications
+        # for the admin who triggered the generation, not just present
+        # in the database - a real user report was that the gap
+        # notification "didn't show up" despite the underlying service
+        # method being unit-tested in isolation.
+        notif_page = logged_in_client.get("/notifications")
+        assert notif_page.status_code == 200
+        assert b"respecte le d\xc3\xa9lai l\xc3\xa9gal" in notif_page.data
+
+    def test_automation_full_post_generate_notifies_admins_on_shift_unfilled(
+        self, logged_in_client, test_user, second_user
+    ):
+        """Real user report: shift generation can also fail to find
+        anyone available for a day (no exception - AdvancedShiftAutomation
+        .generate_daily_shifts()'s own "aucun utilisateur disponible"
+        business-rule case) and this was never surfaced as an admin
+        notification, unlike the equivalent on-call gap case above."""
+        from app.models import Leave
+
+        with logged_in_client.application.app_context():
+            login_group = Group.query.filter_by(name="Test Group Login").first()
+            login_group.is_part_of_schedule = False
+            db.session.commit()
+
+        today = date.today()
+        target_day = today
+        while target_day.weekday() != 0:  # Monday
+            target_day += timedelta(days=1)
+        end_date = target_day
+
+        with logged_in_client.application.app_context():
+            db.session.add_all(
+                [
+                    Leave(
+                        user_id=test_user.id,
+                        start_date=target_day,
+                        end_date=target_day,
+                    ),
+                    Leave(
+                        user_id=second_user.id,
+                        start_date=target_day,
+                        end_date=target_day,
+                    ),
+                ]
+            )
+            db.session.commit()
+
+        response = logged_in_client.post(
+            "/admin/automation/full",
+            data={
+                "action": "refresh_shifts",
+                "start_date": target_day.strftime("%Y-%m-%d"),
+                "end_date": end_date.strftime("%Y-%m-%d"),
+                "oncall_mode": "none",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+
+        gap_notifs = AppNotification.query.filter_by(
+            notification_type="shift_generation_gap"
+        ).all()
+        assert len(gap_notifs) >= 1
+        assert target_day.strftime("%d/%m/%Y") in gap_notifs[0].message
+        assert gap_notifs[0].link.startswith("/admin/automation/full?start_date=")
+
+        notif_page = logged_in_client.get("/notifications")
+        assert notif_page.status_code == 200
+        assert b"Aucun shift g\xc3\xa9n\xc3\xa9r\xc3\xa9" in notif_page.data
 
 
 class TestAutomationStatusMergedIntoDashboard:

@@ -524,7 +524,7 @@ class TestLeaveService:
         gap_date = date(2026, 8, 21)
         with patch(
             "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
-            return_value=([], ["some message"], [gap_date], [], []),
+            return_value=([], ["some message"], [gap_date], [], [], []),
         ):
             LeaveService.add_leave(
                 test_user, date.today(), date.today() + timedelta(days=2)
@@ -550,7 +550,7 @@ class TestLeaveService:
         failed_date = date(2026, 8, 21)
         with patch(
             "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
-            return_value=([], ["some message"], [], [failed_date], []),
+            return_value=([], ["some message"], [], [failed_date], [], []),
         ):
             LeaveService.add_leave(
                 test_user, date.today(), date.today() + timedelta(days=2)
@@ -575,7 +575,14 @@ class TestLeaveService:
         period_end = date(2026, 9, 1)
         with patch(
             "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
-            return_value=([], ["some message"], [], [], [period_start, period_end]),
+            return_value=(
+                [],
+                ["some message"],
+                [],
+                [],
+                [period_start, period_end],
+                [],
+            ),
         ):
             LeaveService.add_leave(
                 test_user, date.today(), date.today() + timedelta(days=2)
@@ -587,6 +594,30 @@ class TestLeaveService:
         assert len(notifs) == 1
         assert "01/08/2026" in notifs[0].message
         assert "01/09/2026" in notifs[0].message
+
+    def test_add_leave_notifies_admins_on_unfilled_shift_dates(
+        self, test_app, admin_user, test_user, second_user
+    ):
+        """Real user report: rebalance_after_leave() reporting a day with
+        zero shifts because no one was available (a business-rule case,
+        not an exception) must reach admins too - previously invisible
+        to LeaveService, unlike the equivalent on-call gap case above."""
+        from app.models import AppNotification
+
+        unfilled_date = date(2026, 8, 21)
+        with patch(
+            "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
+            return_value=([], ["some message"], [], [], [], [unfilled_date]),
+        ):
+            LeaveService.add_leave(
+                test_user, date.today(), date.today() + timedelta(days=2)
+            )
+
+        notifs = AppNotification.query.filter_by(
+            user_id=admin_user.id, notification_type="shift_generation_gap"
+        ).all()
+        assert len(notifs) == 1
+        assert "21/08/2026" in notifs[0].message
 
     def test_add_leave_conflict_returns_none(self, test_app, test_user, test_leave):
         leave, regenerated = LeaveService.add_leave(

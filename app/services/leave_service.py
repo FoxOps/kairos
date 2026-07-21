@@ -167,6 +167,7 @@ class LeaveService:
                 unfilled_oncall_dates,
                 failed_shift_dates,
                 failed_oncall_period,
+                unfilled_shift_dates,
             ) = AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
             # rebalance_after_leave's own commit() already succeeded at
             # this point (an exception would have skipped straight to
@@ -217,6 +218,22 @@ class LeaveService:
                         "Assignation manuelle nécessaire dans /admin/automation.",
                         start=period_start.strftime("%d/%m/%Y"),
                         end=period_end.strftime("%d/%m/%Y"),
+                    ),
+                )
+            if unfilled_shift_dates:
+                AppNotificationService.notify_admins_shift_unfilled(
+                    unfilled_shift_dates
+                )
+                AppriseNotificationService.notify(
+                    "system",
+                    _("Génération de shifts incomplète"),
+                    _(
+                        "Aucun utilisateur disponible pour générer un shift pour : "
+                        "%(dates)s (rééquilibrage après congé). Assignation "
+                        "manuelle nécessaire dans /admin/automation.",
+                        dates=", ".join(
+                            d.strftime("%d/%m/%Y") for d in unfilled_shift_dates
+                        ),
                     ),
                 )
             return regenerated_shifts
