@@ -460,9 +460,9 @@ class TestFillOnCallGaps:
             # A manually-assigned on-call for week 1, deliberately
             # *not* the user rotation would have picked.
             week1_friday = date(2024, 1, 5)
-            start_time = datetime.combine(
-                week1_friday, datetime.min.time()
-            ).replace(hour=21)
+            start_time = datetime.combine(week1_friday, datetime.min.time()).replace(
+                hour=21
+            )
             end_time = start_time + timedelta(days=7, hours=-14)
             manual_oncall = OnCall(
                 user_id=user3.id, start_time=start_time, end_time=end_time
@@ -507,3 +507,86 @@ class TestFillOnCallGaps:
             assert unfilled_dates == []
             assert OnCall.query.count() == count_before
             assert any("Aucune astreinte manquante" in msg for msg in messages)
+
+
+class TestDetectOnCallGaps:
+    """Tests for OnCallAutomation.detect_oncall_gaps() - proactively
+    surfaces real gaps (missing Fridays strictly between the earliest
+    and latest existing on-call) so the admin doesn't have to guess
+    which date range to widen the automation page's Période fields to
+    (a real point of confusion: the page's default dates start at
+    today, so a gap further in the past is invisible unless the admin
+    already knows to look for it)."""
+
+    def test_no_gaps_returns_empty(self, test_app, test_group, test_user, second_user):
+        """3 users, no conflicts: a clean round-robin fills every week,
+        leaving nothing for detect_oncall_gaps to find. (Only 2 users
+        would leave some weeks legitimately unfillable - see
+        TestOnCallMaxFillSearch - which isn't the "gap" scenario this
+        test is about.)"""
+        with test_app.app_context():
+            user3 = User(
+                name="Third",
+                email="third-gaps@test.com",
+                password_hash="x",
+                is_admin=False,
+                group_id=test_group.id,
+            )
+            db.session.add(user3)
+            db.session.commit()
+            rotation_order = [test_user.id, second_user.id, user3.id]
+
+            OnCallAutomation.generate_oncall_schedule(
+                date(2024, 1, 5), date(2024, 1, 26), rotation_order, dry_run=False
+            )
+            assert OnCallAutomation.detect_oncall_gaps() == []
+
+    def test_detects_missing_week_between_two_existing_oncalls(
+        self, test_app, test_group, test_user, second_user
+    ):
+        with test_app.app_context():
+            user3 = User(
+                name="Third",
+                email="third-gaps2@test.com",
+                password_hash="x",
+                is_admin=False,
+                group_id=test_group.id,
+            )
+            db.session.add(user3)
+            db.session.commit()
+
+            week1 = date(2024, 1, 5)
+            week3 = date(2024, 1, 19)
+            for friday, user_id in [(week1, test_user.id), (week3, second_user.id)]:
+                start_time = datetime.combine(friday, datetime.min.time()).replace(
+                    hour=21
+                )
+                end_time = start_time + timedelta(days=7, hours=-14)
+                db.session.add(
+                    OnCall(user_id=user_id, start_time=start_time, end_time=end_time)
+                )
+            db.session.commit()
+
+            gaps = OnCallAutomation.detect_oncall_gaps()
+            assert gaps == [date(2024, 1, 12)]
+
+    def test_does_not_flag_future_ungenerated_weeks(
+        self, test_app, test_group, test_user
+    ):
+        """A single existing on-call (or none at all) has no "interior"
+        - nothing after it is a gap, it's just not generated yet."""
+        with test_app.app_context():
+            start_time = datetime.combine(
+                date(2024, 1, 5), datetime.min.time()
+            ).replace(hour=21)
+            end_time = start_time + timedelta(days=7, hours=-14)
+            db.session.add(
+                OnCall(user_id=test_user.id, start_time=start_time, end_time=end_time)
+            )
+            db.session.commit()
+
+            assert OnCallAutomation.detect_oncall_gaps() == []
+
+    def test_empty_when_no_oncalls_at_all(self, test_app):
+        with test_app.app_context():
+            assert OnCallAutomation.detect_oncall_gaps() == []

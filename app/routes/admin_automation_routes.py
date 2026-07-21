@@ -78,10 +78,12 @@ def _notify_oncall_gap_if_any(unfilled_dates):
 def automation_dashboard():
     """Automation dashboard."""
     status = get_automation_status()
+    oncall_gaps = OnCallAutomation.detect_oncall_gaps()
 
     return render_template(
         "admin/automation/dashboard.html",
         status=status,
+        oncall_gaps=oncall_gaps,
     )
 
 
@@ -344,10 +346,30 @@ def automation_full():
     while start_date_default.weekday() != 4:
         start_date_default += timedelta(days=1)
 
+    # Allows deep-linking straight to a detected gap (see the dashboard's
+    # "astreintes manquantes" alert, admin.automation_dashboard) instead
+    # of the admin having to manually widen the Période fields to reach
+    # a gap that predates today - the point of confusion that motivated
+    # detect_oncall_gaps() in the first place.
+    prefill_start = request.args.get("start_date")
+    prefill_end = request.args.get("end_date")
+    if prefill_start:
+        try:
+            start_date_default = datetime.strptime(prefill_start, "%Y-%m-%d").date()
+        except ValueError:
+            pass
+    if prefill_end:
+        try:
+            end_date_default = datetime.strptime(prefill_end, "%Y-%m-%d").date()
+        except ValueError:
+            pass
+    prefill_oncall_mode = request.args.get("oncall_mode", "none")
+
     return render_template(
         "admin/automation/full.html",
         oncall_users=oncall_users,
         start_date_default=start_date_default,
         end_date_default=end_date_default,
         current_rotation_order=current_rotation_order,
+        prefill_oncall_mode=prefill_oncall_mode,
     )

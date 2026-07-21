@@ -22,6 +22,37 @@ class TestAutomationDashboard:
         response = client.get("/admin/automation", follow_redirects=True)
         assert b"Connexion" in response.data
 
+    def test_dashboard_no_gap_alert_when_none_detected(self, logged_in_client):
+        response = logged_in_client.get("/admin/automation")
+        assert response.status_code == 200
+        assert b"Combler ces trous" not in response.data
+
+    def test_dashboard_shows_gap_alert_and_deep_link(self, logged_in_client, test_user):
+        """Regression test: an admin ran a refresh with the page's
+        default dates (starting today) and concluded nothing happened,
+        because a real gap predated that range - the dashboard must
+        proactively surface any detected gap with a link that jumps
+        straight to the right period, oncall_mode preselected, instead
+        of relying on the admin to guess."""
+        week1 = date(2024, 1, 5)
+        week3 = date(2024, 1, 19)
+        for friday in (week1, week3):
+            start_time = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+            end_time = start_time + timedelta(days=7, hours=-14)
+            db.session.add(
+                OnCall(user_id=test_user.id, start_time=start_time, end_time=end_time)
+            )
+        db.session.commit()
+
+        response = logged_in_client.get("/admin/automation")
+        assert response.status_code == 200
+        assert b"Combler ces trous" in response.data
+        assert b"12/01/2024" in response.data
+        assert (
+            b"start_date=2024-01-12&amp;end_date=2024-01-12&amp;oncall_mode=fill_gaps"
+            in response.data
+        )
+
 
 class TestAutomationFull:
     """Tests for /admin/automation/full."""
@@ -35,6 +66,30 @@ class TestAutomationFull:
             or b"oncall" in response.data.lower()
             or b"Automatisation" in response.data
         )
+
+    def test_automation_full_prefills_dates_and_mode_from_query_args(
+        self, logged_in_client
+    ):
+        """Deep-link support for the dashboard's gap alert (see
+        TestAutomationDashboard.test_dashboard_shows_gap_alert_and_deep_link)
+        - start_date/end_date/oncall_mode passed as query args must
+        override the page's own defaults."""
+        response = logged_in_client.get(
+            "/admin/automation/full"
+            "?start_date=2024-01-12&end_date=2024-01-12&oncall_mode=fill_gaps"
+        )
+        assert response.status_code == 200
+        html = response.data.decode()
+        assert 'value="2024-01-12"' in html
+        assert 'name="oncall_mode" value="fill_gaps" class="radio" checked' in html
+
+    def test_automation_full_ignores_invalid_query_dates(self, logged_in_client):
+        """Malformed query-string dates must not crash the page -
+        falls back to the normal defaults."""
+        response = logged_in_client.get(
+            "/admin/automation/full?start_date=not-a-date&end_date=also-not-a-date"
+        )
+        assert response.status_code == 200
 
     def test_automation_full_post_save_order(self, logged_in_client, test_user):
         """Test saving the rotation order."""
