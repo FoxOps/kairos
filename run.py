@@ -93,11 +93,18 @@ def create_default_data():
 
     admin_user = User.query.filter_by(email=default_admin_email).first()
     if not admin_user:
-        # The User model has no 'username' field, use 'name' instead
+        # The User model has no 'username' field, use 'name' instead.
+        # must_change_password=True unconditionally: whether the
+        # bootstrap password came from DEFAULT_ADMIN_PASSWORD (a value
+        # an operator may have copy-pasted straight from .env.example,
+        # e.g. "admin123") or was auto-generated, it's a password chosen
+        # *for* this account, not by whoever will actually use it -
+        # forced to change on first login either way.
         admin_user = User(
             email=default_admin_email,
             name="Administrateur",
             password_hash=generate_password_hash(default_admin_password),
+            must_change_password=True,
             is_admin=True,
             group_id=default_group.id,
         )

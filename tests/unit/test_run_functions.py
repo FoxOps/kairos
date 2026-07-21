@@ -176,6 +176,9 @@ class TestCreateDefaultData:
             assert user.name == "Administrateur"
             assert user.email == "admin@kairos.local"
             assert user.is_admin is True
+            # Bootstrap password (whether from DEFAULT_ADMIN_PASSWORD or
+            # auto-generated) must be replaced on first login.
+            assert user.must_change_password is True
 
             # Check that the password is correct
 

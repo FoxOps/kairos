@@ -66,18 +66,32 @@ class TestUserService:
         assert visible == [test_user]
 
     def test_create_success(self, test_app, test_group):
-        user, error = UserService.create(
-            "New", "new-svc@test.com", test_group.id, "pw123"
+        user, error, generated_password = UserService.create(
+            "New", "new-svc@test.com", test_group.id, "Correct-Horse-9"
         )
         assert error is None
         assert user is not None
+        assert generated_password is None
         assert UserRepository.get_by_email("new-svc@test.com") is not None
+
+    def test_create_generates_password_when_blank(self, test_app, test_group):
+        """A blank password no longer silently falls back to the old
+        hardcoded "password123" - a strong random one is generated
+        instead, returned once for the admin to hand to the user."""
+        user, error, generated_password = UserService.create(
+            "New", "generated-pw@test.com", test_group.id
+        )
+        assert error is None
+        assert generated_password is not None
+        assert len(generated_password) >= 16
+        assert user.check_password(generated_password)
+        assert user.must_change_password is True
 
     def test_create_writes_audit_log_entry(self, test_app, test_group):
         from app.models import AuditLog
 
-        user, error = UserService.create(
-            "New", "audit-create@test.com", test_group.id, "pw123"
+        user, error, _generated_password = UserService.create(
+            "New", "audit-create@test.com", test_group.id, "Correct-Horse-9"
         )
         assert error is None
         entry = AuditLog.query.filter_by(action="user.create").first()
@@ -86,9 +100,18 @@ class TestUserService:
         assert entry.details == "audit-create@test.com"
 
     def test_create_rejects_duplicate_email(self, test_app, test_user, test_group):
-        user, error = UserService.create("Dup", test_user.email, test_group.id)
+        user, error, _generated_password = UserService.create(
+            "Dup", test_user.email, test_group.id
+        )
         assert user is None
         assert error == "Un utilisateur avec cet email existe déjà."
+
+    def test_create_rejects_weak_password(self, test_app, test_group):
+        user, error, _generated_password = UserService.create(
+            "New", "weak-pw@test.com", test_group.id, "short1"
+        )
+        assert user is None
+        assert error is not None
 
     def test_update_success(self, test_app, test_user, test_group):
         updated, error = UserService.update(
@@ -113,6 +136,35 @@ class TestUserService:
         )
         assert updated is None
         assert error is None
+
+    def test_update_rejects_weak_password(self, test_app, test_user, test_group):
+        updated, error = UserService.update(
+            test_user.id,
+            test_user.name,
+            test_user.email,
+            test_group.id,
+            False,
+            "short1",
+        )
+        assert updated is None
+        assert error is not None
+
+    def test_update_password_forces_change_on_next_login(
+        self, test_app, test_user, test_group
+    ):
+        """An admin resetting someone else's password is choosing it for
+        them, unlike auth.update_profile's self-service change - must be
+        forced to pick their own on next login."""
+        updated, error = UserService.update(
+            test_user.id,
+            test_user.name,
+            test_user.email,
+            test_group.id,
+            False,
+            "Correct-Horse-9",
+        )
+        assert error is None
+        assert updated.must_change_password is True
 
     def test_delete_success(self, test_app, test_user):
         ok, error = UserService.delete(test_user.id)

@@ -18,6 +18,7 @@ from app.utils.helpers.common_helpers import (
     get_time_format_choices,
     get_timezone_choices,
 )
+from app.utils.helpers.password_helpers import check_password_strength
 from config_oidc import OIDCConfig
 
 # Create blueprint
@@ -221,6 +222,21 @@ def update_profile():
         new_password = request.form.get("new_password", "")
         confirm_password = request.form.get("confirm_password", "")
 
+        # A password chosen *for* current_user (default admin bootstrap,
+        # or an admin creating/resetting their account) must be replaced
+        # before anything else - checked first, before any mutation of
+        # current_user below, so a blocked submission changes nothing
+        # at all (not even name/email) rather than silently letting
+        # those through while only rejecting the password itself. See
+        # the before_request hook in app/__init__.py, which is what
+        # routed them to this page in the first place.
+        if current_user.must_change_password and not new_password:
+            flash(
+                _("Vous devez choisir un nouveau mot de passe avant de " "continuer."),
+                "danger",
+            )
+            return redirect(url_for("auth.update_profile"))
+
         # Check that name and email aren't empty
         if not name or not email:
             flash(_("Le nom et l'email sont obligatoires."), "danger")
@@ -259,7 +275,15 @@ def update_profile():
                 flash(_("Les nouveaux mots de passe ne correspondent pas."), "danger")
                 return redirect(url_for("auth.update_profile"))
 
+            strength_error = check_password_strength(
+                new_password, name=name, email=email
+            )
+            if strength_error:
+                flash(strength_error, "danger")
+                return redirect(url_for("auth.update_profile"))
+
             current_user.set_password(new_password)
+            current_user.must_change_password = False
 
         db.session.commit()
         if new_password:

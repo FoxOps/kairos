@@ -395,6 +395,60 @@ def create_app(config_object: str | None = None):
     app.register_blueprint(admin_bp)
     app.register_blueprint(export_bp)
 
+    # Password-policy hardening (ANSSI-PG-078 section 4): forces a user
+    # through auth.update_profile until they've replaced a password that
+    # was chosen *for* them rather than by them (User.must_change_password
+    # - see the model's docstring for every code path that sets it).
+    # Gated on current_user.password_hash being truthy as an independent
+    # safety net for OIDC-only accounts: they never have a local password
+    # to change and this flag is never set for them in the first place
+    # (see app/auth/user_manager.py::sync_user_from_oidc), but checking
+    # it here too means this enforcement can never accidentally trip for
+    # an OIDC session even if that invariant were ever broken elsewhere.
+    # The API blueprints (bearer-token/ServiceAccount auth, g.service_
+    # account) and the anonymous ICS export routes (token-based) never
+    # populate current_user via Flask-Login, so they're already exempt
+    # via the is_authenticated check below without needing an explicit
+    # endpoint exclusion.
+    _PASSWORD_CHANGE_EXEMPT_ENDPOINTS = {
+        "auth.update_profile",
+        "auth.logout",
+        "static",
+    }
+
+    @app.before_request
+    def enforce_password_change():
+        from flask import flash, redirect, request, url_for
+        from flask_babel import gettext as _
+        from flask_login import current_user
+
+        if request.endpoint in _PASSWORD_CHANGE_EXEMPT_ENDPOINTS:
+            return None
+
+        # A UX nicety must never be allowed to take the whole app down -
+        # fails open (request proceeds normally) on any error resolving
+        # current_user/the flag, same "never break the actual action
+        # over a non-critical side check" philosophy already applied to
+        # AuditService.log() elsewhere in this app.
+        try:
+            if not current_user.is_authenticated:
+                return None
+            if not current_user.password_hash or not current_user.must_change_password:
+                return None
+        except Exception:
+            app.logger.warning(
+                "enforce_password_change: failed to resolve current_user, "
+                "letting the request through",
+                exc_info=True,
+            )
+            return None
+
+        flash(
+            _("Vous devez choisir un nouveau mot de passe avant de continuer."),
+            "warning",
+        )
+        return redirect(url_for("auth.update_profile"))
+
     # Public REST API (flask-smorest, bearer-token/ServiceAccount auth,
     # /api/v1/*, see app/api/). CSRF-exempt: this blueprint never
     # accepts cookie-based auth, so the usual CSRF risk (a browser
