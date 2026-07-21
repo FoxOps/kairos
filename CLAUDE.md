@@ -32,7 +32,18 @@ deliberately **manual-only** (`workflow_dispatch`, never triggered by a tag push
 of truth for releases, dev branches merge into it first, never the other way around. Calls
 `tests.yml` directly as a reusable workflow (`workflow_call`) and only proceeds to build/push if it
 passes (`needs:`) — not a "run that first yourself" note, an enforced dependency. Run it from the
-Actions tab. See `Docs/deployment/docker.md`.
+Actions tab. See `Docs/deployment/docker.md`. `docker/Dockerfile` installs from `docker/requirements.txt`,
+**not** the root `requirements.txt` — a third, deliberately trimmed requirements file (on top of
+`requirements.txt`/`requirements-e2e.txt`) containing only what the running app actually needs
+(no `pytest`/`ruff`/`mypy`/`black`/`bandit`/`pip-audit`/`polib`), so the image doesn't ship the
+entire dev/test/lint toolchain — the whole point being to keep it as small as possible. It does
+carry two things the root file omits: `gunicorn` (the production WSGI server; local/bare-metal dev
+uses Flask's own dev server, `python run.py`, no dev-container equivalent needed) and
+`boto3`/`botocore` (S3-compatible backup support, pre-installed here so `BACKUP_S3_ENABLED=true`
+works out of the box in the image — bare-metal keeps this optional/manual per `make install`'s own
+help text, to avoid the install cost for contributors who don't need it). Keep shared package
+versions identical across all three requirements files when bumping a dependency that appears in
+more than one.
 
 ## Commands
 
