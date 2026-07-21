@@ -840,21 +840,33 @@ hardcoded inside `.js` files itself needs `getString()`.
 `app/templates/**.html`/`**.txt` only (not `scripts/`, `tests/`, `migrations/` — no user-facing
 text there). `make babel-update` (extraction + update in one step, `pybabel extract` runs first as
 an internal prerequisite) and `make babel-compile` wrap `pybabel update`/`compile`; catalogs live at
-`app/translations/<locale>/LC_MESSAGES/messages.po`. **`fr.po` is
-committed with every `msgstr` left empty** — gettext falls back to the `msgid` (the original
-French source string) when `msgstr` is empty, so this is intentionally a no-op catalog, not an
-oversight: French rendering is identical whether or not `fr.po` exists at all. `en.po` carries the
-real translation work — every `msgid` has a real English `msgstr`. `.mo` files are compiled
-build artifacts, gitignored (`*.mo`/`*.pot`) — `docker/Dockerfile` runs `pybabel compile` during
-the image build, and `tests/conftest.py`'s session-scoped autouse `_compile_babel_catalogs`
+`app/translations/<locale>/LC_MESSAGES/messages.po`. **`fr.po` is committed with every `msgstr`
+explicitly filled** (`msgstr` == `msgid`, a mechanical self-copy — French is the source language, so
+there's no actual translation work, just making the catalog structurally complete) — a deliberate
+reversal of this project's earlier convention (relying on gettext's empty-`msgstr`-falls-back-to-
+`msgid` behavior). i18n must be the single source of truth for every displayed string, and an empty
+`msgstr` is indistinguishable from "someone forgot to fill this in" — a fully-populated fr.po is
+auditable (`polib`-based coverage checks, see `scripts/fill_fr_catalog.py` below, can assert 0 empty
+entries) in a way that an intentionally-empty one can't be. `pybabel update` never copies `msgid`
+into `msgstr` itself and can mark a new short French string "fuzzy" against an unrelated existing
+entry (a recurring hazard in this project) — **`scripts/fill_fr_catalog.py`** (stdlib-adjacent,
+`polib`-based) closes both gaps for fr only: any entry with an empty or fuzzy `msgstr` gets
+`msgstr = msgid` and its fuzzy flag cleared. `make babel-update` runs it automatically as its last
+step, right after both `pybabel update` calls — so a fresh `make babel-update` always leaves fr.po
+with 0 empty/0 fuzzy entries without a manual pass. `en.po` carries the real translation work and is
+**not** auto-filled — every `msgid` needs a real, hand-written English `msgstr`; `make babel-update`
+prints a reminder to check `en.po` for new empty/fuzzy entries after every run. `.mo` files are
+compiled build artifacts, gitignored (`*.mo`/`*.pot`) — `docker/Dockerfile` runs `pybabel compile`
+during the image build, and `tests/conftest.py`'s session-scoped autouse `_compile_babel_catalogs`
 fixture does the same before the test suite runs. Without one of these, a fresh checkout has no
 `en.mo`, and Flask-Babel silently falls back to the French `msgid` even when `default_language`
-is set to `"en"` — the exact bug class `TestEnCatalogTranslation` in
-`tests/integration/test_i18n.py` exists to catch (that test, plus the general **"fr.po is
-committed empty" invariant**, are why the 1000+ pre-existing tests stay green through this
-feature with zero changes: `BABEL_DEFAULT_LOCALE = "fr"` + `FALLBACK_DEFAULT_LANGUAGE = "fr"` mean
-`get_locale()` resolves to `"fr"` in every fixture-built test app, where gettext's empty-`msgstr`
-fallback makes every `_()` call render exactly the original French text).
+is set to `"en"` — the exact bug class `TestEnCatalogTranslation` in `tests/integration/test_i18n.py`
+exists to catch. That test (and the 1000+ other pre-existing tests) stay green through this policy
+change with zero modifications needed: `BABEL_DEFAULT_LOCALE = "fr"` +
+`FALLBACK_DEFAULT_LANGUAGE = "fr"` mean `get_locale()` resolves to `"fr"` in every fixture-built test
+app, and an explicit `msgstr = msgid` renders byte-identical to the old empty-`msgstr`-falls-back-to-
+`msgid` behavior — the policy only changes what's *committed* to fr.po, never what a French-locale
+request actually renders.
 
 ### Date/time display format
 

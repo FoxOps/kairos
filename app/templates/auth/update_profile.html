@@ -31,27 +31,40 @@
                     </div>
 
                     <div>
-                        <label class="label" for="current_password">{{ _("Mot de passe actuel") }}</label>
+                        <label class="label" for="current_password">
+                            {{ _("Mot de passe actuel") }}
+                            {% if user.must_change_password %}<span class="text-error">*</span>{% endif %}
+                        </label>
                         <input class="input w-full" type="password" id="current_password" name="current_password"
-                               placeholder="{{ _("Obligatoire pour changer le mot de passe") }}">
+                               placeholder="{{ _("Obligatoire pour changer le mot de passe") }}"
+                               {% if user.must_change_password %}required aria-required="true"{% endif %}>
                         <p class="text-sm text-base-content/60">
                             {{ _("Obligatoire si vous souhaitez changer votre mot de passe") }}
                         </p>
                     </div>
 
                     <div>
-                        <label class="label" for="new_password">{{ _("Nouveau mot de passe") }}</label>
+                        <label class="label" for="new_password">
+                            {{ _("Nouveau mot de passe") }}
+                            {% if user.must_change_password %}<span class="text-error">*</span>{% endif %}
+                        </label>
                         <input class="input w-full" type="password" id="new_password" name="new_password"
-                               placeholder="{{ _("Laisser vide pour ne pas changer") }}" aria-describedby="new-password-help">
+                               placeholder="{{ _("Obligatoire") if user.must_change_password else _("Laisser vide pour ne pas changer") }}"
+                               aria-describedby="new-password-help"
+                               {% if user.must_change_password %}required aria-required="true"{% endif %}>
                         <p class="text-sm text-base-content/60" id="new-password-help">
                             {{ _("Au moins 12 caractères, avec au moins 3 des 4 types suivants : minuscules, majuscules, chiffres, caractères spéciaux.") }}
                         </p>
                     </div>
 
                     <div>
-                        <label class="label" for="confirm_password">{{ _("Confirmer le mot de passe") }}</label>
+                        <label class="label" for="confirm_password">
+                            {{ _("Confirmer le mot de passe") }}
+                            {% if user.must_change_password %}<span class="text-error">*</span>{% endif %}
+                        </label>
                         <input class="input w-full" type="password" id="confirm_password" name="confirm_password"
-                               placeholder="{{ _("Laisser vide pour ne pas changer") }}">
+                               placeholder="{{ _("Obligatoire") if user.must_change_password else _("Laisser vide pour ne pas changer") }}"
+                               {% if user.must_change_password %}required aria-required="true"{% endif %}>
                     </div>
 
                     <div class="flex justify-center gap-2 mt-5">

@@ -8,6 +8,7 @@ to ICS format for calendar integration.
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from flask_babel import gettext as _
 from icalendar import Calendar, Event
 
 
@@ -55,20 +56,25 @@ def generate_ics_standard(events, calendar_name="Kairos", tz_name="Europe/Paris"
                 if event_obj.shift_type
                 else str(event_obj.shift_type_id)
             )
-            title = f"Shift {shift_type_label} - {event_obj.user.name}"
-            description = (
-                f"Type: {shift_type_label}\nUtilisateur: {event_obj.user.name}"
+            title = _(
+                "Shift %(type)s - %(name)s",
+                type=shift_type_label,
+                name=event_obj.user.name,
+            )
+            description = "{}\n{}".format(
+                _("Type: %(type)s", type=shift_type_label),
+                _("Utilisateur: %(name)s", name=event_obj.user.name),
             )
             start_time = event_obj.start_time.replace(tzinfo=tz)
             end_time = event_obj.end_time.replace(tzinfo=tz)
         elif event_type == "OnCall":
-            title = f"Astreinte - {event_obj.user.name}"
-            description = f"Utilisateur: {event_obj.user.name}"
+            title = _("Astreinte - %(name)s", name=event_obj.user.name)
+            description = _("Utilisateur: %(name)s", name=event_obj.user.name)
             start_time = event_obj.start_time.replace(tzinfo=tz)
             end_time = event_obj.end_time.replace(tzinfo=tz)
         elif event_type == "Leave":
-            title = f"Congé - {event_obj.user.name}"
-            description = f"Utilisateur: {event_obj.user.name}"
+            title = _("Congé - %(name)s", name=event_obj.user.name)
+            description = _("Utilisateur: %(name)s", name=event_obj.user.name)
             # For Leave, we need to handle dates (not datetimes)
             start_time = datetime.combine(
                 event_obj.start_date, datetime.min.time()

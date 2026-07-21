@@ -61,6 +61,45 @@ class TestForcedPasswordChangeEnforcement:
         resp = client.get("/logout", follow_redirects=False)
         assert resp.status_code == 302
 
+    def test_forced_page_marks_password_fields_as_required_not_optional(
+        self, client, test_group
+    ):
+        """Regression test: the new_password/confirm_password fields
+        used to keep their normal-mode placeholder ("Laisser vide pour
+        ne pas changer" - leave blank to not change) even when
+        must_change_password made the field actually mandatory,
+        directly contradicting what the server would then reject -
+        confusing enough that an admin reported it as a bug."""
+        with client.application.app_context():
+            user = User(
+                name="Forced User",
+                email="forced-ui@test.com",
+                is_admin=False,
+                group_id=test_group.id,
+                must_change_password=True,
+            )
+            user.set_password("Correct-Horse-9")
+            db.session.add(user)
+            db.session.commit()
+
+        client.post(
+            "/login",
+            data={"email": "forced-ui@test.com", "password": "Correct-Horse-9"},
+        )
+
+        resp = client.get("/profile/update")
+        html = resp.data.decode()
+        assert "Laisser vide pour ne pas changer" not in html
+        assert html.count('id="new_password"') == 1
+        assert html.count('id="confirm_password"') == 1
+        # Both password fields (and current_password, needed to prove
+        # the new one) must be marked required in the HTML itself, not
+        # just enforced server-side.
+        new_password_input = html.split('id="new_password"')[1].split(">")[0]
+        assert "required" in new_password_input
+        confirm_password_input = html.split('id="confirm_password"')[1].split(">")[0]
+        assert "required" in confirm_password_input
+
     def test_non_forced_user_not_redirected(self, test_app, logged_in_client):
         """logged_in_client's user has must_change_password=False by
         model default - normal navigation must be unaffected."""

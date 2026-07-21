@@ -7,6 +7,7 @@ content. Routes stay thin: they parse the request, call this service,
 and turn the result into an HTTP response.
 """
 
+from flask_babel import force_locale
 from flask_login import current_user
 
 from app.models import User
@@ -48,11 +49,12 @@ class ExportService:
             if scope == "my"
             else ShiftRepository.list_all_with_user()
         )
-        return export_to_ics(
-            shifts,
-            f"Kairos - Shifts ({'All' if scope == 'all' else 'My'})",
-            tz_name=SettingsService.get_default_timezone(),
-        )
+        with force_locale(SettingsService.get_default_language()):
+            return export_to_ics(
+                shifts,
+                f"Kairos - Shifts ({'All' if scope == 'all' else 'My'})",
+                tz_name=SettingsService.get_default_timezone(),
+            )
 
     @staticmethod
     def export_oncall(scope: str, user: User) -> str:
@@ -61,11 +63,12 @@ class ExportService:
             if scope == "my"
             else OnCallRepository.list_all_with_user()
         )
-        return export_to_ics(
-            on_calls,
-            f"Kairos - OnCall ({'All' if scope == 'all' else 'My'})",
-            tz_name=SettingsService.get_default_timezone(),
-        )
+        with force_locale(SettingsService.get_default_language()):
+            return export_to_ics(
+                on_calls,
+                f"Kairos - OnCall ({'All' if scope == 'all' else 'My'})",
+                tz_name=SettingsService.get_default_timezone(),
+            )
 
     @staticmethod
     def export_leaves(scope: str, user: User) -> str:
@@ -74,8 +77,9 @@ class ExportService:
             if scope == "my"
             else LeaveRepository.list_all_with_user()
         )
-        return export_to_ics(
-            leaves,
-            f"Kairos - Leaves ({'All' if scope == 'all' else 'My'})",
-            tz_name=SettingsService.get_default_timezone(),
-        )
+        with force_locale(SettingsService.get_default_language()):
+            return export_to_ics(
+                leaves,
+                f"Kairos - Leaves ({'All' if scope == 'all' else 'My'})",
+                tz_name=SettingsService.get_default_timezone(),
+            )

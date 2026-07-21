@@ -272,7 +272,7 @@ def api_create_shift():
     """API endpoint to create a new shift via drag & drop."""
     data = request.get_json()
     if not data:
-        return jsonify({"success": False, "error": "Aucune donnée reçue"}), 400
+        return jsonify({"success": False, "error": _("Aucune donnée reçue")}), 400
 
     try:
         user_id = data.get("userId")
@@ -281,18 +281,24 @@ def api_create_shift():
         end_str = data.get("end")
 
         if not all([user_id, shift_type_id, start_str]):
-            return jsonify({"success": False, "error": "Données manquantes"}), 400
+            return jsonify({"success": False, "error": _("Données manquantes")}), 400
 
         user_id = int(user_id)
         shift_type_id = int(shift_type_id)
 
         user = db.session.get(User, user_id)
         if not user:
-            return jsonify({"success": False, "error": "Utilisateur non trouvé"}), 404
+            return (
+                jsonify({"success": False, "error": _("Utilisateur non trouvé")}),
+                404,
+            )
 
         shift_type = ShiftTypeRepository.get_by_id(shift_type_id)
         if not shift_type:
-            return jsonify({"success": False, "error": "Type de shift non trouvé"}), 404
+            return (
+                jsonify({"success": False, "error": _("Type de shift non trouvé")}),
+                404,
+            )
 
         # FullCalendar is configured with timeZone: 'UTC' (see
         # fullcalendar-config.js), so the "Z"/offset on these strings is
@@ -335,10 +341,18 @@ def api_create_shift():
 
     except ValueError as e:
         db.session.rollback()
-        return jsonify({"success": False, "error": f"Format invalide: {str(e)}"}), 400
+        return (
+            jsonify(
+                {"success": False, "error": _("Format invalide: %(val0)s", val0=str(e))}
+            ),
+            400,
+        )
     except Exception as e:
         db.session.rollback()
-        return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
+        return (
+            jsonify({"success": False, "error": _("Erreur: %(val0)s", val0=str(e))}),
+            500,
+        )
 
 
 @main_bp.route("/api/shifts/<int:shift_id>", methods=["PATCH", "PUT"])
@@ -348,18 +362,21 @@ def api_update_shift(shift_id):
     """API endpoint to update a shift via drag & drop."""
     shift = ShiftRepository.get_by_id(shift_id)
     if not shift:
-        return jsonify({"success": False, "error": "Shift non trouvé"}), 404
+        return jsonify({"success": False, "error": _("Shift non trouvé")}), 404
 
     data = request.get_json()
     if not data:
-        return jsonify({"success": False, "error": "Aucune donnée reçue"}), 400
+        return jsonify({"success": False, "error": _("Aucune donnée reçue")}), 400
 
     try:
         new_start_str = data.get("start")
         new_end_str = data.get("end")
 
         if not new_start_str:
-            return jsonify({"success": False, "error": "Date de début manquante"}), 400
+            return (
+                jsonify({"success": False, "error": _("Date de début manquante")}),
+                400,
+            )
 
         # See api_create_shift's comment: FullCalendar's timeZone: 'UTC'
         # means these strings carry the viewer's own wall-clock digits,
@@ -403,12 +420,20 @@ def api_update_shift(shift_id):
     except ValueError as e:
         db.session.rollback()
         return (
-            jsonify({"success": False, "error": f"Format de date invalide: {str(e)}"}),
+            jsonify(
+                {
+                    "success": False,
+                    "error": _("Format de date invalide: %(val0)s", val0=str(e)),
+                }
+            ),
             400,
         )
     except Exception as e:
         db.session.rollback()
-        return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
+        return (
+            jsonify({"success": False, "error": _("Erreur: %(val0)s", val0=str(e))}),
+            500,
+        )
 
 
 @main_bp.route("/api/shifts/<int:shift_id>", methods=["DELETE"])
@@ -417,14 +442,17 @@ def api_update_shift(shift_id):
 def api_delete_shift(shift_id):
     """API endpoint to delete a shift via drag & drop."""
     if not ShiftRepository.get_by_id(shift_id):
-        return jsonify({"success": False, "error": "Shift non trouvé"}), 404
+        return jsonify({"success": False, "error": _("Shift non trouvé")}), 404
 
     try:
         ShiftService.api_delete(shift_id)
         return jsonify({"success": True, "message": "Shift supprimé avec succès"})
     except Exception as e:
         db.session.rollback()
-        return jsonify({"success": False, "error": f"Erreur: {str(e)}"}), 500
+        return (
+            jsonify({"success": False, "error": _("Erreur: %(val0)s", val0=str(e))}),
+            500,
+        )
 
 
 @main_bp.route("/api/users", methods=["GET"])

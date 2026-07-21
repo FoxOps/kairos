@@ -11,6 +11,7 @@ Werkzeug==3.1.8
 # son propre mécanisme de formatage, jamais appelé ici (to_viewer_timezone()/
 # format_date_fr restent le seul code de fuseau horaire réellement utilisé).
 Flask-Babel==4.0.0
+polib==1.2.0  # scripts/fill_fr_catalog.py - remplissage mécanique des msgstr fr.po (make babel-update)
 
 # Base de données
 SQLAlchemy==2.0.51
