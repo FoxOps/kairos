@@ -540,11 +540,11 @@ class OnCallAutomation:
         """
         eligible_users = OnCallAutomation.get_eligible_users()
         if not eligible_users:
-            return [], ["Aucun utilisateur éligible pour les astreintes."], []
+            return [], [_("Aucun utilisateur éligible pour les astreintes.")], []
 
         rotation_order = OnCallAutomation.get_rotation_order(rotation_order_ids)
         if not rotation_order:
-            return [], ["Impossible de déterminer l'ordre de rotation."], []
+            return [], [_("Impossible de déterminer l'ordre de rotation.")], []
 
         # One bulk query per source (OnCall, Leave) instead of several
         # queries per candidate tested each week - see AvailabilityIndex.
@@ -586,11 +586,11 @@ class OnCallAutomation:
         """
         eligible_users = OnCallAutomation.get_eligible_users()
         if not eligible_users:
-            return [], ["Aucun utilisateur éligible pour les astreintes."], []
+            return [], [_("Aucun utilisateur éligible pour les astreintes.")], []
 
         rotation_order = OnCallAutomation.get_rotation_order(rotation_order_ids)
         if not rotation_order:
-            return [], ["Impossible de déterminer l'ordre de rotation."], []
+            return [], [_("Impossible de déterminer l'ordre de rotation.")], []
 
         index = AvailabilityIndex(user.id for user in eligible_users)
 

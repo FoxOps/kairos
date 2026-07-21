@@ -471,12 +471,28 @@ class AdvancedShiftAutomation:
             current_date += timedelta(days=1)
 
         # Return a summary
+        period_start = start_date.strftime("%d/%m/%Y")
+        period_end = end_date.strftime("%d/%m/%Y")
         if dry_run:
-            msg = f"📋 Prévisualisation : {len(all_shifts)} shifts seraient générés pour la période du {start_date.strftime('%d/%m/%Y')} au {end_date.strftime('%d/%m/%Y')}"
+            msg = _(
+                "📋 Prévisualisation : %(count)s shifts seraient générés pour la période du %(start)s au %(end)s",
+                count=len(all_shifts),
+                start=period_start,
+                end=period_end,
+            )
         else:
-            msg = f"🎉 {len(all_shifts)} shifts générés pour la période du {start_date.strftime('%d/%m/%Y')} au {end_date.strftime('%d/%m/%Y')}"
+            msg = _(
+                "🎉 %(count)s shifts générés pour la période du %(start)s au %(end)s",
+                count=len(all_shifts),
+                start=period_start,
+                end=period_end,
+            )
         if days_skipped > 0:
-            msg += f" ({days_with_shifts} jours avec shifts, {days_skipped} jours sans)"
+            msg += " " + _(
+                "(%(with_shifts)s jours avec shifts, %(skipped)s jours sans)",
+                with_shifts=days_with_shifts,
+                skipped=days_skipped,
+            )
         return all_shifts, [msg]
 
     @staticmethod

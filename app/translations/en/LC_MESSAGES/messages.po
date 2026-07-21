@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-21 10:46+0200\n"
+"POT-Creation-Date: 2026-07-21 15:56+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -349,8 +349,8 @@ msgid ""
 "l'utilisateur - il devra le changer à sa première connexion, ce mot de "
 "passe ne sera plus jamais affiché)."
 msgstr ""
-"Automatically generated password: %(password)s (share it with the user "
-"- they will have to change it on their first login, this password will "
+"Automatically generated password: %(password)s (share it with the user - "
+"they will have to change it on their first login, this password will "
 "never be shown again)."
 
 #: app/routes/admin_user_routes.py:101
@@ -501,6 +501,43 @@ msgstr "Leave deleted. No shifts to recalculate."
 msgid "Conge supprime avec succes !"
 msgstr "Leave successfully deleted!"
 
+#: app/routes/leave_routes.py:152 app/routes/leave_routes.py:187
+#: app/services/leave_service.py:93
+msgid "Congé non trouvé"
+msgstr "Leave not found"
+
+#: app/routes/leave_routes.py:160
+msgid "Vous ne pouvez supprimer que vos propres congés"
+msgstr "You can only delete your own leave"
+
+#: app/routes/leave_routes.py:176 app/routes/leave_routes.py:261
+#: app/routes/oncall_routes.py:174 app/routes/oncall_routes.py:254
+#: app/routes/shift_routes.py:353 app/routes/shift_routes.py:434
+#: app/routes/shift_routes.py:453
+#, python-format
+msgid "Erreur: %(val0)s"
+msgstr "Error: %(val0)s"
+
+#: app/routes/leave_routes.py:195
+msgid "Vous ne pouvez modifier que vos propres congés"
+msgstr "You can only modify your own leave"
+
+#: app/routes/leave_routes.py:203 app/routes/oncall_routes.py:190
+#: app/routes/shift_routes.py:275 app/routes/shift_routes.py:369
+msgid "Aucune donnée reçue"
+msgstr "No data received"
+
+#: app/routes/leave_routes.py:211 app/routes/oncall_routes.py:198
+#: app/routes/shift_routes.py:377
+msgid "Date de début manquante"
+msgstr "Missing start date"
+
+#: app/routes/leave_routes.py:253 app/routes/oncall_routes.py:246
+#: app/routes/shift_routes.py:426
+#, python-format
+msgid "Format de date invalide: %(val0)s"
+msgstr "Invalid date format: %(val0)s"
+
 #: app/routes/notification_routes.py:48
 #, python-format
 msgid "%(count)s notification(s) lue(s) supprimée(s)."
@@ -534,6 +571,11 @@ msgid ""
 "Toutes les %(count)s astreintes de %(name)s ont été supprimées avec "
 "succès !"
 msgstr "All %(count)s on-calls for %(name)s were successfully deleted!"
+
+#: app/routes/oncall_routes.py:166 app/routes/oncall_routes.py:186
+#: app/services/oncall_service.py:128
+msgid "Astreinte non trouvée"
+msgstr "On-call not found"
 
 #: app/routes/shift_routes.py:62
 msgid "Type de shift invalide."
@@ -608,6 +650,28 @@ msgid ""
 msgstr ""
 "All %(count)s shifts for the week of %(strftime)s were successfully "
 "deleted!"
+
+#: app/routes/shift_routes.py:284
+msgid "Données manquantes"
+msgstr "Missing data"
+
+#: app/routes/shift_routes.py:292
+msgid "Utilisateur non trouvé"
+msgstr "User not found"
+
+#: app/routes/shift_routes.py:299
+msgid "Type de shift non trouvé"
+msgstr "Shift type not found"
+
+#: app/routes/shift_routes.py:346
+#, python-format
+msgid "Format invalide: %(val0)s"
+msgstr "Invalid format: %(val0)s"
+
+#: app/routes/shift_routes.py:365 app/routes/shift_routes.py:445
+#: app/services/shift_service.py:169
+msgid "Shift non trouvé"
+msgstr "Shift not found"
 
 #: app/routes/swap_routes.py:38
 msgid "Sélectionnez un shift à échanger et un destinataire."
@@ -792,10 +856,6 @@ msgstr "A group with this name already exists."
 msgid "Impossible de supprimer ce groupe : des utilisateurs y sont associés."
 msgstr "Unable to delete this group: users are associated with it."
 
-#: app/services/leave_service.py:93
-msgid "Congé non trouvé"
-msgstr "Leave not found"
-
 #: app/services/leave_service.py:96
 msgid "La date de fin doit être après la date de début"
 msgstr "The end date must be after the start date"
@@ -897,10 +957,6 @@ msgstr ""
 "Unable to add this on-call (period already covered or leave during this "
 "period)."
 
-#: app/services/oncall_service.py:128
-msgid "Astreinte non trouvée"
-msgstr "On-call not found"
-
 #: app/services/oncall_service.py:131
 msgid "L'astreinte doit commencer un vendredi"
 msgstr "The on-call must start on a Friday"
@@ -914,6 +970,16 @@ msgstr "An on-call already exists for %(name)s during this period"
 #, python-format
 msgid "%(name)s est en congé pendant cette période"
 msgstr "%(name)s is on leave during this period"
+
+#: app/services/schedule_service.py:71 app/utils/export/ics_exporter.py:71
+#, python-format
+msgid "Astreinte - %(name)s"
+msgstr "On-call - %(name)s"
+
+#: app/services/schedule_service.py:83 app/utils/export/ics_exporter.py:76
+#, python-format
+msgid "Congé - %(name)s"
+msgstr "Leave - %(name)s"
 
 #: app/services/settings_service.py:94
 #, python-format
@@ -962,10 +1028,6 @@ msgstr "Unable to create a shift for a weekend"
 #: app/services/shift_service.py:148
 msgid "Conflit détecté pour ce shift"
 msgstr "Conflict detected for this shift"
-
-#: app/services/shift_service.py:169
-msgid "Shift non trouvé"
-msgstr "Shift not found"
 
 #: app/services/shift_service.py:173
 msgid "Impossible de déplacer vers un week-end (samedi/dimanche)"
@@ -1570,7 +1632,7 @@ msgstr "Cancel and return to the list"
 #: app/templates/admin/edit_user.html:58 app/templates/admin/edit_user.html:59
 #: app/templates/admin/swaps.html:179
 #: app/templates/auth/profile_settings.html:134
-#: app/templates/auth/update_profile.html:64 app/templates/confirm_swap.html:46
+#: app/templates/auth/update_profile.html:77 app/templates/confirm_swap.html:46
 #: app/templates/confirm_swap.html:47 app/templates/swaps.html:65
 #: app/utils/helpers/js_translations.py:29
 msgid "Annuler"
@@ -2856,9 +2918,9 @@ msgid ""
 "connexion."
 msgstr ""
 "At least 12 characters, with at least 3 of the following 4 types: "
-"lowercase, uppercase, digits, special characters. If you leave this "
-"field blank, a random password will be generated and shown once. "
-"Either way, the user will have to change it on their first login."
+"lowercase, uppercase, digits, special characters. If you leave this field"
+" blank, a random password will be generated and shown once. Either way, "
+"the user will have to change it on their first login."
 
 #: app/templates/admin/add_user.html:60
 msgid "Enregistrer l'utilisateur"
@@ -3143,7 +3205,7 @@ msgstr "Unique group name"
 #: app/templates/admin/edit_shift_type.html:40
 #: app/templates/admin/edit_user.html:55
 #: app/templates/auth/profile_settings.html:131
-#: app/templates/auth/update_profile.html:60
+#: app/templates/auth/update_profile.html:73
 msgid "Enregistrer les modifications"
 msgstr "Save changes"
 
@@ -3195,13 +3257,13 @@ msgid "Oui, cet utilisateur est administrateur"
 msgstr "Yes, this user is an administrator"
 
 #: app/templates/admin/edit_user.html:47
-#: app/templates/auth/update_profile.html:43
+#: app/templates/auth/update_profile.html:48
 msgid "Nouveau mot de passe"
 msgstr "New password"
 
 #: app/templates/admin/edit_user.html:48
-#: app/templates/auth/update_profile.html:45
-#: app/templates/auth/update_profile.html:54
+#: app/templates/auth/update_profile.html:52
+#: app/templates/auth/update_profile.html:66
 msgid "Laisser vide pour ne pas changer"
 msgstr "Leave empty to keep unchanged"
 
@@ -3274,7 +3336,7 @@ msgid "Actions pour le groupe %(name)s"
 msgstr "Actions for group %(name)s"
 
 #: app/templates/admin/groups.html:63 app/templates/admin/groups.html:65
-#: app/templates/admin/groups.html:86
+#: app/templates/admin/groups.html:89
 msgid "Modifier le groupe"
 msgstr "Edit the group"
 
@@ -3283,40 +3345,40 @@ msgstr "Edit the group"
 msgid "Modifier le groupe %(name)s"
 msgstr "Edit group %(name)s"
 
-#: app/templates/admin/groups.html:69 app/templates/admin/groups.html:72
-#: app/templates/admin/groups.html:87
+#: app/templates/admin/groups.html:69 app/templates/admin/groups.html:74
+#: app/templates/admin/groups.html:90
 msgid "Supprimer le groupe"
 msgstr "Delete the group"
 
-#: app/templates/admin/groups.html:71
+#: app/templates/admin/groups.html:73
 #, python-format
 msgid "Êtes-vous sûr de vouloir supprimer le groupe %(name)s ?"
 msgstr "Are you sure you want to delete group %(name)s?"
 
-#: app/templates/admin/groups.html:72
+#: app/templates/admin/groups.html:74
 #, python-format
 msgid "Supprimer le groupe %(name)s"
 msgstr "Delete group %(name)s"
 
-#: app/templates/admin/groups.html:86
+#: app/templates/admin/groups.html:89
 #: app/templates/admin/notification_targets.html:76
 #: app/templates/admin/notification_targets.html:78
 #: app/templates/admin/notification_targets.html:111
 #: app/templates/admin/service_accounts.html:62
 #: app/templates/admin/service_accounts.html:64
 #: app/templates/admin/service_accounts.html:97
-#: app/templates/admin/shift_types.html:73 app/templates/admin/users.html:91
+#: app/templates/admin/shift_types.html:73 app/templates/admin/users.html:94
 msgid "Modifier"
 msgstr "Edit"
 
-#: app/templates/admin/groups.html:87
+#: app/templates/admin/groups.html:90
 #: app/templates/admin/notification_targets.html:91
 #: app/templates/admin/notification_targets.html:96
 #: app/templates/admin/notification_targets.html:113
 #: app/templates/admin/service_accounts.html:78
 #: app/templates/admin/service_accounts.html:83
 #: app/templates/admin/service_accounts.html:99
-#: app/templates/admin/shift_types.html:74 app/templates/admin/users.html:92
+#: app/templates/admin/shift_types.html:74 app/templates/admin/users.html:95
 msgid "Supprimer"
 msgstr "Delete"
 
@@ -3899,7 +3961,7 @@ msgid "Actions pour l'utilisateur %(name)s"
 msgstr "Actions for user %(name)s"
 
 #: app/templates/admin/users.html:68 app/templates/admin/users.html:70
-#: app/templates/admin/users.html:91
+#: app/templates/admin/users.html:94
 msgid "Modifier l'utilisateur"
 msgstr "Edit the user"
 
@@ -3908,17 +3970,17 @@ msgstr "Edit the user"
 msgid "Modifier l'utilisateur %(name)s"
 msgstr "Edit user %(name)s"
 
-#: app/templates/admin/users.html:74 app/templates/admin/users.html:77
-#: app/templates/admin/users.html:92
+#: app/templates/admin/users.html:74 app/templates/admin/users.html:79
+#: app/templates/admin/users.html:95
 msgid "Supprimer l'utilisateur"
 msgstr "Delete the user"
 
-#: app/templates/admin/users.html:76
+#: app/templates/admin/users.html:78
 #, python-format
 msgid "Êtes-vous sûr de vouloir supprimer l'utilisateur %(name)s ?"
 msgstr "Are you sure you want to delete user %(name)s?"
 
-#: app/templates/admin/users.html:77
+#: app/templates/admin/users.html:79
 #, python-format
 msgid "Supprimer l'utilisateur %(name)s"
 msgstr "Delete user %(name)s"
@@ -4794,19 +4856,24 @@ msgstr "External notifications are currently disabled organization-wide."
 msgid "Modifier mon profil"
 msgstr "Edit my profile"
 
-#: app/templates/auth/update_profile.html:34
+#: app/templates/auth/update_profile.html:35
 msgid "Mot de passe actuel"
 msgstr "Current password"
 
-#: app/templates/auth/update_profile.html:36
+#: app/templates/auth/update_profile.html:39
 msgid "Obligatoire pour changer le mot de passe"
 msgstr "Required to change the password"
 
-#: app/templates/auth/update_profile.html:38
+#: app/templates/auth/update_profile.html:42
 msgid "Obligatoire si vous souhaitez changer votre mot de passe"
 msgstr "Required if you want to change your password"
 
-#: app/templates/auth/update_profile.html:47
+#: app/templates/auth/update_profile.html:52
+#: app/templates/auth/update_profile.html:66
+msgid "Obligatoire"
+msgstr "Required"
+
+#: app/templates/auth/update_profile.html:56
 msgid ""
 "Au moins 12 caractères, avec au moins 3 des 4 types suivants : "
 "minuscules, majuscules, chiffres, caractères spéciaux."
@@ -4814,7 +4881,7 @@ msgstr ""
 "At least 12 characters, with at least 3 of the following 4 types: "
 "lowercase, uppercase, digits, special characters."
 
-#: app/templates/auth/update_profile.html:52
+#: app/templates/auth/update_profile.html:62
 msgid "Confirmer le mot de passe"
 msgstr "Confirm password"
 
@@ -4930,18 +4997,37 @@ msgstr "✅ %(count)s shifts generated for %(date)s"
 msgid "⚠️ Aucun shift généré pour le %(date)s"
 msgstr "⚠️ No shift generated for %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:566
+#: app/utils/automation/advanced_shift_automation.py:478
+#, python-format
+msgid ""
+"📋 Prévisualisation : %(count)s shifts seraient générés pour la période du"
+" %(start)s au %(end)s"
+msgstr ""
+"📋 Preview: %(count)s shifts would be generated for the period %(start)s "
+"to %(end)s"
+
+#: app/utils/automation/advanced_shift_automation.py:485
+#, python-format
+msgid "🎉 %(count)s shifts générés pour la période du %(start)s au %(end)s"
+msgstr "🎉 %(count)s shifts generated for the period %(start)s to %(end)s"
+
+#: app/utils/automation/advanced_shift_automation.py:492
+#, python-format
+msgid "(%(with_shifts)s jours avec shifts, %(skipped)s jours sans)"
+msgstr "(%(with_shifts)s days with shifts, %(skipped)s days without)"
+
+#: app/utils/automation/advanced_shift_automation.py:582
 #, python-format
 msgid "🗑️ %(count)s astreintes supprimées pour l'utilisateur %(user_id)s"
 msgstr "🗑️ %(count)s on-calls deleted for user %(user_id)s"
 
-#: app/utils/automation/advanced_shift_automation.py:612
-#: app/utils/automation/advanced_shift_automation.py:643
+#: app/utils/automation/advanced_shift_automation.py:628
+#: app/utils/automation/advanced_shift_automation.py:659
 #, python-format
 msgid "🗑️ %(count)s shifts supprimés pour le %(date)s"
 msgstr "🗑️ %(count)s shifts deleted for %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:660
+#: app/utils/automation/advanced_shift_automation.py:676
 #, python-format
 msgid ""
 "❌ Échec de la régénération du %(date)s : %(error)s - ce jour n'a pas été "
@@ -4950,7 +5036,7 @@ msgstr ""
 "❌ Failed to regenerate %(date)s: %(error)s - this day was not changed, "
 "manual action required"
 
-#: app/utils/automation/advanced_shift_automation.py:702
+#: app/utils/automation/advanced_shift_automation.py:718
 #, python-format
 msgid ""
 "🗑️ %(count)s astreinte(s) supplémentaire(s) supprimée(s) dans la période "
@@ -4959,12 +5045,12 @@ msgstr ""
 "🗑️ %(count)s extra on-call(s) deleted in the extended period before "
 "regeneration"
 
-#: app/utils/automation/advanced_shift_automation.py:722
+#: app/utils/automation/advanced_shift_automation.py:738
 #, python-format
 msgid "🔄 %(count)s astreintes régénérées pour la période %(start)s - %(end)s"
 msgstr "🔄 %(count)s on-calls regenerated for the period %(start)s - %(end)s"
 
-#: app/utils/automation/advanced_shift_automation.py:732
+#: app/utils/automation/advanced_shift_automation.py:748
 #, python-format
 msgid ""
 "❌ Échec de la régénération des astreintes pour la période %(start)s - "
@@ -4990,9 +5076,35 @@ msgstr ""
 msgid "✅ %(count)s astreintes générées."
 msgstr "✅ %(count)s on-calls generated."
 
+#: app/utils/automation/oncall_automation.py:543
+#: app/utils/automation/oncall_automation.py:589
+msgid "Aucun utilisateur éligible pour les astreintes."
+msgstr "No eligible user for on-calls."
+
+#: app/utils/automation/oncall_automation.py:547
+#: app/utils/automation/oncall_automation.py:593
+msgid "Impossible de déterminer l'ordre de rotation."
+msgstr "Unable to determine the rotation order."
+
 #: app/utils/automation/oncall_automation.py:619
 msgid "✅ Aucune astreinte manquante sur cette période."
 msgstr "✅ No missing on-calls for this period."
+
+#: app/utils/export/ics_exporter.py:60
+#, python-format
+msgid "Shift %(type)s - %(name)s"
+msgstr "Shift %(type)s - %(name)s"
+
+#: app/utils/export/ics_exporter.py:65
+#, python-format
+msgid "Type: %(type)s"
+msgstr "Type: %(type)s"
+
+#: app/utils/export/ics_exporter.py:66 app/utils/export/ics_exporter.py:72
+#: app/utils/export/ics_exporter.py:77
+#, python-format
+msgid "Utilisateur: %(name)s"
+msgstr "User: %(name)s"
 
 #: app/utils/helpers/js_translations.py:20
 msgid "Désactiver le mode édition"
@@ -5135,6 +5247,15 @@ msgstr "Light theme enabled"
 msgid "Copié !"
 msgstr "Copied!"
 
+#: app/utils/helpers/js_translations.py:71
+msgid "1 erreur de formulaire. Veuillez la corriger."
+msgstr "1 form error. Please fix it."
+
+#: app/utils/helpers/js_translations.py:73
+#, python-format
+msgid "%(count)s erreurs de formulaire. Veuillez les corriger."
+msgstr "%(count)s form errors. Please fix them."
+
 #: app/utils/helpers/password_helpers.py:123
 #, python-format
 msgid "Le mot de passe doit contenir au moins %(min_length)s caractères."
@@ -5150,8 +5271,8 @@ msgid ""
 "Le mot de passe doit contenir au moins 3 des 4 types de caractères "
 "suivants : minuscules, majuscules, chiffres, caractères spéciaux."
 msgstr ""
-"The password must contain at least 3 of the following 4 character "
-"types: lowercase, uppercase, digits, special characters."
+"The password must contain at least 3 of the following 4 character types: "
+"lowercase, uppercase, digits, special characters."
 
 #: app/utils/helpers/password_helpers.py:147
 msgid ""

@@ -111,7 +111,9 @@ babel-update: babel-extract ## Extrait et met à jour les catalogues .po (fr/en)
 	@echo "$(YELLOW)Mise à jour des catalogues de traduction...$(NC)"
 	pybabel update -i app/translations/messages.pot -d app/translations -l fr
 	pybabel update -i app/translations/messages.pot -d app/translations -l en
+	python scripts/fill_fr_catalog.py
 	@echo "$(GREEN)✓ Catalogues fr/en mis à jour$(NC)"
+	@echo "$(YELLOW)⚠ Vérifiez app/translations/en/LC_MESSAGES/messages.po : les nouvelles chaînes ont un msgstr vide/fuzzy à traduire à la main.$(NC)"
 
 babel-compile: ## Compile les catalogues .po en .mo (requis avant de lancer l'app)
 	@echo "$(YELLOW)Compilation des catalogues de traduction...$(NC)"
