@@ -468,9 +468,20 @@ class TestAutomationFullRefreshOncallMode:
         assert preserved is not None
         assert preserved.user_id == second_user.id
 
-    def test_regenerate_mode_replaces_oncalls(
+    def test_regenerate_mode_prefers_existing_valid_assignment(
         self, logged_in_client, test_user, second_user
     ):
+        """ "Régénérer entièrement" wipes and recomputes every on-call in
+        the period, but now prefers keeping each week's existing
+        occupant over blindly replaying the rotation order (minimal-
+        perturbation - see OnCallAutomation.capture_existing_assignments()
+        and _generate_for_fridays()'s preferred_assignments) - a manual
+        assignment that's still valid (no conflict) survives the
+        regenerate rather than being needlessly reshuffled. Supersedes
+        the old test_regenerate_mode_replaces_oncalls, which asserted
+        the opposite (any pre-existing assignment always gets replaced)
+        - that was the behavior this feature deliberately changes, not
+        a contract worth preserving."""
         today = date.today()
         start_date = today
         while start_date.weekday() != 4:
@@ -501,12 +512,81 @@ class TestAutomationFullRefreshOncallMode:
             follow_redirects=True,
         )
         assert response.status_code == 200
-        # The manual assignment itself is gone (the row may have been
-        # replaced by a freshly generated one reusing the same primary
-        # key, so check the assignment, not row survival by id).
+        # second_user has no conflict on this week, so they're kept
+        # (the row may have been replaced by a freshly generated one
+        # reusing the same primary key, so check the assignment, not
+        # row survival by id).
+        assert (
+            OnCall.query.filter_by(
+                user_id=second_user.id, start_time=manual_start_time
+            ).first()
+            is not None
+        )
+
+    def test_regenerate_mode_replaces_assignment_with_a_real_conflict(
+        self, logged_in_client, test_user, second_user
+    ):
+        """The minimal-perturbation preference is not a special case:
+        a preferred user with a real conflict on that exact week (here,
+        their own leave) is filtered out like any other candidate -
+        regenerate must still fall back to a valid rotation-order
+        candidate instead of leaving the week unfillable."""
+        from app.models import Leave
+
+        # logged_in_client's own admin ("Login User") is in an
+        # oncall-eligible group too - excluded here so exactly
+        # test_user/second_user are the eligible pool, same pattern as
+        # TestAutomationFull.test_automation_full_post_generate_notifies_admins_on_gap.
+        login_group = Group.query.filter_by(name="Test Group Login").first()
+        login_group.is_part_of_oncall = False
+        db.session.commit()
+
+        today = date.today()
+        start_date = today
+        while start_date.weekday() != 4:
+            start_date += timedelta(days=1)
+        end_date = start_date + timedelta(days=14)
+
+        manual_start_time = datetime.combine(start_date, datetime.min.time()).replace(
+            hour=21
+        )
+        manual_oncall = OnCall(
+            user_id=second_user.id,
+            start_time=manual_start_time,
+            end_time=datetime.combine(
+                start_date + timedelta(days=7), datetime.min.time()
+            ).replace(hour=7),
+        )
+        db.session.add(manual_oncall)
+        db.session.add(
+            Leave(
+                user_id=second_user.id,
+                start_date=start_date,
+                end_date=start_date + timedelta(days=6),
+            )
+        )
+        db.session.commit()
+
+        response = logged_in_client.post(
+            "/admin/automation/full",
+            data={
+                "action": "refresh_shifts",
+                "start_date": start_date.strftime("%Y-%m-%d"),
+                "end_date": end_date.strftime("%Y-%m-%d"),
+                "oncall_mode": "regenerate",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
         assert (
             OnCall.query.filter_by(
                 user_id=second_user.id, start_time=manual_start_time
             ).first()
             is None
+        )
+        assert (
+            OnCall.query.filter_by(
+                user_id=test_user.id, start_time=manual_start_time
+            ).first()
+            is not None
         )

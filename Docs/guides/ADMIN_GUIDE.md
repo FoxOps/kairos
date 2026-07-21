@@ -610,6 +610,15 @@ the code.
 - Minimum 2-week gap enforced between two on-calls for the same user,
   checked against every on-call the user has (past and future), not just
   their single most recent one
+- When on-calls are wiped and regenerated for a period (the automatic
+  rebalance after a leave is added, and "Rafraîchir > Régénérer
+  entièrement" - never the "Générer" button, an explicit full reset)
+  each week prefers keeping the user it already had, instead of
+  replaying the rotation order from scratch - minimizes how much of an
+  already-working schedule gets reshuffled on every rebalance. Not a
+  guarantee: a week whose occupant has a real conflict (on leave,
+  overlapping another on-call) falls back to the rotation order for
+  that week exactly like before
 
 #### Shifts (`app/utils/automation/advanced_shift_automation.py`)
 

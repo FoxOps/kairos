@@ -836,6 +836,89 @@ class TestRebalanceAfterLeave:
 
             assert unfilled_oncall_dates == []
 
+    def test_rebalance_after_leave_preserves_unaffected_weeks(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Real user report: automatic rebalances after a leave
+        reshuffled weeks that had nothing to do with the leave, slowly
+        drifting the rotation over many successive leaves. The
+        rebalance's on-call regeneration now prefers keeping each
+        week's existing occupant (captured before the window is wiped)
+        over blindly replaying the rotation order.
+
+        With ample rotation slack (6 users here), replacing the single
+        leave-affected week's occupant doesn't force a legal-spacing
+        cascade onto any other week (unlike a tight 3-4 user pool,
+        where the replacement candidate's own nearby slot can collide -
+        a real, expected reshuffle in that case, not a bug - see
+        TestOnCallMaxFillSearch for that scenario). So here every other
+        week in the window must come out exactly as it went in."""
+        with test_app.app_context():
+            extra_users = []
+            for i in range(4):
+                u = User(
+                    name=f"Extra User {i}",
+                    email=f"extra{i}@test.com",
+                    password_hash="extra123",
+                    is_admin=False,
+                    group_id=test_group.id,
+                )
+                db.session.add(u)
+                extra_users.append(u)
+            db.session.commit()
+
+            rotation_order = [test_user.id, second_user.id] + [
+                u.id for u in extra_users
+            ]
+            AutomationConfig.set_rotation_order(rotation_order)
+
+            OnCallAutomation.generate_oncall_schedule(
+                date(2023, 11, 3),
+                date(2024, 3, 1),
+                rotation_order_ids=rotation_order,
+                dry_run=False,
+                commit=True,
+            )
+
+            before = {
+                oc.start_time.date(): oc.user_id
+                for oc in OnCall.query.filter(
+                    OnCall.start_time >= datetime(2023, 12, 1),
+                    OnCall.start_time <= datetime(2024, 2, 1),
+                ).all()
+            }
+
+            leave = Leave(
+                user_id=test_user.id,
+                start_date=date(2024, 1, 3),
+                end_date=date(2024, 1, 5),
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
+
+            after = {
+                oc.start_time.date(): oc.user_id
+                for oc in OnCall.query.filter(
+                    OnCall.start_time >= datetime(2023, 12, 1),
+                    OnCall.start_time <= datetime(2024, 2, 1),
+                ).all()
+            }
+
+            # Every week except the one whose occupant went on leave
+            # must be completely unchanged. The leave (Jan 3-5, a
+            # Wed-Fri) overlaps the on-call that *started* the
+            # previous Friday (Dec 29 21h -> Jan 5 07h), not the
+            # calendar week the leave dates themselves fall in.
+            leave_week = date(2023, 12, 29)
+            unchanged_weeks = {d: u for d, u in before.items() if d != leave_week}
+            for friday, user_id in unchanged_weeks.items():
+                assert after.get(friday) == user_id, (
+                    f"week {friday} changed from {user_id} to "
+                    f"{after.get(friday)} despite no conflict"
+                )
+
     def test_rebalance_after_leave_no_overlap(self, test_app, test_group, test_user):
         """Test rebalancing with a leave that overlaps nothing."""
         with test_app.app_context():

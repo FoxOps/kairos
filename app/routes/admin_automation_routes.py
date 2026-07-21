@@ -157,6 +157,17 @@ def automation_full():
                     _flash_automation_messages(oncall_messages, default_category="info")
                     _notify_oncall_gap_if_any(oncall_unfilled_dates)
                 elif oncall_mode == "regenerate":
+                    # Captured before the wipe below, so the search can
+                    # prefer keeping each week's existing occupant
+                    # instead of blindly replaying the rotation order -
+                    # same mechanism as the automatic
+                    # rebalance-after-leave path (see
+                    # OnCallAutomation.capture_existing_assignments()).
+                    preferred_assignments = (
+                        OnCallAutomation.capture_existing_assignments(
+                            start_date, end_date
+                        )
+                    )
                     oncalls_deleted = OnCallRepository.delete_overlapping_range(
                         start_date, end_date
                     )
@@ -175,6 +186,7 @@ def automation_full():
                             end_date,
                             rotation_order_ids=AutomationConfig.get_rotation_order(),
                             dry_run=False,
+                            preferred_assignments=preferred_assignments,
                         )
                     )
                     _flash_automation_messages(
