@@ -190,6 +190,10 @@ class AppNotificationService:
         if not dates:
             return
         dates_str = ", ".join(d.strftime("%d/%m/%Y") for d in dates)
+        link = (
+            f"/admin/automation/full?start_date={min(dates).isoformat()}"
+            f"&end_date={max(dates).isoformat()}&oncall_mode=fill_gaps"
+        )
         for admin in UserRepository.list_admins():
             with force_locale(admin.effective_language()):
                 message = _(
@@ -199,7 +203,7 @@ class AppNotificationService:
                     dates=dates_str,
                 )
             AppNotificationService._notify(
-                admin.id, "oncall_generation_gap", message, "/admin/automation"
+                admin.id, "oncall_generation_gap", message, link
             )
         db.session.commit()
 
@@ -217,6 +221,10 @@ class AppNotificationService:
         if not dates:
             return
         dates_str = ", ".join(d.strftime("%d/%m/%Y") for d in dates)
+        link = (
+            f"/admin/automation/full?start_date={min(dates).isoformat()}"
+            f"&end_date={max(dates).isoformat()}"
+        )
         for admin in UserRepository.list_admins():
             with force_locale(admin.effective_language()):
                 message = _(
@@ -226,7 +234,37 @@ class AppNotificationService:
                     dates=dates_str,
                 )
             AppNotificationService._notify(
-                admin.id, "shift_generation_gap", message, "/admin/automation"
+                admin.id, "shift_generation_gap", message, link
+            )
+        db.session.commit()
+
+    @staticmethod
+    def notify_admins_shift_unfilled(dates: list[date]) -> None:
+        """No one was available for these weekdays - AdvancedShiftAutomation
+        .generate_daily_shifts()'s own business-rule case (not an
+        exception, nothing to roll back: the day genuinely has zero
+        shifts). Distinct from notify_admins_shift_gap() above (an actual
+        exception, day left untouched) - the wording here reflects that
+        the day *was* processed and is now legitimately empty. Call only
+        after the triggering generation's own commit has actually
+        succeeded, same rule as every other call site in this app."""
+        if not dates:
+            return
+        dates_str = ", ".join(d.strftime("%d/%m/%Y") for d in dates)
+        link = (
+            f"/admin/automation/full?start_date={min(dates).isoformat()}"
+            f"&end_date={max(dates).isoformat()}"
+        )
+        for admin in UserRepository.list_admins():
+            with force_locale(admin.effective_language()):
+                message = _(
+                    "Aucun shift généré automatiquement (aucun utilisateur "
+                    "disponible) pour : %(dates)s. Assignation manuelle "
+                    "nécessaire.",
+                    dates=dates_str,
+                )
+            AppNotificationService._notify(
+                admin.id, "shift_generation_gap", message, link
             )
         db.session.commit()
 
@@ -242,6 +280,10 @@ class AppNotificationService:
         before the attempt. Manual admin assignment is needed. Same
         "call only after the triggering generation's own commit has
         actually succeeded" rule as notify_admins_oncall_gap() above."""
+        link = (
+            f"/admin/automation/full?start_date={period_start.isoformat()}"
+            f"&end_date={period_end.isoformat()}&oncall_mode=regenerate"
+        )
         for admin in UserRepository.list_admins():
             with force_locale(admin.effective_language()):
                 message = _(
@@ -253,6 +295,6 @@ class AppNotificationService:
                     end=period_end.strftime("%d/%m/%Y"),
                 )
             AppNotificationService._notify(
-                admin.id, "oncall_generation_gap", message, "/admin/automation"
+                admin.id, "oncall_generation_gap", message, link
             )
         db.session.commit()
