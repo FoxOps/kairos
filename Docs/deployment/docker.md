@@ -22,7 +22,7 @@ time. Kept **manual-only** (`workflow_dispatch`, never triggered by a
 tag push) so an image is only ever published as a deliberate action,
 restricted to `main` (a `require-main` job fails loudly if run from any
 other ref - `main` is the single source of truth for releases, dev
-branches like `1.0.0-RC2` merge into it first, never the other way
+branches like `1.0.0-RC3` merge into it first, never the other way
 around), and gated on `tests.yml` actually passing: it calls that
 workflow directly (`workflow_call`) and only proceeds to build/push if
 it succeeds - not a "remember to run that first" note, an enforced

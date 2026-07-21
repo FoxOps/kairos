@@ -3,7 +3,7 @@
 [![Tests](https://img.shields.io/github/actions/workflow/status/FoxOps/kairos/tests.yml?branch=main&label=tests)](https://github.com/FoxOps/kairos/actions/workflows/tests.yml)
 [![License: CeCILL-2.1](https://img.shields.io/badge/license-CeCILL--2.1-blue)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
-[![Version](https://img.shields.io/badge/version-1.0.0--rc2-orange)](ROADMAP.md)
+[![Version](https://img.shields.io/badge/version-1.0.0--rc3-orange)](ROADMAP.md)
 
 Team shift scheduling, on-call rotations, and leave management - with ICS
 calendar export, SSO/OIDC, a public REST API, and a rotation engine that
@@ -141,4 +141,4 @@ or a [Discussion](https://github.com/FoxOps/kairos/discussions) on GitHub.
 
 ---
 
-**Version**: 1.0.0-rc2 · © 2026 FoxOps
+**Version**: 1.0.0-rc3 · © 2026 FoxOps
