@@ -1,0 +1,26 @@
+profile = "jinja"
+
+# H025 (orphan tag) is disabled project-wide: a false positive on every
+# template that consists of a Jinja block/if-fragment rather than a full
+# HTML document (this project's entire app/templates/ layout, per Flask's
+# {% extends %}/{% block %} pattern) - confirmed by hand-checking several
+# flagged tags (index.html's <section>, dashboard.html's stat <div>s,
+# _pagination.html's outer <div>) against their actual, correctly present
+# closing tags. A known djlint limitation with fragment-only templates,
+# not a real structural problem in this codebase.
+#
+# H029 (lowercase form method values) is a pure style preference with no
+# functional difference (HTML5 accepts both cases) - this project already
+# consistently uses uppercase (method="POST"/"GET") everywhere, so
+# enforcing lowercase would just be churn against an already-consistent
+# convention, not a real fix.
+ignore = "H025,H029"
+
+[per-file-ignores]
+# H021 (inline styles): email templates must use inline styles - external
+# CSS/<style> tags are stripped by most email clients (Gmail among them),
+# there is no Tailwind-class alternative for HTML email.
+# H030 (meta description): irrelevant for an email body, no SEO context.
+# NB: matched as a regex (re.search) against the file path, not a glob -
+# see djlint/lint.py's per_file_ignores handling.
+"app/templates/emails/.*\\.html" = "H021,H030"

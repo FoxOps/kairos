@@ -39,6 +39,10 @@ pytest-cov==7.1.0
 ruff==0.15.22
 mypy==2.3.0
 black==26.5.1
+# Linter Jinja/HTML pour app/templates/ (config : .djlint.toml) - exécuté
+# par make lint et par tests/unit/test_template_lint.py (donc inclus dans
+# make test / pytest tests/ aussi).
+djlint==1.42.2
 
 # Sécurité
 bandit==1.9.4
