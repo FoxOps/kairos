@@ -16,6 +16,18 @@ from app.routes.main import main_bp
 from app.services import ScheduleService
 from app.utils.helpers import build_shift_type_color_map
 
+# Hard ceiling on a single api_get_shifts() request's span, independent
+# of the ±180-day *default* (ScheduleService.CALENDAR_WINDOW_DAYS) - the
+# default no longer caps anything once start/end are supplied (see that
+# function's docstring), so without this a client could request e.g.
+# start=0001-01-01&end=9999-12-31 and force a full-table scan of every
+# shift/on-call/leave ever created on every request. 730 days (2 years)
+# comfortably covers any legitimate admin workflow (generating a
+# schedule a year or more ahead, per the real report that motivated
+# dropping the old fixed window) while keeping a single request's query
+# cost bounded.
+MAX_CALENDAR_RANGE_DAYS = 730
+
 
 @main_bp.route("/")
 @login_required
@@ -60,14 +72,23 @@ def api_get_shifts():
     directly against this app, would silently never appear in the
     calendar with no indication why). start/end omitted or unparseable
     falls back to that same ±180-day default, so any caller that
-    doesn't pass them keeps working unchanged."""
+    doesn't pass them keeps working unchanged. A range wider than
+    MAX_CALENDAR_RANGE_DAYS, or with end before start, is rejected the
+    same way as an unparseable one (falls back to the default window)
+    rather than trusting an arbitrarily large client-supplied span for
+    the underlying query - see that constant's own docstring."""
     start_str = request.args.get("start")
     end_str = request.args.get("end")
 
     window_start = _parse_calendar_bound(start_str) if start_str else None
     window_end = _parse_calendar_bound(end_str) if end_str else None
 
-    if window_start is None or window_end is None:
+    if (
+        window_start is None
+        or window_end is None
+        or window_end <= window_start
+        or (window_end - window_start).days > MAX_CALENDAR_RANGE_DAYS
+    ):
         window_start, window_end = ScheduleService.calendar_window()
 
     events = ScheduleService.get_calendar_events_for_range(
