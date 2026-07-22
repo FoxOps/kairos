@@ -114,8 +114,8 @@ relative to `docker/docker-compose.yml`, so all under `docker/`):
 leviia-schedule/
 └── docker/
     ├── Dockerfile          # Ultra-lightweight Docker image
-    ├── entrypoint.sh       # Startup script (web server + conditional crond)
-    ├── crontabs/appuser    # Email reminder and backup scheduling (crond)
+    ├── entrypoint.sh       # Startup script (web server + crond)
+    ├── crontabs/appuser    # Email reminders, backups, schedule cleanup (crond)
     ├── docker-compose.yml  # App service (local build or registry) + optional OIDC mock (profile)
     ├── .env                # Environment variables (to create, not committed)
     ├── data/                # Persistent SQLite data
@@ -239,15 +239,25 @@ DEFAULT_ADMIN_PASSWORD=your_secure_password
 ### docker/entrypoint.sh
 - **Initialization**: Creates the SQLite database if it doesn't exist
 - **Default data**: Creates the shift types, the group, and the admin
-- **Email notifications and backups**: if `NOTIFICATIONS_ENABLED=true`
-  and/or `BACKUP_ENABLED=true` (see `.env`), starts `crond` (busybox,
-  already present in the Alpine image, no extra package needed) in the
-  background before launching the web server - schedule in
-  `docker/crontabs/appuser`. Nothing else to configure: one environment
-  variable per feature, no extra Docker service
-  to manage. For local backups to survive container recreation,
-  set `BACKUP_LOCAL_DIR=/app/data/backups` (the `./data:/app/data`
-  volume is already mounted).
+- **Scheduled tasks**: always starts `crond` (busybox, already present
+  in the Alpine image, no extra package needed) in the background
+  before launching the web server - schedule in
+  `docker/crontabs/appuser`. Three jobs, each gated independently:
+  - Email reminders (`send_shift_notifications.py`/
+    `send_oncall_notifications.py`): no-op unless `NOTIFICATIONS_ENABLED=true`
+    (see `.env`).
+  - Backups (`backup_database.py`): no-op unless `BACKUP_ENABLED=true`.
+    For local backups to survive container recreation, set
+    `BACKUP_LOCAL_DIR=/app/data/backups` (the `./data:/app/data` volume
+    is already mounted).
+  - Schedule history cleanup (`cleanup_schedule_data.py`): on by
+    default (365-day retention) - no environment variable, gated by the
+    "Historique du planning" setting at `/admin/settings` instead
+    (0 disables it). Runs daily.
+
+  Nothing else to configure: one switch per feature (an env var for
+  the first two, an admin-editable setting for the third), no extra
+  Docker service to manage.
 - **Server selection**:
   - `development` → `python run.py` (with reloader)
   - `production` → `gunicorn` (1 worker for SQLite)

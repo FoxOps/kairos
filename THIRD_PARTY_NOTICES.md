@@ -79,6 +79,7 @@ invented or computed hues.
 | pip-audit | Apache-2.0 | [pypa/pip-audit](https://github.com/pypa/pip-audit) |
 | Playwright (Python) | Apache-2.0 | [microsoft/playwright-python](https://github.com/microsoft/playwright-python) |
 | pytest-playwright | Apache-2.0 | [microsoft/playwright-pytest](https://github.com/microsoft/playwright-pytest) |
+| djLint | GPL-3.0-or-later | [djlint/djLint](https://github.com/djlint/djLint) |
 
 ---
 
