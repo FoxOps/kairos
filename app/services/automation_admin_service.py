@@ -205,17 +205,26 @@ class AutomationAdminService:
         generate_full_schedule() actually persist their result."""
         result = GenerateResult(dry_run=dry_run)
 
+        # Computed *before* clear_period() below, which deletes on-calls
+        # via a true datetime overlap check and would also wipe the
+        # on-call week anchored the Friday just before start_date -
+        # querying for it after that delete would always find nothing
+        # (already gone), silently defeating this realignment. Align
+        # first so the regeneration re-creates that same week instead of
+        # losing it - see OnCallAutomation.align_regeneration_start()'s
+        # docstring. Real regression caught by
+        # tests/integration/test_admin_automation.py::
+        # TestAutomationFullAppendedGeneration - a first ordering
+        # attempt called this after clear_period() and looked correct
+        # until that test's second, appended "Générer" call proved the
+        # boundary week from the first call was still being lost.
+        oncall_regen_start = OnCallAutomation.align_regeneration_start(start_date)
+
         if not dry_run:
             result.oncalls_deleted, result.shifts_deleted = (
                 AutomationAdminService.clear_period(start_date, end_date)
             )
 
-        # clear_period() above deletes on-calls via a true datetime
-        # overlap check, which also wipes the on-call week anchored the
-        # Friday just before start_date. Align so the regeneration below
-        # re-creates that same week instead of silently losing it - see
-        # OnCallAutomation.align_regeneration_start()'s docstring.
-        oncall_regen_start = OnCallAutomation.align_regeneration_start(start_date)
         oncalls, oncall_messages, oncall_unfilled_dates = (
             OnCallAutomation.generate_oncall_schedule(
                 oncall_regen_start, end_date, rotation_order_ids, dry_run=dry_run

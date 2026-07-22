@@ -112,6 +112,76 @@ class TestOnCallAutomationGenerateScheduleFull:
                 for msg in messages
             )
 
+    def test_second_call_appended_after_first_respects_spacing_across_boundary(
+        self, test_app, test_user, second_user, test_group
+    ):
+        """Real admin workflow: generate a schedule, then later generate
+        a *new*, non-overlapping range appended right after it (no
+        deletion in between) - e.g. extending the rotation further into
+        the future once the first batch is already committed. The 2-week
+        legal spacing constraint must still be enforced across the
+        boundary between the two calls: AvailabilityIndex seeds from
+        every existing on-call in the DB regardless of date (see its own
+        docstring), not just the ones inside the range being generated -
+        this test is the regression guard for that property actually
+        holding end-to-end across two separate, committed calls."""
+        with test_app.app_context():
+            from app.models import User as UserModel
+
+            third_user = UserModel(
+                name="Third User", email="third@test.com", group_id=test_group.id
+            )
+            third_user.set_password("test_password")
+            db.session.add(third_user)
+            db.session.commit()
+
+            rotation = [test_user.id, second_user.id, third_user.id]
+
+            today = date.today()
+            days_until_friday = (4 - today.weekday()) % 7
+            first_start = today + timedelta(days=days_until_friday)
+            first_end = first_start + timedelta(days=14)  # 3 Fridays, one full cycle
+
+            first_oncalls, _messages, first_unfilled = (
+                OnCallAutomation.generate_oncall_schedule(
+                    first_start, first_end, rotation_order_ids=rotation, dry_run=False
+                )
+            )
+            assert first_unfilled == []
+            assert len(first_oncalls) == 3
+
+            second_start = first_end + timedelta(days=7)
+            second_end = second_start + timedelta(days=14)  # another full cycle
+
+            second_oncalls, _messages2, second_unfilled = (
+                OnCallAutomation.generate_oncall_schedule(
+                    second_start, second_end, rotation_order_ids=rotation, dry_run=False
+                )
+            )
+            assert second_unfilled == []
+            assert len(second_oncalls) == 3
+
+            all_oncalls = OnCall.query.order_by(OnCall.start_time).all()
+            assert len(all_oncalls) == 6
+
+            # No gap and no duplicate Friday across the boundary between
+            # the two calls.
+            for prev, nxt in zip(all_oncalls, all_oncalls[1:], strict=False):
+                assert (nxt.start_time - prev.start_time).days == 7
+
+            # No user is on-call again sooner than 2 full weeks after
+            # their previous on-call ended - checked across the *whole*
+            # combined history, including pairs that straddle the two
+            # separate generate_oncall_schedule() calls.
+            by_user: dict[int, list] = {}
+            for oc in all_oncalls:
+                by_user.setdefault(oc.user_id, []).append(oc)
+            for _user_id, ocs in by_user.items():
+                ocs.sort(key=lambda o: o.start_time)
+                for prev_oc, next_oc in zip(ocs, ocs[1:], strict=False):
+                    gap_days = (next_oc.start_time - prev_oc.end_time).days
+                    assert gap_days / 7 >= 2
+
 
 class TestOnCallAutomationFindNextAvailableFull:
     """Full tests for OnCallAutomation.find_next_available_user."""
