@@ -9,7 +9,7 @@ from datetime import datetime
 from flask import abort, flash, redirect, render_template, request, url_for
 from flask_babel import gettext as _
 
-from app.auth.decorators import admin_required
+from app.auth.decorators import admin_required, handle_form_errors
 from app.repositories.service_account_repository import ServiceAccountRepository
 from app.routes.admin import admin_bp
 from app.services import ServiceAccountService
@@ -30,6 +30,7 @@ def list_service_accounts():
 
 @admin_bp.route("/admin/service-accounts/add", methods=["GET", "POST"])
 @admin_required
+@handle_form_errors
 def add_service_account():
     if request.method == "POST":
         name = request.form.get("name", "").strip()
@@ -61,6 +62,7 @@ def add_service_account():
     "/admin/service-accounts/edit/<int:service_account_id>", methods=["GET", "POST"]
 )
 @admin_required
+@handle_form_errors
 def edit_service_account(service_account_id):
     service_account = ServiceAccountRepository.get_by_id(service_account_id) or abort(
         404

@@ -8,7 +8,7 @@ from flask import abort, flash, redirect, render_template, request, url_for
 from flask_babel import gettext as _
 
 from app import db
-from app.auth.decorators import admin_required
+from app.auth.decorators import admin_required, handle_form_errors
 from app.repositories.notification_target_repository import (
     NotificationTargetRepository,
 )
@@ -51,6 +51,7 @@ def toggle_apprise_notifications():
 
 @admin_bp.route("/admin/notification-targets/add", methods=["GET", "POST"])
 @admin_required
+@handle_form_errors
 def add_notification_target():
     if request.method == "POST":
         name = request.form.get("name", "").strip()
@@ -64,22 +65,18 @@ def add_notification_target():
             flash(_("Le nom et l'URL Apprise sont obligatoires."), "danger")
             return redirect(url_for("admin.add_notification_target"))
 
-        try:
-            target = NotificationTargetRepository.create(
-                name, apprise_url, enabled, categories
-            )
-            db.session.commit()
-            AuditService.log(
-                "notification_target.create",
-                resource_type="NotificationTarget",
-                resource_id=target.id,
-                details=name,
-            )
-            flash(_("Cible de notification ajoutée avec succès !"), "success")
-            return redirect(url_for("admin.list_notification_targets"))
-        except Exception as e:
-            db.session.rollback()
-            flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
+        target = NotificationTargetRepository.create(
+            name, apprise_url, enabled, categories
+        )
+        db.session.commit()
+        AuditService.log(
+            "notification_target.create",
+            resource_type="NotificationTarget",
+            resource_id=target.id,
+            details=name,
+        )
+        flash(_("Cible de notification ajoutée avec succès !"), "success")
+        return redirect(url_for("admin.list_notification_targets"))
 
     return render_template(
         "admin/add_notification_target.html", category_choices=CATEGORY_CHOICES
@@ -90,6 +87,7 @@ def add_notification_target():
     "/admin/notification-targets/edit/<int:target_id>", methods=["GET", "POST"]
 )
 @admin_required
+@handle_form_errors
 def edit_notification_target(target_id):
     target = NotificationTargetRepository.get_by_id(target_id) or abort(404)
 
@@ -107,23 +105,19 @@ def edit_notification_target(target_id):
                 url_for("admin.edit_notification_target", target_id=target_id)
             )
 
-        try:
-            target.name = name
-            target.apprise_url = apprise_url
-            target.enabled = enabled
-            target.set_categories(categories)
-            db.session.commit()
-            AuditService.log(
-                "notification_target.update",
-                resource_type="NotificationTarget",
-                resource_id=target.id,
-                details=name,
-            )
-            flash(_("Cible de notification modifiée avec succès !"), "success")
-            return redirect(url_for("admin.list_notification_targets"))
-        except Exception as e:
-            db.session.rollback()
-            flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
+        target.name = name
+        target.apprise_url = apprise_url
+        target.enabled = enabled
+        target.set_categories(categories)
+        db.session.commit()
+        AuditService.log(
+            "notification_target.update",
+            resource_type="NotificationTarget",
+            resource_id=target.id,
+            details=name,
+        )
+        flash(_("Cible de notification modifiée avec succès !"), "success")
+        return redirect(url_for("admin.list_notification_targets"))
 
     return render_template(
         "admin/edit_notification_target.html",
