@@ -13,9 +13,12 @@ Contact your administrator — there is no self-service reset feature (no
 Check that:
 1. You are logged in with the correct account.
 2. Your shifts are actually assigned to your user.
-3. The selected period covers your shifts — the home page calendar
-   displays a ±180-day window around today; the **Schedule** page
-   lists everything, with pagination.
+3. Navigate to the actual month/week your shifts are on — the home page
+   calendar fetches events for whatever period FullCalendar is currently
+   showing (no fixed window to run into anymore; a schedule generated a
+   year out is reachable by navigating there). The **Schedule** page
+   lists everything, with pagination, if you'd rather not navigate month
+   by month.
 
 ### I can't add a shift for a user
 

@@ -141,4 +141,4 @@ or a [Discussion](https://github.com/FoxOps/kairos/discussions) on GitHub.
 
 ---
 
-**Version**: 1.0.0-rc3 · © 2026 FoxOps
+**Version**: 1.0.0-rc3 © 2026

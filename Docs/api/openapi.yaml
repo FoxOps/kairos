@@ -101,9 +101,25 @@ paths:
       summary: List calendar events (shifts + on-calls + leaves)
       description: >
         Despite the name, does not return only shifts: aggregates
-        shifts, on-calls, and leaves over a ±180-day window around
-        today, in the format FullCalendar expects.
+        shifts, on-calls, and leaves for the requested range, in the
+        format FullCalendar expects. FullCalendar itself uses this as
+        its dynamic events source, requesting whatever range is
+        currently visible.
       operationId: getCalendarEvents
+      parameters:
+        - name: start
+          in: query
+          required: false
+          description: >
+            ISO date/datetime. Falls back to a ±180-day window around
+            today if omitted, unparseable, reversed relative to `end`,
+            or the resulting span exceeds 730 days.
+          schema: { type: string, format: date-time }
+        - name: end
+          in: query
+          required: false
+          description: ISO date/datetime - see `start`.
+          schema: { type: string, format: date-time }
       responses:
         "200":
           description: List of events

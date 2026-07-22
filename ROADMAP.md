@@ -52,8 +52,24 @@ automated tests), and used for real team scheduling.
 ## 🔧 In progress
 
 **1.0.0-rc3** — addressing feedback reported against `1.0.0-rc2`
-(tagged, see the `1.0.0-RC2` tag/release). Nothing landed yet on this
-branch.
+(tagged, see the `1.0.0-RC2` tag/release). Landed so far (PR #167-181):
+a guaranteed minimum 7am-3pm shift presence (previously a real gap
+could open on 7-9am/5-9pm with certain leave/availability combinations);
+minimal-perturbation on-call rebalancing (a leave no longer reshuffles
+weeks it doesn't actually touch); a fixed admin notification gap for
+automation failures; three related on-call boundary bugs where a
+rebalance/regeneration deleted the astreinte straddling its start date
+without ever recreating it (silently, with no admin notification since
+the week was never even attempted); the home calendar switched from a
+static ±180-day snapshot to a dynamic FullCalendar events source
+(`/api/shifts?start&end`, capped at 730 days to prevent a resource-
+exhaustion request) — a schedule generated a year out is now actually
+reachable; automatic daily cleanup of shift/on-call history past a
+configurable retention (365 days by default, 0 disables it); a Jinja/
+HTML linter (djlint) added to the test suite; a WCAG AA contrast fix
+for muted text in the light theme; and a couple of AI-slop-adjacent
+CSS cleanups (a decorative side-border, a dead layout-property
+transition) caught by a design audit pass.
 
 The `1.0.0-rc1` production-readiness audit is done: dependency updates,
 dead-code removal, N+1/SQL query optimization, i18n completeness (French

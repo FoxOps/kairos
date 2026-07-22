@@ -35,7 +35,7 @@ from the admin form, etc.), see the
 
 | Method | Route | Auth | Description |
 |---|---|---|---|
-| GET | `/api/shifts` | logged in | Calendar events (shifts **+ on-calls + leaves**, despite the name) over ±180 days, FullCalendar format |
+| GET | `/api/shifts` | logged in | Calendar events (shifts **+ on-calls + leaves**, despite the name), FullCalendar format. Accepts `start`/`end` query params (ISO date/datetime) for the requested range — used by FullCalendar itself as its dynamic events source, so a schedule generated arbitrarily far out is always reachable. Falls back to a ±180-day window around today if omitted, unparseable, reversed, or wider than 730 days. |
 | POST | `/api/shifts` | admin | Creates a shift (`userId`, `shiftTypeId`, `start`, `end?`) |
 | PATCH/PUT | `/api/shifts/<id>` | admin | Moves/resizes (`start`, `end?` — duration kept if `end` is absent) |
 | DELETE | `/api/shifts/<id>` | admin | Deletes |
