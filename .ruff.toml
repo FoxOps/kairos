@@ -51,7 +51,9 @@ known-first-party = ["app", "tests"]
 # dev-setup time, not user input. S324 (find_duplicates.py): MD5 used for
 # duplicate-code detection, not a security context. S110 (find_duplicates.py):
 # best-effort skip on a per-file parse error while scanning the whole repo.
-"scripts/*" = ["T201", "S310", "S324", "S110"]
+# S607 (check_version.py): plain "git" relies on PATH - fine here, git
+# already has to be on PATH for this to be a working checkout at all.
+"scripts/*" = ["T201", "S310", "S324", "S110", "S607"]
 "docker/init_database.py" = ["T201"]
 # Script manuel (`python tests/manual_test_theme.py`), pas collecté par
 # pytest (nom ne matche pas test_*.py) - print() est voulu.
