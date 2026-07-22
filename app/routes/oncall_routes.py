@@ -15,22 +15,18 @@ from app.models import User
 from app.repositories.oncall_repository import OnCallRepository
 from app.routes.main import main_bp
 from app.services import OnCallService, UserService
-from app.utils.helpers.timezone_helpers import to_org_timezone, to_viewer_timezone
+from app.utils.helpers.pagination_helpers import PER_PAGE_OPTIONS, resolve_per_page
+from app.utils.helpers.timezone_helpers import (
+    parse_fullcalendar_datetime,
+    to_viewer_timezone,
+)
 
 
 @main_bp.route("/oncall")
 @login_required
 def oncall():
     page = request.args.get("page", 1, type=int)
-    per_page = request.args.get("per_page", 20, type=int)
-
-    per_page_options = [5, 10, 25, 50, 100]
-
-    if per_page == 0 or per_page == -1:
-        per_page = 999999
-
-    if per_page not in per_page_options and per_page != 999999:
-        per_page = 20
+    per_page = resolve_per_page(request.args)
 
     on_calls_paginated = OnCallService.list_paginated(page, per_page)
 
@@ -38,7 +34,7 @@ def oncall():
         "oncall.html",
         on_calls=on_calls_paginated,
         per_page=per_page,
-        per_page_options=per_page_options,
+        per_page_options=PER_PAGE_OPTIONS,
     )
 
 
@@ -199,20 +195,10 @@ def api_update_oncall(oncall_id):
                 400,
             )
 
-        # FullCalendar's timeZone: 'UTC' (fullcalendar-config.js) means
-        # these strings carry the viewer's own wall-clock digits, not a
-        # real UTC instant - strip tzinfo and convert to the org's
-        # canonical timezone before storage.
-        new_start = datetime.fromisoformat(
-            new_start_str.replace("Z", "+00:00")
-        ).replace(tzinfo=None)
-        new_start = to_org_timezone(new_start, current_user)
+        new_start = parse_fullcalendar_datetime(new_start_str, current_user)
 
         if new_end_str:
-            new_end = datetime.fromisoformat(
-                new_end_str.replace("Z", "+00:00")
-            ).replace(tzinfo=None)
-            new_end = to_org_timezone(new_end, current_user)
+            new_end = parse_fullcalendar_datetime(new_end_str, current_user)
         else:
             duration = oncall_obj.end_time - oncall_obj.start_time
             new_end = new_start + duration

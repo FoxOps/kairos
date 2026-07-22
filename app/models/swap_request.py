@@ -159,15 +159,9 @@ class SwapRequest(BaseModel):
 
         return db.session.get(Shift, self.target_shift_id)
 
-    def is_pending(self) -> bool:
-        """Check if this request is still awaiting the target's own
-        confirmation - kept as the original name for existing call sites,
-        same meaning as is_awaiting_target()."""
-        return self.status == self.PENDING
-
     def is_awaiting_target(self) -> bool:
-        """Alias of is_pending() - clearer name at target-facing call
-        sites introduced by the confirmation step."""
+        """Check if this request is still awaiting the target's own
+        confirmation, before it even reaches the admin's queue."""
         return self.status == self.PENDING
 
     def is_awaiting_admin(self) -> bool:

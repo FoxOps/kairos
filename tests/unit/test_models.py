@@ -732,12 +732,6 @@ class TestSwapRequestModel:
             assert test_swap_request.target_shift is None
             assert test_swap_request.reviewer is None
 
-    def test_is_pending(self, test_app, test_swap_request):
-        with test_app.app_context():
-            assert test_swap_request.is_pending() is True
-            test_swap_request.status = SwapRequest.APPROVED
-            assert test_swap_request.is_pending() is False
-
     def test_is_awaiting_target(self, test_app, test_swap_request):
         with test_app.app_context():
             assert test_swap_request.is_awaiting_target() is True

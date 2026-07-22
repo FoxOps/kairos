@@ -138,6 +138,131 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Shared by eventDrop/eventResize/eventClick/the Delete keyboard
+    // shortcut below - the type -> REST endpoint mapping was previously
+    // copy-pasted at each of those 4 call sites.
+    function resolveEventEndpoint(type, resourceId) {
+        if (type === 'shift') return `/api/shifts/${resourceId}`;
+        if (type === 'oncall') return `/api/oncall/${resourceId}`;
+        if (type === 'leave') return `/api/leave/${resourceId}`;
+        return null;
+    }
+
+    // Shared by eventDrop/eventResize - both send the exact same PATCH
+    // request and handle success/error identically, only the console
+    // log label and the error announcement key differ. References
+    // `calendar` by closure - safe even though `calendar` itself isn't
+    // assigned until below this function declaration, since patchEvent
+    // is only ever *called* later, from within the Calendar's own event
+    // handlers, by which point `calendar` is fully assigned.
+    function patchEvent(info, { logLabel, errorKey }) {
+        const event = info.event;
+        const eventId = event.id;
+        const newStart = event.start;
+        const newEnd = event.end;
+
+        if (!eventId || eventId === undefined) {
+            // A new event created by an external drop.
+            return;
+        }
+
+        const extendedProps = event.extendedProps || {};
+        const endpoint = resolveEventEndpoint(extendedProps.type, extendedProps.resourceId);
+        if (!endpoint) {
+            info.revert();
+            return;
+        }
+
+        fetch(endpoint, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                start: newStart.toISOString(),
+                end: newEnd.toISOString()
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log(`${logLabel}:`, data.message);
+                    // Only refetch the calendar's events (FullCalendar
+                    // AJAX request) instead of the whole page, to avoid
+                    // losing the user's context (filters, scroll,
+                    // current view).
+                    calendar.refetchEvents();
+                    if (data.rebalance_warning) {
+                        announceToScreenReader(getString('rebalance_warning'), 'assertive');
+                    }
+                } else {
+                    info.revert();
+                    announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
+                }
+            })
+            .catch(error => {
+                info.revert();
+                console.error('Error:', error);
+                announceToScreenReader(getString(errorKey), 'assertive');
+            });
+    }
+
+    // Shared by eventClick (click-to-delete in edit mode) and the
+    // Delete/Suppr keyboard shortcut below - resolves the confirmation
+    // message for the event's type, confirms, then DELETEs it.
+    function deleteEvent(event) {
+        const extendedProps = event.extendedProps || {};
+        const type = extendedProps.type;
+        const resourceId = extendedProps.resourceId;
+        const endpoint = resolveEventEndpoint(type, resourceId);
+        if (!endpoint) {
+            return;
+        }
+
+        const confirmMessageKeys = {
+            shift: 'confirm_delete_shift',
+            oncall: 'confirm_delete_oncall',
+            leave: 'confirm_delete_leave'
+        };
+        const message = getString(confirmMessageKeys[type]);
+
+        confirmActionAccessible(message,
+            () => {
+                fetch(endpoint, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrfToken
+                    },
+                    credentials: 'same-origin'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            event.remove();
+                            console.log('Event deleted:', data.message);
+                            announceToScreenReader(getString('event_deleted'), 'polite');
+                            // Reload the page to resync with the backend
+                            location.reload();
+                        } else {
+                            announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        announceToScreenReader(getString('delete_error'), 'assertive');
+                    });
+            },
+            () => {
+                announceToScreenReader(getString('delete_cancelled'), 'polite');
+            }
+        );
+    }
+
     const calendar = new FullCalendar.Calendar(calendarEl, {
         // Event start/end strings from the server are already translated
         // into the viewer's own timezone (server-side, via
@@ -180,143 +305,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Drag & drop configuration
         eventDrop: function (info) {
-            // Called when an event is dropped
-            const event = info.event;
-            const eventId = event.id;
-            const newStart = event.start;
-            const newEnd = event.end;
-
-            if (!eventId || eventId === undefined) {
-                // This is a new event created by an external drop
-                return;
-            }
-
-            // Determine the event type and the resource ID
-            const extendedProps = event.extendedProps || {};
-            const type = extendedProps.type;
-            const resourceId = extendedProps.resourceId;
-
-            let endpoint = '';
-
-            if (type === 'shift') {
-                endpoint = `/api/shifts/${resourceId}`;
-            } else if (type === 'oncall') {
-                endpoint = `/api/oncall/${resourceId}`;
-            } else if (type === 'leave') {
-                endpoint = `/api/leave/${resourceId}`;
-            } else {
-                info.revert();
-                return;
-            }
-
-            // Send the update to the server
-            fetch(endpoint, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': csrfToken
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({
-                    start: newStart.toISOString(),
-                    end: newEnd.toISOString()
-                })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        console.log('Event updated:', data.message);
-                        // Only refetch the calendar's events (FullCalendar
-                        // AJAX request) instead of the whole page, to avoid
-                        // losing the user's context (filters, scroll,
-                        // current view).
-                        calendar.refetchEvents();
-                        if (data.rebalance_warning) {
-                            announceToScreenReader(
-                                getString('rebalance_warning'),
-                                'assertive'
-                            );
-                        }
-                    } else {
-                        // Revert the change on error
-                        info.revert();
-                        announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
-                    }
-                })
-                .catch(error => {
-                    info.revert();
-                    console.error('Error:', error);
-                    announceToScreenReader(getString('update_error'), 'assertive');
-                });
+            patchEvent(info, { logLabel: 'Event updated', errorKey: 'update_error' });
         },
 
         eventResize: function (info) {
-            // Called when an event is resized
-            const event = info.event;
-            const eventId = event.id;
-            const newStart = event.start;
-            const newEnd = event.end;
-
-            if (!eventId || eventId === undefined) {
-                return;
-            }
-
-            // Determine the event type and the resource ID
-            const extendedProps = event.extendedProps || {};
-            const type = extendedProps.type;
-            const resourceId = extendedProps.resourceId;
-
-            let endpoint = '';
-
-            if (type === 'shift') {
-                endpoint = `/api/shifts/${resourceId}`;
-            } else if (type === 'oncall') {
-                endpoint = `/api/oncall/${resourceId}`;
-            } else if (type === 'leave') {
-                endpoint = `/api/leave/${resourceId}`;
-            } else {
-                info.revert();
-                return;
-            }
-
-            // Send the update to the server
-            fetch(endpoint, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': csrfToken
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({
-                    start: newStart.toISOString(),
-                    end: newEnd.toISOString()
-                })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        console.log('Event resized:', data.message);
-                        // Only refetch the calendar's events, not the whole
-                        // page (see eventDrop above).
-                        calendar.refetchEvents();
-                        if (data.rebalance_warning) {
-                            announceToScreenReader(
-                                getString('rebalance_warning'),
-                                'assertive'
-                            );
-                        }
-                    } else {
-                        info.revert();
-                        announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
-                    }
-                })
-                .catch(error => {
-                    info.revert();
-                    console.error('Error:', error);
-                    announceToScreenReader(getString('resize_error'), 'assertive');
-                });
+            patchEvent(info, { logLabel: 'Event resized', errorKey: 'resize_error' });
         },
 
         select: function (info) {
@@ -348,59 +341,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // In edit mode, clicking an event deletes it (with confirmation)
             // Outside edit mode, clicking does nothing
             if (editModeEnabled && isAdmin) {
-                // Determine the event type and the resource ID
-                const extendedProps = event.extendedProps || {};
-                const type = extendedProps.type;
-                const resourceId = extendedProps.resourceId;
-
-                let endpoint = '';
-                let message = '';
-
-                if (type === 'shift') {
-                    endpoint = `/api/shifts/${resourceId}`;
-                    message = getString('confirm_delete_shift');
-                } else if (type === 'oncall') {
-                    endpoint = `/api/oncall/${resourceId}`;
-                    message = getString('confirm_delete_oncall');
-                } else if (type === 'leave') {
-                    endpoint = `/api/leave/${resourceId}`;
-                    message = getString('confirm_delete_leave');
-                } else {
-                    return;
-                }
-
-                confirmActionAccessible(message,
-                    () => {
-                        fetch(endpoint, {
-                            method: 'DELETE',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'X-CSRFToken': csrfToken
-                            },
-                            credentials: 'same-origin'
-                        })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success) {
-                                    event.remove();
-                                    console.log('Event deleted:', data.message);
-                                    announceToScreenReader(getString('event_deleted'), 'polite');
-                                    // Reload the page to resync with the backend
-                                    location.reload();
-                                } else {
-                                    announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error:', error);
-                                announceToScreenReader(getString('delete_error'), 'assertive');
-                            });
-                    },
-                    () => {
-                        announceToScreenReader(getString('delete_cancelled'), 'polite');
-                    }
-                );
+                deleteEvent(event);
             }
         },
 
@@ -640,59 +581,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (e.key === 'Delete' || e.key === 'Suppr') {
             const selectedEvent = window.selectedEvent;
             if (selectedEvent && isAdmin && editModeEnabled) {
-                // Determine the event type and the resource ID
-                const extendedProps = selectedEvent.extendedProps || {};
-                const type = extendedProps.type;
-                const resourceId = extendedProps.resourceId;
-
-                let endpoint = '';
-                let message = '';
-
-                if (type === 'shift') {
-                    endpoint = `/api/shifts/${resourceId}`;
-                    message = getString('confirm_delete_shift');
-                } else if (type === 'oncall') {
-                    endpoint = `/api/oncall/${resourceId}`;
-                    message = getString('confirm_delete_oncall');
-                } else if (type === 'leave') {
-                    endpoint = `/api/leave/${resourceId}`;
-                    message = getString('confirm_delete_leave');
-                } else {
-                    return;
-                }
-
-                confirmActionAccessible(message,
-                    () => {
-                        fetch(endpoint, {
-                            method: 'DELETE',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'X-CSRFToken': csrfToken
-                            },
-                            credentials: 'same-origin'
-                        })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success) {
-                                    selectedEvent.remove();
-                                    console.log('Event deleted:', data.message);
-                                    announceToScreenReader(getString('event_deleted'), 'polite');
-                                    // Reload the page to resync with the backend
-                                    location.reload();
-                                } else {
-                                    announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error:', error);
-                                announceToScreenReader(getString('delete_error'), 'assertive');
-                            });
-                    },
-                    () => {
-                        announceToScreenReader(getString('delete_cancelled'), 'polite');
-                    }
-                );
+                deleteEvent(selectedEvent);
             }
         }
     });

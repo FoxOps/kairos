@@ -31,9 +31,6 @@ def get_js_translations() -> dict[str, str]:
         "confirm_delete_shift": _("Voulez-vous supprimer ce shift ?"),
         "confirm_delete_oncall": _("Voulez-vous supprimer cette astreinte ?"),
         "confirm_delete_leave": _("Voulez-vous supprimer ce congé ?"),
-        "unnamed_field": _("Champ non nommé"),
-        "field_required": _("Le champ %(field)s est obligatoire."),
-        "data_table": _("Tableau de données"),
         "confirmation_title": _("Confirmation"),
         "confirm": _("Confirmer"),
         "are_you_sure": _("Êtes-vous sûr ?"),
@@ -68,8 +65,4 @@ def get_js_translations() -> dict[str, str]:
         "dark_theme_enabled": _("Thème sombre activé"),
         "light_theme_enabled": _("Thème clair activé"),
         "copied": _("Copié !"),
-        "form_error_singular": _("1 erreur de formulaire. Veuillez la corriger."),
-        "form_error_plural": _(
-            "%(count)s erreurs de formulaire. Veuillez les corriger."
-        ),
     }

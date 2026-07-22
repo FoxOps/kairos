@@ -21,6 +21,9 @@ from app import db
 from app.config.base import get_bool_from_env, get_int_from_env
 from app.models import Setting
 from app.services.audit_service import AuditService
+from app.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 DEFAULT_TIMEZONE_KEY = "default_timezone"
 DEFAULT_LANGUAGE_KEY = "default_language"
@@ -62,6 +65,26 @@ SUPPORTED_TIME_FORMATS = ("%H:%M", "%I:%M %p")
 class SettingsService:
     """Admin-editable, DB-backed settings with env-var fallback."""
 
+    @staticmethod
+    def _set_with_audit(values: dict[str, object], details: str) -> str | None:
+        """Shared skeleton for every setter below: writes one or more
+        Setting rows, logs the change to the audit trail, and turns any
+        unexpected exception into an error string instead of raising -
+        logging it first via logger.exception(), same convention as
+        audit_service.py/apprise_notification_service.py/
+        backup_service.py (previously missing here: an unexpected
+        failure was only ever returned as str(e) to the admin, never
+        written to the app's own logs)."""
+        try:
+            for key, value in values.items():
+                Setting.set(key, value)
+            AuditService.log("setting.update", resource_type="Setting", details=details)
+            return None
+        except Exception as e:
+            db.session.rollback()
+            logger.exception("Échec de l'écriture du paramètre : %s", details)
+            return str(e)
+
     # --- timezone ---
 
     @staticmethod
@@ -92,17 +115,9 @@ class SettingsService:
     def set_default_timezone(tz_name: str) -> str | None:
         if tz_name not in available_timezones():
             return _("Fuseau horaire invalide : %(tz_name)s", tz_name=tz_name)
-        try:
-            Setting.set(DEFAULT_TIMEZONE_KEY, tz_name)
-            AuditService.log(
-                "setting.update",
-                resource_type="Setting",
-                details=f"default_timezone={tz_name}",
-            )
-            return None
-        except Exception as e:
-            db.session.rollback()
-            return str(e)
+        return SettingsService._set_with_audit(
+            {DEFAULT_TIMEZONE_KEY: tz_name}, f"default_timezone={tz_name}"
+        )
 
     # --- language ---
 
@@ -117,17 +132,9 @@ class SettingsService:
     def set_default_language(lang_code: str) -> str | None:
         if lang_code not in SUPPORTED_LANGUAGES:
             return _("Langue invalide : %(lang_code)s", lang_code=lang_code)
-        try:
-            Setting.set(DEFAULT_LANGUAGE_KEY, lang_code)
-            AuditService.log(
-                "setting.update",
-                resource_type="Setting",
-                details=f"default_language={lang_code}",
-            )
-            return None
-        except Exception as e:
-            db.session.rollback()
-            return str(e)
+        return SettingsService._set_with_audit(
+            {DEFAULT_LANGUAGE_KEY: lang_code}, f"default_language={lang_code}"
+        )
 
     # --- date/time format ---
 
@@ -144,17 +151,10 @@ class SettingsService:
             return _(
                 "Format de date invalide : %(date_format)s", date_format=date_format
             )
-        try:
-            Setting.set(DEFAULT_DATE_FORMAT_KEY, date_format)
-            AuditService.log(
-                "setting.update",
-                resource_type="Setting",
-                details=f"default_date_format={date_format}",
-            )
-            return None
-        except Exception as e:
-            db.session.rollback()
-            return str(e)
+        return SettingsService._set_with_audit(
+            {DEFAULT_DATE_FORMAT_KEY: date_format},
+            f"default_date_format={date_format}",
+        )
 
     @staticmethod
     def get_default_time_format() -> str:
@@ -169,17 +169,10 @@ class SettingsService:
             return _(
                 "Format d'heure invalide : %(time_format)s", time_format=time_format
             )
-        try:
-            Setting.set(DEFAULT_TIME_FORMAT_KEY, time_format)
-            AuditService.log(
-                "setting.update",
-                resource_type="Setting",
-                details=f"default_time_format={time_format}",
-            )
-            return None
-        except Exception as e:
-            db.session.rollback()
-            return str(e)
+        return SettingsService._set_with_audit(
+            {DEFAULT_TIME_FORMAT_KEY: time_format},
+            f"default_time_format={time_format}",
+        )
 
     # --- public base url ---
 
@@ -200,17 +193,9 @@ class SettingsService:
 
     @staticmethod
     def set_public_base_url(url: str | None) -> str | None:
-        try:
-            Setting.set(PUBLIC_BASE_URL_KEY, url or "")
-            AuditService.log(
-                "setting.update",
-                resource_type="Setting",
-                details=f"public_base_url={url}",
-            )
-            return None
-        except Exception as e:
-            db.session.rollback()
-            return str(e)
+        return SettingsService._set_with_audit(
+            {PUBLIC_BASE_URL_KEY: url or ""}, f"public_base_url={url}"
+        )
 
     # --- pagination ---
 
@@ -234,18 +219,10 @@ class SettingsService:
             return _("Les valeurs de pagination doivent être positives")
         if items_per_page > max_per_page:
             return _("items_per_page ne peut pas dépasser max_per_page")
-        try:
-            Setting.set(ITEMS_PER_PAGE_KEY, items_per_page)
-            Setting.set(MAX_PER_PAGE_KEY, max_per_page)
-            AuditService.log(
-                "setting.update",
-                resource_type="Setting",
-                details=f"items_per_page={items_per_page}, max_per_page={max_per_page}",
-            )
-            return None
-        except Exception as e:
-            db.session.rollback()
-            return str(e)
+        return SettingsService._set_with_audit(
+            {ITEMS_PER_PAGE_KEY: items_per_page, MAX_PER_PAGE_KEY: max_per_page},
+            f"items_per_page={items_per_page}, max_per_page={max_per_page}",
+        )
 
     # --- notifications ---
 
@@ -261,17 +238,10 @@ class SettingsService:
 
     @staticmethod
     def set_notifications_enabled(enabled: bool) -> str | None:
-        try:
-            Setting.set(NOTIFICATIONS_ENABLED_KEY, bool(enabled))
-            AuditService.log(
-                "setting.update",
-                resource_type="Setting",
-                details=f"notifications_enabled={enabled}",
-            )
-            return None
-        except Exception as e:
-            db.session.rollback()
-            return str(e)
+        return SettingsService._set_with_audit(
+            {NOTIFICATIONS_ENABLED_KEY: bool(enabled)},
+            f"notifications_enabled={enabled}",
+        )
 
     # --- backups ---
 
@@ -292,18 +262,13 @@ class SettingsService:
     def set_backup_retention(retention_days: int, max_backups: int) -> str | None:
         if retention_days <= 0 or max_backups <= 0:
             return _("Les valeurs de rétention doivent être positives")
-        try:
-            Setting.set(BACKUP_RETENTION_DAYS_KEY, retention_days)
-            Setting.set(BACKUP_MAX_BACKUPS_KEY, max_backups)
-            AuditService.log(
-                "setting.update",
-                resource_type="Setting",
-                details=f"backup_retention_days={retention_days}, backup_max_backups={max_backups}",
-            )
-            return None
-        except Exception as e:
-            db.session.rollback()
-            return str(e)
+        return SettingsService._set_with_audit(
+            {
+                BACKUP_RETENTION_DAYS_KEY: retention_days,
+                BACKUP_MAX_BACKUPS_KEY: max_backups,
+            },
+            f"backup_retention_days={retention_days}, backup_max_backups={max_backups}",
+        )
 
     # --- audit log retention ---
 
@@ -322,17 +287,9 @@ class SettingsService:
     def set_audit_log_retention_days(days: int) -> str | None:
         if days <= 0:
             return _("La durée de rétention doit être positive")
-        try:
-            Setting.set(AUDIT_LOG_RETENTION_DAYS_KEY, days)
-            AuditService.log(
-                "setting.update",
-                resource_type="Setting",
-                details=f"audit_log_retention_days={days}",
-            )
-            return None
-        except Exception as e:
-            db.session.rollback()
-            return str(e)
+        return SettingsService._set_with_audit(
+            {AUDIT_LOG_RETENTION_DAYS_KEY: days}, f"audit_log_retention_days={days}"
+        )
 
     # --- Apprise external notifications master toggle ---
 
@@ -349,17 +306,10 @@ class SettingsService:
 
     @staticmethod
     def set_apprise_notifications_enabled(enabled: bool) -> str | None:
-        try:
-            Setting.set(APPRISE_NOTIFICATIONS_ENABLED_KEY, bool(enabled))
-            AuditService.log(
-                "setting.update",
-                resource_type="Setting",
-                details=f"apprise_notifications_enabled={enabled}",
-            )
-            return None
-        except Exception as e:
-            db.session.rollback()
-            return str(e)
+        return SettingsService._set_with_audit(
+            {APPRISE_NOTIFICATIONS_ENABLED_KEY: bool(enabled)},
+            f"apprise_notifications_enabled={enabled}",
+        )
 
     # --- ICS token expiry ---
 
@@ -378,14 +328,6 @@ class SettingsService:
     def set_ics_token_expiry_days(days: int) -> str | None:
         if days <= 0:
             return _("La durée d'expiration doit être positive")
-        try:
-            Setting.set(ICS_TOKEN_EXPIRY_DAYS_KEY, days)
-            AuditService.log(
-                "setting.update",
-                resource_type="Setting",
-                details=f"ics_token_expiry_days={days}",
-            )
-            return None
-        except Exception as e:
-            db.session.rollback()
-            return str(e)
+        return SettingsService._set_with_audit(
+            {ICS_TOKEN_EXPIRY_DAYS_KEY: days}, f"ics_token_expiry_days={days}"
+        )

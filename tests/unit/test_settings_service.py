@@ -219,3 +219,40 @@ class TestAppriseNotificationsEnabled:
             error = SettingsService.set_apprise_notifications_enabled(True)
             assert error is None
             assert SettingsService.get_apprise_notifications_enabled() is True
+
+
+class TestSetWithAuditFailurePath:
+    """_set_with_audit() (the shared skeleton every setter above now
+    goes through) - an unexpected failure must never raise (returned as
+    an error string instead, same convention as before), and must now
+    actually be logged, unlike before this cleanup pass where it was
+    silently swallowed - the only settings-related exception with no
+    trace anywhere, inconsistent with audit_service.py/
+    apprise_notification_service.py/backup_service.py."""
+
+    def test_does_not_raise_and_returns_error_string(self, test_app):
+        from unittest.mock import patch
+
+        with test_app.app_context():
+            with patch(
+                "app.services.settings_service.Setting.set",
+                side_effect=RuntimeError("db is down"),
+            ):
+                error = SettingsService.set_default_timezone("Europe/Paris")
+
+            assert error == "db is down"
+
+    def test_logs_the_exception(self, test_app, caplog):
+        from unittest.mock import patch
+
+        with test_app.app_context():
+            with patch(
+                "app.services.settings_service.Setting.set",
+                side_effect=RuntimeError("db is down"),
+            ):
+                with caplog.at_level("ERROR"):
+                    SettingsService.set_default_timezone("Europe/Paris")
+
+            assert any(
+                "default_timezone" in record.message for record in caplog.records
+            )

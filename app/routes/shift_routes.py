@@ -15,22 +15,18 @@ from app.models import User
 from app.repositories.shift_repository import ShiftRepository, ShiftTypeRepository
 from app.routes.main import main_bp
 from app.services import ShiftService, UserService
-from app.utils.helpers.timezone_helpers import to_org_timezone, to_viewer_timezone
+from app.utils.helpers.pagination_helpers import PER_PAGE_OPTIONS, resolve_per_page
+from app.utils.helpers.timezone_helpers import (
+    parse_fullcalendar_datetime,
+    to_viewer_timezone,
+)
 
 
 @main_bp.route("/schedule")
 @login_required
 def schedule():
     page = request.args.get("page", 1, type=int)
-    per_page = request.args.get("per_page", 20, type=int)
-
-    per_page_options = [5, 10, 25, 50, 100]
-
-    if per_page == 0 or per_page == -1:
-        per_page = 999999
-
-    if per_page not in per_page_options and per_page != 999999:
-        per_page = 20
+    per_page = resolve_per_page(request.args)
 
     shifts_paginated = ShiftService.list_paginated(page, per_page)
 
@@ -38,7 +34,7 @@ def schedule():
         "schedule.html",
         shifts=shifts_paginated,
         per_page=per_page,
-        per_page_options=per_page_options,
+        per_page_options=PER_PAGE_OPTIONS,
     )
 
 
@@ -300,22 +296,12 @@ def api_create_shift():
                 404,
             )
 
-        # FullCalendar is configured with timeZone: 'UTC' (see
-        # fullcalendar-config.js), so the "Z"/offset on these strings is
-        # just a serialization artifact, not a real UTC instant - the
-        # digits are the viewer's own wall-clock time. Strip the tzinfo
-        # and convert from the viewer's effective timezone to the org's
-        # canonical one before storage.
-        start_time = datetime.fromisoformat(start_str.replace("Z", "+00:00")).replace(
-            tzinfo=None
-        )
+        start_time = parse_fullcalendar_datetime(start_str, current_user)
         end_time = (
-            datetime.fromisoformat(end_str.replace("Z", "+00:00")).replace(tzinfo=None)
+            parse_fullcalendar_datetime(end_str, current_user)
             if end_str
             else start_time
         )
-        start_time = to_org_timezone(start_time, current_user)
-        end_time = to_org_timezone(end_time, current_user)
 
         shift, error = ShiftService.api_create(user, shift_type, start_time, end_time)
         if error:
@@ -378,20 +364,10 @@ def api_update_shift(shift_id):
                 400,
             )
 
-        # See api_create_shift's comment: FullCalendar's timeZone: 'UTC'
-        # means these strings carry the viewer's own wall-clock digits,
-        # not a real UTC instant - strip tzinfo and convert to the org's
-        # canonical timezone before storage.
-        new_start = datetime.fromisoformat(
-            new_start_str.replace("Z", "+00:00")
-        ).replace(tzinfo=None)
-        new_start = to_org_timezone(new_start, current_user)
+        new_start = parse_fullcalendar_datetime(new_start_str, current_user)
 
         if new_end_str:
-            new_end = datetime.fromisoformat(
-                new_end_str.replace("Z", "+00:00")
-            ).replace(tzinfo=None)
-            new_end = to_org_timezone(new_end, current_user)
+            new_end = parse_fullcalendar_datetime(new_end_str, current_user)
         else:
             duration = shift.end_time - shift.start_time
             new_end = new_start + duration

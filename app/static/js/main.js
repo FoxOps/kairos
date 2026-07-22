@@ -10,20 +10,8 @@
 import { ThemeManager } from './theme/theme-manager.js';
 import { NavbarMenu } from './navbar/navbar-menu.js';
 import {
-    toggleVisibility,
-    showElement,
-    hideElement,
-    addClass,
-    removeClass,
-    toggleClass,
-} from './utils/dom.js';
-import {
     announceToScreenReader,
     focusElement,
-    setupKeyboardNavigation,
-    displayFormErrorsAccessible,
-    validateFormAccessible,
-    makeTableAccessible,
     confirmActionAccessible,
     initConfirmDeleteActions,
 } from './utils/accessibility.js';
@@ -59,18 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
 window.Kairos = {
     ThemeManager,
     confirmActionAccessible,
-    toggleVisibility,
-    showElement,
-    hideElement,
-    addClass,
-    removeClass,
-    toggleClass,
     announceToScreenReader,
     focusElement,
-    setupKeyboardNavigation,
-    displayFormErrorsAccessible,
-    validateFormAccessible,
-    makeTableAccessible,
     copyToken,
     copyUrlShiftsAll,
     copyUrlShiftsMy,
