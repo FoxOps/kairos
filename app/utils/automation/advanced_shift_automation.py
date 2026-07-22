@@ -35,6 +35,11 @@ class AdvancedShiftAutomation:
     3. Default slot: 9am-5pm for all other cases (several people can be on this slot)
     4. Leave case: If only 2 people are available, the person NOT on-call must be on 7am-3pm
     5. Legal constraint: No 2 consecutive on-calls - minimum 2 weeks without on-call between two on-calls
+    6. Minimum headcount: with only 1 person available, they alone cover the day
+    7. 7am-3pm minimum coverage: at least one person must always be on this
+       slot (see _ensure_minimum_07_15_coverage()) - rule 2 alone doesn't
+       guarantee it, since the previous week's on-call person may not be
+       available/eligible today
     """
 
     # Time slots
@@ -248,6 +253,51 @@ class AdvancedShiftAutomation:
         return assignments
 
     @staticmethod
+    def _ensure_minimum_07_15_coverage(
+        assignments: "list[tuple[User, tuple[int, int]]]",
+    ) -> "list[tuple[User, tuple[int, int]]]":
+        """Rule 7: at least one person must always be on the 7am-3pm slot.
+        determine_shift_for_user() only assigns it via rule 2 (the
+        previous week's on-call person, rotation) - if that person isn't
+        among today's available/eligible users, nobody gets it and rules
+        1/3 alone can leave 7am-9am and 5pm-9pm completely uncovered.
+
+        Only called from the 3+ users branch of generate_daily_shifts()
+        - the 1-user case (rule 6) and handle_two_users_case() (2-user
+        case) already guarantee this slot is covered on their own.
+
+        If no assignment already covers the slot, overrides one: the
+        first available user in the configured rotation order
+        (AutomationConfig.get_rotation_order(), same order already used
+        for on-call assignment - reusing it here means the fallback
+        stays predictable for admins who already rely on that order),
+        falling back to the first entry in `assignments` if the rotation
+        order is empty or none of its users are in `assignments`.
+        """
+        if any(
+            hours == AdvancedShiftAutomation.SHIFT_07_15 for _, hours in assignments
+        ):
+            return assignments
+
+        from app.models import AutomationConfig
+
+        rotation_order_ids = AutomationConfig.get_rotation_order() or []
+        index_by_user_id = {user.id: i for i, (user, _hours) in enumerate(assignments)}
+
+        fallback_index = 0
+        for user_id in rotation_order_ids:
+            if user_id in index_by_user_id:
+                fallback_index = index_by_user_id[user_id]
+                break
+
+        fallback_user, _hours = assignments[fallback_index]
+        assignments[fallback_index] = (
+            fallback_user,
+            AdvancedShiftAutomation.SHIFT_07_15,
+        )
+        return assignments
+
+    @staticmethod
     def _persist_shifts(
         generated_shifts: list, dry_run: bool, commit: bool
     ) -> "tuple[list, str | None]":
@@ -314,11 +364,14 @@ class AdvancedShiftAutomation:
 
         # Rule 6: minimum headcount of 1 person. When only one person is
         # available (edge case, below the 2-person case handled below),
-        # they're placed directly on 9am-5pm without going through
-        # determine_shift_for_user/handle_two_users_case.
+        # they're placed directly on 7am-3pm without going through
+        # determine_shift_for_user/handle_two_users_case - satisfies rule 7
+        # (7am-3pm minimum coverage) even in this degraded case, at the
+        # cost of leaving 3pm-9pm uncovered (unavoidable with only 1
+        # person and no 14h shift type).
         if len(available_users) == 1:
             sole_user = available_users[0]
-            start_hour, end_hour = AdvancedShiftAutomation.SHIFT_09_17
+            start_hour, end_hour = AdvancedShiftAutomation.SHIFT_07_15
             shift_type = AdvancedShiftAutomation.get_shift_type_by_hours(
                 start_hour, end_hour
             )
@@ -402,13 +455,22 @@ class AdvancedShiftAutomation:
             previous_week_date
         )
 
+        shift_assignments: list[tuple[User, tuple[int, int]]] = []
         for user in schedule_users:
             if user.id not in available_user_ids:
                 continue
 
-            start_hour, end_hour = AdvancedShiftAutomation.determine_shift_for_user(
+            hours = AdvancedShiftAutomation.determine_shift_for_user(
                 user, date, oncall_today, oncall_user_last_week
             )
+            shift_assignments.append((user, hours))
+
+        if shift_assignments:
+            shift_assignments = AdvancedShiftAutomation._ensure_minimum_07_15_coverage(
+                shift_assignments
+            )
+
+        for user, (start_hour, end_hour) in shift_assignments:
             shift_type = AdvancedShiftAutomation.get_shift_type_by_hours(
                 start_hour, end_hour
             )

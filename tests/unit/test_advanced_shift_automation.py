@@ -434,7 +434,9 @@ class TestGenerateDailyShifts:
         self, test_app, test_group, test_user, second_user
     ):
         """Regression test: with a single person available (the other
-        one is on leave), that person must land directly on 09h-17h."""
+        one is on leave), that person must land directly on 07h-15h
+        (rule 7: 7am-3pm minimum coverage - even in this degraded,
+        1-person case)."""
         with test_app.app_context():
             test_date = date(2023, 12, 15)
             leave = Leave(
@@ -451,8 +453,8 @@ class TestGenerateDailyShifts:
 
             assert len(shifts) == 1
             assert shifts[0].user_id == test_user.id
-            assert shifts[0].start_time.hour == 9
-            assert shifts[0].end_time.hour == 17
+            assert shifts[0].start_time.hour == 7
+            assert shifts[0].end_time.hour == 15
 
     def test_generate_daily_shifts_with_two_users(
         self, test_app, test_group, test_user, second_user, test_shift_type
@@ -493,6 +495,70 @@ class TestGenerateDailyShifts:
 
             # Should generate shifts for all 3 users
             assert len(shifts) == 3
+
+    def test_generate_daily_shifts_ensures_07_15_coverage_with_three_users(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Rule 7 regression test: with 3+ users and no on-call context at
+        all (neither this week's nor last week's on-call is set), rules
+        1/2 never fire for anyone and rule 3 alone would put everyone on
+        09h-17h - leaving 07h-09h/17h-21h uncovered. At least one person
+        must still land on 07h-15h."""
+        with test_app.app_context():
+            user3 = User(
+                name="Third User",
+                email="third@test.com",
+                password_hash=generate_password_hash("third-password"),
+                is_admin=False,
+                group_id=test_group.id,
+            )
+            db.session.add(user3)
+            db.session.commit()
+
+            test_date = date(2023, 12, 15)
+            shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(
+                test_date, dry_run=True
+            )
+
+            assert len(shifts) == 3
+            assert any(
+                shift.start_time.hour == 7 and shift.end_time.hour == 15
+                for shift in shifts
+            )
+
+    def test_generate_daily_shifts_07_15_fallback_honors_rotation_order(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """The rule 7 fallback picks the first available user in the
+        configured rotation order, not an arbitrary/incidental one."""
+        with test_app.app_context():
+            user3 = User(
+                name="Third User",
+                email="third@test.com",
+                password_hash=generate_password_hash("third-password"),
+                is_admin=False,
+                group_id=test_group.id,
+            )
+            db.session.add(user3)
+            db.session.commit()
+
+            AutomationConfig.set_rotation_order(
+                [user3.id, second_user.id, test_user.id]
+            )
+
+            test_date = date(2023, 12, 15)
+            shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(
+                test_date, dry_run=True
+            )
+
+            assert len(shifts) == 3
+            covering_07_15 = [
+                shift
+                for shift in shifts
+                if shift.start_time.hour == 7 and shift.end_time.hour == 15
+            ]
+            assert len(covering_07_15) == 1
+            assert covering_07_15[0].user_id == user3.id
 
     def test_generate_daily_shifts_dry_run_no_commit(
         self, test_app, test_group, test_user, test_shift_type

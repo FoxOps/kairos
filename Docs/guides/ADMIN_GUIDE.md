@@ -540,6 +540,13 @@ business rules implemented in `AdvancedShiftAutomation`
 - Everyone else defaults to the 9am-5pm slot (several people can share it)
 - If only 2 people are available on a given day, the one who is *not*
   on-call is put on the 7am-3pm slot
+- **7am-3pm minimum coverage**: at least one person must always be on this
+  slot. If the rotation above doesn't naturally put anyone there (e.g. the
+  person due for it isn't available/eligible that day), one available
+  person is reassigned to it instead - the first one in the configured
+  rotation order, so the choice stays predictable. With only 1 person
+  available that day, they're placed directly on 7am-3pm rather than the
+  usual 9am-5pm default, for the same reason.
 - Monday to Friday only, respecting existing leave and on-call periods
 
 If you need to touch shifts without regenerating on-call periods, use
@@ -625,6 +632,12 @@ the code.
 - Fixed time slots: `SHIFT_07_15` (7am-3pm), `SHIFT_09_17` (9am-5pm, the
   default), `SHIFT_13_21` (1pm-9pm, reserved for that week's on-call
   person)
+- 7am-3pm minimum coverage is enforced separately from the per-user
+  rotation rules above (`_ensure_minimum_07_15_coverage()`): if none of
+  them puts anyone on that slot for a given day, one available person is
+  reassigned to it - the first one in the configured rotation order
+  (falls back to the first available person if the rotation order is
+  empty or none of its users are available that day)
 - Monday to Friday only ("weekend excluded" is not a toggle, it's simply
   never generated)
 - No "number of people per shift type per day" setting exists anywhere
