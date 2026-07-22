@@ -20,19 +20,19 @@
                         <option value="{{ user.id }}">{{ user.name }}</option>
                         {% endfor %}
                     </select>
-                    <p class="text-sm text-base-content/60" id="user-help">{{ _("Sélectionnez l'utilisateur pour ce congé") }}</p>
+                    <p class="text-sm text-base-content/70" id="user-help">{{ _("Sélectionnez l'utilisateur pour ce congé") }}</p>
                 </fieldset>
 
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">{{ _("Date de début") }} <span class="text-error">*</span></legend>
                     <input class="input w-full validator" type="date" id="start_date" name="start_date" required aria-required="true" aria-describedby="start-date-help">
-                    <p class="text-sm text-base-content/60" id="start-date-help">{{ _("Date de début du congé") }}</p>
+                    <p class="text-sm text-base-content/70" id="start-date-help">{{ _("Date de début du congé") }}</p>
                 </fieldset>
 
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">{{ _("Date de fin") }} <span class="text-error">*</span></legend>
                     <input class="input w-full validator" type="date" id="end_date" name="end_date" required aria-required="true" aria-describedby="end-date-help">
-                    <p class="text-sm text-base-content/60" id="end-date-help">{{ _("Date de fin du congé") }}</p>
+                    <p class="text-sm text-base-content/70" id="end-date-help">{{ _("Date de fin du congé") }}</p>
                 </fieldset>
 
                 <div class="flex gap-2" role="group" aria-label="{{ _("Actions du formulaire") }}">

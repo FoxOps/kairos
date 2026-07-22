@@ -21,7 +21,7 @@
                 <input type="checkbox" class="checkbox" id="enabled" name="enabled" onchange="this.form.submit()" {% if apprise_notifications_enabled %}checked{% endif %}>
                 <span>{{ _("Activer les notifications externes (Slack, Discord, Telegram, webhooks...)") }}</span>
             </label>
-            <p class="text-sm text-base-content/60">
+            <p class="text-sm text-base-content/70">
                 {{ _("Tant que ce réglage est désactivé, aucune cible ci-dessous ne recevra de notification, même si elle est individuellement activée.") }}
             </p>
         </div>
@@ -59,7 +59,7 @@
                             <span class="badge badge-sm">{{ cat }}</span>
                             {% endfor %}
                         {% else %}
-                        <span class="text-base-content/60">{{ _("Toutes") }}</span>
+                        <span class="text-base-content/70">{{ _("Toutes") }}</span>
                         {% endif %}
                     </td>
                     <td>
@@ -114,7 +114,7 @@
     ] %}
     {% include "_action_legend.html" %}
     {% else %}
-    <p class="text-base-content/60">{{ _("Aucune cible de notification configurée.") }}</p>
+    <p class="text-base-content/70">{{ _("Aucune cible de notification configurée.") }}</p>
     {% endif %}
 </section>
 {% endblock %}

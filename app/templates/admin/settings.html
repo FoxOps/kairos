@@ -21,7 +21,7 @@
                         <option value="{{ tz }}" {% if tz == default_timezone %}selected{% endif %}>{{ tz }}</option>
                         {% endfor %}
                     </select>
-                    <p class="text-sm text-base-content/60" id="timezone-help">
+                    <p class="text-sm text-base-content/70" id="timezone-help">
                         {{ _("Fuseau utilisé pour interpréter les heures des shifts/astreintes et pour l'export ICS. Les utilisateurs peuvent choisir un fuseau personnel sur leur profil, ce qui n'affecte que l'affichage dans l'app, jamais le fichier ICS exporté ni l'heure réelle du shift.") }}
                     </p>
                 </fieldset>
@@ -47,7 +47,7 @@
                         <option value="{{ code }}" {% if code == default_language %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
-                    <p class="text-sm text-base-content/60" id="language-help">
+                    <p class="text-sm text-base-content/70" id="language-help">
                         {{ _("Langue utilisée pour l'interface et les emails de notification, quand un utilisateur n'a pas défini de préférence personnelle sur son profil.") }}
                     </p>
                 </fieldset>
@@ -73,7 +73,7 @@
                         <option value="{{ pattern }}" {% if pattern == default_date_format %}selected{% endif %}>{{ sample }}</option>
                         {% endfor %}
                     </select>
-                    <p class="text-sm text-base-content/60" id="date-format-help">
+                    <p class="text-sm text-base-content/70" id="date-format-help">
                         {{ _("Format utilisé pour afficher les dates, quand un utilisateur n'a pas défini de préférence personnelle sur son profil. N'affecte pas l'export ICS.") }}
                     </p>
                 </fieldset>
@@ -99,7 +99,7 @@
                         <option value="{{ pattern }}" {% if pattern == default_time_format %}selected{% endif %}>{{ sample }}</option>
                         {% endfor %}
                     </select>
-                    <p class="text-sm text-base-content/60" id="time-format-help">
+                    <p class="text-sm text-base-content/70" id="time-format-help">
                         {{ _("Format utilisé pour afficher les heures, quand un utilisateur n'a pas défini de préférence personnelle sur son profil. N'affecte pas l'export ICS.") }}
                     </p>
                 </fieldset>
@@ -123,7 +123,7 @@
                     <input class="input w-full" type="text" id="public_base_url" name="public_base_url"
                            value="{{ public_base_url or '' }}" placeholder="https://schedule.example.com"
                            aria-describedby="public-base-url-help">
-                    <p class="text-sm text-base-content/60" id="public-base-url-help">
+                    <p class="text-sm text-base-content/70" id="public-base-url-help">
                         {{ _("Utilisée pour générer les liens absolus (abonnements ICS). Laisser vide pour utiliser l'URL de la requête entrante.") }}
                     </p>
                 </fieldset>
@@ -194,7 +194,7 @@
                     <legend class="fieldset-legend">{{ _("Nombre maximum de sauvegardes") }}</legend>
                     <input class="input w-full" type="number" min="1" id="backup_max_backups" name="backup_max_backups" value="{{ backup_max_backups }}">
                 </fieldset>
-                <p class="text-sm text-base-content/60">
+                <p class="text-sm text-base-content/70">
                     {{ _("S'applique uniquement aux actions déclenchées depuis l'UI admin (Sauvegardes). La tâche planifiée (cron) continue d'utiliser les variables d'environnement.") }}
                 </p>
                 <div>
@@ -216,7 +216,7 @@
                     <legend class="fieldset-legend">{{ _("Rétention (jours)") }}</legend>
                     <input class="input w-full" type="number" min="1" id="audit_log_retention_days" name="audit_log_retention_days" value="{{ audit_log_retention_days or '' }}" placeholder="{{ _("Non configuré") }}">
                 </fieldset>
-                <p class="text-sm text-base-content/60">
+                <p class="text-sm text-base-content/70">
                     {{ _("Tant qu'aucune valeur n'est enregistrée ici, aucune purge n'est effectuée : toutes les entrées de l'historique sont conservées indéfiniment.") }}
                 </p>
                 <div>
@@ -238,7 +238,7 @@
                     <legend class="fieldset-legend">{{ _("Rétention (jours)") }}</legend>
                     <input class="input w-full" type="number" min="0" id="schedule_retention_days" name="schedule_retention_days" value="{{ schedule_retention_days }}">
                 </fieldset>
-                <p class="text-sm text-base-content/60">
+                <p class="text-sm text-base-content/70">
                     {{ _("Les shifts et astreintes passés depuis plus longtemps que cette durée sont supprimés automatiquement (tâche planifiée quotidienne). 0 = ne jamais purger.") }}
                 </p>
                 <div>
@@ -260,7 +260,7 @@
                     <legend class="fieldset-legend">{{ _("Expiration du jeton ICS (jours)") }}</legend>
                     <input class="input w-full" type="number" min="1" id="ics_token_expiry_days" name="ics_token_expiry_days" value="{{ ics_token_expiry_days }}">
                 </fieldset>
-                <p class="text-sm text-base-content/60">
+                <p class="text-sm text-base-content/70">
                     {{ _("Réglage actuellement sans effet : aucune expiration n'est encore appliquée aux jetons ICS existants. Conservé pour cohérence, en attendant une éventuelle implémentation future.") }}
                 </p>
                 <div>

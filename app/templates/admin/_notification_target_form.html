@@ -21,7 +21,7 @@
                        value="{{ target.apprise_url if target else '' }}"
                        placeholder="slack://TokenA/TokenB/TokenC/#canal" required aria-required="true"
                        aria-describedby="apprise-url-help">
-                <p class="text-sm text-base-content/60" id="apprise-url-help">
+                <p class="text-sm text-base-content/70" id="apprise-url-help">
                     {{ _("Format d'URL spécifique à chaque service (Slack, Discord, Telegram, webhook générique...).") }}
                     <a class="link" href="https://appriseit.com/services/" target="_blank" rel="noopener noreferrer">
                         {{ _("Voir la documentation Apprise") }} <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
@@ -40,8 +40,8 @@
                     </label>
                     {% endfor %}
                 </div>
-                <p class="text-sm text-base-content/60">{{ _("Aucune catégorie cochée = toutes les catégories.") }}</p>
-                <ul class="text-sm text-base-content/60 list-disc list-inside mt-1">
+                <p class="text-sm text-base-content/70">{{ _("Aucune catégorie cochée = toutes les catégories.") }}</p>
+                <ul class="text-sm text-base-content/70 list-disc list-inside mt-1">
                     <li><strong>swap</strong> — {{ _("Échanges de shifts entre utilisateurs : nouvelle demande, approbation, rejet, annulation d'un échange déjà approuvé.") }}</li>
                     <li><strong>backup</strong> — {{ _("Sauvegardes déclenchées manuellement depuis l'interface d'administration (création, nettoyage) : succès et échecs. N'inclut pas les sauvegardes automatiques planifiées par cron.") }}</li>
                     <li><strong>system</strong> — {{ _("Alertes système générales, notamment les échecs d'envoi des emails de rappel hebdomadaires (shifts et astreintes).") }}</li>

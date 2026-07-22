@@ -15,7 +15,7 @@
                 {% if swap_request.shift %}
                 <strong>{{ swap_request.shift.date|format_date }} - {{ swap_request.shift.shift_type.label }}</strong>
                 {% else %}
-                <strong class="text-base-content/60">{{ _("Shift supprimé") }}</strong>
+                <strong class="text-base-content/70">{{ _("Shift supprimé") }}</strong>
                 {% endif %}
             </p>
         </div>
@@ -34,7 +34,7 @@
                         <option value="{{ shift.id }}">{{ shift.date|format_date }} - {{ shift.shift_type.label }}</option>
                         {% endfor %}
                     </select>
-                    <p class="text-sm text-base-content/60">
+                    <p class="text-sm text-base-content/70">
                         {{ _("Laissez vide pour accepter le shift sans rien proposer en retour.") }}
                     </p>
                 </fieldset>

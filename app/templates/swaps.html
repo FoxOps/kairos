@@ -43,7 +43,7 @@
                         {% if swap.shift %}
                         {{ swap.shift.date|format_date }} - {{ swap.shift.shift_type.label }}
                         {% else %}
-                        <span class="text-base-content/60">{{ _("Shift supprimé") }}</span>
+                        <span class="text-base-content/70">{{ _("Shift supprimé") }}</span>
                         {% endif %}
                     </td>
                     <td>{{ swap.target_user.name if swap.target_user else _("Utilisateur supprimé") }}</td>
@@ -51,7 +51,7 @@
                         {% if swap.target_shift %}
                         {{ swap.target_shift.date|format_date }} - {{ swap.target_shift.shift_type.label }}
                         {% else %}
-                        <span class="text-base-content/60">—</span>
+                        <span class="text-base-content/70">—</span>
                         {% endif %}
                     </td>
                     <td>{% include "_swap_status_badge.html" %}</td>
@@ -69,7 +69,7 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" class="text-center text-base-content/60">{{ _("Aucune demande envoyée") }}</td></tr>
+                <tr><td colspan="5" class="text-center text-base-content/70">{{ _("Aucune demande envoyée") }}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -96,14 +96,14 @@
                         {% if swap.shift %}
                         {{ swap.shift.date|format_date }} - {{ swap.shift.shift_type.label }}
                         {% else %}
-                        <span class="text-base-content/60">{{ _("Shift supprimé") }}</span>
+                        <span class="text-base-content/70">{{ _("Shift supprimé") }}</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if swap.target_shift %}
                         {{ swap.target_shift.date|format_date }} - {{ swap.target_shift.shift_type.label }}
                         {% else %}
-                        <span class="text-base-content/60">{{ _("Don simple") }}</span>
+                        <span class="text-base-content/70">{{ _("Don simple") }}</span>
                         {% endif %}
                     </td>
                     <td>{% include "_swap_status_badge.html" %}</td>
@@ -127,12 +127,12 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" class="text-center text-base-content/60">{{ _("Aucune demande reçue") }}</td></tr>
+                <tr><td colspan="5" class="text-center text-base-content/70">{{ _("Aucune demande reçue") }}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    <p class="text-sm text-base-content/60 mt-2">
+    <p class="text-sm text-base-content/70 mt-2">
         <i class="fas fa-info-circle" aria-hidden="true"></i>
         {{ _("Une demande d'échange doit être confirmée par le destinataire puis validée par un administrateur avant d'être appliquée.") }}
     </p>

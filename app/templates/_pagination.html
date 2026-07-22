@@ -44,7 +44,7 @@
             <option value="0" {% if per_page == 999999 %}selected{% endif %}>{{ _("Tout") }}</option>
         </select>
         <input type="hidden" name="page" value="1">
-        <small class="text-base-content/60 whitespace-nowrap">
+        <small class="text-base-content/70 whitespace-nowrap">
             {{ pagination.items|length }} / {{ pagination.total }} {{ pagination_total_name }}
         </small>
     </form>
