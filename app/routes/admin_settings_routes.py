@@ -119,6 +119,17 @@ def settings_dashboard():
                 else:
                     flash(_("Rétention de l'audit trail enregistrée"), "success")
 
+        elif section == "schedule":
+            parsed = _parse_int_fields("schedule_retention_days")
+            if parsed is None:
+                flash(_("Erreur : durée de rétention invalide"), "danger")
+            else:
+                error = SettingsService.set_schedule_retention_days(parsed[0])
+                if error:
+                    flash(_("Erreur : %(error)s", error=error), "danger")
+                else:
+                    flash(_("Rétention du planning enregistrée"), "success")
+
         elif section == "ics":
             parsed = _parse_int_fields("ics_token_expiry_days")
             if parsed is None:
@@ -154,4 +165,5 @@ def settings_dashboard():
         or env_backup_defaults.max_backups,
         ics_token_expiry_days=SettingsService.get_ics_token_expiry_days(),
         audit_log_retention_days=SettingsService.get_audit_log_retention_days(),
+        schedule_retention_days=SettingsService.get_schedule_retention_days(),
     )

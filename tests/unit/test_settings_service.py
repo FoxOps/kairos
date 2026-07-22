@@ -191,6 +191,32 @@ class TestBackupRetention:
             assert error is not None
 
 
+class TestScheduleRetentionDays:
+    def test_falls_back_to_365_when_unset(self, test_app):
+        """No env-var equivalent (brand new concept) and no None
+        sentinel either, unlike backup/audit retention - see
+        FALLBACK_SCHEDULE_RETENTION_DAYS's docstring."""
+        with test_app.app_context():
+            assert SettingsService.get_schedule_retention_days() == 365
+
+    def test_db_override_wins(self, test_app):
+        with test_app.app_context():
+            error = SettingsService.set_schedule_retention_days(90)
+            assert error is None
+            assert SettingsService.get_schedule_retention_days() == 90
+
+    def test_zero_is_a_valid_value_meaning_never_purge(self, test_app):
+        with test_app.app_context():
+            error = SettingsService.set_schedule_retention_days(0)
+            assert error is None
+            assert SettingsService.get_schedule_retention_days() == 0
+
+    def test_rejects_negative_value(self, test_app):
+        with test_app.app_context():
+            error = SettingsService.set_schedule_retention_days(-1)
+            assert error is not None
+
+
 class TestIcsTokenExpiryDays:
     def test_falls_back_to_env_when_unset(self, test_app, monkeypatch):
         with test_app.app_context():

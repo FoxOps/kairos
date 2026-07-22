@@ -228,7 +228,29 @@
         </div>
     </form>
 
-    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="ics-form-title">
+    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="schedule-form-title" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="section" value="schedule">
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <h2 class="font-semibold" id="schedule-form-title"><i class="fas fa-broom" aria-hidden="true"></i> {{ _("Historique du planning") }}</h2>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Rétention (jours)") }}</legend>
+                    <input class="input w-full" type="number" min="0" id="schedule_retention_days" name="schedule_retention_days" value="{{ schedule_retention_days }}">
+                </fieldset>
+                <p class="text-sm text-base-content/60">
+                    {{ _("Les shifts et astreintes passés depuis plus longtemps que cette durée sont supprimés automatiquement (tâche planifiée quotidienne). 0 = ne jamais purger.") }}
+                </p>
+                <div>
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="ics-form-title"
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="section" value="ics">
         <div class="card card-sm bg-base-100 shadow-md">

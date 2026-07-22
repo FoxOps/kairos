@@ -3,9 +3,12 @@
  *
  * This file was extracted from an inline <script> in index.html so the CSP
  * can enforce a strict `script-src 'self'` (an inline <script> would need
- * 'unsafe-inline' or a nonce). Server-injected data (isAdmin, events) is
- * passed via data-* attributes and a <script type="application/json"> tag
- * instead of Jinja interpolation directly into JS.
+ * 'unsafe-inline' or a nonce). Server-injected data (isAdmin) is passed via
+ * data-* attributes instead of Jinja interpolation directly into JS. The
+ * calendar's own events aren't server-injected at all: they're fetched
+ * dynamically from /api/shifts (see the `events` function below), for
+ * whatever range FullCalendar is currently viewing - not capped by a fixed
+ * window baked in at page load.
  *
  * FullCalendar stays on 6.1.21 (no bump to 7.0.0) and is loaded from
  * jsDelivr rather than cdnjs - two independent findings from real-browser
@@ -47,8 +50,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // file loaded in index.html (locales/fr.global.min.js). Same
     // fallback rule as date-picker.js's currentLocale().
     const calendarLocale = document.documentElement.lang === 'en' ? 'en' : 'fr';
-    const eventsDataEl = document.getElementById('calendar-events-data');
-    const events = eventsDataEl ? JSON.parse(eventsDataEl.textContent) : [];
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 
     // Read edit-mode state from the URL
@@ -283,7 +284,47 @@ document.addEventListener('DOMContentLoaded', function () {
             center: 'title',
             right: 'dayGridMonth,timeGridWeek,timeGridDay'
         },
-        events: events,
+        // Dynamic source (not a static embedded array): fetches
+        // /api/shifts for exactly the range FullCalendar is currently
+        // viewing, so navigating far into the past/future - e.g. a
+        // schedule generated a year ahead - always shows real data
+        // instead of being capped by a fixed window baked in at page
+        // load. Also what makes calendar.refetchEvents() (called after
+        // a drag/drop reschedule below) actually pull fresh data
+        // instead of being a no-op against a static array.
+        events: function (fetchInfo, successCallback, failureCallback) {
+            const params = new URLSearchParams({
+                start: fetchInfo.startStr,
+                end: fetchInfo.endStr
+            });
+            fetch(`/api/shifts?${params}`, { credentials: 'same-origin' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(successCallback)
+                .catch(error => {
+                    console.error('Failed to load calendar events:', error);
+                    failureCallback(error);
+                });
+        },
+        loading: function (isLoading) {
+            if (isLoading) {
+                return;
+            }
+            // Swap the loading skeleton (daisyUI skeleton) for the
+            // calendar once its first real data fetch has settled -
+            // calendar.render() itself returns before an async events
+            // source resolves, so hiding it any earlier would flash an
+            // empty grid.
+            const calendarSkeleton = document.getElementById('calendar-skeleton');
+            if (calendarSkeleton) {
+                calendarSkeleton.classList.add('hidden');
+            }
+            calendarEl.classList.remove('hidden');
+        },
         locale: calendarLocale,
         firstDay: 1,
         eventTimeFormat: {
@@ -365,14 +406,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     calendar.render();
-
-    // Swap the loading skeleton (daisyUI skeleton) for the calendar once
-    // its first render is done.
-    const calendarSkeleton = document.getElementById('calendar-skeleton');
-    if (calendarSkeleton) {
-        calendarSkeleton.classList.add('hidden');
-    }
-    calendarEl.classList.remove('hidden');
+    // Skeleton/calendar visibility swap now happens in the `loading`
+    // callback above, once the first events fetch actually settles.
 
     // Expose the calendar globally
     window.calendar = calendar;

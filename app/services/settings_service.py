@@ -36,6 +36,7 @@ NOTIFICATIONS_ENABLED_KEY = "notifications_enabled"
 BACKUP_RETENTION_DAYS_KEY = "backup_retention_days"
 BACKUP_MAX_BACKUPS_KEY = "backup_max_backups"
 AUDIT_LOG_RETENTION_DAYS_KEY = "audit_log_retention_days"
+SCHEDULE_RETENTION_DAYS_KEY = "schedule_retention_days"
 APPRISE_NOTIFICATIONS_ENABLED_KEY = "apprise_notifications_enabled"
 # Setting key name, not a secret
 ICS_TOKEN_EXPIRY_DAYS_KEY = "ics_token_expiry_days"  # noqa: S105 # nosec B105
@@ -60,6 +61,16 @@ FALLBACK_DEFAULT_DATE_FORMAT = "%d/%m/%Y"
 FALLBACK_DEFAULT_TIME_FORMAT = "%H:%M"
 SUPPORTED_DATE_FORMATS = ("%d/%m/%Y", "%m/%d/%Y", "%Y-%m-%d")
 SUPPORTED_TIME_FORMATS = ("%H:%M", "%I:%M %p")
+
+# Same no-env-var-equivalent situation as language/date format above:
+# automatic schedule cleanup was never a configurable concept before
+# this Setting existed. Unlike backup/audit-log retention (get_backup_
+# retention_days()/get_audit_log_retention_days(), which return None
+# when unset and leave the "what to do then" decision to their own
+# caller), this fallback is a real, immediately-usable default - 0 is
+# the deliberate opt-out value ("never purge"), not a sentinel for
+# "unset".
+FALLBACK_SCHEDULE_RETENTION_DAYS = 365
 
 
 class SettingsService:
@@ -289,6 +300,27 @@ class SettingsService:
             return _("La durée de rétention doit être positive")
         return SettingsService._set_with_audit(
             {AUDIT_LOG_RETENTION_DAYS_KEY: days}, f"audit_log_retention_days={days}"
+        )
+
+    # --- schedule (shift/on-call) history retention ---
+
+    @staticmethod
+    def get_schedule_retention_days() -> int:
+        """How many days of *past* shifts/on-calls to keep before
+        ScheduleCleanupService purges them - 0 means never purge (the
+        admin's explicit opt-out). Always returns a usable int, unlike
+        get_backup_retention_days()/get_audit_log_retention_days() -
+        see FALLBACK_SCHEDULE_RETENTION_DAYS above for why this Setting
+        doesn't need a None sentinel."""
+        value = Setting.get(SCHEDULE_RETENTION_DAYS_KEY)
+        return int(value) if value is not None else FALLBACK_SCHEDULE_RETENTION_DAYS
+
+    @staticmethod
+    def set_schedule_retention_days(days: int) -> str | None:
+        if days < 0:
+            return _("La durée de rétention ne peut pas être négative")
+        return SettingsService._set_with_audit(
+            {SCHEDULE_RETENTION_DAYS_KEY: days}, f"schedule_retention_days={days}"
         )
 
     # --- Apprise external notifications master toggle ---
