@@ -51,5 +51,4 @@
     padding: 15px;
     border-radius: var(--app-radius-small);
     margin-bottom: 15px;
-    border-left: 4px solid var(--app-color-primary, #644ac9);
 }
