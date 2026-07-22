@@ -43,7 +43,10 @@ known-first-party = ["app", "tests"]
 # S101/S105/S106: assert + fake test tokens/secrets/password args, inherent to
 # how tests construct fixtures. S110/B017/B011: broad except/assert patterns
 # that are normal/acceptable in test setup and negative-path assertions.
-"tests/*" = ["S101", "S105", "S106", "S110", "B017", "B011"]
+# S603 (test_template_lint.py): subprocess.run() with a fixed, hardcoded
+# argv (sys.executable, "-m", "djlint", a repo-relative Path) - no
+# untrusted input, same pattern already accepted in scripts/check_version.py.
+"tests/*" = ["S101", "S105", "S106", "S110", "B017", "B011", "S603"]
 "run.py" = ["T201"]  # Allow print in run.py
 "app/routes/*" = ["B008"]  # Allow function calls in defaults for routes
 # CLI dev tools: print() is the actual output mechanism, not debug cruft.

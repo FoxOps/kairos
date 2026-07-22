@@ -38,11 +38,13 @@ test-coverage: ## Exécute les tests avec couverture de code (terminal)
 	# Rapport HTML : ajouter --cov-report=html (ouvre htmlcov/index.html)
 	# Rapport JSON : ajouter --cov-report=json
 
-lint: ## Exécute Ruff et mypy pour vérifier la qualité du code
+lint: ## Exécute Ruff, mypy et djlint (templates Jinja) pour vérifier la qualité du code
 	@echo "$(YELLOW)Vérification avec Ruff...$(NC)"
 	ruff check . --config=.ruff.toml
 	@echo "$(YELLOW)Vérification avec mypy...$(NC)"
 	mypy app/ tests/ --ignore-missing-imports --allow-untyped-decorators
+	@echo "$(YELLOW)Vérification des templates avec djlint...$(NC)"
+	djlint app/templates
 	@echo "$(GREEN)✓ Linting terminé$(NC)"
 
 format: ## Vérifie le formatage du code avec Black
