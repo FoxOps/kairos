@@ -17,8 +17,6 @@ from app.utils.helpers.common_helpers import (
     format_date_fr,
     format_datetime,
     format_time,
-    get_bool,
-    get_int,
     get_timezone_choices,
     is_user_on_leave,
     is_user_on_shift,
@@ -27,8 +25,6 @@ from app.utils.helpers.common_helpers import (
 from app.utils.helpers.timezone_helpers import to_org_timezone, to_viewer_timezone
 
 __all__ = [
-    "get_bool",
-    "get_int",
     "format_date_fr",
     "format_date",
     "format_time",

@@ -30,6 +30,24 @@ class AppriseNotificationService:
         apobj.notify(title=title, body=body)
 
     @staticmethod
+    def _send_to_targets(
+        targets: list[NotificationTarget], title: str, body: str, error_context: str
+    ) -> None:
+        """Shared send loop for notify()/notify_to_targets() below - one
+        broken target must never stop the others from receiving the
+        notification (same batch-resilience idea already used by
+        NotificationService's weekly sends)."""
+        for target in targets:
+            try:
+                AppriseNotificationService._send_to_target(target, title, body)
+            except Exception:
+                logger.exception(
+                    "Échec d'envoi Apprise vers la cible id=%s (%s)",
+                    target.id,
+                    error_context,
+                )
+
+    @staticmethod
     def notify(category: str, title: str, body: str) -> None:
         """Fire-and-forget, to every enabled target subscribed to
         category: never raises. A failure here must never break the
@@ -39,15 +57,9 @@ class AppriseNotificationService:
             if not SettingsService.get_apprise_notifications_enabled():
                 return
             targets = NotificationTargetRepository.list_enabled_for_category(category)
-            for target in targets:
-                try:
-                    AppriseNotificationService._send_to_target(target, title, body)
-                except Exception:
-                    logger.exception(
-                        "Échec d'envoi Apprise vers la cible id=%s (catégorie=%s)",
-                        target.id,
-                        category,
-                    )
+            AppriseNotificationService._send_to_targets(
+                targets, title, body, f"catégorie={category}"
+            )
         except Exception:
             logger.exception(
                 "Échec du service de notifications externes (catégorie=%s)", category
@@ -64,16 +76,12 @@ class AppriseNotificationService:
         try:
             if not SettingsService.get_apprise_notifications_enabled():
                 return
-            targets = NotificationTargetRepository.get_by_ids(target_ids)
-            for target in targets:
-                if not target.enabled:
-                    continue
-                try:
-                    AppriseNotificationService._send_to_target(target, title, body)
-                except Exception:
-                    logger.exception(
-                        "Échec d'envoi Apprise vers la cible id=%s", target.id
-                    )
+            targets = [
+                target
+                for target in NotificationTargetRepository.get_by_ids(target_ids)
+                if target.enabled
+            ]
+            AppriseNotificationService._send_to_targets(targets, title, body, "cibles")
         except Exception:
             logger.exception("Échec du service de notifications externes (cibles)")
 

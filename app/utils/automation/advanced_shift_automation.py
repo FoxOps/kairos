@@ -248,6 +248,33 @@ class AdvancedShiftAutomation:
         return assignments
 
     @staticmethod
+    def _persist_shifts(
+        generated_shifts: list, dry_run: bool, commit: bool
+    ) -> "tuple[list, str | None]":
+        """Shared persistence tail for the 3 generate_daily_shifts() cases
+        (1 user / 2 users / 3+ users): add_all + commit-or-flush, with the
+        same rollback-on-failure behavior in every case. Returns
+        (shifts, error_message) - shifts is [] and error_message is set
+        when the commit failed."""
+        from app import db
+
+        if dry_run:
+            return generated_shifts, None
+
+        db.session.add_all(generated_shifts)
+        if not commit:
+            db.session.flush()
+            return generated_shifts, None
+
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return [], str(e)
+
+        return generated_shifts, None
+
+    @staticmethod
     def generate_daily_shifts(
         date: "date", dry_run: bool = False, commit: bool = True
     ) -> "tuple[list, list]":
@@ -262,7 +289,6 @@ class AdvancedShiftAutomation:
         """
         from datetime import datetime, timedelta
 
-        from app import db
         from app.models import Shift
 
         messages = []
@@ -311,17 +337,12 @@ class AdvancedShiftAutomation:
             )
             generated_shifts.append(shift)
 
-            if not dry_run:
-                db.session.add_all(generated_shifts)
-                if commit:
-                    try:
-                        db.session.commit()
-                    except Exception as e:
-                        db.session.rollback()
-                        messages.append(_("❌ Erreur : %(error)s", error=str(e)))
-                        return [], messages
-                else:
-                    db.session.flush()
+            generated_shifts, error = AdvancedShiftAutomation._persist_shifts(
+                generated_shifts, dry_run, commit
+            )
+            if error is not None:
+                messages.append(_("❌ Erreur : %(error)s", error=error))
+                return [], messages
 
             messages.append(
                 _(
@@ -358,17 +379,12 @@ class AdvancedShiftAutomation:
                     )
                     generated_shifts.append(shift)
 
-                if not dry_run:
-                    db.session.add_all(generated_shifts)
-                    if commit:
-                        try:
-                            db.session.commit()
-                        except Exception as e:
-                            db.session.rollback()
-                            messages.append(_("❌ Erreur : %(error)s", error=str(e)))
-                            return [], messages
-                    else:
-                        db.session.flush()
+                generated_shifts, error = AdvancedShiftAutomation._persist_shifts(
+                    generated_shifts, dry_run, commit
+                )
+                if error is not None:
+                    messages.append(_("❌ Erreur : %(error)s", error=error))
+                    return [], messages
 
                 return generated_shifts, messages
 
@@ -412,17 +428,13 @@ class AdvancedShiftAutomation:
             )
             generated_shifts.append(shift)
 
-        if not dry_run and generated_shifts:
-            db.session.add_all(generated_shifts)
-            if commit:
-                try:
-                    db.session.commit()
-                except Exception as e:
-                    db.session.rollback()
-                    messages.append(_("❌ Erreur : %(error)s", error=str(e)))
-                    return [], messages
-            else:
-                db.session.flush()
+        if generated_shifts:
+            generated_shifts, error = AdvancedShiftAutomation._persist_shifts(
+                generated_shifts, dry_run, commit
+            )
+            if error is not None:
+                messages.append(_("❌ Erreur : %(error)s", error=error))
+                return [], messages
 
         # Return a summary instead of detailed messages
         if generated_shifts:
@@ -510,6 +522,199 @@ class AdvancedShiftAutomation:
         return all_shifts, [msg], unfilled_shift_dates
 
     @staticmethod
+    def _rebalance_shift_days(
+        shift_period_start: "date", shift_period_end: "date", dry_run: bool
+    ) -> "tuple[list, list, list, list]":
+        """Day-by-day shift regeneration for the affected window,
+        extracted from rebalance_after_leave() (see its own docstring
+        for the per-day SAVEPOINT rationale - unchanged here, only moved).
+        Returns (regenerated_shifts, messages, unfilled_shift_dates,
+        failed_shift_dates)."""
+        from datetime import timedelta
+
+        from app import db
+        from app.models import Shift
+
+        messages = []
+        regenerated_shifts = []
+        unfilled_shift_dates: list = []
+        failed_shift_dates: list = []
+
+        current_date = shift_period_start
+        while current_date <= shift_period_end:
+            if current_date.weekday() < 5:  # Monday to Friday only
+                if dry_run:
+                    existing_shifts = Shift.query.filter_by(date=current_date).all()
+                    if existing_shifts:
+                        messages.append(
+                            _(
+                                "🗑️ %(count)s shifts supprimés pour le %(date)s",
+                                count=len(existing_shifts),
+                                date=current_date.strftime("%d/%m/%Y"),
+                            )
+                        )
+                    shifts, date_messages = (
+                        AdvancedShiftAutomation.generate_daily_shifts(
+                            current_date, dry_run=True, commit=False
+                        )
+                    )
+                    regenerated_shifts.extend(shifts)
+                    messages.extend(date_messages)
+                    if not shifts:
+                        unfilled_shift_dates.append(current_date)
+                else:
+                    # A failure on this specific day (e.g. a
+                    # unique-constraint race) must not discard every
+                    # other day already regenerated in this ±30-day
+                    # window - only this day's SAVEPOINT rolls back,
+                    # leaving that day's schedule exactly as it was
+                    # before the attempt. The loop then continues
+                    # instead of aborting the whole rebalance.
+                    try:
+                        with db.session.begin_nested():
+                            existing_shifts = Shift.query.filter_by(
+                                date=current_date
+                            ).all()
+                            if existing_shifts:
+                                for shift in existing_shifts:
+                                    db.session.delete(shift)
+                                db.session.flush()
+                                messages.append(
+                                    _(
+                                        "🗑️ %(count)s shifts supprimés pour le %(date)s",
+                                        count=len(existing_shifts),
+                                        date=current_date.strftime("%d/%m/%Y"),
+                                    )
+                                )
+
+                            shifts, date_messages = (
+                                AdvancedShiftAutomation.generate_daily_shifts(
+                                    current_date, dry_run=False, commit=False
+                                )
+                            )
+                            regenerated_shifts.extend(shifts)
+                            messages.extend(date_messages)
+                            if not shifts:
+                                unfilled_shift_dates.append(current_date)
+                    except Exception as e:
+                        failed_shift_dates.append(current_date)
+                        messages.append(
+                            _(
+                                "❌ Échec de la régénération du %(date)s : "
+                                "%(error)s - ce jour n'a pas été modifié, "
+                                "action manuelle nécessaire",
+                                date=current_date.strftime("%d/%m/%Y"),
+                                error=str(e),
+                            )
+                        )
+            current_date += timedelta(days=1)
+
+        return regenerated_shifts, messages, unfilled_shift_dates, failed_shift_dates
+
+    @staticmethod
+    def _rebalance_oncall_section(
+        shift_period_start: "date", shift_period_end: "date"
+    ) -> "tuple[list, list, list, list]":
+        """On-call regeneration for the affected window, extracted from
+        rebalance_after_leave() - only called by it when
+        oncall_periods_to_regenerate is non-empty and not dry_run (the
+        on-call side has no dry_run preview branch, unlike
+        _rebalance_shift_days above). Isolated in its own SAVEPOINT for
+        the same reason as each shift day: an error here must not
+        discard the shift days already regenerated by the caller.
+        Returns (regenerated_oncalls, messages, unfilled_oncall_dates,
+        failed_oncall_period)."""
+        from app import db
+        from app.models import AutomationConfig
+        from app.repositories.oncall_repository import OnCallRepository
+        from app.utils.automation import OnCallAutomation
+
+        messages = []
+        regenerated_oncalls = []
+        unfilled_oncall_dates: list = []
+        failed_oncall_period: list = []
+
+        try:
+            with db.session.begin_nested():
+                # The deletion in the caller only targets the leave's
+                # own on-calls; the period to regenerate is padded by
+                # ±30 days and can therefore overlap OTHER users'
+                # on-calls, which were never deleted. Since
+                # generate_oncall_schedule always creates new on-calls
+                # without checking what already exists, the whole slot
+                # had to be cleared before regenerating, otherwise
+                # duplicate/overlapping on-calls would appear on the
+                # adjacent Fridays.
+                # Captured before the wipe below, so the search can
+                # prefer keeping each week's existing occupant instead
+                # of blindly replaying the rotation order - minimizes
+                # how much of an already-working schedule gets
+                # reshuffled on each rebalance. The leave user's own
+                # now-conflicting week is naturally excluded by
+                # has_leave_conflict() further down, not here - see
+                # capture_existing_assignments()'s docstring for why
+                # pre-excluding them here would be wrong (it would also
+                # drop their other, unrelated weeks in the same window).
+                preferred_assignments = OnCallAutomation.capture_existing_assignments(
+                    shift_period_start, shift_period_end
+                )
+
+                other_oncalls_deleted = OnCallRepository.delete_overlapping_range(
+                    shift_period_start, shift_period_end
+                )
+                if other_oncalls_deleted:
+                    db.session.flush()
+                    messages.append(
+                        _(
+                            "🗑️ %(count)s astreinte(s) supplémentaire(s) "
+                            "supprimée(s) dans la période étendue avant régénération",
+                            count=other_oncalls_deleted,
+                        )
+                    )
+
+                oncalls, oncall_messages, oncall_unfilled_dates = (
+                    OnCallAutomation.generate_oncall_schedule(
+                        shift_period_start,
+                        shift_period_end,
+                        rotation_order_ids=AutomationConfig.get_rotation_order(),
+                        dry_run=False,
+                        commit=False,
+                        preferred_assignments=preferred_assignments,
+                    )
+                )
+                regenerated_oncalls.extend(oncalls)
+                messages.extend(oncall_messages)
+                unfilled_oncall_dates.extend(oncall_unfilled_dates)
+                messages.append(
+                    _(
+                        "🔄 %(count)s astreintes régénérées pour la période %(start)s - %(end)s",
+                        count=len(oncalls),
+                        start=shift_period_start.strftime("%d/%m/%Y"),
+                        end=shift_period_end.strftime("%d/%m/%Y"),
+                    )
+                )
+        except Exception as e:
+            failed_oncall_period = [shift_period_start, shift_period_end]
+            messages.append(
+                _(
+                    "❌ Échec de la régénération des astreintes pour la "
+                    "période %(start)s - %(end)s : %(error)s - les "
+                    "astreintes de cette période n'ont pas été "
+                    "modifiées, action manuelle nécessaire",
+                    start=shift_period_start.strftime("%d/%m/%Y"),
+                    end=shift_period_end.strftime("%d/%m/%Y"),
+                    error=str(e),
+                )
+            )
+
+        return (
+            regenerated_oncalls,
+            messages,
+            unfilled_oncall_dates,
+            failed_oncall_period,
+        )
+
+    @staticmethod
     def rebalance_after_leave(
         leave: "Leave", dry_run: bool = False
     ) -> "tuple[list, list, list, list, list, list]":
@@ -561,8 +766,7 @@ class AdvancedShiftAutomation:
         from datetime import datetime, timedelta
 
         from app import db
-        from app.models import OnCall, Shift
-        from app.utils.automation import OnCallAutomation
+        from app.models import OnCall
 
         messages = []
         regenerated_shifts = []
@@ -636,169 +840,34 @@ class AdvancedShiftAutomation:
                 )  # Take 30 days after
 
             # Delete and regenerate shifts for the whole affected period.
-            # dry_run never writes to the session, so there's nothing to
-            # isolate - only the not-dry_run branch needs a per-day
-            # SAVEPOINT.
-            current_date = shift_period_start
-            while current_date <= shift_period_end:
-                if current_date.weekday() < 5:  # Monday to Friday only
-                    if dry_run:
-                        existing_shifts = Shift.query.filter_by(date=current_date).all()
-                        if existing_shifts:
-                            messages.append(
-                                _(
-                                    "🗑️ %(count)s shifts supprimés pour le %(date)s",
-                                    count=len(existing_shifts),
-                                    date=current_date.strftime("%d/%m/%Y"),
-                                )
-                            )
-                        shifts, date_messages = (
-                            AdvancedShiftAutomation.generate_daily_shifts(
-                                current_date, dry_run=True, commit=False
-                            )
-                        )
-                        regenerated_shifts.extend(shifts)
-                        messages.extend(date_messages)
-                        if not shifts:
-                            unfilled_shift_dates.append(current_date)
-                    else:
-                        # A failure on this specific day (e.g. a
-                        # unique-constraint race) must not discard every
-                        # other day already regenerated in this ±30-day
-                        # window - only this day's SAVEPOINT rolls back,
-                        # leaving that day's schedule exactly as it was
-                        # before the attempt. The loop then continues
-                        # instead of aborting the whole rebalance.
-                        try:
-                            with db.session.begin_nested():
-                                existing_shifts = Shift.query.filter_by(
-                                    date=current_date
-                                ).all()
-                                if existing_shifts:
-                                    for shift in existing_shifts:
-                                        db.session.delete(shift)
-                                    db.session.flush()
-                                    messages.append(
-                                        _(
-                                            "🗑️ %(count)s shifts supprimés pour le %(date)s",
-                                            count=len(existing_shifts),
-                                            date=current_date.strftime("%d/%m/%Y"),
-                                        )
-                                    )
-
-                                shifts, date_messages = (
-                                    AdvancedShiftAutomation.generate_daily_shifts(
-                                        current_date, dry_run=False, commit=False
-                                    )
-                                )
-                                regenerated_shifts.extend(shifts)
-                                messages.extend(date_messages)
-                                if not shifts:
-                                    unfilled_shift_dates.append(current_date)
-                        except Exception as e:
-                            failed_shift_dates.append(current_date)
-                            messages.append(
-                                _(
-                                    "❌ Échec de la régénération du %(date)s : "
-                                    "%(error)s - ce jour n'a pas été modifié, "
-                                    "action manuelle nécessaire",
-                                    date=current_date.strftime("%d/%m/%Y"),
-                                    error=str(e),
-                                )
-                            )
-                current_date += timedelta(days=1)
+            (
+                shift_results_shifts,
+                shift_results_messages,
+                shift_results_unfilled,
+                shift_results_failed,
+            ) = AdvancedShiftAutomation._rebalance_shift_days(
+                shift_period_start, shift_period_end, dry_run
+            )
+            regenerated_shifts.extend(shift_results_shifts)
+            messages.extend(shift_results_messages)
+            unfilled_shift_dates.extend(shift_results_unfilled)
+            failed_shift_dates.extend(shift_results_failed)
 
             # Regenerate on-calls for the affected period
             # If on-calls were deleted, we need to recompute them
             if oncall_periods_to_regenerate and not dry_run:
-                # Use the same period as for shifts
-                from app.models import AutomationConfig
-                from app.repositories.oncall_repository import OnCallRepository
-
-                # Isolated in its own SAVEPOINT for the same reason as
-                # each shift day above: an error here (e.g. a bug in
-                # generate_oncall_schedule) must not discard the shift
-                # days already regenerated by the loop above them.
-                try:
-                    with db.session.begin_nested():
-                        # The deletion above only targets the leave's
-                        # own on-calls (leave.user_id); the period to
-                        # regenerate is padded by ±30 days and can
-                        # therefore overlap OTHER users' on-calls, which
-                        # were never deleted. Since
-                        # generate_oncall_schedule always creates new
-                        # on-calls without checking what already
-                        # exists, the whole slot had to be cleared
-                        # before regenerating, otherwise
-                        # duplicate/overlapping on-calls would appear on
-                        # the adjacent Fridays.
-                        # Captured before the wipe below, so the search
-                        # can prefer keeping each week's existing
-                        # occupant instead of blindly replaying the
-                        # rotation order - minimizes how much of an
-                        # already-working schedule gets reshuffled on
-                        # each rebalance. The leave user's own
-                        # now-conflicting week is naturally excluded by
-                        # has_leave_conflict() further down, not here -
-                        # see capture_existing_assignments()'s docstring
-                        # for why pre-excluding them here would be
-                        # wrong (it would also drop their other,
-                        # unrelated weeks in the same window).
-                        preferred_assignments = (
-                            OnCallAutomation.capture_existing_assignments(
-                                shift_period_start, shift_period_end
-                            )
-                        )
-
-                        other_oncalls_deleted = (
-                            OnCallRepository.delete_overlapping_range(
-                                shift_period_start, shift_period_end
-                            )
-                        )
-                        if other_oncalls_deleted:
-                            db.session.flush()
-                            messages.append(
-                                _(
-                                    "🗑️ %(count)s astreinte(s) supplémentaire(s) "
-                                    "supprimée(s) dans la période étendue avant régénération",
-                                    count=other_oncalls_deleted,
-                                )
-                            )
-
-                        oncalls, oncall_messages, oncall_unfilled_dates = (
-                            OnCallAutomation.generate_oncall_schedule(
-                                shift_period_start,
-                                shift_period_end,
-                                rotation_order_ids=AutomationConfig.get_rotation_order(),
-                                dry_run=False,
-                                commit=False,
-                                preferred_assignments=preferred_assignments,
-                            )
-                        )
-                        regenerated_oncalls.extend(oncalls)
-                        messages.extend(oncall_messages)
-                        unfilled_oncall_dates.extend(oncall_unfilled_dates)
-                        messages.append(
-                            _(
-                                "🔄 %(count)s astreintes régénérées pour la période %(start)s - %(end)s",
-                                count=len(oncalls),
-                                start=shift_period_start.strftime("%d/%m/%Y"),
-                                end=shift_period_end.strftime("%d/%m/%Y"),
-                            )
-                        )
-                except Exception as e:
-                    failed_oncall_period = [shift_period_start, shift_period_end]
-                    messages.append(
-                        _(
-                            "❌ Échec de la régénération des astreintes pour la "
-                            "période %(start)s - %(end)s : %(error)s - les "
-                            "astreintes de cette période n'ont pas été "
-                            "modifiées, action manuelle nécessaire",
-                            start=shift_period_start.strftime("%d/%m/%Y"),
-                            end=shift_period_end.strftime("%d/%m/%Y"),
-                            error=str(e),
-                        )
-                    )
+                (
+                    oncall_results_oncalls,
+                    oncall_results_messages,
+                    oncall_results_unfilled,
+                    oncall_results_failed,
+                ) = AdvancedShiftAutomation._rebalance_oncall_section(
+                    shift_period_start, shift_period_end
+                )
+                regenerated_oncalls.extend(oncall_results_oncalls)
+                messages.extend(oncall_results_messages)
+                unfilled_oncall_dates.extend(oncall_results_unfilled)
+                failed_oncall_period = oncall_results_failed
 
             if not dry_run:
                 db.session.commit()

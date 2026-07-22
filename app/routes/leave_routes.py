@@ -15,21 +15,14 @@ from app.models import Leave, User
 from app.repositories.leave_repository import LeaveRepository
 from app.routes.main import main_bp
 from app.services import LeaveService, UserService
+from app.utils.helpers.pagination_helpers import PER_PAGE_OPTIONS, resolve_per_page
 
 
 @main_bp.route("/leave")
 @login_required
 def leave():
     page = request.args.get("page", 1, type=int)
-    per_page = request.args.get("per_page", 20, type=int)
-
-    per_page_options = [5, 10, 25, 50, 100]
-
-    if per_page == 0 or per_page == -1:
-        per_page = 999999
-
-    if per_page not in per_page_options and per_page != 999999:
-        per_page = 20
+    per_page = resolve_per_page(request.args)
 
     leaves_paginated = LeaveService.list_paginated(page, per_page)
 
@@ -37,7 +30,7 @@ def leave():
         "leave.html",
         leaves=leaves_paginated,
         per_page=per_page,
-        per_page_options=per_page_options,
+        per_page_options=PER_PAGE_OPTIONS,
     )
 
 

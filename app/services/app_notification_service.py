@@ -175,6 +175,23 @@ class AppNotificationService:
         db.session.commit()
 
     @staticmethod
+    def _notify_all_admins(notification_type: str, link: str, message_builder) -> None:
+        """Shared skeleton for the 4 notify_admins_* methods below: loop
+        every admin, resolve the message in their own
+        effective_language() (message_builder is a zero-arg callable so
+        it's evaluated inside force_locale, not before - the same
+        per-recipient-locale pattern already used elsewhere in this
+        module), write the notification, single final commit. Callers
+        keep their own guard clause (e.g. skipping entirely on an empty
+        dates list) before calling this - that part varies per caller,
+        this only factors what's identical across all 4."""
+        for admin in UserRepository.list_admins():
+            with force_locale(admin.effective_language()):
+                message = message_builder()
+            AppNotificationService._notify(admin.id, notification_type, message, link)
+        db.session.commit()
+
+    @staticmethod
     def notify_admins_oncall_gap(dates: list[date]) -> None:
         """No user satisfies the legal 2-week on-call spacing constraint
         (or is free of leave/overlap) for these Fridays - automatic
@@ -194,18 +211,16 @@ class AppNotificationService:
             f"/admin/automation/full?start_date={min(dates).isoformat()}"
             f"&end_date={max(dates).isoformat()}&oncall_mode=fill_gaps"
         )
-        for admin in UserRepository.list_admins():
-            with force_locale(admin.effective_language()):
-                message = _(
-                    "Astreinte(s) non générée(s) automatiquement (aucun utilisateur "
-                    "ne respecte le délai légal de 2 semaines) : %(dates)s. "
-                    "Assignation manuelle nécessaire.",
-                    dates=dates_str,
-                )
-            AppNotificationService._notify(
-                admin.id, "oncall_generation_gap", message, link
-            )
-        db.session.commit()
+        AppNotificationService._notify_all_admins(
+            "oncall_generation_gap",
+            link,
+            lambda: _(
+                "Astreinte(s) non générée(s) automatiquement (aucun utilisateur "
+                "ne respecte le délai légal de 2 semaines) : %(dates)s. "
+                "Assignation manuelle nécessaire.",
+                dates=dates_str,
+            ),
+        )
 
     @staticmethod
     def notify_admins_shift_gap(dates: list[date]) -> None:
@@ -225,18 +240,16 @@ class AppNotificationService:
             f"/admin/automation/full?start_date={min(dates).isoformat()}"
             f"&end_date={max(dates).isoformat()}"
         )
-        for admin in UserRepository.list_admins():
-            with force_locale(admin.effective_language()):
-                message = _(
-                    "Échec de la régénération automatique des shifts pour : "
-                    "%(dates)s. Le planning de ces jours n'a pas été modifié. "
-                    "Assignation manuelle nécessaire.",
-                    dates=dates_str,
-                )
-            AppNotificationService._notify(
-                admin.id, "shift_generation_gap", message, link
-            )
-        db.session.commit()
+        AppNotificationService._notify_all_admins(
+            "shift_generation_gap",
+            link,
+            lambda: _(
+                "Échec de la régénération automatique des shifts pour : "
+                "%(dates)s. Le planning de ces jours n'a pas été modifié. "
+                "Assignation manuelle nécessaire.",
+                dates=dates_str,
+            ),
+        )
 
     @staticmethod
     def notify_admins_shift_unfilled(dates: list[date]) -> None:
@@ -255,18 +268,16 @@ class AppNotificationService:
             f"/admin/automation/full?start_date={min(dates).isoformat()}"
             f"&end_date={max(dates).isoformat()}"
         )
-        for admin in UserRepository.list_admins():
-            with force_locale(admin.effective_language()):
-                message = _(
-                    "Aucun shift généré automatiquement (aucun utilisateur "
-                    "disponible) pour : %(dates)s. Assignation manuelle "
-                    "nécessaire.",
-                    dates=dates_str,
-                )
-            AppNotificationService._notify(
-                admin.id, "shift_generation_gap", message, link
-            )
-        db.session.commit()
+        AppNotificationService._notify_all_admins(
+            "shift_generation_gap",
+            link,
+            lambda: _(
+                "Aucun shift généré automatiquement (aucun utilisateur "
+                "disponible) pour : %(dates)s. Assignation manuelle "
+                "nécessaire.",
+                dates=dates_str,
+            ),
+        )
 
     @staticmethod
     def notify_admins_oncall_regen_failure(
@@ -284,17 +295,15 @@ class AppNotificationService:
             f"/admin/automation/full?start_date={period_start.isoformat()}"
             f"&end_date={period_end.isoformat()}&oncall_mode=regenerate"
         )
-        for admin in UserRepository.list_admins():
-            with force_locale(admin.effective_language()):
-                message = _(
-                    "Échec de la régénération automatique des astreintes pour "
-                    "la période du %(start)s au %(end)s. Les astreintes de "
-                    "cette période n'ont pas été modifiées. Assignation "
-                    "manuelle nécessaire.",
-                    start=period_start.strftime("%d/%m/%Y"),
-                    end=period_end.strftime("%d/%m/%Y"),
-                )
-            AppNotificationService._notify(
-                admin.id, "oncall_generation_gap", message, link
-            )
-        db.session.commit()
+        AppNotificationService._notify_all_admins(
+            "oncall_generation_gap",
+            link,
+            lambda: _(
+                "Échec de la régénération automatique des astreintes pour "
+                "la période du %(start)s au %(end)s. Les astreintes de "
+                "cette période n'ont pas été modifiées. Assignation "
+                "manuelle nécessaire.",
+                start=period_start.strftime("%d/%m/%Y"),
+                end=period_end.strftime("%d/%m/%Y"),
+            ),
+        )

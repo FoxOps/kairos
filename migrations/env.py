@@ -10,7 +10,15 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-fileConfig(config.config_file_name)
+# disable_existing_loggers=False: the default (True) permanently disables
+# every already-created Python logger not listed in alembic.ini's [loggers]
+# section (e.g. every app.* logger from app/utils/logging/logger.py's
+# get_logger()) for the rest of the process - since Logger objects are
+# cached singletons, this silences that logger's output forever, not just
+# during this migration run. setup_database() runs this on every app
+# startup, so without this flag any app logger created before the first
+# migration run goes permanently silent.
+fileConfig(config.config_file_name, disable_existing_loggers=False)
 logger = logging.getLogger("alembic.env")
 
 

@@ -19,8 +19,6 @@ from app.utils.helpers import (
     format_date_fr,
     format_datetime,
     format_time,
-    get_bool,
-    get_int,
     is_user_on_leave,
     is_user_on_shift,
 )
@@ -456,41 +454,6 @@ class TestCanAddLeave:
             # Add a leave for the second user in the same period
             can_add2 = can_add_leave(second_user, start_date, end_date)
             assert can_add2 is True
-
-
-class TestGetBool:
-    def test_true_variants(self, monkeypatch):
-        for v in ("true", "1", "yes", "y", "on", "TRUE", "On"):
-            monkeypatch.setenv("TEST_BOOL", v)
-            assert get_bool("TEST_BOOL") is True
-
-    def test_false_variants(self, monkeypatch):
-        for v in ("false", "0", "no", "n", "off", "FALSE"):
-            monkeypatch.setenv("TEST_BOOL", v)
-            assert get_bool("TEST_BOOL") is False
-
-    def test_missing_var_returns_default(self, monkeypatch):
-        monkeypatch.delenv("TEST_BOOL_MISSING", raising=False)
-        assert get_bool("TEST_BOOL_MISSING", default=True) is True
-        assert get_bool("TEST_BOOL_MISSING", default=False) is False
-
-    def test_unrecognized_value_returns_default(self, monkeypatch):
-        monkeypatch.setenv("TEST_BOOL", "bogus")
-        assert get_bool("TEST_BOOL", default=True) is True
-
-
-class TestGetInt:
-    def test_valid_int(self, monkeypatch):
-        monkeypatch.setenv("TEST_INT", "42")
-        assert get_int("TEST_INT") == 42
-
-    def test_missing_var_returns_default(self, monkeypatch):
-        monkeypatch.delenv("TEST_INT_MISSING", raising=False)
-        assert get_int("TEST_INT_MISSING", default=7) == 7
-
-    def test_invalid_value_returns_default(self, monkeypatch):
-        monkeypatch.setenv("TEST_INT", "not-a-number")
-        assert get_int("TEST_INT", default=99) == 99
 
 
 class TestFormatFunctions:

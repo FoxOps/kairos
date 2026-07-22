@@ -24,6 +24,40 @@ class TestScheduleRoutePerPage:
         resp = logged_in_client.get("/schedule?per_page=0")
         assert resp.status_code == 200
 
+    def test_default_per_page_respects_admin_setting(
+        self, test_app, logged_in_client, test_shift
+    ):
+        """Regression test: /schedule used to default to a hardcoded 20,
+        completely independent of SettingsService.get_items_per_page()
+        (the "Éléments par page" setting at /admin/settings) - unlike
+        the public API, which already respected it. Changing the
+        setting must now actually affect this page too. The pagination
+        widget only renders when there's at least one row (see
+        _pagination.html), hence test_shift."""
+        with test_app.app_context():
+            from app.services import SettingsService
+
+            SettingsService.set_pagination(items_per_page=10, max_per_page=50)
+
+        resp = logged_in_client.get("/schedule")
+        assert resp.status_code == 200
+        assert b'<option value="10" selected>' in resp.data
+
+    def test_per_page_option_capped_by_max_per_page(
+        self, test_app, logged_in_client, test_shift
+    ):
+        """An explicit per_page beyond the admin-configured ceiling is
+        capped, same as the public API."""
+        with test_app.app_context():
+            from app.services import SettingsService
+
+            SettingsService.set_pagination(items_per_page=10, max_per_page=25)
+
+        resp = logged_in_client.get("/schedule?per_page=50")
+        assert resp.status_code == 200
+        assert b'<option value="25" selected>' in resp.data
+        assert b'<option value="50" selected>' not in resp.data
+
 
 class TestAddShiftValidation:
     def test_invalid_shift_type_id(self, test_app, logged_in_client, test_user):

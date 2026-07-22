@@ -1,0 +1,71 @@
+{# Shared by add_notification_target.html/edit_notification_target.html -
+   only the form action and pre-filled values differ between the two.
+   Expects: form_action, category_choices, and optionally target (the
+   NotificationTarget being edited, undefined/None on the add page) +
+   selected_categories (list of category strings already checked,
+   only meaningful when target is set). #}
+<form method="POST" action="{{ form_action }}" aria-labelledby="form-title">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="card card-sm bg-base-100 shadow-md">
+        <div class="card-body gap-4">
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend">{{ _("Nom") }} *</legend>
+                <input class="input w-full validator" type="text" id="name" name="name"
+                       value="{{ target.name if target else '' }}"
+                       placeholder="{{ _("Ex: Slack - #on-call") }}" required aria-required="true">
+            </fieldset>
+
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend">{{ _("URL Apprise") }} *</legend>
+                <input class="input w-full validator" type="text" id="apprise_url" name="apprise_url"
+                       value="{{ target.apprise_url if target else '' }}"
+                       placeholder="slack://TokenA/TokenB/TokenC/#canal" required aria-required="true"
+                       aria-describedby="apprise-url-help">
+                <p class="text-sm text-base-content/60" id="apprise-url-help">
+                    {{ _("Format d'URL spécifique à chaque service (Slack, Discord, Telegram, webhook générique...).") }}
+                    <a class="link" href="https://appriseit.com/services/" target="_blank" rel="noopener noreferrer">
+                        {{ _("Voir la documentation Apprise") }} <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                    </a>
+                </p>
+            </fieldset>
+
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend">{{ _("Catégories") }}</legend>
+                <div class="flex flex-wrap gap-4">
+                    {% for cat in category_choices %}
+                    <label class="label cursor-pointer gap-2">
+                        <input type="checkbox" class="checkbox" name="categories" value="{{ cat }}"
+                               {% if target and cat in selected_categories %}checked{% endif %}>
+                        <span>{{ cat }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                <p class="text-sm text-base-content/60">{{ _("Aucune catégorie cochée = toutes les catégories.") }}</p>
+                <ul class="text-sm text-base-content/60 list-disc list-inside mt-1">
+                    <li><strong>swap</strong> — {{ _("Échanges de shifts entre utilisateurs : nouvelle demande, approbation, rejet, annulation d'un échange déjà approuvé.") }}</li>
+                    <li><strong>backup</strong> — {{ _("Sauvegardes déclenchées manuellement depuis l'interface d'administration (création, nettoyage) : succès et échecs. N'inclut pas les sauvegardes automatiques planifiées par cron.") }}</li>
+                    <li><strong>system</strong> — {{ _("Alertes système générales, notamment les échecs d'envoi des emails de rappel hebdomadaires (shifts et astreintes).") }}</li>
+                    <li><strong>shift_weekly</strong> — {{ _("Rappel hebdomadaire des shifts, en relais du rappel par email. Chaque utilisateur peut désactiver ce relais individuellement dans ses paramètres personnels.") }}</li>
+                    <li><strong>oncall_weekly</strong> — {{ _("Rappel hebdomadaire d'astreinte, en relais du rappel par email. Chaque utilisateur peut désactiver ce relais individuellement dans ses paramètres personnels.") }}</li>
+                </ul>
+            </fieldset>
+
+            <div>
+                <label class="label cursor-pointer justify-start gap-2" for="enabled">
+                    <input type="checkbox" class="checkbox" id="enabled" name="enabled"
+                           {% if not target or target.enabled %}checked{% endif %}>
+                    <span>{{ _("Activée") }}</span>
+                </label>
+            </div>
+
+            <div class="flex gap-2" role="group" aria-label="{{ _("Actions du formulaire") }}">
+                <button class="btn btn-primary" type="submit" aria-label="{{ _("Enregistrer les modifications") }}" title="{{ _("Enregistrer les modifications") }}">
+                    <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
+                </button>
+                <a class="btn btn-ghost" href="{{ url_for('admin.list_notification_targets') }}" aria-label="{{ _("Annuler et retourner à la liste") }}" title="{{ _("Annuler") }}">
+                    {{ _("Annuler") }}
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
