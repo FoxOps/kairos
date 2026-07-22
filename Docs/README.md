@@ -49,6 +49,7 @@
 | [`ENVIRONMENT_VARIABLES.md`](reference/ENVIRONMENT_VARIABLES.md) | Every environment variable actually read by the application |
 | [`ERROR_HANDLING.md`](reference/ERROR_HANDLING.md) | Error pages, HTTP handlers, logging system |
 | [`PERFORMANCE_OPTIMIZATION.md`](reference/PERFORMANCE_OPTIMIZATION.md) | Cache, `eager_load`, database indexes |
+| [`VERSIONING.md`](reference/VERSIONING.md) | SemVer policy, `make bump-version`/`check-version`, Docker image tagging |
 
 ## Contributing to the documentation
 

@@ -8,7 +8,7 @@
 # exemples en commentaire sous test/test-coverage/backup ci-dessous et
 # Docs/deployment/BACKUP_GUIDE.md pour les sauvegardes.
 
-.PHONY: help install test test-coverage lint format format-fix security all clean find-duplicates backup backup-restore babel-update babel-compile
+.PHONY: help install test test-coverage lint format format-fix security all clean find-duplicates backup backup-restore babel-update babel-compile bump-version check-version
 
 # Couleurs pour les messages
 GREEN := \033[0;32m
@@ -76,6 +76,20 @@ clean: ## Nettoie les fichiers temporaires et artifacts
 find-duplicates: ## Trouve le code dupliqué (fonctions/classes/imports)
 	@echo "Recherche de code dupliqué..."
 	python scripts/find_duplicates.py --check-imports
+
+# ============================================================================
+# VERSIONING (voir Docs/reference/VERSIONING.md)
+# ============================================================================
+
+bump-version: ## Met à jour la version dans health.py/.env.example (VERSION=1.0.0-rc4)
+	@if [ -z "$(VERSION)" ]; then \
+		echo "$(RED)Erreur: précisez VERSION=1.0.0-rc4 (ou 1.0.0)$(NC)"; \
+		exit 1; \
+	fi
+	python scripts/bump_version.py $(VERSION)
+
+check-version: ## Vérifie que le tag git courant correspond à APP_VERSION_DEFAULT
+	python scripts/check_version.py
 
 # ============================================================================
 # SAUVEGARDE DE LA BASE DE DONNÉES
