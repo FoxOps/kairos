@@ -49,6 +49,17 @@ class OnCallRepository:
         )
 
     @staticmethod
+    def delete_older_than(cutoff: datetime) -> int:
+        """Delete on-calls that ended strictly before cutoff - used by
+        ScheduleCleanupService for the retention-based automatic purge.
+        Keyed on end_time (not start_time): an on-call still in progress
+        or only just starting must never be purged just because it
+        started long ago in a pathological retention setting."""
+        return OnCall.query.filter(OnCall.end_time < cutoff).delete(
+            synchronize_session=False
+        )
+
+    @staticmethod
     def list_for_user(user_id: int) -> list[OnCall]:
         return (
             OnCall.query.options(joinedload(OnCall.user))

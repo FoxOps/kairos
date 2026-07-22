@@ -54,15 +54,18 @@ fi
 python docker/init_database.py || { echo "❌ Erreur: Échec de l'initialisation/mise à jour de la base de données"; exit 1; }
 echo "✅ Base de données prête"
 
-# --- Tâches planifiées (notifications par email, sauvegardes) ---
-# Purement piloté par variables d'environnement (NOTIFICATIONS_ENABLED,
-# BACKUP_ENABLED, voir .env.example) - pas de service Docker séparé à
-# gérer. crond (busybox, déjà dans l'image Alpine) tourne en
+# --- Tâches planifiées (notifications par email, sauvegardes, purge du
+# planning) ---
+# Notifications/sauvegardes restent pilotées par variables
+# d'environnement (NOTIFICATIONS_ENABLED, BACKUP_ENABLED, voir
+# .env.example) ; la purge du planning est activée par défaut
+# (Setting schedule_retention_days=365, admin-éditable à
+# /admin/settings, 0 = désactivée) - crond démarre donc désormais
+# toujours. crond (busybox, déjà dans l'image Alpine) tourne en
 # arrière-plan dans ce même conteneur ; le serveur web reste le process
 # principal (PID 1, via exec plus bas). Planning : docker/crontabs/appuser
-# (toutes les entrées y sont toujours présentes ; chaque script se
-# no-op silencieusement si sa propre variable *_ENABLED est à false -
-# crond n'a donc besoin de démarrer que si au moins une tâche est active).
+# (toutes les entrées y sont toujours présentes ; chaque script vérifie
+# lui-même sa propre condition d'activation et ne fait rien sinon).
 is_true() {
     case "$(echo "$1" | tr '[:upper:]' '[:lower:]')" in
         true|1|yes|y) return 0 ;;
@@ -70,28 +73,21 @@ is_true() {
     esac
 }
 
-any_scheduled_task=false
-
 if is_true "${NOTIFICATIONS_ENABLED:-false}"; then
     echo "📧 Notifications par email activées"
-    any_scheduled_task=true
 else
     echo "📧 Notifications par email désactivées (NOTIFICATIONS_ENABLED)"
 fi
 
 if is_true "${BACKUP_ENABLED:-false}"; then
     echo "💾 Sauvegardes automatiques activées"
-    any_scheduled_task=true
 else
     echo "💾 Sauvegardes automatiques désactivées (BACKUP_ENABLED)"
 fi
 
-if [ "$any_scheduled_task" = "true" ]; then
-    echo "⏱️ Démarrage de crond en arrière-plan"
-    crond -l 2 -c /app/docker/crontabs
-else
-    echo "⏱️ Aucune tâche planifiée active - crond non démarré"
-fi
+echo "🧹 Purge automatique du planning activée par défaut (Setting schedule_retention_days, /admin/settings)"
+echo "⏱️ Démarrage de crond en arrière-plan"
+crond -l 2 -c /app/docker/crontabs
 
 # --- Démarrage du serveur ---
 if [ "$FLASK_ENV" = "production" ]; then

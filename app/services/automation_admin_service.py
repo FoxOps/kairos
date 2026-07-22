@@ -220,6 +220,18 @@ class AutomationAdminService:
         # boundary week from the first call was still being lost.
         oncall_regen_start = OnCallAutomation.align_regeneration_start(start_date)
 
+        # Also captured before the wipe, same "minimal perturbation"
+        # mechanism as _rebalance_oncall_section/refresh_shifts's
+        # regenerate mode (see OnCallAutomation.
+        # capture_existing_assignments()'s docstring) - without it,
+        # "Générer" used on a period appended right after an existing
+        # one would silently reshuffle the boundary week's already-
+        # working occupant instead of keeping it, purely because it
+        # happened to fall inside the realigned regeneration range.
+        preferred_assignments = OnCallAutomation.capture_existing_assignments(
+            oncall_regen_start, end_date
+        )
+
         if not dry_run:
             result.oncalls_deleted, result.shifts_deleted = (
                 AutomationAdminService.clear_period(start_date, end_date)
@@ -227,7 +239,11 @@ class AutomationAdminService:
 
         oncalls, oncall_messages, oncall_unfilled_dates = (
             OnCallAutomation.generate_oncall_schedule(
-                oncall_regen_start, end_date, rotation_order_ids, dry_run=dry_run
+                oncall_regen_start,
+                end_date,
+                rotation_order_ids,
+                dry_run=dry_run,
+                preferred_assignments=preferred_assignments,
             )
         )
         result.oncalls = oncalls

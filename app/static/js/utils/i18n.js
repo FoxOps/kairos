@@ -4,9 +4,10 @@
  * #i18n-strings JSON script tag) - this app has no build step (CSS/JS
  * loaded via CDN only), so there's no i18next-style pipeline
  * available; translation happens server-side
- * (gettext) and ships to the browser as plain JSON, the same pattern
- * already used for #calendar-events-data (see
- * fullcalendar-config.js's top-of-file comment for that precedent).
+ * (gettext) and ships to the browser as plain JSON, once at page load -
+ * unlike the calendar's own events (fullcalendar-config.js), which
+ * fetch dynamically from /api/shifts since they depend on whatever
+ * date range is currently being viewed.
  */
 
 let _translations = null;

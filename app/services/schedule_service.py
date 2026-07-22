@@ -31,11 +31,25 @@ class ScheduleService:
 
     @staticmethod
     def get_calendar_events(viewer) -> list[dict]:
-        """Fetch shifts/on-calls/leaves within the calendar window and
-        convert them into FullCalendar events, translated into the
-        viewer's effective timezone."""
+        """Default ±180-day window around today - kept for callers that
+        don't need a specific range (e.g. get_calendar_events_for_range()
+        called with no query params)."""
         window_start, window_end = ScheduleService.calendar_window()
+        return ScheduleService.get_calendar_events_for_range(
+            viewer, window_start, window_end
+        )
 
+    @staticmethod
+    def get_calendar_events_for_range(
+        viewer, window_start: datetime, window_end: datetime
+    ) -> list[dict]:
+        """Fetch shifts/on-calls/leaves within an arbitrary window and
+        convert them into FullCalendar events, translated into the
+        viewer's effective timezone. Backs /api/shifts as FullCalendar's
+        dynamic events source (see dashboard_routes.py::api_get_shifts)
+        - called with whatever range the calendar is currently viewing,
+        not capped to the ±180-day default the way a one-shot page-load
+        embed would be."""
         shifts = ShiftRepository.list_in_window(window_start, window_end)
         on_calls = OnCallRepository.list_in_window(window_start, window_end)
         leaves = LeaveRepository.list_in_window(window_start.date(), window_end.date())

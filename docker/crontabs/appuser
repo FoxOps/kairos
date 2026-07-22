@@ -1,11 +1,13 @@
 # Planning des tâches périodiques, démarré par entrypoint.sh (crond, en
-# arrière-plan dans le même conteneur que le serveur web) si
-# NOTIFICATIONS_ENABLED=true et/ou BACKUP_ENABLED=true. Lu par busybox
-# crond en tant qu'utilisateur non-root "appuser" (uid 1000) - le nom du
-# fichier doit correspondre exactement au nom d'utilisateur. Toutes les
-# entrées ci-dessous sont toujours présentes ; chaque script vérifie
-# lui-même sa propre variable *_ENABLED et ne fait rien si elle est à
-# false (voir scripts/backup_config.py / scripts/notification_config.py).
+# arrière-plan dans le même conteneur que le serveur web) - toujours
+# démarré désormais, la purge du planning ci-dessous étant activée par
+# défaut (schedule_retention_days=365). Lu par busybox crond en tant
+# qu'utilisateur non-root "appuser" (uid 1000) - le nom du fichier doit
+# correspondre exactement au nom d'utilisateur. Toutes les entrées
+# ci-dessous sont toujours présentes ; chaque script vérifie lui-même sa
+# propre condition d'activation et ne fait rien si elle ne l'autorise
+# pas (voir scripts/backup_config.py / scripts/notification_config.py /
+# Setting schedule_retention_days).
 #
 # Rappel des shifts de la semaine : dimanche 9h, 24h avant le début des
 # shifts du lundi.
@@ -19,3 +21,8 @@
 # BACKUP_LOCAL_ENABLED/BACKUP_S3_ENABLED), avec vérification et
 # nettoyage des sauvegardes expirées (BACKUP_RETENTION_DAYS/BACKUP_MAX_BACKUPS).
 0 3 * * * python3 /app/scripts/backup_database.py --local --s3 --verify --cleanup >> /app/logs/backup.log 2>&1
+
+# Purge quotidienne des shifts/astreintes passés au-delà de la
+# rétention configurée (/admin/settings, Setting schedule_retention_days,
+# 365 jours par défaut, 0 = désactivé).
+0 4 * * * python3 /app/scripts/cleanup_schedule_data.py >> /app/logs/cleanup.log 2>&1

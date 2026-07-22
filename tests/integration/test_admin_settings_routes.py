@@ -236,3 +236,42 @@ class TestSettingsIcsSection:
         from app.services import SettingsService
 
         assert SettingsService.get_ics_token_expiry_days() == 30
+
+
+class TestSettingsScheduleRetentionSection:
+    def test_valid_retention_persists(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={"section": "schedule", "schedule_retention_days": "90"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+
+        from app.services import SettingsService
+
+        assert SettingsService.get_schedule_retention_days() == 90
+
+    def test_zero_persists_as_never_purge(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={"section": "schedule", "schedule_retention_days": "0"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+
+        from app.services import SettingsService
+
+        assert SettingsService.get_schedule_retention_days() == 0
+
+    def test_negative_value_rejected(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={"section": "schedule", "schedule_retention_days": "-5"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"invalide" in response.data or b"Erreur" in response.data
+
+        from app.services import SettingsService
+
+        assert SettingsService.get_schedule_retention_days() == 365
