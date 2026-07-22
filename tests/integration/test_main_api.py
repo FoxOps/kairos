@@ -71,6 +71,49 @@ class TestAPIGetShifts:
         assert response.status_code == 200
         assert isinstance(response.json, list)
 
+    def test_excessively_wide_range_falls_back_to_default_window(
+        self, logged_in_client, test_user, test_shift_type
+    ):
+        """Security regression: once start/end weren't capped by a
+        fixed embedded window anymore, an authenticated client could
+        request an arbitrarily large span (e.g. year 1 to year 9999)
+        and force a full-table scan of every shift/on-call/leave ever
+        created, on every request - a resource-exhaustion vector. A
+        span wider than MAX_CALENDAR_RANGE_DAYS must be rejected the
+        same way as a malformed one - proven here by checking the
+        fallback default window actually engaged (a shift outside it
+        stays absent even though the requested span would have covered
+        it), not just that the request happened to return 200."""
+        from datetime import date, datetime, timedelta
+
+        from app import db
+        from app.models import Shift
+
+        far_future = date.today() + timedelta(days=400)
+        shift = Shift(
+            user_id=test_user.id,
+            shift_type_id=test_shift_type.id,
+            date=far_future,
+            start_time=datetime.combine(far_future, datetime.min.time()).replace(
+                hour=9
+            ),
+            end_time=datetime.combine(far_future, datetime.min.time()).replace(hour=17),
+        )
+        db.session.add(shift)
+        db.session.commit()
+
+        response = logged_in_client.get("/api/shifts?start=0001-01-01&end=9999-12-31")
+        assert response.status_code == 200
+        ids = {e["extendedProps"]["resourceId"] for e in response.json}
+        assert shift.id not in ids
+
+    def test_end_before_start_falls_back_to_default_window(self, logged_in_client):
+        """A reversed range (end before start) must not be trusted as-is
+        either."""
+        response = logged_in_client.get("/api/shifts?start=2026-06-01&end=2026-01-01")
+        assert response.status_code == 200
+        assert isinstance(response.json, list)
+
 
 class TestAPIGetUsers:
     """Tests for GET /api/users."""
