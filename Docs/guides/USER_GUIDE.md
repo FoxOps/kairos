@@ -63,8 +63,8 @@
 #### 1. Clone the repository
 
 ```bash
-git clone https://github.com/FoxOps/leviia-schedule.git
-cd leviia-schedule
+git clone https://github.com/FoxOps/kairos.git
+cd kairos
 ```
 
 #### 2. Create a virtual environment
@@ -951,7 +951,7 @@ questions, common error messages, technical issues).
 
 To report a bug:
 
-1. **Check that it hasn't already been reported**: See the [GitHub Issues](https://github.com/FoxOps/leviia-schedule/issues)
+1. **Check that it hasn't already been reported**: See the [GitHub Issues](https://github.com/FoxOps/kairos/issues)
 2. **Prepare the following information**:
    - Application version
    - Steps to reproduce the bug
@@ -959,14 +959,14 @@ To report a bug:
    - Actual behavior
    - Screenshots (if applicable)
    - Error logs (if applicable)
-3. **Open an Issue**: [Create a new Issue](https://github.com/FoxOps/leviia-schedule/issues/new)
+3. **Open an Issue**: [Create a new Issue](https://github.com/FoxOps/kairos/issues/new)
 
 ### Requesting a feature
 
 To request a new feature:
 
 1. **Check that it isn't already planned**: See the [Roadmap](../../ROADMAP.md)
-2. **Open a Discussion**: [Create a new Discussion](https://github.com/FoxOps/leviia-schedule/discussions/new)
+2. **Open a Discussion**: [Create a new Discussion](https://github.com/FoxOps/kairos/discussions/new)
 3. **Describe your need**: Explain in detail the desired feature and its usefulness
 
 ### Contributing to the project
@@ -982,7 +982,7 @@ branch, commit, Pull Request).
 - [README.md](../../README.md) - Technical documentation and installation
 - [ROADMAP.md](../../ROADMAP.md) - Development roadmap
 - [LICENSE](../../LICENSE) - CeCILL v2.1 License
-- [GitHub Repository](https://github.com/FoxOps/leviia-schedule) - Source code and issues
+- [GitHub Repository](https://github.com/FoxOps/kairos) - Source code and issues
 
 ---
 

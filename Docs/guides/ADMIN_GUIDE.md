@@ -1144,8 +1144,8 @@ dotenv run -- python run.py
 
 ### Communities
 
-- **GitHub Issues**: [https://github.com/FoxOps/leviia-schedule/issues](https://github.com/FoxOps/leviia-schedule/issues)
-- **GitHub Discussions**: [https://github.com/FoxOps/leviia-schedule/discussions](https://github.com/FoxOps/leviia-schedule/discussions)
+- **GitHub Issues**: [https://github.com/FoxOps/kairos/issues](https://github.com/FoxOps/kairos/issues)
+- **GitHub Discussions**: [https://github.com/FoxOps/kairos/discussions](https://github.com/FoxOps/kairos/discussions)
 
 ---
 

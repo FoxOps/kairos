@@ -56,8 +56,8 @@
 ### 2.1 Clone the repository
 ```bash
 # Clone the GitHub repository
-git clone https://github.com/FoxOps/leviia-schedule.git
-cd leviia-schedule
+git clone https://github.com/FoxOps/kairos.git
+cd kairos
 
 # Switch to the latest stable version
 git checkout main
@@ -590,9 +590,9 @@ After=network.target postgresql.target
 [Service]
 User=www-data
 Group=www-data
-WorkingDirectory=/var/www/leviia-schedule
-Environment="PATH=/var/www/leviia-schedule/venv/bin"
-ExecStart=/var/www/leviia-schedule/venv/bin/gunicorn -w 8 -b unix:/tmp/kairos.sock run:app
+WorkingDirectory=/var/www/kairos
+Environment="PATH=/var/www/kairos/venv/bin"
+ExecStart=/var/www/kairos/venv/bin/gunicorn -w 8 -b unix:/tmp/kairos.sock run:app
 Restart=always
 RestartSec=5
 
@@ -633,7 +633,7 @@ server {
     }
     
     location /static/ {
-        alias /var/www/leviia-schedule/app/static/;
+        alias /var/www/kairos/app/static/;
         expires 30d;
     }
 }
@@ -657,8 +657,8 @@ sudo systemctl restart nginx
 
 For any questions or issues:
 - See the [full documentation](../README.md)
-- Open an **Issue** on [GitHub](https://github.com/FoxOps/leviia-schedule/issues)
-- See the [discussions](https://github.com/FoxOps/leviia-schedule/discussions)
+- Open an **Issue** on [GitHub](https://github.com/FoxOps/kairos/issues)
+- See the [discussions](https://github.com/FoxOps/kairos/discussions)
 
 ---
 

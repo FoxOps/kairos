@@ -43,8 +43,8 @@ TLS reverse proxy in this minimal stack):
 ```bash
 mkdir kairos && cd kairos
 
-curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/docker-compose.example.yml
-curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/.env.example
+curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/kairos/main/docker/docker-compose.example.yml
+curl -o .env https://raw.githubusercontent.com/FoxOps/kairos/main/docker/.env.example
 ```
 
 ### 2️⃣ Configure
@@ -103,15 +103,15 @@ the code, testing a `Dockerfile` change, exercising the SSO/OIDC flow
 locally (optional mock). Requires cloning the entire repo:
 
 ```bash
-git clone https://github.com/FoxOps/leviia-schedule.git
-cd leviia-schedule/docker
+git clone https://github.com/FoxOps/kairos.git
+cd kairos/docker
 ```
 
 Structure of `docker/` (relative `.env`/`data`/`logs` paths resolved
 relative to `docker/docker-compose.yml`, so all under `docker/`):
 
 ```
-leviia-schedule/
+kairos/
 └── docker/
     ├── Dockerfile          # Ultra-lightweight Docker image
     ├── entrypoint.sh       # Startup script (web server + conditional crond)
@@ -398,8 +398,8 @@ kill <PID>
 
 ```bash
 mkdir kairos && cd kairos
-curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/docker-compose.example.yml
-curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/.env.example
+curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/kairos/main/docker/docker-compose.example.yml
+curl -o .env https://raw.githubusercontent.com/FoxOps/kairos/main/docker/.env.example
 
 nano .env  # KAIROS_IMAGE, SECRET_KEY, DEFAULT_ADMIN_PASSWORD, DATABASE_URL, TALISMAN_FORCE_HTTPS
 
@@ -413,8 +413,8 @@ docker compose up -d
 
 ```bash
 mkdir kairos && cd kairos
-curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/docker-compose.example.yml
-curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/.env.example
+curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/kairos/main/docker/docker-compose.example.yml
+curl -o .env https://raw.githubusercontent.com/FoxOps/kairos/main/docker/.env.example
 
 nano .env  # KAIROS_IMAGE, SECRET_KEY, DEFAULT_ADMIN_PASSWORD, DATABASE_URL, FLASK_ENV=production
 
