@@ -37,7 +37,6 @@
     border-radius: var(--app-radius-small) var(--app-radius-small) 0 0;
     position: relative;
     min-height: 4px;
-    transition: height 0.3s ease-in-out;
 }
 
 .chart-bar-label {
