@@ -20,7 +20,7 @@
                         <option value="{{ shift.id }}">{{ shift.date|format_date }} - {{ shift.shift_type.label }}</option>
                         {% endfor %}
                     </select>
-                    <p class="text-sm text-base-content/60" id="shift-help">{{ _("Seuls vos shifts à venir sont proposables") }}</p>
+                    <p class="text-sm text-base-content/70" id="shift-help">{{ _("Seuls vos shifts à venir sont proposables") }}</p>
                 </fieldset>
 
                 <fieldset class="fieldset">
@@ -31,10 +31,10 @@
                         <option value="{{ user.id }}">{{ user.name }}</option>
                         {% endfor %}
                     </select>
-                    <p class="text-sm text-base-content/60" id="target-user-help">{{ _("L'utilisateur à qui proposer l'échange") }}</p>
+                    <p class="text-sm text-base-content/70" id="target-user-help">{{ _("L'utilisateur à qui proposer l'échange") }}</p>
                 </fieldset>
 
-                <p class="text-sm text-base-content/60">
+                <p class="text-sm text-base-content/70">
                     {{ _("Le destinataire choisira ensuite quel shift proposer en retour (ou déclinera l'échange).") }}
                 </p>
 

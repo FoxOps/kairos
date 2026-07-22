@@ -39,7 +39,7 @@
                     </div>
                     {% set expires_at = user.ics_token_expires_at() %}
                     {% if expires_at %}
-                    <p class="text-sm text-base-content/60 mt-1">
+                    <p class="text-sm text-base-content/70 mt-1">
                         {{ _("Expire le %(date)s - régénérez le token pour prolonger son accès.", date=expires_at|format_date) }}
                     </p>
                     {% endif %}
@@ -57,7 +57,7 @@
                             <span>{{ _("Copier") }}</span>
                         </button>
                     </div>
-                    <p class="text-sm text-base-content/60">
+                    <p class="text-sm text-base-content/70">
                         {{ _("URL pour exporter TOUS les shifts (scope=all)") }}
                     </p>
                 </div>
@@ -73,7 +73,7 @@
                             <span>{{ _("Copier") }}</span>
                         </button>
                     </div>
-                    <p class="text-sm text-base-content/60">
+                    <p class="text-sm text-base-content/70">
                         {{ _("URL pour exporter uniquement vos shifts (scope=my)") }}
                     </p>
                 </div>
@@ -90,7 +90,7 @@
                             <span>{{ _("Copier") }}</span>
                         </button>
                     </div>
-                    <p class="text-sm text-base-content/60">
+                    <p class="text-sm text-base-content/70">
                         {{ _("URL pour exporter TOUTES les astreintes (scope=all)") }}
                     </p>
                 </div>
@@ -106,7 +106,7 @@
                             <span>{{ _("Copier") }}</span>
                         </button>
                     </div>
-                    <p class="text-sm text-base-content/60">
+                    <p class="text-sm text-base-content/70">
                         {{ _("URL pour exporter uniquement vos astreintes (scope=my)") }}
                     </p>
                 </div>
@@ -123,7 +123,7 @@
                             <span>{{ _("Copier") }}</span>
                         </button>
                     </div>
-                    <p class="text-sm text-base-content/60">
+                    <p class="text-sm text-base-content/70">
                         {{ _("URL pour exporter TOUS les congés (scope=all)") }}
                     </p>
                 </div>
@@ -139,7 +139,7 @@
                             <span>{{ _("Copier") }}</span>
                         </button>
                     </div>
-                    <p class="text-sm text-base-content/60">
+                    <p class="text-sm text-base-content/70">
                         {{ _("URL pour exporter uniquement vos congés (scope=my)") }}
                     </p>
                 </div>

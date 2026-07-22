@@ -46,7 +46,7 @@
                         {% if swap.shift %}
                         {{ swap.shift.date|format_date }} - {{ swap.shift.shift_type.label }}
                         {% else %}
-                        <span class="text-base-content/60">{{ _("Shift supprimé") }}</span>
+                        <span class="text-base-content/70">{{ _("Shift supprimé") }}</span>
                         {% endif %}
                     </td>
                     <td>{{ swap.target_user.name if swap.target_user else _("Utilisateur supprimé") }}</td>
@@ -56,12 +56,12 @@
             </tbody>
         </table>
     </div>
-    <p class="text-sm text-base-content/60 mb-6">
+    <p class="text-sm text-base-content/70 mb-6">
         <i class="fas fa-info-circle" aria-hidden="true"></i>
         {{ _("Lecture seule - le destinataire doit d'abord confirmer (et choisir son propre shift) avant qu'une action admin soit possible.") }}
     </p>
     {% else %}
-    <p class="text-base-content/60 mb-6">{{ _("Aucune demande en attente du destinataire.") }}</p>
+    <p class="text-base-content/70 mb-6">{{ _("Aucune demande en attente du destinataire.") }}</p>
     {% endif %}
 
     <h2 class="text-xl font-semibold mb-2" id="swaps-title">{{ _("En attente de validation") }}</h2>
@@ -87,7 +87,7 @@
                         {% if swap.shift %}
                         {{ swap.shift.date|format_date }} - {{ swap.shift.shift_type.label }}
                         {% else %}
-                        <span class="text-base-content/60">{{ _("Shift supprimé") }}</span>
+                        <span class="text-base-content/70">{{ _("Shift supprimé") }}</span>
                         {% endif %}
                     </td>
                     <td>{{ swap.target_user.name if swap.target_user else _("Utilisateur supprimé") }}</td>
@@ -95,7 +95,7 @@
                         {% if swap.target_shift %}
                         {{ swap.target_shift.date|format_date }} - {{ swap.target_shift.shift_type.label }}
                         {% else %}
-                        <span class="text-base-content/60">{{ _("Don simple") }}</span>
+                        <span class="text-base-content/70">{{ _("Don simple") }}</span>
                         {% endif %}
                     </td>
                     <td>{{ swap.created_at|format_datetime }}</td>
@@ -132,7 +132,7 @@
     ] %}
     {% include "_action_legend.html" %}
     {% else %}
-    <p class="text-base-content/60 mb-6">{{ _("Aucune demande d'échange en attente de validation.") }}</p>
+    <p class="text-base-content/70 mb-6">{{ _("Aucune demande d'échange en attente de validation.") }}</p>
     {% endif %}
 
     <h2 class="text-xl font-semibold mb-2" id="approved-swaps-title">{{ _("Approuvés") }}</h2>
@@ -158,7 +158,7 @@
                         {% if swap.shift %}
                         {{ swap.shift.date|format_date }} - {{ swap.shift.shift_type.label }}
                         {% else %}
-                        <span class="text-base-content/60">{{ _("Shift supprimé") }}</span>
+                        <span class="text-base-content/70">{{ _("Shift supprimé") }}</span>
                         {% endif %}
                     </td>
                     <td>{{ swap.target_user.name if swap.target_user else _("Utilisateur supprimé") }}</td>
@@ -166,7 +166,7 @@
                         {% if swap.target_shift %}
                         {{ swap.target_shift.date|format_date }} - {{ swap.target_shift.shift_type.label }}
                         {% else %}
-                        <span class="text-base-content/60">{{ _("Don simple") }}</span>
+                        <span class="text-base-content/70">{{ _("Don simple") }}</span>
                         {% endif %}
                     </td>
                     <td>{{ swap.reviewed_at|format_datetime if swap.reviewed_at else '—' }}</td>
@@ -186,7 +186,7 @@
         </table>
     </div>
     {% else %}
-    <p class="text-base-content/60">{{ _("Aucun échange approuvé.") }}</p>
+    <p class="text-base-content/70">{{ _("Aucun échange approuvé.") }}</p>
     {% endif %}
 </section>
 {% endblock %}

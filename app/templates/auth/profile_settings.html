@@ -20,7 +20,7 @@
                             <option value="{{ tz }}" {% if tz == user.timezone %}selected{% endif %}>{{ tz }}</option>
                             {% endfor %}
                         </select>
-                        <p class="text-sm text-base-content/60">
+                        <p class="text-sm text-base-content/70">
                             {{ _("Affecte uniquement l'affichage du calendrier dans l'application, jamais l'export ICS ni l'heure réelle des shifts.") }}
                         </p>
                     </div>
@@ -75,7 +75,7 @@
                     </div>
                     {% else %}
                     <div class="divider">{{ _("Notifications par email") }}</div>
-                    <p class="text-sm text-base-content/60">
+                    <p class="text-sm text-base-content/70">
                         {{ _("Les notifications par email sont actuellement désactivées pour toute l'organisation.") }}
                     </p>
                     {% endif %}
@@ -96,9 +96,9 @@
                             {% endfor %}
                         </div>
                         {% else %}
-                        <p class="text-sm text-base-content/60">{{ _("Aucune cible n'est disponible pour les rappels de shifts pour le moment.") }}</p>
+                        <p class="text-sm text-base-content/70">{{ _("Aucune cible n'est disponible pour les rappels de shifts pour le moment.") }}</p>
                         {% endif %}
-                        <p class="text-sm text-base-content/60">{{ _("Aucune cible cochée = pas de relais.") }}</p>
+                        <p class="text-sm text-base-content/70">{{ _("Aucune cible cochée = pas de relais.") }}</p>
                     </div>
 
                     <div>
@@ -114,13 +114,13 @@
                             {% endfor %}
                         </div>
                         {% else %}
-                        <p class="text-sm text-base-content/60">{{ _("Aucune cible n'est disponible pour les rappels d'astreinte pour le moment.") }}</p>
+                        <p class="text-sm text-base-content/70">{{ _("Aucune cible n'est disponible pour les rappels d'astreinte pour le moment.") }}</p>
                         {% endif %}
-                        <p class="text-sm text-base-content/60">{{ _("Aucune cible cochée = pas de relais.") }}</p>
+                        <p class="text-sm text-base-content/70">{{ _("Aucune cible cochée = pas de relais.") }}</p>
                     </div>
                     {% else %}
                     <div class="divider">{{ _("Notifications externes (Slack, Discord, Telegram...)") }}</div>
-                    <p class="text-sm text-base-content/60">
+                    <p class="text-sm text-base-content/70">
                         {{ _("Les notifications externes sont actuellement désactivées pour toute l'organisation.") }}
                     </p>
                     {% endif %}
