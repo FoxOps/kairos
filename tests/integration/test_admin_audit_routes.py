@@ -4,7 +4,7 @@ Tests for the admin audit trail consultation page
 admin-only permission, and the retention-based purge action.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.models import AuditLog
 from app.services import AuditService, SettingsService
@@ -49,10 +49,12 @@ class TestAuditLogRoute:
 
             AuditService.log("shift.create", actor=test_user)
             old_entry = AuditLog.query.filter_by(action="shift.create").first()
-            old_entry.created_at = datetime.utcnow() - timedelta(days=30)
+            old_entry.created_at = datetime.now(timezone.utc) - timedelta(days=30)
             db.session.commit()
 
-        far_future = (datetime.utcnow() + timedelta(days=1)).strftime("%Y-%m-%d")
+        far_future = (datetime.now(timezone.utc) + timedelta(days=1)).strftime(
+            "%Y-%m-%d"
+        )
         resp = logged_in_client.get(f"/admin/audit-log?date_from={far_future}")
         assert resp.status_code == 200
         assert b"Aucune entr" in resp.data
@@ -77,7 +79,7 @@ class TestPurgeAuditLog:
             SettingsService.set_audit_log_retention_days(7)
             AuditService.log("shift.create", actor=test_user)
             old_entry = AuditLog.query.filter_by(action="shift.create").first()
-            old_entry.created_at = datetime.utcnow() - timedelta(days=30)
+            old_entry.created_at = datetime.now(timezone.utc) - timedelta(days=30)
             from app import db
 
             db.session.commit()

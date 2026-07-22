@@ -2,7 +2,7 @@
 Tests for the ICS export routes.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app import db
 from app.models import Leave, OnCall, Shift
@@ -550,7 +550,9 @@ class TestIcsTokenExpiry:
     def test_token_past_expiry_days_is_rejected(self, client, test_user, test_app):
         with test_app.app_context():
             token = test_user.generate_ics_token()
-            test_user.ics_token_created_at = datetime.utcnow() - timedelta(days=400)
+            test_user.ics_token_created_at = datetime.now(timezone.utc) - timedelta(
+                days=400
+            )
             db.session.commit()
 
         response = client.get(f"/export/shifts?scope=my&token={token}")
@@ -570,7 +572,9 @@ class TestIcsTokenExpiry:
     def test_regenerating_token_resets_expiry_clock(self, client, test_user, test_app):
         with test_app.app_context():
             test_user.generate_ics_token()
-            test_user.ics_token_created_at = datetime.utcnow() - timedelta(days=400)
+            test_user.ics_token_created_at = datetime.now(timezone.utc) - timedelta(
+                days=400
+            )
             db.session.commit()
 
             new_token = test_user.generate_ics_token()
@@ -586,7 +590,9 @@ class TestIcsTokenExpiry:
 
         with test_app.app_context():
             token = test_user.generate_ics_token()
-            test_user.ics_token_created_at = datetime.utcnow() - timedelta(days=10)
+            test_user.ics_token_created_at = datetime.now(timezone.utc) - timedelta(
+                days=10
+            )
             db.session.commit()
             SettingsService.set_ics_token_expiry_days(5)
 

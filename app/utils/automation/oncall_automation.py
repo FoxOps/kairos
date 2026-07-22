@@ -246,6 +246,49 @@ def _fridays_in_range(start_date: date, end_date: date) -> list[date]:
     return fridays
 
 
+def _covering_friday(start_date: date) -> date:
+    """The Friday anchor of the on-call week straddling `start_date`
+    (Fri 21:00 -> the following Friday 07:00), if one actually exists
+    in the database - otherwise `start_date` itself, unchanged.
+
+    A delete-then-regenerate pair (OnCallRepository.
+    delete_overlapping_range() followed by generate_oncall_schedule())
+    must operate on the exact same set of weeks, or the delete silently
+    drops a week the regenerate never re-creates. delete_overlapping_range()
+    uses a true datetime overlap check (OnCall.end_time > start_date at
+    00:00), while _fridays_in_range() above only considers Fridays
+    on/after start_date at *date* granularity - the Friday immediately
+    before start_date always still overlaps (its on-call ends 07:00 on
+    the morning of the day 7 days later, which is after midnight of
+    that day), even when start_date itself already falls on a Friday.
+    Passing this function's result instead of the raw start_date to
+    generate_oncall_schedule() (for the same delete-then-regenerate
+    call) closes that gap - see the "astreinte supprimée par un
+    rééquilibrage mais jamais régénérée" investigation for a confirmed
+    real-world instance (two consecutive weeks silently lost after a
+    leave-triggered rebalance).
+
+    Deliberately queries the DB rather than just computing "one week
+    back" unconditionally: unconditionally backdating would ask the
+    solver to also fill whatever Friday sits one week before
+    start_date even when nothing was ever assigned or deleted there,
+    consuming a candidate's 2-week spacing budget for a week nobody
+    asked about and blocking the *actual* requested weeks from getting
+    their expected fallback assignment - a real regression caught by
+    tests/integration/test_admin_automation.py::
+    test_regenerate_mode_replaces_assignment_with_a_real_conflict."""
+    start_midnight = datetime.combine(start_date, datetime.min.time())
+    straddling = (
+        OnCall.query.filter(
+            OnCall.start_time < start_midnight,
+            OnCall.end_time > start_midnight,
+        )
+        .order_by(OnCall.start_time.desc())
+        .first()
+    )
+    return straddling.start_time.date() if straddling else start_date
+
+
 def _generate_for_fridays(
     fridays: list[date],
     rotation_order: list[User],
@@ -422,6 +465,19 @@ class OnCallAutomation:
                 gaps.append(current_friday)
             current_friday += timedelta(days=7)
         return gaps
+
+    @staticmethod
+    def align_regeneration_start(start_date: date) -> date:
+        """Public wrapper around _covering_friday() (see its docstring)
+        for callers outside this module that pair OnCallRepository.
+        delete_overlapping_range(start_date, ...) with
+        generate_oncall_schedule(start_date, ...) - pass this method's
+        result as the regeneration call's start_date instead of the raw
+        one, so it re-creates the same week the delete call actually
+        wiped. Only the generate side needs realigning; the delete call
+        already reaches this Friday on its own (true datetime overlap),
+        it's generate's date-level Friday search that falls short."""
+        return _covering_friday(start_date)
 
     @staticmethod
     def get_rotation_order(rotation_order_ids: list[int] | None = None) -> list[User]:

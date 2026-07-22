@@ -698,6 +698,24 @@ class AdvancedShiftAutomation:
 
         try:
             with db.session.begin_nested():
+                # OnCallRepository.delete_overlapping_range() below uses
+                # a true datetime overlap check, so it also wipes the
+                # on-call week anchored the Friday just before
+                # shift_period_start (its own on-call only ends 07:00
+                # into shift_period_start, still "overlapping"). A
+                # regeneration keyed off the raw shift_period_start
+                # would never re-create that week (Friday search starts
+                # on/after shift_period_start) - align first so delete
+                # and regenerate agree on the exact same set of weeks
+                # (see OnCallAutomation.align_regeneration_start()'s
+                # docstring for the confirmed real-world instance this
+                # closes: two consecutive weeks silently lost after a
+                # leave-triggered rebalance, with no unfilled-dates
+                # notification since the week was never even attempted).
+                oncall_regen_start = OnCallAutomation.align_regeneration_start(
+                    shift_period_start
+                )
+
                 # The deletion in the caller only targets the leave's
                 # own on-calls; the period to regenerate is padded by
                 # ±30 days and can therefore overlap OTHER users'
@@ -718,7 +736,7 @@ class AdvancedShiftAutomation:
                 # pre-excluding them here would be wrong (it would also
                 # drop their other, unrelated weeks in the same window).
                 preferred_assignments = OnCallAutomation.capture_existing_assignments(
-                    shift_period_start, shift_period_end
+                    oncall_regen_start, shift_period_end
                 )
 
                 other_oncalls_deleted = OnCallRepository.delete_overlapping_range(
@@ -736,7 +754,7 @@ class AdvancedShiftAutomation:
 
                 oncalls, oncall_messages, oncall_unfilled_dates = (
                     OnCallAutomation.generate_oncall_schedule(
-                        shift_period_start,
+                        oncall_regen_start,
                         shift_period_end,
                         rotation_order_ids=AutomationConfig.get_rotation_order(),
                         dry_run=False,

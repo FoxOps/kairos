@@ -134,13 +134,22 @@ class AutomationAdminService:
             result.oncall_messages_category = "info"
             result.oncall_unfilled_dates = oncall_unfilled_dates
         elif oncall_mode == "regenerate":
+            # delete_overlapping_range() below uses a true datetime
+            # overlap check, so it also wipes the on-call week anchored
+            # the Friday just before start_date (its own on-call only
+            # ends 07:00 into start_date, still "overlapping"). Align
+            # first so the regeneration re-creates that same week
+            # instead of silently losing it - see OnCallAutomation.
+            # align_regeneration_start()'s docstring.
+            oncall_regen_start = OnCallAutomation.align_regeneration_start(start_date)
+
             # Captured before the wipe below, so the search can prefer
             # keeping each week's existing occupant instead of blindly
             # replaying the rotation order - same mechanism as the
             # automatic rebalance-after-leave path (see
             # OnCallAutomation.capture_existing_assignments()).
             preferred_assignments = OnCallAutomation.capture_existing_assignments(
-                start_date, end_date
+                oncall_regen_start, end_date
             )
             oncalls_deleted = OnCallRepository.delete_overlapping_range(
                 start_date, end_date
@@ -151,7 +160,7 @@ class AutomationAdminService:
 
             _regenerated, oncall_messages, oncall_unfilled_dates = (
                 OnCallAutomation.generate_oncall_schedule(
-                    start_date,
+                    oncall_regen_start,
                     end_date,
                     rotation_order_ids=AutomationConfig.get_rotation_order(),
                     dry_run=False,
@@ -201,9 +210,15 @@ class AutomationAdminService:
                 AutomationAdminService.clear_period(start_date, end_date)
             )
 
+        # clear_period() above deletes on-calls via a true datetime
+        # overlap check, which also wipes the on-call week anchored the
+        # Friday just before start_date. Align so the regeneration below
+        # re-creates that same week instead of silently losing it - see
+        # OnCallAutomation.align_regeneration_start()'s docstring.
+        oncall_regen_start = OnCallAutomation.align_regeneration_start(start_date)
         oncalls, oncall_messages, oncall_unfilled_dates = (
             OnCallAutomation.generate_oncall_schedule(
-                start_date, end_date, rotation_order_ids, dry_run=dry_run
+                oncall_regen_start, end_date, rotation_order_ids, dry_run=dry_run
             )
         )
         result.oncalls = oncalls
