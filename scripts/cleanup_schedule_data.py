@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 """
-Kairos - Purge des shifts/astreintes anciens
+Kairos - Purge old shifts/on-calls
 =============================================
 
-Supprime les shifts et astreintes passés depuis plus longtemps que la
-durée de rétention configurée (Setting "schedule_retention_days",
-/admin/settings, 365 jours par défaut, 0 = ne jamais purger) - évite
-d'accumuler des années de données de planning sans usage réel dans la
-base.
+Deletes shifts and on-calls older than the configured retention duration
+(Setting "schedule_retention_days", /admin/settings, 365 days by
+default, 0 = never purge) - avoids accumulating years of schedule data
+with no real use in the database.
 
-À exécuter chaque jour via cron - voir docker/crontabs/appuser. No-op
-silencieux si schedule_retention_days vaut 0.
+Run daily via cron - see docker/crontabs/appuser. Silent no-op if
+schedule_retention_days is 0.
 
-Utilisation:
+Usage:
     python scripts/cleanup_schedule_data.py
 """
 

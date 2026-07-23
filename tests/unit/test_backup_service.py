@@ -1,6 +1,6 @@
 """
-Tests pour app/services/backup_service.py (couche support pour l'UI
-admin, au-dessus des fonctions pures de scripts/backup_database.py).
+Tests for app/services/backup_service.py (support layer for the admin
+UI, on top of scripts/backup_database.py's pure functions).
 """
 
 import os

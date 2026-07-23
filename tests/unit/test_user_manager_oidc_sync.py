@@ -1,4 +1,4 @@
-"""Tests unitaires pour app/auth/user_manager.py (UserManager, sync OIDC)."""
+"""Unit tests for app/auth/user_manager.py (UserManager, OIDC sync)."""
 
 import pytest
 

@@ -1,37 +1,37 @@
 #!/usr/bin/env python3
 """
-Kairos - Sauvegarde automatique de la base de données
+Kairos - Automatic database backup
 ===============================================================
 
-Ce script permet de sauvegarder la base de données Kairos :
-- Sauvegarde locale (fichier)
-- Stockage S3 ou S3-compatible (AWS S3, MinIO, etc.)
+This script backs up the Kairos database:
+- Local backup (file)
+- S3 or S3-compatible storage (AWS S3, MinIO, etc.)
 
-Utilisation:
+Usage:
     python scripts/backup_database.py [--local] [--s3] [--verify] [--cleanup]
 
 Options:
-    --local      Effectuer une sauvegarde locale (activé par défaut)
-    --s3        Effectuer une sauvegarde S3 (désactivé par défaut)
-    --verify    Vérifier l'intégrité de la sauvegarde
-    --cleanup   Nettoyer les anciennes sauvegardes
-    --config    Chemin vers un fichier de configuration JSON (optionnel)
-    --help      Afficher l'aide
+    --local      Perform a local backup (enabled by default)
+    --s3        Perform an S3 backup (disabled by default)
+    --verify    Verify backup integrity
+    --cleanup   Clean up old backups
+    --config    Path to a JSON config file (optional)
+    --help      Show help
 
-Variables d'environnement:
-    Voir scripts/backup_config.py pour la liste complète.
+Environment variables:
+    See scripts/backup_config.py for the full list.
 
-Exemples:
-    # Sauvegarde locale uniquement
+Examples:
+    # Local backup only
     python scripts/backup_database.py --local
 
-    # Sauvegarde locale + S3
+    # Local + S3 backup
     python scripts/backup_database.py --local --s3
 
-    # Sauvegarde avec nettoyage des anciennes sauvegardes
+    # Backup with cleanup of old backups
     python scripts/backup_database.py --local --cleanup
 
-    # Sauvegarde complète (local + S3 + vérification + nettoyage)
+    # Full backup (local + S3 + verify + cleanup)
     python scripts/backup_database.py --local --s3 --verify --cleanup
 """
 
@@ -47,7 +47,7 @@ import tempfile
 from datetime import datetime, timedelta
 from typing import Any
 
-# Ajouter le dossier parent au path pour importer la configuration
+# Add the parent directory to the path to import the configuration
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
@@ -62,14 +62,14 @@ except ImportError:
 from scripts.backup_config import BackupConfig, get_config
 
 # ============================================================================
-# CONFIGURATION DU LOGGING
+# LOGGING CONFIGURATION
 # ============================================================================
 
 
 def setup_logging(
     log_level: str = "INFO", log_file: str | None = None
 ) -> logging.Logger:
-    """Configure le logging pour le script de sauvegarde."""
+    """Configure logging for the backup script."""
     logger = logging.getLogger("kairos.backup")
     logger.setLevel(getattr(logging, log_level.upper(), logging.INFO))
 
@@ -79,12 +79,12 @@ def setup_logging(
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    # Handler console
+    # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
-    # Handler fichier (si spécifié)
+    # File handler (if specified)
     if log_file:
         file_handler = logging.FileHandler(log_file)
         file_handler.setFormatter(formatter)
@@ -94,20 +94,20 @@ def setup_logging(
 
 
 # ============================================================================
-# FONCTIONS DE SAUVEGARDE LOCALE
+# LOCAL BACKUP FUNCTIONS
 # ============================================================================
 
 
 def detect_db_path(config: BackupConfig) -> str | None:
-    """Détecte automatiquement le chemin de la base de données SQLite."""
-    # Vérifier si un chemin est déjà configuré
+    """Automatically detects the SQLite database path."""
+    # Check if a path is already configured
     if config.db_path and os.path.exists(config.db_path):
         return config.db_path
 
-    # Chercher dans les emplacements courants
+    # Look in common locations
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    # Emplacements courants pour SQLite
+    # Common locations for SQLite
     possible_paths = [
         os.path.join(project_root, "instance", "app.db"),
         os.path.join(project_root, "app.db"),
@@ -119,7 +119,7 @@ def detect_db_path(config: BackupConfig) -> str | None:
         if os.path.exists(path):
             return path
 
-    # Vérifier l'URI de la base de données
+    # Check the database URI
     if config.db_uri and config.db_uri.startswith("sqlite:///"):
         db_path = config.db_uri.replace("sqlite:///", "")
         if not os.path.isabs(db_path):
@@ -134,27 +134,27 @@ def create_local_backup(
     db_path: str, backup_path: str, compress: bool = True
 ) -> tuple[bool, str]:
     """
-    Crée une sauvegarde locale de la base de données SQLite.
+    Creates a local backup of the SQLite database.
 
     Args:
-        db_path: Chemin vers le fichier SQLite source
-        backup_path: Chemin vers le fichier de sauvegarde
-        compress: Si True, compresse la sauvegarde
+        db_path: Path to the source SQLite file
+        backup_path: Path to the backup file
+        compress: If True, compresses the backup
 
     Returns:
         Tuple (success, message)
     """
     try:
-        # Créer le dossier de destination si nécessaire
+        # Create the destination directory if needed
         os.makedirs(os.path.dirname(backup_path), exist_ok=True)
 
         if compress:
-            # Sauvegarde avec compression
+            # Backup with compression
             with open(db_path, "rb") as f_in:
                 with gzip.open(backup_path, "wb") as f_out:
                     shutil.copyfileobj(f_in, f_out)
         else:
-            # Sauvegarde sans compression
+            # Backup without compression
             shutil.copy2(db_path, backup_path)
 
         return True, f"Sauvegarde locale créée: {backup_path}"
@@ -167,45 +167,45 @@ def verify_backup(
     db_path: str, backup_path: str, compress: bool = False
 ) -> tuple[bool, str]:
     """
-    Vérifie l'intégrité d'une sauvegarde.
+    Verifies the integrity of a backup.
 
     Args:
-        db_path: Chemin vers le fichier SQLite original
-        backup_path: Chemin vers le fichier de sauvegarde
-        compress: Si True, la sauvegarde est compressée
+        db_path: Path to the original SQLite file
+        backup_path: Path to the backup file
+        compress: If True, the backup is compressed
 
     Returns:
         Tuple (success, message)
     """
     try:
-        # Vérifier que le fichier existe
+        # Check the file exists
         if not os.path.exists(backup_path):
             return False, f"Fichier de sauvegarde introuvable: {backup_path}"
 
-        # Vérifier la taille
+        # Check the size
         backup_size = os.path.getsize(backup_path)
         if backup_size == 0:
             return False, "Fichier de sauvegarde vide"
 
-        # Pour les sauvegardes compressées, vérifier qu'on peut les décompresser
+        # For compressed backups, check they can be decompressed
         if compress and backup_path.endswith(".gz"):
             with gzip.open(backup_path, "rb") as f:
                 try:
-                    # Lire le début du fichier pour vérifier
+                    # Read the start of the file to check it
                     header = f.read(16)
-                    # Vérifier la signature SQLite
+                    # Check the SQLite signature
                     if header != b"SQLite format 3\x00":
                         return False, "Fichier corrompu: signature SQLite invalide"
                 except Exception as e:
                     return False, f"Erreur de décompression: {str(e)}"
         else:
-            # Vérifier la signature SQLite directement
+            # Check the SQLite signature directly
             with open(backup_path, "rb") as f:
                 header = f.read(16)
                 if header != b"SQLite format 3\x00":
                     return False, "Fichier corrompu: signature SQLite invalide"
 
-        # Calculer le hash pour vérification
+        # Compute the hash for verification
         if compress:
             with gzip.open(backup_path, "rb") as f:
                 backup_hash = hashlib.sha256(f.read()).hexdigest()
@@ -220,25 +220,25 @@ def verify_backup(
 
 
 # ============================================================================
-# FONCTIONS DE SAUVEGARDE S3
+# S3 BACKUP FUNCTIONS
 # ============================================================================
 
 
 def get_s3_client(config: BackupConfig):
     """
-    Crée un client S3 avec la configuration donnée.
+    Creates an S3 client with the given configuration.
 
     Args:
-        config: Configuration de sauvegarde
+        config: Backup configuration
 
     Returns:
-        Client S3 ou None si erreur
+        S3 client or None on error
     """
     if not S3_AVAILABLE:
         return None
 
     try:
-        # Configuration S3
+        # S3 configuration
         s3_config = {
             "endpoint_url": config.s3_endpoint,
             "region_name": config.s3_region,
@@ -247,10 +247,10 @@ def get_s3_client(config: BackupConfig):
             "use_ssl": config.s3_use_ssl,
         }
 
-        # Nettoyer les valeurs None
+        # Clean up None values
         s3_config = {k: v for k, v in s3_config.items() if v is not None}
 
-        # Créer le client
+        # Create the client
         if config.s3_endpoint:
             # S3-compatible (MinIO, etc.)
             client = boto3.client("s3", **s3_config)
@@ -268,14 +268,14 @@ def upload_to_s3(
     file_path: str, bucket: str, key: str, config: BackupConfig, logger: logging.Logger
 ) -> tuple[bool, str]:
     """
-    Upload un fichier vers S3.
+    Uploads a file to S3.
 
     Args:
-        file_path: Chemin local du fichier à uploader
-        bucket: Nom du bucket S3
-        key: Clé S3 (chemin dans le bucket)
-        config: Configuration de sauvegarde
-        logger: Logger pour les messages
+        file_path: Local path of the file to upload
+        bucket: S3 bucket name
+        key: S3 key (path within the bucket)
+        config: Backup configuration
+        logger: Logger for messages
 
     Returns:
         Tuple (success, message)
@@ -287,16 +287,16 @@ def upload_to_s3(
         )
 
     try:
-        # Vérifier que le fichier existe
+        # Check the file exists
         if not os.path.exists(file_path):
             return False, f"Fichier introuvable: {file_path}"
 
-        # Créer le client S3
+        # Create the S3 client
         s3_client = get_s3_client(config)
         if s3_client is None:
             return False, "Impossible de créer le client S3. Vérifiez vos identifiants."
 
-        # Vérifier que le bucket existe
+        # Check the bucket exists
         try:
             s3_client.head_bucket(Bucket=bucket)
         except ClientError as e:
@@ -310,13 +310,13 @@ def upload_to_s3(
             else:
                 return False, f"Erreur S3: {str(e)}"
 
-        # Upload du fichier
+        # Upload the file
         logger.info(f"Upload vers S3: {bucket}/{key}")
 
-        # Options d'upload
+        # Upload options
         extra_args = {}
 
-        # Définir le type de contenu
+        # Set the content type
         if key.endswith(".gz"):
             extra_args["ContentType"] = "application/gzip"
             extra_args["ContentEncoding"] = "gzip"
@@ -325,7 +325,7 @@ def upload_to_s3(
 
         s3_client.upload_file(file_path, bucket, key, ExtraArgs=extra_args)
 
-        # Vérifier que le fichier a été uploadé
+        # Check the file was uploaded
         response = s3_client.head_object(Bucket=bucket, Key=key)
         file_size = response["ContentLength"]
 
@@ -349,14 +349,14 @@ def download_from_s3(
     bucket: str, key: str, file_path: str, config: BackupConfig, logger: logging.Logger
 ) -> tuple[bool, str]:
     """
-    Télécharge un fichier depuis S3.
+    Downloads a file from S3.
 
     Args:
-        bucket: Nom du bucket S3
-        key: Clé S3
-        file_path: Chemin local pour sauvegarder le fichier
-        config: Configuration de sauvegarde
-        logger: Logger pour les messages
+        bucket: S3 bucket name
+        key: S3 key
+        file_path: Local path to save the file to
+        config: Backup configuration
+        logger: Logger for messages
 
     Returns:
         Tuple (success, message)
@@ -369,10 +369,10 @@ def download_from_s3(
         if s3_client is None:
             return False, "Impossible de créer le client S3"
 
-        # Créer le dossier de destination
+        # Create the destination directory
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-        # Télécharger le fichier
+        # Download the file
         s3_client.download_file(bucket, key, file_path)
 
         return True, f"Téléchargement S3 réussi: {bucket}/{key} -> {file_path}"
@@ -382,7 +382,7 @@ def download_from_s3(
 
 
 # ============================================================================
-# FONCTIONS DE NETTOYAGE
+# CLEANUP FUNCTIONS
 # ============================================================================
 
 
@@ -390,14 +390,14 @@ def cleanup_local_backups(
     config: BackupConfig, logger: logging.Logger
 ) -> tuple[int, str]:
     """
-    Nettoie les anciennes sauvegardes locales.
+    Cleans up old local backups.
 
     Args:
-        config: Configuration de sauvegarde
-        logger: Logger pour les messages
+        config: Backup configuration
+        logger: Logger for messages
 
     Returns:
-        Tuple (nombre de fichiers supprimés, message)
+        Tuple (number of files deleted, message)
     """
     if not config.local_enabled or not config.local_dir:
         return 0, "Nettoyage local désactivé"
@@ -409,7 +409,7 @@ def cleanup_local_backups(
         if not os.path.exists(local_dir):
             return 0, f"Dossier introuvable: {local_dir}"
 
-        # Lister tous les fichiers de sauvegarde
+        # List all backup files
         backup_files: list[dict[str, Any]] = []
         for filename in os.listdir(local_dir):
             if filename.startswith(config.backup_prefix):
@@ -424,14 +424,14 @@ def cleanup_local_backups(
                         }
                     )
 
-        # Trier par date de modification (plus ancien en premier)
+        # Sort by modification date (oldest first)
         backup_files.sort(key=lambda x: x["mtime"])
 
-        # Calculer la date limite
+        # Compute the cutoff date
         cutoff_date = datetime.now() - timedelta(days=config.retention_days)
         cutoff_timestamp = cutoff_date.timestamp()
 
-        # Supprimer les fichiers trop anciens
+        # Delete files that are too old
         for backup in backup_files:
             if backup["mtime"] < cutoff_timestamp:
                 try:
@@ -445,7 +445,7 @@ def cleanup_local_backups(
                         f"Erreur lors de la suppression de {backup['filename']}: {str(e)}"
                     )
 
-            # Limiter le nombre total de sauvegardes
+            # Cap the total number of backups
             elif len(backup_files) - deleted_count > config.max_backups:
                 try:
                     os.remove(backup["path"])
@@ -464,14 +464,14 @@ def cleanup_local_backups(
 
 def cleanup_s3_backups(config: BackupConfig, logger: logging.Logger) -> tuple[int, str]:
     """
-    Nettoie les anciennes sauvegardes S3.
+    Cleans up old S3 backups.
 
     Args:
-        config: Configuration de sauvegarde
-        logger: Logger pour les messages
+        config: Backup configuration
+        logger: Logger for messages
 
     Returns:
-        Tuple (nombre de fichiers supprimés, message)
+        Tuple (number of files deleted, message)
     """
     if not config.s3_enabled or not config.s3_bucket:
         return 0, "Nettoyage S3 désactivé"
@@ -487,7 +487,7 @@ def cleanup_s3_backups(config: BackupConfig, logger: logging.Logger) -> tuple[in
         deleted_count = 0
         prefix = config.s3_prefix or ""
 
-        # Lister tous les objets dans le bucket avec le préfixe
+        # List all objects in the bucket with the prefix
         paginator = s3_client.get_paginator("list_objects_v2")
 
         for page in paginator.paginate(Bucket=config.s3_bucket, Prefix=prefix):
@@ -498,10 +498,10 @@ def cleanup_s3_backups(config: BackupConfig, logger: logging.Logger) -> tuple[in
                 key = obj["Key"]
                 last_modified = obj["LastModified"]
 
-                # Calculer l'âge en jours
+                # Compute the age in days
                 age = (datetime.now(last_modified.tzinfo) - last_modified).days
 
-                # Supprimer si trop ancien
+                # Delete if too old
                 if age > config.retention_days:
                     try:
                         s3_client.delete_object(Bucket=config.s3_bucket, Key=key)
@@ -519,7 +519,7 @@ def cleanup_s3_backups(config: BackupConfig, logger: logging.Logger) -> tuple[in
 
 
 # ============================================================================
-# FONCTIONS DE NOTIFICATION
+# NOTIFICATION FUNCTIONS
 # ============================================================================
 
 
@@ -527,18 +527,17 @@ def send_backup_notification(
     config: BackupConfig, results: dict[str, Any], logger: logging.Logger
 ) -> None:
     """
-    Envoie un email d'alerte de sauvegarde si configuré (succès et/ou
-    échec selon config.notify_on_success/notify_on_failure), en
-    réutilisant la configuration SMTP des notifications par email (voir
-    scripts/notification_config.py - mêmes variables d'environnement,
-    donc aussi soumis à NOTIFICATIONS_ENABLED).
+    Sends a backup alert email if configured (success and/or failure
+    depending on config.notify_on_success/notify_on_failure), reusing the
+    email-notification SMTP configuration (see scripts/notification_config.py
+    - same environment variables, so also subject to NOTIFICATIONS_ENABLED).
 
-    Implémentation SMTP autonome plutôt qu'un import de
-    app.utils.notifications : ce script doit rester utilisable même si
-    l'application Flask ne démarre pas (justement le scénario le plus
-    probable en reprise après sinistre) - importer le package app
-    déclencherait app/__init__.py (connexion DB, extensions Flask, etc.),
-    cassant cette isolation volontaire.
+    Self-contained SMTP implementation rather than importing
+    app.utils.notifications: this script must remain usable even if the
+    Flask app fails to start (precisely the most likely disaster-recovery
+    scenario) - importing the app package would trigger app/__init__.py
+    (DB connection, Flask extensions, etc.), breaking this deliberate
+    isolation.
     """
     should_notify = (results["success"] and config.notify_on_success) or (
         not results["success"] and config.notify_on_failure
@@ -609,20 +608,20 @@ def send_backup_notification(
 
 
 # ============================================================================
-# FONCTIONS PRINCIPALES
+# MAIN FUNCTIONS
 # ============================================================================
 
 
 def create_backup(config: BackupConfig, logger: logging.Logger) -> dict[str, Any]:
     """
-    Crée une sauvegarde complète (locale et/ou S3).
+    Creates a full backup (local and/or S3).
 
     Args:
-        config: Configuration de sauvegarde
-        logger: Logger pour les messages
+        config: Backup configuration
+        logger: Logger for messages
 
     Returns:
-        Dictionnaire avec les résultats
+        Dictionary with the results
     """
     results: dict[str, Any] = {
         "success": False,
@@ -632,7 +631,7 @@ def create_backup(config: BackupConfig, logger: logging.Logger) -> dict[str, Any
         "errors": [],
     }
 
-    # Détecter le chemin de la base de données
+    # Detect the database path
     db_path = detect_db_path(config)
     if db_path is None:
         error_msg = "Impossible de trouver la base de données. Vérifiez DATABASE_URL ou placez app.db dans instance/"
@@ -645,7 +644,7 @@ def create_backup(config: BackupConfig, logger: logging.Logger) -> dict[str, Any
 
     timestamp = datetime.now()
 
-    # Sauvegarde locale
+    # Local backup
     if config.local_enabled:
         backup_path = config.get_local_backup_path(timestamp)
         logger.info(f"Création de la sauvegarde locale: {backup_path}")
@@ -656,7 +655,7 @@ def create_backup(config: BackupConfig, logger: logging.Logger) -> dict[str, Any
         if success:
             logger.info(message)
 
-            # Vérification
+            # Verification
             if config.verify_backup:
                 verify_success, verify_message = verify_backup(
                     db_path, backup_path, config.compress
@@ -671,12 +670,12 @@ def create_backup(config: BackupConfig, logger: logging.Logger) -> dict[str, Any
             logger.error(message)
             results["errors"].append(message)
 
-    # Sauvegarde S3
+    # S3 backup
     if config.s3_enabled and config.s3_bucket:
         backup_path = config.get_local_backup_path(timestamp)
         s3_key = config.get_s3_key(timestamp)
 
-        # Si la sauvegarde locale a réussi, uploader vers S3
+        # If the local backup succeeded, upload it to S3
         if results["local"] and results["local"]["success"]:
             logger.info(f"Upload vers S3: {config.s3_bucket}/{s3_key}")
             success, message = upload_to_s3(
@@ -695,7 +694,7 @@ def create_backup(config: BackupConfig, logger: logging.Logger) -> dict[str, Any
                 logger.error(message)
                 results["errors"].append(message)
         else:
-            # Créer une sauvegarde temporaire pour S3
+            # Create a temporary backup for S3
             with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp_file:
                 tmp_backup_path = tmp_file.name
 
@@ -723,11 +722,11 @@ def create_backup(config: BackupConfig, logger: logging.Logger) -> dict[str, Any
                 else:
                     results["errors"].append(message)
             finally:
-                # Nettoyer le fichier temporaire
+                # Clean up the temporary file
                 if os.path.exists(tmp_backup_path):
                     os.remove(tmp_backup_path)
 
-    # Déterminer le succès global
+    # Determine overall success
     results["success"] = (
         not config.local_enabled or (results["local"] and results["local"]["success"])
     ) and (not config.s3_enabled or (results["s3"] and results["s3"]["success"]))
@@ -739,26 +738,26 @@ def restore_backup(
     backup_path: str, target_path: str, config: BackupConfig, logger: logging.Logger
 ) -> tuple[bool, str]:
     """
-    Restaure une sauvegarde.
+    Restores a backup.
 
     Args:
-        backup_path: Chemin vers le fichier de sauvegarde
-        target_path: Chemin vers la base de données cible
-        config: Configuration de sauvegarde
-        logger: Logger pour les messages
+        backup_path: Path to the backup file
+        target_path: Path to the target database
+        config: Backup configuration
+        logger: Logger for messages
 
     Returns:
         Tuple (success, message)
     """
     try:
-        # Vérifier que le fichier de sauvegarde existe
+        # Check the backup file exists
         if not os.path.exists(backup_path):
             return False, f"Fichier de sauvegarde introuvable: {backup_path}"
 
-        # Créer le dossier de destination si nécessaire
+        # Create the destination directory if needed
         os.makedirs(os.path.dirname(target_path), exist_ok=True)
 
-        # Vérifier si la sauvegarde est compressée
+        # Check whether the backup is compressed
         if backup_path.endswith(".gz"):
             logger.info(f"Décompression de {backup_path}")
             with gzip.open(backup_path, "rb") as f_in:
@@ -768,7 +767,7 @@ def restore_backup(
             logger.info(f"Copie de {backup_path} vers {target_path}")
             shutil.copy2(backup_path, target_path)
 
-        # Vérifier que le fichier a été restauré
+        # Check the file was restored
         if os.path.exists(target_path):
             file_size = os.path.getsize(target_path)
             return True, f"Restauration réussie: {target_path} ({file_size} octets)"
@@ -781,18 +780,18 @@ def restore_backup(
 
 def list_backups(config: BackupConfig, logger: logging.Logger) -> dict[str, Any]:
     """
-    Liste toutes les sauvegardes disponibles.
+    Lists all available backups.
 
     Args:
-        config: Configuration de sauvegarde
-        logger: Logger pour les messages
+        config: Backup configuration
+        logger: Logger for messages
 
     Returns:
-        Dictionnaire avec les listes de sauvegardes
+        Dictionary with the lists of backups
     """
     results: dict[str, Any] = {"local": [], "s3": []}
 
-    # Sauvegardes locales
+    # Local backups
     if config.local_enabled and config.local_dir:
         local_dir = config.local_dir
         if os.path.exists(local_dir):
@@ -811,7 +810,7 @@ def list_backups(config: BackupConfig, logger: logging.Logger) -> dict[str, Any]
                             }
                         )
 
-    # Sauvegardes S3
+    # S3 backups
     if config.s3_enabled and config.s3_bucket and S3_AVAILABLE:
         try:
             s3_client = get_s3_client(config)
@@ -839,12 +838,12 @@ def list_backups(config: BackupConfig, logger: logging.Logger) -> dict[str, Any]
 
 
 # ============================================================================
-# FONCTION PRINCIPALE
+# MAIN FUNCTION
 # ============================================================================
 
 
 def main():
-    """Fonction principale du script."""
+    """Script main function."""
     parser = argparse.ArgumentParser(
         description="Sauvegarde automatique de la base de données Kairos",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -917,9 +916,9 @@ Variables d'environnement:
 
     args = parser.parse_args()
 
-    # Charger la configuration
+    # Load the configuration
     if args.config:
-        # Charger depuis un fichier JSON
+        # Load from a JSON file
         try:
             with open(args.config) as f:
                 config_data = json.load(f)
@@ -930,15 +929,15 @@ Variables d'environnement:
             )
             sys.exit(1)
     else:
-        # Charger depuis les variables d'environnement
+        # Load from environment variables
         config = get_config()
 
-        # Ecraser avec les arguments de la ligne de commande
+        # Override with command-line arguments
         config.local_enabled = args.local
         config.s3_enabled = args.s3
         config.verify_backup = args.verify
 
-    # Configurer le logging
+    # Configure logging
     log_level = args.log_level or config.log_level
     log_file = args.log_file or config.log_file
     logger = setup_logging(log_level, log_file)
@@ -947,12 +946,12 @@ Variables d'environnement:
     logger.info("Kairos - Sauvegarde de la base de données")
     logger.info("=" * 60)
 
-    # Vérifier si les sauvegardes sont activées
+    # Check whether backups are enabled
     if not config.enabled:
         logger.info("Les sauvegardes sont désactivées (BACKUP_ENABLED=false)")
         sys.exit(0)
 
-    # Lister les sauvegardes
+    # List backups
     if args.list:
         backups = list_backups(config, logger)
         print("\n" + "=" * 60)
@@ -970,35 +969,35 @@ Variables d'environnement:
             print(f"  {backup['key']} ({backup['size']} octets, {backup['modified']})")
         sys.exit(0)
 
-    # Restaurer une sauvegarde
+    # Restore a backup
     if args.restore:
         if args.restore.startswith("s3://"):
-            # Restauration depuis S3
+            # Restore from S3
             parts = args.restore[5:].split("/")
             if len(parts) >= 2:
                 bucket = parts[0]
                 key = "/".join(parts[1:])
 
-                # Télécharger vers un fichier temporaire
+                # Download to a temporary file
                 with tempfile.NamedTemporaryFile(
                     suffix=".db", delete=False
                 ) as tmp_file:
                     tmp_path = tmp_file.name
 
                 try:
-                    # Télécharger depuis S3
+                    # Download from S3
                     db_path = detect_db_path(config)
                     if db_path is None:
                         logger.error("Impossible de trouver la base de données cible")
                         sys.exit(1)
 
-                    # Télécharger le fichier
+                    # Download the file
                     success, message = download_from_s3(
                         bucket, key, tmp_path, config, logger
                     )
 
                     if success:
-                        # Restaurer
+                        # Restore
                         restore_success, restore_message = restore_backup(
                             tmp_path, db_path, config, logger
                         )
@@ -1016,7 +1015,7 @@ Variables d'environnement:
                     if os.path.exists(tmp_path):
                         os.remove(tmp_path)
         else:
-            # Restauration depuis un fichier local
+            # Restore from a local file
             db_path = detect_db_path(config)
             if db_path is None:
                 logger.error("Impossible de trouver la base de données cible")
@@ -1033,7 +1032,7 @@ Variables d'environnement:
 
         sys.exit(0)
 
-    # Effectuer la sauvegarde
+    # Perform the backup
     logger.info("Début de la sauvegarde...")
     logger.info(f"Configuration: local={config.local_enabled}, s3={config.s3_enabled}")
 
@@ -1041,7 +1040,7 @@ Variables d'environnement:
 
     send_backup_notification(config, results, logger)
 
-    # Nettoyage
+    # Cleanup
     if args.cleanup:
         logger.info("\nNettoyage des anciennes sauvegardes...")
 
@@ -1053,7 +1052,7 @@ Variables d'environnement:
             deleted, message = cleanup_s3_backups(config, logger)
             logger.info(message)
 
-    # Afficher les résultats
+    # Show the results
     print("\n" + "=" * 60)
     print("RÉSULTATS DE LA SAUVEGARDE:")
     print("=" * 60)

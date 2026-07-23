@@ -6,7 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Respond to the user in French. Code, identifiers, and commit messages follow the conventions
 described below (commit history is French-language; code/comments in English unless stated
-otherwise).
+otherwise). This was a stated-but-unenforced rule for a long time — a repo-wide sweep translated
+every remaining French code comment/docstring to English (Python, Dockerfile, entrypoint.sh,
+Makefile, .ruff.toml, k8s/*.yaml, docker-compose*.yml). Keep new comments/docstrings in English
+going forward. Two deliberate carve-outs, not oversights:
+- **Runtime CLI/ops output stays French** — `print()`/`logger`/`echo` messages in
+  `scripts/backup_database.py`, `docker/entrypoint.sh`, `Makefile` targets, etc. are operator-facing
+  text (what a French-speaking admin sees when running the command), not developer-facing
+  documentation — same category as this repo's French Flask UI strings, not "comments."
+- **`report/*.md` stays untouched** — frozen historical audit/investigation snapshots (prose
+  documents, not code), deliberately excluded from this sweep the same way PR #183's doc cleanup
+  excluded them (later reversed only for the literal old-repo-name references, on explicit request —
+  this translation sweep is a separate, narrower concern and that reversal doesn't extend to it).
 
 ## Project
 

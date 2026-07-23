@@ -1,27 +1,27 @@
 #!/bin/bash
 # ============================================================================
-# Kairos - Test de charge
+# Kairos - Load test
 # ============================================================================
 #
-# Wrapper autour de wrk (préféré) ou hey - pas de dépendance Python
-# supplémentaire, ces deux outils sont des binaires autonomes.
+# Wrapper around wrk (preferred) or hey - no extra Python dependency,
+# both tools are standalone binaries.
 #
-# Prérequis : une instance de l'app déjà lancée (python run.py, ou
-# docker compose up) et accessible à l'URL cible, avec un compte de test
-# déjà créé (l'endpoint /login exige une authentification pour toutes les
-# pages sauf /health, /ready, /version).
+# Prerequisites: an already-running app instance (python run.py, or
+# docker compose up) reachable at the target URL, with a test account
+# already created (the /login endpoint requires authentication for every
+# page except /health, /ready, /version).
 #
-# Installation :
-#   wrk  : https://github.com/wg/wrk (paquet "wrk" sous Arch/chaotic-aur,
-#          "wrk" sous Debian/Ubuntu via apt si disponible, sinon compiler
-#          depuis les sources - un seul binaire C, pas de runtime requis)
-#   hey  : https://github.com/rakyll/hey (binaire Go statique, ou
+# Install:
+#   wrk  : https://github.com/wg/wrk ("wrk" package on Arch/chaotic-aur,
+#          "wrk" on Debian/Ubuntu via apt if available, otherwise build
+#          from source - a single C binary, no runtime required)
+#   hey  : https://github.com/rakyll/hey (static Go binary, or
 #          `go install github.com/rakyll/hey@latest`)
 #
-# Utilisation :
-#   scripts/load_test.sh [URL_BASE] [DUREE] [CONNEXIONS] [THREADS]
+# Usage:
+#   scripts/load_test.sh [BASE_URL] [DURATION] [CONNECTIONS] [THREADS]
 #
-# Exemples :
+# Examples:
 #   scripts/load_test.sh
 #   scripts/load_test.sh http://localhost:5000 30s 50 4
 #
@@ -34,11 +34,11 @@ DURATION="${2:-30s}"
 CONNECTIONS="${3:-50}"
 THREADS="${4:-4}"
 
-# Endpoints publics (pas d'authentification requise) - ceux qui ont le
-# plus de sens à charger en boucle sans avoir à gérer une session/cookie
-# de connexion dans ce script (voir report/LOAD_TEST_v1.0.md pour une
-# méthodologie couvrant aussi les pages authentifiées, via un outil qui
-# gère les cookies).
+# Public endpoints (no authentication required) - the ones that make the
+# most sense to load-test in a loop without having to manage a login
+# session/cookie in this script (see report/LOAD_TEST_v1.0.md for a
+# methodology that also covers authenticated pages, via a tool that
+# handles cookies).
 ENDPOINTS=(
     "/health"
     "/ready"
@@ -60,8 +60,8 @@ run_with_wrk() {
 
 run_with_hey() {
     local url="$1"
-    # hey utilise -z pour une durée (au lieu de -n pour un nombre de
-    # requêtes fixe) - équivalent de wrk -d.
+    # hey uses -z for a duration (instead of -n for a fixed request
+    # count) - equivalent of wrk -d.
     hey -z "$DURATION" -c "$CONNECTIONS" "$url"
 }
 

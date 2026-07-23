@@ -1,5 +1,5 @@
 """
-Tests pour les routes admin de sauvegarde (app/routes/admin_backup_routes.py).
+Tests for the admin backup routes (app/routes/admin_backup_routes.py).
 """
 
 import pytest

@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
-Kairos - Envoi du rappel d'astreinte par email
+Kairos - Send the on-call reminder email
 =========================================================
 
-Envoie un email à l'utilisateur d'astreinte pour la période démarrant
-le vendredi 21h à venir. Un seul email par semaine et par utilisateur -
-voir app/services/notification_service.py pour la logique et
-NotificationLog pour la garde-fou anti-doublon.
+Sends an email to the user on call for the period starting the coming
+Friday at 9pm. One email per week per user - see
+app/services/notification_service.py for the logic and NotificationLog
+for the anti-duplicate guard.
 
-À exécuter chaque jeudi (24h avant le début de l'astreinte du vendredi
-21h) via cron - voir scripts/cron_example.sh pour un exemple d'entrée
-crontab. Ne fait rien si NOTIFICATIONS_ENABLED n'est pas activé.
+Run every Thursday (24h before Friday 9pm on-call starts) via cron - see
+scripts/cron_example.sh for a sample crontab entry. No-op if
+NOTIFICATIONS_ENABLED isn't set.
 
-Utilisation:
+Usage:
     python scripts/send_oncall_notifications.py
 
-Variables d'environnement: voir scripts/notification_config.py.
+Environment variables: see scripts/notification_config.py.
 """
 
 import logging

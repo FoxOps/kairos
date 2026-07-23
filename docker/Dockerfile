@@ -1,11 +1,11 @@
-# Dockerfile pour Kairos - build multi-stage optimisé (Alpine)
+# Dockerfile for Kairos - optimized multi-stage build (Alpine)
 
 # ============================================
-# Stage 1: Build - Installation des dépendances
+# Stage 1: Build - Install dependencies
 # ============================================
 FROM python:3.11-alpine AS builder
 
-# Configuration de base pour le build
+# Base build configuration
 ENV PYTHONFAULTHANDLER=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONHASHSEED=random \
@@ -15,8 +15,8 @@ ENV PYTHONFAULTHANDLER=1 \
 
 WORKDIR /app
 
-# Installer les dépendances de build pour Alpine
-# CORRECTION: Ajout de linux-headers et python3-dev pour psutil
+# Install build dependencies for Alpine
+# FIX: added linux-headers and python3-dev for psutil
 RUN apk add --no-cache --virtual .build-deps \
     gcc \
     musl-dev \
@@ -25,27 +25,28 @@ RUN apk add --no-cache --virtual .build-deps \
     linux-headers \
     python3-dev
 
-# Copier uniquement les fichiers nécessaires pour pip
+# Copy only the files needed for pip
 COPY docker/requirements.txt /tmp/requirements.txt
 
-# Met à jour pip lui-même avant d'installer les dépendances - la version
-# de pip pré-installée dans l'image de base traîne souvent derrière,
-# meilleur résolveur de dépendances et correctifs de sécurité à jour.
+# Upgrade pip itself before installing dependencies - the pip version
+# pre-installed in the base image is often behind, better dependency
+# resolver and up-to-date security fixes.
 RUN pip install --no-cache-dir --upgrade pip
 
-# Installer dans /install plutôt qu'avec --user (qui cible /root/.local -
-# illisible par un utilisateur non-root dans le stage runtime, /root reste
-# en mode 700 même si son contenu est chown). /usr/local/lib/python3.11/
-# site-packages est déjà dans le sys.path par défaut de l'image de base et
-# lisible par tous, donc /install est copié directement dessus plus bas.
+# Install into /install rather than with --user (which targets
+# /root/.local - unreadable by a non-root user in the runtime stage,
+# /root stays mode 700 even if its contents are chowned).
+# /usr/local/lib/python3.11/site-packages is already in the base image's
+# default sys.path and world-readable, so /install is copied straight
+# onto it further below.
 RUN pip install --no-cache-dir --prefix=/install -r /tmp/requirements.txt
 
 # ============================================
-# Stage 2: Runtime - Image finale légère
+# Stage 2: Runtime - lightweight final image
 # ============================================
 FROM python:3.11-alpine
 
-# Configuration de base
+# Base configuration
 ENV PYTHONFAULTHANDLER=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONHASHSEED=random \
@@ -54,51 +55,50 @@ ENV PYTHONFAULTHANDLER=1 \
     PORT=5000 \
     TZ=Europe/Paris
 
-# tzdata : sans ce paquet, Alpine tourne toujours en UTC quel que soit TZ -
-# crond (notifications par email, entrypoint.sh) a besoin du fuseau
-# horaire réel pour que "dimanche 9h"/"jeudi 9h" tombent effectivement
-# le bon jour/heure en heure de Paris, pas en UTC.
+# tzdata: without this package, Alpine always runs in UTC regardless of
+# TZ - crond (email notifications, entrypoint.sh) needs the real
+# timezone so "Sunday 9am"/"Thursday 9am" actually land on the right
+# day/time in Paris time, not UTC.
 RUN apk add --no-cache tzdata
 
-# Créer l'utilisateur non-root avec un UID/GID fixe
+# Create the non-root user with a fixed UID/GID
 RUN adduser -D -u 1000 -g 1000 appuser
 WORKDIR /app
 
-# Copier les dépendances depuis le stage builder directement dans
-# /usr/local (déjà dans le sys.path par défaut de l'image de base, déjà
-# lisible par tous - contrairement à /root/.local qui hérite du mode 700
-# de /root, illisible pour appuser même avec --chown sur le contenu copié).
+# Copy the dependencies from the builder stage directly into /usr/local
+# (already in the base image's default sys.path, already world-readable -
+# unlike /root/.local, which inherits /root's mode 700 and stays
+# unreadable to appuser even with --chown on the copied content).
 COPY --from=builder /install /usr/local
 
-# Créer les répertoires nécessaires avec les bonnes permissions
+# Create the necessary directories with the right permissions
 RUN mkdir -p /app/data /app/logs /app/instance && \
     chown 1000:1000 /app/data /app/logs /app/instance && \
     chmod 755 /app/data /app/logs /app/instance
 
-# Copier l'application (comme dans main, mais en excluant les fichiers inutiles)
+# Copy the application (as on main, but excluding unneeded files)
 COPY --chown=1000:1000 . .
 
-# Copier le script d'entrée
+# Copy the entrypoint script
 COPY --chown=1000:1000 docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Planning des notifications par email (crond, démarré conditionnellement
-# par entrypoint.sh selon NOTIFICATIONS_ENABLED) - déjà copié avec le
-# reste du dépôt via `COPY . .` ci-dessus. crond (busybox) exige que le
-# fichier crontab appartienne à l'utilisateur qui l'exécute et ne soit
-# pas accessible en écriture par d'autres, sans quoi il l'ignore
-# silencieusement.
+# Email notification schedule (crond, started conditionally by
+# entrypoint.sh based on NOTIFICATIONS_ENABLED) - already copied with
+# the rest of the repo via `COPY . .` above. crond (busybox) requires the
+# crontab file to be owned by the user that runs it and not writable by
+# others, otherwise it silently ignores it.
 RUN chmod 600 /app/docker/crontabs/appuser
 
-# Passer à l'utilisateur non-root
+# Switch to the non-root user
 USER appuser
 
-# Exposer le port
+# Expose the port
 EXPOSE 5000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD python -c "import requests; requests.get('http://localhost:5000/health', timeout=2)" || exit 1
 
-# Point d'entrée
+# Entrypoint
 ENTRYPOINT ["/entrypoint.sh"]

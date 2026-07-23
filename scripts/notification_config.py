@@ -1,24 +1,24 @@
 """
-Kairos - Configuration des notifications par email
+Kairos - Email notification configuration
 =============================================================
 
-Ce module contient la configuration pour l'envoi des notifications par
-email (rappels de shifts et d'astreintes). Suit le même pattern que
-scripts/backup_config.py (dataclass chargée depuis les variables
-d'environnement, utilisée par les scripts autonomes déclenchés via cron -
-pas de scheduler intégré à l'application Flask).
+This module holds the configuration for sending email notifications
+(shift and on-call reminders). Follows the same pattern as
+scripts/backup_config.py (dataclass loaded from environment variables,
+used by the standalone scripts triggered via cron - no scheduler built
+into the Flask app).
 
-Variables d'environnement disponibles:
-- NOTIFICATIONS_ENABLED: Activer/désactiver l'envoi des notifications (true/false)
-- NOTIFICATION_FROM_EMAIL: Adresse email de l'expéditeur
-- SMTP_HOST: Serveur SMTP
-- SMTP_PORT: Port SMTP (par défaut: 587)
-- SMTP_USERNAME: Nom d'utilisateur SMTP
-- SMTP_PASSWORD: Mot de passe SMTP
-- SMTP_USE_TLS: Utiliser TLS/STARTTLS (true/false)
-- SMTP_TIMEOUT: Délai d'attente de connexion SMTP en secondes (par défaut: 10)
-- NOTIFICATION_APP_BASE_URL: URL de base de l'application, pour le lien
-  "voir le planning" dans les emails (optionnel, pas de lien si absent)
+Available environment variables:
+- NOTIFICATIONS_ENABLED: Enable/disable sending notifications (true/false)
+- NOTIFICATION_FROM_EMAIL: Sender email address
+- SMTP_HOST: SMTP server
+- SMTP_PORT: SMTP port (default: 587)
+- SMTP_USERNAME: SMTP username
+- SMTP_PASSWORD: SMTP password
+- SMTP_USE_TLS: Use TLS/STARTTLS (true/false)
+- SMTP_TIMEOUT: SMTP connection timeout in seconds (default: 10)
+- NOTIFICATION_APP_BASE_URL: Base URL of the application, for the "view
+  schedule" link in emails (optional, no link if absent)
 """
 
 import os
@@ -27,7 +27,7 @@ from dataclasses import dataclass
 
 @dataclass
 class NotificationConfig:
-    """Configuration complète pour l'envoi des notifications par email."""
+    """Full configuration for sending email notifications."""
 
     enabled: bool = False
 
@@ -44,7 +44,7 @@ class NotificationConfig:
 
     @classmethod
     def from_env(cls) -> "NotificationConfig":
-        """Charge la configuration depuis les variables d'environnement."""
+        """Loads the configuration from environment variables."""
 
         def get_bool(env_var: str, default: bool = False) -> bool:
             value = os.environ.get(env_var, "").lower()
@@ -73,9 +73,9 @@ class NotificationConfig:
         )
 
     def is_configured(self) -> bool:
-        """True si assez d'informations sont réunies pour tenter un envoi."""
+        """True if enough information is available to attempt a send."""
         return bool(self.enabled and self.from_email and self.smtp_host)
 
 
-# Instance globale de configuration
+# Global configuration instance
 config = NotificationConfig.from_env()

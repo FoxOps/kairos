@@ -1,13 +1,13 @@
-"""Remplit mécaniquement les msgstr vides/fuzzy de fr.po avec le msgid.
+"""Mechanically fills fr.po's empty/fuzzy msgstr with the msgid.
 
-fr.po est la source française elle-même (msgid == texte affiché), donc ce
-remplissage n'est jamais une traduction à écrire à la main - contrairement à
-en.po. `pybabel update` ne copie jamais msgid dans msgstr automatiquement, et
-peut marquer une entrée "fuzzy" (mauvais rapprochement) sur une nouvelle
-chaîne courte ; ce script corrige les deux cas pour fr uniquement.
+fr.po is the French source itself (msgid == displayed text), so this
+fill is never a translation that needs writing by hand - unlike en.po.
+`pybabel update` never automatically copies msgid into msgstr, and can
+mark an entry "fuzzy" (bad match) on a new short string; this script
+fixes both cases for fr only.
 
-Appelé par `make babel-update`, jamais par `make babel-compile` (qui ne doit
-pas modifier les .po).
+Called by `make babel-update`, never by `make babel-compile` (which must
+not modify the .po files).
 """
 
 import sys
