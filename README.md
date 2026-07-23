@@ -9,6 +9,36 @@ Team shift scheduling, on-call rotations, and leave management - with ICS
 calendar export, SSO/OIDC, a public REST API, and a rotation engine that
 actually understands legal rest constraints.
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Docs/assets/screenshots/calendar-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="Docs/assets/screenshots/calendar-light.png">
+    <img src="Docs/assets/screenshots/calendar-light.png" alt="Monthly calendar view with shifts, on-call, and leave" width="820">
+  </picture>
+</p>
+
+<details>
+<summary>More screenshots (on-call list, admin settings)</summary>
+<br>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Docs/assets/screenshots/oncall-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="Docs/assets/screenshots/oncall-light.png">
+    <img src="Docs/assets/screenshots/oncall-light.png" alt="On-call rotation list" width="820">
+  </picture>
+</p>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Docs/assets/screenshots/admin-settings-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="Docs/assets/screenshots/admin-settings-light.png">
+    <img src="Docs/assets/screenshots/admin-settings-light.png" alt="Admin settings page (timezone, language, date format)" width="820">
+  </picture>
+</p>
+
+</details>
+
 ## Quick start (Docker)
 
 No need to clone the repo - two files are enough:
