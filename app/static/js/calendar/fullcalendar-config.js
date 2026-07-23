@@ -289,6 +289,21 @@ document.addEventListener('DOMContentLoaded', function () {
             center: 'title',
             right: 'dayGridMonth,timeGridWeek,timeGridDay'
         },
+        // v7 changed the Week view's default titleFormat to omit the day
+        // number entirely (month/year only, e.g. "juillet 2026") - with no
+        // day range shown, the title alone can no longer tell which week
+        // is displayed (confirmed against the official v6->v7 upgrade
+        // guide, and empirically: the title stayed identical across
+        // Prev/Next clicks within the same month). Restored via a
+        // view-specific override; FullCalendar formats the range through
+        // the standard Intl API (no more internal range-formatting logic
+        // in v7), so a single day-inclusive format here is enough to get
+        // a real "20 - 26 juillet 2026"-style range back.
+        views: {
+            timeGridWeek: {
+                titleFormat: { year: 'numeric', month: 'long', day: 'numeric' }
+            }
+        },
         // Render prev/next as icons instead of the spelled-out "Précédent"/
         // "Suivant" text - v7 dropped the old top-level buttonIcons option
         // (a small built-in icon font), so this is now done per-button via
