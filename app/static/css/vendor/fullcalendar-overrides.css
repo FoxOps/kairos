@@ -132,17 +132,12 @@
     background-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 10%, transparent);
 }
 
-/* FullCalendar doesn't paint its events with the usual CSS properties
-   (background-color/color) on the .fc-event element itself - the inner
-   elements that actually render the text (.fc-event-main, notably in
-   the Week/Day views) read their own --fc-event-bg-color/
-   --fc-event-border-color/--fc-event-text-color variables (default #fff
-   for the text, never read from a plain `color` rule on the container).
-   Hence the bug this caused: unreadable white text on a light background
-   in the dark theme (Week/Day views), while the Month view (different
-   background, different render path) looked fine. Overriding these
-   variables rather than the plain CSS properties is FullCalendar's
-   officially documented theming API. */
+/* FullCalendar reads its own --fc-event-bg-color/--fc-event-border-color/
+   --fc-event-text-color variables for event coloring rather than the
+   plain background-color/border-color/color properties - overriding
+   these variables (in addition to the plain properties, for the same
+   value, as defensive belt-and-suspenders) is FullCalendar's officially
+   documented theming API for event colors. */
 /* margin/padding/border-radius (not colors) also lost in v7 for the same
    reason - each event used to render as a small rounded, spaced-out pill
    by default; without a theme it's a flush, square block instead. Applied
@@ -154,6 +149,48 @@
     margin: 1px 3px;
     padding: 1px 4px;
     border-radius: 4px;
+}
+
+/* Event time + title regression: FullCalendar's default (theme-less)
+   event markup is just two bare, class-less <div>s (time, title) inside
+   one wrapper div - confirmed via a real DOM dump, neither carries any
+   class FullCalendar itself assigns, only the render-hook classNames a
+   theme would normally supply. That wrapper has no display set either
+   (skeleton.css doesn't touch it), so the two <div>s default-stack as
+   plain block content - one event per TWO lines (time, then title)
+   instead of v6's single "07:00 Pierre - Matin" line. Confirmed via
+   getComputedStyle (display: block on the wrapper) before writing this
+   fix - not assumed from the screenshot alone. Scoped via our own
+   className's direct child (:first-child guards against ever matching
+   a nested event, e.g. the shift-creation modal has no such nesting
+   today, but this is cheap insurance) since FullCalendar assigns no
+   class of its own to that wrapper to target instead.
+
+   flex-wrap is deliberately nowrap, not wrap: a long title (e.g. a long
+   user display name) would otherwise still wrap onto its own line
+   whenever time+title together don't fit the cell's width - recreating
+   the very "two lines" bug this rule exists to fix, just for longer
+   names instead of every name. Truncating the title with an ellipsis
+   below keeps every event a fixed single line regardless of name
+   length, and never grows the row height unexpectedly either. */
+.fc-event-shift > div:first-child,
+.fc-event-oncall > div:first-child,
+.fc-event-leave > div:first-child {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+    flex-wrap: nowrap;
+}
+
+/* The title is always the wrapper's last child (time is always first) -
+   shrinks and truncates first so the time never gets cut off instead. */
+.fc-event-shift > div:first-child > div:last-child,
+.fc-event-oncall > div:first-child > div:last-child,
+.fc-event-leave > div:first-child > div:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
 }
 
 .fc-event-shift {
