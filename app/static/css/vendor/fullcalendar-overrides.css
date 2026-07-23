@@ -43,7 +43,12 @@
     margin-bottom: 0.75rem;
 }
 
+/* The nav-button group (prev/next) is a grandchild with no distinguishing
+   attribute (unlike the view-switcher group, which has role="tablist") -
+   the extra `> div > div` selector reaches it structurally so prev/next
+   get the same gap as every other button group in the toolbar. */
 #calendar > div:first-child > div,
+#calendar > div:first-child > div > div,
 #calendar > div:first-child [role="tablist"] {
     display: flex;
     align-items: center;
