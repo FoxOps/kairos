@@ -52,7 +52,7 @@ automated tests), and used for real team scheduling.
 ## 🔧 In progress
 
 **1.0.0-rc3** — addressing feedback reported against `1.0.0-rc2`
-(tagged, see the `1.0.0-RC2` tag/release). Landed so far (PR #167-181):
+(tagged, see the `1.0.0-RC2` tag/release). Landed so far (PR #167-185):
 a guaranteed minimum 7am-3pm shift presence (previously a real gap
 could open on 7-9am/5-9pm with certain leave/availability combinations);
 minimal-perturbation on-call rebalancing (a leave no longer reshuffles
@@ -70,6 +70,34 @@ HTML linter (djlint) added to the test suite; a WCAG AA contrast fix
 for muted text in the light theme; and a couple of AI-slop-adjacent
 CSS cleanups (a decorative side-border, a dead layout-property
 transition) caught by a design audit pass.
+
+A documentation catch-up pass followed (PR #182-183): the README,
+THIRD_PARTY_NOTICES, API docs, FAQ, ADMIN_GUIDE and docker.md had
+drifted across PR #167-181 (a stale ±180-day window reference, a
+missing djLint license entry, an undocumented schedule-history-cleanup
+cron job), and 26 references to the repository's old name
+(`leviia-schedule`, renamed to `kairos`) were still sitting in `Docs/` —
+a few of them a literally broken `cd leviia-schedule` right after a
+`git clone` instruction.
+
+FullCalendar was then upgraded from 6.1.21 to 7.0.1 (PR #184-185). The
+previous blocker — a crash on 7.0.0, `Class constructor ... cannot be
+invoked without 'new'` — turned out to be a bug specific to jsDelivr's
+ESM transform endpoint (`/+esm`), not FullCalendar itself, and doesn't
+affect the plain `<script>`-tag global-bundle loading method this app
+already uses. The upgrade surfaced several real v7 breaking changes:
+`slotLabelFormat` silently renamed to `slotHeaderFormat`; the toolbar
+buttons, day/week grid lines, and event spacing/rounding all losing
+their default styling now that v7 ships a bare structural stylesheet
+with no visual theme bundled in (previously free in v6's self-injected
+CSS); the Week view's title losing its day-range; the current day no
+longer highlighted; and events rendering on two lines (time above
+title) instead of one. All restored via FullCalendar's stable contracts
+(ARIA roles/attributes, its own `<button>`/classNames) rather than its
+now-hashed internal classes — each fix verified against real
+`getComputedStyle` output, not just a screenshot, after a couple of
+early attempts turned out to be silently overridden by `skeleton.css`'s
+own `!important` reset utilities.
 
 The `1.0.0-rc1` production-readiness audit is done: dependency updates,
 dead-code removal, N+1/SQL query optimization, i18n completeness (French
