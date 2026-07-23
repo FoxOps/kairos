@@ -79,6 +79,19 @@ RUN mkdir -p /app/data /app/logs /app/instance && \
 # Copy the application (as on main, but excluding unneeded files)
 COPY --chown=1000:1000 . .
 
+# Compile translation catalogs (.po -> .mo). .mo is gitignored (build
+# artifact) and nothing else in this image generates it - without this
+# step, the image depends entirely on whatever happens to sit in the
+# local build context (.dockerignore doesn't exclude it either): a
+# missing .mo makes every string fall back to French (the source
+# language), a present-but-stale .mo (compiled before a newer translated
+# string was added) only has the older ones - a real bug observed in
+# production (/admin/settings partially in French despite an up-to-date
+# en.po in the built commit). Compiled here, after the COPY above, so
+# always from this commit's own .po files, never from the build
+# context's local disk state.
+RUN python -m babel.messages.frontend compile -d app/translations
+
 # Copy the entrypoint script
 COPY --chown=1000:1000 docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
