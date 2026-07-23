@@ -1,6 +1,6 @@
 # 📋 Refactoring Report - Phase 3: Frontend
 **Branch**: `refacto/phase3`
-**PR**: [#99](https://github.com/FoxOps/leviia-schedule/pull/99)
+**PR**: [#99](https://github.com/FoxOps/kairos/pull/99)
 **Start date**: 2026-07-11
 **Status**: 🟢 Complete
 **Base**: `main` (includes Phase 1 + Phase 2, PR #98 merged)

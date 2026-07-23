@@ -5334,10 +5334,6 @@ msgstr "The password must not contain your email address."
 #~ "First choose a colleague - leave empty for a simple give-away of your shift"
 
 #~ msgid ""
-#~ "Leviia Schedule - Gestion des plannings, astreintes et congés d'équipe."
-#~ msgstr "Leviia Schedule - Team shift, on-call, and leave management."
-
-#~ msgid ""
 #~ "Générer les astreintes. Les shifts seront automatiquement générés selon les "
 #~ "règles métiers."
 #~ msgstr ""

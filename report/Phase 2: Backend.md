@@ -1,6 +1,6 @@
 # 📋 Refactoring Report - Phase 2: Backend
 **Branch**: `vibe/refactor-backend-b1b247`
-**PR**: [#98](https://github.com/FoxOps/leviia-schedule/pull/98)
+**PR**: [#98](https://github.com/FoxOps/kairos/pull/98)
 **Start date**: 2025-07-02
 **Last updated**: 2026-07-11
 **Status**: 🟢🎉 **Phase 2 complete** — test suite green (504 tests passing, 7 intentional skips, **0 failures**), services/repositories architecture in place and wired into every route (main + admin + export), utils/ reorganized, legacy app/models.py removed
