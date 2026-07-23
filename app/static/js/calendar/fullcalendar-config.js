@@ -289,6 +289,29 @@ document.addEventListener('DOMContentLoaded', function () {
             center: 'title',
             right: 'dayGridMonth,timeGridWeek,timeGridDay'
         },
+        // Render prev/next as icons instead of the spelled-out "Précédent"/
+        // "Suivant" text - v7 dropped the old top-level buttonIcons option
+        // (a small built-in icon font), so this is now done per-button via
+        // `buttons` (the v7 rename of v6's customButtons; also used to
+        // override built-ins, not just add new ones). display:'icon' keeps
+        // rendering to iconContent only, but FullCalendar still derives the
+        // button's accessible name (aria-label) from its own localized
+        // buttonText/buttonHint default - not overridden here - since we
+        // only override how it's drawn, not its text/hint. Font Awesome's
+        // SVG+JS mode replaces this <i> with an inline <svg> after mount,
+        // same as every other icon in this app (see index.html's own
+        // fa-chevron-* usage elsewhere) - aria-hidden because the
+        // accessible name already lives on the <button> itself.
+        buttons: {
+            prev: {
+                display: 'icon',
+                iconContent: { html: '<i class="fas fa-chevron-left" aria-hidden="true"></i>' }
+            },
+            next: {
+                display: 'icon',
+                iconContent: { html: '<i class="fas fa-chevron-right" aria-hidden="true"></i>' }
+            }
+        },
         // Dynamic source (not a static embedded array): fetches
         // /api/shifts for exactly the range FullCalendar is currently
         // viewing, so navigating far into the past/future - e.g. a
