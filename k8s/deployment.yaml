@@ -22,14 +22,14 @@ spec:
       labels:
         app: kairos
         version: v1
-      # Pas d'annotations checksum/config-secret ici : ce manifest est
-      # appliqué tel quel via `kubectl apply -f k8s/` (voir .gitlab-ci.yml,
-      # job deploy_production), pas via Helm - la syntaxe `{{ include ... }}`
-      # qui existait avant n'était jamais interprétée, c'était du texte
-      # littéral dans l'annotation, donc le rolling restart automatique sur
-      # changement de ConfigMap/Secret ne s'est jamais produit. Si besoin,
-      # déclencher `kubectl rollout restart deployment/kairos -n
-      # kairos` explicitement en CI après un changement de config.
+      # No checksum/config-secret annotations here: this manifest is
+      # applied as-is via `kubectl apply -f k8s/` (see .gitlab-ci.yml,
+      # deploy_production job), not via Helm - the `{{ include ... }}`
+      # syntax that used to be here was never interpreted, it was literal
+      # text in the annotation, so the automatic rolling restart on
+      # ConfigMap/Secret change never actually happened. If needed,
+      # trigger `kubectl rollout restart deployment/kairos -n kairos`
+      # explicitly in CI after a config change.
     spec:
       securityContext:
         runAsNonRoot: true
@@ -37,10 +37,10 @@ spec:
         fsGroup: 1000
       containers:
       - name: kairos
-        # Placeholder remplacé en CI (voir .gitlab-ci.yml, job
-        # deploy_production) par $CI_REGISTRY_IMAGE:latest avant `kubectl
-        # apply` - l'image réellement poussée par build_docker. Pour un
-        # apply manuel hors CI, remplacer par le registre réel avant usage.
+        # Placeholder replaced in CI (see .gitlab-ci.yml, deploy_production
+        # job) with $CI_REGISTRY_IMAGE:latest before `kubectl apply` - the
+        # image actually pushed by build_docker. For a manual apply outside
+        # CI, replace with the real registry before use.
         image: your-registry/kairos:latest
         imagePullPolicy: Always
         ports:
@@ -98,6 +98,6 @@ spec:
         emptyDir: {}
       - name: instance
         emptyDir: {}
-      # Si vous utilisez un registry privé
+      # If you're using a private registry
       # imagePullSecrets:
       # - name: regcred

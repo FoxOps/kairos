@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
-Kairos - Envoi des rappels de shifts par email
+Kairos - Send the shift reminder emails
 =========================================================
 
-Envoie un email récapitulatif à chaque utilisateur ayant au moins un
-shift la semaine prochaine (lundi-vendredi). Un seul email par semaine
-et par utilisateur - voir app/services/notification_service.py pour la
-logique et NotificationLog pour la garde-fou anti-doublon.
+Sends a summary email to every user with at least one shift next week
+(Monday-Friday). One email per week per user - see
+app/services/notification_service.py for the logic and NotificationLog
+for the anti-duplicate guard.
 
-À exécuter chaque dimanche (24h avant le début des shifts du lundi) via
-cron - voir scripts/cron_example.sh pour un exemple d'entrée crontab.
-Ne fait rien si NOTIFICATIONS_ENABLED n'est pas activé.
+Run every Sunday (24h before Monday's shifts start) via cron - see
+scripts/cron_example.sh for a sample crontab entry. No-op if
+NOTIFICATIONS_ENABLED isn't set.
 
-Utilisation:
+Usage:
     python scripts/send_shift_notifications.py
 
-Variables d'environnement: voir scripts/notification_config.py.
+Environment variables: see scripts/notification_config.py.
 """
 
 import logging

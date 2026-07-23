@@ -1,5 +1,5 @@
 """
-Tests prioritaires pour auth.py.
+Priority tests for auth.py.
 """
 
 from werkzeug.security import generate_password_hash
@@ -9,7 +9,7 @@ from app.models import Group, User
 
 
 class TestRegisterRoute:
-    """Tests pour /register."""
+    """Tests for /register."""
 
     def test_register_get(self, client):
         """Test rendering the registration page."""

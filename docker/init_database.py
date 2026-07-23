@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Script d'initialisation de la base de données SQLite pour Kairos."""
+"""SQLite database initialization script for Kairos."""
 
 from app import app, db
 from app.models import Group, ShiftType, User
 from run import setup_database
 
-# Types de shifts par défaut
+# Default shift types
 DEFAULT_SHIFT_TYPES = [
     {"name": "morning", "label": "07h-15h", "start_hour": 7, "end_hour": 15},
     {"name": "afternoon", "label": "09h-17h", "start_hour": 9, "end_hour": 17},
@@ -14,23 +14,23 @@ DEFAULT_SHIFT_TYPES = [
 
 
 def main():
-    """Initialise la base de données avec les tables et données par défaut."""
+    """Initializes the database with the default tables and data."""
     with app.app_context():
         setup_database()
 
-        # Types de shifts par défaut
+        # Default shift types
         for st in DEFAULT_SHIFT_TYPES:
             if not ShiftType.query.filter_by(name=st["name"]).first():
                 db.session.add(ShiftType(**st))
 
-        # Groupe par défaut
+        # Default group
         if not Group.query.first():
             db.session.add(
                 Group(name="Defaut", is_part_of_schedule=True, is_part_of_oncall=True)
             )
             db.session.commit()
 
-        # Admin par défaut
+        # Default admin
         if not User.query.first():
             group = Group.query.first()
             admin = User(

@@ -3,18 +3,18 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    # KAIROS_IMAGE (dans docker/.env) pointe vers l'image du registry pour
-    # `docker compose up -d --no-build` (méthode recommandée, voir
-    # Docs/deployment/docker.md) ; par défaut, tag local utilisé par
-    # `docker compose build` (alternative dev, construction locale).
+    # KAIROS_IMAGE (in docker/.env) points to the registry image for
+    # `docker compose up -d --no-build` (recommended method, see
+    # Docs/deployment/docker.md); defaults to the local tag used by
+    # `docker compose build` (dev alternative, local build).
     image: ${KAIROS_IMAGE:-kairos:dev}
     container_name: kairos
     ports:
       - "5000:5000"
     user: "1000:1000"
-    # Tout passe par docker/.env (pas de bloc environment: ici) - voir
-    # Docs/deployment/docker.md pour les valeurs Docker-spécifiques à y
-    # mettre (DATABASE_URL, TALISMAN_FORCE_HTTPS, FLASK_ENV notamment).
+    # Everything goes through docker/.env (no environment: block here) -
+    # see Docs/deployment/docker.md for the Docker-specific values to put
+    # there (notably DATABASE_URL, TALISMAN_FORCE_HTTPS, FLASK_ENV).
     env_file:
       - ./.env
     volumes:
@@ -23,10 +23,10 @@ services:
     networks:
       - kairos-network
 
-  # Fournisseur OIDC de test, optionnel - démarré uniquement avec
-  # `docker compose --profile oidc-mock up -d` (dev/test du flux SSO en
-  # local, voir Docs/deployment/docker.md). Pas de dépendance depuis
-  # kairos : un `docker compose up -d` normal ne le démarre pas.
+  # Optional test OIDC provider - only started with
+  # `docker compose --profile oidc-mock up -d` (local dev/test of the SSO
+  # flow, see Docs/deployment/docker.md). No dependency from kairos: a
+  # normal `docker compose up -d` doesn't start it.
   oidc-mock:
     profiles:
       - oidc-mock

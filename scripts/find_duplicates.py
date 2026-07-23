@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Script pour trouver le code dupliqué dans le projet Kairos.
+Script to find duplicated code in the Kairos project.
 
 Usage:
     python scripts/find_duplicates.py [directory] [min_lines]
 
-Exemple:
+Example:
     python scripts/find_duplicates.py app 5
 """
 
@@ -18,11 +18,11 @@ from collections import defaultdict
 
 def find_duplicate_functions(directory, min_lines=5):
     """
-    Trouve les fonctions et méthodes dupliquées dans les fichiers Python.
+    Finds duplicated functions and methods in Python files.
 
     Args:
-        directory: Répertoire à analyser
-        min_lines: Nombre minimum de lignes pour considérer une fonction
+        directory: Directory to analyze
+        min_lines: Minimum number of lines to consider a function
 
     Returns:
         Dict: {hash: [(filepath, function_name, start_line, end_line), ...]}
@@ -30,7 +30,7 @@ def find_duplicate_functions(directory, min_lines=5):
     duplicates = defaultdict(list)
 
     for root, dirs, filenames in os.walk(directory):
-        # Ignorer les répertoires spéciaux
+        # Ignore special directories
         dirs[:] = [
             d
             for d in dirs
@@ -44,15 +44,15 @@ def find_duplicate_functions(directory, min_lines=5):
                     with open(filepath, encoding="utf-8") as f:
                         content = f.read()
 
-                    # Analyser avec AST
+                    # Parse with AST
                     tree = ast.parse(content)
 
-                    # Extraire les fonctions et classes
+                    # Extract functions and classes
                     for node in ast.walk(tree):
                         if isinstance(
                             node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
                         ):
-                            # Obtenir le code source de la fonction
+                            # Get the function's source code
                             try:
                                 start_line = node.lineno - 1
                                 end_line = (
@@ -61,14 +61,14 @@ def find_duplicate_functions(directory, min_lines=5):
                                     else node.lineno
                                 )
 
-                                # Lire les lignes de la fonction
+                                # Read the function's lines
                                 lines = content.split("\n")
                                 func_lines = lines[start_line:end_line]
 
-                                # Filtrer les fonctions trop courtes
+                                # Filter out functions that are too short
                                 if len(func_lines) >= min_lines:
                                     func_code = "\n".join(func_lines)
-                                    # Normaliser le code (enlever les commentaires, standardiser les espaces)
+                                    # Normalize the code (strip comments, standardize whitespace)
                                     normalized = normalize_code(func_code)
                                     # Not a security use (code-similarity
                                     # fingerprint, not a cryptographic
@@ -89,32 +89,32 @@ def find_duplicate_functions(directory, min_lines=5):
                                         }
                                     )
                             except Exception:
-                                # Ignorer les erreurs de parsing
+                                # Ignore parsing errors
                                 pass
                 except Exception as e:
                     print(
                         f"Erreur lors de l'analyse de {filepath}: {e}", file=sys.stderr
                     )
 
-    # Filtrer pour ne garder que les doublons
+    # Filter to keep only duplicates
     return {k: v for k, v in duplicates.items() if len(v) > 1}
 
 
 def normalize_code(code):
     """
-    Normalise le code pour une meilleure comparaison.
+    Normalizes code for better comparison.
     """
-    # Enlever les commentaires
+    # Strip comments
     lines = []
     for line in code.split("\n"):
-        # Enlever les commentaires inline
+        # Strip inline comments
         if "#" in line:
             line = line[: line.index("#")]
         lines.append(line.strip())
 
-    # Standardiser les espaces
+    # Standardize whitespace
     normalized = "\n".join(lines)
-    # Remplacer les espaces multiples par un seul
+    # Collapse multiple spaces into one
     normalized = " ".join(normalized.split())
 
     return normalized
@@ -122,7 +122,7 @@ def normalize_code(code):
 
 def find_duplicate_imports(directory):
     """
-    Trouve les imports dupliqués ou non utilisés.
+    Finds duplicated or unused imports.
     """
     import_counts = defaultdict(list)
 
@@ -155,16 +155,16 @@ def find_duplicate_imports(directory):
                 except Exception:
                     pass
 
-    # Filtrer les imports utilisés dans plusieurs fichiers
+    # Filter imports used in several files
     return {k: v for k, v in import_counts.items() if len(v) > 3}
 
 
 def find_similar_code(directory, min_tokens=10):
     """
-    Trouve le code similaire (pas exactement dupliqué) en utilisant des n-grammes.
+    Finds similar (not exactly duplicated) code using n-grams.
     """
 
-    # Dictionnaire pour stocker les n-grammes
+    # Dictionary to store the n-grams
     ngrams = defaultdict(list)
 
     for root, dirs, filenames in os.walk(directory):
@@ -179,45 +179,45 @@ def find_similar_code(directory, min_tokens=10):
                     with open(filepath, encoding="utf-8") as f:
                         content = f.read()
 
-                    # Extraire les tokens (mots clés, identifiants)
+                    # Extract tokens (keywords, identifiers)
                     tokens = extract_tokens(content)
 
-                    # Créer des n-grammes
+                    # Build n-grams
                     for i in range(len(tokens) - min_tokens + 1):
                         ngram = tuple(tokens[i : i + min_tokens])
                         ngrams[ngram].append(filepath)
                 except Exception:
                     pass
 
-    # Filtrer les n-grammes qui apparaissent dans plusieurs fichiers
+    # Filter n-grams that appear in several files
     return {k: v for k, v in ngrams.items() if len(set(v)) > 1}
 
 
 def extract_tokens(code):
     """
-    Extrait les tokens significatifs du code Python.
+    Extracts significant tokens from Python code.
     """
     import keyword
     import re
 
-    # Mots clés Python
+    # Python keywords
     python_keywords = set(keyword.kwlist)
 
-    # Diviser le code en tokens
+    # Split the code into tokens
     tokens = re.findall(
         r"[a-zA-Z_][a-zA-Z0-9_]*|[+\-*/%=<>!&|^~:,;()\[\]{}]|\.|@|\\", code
     )
 
-    # Filtrer les tokens significatifs
+    # Filter significant tokens
     significant_tokens = []
     for token in tokens:
         if token.strip() and not token.isspace():
-            # Garder les mots clés, identifiants et opérateurs
+            # Keep keywords, identifiers and operators
             if (
                 token in python_keywords
                 or token.isidentifier()
                 or token
-                in "+-*/%=<>!&|^~:,;()[]{}@."  # noqa: S105 - token de tokenizer Python, pas un secret
+                in "+-*/%=<>!&|^~:,;()[]{}@."  # noqa: S105 - Python tokenizer token, not a secret
             ):
                 significant_tokens.append(token)
 
@@ -226,7 +226,7 @@ def extract_tokens(code):
 
 def print_duplicates(duplicates):
     """
-    Affiche les doublons de manière lisible.
+    Prints duplicates in a readable way.
     """
     if not duplicates:
         print("✅ Aucun code dupliqué détecté.")
@@ -245,7 +245,7 @@ def print_duplicates(duplicates):
 
 def print_imports(imports):
     """
-    Affiche les imports dupliqués.
+    Prints duplicated imports.
     """
     if not imports:
         print("✅ Aucun import dupliqué détecté.")
@@ -255,7 +255,7 @@ def print_imports(imports):
 
     for import_name, files in sorted(imports.items()):
         print(f"  {import_name}: {len(files)} fichiers")
-        for filepath in files[:5]:  # Afficher max 5 fichiers
+        for filepath in files[:5]:  # Show at most 5 files
             print(f"    - {filepath}")
         if len(files) > 5:
             print(f"    ... et {len(files) - 5} autres")
@@ -264,7 +264,7 @@ def print_imports(imports):
 
 def main():
     """
-    Fonction principale.
+    Main function.
     """
     import argparse
 
@@ -300,7 +300,7 @@ def main():
     print("=" * 60)
     print()
 
-    # Vérifier que le répertoire existe
+    # Check the directory exists
     if not os.path.isdir(args.directory):
         print(
             f"❌ Erreur: Le répertoire '{args.directory}' n'existe pas.",
@@ -312,18 +312,18 @@ def main():
     print(f"📏 Taille minimum des fonctions: {args.min_lines} lignes")
     print()
 
-    # Trouver les fonctions dupliquées
+    # Find duplicated functions
     print("🔎 Recherche de fonctions dupliquées...")
     duplicates = find_duplicate_functions(args.directory, args.min_lines)
     print_duplicates(duplicates)
 
-    # Trouver les imports dupliqués
+    # Find duplicated imports
     if args.check_imports:
         print("🔎 Recherche d'imports dupliqués...")
         imports = find_duplicate_imports(args.directory)
         print_imports(imports)
 
-    # Trouver le code similaire
+    # Find similar code
     if args.check_similar:
         print("🔎 Recherche de code similaire (cela peut prendre du temps)...")
         similar = find_similar_code(args.directory)
@@ -331,7 +331,7 @@ def main():
             f"   Trouvé {len(similar)} séquences de code similaires dans plusieurs fichiers."
         )
 
-    # Résumé
+    # Summary
     print("=" * 60)
     print("📊 Résumé:")
     print(f"   - Fonctions dupliquées: {len(duplicates)}")
@@ -341,7 +341,7 @@ def main():
         print(f"   - Code similaire: {len(similar)}")
     print()
 
-    # Retourner un code de sortie
+    # Return an exit code
     if duplicates:
         sys.exit(1)
     else:

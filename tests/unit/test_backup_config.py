@@ -1,6 +1,6 @@
 """
-Tests pour scripts/backup_config.py (chargement de la config sauvegardes
-depuis les variables d'environnement).
+Tests for scripts/backup_config.py (loading the backup config from
+environment variables).
 """
 
 import os

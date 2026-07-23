@@ -1,5 +1,5 @@
 """
-Tests pour app/services/notification_service.py.
+Tests for app/services/notification_service.py.
 """
 
 from datetime import date, datetime, timedelta

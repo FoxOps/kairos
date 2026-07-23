@@ -6,43 +6,43 @@ metadata:
   labels:
     app: kairos
   annotations:
-    # Annotations pour le contrôleur Ingress
-    # Exemple pour Nginx Ingress Controller
+    # Annotations for the Ingress controller
+    # Example for Nginx Ingress Controller
     nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/proxy-body-size: "16m"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
-    
-    # Pour activer HTTPS (nécessite cert-manager)
+
+    # To enable HTTPS (requires cert-manager)
     # cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    
-    # Pour Traefik
+
+    # For Traefik
     # traefik.ingress.kubernetes.io/router.entrypoints: websecure
     # traefik.ingress.kubernetes.io/router.tls: "true"
-    
-    # Pour HAProxy
+
+    # For HAProxy
     # haproxy.org/ssl-passthrough: "true"
     # haproxy.org/backend-config-snippet: |
     #   timeout server 600s
-    
-    # Pour AWS ALB
+
+    # For AWS ALB
     # alb.ingress.kubernetes.io/scheme: internet-facing
     # alb.ingress.kubernetes.io/target-type: ip
     # alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
     # alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
-    
-    # Redirection HTTP vers HTTPS
+
+    # Redirect HTTP to HTTPS
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    
-    # Configuration CORS
+
+    # CORS configuration
     nginx.ingress.kubernetes.io/enable-cors: "true"
     nginx.ingress.kubernetes.io/cors-allow-origin: "*"
     nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
     nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
     nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
-    
-    # Configuration de la sécurité
+
+    # Security configuration
     nginx.ingress.kubernetes.io/configuration-snippet: |
       add_header X-Frame-Options "SAMEORIGIN" always;
       add_header X-Content-Type-Options "nosniff" always;
@@ -63,15 +63,15 @@ spec:
             name: kairos
             port:
               number: 80
-  
-  # Configuration TLS (décommenter si vous avez des certificats)
+
+  # TLS configuration (uncomment if you have certificates)
   # tls:
   # - hosts:
   #   - schedule.yourdomain.com
   #   secretName: kairos-tls
 
 ---
-# Ingress pour l'API (optionnel, si vous voulez séparer l'API)
+# Ingress for the API (optional, if you want to separate the API)
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

@@ -58,6 +58,6 @@ known-first-party = ["app", "tests"]
 # already has to be on PATH for this to be a working checkout at all.
 "scripts/*" = ["T201", "S310", "S324", "S110", "S607"]
 "docker/init_database.py" = ["T201"]
-# Script manuel (`python tests/manual_test_theme.py`), pas collecté par
-# pytest (nom ne matche pas test_*.py) - print() est voulu.
+# Manual script (`python tests/manual_test_theme.py`), not collected by
+# pytest (name doesn't match test_*.py) - print() is intentional.
 "tests/manual_test_theme.py" = ["T201"]
