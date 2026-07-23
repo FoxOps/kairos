@@ -10,20 +10,25 @@
  * whatever range FullCalendar is currently viewing - not capped by a fixed
  * window baked in at page load.
  *
- * FullCalendar stays on 6.1.21 (no bump to 7.0.0) and is loaded from
- * jsDelivr rather than cdnjs - two independent findings from real-browser
- * testing:
- *   1. cdnjs hosts neither the internal chunks nor the locale files for any
- *      version of this package that was tried (consistent 404s);
- *   2. FullCalendar 7.0.0 throws a real runtime error outside its own
- *      official build pipeline ("Class constructor ... cannot be invoked
- *      without 'new'", thrown from FullCalendar's own compiled code on the
- *      first Preact render - reproduced identically via jsDelivr AND via
- *      esm.sh, which normally rebuilds packages with their dependencies
- *      already resolved - so this is not a CDN-hosting issue but a bug in
- *      this package under this consumption mode, outside the reach of any
- *      CDN-side workaround). Stays on the last stable 6.x release, loaded
- *      from a CDN instead of being vendored locally like the rest of the app.
+ * FullCalendar 7.0.1, loaded from jsDelivr rather than cdnjs (cdnjs hosts
+ * neither the internal chunks nor the locale files for any version of this
+ * package that was tried - consistent 404s).
+ *
+ * History: 7.0.0 was attempted twice before and reverted both times -
+ * "Class constructor ... cannot be invoked without 'new'", thrown from
+ * FullCalendar's own compiled code on the first Preact render. Root-caused
+ * (see fullcalendar/fullcalendar#7472/#7474 upstream) to jsDelivr's `/+esm`
+ * transform endpoint specifically (a Rollup+Terser build/dedup bug on
+ * jsDelivr's side, not FullCalendar's) - every prior attempt here loaded it
+ * via an ESM import path (plain jsDelivr ESM imports, esm.sh) that goes
+ * through that exact endpoint. v7 also still ships a single-file global
+ * bundle (`all/global.min.js`, a plain non-module <script>, see index.html)
+ * that never touches `/+esm` - confirmed working in a real browser (no
+ * console errors, correct rendering, French locale, drag & drop) before
+ * this upgrade landed. Still worth re-testing after any future FullCalendar
+ * bump: this endpoint-specific root cause is fixed by construction for the
+ * global-bundle loading path, but re-verify rather than assume if the
+ * loading method ever changes.
  */
 import {
     announceToScreenReader,
@@ -332,7 +337,10 @@ document.addEventListener('DOMContentLoaded', function () {
             minute: '2-digit',
             hour12: hour12
         },
-        slotLabelFormat: {
+        // v7 renamed slotLabelFormat -> slotHeaderFormat (confirmed against
+        // the official v6->v7 upgrade guide; the old name is silently
+        // ignored, only logging a console warning, not an error).
+        slotHeaderFormat: {
             hour: '2-digit',
             minute: '2-digit',
             hour12: hour12

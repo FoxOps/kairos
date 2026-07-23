@@ -3,7 +3,13 @@
 {% block title %}Kairos - {{ _("Accueil") }}{% endblock %}
 
 {% block extra_css %}
-<!-- FullCalendar - its CSS is bundled into its JS, no separate CSS file -->
+<!-- FullCalendar 7: unlike 6.x, ships a real stylesheet (skeleton.css -
+     bare structural layout, no colors) instead of self-injecting via
+     JS. Deliberately not one of the bundled themes/*/theme.css
+     (breezy, classic...) - this app applies its own daisyUI-driven
+     look via fullcalendar-overrides.css on top of the skeleton, same
+     "no canned theme" approach already used for daisyUI itself. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@7.0.1/skeleton.css">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/vendor/fullcalendar-overrides.css') }}">
 {% endblock %}
 
@@ -138,11 +144,13 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- FullCalendar 6.1.21 - loaded from jsDelivr (cdnjs doesn't host this
+<!-- FullCalendar 7 - loaded from jsDelivr (cdnjs doesn't host this
      package's locale files); see the comment at the top of
-     fullcalendar-config.js for the full detail, including why the
-     version stays on 6.x. -->
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.21/index.global.min.js'></script>
-<script src='https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.21/locales/fr.global.min.js'></script>
+     fullcalendar-config.js for the version-history detail. Single
+     "all/global.min.js" bundle now (v7 merged the previously separate
+     @fullcalendar/core + daygrid + timegrid + interaction packages
+     into one), so no separate core-vs-plugin script tags anymore. -->
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@7.0.1/all/global.min.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@7.0.1/locales/fr/global.min.js'></script>
 <script type="module" src="{{ url_for('static', filename='js/calendar/fullcalendar-config.js') }}"></script>
 {% endblock %}
