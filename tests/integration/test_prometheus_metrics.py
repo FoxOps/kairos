@@ -96,3 +96,43 @@ class TestSystemMetricsUpdate:
         with prometheus_app.app_context():
             # Must never raise, even if psutil fails (broad try/except on the source side).
             _update_system_metrics()
+
+
+class TestRealAppFactoryWithPrometheusEnabled:
+    """Regression test for a real production bug: init_prometheus() ended
+    with `current_app.logger.info(...)`, called synchronously from inside
+    create_app() itself - no app/request context is pushed at that point,
+    so `current_app` raised `RuntimeError: Working outside of application
+    context`, crashing create_app() (and therefore the whole app, not just
+    /metrics) whenever PROMETHEUS_ENABLED was true. Every other test in
+    this file calls init_prometheus() from inside a manually-pushed
+    `with app.app_context():` block (see the prometheus_app fixture above),
+    which masked this exact bug - the same masking pattern already flagged
+    once before for this file, see test_config.py::test_prometheus_enabled_reads_env.
+    This test goes through create_app() for real, with the env var actually
+    set, the only way to reproduce it."""
+
+    def test_create_app_does_not_crash_with_prometheus_enabled(self, monkeypatch):
+        # TestingConfig doesn't override PROMETHEUS_ENABLED - it inherits
+        # Config's class-level `get_bool_from_env(...)` default, baked in
+        # at module-import time. monkeypatch.setenv alone wouldn't affect
+        # an already-imported class, so the class attribute itself is
+        # patched directly instead (simpler than test_config.py's
+        # del sys.modules dance, and patches exactly what create_app()
+        # actually reads via app.config.from_object()).
+        from app.config.testing import TestingConfig
+
+        monkeypatch.setattr(TestingConfig, "PROMETHEUS_ENABLED", True)
+        app = create_app("app.config.TestingConfig")
+
+        with app.app_context():
+            db.drop_all()
+            db.create_all()
+
+            client = app.test_client()
+            resp = client.get("/metrics")
+            assert resp.status_code == 200
+            assert "kairos_shifts_total" in resp.data.decode("utf-8")
+
+            db.session.rollback()
+            db.drop_all()
