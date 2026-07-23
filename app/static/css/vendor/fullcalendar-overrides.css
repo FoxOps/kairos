@@ -110,10 +110,17 @@
     overflow: hidden;
 }
 
+/* Same !important requirement as the borders above, same reason: these
+   elements also carry skeleton.css's own `.fc-np` utility class
+   (`padding: 0 !important`) - confirmed via getComputedStyle showing a
+   real 0px padding despite this rule looking correct without !important
+   first. Without it, header/day-number text sits flush against the left
+   edge, colliding with the outer grid's own rounded corner (worst on
+   Monday's abbreviated label). */
 #calendar [role="columnheader"] {
     border-bottom: 1px solid var(--border-secondary) !important;
     border-inline-end: 1px solid var(--border-secondary) !important;
-    padding: 0.35rem 0;
+    padding: 0.35rem 0.5rem !important;
     font-weight: 600;
 }
 
@@ -121,6 +128,7 @@
 #calendar [role="rowheader"] {
     border-bottom: 1px solid var(--border-secondary) !important;
     border-inline-end: 1px solid var(--border-secondary) !important;
+    padding: 0.35rem 0.5rem !important;
 }
 
 /* "Today" highlight: v7 marks the current day's cell/column-header with
