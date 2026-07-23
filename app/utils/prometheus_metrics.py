@@ -230,4 +230,4 @@ def init_prometheus(app):
     _update_business_metrics()
     _update_system_metrics()
 
-    current_app.logger.info("Prometheus metrics initialized")
+    app.logger.info("Prometheus metrics initialized")

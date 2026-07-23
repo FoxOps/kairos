@@ -150,8 +150,9 @@ CSP_POLICY = {
     # rather than vendored locally.
     # cdn.jsdelivr.net: FullCalendar, plus Vanilla Calendar Pro (the
     # date/datetime-local picker - see date-picker.js and
-    # vanilla-calendar-overrides.css). Vanilla Calendar Pro ships its own
-    # layout stylesheet, so unlike FullCalendar it also needs style-src.
+    # vanilla-calendar-overrides.css). Both ship their own stylesheet
+    # (FullCalendar's skeleton.css since v7; previously bundled into its
+    # JS on 6.x), so both need style-src too, not just script-src.
     "script-src": f"'self' {CDNJS_HOST} {JSDELIVR_HOST}",
     "script-src-attr": "'unsafe-inline'",
     "style-src": f"'self' 'unsafe-inline' {CDNJS_HOST} {JSDELIVR_HOST}",

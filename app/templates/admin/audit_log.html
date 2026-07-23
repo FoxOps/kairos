@@ -68,9 +68,9 @@
             </button>
         </form>
         {% if audit_log_retention_days %}
-        <span class="text-sm text-base-content/60 self-center">{{ _("Rétention actuelle : %(days)s jour(s)", days=audit_log_retention_days) }}</span>
+        <span class="text-sm text-base-content/70 self-center">{{ _("Rétention actuelle : %(days)s jour(s)", days=audit_log_retention_days) }}</span>
         {% else %}
-        <span class="text-sm text-base-content/60 self-center">
+        <span class="text-sm text-base-content/70 self-center">
             {{ _("Aucune rétention configurée -") }}
             <a class="link" href="{{ url_for('admin.settings_dashboard') }}">{{ _("réglez-la dans les paramètres") }}</a>
             {{ _("pour pouvoir purger.") }}
@@ -102,7 +102,7 @@
                         {% if entry.resource_type %}
                         {{ entry.resource_type }}{% if entry.resource_id %} #{{ entry.resource_id }}{% endif %}
                         {% else %}
-                        &mdash;
+                        —
                         {% endif %}
                     </td>
                     <td>{{ entry.details or "—" }}</td>
@@ -129,12 +129,12 @@
                 <i class="fas fa-chevron-right" aria-hidden="true"></i>
             </a>
         </nav>
-        <small class="text-base-content/60 whitespace-nowrap">
+        <small class="text-base-content/70 whitespace-nowrap">
             {{ entries.items|length }} / {{ entries.total }} {{ _("entrées") }}
         </small>
     </div>
     {% else %}
-    <p class="text-base-content/60">{{ _("Aucune entrée d'historique ne correspond à ces filtres.") }}</p>
+    <p class="text-base-content/70">{{ _("Aucune entrée d'historique ne correspond à ces filtres.") }}</p>
     {% endif %}
 </section>
 {% endblock %}

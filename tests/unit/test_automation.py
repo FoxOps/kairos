@@ -237,8 +237,10 @@ class TestFullScheduleGeneration:
             # AdvancedShiftAutomation.generate_full_schedule only
             # generates shifts (business days); on-calls are generated
             # separately by OnCallAutomation.generate_oncall_schedule.
-            shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
-                start_date, end_date, dry_run=True
+            shifts, messages, _unfilled_shifts = (
+                AdvancedShiftAutomation.generate_full_schedule(
+                    start_date, end_date, dry_run=True
+                )
             )
 
             assert len(shifts) > 0
@@ -432,6 +434,151 @@ class TestOnCallMaxFillSearch:
 
             assert len(unfilled_dates) >= 1
             assert len(oncalls) + len(unfilled_dates) == 4
+
+
+class TestCaptureExistingAssignments:
+    """OnCallAutomation.capture_existing_assignments() - the read
+    called *before* a rebalance/regenerate wipes a period, so its
+    result can be fed back as generate_oncall_schedule()'s
+    preferred_assignments (minimal-perturbation, see
+    TestMinimalPerturbation below)."""
+
+    def test_captures_by_friday(self, test_app, test_group, test_user, second_user):
+        with test_app.app_context():
+            start = datetime(2026, 1, 2, 21, 0)  # a Friday
+            end = start + timedelta(days=7, hours=-14)
+            oncall = OnCall(user_id=test_user.id, start_time=start, end_time=end)
+            db.session.add(oncall)
+            db.session.commit()
+
+            result = OnCallAutomation.capture_existing_assignments(
+                date(2026, 1, 1), date(2026, 1, 9)
+            )
+
+            assert result == {date(2026, 1, 2): test_user.id}
+
+    def test_captures_every_user_no_exclusion(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Deliberately no way to exclude a specific user - see the
+        method's own docstring for why a leave rebalance must not
+        pre-exclude the leave user (it would also drop their other,
+        unrelated weeks in the same window; has_leave_conflict()
+        already filters the actually-conflicting week precisely)."""
+        with test_app.app_context():
+            start1 = datetime(2026, 1, 2, 21, 0)  # a Friday
+            end1 = start1 + timedelta(days=7, hours=-14)
+            start2 = start1 + timedelta(days=28)  # 4 weeks later
+            end2 = start2 + timedelta(days=7, hours=-14)
+            db.session.add(
+                OnCall(user_id=test_user.id, start_time=start1, end_time=end1)
+            )
+            db.session.add(
+                OnCall(user_id=test_user.id, start_time=start2, end_time=end2)
+            )
+            db.session.commit()
+
+            result = OnCallAutomation.capture_existing_assignments(
+                date(2026, 1, 1), date(2026, 2, 1)
+            )
+
+            assert result == {
+                date(2026, 1, 2): test_user.id,
+                date(2026, 1, 30): test_user.id,
+            }
+
+    def test_empty_range_returns_empty_dict(self, test_app, test_group):
+        with test_app.app_context():
+            assert (
+                OnCallAutomation.capture_existing_assignments(
+                    date(2026, 1, 1), date(2026, 1, 9)
+                )
+                == {}
+            )
+
+
+class TestMinimalPerturbation:
+    """generate_oncall_schedule()'s preferred_assignments parameter -
+    real user report: the automatic rebalance after a leave (and
+    "Rafraîchir > Régénérer entièrement") reshuffled weeks that didn't
+    need to change, needlessly drifting the rotation over many
+    successive rebalances. preferred_assignments lets the search prefer
+    each week's already-assigned user over blindly replaying the
+    rotation order, minimizing how much of an already-working schedule
+    gets reshuffled on each rebalance."""
+
+    def test_prefers_existing_assignment_when_still_eligible(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Rotation order is [test_user, second_user] - a plain
+        rotation would put test_user on the first Friday. With
+        second_user preferred for that week (and no conflict), the
+        search must keep second_user instead."""
+        with test_app.app_context():
+            start_date = date(2024, 1, 5)  # Friday
+            end_date = date(2024, 1, 5)
+            rotation_order = [test_user.id, second_user.id]
+
+            oncalls, _messages, unfilled = OnCallAutomation.generate_oncall_schedule(
+                start_date,
+                end_date,
+                rotation_order,
+                dry_run=True,
+                preferred_assignments={start_date: second_user.id},
+            )
+
+            assert unfilled == []
+            assert len(oncalls) == 1
+            assert oncalls[0].user_id == second_user.id
+
+    def test_preferred_user_with_real_conflict_falls_back_normally(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """The preferred user isn't special-cased around conflict
+        filtering - if they're on leave that exact week, they're
+        filtered out like any other candidate and the search falls
+        back to whoever else is actually eligible."""
+        with test_app.app_context():
+            start_date = date(2024, 1, 5)  # Friday
+            end_date = date(2024, 1, 5)
+            rotation_order = [test_user.id, second_user.id]
+
+            leave = Leave(
+                user_id=second_user.id,
+                start_date=start_date,
+                end_date=start_date + timedelta(days=6),
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            oncalls, _messages, unfilled = OnCallAutomation.generate_oncall_schedule(
+                start_date,
+                end_date,
+                rotation_order,
+                dry_run=True,
+                preferred_assignments={start_date: second_user.id},
+            )
+
+            assert unfilled == []
+            assert len(oncalls) == 1
+            assert oncalls[0].user_id == test_user.id
+
+    def test_none_preserves_current_behavior(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Default (no preferred_assignments) must behave exactly like
+        before this feature - plain rotation order, no special casing."""
+        with test_app.app_context():
+            start_date = date(2024, 1, 5)  # Friday
+            end_date = date(2024, 1, 5)
+            rotation_order = [test_user.id, second_user.id]
+
+            oncalls, _messages, unfilled = OnCallAutomation.generate_oncall_schedule(
+                start_date, end_date, rotation_order, dry_run=True
+            )
+
+            assert unfilled == []
+            assert oncalls[0].user_id == test_user.id
 
 
 class TestFillOnCallGaps:

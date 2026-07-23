@@ -7,7 +7,7 @@ from flask import abort, flash, redirect, render_template, request, url_for
 from flask_babel import gettext as _
 
 from app import db
-from app.auth.decorators import admin_required
+from app.auth.decorators import admin_required, handle_form_errors
 from app.repositories.shift_repository import ShiftTypeRepository
 from app.routes.admin import admin_bp
 from app.services import ShiftTypeService
@@ -22,6 +22,7 @@ def list_shift_types():
 
 @admin_bp.route("/admin/shift-types/add", methods=["GET", "POST"])
 @admin_required
+@handle_form_errors
 def add_shift_type():
     if request.method == "POST":
         name = request.form.get("name", "").strip()
@@ -37,25 +38,24 @@ def add_shift_type():
             shift_type, error = ShiftTypeService.create(
                 name, label, int(start_hour), int(end_hour)
             )
-            if error:
-                flash(error, "danger")
-                return redirect(url_for("admin.add_shift_type"))
-
-            flash(_("Type de shift ajouté avec succès !"), "success")
-            return redirect(url_for("admin.list_shift_types"))
         except ValueError:
             db.session.rollback()
             flash(_("Les heures doivent être des nombres entiers."), "danger")
             return redirect(url_for("admin.add_shift_type"))
-        except Exception as e:
-            db.session.rollback()
-            flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
+
+        if error:
+            flash(error, "danger")
+            return redirect(url_for("admin.add_shift_type"))
+
+        flash(_("Type de shift ajouté avec succès !"), "success")
+        return redirect(url_for("admin.list_shift_types"))
 
     return render_template("admin/add_shift_type.html")
 
 
 @admin_bp.route("/admin/shift-types/edit/<int:shift_type_id>", methods=["GET", "POST"])
 @admin_required
+@handle_form_errors
 def edit_shift_type(shift_type_id):
     shift_type = ShiftTypeRepository.get_by_id(shift_type_id) or abort(404)
 
@@ -75,23 +75,21 @@ def edit_shift_type(shift_type_id):
             updated, error = ShiftTypeService.update(
                 shift_type_id, name, label, int(start_hour), int(end_hour)
             )
-            if error:
-                flash(error, "danger")
-                return redirect(
-                    url_for("admin.edit_shift_type", shift_type_id=shift_type_id)
-                )
-
-            flash(_("Type de shift modifié avec succès !"), "success")
-            return redirect(url_for("admin.list_shift_types"))
         except ValueError:
             db.session.rollback()
             flash(_("Les heures doivent être des nombres entiers."), "danger")
             return redirect(
                 url_for("admin.edit_shift_type", shift_type_id=shift_type_id)
             )
-        except Exception as e:
-            db.session.rollback()
-            flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
+
+        if error:
+            flash(error, "danger")
+            return redirect(
+                url_for("admin.edit_shift_type", shift_type_id=shift_type_id)
+            )
+
+        flash(_("Type de shift modifié avec succès !"), "success")
+        return redirect(url_for("admin.list_shift_types"))
 
     return render_template("admin/edit_shift_type.html", shift_type=shift_type)
 

@@ -46,7 +46,7 @@
         <div class="lg:col-span-3 card card-sm bg-base-100 shadow-md" role="region" aria-labelledby="shift-types-title">
             <div class="card-body p-3 md:p-4">
                 <h2 id="shift-types-title" class="text-lg font-semibold"><i class="fas fa-chart-bar" aria-hidden="true"></i> {{ _("Répartition par type de shift") }}</h2>
-                <p class="text-sm text-base-content/60">{{ _("Nombre de shifts par créneau horaire (ex: 07h-15h, 09h-17h, 13h-21h)") }}</p>
+                <p class="text-sm text-base-content/70">{{ _("Nombre de shifts par créneau horaire (ex: 07h-15h, 09h-17h, 13h-21h)") }}</p>
                 <div class="chart-container" role="img" aria-label="{{ _("Graphique à barres de la répartition des types de shifts") }}">
                     {% for stat in shift_types_stats %}
                     {% set max_count = shift_types_stats|map(attribute='count')|max %}
@@ -86,7 +86,7 @@
                         {% endfor %}
                     </ul>
                 {% else %}
-                    <div class="text-center py-8 text-base-content/50" role="status" aria-live="polite">
+                    <div class="text-center py-8 text-base-content/70" role="status" aria-live="polite">
                         <i class="fas fa-calendar-times text-3xl opacity-50 mb-2" aria-hidden="true"></i>
                         <p>{{ _("Aucun shift à venir") }}</p>
                     </div>
@@ -106,13 +106,13 @@
                                     <strong>{{ oncall.start_time|date_fr }}</strong>
                                     {{ _("de %(start)s à %(end)s", start=oncall.start_time|format_time, end=oncall.end_time|format_time) }}
                                 </p>
-                                <p class="text-base-content/60">{{ _("Astreinte programmée") }}</p>
+                                <p class="text-base-content/70">{{ _("Astreinte programmée") }}</p>
                             </div>
                         </li>
                         {% endfor %}
                     </ul>
                 {% else %}
-                    <div class="text-center py-8 text-base-content/50" role="status" aria-live="polite">
+                    <div class="text-center py-8 text-base-content/70" role="status" aria-live="polite">
                         <i class="fas fa-moon text-3xl opacity-50 mb-2" aria-hidden="true"></i>
                         <p>{{ _("Aucune astreinte à venir") }}</p>
                     </div>
@@ -132,7 +132,7 @@
                                     <strong>{{ _("Du %(start)s", start=leave.start_date|format_date) }}</strong>
                                     {{ _("au %(end)s", end=leave.end_date|format_date) }}
                                 </p>
-                                <p class="text-base-content/60">
+                                <p class="text-base-content/70">
                                     {{ _("%(days)s jour(s)", days=(leave.end_date - leave.start_date).days + 1) }}
                                 </p>
                             </div>
@@ -140,7 +140,7 @@
                         {% endfor %}
                     </ul>
                 {% else %}
-                    <div class="text-center py-8 text-base-content/50" role="status" aria-live="polite">
+                    <div class="text-center py-8 text-base-content/70" role="status" aria-live="polite">
                         <i class="fas fa-umbrella-beach text-3xl opacity-50 mb-2" aria-hidden="true"></i>
                         <p>{{ _("Aucun congé à venir") }}</p>
                     </div>
@@ -170,7 +170,7 @@
                         {% endfor %}
                     </ul>
                 {% else %}
-                    <div class="text-center py-8 text-base-content/50" role="status" aria-live="polite">
+                    <div class="text-center py-8 text-base-content/70" role="status" aria-live="polite">
                         <i class="fas fa-history text-3xl opacity-50 mb-2" aria-hidden="true"></i>
                         <p>{{ _("Aucun shift récent") }}</p>
                     </div>

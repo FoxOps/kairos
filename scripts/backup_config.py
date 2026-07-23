@@ -1,28 +1,28 @@
 """
-Kairos - Configuration de sauvegarde
+Kairos - Backup configuration
 ==============================================
 
-Ce module contient la configuration pour les sauvegardes de la base de données.
-Les paramètres peuvent être définis via des variables d'environnement ou modifiés directement.
+This module holds the configuration for database backups.
+Settings can be set via environment variables or edited directly.
 
-Variables d'environnement disponibles:
-- BACKUP_ENABLED: Activer/désactiver les sauvegardes (true/false, défaut: false)
-- BACKUP_LOCAL_ENABLED: Activer la sauvegarde locale (true/false)
-- BACKUP_S3_ENABLED: Activer la sauvegarde S3 (true/false)
-- BACKUP_LOCAL_DIR: Dossier de sauvegarde local (par défaut: backups/)
-- BACKUP_S3_BUCKET: Nom du bucket S3
-- BACKUP_S3_ENDPOINT: Endpoint S3 (pour S3-compatible comme MinIO)
-- BACKUP_S3_REGION: Région S3
-- BACKUP_S3_ACCESS_KEY: Clé d'accès S3
-- BACKUP_S3_SECRET_KEY: Clé secrète S3
-- BACKUP_S3_PREFIX: Préfixe pour les fichiers dans le bucket
-- BACKUP_RETENTION_DAYS: Nombre de jours à conserver les sauvegardes
-- BACKUP_COMPRESS: Compresser les sauvegardes (true/false)
-- BACKUP_NOTIFY_ON_SUCCESS: Envoyer un email en cas de succès (true/false)
-- BACKUP_NOTIFY_ON_FAILURE: Envoyer un email en cas d'échec (true/false)
-- BACKUP_NOTIFICATION_EMAIL: Adresse email destinataire des alertes de
-  sauvegarde (réutilise la configuration SMTP des notifications - voir
-  scripts/notification_config.py - donc aussi soumis à
+Available environment variables:
+- BACKUP_ENABLED: Enable/disable backups (true/false, default: false)
+- BACKUP_LOCAL_ENABLED: Enable the local backup (true/false)
+- BACKUP_S3_ENABLED: Enable the S3 backup (true/false)
+- BACKUP_LOCAL_DIR: Local backup directory (default: backups/)
+- BACKUP_S3_BUCKET: S3 bucket name
+- BACKUP_S3_ENDPOINT: S3 endpoint (for S3-compatible services like MinIO)
+- BACKUP_S3_REGION: S3 region
+- BACKUP_S3_ACCESS_KEY: S3 access key
+- BACKUP_S3_SECRET_KEY: S3 secret key
+- BACKUP_S3_PREFIX: Prefix for files in the bucket
+- BACKUP_RETENTION_DAYS: Number of days to keep backups
+- BACKUP_COMPRESS: Compress backups (true/false)
+- BACKUP_NOTIFY_ON_SUCCESS: Send an email on success (true/false)
+- BACKUP_NOTIFY_ON_FAILURE: Send an email on failure (true/false)
+- BACKUP_NOTIFICATION_EMAIL: Recipient email address for backup alerts
+  (reuses the notifications SMTP configuration - see
+  scripts/notification_config.py - so also subject to
   NOTIFICATIONS_ENABLED)
 """
 
@@ -33,47 +33,46 @@ from datetime import datetime
 
 @dataclass
 class BackupConfig:
-    """Configuration complète pour les sauvegardes de la base de données."""
+    """Full configuration for database backups."""
 
-    # Activation générale (opt-in : pas de sauvegarde tant que ce n'est
-    # pas explicitement activé, cohérent avec le pattern des
-    # notifications par email)
+    # Overall enable flag (opt-in: no backup until explicitly enabled,
+    # consistent with the email notifications pattern)
     enabled: bool = False
 
-    # Sauvegarde locale
+    # Local backup
     local_enabled: bool = True
     local_dir: str = "backups"
 
-    # Sauvegarde S3
+    # S3 backup
     s3_enabled: bool = False
     s3_bucket: str | None = None
-    s3_endpoint: str | None = None  # None pour AWS S3, URL pour MinIO/etc
+    s3_endpoint: str | None = None  # None for AWS S3, URL for MinIO/etc
     s3_region: str | None = None
     s3_access_key: str | None = None
     s3_secret_key: str | None = None
     s3_prefix: str = "kairos"
     s3_use_ssl: bool = True
 
-    # Rétention
+    # Retention
     retention_days: int = 30
     max_backups: int = 30
 
-    # Format et compression
+    # Format and compression
     compress: bool = True
 
     # Timestamps
     include_timestamp: bool = True
     timestamp_format: str = "%Y%m%d_%H%M%S"
 
-    # Nom du fichier
+    # Filename
     backup_prefix: str = "kairos_backup"
 
-    # Base de données
-    db_path: str | None = None  # Chemin vers le fichier SQLite
-    db_uri: str | None = None  # URI de la base de données
+    # Database
+    db_path: str | None = None  # Path to the SQLite file
+    db_uri: str | None = None  # Database URI
 
-    # Notifications par email (branchées sur app.utils.notifications -
-    # même config SMTP que les rappels de shifts/astreinte)
+    # Email notifications (wired into app.utils.notifications - same
+    # SMTP config as the shift/on-call reminders)
     notify_on_success: bool = False
     notify_on_failure: bool = True
     notification_email: str | None = None
@@ -85,12 +84,12 @@ class BackupConfig:
     # Exclusions
     exclude_tables: list = field(default_factory=list)
 
-    # Vérification
+    # Verification
     verify_backup: bool = True
 
     @classmethod
     def from_env(cls) -> "BackupConfig":
-        """Charge la configuration depuis les variables d'environnement."""
+        """Loads the configuration from environment variables."""
 
         def get_bool(env_var: str, default: bool = False) -> bool:
             value = os.environ.get(env_var, "").lower()
@@ -110,15 +109,15 @@ class BackupConfig:
             value = os.environ.get(env_var)
             return value if value else default
 
-        # Détecter le chemin de la base de données
+        # Detect the database path
         db_uri = get_str("DATABASE_URL") or get_str("SQLALCHEMY_DATABASE_URI")
         db_path = None
 
         if db_uri and db_uri.startswith("sqlite:///"):
-            # Extraire le chemin du fichier SQLite
+            # Extract the SQLite file path
             db_path = db_uri.replace("sqlite:///", "")
             if not os.path.isabs(db_path):
-                # Chemin relatif à la racine du projet
+                # Path relative to the project root
                 project_root = os.path.dirname(
                     os.path.dirname(os.path.abspath(__file__))
                 )
@@ -155,7 +154,7 @@ class BackupConfig:
         )
 
     def get_backup_filename(self, timestamp: datetime | None = None) -> str:
-        """Génère le nom du fichier de sauvegarde."""
+        """Generates the backup filename."""
         if timestamp is None:
             timestamp = datetime.now()
 
@@ -168,25 +167,25 @@ class BackupConfig:
         else:
             filename = self.backup_prefix
 
-        # Ajouter l'extension
+        # Add the extension
         if self.db_path and self.db_path.endswith(".db"):
             filename += ".db"
         else:
             filename += ".sqlite"
 
-        # Ajouter la compression
+        # Add the compression
         if self.compress:
             filename += ".gz"
 
         return filename
 
     def get_local_backup_path(self, timestamp: datetime | None = None) -> str:
-        """Retourne le chemin complet pour la sauvegarde locale."""
+        """Returns the full path for the local backup."""
         filename = self.get_backup_filename(timestamp)
         return os.path.join(self.local_dir, filename)
 
     def get_s3_key(self, timestamp: datetime | None = None) -> str:
-        """Retourne la clé S3 pour la sauvegarde."""
+        """Returns the S3 key for the backup."""
         filename = self.get_backup_filename(timestamp)
         if self.s3_prefix:
             return f"{self.s3_prefix}/{filename}"
@@ -194,5 +193,5 @@ class BackupConfig:
 
 
 def get_config() -> BackupConfig:
-    """Retourne la configuration de sauvegarde."""
+    """Returns the backup configuration."""
     return BackupConfig.from_env()

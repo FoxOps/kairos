@@ -42,6 +42,19 @@ def to_org_timezone(dt: datetime, viewer) -> datetime:
     return localized.astimezone(_org_timezone()).replace(tzinfo=None)
 
 
+def parse_fullcalendar_datetime(iso_str: str, viewer) -> datetime:
+    """FullCalendar's timeZone: 'UTC' (fullcalendar-config.js) means an
+    ISO string coming back from a drag & drop / shift-creation request
+    carries the viewer's own wall-clock digits under a "Z"/offset
+    suffix that's just a serialization artifact, never a real UTC
+    instant. Strips that tzinfo and converts from the viewer's
+    effective_timezone() to the org's canonical one, ready for storage
+    - the exact parse+convert sequence previously duplicated at every
+    api_create_shift/api_update_shift/api_update_oncall call site."""
+    naive = datetime.fromisoformat(iso_str.replace("Z", "+00:00")).replace(tzinfo=None)
+    return to_org_timezone(naive, viewer)
+
+
 def org_now() -> datetime:
     """Current time as a naive org-tz wall clock datetime - the same
     representation Shift/OnCall store, for "is this happening right now"

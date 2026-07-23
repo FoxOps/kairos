@@ -1,6 +1,6 @@
 # 📋 Refactoring Report - Phase 5: Documentation
 **Branch**: `refacto/phase5`
-**PR**: [#101](https://github.com/FoxOps/leviia-schedule/pull/101)
+**PR**: [#101](https://github.com/FoxOps/kairos/pull/101)
 **Start date**: 2026-07-12
 **Status**: 🟢 Complete
 **Base**: `main` (includes Phases 1 + 2 + 3 + 4, PR #100 merged)

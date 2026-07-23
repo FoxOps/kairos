@@ -1,7 +1,7 @@
 # 🎯 **Bug Hunt Report - Kairos**
 
 **Date:** June 30, 2026  
-**Project:** [FoxOps/leviia-schedule](https://github.com/FoxOps/leviia-schedule)  
+**Project:** [FoxOps/kairos](https://github.com/FoxOps/kairos)  
 **Auditor:** Vibe Code (Bug Hunt Agent)  
 
 ---

@@ -1,6 +1,6 @@
 """
-Tests pour scripts/notification_config.py (chargement de la config
-notifications par email depuis les variables d'environnement).
+Tests for scripts/notification_config.py (loading the email
+notifications config from environment variables).
 """
 
 from scripts.notification_config import NotificationConfig

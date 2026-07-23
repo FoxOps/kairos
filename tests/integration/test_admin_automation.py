@@ -222,7 +222,192 @@ class TestAutomationFull:
             notification_type="oncall_generation_gap"
         ).all()
         assert len(gap_notifs) >= 1
-        assert gap_notifs[0].link == "/admin/automation"
+        # Deep-links straight to the generation page with the affected
+        # period pre-filled and "combler les trous" pre-selected, same
+        # convention as the dashboard's own gap-detection banner - not
+        # just a plain "/admin/automation" the admin then has to
+        # manually re-navigate from.
+        assert gap_notifs[0].link.startswith("/admin/automation/full?start_date=")
+        assert "oncall_mode=fill_gaps" in gap_notifs[0].link
+
+        # The notification must actually be visible on /notifications
+        # for the admin who triggered the generation, not just present
+        # in the database - a real user report was that the gap
+        # notification "didn't show up" despite the underlying service
+        # method being unit-tested in isolation.
+        notif_page = logged_in_client.get("/notifications")
+        assert notif_page.status_code == 200
+        assert b"respecte le d\xc3\xa9lai l\xc3\xa9gal" in notif_page.data
+
+    def test_automation_full_post_generate_notifies_admins_on_shift_unfilled(
+        self, logged_in_client, test_user, second_user
+    ):
+        """Real user report: shift generation can also fail to find
+        anyone available for a day (no exception - AdvancedShiftAutomation
+        .generate_daily_shifts()'s own "aucun utilisateur disponible"
+        business-rule case) and this was never surfaced as an admin
+        notification, unlike the equivalent on-call gap case above."""
+        from app.models import Leave
+
+        with logged_in_client.application.app_context():
+            login_group = Group.query.filter_by(name="Test Group Login").first()
+            login_group.is_part_of_schedule = False
+            db.session.commit()
+
+        today = date.today()
+        target_day = today
+        while target_day.weekday() != 0:  # Monday
+            target_day += timedelta(days=1)
+        end_date = target_day
+
+        with logged_in_client.application.app_context():
+            db.session.add_all(
+                [
+                    Leave(
+                        user_id=test_user.id,
+                        start_date=target_day,
+                        end_date=target_day,
+                    ),
+                    Leave(
+                        user_id=second_user.id,
+                        start_date=target_day,
+                        end_date=target_day,
+                    ),
+                ]
+            )
+            db.session.commit()
+
+        response = logged_in_client.post(
+            "/admin/automation/full",
+            data={
+                "action": "refresh_shifts",
+                "start_date": target_day.strftime("%Y-%m-%d"),
+                "end_date": end_date.strftime("%Y-%m-%d"),
+                "oncall_mode": "none",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+
+        gap_notifs = AppNotification.query.filter_by(
+            notification_type="shift_generation_gap"
+        ).all()
+        assert len(gap_notifs) >= 1
+        assert target_day.strftime("%d/%m/%Y") in gap_notifs[0].message
+        assert gap_notifs[0].link.startswith("/admin/automation/full?start_date=")
+
+        notif_page = logged_in_client.get("/notifications")
+        assert notif_page.status_code == 200
+        assert b"Aucun shift g\xc3\xa9n\xc3\xa9r\xc3\xa9" in notif_page.data
+
+
+class TestAutomationFullAppendedGeneration:
+    """Real admin workflow: run "Générer" once, then run it again for a
+    *new*, non-overlapping period appended right after the first one -
+    e.g. extending the schedule further into the future once the first
+    batch is already committed (no deletion in between, unlike
+    oncall_mode="regenerate"). Added after a real report: shifts/
+    on-calls generated this way looked fine per the flash messages, but
+    the concern was whether the second call correctly sees the first
+    call's already-committed data - both for the on-call 2-week spacing
+    constraint and for AdvancedShiftAutomation's "was on-call last week"
+    07h-15h rotation rule at the exact boundary between the two calls."""
+
+    def test_second_generate_after_first_has_no_gap_and_correct_boundary_rotation(
+        self, logged_in_client, test_user, second_user, test_group
+    ):
+        from app.models import Shift
+        from app.models import User as UserModel
+
+        with logged_in_client.application.app_context():
+            third_user = UserModel(
+                name="Third User",
+                email="third-appended@test.com",
+                group_id=test_group.id,
+            )
+            third_user.set_password("test_password")
+            db.session.add(third_user)
+            db.session.commit()
+            third_user_id = third_user.id
+
+        today = date.today()
+        first_start = today
+        while first_start.weekday() != 4:  # Friday
+            first_start += timedelta(days=1)
+        first_end = first_start + timedelta(days=7)  # 2 Fridays: F0, F0+7
+
+        rotation_fields = {}
+        for position, uid in enumerate(
+            [test_user.id, second_user.id, third_user_id], start=1
+        ):
+            rotation_fields[f"rotation_order_{uid}"] = str(position)
+            rotation_fields[f"include_{uid}"] = "1"
+
+        resp1 = logged_in_client.post(
+            "/admin/automation/full",
+            data={
+                "action": "generate",
+                "start_date": first_start.strftime("%Y-%m-%d"),
+                "end_date": first_end.strftime("%Y-%m-%d"),
+                **rotation_fields,
+            },
+            follow_redirects=True,
+        )
+        assert resp1.status_code == 200
+
+        # Appended right after the first call, no overlap, no deletion.
+        second_start = first_end + timedelta(days=3)  # the following Monday
+        # second_start is a Monday, not a Friday like first_start - a
+        # Monday+7 range only crosses a single Friday (+4), so 11 days
+        # are needed to capture 2 Fridays (+4 and +11) and stay
+        # symmetric with the first call's 2 on-calls.
+        second_end = second_start + timedelta(days=11)
+
+        resp2 = logged_in_client.post(
+            "/admin/automation/full",
+            data={
+                "action": "generate",
+                "start_date": second_start.strftime("%Y-%m-%d"),
+                "end_date": second_end.strftime("%Y-%m-%d"),
+                **rotation_fields,
+            },
+            follow_redirects=True,
+        )
+        assert resp2.status_code == 200
+
+        with logged_in_client.application.app_context():
+            all_oncalls = OnCall.query.order_by(OnCall.start_time).all()
+            # F0, F0+7 (first call) and F0+7+10, F0+7+17 (second call,
+            # started the Monday after F0+7's week) - 4 total, no gap
+            # between the two calls' Fridays and no spacing violation
+            # for whichever user comes back around.
+            assert len(all_oncalls) == 4
+            for prev, nxt in zip(all_oncalls, all_oncalls[1:], strict=False):
+                assert (nxt.start_time - prev.start_time).days == 7
+
+            by_user: dict[int, list] = {}
+            for oc in all_oncalls:
+                by_user.setdefault(oc.user_id, []).append(oc)
+            for _uid, ocs in by_user.items():
+                ocs.sort(key=lambda o: o.start_time)
+                for prev_oc, next_oc in zip(ocs, ocs[1:], strict=False):
+                    gap_days = (next_oc.start_time - prev_oc.end_time).days
+                    assert gap_days / 7 >= 2
+
+            # The boundary rotation rule: whoever was on-call the week
+            # containing (second_start - 7 days) - which is entirely
+            # inside the *first* call's already-committed range - must
+            # get the 07h-15h shift on second_start, exactly like within
+            # a single call. This is the part that would silently break
+            # if shift generation for the second call somehow only saw
+            # on-calls created by that same call.
+            first_oncall = min(all_oncalls, key=lambda o: o.start_time)
+            boundary_shift = Shift.query.filter_by(
+                date=second_start, user_id=first_oncall.user_id
+            ).first()
+            assert boundary_shift is not None
+            assert boundary_shift.start_time.hour == 7
+            assert boundary_shift.end_time.hour == 15
 
 
 class TestAutomationStatusMergedIntoDashboard:
@@ -392,9 +577,20 @@ class TestAutomationFullRefreshOncallMode:
         assert preserved is not None
         assert preserved.user_id == second_user.id
 
-    def test_regenerate_mode_replaces_oncalls(
+    def test_regenerate_mode_prefers_existing_valid_assignment(
         self, logged_in_client, test_user, second_user
     ):
+        """ "Régénérer entièrement" wipes and recomputes every on-call in
+        the period, but now prefers keeping each week's existing
+        occupant over blindly replaying the rotation order (minimal-
+        perturbation - see OnCallAutomation.capture_existing_assignments()
+        and _generate_for_fridays()'s preferred_assignments) - a manual
+        assignment that's still valid (no conflict) survives the
+        regenerate rather than being needlessly reshuffled. Supersedes
+        the old test_regenerate_mode_replaces_oncalls, which asserted
+        the opposite (any pre-existing assignment always gets replaced)
+        - that was the behavior this feature deliberately changes, not
+        a contract worth preserving."""
         today = date.today()
         start_date = today
         while start_date.weekday() != 4:
@@ -425,12 +621,81 @@ class TestAutomationFullRefreshOncallMode:
             follow_redirects=True,
         )
         assert response.status_code == 200
-        # The manual assignment itself is gone (the row may have been
-        # replaced by a freshly generated one reusing the same primary
-        # key, so check the assignment, not row survival by id).
+        # second_user has no conflict on this week, so they're kept
+        # (the row may have been replaced by a freshly generated one
+        # reusing the same primary key, so check the assignment, not
+        # row survival by id).
+        assert (
+            OnCall.query.filter_by(
+                user_id=second_user.id, start_time=manual_start_time
+            ).first()
+            is not None
+        )
+
+    def test_regenerate_mode_replaces_assignment_with_a_real_conflict(
+        self, logged_in_client, test_user, second_user
+    ):
+        """The minimal-perturbation preference is not a special case:
+        a preferred user with a real conflict on that exact week (here,
+        their own leave) is filtered out like any other candidate -
+        regenerate must still fall back to a valid rotation-order
+        candidate instead of leaving the week unfillable."""
+        from app.models import Leave
+
+        # logged_in_client's own admin ("Login User") is in an
+        # oncall-eligible group too - excluded here so exactly
+        # test_user/second_user are the eligible pool, same pattern as
+        # TestAutomationFull.test_automation_full_post_generate_notifies_admins_on_gap.
+        login_group = Group.query.filter_by(name="Test Group Login").first()
+        login_group.is_part_of_oncall = False
+        db.session.commit()
+
+        today = date.today()
+        start_date = today
+        while start_date.weekday() != 4:
+            start_date += timedelta(days=1)
+        end_date = start_date + timedelta(days=14)
+
+        manual_start_time = datetime.combine(start_date, datetime.min.time()).replace(
+            hour=21
+        )
+        manual_oncall = OnCall(
+            user_id=second_user.id,
+            start_time=manual_start_time,
+            end_time=datetime.combine(
+                start_date + timedelta(days=7), datetime.min.time()
+            ).replace(hour=7),
+        )
+        db.session.add(manual_oncall)
+        db.session.add(
+            Leave(
+                user_id=second_user.id,
+                start_date=start_date,
+                end_date=start_date + timedelta(days=6),
+            )
+        )
+        db.session.commit()
+
+        response = logged_in_client.post(
+            "/admin/automation/full",
+            data={
+                "action": "refresh_shifts",
+                "start_date": start_date.strftime("%Y-%m-%d"),
+                "end_date": end_date.strftime("%Y-%m-%d"),
+                "oncall_mode": "regenerate",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
         assert (
             OnCall.query.filter_by(
                 user_id=second_user.id, start_time=manual_start_time
             ).first()
             is None
+        )
+        assert (
+            OnCall.query.filter_by(
+                user_id=test_user.id, start_time=manual_start_time
+            ).first()
+            is not None
         )

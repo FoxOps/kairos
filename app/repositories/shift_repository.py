@@ -143,6 +143,16 @@ class ShiftRepository:
         ).delete(synchronize_session="evaluate")
 
     @staticmethod
+    def delete_older_than(cutoff_date: date) -> int:
+        """Delete shifts strictly before cutoff_date - used by
+        ScheduleCleanupService for the retention-based automatic purge,
+        never by anything user-facing (delete_in_date_range above is the
+        one every admin-triggered action already uses)."""
+        return Shift.query.filter(Shift.date < cutoff_date).delete(
+            synchronize_session=False
+        )
+
+    @staticmethod
     def create(
         user_id: int,
         shift_type_id: int,

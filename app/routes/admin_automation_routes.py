@@ -11,9 +11,6 @@ from flask_babel import gettext as _
 
 from app import db
 from app.auth.decorators import admin_required
-from app.models import AutomationConfig
-from app.repositories.oncall_repository import OnCallRepository
-from app.repositories.shift_repository import ShiftRepository
 from app.routes.admin import admin_bp
 from app.services import (
     AppNotificationService,
@@ -21,7 +18,6 @@ from app.services import (
     AutomationAdminService,
 )
 from app.utils.automation import (
-    AdvancedShiftAutomation,
     OnCallAutomation,
     get_automation_status,
 )
@@ -67,6 +63,22 @@ def _notify_oncall_gap_if_any(unfilled_dates):
             "Aucun utilisateur disponible dans le respect du "
             "délai légal de 2 semaines pour : %(dates)s. "
             "Assignation manuelle nécessaire dans "
+            "/admin/automation.",
+            dates=", ".join(d.strftime("%d/%m/%Y") for d in unfilled_dates),
+        ),
+    )
+
+
+def _notify_shift_unfilled_if_any(unfilled_dates):
+    if not unfilled_dates:
+        return
+    AppNotificationService.notify_admins_shift_unfilled(unfilled_dates)
+    AppriseNotificationService.notify(
+        "system",
+        _("Génération de shifts incomplète"),
+        _(
+            "Aucun utilisateur disponible pour générer un shift pour : "
+            "%(dates)s. Assignation manuelle nécessaire dans "
             "/admin/automation.",
             dates=", ".join(d.strftime("%d/%m/%Y") for d in unfilled_dates),
         ),
@@ -129,66 +141,44 @@ def automation_full():
                 start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
                 end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
 
-                if oncall_mode == "fill_gaps":
-                    _filled, oncall_messages, oncall_unfilled_dates = (
-                        OnCallAutomation.fill_oncall_gaps(
-                            start_date,
-                            end_date,
-                            rotation_order_ids=AutomationConfig.get_rotation_order(),
-                            dry_run=False,
-                        )
-                    )
-                    _flash_automation_messages(oncall_messages, default_category="info")
-                    _notify_oncall_gap_if_any(oncall_unfilled_dates)
-                elif oncall_mode == "regenerate":
-                    oncalls_deleted = OnCallRepository.delete_overlapping_range(
-                        start_date, end_date
-                    )
-                    if oncalls_deleted:
-                        db.session.commit()
-                        flash(
-                            _(
-                                "%(oncalls_deleted)s astreintes existantes supprimées pour la période",
-                                oncalls_deleted=oncalls_deleted,
-                            ),
-                            "info",
-                        )
-                    _regenerated, oncall_messages, oncall_unfilled_dates = (
-                        OnCallAutomation.generate_oncall_schedule(
-                            start_date,
-                            end_date,
-                            rotation_order_ids=AutomationConfig.get_rotation_order(),
-                            dry_run=False,
-                        )
-                    )
-                    _flash_automation_messages(
-                        oncall_messages, default_category="danger"
-                    )
-                    _notify_oncall_gap_if_any(oncall_unfilled_dates)
+                result = AutomationAdminService.refresh_shifts(
+                    start_date, end_date, oncall_mode
+                )
 
-                # Only deletes shifts (never on-calls beyond what
-                # oncall_mode above already handled): this recomputes
-                # shifts, taking whatever on-calls now exist into
-                # account.
-                deleted = ShiftRepository.delete_in_date_range(start_date, end_date)
-                if deleted:
-                    db.session.commit()
+                if result.oncalls_deleted:
+                    flash(
+                        _(
+                            "%(oncalls_deleted)s astreintes existantes supprimées pour la période",
+                            oncalls_deleted=result.oncalls_deleted,
+                        ),
+                        "info",
+                    )
+                if result.oncall_messages:
+                    _flash_automation_messages(
+                        result.oncall_messages,
+                        default_category=result.oncall_messages_category,
+                    )
+                _notify_oncall_gap_if_any(result.oncall_unfilled_dates)
+
+                if result.shifts_deleted:
                     flash(
                         _(
                             "%(deleted)s shifts existants supprimés pour la période",
-                            deleted=deleted,
+                            deleted=result.shifts_deleted,
                         ),
                         "info",
                     )
 
-                shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
-                    start_date, end_date, dry_run=False
+                _flash_automation_messages(
+                    result.shift_messages, default_category="info"
                 )
-
-                _flash_automation_messages(messages, default_category="info")
+                _notify_shift_unfilled_if_any(result.shift_unfilled_dates)
 
                 flash(
-                    _("%(val0)s shifts régénérés avec succès !", val0=len(shifts)),
+                    _(
+                        "%(val0)s shifts régénérés avec succès !",
+                        val0=len(result.shifts),
+                    ),
                     "success",
                 )
             except ValueError as e:
@@ -231,59 +221,26 @@ def automation_full():
 
                 dry_run = action == "dry_run"
 
-                if not dry_run:
-                    oncalls_deleted, shifts_deleted = (
-                        AutomationAdminService.clear_period(start_date, end_date)
-                    )
-                    if oncalls_deleted:
-                        flash(
-                            _(
-                                "%(oncalls_deleted)s astreintes existantes supprimées pour la période",
-                                oncalls_deleted=oncalls_deleted,
-                            ),
-                            "info",
-                        )
-                    if shifts_deleted:
-                        flash(
-                            _(
-                                "%(shifts_deleted)s shifts existants supprimés pour la période",
-                                shifts_deleted=shifts_deleted,
-                            ),
-                            "info",
-                        )
-
-                oncalls, oncall_messages, oncall_unfilled_dates = (
-                    OnCallAutomation.generate_oncall_schedule(
-                        start_date, end_date, rotation_order_ids, dry_run=dry_run
-                    )
+                result = AutomationAdminService.generate_full(
+                    start_date, end_date, rotation_order_ids, dry_run
                 )
 
                 if dry_run:
-                    # Note: the shift preview is based on the on-calls
-                    # already in the database for the period (the on-call
-                    # dry_run above doesn't save anything) - it can
-                    # therefore differ from the final result if no
-                    # on-call exists yet for this period.
-                    shifts, shift_messages = (
-                        AdvancedShiftAutomation.generate_full_schedule(
-                            start_date, end_date, dry_run=True
-                        )
-                    )
                     return render_template(
                         "admin/automation/full_dry_run.html",
                         result={
                             "oncall": {
-                                "generated": oncalls,
+                                "generated": result.oncalls,
                                 "messages": [
                                     _classify_automation_message(m, "danger")
-                                    for m in oncall_messages
+                                    for m in result.oncall_messages
                                 ],
                             },
                             "shift": {
-                                "generated": shifts,
+                                "generated": result.shifts,
                                 "messages": [
                                     _classify_automation_message(m, "info")
-                                    for m in shift_messages
+                                    for m in result.shift_messages
                                 ],
                             },
                         },
@@ -292,35 +249,32 @@ def automation_full():
                         rotation_order_ids=rotation_order_ids,
                     )
                 else:
-                    shifts, shift_messages = (
-                        AdvancedShiftAutomation.generate_full_schedule(
-                            start_date, end_date, dry_run=False
+                    if result.oncalls_deleted:
+                        flash(
+                            _(
+                                "%(oncalls_deleted)s astreintes existantes supprimées pour la période",
+                                oncalls_deleted=result.oncalls_deleted,
+                            ),
+                            "info",
                         )
-                    )
+                    if result.shifts_deleted:
+                        flash(
+                            _(
+                                "%(shifts_deleted)s shifts existants supprimés pour la période",
+                                shifts_deleted=result.shifts_deleted,
+                            ),
+                            "info",
+                        )
 
                     _flash_automation_messages(
-                        oncall_messages, default_category="danger"
+                        result.oncall_messages, default_category="danger"
                     )
-                    _flash_automation_messages(shift_messages, default_category="info")
+                    _flash_automation_messages(
+                        result.shift_messages, default_category="info"
+                    )
 
-                    if oncall_unfilled_dates:
-                        AppNotificationService.notify_admins_oncall_gap(
-                            oncall_unfilled_dates
-                        )
-                        AppriseNotificationService.notify(
-                            "system",
-                            _("Génération d'astreintes incomplète"),
-                            _(
-                                "Aucun utilisateur disponible dans le respect du "
-                                "délai légal de 2 semaines pour : %(dates)s. "
-                                "Assignation manuelle nécessaire dans "
-                                "/admin/automation.",
-                                dates=", ".join(
-                                    d.strftime("%d/%m/%Y")
-                                    for d in oncall_unfilled_dates
-                                ),
-                            ),
-                        )
+                    _notify_oncall_gap_if_any(result.oncall_unfilled_dates)
+                    _notify_shift_unfilled_if_any(result.shift_unfilled_dates)
 
                     flash(
                         _(

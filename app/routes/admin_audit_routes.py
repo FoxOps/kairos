@@ -6,7 +6,7 @@ only ever written by AuditService.log() (see app/services/audit_service.py),
 never directly from a route.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from flask import flash, redirect, render_template, request, url_for
 from flask_babel import gettext as _
@@ -103,7 +103,7 @@ def purge_audit_log():
         )
         return redirect(url_for("admin.audit_log"))
 
-    cutoff = datetime.utcnow() - timedelta(days=retention_days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
     count = AuditLogRepository.delete_older_than(cutoff)
     db.session.commit()
     flash(

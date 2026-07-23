@@ -38,7 +38,7 @@
                         <input class="input w-full" type="password" id="current_password" name="current_password"
                                placeholder="{{ _("Obligatoire pour changer le mot de passe") }}"
                                {% if user.must_change_password %}required aria-required="true"{% endif %}>
-                        <p class="text-sm text-base-content/60">
+                        <p class="text-sm text-base-content/70">
                             {{ _("Obligatoire si vous souhaitez changer votre mot de passe") }}
                         </p>
                     </div>
@@ -52,7 +52,7 @@
                                placeholder="{{ _("Obligatoire") if user.must_change_password else _("Laisser vide pour ne pas changer") }}"
                                aria-describedby="new-password-help"
                                {% if user.must_change_password %}required aria-required="true"{% endif %}>
-                        <p class="text-sm text-base-content/60" id="new-password-help">
+                        <p class="text-sm text-base-content/70" id="new-password-help">
                             {{ _("Au moins 12 caractères, avec au moins 3 des 4 types suivants : minuscules, majuscules, chiffres, caractères spéciaux.") }}
                         </p>
                     </div>

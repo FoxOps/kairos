@@ -12,13 +12,13 @@ spec:
     requests:
       storage: 1Gi
   storageClassName: standard
-  # Pour les environnements avec des classes de stockage spécifiques
+  # For environments with specific storage classes
   # storageClassName: gp2 (AWS EBS)
   # storageClassName: standard (GKE)
   # storageClassName: managed-premium (Azure)
 
 ---
-# PersistentVolumeClaim pour les logs (optionnel)
+# PersistentVolumeClaim for logs (optional)
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

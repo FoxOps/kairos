@@ -1,19 +1,19 @@
-# Exemple de configuration Docker Compose pour Kairos - méthode
-# recommandée, image déjà construite sur le registry (pas de clone du
-# dépôt, pas de build local).
+# Example Docker Compose configuration for Kairos - recommended method,
+# using the pre-built image from the registry (no repo clone, no local
+# build).
 #
-# Pour l'utiliser:
-# 1. Copiez ce fichier en docker-compose.yml
-# 2. Copiez docker/.env.example (pas le .env.example à la racine du
-#    dépôt, celui-ci est pour un lancement hors Docker) en .env et
-#    modifiez-le selon vos besoins (KAIROS_IMAGE, SECRET_KEY,
-#    DEFAULT_ADMIN_PASSWORD au minimum - voir la section CONFIGURATION
-#    OIDC/SSO pour activer l'authentification OIDC - désactivée par défaut)
-# 3. Lancez avec: docker compose up -d
+# To use it:
+# 1. Copy this file to docker-compose.yml
+# 2. Copy docker/.env.example (not the .env.example at the repo root,
+#    that one is for running outside Docker) to .env and edit it as
+#    needed (KAIROS_IMAGE, SECRET_KEY, DEFAULT_ADMIN_PASSWORD at a
+#    minimum - see the OIDC/SSO CONFIGURATION section to enable OIDC
+#    authentication - disabled by default)
+# 3. Run with: docker compose up -d
 #
-# Pour un environnement de dev complet (build local, faux fournisseur
-# OIDC optionnel pour tester le flux SSO) voir docker/docker-compose.yml
-# à la place, dans un clone du dépôt.
+# For a full dev environment (local build, optional fake OIDC provider
+# to test the SSO flow) see docker/docker-compose.yml instead, in a
+# clone of the repo.
 
 services:
   kairos:

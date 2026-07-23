@@ -4,7 +4,6 @@ Common helper functions for Kairos.
 This module provides general utility functions used throughout the application.
 """
 
-import os
 from datetime import date, datetime, timedelta
 from zoneinfo import available_timezones
 
@@ -12,30 +11,6 @@ from flask_login import current_user
 
 from app import db
 from app.models import Leave, OnCall, Shift
-
-
-def get_bool(env_var: str, default: bool = False) -> bool:
-    """Get a boolean value from environment variable."""
-    value = os.environ.get(env_var)
-    if value is None:
-        return default
-    value_lower = value.lower().strip()
-    if value_lower in ("true", "1", "yes", "y", "on"):
-        return True
-    elif value_lower in ("false", "0", "no", "n", "off"):
-        return False
-    return default
-
-
-def get_int(env_var: str, default: int = 0) -> int:
-    """Get an integer value from environment variable."""
-    value = os.environ.get(env_var)
-    if value is None:
-        return default
-    try:
-        return int(value.strip())
-    except ValueError:
-        return default
 
 
 def get_timezone_choices() -> list[str]:

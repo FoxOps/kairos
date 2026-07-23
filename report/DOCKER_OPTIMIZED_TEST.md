@@ -5,7 +5,7 @@
 ### 1. Build the image
 
 ```bash
-cd /workspace/FoxOps__leviia-schedule
+cd /workspace/FoxOps__kairos
 docker build -t kairos:optimized -f docker/Dockerfile.optimized .
 ```
 

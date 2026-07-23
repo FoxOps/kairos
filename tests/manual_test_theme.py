@@ -71,7 +71,6 @@ def test_file_structure():
     js_files = [
         "js/main.js",
         "js/theme/theme-manager.js",
-        "js/utils/dom.js",
         "js/utils/accessibility.js",
         "js/notifications/flash-messages.js",
     ]

@@ -1,5 +1,5 @@
 """
-Tests pour app/utils/notifications/email_sender.py.
+Tests for app/utils/notifications/email_sender.py.
 """
 
 from unittest.mock import MagicMock, patch

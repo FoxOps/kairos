@@ -16,7 +16,7 @@ spec:
   type: ClusterIP
 
 ---
-# Service pour accéder depuis l'extérieur du cluster (optionnel)
+# Service to access from outside the cluster (optional)
 apiVersion: v1
 kind: Service
 metadata:
@@ -33,6 +33,6 @@ spec:
     targetPort: 5000
     protocol: TCP
   type: LoadBalancer
-  # Pour les clouds qui supportent LoadBalancer
+  # For clouds that support LoadBalancer
   # type: NodePort
-  # Pour Minikube, utiliser NodePort
+  # For Minikube, use NodePort

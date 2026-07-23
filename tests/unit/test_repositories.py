@@ -1,5 +1,5 @@
 """
-Tests unitaires pour app/repositories/.
+Unit tests for app/repositories/.
 
 The data-access layer, until now only exercised indirectly through the
 HTTP route tests (tests/integration/). These tests call the

@@ -59,6 +59,34 @@ class NotificationService:
         return today + timedelta(days=days_ahead or 7)
 
     @staticmethod
+    def _log_sent_and_relay(
+        user: User,
+        notification_type: str,
+        period_start: date,
+        apprise_target_ids: list[int],
+        subject: str,
+        text_body: str,
+        result: NotificationBatchResult,
+    ) -> None:
+        """Shared tail of both weekly sends: write the NotificationLog
+        idempotency guard, then relay to the recipient's own picked
+        Apprise targets (if any)."""
+        db.session.add(
+            NotificationLog(
+                user_id=user.id,
+                notification_type=notification_type,
+                period_start=period_start,
+            )
+        )
+        db.session.commit()
+        result.sent.append(user.email)
+
+        if apprise_target_ids:
+            AppriseNotificationService.notify_to_targets(
+                apprise_target_ids, subject, text_body
+            )
+
+    @staticmethod
     def send_weekly_shift_notifications(
         smtp_config: dict,
         app_base_url: str | None = None,
@@ -124,21 +152,15 @@ class NotificationService:
                 result.failed.append((user.email, str(e)))
                 continue
 
-            db.session.add(
-                NotificationLog(
-                    user_id=user_id,
-                    notification_type=NotificationService.SHIFT_WEEKLY,
-                    period_start=week_start,
-                )
+            NotificationService._log_sent_and_relay(
+                user,
+                NotificationService.SHIFT_WEEKLY,
+                week_start,
+                user.get_apprise_shift_target_ids(),
+                subject,
+                text_body,
+                result,
             )
-            db.session.commit()
-            result.sent.append(user.email)
-
-            apprise_target_ids = user.get_apprise_shift_target_ids()
-            if apprise_target_ids:
-                AppriseNotificationService.notify_to_targets(
-                    apprise_target_ids, subject, text_body
-                )
 
         if result.failed:
             AppriseNotificationService.notify(
@@ -221,20 +243,14 @@ class NotificationService:
             )
             return result
 
-        db.session.add(
-            NotificationLog(
-                user_id=user.id,
-                notification_type=NotificationService.ONCALL_WEEKLY,
-                period_start=oncall_friday,
-            )
+        NotificationService._log_sent_and_relay(
+            user,
+            NotificationService.ONCALL_WEEKLY,
+            oncall_friday,
+            user.get_apprise_oncall_target_ids(),
+            subject,
+            text_body,
+            result,
         )
-        db.session.commit()
-        result.sent.append(user.email)
-
-        apprise_target_ids = user.get_apprise_oncall_target_ids()
-        if apprise_target_ids:
-            AppriseNotificationService.notify_to_targets(
-                apprise_target_ids, subject, text_body
-            )
 
         return result

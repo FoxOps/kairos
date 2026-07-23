@@ -434,7 +434,9 @@ class TestGenerateDailyShifts:
         self, test_app, test_group, test_user, second_user
     ):
         """Regression test: with a single person available (the other
-        one is on leave), that person must land directly on 09h-17h."""
+        one is on leave), that person must land directly on 07h-15h
+        (rule 7: 7am-3pm minimum coverage - even in this degraded,
+        1-person case)."""
         with test_app.app_context():
             test_date = date(2023, 12, 15)
             leave = Leave(
@@ -451,8 +453,8 @@ class TestGenerateDailyShifts:
 
             assert len(shifts) == 1
             assert shifts[0].user_id == test_user.id
-            assert shifts[0].start_time.hour == 9
-            assert shifts[0].end_time.hour == 17
+            assert shifts[0].start_time.hour == 7
+            assert shifts[0].end_time.hour == 15
 
     def test_generate_daily_shifts_with_two_users(
         self, test_app, test_group, test_user, second_user, test_shift_type
@@ -493,6 +495,70 @@ class TestGenerateDailyShifts:
 
             # Should generate shifts for all 3 users
             assert len(shifts) == 3
+
+    def test_generate_daily_shifts_ensures_07_15_coverage_with_three_users(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Rule 7 regression test: with 3+ users and no on-call context at
+        all (neither this week's nor last week's on-call is set), rules
+        1/2 never fire for anyone and rule 3 alone would put everyone on
+        09h-17h - leaving 07h-09h/17h-21h uncovered. At least one person
+        must still land on 07h-15h."""
+        with test_app.app_context():
+            user3 = User(
+                name="Third User",
+                email="third@test.com",
+                password_hash=generate_password_hash("third-password"),
+                is_admin=False,
+                group_id=test_group.id,
+            )
+            db.session.add(user3)
+            db.session.commit()
+
+            test_date = date(2023, 12, 15)
+            shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(
+                test_date, dry_run=True
+            )
+
+            assert len(shifts) == 3
+            assert any(
+                shift.start_time.hour == 7 and shift.end_time.hour == 15
+                for shift in shifts
+            )
+
+    def test_generate_daily_shifts_07_15_fallback_honors_rotation_order(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """The rule 7 fallback picks the first available user in the
+        configured rotation order, not an arbitrary/incidental one."""
+        with test_app.app_context():
+            user3 = User(
+                name="Third User",
+                email="third@test.com",
+                password_hash=generate_password_hash("third-password"),
+                is_admin=False,
+                group_id=test_group.id,
+            )
+            db.session.add(user3)
+            db.session.commit()
+
+            AutomationConfig.set_rotation_order(
+                [user3.id, second_user.id, test_user.id]
+            )
+
+            test_date = date(2023, 12, 15)
+            shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(
+                test_date, dry_run=True
+            )
+
+            assert len(shifts) == 3
+            covering_07_15 = [
+                shift
+                for shift in shifts
+                if shift.start_time.hour == 7 and shift.end_time.hour == 15
+            ]
+            assert len(covering_07_15) == 1
+            assert covering_07_15[0].user_id == user3.id
 
     def test_generate_daily_shifts_dry_run_no_commit(
         self, test_app, test_group, test_user, test_shift_type
@@ -537,8 +603,10 @@ class TestGenerateFullSchedule:
         with test_app.app_context():
             start_date = date(2023, 12, 15)
             end_date = date(2023, 12, 15)
-            shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
-                start_date, end_date, dry_run=True
+            shifts, messages, _unfilled_shifts = (
+                AdvancedShiftAutomation.generate_full_schedule(
+                    start_date, end_date, dry_run=True
+                )
             )
 
             assert len(shifts) > 0
@@ -550,8 +618,10 @@ class TestGenerateFullSchedule:
         with test_app.app_context():
             start_date = date(2023, 12, 15)
             end_date = date(2023, 12, 20)
-            shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
-                start_date, end_date, dry_run=True
+            shifts, messages, _unfilled_shifts = (
+                AdvancedShiftAutomation.generate_full_schedule(
+                    start_date, end_date, dry_run=True
+                )
             )
 
             # Should generate shifts for every business day
@@ -575,8 +645,10 @@ class TestGenerateFullSchedule:
 
             start_date = date(2023, 12, 15)
             end_date = date(2023, 12, 20)
-            shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
-                start_date, end_date, dry_run=True
+            shifts, messages, _unfilled_shifts = (
+                AdvancedShiftAutomation.generate_full_schedule(
+                    start_date, end_date, dry_run=True
+                )
             )
 
             final_count = Shift.query.count()
@@ -589,8 +661,10 @@ class TestGenerateFullSchedule:
 
             start_date = date(2023, 12, 15)
             end_date = date(2023, 12, 20)
-            shifts, messages = AdvancedShiftAutomation.generate_full_schedule(
-                start_date, end_date, dry_run=False
+            shifts, messages, _unfilled_shifts = (
+                AdvancedShiftAutomation.generate_full_schedule(
+                    start_date, end_date, dry_run=False
+                )
             )
 
             final_count = Shift.query.count()
@@ -674,7 +748,7 @@ class TestRebalanceAfterLeave:
             initial_count = Shift.query.count()
 
             # Run the rebalance in dry_run
-            shifts, messages, _unfilled, _failed, _failed_oncall = (
+            shifts, messages, _unfilled, _failed, _failed_oncall, _unfilled_shifts = (
                 AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=True)
             )
 
@@ -704,7 +778,7 @@ class TestRebalanceAfterLeave:
             db.session.commit()
 
             # Run the rebalance
-            shifts, messages, _unfilled, _failed, _failed_oncall = (
+            shifts, messages, _unfilled, _failed, _failed_oncall, _unfilled_shifts = (
                 AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=True)
             )
 
@@ -817,11 +891,99 @@ class TestRebalanceAfterLeave:
             db.session.add(leave)
             db.session.commit()
 
-            _shifts, _messages, unfilled_oncall_dates, _failed, _failed_oncall = (
-                AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
-            )
+            (
+                _shifts,
+                _messages,
+                unfilled_oncall_dates,
+                _failed,
+                _failed_oncall,
+                _unfilled_shifts,
+            ) = AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
 
             assert unfilled_oncall_dates == []
+
+    def test_rebalance_after_leave_preserves_unaffected_weeks(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Real user report: automatic rebalances after a leave
+        reshuffled weeks that had nothing to do with the leave, slowly
+        drifting the rotation over many successive leaves. The
+        rebalance's on-call regeneration now prefers keeping each
+        week's existing occupant (captured before the window is wiped)
+        over blindly replaying the rotation order.
+
+        With ample rotation slack (6 users here), replacing the single
+        leave-affected week's occupant doesn't force a legal-spacing
+        cascade onto any other week (unlike a tight 3-4 user pool,
+        where the replacement candidate's own nearby slot can collide -
+        a real, expected reshuffle in that case, not a bug - see
+        TestOnCallMaxFillSearch for that scenario). So here every other
+        week in the window must come out exactly as it went in."""
+        with test_app.app_context():
+            extra_users = []
+            for i in range(4):
+                u = User(
+                    name=f"Extra User {i}",
+                    email=f"extra{i}@test.com",
+                    password_hash="extra123",
+                    is_admin=False,
+                    group_id=test_group.id,
+                )
+                db.session.add(u)
+                extra_users.append(u)
+            db.session.commit()
+
+            rotation_order = [test_user.id, second_user.id] + [
+                u.id for u in extra_users
+            ]
+            AutomationConfig.set_rotation_order(rotation_order)
+
+            OnCallAutomation.generate_oncall_schedule(
+                date(2023, 11, 3),
+                date(2024, 3, 1),
+                rotation_order_ids=rotation_order,
+                dry_run=False,
+                commit=True,
+            )
+
+            before = {
+                oc.start_time.date(): oc.user_id
+                for oc in OnCall.query.filter(
+                    OnCall.start_time >= datetime(2023, 12, 1),
+                    OnCall.start_time <= datetime(2024, 2, 1),
+                ).all()
+            }
+
+            leave = Leave(
+                user_id=test_user.id,
+                start_date=date(2024, 1, 3),
+                end_date=date(2024, 1, 5),
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
+
+            after = {
+                oc.start_time.date(): oc.user_id
+                for oc in OnCall.query.filter(
+                    OnCall.start_time >= datetime(2023, 12, 1),
+                    OnCall.start_time <= datetime(2024, 2, 1),
+                ).all()
+            }
+
+            # Every week except the one whose occupant went on leave
+            # must be completely unchanged. The leave (Jan 3-5, a
+            # Wed-Fri) overlaps the on-call that *started* the
+            # previous Friday (Dec 29 21h -> Jan 5 07h), not the
+            # calendar week the leave dates themselves fall in.
+            leave_week = date(2023, 12, 29)
+            unchanged_weeks = {d: u for d, u in before.items() if d != leave_week}
+            for friday, user_id in unchanged_weeks.items():
+                assert after.get(friday) == user_id, (
+                    f"week {friday} changed from {user_id} to "
+                    f"{after.get(friday)} despite no conflict"
+                )
 
     def test_rebalance_after_leave_no_overlap(self, test_app, test_group, test_user):
         """Test rebalancing with a leave that overlaps nothing."""
@@ -835,7 +997,7 @@ class TestRebalanceAfterLeave:
             db.session.add(leave)
             db.session.commit()
 
-            shifts, messages, _unfilled, _failed, _failed_oncall = (
+            shifts, messages, _unfilled, _failed, _failed_oncall, _unfilled_shifts = (
                 AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=True)
             )
 
@@ -878,9 +1040,14 @@ class TestRebalanceAfterLeave:
                 "app.utils.automation.OnCallAutomation.generate_oncall_schedule",
                 side_effect=RuntimeError("boom"),
             ):
-                _shifts, messages, _unfilled, _failed, failed_oncall_period = (
-                    AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
-                )
+                (
+                    _shifts,
+                    messages,
+                    _unfilled,
+                    _failed,
+                    failed_oncall_period,
+                    _unfilled_shifts,
+                ) = AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
 
             # No exception propagated - the failure is reported, not raised.
             assert len(failed_oncall_period) == 2
@@ -937,9 +1104,14 @@ class TestRebalanceAfterLeave:
                 "generate_daily_shifts",
                 side_effect=flaky_generate_daily_shifts,
             ):
-                _shifts, messages, _unfilled, failed_shift_dates, _failed_oncall = (
-                    AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
-                )
+                (
+                    _shifts,
+                    messages,
+                    _unfilled,
+                    failed_shift_dates,
+                    _failed_oncall,
+                    _unfilled_shifts,
+                ) = AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
 
             assert failed_shift_dates == [failing_day]
             assert any(
@@ -976,9 +1148,14 @@ class TestRebalanceAfterLeave:
             db.session.add(leave)
             db.session.commit()
 
-            regenerated_shifts, messages, _unfilled, _failed, _failed_oncall = (
-                AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
-            )
+            (
+                regenerated_shifts,
+                messages,
+                _unfilled,
+                _failed,
+                _failed_oncall,
+                _unfilled_shifts,
+            ) = AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
 
             # test_user's old on-call for this period was indeed deleted
             # and that deletion persisted (not just flush()'d then lost

@@ -30,13 +30,13 @@
                         <label class="label">{{ _("Date de début") }}</label>
                         <input class="input w-full" type="date" name="start_date"
                                value="{{ start_date_default.strftime('%Y-%m-%d') }}" required>
-                        <p class="text-sm text-base-content/60">{{ _("Premier vendredi à partir de cette date") }}</p>
+                        <p class="text-sm text-base-content/70">{{ _("Premier vendredi à partir de cette date") }}</p>
                     </div>
                     <div>
                         <label class="label">{{ _("Date de fin") }}</label>
                         <input class="input w-full" type="date" name="end_date"
                                value="{{ end_date_default.strftime('%Y-%m-%d') }}" required>
-                        <p class="text-sm text-base-content/60">{{ _("Dernier jour de la période (6 mois par défaut)") }}</p>
+                        <p class="text-sm text-base-content/70">{{ _("Dernier jour de la période (6 mois par défaut)") }}</p>
                     </div>
                 </div>
             </div>
@@ -62,12 +62,12 @@
                             {% endif %}
                         {% endfor %}
                     </p>
-                    <p class="text-sm text-base-content/60">{{ _("Glissez-déposez les utilisateurs ci-dessous pour modifier l'ordre.") }}</p>
+                    <p class="text-sm text-base-content/70">{{ _("Glissez-déposez les utilisateurs ci-dessous pour modifier l'ordre.") }}</p>
                 </div>
                 {% endif %}
 
                 <label class="label">{{ _("Ordre de rotation") }} <i class="fas fa-question-circle" title="{{ _("Glissez-déposez pour réorganiser, cochez pour inclure dans la rotation") }}"></i></label>
-                <p class="text-sm text-base-content/60">
+                <p class="text-sm text-base-content/70">
                     <strong>{{ _("Définissez l'ordre de rotation") }}</strong> {{ _("en glissant-déposant les utilisateurs. La rotation se fera dans l'ordre affiché.") }}
                 </p>
 
@@ -176,28 +176,28 @@
         <div class="card card-sm bg-base-100 shadow-md mb-4">
             <div class="card-body">
                 <h2 class="text-lg font-semibold"><i class="fas fa-sync-alt" aria-hidden="true"></i> {{ _("Rafraîchir les shifts") }}</h2>
-                <p class="text-sm text-base-content/60">{{ _("Recalcule les shifts d'après les astreintes en base, en choisissant ci-dessous comment traiter les astreintes elles-mêmes.") }}</p>
+                <p class="text-sm text-base-content/70">{{ _("Recalcule les shifts d'après les astreintes en base, en choisissant ci-dessous comment traiter les astreintes elles-mêmes.") }}</p>
 
                 <div class="flex flex-col gap-2 mt-2">
                     <label class="label cursor-pointer justify-start gap-3">
                         <input type="radio" name="oncall_mode" value="none" class="radio" {% if prefill_oncall_mode == 'none' %}checked{% endif %}>
                         <span>
                             <strong>{{ _("Ne pas toucher aux astreintes") }}</strong>
-                            <span class="block text-sm text-base-content/60">{{ _("Recalcule seulement les shifts, en tenant compte des astreintes actuelles (même modifiées manuellement).") }}</span>
+                            <span class="block text-sm text-base-content/70">{{ _("Recalcule seulement les shifts, en tenant compte des astreintes actuelles (même modifiées manuellement).") }}</span>
                         </span>
                     </label>
                     <label class="label cursor-pointer justify-start gap-3">
                         <input type="radio" name="oncall_mode" value="fill_gaps" class="radio" {% if prefill_oncall_mode == 'fill_gaps' %}checked{% endif %}>
                         <span>
                             <strong>{{ _("Combler les trous d'astreintes") }}</strong>
-                            <span class="block text-sm text-base-content/60">{{ _("Assigne une astreinte uniquement aux semaines qui n'en ont aucune - les astreintes déjà assignées (même modifiées manuellement) ne sont jamais touchées.") }}</span>
+                            <span class="block text-sm text-base-content/70">{{ _("Assigne une astreinte uniquement aux semaines qui n'en ont aucune - les astreintes déjà assignées (même modifiées manuellement) ne sont jamais touchées.") }}</span>
                         </span>
                     </label>
                     <label class="label cursor-pointer justify-start gap-3">
                         <input type="radio" name="oncall_mode" value="regenerate" class="radio" {% if prefill_oncall_mode == 'regenerate' %}checked{% endif %}>
                         <span>
                             <strong>{{ _("Régénérer entièrement les astreintes") }}</strong>
-                            <span class="block text-sm text-base-content/60">{{ _("Supprime et régénère toutes les astreintes de la période selon l'ordre de rotation configuré - écrase les modifications manuelles.") }}</span>
+                            <span class="block text-sm text-base-content/70">{{ _("Supprime et régénère toutes les astreintes de la période selon l'ordre de rotation configuré - écrase les modifications manuelles.") }}</span>
                         </span>
                     </label>
                 </div>

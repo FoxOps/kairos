@@ -81,6 +81,7 @@ jobs:
       - run: ruff check . --config=.ruff.toml
       - run: mypy app/ tests/ --ignore-missing-imports --allow-untyped-decorators
       - run: black --check . --exclude=".git|__pycache__|instance|venv"
+      - run: djlint app/templates
 
   # bandit and pip-audit both run without a continue-on-error: neither
   # needs an external service/auth (pip-audit queries PyPI/OSV

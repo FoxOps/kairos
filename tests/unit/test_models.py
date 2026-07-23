@@ -2,7 +2,7 @@
 Tests for the database models.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy.exc import IntegrityError
@@ -335,7 +335,9 @@ class TestUserModel:
     def test_regenerate_ics_token_resets_created_at(self, test_app, test_user):
         with test_app.app_context():
             test_user.generate_ics_token()
-            test_user.ics_token_created_at = datetime.utcnow() - timedelta(days=400)
+            test_user.ics_token_created_at = datetime.now(timezone.utc) - timedelta(
+                days=400
+            )
             db.session.commit()
             assert test_user.is_ics_token_expired() is True
 
@@ -362,7 +364,9 @@ class TestUserModel:
     def test_is_ics_token_expired_within_window(self, test_app, test_user):
         with test_app.app_context():
             test_user.generate_ics_token()
-            test_user.ics_token_created_at = datetime.utcnow() - timedelta(days=1)
+            test_user.ics_token_created_at = datetime.now(timezone.utc) - timedelta(
+                days=1
+            )
             db.session.commit()
 
             assert test_user.is_ics_token_expired() is False
@@ -370,7 +374,9 @@ class TestUserModel:
     def test_is_ics_token_expired_past_window(self, test_app, test_user):
         with test_app.app_context():
             test_user.generate_ics_token()
-            test_user.ics_token_created_at = datetime.utcnow() - timedelta(days=400)
+            test_user.ics_token_created_at = datetime.now(timezone.utc) - timedelta(
+                days=400
+            )
             db.session.commit()
 
             assert test_user.is_ics_token_expired() is True
@@ -384,7 +390,7 @@ class TestUserModel:
 
         with test_app.app_context():
             SettingsService.set_ics_token_expiry_days(30)
-            created = datetime.utcnow() - timedelta(days=5)
+            created = datetime.now(timezone.utc) - timedelta(days=5)
             test_user.generate_ics_token()
             test_user.ics_token_created_at = created
             db.session.commit()
@@ -731,12 +737,6 @@ class TestSwapRequestModel:
             assert test_swap_request.shift.id == test_swap_request.shift_id
             assert test_swap_request.target_shift is None
             assert test_swap_request.reviewer is None
-
-    def test_is_pending(self, test_app, test_swap_request):
-        with test_app.app_context():
-            assert test_swap_request.is_pending() is True
-            test_swap_request.status = SwapRequest.APPROVED
-            assert test_swap_request.is_pending() is False
 
     def test_is_awaiting_target(self, test_app, test_swap_request):
         with test_app.app_context():

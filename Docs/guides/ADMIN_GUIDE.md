@@ -540,6 +540,13 @@ business rules implemented in `AdvancedShiftAutomation`
 - Everyone else defaults to the 9am-5pm slot (several people can share it)
 - If only 2 people are available on a given day, the one who is *not*
   on-call is put on the 7am-3pm slot
+- **7am-3pm minimum coverage**: at least one person must always be on this
+  slot. If the rotation above doesn't naturally put anyone there (e.g. the
+  person due for it isn't available/eligible that day), one available
+  person is reassigned to it instead - the first one in the configured
+  rotation order, so the choice stays predictable. With only 1 person
+  available that day, they're placed directly on 7am-3pm rather than the
+  usual 9am-5pm default, for the same reason.
 - Monday to Friday only, respecting existing leave and on-call periods
 
 If you need to touch shifts without regenerating on-call periods, use
@@ -610,12 +617,27 @@ the code.
 - Minimum 2-week gap enforced between two on-calls for the same user,
   checked against every on-call the user has (past and future), not just
   their single most recent one
+- When on-calls are wiped and regenerated for a period (the automatic
+  rebalance after a leave is added, and "Rafraîchir > Régénérer
+  entièrement" - never the "Générer" button, an explicit full reset)
+  each week prefers keeping the user it already had, instead of
+  replaying the rotation order from scratch - minimizes how much of an
+  already-working schedule gets reshuffled on every rebalance. Not a
+  guarantee: a week whose occupant has a real conflict (on leave,
+  overlapping another on-call) falls back to the rotation order for
+  that week exactly like before
 
 #### Shifts (`app/utils/automation/advanced_shift_automation.py`)
 
 - Fixed time slots: `SHIFT_07_15` (7am-3pm), `SHIFT_09_17` (9am-5pm, the
   default), `SHIFT_13_21` (1pm-9pm, reserved for that week's on-call
   person)
+- 7am-3pm minimum coverage is enforced separately from the per-user
+  rotation rules above (`_ensure_minimum_07_15_coverage()`): if none of
+  them puts anyone on that slot for a given day, one available person is
+  reassigned to it - the first one in the configured rotation order
+  (falls back to the first available person if the rotation order is
+  empty or none of its users are available that day)
 - Monday to Friday only ("weekend excluded" is not a toggle, it's simply
   never generated)
 - No "number of people per shift type per day" setting exists anywhere
@@ -639,7 +661,10 @@ previously environment variables only — is editable at runtime from
 `/admin/settings` without a redeploy: default timezone, default language
 (French/English), default date/time formats, public URL, pagination
 (items per page), email notifications (global toggle), backup retention,
-ICS token expiry duration, and audit trail retention. Each setting
+ICS token expiry duration, audit trail retention, and schedule history
+retention (how many days of *past* shifts/on-calls to keep before an
+automatic daily purge deletes them — 365 days by default, 0 disables the
+purge entirely; see `scripts/cleanup_schedule_data.py` below). Each setting
 follows the same rule: a value saved in the database always wins; as
 long as no value has been saved, the application falls back live to the
 corresponding environment variable/default value (so a deployment driven
@@ -989,6 +1014,24 @@ cp instance/app.db instance/app.db.backup-$(date +%Y%m%d)
 pg_dump kairos > kairos-backup-$(date +%Y%m%d).sql
 ```
 
+### Schedule History Cleanup
+
+`scripts/cleanup_schedule_data.py` deletes shifts and on-calls older than
+the configured retention window — controlled by the "Historique du
+planning" setting on `/admin/settings` (365 days by default, 0 disables
+the purge entirely). Unlike backups/notifications, no environment
+variable gates this one: the retention value itself is the on/off
+switch. Triggered by an external cron job — in Docker, already present
+in `docker/crontabs/appuser` (runs daily at 4am) and requires no
+`*_ENABLED` flag, since a schedule this far in the past isn't shown by
+the calendar anyway (see [`architecture/ARCHITECTURE.md`](../architecture/ARCHITECTURE.md)).
+Bare-metal deployments need their own crontab entry:
+
+```bash
+# Daily at 4am: purge old shifts/on-calls past the retention window
+0 4 * * * cd /path/to/kairos && venv/bin/python scripts/cleanup_schedule_data.py >> /var/log/kairos-cleanup.log 2>&1
+```
+
 ### Updating the Application
 
 1. Back up the database
@@ -1122,8 +1165,8 @@ dotenv run -- python run.py
 
 ### Communities
 
-- **GitHub Issues**: [https://github.com/FoxOps/leviia-schedule/issues](https://github.com/FoxOps/leviia-schedule/issues)
-- **GitHub Discussions**: [https://github.com/FoxOps/leviia-schedule/discussions](https://github.com/FoxOps/leviia-schedule/discussions)
+- **GitHub Issues**: [https://github.com/FoxOps/kairos/issues](https://github.com/FoxOps/kairos/issues)
+- **GitHub Discussions**: [https://github.com/FoxOps/kairos/discussions](https://github.com/FoxOps/kairos/discussions)
 
 ---
 

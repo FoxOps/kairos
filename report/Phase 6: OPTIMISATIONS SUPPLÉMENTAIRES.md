@@ -1,6 +1,6 @@
 # 📋 Refactoring Report - Phase 6: Additional Optimizations
 **Branch**: `refacto/phase6`
-**PR**: [#102](https://github.com/FoxOps/leviia-schedule/pull/102)
+**PR**: [#102](https://github.com/FoxOps/kairos/pull/102)
 **Start date**: 2026-07-12
 **Status**: 🟢 Ready for review
 **Base**: `main` (includes Phases 1 to 5, PR #101 merged)

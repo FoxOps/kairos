@@ -211,7 +211,7 @@ Fixed: `run_linting` (ruff/mypy/black) is now strictly aligned with
 remains conditional for the reasons above.
 
 **Important point not resolved by this PR**: this repository is hosted on
-GitHub (`FoxOps/leviia-schedule`), but `.gitlab-ci/.gitlab-ci.yml` is a
+GitHub (`FoxOps/kairos`), but `.gitlab-ci/.gitlab-ci.yml` is a
 **GitLab CI** configuration — there is **no GitHub
 Actions workflow at all** (`.github/workflows/` does not exist). Making
 this file blocking improves its intrinsic quality but, as it stands, has

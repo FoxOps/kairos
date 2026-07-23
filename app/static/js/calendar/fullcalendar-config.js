@@ -3,24 +3,32 @@
  *
  * This file was extracted from an inline <script> in index.html so the CSP
  * can enforce a strict `script-src 'self'` (an inline <script> would need
- * 'unsafe-inline' or a nonce). Server-injected data (isAdmin, events) is
- * passed via data-* attributes and a <script type="application/json"> tag
- * instead of Jinja interpolation directly into JS.
+ * 'unsafe-inline' or a nonce). Server-injected data (isAdmin) is passed via
+ * data-* attributes instead of Jinja interpolation directly into JS. The
+ * calendar's own events aren't server-injected at all: they're fetched
+ * dynamically from /api/shifts (see the `events` function below), for
+ * whatever range FullCalendar is currently viewing - not capped by a fixed
+ * window baked in at page load.
  *
- * FullCalendar stays on 6.1.21 (no bump to 7.0.0) and is loaded from
- * jsDelivr rather than cdnjs - two independent findings from real-browser
- * testing:
- *   1. cdnjs hosts neither the internal chunks nor the locale files for any
- *      version of this package that was tried (consistent 404s);
- *   2. FullCalendar 7.0.0 throws a real runtime error outside its own
- *      official build pipeline ("Class constructor ... cannot be invoked
- *      without 'new'", thrown from FullCalendar's own compiled code on the
- *      first Preact render - reproduced identically via jsDelivr AND via
- *      esm.sh, which normally rebuilds packages with their dependencies
- *      already resolved - so this is not a CDN-hosting issue but a bug in
- *      this package under this consumption mode, outside the reach of any
- *      CDN-side workaround). Stays on the last stable 6.x release, loaded
- *      from a CDN instead of being vendored locally like the rest of the app.
+ * FullCalendar 7.0.1, loaded from jsDelivr rather than cdnjs (cdnjs hosts
+ * neither the internal chunks nor the locale files for any version of this
+ * package that was tried - consistent 404s).
+ *
+ * History: 7.0.0 was attempted twice before and reverted both times -
+ * "Class constructor ... cannot be invoked without 'new'", thrown from
+ * FullCalendar's own compiled code on the first Preact render. Root-caused
+ * (see fullcalendar/fullcalendar#7472/#7474 upstream) to jsDelivr's `/+esm`
+ * transform endpoint specifically (a Rollup+Terser build/dedup bug on
+ * jsDelivr's side, not FullCalendar's) - every prior attempt here loaded it
+ * via an ESM import path (plain jsDelivr ESM imports, esm.sh) that goes
+ * through that exact endpoint. v7 also still ships a single-file global
+ * bundle (`all/global.min.js`, a plain non-module <script>, see index.html)
+ * that never touches `/+esm` - confirmed working in a real browser (no
+ * console errors, correct rendering, French locale, drag & drop) before
+ * this upgrade landed. Still worth re-testing after any future FullCalendar
+ * bump: this endpoint-specific root cause is fixed by construction for the
+ * global-bundle loading path, but re-verify rather than assume if the
+ * loading method ever changes.
  */
 import {
     announceToScreenReader,
@@ -47,8 +55,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // file loaded in index.html (locales/fr.global.min.js). Same
     // fallback rule as date-picker.js's currentLocale().
     const calendarLocale = document.documentElement.lang === 'en' ? 'en' : 'fr';
-    const eventsDataEl = document.getElementById('calendar-events-data');
-    const events = eventsDataEl ? JSON.parse(eventsDataEl.textContent) : [];
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 
     // Read edit-mode state from the URL
@@ -138,6 +144,131 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Shared by eventDrop/eventResize/eventClick/the Delete keyboard
+    // shortcut below - the type -> REST endpoint mapping was previously
+    // copy-pasted at each of those 4 call sites.
+    function resolveEventEndpoint(type, resourceId) {
+        if (type === 'shift') return `/api/shifts/${resourceId}`;
+        if (type === 'oncall') return `/api/oncall/${resourceId}`;
+        if (type === 'leave') return `/api/leave/${resourceId}`;
+        return null;
+    }
+
+    // Shared by eventDrop/eventResize - both send the exact same PATCH
+    // request and handle success/error identically, only the console
+    // log label and the error announcement key differ. References
+    // `calendar` by closure - safe even though `calendar` itself isn't
+    // assigned until below this function declaration, since patchEvent
+    // is only ever *called* later, from within the Calendar's own event
+    // handlers, by which point `calendar` is fully assigned.
+    function patchEvent(info, { logLabel, errorKey }) {
+        const event = info.event;
+        const eventId = event.id;
+        const newStart = event.start;
+        const newEnd = event.end;
+
+        if (!eventId || eventId === undefined) {
+            // A new event created by an external drop.
+            return;
+        }
+
+        const extendedProps = event.extendedProps || {};
+        const endpoint = resolveEventEndpoint(extendedProps.type, extendedProps.resourceId);
+        if (!endpoint) {
+            info.revert();
+            return;
+        }
+
+        fetch(endpoint, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                start: newStart.toISOString(),
+                end: newEnd.toISOString()
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log(`${logLabel}:`, data.message);
+                    // Only refetch the calendar's events (FullCalendar
+                    // AJAX request) instead of the whole page, to avoid
+                    // losing the user's context (filters, scroll,
+                    // current view).
+                    calendar.refetchEvents();
+                    if (data.rebalance_warning) {
+                        announceToScreenReader(getString('rebalance_warning'), 'assertive');
+                    }
+                } else {
+                    info.revert();
+                    announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
+                }
+            })
+            .catch(error => {
+                info.revert();
+                console.error('Error:', error);
+                announceToScreenReader(getString(errorKey), 'assertive');
+            });
+    }
+
+    // Shared by eventClick (click-to-delete in edit mode) and the
+    // Delete/Suppr keyboard shortcut below - resolves the confirmation
+    // message for the event's type, confirms, then DELETEs it.
+    function deleteEvent(event) {
+        const extendedProps = event.extendedProps || {};
+        const type = extendedProps.type;
+        const resourceId = extendedProps.resourceId;
+        const endpoint = resolveEventEndpoint(type, resourceId);
+        if (!endpoint) {
+            return;
+        }
+
+        const confirmMessageKeys = {
+            shift: 'confirm_delete_shift',
+            oncall: 'confirm_delete_oncall',
+            leave: 'confirm_delete_leave'
+        };
+        const message = getString(confirmMessageKeys[type]);
+
+        confirmActionAccessible(message,
+            () => {
+                fetch(endpoint, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrfToken
+                    },
+                    credentials: 'same-origin'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            event.remove();
+                            console.log('Event deleted:', data.message);
+                            announceToScreenReader(getString('event_deleted'), 'polite');
+                            // Reload the page to resync with the backend
+                            location.reload();
+                        } else {
+                            announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        announceToScreenReader(getString('delete_error'), 'assertive');
+                    });
+            },
+            () => {
+                announceToScreenReader(getString('delete_cancelled'), 'polite');
+            }
+        );
+    }
+
     const calendar = new FullCalendar.Calendar(calendarEl, {
         // Event start/end strings from the server are already translated
         // into the viewer's own timezone (server-side, via
@@ -158,7 +289,85 @@ document.addEventListener('DOMContentLoaded', function () {
             center: 'title',
             right: 'dayGridMonth,timeGridWeek,timeGridDay'
         },
-        events: events,
+        // v7 changed the Week view's default titleFormat to omit the day
+        // number entirely (month/year only, e.g. "juillet 2026") - with no
+        // day range shown, the title alone can no longer tell which week
+        // is displayed (confirmed against the official v6->v7 upgrade
+        // guide, and empirically: the title stayed identical across
+        // Prev/Next clicks within the same month). Restored via a
+        // view-specific override; FullCalendar formats the range through
+        // the standard Intl API (no more internal range-formatting logic
+        // in v7), so a single day-inclusive format here is enough to get
+        // a real "20 - 26 juillet 2026"-style range back.
+        views: {
+            timeGridWeek: {
+                titleFormat: { year: 'numeric', month: 'long', day: 'numeric' }
+            }
+        },
+        // Render prev/next as icons instead of the spelled-out "Précédent"/
+        // "Suivant" text - v7 dropped the old top-level buttonIcons option
+        // (a small built-in icon font), so this is now done per-button via
+        // `buttons` (the v7 rename of v6's customButtons; also used to
+        // override built-ins, not just add new ones). display:'icon' keeps
+        // rendering to iconContent only, but FullCalendar still derives the
+        // button's accessible name (aria-label) from its own localized
+        // buttonText/buttonHint default - not overridden here - since we
+        // only override how it's drawn, not its text/hint. Font Awesome's
+        // SVG+JS mode replaces this <i> with an inline <svg> after mount,
+        // same as every other icon in this app (see index.html's own
+        // fa-chevron-* usage elsewhere) - aria-hidden because the
+        // accessible name already lives on the <button> itself.
+        buttons: {
+            prev: {
+                display: 'icon',
+                iconContent: { html: '<i class="fas fa-chevron-left" aria-hidden="true"></i>' }
+            },
+            next: {
+                display: 'icon',
+                iconContent: { html: '<i class="fas fa-chevron-right" aria-hidden="true"></i>' }
+            }
+        },
+        // Dynamic source (not a static embedded array): fetches
+        // /api/shifts for exactly the range FullCalendar is currently
+        // viewing, so navigating far into the past/future - e.g. a
+        // schedule generated a year ahead - always shows real data
+        // instead of being capped by a fixed window baked in at page
+        // load. Also what makes calendar.refetchEvents() (called after
+        // a drag/drop reschedule below) actually pull fresh data
+        // instead of being a no-op against a static array.
+        events: function (fetchInfo, successCallback, failureCallback) {
+            const params = new URLSearchParams({
+                start: fetchInfo.startStr,
+                end: fetchInfo.endStr
+            });
+            fetch(`/api/shifts?${params}`, { credentials: 'same-origin' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(successCallback)
+                .catch(error => {
+                    console.error('Failed to load calendar events:', error);
+                    failureCallback(error);
+                });
+        },
+        loading: function (isLoading) {
+            if (isLoading) {
+                return;
+            }
+            // Swap the loading skeleton (daisyUI skeleton) for the
+            // calendar once its first real data fetch has settled -
+            // calendar.render() itself returns before an async events
+            // source resolves, so hiding it any earlier would flash an
+            // empty grid.
+            const calendarSkeleton = document.getElementById('calendar-skeleton');
+            if (calendarSkeleton) {
+                calendarSkeleton.classList.add('hidden');
+            }
+            calendarEl.classList.remove('hidden');
+        },
         locale: calendarLocale,
         firstDay: 1,
         eventTimeFormat: {
@@ -166,7 +375,10 @@ document.addEventListener('DOMContentLoaded', function () {
             minute: '2-digit',
             hour12: hour12
         },
-        slotLabelFormat: {
+        // v7 renamed slotLabelFormat -> slotHeaderFormat (confirmed against
+        // the official v6->v7 upgrade guide; the old name is silently
+        // ignored, only logging a console warning, not an error).
+        slotHeaderFormat: {
             hour: '2-digit',
             minute: '2-digit',
             hour12: hour12
@@ -180,143 +392,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Drag & drop configuration
         eventDrop: function (info) {
-            // Called when an event is dropped
-            const event = info.event;
-            const eventId = event.id;
-            const newStart = event.start;
-            const newEnd = event.end;
-
-            if (!eventId || eventId === undefined) {
-                // This is a new event created by an external drop
-                return;
-            }
-
-            // Determine the event type and the resource ID
-            const extendedProps = event.extendedProps || {};
-            const type = extendedProps.type;
-            const resourceId = extendedProps.resourceId;
-
-            let endpoint = '';
-
-            if (type === 'shift') {
-                endpoint = `/api/shifts/${resourceId}`;
-            } else if (type === 'oncall') {
-                endpoint = `/api/oncall/${resourceId}`;
-            } else if (type === 'leave') {
-                endpoint = `/api/leave/${resourceId}`;
-            } else {
-                info.revert();
-                return;
-            }
-
-            // Send the update to the server
-            fetch(endpoint, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': csrfToken
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({
-                    start: newStart.toISOString(),
-                    end: newEnd.toISOString()
-                })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        console.log('Event updated:', data.message);
-                        // Only refetch the calendar's events (FullCalendar
-                        // AJAX request) instead of the whole page, to avoid
-                        // losing the user's context (filters, scroll,
-                        // current view).
-                        calendar.refetchEvents();
-                        if (data.rebalance_warning) {
-                            announceToScreenReader(
-                                getString('rebalance_warning'),
-                                'assertive'
-                            );
-                        }
-                    } else {
-                        // Revert the change on error
-                        info.revert();
-                        announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
-                    }
-                })
-                .catch(error => {
-                    info.revert();
-                    console.error('Error:', error);
-                    announceToScreenReader(getString('update_error'), 'assertive');
-                });
+            patchEvent(info, { logLabel: 'Event updated', errorKey: 'update_error' });
         },
 
         eventResize: function (info) {
-            // Called when an event is resized
-            const event = info.event;
-            const eventId = event.id;
-            const newStart = event.start;
-            const newEnd = event.end;
-
-            if (!eventId || eventId === undefined) {
-                return;
-            }
-
-            // Determine the event type and the resource ID
-            const extendedProps = event.extendedProps || {};
-            const type = extendedProps.type;
-            const resourceId = extendedProps.resourceId;
-
-            let endpoint = '';
-
-            if (type === 'shift') {
-                endpoint = `/api/shifts/${resourceId}`;
-            } else if (type === 'oncall') {
-                endpoint = `/api/oncall/${resourceId}`;
-            } else if (type === 'leave') {
-                endpoint = `/api/leave/${resourceId}`;
-            } else {
-                info.revert();
-                return;
-            }
-
-            // Send the update to the server
-            fetch(endpoint, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': csrfToken
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({
-                    start: newStart.toISOString(),
-                    end: newEnd.toISOString()
-                })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        console.log('Event resized:', data.message);
-                        // Only refetch the calendar's events, not the whole
-                        // page (see eventDrop above).
-                        calendar.refetchEvents();
-                        if (data.rebalance_warning) {
-                            announceToScreenReader(
-                                getString('rebalance_warning'),
-                                'assertive'
-                            );
-                        }
-                    } else {
-                        info.revert();
-                        announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
-                    }
-                })
-                .catch(error => {
-                    info.revert();
-                    console.error('Error:', error);
-                    announceToScreenReader(getString('resize_error'), 'assertive');
-                });
+            patchEvent(info, { logLabel: 'Event resized', errorKey: 'resize_error' });
         },
 
         select: function (info) {
@@ -348,59 +428,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // In edit mode, clicking an event deletes it (with confirmation)
             // Outside edit mode, clicking does nothing
             if (editModeEnabled && isAdmin) {
-                // Determine the event type and the resource ID
-                const extendedProps = event.extendedProps || {};
-                const type = extendedProps.type;
-                const resourceId = extendedProps.resourceId;
-
-                let endpoint = '';
-                let message = '';
-
-                if (type === 'shift') {
-                    endpoint = `/api/shifts/${resourceId}`;
-                    message = getString('confirm_delete_shift');
-                } else if (type === 'oncall') {
-                    endpoint = `/api/oncall/${resourceId}`;
-                    message = getString('confirm_delete_oncall');
-                } else if (type === 'leave') {
-                    endpoint = `/api/leave/${resourceId}`;
-                    message = getString('confirm_delete_leave');
-                } else {
-                    return;
-                }
-
-                confirmActionAccessible(message,
-                    () => {
-                        fetch(endpoint, {
-                            method: 'DELETE',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'X-CSRFToken': csrfToken
-                            },
-                            credentials: 'same-origin'
-                        })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success) {
-                                    event.remove();
-                                    console.log('Event deleted:', data.message);
-                                    announceToScreenReader(getString('event_deleted'), 'polite');
-                                    // Reload the page to resync with the backend
-                                    location.reload();
-                                } else {
-                                    announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error:', error);
-                                announceToScreenReader(getString('delete_error'), 'assertive');
-                            });
-                    },
-                    () => {
-                        announceToScreenReader(getString('delete_cancelled'), 'polite');
-                    }
-                );
+                deleteEvent(event);
             }
         },
 
@@ -424,14 +452,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     calendar.render();
-
-    // Swap the loading skeleton (daisyUI skeleton) for the calendar once
-    // its first render is done.
-    const calendarSkeleton = document.getElementById('calendar-skeleton');
-    if (calendarSkeleton) {
-        calendarSkeleton.classList.add('hidden');
-    }
-    calendarEl.classList.remove('hidden');
+    // Skeleton/calendar visibility swap now happens in the `loading`
+    // callback above, once the first events fetch actually settles.
 
     // Expose the calendar globally
     window.calendar = calendar;
@@ -640,59 +662,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (e.key === 'Delete' || e.key === 'Suppr') {
             const selectedEvent = window.selectedEvent;
             if (selectedEvent && isAdmin && editModeEnabled) {
-                // Determine the event type and the resource ID
-                const extendedProps = selectedEvent.extendedProps || {};
-                const type = extendedProps.type;
-                const resourceId = extendedProps.resourceId;
-
-                let endpoint = '';
-                let message = '';
-
-                if (type === 'shift') {
-                    endpoint = `/api/shifts/${resourceId}`;
-                    message = getString('confirm_delete_shift');
-                } else if (type === 'oncall') {
-                    endpoint = `/api/oncall/${resourceId}`;
-                    message = getString('confirm_delete_oncall');
-                } else if (type === 'leave') {
-                    endpoint = `/api/leave/${resourceId}`;
-                    message = getString('confirm_delete_leave');
-                } else {
-                    return;
-                }
-
-                confirmActionAccessible(message,
-                    () => {
-                        fetch(endpoint, {
-                            method: 'DELETE',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'X-CSRFToken': csrfToken
-                            },
-                            credentials: 'same-origin'
-                        })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success) {
-                                    selectedEvent.remove();
-                                    console.log('Event deleted:', data.message);
-                                    announceToScreenReader(getString('event_deleted'), 'polite');
-                                    // Reload the page to resync with the backend
-                                    location.reload();
-                                } else {
-                                    announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error:', error);
-                                announceToScreenReader(getString('delete_error'), 'assertive');
-                            });
-                    },
-                    () => {
-                        announceToScreenReader(getString('delete_cancelled'), 'polite');
-                    }
-                );
+                deleteEvent(selectedEvent);
             }
         }
     });

@@ -12,8 +12,8 @@ No need to clone the repository - two files are enough:
 
 ```bash
 mkdir kairos && cd kairos
-curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/docker-compose.example.yml
-curl -o .env https://raw.githubusercontent.com/FoxOps/leviia-schedule/main/docker/.env.example
+curl -o docker-compose.yml https://raw.githubusercontent.com/FoxOps/kairos/main/docker/docker-compose.example.yml
+curl -o .env https://raw.githubusercontent.com/FoxOps/kairos/main/docker/.env.example
 
 nano .env  # KAIROS_IMAGE=ghcr.io/foxops/kairos:latest, SECRET_KEY, DEFAULT_ADMIN_PASSWORD
 
@@ -42,8 +42,8 @@ Reserved for developing on the code or for cases where Docker is not
 available - the Docker image above remains the primary method.
 
 ```bash
-git clone https://github.com/FoxOps/leviia-schedule.git
-cd leviia-schedule
+git clone https://github.com/FoxOps/kairos.git
+cd kairos
 python -m venv venv
 source venv/bin/activate  # Linux/macOS
 # venv\Scripts\activate  # Windows
@@ -225,8 +225,8 @@ make all
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/FoxOps/leviia-schedule/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/FoxOps/leviia-schedule/discussions)
+- **Issues**: [GitHub Issues](https://github.com/FoxOps/kairos/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/FoxOps/kairos/discussions)
 - **License**: CeCILL v2.1
 
 ---

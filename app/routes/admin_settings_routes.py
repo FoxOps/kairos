@@ -20,6 +20,18 @@ from app.utils.helpers.common_helpers import (
 from scripts.backup_config import BackupConfig
 
 
+def _parse_int_fields(*names: str) -> list[int] | None:
+    """Parses each named field from request.form as int, None if any of
+    them isn't a valid integer - the caller still owns which error
+    message to flash for its own section, this only removes the
+    try/except ValueError boilerplate repeated across the pagination/
+    backups/audit/ics sections below."""
+    try:
+        return [int(request.form.get(name, "")) for name in names]
+    except ValueError:
+        return None
+
+
 @admin_bp.route("/admin/settings", methods=["GET", "POST"])
 @admin_required
 def settings_dashboard():
@@ -67,13 +79,11 @@ def settings_dashboard():
                 flash(_("URL publique enregistrée"), "success")
 
         elif section == "pagination":
-            try:
-                items_per_page = int(request.form.get("items_per_page", ""))
-                max_per_page = int(request.form.get("max_per_page", ""))
-            except ValueError:
+            parsed = _parse_int_fields("items_per_page", "max_per_page")
+            if parsed is None:
                 flash(_("Erreur : valeurs de pagination invalides"), "danger")
             else:
-                error = SettingsService.set_pagination(items_per_page, max_per_page)
+                error = SettingsService.set_pagination(*parsed)
                 if error:
                     flash(_("Erreur : %(error)s", error=error), "danger")
                 else:
@@ -88,43 +98,44 @@ def settings_dashboard():
                 flash(_("Notifications enregistrées"), "success")
 
         elif section == "backups":
-            try:
-                retention_days = int(request.form.get("backup_retention_days", ""))
-                max_backups = int(request.form.get("backup_max_backups", ""))
-            except ValueError:
+            parsed = _parse_int_fields("backup_retention_days", "backup_max_backups")
+            if parsed is None:
                 flash(_("Erreur : valeurs de sauvegarde invalides"), "danger")
             else:
-                error = SettingsService.set_backup_retention(
-                    retention_days, max_backups
-                )
+                error = SettingsService.set_backup_retention(*parsed)
                 if error:
                     flash(_("Erreur : %(error)s", error=error), "danger")
                 else:
                     flash(_("Rétention des sauvegardes enregistrée"), "success")
 
         elif section == "audit":
-            try:
-                audit_log_retention_days = int(
-                    request.form.get("audit_log_retention_days", "")
-                )
-            except ValueError:
+            parsed = _parse_int_fields("audit_log_retention_days")
+            if parsed is None:
                 flash(_("Erreur : durée de rétention invalide"), "danger")
             else:
-                error = SettingsService.set_audit_log_retention_days(
-                    audit_log_retention_days
-                )
+                error = SettingsService.set_audit_log_retention_days(parsed[0])
                 if error:
                     flash(_("Erreur : %(error)s", error=error), "danger")
                 else:
                     flash(_("Rétention de l'audit trail enregistrée"), "success")
 
+        elif section == "schedule":
+            parsed = _parse_int_fields("schedule_retention_days")
+            if parsed is None:
+                flash(_("Erreur : durée de rétention invalide"), "danger")
+            else:
+                error = SettingsService.set_schedule_retention_days(parsed[0])
+                if error:
+                    flash(_("Erreur : %(error)s", error=error), "danger")
+                else:
+                    flash(_("Rétention du planning enregistrée"), "success")
+
         elif section == "ics":
-            try:
-                expiry_days = int(request.form.get("ics_token_expiry_days", ""))
-            except ValueError:
+            parsed = _parse_int_fields("ics_token_expiry_days")
+            if parsed is None:
                 flash(_("Erreur : durée d'expiration invalide"), "danger")
             else:
-                error = SettingsService.set_ics_token_expiry_days(expiry_days)
+                error = SettingsService.set_ics_token_expiry_days(parsed[0])
                 if error:
                     flash(_("Erreur : %(error)s", error=error), "danger")
                 else:
@@ -154,4 +165,5 @@ def settings_dashboard():
         or env_backup_defaults.max_backups,
         ics_token_expiry_days=SettingsService.get_ics_token_expiry_days(),
         audit_log_retention_days=SettingsService.get_audit_log_retention_days(),
+        schedule_retention_days=SettingsService.get_schedule_retention_days(),
     )

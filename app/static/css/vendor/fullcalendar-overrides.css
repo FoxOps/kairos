@@ -1,44 +1,219 @@
 /* ============================================
    FULLCALENDAR OVERRIDES (light / default theme)
    ============================================
-   FullCalendar is loaded from cdn.jsdelivr.net (kept at 6.1.21, not
-   cdnjs like the rest of this app's CDN assets) and has no separate
-   CSS file - its style is bundled into its JS. This
-   file holds only OUR overrides to fit it into the app. Dark-theme-
-   specific overrides live in themes/dark.css. Hex fallbacks = Alucard
-   (light theme) values from the Dracula/Alucard palette - purely
-   defensive, the variables always resolve in practice (defined
-   unconditionally in theme-colors.css).
+   FullCalendar is loaded from cdn.jsdelivr.net (not cdnjs like the
+   rest of this app's CDN assets) - see index.html. v7 ships a real
+   base stylesheet (skeleton.css, structural layout only, no colors),
+   linked before this file; this file holds only OUR overrides to fit
+   it into the app on top of that skeleton, deliberately not one of
+   FullCalendar's own bundled visual themes. Dark-theme-specific
+   overrides live in themes/dark.css. Hex fallbacks = Alucard (light
+   theme) values from the Dracula/Alucard palette - purely defensive,
+   the variables always resolve in practice (defined unconditionally
+   in theme-colors.css).
    ============================================ */
 
 #calendar {
     width: 100%;
     max-width: 100%;
-    /* Toolbar buttons (Month/Week/Day, Today, prev/next): FullCalendar
-       used its own generic blue-gray by default, never tied to the app's
-       palette - aligned here on --app-color-primary (theme-aware via
-       theme-colors.css, so it's correct in both themes with no
-       duplication in dark.css). */
-    --fc-button-text-color: var(--color-primary-content, #fffbeb);
-    --fc-button-bg-color: var(--app-color-primary, #644ac9);
-    --fc-button-border-color: var(--app-color-primary, #644ac9);
-    --fc-button-hover-bg-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 85%, black);
-    --fc-button-hover-border-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 85%, black);
-    --fc-button-active-bg-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 70%, black);
-    --fc-button-active-border-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 70%, black);
 }
 
-/* FullCalendar doesn't paint its events with the usual CSS properties
-   (background-color/color) on the .fc-event element itself - the inner
-   elements that actually render the text (.fc-event-main, notably in
-   the Week/Day views) read their own --fc-event-bg-color/
-   --fc-event-border-color/--fc-event-text-color variables (default #fff
-   for the text, never read from a plain `color` rule on the container).
-   Hence the bug this caused: unreadable white text on a light background
-   in the dark theme (Week/Day views), while the Month view (different
-   background, different render path) looked fine. Overriding these
-   variables rather than the plain CSS properties is FullCalendar's
-   officially documented theming API. */
+/* v7's skeleton.css only lays out the calendar body grid - unlike v6, it
+   gives the toolbar (prev/next/today, title, view-switcher) no flex layout
+   and no button chrome at all, and no longer reads a --fc-button-* CSS
+   custom-property API either (confirmed empirically: neither string
+   appears anywhere in the v7 bundle, skeleton.css, or a bundled theme's
+   own CSS). Both used to be free in v6's self-injected base CSS; in v7
+   they only exist bundled INSIDE an optional visual theme (its own
+   theme.css paired with its own class-name-generating JS), which this app
+   deliberately doesn't load (see file header). FullCalendar's own
+   structural classes on the toolbar's wrapper <div>s are unstable hashed
+   short codes with zero public contract - so this app lays out the
+   toolbar and styles its buttons itself, scoped by DOM position
+   (FullCalendar always renders the toolbar as #calendar's first child)
+   and by <button>/ARIA attributes (role="tab", aria-selected,
+   disabled) rather than by class name, since those are part of
+   FullCalendar's actual stable (accessibility) contract. */
+#calendar > div:first-child {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+/* The nav-button group (prev/next) is a grandchild with no distinguishing
+   attribute (unlike the view-switcher group, which has role="tablist") -
+   the extra `> div > div` selector reaches it structurally so prev/next
+   get the same gap as every other button group in the toolbar. */
+#calendar > div:first-child > div,
+#calendar > div:first-child > div > div,
+#calendar > div:first-child [role="tablist"] {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+#calendar button {
+    cursor: pointer;
+    font: inherit;
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--app-radius-small, 6px);
+    border: 1px solid var(--app-color-primary, #644ac9);
+    background-color: var(--app-color-primary, #644ac9);
+    color: var(--color-primary-content, #fffbeb);
+    transition: background-color 0.15s ease-out, border-color 0.15s ease-out;
+}
+
+#calendar button:hover:not(:disabled) {
+    background-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 85%, black);
+    border-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 85%, black);
+}
+
+/* Today button: FullCalendar disables it natively (not a class) once
+   already on today - reflect that instead of leaving it fully opaque and
+   clickable-looking. */
+#calendar button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* Active Month/Week/Day tab: FullCalendar marks it via aria-selected
+   (accessibility contract, stable) rather than a themeable class. */
+#calendar button[aria-selected="true"] {
+    background-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 70%, black);
+    border-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 70%, black);
+}
+
+/* Same v7 regression, applied to the toolbar title ("juillet 2026" /
+   week-range / day date): skeleton.css leaves it at whatever the
+   ambient default is - confirmed via getComputedStyle: 12px/400, even
+   smaller and lighter than the day-of-week column headers (12px/600)
+   right below it, illegible next to the rest of the toolbar. Matches
+   this app's own h2 section-title scale (text-lg font-semibold, e.g.
+   the "Calendrier"/"Actions rapides" card titles) rather than
+   inventing a new one. */
+#calendar [role="heading"] {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+/* Same v7 regression as the toolbar above, applied to the day/week grid
+   itself: skeleton.css only resets borders to 0 (utility classes) and
+   never draws real ones - the grid lines separating days/weeks, and the
+   spacing/rounding around each event, lived in v6's self-injected base
+   CSS and now only exist inside an optional bundled theme. FullCalendar's
+   day/week grid is marked up per the ARIA grid pattern
+   (role="grid"/"row"/"columnheader"/"gridcell"/"rowheader") - a stable,
+   accessibility-mandated contract, unlike its hashed structural classes -
+   so grid lines are drawn against those roles instead.
+
+   !important is required here, not just defensive: those same gridcell/
+   columnheader elements also carry one of skeleton.css's own border-reset
+   utility classes (e.g. .fc-Hm / .fc-6s, both `border...: 0 !important`)
+   - confirmed via getComputedStyle in a real browser, where a first
+   attempt without !important resolved to a real, silent 0px border
+   despite looking correct in the stylesheet. A !important border of our
+   own is the only way to win against those. */
+#calendar [role="grid"] {
+    border: 1px solid var(--border-secondary) !important;
+    border-radius: var(--app-radius-small, 6px);
+    overflow: hidden;
+}
+
+/* Same !important requirement as the borders above, same reason: these
+   elements also carry skeleton.css's own `.fc-np` utility class
+   (`padding: 0 !important`) - confirmed via getComputedStyle showing a
+   real 0px padding despite this rule looking correct without !important
+   first. Without it, header/day-number text sits flush against the left
+   edge, colliding with the outer grid's own rounded corner (worst on
+   Monday's abbreviated label). */
+#calendar [role="columnheader"] {
+    border-bottom: 1px solid var(--border-secondary) !important;
+    border-inline-end: 1px solid var(--border-secondary) !important;
+    padding: 0.35rem 0.5rem !important;
+    font-weight: 600;
+}
+
+#calendar [role="gridcell"],
+#calendar [role="rowheader"] {
+    border-bottom: 1px solid var(--border-secondary) !important;
+    border-inline-end: 1px solid var(--border-secondary) !important;
+    padding: 0.35rem 0.5rem !important;
+}
+
+/* "Today" highlight: v7 marks the current day's cell/column-header with
+   aria-current="date" (a new accessibility feature - it did not exist as
+   an ARIA attribute in v6, which relied on its own removed .fc-day-today
+   class instead) - restored via this stable hook rather than a hashed
+   class. */
+#calendar [aria-current="date"] {
+    background-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 10%, transparent);
+}
+
+/* FullCalendar reads its own --fc-event-bg-color/--fc-event-border-color/
+   --fc-event-text-color variables for event coloring rather than the
+   plain background-color/border-color/color properties - overriding
+   these variables (in addition to the plain properties, for the same
+   value, as defensive belt-and-suspenders) is FullCalendar's officially
+   documented theming API for event colors. */
+/* margin/padding/border-radius (not colors) also lost in v7 for the same
+   reason - each event used to render as a small rounded, spaced-out pill
+   by default; without a theme it's a flush, square block instead. Applied
+   here rather than as a separate rule since it's the same "restore what
+   v7's skeleton dropped" concern as the colors right below. */
+.fc-event-shift,
+.fc-event-oncall,
+.fc-event-leave {
+    margin: 1px 3px;
+    padding: 1px 4px;
+    border-radius: 4px;
+}
+
+/* Event time + title regression: FullCalendar's default (theme-less)
+   event markup is just two bare, class-less <div>s (time, title) inside
+   one wrapper div - confirmed via a real DOM dump, neither carries any
+   class FullCalendar itself assigns, only the render-hook classNames a
+   theme would normally supply. That wrapper has no display set either
+   (skeleton.css doesn't touch it), so the two <div>s default-stack as
+   plain block content - one event per TWO lines (time, then title)
+   instead of v6's single "07:00 Pierre - Matin" line. Confirmed via
+   getComputedStyle (display: block on the wrapper) before writing this
+   fix - not assumed from the screenshot alone. Scoped via our own
+   className's direct child (:first-child guards against ever matching
+   a nested event, e.g. the shift-creation modal has no such nesting
+   today, but this is cheap insurance) since FullCalendar assigns no
+   class of its own to that wrapper to target instead.
+
+   flex-wrap is deliberately nowrap, not wrap: a long title (e.g. a long
+   user display name) would otherwise still wrap onto its own line
+   whenever time+title together don't fit the cell's width - recreating
+   the very "two lines" bug this rule exists to fix, just for longer
+   names instead of every name. Truncating the title with an ellipsis
+   below keeps every event a fixed single line regardless of name
+   length, and never grows the row height unexpectedly either. */
+.fc-event-shift > div:first-child,
+.fc-event-oncall > div:first-child,
+.fc-event-leave > div:first-child {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+    flex-wrap: nowrap;
+}
+
+/* The title is always the wrapper's last child (time is always first) -
+   shrinks and truncates first so the time never gets cut off instead. */
+.fc-event-shift > div:first-child > div:last-child,
+.fc-event-oncall > div:first-child > div:last-child,
+.fc-event-leave > div:first-child > div:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
 .fc-event-shift {
     --fc-event-bg-color: var(--app-color-primary, #644ac9);
     --fc-event-border-color: var(--app-color-primary, #644ac9);
@@ -66,41 +241,22 @@
     color: var(--color-error-content, #fffbeb);
 }
 
-/* .fc-event-main (the text actually rendered) only reads the variables
-   above, not `color` - an explicit safety net in case a future
-   FullCalendar version changes this behavior. */
-.fc-event-shift .fc-event-main,
-.fc-event-oncall .fc-event-main,
-.fc-event-leave .fc-event-main {
-    color: var(--fc-event-text-color);
-}
-
-/* FullCalendar forces appearance:button on its toolbar buttons (Month/
-   Week/Day, Today, prev/next) - some rendering engines then paint the
-   native OS widget on top of background-color, even though it's still
-   correct in the computed CSS (this caused the "active" button to
-   render light/native despite a correct dark --fc-button-active-bg-color,
-   with unreadable white text on top). appearance:none hands full control
-   back to background-color. */
-.fc-button {
-    appearance: none;
-    -webkit-appearance: none;
-}
-
-/* Drag and drop */
-.fc-event-draggable,
-.fc-event-resizable {
-    cursor: move;
-}
-
-.fc-event-mirror {
-    opacity: 0.75;
-    z-index: 10000;
-}
-
-.fc-event-selected {
-    box-shadow: 0 0 0 2px var(--app-color-warning, #a34d14);
-}
+/* v7 confirmed dead (0 matches in the v7 bundle/skeleton/any bundled
+   theme's CSS), removed rather than left as misleading no-op selectors:
+   .fc-event-main (text color already inherits fine from .fc-event-shift/
+   -oncall/-leave directly - verified rendering correctly without it),
+   .fc-button (superseded by the #calendar button rules above, which don't
+   need an appearance:none reset since they never set appearance:button in
+   the first place), .fc-event-draggable/-resizable (cursor:move
+   affordance during drag - lost, but the drag/resize operation itself is
+   unaffected, purely a mouse-cursor cosmetic), .fc-event-mirror (the
+   semi-transparent drag-ghost effect - same, cosmetic only) and
+   .fc-event-selected. FullCalendar v7 has no public class-name hook for
+   any of these anymore (only for fully custom-defined buttons via
+   customButtons); reproducing the effect would mean hardcoding one of its
+   internal hashed classes, which can change on any future FullCalendar
+   patch release - not a stable trade worth making for a cosmetic-only
+   regression. Revisit if FullCalendar adds a stable hook later. */
 
 /* External events container (drag & drop from outside the calendar) */
 .external-event-container {

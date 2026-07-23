@@ -36,6 +36,9 @@ Services:
   (bell icon).
 - service_account_service: Admin-managed bearer credentials for the
   public REST API (app/api/) - creation/revocation/secret regeneration.
+- schedule_cleanup_service: Retention-based purge of past shifts/
+  on-calls (Setting schedule_retention_days, default 365, 0 = never),
+  called by scripts/cleanup_schedule_data.py, not by any Flask route.
 """
 
 from app.services.app_notification_service import AppNotificationService
@@ -48,6 +51,7 @@ from app.services.group_service import GroupService
 from app.services.leave_service import LeaveService
 from app.services.notification_service import NotificationService
 from app.services.oncall_service import OnCallService
+from app.services.schedule_cleanup_service import ScheduleCleanupService
 from app.services.schedule_service import ScheduleService
 from app.services.service_account_service import ServiceAccountService
 from app.services.settings_service import SettingsService
@@ -74,4 +78,5 @@ __all__ = [
     "AuditService",
     "AppriseNotificationService",
     "ServiceAccountService",
+    "ScheduleCleanupService",
 ]

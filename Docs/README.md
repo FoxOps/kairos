@@ -49,11 +49,12 @@
 | [`ENVIRONMENT_VARIABLES.md`](reference/ENVIRONMENT_VARIABLES.md) | Every environment variable actually read by the application |
 | [`ERROR_HANDLING.md`](reference/ERROR_HANDLING.md) | Error pages, HTTP handlers, logging system |
 | [`PERFORMANCE_OPTIMIZATION.md`](reference/PERFORMANCE_OPTIMIZATION.md) | Cache, `eager_load`, database indexes |
+| [`VERSIONING.md`](reference/VERSIONING.md) | SemVer policy, `make bump-version`/`check-version`, Docker image tagging |
 
 ## Contributing to the documentation
 
-1. Report an error: [GitHub Issue](https://github.com/FoxOps/leviia-schedule/issues)
-2. Suggest an improvement: [GitHub Discussion](https://github.com/FoxOps/leviia-schedule/discussions)
+1. Report an error: [GitHub Issue](https://github.com/FoxOps/kairos/issues)
+2. Suggest an improvement: [GitHub Discussion](https://github.com/FoxOps/kairos/discussions)
 3. Submit a change: fork, branch, edit, Pull Request
 
 Main rule: **verify against the real code before writing**, not
@@ -64,8 +65,8 @@ common source of inaccuracies.
 ## Support
 
 - Questions: [`guides/FAQ.md`](guides/FAQ.md), then your administrator
-- Bugs: [GitHub Issues](https://github.com/FoxOps/leviia-schedule/issues)
-- New features: [`../ROADMAP.md`](../ROADMAP.md), then [GitHub Discussions](https://github.com/FoxOps/leviia-schedule/discussions)
+- Bugs: [GitHub Issues](https://github.com/FoxOps/kairos/issues)
+- New features: [`../ROADMAP.md`](../ROADMAP.md), then [GitHub Discussions](https://github.com/FoxOps/kairos/discussions)
 
 ---
 
