@@ -87,6 +87,19 @@
     border-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 70%, black);
 }
 
+/* Same v7 regression, applied to the toolbar title ("juillet 2026" /
+   week-range / day date): skeleton.css leaves it at whatever the
+   ambient default is - confirmed via getComputedStyle: 12px/400, even
+   smaller and lighter than the day-of-week column headers (12px/600)
+   right below it, illegible next to the rest of the toolbar. Matches
+   this app's own h2 section-title scale (text-lg font-semibold, e.g.
+   the "Calendrier"/"Actions rapides" card titles) rather than
+   inventing a new one. */
+#calendar [role="heading"] {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
 /* Same v7 regression as the toolbar above, applied to the day/week grid
    itself: skeleton.css only resets borders to 0 (utility classes) and
    never draws real ones - the grid lines separating days/weeks, and the
