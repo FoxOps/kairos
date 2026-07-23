@@ -1,7 +1,7 @@
 # 📋 Report - E2E Playwright Tests (real browser)
 
 **Branch**: `feature/e2e-playwright`
-**PR**: [#104](https://github.com/FoxOps/leviia-schedule/pull/104) (draft)
+**PR**: [#104](https://github.com/FoxOps/kairos/pull/104) (draft)
 **Start date**: 2026-07-13
 **Status**: 🟢 Implementation complete, verified for real
 **Base**: `main` (post UI/UX overhaul, PR #103, commit `b881b3d`)

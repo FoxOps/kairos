@@ -5428,22 +5428,6 @@ msgstr "Le mot de passe ne doit pas contenir votre adresse email."
 #~ msgid "Aucune demande d'échange en attente."
 #~ msgstr ""
 
-#~ msgid "Test de notification - Leviia Schedule"
-#~ msgstr ""
-
-#~ msgid ""
-#~ "Leviia Schedule - Gestion des plannings, astreintes et congés d'équipe."
-#~ msgstr ""
-
-#~ msgid "Accueil - Leviia"
-#~ msgstr ""
-
-#~ msgid "Version %(app_version)s | (c) 2026 Leviia"
-#~ msgstr ""
-
-#~ msgid "Calendrier - Leviia"
-#~ msgstr ""
-
 #~ msgid ""
 #~ "Générer les astreintes. Les shifts seront automatiquement générés selon les "
 #~ "règles métiers."

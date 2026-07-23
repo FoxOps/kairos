@@ -1,7 +1,7 @@
 # 📋 Report - UI/UX Overhaul: Modern, Responsive Design
 
 **Branch**: `feature/ui-ux-refonte`
-**PR**: [#103](https://github.com/FoxOps/leviia-schedule/pull/103) (draft)
+**PR**: [#103](https://github.com/FoxOps/kairos/pull/103) (draft)
 **Start date**: 2026-07-12
 **Status**: 🟢 Plan complete + real visual verification done (Playwright/Chromium, see Log)
 **Base**: `main` (post overhaul Phases 1-6, commit `ae1c091`)

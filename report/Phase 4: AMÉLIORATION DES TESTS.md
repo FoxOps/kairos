@@ -1,6 +1,6 @@
 # 📋 Refactoring Report - Phase 4: Test Improvements
 **Branch**: `refacto/phase4`
-**PR**: [#100](https://github.com/FoxOps/leviia-schedule/pull/100)
+**PR**: [#100](https://github.com/FoxOps/kairos/pull/100)
 **Start date**: 2026-07-11
 **Status**: 🟢 Done
 **Base**: `main` (includes Phases 1 + 2 + 3, PR #99 merged)

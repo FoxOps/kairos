@@ -3,7 +3,7 @@
 **Date:** June 23, 2026  
 **Version:** 1.0  
 **Auditor:** Vibe Code (Security Audit Agent)  
-**Project:** [FoxOps/leviia-schedule](https://github.com/FoxOps/leviia-schedule)  
+**Project:** [FoxOps/kairos](https://github.com/FoxOps/kairos)  
 
 ---
 
