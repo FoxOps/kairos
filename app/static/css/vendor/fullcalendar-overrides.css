@@ -115,6 +115,15 @@
     border-inline-end: 1px solid var(--border-secondary);
 }
 
+/* "Today" highlight: v7 marks the current day's cell/column-header with
+   aria-current="date" (a new accessibility feature - it did not exist as
+   an ARIA attribute in v6, which relied on its own removed .fc-day-today
+   class instead) - restored via this stable hook rather than a hashed
+   class. */
+#calendar [aria-current="date"] {
+    background-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 10%, transparent);
+}
+
 /* FullCalendar doesn't paint its events with the usual CSS properties
    (background-color/color) on the .fc-event element itself - the inner
    elements that actually render the text (.fc-event-main, notably in
