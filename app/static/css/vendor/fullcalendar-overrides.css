@@ -1,31 +1,90 @@
 /* ============================================
    FULLCALENDAR OVERRIDES (light / default theme)
    ============================================
-   FullCalendar is loaded from cdn.jsdelivr.net (kept at 6.1.21, not
-   cdnjs like the rest of this app's CDN assets) and has no separate
-   CSS file - its style is bundled into its JS. This
-   file holds only OUR overrides to fit it into the app. Dark-theme-
-   specific overrides live in themes/dark.css. Hex fallbacks = Alucard
-   (light theme) values from the Dracula/Alucard palette - purely
-   defensive, the variables always resolve in practice (defined
-   unconditionally in theme-colors.css).
+   FullCalendar is loaded from cdn.jsdelivr.net (not cdnjs like the
+   rest of this app's CDN assets) - see index.html. v7 ships a real
+   base stylesheet (skeleton.css, structural layout only, no colors),
+   linked before this file; this file holds only OUR overrides to fit
+   it into the app on top of that skeleton, deliberately not one of
+   FullCalendar's own bundled visual themes. Dark-theme-specific
+   overrides live in themes/dark.css. Hex fallbacks = Alucard (light
+   theme) values from the Dracula/Alucard palette - purely defensive,
+   the variables always resolve in practice (defined unconditionally
+   in theme-colors.css).
    ============================================ */
 
 #calendar {
     width: 100%;
     max-width: 100%;
-    /* Toolbar buttons (Month/Week/Day, Today, prev/next): FullCalendar
-       used its own generic blue-gray by default, never tied to the app's
-       palette - aligned here on --app-color-primary (theme-aware via
-       theme-colors.css, so it's correct in both themes with no
-       duplication in dark.css). */
-    --fc-button-text-color: var(--color-primary-content, #fffbeb);
-    --fc-button-bg-color: var(--app-color-primary, #644ac9);
-    --fc-button-border-color: var(--app-color-primary, #644ac9);
-    --fc-button-hover-bg-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 85%, black);
-    --fc-button-hover-border-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 85%, black);
-    --fc-button-active-bg-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 70%, black);
-    --fc-button-active-border-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 70%, black);
+}
+
+/* v7's skeleton.css only lays out the calendar body grid - unlike v6, it
+   gives the toolbar (prev/next/today, title, view-switcher) no flex layout
+   and no button chrome at all, and no longer reads a --fc-button-* CSS
+   custom-property API either (confirmed empirically: neither string
+   appears anywhere in the v7 bundle, skeleton.css, or a bundled theme's
+   own CSS). Both used to be free in v6's self-injected base CSS; in v7
+   they only exist bundled INSIDE an optional visual theme (its own
+   theme.css paired with its own class-name-generating JS), which this app
+   deliberately doesn't load (see file header). FullCalendar's own
+   structural classes on the toolbar's wrapper <div>s are unstable hashed
+   short codes with zero public contract - so this app lays out the
+   toolbar and styles its buttons itself, scoped by DOM position
+   (FullCalendar always renders the toolbar as #calendar's first child)
+   and by <button>/ARIA attributes (role="tab", aria-selected,
+   disabled) rather than by class name, since those are part of
+   FullCalendar's actual stable (accessibility) contract. */
+#calendar > div:first-child {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+/* The nav-button group (prev/next) is a grandchild with no distinguishing
+   attribute (unlike the view-switcher group, which has role="tablist") -
+   the extra `> div > div` selector reaches it structurally so prev/next
+   get the same gap as every other button group in the toolbar. */
+#calendar > div:first-child > div,
+#calendar > div:first-child > div > div,
+#calendar > div:first-child [role="tablist"] {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+#calendar button {
+    cursor: pointer;
+    font: inherit;
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--app-radius-small, 6px);
+    border: 1px solid var(--app-color-primary, #644ac9);
+    background-color: var(--app-color-primary, #644ac9);
+    color: var(--color-primary-content, #fffbeb);
+    transition: background-color 0.15s ease-out, border-color 0.15s ease-out;
+}
+
+#calendar button:hover:not(:disabled) {
+    background-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 85%, black);
+    border-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 85%, black);
+}
+
+/* Today button: FullCalendar disables it natively (not a class) once
+   already on today - reflect that instead of leaving it fully opaque and
+   clickable-looking. */
+#calendar button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* Active Month/Week/Day tab: FullCalendar marks it via aria-selected
+   (accessibility contract, stable) rather than a themeable class. */
+#calendar button[aria-selected="true"] {
+    background-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 70%, black);
+    border-color: color-mix(in oklab, var(--app-color-primary, #644ac9) 70%, black);
 }
 
 /* FullCalendar doesn't paint its events with the usual CSS properties
@@ -66,41 +125,22 @@
     color: var(--color-error-content, #fffbeb);
 }
 
-/* .fc-event-main (the text actually rendered) only reads the variables
-   above, not `color` - an explicit safety net in case a future
-   FullCalendar version changes this behavior. */
-.fc-event-shift .fc-event-main,
-.fc-event-oncall .fc-event-main,
-.fc-event-leave .fc-event-main {
-    color: var(--fc-event-text-color);
-}
-
-/* FullCalendar forces appearance:button on its toolbar buttons (Month/
-   Week/Day, Today, prev/next) - some rendering engines then paint the
-   native OS widget on top of background-color, even though it's still
-   correct in the computed CSS (this caused the "active" button to
-   render light/native despite a correct dark --fc-button-active-bg-color,
-   with unreadable white text on top). appearance:none hands full control
-   back to background-color. */
-.fc-button {
-    appearance: none;
-    -webkit-appearance: none;
-}
-
-/* Drag and drop */
-.fc-event-draggable,
-.fc-event-resizable {
-    cursor: move;
-}
-
-.fc-event-mirror {
-    opacity: 0.75;
-    z-index: 10000;
-}
-
-.fc-event-selected {
-    box-shadow: 0 0 0 2px var(--app-color-warning, #a34d14);
-}
+/* v7 confirmed dead (0 matches in the v7 bundle/skeleton/any bundled
+   theme's CSS), removed rather than left as misleading no-op selectors:
+   .fc-event-main (text color already inherits fine from .fc-event-shift/
+   -oncall/-leave directly - verified rendering correctly without it),
+   .fc-button (superseded by the #calendar button rules above, which don't
+   need an appearance:none reset since they never set appearance:button in
+   the first place), .fc-event-draggable/-resizable (cursor:move
+   affordance during drag - lost, but the drag/resize operation itself is
+   unaffected, purely a mouse-cursor cosmetic), .fc-event-mirror (the
+   semi-transparent drag-ghost effect - same, cosmetic only) and
+   .fc-event-selected. FullCalendar v7 has no public class-name hook for
+   any of these anymore (only for fully custom-defined buttons via
+   customButtons); reproducing the effect would mean hardcoding one of its
+   internal hashed classes, which can change on any future FullCalendar
+   patch release - not a stable trade worth making for a cosmetic-only
+   regression. Revisit if FullCalendar adds a stable hook later. */
 
 /* External events container (drag & drop from outside the calendar) */
 .external-event-container {
