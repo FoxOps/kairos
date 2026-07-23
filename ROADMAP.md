@@ -71,14 +71,13 @@ for muted text in the light theme; and a couple of AI-slop-adjacent
 CSS cleanups (a decorative side-border, a dead layout-property
 transition) caught by a design audit pass.
 
-A documentation catch-up pass followed (PR #182-183): the README,
+A documentation catch-up pass followed (PR #182-183, #188): the README,
 THIRD_PARTY_NOTICES, API docs, FAQ, ADMIN_GUIDE and docker.md had
 drifted across PR #167-181 (a stale ±180-day window reference, a
 missing djLint license entry, an undocumented schedule-history-cleanup
-cron job), and 26 references to the repository's old name
-(`leviia-schedule`, renamed to `kairos`) were still sitting in `Docs/` —
-a few of them a literally broken `cd leviia-schedule` right after a
-`git clone` instruction.
+cron job), and dozens of references to the repository's pre-rename name
+were still sitting across `Docs/` and `report/` — a few of them a
+literally broken `cd <old-name>` right after a `git clone` instruction.
 
 FullCalendar was then upgraded from 6.1.21 to 7.0.1 (PR #184-185). The
 previous blocker — a crash on 7.0.0, `Class constructor ... cannot be
