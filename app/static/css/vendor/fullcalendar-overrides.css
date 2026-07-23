@@ -95,24 +95,32 @@
    day/week grid is marked up per the ARIA grid pattern
    (role="grid"/"row"/"columnheader"/"gridcell"/"rowheader") - a stable,
    accessibility-mandated contract, unlike its hashed structural classes -
-   so grid lines are drawn against those roles instead. */
+   so grid lines are drawn against those roles instead.
+
+   !important is required here, not just defensive: those same gridcell/
+   columnheader elements also carry one of skeleton.css's own border-reset
+   utility classes (e.g. .fc-Hm / .fc-6s, both `border...: 0 !important`)
+   - confirmed via getComputedStyle in a real browser, where a first
+   attempt without !important resolved to a real, silent 0px border
+   despite looking correct in the stylesheet. A !important border of our
+   own is the only way to win against those. */
 #calendar [role="grid"] {
-    border: 1px solid var(--border-secondary);
+    border: 1px solid var(--border-secondary) !important;
     border-radius: var(--app-radius-small, 6px);
     overflow: hidden;
 }
 
 #calendar [role="columnheader"] {
-    border-bottom: 1px solid var(--border-secondary);
-    border-inline-end: 1px solid var(--border-secondary);
+    border-bottom: 1px solid var(--border-secondary) !important;
+    border-inline-end: 1px solid var(--border-secondary) !important;
     padding: 0.35rem 0;
     font-weight: 600;
 }
 
 #calendar [role="gridcell"],
 #calendar [role="rowheader"] {
-    border-bottom: 1px solid var(--border-secondary);
-    border-inline-end: 1px solid var(--border-secondary);
+    border-bottom: 1px solid var(--border-secondary) !important;
+    border-inline-end: 1px solid var(--border-secondary) !important;
 }
 
 /* "Today" highlight: v7 marks the current day's cell/column-header with
