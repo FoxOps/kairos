@@ -1,6 +1,6 @@
 # Roadmap
 
-**Current version: 1.0.0-rc3** — feature-complete, tested (1390+
+**Current version: 1.1.0** — feature-complete, tested (1390+
 automated tests), and used for real team scheduling.
 
 ## ✅ Done
@@ -51,8 +51,11 @@ automated tests), and used for real team scheduling.
 
 ## 🔧 In progress
 
-**1.0.0-rc3** — addressing feedback reported against `1.0.0-rc2`
-(tagged, see the `1.0.0-RC2` tag/release). Landed so far (PR #167-185):
+**1.1.0** — next development cycle, just started, nothing landed yet.
+
+`1.0.0-rc3` (tagged `1.0.0-rc3`, merged to `main` via PR #193) closed
+out feedback reported against `1.0.0-rc2` (tagged, see the
+`1.0.0-RC2` tag/release). Landed (PR #167-192):
 a guaranteed minimum 7am-3pm shift presence (previously a real gap
 could open on 7-9am/5-9pm with certain leave/availability combinations);
 minimal-perturbation on-call rebalancing (a leave no longer reshuffles
