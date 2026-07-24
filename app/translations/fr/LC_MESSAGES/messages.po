@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-24 05:43+0200\n"
+"POT-Creation-Date: 2026-07-24 09:22+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: fr <LL@li.org>\n"
@@ -1109,6 +1109,14 @@ msgid ""
 msgstr ""
 "Impossible de supprimer ce type de shift : il est utilisé dans des shifts "
 "existants."
+
+#: app/services/shift_type_service.py:94
+msgid ""
+"Impossible de supprimer ce type de shift : il est utilisé par une règle "
+"d'automatisation configurée."
+msgstr ""
+"Impossible de supprimer ce type de shift : il est utilisé par une règle "
+"d'automatisation configurée."
 
 #: app/services/swap_service.py:63
 msgid "Shift introuvable"
@@ -5091,40 +5099,40 @@ msgstr "Voir le planning : %(url)s"
 msgid "Se déconnecter"
 msgstr "Se déconnecter"
 
-#: app/utils/automation/advanced_shift_automation.py:358
-#: app/utils/automation/advanced_shift_automation.py:521
+#: app/utils/automation/advanced_shift_automation.py:394
+#: app/utils/automation/advanced_shift_automation.py:552
 #, python-format
 msgid "⏭️ Pas de shift généré pour le %(date)s (week-end)"
 msgstr "⏭️ Pas de shift généré pour le %(date)s (week-end)"
 
-#: app/utils/automation/advanced_shift_automation.py:368
+#: app/utils/automation/advanced_shift_automation.py:404
 #, python-format
 msgid "⚠️ Aucun utilisateur disponible pour le %(date)s"
 msgstr "⚠️ Aucun utilisateur disponible pour le %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:405
-#: app/utils/automation/advanced_shift_automation.py:447
-#: app/utils/automation/advanced_shift_automation.py:506
+#: app/utils/automation/advanced_shift_automation.py:440
+#: app/utils/automation/advanced_shift_automation.py:480
+#: app/utils/automation/advanced_shift_automation.py:537
 #, python-format
 msgid "❌ Erreur : %(error)s"
 msgstr "❌ Erreur : %(error)s"
 
-#: app/utils/automation/advanced_shift_automation.py:410
+#: app/utils/automation/advanced_shift_automation.py:445
 #, python-format
 msgid "✅ 1 shift généré pour le %(date)s (effectif minimum : %(name)s)"
 msgstr "✅ 1 shift généré pour le %(date)s (effectif minimum : %(name)s)"
 
-#: app/utils/automation/advanced_shift_automation.py:513
+#: app/utils/automation/advanced_shift_automation.py:544
 #, python-format
 msgid "✅ %(count)s shifts générés pour le %(date)s"
 msgstr "✅ %(count)s shifts générés pour le %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:528
+#: app/utils/automation/advanced_shift_automation.py:559
 #, python-format
 msgid "⚠️ Aucun shift généré pour le %(date)s"
 msgstr "⚠️ Aucun shift généré pour le %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:574
+#: app/utils/automation/advanced_shift_automation.py:605
 #, python-format
 msgid ""
 "📋 Prévisualisation : %(count)s shifts seraient générés pour la période du "
@@ -5133,23 +5141,23 @@ msgstr ""
 "📋 Prévisualisation : %(count)s shifts seraient générés pour la période du "
 "%(start)s au %(end)s"
 
-#: app/utils/automation/advanced_shift_automation.py:581
+#: app/utils/automation/advanced_shift_automation.py:612
 #, python-format
 msgid "🎉 %(count)s shifts générés pour la période du %(start)s au %(end)s"
 msgstr "🎉 %(count)s shifts générés pour la période du %(start)s au %(end)s"
 
-#: app/utils/automation/advanced_shift_automation.py:588
+#: app/utils/automation/advanced_shift_automation.py:619
 #, python-format
 msgid "(%(with_shifts)s jours avec shifts, %(skipped)s jours sans)"
 msgstr "(%(with_shifts)s jours avec shifts, %(skipped)s jours sans)"
 
-#: app/utils/automation/advanced_shift_automation.py:621
-#: app/utils/automation/advanced_shift_automation.py:654
+#: app/utils/automation/advanced_shift_automation.py:652
+#: app/utils/automation/advanced_shift_automation.py:685
 #, python-format
 msgid "🗑️ %(count)s shifts supprimés pour le %(date)s"
 msgstr "🗑️ %(count)s shifts supprimés pour le %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:673
+#: app/utils/automation/advanced_shift_automation.py:704
 #, python-format
 msgid ""
 "❌ Échec de la régénération du %(date)s : %(error)s - ce jour n'a pas été "
@@ -5157,24 +5165,24 @@ msgid ""
 msgstr ""
 "❌ Échec de la régénération du %(date)s : %(error)s - ce jour n'a pas été "
 "modifié, action manuelle nécessaire"
-
-#: app/utils/automation/advanced_shift_automation.py:757
-#, python-format
-msgid ""
-"🗑️ %(count)s astreinte(s) supplémentaire(s) supprimée(s) dans la période "
-"étendue avant régénération"
-msgstr ""
-"🗑️ %(count)s astreinte(s) supplémentaire(s) supprimée(s) dans la période "
-"étendue avant régénération"
-
-#: app/utils/automation/advanced_shift_automation.py:778
-#, python-format
-msgid "🔄 %(count)s astreintes régénérées pour la période %(start)s - %(end)s"
-msgstr "🔄 %(count)s astreintes régénérées pour la période %(start)s - %(end)s"
 
 #: app/utils/automation/advanced_shift_automation.py:788
 #, python-format
 msgid ""
+"🗑️ %(count)s astreinte(s) supplémentaire(s) supprimée(s) dans la période "
+"étendue avant régénération"
+msgstr ""
+"🗑️ %(count)s astreinte(s) supplémentaire(s) supprimée(s) dans la période "
+"étendue avant régénération"
+
+#: app/utils/automation/advanced_shift_automation.py:809
+#, python-format
+msgid "🔄 %(count)s astreintes régénérées pour la période %(start)s - %(end)s"
+msgstr "🔄 %(count)s astreintes régénérées pour la période %(start)s - %(end)s"
+
+#: app/utils/automation/advanced_shift_automation.py:819
+#, python-format
+msgid ""
 "❌ Échec de la régénération des astreintes pour la période %(start)s - "
 "%(end)s : %(error)s - les astreintes de cette période n'ont pas été "
 "modifiées, action manuelle nécessaire"
@@ -5183,7 +5191,7 @@ msgstr ""
 "%(end)s : %(error)s - les astreintes de cette période n'ont pas été "
 "modifiées, action manuelle nécessaire"
 
-#: app/utils/automation/advanced_shift_automation.py:896
+#: app/utils/automation/advanced_shift_automation.py:927
 #, python-format
 msgid "🗑️ %(count)s astreintes supprimées pour l'utilisateur %(user_id)s"
 msgstr "🗑️ %(count)s astreintes supprimées pour l'utilisateur %(user_id)s"

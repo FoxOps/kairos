@@ -13,11 +13,17 @@ AutomationRule.params is generic JSON.
 from app.utils.automation.rules.base import AutomationRuleType
 from app.utils.automation.rules.oncall_anchor import OnCallAnchorRule
 from app.utils.automation.rules.oncall_spacing import OnCallSpacingRule
+from app.utils.automation.rules.shift_slots import ShiftSlotsRule
 from app.utils.automation.rules.weekend_definition import WeekendDefinitionRule
 
 RULE_TYPES: dict[str, type[AutomationRuleType]] = {
     rule_cls.rule_type: rule_cls
-    for rule_cls in (OnCallAnchorRule, OnCallSpacingRule, WeekendDefinitionRule)
+    for rule_cls in (
+        OnCallAnchorRule,
+        OnCallSpacingRule,
+        ShiftSlotsRule,
+        WeekendDefinitionRule,
+    )
 }
 
 __all__ = [
@@ -25,5 +31,6 @@ __all__ = [
     "RULE_TYPES",
     "OnCallAnchorRule",
     "OnCallSpacingRule",
+    "ShiftSlotsRule",
     "WeekendDefinitionRule",
 ]

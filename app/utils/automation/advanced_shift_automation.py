@@ -71,6 +71,42 @@ class AdvancedShiftAutomation:
         return new_shift_type
 
     @staticmethod
+    def get_shift_type_for_slot(hours: tuple, group=None) -> "ShiftType":
+        """Resolve the actual configured ShiftType for one of the 3
+        role slots (SHIFT_13_21/SHIFT_07_15/SHIFT_09_17 - used
+        internally purely as role markers, not literal hours anymore)
+        via ShiftSlotsRule, instead of re-deriving a ShiftType from raw
+        hours (get_shift_type_by_hours). Fixes a bug in the latter:
+        editing a referenced ShiftType's hours via /admin/shift-types
+        made the hours-based lookup miss the renamed row and silently
+        mint an orphaning duplicate. Callers must use the returned
+        ShiftType's own start_hour/end_hour for the Shift's
+        start_time/end_time - never the role marker's hours, which may
+        now differ from the configured ShiftType."""
+        from app import db
+        from app.models import ShiftType
+        from app.utils.automation.rules import ShiftSlotsRule
+        from app.utils.automation.rules.shift_slots import (
+            DEFAULT_KEY,
+            ONCALL_KEY,
+            ROTATION_KEY,
+        )
+
+        role_key = {
+            AdvancedShiftAutomation.SHIFT_13_21: ONCALL_KEY,
+            AdvancedShiftAutomation.SHIFT_07_15: ROTATION_KEY,
+            AdvancedShiftAutomation.SHIFT_09_17: DEFAULT_KEY,
+        }[hours]
+        shift_type_id = ShiftSlotsRule.resolve(group=group)[role_key]
+        shift_type = db.session.get(ShiftType, shift_type_id)
+        if shift_type is not None:
+            return shift_type
+        # Configured id no longer exists (e.g. the ShiftType row was
+        # deleted outside the delete-protection guard) - fall back to
+        # the historical hours-based fetch-or-create rather than crash.
+        return AdvancedShiftAutomation.get_shift_type_by_hours(*hours)
+
+    @staticmethod
     def get_users_in_schedule_groups() -> list:
         """Fetch users belonging to groups that can be added to the schedule."""
         from app.models import Group, User
@@ -379,15 +415,14 @@ class AdvancedShiftAutomation:
         # person and no 14h shift type).
         if len(available_users) == 1:
             sole_user = available_users[0]
-            start_hour, end_hour = AdvancedShiftAutomation.SHIFT_07_15
-            shift_type = AdvancedShiftAutomation.get_shift_type_by_hours(
-                start_hour, end_hour
+            shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(
+                AdvancedShiftAutomation.SHIFT_07_15
             )
             start_time = datetime.combine(date, datetime.min.time()).replace(
-                hour=start_hour
+                hour=shift_type.start_hour
             )
             end_time = datetime.combine(date, datetime.min.time()).replace(
-                hour=end_hour
+                hour=shift_type.end_hour
             )
             shift = Shift(
                 user_id=sole_user.id,
@@ -420,15 +455,13 @@ class AdvancedShiftAutomation:
                 available_users, date
             )
             if assignments:
-                for user, (start_hour, end_hour) in assignments.items():
-                    shift_type = AdvancedShiftAutomation.get_shift_type_by_hours(
-                        start_hour, end_hour
-                    )
+                for user, hours in assignments.items():
+                    shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(hours)
                     start_time = datetime.combine(date, datetime.min.time()).replace(
-                        hour=start_hour
+                        hour=shift_type.start_hour
                     )
                     end_time = datetime.combine(date, datetime.min.time()).replace(
-                        hour=end_hour
+                        hour=shift_type.end_hour
                     )
 
                     shift = Shift(
@@ -478,15 +511,13 @@ class AdvancedShiftAutomation:
                 shift_assignments
             )
 
-        for user, (start_hour, end_hour) in shift_assignments:
-            shift_type = AdvancedShiftAutomation.get_shift_type_by_hours(
-                start_hour, end_hour
-            )
+        for user, hours in shift_assignments:
+            shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(hours)
             start_time = datetime.combine(date, datetime.min.time()).replace(
-                hour=start_hour
+                hour=shift_type.start_hour
             )
             end_time = datetime.combine(date, datetime.min.time()).replace(
-                hour=end_hour
+                hour=shift_type.end_hour
             )
 
             shift = Shift(

@@ -288,6 +288,26 @@ class TestShiftTypeService:
         assert ok is False
         assert "utilisé" in error
 
+    def test_delete_blocked_by_automation_rule_reference(
+        self, test_app, test_shift_type
+    ):
+        """A ShiftType referenced by a configured shift_slots rule
+        (app/utils/automation/rules/shift_slots.py) must not be
+        deletable - doing so would silently break slot resolution for
+        whichever role referenced it."""
+        from app.models import AutomationRule
+        from app.utils.automation.rules import ShiftSlotsRule
+
+        default_params = ShiftSlotsRule.resolve()
+        AutomationRule.set(
+            "shift_slots",
+            {**default_params, "rotation_shift_type_id": test_shift_type.id},
+        )
+
+        ok, error = ShiftTypeService.delete(test_shift_type.id)
+        assert ok is False
+        assert "utilisé" in error
+
 
 class TestShiftService:
     def test_add_shifts_for_range_skips_weekends(

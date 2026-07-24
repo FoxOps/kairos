@@ -158,6 +158,41 @@ class TestShiftTypeByHours:
             assert shift_type.label == "13h-21h"
 
 
+class TestGetShiftTypeForSlot:
+    """Regression tests for the fix to a pre-existing bug:
+    get_shift_type_by_hours() matched ShiftType rows by hours, so an
+    admin editing a configured ShiftType's hours via /admin/shift-types
+    would silently orphan it (a fresh duplicate got created instead).
+    get_shift_type_for_slot() resolves via the configured ShiftSlotsRule
+    id instead, closing that gap."""
+
+    def test_default_matches_legacy_hours(self, test_app):
+        shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(
+            AdvancedShiftAutomation.SHIFT_07_15
+        )
+        assert (shift_type.start_hour, shift_type.end_hour) == (7, 15)
+
+    def test_uses_configured_shift_type_even_with_different_hours(self, test_app):
+        from app.models import AutomationRule, ShiftType
+        from app.utils.automation.rules import ShiftSlotsRule
+
+        custom = ShiftType(name="custom", label="Custom", start_hour=6, end_hour=14)
+        db.session.add(custom)
+        db.session.commit()
+
+        default_params = ShiftSlotsRule.resolve()
+        AutomationRule.set(
+            "shift_slots",
+            {**default_params, "rotation_shift_type_id": custom.id},
+        )
+
+        shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(
+            AdvancedShiftAutomation.SHIFT_07_15
+        )
+        assert shift_type.id == custom.id
+        assert (shift_type.start_hour, shift_type.end_hour) == (6, 14)
+
+
 class TestDetermineShiftForUser:
     """Tests for determining a user's shift slot."""
 
@@ -455,6 +490,46 @@ class TestGenerateDailyShifts:
             assert shifts[0].user_id == test_user.id
             assert shifts[0].start_time.hour == 7
             assert shifts[0].end_time.hour == 15
+
+    def test_generate_daily_shifts_honors_configured_rotation_shift_type(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Regression test for the ShiftType-by-hours orphan bug fix:
+        when the rotation slot (rule 7's 07h-15h fallback) is
+        overridden to point at a ShiftType with different hours, the
+        generated shift must use THAT ShiftType's actual hours, not
+        the legacy 7-15 literal."""
+        from app.models import AutomationRule, ShiftType
+        from app.utils.automation.rules import ShiftSlotsRule
+
+        with test_app.app_context():
+            custom = ShiftType(
+                name="custom-rotation", label="Custom", start_hour=6, end_hour=14
+            )
+            db.session.add(custom)
+            db.session.commit()
+
+            default_params = ShiftSlotsRule.resolve()
+            AutomationRule.set(
+                "shift_slots",
+                {**default_params, "rotation_shift_type_id": custom.id},
+            )
+
+            test_date = date(2023, 12, 15)
+            leave = Leave(
+                user_id=second_user.id, start_date=test_date, end_date=test_date
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            shifts, _messages = AdvancedShiftAutomation.generate_daily_shifts(
+                test_date, dry_run=True
+            )
+
+            assert len(shifts) == 1
+            assert shifts[0].shift_type_id == custom.id
+            assert shifts[0].start_time.hour == 6
+            assert shifts[0].end_time.hour == 14
 
     def test_generate_daily_shifts_with_two_users(
         self, test_app, test_group, test_user, second_user, test_shift_type
