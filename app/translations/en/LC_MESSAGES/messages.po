@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-24 14:02+0200\n"
+"POT-Creation-Date: 2026-07-24 14:16+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: en <LL@li.org>\n"
@@ -174,12 +174,13 @@ msgstr "Group successfully deleted!"
 #: app/routes/admin_settings_routes.py:61
 #: app/routes/admin_settings_routes.py:69
 #: app/routes/admin_settings_routes.py:77
-#: app/routes/admin_settings_routes.py:88
+#: app/routes/admin_settings_routes.py:85
 #: app/routes/admin_settings_routes.py:96
-#: app/routes/admin_settings_routes.py:107
-#: app/routes/admin_settings_routes.py:118
-#: app/routes/admin_settings_routes.py:129
-#: app/routes/admin_settings_routes.py:140
+#: app/routes/admin_settings_routes.py:104
+#: app/routes/admin_settings_routes.py:115
+#: app/routes/admin_settings_routes.py:126
+#: app/routes/admin_settings_routes.py:137
+#: app/routes/admin_settings_routes.py:148
 #, python-format
 msgid "Erreur : %(error)s"
 msgstr "Error: %(error)s"
@@ -253,55 +254,59 @@ msgid "Langue par défaut enregistrée"
 msgstr "Default language saved"
 
 #: app/routes/admin_settings_routes.py:63
+msgid "Mode de planification enregistré"
+msgstr "Scheduling mode saved"
+
+#: app/routes/admin_settings_routes.py:71
 msgid "Format de date par défaut enregistré"
 msgstr "Default date format saved"
 
-#: app/routes/admin_settings_routes.py:71
+#: app/routes/admin_settings_routes.py:79
 msgid "Format d'heure par défaut enregistré"
 msgstr "Default time format saved"
 
-#: app/routes/admin_settings_routes.py:79
+#: app/routes/admin_settings_routes.py:87
 msgid "URL publique enregistrée"
 msgstr "Public URL saved"
 
-#: app/routes/admin_settings_routes.py:84
+#: app/routes/admin_settings_routes.py:92
 msgid "Erreur : valeurs de pagination invalides"
 msgstr "Error: invalid pagination values"
 
-#: app/routes/admin_settings_routes.py:90
+#: app/routes/admin_settings_routes.py:98
 msgid "Pagination enregistrée"
 msgstr "Pagination saved"
 
-#: app/routes/admin_settings_routes.py:98
+#: app/routes/admin_settings_routes.py:106
 msgid "Notifications enregistrées"
 msgstr "Notifications saved"
 
-#: app/routes/admin_settings_routes.py:103
+#: app/routes/admin_settings_routes.py:111
 msgid "Erreur : valeurs de sauvegarde invalides"
 msgstr "Error: invalid backup values"
 
-#: app/routes/admin_settings_routes.py:109
+#: app/routes/admin_settings_routes.py:117
 msgid "Rétention des sauvegardes enregistrée"
 msgstr "Backup retention saved"
 
-#: app/routes/admin_settings_routes.py:114
-#: app/routes/admin_settings_routes.py:125
+#: app/routes/admin_settings_routes.py:122
+#: app/routes/admin_settings_routes.py:133
 msgid "Erreur : durée de rétention invalide"
 msgstr "Error: invalid retention period"
 
-#: app/routes/admin_settings_routes.py:120
+#: app/routes/admin_settings_routes.py:128
 msgid "Rétention de l'audit trail enregistrée"
 msgstr "Audit trail retention saved"
 
-#: app/routes/admin_settings_routes.py:131
+#: app/routes/admin_settings_routes.py:139
 msgid "Rétention du planning enregistrée"
 msgstr "Schedule retention saved"
 
-#: app/routes/admin_settings_routes.py:136
+#: app/routes/admin_settings_routes.py:144
 msgid "Erreur : durée d'expiration invalide"
 msgstr "Error: invalid expiry duration"
 
-#: app/routes/admin_settings_routes.py:142
+#: app/routes/admin_settings_routes.py:150
 msgid "Durée d'expiration ICS enregistrée"
 msgstr "ICS expiry duration saved"
 
@@ -1011,47 +1016,52 @@ msgstr "On-call - %(name)s"
 msgid "Congé - %(name)s"
 msgstr "Leave - %(name)s"
 
-#: app/services/settings_service.py:128
+#: app/services/settings_service.py:141
 #, python-format
 msgid "Fuseau horaire invalide : %(tz_name)s"
 msgstr "Invalid timezone: %(tz_name)s"
 
-#: app/services/settings_service.py:145
+#: app/services/settings_service.py:158
 #, python-format
 msgid "Langue invalide : %(lang_code)s"
 msgstr "Invalid language: %(lang_code)s"
 
-#: app/services/settings_service.py:163
+#: app/services/settings_service.py:175
+#, python-format
+msgid "Mode de planification invalide : %(mode)s"
+msgstr "Invalid scheduling mode: %(mode)s"
+
+#: app/services/settings_service.py:193
 #, python-format
 msgid "Format de date invalide : %(date_format)s"
 msgstr "Invalid date format: %(date_format)s"
 
-#: app/services/settings_service.py:181
+#: app/services/settings_service.py:211
 #, python-format
 msgid "Format d'heure invalide : %(time_format)s"
 msgstr "Invalid time format: %(time_format)s"
 
-#: app/services/settings_service.py:230
+#: app/services/settings_service.py:260
 msgid "Les valeurs de pagination doivent être positives"
 msgstr "Pagination values must be positive"
 
-#: app/services/settings_service.py:232
+#: app/services/settings_service.py:262
 msgid "items_per_page ne peut pas dépasser max_per_page"
 msgstr "items_per_page cannot exceed max_per_page"
 
-#: app/services/settings_service.py:275
+#: app/services/settings_service.py:305
 msgid "Les valeurs de rétention doivent être positives"
 msgstr "Retention values must be positive"
 
-#: app/services/settings_service.py:300
+#: app/services/settings_service.py:330
 msgid "La durée de rétention doit être positive"
 msgstr "The retention period must be positive"
 
-#: app/services/settings_service.py:321
+#: app/services/settings_service.py:351
 msgid "La durée de rétention ne peut pas être négative"
 msgstr "Retention duration cannot be negative"
 
-#: app/services/settings_service.py:362
+#: app/services/settings_service.py:392
 msgid "La durée d'expiration doit être positive"
 msgstr "The expiry duration must be positive"
 
@@ -1526,7 +1536,7 @@ msgid "Exporter mes %(resource_name)s"
 msgstr "Export my %(resource_name)s"
 
 #: app/templates/_pagination.html:22 app/templates/admin/audit_log.html:117
-#: app/templates/admin/settings.html:144
+#: app/templates/admin/settings.html:169
 msgid "Pagination"
 msgstr "Pagination"
 
@@ -1547,7 +1557,7 @@ msgstr "Next page"
 msgid "Nombre d'éléments par page"
 msgstr "Number of items per page"
 
-#: app/templates/_pagination.html:40 app/templates/admin/settings.html:146
+#: app/templates/_pagination.html:40 app/templates/admin/settings.html:171
 msgid "Éléments par page"
 msgstr "Items per page"
 
@@ -1641,11 +1651,12 @@ msgstr "Save the leave"
 #: app/templates/admin/edit_service_account.html:38
 #: app/templates/admin/edit_shift_type.html:41
 #: app/templates/admin/edit_user.html:56 app/templates/admin/settings.html:30
-#: app/templates/admin/settings.html:56 app/templates/admin/settings.html:82
-#: app/templates/admin/settings.html:108 app/templates/admin/settings.html:132
-#: app/templates/admin/settings.html:155 app/templates/admin/settings.html:176
-#: app/templates/admin/settings.html:202 app/templates/admin/settings.html:224
-#: app/templates/admin/settings.html:246 app/templates/admin/settings.html:268
+#: app/templates/admin/settings.html:56 app/templates/admin/settings.html:81
+#: app/templates/admin/settings.html:107 app/templates/admin/settings.html:133
+#: app/templates/admin/settings.html:157 app/templates/admin/settings.html:180
+#: app/templates/admin/settings.html:201 app/templates/admin/settings.html:227
+#: app/templates/admin/settings.html:249 app/templates/admin/settings.html:271
+#: app/templates/admin/settings.html:293
 msgid "Enregistrer"
 msgstr "Save"
 
@@ -3181,7 +3192,7 @@ msgstr "Configure"
 
 #: app/templates/admin/backups/dashboard.html:8
 #: app/templates/admin/backups/dashboard.html:11
-#: app/templates/admin/dashboard.html:98 app/templates/admin/settings.html:188
+#: app/templates/admin/dashboard.html:98 app/templates/admin/settings.html:213
 msgid "Sauvegardes"
 msgstr "Backups"
 
@@ -3195,7 +3206,7 @@ msgid "Gérer"
 msgstr "Manage"
 
 #: app/templates/admin/dashboard.html:110
-#: app/templates/admin/settings.html:214
+#: app/templates/admin/settings.html:239
 msgid "Audit trail"
 msgstr "Audit trail"
 
@@ -3696,15 +3707,40 @@ msgstr ""
 " set a personal preference in their profile."
 
 #: app/templates/admin/settings.html:68
+msgid "Planification"
+msgstr "Scheduling"
+
+#: app/templates/admin/settings.html:70
+msgid "Mode de planification"
+msgstr "Scheduling mode"
+
+#: app/templates/admin/settings.html:72
+msgid "Rotation commune (par défaut)"
+msgstr "Shared rotation (default)"
+
+#: app/templates/admin/settings.html:73
+msgid "Rotation par groupe"
+msgstr "Per-group rotation"
+
+#: app/templates/admin/settings.html:76
+msgid ""
+"Rotation commune : tous les groupes éligibles partagent une seule rotation "
+"de shifts/astreintes. Rotation par groupe : chaque groupe a sa propre "
+"rotation indépendante."
+msgstr ""
+"Shared rotation: all eligible groups share a single shift/on-call rotation. "
+"Per-group rotation: each group has its own independent rotation."
+
+#: app/templates/admin/settings.html:93
 #: app/templates/auth/profile_settings.html:39
 msgid "Format de date"
 msgstr "Date format"
 
-#: app/templates/admin/settings.html:70
+#: app/templates/admin/settings.html:95
 msgid "Format de date par défaut de l'organisation"
 msgstr "Organization's default date format"
 
-#: app/templates/admin/settings.html:77
+#: app/templates/admin/settings.html:102
 msgid ""
 "Format utilisé pour afficher les dates, quand un utilisateur n'a pas défini "
 "de préférence personnelle sur son profil. N'affecte pas l'export ICS."
@@ -3712,16 +3748,16 @@ msgstr ""
 "Format used to display dates, when a user has not set a personal preference "
 "in their profile. Does not affect ICS export."
 
-#: app/templates/admin/settings.html:94
+#: app/templates/admin/settings.html:119
 #: app/templates/auth/profile_settings.html:49
 msgid "Format d'heure"
 msgstr "Time format"
 
-#: app/templates/admin/settings.html:96
+#: app/templates/admin/settings.html:121
 msgid "Format d'heure par défaut de l'organisation"
 msgstr "Organization's default time format"
 
-#: app/templates/admin/settings.html:103
+#: app/templates/admin/settings.html:128
 msgid ""
 "Format utilisé pour afficher les heures, quand un utilisateur n'a pas défini"
 " de préférence personnelle sur son profil. N'affecte pas l'export ICS."
@@ -3729,15 +3765,15 @@ msgstr ""
 "Format used to display times, when a user has not set a personal preference "
 "in their profile. Does not affect ICS export."
 
-#: app/templates/admin/settings.html:120
+#: app/templates/admin/settings.html:145
 msgid "URL publique"
 msgstr "Public URL"
 
-#: app/templates/admin/settings.html:122
+#: app/templates/admin/settings.html:147
 msgid "URL publique de l'application"
 msgstr "Application's public URL"
 
-#: app/templates/admin/settings.html:127
+#: app/templates/admin/settings.html:152
 msgid ""
 "Utilisée pour générer les liens absolus (abonnements ICS). Laisser vide pour"
 " utiliser l'URL de la requête entrante."
@@ -3745,30 +3781,30 @@ msgstr ""
 "Used to generate absolute links (ICS subscriptions). Leave empty to use the "
 "incoming request's URL."
 
-#: app/templates/admin/settings.html:150
+#: app/templates/admin/settings.html:175
 msgid "Maximum par page"
 msgstr "Maximum per page"
 
-#: app/templates/admin/settings.html:167
+#: app/templates/admin/settings.html:192
 #: app/templates/auth/profile_settings.html:59
 #: app/templates/auth/profile_settings.html:77
 msgid "Notifications par email"
 msgstr "Email notifications"
 
-#: app/templates/admin/settings.html:171
+#: app/templates/admin/settings.html:196
 msgid "Activer les rappels hebdomadaires par email (shifts + astreintes)"
 msgstr "Enable weekly email reminders (shifts + on-calls)"
 
-#: app/templates/admin/settings.html:190 app/templates/admin/settings.html:216
-#: app/templates/admin/settings.html:238
+#: app/templates/admin/settings.html:215 app/templates/admin/settings.html:241
+#: app/templates/admin/settings.html:263
 msgid "Rétention (jours)"
 msgstr "Retention (days)"
 
-#: app/templates/admin/settings.html:194
+#: app/templates/admin/settings.html:219
 msgid "Nombre maximum de sauvegardes"
 msgstr "Maximum number of backups"
 
-#: app/templates/admin/settings.html:198
+#: app/templates/admin/settings.html:223
 msgid ""
 "S'applique uniquement aux actions déclenchées depuis l'UI admin "
 "(Sauvegardes). La tâche planifiée (cron) continue d'utiliser les variables "
@@ -3777,11 +3813,11 @@ msgstr ""
 "Only applies to actions triggered from the admin UI (Backups). The scheduled"
 " task (cron) keeps using environment variables."
 
-#: app/templates/admin/settings.html:217
+#: app/templates/admin/settings.html:242
 msgid "Non configuré"
 msgstr "Not configured"
 
-#: app/templates/admin/settings.html:220
+#: app/templates/admin/settings.html:245
 msgid ""
 "Tant qu'aucune valeur n'est enregistrée ici, aucune purge n'est effectuée : "
 "toutes les entrées de l'historique sont conservées indéfiniment."
@@ -3789,11 +3825,11 @@ msgstr ""
 "As long as no value is saved here, no purge happens: every history entry is "
 "kept indefinitely."
 
-#: app/templates/admin/settings.html:236
+#: app/templates/admin/settings.html:261
 msgid "Historique du planning"
 msgstr "Schedule history"
 
-#: app/templates/admin/settings.html:242
+#: app/templates/admin/settings.html:267
 msgid ""
 "Les shifts et astreintes passés depuis plus longtemps que cette durée sont "
 "supprimés automatiquement (tâche planifiée quotidienne). 0 = ne jamais "
@@ -3802,15 +3838,15 @@ msgstr ""
 "Shifts and on-calls older than this duration are automatically deleted "
 "(daily scheduled task). 0 = never purge."
 
-#: app/templates/admin/settings.html:258
+#: app/templates/admin/settings.html:283
 msgid "Export ICS"
 msgstr "ICS Export"
 
-#: app/templates/admin/settings.html:260
+#: app/templates/admin/settings.html:285
 msgid "Expiration du jeton ICS (jours)"
 msgstr "ICS token expiry (days)"
 
-#: app/templates/admin/settings.html:264
+#: app/templates/admin/settings.html:289
 msgid ""
 "Réglage actuellement sans effet : aucune expiration n'est encore appliquée "
 "aux jetons ICS existants. Conservé pour cohérence, en attendant une "

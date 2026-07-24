@@ -60,6 +60,31 @@
         </div>
     </form>
 
+    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="scheduling-form-title" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="section" value="scheduling">
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <h2 class="font-semibold" id="scheduling-form-title"><i class="fas fa-users-gear" aria-hidden="true"></i> {{ _("Planification") }}</h2>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Mode de planification") }}</legend>
+                    <select class="select w-full" id="scheduling_mode" name="scheduling_mode" aria-describedby="scheduling-help">
+                        <option value="shared" {% if scheduling_mode == "shared" %}selected{% endif %}>{{ _("Rotation commune (par défaut)") }}</option>
+                        <option value="per_group" {% if scheduling_mode == "per_group" %}selected{% endif %}>{{ _("Rotation par groupe") }}</option>
+                    </select>
+                    <p class="text-sm text-base-content/70" id="scheduling-help">
+                        {{ _("Rotation commune : tous les groupes éligibles partagent une seule rotation de shifts/astreintes. Rotation par groupe : chaque groupe a sa propre rotation indépendante.") }}
+                    </p>
+                </fieldset>
+                <div>
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
     <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="date-format-form-title" class="mb-4">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="section" value="date_format">
