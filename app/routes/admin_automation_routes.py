@@ -35,7 +35,14 @@ def _classify_automation_message(
     msg: str, default_category: str = "info"
 ) -> tuple[str, str]:
     """Returns (category, message with its leading emoji stripped)."""
-    if "✅" in msg or "🎉" in msg:
+    if "🚨" in msg:
+        # Elevated severity (MandatoryShiftRule: a slot flagged
+        # mandatory went unfilled) - always "danger", regardless of
+        # default_category, so it's visually distinct from the
+        # ordinary "⚠️ unfilled slot" case even on the shift-messages
+        # path (whose default_category is "info").
+        category = "danger"
+    elif "✅" in msg or "🎉" in msg:
         category = "success"
     elif "⚠️" in msg:
         category = "warning"

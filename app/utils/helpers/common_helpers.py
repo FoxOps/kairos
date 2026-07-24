@@ -7,6 +7,7 @@ This module provides general utility functions used throughout the application.
 from datetime import date, datetime, timedelta
 from zoneinfo import available_timezones
 
+from flask_babel import gettext as _
 from flask_login import current_user
 
 from app import db
@@ -178,14 +179,17 @@ def _resolve_authenticated_user(user):
     return user
 
 
-def can_add_shift(user=None, date=None, shift_type_id=None):
+def can_add_shift(user=None, date=None, shift_type=None):
     """
     Check if a user can add a shift on a specific date.
 
     Args:
         user: User to check (default: current_user)
         date: Date to check (default: today)
-        shift_type_id: Shift type ID to check
+        shift_type: ShiftType the shift would use - optional (the
+            configured-rule checks in check_shift_rule_violations()
+            are skipped when not given, same "not enough information,
+            don't block" stance as the rest of this function)
 
     Returns:
         True if user can add a shift, False otherwise
@@ -206,7 +210,10 @@ def can_add_shift(user=None, date=None, shift_type_id=None):
         return False
 
     # Check if user already has a shift on this date
-    return not is_user_on_shift(user.id, date)
+    if is_user_on_shift(user.id, date):
+        return False
+
+    return check_shift_rule_violations(user, date, shift_type) is None
 
 
 def can_add_leave(user=None, start_date=None, end_date=None, exclude_leave_id=None):
@@ -333,8 +340,10 @@ def can_add_oncall(user=None, start_time=None, end_time=None):
         OnCall.start_time <= end_time,
         OnCall.end_time >= start_time,
     ).first()
+    if overlapping_oncall is not None:
+        return False
 
-    return overlapping_oncall is None
+    return check_oncall_rule_violations(user, start_time, end_time) is None
 
 
 # ---------------------------------------------------------------------------
@@ -407,3 +416,105 @@ def _get_overlapping_oncall(user_id, start_date, end_date):
         )
         .first()
     )
+
+
+# ---------------------------------------------------------------------------
+# Configurable automation rule checks (see app/utils/automation/rules/) -
+# none of these 3 rule types existed in any form before this feature;
+# each check is a no-op until an admin actually configures the rule
+# (oncall_shift_overlap is the one exception, on by default - see its
+# rule class docstring for why).
+# ---------------------------------------------------------------------------
+
+
+def check_shift_rule_violations(user, date, shift_type=None, exclude_shift_id=None):
+    """Returns a translated error message if creating/moving a shift
+    for `user` on `date` into `shift_type` would violate a configured
+    automation rule (staffing_limits max, rest_after_oncall,
+    oncall_shift_overlap), else None. `shift_type` is optional - the
+    checks that need it (all 3, currently) are skipped when it's None.
+    `exclude_shift_id`: the shift's own id, when checking a move
+    (ShiftService.api_update) rather than a fresh creation - excludes
+    it from the staffing_limits headcount so moving a shift to the
+    same date/type it's already on doesn't count itself twice."""
+    if shift_type is None:
+        return None
+
+    from app.utils.automation.rules import (
+        OnCallShiftOverlapRule,
+        RestAfterOnCallRule,
+        StaffingLimitsRule,
+    )
+
+    limits = StaffingLimitsRule.get_limits(shift_type.id)
+    if limits["max"] is not None:
+        count_query = Shift.query.filter(
+            Shift.shift_type_id == shift_type.id, Shift.date == date
+        )
+        if exclude_shift_id is not None:
+            count_query = count_query.filter(Shift.id != exclude_shift_id)
+        if count_query.count() >= limits["max"]:
+            return _(
+                "Impossible d'ajouter ce shift : effectif maximum (%(max)s) "
+                "déjà atteint pour ce créneau.",
+                max=limits["max"],
+            )
+
+    start_time = datetime.combine(date, datetime.min.time()).replace(
+        hour=shift_type.start_hour
+    )
+    end_time = datetime.combine(date, datetime.min.time()).replace(
+        hour=shift_type.end_hour
+    )
+
+    if OnCallShiftOverlapRule.resolve()["block"] and _has_overlapping_oncall(
+        user.id, start_time, end_time
+    ):
+        return _(
+            "Impossible d'ajouter ce shift : chevauche une astreinte de %(name)s.",
+            name=user.name,
+        )
+
+    min_rest_hours = RestAfterOnCallRule.resolve()["min_rest_hours"]
+    if min_rest_hours > 0:
+        last_oncall = (
+            OnCall.query.filter(
+                OnCall.user_id == user.id, OnCall.end_time <= start_time
+            )
+            .order_by(OnCall.end_time.desc())
+            .first()
+        )
+        if last_oncall and (start_time - last_oncall.end_time) < timedelta(
+            hours=min_rest_hours
+        ):
+            return _(
+                "Impossible d'ajouter ce shift : %(name)s doit se reposer "
+                "%(hours)sh après son astreinte.",
+                name=user.name,
+                hours=min_rest_hours,
+            )
+
+    return None
+
+
+def check_oncall_rule_violations(user, start_time, end_time, exclude_oncall_id=None):
+    """Returns a translated error message if creating/moving an on-call
+    for `user` over [start_time, end_time] would violate
+    oncall_shift_overlap, else None. `exclude_oncall_id` is accepted
+    for symmetry with check_shift_rule_violations() but unused here -
+    the check queries Shift, not OnCall, so the on-call being moved
+    never counts against itself."""
+    from app.utils.automation.rules import OnCallShiftOverlapRule
+
+    if OnCallShiftOverlapRule.resolve()["block"]:
+        overlapping_shift = _get_overlapping_shift(
+            user.id, start_time.date(), end_time.date()
+        )
+        if overlapping_shift is not None:
+            return _(
+                "Impossible d'ajouter cette astreinte : chevauche un shift de "
+                "%(name)s.",
+                name=user.name,
+            )
+
+    return None

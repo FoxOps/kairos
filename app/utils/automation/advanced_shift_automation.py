@@ -368,6 +368,41 @@ class AdvancedShiftAutomation:
         return generated_shifts, None
 
     @staticmethod
+    def _check_mandatory_coverage(generated_shifts: list, date: "date") -> list:
+        """Rule engine addition (MandatoryShiftRule, no prior
+        equivalent): for each ShiftType an admin flagged mandatory, if
+        the day's generated shifts don't cover it, raise an elevated
+        message - distinct from the generic "no available user"/
+        "no shift generated" messages elsewhere in this method, so an
+        admin can tell "a mandatory slot specifically went unfilled"
+        apart from the ordinary unfilled-slot case. Stays within the
+        existing "leave unfilled + notify, never block" philosophy
+        (ROADMAP.md) - this never prevents generation/commit."""
+        from app import db
+        from app.models import ShiftType
+        from app.utils.automation.rules import MandatoryShiftRule
+
+        mandatory_ids = MandatoryShiftRule.resolve()["shift_type_ids"]
+        if not mandatory_ids:
+            return []
+
+        covered_ids = {shift.shift_type_id for shift in generated_shifts}
+        messages = []
+        for shift_type_id in mandatory_ids:
+            if shift_type_id in covered_ids:
+                continue
+            shift_type = db.session.get(ShiftType, shift_type_id)
+            name = shift_type.label if shift_type else shift_type_id
+            messages.append(
+                _(
+                    "🚨 Créneau obligatoire non pourvu pour le %(date)s : " "%(name)s.",
+                    date=date.strftime("%d/%m/%Y"),
+                    name=name,
+                )
+            )
+        return messages
+
+    @staticmethod
     def generate_daily_shifts(
         date: "date", dry_run: bool = False, commit: bool = True
     ) -> "tuple[list, list]":
@@ -447,6 +482,11 @@ class AdvancedShiftAutomation:
                     name=sole_user.name,
                 )
             )
+            messages.extend(
+                AdvancedShiftAutomation._check_mandatory_coverage(
+                    generated_shifts, date
+                )
+            )
             return generated_shifts, messages
 
         # Special case: only 2 people available
@@ -480,6 +520,11 @@ class AdvancedShiftAutomation:
                     messages.append(_("❌ Erreur : %(error)s", error=error))
                     return [], messages
 
+                messages.extend(
+                    AdvancedShiftAutomation._check_mandatory_coverage(
+                        generated_shifts, date
+                    )
+                )
                 return generated_shifts, messages
 
         # Normal case: 3+ users
@@ -539,13 +584,19 @@ class AdvancedShiftAutomation:
 
         # Return a summary instead of detailed messages
         if generated_shifts:
-            return generated_shifts, [
+            summary_messages = [
                 _(
                     "✅ %(count)s shifts générés pour le %(date)s",
                     count=len(generated_shifts),
                     date=date.strftime("%d/%m/%Y"),
                 )
             ]
+            summary_messages.extend(
+                AdvancedShiftAutomation._check_mandatory_coverage(
+                    generated_shifts, date
+                )
+            )
+            return generated_shifts, summary_messages
         elif WeekendDefinitionRule.is_weekend(date):
             return [], [
                 _(

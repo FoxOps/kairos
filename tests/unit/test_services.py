@@ -11,7 +11,7 @@ from datetime import date, datetime, timedelta
 from unittest.mock import patch
 
 from app import db
-from app.models import Leave
+from app.models import Leave, Shift
 from app.repositories.leave_repository import LeaveRepository
 from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository
@@ -427,6 +427,61 @@ class TestShiftService:
         assert shift is None
         assert "congé" in error
 
+    def test_api_update_rejects_move_onto_overlapping_oncall(
+        self, test_app, test_user, test_shift, test_shift_type
+    ):
+        """Regression test: the drag & drop path used to skip the new
+        configurable automation-rule checks entirely - same class of
+        gap as the pre-existing leave check above."""
+        from app.models import OnCall
+
+        target_day = _next_weekday()
+        new_start = datetime.combine(target_day, datetime.min.time()).replace(
+            hour=test_shift_type.start_hour
+        )
+        new_end = datetime.combine(target_day, datetime.min.time()).replace(
+            hour=test_shift_type.end_hour
+        )
+        db.session.add(
+            OnCall(
+                user_id=test_user.id,
+                start_time=new_start - timedelta(hours=1),
+                end_time=new_end + timedelta(hours=1),
+            )
+        )
+        db.session.commit()
+
+        shift, error = ShiftService.api_update(test_shift.id, new_start, new_end)
+        assert shift is None
+        assert "astreinte" in error
+
+    def test_api_update_rejects_move_when_staffing_max_reached(
+        self, test_app, test_user, second_user, test_shift, test_shift_type
+    ):
+        from app.models import AutomationRule
+
+        target_day = _next_weekday()
+        AutomationRule.set("staffing_limits", {str(test_shift_type.id): {"max": 1}})
+        other_shift = Shift(
+            date=target_day,
+            start_time=datetime.combine(target_day, datetime.min.time()),
+            end_time=datetime.combine(target_day, datetime.max.time()),
+            user_id=second_user.id,
+            shift_type_id=test_shift_type.id,
+        )
+        db.session.add(other_shift)
+        db.session.commit()
+
+        new_start = datetime.combine(target_day, datetime.min.time()).replace(
+            hour=test_shift_type.start_hour
+        )
+        new_end = datetime.combine(target_day, datetime.min.time()).replace(
+            hour=test_shift_type.end_hour
+        )
+        shift, error = ShiftService.api_update(test_shift.id, new_start, new_end)
+        assert shift is None
+        assert "effectif maximum" in error
+
     def test_api_delete(self, test_app, test_shift):
         assert ShiftService.api_delete(test_shift.id) is True
         assert ShiftService.api_delete(test_shift.id) is False
@@ -509,6 +564,33 @@ class TestOnCallService:
         oncall, error = OnCallService.api_update(test_oncall.id, new_start, new_end)
         assert oncall is None
         assert "congé" in error
+
+    def test_api_update_rejects_move_onto_overlapping_shift(
+        self, test_app, test_user, test_oncall, test_shift_type
+    ):
+        """Regression test: same class of gap as the leave check above,
+        for the new configurable oncall_shift_overlap rule."""
+        friday = _next_friday()
+        new_start = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+        new_end = new_start + timedelta(days=7, hours=-14)
+        db.session.add(
+            Shift(
+                date=friday,
+                start_time=datetime.combine(friday, datetime.min.time()).replace(
+                    hour=test_shift_type.start_hour
+                ),
+                end_time=datetime.combine(friday, datetime.min.time()).replace(
+                    hour=test_shift_type.end_hour
+                ),
+                user_id=test_user.id,
+                shift_type_id=test_shift_type.id,
+            )
+        )
+        db.session.commit()
+
+        oncall, error = OnCallService.api_update(test_oncall.id, new_start, new_end)
+        assert oncall is None
+        assert "shift" in error
 
 
 class TestLeaveService:

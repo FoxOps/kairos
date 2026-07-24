@@ -571,6 +571,41 @@ class TestGenerateDailyShifts:
             # Should generate shifts for all 3 users
             assert len(shifts) == 3
 
+    def test_generate_daily_shifts_flags_unfilled_mandatory_slot(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """New rule (mandatory_shift, no prior equivalent): with no
+        on-call context at all, rule 1 never fires and nobody lands on
+        the on-call slot - if that slot is flagged mandatory, an
+        elevated message must be raised (never a hard block, per the
+        existing "leave unfilled + notify" philosophy - shifts still
+        get generated normally)."""
+        from app.models import AutomationRule
+        from app.utils.automation.rules import ShiftSlotsRule
+
+        user3 = User(
+            name="Third User",
+            email="third-mandatory@test.com",
+            password_hash=generate_password_hash("third-password"),
+            is_admin=False,
+            group_id=test_group.id,
+        )
+        db.session.add(user3)
+        db.session.commit()
+
+        oncall_shift_type_id = ShiftSlotsRule.resolve()["oncall_shift_type_id"]
+        AutomationRule.set(
+            "mandatory_shift", {"shift_type_ids": [oncall_shift_type_id]}
+        )
+
+        test_date = date(2023, 12, 15)
+        shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(
+            test_date, dry_run=True
+        )
+
+        assert len(shifts) == 3  # generation itself is unaffected
+        assert any("obligatoire" in msg for msg in messages)
+
     def test_generate_daily_shifts_ensures_07_15_coverage_with_three_users(
         self, test_app, test_group, test_user, second_user
     ):
