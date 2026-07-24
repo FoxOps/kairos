@@ -26,6 +26,14 @@ going forward. Two deliberate carve-outs, not oversights:
   excluded them (later reversed only for the literal old-repo-name references, on explicit request —
   this translation sweep is a separate, narrower concern and that reversal doesn't extend to it).
 
+## Memory
+
+Update the persistent auto-memory system (feedback/user/project/reference entries) proactively and
+often during a session, not just at natural stopping points or when explicitly asked. This project
+has real, recurring friction (see the language-drift history above) that's easy to under-document if
+memory writes are deferred until a session's end — capture a correction or a confirmed approach as
+soon as it happens, not retrospectively.
+
 ## Project
 
 Kairos is a Flask web app for team shift scheduling, on-call rotations, and leave
@@ -146,7 +154,9 @@ touching auth flows.
   without redeploying — `default_timezone`, `default_language`, `public_base_url`,
   `items_per_page`/`max_per_page`, `notifications_enabled`,
   `backup_retention_days`/`backup_max_backups`, `ics_token_expiry_days` (currently unenforced, see
-  "Multi-timezone support" below). Rule: a `Setting` row, if present, always wins; if absent, the
+  "Multi-timezone support" below), `scheduling_mode` (`shared`/`per_group`, same no-env-var-fallback
+  shape as `default_language` below — see "Configurable automation rules" for what it actually
+  changes and what's still not wired to it). Rule: a `Setting` row, if present, always wins; if absent, the
   getter falls back **live** to the matching `app.config`/env value (never a one-time seed written
   to the DB) — so an env-var-only deployment behaves identically to before this feature existed,
   until an admin actually saves a value through the new page. Don't remove the underlying env vars
@@ -200,8 +210,13 @@ touching auth flows.
 
 `app/models/` is a package (`base.py` defines the shared `BaseModel` with `id`/`created_at`/
 `updated_at` and CRUD helpers like `.save()`/`.update()`/`.to_dict()`; `user.py`, `shift.py`,
-`oncall.py`, `leave.py`, `automation_config.py`, `notification_log.py`, `swap_request.py`,
-`setting.py` hold the domain models, all subclassing `BaseModel`). `User.timezone` (nullable
+`oncall.py`, `leave.py`, `automation_config.py`, `automation_rule.py`, `notification_log.py`,
+`swap_request.py`, `setting.py` hold the domain models, all subclassing `BaseModel`).
+`AutomationRule` is **not** the same thing as `AutomationConfig` — the former is a per-`rule_type`,
+optionally per-`Group`-scoped store for the configurable automation rules engine (see "Configurable
+automation rules" below), the latter remains a single global EAV row solely for the on-call rotation
+order (`AutomationConfig.get_rotation_order()`) — don't confuse the two when searching for
+"automation" in this codebase. `User.timezone` (nullable
 String) is the user's personal display timezone preference — `None` means "use the org's
 `default_timezone` Setting", resolved at read time via `User.effective_timezone()`, not baked
 into the column (see "Multi-timezone support" below). `User.language` (nullable `String(5)`)
@@ -233,7 +248,8 @@ query per access) — acceptable at this app's scale.
 `ShiftTypeRepository`, `OnCallRepository`, `LeaveRepository`, `SwapRequestRepository`) and
 `app/services/` (business logic — `UserService`, `GroupService`, `ShiftService`, `ShiftTypeService`,
 `OnCallService`, `LeaveService`, `SwapService`, `ExportService`, `ScheduleService`,
-`AutomationAdminService`, `NotificationService`, `BackupService`) are implemented and wired up.
+`AutomationAdminService`, `AutomationRuleAdminService`, `NotificationService`, `BackupService`) are
+implemented and wired up.
 Routes in `app/routes/` (both the `main` and `admin` blueprints, split across multiple files — e.g.
 `shift_routes.py`, `admin_user_routes.py` — that all register onto the same blueprint object defined
 in `main.py`/`admin.py`) parse the request, call a service, and turn the result into a
@@ -368,6 +384,94 @@ approve/reject/revert. Every one of these five call sites also has a matching
 `AppriseNotificationService.notify("swap", ...)` call right after it (see "External notifications
 (Apprise)" above).
 
+### Configurable automation rules
+
+Business rules that drive shift/on-call generation (`app/utils/automation/`:
+`AdvancedShiftAutomation`, `OnCallAutomation`) used to be Python literals, identical for every team.
+`AutomationRule` (`app/models/automation_rule.py`) plus a plugin-style registry
+(`app/utils/automation/rules/`, one small class per rule type subclassing `AutomationRuleType` in
+`base.py`) replace 4 of those literals and add 4 genuinely new rule types with no prior hardcoded
+equivalent — admin-editable at `/admin/automation/rules`
+(`app/routes/admin_automation_rules_routes.py`, `app/services/automation_rule_admin_service.py::AutomationRuleAdminService`,
+one `save_*()` method per rule type, mirroring `SettingsService`'s per-section setter pattern).
+
+**Storage and resolution.** One `AutomationRule` row = one `rule_type` key + JSON `params`, either
+the org-wide default (`group_id IS NULL`) or a specific `Group`'s override.
+`AutomationRule.resolve_params(rule_type, group=None)` returns the `Group`'s own row if one exists
+and is enabled, else the org-default row, else `None` (callers fall back to that rule type's own
+`default_params()`, which is chosen to match the previously hardcoded value exactly — introducing
+this engine is behavior-neutral until an admin actually configures something; the `automation_rules`
+table starts **empty**, no seeded default row). Deliberately **not** a DB-level unique constraint on
+`(group_id, rule_type)`: SQL treats two `NULL group_id` values as distinct, so such a constraint
+wouldn't actually prevent duplicate org-default rows — dedup is enforced by `AutomationRule.set()`
+instead (query-then-update, same pattern as `AutomationConfig.set_config`).
+
+**The 4 transposed rule types** (replacing a prior hardcoded literal 1:1): `weekend_definition`
+(`weekend_days`, was `date.weekday() >= 5`), `oncall_spacing` (`min_spacing_weeks`, was a literal
+`2` duplicated in two places in `oncall_automation.py`), `oncall_anchor` (`weekday`/`start_hour`/
+`end_hour`, was hardcoded Friday 21:00 → Friday 07:00), and `shift_slots`
+(`oncall_shift_type_id`/`rotation_shift_type_id`/`default_shift_type_id`, was the 3 class constants
+`SHIFT_07_15`/`SHIFT_09_17`/`SHIFT_13_21`). `shift_slots` deliberately **FKs to existing `ShiftType`
+rows** (reusing `/admin/shift-types`) instead of duplicating hour inputs — unlike every other rule
+type, its `default_params()` can't be a static dict (`ShiftType` ids vary per database), so it falls
+back to the historical hours-based fetch-or-create (`AdvancedShiftAutomation.get_shift_type_by_hours()`)
+when unconfigured. Fixed a real pre-existing bug found while building this: that hours-based lookup
+matched by raw hours, not id, so an admin editing a referenced `ShiftType`'s hours via
+`/admin/shift-types` silently orphaned it (minted a duplicate row instead). The 3 role-slot call
+sites in `AdvancedShiftAutomation` now resolve through `get_shift_type_for_slot()` (by configured id)
+instead, and `ShiftTypeService.delete()`'s existing usage guard (blocks deleting a `ShiftType`
+referenced by a real `Shift`) now also blocks one referenced by a configured `shift_slots` rule.
+
+**The 4 new rule types** (no prior hardcoded equivalent — confirmed by exploration before building
+this): `staffing_limits` (min/max headcount per `ShiftType`, JSON keyed by `ShiftType` id since one
+row covers every type), `mandatory_shift` (`shift_type_ids` that must never go unfilled — an unfilled
+one raises a `[ALERT]`-tagged message, always classified `danger` regardless of the caller's default
+category, distinct from the pre-existing `[WARN]` "unfilled slot" case; stays within this app's
+"leave unfilled + notify, never block" philosophy, see "Automation" in the Done section of
+`ROADMAP.md` — no new blocking mechanism), `rest_after_oncall` (`min_rest_hours` between a user's
+on-call ending and a shift starting), and `oncall_shift_overlap` (blocks a shift/on-call overlapping
+the same user's existing on-call/shift — **on by default**, unlike the other 3, since an unblocked
+overlap is a data-integrity problem, not a preference). The last 3 are wired into `can_add_shift()`/
+`can_add_oncall()` (`app/utils/helpers/common_helpers.py`, via `check_shift_rule_violations()`/
+`check_oncall_rule_violations()`), resurrecting `_has_overlapping_oncall`/`_get_overlapping_shift`/
+`_get_overlapping_oncall` — 3 helpers that existed but were never called from production code before
+this — and into both drag & drop `api_update()` paths (`ShiftService`, `OnCallService`), which
+previously skipped these checks entirely, same class of pre-existing gap already documented for the
+leave check in those methods. `can_add_shift()`'s third parameter changed from an unused
+`shift_type_id` string (every real caller actually passed `shift_type.name`, silently inert) to the
+`ShiftType` object itself, now genuinely used.
+
+**Message severity tags, not emoji.** `app/utils/automation/`'s generated messages used to encode
+severity as a leading emoji, stripped before ever reaching `flash()`/a template — this app doesn't
+use emoji anywhere (see `tests/unit/test_flash_message_icons.py`), so it's now a plain-text
+`"[TAG] "` marker (`[OK]`/`[WARN]`/`[ERROR]`/`[ALERT]`/`[SKIP]`/`[PREVIEW]`/`[DELETED]`/`[REGEN]`)
+instead — `admin_automation_routes.py::_classify_automation_message()` matches on the tag, not
+Unicode ranges, same severity mapping as before.
+
+**`scheduling_mode` (`shared`/`per_group` `Setting`, defaults to `shared`)** controls whether
+generation pools every eligible `Group` into one shared rotation (the only behavior that ever existed
+before this feature) or runs one independent generation pass per eligible `Group`.
+`AutomationAdminService.generate_full()` branches on it: `per_group` loops over every
+on-call-eligible `Group` (for on-calls) and every schedule-eligible `Group` (for shifts), calling the
+*same* single-group code path once per group and concatenating results — the core solver
+(`_solve_max_filled_weeks`, `AvailabilityIndex`, `determine_shift_for_user`'s rule logic) is
+untouched, only the query layer that decides "who is eligible" gained an optional `group` parameter
+(threaded through `get_users_in_schedule_groups`/`get_available_users_for_date`/`get_oncall_for_date`/
+`get_oncall_user_for_date`/`determine_shift_for_user`/`handle_two_users_case` in
+`AdvancedShiftAutomation`, and `get_eligible_users`/`get_rotation_order`/`generate_oncall_schedule`
+in `OnCallAutomation`). `group=None` (unchanged everywhere) preserves pooled behavior exactly. A
+real correctness gap was found and fixed while wiring this: `get_oncall_for_date()`'s anchor-time
+lookup used an unscoped `.first()` — in `per_group` mode two groups can have a genuinely concurrent
+on-call for the same week, and the unscoped query could silently pick a *different* group's on-call,
+misattributing the on-call shift-slot rule within the group actually being generated; it now filters
+by the given group's membership. Rule *values* (weekend/slots/spacing/anchor) still stay org-wide
+either way — only the eligible-user pool is partitioned, no generation call site resolves a rule
+*value* per group yet, even though the rule-resolution plumbing already accepts a `group` argument
+for whenever that lands. **Not yet wired to `scheduling_mode`** at all: `fill_oncall_gaps()`,
+`rebalance_after_leave()`, and `refresh_shifts()` (narrower advanced workflows) keep pooling
+regardless of the setting, and the calendar has no per-group display (color/legend/filter) — both
+tracked as the "Future ideas" entry in `ROADMAP.md`, not silently forgotten.
+
 ### In-app notifications
 
 `AppNotification` (`app/models/app_notification.py`) is the bell-icon notification shown in the
@@ -406,7 +510,9 @@ Domains in use: `user`, `group`, `shift` (plus `shift.bulk_delete` for the multi
 `shift_type`, `swap` (`request`/`cancel`/`approve`/`reject`/`revert`/`purge`, mirroring every
 cross-cutting effect already documented under "Shift swaps" above), `setting` (one action,
 `setting.update`, for every `SettingsService` setter — `resource_type="Setting"`, `details` is a
-plain `"key=value"` string since `Setting` rows have no admin-facing PK), and `auth`/`profile`
+plain `"key=value"` string since `Setting` rows have no admin-facing PK), `automation_rule` (one
+action, `automation_rule.update`, for every `AutomationRuleAdminService` save — see "Configurable
+automation rules" below), and `auth`/`profile`
 (`auth.register`, `auth.login_success`, `auth.login_failure`, `auth.logout`,
 `profile.password_change`). Deliberately out of scope: no field-by-field before/after diff, just
 who/what/when/which-resource plus a short human-readable `details` summary — a future enhancement,
