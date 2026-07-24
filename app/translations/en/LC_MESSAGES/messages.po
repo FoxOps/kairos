@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-22 23:20+0200\n"
+"POT-Creation-Date: 2026-07-24 05:43+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: en <LL@li.org>\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: app/__init__.py:447 app/routes/auth.py:235
+#: app/__init__.py:448 app/routes/auth.py:235
 #: app/templates/auth/update_profile.html:15
 msgid "Vous devez choisir un nouveau mot de passe avant de continuer."
 msgstr "You must choose a new password before continuing."
@@ -1570,7 +1570,7 @@ msgid "Annulée"
 msgstr "Cancelled"
 
 #: app/templates/add_leave.html:3 app/templates/add_leave.html:8
-#: app/templates/index.html:85 app/templates/index.html:86
+#: app/templates/index.html:91 app/templates/index.html:92
 #: app/templates/leave.html:15 app/templates/leave.html:16
 msgid "Ajouter un congé"
 msgstr "Add a leave"
@@ -1675,7 +1675,7 @@ msgid "Annuler"
 msgstr "Cancel"
 
 #: app/templates/add_oncall.html:3 app/templates/add_oncall.html:8
-#: app/templates/index.html:82 app/templates/index.html:83
+#: app/templates/index.html:88 app/templates/index.html:89
 #: app/templates/oncall.html:15 app/templates/oncall.html:16
 msgid "Ajouter une astreinte"
 msgstr "Add an on-call"
@@ -1700,7 +1700,7 @@ msgid "Enregistrer l'astreinte"
 msgstr "Save the on-call"
 
 #: app/templates/add_shift.html:3 app/templates/add_shift.html:8
-#: app/templates/index.html:79 app/templates/index.html:80
+#: app/templates/index.html:85 app/templates/index.html:86
 #: app/templates/schedule.html:17
 msgid "Ajouter un shift"
 msgstr "Add a shift"
@@ -1802,20 +1802,20 @@ msgstr "Dashboard"
 #: app/templates/admin/automation/full_dry_run.html:61
 #: app/templates/admin/automation/full_dry_run.html:141
 #: app/templates/admin/dashboard.html:32 app/templates/base.html:90
-#: app/templates/index.html:129
+#: app/templates/index.html:135
 msgid "Shifts"
 msgstr "Shifts"
 
 #: app/templates/admin/automation/full_dry_run.html:24
 #: app/templates/admin/automation/full_dry_run.html:127
 #: app/templates/admin/dashboard.html:54 app/templates/base.html:91
-#: app/templates/dashboard.html:28 app/templates/index.html:130
+#: app/templates/dashboard.html:28 app/templates/index.html:136
 #: app/templates/oncall.html:3 app/templates/oncall.html:8
 msgid "Astreintes"
 msgstr "On-calls"
 
 #: app/templates/admin/dashboard.html:65 app/templates/base.html:92
-#: app/templates/dashboard.html:36 app/templates/index.html:131
+#: app/templates/dashboard.html:36 app/templates/index.html:137
 #: app/templates/leave.html:3 app/templates/leave.html:8
 msgid "Congés"
 msgstr "Leaves"
@@ -1832,7 +1832,7 @@ msgstr "Toggle between light and dark theme"
 msgid "Menu"
 msgstr "Menu"
 
-#: app/templates/base.html:170 app/templates/base.html:217
+#: app/templates/base.html:170 app/templates/base.html:227
 msgid "Accueil - Kairos"
 msgstr "Home - Kairos"
 
@@ -1849,34 +1849,34 @@ msgstr "Team shift, on-call, and leave management."
 msgid "Version %(app_version)s © 2026"
 msgstr "Version %(app_version)s © 2026"
 
-#: app/templates/base.html:204
+#: app/templates/base.html:212
 msgid "Dépôt GitHub de Kairos"
 msgstr "Kairos GitHub repository"
 
-#: app/templates/base.html:214
+#: app/templates/base.html:224
 msgid "Fermer le menu"
 msgstr "Close the menu"
 
-#: app/templates/base.html:215
+#: app/templates/base.html:225
 msgid "Navigation principale"
 msgstr "Main navigation"
 
-#: app/templates/base.html:227
+#: app/templates/base.html:237
 #, python-format
 msgid "Notifications (%(count)s non lues)"
 msgstr "Notifications (%(count)s unread)"
 
-#: app/templates/base.html:227 app/templates/base.html:228
+#: app/templates/base.html:237 app/templates/base.html:238
 #: app/templates/notifications.html:3 app/templates/notifications.html:8
 msgid "Notifications"
 msgstr "Notifications"
 
-#: app/templates/base.html:235
+#: app/templates/base.html:245
 msgid "Administration"
 msgstr "Administration"
 
 #: app/templates/admin/dashboard.html:10 app/templates/admin/users.html:10
-#: app/templates/base.html:236
+#: app/templates/base.html:246
 msgid "Utilisateurs"
 msgstr "Users"
 
@@ -1884,20 +1884,20 @@ msgstr "Users"
 #: app/templates/admin/automation/dashboard.html:11
 #: app/templates/admin/automation/full.html:12
 #: app/templates/admin/automation/full_dry_run.html:8
-#: app/templates/admin/dashboard.html:87 app/templates/base.html:237
+#: app/templates/admin/dashboard.html:87 app/templates/base.html:247
 msgid "Automatisation"
 msgstr "Automation"
 
-#: app/templates/base.html:238 app/templates/index.html:95
+#: app/templates/base.html:248 app/templates/index.html:101
 msgid "Admin"
 msgstr "Admin"
 
-#: app/templates/base.html:243
+#: app/templates/base.html:253
 #, python-format
 msgid "Mon profil - %(name)s"
 msgstr "My profile - %(name)s"
 
-#: app/templates/base.html:252
+#: app/templates/base.html:262
 msgid "Déconnexion"
 msgstr "Logout"
 
@@ -2109,52 +2109,52 @@ msgstr "List of recent shifts"
 msgid "Aucun shift récent"
 msgstr "No recent shifts"
 
-#: app/templates/index.html:13
+#: app/templates/index.html:19
 msgid "Calendrier - Kairos"
 msgstr "Calendar - Kairos"
 
-#: app/templates/index.html:26
+#: app/templates/index.html:32
 msgid "Calendrier"
 msgstr "Calendar"
 
-#: app/templates/index.html:30
+#: app/templates/index.html:36
 msgid "Options du calendrier"
 msgstr "Calendar options"
 
-#: app/templates/index.html:32 app/templates/index.html:54
+#: app/templates/index.html:38 app/templates/index.html:60
 #: app/utils/helpers/js_translations.py:19
 msgid "Mode édition désactivé"
 msgstr "Edit mode disabled"
 
-#: app/templates/index.html:34 app/utils/helpers/js_translations.py:21
+#: app/templates/index.html:40 app/utils/helpers/js_translations.py:21
 msgid "Activer le mode édition"
 msgstr "Enable edit mode"
 
-#: app/templates/index.html:35 app/utils/helpers/js_translations.py:23
+#: app/templates/index.html:41 app/utils/helpers/js_translations.py:23
 msgid "Activer l'édition"
 msgstr "Enable editing"
 
-#: app/templates/index.html:37 app/utils/helpers/js_translations.py:25
+#: app/templates/index.html:43 app/utils/helpers/js_translations.py:25
 msgid "Afficher les conseils"
 msgstr "Show tips"
 
-#: app/templates/index.html:38 app/utils/helpers/js_translations.py:27
+#: app/templates/index.html:44 app/utils/helpers/js_translations.py:27
 msgid "Afficher conseils"
 msgstr "Show tips"
 
-#: app/templates/index.html:46
+#: app/templates/index.html:52
 msgid "Conseils d'utilisation"
 msgstr "Usage tips"
 
-#: app/templates/index.html:48
+#: app/templates/index.html:54
 msgid "Conseils d'utilisation :"
 msgstr "Usage tips:"
 
-#: app/templates/index.html:50 app/utils/helpers/js_translations.py:18
+#: app/templates/index.html:56 app/utils/helpers/js_translations.py:18
 msgid "Mode édition activé"
 msgstr "Edit mode enabled"
 
-#: app/templates/index.html:50
+#: app/templates/index.html:56
 msgid ""
 "Le drag & drop est activé. Cliquez sur un événement (shift, astreinte, "
 "congé) pour le supprimer (avec confirmation)."
@@ -2162,43 +2162,43 @@ msgstr ""
 "Drag & drop is enabled. Click on an event (shift, on-call, leave) to delete "
 "it (with confirmation)."
 
-#: app/templates/index.html:51
+#: app/templates/index.html:57
 msgid "Déplacer un événement"
 msgstr "Move an event"
 
-#: app/templates/index.html:51
+#: app/templates/index.html:57
 msgid ""
 "Cliquez et faites glisser un événement (shift, astreinte, congé) vers une "
 "nouvelle date/heure"
 msgstr "Click and drag an event (shift, on-call, leave) to a new date/time"
 
-#: app/templates/index.html:52
+#: app/templates/index.html:58
 msgid "Redimensionner un événement"
 msgstr "Resize an event"
 
-#: app/templates/index.html:52
+#: app/templates/index.html:58
 msgid ""
 "Passez la souris sur le bord d'un événement et faites glisser pour modifier "
 "la durée"
 msgstr "Hover over the edge of an event and drag to change its duration"
 
-#: app/templates/index.html:53
+#: app/templates/index.html:59
 msgid "Créer un shift"
 msgstr "Create a shift"
 
-#: app/templates/index.html:53
+#: app/templates/index.html:59
 msgid "Sélectionnez une plage horaire vide dans le calendrier"
 msgstr "Select an empty time slot on the calendar"
 
-#: app/templates/index.html:54
+#: app/templates/index.html:60
 msgid "Le drag & drop est désactivé. Cliquer sur un événement ne fait rien."
 msgstr "Drag & drop is disabled. Clicking on an event does nothing."
 
-#: app/templates/index.html:55
+#: app/templates/index.html:61
 msgid "Contraintes"
 msgstr "Constraints"
 
-#: app/templates/index.html:55
+#: app/templates/index.html:61
 msgid ""
 "Les astreintes doivent commencer un vendredi. Les congés et shifts ne "
 "peuvent pas être placés sur des week-ends."
@@ -2206,66 +2206,66 @@ msgstr ""
 "On-calls must start on a Friday. Leaves and shifts cannot be placed on "
 "weekends."
 
-#: app/templates/index.html:65
+#: app/templates/index.html:71
 msgid "Calendrier interactif"
 msgstr "Interactive calendar"
 
-#: app/templates/admin/dashboard.html:154 app/templates/index.html:75
-#: app/templates/index.html:77
+#: app/templates/admin/dashboard.html:154 app/templates/index.html:81
+#: app/templates/index.html:83
 msgid "Actions rapides"
 msgstr "Quick actions"
 
-#: app/templates/admin/automation/full.html:167 app/templates/index.html:88
-#: app/templates/index.html:89
+#: app/templates/admin/automation/full.html:167 app/templates/index.html:94
+#: app/templates/index.html:95
 msgid "Gérer les utilisateurs"
 msgstr "Manage users"
 
-#: app/templates/admin/automation/full.html:164 app/templates/index.html:91
-#: app/templates/index.html:92
+#: app/templates/admin/automation/full.html:164 app/templates/index.html:97
+#: app/templates/index.html:98
 msgid "Gérer les groupes"
 msgstr "Manage groups"
 
-#: app/templates/index.html:94
+#: app/templates/index.html:100
 msgid "Tableau de bord administrateur"
 msgstr "Administrator dashboard"
 
-#: app/templates/index.html:100
+#: app/templates/index.html:106
 msgid "Exporter le calendrier complet de l'équipe"
 msgstr "Export the team's full calendar"
 
-#: app/templates/index.html:101
+#: app/templates/index.html:107
 msgid "Exporter le calendrier complet"
 msgstr "Export the full calendar"
 
-#: app/templates/index.html:103 app/templates/index.html:104
+#: app/templates/index.html:109 app/templates/index.html:110
 msgid "Exporter mes shifts"
 msgstr "Export my shifts"
 
-#: app/templates/index.html:106 app/templates/index.html:107
+#: app/templates/index.html:112 app/templates/index.html:113
 msgid "Exporter mes astreintes"
 msgstr "Export my on-calls"
 
-#: app/templates/index.html:109 app/templates/index.html:110
+#: app/templates/index.html:115 app/templates/index.html:116
 msgid "Exporter mes congés"
 msgstr "Export my leaves"
 
-#: app/templates/index.html:112
+#: app/templates/index.html:118
 msgid "Plus d'options d'export ICS"
 msgstr "More ICS export options"
 
-#: app/templates/index.html:113
+#: app/templates/index.html:119
 msgid "Plus d'options"
 msgstr "More options"
 
-#: app/templates/index.html:116 app/templates/index.html:117
+#: app/templates/index.html:122 app/templates/index.html:123
 msgid "Générer mon export ICS"
 msgstr "Generate my ICS export"
 
-#: app/templates/index.html:127
+#: app/templates/index.html:133
 msgid "Légende"
 msgstr "Legend"
 
-#: app/templates/index.html:128
+#: app/templates/index.html:134
 msgid "Types d'événements"
 msgstr "Event types"
 
@@ -5015,40 +5015,40 @@ msgstr "View the schedule: %(url)s"
 msgid "Se déconnecter"
 msgstr "Log out"
 
-#: app/utils/automation/advanced_shift_automation.py:350
-#: app/utils/automation/advanced_shift_automation.py:513
+#: app/utils/automation/advanced_shift_automation.py:358
+#: app/utils/automation/advanced_shift_automation.py:521
 #, python-format
 msgid "⏭️ Pas de shift généré pour le %(date)s (week-end)"
 msgstr "⏭️ No shift generated for %(date)s (weekend)"
 
-#: app/utils/automation/advanced_shift_automation.py:360
+#: app/utils/automation/advanced_shift_automation.py:368
 #, python-format
 msgid "⚠️ Aucun utilisateur disponible pour le %(date)s"
 msgstr "⚠️ No user available for %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:397
-#: app/utils/automation/advanced_shift_automation.py:439
-#: app/utils/automation/advanced_shift_automation.py:498
+#: app/utils/automation/advanced_shift_automation.py:405
+#: app/utils/automation/advanced_shift_automation.py:447
+#: app/utils/automation/advanced_shift_automation.py:506
 #, python-format
 msgid "❌ Erreur : %(error)s"
 msgstr "❌ Error: %(error)s"
 
-#: app/utils/automation/advanced_shift_automation.py:402
+#: app/utils/automation/advanced_shift_automation.py:410
 #, python-format
 msgid "✅ 1 shift généré pour le %(date)s (effectif minimum : %(name)s)"
 msgstr "✅ 1 shift generated for %(date)s (minimum staffing: %(name)s)"
 
-#: app/utils/automation/advanced_shift_automation.py:505
+#: app/utils/automation/advanced_shift_automation.py:513
 #, python-format
 msgid "✅ %(count)s shifts générés pour le %(date)s"
 msgstr "✅ %(count)s shifts generated for %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:520
+#: app/utils/automation/advanced_shift_automation.py:528
 #, python-format
 msgid "⚠️ Aucun shift généré pour le %(date)s"
 msgstr "⚠️ No shift generated for %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:566
+#: app/utils/automation/advanced_shift_automation.py:574
 #, python-format
 msgid ""
 "📋 Prévisualisation : %(count)s shifts seraient générés pour la période du "
@@ -5057,23 +5057,23 @@ msgstr ""
 "📋 Preview: %(count)s shifts would be generated for the period %(start)s to "
 "%(end)s"
 
-#: app/utils/automation/advanced_shift_automation.py:573
+#: app/utils/automation/advanced_shift_automation.py:581
 #, python-format
 msgid "🎉 %(count)s shifts générés pour la période du %(start)s au %(end)s"
 msgstr "🎉 %(count)s shifts generated for the period %(start)s to %(end)s"
 
-#: app/utils/automation/advanced_shift_automation.py:580
+#: app/utils/automation/advanced_shift_automation.py:588
 #, python-format
 msgid "(%(with_shifts)s jours avec shifts, %(skipped)s jours sans)"
 msgstr "(%(with_shifts)s days with shifts, %(skipped)s days without)"
 
-#: app/utils/automation/advanced_shift_automation.py:613
-#: app/utils/automation/advanced_shift_automation.py:646
+#: app/utils/automation/advanced_shift_automation.py:621
+#: app/utils/automation/advanced_shift_automation.py:654
 #, python-format
 msgid "🗑️ %(count)s shifts supprimés pour le %(date)s"
 msgstr "🗑️ %(count)s shifts deleted for %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:665
+#: app/utils/automation/advanced_shift_automation.py:673
 #, python-format
 msgid ""
 "❌ Échec de la régénération du %(date)s : %(error)s - ce jour n'a pas été "
@@ -5082,7 +5082,7 @@ msgstr ""
 "❌ Failed to regenerate %(date)s: %(error)s - this day was not changed, "
 "manual action required"
 
-#: app/utils/automation/advanced_shift_automation.py:749
+#: app/utils/automation/advanced_shift_automation.py:757
 #, python-format
 msgid ""
 "🗑️ %(count)s astreinte(s) supplémentaire(s) supprimée(s) dans la période "
@@ -5091,12 +5091,12 @@ msgstr ""
 "🗑️ %(count)s extra on-call(s) deleted in the extended period before "
 "regeneration"
 
-#: app/utils/automation/advanced_shift_automation.py:770
+#: app/utils/automation/advanced_shift_automation.py:778
 #, python-format
 msgid "🔄 %(count)s astreintes régénérées pour la période %(start)s - %(end)s"
 msgstr "🔄 %(count)s on-calls regenerated for the period %(start)s - %(end)s"
 
-#: app/utils/automation/advanced_shift_automation.py:780
+#: app/utils/automation/advanced_shift_automation.py:788
 #, python-format
 msgid ""
 "❌ Échec de la régénération des astreintes pour la période %(start)s - "
@@ -5107,37 +5107,37 @@ msgstr ""
 "%(error)s - the on-calls for this period were not changed, manual action "
 "required"
 
-#: app/utils/automation/advanced_shift_automation.py:888
+#: app/utils/automation/advanced_shift_automation.py:896
 #, python-format
 msgid "🗑️ %(count)s astreintes supprimées pour l'utilisateur %(user_id)s"
 msgstr "🗑️ %(count)s on-calls deleted for user %(user_id)s"
 
-#: app/utils/automation/oncall_automation.py:381
+#: app/utils/automation/oncall_automation.py:401
 #, python-format
 msgid ""
 "⚠️ Aucune astreinte générée pour le %(date)s (aucun utilisateur ne respecte "
-"le délai légal de 2 semaines entre deux astreintes) - assignation manuelle "
-"nécessaire."
+"le délai légal de %(weeks)s semaines entre deux astreintes) - assignation "
+"manuelle nécessaire."
 msgstr ""
-"⚠️ No on-call generated for %(date)s (no user meets the legal 2-week spacing"
-" constraint between two on-calls) - manual assignment required."
+"⚠️ No on-call generated for %(date)s (no user meets the legal %(weeks)s-week"
+" spacing constraint between two on-calls) - manual assignment required."
 
-#: app/utils/automation/oncall_automation.py:408
+#: app/utils/automation/oncall_automation.py:430
 #, python-format
 msgid "✅ %(count)s astreintes générées."
 msgstr "✅ %(count)s on-calls generated."
 
-#: app/utils/automation/oncall_automation.py:632
-#: app/utils/automation/oncall_automation.py:712
+#: app/utils/automation/oncall_automation.py:654
+#: app/utils/automation/oncall_automation.py:739
 msgid "Aucun utilisateur éligible pour les astreintes."
 msgstr "No eligible user for on-calls."
 
-#: app/utils/automation/oncall_automation.py:636
-#: app/utils/automation/oncall_automation.py:716
+#: app/utils/automation/oncall_automation.py:658
+#: app/utils/automation/oncall_automation.py:743
 msgid "Impossible de déterminer l'ordre de rotation."
 msgstr "Unable to determine the rotation order."
 
-#: app/utils/automation/oncall_automation.py:742
+#: app/utils/automation/oncall_automation.py:774
 msgid "✅ Aucune astreinte manquante sur cette période."
 msgstr "✅ No missing on-calls for this period."
 

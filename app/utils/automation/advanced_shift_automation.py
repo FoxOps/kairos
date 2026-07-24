@@ -139,11 +139,18 @@ class AdvancedShiftAutomation:
 
         from app import db
         from app.models import OnCall
+        from app.utils.automation.rules import OnCallAnchorRule
 
+        anchor = OnCallAnchorRule.resolve()
+        # Days before this week's Monday (weekday 0) that the on-call
+        # anchor weekday falls on - generalizes the previous hardcoded
+        # "Friday = Monday minus 3 days" to any configured anchor
+        # weekday (e.g. anchor weekday 0 = Monday itself, offset 0).
+        days_before_monday = (0 - anchor["weekday"]) % 7
         week_monday = date - timedelta(days=date.weekday())
-        anchor_friday = week_monday - timedelta(days=3)
-        anchor_start = datetime.combine(anchor_friday, datetime.min.time()).replace(
-            hour=21
+        anchor_day = week_monday - timedelta(days=days_before_monday)
+        anchor_start = datetime.combine(anchor_day, datetime.min.time()).replace(
+            hour=anchor["start_hour"]
         )
 
         # Optimization: use a query with JOIN to avoid lazy loading
@@ -340,11 +347,12 @@ class AdvancedShiftAutomation:
         from datetime import datetime, timedelta
 
         from app.models import Shift
+        from app.utils.automation.rules import WeekendDefinitionRule
 
         messages = []
         generated_shifts = []
 
-        if date.weekday() >= 5:
+        if WeekendDefinitionRule.is_weekend(date):
             return [], [
                 _(
                     "⏭️ Pas de shift généré pour le %(date)s (week-end)",
@@ -507,7 +515,7 @@ class AdvancedShiftAutomation:
                     date=date.strftime("%d/%m/%Y"),
                 )
             ]
-        elif date.weekday() >= 5:
+        elif WeekendDefinitionRule.is_weekend(date):
             return [], [
                 _(
                     "⏭️ Pas de shift généré pour le %(date)s (week-end)",

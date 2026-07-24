@@ -10,6 +10,7 @@ from typing import Any
 from app.models import OnCall, Shift
 from app.utils.automation.advanced_shift_automation import AdvancedShiftAutomation
 from app.utils.automation.oncall_automation import OnCallAutomation
+from app.utils.automation.rules import OnCallAnchorRule
 
 
 def get_automation_status() -> dict[str, Any]:
@@ -34,17 +35,20 @@ def get_automation_status() -> dict[str, Any]:
     oncall_eligible = len(OnCallAutomation.get_eligible_users())
     shift_eligible = len(AdvancedShiftAutomation.get_users_in_schedule_groups())
 
-    # Find the next available date (the first Friday in the future with no on-call)
+    # Find the next available date (the first on-call anchor weekday in
+    # the future with no on-call) - see OnCallAnchorRule for the
+    # configurable weekday/start_hour (defaults to Friday 21:00).
+    anchor = OnCallAnchorRule.resolve()
     today = date.today()
     current_date = today
-    while current_date.weekday() != 4:  # 4 = Friday
+    while current_date.weekday() != anchor["weekday"]:
         current_date += timedelta(days=1)
 
-    # Check whether an on-call already exists for this Friday
+    # Check whether an on-call already exists for this anchor date
     next_oncall_date = None
     while next_oncall_date is None:
         start_time = datetime.combine(current_date, datetime.min.time()).replace(
-            hour=21
+            hour=anchor["start_hour"]
         )
 
         has_oncall = OnCall.query.filter(OnCall.start_time == start_time).first()

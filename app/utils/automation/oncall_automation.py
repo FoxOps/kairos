@@ -30,7 +30,8 @@ class AvailabilityIndex:
     guaranteed that visibility on every query.
     """
 
-    def __init__(self, user_ids: Iterable[int]):
+    def __init__(self, user_ids: Iterable[int], min_spacing_weeks: int = 2):
+        self._min_spacing_weeks = min_spacing_weeks
         user_id_set = set(user_ids)
         self._oncall_intervals: dict[int, list[tuple[datetime, datetime]]] = (
             defaultdict(list)
@@ -69,7 +70,8 @@ class AvailabilityIndex:
     def meets_spacing_constraint(
         self, user_id: int, start_time: datetime, end_time: datetime
     ) -> bool:
-        """2-week minimum gap to EVERY existing/assigned on-call for
+        """`min_spacing_weeks`-minimum gap (see OnCallSpacingRule,
+        default 2 weeks) to EVERY existing/assigned on-call for
         this user - chronologically before *or* after the prospective
         interval, not just "the single most recently created one".
 
@@ -96,7 +98,7 @@ class AvailabilityIndex:
                 # Overlaps the prospective interval - a conflict
                 # (has_oncall_conflict's concern), not a spacing issue.
                 continue
-            if gap_days / 7 < 2:
+            if gap_days / 7 < self._min_spacing_weeks:
                 return False
         return True
 
@@ -129,10 +131,12 @@ def _solve_max_filled_weeks(
     weeks: list[tuple[date, datetime, datetime]],
     week_candidates: list[list[User]],
     index: AvailabilityIndex,
+    min_spacing_weeks: int = 2,
 ) -> dict[int, User]:
     """
     Branch-and-bound search that maximizes the number of on-call weeks
-    that can be filled, respecting the 2-week legal spacing constraint.
+    that can be filled, respecting the legal spacing constraint (see
+    OnCallSpacingRule, default 2 weeks).
 
     Why this exists: a plain greedy pass (try the first available
     candidate for week 1, then week 2, ...) can commit to a locally-fine
@@ -191,7 +195,7 @@ def _solve_max_filled_weeks(
                 gap_days = (existing_start - end_time).days
             else:
                 continue
-            if gap_days / 7 < 2:
+            if gap_days / 7 < min_spacing_weeks:
                 return False
         return True
 
@@ -235,9 +239,15 @@ def _solve_max_filled_weeks(
 
 
 def _fridays_in_range(start_date: date, end_date: date) -> list[date]:
-    """Every Friday from the first one on/after start_date through
-    end_date, inclusive."""
-    days_ahead = (4 - start_date.weekday()) % 7
+    """Every on-call anchor weekday (see OnCallAnchorRule, default
+    Friday) from the first one on/after start_date through end_date,
+    inclusive. Keeps the "fridays" name for the default-configuration
+    case this module was originally written for; the actual weekday
+    used is whatever OnCallAnchorRule resolves to."""
+    from app.utils.automation.rules import OnCallAnchorRule
+
+    anchor_weekday = OnCallAnchorRule.resolve()["weekday"]
+    days_ahead = (anchor_weekday - start_date.weekday()) % 7
     current_friday = start_date + timedelta(days=days_ahead)
     fridays = []
     while current_friday <= end_date:
@@ -316,11 +326,19 @@ def _generate_for_fridays(
     preferred user with a real conflict - e.g. it's their own leave
     week - is filtered out like anyone else, no special-casing)."""
     from app import db
+    from app.utils.automation.rules import OnCallAnchorRule, OnCallSpacingRule
+
+    anchor = OnCallAnchorRule.resolve()
+    min_spacing_weeks = OnCallSpacingRule.resolve()["min_spacing_weeks"]
 
     weeks: list[tuple[date, datetime, datetime]] = []
     for friday in fridays:
-        start_time = datetime.combine(friday, datetime.min.time()).replace(hour=21)
-        end_time = start_time + timedelta(days=7, hours=-14)
+        start_time = datetime.combine(friday, datetime.min.time()).replace(
+            hour=anchor["start_hour"]
+        )
+        end_time = datetime.combine(
+            friday + timedelta(days=7), datetime.min.time()
+        ).replace(hour=anchor["end_hour"])
         weeks.append((friday, start_time, end_time))
 
     # Per-week candidates, pre-filtered for the *static* constraints
@@ -360,7 +378,9 @@ def _generate_for_fridays(
             ]
         )
 
-    assignment = _solve_max_filled_weeks(weeks, week_candidates, index)
+    assignment = _solve_max_filled_weeks(
+        weeks, week_candidates, index, min_spacing_weeks=min_spacing_weeks
+    )
 
     oncalls = []
     messages = []
@@ -371,17 +391,19 @@ def _generate_for_fridays(
 
         if assigned_user is None:
             # Deliberately left unassigned - no fallback that ignores
-            # the legal 2-week spacing constraint, and only after the
-            # search above confirmed no permutation of this period's
-            # assignments could fill it either. The caller is
-            # responsible for notifying admins once its own commit has
-            # actually succeeded (see unfilled_dates below).
+            # the legal spacing constraint (see OnCallSpacingRule), and
+            # only after the search above confirmed no permutation of
+            # this period's assignments could fill it either. The
+            # caller is responsible for notifying admins once its own
+            # commit has actually succeeded (see unfilled_dates below).
             messages.append(
                 _(
                     "⚠️ Aucune astreinte générée pour le %(date)s "
-                    "(aucun utilisateur ne respecte le délai légal de 2 semaines entre deux "
-                    "astreintes) - assignation manuelle nécessaire.",
+                    "(aucun utilisateur ne respecte le délai légal de %(weeks)s "
+                    "semaines entre deux astreintes) - assignation manuelle "
+                    "nécessaire.",
                     date=friday.strftime("%d/%m/%Y"),
+                    weeks=min_spacing_weeks,
                 )
             )
             unfilled_dates.append(friday)
@@ -637,7 +659,12 @@ class OnCallAutomation:
 
         # One bulk query per source (OnCall, Leave) instead of several
         # queries per candidate tested each week - see AvailabilityIndex.
-        index = AvailabilityIndex(user.id for user in eligible_users)
+        from app.utils.automation.rules import OnCallSpacingRule
+
+        index = AvailabilityIndex(
+            (user.id for user in eligible_users),
+            min_spacing_weeks=OnCallSpacingRule.resolve()["min_spacing_weeks"],
+        )
 
         # end_date inclusive, like AdvancedShiftAutomation.generate_full_schedule
         # (`current_date <= end_date`) - both receive the same period
@@ -715,7 +742,12 @@ class OnCallAutomation:
         if not rotation_order:
             return [], [_("Impossible de déterminer l'ordre de rotation.")], []
 
-        index = AvailabilityIndex(user.id for user in eligible_users)
+        from app.utils.automation.rules import OnCallSpacingRule
+
+        index = AvailabilityIndex(
+            (user.id for user in eligible_users),
+            min_spacing_weeks=OnCallSpacingRule.resolve()["min_spacing_weeks"],
+        )
 
         # AvailabilityIndex doesn't expose "which Fridays already have
         # *someone* assigned" (its intervals are keyed per user, not
