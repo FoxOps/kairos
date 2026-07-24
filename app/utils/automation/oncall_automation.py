@@ -442,18 +442,20 @@ class OnCallAutomation:
     """
 
     @staticmethod
-    def get_eligible_users() -> list[User]:
+    def get_eligible_users(group: Group | None = None) -> list[User]:
         """
         Fetch the list of users eligible for on-call duty.
         A user is eligible if they belong to a group that participates
-        in on-call rotation.
-        """
-        return (
-            User.query.join(Group)
-            .filter(Group.is_part_of_oncall.is_(True))
-            .order_by(User.name)
-            .all()
-        )
+        in on-call rotation. `group`: when given, restricts eligibility
+        to that single Group's members instead of pooling every
+        on-call-eligible group - used by the "per_group" scheduling
+        mode (SettingsService.get_scheduling_mode()) to run each
+        group's own independent rotation. None (the default) preserves
+        today's pooled behavior."""
+        query = User.query.join(Group).filter(Group.is_part_of_oncall.is_(True))
+        if group is not None:
+            query = query.filter(User.group_id == group.id)
+        return query.order_by(User.name).all()
 
     @staticmethod
     def detect_oncall_gaps() -> list[date]:
@@ -502,18 +504,24 @@ class OnCallAutomation:
         return _covering_friday(start_date)
 
     @staticmethod
-    def get_rotation_order(rotation_order_ids: list[int] | None = None) -> list[User]:
+    def get_rotation_order(
+        rotation_order_ids: list[int] | None = None, group: Group | None = None
+    ) -> list[User]:
         """
         Fetch the users' rotation order.
 
         Args:
             rotation_order_ids: Optional list of user IDs in the desired
                               order. If None, uses alphabetical order.
+            group: When given, restricts to that Group's eligible
+                users (see get_eligible_users()) - rotation_order_ids
+                entries for users outside the group are silently
+                dropped, same as any other ineligible id.
 
         Returns:
             List of users in rotation order.
         """
-        eligible_users = OnCallAutomation.get_eligible_users()
+        eligible_users = OnCallAutomation.get_eligible_users(group=group)
 
         if not eligible_users:
             return []
@@ -606,6 +614,7 @@ class OnCallAutomation:
         dry_run: bool = True,
         commit: bool = True,
         preferred_assignments: dict[date, int] | None = None,
+        group: Group | None = None,
     ):
         """
         Generate an on-call schedule for a given period.
@@ -640,6 +649,14 @@ class OnCallAutomation:
                 docstring - only rebalance_after_leave() and the
                 "Rafraîchir > Régénérer entièrement" action pass this,
                 every other caller leaves it None.
+            group: When given, restricts eligibility/rotation order to
+                that Group only (see get_eligible_users()) - used by
+                "per_group" scheduling mode to run each group's own
+                independent weekly rotation. Since on-calls carry no
+                group of their own, calling this once per group for
+                the same date range is how multiple groups end up with
+                concurrent on-calls for the same Friday, one each -
+                the intended per_group behavior, not a conflict.
 
         Returns:
             Tuple: (list of generated on-calls (OnCall objects), log
@@ -649,11 +666,13 @@ class OnCallAutomation:
             about these once the caller's own commit has actually
             succeeded, never before).
         """
-        eligible_users = OnCallAutomation.get_eligible_users()
+        eligible_users = OnCallAutomation.get_eligible_users(group=group)
         if not eligible_users:
             return [], [_("Aucun utilisateur éligible pour les astreintes.")], []
 
-        rotation_order = OnCallAutomation.get_rotation_order(rotation_order_ids)
+        rotation_order = OnCallAutomation.get_rotation_order(
+            rotation_order_ids, group=group
+        )
         if not rotation_order:
             return [], [_("Impossible de déterminer l'ordre de rotation.")], []
 
