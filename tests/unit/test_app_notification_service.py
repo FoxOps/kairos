@@ -294,7 +294,7 @@ class TestNotifyAdminsShiftGap:
 class TestNotifyAdminsShiftUnfilled:
     """Real user report: when shift automation can't find anyone
     available for a day (a business-rule case, not an exception -
-    AdvancedShiftAutomation.generate_daily_shifts()'s own "⚠️ Aucun
+    AdvancedShiftAutomation.generate_daily_shifts()'s own "[WARN] Aucun
     shift généré" case), admins were never notified at all - only
     notify_admins_shift_gap() (the *exception* case) existed, so a
     silent "nobody available" gap had no admin-facing signal anywhere,

@@ -70,6 +70,34 @@ class TestSettingsLanguageSection:
         assert SettingsService.get_default_language() == "fr"
 
 
+class TestSettingsSchedulingSection:
+    def test_valid_mode_persists(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={"section": "scheduling", "scheduling_mode": "per_group"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"enregistr\xc3\xa9" in response.data
+
+        from app.services import SettingsService
+
+        assert SettingsService.get_scheduling_mode() == "per_group"
+
+    def test_invalid_mode_flashes_error_without_persisting(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={"section": "scheduling", "scheduling_mode": "not_a_real_mode"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
+
+        from app.services import SettingsService
+
+        assert SettingsService.get_scheduling_mode() == "shared"
+
+
 class TestSettingsDateFormatSection:
     def test_valid_date_format_persists(self, logged_in_client):
         response = logged_in_client.post(

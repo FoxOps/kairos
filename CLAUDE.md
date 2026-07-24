@@ -4,9 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Language
 
-Respond to the user in French. Code, identifiers, and commit messages follow the conventions
-described below (commit history is French-language; code/comments in English unless stated
-otherwise). This was a stated-but-unenforced rule for a long time — a repo-wide sweep translated
+Respond to the user in English. Switched from French after a recurring, unresolved failure mode:
+Claude Code sessions on this project repeatedly drifted into Portuguese mid-response (confirmed
+across 8 occurrences in one session, in short compressed fragments as well as full structured
+summaries, and persisting even right after being told to stop) — English was adopted as the
+working mitigation rather than continuing to fight the French/Portuguese cross-contamination.
+Code, identifiers, and commit messages follow the conventions described below (commit history is
+French-language; code/comments in English unless stated otherwise) — this change only affects the
+chat-response language, not the codebase's own existing French conventions (UI strings, commit
+history, ops output) documented in this file, which are unrelated and untouched. This was a
+stated-but-unenforced rule for a long time — a repo-wide sweep translated
 every remaining French code comment/docstring to English (Python, Dockerfile, entrypoint.sh,
 Makefile, .ruff.toml, k8s/*.yaml, docker-compose*.yml). Keep new comments/docstrings in English
 going forward. Two deliberate carve-outs, not oversights:
@@ -43,13 +50,7 @@ deliberately **manual-only** (`workflow_dispatch`, never triggered by a tag push
 of truth for releases, dev branches merge into it first, never the other way around. Calls
 `tests.yml` directly as a reusable workflow (`workflow_call`) and only proceeds to build/push if it
 passes (`needs:`) — not a "run that first yourself" note, an enforced dependency. Run it from the
-Actions tab. See `Docs/deployment/docker.md`. A sibling workflow, `docker-dev-build.yml`, covers the
-opposite case — a disposable test image built from any **non**-`main` branch (its own `require-not-main`
-job refuses to run from `main`), tagged `dev-<branch>-<sha>` and stamped with SemVer build metadata
-(`<version>+dev.<run number>.<sha>`, via the `APP_VERSION` build-arg `docker/Dockerfile` now accepts) so
-a running test container can prove which commit it was actually built from. `main` itself never carries
-build metadata — a `docker-release.yml` build always reports a clean `APP_VERSION_DEFAULT`. Full detail:
-`Docs/reference/VERSIONING.md`. `docker/Dockerfile` installs from `docker/requirements.txt`,
+Actions tab. See `Docs/deployment/docker.md`. `docker/Dockerfile` installs from `docker/requirements.txt`,
 **not** the root `requirements.txt` — a third, deliberately trimmed requirements file (on top of
 `requirements.txt`/`requirements-e2e.txt`) containing only what the running app actually needs
 (no `pytest`/`ruff`/`mypy`/`black`/`bandit`/`pip-audit`/`polib`), so the image doesn't ship the

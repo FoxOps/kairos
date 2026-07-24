@@ -16,11 +16,15 @@ organized by domain:
   see app/auth/service_account_auth.py and app/api/ - not a human User)
 - Base: BaseModel (common fields and methods)
 - Setting: Setting (generic DB-backed admin settings, distinct from AutomationConfig)
+- AutomationRule: AutomationRule (configurable automation rules engine - org
+  default + per-Group override, see app/utils/automation/rules/ - distinct
+  from AutomationConfig, which only stores the on-call rotation order)
 """
 
 from app.models.app_notification import AppNotification
 from app.models.audit_log import AuditLog
 from app.models.automation_config import AutomationConfig
+from app.models.automation_rule import AutomationRule
 from app.models.base import BaseModel
 from app.models.leave import Leave
 from app.models.notification_log import NotificationLog
@@ -41,6 +45,7 @@ __all__ = [
     "OnCall",
     "Leave",
     "AutomationConfig",
+    "AutomationRule",
     "Setting",
     "NotificationLog",
     "SwapRequest",

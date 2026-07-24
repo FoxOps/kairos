@@ -85,6 +85,17 @@ class ShiftTypeService:
                 ),
             )
 
+        from app.utils.automation.rules import ShiftSlotsRule
+
+        if ShiftSlotsRule.references_shift_type(shift_type_id):
+            return (
+                False,
+                _(
+                    "Impossible de supprimer ce type de shift : il est utilisé "
+                    "par une règle d'automatisation configurée."
+                ),
+            )
+
         deleted_name = shift_type.name
         ShiftTypeRepository.delete(shift_type)
         db.session.commit()

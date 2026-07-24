@@ -158,6 +158,41 @@ class TestShiftTypeByHours:
             assert shift_type.label == "13h-21h"
 
 
+class TestGetShiftTypeForSlot:
+    """Regression tests for the fix to a pre-existing bug:
+    get_shift_type_by_hours() matched ShiftType rows by hours, so an
+    admin editing a configured ShiftType's hours via /admin/shift-types
+    would silently orphan it (a fresh duplicate got created instead).
+    get_shift_type_for_slot() resolves via the configured ShiftSlotsRule
+    id instead, closing that gap."""
+
+    def test_default_matches_legacy_hours(self, test_app):
+        shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(
+            AdvancedShiftAutomation.SHIFT_07_15
+        )
+        assert (shift_type.start_hour, shift_type.end_hour) == (7, 15)
+
+    def test_uses_configured_shift_type_even_with_different_hours(self, test_app):
+        from app.models import AutomationRule, ShiftType
+        from app.utils.automation.rules import ShiftSlotsRule
+
+        custom = ShiftType(name="custom", label="Custom", start_hour=6, end_hour=14)
+        db.session.add(custom)
+        db.session.commit()
+
+        default_params = ShiftSlotsRule.resolve()
+        AutomationRule.set(
+            "shift_slots",
+            {**default_params, "rotation_shift_type_id": custom.id},
+        )
+
+        shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(
+            AdvancedShiftAutomation.SHIFT_07_15
+        )
+        assert shift_type.id == custom.id
+        assert (shift_type.start_hour, shift_type.end_hour) == (6, 14)
+
+
 class TestDetermineShiftForUser:
     """Tests for determining a user's shift slot."""
 
@@ -456,6 +491,46 @@ class TestGenerateDailyShifts:
             assert shifts[0].start_time.hour == 7
             assert shifts[0].end_time.hour == 15
 
+    def test_generate_daily_shifts_honors_configured_rotation_shift_type(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Regression test for the ShiftType-by-hours orphan bug fix:
+        when the rotation slot (rule 7's 07h-15h fallback) is
+        overridden to point at a ShiftType with different hours, the
+        generated shift must use THAT ShiftType's actual hours, not
+        the legacy 7-15 literal."""
+        from app.models import AutomationRule, ShiftType
+        from app.utils.automation.rules import ShiftSlotsRule
+
+        with test_app.app_context():
+            custom = ShiftType(
+                name="custom-rotation", label="Custom", start_hour=6, end_hour=14
+            )
+            db.session.add(custom)
+            db.session.commit()
+
+            default_params = ShiftSlotsRule.resolve()
+            AutomationRule.set(
+                "shift_slots",
+                {**default_params, "rotation_shift_type_id": custom.id},
+            )
+
+            test_date = date(2023, 12, 15)
+            leave = Leave(
+                user_id=second_user.id, start_date=test_date, end_date=test_date
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            shifts, _messages = AdvancedShiftAutomation.generate_daily_shifts(
+                test_date, dry_run=True
+            )
+
+            assert len(shifts) == 1
+            assert shifts[0].shift_type_id == custom.id
+            assert shifts[0].start_time.hour == 6
+            assert shifts[0].end_time.hour == 14
+
     def test_generate_daily_shifts_with_two_users(
         self, test_app, test_group, test_user, second_user, test_shift_type
     ):
@@ -495,6 +570,41 @@ class TestGenerateDailyShifts:
 
             # Should generate shifts for all 3 users
             assert len(shifts) == 3
+
+    def test_generate_daily_shifts_flags_unfilled_mandatory_slot(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """New rule (mandatory_shift, no prior equivalent): with no
+        on-call context at all, rule 1 never fires and nobody lands on
+        the on-call slot - if that slot is flagged mandatory, an
+        elevated message must be raised (never a hard block, per the
+        existing "leave unfilled + notify" philosophy - shifts still
+        get generated normally)."""
+        from app.models import AutomationRule
+        from app.utils.automation.rules import ShiftSlotsRule
+
+        user3 = User(
+            name="Third User",
+            email="third-mandatory@test.com",
+            password_hash=generate_password_hash("third-password"),
+            is_admin=False,
+            group_id=test_group.id,
+        )
+        db.session.add(user3)
+        db.session.commit()
+
+        oncall_shift_type_id = ShiftSlotsRule.resolve()["oncall_shift_type_id"]
+        AutomationRule.set(
+            "mandatory_shift", {"shift_type_ids": [oncall_shift_type_id]}
+        )
+
+        test_date = date(2023, 12, 15)
+        shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(
+            test_date, dry_run=True
+        )
+
+        assert len(shifts) == 3  # generation itself is unaffected
+        assert any("obligatoire" in msg for msg in messages)
 
     def test_generate_daily_shifts_ensures_07_15_coverage_with_three_users(
         self, test_app, test_group, test_user, second_user
@@ -1115,7 +1225,8 @@ class TestRebalanceAfterLeave:
 
             assert failed_shift_dates == [failing_day]
             assert any(
-                failing_day.strftime("%d/%m/%Y") in m and "❌" in m for m in messages
+                failing_day.strftime("%d/%m/%Y") in m and "[ERROR]" in m
+                for m in messages
             )
             # Every other weekday in the window still got a shift - the
             # single failing day didn't take the rest down with it.

@@ -13,8 +13,10 @@ from dataclasses import dataclass, field
 from datetime import date
 
 from app import db
+from app.models import Group
 from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository
+from app.services.settings_service import SettingsService
 from app.utils.automation import AdvancedShiftAutomation, OnCallAutomation
 
 
@@ -237,30 +239,51 @@ class AutomationAdminService:
                 AutomationAdminService.clear_period(start_date, end_date)
             )
 
-        oncalls, oncall_messages, oncall_unfilled_dates = (
-            OnCallAutomation.generate_oncall_schedule(
-                oncall_regen_start,
-                end_date,
-                rotation_order_ids,
-                dry_run=dry_run,
-                preferred_assignments=preferred_assignments,
-            )
+        # scheduling_mode="per_group" (SettingsService) runs one
+        # independent generation pass per eligible Group instead of
+        # pooling every group into a single shared pass - see the
+        # `group` parameter added to generate_oncall_schedule()/
+        # generate_full_schedule() for what "independent" means (e.g.
+        # concurrent on-calls, one per group, for the same week).
+        # Rule *values* (weekend/slots/spacing/anchor) stay org-wide
+        # either way in this increment - only the eligible-user pool
+        # is partitioned.
+        per_group = SettingsService.get_scheduling_mode() == "per_group"
+        oncall_groups = (
+            Group.query.filter_by(is_part_of_oncall=True).all() if per_group else [None]
         )
-        result.oncalls = oncalls
-        result.oncall_messages = oncall_messages
-        result.oncall_unfilled_dates = oncall_unfilled_dates
+        for group in oncall_groups:
+            oncalls, oncall_messages, oncall_unfilled_dates = (
+                OnCallAutomation.generate_oncall_schedule(
+                    oncall_regen_start,
+                    end_date,
+                    rotation_order_ids,
+                    dry_run=dry_run,
+                    preferred_assignments=preferred_assignments,
+                    group=group,
+                )
+            )
+            result.oncalls.extend(oncalls)
+            result.oncall_messages.extend(oncall_messages)
+            result.oncall_unfilled_dates.extend(oncall_unfilled_dates)
 
         # Note (dry_run only): the shift preview is based on the
         # on-calls already in the database for the period (the on-call
         # dry_run above doesn't save anything) - it can therefore differ
         # from the final result if no on-call exists yet for this period.
-        shifts, shift_messages, shift_unfilled_dates = (
-            AdvancedShiftAutomation.generate_full_schedule(
-                start_date, end_date, dry_run=dry_run
-            )
+        schedule_groups = (
+            Group.query.filter_by(is_part_of_schedule=True).all()
+            if per_group
+            else [None]
         )
-        result.shifts = shifts
-        result.shift_messages = shift_messages
-        result.shift_unfilled_dates = shift_unfilled_dates
+        for group in schedule_groups:
+            shifts, shift_messages, shift_unfilled_dates = (
+                AdvancedShiftAutomation.generate_full_schedule(
+                    start_date, end_date, dry_run=dry_run, group=group
+                )
+            )
+            result.shifts.extend(shifts)
+            result.shift_messages.extend(shift_messages)
+            result.shift_unfilled_dates.extend(shift_unfilled_dates)
 
         return result

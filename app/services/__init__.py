@@ -39,12 +39,18 @@ Services:
 - schedule_cleanup_service: Retention-based purge of past shifts/
   on-calls (Setting schedule_retention_days, default 365, 0 = never),
   called by scripts/cleanup_schedule_data.py, not by any Flask route.
+- automation_rule_admin_service: Admin-editable, DB-backed configurable
+  automation rules (app/models/automation_rule.py, app/utils/automation/
+  rules/) - one save_*() per rule type, org-wide only for now (no
+  per-Group override UI yet). Not to be confused with
+  automation_admin_service above (rotation order + generation actions).
 """
 
 from app.services.app_notification_service import AppNotificationService
 from app.services.apprise_notification_service import AppriseNotificationService
 from app.services.audit_service import AuditService
 from app.services.automation_admin_service import AutomationAdminService
+from app.services.automation_rule_admin_service import AutomationRuleAdminService
 from app.services.backup_service import BackupService
 from app.services.export_service import ExportService
 from app.services.group_service import GroupService
@@ -71,6 +77,7 @@ __all__ = [
     "ExportService",
     "ScheduleService",
     "AutomationAdminService",
+    "AutomationRuleAdminService",
     "NotificationService",
     "AppNotificationService",
     "BackupService",

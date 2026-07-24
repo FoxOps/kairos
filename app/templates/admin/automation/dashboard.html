@@ -54,6 +54,18 @@
         </div>
     </div>
 
+    <div class="card card-sm bg-base-100 shadow-md mb-6">
+        <div class="card-body">
+            <h2 class="text-lg font-semibold"><i class="fas fa-sliders" aria-hidden="true"></i> {{ _("Règles d'automatisation") }}</h2>
+            <p>{{ _("Configurer les règles utilisées par la génération : créneaux, week-end, espacement des astreintes, effectifs minimum/maximum, créneaux obligatoires, repos après astreinte.") }}</p>
+            <div class="mt-3">
+                <a class="btn btn-primary btn-sm" href="{{ url_for('admin.automation_rules_dashboard') }}">
+                    <i class="fas fa-sliders"></i> {{ _("Configurer") }}
+                </a>
+            </div>
+        </div>
+    </div>
+
     <div class="stats stats-vertical sm:stats-horizontal shadow-md bg-base-100 w-full mb-6">
         <div class="stat">
             <div class="stat-title">{{ _("Total astreintes") }}</div>

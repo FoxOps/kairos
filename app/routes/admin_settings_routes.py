@@ -54,6 +54,14 @@ def settings_dashboard():
             else:
                 flash(_("Langue par défaut enregistrée"), "success")
 
+        elif section == "scheduling":
+            mode = request.form.get("scheduling_mode", "")
+            error = SettingsService.set_scheduling_mode(mode)
+            if error:
+                flash(_("Erreur : %(error)s", error=error), "danger")
+            else:
+                flash(_("Mode de planification enregistré"), "success")
+
         elif section == "date_format":
             date_format = request.form.get("default_date_format", "")
             error = SettingsService.set_default_date_format(date_format)
@@ -151,6 +159,7 @@ def settings_dashboard():
         timezones=get_timezone_choices(),
         default_language=SettingsService.get_default_language(),
         languages=get_language_choices(),
+        scheduling_mode=SettingsService.get_scheduling_mode(),
         default_date_format=SettingsService.get_default_date_format(),
         date_formats=get_date_format_choices(),
         default_time_format=SettingsService.get_default_time_format(),
