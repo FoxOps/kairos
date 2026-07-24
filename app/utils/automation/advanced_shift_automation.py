@@ -71,6 +71,42 @@ class AdvancedShiftAutomation:
         return new_shift_type
 
     @staticmethod
+    def get_shift_type_for_slot(hours: tuple, group=None) -> "ShiftType":
+        """Resolve the actual configured ShiftType for one of the 3
+        role slots (SHIFT_13_21/SHIFT_07_15/SHIFT_09_17 - used
+        internally purely as role markers, not literal hours anymore)
+        via ShiftSlotsRule, instead of re-deriving a ShiftType from raw
+        hours (get_shift_type_by_hours). Fixes a bug in the latter:
+        editing a referenced ShiftType's hours via /admin/shift-types
+        made the hours-based lookup miss the renamed row and silently
+        mint an orphaning duplicate. Callers must use the returned
+        ShiftType's own start_hour/end_hour for the Shift's
+        start_time/end_time - never the role marker's hours, which may
+        now differ from the configured ShiftType."""
+        from app import db
+        from app.models import ShiftType
+        from app.utils.automation.rules import ShiftSlotsRule
+        from app.utils.automation.rules.shift_slots import (
+            DEFAULT_KEY,
+            ONCALL_KEY,
+            ROTATION_KEY,
+        )
+
+        role_key = {
+            AdvancedShiftAutomation.SHIFT_13_21: ONCALL_KEY,
+            AdvancedShiftAutomation.SHIFT_07_15: ROTATION_KEY,
+            AdvancedShiftAutomation.SHIFT_09_17: DEFAULT_KEY,
+        }[hours]
+        shift_type_id = ShiftSlotsRule.resolve(group=group)[role_key]
+        shift_type = db.session.get(ShiftType, shift_type_id)
+        if shift_type is not None:
+            return shift_type
+        # Configured id no longer exists (e.g. the ShiftType row was
+        # deleted outside the delete-protection guard) - fall back to
+        # the historical hours-based fetch-or-create rather than crash.
+        return AdvancedShiftAutomation.get_shift_type_by_hours(*hours)
+
+    @staticmethod
     def get_users_in_schedule_groups() -> list:
         """Fetch users belonging to groups that can be added to the schedule."""
         from app.models import Group, User
@@ -139,11 +175,18 @@ class AdvancedShiftAutomation:
 
         from app import db
         from app.models import OnCall
+        from app.utils.automation.rules import OnCallAnchorRule
 
+        anchor = OnCallAnchorRule.resolve()
+        # Days before this week's Monday (weekday 0) that the on-call
+        # anchor weekday falls on - generalizes the previous hardcoded
+        # "Friday = Monday minus 3 days" to any configured anchor
+        # weekday (e.g. anchor weekday 0 = Monday itself, offset 0).
+        days_before_monday = (0 - anchor["weekday"]) % 7
         week_monday = date - timedelta(days=date.weekday())
-        anchor_friday = week_monday - timedelta(days=3)
-        anchor_start = datetime.combine(anchor_friday, datetime.min.time()).replace(
-            hour=21
+        anchor_day = week_monday - timedelta(days=days_before_monday)
+        anchor_start = datetime.combine(anchor_day, datetime.min.time()).replace(
+            hour=anchor["start_hour"]
         )
 
         # Optimization: use a query with JOIN to avoid lazy loading
@@ -325,6 +368,42 @@ class AdvancedShiftAutomation:
         return generated_shifts, None
 
     @staticmethod
+    def _check_mandatory_coverage(generated_shifts: list, date: "date") -> list:
+        """Rule engine addition (MandatoryShiftRule, no prior
+        equivalent): for each ShiftType an admin flagged mandatory, if
+        the day's generated shifts don't cover it, raise an elevated
+        message - distinct from the generic "no available user"/
+        "no shift generated" messages elsewhere in this method, so an
+        admin can tell "a mandatory slot specifically went unfilled"
+        apart from the ordinary unfilled-slot case. Stays within the
+        existing "leave unfilled + notify, never block" philosophy
+        (ROADMAP.md) - this never prevents generation/commit."""
+        from app import db
+        from app.models import ShiftType
+        from app.utils.automation.rules import MandatoryShiftRule
+
+        mandatory_ids = MandatoryShiftRule.resolve()["shift_type_ids"]
+        if not mandatory_ids:
+            return []
+
+        covered_ids = {shift.shift_type_id for shift in generated_shifts}
+        messages = []
+        for shift_type_id in mandatory_ids:
+            if shift_type_id in covered_ids:
+                continue
+            shift_type = db.session.get(ShiftType, shift_type_id)
+            name = shift_type.label if shift_type else shift_type_id
+            messages.append(
+                _(
+                    "[ALERT] Créneau obligatoire non pourvu pour le %(date)s : "
+                    "%(name)s.",
+                    date=date.strftime("%d/%m/%Y"),
+                    name=name,
+                )
+            )
+        return messages
+
+    @staticmethod
     def generate_daily_shifts(
         date: "date", dry_run: bool = False, commit: bool = True
     ) -> "tuple[list, list]":
@@ -340,14 +419,15 @@ class AdvancedShiftAutomation:
         from datetime import datetime, timedelta
 
         from app.models import Shift
+        from app.utils.automation.rules import WeekendDefinitionRule
 
         messages = []
         generated_shifts = []
 
-        if date.weekday() >= 5:
+        if WeekendDefinitionRule.is_weekend(date):
             return [], [
                 _(
-                    "⏭️ Pas de shift généré pour le %(date)s (week-end)",
+                    "[SKIP] Pas de shift généré pour le %(date)s (week-end)",
                     date=date.strftime("%d/%m/%Y"),
                 )
             ]
@@ -357,7 +437,7 @@ class AdvancedShiftAutomation:
         if not available_users:
             return [], [
                 _(
-                    "⚠️ Aucun utilisateur disponible pour le %(date)s",
+                    "[WARN] Aucun utilisateur disponible pour le %(date)s",
                     date=date.strftime("%d/%m/%Y"),
                 )
             ]
@@ -371,15 +451,14 @@ class AdvancedShiftAutomation:
         # person and no 14h shift type).
         if len(available_users) == 1:
             sole_user = available_users[0]
-            start_hour, end_hour = AdvancedShiftAutomation.SHIFT_07_15
-            shift_type = AdvancedShiftAutomation.get_shift_type_by_hours(
-                start_hour, end_hour
+            shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(
+                AdvancedShiftAutomation.SHIFT_07_15
             )
             start_time = datetime.combine(date, datetime.min.time()).replace(
-                hour=start_hour
+                hour=shift_type.start_hour
             )
             end_time = datetime.combine(date, datetime.min.time()).replace(
-                hour=end_hour
+                hour=shift_type.end_hour
             )
             shift = Shift(
                 user_id=sole_user.id,
@@ -394,14 +473,19 @@ class AdvancedShiftAutomation:
                 generated_shifts, dry_run, commit
             )
             if error is not None:
-                messages.append(_("❌ Erreur : %(error)s", error=error))
+                messages.append(_("[ERROR] Erreur : %(error)s", error=error))
                 return [], messages
 
             messages.append(
                 _(
-                    "✅ 1 shift généré pour le %(date)s (effectif minimum : %(name)s)",
+                    "[OK] 1 shift généré pour le %(date)s (effectif minimum : %(name)s)",
                     date=date.strftime("%d/%m/%Y"),
                     name=sole_user.name,
+                )
+            )
+            messages.extend(
+                AdvancedShiftAutomation._check_mandatory_coverage(
+                    generated_shifts, date
                 )
             )
             return generated_shifts, messages
@@ -412,15 +496,13 @@ class AdvancedShiftAutomation:
                 available_users, date
             )
             if assignments:
-                for user, (start_hour, end_hour) in assignments.items():
-                    shift_type = AdvancedShiftAutomation.get_shift_type_by_hours(
-                        start_hour, end_hour
-                    )
+                for user, hours in assignments.items():
+                    shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(hours)
                     start_time = datetime.combine(date, datetime.min.time()).replace(
-                        hour=start_hour
+                        hour=shift_type.start_hour
                     )
                     end_time = datetime.combine(date, datetime.min.time()).replace(
-                        hour=end_hour
+                        hour=shift_type.end_hour
                     )
 
                     shift = Shift(
@@ -436,9 +518,14 @@ class AdvancedShiftAutomation:
                     generated_shifts, dry_run, commit
                 )
                 if error is not None:
-                    messages.append(_("❌ Erreur : %(error)s", error=error))
+                    messages.append(_("[ERROR] Erreur : %(error)s", error=error))
                     return [], messages
 
+                messages.extend(
+                    AdvancedShiftAutomation._check_mandatory_coverage(
+                        generated_shifts, date
+                    )
+                )
                 return generated_shifts, messages
 
         # Normal case: 3+ users
@@ -470,15 +557,13 @@ class AdvancedShiftAutomation:
                 shift_assignments
             )
 
-        for user, (start_hour, end_hour) in shift_assignments:
-            shift_type = AdvancedShiftAutomation.get_shift_type_by_hours(
-                start_hour, end_hour
-            )
+        for user, hours in shift_assignments:
+            shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(hours)
             start_time = datetime.combine(date, datetime.min.time()).replace(
-                hour=start_hour
+                hour=shift_type.start_hour
             )
             end_time = datetime.combine(date, datetime.min.time()).replace(
-                hour=end_hour
+                hour=shift_type.end_hour
             )
 
             shift = Shift(
@@ -495,29 +580,35 @@ class AdvancedShiftAutomation:
                 generated_shifts, dry_run, commit
             )
             if error is not None:
-                messages.append(_("❌ Erreur : %(error)s", error=error))
+                messages.append(_("[ERROR] Erreur : %(error)s", error=error))
                 return [], messages
 
         # Return a summary instead of detailed messages
         if generated_shifts:
-            return generated_shifts, [
+            summary_messages = [
                 _(
-                    "✅ %(count)s shifts générés pour le %(date)s",
+                    "[OK] %(count)s shifts générés pour le %(date)s",
                     count=len(generated_shifts),
                     date=date.strftime("%d/%m/%Y"),
                 )
             ]
-        elif date.weekday() >= 5:
+            summary_messages.extend(
+                AdvancedShiftAutomation._check_mandatory_coverage(
+                    generated_shifts, date
+                )
+            )
+            return generated_shifts, summary_messages
+        elif WeekendDefinitionRule.is_weekend(date):
             return [], [
                 _(
-                    "⏭️ Pas de shift généré pour le %(date)s (week-end)",
+                    "[SKIP] Pas de shift généré pour le %(date)s (week-end)",
                     date=date.strftime("%d/%m/%Y"),
                 )
             ]
         else:
             return [], [
                 _(
-                    "⚠️ Aucun shift généré pour le %(date)s",
+                    "[WARN] Aucun shift généré pour le %(date)s",
                     date=date.strftime("%d/%m/%Y"),
                 )
             ]
@@ -530,7 +621,7 @@ class AdvancedShiftAutomation:
 
         Returns (all_shifts, messages, unfilled_shift_dates).
         unfilled_shift_dates lists weekdays where generate_daily_shifts()
-        produced zero shifts because no one was available (the "⚠️ Aucun
+        produced zero shifts because no one was available (the "[WARN] Aucun
         shift généré" business-rule case, not an exception) - previously
         silently folded into the "days_skipped" count alongside ordinary
         weekends, with no way for the caller to tell the two apart or
@@ -563,14 +654,14 @@ class AdvancedShiftAutomation:
         period_end = end_date.strftime("%d/%m/%Y")
         if dry_run:
             msg = _(
-                "📋 Prévisualisation : %(count)s shifts seraient générés pour la période du %(start)s au %(end)s",
+                "[PREVIEW] Prévisualisation : %(count)s shifts seraient générés pour la période du %(start)s au %(end)s",
                 count=len(all_shifts),
                 start=period_start,
                 end=period_end,
             )
         else:
             msg = _(
-                "🎉 %(count)s shifts générés pour la période du %(start)s au %(end)s",
+                "[OK] %(count)s shifts générés pour la période du %(start)s au %(end)s",
                 count=len(all_shifts),
                 start=period_start,
                 end=period_end,
@@ -610,7 +701,7 @@ class AdvancedShiftAutomation:
                     if existing_shifts:
                         messages.append(
                             _(
-                                "🗑️ %(count)s shifts supprimés pour le %(date)s",
+                                "[DELETED] %(count)s shifts supprimés pour le %(date)s",
                                 count=len(existing_shifts),
                                 date=current_date.strftime("%d/%m/%Y"),
                             )
@@ -643,7 +734,7 @@ class AdvancedShiftAutomation:
                                 db.session.flush()
                                 messages.append(
                                     _(
-                                        "🗑️ %(count)s shifts supprimés pour le %(date)s",
+                                        "[DELETED] %(count)s shifts supprimés pour le %(date)s",
                                         count=len(existing_shifts),
                                         date=current_date.strftime("%d/%m/%Y"),
                                     )
@@ -662,7 +753,7 @@ class AdvancedShiftAutomation:
                         failed_shift_dates.append(current_date)
                         messages.append(
                             _(
-                                "❌ Échec de la régénération du %(date)s : "
+                                "[ERROR] Échec de la régénération du %(date)s : "
                                 "%(error)s - ce jour n'a pas été modifié, "
                                 "action manuelle nécessaire",
                                 date=current_date.strftime("%d/%m/%Y"),
@@ -746,7 +837,7 @@ class AdvancedShiftAutomation:
                     db.session.flush()
                     messages.append(
                         _(
-                            "🗑️ %(count)s astreinte(s) supplémentaire(s) "
+                            "[DELETED] %(count)s astreinte(s) supplémentaire(s) "
                             "supprimée(s) dans la période étendue avant régénération",
                             count=other_oncalls_deleted,
                         )
@@ -767,7 +858,7 @@ class AdvancedShiftAutomation:
                 unfilled_oncall_dates.extend(oncall_unfilled_dates)
                 messages.append(
                     _(
-                        "🔄 %(count)s astreintes régénérées pour la période %(start)s - %(end)s",
+                        "[REGEN] %(count)s astreintes régénérées pour la période %(start)s - %(end)s",
                         count=len(oncalls),
                         start=shift_period_start.strftime("%d/%m/%Y"),
                         end=shift_period_end.strftime("%d/%m/%Y"),
@@ -777,7 +868,7 @@ class AdvancedShiftAutomation:
             failed_oncall_period = [shift_period_start, shift_period_end]
             messages.append(
                 _(
-                    "❌ Échec de la régénération des astreintes pour la "
+                    "[ERROR] Échec de la régénération des astreintes pour la "
                     "période %(start)s - %(end)s : %(error)s - les "
                     "astreintes de cette période n'ont pas été "
                     "modifiées, action manuelle nécessaire",
@@ -885,7 +976,7 @@ class AdvancedShiftAutomation:
                 db.session.flush()
                 messages.append(
                     _(
-                        "🗑️ %(count)s astreintes supprimées pour l'utilisateur %(user_id)s",
+                        "[DELETED] %(count)s astreintes supprimées pour l'utilisateur %(user_id)s",
                         count=len(overlapping_oncalls),
                         user_id=leave.user_id,
                     )

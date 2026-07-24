@@ -22,6 +22,14 @@ automated tests), and used for real team scheduling.
 - If a rule can't be satisfied (e.g. no one eligible for on-call
   duty), the affected slot is left unfilled and admins are notified
   instead of silently breaking the rule
+- Configurable automation rules, admin-editable at
+  `/admin/automation/rules`: weekend definition, on-call spacing/week
+  anchor, shift slots (which `ShiftType` covers on-call/rotation/
+  default), minimum/maximum staffing per shift type, mandatory slots
+  (unfilled raises an elevated alert, never a hard block), minimum
+  rest after an on-call, and shift/on-call overlap blocking. Each
+  rule's default matches the previously hardcoded behavior exactly.
+  Org-wide for now — see "Future ideas" for per-group rules
 
 **Access & integration**
 - Session login and SSO/OIDC (Keycloak, Okta, Auth0-compatible
@@ -57,10 +65,17 @@ automated tests), and used for real team scheduling.
 
 Larger features, not yet started, not committed to a timeline.
 
-- **Configurable automation rules.** Rules used to generate shifts and
-  on-call rotations (weekend handling, minimum staffing, rest periods)
-  are currently hardcoded in Python — a config file or an admin UI
-  would let each team adapt them without touching code.
+- **Per-group independent scheduling rotations.** The configurable
+  automation rules engine (see "Done") already supports a per-`Group`
+  override at the data layer, and a `scheduling_mode` setting
+  (shared/per_group) exists — but shift/on-call generation still pools
+  every eligible group into one shared rotation regardless of that
+  setting, and the calendar has no per-group display yet. Wiring
+  `per_group` all the way through is a larger, more delicate change
+  (the branch-and-bound solver and minimal-perturbation rebalancing
+  logic weren't designed with multiple independent pools in mind) —
+  deliberately left for a dedicated follow-up rather than bundled into
+  the rules-engine work.
 - **On-call intervention reports.** A way to log what happened during
   an on-call shift (time spent, actions taken) — useful both for
   payroll and as an audit trail of interventions.

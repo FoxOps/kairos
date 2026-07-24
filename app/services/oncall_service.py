@@ -14,7 +14,11 @@ from app import db
 from app.models import OnCall, User
 from app.repositories.oncall_repository import OnCallRepository
 from app.services.audit_service import AuditService
-from app.utils.helpers import _get_overlapping_leave, can_add_oncall
+from app.utils.helpers import (
+    _get_overlapping_leave,
+    can_add_oncall,
+    check_oncall_rule_violations,
+)
 
 
 class OnCallService:
@@ -153,6 +157,15 @@ class OnCallService:
                     name=oncall.user.name,
                 ),
             )
+
+        # Same class of gap, for the configurable oncall_shift_overlap
+        # rule - the creation path (add_oncall) already goes through
+        # can_add_oncall(), which calls this too.
+        violation = check_oncall_rule_violations(
+            oncall.user, new_start, new_end, exclude_oncall_id=oncall_id
+        )
+        if violation is not None:
+            return None, violation
 
         oncall.start_time = new_start
         oncall.end_time = new_end

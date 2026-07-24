@@ -27,6 +27,7 @@ logger = get_logger(__name__)
 
 DEFAULT_TIMEZONE_KEY = "default_timezone"
 DEFAULT_LANGUAGE_KEY = "default_language"
+SCHEDULING_MODE_KEY = "scheduling_mode"
 DEFAULT_DATE_FORMAT_KEY = "default_date_format"
 DEFAULT_TIME_FORMAT_KEY = "default_time_format"
 PUBLIC_BASE_URL_KEY = "public_base_url"
@@ -51,6 +52,18 @@ FALLBACK_DEFAULT_TIMEZONE = "Europe/Paris"
 # per-request locale can be resolved).
 FALLBACK_DEFAULT_LANGUAGE = "fr"
 SUPPORTED_LANGUAGES = ("fr", "en")
+
+# Same no-env-var-equivalent situation as language above: whether
+# shift/on-call generation pools every eligible Group into one shared
+# rotation ("shared", the only behavior that ever existed before this
+# feature and still the only one actually wired into generation) or
+# gives each Group its own independent rotation ("per_group") was
+# never a configurable concept before. Storing/validating the setting
+# is step one - see ROADMAP.md / the feature's tracking plan for the
+# generation-pipeline and calendar-display work "per_group" still
+# needs before it does anything beyond being readable.
+FALLBACK_SCHEDULING_MODE = "shared"
+SUPPORTED_SCHEDULING_MODES = ("shared", "per_group")
 
 # Same no-env-var-equivalent situation as language above: date/time
 # display format was never a configurable concept before this Setting
@@ -145,6 +158,23 @@ class SettingsService:
             return _("Langue invalide : %(lang_code)s", lang_code=lang_code)
         return SettingsService._set_with_audit(
             {DEFAULT_LANGUAGE_KEY: lang_code}, f"default_language={lang_code}"
+        )
+
+    # --- scheduling mode ---
+
+    @staticmethod
+    def get_scheduling_mode() -> str:
+        value = Setting.get(SCHEDULING_MODE_KEY)
+        if value:
+            return str(value)
+        return FALLBACK_SCHEDULING_MODE
+
+    @staticmethod
+    def set_scheduling_mode(mode: str) -> str | None:
+        if mode not in SUPPORTED_SCHEDULING_MODES:
+            return _("Mode de planification invalide : %(mode)s", mode=mode)
+        return SettingsService._set_with_audit(
+            {SCHEDULING_MODE_KEY: mode}, f"scheduling_mode={mode}"
         )
 
     # --- date/time format ---

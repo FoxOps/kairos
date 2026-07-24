@@ -14,7 +14,11 @@ from app import db
 from app.models import Shift, ShiftType, User
 from app.repositories.shift_repository import ShiftRepository
 from app.services.audit_service import AuditService
-from app.utils.helpers import can_add_shift, is_user_on_leave
+from app.utils.helpers import (
+    can_add_shift,
+    check_shift_rule_violations,
+    is_user_on_leave,
+)
 
 
 class ShiftService:
@@ -46,7 +50,7 @@ class ShiftService:
                 current_date += timedelta(days=1)
                 continue
 
-            if not can_add_shift(user, current_date, shift_type.name):
+            if not can_add_shift(user, current_date, shift_type):
                 return [], current_date
 
             start_time = datetime.combine(current_date, datetime.min.time()).replace(
@@ -144,7 +148,7 @@ class ShiftService:
         if on_date.weekday() >= 5:
             return None, _("Impossible de créer un shift pour un week-end")
 
-        if not can_add_shift(user, on_date, shift_type.name):
+        if not can_add_shift(user, on_date, shift_type):
             return None, _("Conflit détecté pour ce shift")
 
         shift = ShiftRepository.create(
@@ -198,6 +202,16 @@ class ShiftService:
                     date=new_date.strftime("%d/%m/%Y"),
                 ),
             )
+
+        # Same class of gap as the leave check above, for the
+        # configurable automation rules (staffing_limits,
+        # rest_after_oncall, oncall_shift_overlap) - the creation path
+        # already goes through can_add_shift(), which calls this too.
+        violation = check_shift_rule_violations(
+            shift.user, new_date, shift.shift_type, exclude_shift_id=shift_id
+        )
+        if violation is not None:
+            return None, violation
 
         shift.start_time = new_start
         shift.end_time = new_end

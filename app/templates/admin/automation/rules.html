@@ -1,0 +1,243 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}{{ _("Règles d'automatisation") }} - Kairos{% endblock %}
+
+{% block admin_content %}
+<section class="p-3 md:p-4 max-w-2xl mx-auto">
+    <div class="breadcrumbs text-sm mb-2" aria-label="{{ _("Fil d'Ariane") }}">
+        <ul>
+            <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
+            <li><a href="{{ url_for('admin.automation_dashboard') }}">{{ _("Automatisation") }}</a></li>
+            <li>{{ _("Règles") }}</li>
+        </ul>
+    </div>
+    <h1 class="text-2xl font-bold mb-4">
+        <i class="fas fa-sliders" aria-hidden="true"></i> {{ _("Règles d'automatisation") }}
+    </h1>
+    <p class="text-sm text-base-content/70 mb-4">
+        {{ _("Ces réglages s'appliquent à toute l'organisation. Une valeur par défaut équivalente au comportement historique est utilisée tant qu'aucune règle n'est enregistrée ici.") }}
+    </p>
+
+    <form method="POST" action="{{ url_for('admin.automation_rules_dashboard') }}" aria-labelledby="shift-slots-form-title" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="section" value="shift_slots">
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <h2 class="font-semibold" id="shift-slots-form-title"><i class="fas fa-clock" aria-hidden="true"></i> {{ _("Créneaux de shift") }}</h2>
+                <p class="text-sm text-base-content/70">
+                    {{ _("Quel type de shift joue chaque rôle dans la génération automatique. Gérez les types de shift eux-mêmes sur la page \"Types de shift\".") }}
+                </p>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Créneau d'astreinte") }}</legend>
+                    <select class="select w-full" name="oncall_shift_type_id">
+                        {% for st in shift_types %}
+                        <option value="{{ st.id }}" {% if st.id == shift_slots.oncall_shift_type_id %}selected{% endif %}>{{ st.label }}</option>
+                        {% endfor %}
+                    </select>
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Créneau de rotation") }}</legend>
+                    <select class="select w-full" name="rotation_shift_type_id">
+                        {% for st in shift_types %}
+                        <option value="{{ st.id }}" {% if st.id == shift_slots.rotation_shift_type_id %}selected{% endif %}>{{ st.label }}</option>
+                        {% endfor %}
+                    </select>
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Créneau par défaut") }}</legend>
+                    <select class="select w-full" name="default_shift_type_id">
+                        {% for st in shift_types %}
+                        <option value="{{ st.id }}" {% if st.id == shift_slots.default_shift_type_id %}selected{% endif %}>{{ st.label }}</option>
+                        {% endfor %}
+                    </select>
+                </fieldset>
+                <div>
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <form method="POST" action="{{ url_for('admin.automation_rules_dashboard') }}" aria-labelledby="weekend-form-title" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="section" value="weekend_definition">
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <h2 class="font-semibold" id="weekend-form-title"><i class="fas fa-calendar-week" aria-hidden="true"></i> {{ _("Définition du week-end") }}</h2>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Jours considérés comme week-end") }}</legend>
+                    <div class="flex flex-wrap gap-3">
+                        {% for value, label in weekday_choices %}
+                        <label class="label cursor-pointer gap-2">
+                            <input type="checkbox" class="checkbox" name="weekend_days" value="{{ value }}" {% if value in weekend_definition.weekend_days %}checked{% endif %}>
+                            {{ label }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+                <div>
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <form method="POST" action="{{ url_for('admin.automation_rules_dashboard') }}" aria-labelledby="spacing-form-title" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="section" value="oncall_spacing">
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <h2 class="font-semibold" id="spacing-form-title"><i class="fas fa-arrows-left-right" aria-hidden="true"></i> {{ _("Espacement minimum entre astreintes") }}</h2>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Nombre de semaines minimum entre deux astreintes pour la même personne") }}</legend>
+                    <input type="number" class="input w-full" name="min_spacing_weeks" min="1" value="{{ oncall_spacing.min_spacing_weeks }}">
+                </fieldset>
+                <div>
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <form method="POST" action="{{ url_for('admin.automation_rules_dashboard') }}" aria-labelledby="anchor-form-title" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="section" value="oncall_anchor">
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <h2 class="font-semibold" id="anchor-form-title"><i class="fas fa-anchor" aria-hidden="true"></i> {{ _("Ancrage de la semaine d'astreinte") }}</h2>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Jour de début") }}</legend>
+                    <select class="select w-full" name="weekday">
+                        {% for value, label in weekday_choices %}
+                        <option value="{{ value }}" {% if value == oncall_anchor.weekday %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Heure de début") }}</legend>
+                    <input type="number" class="input w-full" name="start_hour" min="0" max="23" value="{{ oncall_anchor.start_hour }}">
+                </fieldset>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Heure de fin (une semaine plus tard)") }}</legend>
+                    <input type="number" class="input w-full" name="end_hour" min="0" max="23" value="{{ oncall_anchor.end_hour }}">
+                </fieldset>
+                <div>
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <form method="POST" action="{{ url_for('admin.automation_rules_dashboard') }}" aria-labelledby="staffing-form-title" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="section" value="staffing_limits">
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <h2 class="font-semibold" id="staffing-form-title"><i class="fas fa-users" aria-hidden="true"></i> {{ _("Effectif minimum/maximum par créneau") }}</h2>
+                <p class="text-sm text-base-content/70">{{ _("Laisser vide = pas de limite.") }}</p>
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>{{ _("Type de shift") }}</th>
+                                <th>{{ _("Minimum") }}</th>
+                                <th>{{ _("Maximum") }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for st in shift_types %}
+                            <tr>
+                                <td>{{ st.label }}</td>
+                                <td><input type="number" class="input input-sm w-24" name="min_{{ st.id }}" min="0" value="{{ staffing_limits[st.id].min if staffing_limits[st.id].min is not none else '' }}"></td>
+                                <td><input type="number" class="input input-sm w-24" name="max_{{ st.id }}" min="0" value="{{ staffing_limits[st.id].max if staffing_limits[st.id].max is not none else '' }}"></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div>
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <form method="POST" action="{{ url_for('admin.automation_rules_dashboard') }}" aria-labelledby="mandatory-form-title" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="section" value="mandatory_shift">
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <h2 class="font-semibold" id="mandatory-form-title"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> {{ _("Créneaux obligatoires") }}</h2>
+                <p class="text-sm text-base-content/70">
+                    {{ _("Un créneau obligatoire non pourvu déclenche une alerte distincte, sans jamais bloquer la génération.") }}
+                </p>
+                <fieldset class="fieldset">
+                    <div class="flex flex-wrap gap-3">
+                        {% for st in shift_types %}
+                        <label class="label cursor-pointer gap-2">
+                            <input type="checkbox" class="checkbox" name="mandatory_shift_type_ids" value="{{ st.id }}" {% if st.id in mandatory_shift.shift_type_ids %}checked{% endif %}>
+                            {{ st.label }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+                <div>
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <form method="POST" action="{{ url_for('admin.automation_rules_dashboard') }}" aria-labelledby="rest-form-title" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="section" value="rest_after_oncall">
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <h2 class="font-semibold" id="rest-form-title"><i class="fas fa-bed" aria-hidden="true"></i> {{ _("Repos minimum après une astreinte") }}</h2>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Heures de repos requises avant un shift, après la fin d'une astreinte") }}</legend>
+                    <input type="number" class="input w-full" name="min_rest_hours" min="0" value="{{ rest_after_oncall.min_rest_hours }}">
+                </fieldset>
+                <div>
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <form method="POST" action="{{ url_for('admin.automation_rules_dashboard') }}" aria-labelledby="overlap-form-title" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="section" value="oncall_shift_overlap">
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <h2 class="font-semibold" id="overlap-form-title"><i class="fas fa-layer-group" aria-hidden="true"></i> {{ _("Chevauchement shift / astreinte") }}</h2>
+                <fieldset class="fieldset">
+                    <label class="label cursor-pointer gap-2 justify-start">
+                        <input type="checkbox" class="checkbox" name="block" {% if oncall_shift_overlap.block %}checked{% endif %}>
+                        {{ _("Bloquer la création d'un shift/astreinte qui chevauche une astreinte/shift existant pour le même utilisateur") }}
+                    </label>
+                </fieldset>
+                <div>
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</section>
+{% endblock %}

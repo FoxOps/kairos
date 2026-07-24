@@ -1,8 +1,9 @@
 """
 Admin blueprint ("admin"). Routes are defined in separate files by
 domain (admin_group_routes, admin_user_routes, admin_shift_type_routes,
-admin_automation_routes, admin_backup_routes, admin_settings_routes)
-which all register onto the admin_bp defined here - the blueprint name
+admin_automation_routes, admin_automation_rules_routes,
+admin_backup_routes, admin_settings_routes) which all register onto
+the admin_bp defined here - the blueprint name
 stays "admin" everywhere (url_for("admin.xxx"), templates), only the
 file split changes.
 """
@@ -49,6 +50,7 @@ def admin_dashboard():
 from app.routes import (  # noqa: E402
     admin_audit_routes,  # noqa: F401
     admin_automation_routes,  # noqa: F401
+    admin_automation_rules_routes,  # noqa: F401
     admin_backup_routes,  # noqa: F401
     admin_group_routes,  # noqa: F401
     admin_notification_target_routes,  # noqa: F401
