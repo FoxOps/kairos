@@ -181,3 +181,16 @@ Image tags: dev builds are pushed to the same `ghcr.io/foxops/kairos`
 package as releases, but as `dev-<branch-slug>-<short-sha>` - never
 `:latest` (reserved for the last real `docker-release.yml` build from
 `main`) and never a bare version tag (reserved for an actual release).
+Each dev build also gets the floating `:dev` tag, moved to point at
+whichever dev build ran most recently (any branch) - "give me the
+newest test image" without knowing the exact tag, same idea as
+`:latest` but scoped to dev builds and never mixed with it.
+
+**Retention: only the 5 most recent dev builds are kept.** A
+`cleanup-old-dev-builds` job runs after every push
+(`actions/delete-package-versions`), keeping the 5 newest package
+versions and deleting the rest - `ignore-versions` excludes anything
+tagged `latest`, `dev`, or a bare SemVer version from ever being counted
+or deleted by this job, so it only ever prunes old
+`dev-<branch-slug>-<short-sha>` versions, never a release. Without this,
+a disposable-by-design build would accumulate in the registry forever.

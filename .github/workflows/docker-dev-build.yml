@@ -89,10 +89,35 @@ jobs:
           build-args: |
             APP_VERSION=${{ steps.version.outputs.full_version }}
           # Never :latest - that tag is reserved for the last
-          # docker-release.yml (production) build. dev-* tags live
-          # alongside it in the same package without ever being mistaken
-          # for a release.
+          # docker-release.yml (production) build. The exact
+          # dev-<branch>-<sha> tag pins one specific build; the floating
+          # `dev` tag always points at whichever dev build ran most
+          # recently (any branch) - convenient for "just give me the
+          # newest test image" without knowing the exact tag, same idea
+          # as `:latest` but scoped to dev builds only, never mixed with
+          # it.
           tags: |
             ghcr.io/foxops/kairos:${{ steps.version.outputs.image_tag }}
+            ghcr.io/foxops/kairos:dev
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # Keeps the ghcr.io/foxops/kairos package from growing unbounded - dev
+  # builds are disposable and this workflow can be run often. Sorts all
+  # package versions by creation date and deletes everything past the 5
+  # newest, EXCEPT anything matching ignore-versions below - which
+  # protects every release tag (bare SemVer, e.g. "1.1.0"), `:latest`,
+  # and the floating `:dev` tag from ever being counted/deleted here, so
+  # only the disposable dev-<branch>-<sha> versions are actually pruned.
+  cleanup-old-dev-builds:
+    needs: docker-build-push
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/delete-package-versions@v5
+        with:
+          package-name: kairos
+          package-type: container
+          min-versions-to-keep: 5
+          ignore-versions: "^(latest|dev|[0-9]+\\.[0-9]+\\.[0-9]+.*)$"
