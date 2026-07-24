@@ -11,11 +11,14 @@ from datetime import datetime, timezone
 from flask import Flask, jsonify
 from sqlalchemy import text
 
-# Default version if APP_VERSION isn't set in the environment. Single
-# source of truth: imported by app/__init__.py (footer context_processor)
-# so /version and the footer never show two different values (this
-# already happened once: the footer stayed stuck on "0.6.0" after a
-# bump here).
+# Default version if APP_VERSION isn't set (or is empty) in the
+# environment - both call sites read it with `or`, not the two-arg
+# form of dict.get(), since the Dockerfile always declares the ENV var
+# (see docker/Dockerfile) and an unset build-arg leaves it present but
+# empty rather than absent. Single source of truth: imported by
+# app/__init__.py (footer context_processor) so /version and the
+# footer never show two different values (this already happened once:
+# the footer stayed stuck on "0.6.0" after a bump here).
 APP_VERSION_DEFAULT = "1.1.0"
 
 
@@ -105,7 +108,7 @@ def register_health_endpoints(app: Flask) -> None:
             jsonify(
                 {
                     "application": "Kairos",
-                    "version": os.environ.get("APP_VERSION", APP_VERSION_DEFAULT),
+                    "version": os.environ.get("APP_VERSION") or APP_VERSION_DEFAULT,
                     "environment": os.environ.get("FLASK_ENV", "development"),
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 }

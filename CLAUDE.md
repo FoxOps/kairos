@@ -43,7 +43,13 @@ deliberately **manual-only** (`workflow_dispatch`, never triggered by a tag push
 of truth for releases, dev branches merge into it first, never the other way around. Calls
 `tests.yml` directly as a reusable workflow (`workflow_call`) and only proceeds to build/push if it
 passes (`needs:`) — not a "run that first yourself" note, an enforced dependency. Run it from the
-Actions tab. See `Docs/deployment/docker.md`. `docker/Dockerfile` installs from `docker/requirements.txt`,
+Actions tab. See `Docs/deployment/docker.md`. A sibling workflow, `docker-dev-build.yml`, covers the
+opposite case — a disposable test image built from any **non**-`main` branch (its own `require-not-main`
+job refuses to run from `main`), tagged `dev-<branch>-<sha>` and stamped with SemVer build metadata
+(`<version>+dev.<run number>.<sha>`, via the `APP_VERSION` build-arg `docker/Dockerfile` now accepts) so
+a running test container can prove which commit it was actually built from. `main` itself never carries
+build metadata — a `docker-release.yml` build always reports a clean `APP_VERSION_DEFAULT`. Full detail:
+`Docs/reference/VERSIONING.md`. `docker/Dockerfile` installs from `docker/requirements.txt`,
 **not** the root `requirements.txt` — a third, deliberately trimmed requirements file (on top of
 `requirements.txt`/`requirements-e2e.txt`) containing only what the running app actually needs
 (no `pytest`/`ruff`/`mypy`/`black`/`bandit`/`pip-audit`/`polib`), so the image doesn't ship the

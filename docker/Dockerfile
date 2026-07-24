@@ -55,6 +55,17 @@ ENV PYTHONFAULTHANDLER=1 \
     PORT=5000 \
     TZ=Europe/Paris
 
+# Build metadata (SemVer build-metadata suffix, e.g. "+dev.42.a3f8c1d"),
+# baked in as a build-arg by docker-dev-build.yml so a test image
+# self-reports which CI run/commit it was built from - see
+# Docs/reference/VERSIONING.md. Left empty for a production build
+# (docker-release.yml never passes this arg), so APP_VERSION stays
+# present-but-empty and both call sites in app/utils/health.py fall back
+# to APP_VERSION_DEFAULT (read with `or`, not the two-arg dict.get()
+# form, since an unset build-arg still leaves the var present here).
+ARG APP_VERSION=
+ENV APP_VERSION=${APP_VERSION}
+
 # tzdata: without this package, Alpine always runs in UTC regardless of
 # TZ - crond (email notifications, entrypoint.sh) needs the real
 # timezone so "Sunday 9am"/"Thursday 9am" actually land on the right

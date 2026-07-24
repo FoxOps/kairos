@@ -1,0 +1,98 @@
+name: Docker Dev Build
+
+# Manual only, same philosophy as docker-release.yml - never triggered by
+# a push (this repo is private, GitHub Actions minutes are metered past
+# the free monthly quota, see tests.yml). Run from the Actions tab (or
+# `gh workflow run docker-dev-build.yml --ref <branch>`), picking any
+# branch EXCEPT main - the require-not-main job below refuses to run
+# otherwise. main is production; it only ever gets a clean version
+# (docker-release.yml, no build metadata) - a dev build with build
+# metadata off main would be a contradiction in terms.
+#
+# Unlike a release image, a dev build's tag/version is disposable and
+# exists purely to answer "is this test container actually running the
+# latest commit on this branch?" - see Docs/reference/VERSIONING.md.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  # Inverse of docker-release.yml's require-main - a dev build off main
+  # would tag main's own commit with build metadata it should never
+  # carry. Fails loudly so whoever triggered this from the wrong ref
+  # gets a clear reason instead of a silent skip.
+  require-not-main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refuse main
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "::error::docker-dev-build.yml must not be run from main - main is production and never carries build metadata. Use docker-release.yml instead." >&2
+          exit 1
+
+  run-tests:
+    needs: require-not-main
+    uses: ./.github/workflows/tests.yml
+
+  docker-build-push:
+    needs: run-tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      # Base version straight from the source of truth
+      # (APP_VERSION_DEFAULT), then append SemVer build metadata
+      # (`+dev.<run number>.<short sha>`) - the `+` syntax is part of
+      # SemVer itself and never affects precedence/ordering, so this
+      # never collides with or outranks a real release version. The run
+      # number is a free, already-unique, monotonically increasing
+      # counter (no hand-maintained counter to keep in sync across
+      # branches); the short SHA is what actually proves the running
+      # container matches a specific commit.
+      - name: Compute dev build version
+        id: version
+        # github.ref_name/run_number come through env:, not interpolated
+        # directly into the script, and are quoted throughout - standard
+        # precaution against ref-injection even though git itself
+        # already rejects the shell metacharacters that would matter
+        # here in a branch name.
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          base_version=$(grep -oP '(?<=APP_VERSION_DEFAULT = ")[^"]+' app/utils/health.py)
+          if [ -z "$base_version" ]; then
+            echo "Could not extract APP_VERSION_DEFAULT from app/utils/health.py" >&2
+            exit 1
+          fi
+          short_sha=$(git rev-parse --short HEAD)
+          full_version="${base_version}+dev.${RUN_NUMBER}.${short_sha}"
+          # Docker tags can't contain "+" - the image tag uses the
+          # branch name and short SHA instead; the "+..." form only
+          # ever shows up inside the image itself, at /version and in
+          # the footer.
+          branch_slug=$(echo "$REF_NAME" | tr -c 'a-zA-Z0-9' '-' | tr 'A-Z' 'a-z')
+          echo "full_version=${full_version}" >> "$GITHUB_OUTPUT"
+          echo "image_tag=dev-${branch_slug}-${short_sha}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          build-args: |
+            APP_VERSION=${{ steps.version.outputs.full_version }}
+          # Never :latest - that tag is reserved for the last
+          # docker-release.yml (production) build. dev-* tags live
+          # alongside it in the same package without ever being mistaken
+          # for a release.
+          tags: |
+            ghcr.io/foxops/kairos:${{ steps.version.outputs.image_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
