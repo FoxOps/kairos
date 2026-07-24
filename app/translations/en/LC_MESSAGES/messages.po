@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-24 13:35+0200\n"
+"POT-Creation-Date: 2026-07-24 14:02+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: en <LL@li.org>\n"
@@ -27,8 +27,8 @@ msgstr "You must choose a new password before continuing."
 msgid "Accès refusé : vous devez être administrateur."
 msgstr "Access denied: you must be an administrator."
 
-#: app/auth/decorators.py:91 app/routes/admin_automation_routes.py:195
-#: app/routes/admin_automation_routes.py:299
+#: app/auth/decorators.py:91 app/routes/admin_automation_routes.py:197
+#: app/routes/admin_automation_routes.py:301
 #: app/routes/admin_group_routes.py:89
 #: app/routes/admin_shift_type_routes.py:111
 #: app/routes/admin_user_routes.py:118 app/routes/auth.py:438
@@ -63,11 +63,11 @@ msgstr ""
 msgid "%(count)s entrée(s) d'historique purgée(s)."
 msgstr "%(count)s history entry(ies) purged."
 
-#: app/routes/admin_automation_routes.py:68 app/services/leave_service.py:180
+#: app/routes/admin_automation_routes.py:70 app/services/leave_service.py:180
 msgid "Génération d'astreintes incomplète"
 msgstr "Incomplete on-call generation"
 
-#: app/routes/admin_automation_routes.py:70
+#: app/routes/admin_automation_routes.py:72
 #, python-format
 msgid ""
 "Aucun utilisateur disponible dans le respect du délai légal de 2 semaines "
@@ -76,11 +76,11 @@ msgstr ""
 "No user available within the legal 2-week spacing constraint for: %(dates)s."
 " Manual assignment required in /admin/automation."
 
-#: app/routes/admin_automation_routes.py:85 app/services/leave_service.py:229
+#: app/routes/admin_automation_routes.py:87 app/services/leave_service.py:229
 msgid "Génération de shifts incomplète"
 msgstr "Incomplete shift generation"
 
-#: app/routes/admin_automation_routes.py:87
+#: app/routes/admin_automation_routes.py:89
 #, python-format
 msgid ""
 "Aucun utilisateur disponible pour générer un shift pour : %(dates)s. "
@@ -89,44 +89,44 @@ msgstr ""
 "No user available to generate a shift for: %(dates)s. Manual assignment "
 "required in /admin/automation."
 
-#: app/routes/admin_automation_routes.py:158
-#: app/routes/admin_automation_routes.py:262
+#: app/routes/admin_automation_routes.py:160
+#: app/routes/admin_automation_routes.py:264
 #, python-format
 msgid "%(oncalls_deleted)s astreintes existantes supprimées pour la période"
 msgstr "%(oncalls_deleted)s existing on-calls deleted for the period"
 
-#: app/routes/admin_automation_routes.py:173
+#: app/routes/admin_automation_routes.py:175
 #, python-format
 msgid "%(deleted)s shifts existants supprimés pour la période"
 msgstr "%(deleted)s existing shifts deleted for the period"
 
-#: app/routes/admin_automation_routes.py:186
+#: app/routes/admin_automation_routes.py:188
 #, python-format
 msgid "%(val0)s shifts régénérés avec succès !"
 msgstr "%(val0)s shifts successfully regenerated!"
 
-#: app/routes/admin_automation_routes.py:192
-#: app/routes/admin_automation_routes.py:297
+#: app/routes/admin_automation_routes.py:194
+#: app/routes/admin_automation_routes.py:299
 #, python-format
 msgid "Format de date invalide : %(val0)s"
 msgstr "Invalid date format: %(val0)s"
 
-#: app/routes/admin_automation_routes.py:211
+#: app/routes/admin_automation_routes.py:213
 #, python-format
 msgid "Erreur lors de la sauvegarde de l'ordre : %(error)s"
 msgstr "Error saving the order: %(error)s"
 
-#: app/routes/admin_automation_routes.py:219
+#: app/routes/admin_automation_routes.py:221
 msgid ""
 "Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour appliquer."
 msgstr "Rotation order saved! Use the 'Generate' button to apply it."
 
-#: app/routes/admin_automation_routes.py:270
+#: app/routes/admin_automation_routes.py:272
 #, python-format
 msgid "%(shifts_deleted)s shifts existants supprimés pour la période"
 msgstr "%(shifts_deleted)s existing shifts deleted for the period"
 
-#: app/routes/admin_automation_routes.py:288
+#: app/routes/admin_automation_routes.py:290
 #, python-format
 msgid ""
 "Régénération complète terminée pour la période du %(strftime)s au "
@@ -5024,120 +5024,124 @@ msgstr "Log out"
 
 #: app/utils/automation/advanced_shift_automation.py:398
 #, python-format
-msgid "🚨 Créneau obligatoire non pourvu pour le %(date)s : %(name)s."
-msgstr "🚨 Mandatory slot unfilled for %(date)s: %(name)s."
+msgid "[ALERT] Créneau obligatoire non pourvu pour le %(date)s : %(name)s."
+msgstr "[ALERT] Mandatory slot unfilled for %(date)s: %(name)s."
 
-#: app/utils/automation/advanced_shift_automation.py:429
-#: app/utils/automation/advanced_shift_automation.py:603
+#: app/utils/automation/advanced_shift_automation.py:430
+#: app/utils/automation/advanced_shift_automation.py:604
 #, python-format
-msgid "⏭️ Pas de shift généré pour le %(date)s (week-end)"
-msgstr "⏭️ No shift generated for %(date)s (weekend)"
+msgid "[SKIP] Pas de shift généré pour le %(date)s (week-end)"
+msgstr "[SKIP] No shift generated for %(date)s (weekend)"
 
-#: app/utils/automation/advanced_shift_automation.py:439
+#: app/utils/automation/advanced_shift_automation.py:440
 #, python-format
-msgid "⚠️ Aucun utilisateur disponible pour le %(date)s"
-msgstr "⚠️ No user available for %(date)s"
+msgid "[WARN] Aucun utilisateur disponible pour le %(date)s"
+msgstr "[WARN] No user available for %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:475
-#: app/utils/automation/advanced_shift_automation.py:520
-#: app/utils/automation/advanced_shift_automation.py:582
+#: app/utils/automation/advanced_shift_automation.py:476
+#: app/utils/automation/advanced_shift_automation.py:521
+#: app/utils/automation/advanced_shift_automation.py:583
 #, python-format
-msgid "❌ Erreur : %(error)s"
-msgstr "❌ Error: %(error)s"
+msgid "[ERROR] Erreur : %(error)s"
+msgstr "[ERROR] Error: %(error)s"
 
-#: app/utils/automation/advanced_shift_automation.py:480
+#: app/utils/automation/advanced_shift_automation.py:481
 #, python-format
-msgid "✅ 1 shift généré pour le %(date)s (effectif minimum : %(name)s)"
-msgstr "✅ 1 shift generated for %(date)s (minimum staffing: %(name)s)"
+msgid "[OK] 1 shift généré pour le %(date)s (effectif minimum : %(name)s)"
+msgstr "[OK] 1 shift generated for %(date)s (minimum staffing: %(name)s)"
 
-#: app/utils/automation/advanced_shift_automation.py:589
+#: app/utils/automation/advanced_shift_automation.py:590
 #, python-format
-msgid "✅ %(count)s shifts générés pour le %(date)s"
-msgstr "✅ %(count)s shifts generated for %(date)s"
+msgid "[OK] %(count)s shifts générés pour le %(date)s"
+msgstr "[OK] %(count)s shifts generated for %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:610
+#: app/utils/automation/advanced_shift_automation.py:611
 #, python-format
-msgid "⚠️ Aucun shift généré pour le %(date)s"
-msgstr "⚠️ No shift generated for %(date)s"
+msgid "[WARN] Aucun shift généré pour le %(date)s"
+msgstr "[WARN] No shift generated for %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:656
+#: app/utils/automation/advanced_shift_automation.py:657
 #, python-format
 msgid ""
-"📋 Prévisualisation : %(count)s shifts seraient générés pour la période du "
-"%(start)s au %(end)s"
+"[PREVIEW] Prévisualisation : %(count)s shifts seraient générés pour la "
+"période du %(start)s au %(end)s"
 msgstr ""
-"📋 Preview: %(count)s shifts would be generated for the period %(start)s to "
-"%(end)s"
+"[PREVIEW] Preview: %(count)s shifts would be generated for the period "
+"%(start)s to %(end)s"
 
-#: app/utils/automation/advanced_shift_automation.py:663
+#: app/utils/automation/advanced_shift_automation.py:664
 #, python-format
-msgid "🎉 %(count)s shifts générés pour la période du %(start)s au %(end)s"
-msgstr "🎉 %(count)s shifts generated for the period %(start)s to %(end)s"
+msgid "[OK] %(count)s shifts générés pour la période du %(start)s au %(end)s"
+msgstr "[OK] %(count)s shifts generated for the period %(start)s to %(end)s"
 
-#: app/utils/automation/advanced_shift_automation.py:670
+#: app/utils/automation/advanced_shift_automation.py:671
 #, python-format
 msgid "(%(with_shifts)s jours avec shifts, %(skipped)s jours sans)"
 msgstr "(%(with_shifts)s days with shifts, %(skipped)s days without)"
 
-#: app/utils/automation/advanced_shift_automation.py:703
-#: app/utils/automation/advanced_shift_automation.py:736
+#: app/utils/automation/advanced_shift_automation.py:704
+#: app/utils/automation/advanced_shift_automation.py:737
 #, python-format
-msgid "🗑️ %(count)s shifts supprimés pour le %(date)s"
-msgstr "🗑️ %(count)s shifts deleted for %(date)s"
+msgid "[DELETED] %(count)s shifts supprimés pour le %(date)s"
+msgstr "[DELETED] %(count)s shifts deleted for %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:755
+#: app/utils/automation/advanced_shift_automation.py:756
 #, python-format
 msgid ""
-"❌ Échec de la régénération du %(date)s : %(error)s - ce jour n'a pas été "
-"modifié, action manuelle nécessaire"
+"[ERROR] Échec de la régénération du %(date)s : %(error)s - ce jour n'a pas "
+"été modifié, action manuelle nécessaire"
 msgstr ""
-"❌ Failed to regenerate %(date)s: %(error)s - this day was not changed, "
-"manual action required"
+"[ERROR] Failed to regenerate %(date)s: %(error)s - this day was not changed,"
+" manual action required"
 
-#: app/utils/automation/advanced_shift_automation.py:839
+#: app/utils/automation/advanced_shift_automation.py:840
 #, python-format
 msgid ""
-"🗑️ %(count)s astreinte(s) supplémentaire(s) supprimée(s) dans la période "
-"étendue avant régénération"
+"[DELETED] %(count)s astreinte(s) supplémentaire(s) supprimée(s) dans la "
+"période étendue avant régénération"
 msgstr ""
-"🗑️ %(count)s extra on-call(s) deleted in the extended period before "
+"[DELETED] %(count)s extra on-call(s) deleted in the extended period before "
 "regeneration"
 
-#: app/utils/automation/advanced_shift_automation.py:860
-#, python-format
-msgid "🔄 %(count)s astreintes régénérées pour la période %(start)s - %(end)s"
-msgstr "🔄 %(count)s on-calls regenerated for the period %(start)s - %(end)s"
-
-#: app/utils/automation/advanced_shift_automation.py:870
+#: app/utils/automation/advanced_shift_automation.py:861
 #, python-format
 msgid ""
-"❌ Échec de la régénération des astreintes pour la période %(start)s - "
+"[REGEN] %(count)s astreintes régénérées pour la période %(start)s - %(end)s"
+msgstr ""
+"[REGEN] %(count)s on-calls regenerated for the period %(start)s - %(end)s"
+
+#: app/utils/automation/advanced_shift_automation.py:871
+#, python-format
+msgid ""
+"[ERROR] Échec de la régénération des astreintes pour la période %(start)s - "
 "%(end)s : %(error)s - les astreintes de cette période n'ont pas été "
 "modifiées, action manuelle nécessaire"
 msgstr ""
-"❌ Failed to regenerate on-calls for the period %(start)s - %(end)s: "
+"[ERROR] Failed to regenerate on-calls for the period %(start)s - %(end)s: "
 "%(error)s - the on-calls for this period were not changed, manual action "
 "required"
 
-#: app/utils/automation/advanced_shift_automation.py:978
+#: app/utils/automation/advanced_shift_automation.py:979
 #, python-format
-msgid "🗑️ %(count)s astreintes supprimées pour l'utilisateur %(user_id)s"
-msgstr "🗑️ %(count)s on-calls deleted for user %(user_id)s"
+msgid ""
+"[DELETED] %(count)s astreintes supprimées pour l'utilisateur %(user_id)s"
+msgstr "[DELETED] %(count)s on-calls deleted for user %(user_id)s"
 
 #: app/utils/automation/oncall_automation.py:401
 #, python-format
 msgid ""
-"⚠️ Aucune astreinte générée pour le %(date)s (aucun utilisateur ne respecte "
-"le délai légal de %(weeks)s semaines entre deux astreintes) - assignation "
-"manuelle nécessaire."
+"[WARN] Aucune astreinte générée pour le %(date)s (aucun utilisateur ne "
+"respecte le délai légal de %(weeks)s semaines entre deux astreintes) - "
+"assignation manuelle nécessaire."
 msgstr ""
-"⚠️ No on-call generated for %(date)s (no user meets the legal %(weeks)s-week"
-" spacing constraint between two on-calls) - manual assignment required."
+"[WARN] No on-call generated for %(date)s (no user meets the legal "
+"%(weeks)s-week spacing constraint between two on-calls) - manual assignment "
+"required."
 
 #: app/utils/automation/oncall_automation.py:430
 #, python-format
-msgid "✅ %(count)s astreintes générées."
-msgstr "✅ %(count)s on-calls generated."
+msgid "[OK] %(count)s astreintes générées."
+msgstr "[OK] %(count)s on-calls generated."
 
 #: app/utils/automation/oncall_automation.py:654
 #: app/utils/automation/oncall_automation.py:739
@@ -5150,8 +5154,8 @@ msgid "Impossible de déterminer l'ordre de rotation."
 msgstr "Unable to determine the rotation order."
 
 #: app/utils/automation/oncall_automation.py:774
-msgid "✅ Aucune astreinte manquante sur cette période."
-msgstr "✅ No missing on-calls for this period."
+msgid "[OK] Aucune astreinte manquante sur cette période."
+msgstr "[OK] No missing on-calls for this period."
 
 #: app/utils/export/ics_exporter.py:60
 #, python-format

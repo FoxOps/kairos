@@ -23,34 +23,36 @@ from app.utils.automation import (
 )
 
 # app/utils/automation/ (AdvancedShiftAutomation/OnCallAutomation) encodes
-# each generated message's severity as a leading emoji rather than a
-# separate field. Detect the category from it here, then strip the emoji
-# before display - Font Awesome icons, not emoji, are this project's icon
-# convention (see base.html's flash rendering, which already prepends a
-# category icon; keeping the emoji too would show it twice).
-_EMOJI_PREFIX_RE = re.compile(r"^[\U0001F300-\U0001FAFF☀-➿️]+\s*")
+# each generated message's severity as a leading plain-text "[TAG] "
+# marker rather than a separate field - deliberately not emoji, this
+# app never shows emoji anywhere (see test_flash_message_icons.py).
+# Detect the category from it here, then strip the tag before display -
+# Font Awesome icons are this project's only icon convention (see
+# base.html's flash rendering, which already prepends a category icon).
+_TAG_PREFIX_RE = re.compile(r"^\[[A-Z]+\]\s*")
 
 
 def _classify_automation_message(
     msg: str, default_category: str = "info"
 ) -> tuple[str, str]:
-    """Returns (category, message with its leading emoji stripped)."""
-    if "🚨" in msg:
+    """Returns (category, message with its leading "[TAG] " marker
+    stripped)."""
+    if "[ALERT]" in msg:
         # Elevated severity (MandatoryShiftRule: a slot flagged
         # mandatory went unfilled) - always "danger", regardless of
         # default_category, so it's visually distinct from the
-        # ordinary "⚠️ unfilled slot" case even on the shift-messages
-        # path (whose default_category is "info").
+        # ordinary "[WARN] unfilled slot" case even on the
+        # shift-messages path (whose default_category is "info").
         category = "danger"
-    elif "✅" in msg or "🎉" in msg:
+    elif "[OK]" in msg:
         category = "success"
-    elif "⚠️" in msg:
+    elif "[WARN]" in msg:
         category = "warning"
     elif default_category == "info":
         category = "info"
     else:
         category = "danger"
-    return category, _EMOJI_PREFIX_RE.sub("", msg)
+    return category, _TAG_PREFIX_RE.sub("", msg)
 
 
 def _flash_automation_messages(messages, default_category="info"):

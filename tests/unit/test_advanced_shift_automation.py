@@ -1225,7 +1225,8 @@ class TestRebalanceAfterLeave:
 
             assert failed_shift_dates == [failing_day]
             assert any(
-                failing_day.strftime("%d/%m/%Y") in m and "❌" in m for m in messages
+                failing_day.strftime("%d/%m/%Y") in m and "[ERROR]" in m
+                for m in messages
             )
             # Every other weekday in the window still got a shift - the
             # single failing day didn't take the rest down with it.

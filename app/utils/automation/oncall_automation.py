@@ -398,7 +398,7 @@ def _generate_for_fridays(
             # commit has actually succeeded (see unfilled_dates below).
             messages.append(
                 _(
-                    "⚠️ Aucune astreinte générée pour le %(date)s "
+                    "[WARN] Aucune astreinte générée pour le %(date)s "
                     "(aucun utilisateur ne respecte le délai légal de %(weeks)s "
                     "semaines entre deux astreintes) - assignation manuelle "
                     "nécessaire.",
@@ -427,7 +427,7 @@ def _generate_for_fridays(
         else:
             db.session.flush()
 
-    messages.append(_("✅ %(count)s astreintes générées.", count=len(oncalls)))
+    messages.append(_("[OK] %(count)s astreintes générées.", count=len(oncalls)))
     return oncalls, messages, unfilled_dates
 
 
@@ -771,7 +771,7 @@ class OnCallAutomation:
         ]
 
         if not missing_fridays:
-            return [], [_("✅ Aucune astreinte manquante sur cette période.")], []
+            return [], [_("[OK] Aucune astreinte manquante sur cette période.")], []
 
         return _generate_for_fridays(
             missing_fridays, rotation_order, index, dry_run=dry_run, commit=commit
