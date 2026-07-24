@@ -4,9 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Language
 
-Respond to the user in French. Code, identifiers, and commit messages follow the conventions
-described below (commit history is French-language; code/comments in English unless stated
-otherwise). This was a stated-but-unenforced rule for a long time — a repo-wide sweep translated
+Respond to the user in English. Switched from French after a recurring, unresolved failure mode:
+Claude Code sessions on this project repeatedly drifted into Portuguese mid-response (confirmed
+across 8 occurrences in one session, in short compressed fragments as well as full structured
+summaries, and persisting even right after being told to stop) — English was adopted as the
+working mitigation rather than continuing to fight the French/Portuguese cross-contamination.
+Code, identifiers, and commit messages follow the conventions described below (commit history is
+French-language; code/comments in English unless stated otherwise) — this change only affects the
+chat-response language, not the codebase's own existing French conventions (UI strings, commit
+history, ops output) documented in this file, which are unrelated and untouched. This was a
+stated-but-unenforced rule for a long time — a repo-wide sweep translated
 every remaining French code comment/docstring to English (Python, Dockerfile, entrypoint.sh,
 Makefile, .ruff.toml, k8s/*.yaml, docker-compose*.yml). Keep new comments/docstrings in English
 going forward. Two deliberate carve-outs, not oversights:
