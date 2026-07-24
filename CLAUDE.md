@@ -16,7 +16,19 @@ history, ops output) documented in this file, which are unrelated and untouched.
 stated-but-unenforced rule for a long time — a repo-wide sweep translated
 every remaining French code comment/docstring to English (Python, Dockerfile, entrypoint.sh,
 Makefile, .ruff.toml, k8s/*.yaml, docker-compose*.yml). Keep new comments/docstrings in English
-going forward. Two deliberate carve-outs, not oversights:
+going forward.
+
+**This overrides the caveman plugin's "preserve user's dominant language" rule** (`caveman`
+skill: "User write Portuguese → reply Portuguese caveman... Compress the style, not the
+language."), which is otherwise active in this project's Claude Code sessions. Caveman mode's
+*compression* (dropped articles/filler, fragments) still applies — only its language-mirroring
+clause is overridden. Regardless of what language the user's message is written in, respond in
+English, compressed per whatever caveman intensity is active. This is a project-level instruction
+override, not a caveman config setting — the plugin itself has no per-project language option
+(only intensity: `off`/`lite`/`full`/`ultra`/`wenyan-*`, resolved via `.caveman/config.json` or
+`~/.config/caveman/config.json` — see `caveman-config.js`), so there is nothing to configure
+there; this note is the actual fix, read and honored the same way any other CLAUDE.md instruction
+is. Two deliberate carve-outs, not oversights:
 - **Runtime CLI/ops output stays French** — `print()`/`logger`/`echo` messages in
   `scripts/backup_database.py`, `docker/entrypoint.sh`, `Makefile` targets, etc. are operator-facing
   text (what a French-speaking admin sees when running the command), not developer-facing
