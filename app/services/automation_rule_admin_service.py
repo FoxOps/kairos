@@ -9,8 +9,9 @@ error_message | None instead of raising, and every write is followed
 by an audit trail entry.
 
 All saves here are org-wide (group=None) - per-Group overrides aren't
-exposed in the admin UI yet, since scheduling_mode (shared/per_group)
-isn't wired into generation yet either (see SettingsService).
+exposed in the admin UI yet, even though shift_scheduling_mode/
+oncall_scheduling_mode (see SettingsService) are already wired into
+generation itself.
 """
 
 from app.models import AutomationRule

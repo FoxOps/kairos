@@ -449,7 +449,7 @@ class OnCallAutomation:
         in on-call rotation. `group`: when given, restricts eligibility
         to that single Group's members instead of pooling every
         on-call-eligible group - used by the "per_group" scheduling
-        mode (SettingsService.get_scheduling_mode()) to run each
+        mode (SettingsService.get_oncall_scheduling_mode()) to run each
         group's own independent rotation. None (the default) preserves
         today's pooled behavior."""
         query = User.query.join(Group).filter(Group.is_part_of_oncall.is_(True))

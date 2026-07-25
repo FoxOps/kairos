@@ -1,11 +1,13 @@
 """
-Tests for AutomationAdminService.generate_full()'s scheduling_mode
-branching: "shared" (default) keeps pooling every eligible group into
-one generation pass, "per_group" runs one independent pass per
-eligible Group instead (see app/utils/automation/*'s new `group`
-parameter and its docstrings for what "independent" means in
-practice - e.g. concurrent on-calls, one per group, for the same
-week).
+Tests for AutomationAdminService.generate_full()'s shift/oncall
+scheduling_mode branching: "shared" (default) keeps pooling every
+eligible group into one generation pass, "per_group" runs one
+independent pass per eligible Group instead (see
+app/utils/automation/*'s new `group` parameter and its docstrings for
+what "independent" means in practice - e.g. concurrent on-calls, one
+per group, for the same week). Shift and on-call modes are
+independent settings - each test below only flips the one relevant
+to what it's asserting.
 """
 
 from datetime import date
@@ -55,7 +57,7 @@ class TestGenerateFullSchedulingMode:
         from app.services import SettingsService
         from app.services.automation_admin_service import AutomationAdminService
 
-        SettingsService.set_scheduling_mode("per_group")
+        SettingsService.set_oncall_scheduling_mode("per_group")
 
         other_group = Group(
             name="Other", is_part_of_oncall=True, is_part_of_schedule=True
@@ -72,3 +74,28 @@ class TestGenerateFullSchedulingMode:
         # Friday, so both users end up on-call concurrently.
         assert {o.user_id for o in result.oncalls} == {user_a.id, user_b.id}
         assert len(result.oncalls) == 2
+
+    def test_shift_mode_does_not_affect_oncall_pooling(self, test_app, test_group):
+        """Flipping shift_scheduling_mode alone must not make on-call
+        generation per_group too - the two settings are independent,
+        not a single combined switch."""
+        from app.services import SettingsService
+        from app.services.automation_admin_service import AutomationAdminService
+
+        SettingsService.set_shift_scheduling_mode("per_group")
+
+        other_group = Group(
+            name="Other", is_part_of_oncall=True, is_part_of_schedule=True
+        )
+        db.session.add(other_group)
+        db.session.commit()
+        user_a = _make_user("A", "a@test.com", test_group)
+        user_b = _make_user("B", "b@test.com", other_group)
+
+        friday = date(2023, 12, 1)
+        result = AutomationAdminService.generate_full(friday, friday, [], dry_run=False)
+
+        # On-call mode is still "shared" (default): pooled, one on-call
+        # for the Friday, despite shift mode being "per_group".
+        assert len(result.oncalls) == 1
+        assert result.oncalls[0].user_id in {user_a.id, user_b.id}

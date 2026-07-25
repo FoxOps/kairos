@@ -162,13 +162,15 @@ touching auth flows.
   actually wiring it into `create_app()`.
 - A third layer sits on top of both: `Setting` (`app/models/setting.py`, generic key/value store,
   same EAV shape as `AutomationConfig`) + `app/services/settings_service.py::SettingsService`
-  (typed getters/setters) for settings an admin can change at runtime from `/admin/settings`
-  without redeploying — `default_timezone`, `default_language`, `public_base_url`,
+  (typed getters/setters) for settings an admin can change at runtime without redeploying —
+  most editable from `/admin/settings`: `default_timezone`, `default_language`, `public_base_url`,
   `items_per_page`/`max_per_page`, `notifications_enabled`,
   `backup_retention_days`/`backup_max_backups`, `ics_token_expiry_days` (currently unenforced, see
-  "Multi-timezone support" below), `scheduling_mode` (`shared`/`per_group`, same no-env-var-fallback
-  shape as `default_language` below — see "Configurable automation rules" for what it actually
-  changes and what's still not wired to it). Rule: a `Setting` row, if present, always wins; if absent, the
+  "Multi-timezone support" below). `shift_scheduling_mode`/`oncall_scheduling_mode` (each
+  independently `shared`/`per_group`, same no-env-var-fallback shape as `default_language` below)
+  are the one exception: edited on `/admin/automation/rules` instead, alongside the rest of the
+  rule engine they scope — see "Configurable automation rules" for what each actually changes and
+  what's still not wired to it. Rule: a `Setting` row, if present, always wins; if absent, the
   getter falls back **live** to the matching `app.config`/env value (never a one-time seed written
   to the DB) — so an env-var-only deployment behaves identically to before this feature existed,
   until an admin actually saves a value through the new page. Don't remove the underlying env vars
@@ -460,12 +462,15 @@ use emoji anywhere (see `tests/unit/test_flash_message_icons.py`), so it's now a
 instead — `admin_automation_routes.py::_classify_automation_message()` matches on the tag, not
 Unicode ranges, same severity mapping as before.
 
-**`scheduling_mode` (`shared`/`per_group` `Setting`, defaults to `shared`)** controls whether
-generation pools every eligible `Group` into one shared rotation (the only behavior that ever existed
-before this feature) or runs one independent generation pass per eligible `Group`.
-`AutomationAdminService.generate_full()` branches on it: `per_group` loops over every
-on-call-eligible `Group` (for on-calls) and every schedule-eligible `Group` (for shifts), calling the
-*same* single-group code path once per group and concatenating results — the core solver
+**`shift_scheduling_mode`/`oncall_scheduling_mode` (each independently `shared`/`per_group`
+`Setting`, defaults to `shared`, edited on `/admin/automation/rules`, not `/admin/settings`)**
+control whether generation pools every eligible `Group` into one shared rotation (the only behavior
+that ever existed before this feature) or runs one independent generation pass per eligible `Group`
+— separately for shifts and for on-calls, since a team's on-call rotation doesn't have to be scoped
+the same way as its shift rotation. `AutomationAdminService.generate_full()` branches on each
+independently: `oncall_scheduling_mode="per_group"` loops over every on-call-eligible `Group`;
+`shift_scheduling_mode="per_group"` loops over every schedule-eligible `Group`; either one calls the
+*same* single-group code path once per group and concatenates results — the core solver
 (`_solve_max_filled_weeks`, `AvailabilityIndex`, `determine_shift_for_user`'s rule logic) is
 untouched, only the query layer that decides "who is eligible" gained an optional `group` parameter
 (threaded through `get_users_in_schedule_groups`/`get_available_users_for_date`/`get_oncall_for_date`/
@@ -479,7 +484,7 @@ misattributing the on-call shift-slot rule within the group actually being gener
 by the given group's membership. Rule *values* (weekend/slots/spacing/anchor) still stay org-wide
 either way — only the eligible-user pool is partitioned, no generation call site resolves a rule
 *value* per group yet, even though the rule-resolution plumbing already accepts a `group` argument
-for whenever that lands. **Not yet wired to `scheduling_mode`** at all: `fill_oncall_gaps()`,
+for whenever that lands. **Not yet wired to either scheduling mode** at all: `fill_oncall_gaps()`,
 `rebalance_after_leave()`, and `refresh_shifts()` (narrower advanced workflows) keep pooling
 regardless of the setting, and the calendar has no per-group display (color/legend/filter) — both
 tracked as the "Future ideas" entry in `ROADMAP.md`, not silently forgotten.

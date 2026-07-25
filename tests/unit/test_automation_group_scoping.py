@@ -1,11 +1,12 @@
 """
 Tests for optional per-Group scoping of the automation generation
 entry points - the piece of "per_group" scheduling mode
-(SettingsService.get_scheduling_mode()) that partitions the eligible-
-user pool so two groups don't compete for the same on-call/staffing
-budget. Rule *values* (weekend/slots/spacing/anchor) stay org-wide in
-this increment - only WHO is eligible is partitioned. group=None
-(the default everywhere) must keep today's pooled behavior unchanged.
+(SettingsService.get_shift_scheduling_mode()/get_oncall_scheduling_mode())
+that partitions the eligible-user pool so two groups don't compete for
+the same on-call/staffing budget. Rule *values* (weekend/slots/spacing/
+anchor) stay org-wide in this increment - only WHO is eligible is
+partitioned. group=None (the default everywhere) must keep today's
+pooled behavior unchanged.
 """
 
 from datetime import date, datetime, timedelta

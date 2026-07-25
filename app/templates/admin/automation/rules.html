@@ -18,6 +18,50 @@
         {{ _("Ces réglages s'appliquent à toute l'organisation. Une valeur par défaut équivalente au comportement historique est utilisée tant qu'aucune règle n'est enregistrée ici.") }}
     </p>
 
+    <form method="POST" action="{{ url_for('admin.automation_rules_dashboard') }}" aria-labelledby="shift-scheduling-mode-form-title" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="section" value="shift_scheduling_mode">
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <h2 class="font-semibold" id="shift-scheduling-mode-form-title"><i class="fas fa-diagram-project" aria-hidden="true"></i> {{ _("Mode de planification — Shifts") }}</h2>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Portée de la rotation des shifts") }}</legend>
+                    <select class="select w-full" name="shift_scheduling_mode">
+                        <option value="shared" {% if shift_scheduling_mode == "shared" %}selected{% endif %}>{{ _("Commune (tous les groupes partagent une seule rotation)") }}</option>
+                        <option value="per_group" {% if shift_scheduling_mode == "per_group" %}selected{% endif %}>{{ _("Par groupe (chaque groupe a sa propre rotation)") }}</option>
+                    </select>
+                </fieldset>
+                <div>
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <form method="POST" action="{{ url_for('admin.automation_rules_dashboard') }}" aria-labelledby="oncall-scheduling-mode-form-title" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="section" value="oncall_scheduling_mode">
+        <div class="card card-sm bg-base-100 shadow-md">
+            <div class="card-body gap-4">
+                <h2 class="font-semibold" id="oncall-scheduling-mode-form-title"><i class="fas fa-diagram-project" aria-hidden="true"></i> {{ _("Mode de planification — Astreintes") }}</h2>
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">{{ _("Portée de la rotation des astreintes") }}</legend>
+                    <select class="select w-full" name="oncall_scheduling_mode">
+                        <option value="shared" {% if oncall_scheduling_mode == "shared" %}selected{% endif %}>{{ _("Commune (tous les groupes partagent une seule rotation)") }}</option>
+                        <option value="per_group" {% if oncall_scheduling_mode == "per_group" %}selected{% endif %}>{{ _("Par groupe (chaque groupe a sa propre rotation)") }}</option>
+                    </select>
+                </fieldset>
+                <div>
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
     <form method="POST" action="{{ url_for('admin.automation_rules_dashboard') }}" aria-labelledby="shift-slots-form-title" class="mb-4">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="section" value="shift_slots">

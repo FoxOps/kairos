@@ -54,32 +54,72 @@ class TestDefaultLanguage:
             assert SettingsService.get_default_language() == "fr"
 
 
-class TestSchedulingMode:
+class TestShiftSchedulingMode:
     def test_falls_back_to_shared_when_unset(self, test_app):
         with test_app.app_context():
-            assert SettingsService.get_scheduling_mode() == "shared"
+            assert SettingsService.get_shift_scheduling_mode() == "shared"
 
     def test_db_override_wins(self, test_app):
         with test_app.app_context():
-            error = SettingsService.set_scheduling_mode("per_group")
+            error = SettingsService.set_shift_scheduling_mode("per_group")
             assert error is None
-            assert SettingsService.get_scheduling_mode() == "per_group"
+            assert SettingsService.get_shift_scheduling_mode() == "per_group"
 
     def test_set_writes_audit_log_entry(self, test_app):
         with test_app.app_context():
             from app.models import AuditLog
 
-            SettingsService.set_scheduling_mode("per_group")
+            SettingsService.set_shift_scheduling_mode("per_group")
 
             entry = AuditLog.query.filter_by(action="setting.update").first()
             assert entry is not None
-            assert "scheduling_mode=per_group" in entry.details
+            assert "shift_scheduling_mode=per_group" in entry.details
 
     def test_rejects_invalid_mode(self, test_app):
         with test_app.app_context():
-            error = SettingsService.set_scheduling_mode("everyone_for_themselves")
+            error = SettingsService.set_shift_scheduling_mode("everyone_for_themselves")
             assert error is not None
-            assert SettingsService.get_scheduling_mode() == "shared"
+            assert SettingsService.get_shift_scheduling_mode() == "shared"
+
+    def test_independent_from_oncall_mode(self, test_app):
+        with test_app.app_context():
+            SettingsService.set_shift_scheduling_mode("per_group")
+            assert SettingsService.get_oncall_scheduling_mode() == "shared"
+
+
+class TestOnCallSchedulingMode:
+    def test_falls_back_to_shared_when_unset(self, test_app):
+        with test_app.app_context():
+            assert SettingsService.get_oncall_scheduling_mode() == "shared"
+
+    def test_db_override_wins(self, test_app):
+        with test_app.app_context():
+            error = SettingsService.set_oncall_scheduling_mode("per_group")
+            assert error is None
+            assert SettingsService.get_oncall_scheduling_mode() == "per_group"
+
+    def test_set_writes_audit_log_entry(self, test_app):
+        with test_app.app_context():
+            from app.models import AuditLog
+
+            SettingsService.set_oncall_scheduling_mode("per_group")
+
+            entry = AuditLog.query.filter_by(action="setting.update").first()
+            assert entry is not None
+            assert "oncall_scheduling_mode=per_group" in entry.details
+
+    def test_rejects_invalid_mode(self, test_app):
+        with test_app.app_context():
+            error = SettingsService.set_oncall_scheduling_mode(
+                "everyone_for_themselves"
+            )
+            assert error is not None
+            assert SettingsService.get_oncall_scheduling_mode() == "shared"
+
+    def test_independent_from_shift_mode(self, test_app):
+        with test_app.app_context():
+            SettingsService.set_oncall_scheduling_mode("per_group")
+            assert SettingsService.get_shift_scheduling_mode() == "shared"
 
 
 class TestDefaultDateFormat:

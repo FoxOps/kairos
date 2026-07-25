@@ -195,6 +195,55 @@ class TestOnCallAnchorSection:
         }
 
 
+class TestSchedulingModeSection:
+    def test_shift_mode_persists_independently_of_oncall(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/automation/rules",
+            data={
+                "section": "shift_scheduling_mode",
+                "shift_scheduling_mode": "per_group",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+
+        from app.services import SettingsService
+
+        assert SettingsService.get_shift_scheduling_mode() == "per_group"
+        assert SettingsService.get_oncall_scheduling_mode() == "shared"
+
+    def test_oncall_mode_persists_independently_of_shift(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/automation/rules",
+            data={
+                "section": "oncall_scheduling_mode",
+                "oncall_scheduling_mode": "per_group",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+
+        from app.services import SettingsService
+
+        assert SettingsService.get_oncall_scheduling_mode() == "per_group"
+        assert SettingsService.get_shift_scheduling_mode() == "shared"
+
+    def test_invalid_shift_mode_flashes_error_without_persisting(
+        self, logged_in_client
+    ):
+        response = logged_in_client.post(
+            "/admin/automation/rules",
+            data={"section": "shift_scheduling_mode", "shift_scheduling_mode": "bogus"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
+
+        from app.services import SettingsService
+
+        assert SettingsService.get_shift_scheduling_mode() == "shared"
+
+
 class TestShiftSlotsSection:
     def test_valid_ids_persist(self, logged_in_client, test_shift_type):
         response = logged_in_client.post(

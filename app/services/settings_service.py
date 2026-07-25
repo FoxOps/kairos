@@ -27,7 +27,8 @@ logger = get_logger(__name__)
 
 DEFAULT_TIMEZONE_KEY = "default_timezone"
 DEFAULT_LANGUAGE_KEY = "default_language"
-SCHEDULING_MODE_KEY = "scheduling_mode"
+SHIFT_SCHEDULING_MODE_KEY = "shift_scheduling_mode"
+ONCALL_SCHEDULING_MODE_KEY = "oncall_scheduling_mode"
 DEFAULT_DATE_FORMAT_KEY = "default_date_format"
 DEFAULT_TIME_FORMAT_KEY = "default_time_format"
 PUBLIC_BASE_URL_KEY = "public_base_url"
@@ -54,14 +55,17 @@ FALLBACK_DEFAULT_LANGUAGE = "fr"
 SUPPORTED_LANGUAGES = ("fr", "en")
 
 # Same no-env-var-equivalent situation as language above: whether
-# shift/on-call generation pools every eligible Group into one shared
-# rotation ("shared", the only behavior that ever existed before this
-# feature and still the only one actually wired into generation) or
-# gives each Group its own independent rotation ("per_group") was
-# never a configurable concept before. Storing/validating the setting
-# is step one - see ROADMAP.md / the feature's tracking plan for the
-# generation-pipeline and calendar-display work "per_group" still
-# needs before it does anything beyond being readable.
+# generation pools every eligible Group into one shared rotation
+# ("shared", the only behavior that ever existed before this feature)
+# or gives each Group its own independent rotation ("per_group") was
+# never a configurable concept before. Shifts and on-calls each get
+# their own independent setting (SHIFT_SCHEDULING_MODE_KEY/
+# ONCALL_SCHEDULING_MODE_KEY above) - a team's on-call rotation and
+# its shift rotation don't have to be scoped the same way (e.g. one
+# shared on-call pool across the whole org, but each team running its
+# own independent shift rotation). Calendar display doesn't
+# distinguish per-group shifts/on-calls yet regardless of either
+# setting - see ROADMAP.md.
 FALLBACK_SCHEDULING_MODE = "shared"
 SUPPORTED_SCHEDULING_MODES = ("shared", "per_group")
 
@@ -163,18 +167,33 @@ class SettingsService:
     # --- scheduling mode ---
 
     @staticmethod
-    def get_scheduling_mode() -> str:
-        value = Setting.get(SCHEDULING_MODE_KEY)
+    def get_shift_scheduling_mode() -> str:
+        value = Setting.get(SHIFT_SCHEDULING_MODE_KEY)
         if value:
             return str(value)
         return FALLBACK_SCHEDULING_MODE
 
     @staticmethod
-    def set_scheduling_mode(mode: str) -> str | None:
+    def set_shift_scheduling_mode(mode: str) -> str | None:
         if mode not in SUPPORTED_SCHEDULING_MODES:
             return _("Mode de planification invalide : %(mode)s", mode=mode)
         return SettingsService._set_with_audit(
-            {SCHEDULING_MODE_KEY: mode}, f"scheduling_mode={mode}"
+            {SHIFT_SCHEDULING_MODE_KEY: mode}, f"shift_scheduling_mode={mode}"
+        )
+
+    @staticmethod
+    def get_oncall_scheduling_mode() -> str:
+        value = Setting.get(ONCALL_SCHEDULING_MODE_KEY)
+        if value:
+            return str(value)
+        return FALLBACK_SCHEDULING_MODE
+
+    @staticmethod
+    def set_oncall_scheduling_mode(mode: str) -> str | None:
+        if mode not in SUPPORTED_SCHEDULING_MODES:
+            return _("Mode de planification invalide : %(mode)s", mode=mode)
+        return SettingsService._set_with_audit(
+            {ONCALL_SCHEDULING_MODE_KEY: mode}, f"oncall_scheduling_mode={mode}"
         )
 
     # --- date/time format ---

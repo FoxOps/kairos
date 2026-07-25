@@ -16,7 +16,7 @@ from flask_babel import gettext as _
 
 from app.auth.decorators import admin_required
 from app.routes.admin import admin_bp
-from app.services import AutomationRuleAdminService
+from app.services import AutomationRuleAdminService, SettingsService
 from app.services.shift_type_service import ShiftTypeService
 from app.utils.automation.rules import (
     MandatoryShiftRule,
@@ -133,6 +133,16 @@ def automation_rules_dashboard():
             error = AutomationRuleAdminService.save_oncall_shift_overlap(block)
             _flash_result(error, _("Règle de chevauchement enregistrée"))
 
+        elif section == "shift_scheduling_mode":
+            mode = request.form.get("shift_scheduling_mode", "")
+            error = SettingsService.set_shift_scheduling_mode(mode)
+            _flash_result(error, _("Mode de planification des shifts enregistré"))
+
+        elif section == "oncall_scheduling_mode":
+            mode = request.form.get("oncall_scheduling_mode", "")
+            error = SettingsService.set_oncall_scheduling_mode(mode)
+            _flash_result(error, _("Mode de planification des astreintes enregistré"))
+
         return redirect(url_for("admin.automation_rules_dashboard"))
 
     shift_types = ShiftTypeService.list_all()
@@ -154,4 +164,6 @@ def automation_rules_dashboard():
         mandatory_shift=MandatoryShiftRule.resolve(),
         rest_after_oncall=RestAfterOnCallRule.resolve(),
         oncall_shift_overlap=OnCallShiftOverlapRule.resolve(),
+        shift_scheduling_mode=SettingsService.get_shift_scheduling_mode(),
+        oncall_scheduling_mode=SettingsService.get_oncall_scheduling_mode(),
     )

@@ -65,17 +65,19 @@ automated tests), and used for real team scheduling.
 
 Larger features, not yet started, not committed to a timeline.
 
-- **Per-group independent scheduling rotations.** The configurable
-  automation rules engine (see "Done") already supports a per-`Group`
-  override at the data layer, and a `scheduling_mode` setting
-  (shared/per_group) exists — but shift/on-call generation still pools
-  every eligible group into one shared rotation regardless of that
-  setting, and the calendar has no per-group display yet. Wiring
-  `per_group` all the way through is a larger, more delicate change
-  (the branch-and-bound solver and minimal-perturbation rebalancing
-  logic weren't designed with multiple independent pools in mind) —
-  deliberately left for a dedicated follow-up rather than bundled into
-  the rules-engine work.
+- **Per-group calendar display.** The configurable automation rules
+  engine (see "Done") already supports a per-`Group` override at the
+  data layer, and `shift_scheduling_mode`/`oncall_scheduling_mode`
+  (each independently shared/per_group, edited on
+  `/admin/automation/rules`) are wired all the way into generation —
+  `AutomationAdminService.generate_full()` runs one independent pass
+  per eligible `Group` when a mode is `per_group`. What's still missing
+  is the calendar itself: no per-group color/legend/filter, so a
+  `per_group` deployment can't visually distinguish which rotation an
+  event belongs to. `fill_oncall_gaps()`/`rebalance_after_leave()`/
+  `refresh_shifts()` (narrower advanced workflows) also still pool
+  regardless of the setting. Deliberately left for a dedicated
+  follow-up rather than bundled into the rules-engine work.
 - **On-call intervention reports.** A way to log what happened during
   an on-call shift (time spent, actions taken) — useful both for
   payroll and as an audit trail of interventions.

@@ -239,18 +239,22 @@ class AutomationAdminService:
                 AutomationAdminService.clear_period(start_date, end_date)
             )
 
-        # scheduling_mode="per_group" (SettingsService) runs one
-        # independent generation pass per eligible Group instead of
-        # pooling every group into a single shared pass - see the
-        # `group` parameter added to generate_oncall_schedule()/
-        # generate_full_schedule() for what "independent" means (e.g.
-        # concurrent on-calls, one per group, for the same week).
-        # Rule *values* (weekend/slots/spacing/anchor) stay org-wide
-        # either way in this increment - only the eligible-user pool
-        # is partitioned.
-        per_group = SettingsService.get_scheduling_mode() == "per_group"
+        # oncall_scheduling_mode/shift_scheduling_mode="per_group"
+        # (SettingsService) each independently run one generation pass
+        # per eligible Group instead of pooling every group into a
+        # single shared pass - see the `group` parameter added to
+        # generate_oncall_schedule()/generate_full_schedule() for what
+        # "independent" means (e.g. concurrent on-calls, one per
+        # group, for the same week). The two are deliberately separate
+        # settings: a team's on-call rotation and its shift rotation
+        # don't have to be scoped the same way. Rule *values* (weekend/
+        # slots/spacing/anchor) stay org-wide either way in this
+        # increment - only the eligible-user pool is partitioned.
+        oncall_per_group = SettingsService.get_oncall_scheduling_mode() == "per_group"
         oncall_groups = (
-            Group.query.filter_by(is_part_of_oncall=True).all() if per_group else [None]
+            Group.query.filter_by(is_part_of_oncall=True).all()
+            if oncall_per_group
+            else [None]
         )
         for group in oncall_groups:
             oncalls, oncall_messages, oncall_unfilled_dates = (
@@ -271,9 +275,10 @@ class AutomationAdminService:
         # on-calls already in the database for the period (the on-call
         # dry_run above doesn't save anything) - it can therefore differ
         # from the final result if no on-call exists yet for this period.
+        shift_per_group = SettingsService.get_shift_scheduling_mode() == "per_group"
         schedule_groups = (
             Group.query.filter_by(is_part_of_schedule=True).all()
-            if per_group
+            if shift_per_group
             else [None]
         )
         for group in schedule_groups:
