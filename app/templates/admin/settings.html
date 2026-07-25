@@ -250,7 +250,7 @@
         </div>
     </form>
 
-    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="ics-form-title"
+    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="ics-form-title" class="mb-4">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="section" value="ics">
         <div class="card card-sm bg-base-100 shadow-md">
