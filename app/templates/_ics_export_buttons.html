@@ -22,9 +22,18 @@
     {% if show_all %}
     {% set modal_id = "ics-modal-" ~ resource_type ~ "-all" %}
     {% set url = (public_base_url or request.host_url.rstrip('/')) ~ current_user.get_ics_export_url(resource_type, 'all') %}
+    {# "tous"/"toutes" agrees with resource_name's gender - astreintes is
+       feminine (shifts/congés are masculine), can't be substituted into
+       one generic string without breaking that agreement. #}
+    {% if resource_type == 'oncall' %}
+    {% set label = _("Exporter toutes les %(resource_name)s", resource_name=resource_name) %}
+    {% set label_aria = _("Exporter toutes les %(resource_name)s au format iCalendar", resource_name=resource_name) %}
+    {% else %}
     {% set label = _("Exporter tous les %(resource_name)s", resource_name=resource_name) %}
+    {% set label_aria = _("Exporter tous les %(resource_name)s au format iCalendar", resource_name=resource_name) %}
+    {% endif %}
     <label for="{{ modal_id }}" class="btn btn-success"
-           aria-label="{{ _("Exporter tous les %(resource_name)s au format iCalendar", resource_name=resource_name) }}"
+           aria-label="{{ label_aria }}"
            title="{{ label }}">
         <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; {{ label }}
     </label>

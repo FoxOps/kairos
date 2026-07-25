@@ -80,7 +80,7 @@
 
                 <!-- OnCall URLs -->
                 <div class="mb-4">
-                    <label class="label">{{ _("URL Astreintes (Tous)") }}</label>
+                    <label class="label">{{ _("URL Astreintes (Toutes)") }}</label>
                     <div class="join w-full">
                         <input class="input join-item flex-1" type="text"
                                value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('oncall', 'all') }}"
