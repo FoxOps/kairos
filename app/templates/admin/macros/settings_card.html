@@ -16,7 +16,7 @@
         own responsibility to keep it safe) + optional description + the
         caller's own fieldset content + the standard save button.
 
-    settings_section(title, icon, open=True)
+    settings_section(title, icon, open=False)
         The checkbox-driven daisyUI collapse-arrow wrapper (same markup
         as admin/automation/dashboard.html's help panel) grouping several
         settings_form_card calls under one named category.
@@ -59,7 +59,7 @@
 </form>
 {% endmacro %}
 
-{% macro settings_section(title, icon, open=True) %}
+{% macro settings_section(title, icon, open=False) %}
 <div class="collapse collapse-arrow bg-base-200/50 mb-4">
     <input type="checkbox" aria-label="{{ _("Afficher/masquer") }} {{ title }}" {% if open %}checked{% endif %}>
     <div class="collapse-title text-lg font-semibold flex items-center gap-2">
