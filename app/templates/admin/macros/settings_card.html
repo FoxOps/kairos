@@ -1,0 +1,80 @@
+{#
+    Shared building blocks for "settings-style" admin pages: several
+    independently-submitting <form> cards, each posting its own
+    `section` value to the same view. Used by admin/settings.html and
+    admin/automation/rules.html - the only two pages in this shape.
+
+    settings_form_card(title, icon, section, action_url, group_id=none,
+                        description=none, badge_html=none)
+        Usage:
+            {% call settings_form_card(_("Espacement minimum"), "fa-arrows-left-right",
+                                        "oncall_spacing", url_for("admin.automation_rules_dashboard")) %}
+                <fieldset class="fieldset">...</fieldset>
+            {% endcall %}
+        Renders the <form> + hidden csrf_token/section (+ group_id when
+        given) + card/card-body + <h2> (+ badge_html, raw HTML, caller's
+        own responsibility to keep it safe) + optional description + the
+        caller's own fieldset content + the standard save button.
+
+    settings_section(title, icon, open=True)
+        The checkbox-driven daisyUI collapse-arrow wrapper (same markup
+        as admin/automation/dashboard.html's help panel) grouping several
+        settings_form_card calls under one named category.
+        Usage:
+            {% call settings_section(_("Shifts"), "fa-clock") %}
+                {% call settings_form_card(...) %}...{% endcall %}
+                {% call settings_form_card(...) %}...{% endcall %}
+            {% endcall %}
+
+    override_badge(is_overridden)
+        Small "Personnalisé"/"Hérité de l'organisation" chip - pass its
+        output as settings_form_card's badge_html when a Group is
+        selected (rules.html only; settings.html has no group scoping).
+#}
+
+{% macro settings_form_card(title, icon, section, action_url, group_id=none, description=none, badge_html=none) %}
+<form method="POST" action="{{ action_url }}" aria-labelledby="{{ section }}-form-title" class="mb-4">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="section" value="{{ section }}">
+    {% if group_id is not none %}
+    <input type="hidden" name="group_id" value="{{ group_id }}">
+    {% endif %}
+    <div class="card card-sm bg-base-100 shadow-md">
+        <div class="card-body gap-4">
+            <h2 class="font-semibold flex items-center gap-2" id="{{ section }}-form-title">
+                <i class="fas {{ icon }}" aria-hidden="true"></i> {{ title }}
+                {% if badge_html %}{{ badge_html }}{% endif %}
+            </h2>
+            {% if description %}
+            <p class="text-sm text-base-content/70">{{ description }}</p>
+            {% endif %}
+            {{ caller() }}
+            <div>
+                <button class="btn btn-primary btn-sm" type="submit">
+                    <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+{% endmacro %}
+
+{% macro settings_section(title, icon, open=True) %}
+<div class="collapse collapse-arrow bg-base-200/50 mb-4">
+    <input type="checkbox" aria-label="{{ _("Afficher/masquer") }} {{ title }}" {% if open %}checked{% endif %}>
+    <div class="collapse-title text-lg font-semibold flex items-center gap-2">
+        <i class="fas {{ icon }}" aria-hidden="true"></i> {{ title }}
+    </div>
+    <div class="collapse-content">
+        {{ caller() }}
+    </div>
+</div>
+{% endmacro %}
+
+{% macro override_badge(is_overridden) %}
+{% if is_overridden %}
+<span class="badge badge-info badge-sm">{{ _("Personnalisé") }}</span>
+{% else %}
+<span class="badge badge-ghost badge-sm">{{ _("Hérité de l'organisation") }}</span>
+{% endif %}
+{% endmacro %}

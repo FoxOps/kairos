@@ -92,5 +92,19 @@ class AutomationRule(BaseModel):
         db.session.commit()
         return row
 
+    @classmethod
+    def has_group_override(cls, rule_type: str, group) -> bool:
+        """True if `group` has its own enabled row for this rule type
+        (distinct from resolve_params(), which also returns a value
+        when only the org-wide default exists) - used by the admin UI
+        to show a "customized for this group" vs "inherited from the
+        organization" badge."""
+        return (
+            cls.query.filter_by(
+                rule_type=rule_type, group_id=group.id, enabled=True
+            ).first()
+            is not None
+        )
+
     def __repr__(self) -> str:
         return f"<AutomationRule {self.rule_type} group_id={self.group_id}>"

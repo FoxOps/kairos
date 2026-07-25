@@ -1,275 +1,140 @@
 {% extends "admin/base_admin.html" %}
+{% from "admin/macros/settings_card.html" import settings_form_card, settings_section %}
 
 {% block title %}{{ _("Paramètres") }} - Kairos{% endblock %}
 
 {% block admin_content %}
-<section class="p-3 md:p-4 max-w-2xl mx-auto">
+<section class="p-3 md:p-4 max-w-3xl mx-auto">
     <h1 class="text-2xl font-bold mb-4">
         <i class="fas fa-sliders" aria-hidden="true"></i> {{ _("Paramètres") }}
     </h1>
 
-    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="timezone-form-title" class="mb-4">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="section" value="timezone">
-        <div class="card card-sm bg-base-100 shadow-md">
-            <div class="card-body gap-4">
-                <h2 class="font-semibold" id="timezone-form-title"><i class="fas fa-globe" aria-hidden="true"></i> {{ _("Fuseau horaire") }}</h2>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">{{ _("Fuseau horaire par défaut de l'organisation") }}</legend>
-                    <select class="select w-full" id="default_timezone" name="default_timezone" aria-describedby="timezone-help">
-                        {% for tz in timezones %}
-                        <option value="{{ tz }}" {% if tz == default_timezone %}selected{% endif %}>{{ tz }}</option>
-                        {% endfor %}
-                    </select>
-                    <p class="text-sm text-base-content/70" id="timezone-help">
-                        {{ _("Fuseau utilisé pour interpréter les heures des shifts/astreintes et pour l'export ICS. Les utilisateurs peuvent choisir un fuseau personnel sur leur profil, ce qui n'affecte que l'affichage dans l'app, jamais le fichier ICS exporté ni l'heure réelle du shift.") }}
-                    </p>
-                </fieldset>
-                <div>
-                    <button class="btn btn-primary btn-sm" type="submit">
-                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
-                    </button>
-                </div>
-            </div>
-        </div>
-    </form>
+    {% call settings_section(_("Localisation & Format"), "fa-earth-europe") %}
+    {% call settings_form_card(_("Fuseau horaire"), "fa-globe", "timezone", url_for('admin.settings_dashboard')) %}
+    <fieldset class="fieldset">
+        <legend class="fieldset-legend">{{ _("Fuseau horaire par défaut de l'organisation") }}</legend>
+        <select class="select w-full" id="default_timezone" name="default_timezone" aria-describedby="timezone-help">
+            {% for tz in timezones %}
+            <option value="{{ tz }}" {% if tz == default_timezone %}selected{% endif %}>{{ tz }}</option>
+            {% endfor %}
+        </select>
+        <p class="text-sm text-base-content/70" id="timezone-help">
+            {{ _("Fuseau utilisé pour interpréter les heures des shifts/astreintes et pour l'export ICS. Les utilisateurs peuvent choisir un fuseau personnel sur leur profil, ce qui n'affecte que l'affichage dans l'app, jamais le fichier ICS exporté ni l'heure réelle du shift.") }}
+        </p>
+    </fieldset>
+    {% endcall %}
 
-    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="language-form-title" class="mb-4">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="section" value="language">
-        <div class="card card-sm bg-base-100 shadow-md">
-            <div class="card-body gap-4">
-                <h2 class="font-semibold" id="language-form-title"><i class="fas fa-language" aria-hidden="true"></i> {{ _("Langue") }}</h2>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">{{ _("Langue par défaut de l'organisation") }}</legend>
-                    <select class="select w-full" id="default_language" name="default_language" aria-describedby="language-help">
-                        {% for code, label in languages %}
-                        <option value="{{ code }}" {% if code == default_language %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                    <p class="text-sm text-base-content/70" id="language-help">
-                        {{ _("Langue utilisée pour l'interface et les emails de notification, quand un utilisateur n'a pas défini de préférence personnelle sur son profil.") }}
-                    </p>
-                </fieldset>
-                <div>
-                    <button class="btn btn-primary btn-sm" type="submit">
-                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
-                    </button>
-                </div>
-            </div>
-        </div>
-    </form>
+    {% call settings_form_card(_("Langue"), "fa-language", "language", url_for('admin.settings_dashboard')) %}
+    <fieldset class="fieldset">
+        <legend class="fieldset-legend">{{ _("Langue par défaut de l'organisation") }}</legend>
+        <select class="select w-full" id="default_language" name="default_language" aria-describedby="language-help">
+            {% for code, label in languages %}
+            <option value="{{ code }}" {% if code == default_language %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <p class="text-sm text-base-content/70" id="language-help">
+            {{ _("Langue utilisée pour l'interface et les emails de notification, quand un utilisateur n'a pas défini de préférence personnelle sur son profil.") }}
+        </p>
+    </fieldset>
+    {% endcall %}
 
-    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="date-format-form-title" class="mb-4">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="section" value="date_format">
-        <div class="card card-sm bg-base-100 shadow-md">
-            <div class="card-body gap-4">
-                <h2 class="font-semibold" id="date-format-form-title"><i class="fas fa-calendar-day" aria-hidden="true"></i> {{ _("Format de date") }}</h2>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">{{ _("Format de date par défaut de l'organisation") }}</legend>
-                    <select class="select w-full" id="default_date_format" name="default_date_format" aria-describedby="date-format-help">
-                        {% for pattern, sample in date_formats %}
-                        <option value="{{ pattern }}" {% if pattern == default_date_format %}selected{% endif %}>{{ sample }}</option>
-                        {% endfor %}
-                    </select>
-                    <p class="text-sm text-base-content/70" id="date-format-help">
-                        {{ _("Format utilisé pour afficher les dates, quand un utilisateur n'a pas défini de préférence personnelle sur son profil. N'affecte pas l'export ICS.") }}
-                    </p>
-                </fieldset>
-                <div>
-                    <button class="btn btn-primary btn-sm" type="submit">
-                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
-                    </button>
-                </div>
-            </div>
-        </div>
-    </form>
+    {% call settings_form_card(_("Format de date"), "fa-calendar-day", "date_format", url_for('admin.settings_dashboard')) %}
+    <fieldset class="fieldset">
+        <legend class="fieldset-legend">{{ _("Format de date par défaut de l'organisation") }}</legend>
+        <select class="select w-full" id="default_date_format" name="default_date_format" aria-describedby="date-format-help">
+            {% for pattern, sample in date_formats %}
+            <option value="{{ pattern }}" {% if pattern == default_date_format %}selected{% endif %}>{{ sample }}</option>
+            {% endfor %}
+        </select>
+        <p class="text-sm text-base-content/70" id="date-format-help">
+            {{ _("Format utilisé pour afficher les dates, quand un utilisateur n'a pas défini de préférence personnelle sur son profil. N'affecte pas l'export ICS.") }}
+        </p>
+    </fieldset>
+    {% endcall %}
 
-    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="time-format-form-title" class="mb-4">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="section" value="time_format">
-        <div class="card card-sm bg-base-100 shadow-md">
-            <div class="card-body gap-4">
-                <h2 class="font-semibold" id="time-format-form-title"><i class="fas fa-clock" aria-hidden="true"></i> {{ _("Format d'heure") }}</h2>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">{{ _("Format d'heure par défaut de l'organisation") }}</legend>
-                    <select class="select w-full" id="default_time_format" name="default_time_format" aria-describedby="time-format-help">
-                        {% for pattern, sample in time_formats %}
-                        <option value="{{ pattern }}" {% if pattern == default_time_format %}selected{% endif %}>{{ sample }}</option>
-                        {% endfor %}
-                    </select>
-                    <p class="text-sm text-base-content/70" id="time-format-help">
-                        {{ _("Format utilisé pour afficher les heures, quand un utilisateur n'a pas défini de préférence personnelle sur son profil. N'affecte pas l'export ICS.") }}
-                    </p>
-                </fieldset>
-                <div>
-                    <button class="btn btn-primary btn-sm" type="submit">
-                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
-                    </button>
-                </div>
-            </div>
-        </div>
-    </form>
+    {% call settings_form_card(_("Format d'heure"), "fa-clock", "time_format", url_for('admin.settings_dashboard')) %}
+    <fieldset class="fieldset">
+        <legend class="fieldset-legend">{{ _("Format d'heure par défaut de l'organisation") }}</legend>
+        <select class="select w-full" id="default_time_format" name="default_time_format" aria-describedby="time-format-help">
+            {% for pattern, sample in time_formats %}
+            <option value="{{ pattern }}" {% if pattern == default_time_format %}selected{% endif %}>{{ sample }}</option>
+            {% endfor %}
+        </select>
+        <p class="text-sm text-base-content/70" id="time-format-help">
+            {{ _("Format utilisé pour afficher les heures, quand un utilisateur n'a pas défini de préférence personnelle sur son profil. N'affecte pas l'export ICS.") }}
+        </p>
+    </fieldset>
+    {% endcall %}
+    {% endcall %}
 
-    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="general-form-title" class="mb-4">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="section" value="general">
-        <div class="card card-sm bg-base-100 shadow-md">
-            <div class="card-body gap-4">
-                <h2 class="font-semibold" id="general-form-title"><i class="fas fa-link" aria-hidden="true"></i> {{ _("URL publique") }}</h2>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">{{ _("URL publique de l'application") }}</legend>
-                    <input class="input w-full" type="text" id="public_base_url" name="public_base_url"
-                           value="{{ public_base_url or '' }}" placeholder="https://schedule.example.com"
-                           aria-describedby="public-base-url-help">
-                    <p class="text-sm text-base-content/70" id="public-base-url-help">
-                        {{ _("Utilisée pour générer les liens absolus (abonnements ICS). Laisser vide pour utiliser l'URL de la requête entrante.") }}
-                    </p>
-                </fieldset>
-                <div>
-                    <button class="btn btn-primary btn-sm" type="submit">
-                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
-                    </button>
-                </div>
-            </div>
-        </div>
-    </form>
+    {% call settings_section(_("Général"), "fa-link") %}
+    {% call settings_form_card(_("URL publique"), "fa-link", "general", url_for('admin.settings_dashboard')) %}
+    <fieldset class="fieldset">
+        <legend class="fieldset-legend">{{ _("URL publique de l'application") }}</legend>
+        <input class="input w-full" type="text" id="public_base_url" name="public_base_url"
+               value="{{ public_base_url or '' }}" placeholder="https://schedule.example.com"
+               aria-describedby="public-base-url-help">
+        <p class="text-sm text-base-content/70" id="public-base-url-help">
+            {{ _("Utilisée pour générer les liens absolus (abonnements ICS). Laisser vide pour utiliser l'URL de la requête entrante.") }}
+        </p>
+    </fieldset>
+    {% endcall %}
 
-    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="pagination-form-title" class="mb-4">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="section" value="pagination">
-        <div class="card card-sm bg-base-100 shadow-md">
-            <div class="card-body gap-4">
-                <h2 class="font-semibold" id="pagination-form-title"><i class="fas fa-list-ol" aria-hidden="true"></i> {{ _("Pagination") }}</h2>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">{{ _("Éléments par page") }}</legend>
-                    <input class="input w-full" type="number" min="1" id="items_per_page" name="items_per_page" value="{{ items_per_page }}">
-                </fieldset>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">{{ _("Maximum par page") }}</legend>
-                    <input class="input w-full" type="number" min="1" id="max_per_page" name="max_per_page" value="{{ max_per_page }}">
-                </fieldset>
-                <div>
-                    <button class="btn btn-primary btn-sm" type="submit">
-                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
-                    </button>
-                </div>
-            </div>
-        </div>
-    </form>
+    {% call settings_form_card(_("Pagination"), "fa-list-ol", "pagination", url_for('admin.settings_dashboard')) %}
+    <fieldset class="fieldset">
+        <legend class="fieldset-legend">{{ _("Éléments par page") }}</legend>
+        <input class="input w-full" type="number" min="1" id="items_per_page" name="items_per_page" value="{{ items_per_page }}">
+    </fieldset>
+    <fieldset class="fieldset">
+        <legend class="fieldset-legend">{{ _("Maximum par page") }}</legend>
+        <input class="input w-full" type="number" min="1" id="max_per_page" name="max_per_page" value="{{ max_per_page }}">
+    </fieldset>
+    {% endcall %}
+    {% endcall %}
 
-    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="notifications-form-title" class="mb-4">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="section" value="notifications">
-        <div class="card card-sm bg-base-100 shadow-md">
-            <div class="card-body gap-4">
-                <h2 class="font-semibold" id="notifications-form-title"><i class="fas fa-bell" aria-hidden="true"></i> {{ _("Notifications par email") }}</h2>
-                <div>
-                    <label class="label cursor-pointer justify-start gap-2" for="notifications_enabled">
-                        <input type="checkbox" class="checkbox" id="notifications_enabled" name="notifications_enabled" {% if notifications_enabled %}checked{% endif %}>
-                        <span>{{ _("Activer les rappels hebdomadaires par email (shifts + astreintes)") }}</span>
-                    </label>
-                </div>
-                <div>
-                    <button class="btn btn-primary btn-sm" type="submit">
-                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
-                    </button>
-                </div>
-            </div>
-        </div>
-    </form>
+    {% call settings_section(_("Notifications & Sauvegardes"), "fa-bell") %}
+    {% call settings_form_card(_("Notifications par email"), "fa-bell", "notifications", url_for('admin.settings_dashboard')) %}
+    <div>
+        <label class="label cursor-pointer justify-start gap-2" for="notifications_enabled">
+            <input type="checkbox" class="checkbox" id="notifications_enabled" name="notifications_enabled" {% if notifications_enabled %}checked{% endif %}>
+            <span>{{ _("Activer les rappels hebdomadaires par email (shifts + astreintes)") }}</span>
+        </label>
+    </div>
+    {% endcall %}
 
-    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="backups-form-title" class="mb-4">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="section" value="backups">
-        <div class="card card-sm bg-base-100 shadow-md">
-            <div class="card-body gap-4">
-                <h2 class="font-semibold" id="backups-form-title"><i class="fas fa-database" aria-hidden="true"></i> {{ _("Sauvegardes") }}</h2>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">{{ _("Rétention (jours)") }}</legend>
-                    <input class="input w-full" type="number" min="1" id="backup_retention_days" name="backup_retention_days" value="{{ backup_retention_days }}">
-                </fieldset>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">{{ _("Nombre maximum de sauvegardes") }}</legend>
-                    <input class="input w-full" type="number" min="1" id="backup_max_backups" name="backup_max_backups" value="{{ backup_max_backups }}">
-                </fieldset>
-                <p class="text-sm text-base-content/70">
-                    {{ _("S'applique uniquement aux actions déclenchées depuis l'UI admin (Sauvegardes). La tâche planifiée (cron) continue d'utiliser les variables d'environnement.") }}
-                </p>
-                <div>
-                    <button class="btn btn-primary btn-sm" type="submit">
-                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
-                    </button>
-                </div>
-            </div>
-        </div>
-    </form>
+    {% call settings_form_card(_("Sauvegardes"), "fa-database", "backups", url_for('admin.settings_dashboard'), description=_("S'applique uniquement aux actions déclenchées depuis l'UI admin (Sauvegardes). La tâche planifiée (cron) continue d'utiliser les variables d'environnement.")) %}
+    <fieldset class="fieldset">
+        <legend class="fieldset-legend">{{ _("Rétention (jours)") }}</legend>
+        <input class="input w-full" type="number" min="1" id="backup_retention_days" name="backup_retention_days" value="{{ backup_retention_days }}">
+    </fieldset>
+    <fieldset class="fieldset">
+        <legend class="fieldset-legend">{{ _("Nombre maximum de sauvegardes") }}</legend>
+        <input class="input w-full" type="number" min="1" id="backup_max_backups" name="backup_max_backups" value="{{ backup_max_backups }}">
+    </fieldset>
+    {% endcall %}
+    {% endcall %}
 
-    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="audit-form-title" class="mb-4">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="section" value="audit">
-        <div class="card card-sm bg-base-100 shadow-md">
-            <div class="card-body gap-4">
-                <h2 class="font-semibold" id="audit-form-title"><i class="fas fa-clock-rotate-left" aria-hidden="true"></i> {{ _("Audit trail") }}</h2>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">{{ _("Rétention (jours)") }}</legend>
-                    <input class="input w-full" type="number" min="1" id="audit_log_retention_days" name="audit_log_retention_days" value="{{ audit_log_retention_days or '' }}" placeholder="{{ _("Non configuré") }}">
-                </fieldset>
-                <p class="text-sm text-base-content/70">
-                    {{ _("Tant qu'aucune valeur n'est enregistrée ici, aucune purge n'est effectuée : toutes les entrées de l'historique sont conservées indéfiniment.") }}
-                </p>
-                <div>
-                    <button class="btn btn-primary btn-sm" type="submit">
-                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
-                    </button>
-                </div>
-            </div>
-        </div>
-    </form>
+    {% call settings_section(_("Rétention & Audit"), "fa-clock-rotate-left") %}
+    {% call settings_form_card(_("Audit trail"), "fa-clock-rotate-left", "audit", url_for('admin.settings_dashboard'), description=_("Tant qu'aucune valeur n'est enregistrée ici, aucune purge n'est effectuée : toutes les entrées de l'historique sont conservées indéfiniment.")) %}
+    <fieldset class="fieldset">
+        <legend class="fieldset-legend">{{ _("Rétention (jours)") }}</legend>
+        <input class="input w-full" type="number" min="1" id="audit_log_retention_days" name="audit_log_retention_days" value="{{ audit_log_retention_days or '' }}" placeholder="{{ _("Non configuré") }}">
+    </fieldset>
+    {% endcall %}
 
-    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="schedule-form-title" class="mb-4">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="section" value="schedule">
-        <div class="card card-sm bg-base-100 shadow-md">
-            <div class="card-body gap-4">
-                <h2 class="font-semibold" id="schedule-form-title"><i class="fas fa-broom" aria-hidden="true"></i> {{ _("Historique du planning") }}</h2>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">{{ _("Rétention (jours)") }}</legend>
-                    <input class="input w-full" type="number" min="0" id="schedule_retention_days" name="schedule_retention_days" value="{{ schedule_retention_days }}">
-                </fieldset>
-                <p class="text-sm text-base-content/70">
-                    {{ _("Les shifts et astreintes passés depuis plus longtemps que cette durée sont supprimés automatiquement (tâche planifiée quotidienne). 0 = ne jamais purger.") }}
-                </p>
-                <div>
-                    <button class="btn btn-primary btn-sm" type="submit">
-                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
-                    </button>
-                </div>
-            </div>
-        </div>
-    </form>
+    {% call settings_form_card(_("Historique du planning"), "fa-broom", "schedule", url_for('admin.settings_dashboard'), description=_("Les shifts et astreintes passés depuis plus longtemps que cette durée sont supprimés automatiquement (tâche planifiée quotidienne). 0 = ne jamais purger.")) %}
+    <fieldset class="fieldset">
+        <legend class="fieldset-legend">{{ _("Rétention (jours)") }}</legend>
+        <input class="input w-full" type="number" min="0" id="schedule_retention_days" name="schedule_retention_days" value="{{ schedule_retention_days }}">
+    </fieldset>
+    {% endcall %}
 
-    <form method="POST" action="{{ url_for('admin.settings_dashboard') }}" aria-labelledby="ics-form-title" class="mb-4">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="section" value="ics">
-        <div class="card card-sm bg-base-100 shadow-md">
-            <div class="card-body gap-4">
-                <h2 class="font-semibold" id="ics-form-title"><i class="fas fa-calendar-check" aria-hidden="true"></i> {{ _("Export ICS") }}</h2>
-                <fieldset class="fieldset">
-                    <legend class="fieldset-legend">{{ _("Expiration du jeton ICS (jours)") }}</legend>
-                    <input class="input w-full" type="number" min="1" id="ics_token_expiry_days" name="ics_token_expiry_days" value="{{ ics_token_expiry_days }}">
-                </fieldset>
-                <p class="text-sm text-base-content/70">
-                    {{ _("Réglage actuellement sans effet : aucune expiration n'est encore appliquée aux jetons ICS existants. Conservé pour cohérence, en attendant une éventuelle implémentation future.") }}
-                </p>
-                <div>
-                    <button class="btn btn-primary btn-sm" type="submit">
-                        <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
-                    </button>
-                </div>
-            </div>
-        </div>
-    </form>
+    {% call settings_form_card(_("Export ICS"), "fa-calendar-check", "ics", url_for('admin.settings_dashboard'), description=_("Réglage actuellement sans effet : aucune expiration n'est encore appliquée aux jetons ICS existants. Conservé pour cohérence, en attendant une éventuelle implémentation future.")) %}
+    <fieldset class="fieldset">
+        <legend class="fieldset-legend">{{ _("Expiration du jeton ICS (jours)") }}</legend>
+        <input class="input w-full" type="number" min="1" id="ics_token_expiry_days" name="ics_token_expiry_days" value="{{ ics_token_expiry_days }}">
+    </fieldset>
+    {% endcall %}
+    {% endcall %}
 </section>
 {% endblock %}

@@ -294,6 +294,37 @@ class TestGroupScopedRuleEditing:
         }
 
 
+class TestOverrideBadges:
+    def test_shows_personalized_badge_for_an_overridden_rule(
+        self, logged_in_client, test_group
+    ):
+        from app.models import AutomationRule
+
+        AutomationRule.set("oncall_spacing", {"min_spacing_weeks": 4}, group=test_group)
+
+        response = logged_in_client.get(
+            f"/admin/automation/rules?group_id={test_group.id}"
+        )
+        assert response.status_code == 200
+        assert "Personnalisé" in response.data.decode()
+
+    def test_shows_inherited_badge_for_a_non_overridden_rule(
+        self, logged_in_client, test_group
+    ):
+        response = logged_in_client.get(
+            f"/admin/automation/rules?group_id={test_group.id}"
+        )
+        assert response.status_code == 200
+        assert "Hérité de l'organisation" in response.data.decode()
+
+    def test_no_badges_shown_on_the_org_wide_view(self, logged_in_client):
+        response = logged_in_client.get("/admin/automation/rules")
+        assert response.status_code == 200
+        body = response.data.decode()
+        assert "Personnalisé" not in body
+        assert "Hérité de l'organisation" not in body
+
+
 class TestShiftSlotsSection:
     def test_valid_ids_persist(self, logged_in_client, test_shift_type):
         response = logged_in_client.post(

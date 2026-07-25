@@ -23,12 +23,13 @@ from flask import flash, redirect, render_template, request, url_for
 from flask_babel import gettext as _
 
 from app.auth.decorators import admin_required
-from app.models import Group
+from app.models import AutomationRule, Group
 from app.repositories.user_repository import GroupRepository
 from app.routes.admin import admin_bp
 from app.services import AutomationRuleAdminService, SettingsService
 from app.services.shift_type_service import ShiftTypeService
 from app.utils.automation.rules import (
+    RULE_TYPES,
     MandatoryShiftRule,
     OnCallAnchorRule,
     OnCallShiftOverlapRule,
@@ -184,11 +185,20 @@ def automation_rules_dashboard():
         shift_type.id: StaffingLimitsRule.get_limits(shift_type.id, group=group)
         for shift_type in shift_types
     }
+    overrides = (
+        {
+            rule_type: AutomationRule.has_group_override(rule_type, group)
+            for rule_type in RULE_TYPES
+        }
+        if group is not None
+        else {}
+    )
 
     return render_template(
         "admin/automation/rules.html",
         groups=groups,
         selected_group=group,
+        overrides=overrides,
         shift_types=shift_types,
         weekday_choices=weekday_choices,
         shift_slots=ShiftSlotsRule.resolve(group=group),

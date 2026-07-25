@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-25 04:38+0200\n"
+"POT-Creation-Date: 2026-07-25 06:55+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: en <LL@li.org>\n"
@@ -135,35 +135,35 @@ msgstr ""
 "Full regeneration completed for the period from %(strftime)s to "
 "%(strftime1)s"
 
-#: app/routes/admin_automation_rules_routes.py:43
+#: app/routes/admin_automation_rules_routes.py:44
 msgid "Lundi"
 msgstr "Monday"
 
-#: app/routes/admin_automation_rules_routes.py:44
+#: app/routes/admin_automation_rules_routes.py:45
 msgid "Mardi"
 msgstr "Tuesday"
 
-#: app/routes/admin_automation_rules_routes.py:45
+#: app/routes/admin_automation_rules_routes.py:46
 msgid "Mercredi"
 msgstr "Wednesday"
 
-#: app/routes/admin_automation_rules_routes.py:46
+#: app/routes/admin_automation_rules_routes.py:47
 msgid "Jeudi"
 msgstr "Thursday"
 
-#: app/routes/admin_automation_rules_routes.py:47
+#: app/routes/admin_automation_rules_routes.py:48
 msgid "Vendredi"
 msgstr "Friday"
 
-#: app/routes/admin_automation_rules_routes.py:48
+#: app/routes/admin_automation_rules_routes.py:49
 msgid "Samedi"
 msgstr "Saturday"
 
-#: app/routes/admin_automation_rules_routes.py:49
+#: app/routes/admin_automation_rules_routes.py:50
 msgid "Dimanche"
 msgstr "Sunday"
 
-#: app/routes/admin_automation_rules_routes.py:62
+#: app/routes/admin_automation_rules_routes.py:63
 #: app/routes/admin_notification_target_routes.py:39
 #: app/routes/admin_settings_routes.py:45
 #: app/routes/admin_settings_routes.py:53
@@ -180,61 +180,61 @@ msgstr "Sunday"
 msgid "Erreur : %(error)s"
 msgstr "Error: %(error)s"
 
-#: app/routes/admin_automation_rules_routes.py:84
+#: app/routes/admin_automation_rules_routes.py:85
 msgid "Erreur : sélection de créneau invalide"
 msgstr "Error: invalid slot selection"
 
-#: app/routes/admin_automation_rules_routes.py:89
+#: app/routes/admin_automation_rules_routes.py:90
 msgid "Créneaux de shift enregistrés"
 msgstr "Shift slots saved"
 
-#: app/routes/admin_automation_rules_routes.py:94
+#: app/routes/admin_automation_rules_routes.py:95
 msgid "Erreur : jour invalide"
 msgstr "Error: invalid day"
 
-#: app/routes/admin_automation_rules_routes.py:99
+#: app/routes/admin_automation_rules_routes.py:100
 msgid "Définition du week-end enregistrée"
 msgstr "Weekend definition saved"
 
-#: app/routes/admin_automation_rules_routes.py:104
-#: app/routes/admin_automation_rules_routes.py:116
-#: app/routes/admin_automation_rules_routes.py:148
+#: app/routes/admin_automation_rules_routes.py:105
+#: app/routes/admin_automation_rules_routes.py:117
+#: app/routes/admin_automation_rules_routes.py:149
 msgid "Erreur : valeur invalide"
 msgstr "Error: invalid value"
 
-#: app/routes/admin_automation_rules_routes.py:109
+#: app/routes/admin_automation_rules_routes.py:110
 msgid "Espacement des astreintes enregistré"
 msgstr "On-call spacing saved"
 
-#: app/routes/admin_automation_rules_routes.py:121
+#: app/routes/admin_automation_rules_routes.py:122
 msgid "Ancrage de la semaine d'astreinte enregistré"
 msgstr "On-call week anchor saved"
 
-#: app/routes/admin_automation_rules_routes.py:131
+#: app/routes/admin_automation_rules_routes.py:132
 msgid "Effectifs enregistrés"
 msgstr "Staffing limits saved"
 
-#: app/routes/admin_automation_rules_routes.py:138
+#: app/routes/admin_automation_rules_routes.py:139
 msgid "Erreur : sélection invalide"
 msgstr "Error: invalid selection"
 
-#: app/routes/admin_automation_rules_routes.py:143
+#: app/routes/admin_automation_rules_routes.py:144
 msgid "Créneaux obligatoires enregistrés"
 msgstr "Mandatory slots saved"
 
-#: app/routes/admin_automation_rules_routes.py:153
+#: app/routes/admin_automation_rules_routes.py:154
 msgid "Repos après astreinte enregistré"
 msgstr "Rest after on-call saved"
 
-#: app/routes/admin_automation_rules_routes.py:160
+#: app/routes/admin_automation_rules_routes.py:161
 msgid "Règle de chevauchement enregistrée"
 msgstr "Overlap rule saved"
 
-#: app/routes/admin_automation_rules_routes.py:165
+#: app/routes/admin_automation_rules_routes.py:166
 msgid "Mode de planification des shifts enregistré"
 msgstr "Shift scheduling mode saved"
 
-#: app/routes/admin_automation_rules_routes.py:170
+#: app/routes/admin_automation_rules_routes.py:171
 msgid "Mode de planification des astreintes enregistré"
 msgstr "On-call scheduling mode saved"
 
@@ -1618,7 +1618,7 @@ msgid "Exporter mes %(resource_name)s"
 msgstr "Export my %(resource_name)s"
 
 #: app/templates/_pagination.html:22 app/templates/admin/audit_log.html:117
-#: app/templates/admin/settings.html:144
+#: app/templates/admin/settings.html:83
 msgid "Pagination"
 msgstr "Pagination"
 
@@ -1639,7 +1639,7 @@ msgstr "Next page"
 msgid "Nombre d'éléments par page"
 msgstr "Number of items per page"
 
-#: app/templates/_pagination.html:40 app/templates/admin/settings.html:146
+#: app/templates/_pagination.html:40 app/templates/admin/settings.html:85
 msgid "Éléments par page"
 msgstr "Items per page"
 
@@ -1730,25 +1730,13 @@ msgstr "Save the leave"
 #: app/templates/admin/add_group.html:32
 #: app/templates/admin/add_shift_type.html:41
 #: app/templates/admin/add_user.html:61
-#: app/templates/admin/automation/rules.html:65
-#: app/templates/admin/automation/rules.html:87
-#: app/templates/admin/automation/rules.html:130
-#: app/templates/admin/automation/rules.html:157
-#: app/templates/admin/automation/rules.html:177
-#: app/templates/admin/automation/rules.html:209
-#: app/templates/admin/automation/rules.html:246
-#: app/templates/admin/automation/rules.html:275
-#: app/templates/admin/automation/rules.html:295
-#: app/templates/admin/automation/rules.html:317
+#: app/templates/admin/automation/rules.html:59
+#: app/templates/admin/automation/rules.html:73
 #: app/templates/admin/edit_group.html:35
 #: app/templates/admin/edit_service_account.html:38
 #: app/templates/admin/edit_shift_type.html:41
-#: app/templates/admin/edit_user.html:56 app/templates/admin/settings.html:30
-#: app/templates/admin/settings.html:56 app/templates/admin/settings.html:82
-#: app/templates/admin/settings.html:108 app/templates/admin/settings.html:132
-#: app/templates/admin/settings.html:155 app/templates/admin/settings.html:176
-#: app/templates/admin/settings.html:202 app/templates/admin/settings.html:224
-#: app/templates/admin/settings.html:246 app/templates/admin/settings.html:268
+#: app/templates/admin/edit_user.html:56
+#: app/templates/admin/macros/settings_card.html:54
 msgid "Enregistrer"
 msgstr "Save"
 
@@ -1824,7 +1812,7 @@ msgid "Sélectionnez l'utilisateur pour ce shift"
 msgstr "Select the user for this shift"
 
 #: app/templates/add_shift.html:27
-#: app/templates/admin/automation/rules.html:228
+#: app/templates/admin/automation/rules.html:129
 #: app/templates/schedule.html:55 app/utils/helpers/js_translations.py:42
 msgid "Type de shift"
 msgstr "Shift type"
@@ -1912,6 +1900,8 @@ msgstr "Dashboard"
 
 #: app/templates/admin/automation/full_dry_run.html:61
 #: app/templates/admin/automation/full_dry_run.html:141
+#: app/templates/admin/automation/rules.html:52
+#: app/templates/admin/automation/rules.html:82
 #: app/templates/admin/dashboard.html:32 app/templates/base.html:90
 #: app/templates/index.html:135
 msgid "Shifts"
@@ -1919,6 +1909,8 @@ msgstr "Shifts"
 
 #: app/templates/admin/automation/full_dry_run.html:24
 #: app/templates/admin/automation/full_dry_run.html:127
+#: app/templates/admin/automation/rules.html:66
+#: app/templates/admin/automation/rules.html:161
 #: app/templates/admin/dashboard.html:54 app/templates/base.html:91
 #: app/templates/dashboard.html:28 app/templates/index.html:136
 #: app/templates/oncall.html:3 app/templates/oncall.html:8
@@ -1995,7 +1987,7 @@ msgstr "Users"
 #: app/templates/admin/automation/dashboard.html:11
 #: app/templates/admin/automation/full.html:12
 #: app/templates/admin/automation/full_dry_run.html:8
-#: app/templates/admin/automation/rules.html:10
+#: app/templates/admin/automation/rules.html:11
 #: app/templates/admin/dashboard.html:87 app/templates/base.html:247
 msgid "Automatisation"
 msgstr "Automation"
@@ -2572,7 +2564,7 @@ msgid "Date"
 msgstr "Date"
 
 #: app/templates/admin/add_shift_type.html:28
-#: app/templates/admin/automation/rules.html:200
+#: app/templates/admin/automation/rules.html:179
 #: app/templates/admin/edit_shift_type.html:28
 #: app/templates/admin/shift_types.html:33 app/templates/schedule.html:57
 msgid "Heure de début"
@@ -3045,10 +3037,8 @@ msgstr "E.g.: jean.dupont@exemple.com"
 msgid "Exemple : jean.dupont@exemple.com"
 msgstr "Example: john.smith@example.com"
 
-#: app/templates/admin/add_user.html:41
-#: app/templates/admin/automation/rules.html:33
-#: app/templates/admin/edit_user.html:28 app/templates/admin/users.html:40
-#: app/templates/auth/profile.html:24
+#: app/templates/admin/add_user.html:41 app/templates/admin/edit_user.html:28
+#: app/templates/admin/users.html:40 app/templates/auth/profile.html:24
 msgid "Groupe"
 msgstr "Group"
 
@@ -3098,7 +3088,7 @@ msgstr "Change history"
 #: app/templates/admin/automation/dashboard.html:5
 #: app/templates/admin/automation/full.html:9
 #: app/templates/admin/automation/full_dry_run.html:5
-#: app/templates/admin/automation/rules.html:7
+#: app/templates/admin/automation/rules.html:8
 #: app/templates/admin/backups/dashboard.html:5
 #: app/templates/admin/groups.html:7
 #: app/templates/admin/notification_targets.html:7
@@ -3291,7 +3281,7 @@ msgstr "Configure"
 
 #: app/templates/admin/backups/dashboard.html:8
 #: app/templates/admin/backups/dashboard.html:11
-#: app/templates/admin/dashboard.html:98 app/templates/admin/settings.html:188
+#: app/templates/admin/dashboard.html:98 app/templates/admin/settings.html:105
 msgid "Sauvegardes"
 msgstr "Backups"
 
@@ -3305,7 +3295,7 @@ msgid "Gérer"
 msgstr "Manage"
 
 #: app/templates/admin/dashboard.html:110
-#: app/templates/admin/settings.html:214
+#: app/templates/admin/settings.html:118
 msgid "Audit trail"
 msgstr "Audit trail"
 
@@ -3341,8 +3331,8 @@ msgstr "Service accounts for third-party integrations"
 msgid "Gérer les comptes de service"
 msgstr "Manage service accounts"
 
-#: app/templates/admin/dashboard.html:142 app/templates/admin/settings.html:3
-#: app/templates/admin/settings.html:8
+#: app/templates/admin/dashboard.html:142 app/templates/admin/settings.html:4
+#: app/templates/admin/settings.html:9
 msgid "Paramètres"
 msgstr "Settings"
 
@@ -3768,16 +3758,20 @@ msgstr "Permanently delete the account"
 msgid "Aucun compte de service configuré."
 msgstr "No service account configured."
 
-#: app/templates/admin/settings.html:16
+#: app/templates/admin/settings.html:12
+msgid "Localisation & Format"
+msgstr "Localization & Format"
+
+#: app/templates/admin/settings.html:13
 #: app/templates/auth/profile_settings.html:16
 msgid "Fuseau horaire"
 msgstr "Timezone"
 
-#: app/templates/admin/settings.html:18
+#: app/templates/admin/settings.html:15
 msgid "Fuseau horaire par défaut de l'organisation"
 msgstr "Organization's default timezone"
 
-#: app/templates/admin/settings.html:25
+#: app/templates/admin/settings.html:22
 msgid ""
 "Fuseau utilisé pour interpréter les heures des shifts/astreintes et pour "
 "l'export ICS. Les utilisateurs peuvent choisir un fuseau personnel sur leur "
@@ -3788,16 +3782,16 @@ msgstr ""
 " choose a personal timezone in their profile, which only affects the display"
 " in the app, never the exported ICS file nor the actual shift time."
 
-#: app/templates/admin/settings.html:42
+#: app/templates/admin/settings.html:27
 #: app/templates/auth/profile_settings.html:29
 msgid "Langue"
 msgstr "Language"
 
-#: app/templates/admin/settings.html:44
+#: app/templates/admin/settings.html:29
 msgid "Langue par défaut de l'organisation"
 msgstr "Organization's default language"
 
-#: app/templates/admin/settings.html:51
+#: app/templates/admin/settings.html:36
 msgid ""
 "Langue utilisée pour l'interface et les emails de notification, quand un "
 "utilisateur n'a pas défini de préférence personnelle sur son profil."
@@ -3805,16 +3799,16 @@ msgstr ""
 "Language used for the interface and notification emails, when a user has not"
 " set a personal preference in their profile."
 
-#: app/templates/admin/settings.html:68
+#: app/templates/admin/settings.html:41
 #: app/templates/auth/profile_settings.html:39
 msgid "Format de date"
 msgstr "Date format"
 
-#: app/templates/admin/settings.html:70
+#: app/templates/admin/settings.html:43
 msgid "Format de date par défaut de l'organisation"
 msgstr "Organization's default date format"
 
-#: app/templates/admin/settings.html:77
+#: app/templates/admin/settings.html:50
 msgid ""
 "Format utilisé pour afficher les dates, quand un utilisateur n'a pas défini "
 "de préférence personnelle sur son profil. N'affecte pas l'export ICS."
@@ -3822,16 +3816,16 @@ msgstr ""
 "Format used to display dates, when a user has not set a personal preference "
 "in their profile. Does not affect ICS export."
 
-#: app/templates/admin/settings.html:94
+#: app/templates/admin/settings.html:55
 #: app/templates/auth/profile_settings.html:49
 msgid "Format d'heure"
 msgstr "Time format"
 
-#: app/templates/admin/settings.html:96
+#: app/templates/admin/settings.html:57
 msgid "Format d'heure par défaut de l'organisation"
 msgstr "Organization's default time format"
 
-#: app/templates/admin/settings.html:103
+#: app/templates/admin/settings.html:64
 msgid ""
 "Format utilisé pour afficher les heures, quand un utilisateur n'a pas défini"
 " de préférence personnelle sur son profil. N'affecte pas l'export ICS."
@@ -3839,15 +3833,19 @@ msgstr ""
 "Format used to display times, when a user has not set a personal preference "
 "in their profile. Does not affect ICS export."
 
-#: app/templates/admin/settings.html:120
+#: app/templates/admin/settings.html:70
+msgid "Général"
+msgstr "General"
+
+#: app/templates/admin/settings.html:71
 msgid "URL publique"
 msgstr "Public URL"
 
-#: app/templates/admin/settings.html:122
+#: app/templates/admin/settings.html:73
 msgid "URL publique de l'application"
 msgstr "Application's public URL"
 
-#: app/templates/admin/settings.html:127
+#: app/templates/admin/settings.html:78
 msgid ""
 "Utilisée pour générer les liens absolus (abonnements ICS). Laisser vide pour"
 " utiliser l'URL de la requête entrante."
@@ -3855,30 +3853,25 @@ msgstr ""
 "Used to generate absolute links (ICS subscriptions). Leave empty to use the "
 "incoming request's URL."
 
-#: app/templates/admin/settings.html:150
+#: app/templates/admin/settings.html:89
 msgid "Maximum par page"
 msgstr "Maximum per page"
 
-#: app/templates/admin/settings.html:167
+#: app/templates/admin/settings.html:95
+msgid "Notifications & Sauvegardes"
+msgstr "Notifications & Backups"
+
+#: app/templates/admin/settings.html:96
 #: app/templates/auth/profile_settings.html:59
 #: app/templates/auth/profile_settings.html:77
 msgid "Notifications par email"
 msgstr "Email notifications"
 
-#: app/templates/admin/settings.html:171
+#: app/templates/admin/settings.html:100
 msgid "Activer les rappels hebdomadaires par email (shifts + astreintes)"
 msgstr "Enable weekly email reminders (shifts + on-calls)"
 
-#: app/templates/admin/settings.html:190 app/templates/admin/settings.html:216
-#: app/templates/admin/settings.html:238
-msgid "Rétention (jours)"
-msgstr "Retention (days)"
-
-#: app/templates/admin/settings.html:194
-msgid "Nombre maximum de sauvegardes"
-msgstr "Maximum number of backups"
-
-#: app/templates/admin/settings.html:198
+#: app/templates/admin/settings.html:105
 msgid ""
 "S'applique uniquement aux actions déclenchées depuis l'UI admin "
 "(Sauvegardes). La tâche planifiée (cron) continue d'utiliser les variables "
@@ -3887,11 +3880,20 @@ msgstr ""
 "Only applies to actions triggered from the admin UI (Backups). The scheduled"
 " task (cron) keeps using environment variables."
 
-#: app/templates/admin/settings.html:217
-msgid "Non configuré"
-msgstr "Not configured"
+#: app/templates/admin/settings.html:107 app/templates/admin/settings.html:120
+#: app/templates/admin/settings.html:127
+msgid "Rétention (jours)"
+msgstr "Retention (days)"
 
-#: app/templates/admin/settings.html:220
+#: app/templates/admin/settings.html:111
+msgid "Nombre maximum de sauvegardes"
+msgstr "Maximum number of backups"
+
+#: app/templates/admin/settings.html:117
+msgid "Rétention & Audit"
+msgstr "Retention & Audit"
+
+#: app/templates/admin/settings.html:118
 msgid ""
 "Tant qu'aucune valeur n'est enregistrée ici, aucune purge n'est effectuée : "
 "toutes les entrées de l'historique sont conservées indéfiniment."
@@ -3899,11 +3901,15 @@ msgstr ""
 "As long as no value is saved here, no purge happens: every history entry is "
 "kept indefinitely."
 
-#: app/templates/admin/settings.html:236
+#: app/templates/admin/settings.html:121
+msgid "Non configuré"
+msgstr "Not configured"
+
+#: app/templates/admin/settings.html:125
 msgid "Historique du planning"
 msgstr "Schedule history"
 
-#: app/templates/admin/settings.html:242
+#: app/templates/admin/settings.html:125
 msgid ""
 "Les shifts et astreintes passés depuis plus longtemps que cette durée sont "
 "supprimés automatiquement (tâche planifiée quotidienne). 0 = ne jamais "
@@ -3912,15 +3918,11 @@ msgstr ""
 "Shifts and on-calls older than this duration are automatically deleted "
 "(daily scheduled task). 0 = never purge."
 
-#: app/templates/admin/settings.html:258
+#: app/templates/admin/settings.html:132
 msgid "Export ICS"
 msgstr "ICS Export"
 
-#: app/templates/admin/settings.html:260
-msgid "Expiration du jeton ICS (jours)"
-msgstr "ICS token expiry (days)"
-
-#: app/templates/admin/settings.html:264
+#: app/templates/admin/settings.html:132
 msgid ""
 "Réglage actuellement sans effet : aucune expiration n'est encore appliquée "
 "aux jetons ICS existants. Conservé pour cohérence, en attendant une "
@@ -3928,6 +3930,10 @@ msgid ""
 msgstr ""
 "Setting currently has no effect: no expiry is yet enforced on existing ICS "
 "tokens. Kept for consistency, pending a possible future implementation."
+
+#: app/templates/admin/settings.html:134
+msgid "Expiration du jeton ICS (jours)"
+msgstr "ICS token expiry (days)"
 
 #: app/templates/admin/shift_types.html:14
 msgid "Gestion des types de shifts"
@@ -4201,8 +4207,8 @@ msgid "Lancer"
 msgstr "Launch"
 
 #: app/templates/admin/automation/dashboard.html:59
-#: app/templates/admin/automation/rules.html:3
-#: app/templates/admin/automation/rules.html:15
+#: app/templates/admin/automation/rules.html:4
+#: app/templates/admin/automation/rules.html:16
 msgid "Règles d'automatisation"
 msgstr "Automation rules"
 
@@ -4632,76 +4638,63 @@ msgstr "Confirm and save everything"
 msgid "Retour à la configuration"
 msgstr "Back to configuration"
 
-#: app/templates/admin/automation/rules.html:11
+#: app/templates/admin/automation/rules.html:12
 msgid "Règles"
 msgstr "Rules"
 
-#: app/templates/admin/automation/rules.html:19
+#: app/templates/admin/automation/rules.html:22
+msgid "Portée éditée"
+msgstr "Editing scope"
+
+#: app/templates/admin/automation/rules.html:24
+msgid "Organisation (par défaut)"
+msgstr "Organization (default)"
+
+#: app/templates/admin/automation/rules.html:30
+msgid "Afficher"
+msgstr "Show"
+
+#: app/templates/admin/automation/rules.html:34
 #, python-format
 msgid "Édition des réglages du groupe : %(name)s"
 msgstr "Editing settings for group: %(name)s"
 
-#: app/templates/admin/automation/rules.html:21
+#: app/templates/admin/automation/rules.html:36
 msgid "Édition des réglages par défaut de l'organisation"
 msgstr "Editing the organization's default settings"
 
-#: app/templates/admin/automation/rules.html:25
+#: app/templates/admin/automation/rules.html:41
 msgid ""
-"Ces réglages s'appliquent par défaut à toute l'organisation. Une valeur par "
-"défaut équivalente au comportement historique est utilisée tant qu'aucune "
-"règle n'est enregistrée ici. Sélectionnez un groupe ci-dessous pour éditer "
-"ses propres réglages à la place - ils ne prennent effet que si le mode de "
-"planification correspondant (shifts ou astreintes) est réglé sur \"Par "
-"groupe\"."
+"Une valeur par défaut équivalente au comportement historique est utilisée "
+"tant qu'aucune règle n'est enregistrée. Sélectionnez un groupe ci-dessus "
+"pour éditer ses propres réglages à la place - ils ne prennent effet que si "
+"le mode de planification correspondant (shifts ou astreintes) est réglé sur "
+"\"Par groupe\"."
 msgstr ""
-"These settings apply to the whole organization by default. A default "
-"matching the historical behavior is used until a rule is saved here. Select "
-"a group below to edit its own settings instead - they only take effect if "
-"the matching scheduling mode (shifts or on-call) is set to \"Per group\"."
+"A default matching the historical behavior is used until a rule is saved. "
+"Select a group above to edit its own settings instead - they only take "
+"effect if the matching scheduling mode (shifts or on-call) is set to \"Per "
+"group\"."
 
-#: app/templates/admin/automation/rules.html:31
-msgid "Portée éditée"
-msgstr "Editing scope"
+#: app/templates/admin/automation/rules.html:46
+msgid "Mode de planification"
+msgstr "Scheduling mode"
 
-#: app/templates/admin/automation/rules.html:35
-msgid "Organisation (par défaut)"
-msgstr "Organization (default)"
-
-#: app/templates/admin/automation/rules.html:43
-msgid "Afficher"
-msgstr "Show"
-
-#: app/templates/admin/automation/rules.html:55
-msgid "Mode de planification — Shifts"
-msgstr "Scheduling mode — Shifts"
-
-#: app/templates/admin/automation/rules.html:57
-msgid "Portée de la rotation des shifts"
-msgstr "Scope of the shift rotation"
-
-#: app/templates/admin/automation/rules.html:59
-#: app/templates/admin/automation/rules.html:81
+#: app/templates/admin/automation/rules.html:54
+#: app/templates/admin/automation/rules.html:68
 msgid "Commune (tous les groupes partagent une seule rotation)"
 msgstr "Shared (every group uses a single rotation)"
 
-#: app/templates/admin/automation/rules.html:60
-#: app/templates/admin/automation/rules.html:82
+#: app/templates/admin/automation/rules.html:55
+#: app/templates/admin/automation/rules.html:69
 msgid "Par groupe (chaque groupe a sa propre rotation)"
 msgstr "Per group (each group has its own rotation)"
 
-#: app/templates/admin/automation/rules.html:77
-msgid "Mode de planification — Astreintes"
-msgstr "Scheduling mode — On-call"
-
-#: app/templates/admin/automation/rules.html:79
-msgid "Portée de la rotation des astreintes"
-msgstr "Scope of the on-call rotation"
-
-#: app/templates/admin/automation/rules.html:100
+#: app/templates/admin/automation/rules.html:83
 msgid "Créneaux de shift"
 msgstr "Shift slots"
 
-#: app/templates/admin/automation/rules.html:102
+#: app/templates/admin/automation/rules.html:83
 msgid ""
 "Quel type de shift joue chaque rôle dans la génération automatique. Gérez "
 "les types de shift eux-mêmes sur la page \"Types de shift\"."
@@ -4709,67 +4702,47 @@ msgstr ""
 "Which shift type plays each role in automatic generation. Manage the shift "
 "types themselves on the \"Shift types\" page."
 
-#: app/templates/admin/automation/rules.html:105
+#: app/templates/admin/automation/rules.html:85
 msgid "Créneau d'astreinte"
 msgstr "On-call slot"
 
-#: app/templates/admin/automation/rules.html:113
+#: app/templates/admin/automation/rules.html:93
 msgid "Créneau de rotation"
 msgstr "Rotation slot"
 
-#: app/templates/admin/automation/rules.html:121
+#: app/templates/admin/automation/rules.html:101
 msgid "Créneau par défaut"
 msgstr "Default slot"
 
-#: app/templates/admin/automation/rules.html:143
+#: app/templates/admin/automation/rules.html:110
 msgid "Définition du week-end"
 msgstr "Weekend definition"
 
-#: app/templates/admin/automation/rules.html:145
+#: app/templates/admin/automation/rules.html:112
 msgid "Jours considérés comme week-end"
 msgstr "Days considered as weekend"
 
-#: app/templates/admin/automation/rules.html:170
-msgid "Espacement minimum entre astreintes"
-msgstr "Minimum spacing between on-calls"
-
-#: app/templates/admin/automation/rules.html:172
-msgid "Nombre de semaines minimum entre deux astreintes pour la même personne"
-msgstr "Minimum number of weeks between two on-calls for the same person"
-
-#: app/templates/admin/automation/rules.html:190
-msgid "Ancrage de la semaine d'astreinte"
-msgstr "On-call week anchor"
-
-#: app/templates/admin/automation/rules.html:192
-msgid "Jour de début"
-msgstr "Start day"
-
-#: app/templates/admin/automation/rules.html:204
-msgid "Heure de fin (une semaine plus tard)"
-msgstr "End hour (one week later)"
-
-#: app/templates/admin/automation/rules.html:222
+#: app/templates/admin/automation/rules.html:124
 msgid "Effectif minimum/maximum par créneau"
 msgstr "Minimum/maximum staffing per slot"
 
-#: app/templates/admin/automation/rules.html:223
+#: app/templates/admin/automation/rules.html:124
 msgid "Laisser vide = pas de limite."
 msgstr "Leave empty for no limit."
 
-#: app/templates/admin/automation/rules.html:229
+#: app/templates/admin/automation/rules.html:130
 msgid "Minimum"
 msgstr "Minimum"
 
-#: app/templates/admin/automation/rules.html:230
+#: app/templates/admin/automation/rules.html:131
 msgid "Maximum"
 msgstr "Maximum"
 
-#: app/templates/admin/automation/rules.html:259
+#: app/templates/admin/automation/rules.html:147
 msgid "Créneaux obligatoires"
 msgstr "Mandatory slots"
 
-#: app/templates/admin/automation/rules.html:261
+#: app/templates/admin/automation/rules.html:147
 msgid ""
 "Un créneau obligatoire non pourvu déclenche une alerte distincte, sans "
 "jamais bloquer la génération."
@@ -4777,19 +4750,43 @@ msgstr ""
 "An unfilled mandatory slot raises a distinct alert, never blocking "
 "generation."
 
-#: app/templates/admin/automation/rules.html:288
+#: app/templates/admin/automation/rules.html:162
+msgid "Espacement minimum entre astreintes"
+msgstr "Minimum spacing between on-calls"
+
+#: app/templates/admin/automation/rules.html:164
+msgid "Nombre de semaines minimum entre deux astreintes pour la même personne"
+msgstr "Minimum number of weeks between two on-calls for the same person"
+
+#: app/templates/admin/automation/rules.html:169
+msgid "Ancrage de la semaine d'astreinte"
+msgstr "On-call week anchor"
+
+#: app/templates/admin/automation/rules.html:171
+msgid "Jour de début"
+msgstr "Start day"
+
+#: app/templates/admin/automation/rules.html:183
+msgid "Heure de fin (une semaine plus tard)"
+msgstr "End hour (one week later)"
+
+#: app/templates/admin/automation/rules.html:189
+msgid "Commun"
+msgstr "Common"
+
+#: app/templates/admin/automation/rules.html:190
 msgid "Repos minimum après une astreinte"
 msgstr "Minimum rest after an on-call"
 
-#: app/templates/admin/automation/rules.html:290
+#: app/templates/admin/automation/rules.html:192
 msgid "Heures de repos requises avant un shift, après la fin d'une astreinte"
 msgstr "Hours of rest required before a shift, after an on-call ends"
 
-#: app/templates/admin/automation/rules.html:308
+#: app/templates/admin/automation/rules.html:197
 msgid "Chevauchement shift / astreinte"
 msgstr "Shift / on-call overlap"
 
-#: app/templates/admin/automation/rules.html:312
+#: app/templates/admin/automation/rules.html:201
 msgid ""
 "Bloquer la création d'un shift/astreinte qui chevauche une astreinte/shift "
 "existant pour le même utilisateur"
@@ -4912,6 +4909,18 @@ msgstr "Download %(key)s"
 #: app/templates/admin/backups/dashboard.html:135
 msgid "Aucune sauvegarde S3 disponible."
 msgstr "No S3 backup available."
+
+#: app/templates/admin/macros/settings_card.html:64
+msgid "Afficher/masquer"
+msgstr "Show/hide"
+
+#: app/templates/admin/macros/settings_card.html:76
+msgid "Personnalisé"
+msgstr "Customized"
+
+#: app/templates/admin/macros/settings_card.html:78
+msgid "Hérité de l'organisation"
+msgstr "Inherited from the organization"
 
 #: app/templates/auth/ics_token.html:3 app/templates/auth/profile.html:51
 msgid "Token ICS"
@@ -5350,7 +5359,7 @@ msgstr "[OK] %(count)s shifts generated for %(date)s"
 msgid "[WARN] Aucun shift généré pour le %(date)s"
 msgstr "[WARN] No shift generated for %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:718
+#: app/utils/automation/advanced_shift_automation.py:731
 #, python-format
 msgid ""
 "[PREVIEW] Prévisualisation : %(count)s shifts seraient générés pour la "
@@ -5359,23 +5368,23 @@ msgstr ""
 "[PREVIEW] Preview: %(count)s shifts would be generated for the period "
 "%(start)s to %(end)s"
 
-#: app/utils/automation/advanced_shift_automation.py:725
+#: app/utils/automation/advanced_shift_automation.py:738
 #, python-format
 msgid "[OK] %(count)s shifts générés pour la période du %(start)s au %(end)s"
 msgstr "[OK] %(count)s shifts generated for the period %(start)s to %(end)s"
 
-#: app/utils/automation/advanced_shift_automation.py:732
+#: app/utils/automation/advanced_shift_automation.py:745
 #, python-format
 msgid "(%(with_shifts)s jours avec shifts, %(skipped)s jours sans)"
 msgstr "(%(with_shifts)s days with shifts, %(skipped)s days without)"
 
-#: app/utils/automation/advanced_shift_automation.py:765
-#: app/utils/automation/advanced_shift_automation.py:798
+#: app/utils/automation/advanced_shift_automation.py:778
+#: app/utils/automation/advanced_shift_automation.py:811
 #, python-format
 msgid "[DELETED] %(count)s shifts supprimés pour le %(date)s"
 msgstr "[DELETED] %(count)s shifts deleted for %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:817
+#: app/utils/automation/advanced_shift_automation.py:830
 #, python-format
 msgid ""
 "[ERROR] Échec de la régénération du %(date)s : %(error)s - ce jour n'a pas "
@@ -5384,7 +5393,7 @@ msgstr ""
 "[ERROR] Failed to regenerate %(date)s: %(error)s - this day was not changed,"
 " manual action required"
 
-#: app/utils/automation/advanced_shift_automation.py:901
+#: app/utils/automation/advanced_shift_automation.py:914
 #, python-format
 msgid ""
 "[DELETED] %(count)s astreinte(s) supplémentaire(s) supprimée(s) dans la "
@@ -5393,14 +5402,14 @@ msgstr ""
 "[DELETED] %(count)s extra on-call(s) deleted in the extended period before "
 "regeneration"
 
-#: app/utils/automation/advanced_shift_automation.py:922
+#: app/utils/automation/advanced_shift_automation.py:935
 #, python-format
 msgid ""
 "[REGEN] %(count)s astreintes régénérées pour la période %(start)s - %(end)s"
 msgstr ""
 "[REGEN] %(count)s on-calls regenerated for the period %(start)s - %(end)s"
 
-#: app/utils/automation/advanced_shift_automation.py:932
+#: app/utils/automation/advanced_shift_automation.py:945
 #, python-format
 msgid ""
 "[ERROR] Échec de la régénération des astreintes pour la période %(start)s - "
@@ -5411,7 +5420,7 @@ msgstr ""
 "%(error)s - the on-calls for this period were not changed, manual action "
 "required"
 
-#: app/utils/automation/advanced_shift_automation.py:1040
+#: app/utils/automation/advanced_shift_automation.py:1053
 #, python-format
 msgid ""
 "[DELETED] %(count)s astreintes supprimées pour l'utilisateur %(user_id)s"
@@ -5869,3 +5878,12 @@ msgstr "The password must not contain your email address."
 #~ msgstr ""
 #~ "Shared rotation: all eligible groups share a single shift/on-call rotation. "
 #~ "Per-group rotation: each group has its own independent rotation."
+
+#~ msgid "Portée de la rotation des shifts"
+#~ msgstr "Scope of the shift rotation"
+
+#~ msgid "Mode de planification — Astreintes"
+#~ msgstr "Scheduling mode — On-call"
+
+#~ msgid "Portée de la rotation des astreintes"
+#~ msgstr "Scope of the on-call rotation"
