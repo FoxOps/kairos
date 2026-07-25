@@ -244,6 +244,56 @@ class TestSchedulingModeSection:
         assert SettingsService.get_shift_scheduling_mode() == "shared"
 
 
+class TestGroupScopedRuleEditing:
+    def test_dashboard_get_with_group_id_shows_group_scoped_value(
+        self, logged_in_client, test_group
+    ):
+        from app.models import AutomationRule
+
+        AutomationRule.set("oncall_spacing", {"min_spacing_weeks": 4}, group=test_group)
+
+        response = logged_in_client.get(
+            f"/admin/automation/rules?group_id={test_group.id}"
+        )
+        assert response.status_code == 200
+        assert b'name="min_spacing_weeks" min="1" value="4"' in response.data
+
+    def test_post_with_group_id_saves_group_override_not_org_default(
+        self, logged_in_client, test_group
+    ):
+        response = logged_in_client.post(
+            "/admin/automation/rules",
+            data={
+                "section": "oncall_spacing",
+                "min_spacing_weeks": "5",
+                "group_id": str(test_group.id),
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+
+        from app.models import AutomationRule
+
+        assert AutomationRule.resolve_params("oncall_spacing", group=test_group) == {
+            "min_spacing_weeks": 5
+        }
+        assert AutomationRule.resolve_params("oncall_spacing") is None
+
+    def test_post_without_group_id_still_saves_org_default(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/automation/rules",
+            data={"section": "oncall_spacing", "min_spacing_weeks": "5"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+
+        from app.models import AutomationRule
+
+        assert AutomationRule.resolve_params("oncall_spacing") == {
+            "min_spacing_weeks": 5
+        }
+
+
 class TestShiftSlotsSection:
     def test_valid_ids_persist(self, logged_in_client, test_shift_type):
         response = logged_in_client.post(

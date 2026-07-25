@@ -5,7 +5,49 @@ type's own validate_params() before persisting through AutomationRule.set(),
 mirroring SettingsService's per-section setter pattern.
 """
 
-from app.models import AutomationRule
+from app.models import AutomationRule, Group
+
+
+class TestSaveGroupScoping:
+    def test_group_override_does_not_change_org_default(self, test_app):
+        from app.services.automation_rule_admin_service import (
+            AutomationRuleAdminService,
+        )
+
+        group = Group(name="Team A")
+        from app import db
+
+        db.session.add(group)
+        db.session.commit()
+
+        error = AutomationRuleAdminService.save_oncall_spacing(5, group=group)
+
+        assert error is None
+        assert AutomationRule.resolve_params("oncall_spacing", group=group) == {
+            "min_spacing_weeks": 5
+        }
+        assert AutomationRule.resolve_params("oncall_spacing") is None
+
+    def test_audit_log_mentions_the_group(self, test_app):
+        from app import db
+        from app.models import AuditLog
+        from app.services.automation_rule_admin_service import (
+            AutomationRuleAdminService,
+        )
+
+        group = Group(name="Team A")
+        db.session.add(group)
+        db.session.commit()
+
+        AutomationRuleAdminService.save_oncall_spacing(5, group=group)
+
+        entry = (
+            AuditLog.query.filter_by(action="automation_rule.update")
+            .order_by(AuditLog.id.desc())
+            .first()
+        )
+        assert entry is not None
+        assert "Team A" in entry.details
 
 
 class TestSaveShiftSlots:

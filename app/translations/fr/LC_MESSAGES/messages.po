@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-25 02:28+0200\n"
+"POT-Creation-Date: 2026-07-25 04:38+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: fr <LL@li.org>\n"
@@ -136,35 +136,35 @@ msgstr ""
 "Régénération complète terminée pour la période du %(strftime)s au "
 "%(strftime1)s"
 
-#: app/routes/admin_automation_rules_routes.py:33
+#: app/routes/admin_automation_rules_routes.py:43
 msgid "Lundi"
 msgstr "Lundi"
 
-#: app/routes/admin_automation_rules_routes.py:34
+#: app/routes/admin_automation_rules_routes.py:44
 msgid "Mardi"
 msgstr "Mardi"
 
-#: app/routes/admin_automation_rules_routes.py:35
+#: app/routes/admin_automation_rules_routes.py:45
 msgid "Mercredi"
 msgstr "Mercredi"
 
-#: app/routes/admin_automation_rules_routes.py:36
+#: app/routes/admin_automation_rules_routes.py:46
 msgid "Jeudi"
 msgstr "Jeudi"
 
-#: app/routes/admin_automation_rules_routes.py:37
+#: app/routes/admin_automation_rules_routes.py:47
 msgid "Vendredi"
 msgstr "Vendredi"
 
-#: app/routes/admin_automation_rules_routes.py:38
+#: app/routes/admin_automation_rules_routes.py:48
 msgid "Samedi"
 msgstr "Samedi"
 
-#: app/routes/admin_automation_rules_routes.py:39
+#: app/routes/admin_automation_rules_routes.py:49
 msgid "Dimanche"
 msgstr "Dimanche"
 
-#: app/routes/admin_automation_rules_routes.py:52
+#: app/routes/admin_automation_rules_routes.py:62
 #: app/routes/admin_notification_target_routes.py:39
 #: app/routes/admin_settings_routes.py:45
 #: app/routes/admin_settings_routes.py:53
@@ -181,61 +181,61 @@ msgstr "Dimanche"
 msgid "Erreur : %(error)s"
 msgstr "Erreur : %(error)s"
 
-#: app/routes/admin_automation_rules_routes.py:68
+#: app/routes/admin_automation_rules_routes.py:84
 msgid "Erreur : sélection de créneau invalide"
 msgstr "Erreur : sélection de créneau invalide"
 
-#: app/routes/admin_automation_rules_routes.py:73
+#: app/routes/admin_automation_rules_routes.py:89
 msgid "Créneaux de shift enregistrés"
 msgstr "Créneaux de shift enregistrés"
 
-#: app/routes/admin_automation_rules_routes.py:78
+#: app/routes/admin_automation_rules_routes.py:94
 msgid "Erreur : jour invalide"
 msgstr "Erreur : jour invalide"
 
-#: app/routes/admin_automation_rules_routes.py:81
+#: app/routes/admin_automation_rules_routes.py:99
 msgid "Définition du week-end enregistrée"
 msgstr "Définition du week-end enregistrée"
 
-#: app/routes/admin_automation_rules_routes.py:86
-#: app/routes/admin_automation_rules_routes.py:96
-#: app/routes/admin_automation_rules_routes.py:126
+#: app/routes/admin_automation_rules_routes.py:104
+#: app/routes/admin_automation_rules_routes.py:116
+#: app/routes/admin_automation_rules_routes.py:148
 msgid "Erreur : valeur invalide"
 msgstr "Erreur : valeur invalide"
 
-#: app/routes/admin_automation_rules_routes.py:89
+#: app/routes/admin_automation_rules_routes.py:109
 msgid "Espacement des astreintes enregistré"
 msgstr "Espacement des astreintes enregistré"
 
-#: app/routes/admin_automation_rules_routes.py:101
+#: app/routes/admin_automation_rules_routes.py:121
 msgid "Ancrage de la semaine d'astreinte enregistré"
 msgstr "Ancrage de la semaine d'astreinte enregistré"
 
-#: app/routes/admin_automation_rules_routes.py:111
+#: app/routes/admin_automation_rules_routes.py:131
 msgid "Effectifs enregistrés"
 msgstr "Effectifs enregistrés"
 
-#: app/routes/admin_automation_rules_routes.py:118
+#: app/routes/admin_automation_rules_routes.py:138
 msgid "Erreur : sélection invalide"
 msgstr "Erreur : sélection invalide"
 
-#: app/routes/admin_automation_rules_routes.py:121
+#: app/routes/admin_automation_rules_routes.py:143
 msgid "Créneaux obligatoires enregistrés"
 msgstr "Créneaux obligatoires enregistrés"
 
-#: app/routes/admin_automation_rules_routes.py:129
+#: app/routes/admin_automation_rules_routes.py:153
 msgid "Repos après astreinte enregistré"
 msgstr "Repos après astreinte enregistré"
 
-#: app/routes/admin_automation_rules_routes.py:134
+#: app/routes/admin_automation_rules_routes.py:160
 msgid "Règle de chevauchement enregistrée"
 msgstr "Règle de chevauchement enregistrée"
 
-#: app/routes/admin_automation_rules_routes.py:139
+#: app/routes/admin_automation_rules_routes.py:165
 msgid "Mode de planification des shifts enregistré"
 msgstr "Mode de planification des shifts enregistré"
 
-#: app/routes/admin_automation_rules_routes.py:144
+#: app/routes/admin_automation_rules_routes.py:170
 msgid "Mode de planification des astreintes enregistré"
 msgstr "Mode de planification des astreintes enregistré"
 
@@ -1755,16 +1755,16 @@ msgstr "Enregistrer le congé"
 #: app/templates/admin/add_group.html:32
 #: app/templates/admin/add_shift_type.html:41
 #: app/templates/admin/add_user.html:61
-#: app/templates/admin/automation/rules.html:36
-#: app/templates/admin/automation/rules.html:58
-#: app/templates/admin/automation/rules.html:100
-#: app/templates/admin/automation/rules.html:126
-#: app/templates/admin/automation/rules.html:145
-#: app/templates/admin/automation/rules.html:176
-#: app/templates/admin/automation/rules.html:212
-#: app/templates/admin/automation/rules.html:240
-#: app/templates/admin/automation/rules.html:259
-#: app/templates/admin/automation/rules.html:280
+#: app/templates/admin/automation/rules.html:65
+#: app/templates/admin/automation/rules.html:87
+#: app/templates/admin/automation/rules.html:130
+#: app/templates/admin/automation/rules.html:157
+#: app/templates/admin/automation/rules.html:177
+#: app/templates/admin/automation/rules.html:209
+#: app/templates/admin/automation/rules.html:246
+#: app/templates/admin/automation/rules.html:275
+#: app/templates/admin/automation/rules.html:295
+#: app/templates/admin/automation/rules.html:317
 #: app/templates/admin/edit_group.html:35
 #: app/templates/admin/edit_service_account.html:38
 #: app/templates/admin/edit_shift_type.html:41
@@ -1850,7 +1850,7 @@ msgid "Sélectionnez l'utilisateur pour ce shift"
 msgstr "Sélectionnez l'utilisateur pour ce shift"
 
 #: app/templates/add_shift.html:27
-#: app/templates/admin/automation/rules.html:194
+#: app/templates/admin/automation/rules.html:228
 #: app/templates/schedule.html:55 app/utils/helpers/js_translations.py:42
 msgid "Type de shift"
 msgstr "Type de shift"
@@ -2605,7 +2605,7 @@ msgid "Date"
 msgstr "Date"
 
 #: app/templates/admin/add_shift_type.html:28
-#: app/templates/admin/automation/rules.html:167
+#: app/templates/admin/automation/rules.html:200
 #: app/templates/admin/edit_shift_type.html:28
 #: app/templates/admin/shift_types.html:33 app/templates/schedule.html:57
 msgid "Heure de début"
@@ -3082,8 +3082,10 @@ msgstr "Ex: jean.dupont@exemple.com"
 msgid "Exemple : jean.dupont@exemple.com"
 msgstr "Exemple : jean.dupont@exemple.com"
 
-#: app/templates/admin/add_user.html:41 app/templates/admin/edit_user.html:28
-#: app/templates/admin/users.html:40 app/templates/auth/profile.html:24
+#: app/templates/admin/add_user.html:41
+#: app/templates/admin/automation/rules.html:33
+#: app/templates/admin/edit_user.html:28 app/templates/admin/users.html:40
+#: app/templates/auth/profile.html:24
 msgid "Groupe"
 msgstr "Groupe"
 
@@ -4696,47 +4698,74 @@ msgstr "Retour à la configuration"
 msgid "Règles"
 msgstr "Règles"
 
-#: app/templates/admin/automation/rules.html:18
-msgid ""
-"Ces réglages s'appliquent à toute l'organisation. Une valeur par défaut "
-"équivalente au comportement historique est utilisée tant qu'aucune règle "
-"n'est enregistrée ici."
-msgstr ""
-"Ces réglages s'appliquent à toute l'organisation. Une valeur par défaut "
-"équivalente au comportement historique est utilisée tant qu'aucune règle "
-"n'est enregistrée ici."
+#: app/templates/admin/automation/rules.html:19
+#, python-format
+msgid "Édition des réglages du groupe : %(name)s"
+msgstr "Édition des réglages du groupe : %(name)s"
 
-#: app/templates/admin/automation/rules.html:26
+#: app/templates/admin/automation/rules.html:21
+msgid "Édition des réglages par défaut de l'organisation"
+msgstr "Édition des réglages par défaut de l'organisation"
+
+#: app/templates/admin/automation/rules.html:25
+msgid ""
+"Ces réglages s'appliquent par défaut à toute l'organisation. Une valeur par "
+"défaut équivalente au comportement historique est utilisée tant qu'aucune "
+"règle n'est enregistrée ici. Sélectionnez un groupe ci-dessous pour éditer "
+"ses propres réglages à la place - ils ne prennent effet que si le mode de "
+"planification correspondant (shifts ou astreintes) est réglé sur \"Par "
+"groupe\"."
+msgstr ""
+"Ces réglages s'appliquent par défaut à toute l'organisation. Une valeur par "
+"défaut équivalente au comportement historique est utilisée tant qu'aucune "
+"règle n'est enregistrée ici. Sélectionnez un groupe ci-dessous pour éditer "
+"ses propres réglages à la place - ils ne prennent effet que si le mode de "
+"planification correspondant (shifts ou astreintes) est réglé sur \"Par "
+"groupe\"."
+
+#: app/templates/admin/automation/rules.html:31
+msgid "Portée éditée"
+msgstr "Portée éditée"
+
+#: app/templates/admin/automation/rules.html:35
+msgid "Organisation (par défaut)"
+msgstr "Organisation (par défaut)"
+
+#: app/templates/admin/automation/rules.html:43
+msgid "Afficher"
+msgstr "Afficher"
+
+#: app/templates/admin/automation/rules.html:55
 msgid "Mode de planification — Shifts"
 msgstr "Mode de planification — Shifts"
 
-#: app/templates/admin/automation/rules.html:28
+#: app/templates/admin/automation/rules.html:57
 msgid "Portée de la rotation des shifts"
 msgstr "Portée de la rotation des shifts"
 
-#: app/templates/admin/automation/rules.html:30
-#: app/templates/admin/automation/rules.html:52
+#: app/templates/admin/automation/rules.html:59
+#: app/templates/admin/automation/rules.html:81
 msgid "Commune (tous les groupes partagent une seule rotation)"
 msgstr "Commune (tous les groupes partagent une seule rotation)"
 
-#: app/templates/admin/automation/rules.html:31
-#: app/templates/admin/automation/rules.html:53
+#: app/templates/admin/automation/rules.html:60
+#: app/templates/admin/automation/rules.html:82
 msgid "Par groupe (chaque groupe a sa propre rotation)"
 msgstr "Par groupe (chaque groupe a sa propre rotation)"
 
-#: app/templates/admin/automation/rules.html:48
+#: app/templates/admin/automation/rules.html:77
 msgid "Mode de planification — Astreintes"
 msgstr "Mode de planification — Astreintes"
 
-#: app/templates/admin/automation/rules.html:50
+#: app/templates/admin/automation/rules.html:79
 msgid "Portée de la rotation des astreintes"
 msgstr "Portée de la rotation des astreintes"
 
-#: app/templates/admin/automation/rules.html:70
+#: app/templates/admin/automation/rules.html:100
 msgid "Créneaux de shift"
 msgstr "Créneaux de shift"
 
-#: app/templates/admin/automation/rules.html:72
+#: app/templates/admin/automation/rules.html:102
 msgid ""
 "Quel type de shift joue chaque rôle dans la génération automatique. Gérez "
 "les types de shift eux-mêmes sur la page \"Types de shift\"."
@@ -4744,68 +4773,68 @@ msgstr ""
 "Quel type de shift joue chaque rôle dans la génération automatique. Gérez "
 "les types de shift eux-mêmes sur la page \"Types de shift\"."
 
-#: app/templates/admin/automation/rules.html:75
+#: app/templates/admin/automation/rules.html:105
 msgid "Créneau d'astreinte"
 msgstr "Créneau d'astreinte"
 
-#: app/templates/admin/automation/rules.html:83
+#: app/templates/admin/automation/rules.html:113
 msgid "Créneau de rotation"
 msgstr "Créneau de rotation"
 
-#: app/templates/admin/automation/rules.html:91
+#: app/templates/admin/automation/rules.html:121
 msgid "Créneau par défaut"
 msgstr "Créneau par défaut"
 
-#: app/templates/admin/automation/rules.html:112
+#: app/templates/admin/automation/rules.html:143
 msgid "Définition du week-end"
 msgstr "Définition du week-end"
 
-#: app/templates/admin/automation/rules.html:114
+#: app/templates/admin/automation/rules.html:145
 msgid "Jours considérés comme week-end"
 msgstr "Jours considérés comme week-end"
 
-#: app/templates/admin/automation/rules.html:138
+#: app/templates/admin/automation/rules.html:170
 msgid "Espacement minimum entre astreintes"
 msgstr "Espacement minimum entre astreintes"
 
-#: app/templates/admin/automation/rules.html:140
+#: app/templates/admin/automation/rules.html:172
 msgid "Nombre de semaines minimum entre deux astreintes pour la même personne"
 msgstr ""
 "Nombre de semaines minimum entre deux astreintes pour la même personne"
 
-#: app/templates/admin/automation/rules.html:157
+#: app/templates/admin/automation/rules.html:190
 msgid "Ancrage de la semaine d'astreinte"
 msgstr "Ancrage de la semaine d'astreinte"
 
-#: app/templates/admin/automation/rules.html:159
+#: app/templates/admin/automation/rules.html:192
 msgid "Jour de début"
 msgstr "Jour de début"
 
-#: app/templates/admin/automation/rules.html:171
+#: app/templates/admin/automation/rules.html:204
 msgid "Heure de fin (une semaine plus tard)"
 msgstr "Heure de fin (une semaine plus tard)"
 
-#: app/templates/admin/automation/rules.html:188
+#: app/templates/admin/automation/rules.html:222
 msgid "Effectif minimum/maximum par créneau"
 msgstr "Effectif minimum/maximum par créneau"
 
-#: app/templates/admin/automation/rules.html:189
+#: app/templates/admin/automation/rules.html:223
 msgid "Laisser vide = pas de limite."
 msgstr "Laisser vide = pas de limite."
 
-#: app/templates/admin/automation/rules.html:195
+#: app/templates/admin/automation/rules.html:229
 msgid "Minimum"
 msgstr "Minimum"
 
-#: app/templates/admin/automation/rules.html:196
+#: app/templates/admin/automation/rules.html:230
 msgid "Maximum"
 msgstr "Maximum"
 
-#: app/templates/admin/automation/rules.html:224
+#: app/templates/admin/automation/rules.html:259
 msgid "Créneaux obligatoires"
 msgstr "Créneaux obligatoires"
 
-#: app/templates/admin/automation/rules.html:226
+#: app/templates/admin/automation/rules.html:261
 msgid ""
 "Un créneau obligatoire non pourvu déclenche une alerte distincte, sans "
 "jamais bloquer la génération."
@@ -4813,19 +4842,19 @@ msgstr ""
 "Un créneau obligatoire non pourvu déclenche une alerte distincte, sans "
 "jamais bloquer la génération."
 
-#: app/templates/admin/automation/rules.html:252
+#: app/templates/admin/automation/rules.html:288
 msgid "Repos minimum après une astreinte"
 msgstr "Repos minimum après une astreinte"
 
-#: app/templates/admin/automation/rules.html:254
+#: app/templates/admin/automation/rules.html:290
 msgid "Heures de repos requises avant un shift, après la fin d'une astreinte"
 msgstr "Heures de repos requises avant un shift, après la fin d'une astreinte"
 
-#: app/templates/admin/automation/rules.html:271
+#: app/templates/admin/automation/rules.html:308
 msgid "Chevauchement shift / astreinte"
 msgstr "Chevauchement shift / astreinte"
 
-#: app/templates/admin/automation/rules.html:275
+#: app/templates/admin/automation/rules.html:312
 msgid ""
 "Bloquer la création d'un shift/astreinte qui chevauche une astreinte/shift "
 "existant pour le même utilisateur"
@@ -5364,45 +5393,45 @@ msgstr "Voir le planning : %(url)s"
 msgid "Se déconnecter"
 msgstr "Se déconnecter"
 
-#: app/utils/automation/advanced_shift_automation.py:430
+#: app/utils/automation/advanced_shift_automation.py:436
 #, python-format
 msgid "[ALERT] Créneau obligatoire non pourvu pour le %(date)s : %(name)s."
 msgstr "[ALERT] Créneau obligatoire non pourvu pour le %(date)s : %(name)s."
 
-#: app/utils/automation/advanced_shift_automation.py:470
-#: app/utils/automation/advanced_shift_automation.py:648
+#: app/utils/automation/advanced_shift_automation.py:476
+#: app/utils/automation/advanced_shift_automation.py:658
 #, python-format
 msgid "[SKIP] Pas de shift généré pour le %(date)s (week-end)"
 msgstr "[SKIP] Pas de shift généré pour le %(date)s (week-end)"
 
-#: app/utils/automation/advanced_shift_automation.py:482
+#: app/utils/automation/advanced_shift_automation.py:488
 #, python-format
 msgid "[WARN] Aucun utilisateur disponible pour le %(date)s"
 msgstr "[WARN] Aucun utilisateur disponible pour le %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:518
-#: app/utils/automation/advanced_shift_automation.py:563
-#: app/utils/automation/advanced_shift_automation.py:627
+#: app/utils/automation/advanced_shift_automation.py:524
+#: app/utils/automation/advanced_shift_automation.py:571
+#: app/utils/automation/advanced_shift_automation.py:637
 #, python-format
 msgid "[ERROR] Erreur : %(error)s"
 msgstr "[ERROR] Erreur : %(error)s"
 
-#: app/utils/automation/advanced_shift_automation.py:523
+#: app/utils/automation/advanced_shift_automation.py:529
 #, python-format
 msgid "[OK] 1 shift généré pour le %(date)s (effectif minimum : %(name)s)"
 msgstr "[OK] 1 shift généré pour le %(date)s (effectif minimum : %(name)s)"
 
-#: app/utils/automation/advanced_shift_automation.py:634
+#: app/utils/automation/advanced_shift_automation.py:644
 #, python-format
 msgid "[OK] %(count)s shifts générés pour le %(date)s"
 msgstr "[OK] %(count)s shifts générés pour le %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:655
+#: app/utils/automation/advanced_shift_automation.py:665
 #, python-format
 msgid "[WARN] Aucun shift généré pour le %(date)s"
 msgstr "[WARN] Aucun shift généré pour le %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:708
+#: app/utils/automation/advanced_shift_automation.py:718
 #, python-format
 msgid ""
 "[PREVIEW] Prévisualisation : %(count)s shifts seraient générés pour la "
@@ -5411,23 +5440,23 @@ msgstr ""
 "[PREVIEW] Prévisualisation : %(count)s shifts seraient générés pour la "
 "période du %(start)s au %(end)s"
 
-#: app/utils/automation/advanced_shift_automation.py:715
+#: app/utils/automation/advanced_shift_automation.py:725
 #, python-format
 msgid "[OK] %(count)s shifts générés pour la période du %(start)s au %(end)s"
 msgstr "[OK] %(count)s shifts générés pour la période du %(start)s au %(end)s"
 
-#: app/utils/automation/advanced_shift_automation.py:722
+#: app/utils/automation/advanced_shift_automation.py:732
 #, python-format
 msgid "(%(with_shifts)s jours avec shifts, %(skipped)s jours sans)"
 msgstr "(%(with_shifts)s jours avec shifts, %(skipped)s jours sans)"
 
-#: app/utils/automation/advanced_shift_automation.py:755
-#: app/utils/automation/advanced_shift_automation.py:788
+#: app/utils/automation/advanced_shift_automation.py:765
+#: app/utils/automation/advanced_shift_automation.py:798
 #, python-format
 msgid "[DELETED] %(count)s shifts supprimés pour le %(date)s"
 msgstr "[DELETED] %(count)s shifts supprimés pour le %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:807
+#: app/utils/automation/advanced_shift_automation.py:817
 #, python-format
 msgid ""
 "[ERROR] Échec de la régénération du %(date)s : %(error)s - ce jour n'a pas "
@@ -5436,7 +5465,7 @@ msgstr ""
 "[ERROR] Échec de la régénération du %(date)s : %(error)s - ce jour n'a pas "
 "été modifié, action manuelle nécessaire"
 
-#: app/utils/automation/advanced_shift_automation.py:891
+#: app/utils/automation/advanced_shift_automation.py:901
 #, python-format
 msgid ""
 "[DELETED] %(count)s astreinte(s) supplémentaire(s) supprimée(s) dans la "
@@ -5444,17 +5473,17 @@ msgid ""
 msgstr ""
 "[DELETED] %(count)s astreinte(s) supplémentaire(s) supprimée(s) dans la "
 "période étendue avant régénération"
-
-#: app/utils/automation/advanced_shift_automation.py:912
-#, python-format
-msgid ""
-"[REGEN] %(count)s astreintes régénérées pour la période %(start)s - %(end)s"
-msgstr ""
-"[REGEN] %(count)s astreintes régénérées pour la période %(start)s - %(end)s"
 
 #: app/utils/automation/advanced_shift_automation.py:922
 #, python-format
 msgid ""
+"[REGEN] %(count)s astreintes régénérées pour la période %(start)s - %(end)s"
+msgstr ""
+"[REGEN] %(count)s astreintes régénérées pour la période %(start)s - %(end)s"
+
+#: app/utils/automation/advanced_shift_automation.py:932
+#, python-format
+msgid ""
 "[ERROR] Échec de la régénération des astreintes pour la période %(start)s - "
 "%(end)s : %(error)s - les astreintes de cette période n'ont pas été "
 "modifiées, action manuelle nécessaire"
@@ -5463,14 +5492,14 @@ msgstr ""
 "%(end)s : %(error)s - les astreintes de cette période n'ont pas été "
 "modifiées, action manuelle nécessaire"
 
-#: app/utils/automation/advanced_shift_automation.py:1030
+#: app/utils/automation/advanced_shift_automation.py:1040
 #, python-format
 msgid ""
 "[DELETED] %(count)s astreintes supprimées pour l'utilisateur %(user_id)s"
 msgstr ""
 "[DELETED] %(count)s astreintes supprimées pour l'utilisateur %(user_id)s"
 
-#: app/utils/automation/oncall_automation.py:401
+#: app/utils/automation/oncall_automation.py:417
 #, python-format
 msgid ""
 "[WARN] Aucune astreinte générée pour le %(date)s (aucun utilisateur ne "
@@ -5481,22 +5510,22 @@ msgstr ""
 "respecte le délai légal de %(weeks)s semaines entre deux astreintes) - "
 "assignation manuelle nécessaire."
 
-#: app/utils/automation/oncall_automation.py:430
+#: app/utils/automation/oncall_automation.py:446
 #, python-format
 msgid "[OK] %(count)s astreintes générées."
 msgstr "[OK] %(count)s astreintes générées."
 
-#: app/utils/automation/oncall_automation.py:671
-#: app/utils/automation/oncall_automation.py:758
+#: app/utils/automation/oncall_automation.py:687
+#: app/utils/automation/oncall_automation.py:777
 msgid "Aucun utilisateur éligible pour les astreintes."
 msgstr "Aucun utilisateur éligible pour les astreintes."
 
-#: app/utils/automation/oncall_automation.py:677
-#: app/utils/automation/oncall_automation.py:762
+#: app/utils/automation/oncall_automation.py:693
+#: app/utils/automation/oncall_automation.py:781
 msgid "Impossible de déterminer l'ordre de rotation."
 msgstr "Impossible de déterminer l'ordre de rotation."
 
-#: app/utils/automation/oncall_automation.py:793
+#: app/utils/automation/oncall_automation.py:812
 msgid "[OK] Aucune astreinte manquante sur cette période."
 msgstr "[OK] Aucune astreinte manquante sur cette période."
 
@@ -5516,7 +5545,7 @@ msgstr "Type: %(type)s"
 msgid "Utilisateur: %(name)s"
 msgstr "Utilisateur: %(name)s"
 
-#: app/utils/helpers/common_helpers.py:458
+#: app/utils/helpers/common_helpers.py:474
 #, python-format
 msgid ""
 "Impossible d'ajouter ce shift : effectif maximum (%(max)s) déjà atteint pour"
@@ -5525,12 +5554,12 @@ msgstr ""
 "Impossible d'ajouter ce shift : effectif maximum (%(max)s) déjà atteint pour"
 " ce créneau."
 
-#: app/utils/helpers/common_helpers.py:474
+#: app/utils/helpers/common_helpers.py:490
 #, python-format
 msgid "Impossible d'ajouter ce shift : chevauche une astreinte de %(name)s."
 msgstr "Impossible d'ajouter ce shift : chevauche une astreinte de %(name)s."
 
-#: app/utils/helpers/common_helpers.py:491
+#: app/utils/helpers/common_helpers.py:507
 #, python-format
 msgid ""
 "Impossible d'ajouter ce shift : %(name)s doit se reposer %(hours)sh après "
@@ -5539,7 +5568,7 @@ msgstr ""
 "Impossible d'ajouter ce shift : %(name)s doit se reposer %(hours)sh après "
 "son astreinte."
 
-#: app/utils/helpers/common_helpers.py:515
+#: app/utils/helpers/common_helpers.py:544
 #, python-format
 msgid "Impossible d'ajouter cette astreinte : chevauche un shift de %(name)s."
 msgstr ""

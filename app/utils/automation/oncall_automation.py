@@ -238,15 +238,24 @@ def _solve_max_filled_weeks(
     return best_assignment
 
 
-def _fridays_in_range(start_date: date, end_date: date) -> list[date]:
+def _fridays_in_range(
+    start_date: date, end_date: date, group: Group | None = None
+) -> list[date]:
     """Every on-call anchor weekday (see OnCallAnchorRule, default
     Friday) from the first one on/after start_date through end_date,
     inclusive. Keeps the "fridays" name for the default-configuration
     case this module was originally written for; the actual weekday
-    used is whatever OnCallAnchorRule resolves to."""
+    used is whatever OnCallAnchorRule resolves to.
+
+    `group`: when given, resolves that Group's own oncall_anchor
+    override instead of the org-wide default - see
+    generate_oncall_schedule()'s own `group` docstring. Callers that
+    don't pass it (fill_oncall_gaps()) keep resolving the org-wide
+    anchor, consistent with those callers not being wired to
+    "per_group" scheduling mode at all yet."""
     from app.utils.automation.rules import OnCallAnchorRule
 
-    anchor_weekday = OnCallAnchorRule.resolve()["weekday"]
+    anchor_weekday = OnCallAnchorRule.resolve(group=group)["weekday"]
     days_ahead = (anchor_weekday - start_date.weekday()) % 7
     current_friday = start_date + timedelta(days=days_ahead)
     fridays = []
@@ -306,6 +315,7 @@ def _generate_for_fridays(
     dry_run: bool,
     commit: bool,
     preferred_assignments: dict[date, int] | None = None,
+    group: Group | None = None,
 ) -> tuple[list[OnCall], list[str], list[date]]:
     """Shared by generate_oncall_schedule() (every Friday in a period)
     and fill_oncall_gaps() (only the Fridays missing an on-call) - runs
@@ -324,12 +334,18 @@ def _generate_for_fridays(
     caller leaves this None, exactly today's behavior. Still subject to
     the same conflict filtering as any other candidate below (a
     preferred user with a real conflict - e.g. it's their own leave
-    week - is filtered out like anyone else, no special-casing)."""
+    week - is filtered out like anyone else, no special-casing).
+
+    `group`: when given, resolves that Group's own oncall_anchor/
+    oncall_spacing overrides instead of the org-wide default - only
+    generate_oncall_schedule() passes it; fill_oncall_gaps() leaves it
+    None (not yet wired to "per_group" scheduling mode, see that
+    method's own docstring)."""
     from app import db
     from app.utils.automation.rules import OnCallAnchorRule, OnCallSpacingRule
 
-    anchor = OnCallAnchorRule.resolve()
-    min_spacing_weeks = OnCallSpacingRule.resolve()["min_spacing_weeks"]
+    anchor = OnCallAnchorRule.resolve(group=group)
+    min_spacing_weeks = OnCallSpacingRule.resolve(group=group)["min_spacing_weeks"]
 
     weeks: list[tuple[date, datetime, datetime]] = []
     for friday in fridays:
@@ -682,7 +698,9 @@ class OnCallAutomation:
 
         index = AvailabilityIndex(
             (user.id for user in eligible_users),
-            min_spacing_weeks=OnCallSpacingRule.resolve()["min_spacing_weeks"],
+            min_spacing_weeks=OnCallSpacingRule.resolve(group=group)[
+                "min_spacing_weeks"
+            ],
         )
 
         # end_date inclusive, like AdvancedShiftAutomation.generate_full_schedule
@@ -690,13 +708,14 @@ class OnCallAutomation:
         # from admin_automation_routes.py::automation_full, they must
         # treat end_date the same way. Before: `<` ignored the week
         # whose Friday landed exactly on end_date.
-        fridays = _fridays_in_range(start_date, end_date)
+        fridays = _fridays_in_range(start_date, end_date, group=group)
 
         return _generate_for_fridays(
             fridays,
             rotation_order,
             index,
             dry_run=dry_run,
+            group=group,
             commit=commit,
             preferred_assignments=preferred_assignments,
         )

@@ -199,7 +199,7 @@ class AdvancedShiftAutomation:
         from app.models import OnCall, User
         from app.utils.automation.rules import OnCallAnchorRule
 
-        anchor = OnCallAnchorRule.resolve()
+        anchor = OnCallAnchorRule.resolve(group=group)
         # Days before this week's Monday (weekday 0) that the on-call
         # anchor weekday falls on - generalizes the previous hardcoded
         # "Friday = Monday minus 3 days" to any configured anchor
@@ -400,7 +400,9 @@ class AdvancedShiftAutomation:
         return generated_shifts, None
 
     @staticmethod
-    def _check_mandatory_coverage(generated_shifts: list, date: "date") -> list:
+    def _check_mandatory_coverage(
+        generated_shifts: list, date: "date", group: "Group | None" = None
+    ) -> list:
         """Rule engine addition (MandatoryShiftRule, no prior
         equivalent): for each ShiftType an admin flagged mandatory, if
         the day's generated shifts don't cover it, raise an elevated
@@ -409,12 +411,16 @@ class AdvancedShiftAutomation:
         admin can tell "a mandatory slot specifically went unfilled"
         apart from the ordinary unfilled-slot case. Stays within the
         existing "leave unfilled + notify, never block" philosophy
-        (ROADMAP.md) - this never prevents generation/commit."""
+        (ROADMAP.md) - this never prevents generation/commit.
+
+        `group`: when given, resolves the Group's own mandatory_shift
+        override instead of the org-wide default - see
+        generate_daily_shifts()'s own `group` docstring."""
         from app import db
         from app.models import ShiftType
         from app.utils.automation.rules import MandatoryShiftRule
 
-        mandatory_ids = MandatoryShiftRule.resolve()["shift_type_ids"]
+        mandatory_ids = MandatoryShiftRule.resolve(group=group)["shift_type_ids"]
         if not mandatory_ids:
             return []
 
@@ -464,7 +470,7 @@ class AdvancedShiftAutomation:
         messages = []
         generated_shifts = []
 
-        if WeekendDefinitionRule.is_weekend(date):
+        if WeekendDefinitionRule.is_weekend(date, group=group):
             return [], [
                 _(
                     "[SKIP] Pas de shift généré pour le %(date)s (week-end)",
@@ -494,7 +500,7 @@ class AdvancedShiftAutomation:
         if len(available_users) == 1:
             sole_user = available_users[0]
             shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(
-                AdvancedShiftAutomation.SHIFT_07_15
+                AdvancedShiftAutomation.SHIFT_07_15, group=group
             )
             start_time = datetime.combine(date, datetime.min.time()).replace(
                 hour=shift_type.start_hour
@@ -527,7 +533,7 @@ class AdvancedShiftAutomation:
             )
             messages.extend(
                 AdvancedShiftAutomation._check_mandatory_coverage(
-                    generated_shifts, date
+                    generated_shifts, date, group=group
                 )
             )
             return generated_shifts, messages
@@ -539,7 +545,9 @@ class AdvancedShiftAutomation:
             )
             if assignments:
                 for user, hours in assignments.items():
-                    shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(hours)
+                    shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(
+                        hours, group=group
+                    )
                     start_time = datetime.combine(date, datetime.min.time()).replace(
                         hour=shift_type.start_hour
                     )
@@ -565,7 +573,7 @@ class AdvancedShiftAutomation:
 
                 messages.extend(
                     AdvancedShiftAutomation._check_mandatory_coverage(
-                        generated_shifts, date
+                        generated_shifts, date, group=group
                     )
                 )
                 return generated_shifts, messages
@@ -602,7 +610,9 @@ class AdvancedShiftAutomation:
             )
 
         for user, hours in shift_assignments:
-            shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(hours)
+            shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(
+                hours, group=group
+            )
             start_time = datetime.combine(date, datetime.min.time()).replace(
                 hour=shift_type.start_hour
             )
@@ -638,11 +648,11 @@ class AdvancedShiftAutomation:
             ]
             summary_messages.extend(
                 AdvancedShiftAutomation._check_mandatory_coverage(
-                    generated_shifts, date
+                    generated_shifts, date, group=group
                 )
             )
             return generated_shifts, summary_messages
-        elif WeekendDefinitionRule.is_weekend(date):
+        elif WeekendDefinitionRule.is_weekend(date, group=group):
             return [], [
                 _(
                     "[SKIP] Pas de shift généré pour le %(date)s (week-end)",

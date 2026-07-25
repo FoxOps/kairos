@@ -66,15 +66,17 @@ automated tests), and used for real team scheduling.
 Larger features, not yet started, not committed to a timeline.
 
 - **Per-group calendar display.** The configurable automation rules
-  engine (see "Done") already supports a per-`Group` override at the
-  data layer, and `shift_scheduling_mode`/`oncall_scheduling_mode`
-  (each independently shared/per_group, edited on
-  `/admin/automation/rules`) are wired all the way into generation —
+  engine (see "Done") supports per-`Group` overrides end to end —
+  both the eligible-user pool *and* rule values (weekend/slots/
+  spacing/anchor/mandatory/staffing/rest/overlap) resolve per Group,
+  editable on `/admin/automation/rules` via its group selector — and
+  `shift_scheduling_mode`/`oncall_scheduling_mode` (each independently
+  shared/per_group) are wired all the way into generation:
   `AutomationAdminService.generate_full()` runs one independent pass
-  per eligible `Group` when a mode is `per_group`. What's still missing
-  is the calendar itself: no per-group color/legend/filter, so a
-  `per_group` deployment can't visually distinguish which rotation an
-  event belongs to. `fill_oncall_gaps()`/`rebalance_after_leave()`/
+  per eligible `Group` when a mode is `per_group`. What's still
+  missing is the calendar itself: no per-group color/legend/filter, so
+  a `per_group` deployment can't visually distinguish which rotation
+  an event belongs to. `fill_oncall_gaps()`/`rebalance_after_leave()`/
   `refresh_shifts()` (narrower advanced workflows) also still pool
   regardless of the setting. Deliberately left for a dedicated
   follow-up rather than bundled into the rules-engine work.

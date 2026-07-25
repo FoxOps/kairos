@@ -1,12 +1,17 @@
 """
 Tests for optional per-Group scoping of the automation generation
-entry points - the piece of "per_group" scheduling mode
-(SettingsService.get_shift_scheduling_mode()/get_oncall_scheduling_mode())
-that partitions the eligible-user pool so two groups don't compete for
-the same on-call/staffing budget. Rule *values* (weekend/slots/spacing/
-anchor) stay org-wide in this increment - only WHO is eligible is
-partitioned. group=None (the default everywhere) must keep today's
-pooled behavior unchanged.
+entry points - both halves of "per_group" scheduling mode
+(SettingsService.get_shift_scheduling_mode()/get_oncall_scheduling_mode()):
+partitioning the eligible-user pool so two groups don't compete for the
+same on-call/staffing budget (TestGetEligibleUsersGroupScoping and
+friends below), and resolving rule *values* (weekend/slots/spacing/
+anchor/mandatory) per Group instead of a single org-wide value
+(TestWeekendDefinitionRuleValueGroupScoping and friends further down -
+each configures a Group-specific AutomationRule override via
+AutomationRule.set(rule_type, params, group=group) and proves it only
+affects that group's own generation, not another group's or the
+org-wide default). group=None (the default everywhere) must keep
+today's pooled behavior unchanged in both cases.
 """
 
 from datetime import date, datetime, timedelta
@@ -14,7 +19,7 @@ from datetime import date, datetime, timedelta
 from werkzeug.security import generate_password_hash
 
 from app import db
-from app.models import Group, OnCall, User
+from app.models import AutomationRule, Group, OnCall, ShiftType, User
 from app.utils.automation.advanced_shift_automation import AdvancedShiftAutomation
 from app.utils.automation.oncall_automation import OnCallAutomation
 
@@ -170,3 +175,172 @@ class TestGenerateFullScheduleGroupScoping:
 
         assert {s.user_id for s in shifts_a} == {u1.id}
         assert {s.user_id for s in shifts_b} == {u2.id}
+
+
+class TestWeekendDefinitionRuleValueGroupScoping:
+    def test_group_override_only_affects_that_groups_generation(
+        self, test_app, test_group
+    ):
+        other_group = Group(name="Other", is_part_of_schedule=True)
+        db.session.add(other_group)
+        db.session.commit()
+        _make_user("A", "a@test.com", test_group)
+        _make_user("B", "b@test.com", other_group)
+
+        # Monday - a normal working day under the org-wide default
+        # (weekend_days=[5, 6]). Overriding it to [0] for test_group
+        # only should make test_group's own generation skip it while
+        # other_group still generates normally.
+        monday = date(2023, 12, 4)
+        AutomationRule.set(
+            "weekend_definition", {"weekend_days": [0]}, group=test_group
+        )
+
+        shifts_a, _msgs_a, _unfilled_a = AdvancedShiftAutomation.generate_full_schedule(
+            monday, monday, dry_run=False, group=test_group
+        )
+        shifts_b, _msgs_b, _unfilled_b = AdvancedShiftAutomation.generate_full_schedule(
+            monday, monday, dry_run=False, group=other_group
+        )
+
+        assert shifts_a == []
+        assert len(shifts_b) == 1
+
+
+class TestShiftSlotsRuleValueGroupScoping:
+    def test_group_override_changes_shift_type_used(self, test_app, test_group):
+        other_group = Group(name="Other", is_part_of_schedule=True)
+        db.session.add(other_group)
+        db.session.commit()
+        _make_user("A", "a@test.com", test_group)
+        _make_user("B", "b@test.com", other_group)
+
+        custom_type = ShiftType(
+            name="custom", label="Custom", start_hour=6, end_hour=14
+        )
+        db.session.add(custom_type)
+        db.session.commit()
+
+        AutomationRule.set(
+            "shift_slots",
+            {
+                "oncall_shift_type_id": custom_type.id,
+                "rotation_shift_type_id": custom_type.id,
+                "default_shift_type_id": custom_type.id,
+            },
+            group=test_group,
+        )
+
+        monday = date(2023, 12, 4)
+        # Only 1 user available per group -> the "sole user" path, which
+        # always resolves the rotation-slot role (SHIFT_07_15).
+        shifts_a, _msgs_a, _unfilled_a = AdvancedShiftAutomation.generate_full_schedule(
+            monday, monday, dry_run=False, group=test_group
+        )
+        shifts_b, _msgs_b, _unfilled_b = AdvancedShiftAutomation.generate_full_schedule(
+            monday, monday, dry_run=False, group=other_group
+        )
+
+        assert shifts_a[0].shift_type_id == custom_type.id
+        assert shifts_b[0].shift_type_id != custom_type.id
+
+
+class TestOnCallAnchorRuleValueGroupScoping:
+    def test_group_override_changes_anchor_weekday(self, test_app, test_group):
+        other_group = Group(name="Other", is_part_of_oncall=True)
+        db.session.add(other_group)
+        db.session.commit()
+        u1 = _make_user("A", "a@test.com", test_group)
+        u2 = _make_user("B", "b@test.com", other_group)
+
+        # Org default anchor is Friday (4). Override test_group to
+        # anchor on Monday (0) instead - only a Monday-starting week
+        # should get filled for that group, while other_group keeps
+        # anchoring on the org-default Friday.
+        AutomationRule.set(
+            "oncall_anchor",
+            {"weekday": 0, "start_hour": 21, "end_hour": 7},
+            group=test_group,
+        )
+
+        monday = date(2023, 12, 4)
+        friday = date(2023, 12, 1)
+
+        oncalls_a, _msgs_a, _unfilled_a = OnCallAutomation.generate_oncall_schedule(
+            monday, monday, dry_run=False, group=test_group
+        )
+        oncalls_b, _msgs_b, _unfilled_b = OnCallAutomation.generate_oncall_schedule(
+            friday, friday, dry_run=False, group=other_group
+        )
+
+        assert len(oncalls_a) == 1
+        assert oncalls_a[0].user_id == u1.id
+        assert oncalls_a[0].start_time == datetime(2023, 12, 4, 21, 0)
+        assert len(oncalls_b) == 1
+        assert oncalls_b[0].user_id == u2.id
+        assert oncalls_b[0].start_time == datetime(2023, 12, 1, 21, 0)
+
+
+class TestOnCallSpacingRuleValueGroupScoping:
+    def test_group_override_relaxes_minimum_spacing(self, test_app, test_group):
+        other_group = Group(name="Other", is_part_of_oncall=True)
+        db.session.add(other_group)
+        db.session.commit()
+        u1 = _make_user("A", "a@test.com", test_group)
+        _make_user("B", "b@test.com", other_group)
+
+        # Org default is 2 weeks minimum spacing between on-calls for
+        # the same person - with only 1 rotating user, every week after
+        # the first is unfillable under that default. Relaxing it to 0
+        # for test_group only should let that single user cover every
+        # week for their own group.
+        AutomationRule.set("oncall_spacing", {"min_spacing_weeks": 0}, group=test_group)
+
+        friday = date(2023, 12, 1)
+        next_friday = friday + timedelta(days=7)
+
+        oncalls_a, _msgs_a, unfilled_a = OnCallAutomation.generate_oncall_schedule(
+            friday, next_friday, dry_run=False, group=test_group
+        )
+
+        assert len(oncalls_a) == 2
+        assert unfilled_a == []
+        assert {o.user_id for o in oncalls_a} == {u1.id}
+
+
+class TestMandatoryShiftRuleValueGroupScoping:
+    def test_group_override_only_alerts_for_that_group(self, test_app, test_group):
+        other_group = Group(name="Other", is_part_of_schedule=True)
+        db.session.add(other_group)
+        db.session.commit()
+        _make_user("A", "a@test.com", test_group)
+        _make_user("B", "b@test.com", other_group)
+
+        # The "1 available user" path always covers the rotation slot
+        # (07-15) and never the on-call slot (13-21) - flagging the
+        # on-call slot mandatory for test_group only should raise
+        # [ALERT] there, never for other_group (no override -> org
+        # default, empty).
+        oncall_type = AdvancedShiftAutomation.get_shift_type_by_hours(13, 21)
+        db.session.commit()
+
+        AutomationRule.set(
+            "mandatory_shift",
+            {"shift_type_ids": [oncall_type.id]},
+            group=test_group,
+        )
+
+        # generate_daily_shifts() directly, not generate_full_schedule()
+        # (which only returns one aggregate period summary and
+        # discards each day's own messages, including this ALERT - a
+        # separate pre-existing gap, out of scope here).
+        monday = date(2023, 12, 4)
+        _shifts_a, msgs_a = AdvancedShiftAutomation.generate_daily_shifts(
+            monday, group=test_group
+        )
+        _shifts_b, msgs_b = AdvancedShiftAutomation.generate_daily_shifts(
+            monday, group=other_group
+        )
+
+        assert any("[ALERT]" in m for m in msgs_a)
+        assert not any("[ALERT]" in m for m in msgs_b)

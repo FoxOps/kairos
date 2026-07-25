@@ -481,13 +481,37 @@ real correctness gap was found and fixed while wiring this: `get_oncall_for_date
 lookup used an unscoped `.first()` — in `per_group` mode two groups can have a genuinely concurrent
 on-call for the same week, and the unscoped query could silently pick a *different* group's on-call,
 misattributing the on-call shift-slot rule within the group actually being generated; it now filters
-by the given group's membership. Rule *values* (weekend/slots/spacing/anchor) still stay org-wide
-either way — only the eligible-user pool is partitioned, no generation call site resolves a rule
-*value* per group yet, even though the rule-resolution plumbing already accepts a `group` argument
-for whenever that lands. **Not yet wired to either scheduling mode** at all: `fill_oncall_gaps()`,
-`rebalance_after_leave()`, and `refresh_shifts()` (narrower advanced workflows) keep pooling
-regardless of the setting, and the calendar has no per-group display (color/legend/filter) — both
-tracked as the "Future ideas" entry in `ROADMAP.md`, not silently forgotten.
+by the given group's membership.
+
+**Rule *values* are also resolved per Group**, not just the eligible-user pool: every rule-value
+lookup inside the generation call sites above (`WeekendDefinitionRule.is_weekend()`,
+`get_shift_type_for_slot()`/`ShiftSlotsRule`, `MandatoryShiftRule.resolve()` in
+`AdvancedShiftAutomation`; `OnCallAnchorRule`/`OnCallSpacingRule.resolve()` in `_fridays_in_range()`/
+`_generate_for_fridays()`/`generate_oncall_schedule()`'s own `AvailabilityIndex` construction in
+`OnCallAutomation`) now threads the same `group` parameter through to `AutomationRule.resolve_params(rule_type,
+group=group)`, so a Group override actually takes effect during that group's own generation pass —
+previously these all resolved org-wide regardless of `group`, even though the model-layer resolution
+(`AutomationRule.resolve_params`) already supported it. The same threading was extended to the
+manual create/move validation path (`app/utils/helpers/common_helpers.py`'s
+`check_shift_rule_violations()`/`check_oncall_rule_violations()`, called by `ShiftService`/
+`OnCallService`): each resolves the acting user's own `Group` (`user.group`) instead of `None`
+**only when the relevant scheduling mode is `"per_group"`** (`shift_scheduling_mode` for the former,
+`oncall_scheduling_mode` for the latter) — mirrors generation's own gating, so a Group override
+saved while its mode is still `"shared"` persists but has no effect anywhere until the mode is
+flipped. `/admin/automation/rules` exposes this: a `group_id` selector (query param on GET, hidden
+field on every rule-type POST) switches every form between editing the organization-wide default
+(`group_id` absent) and a specific `Group`'s own override (`AutomationRuleAdminService.save_*()`'s
+optional `group` parameter) — the two scheduling-mode sections themselves are deliberately **not**
+group-scoped, since they're the org-wide switch that decides whether per-Group overrides get looked
+up at all. One separate, pre-existing gap found (not fixed) while building this:
+`AdvancedShiftAutomation.generate_full_schedule()` discards each day's own messages (including a
+`mandatory_shift` `[ALERT]`) and returns only one aggregate period summary — `generate_daily_shifts()`
+itself does return them correctly, so this only affects the full-period entry point; out of scope
+for the per-Group work, worth fixing separately. **Still not wired to either scheduling mode** at
+all, for eligible-user pooling *or* rule values: `fill_oncall_gaps()`, `rebalance_after_leave()`,
+and `refresh_shifts()` (narrower advanced workflows) keep pooling/org-wide regardless of the
+setting, and the calendar has no per-group display (color/legend/filter) — both tracked as the
+"Future ideas" entry in `ROADMAP.md`, not silently forgotten.
 
 ### In-app notifications
 

@@ -5,16 +5,26 @@ Registered on admin_bp (see app/routes/admin.py). Separate from
 admin_automation_routes.py, which owns rotation order + the
 generate/refresh actions - this page only edits rule parameters.
 
-Each form section posts independently (a `section` hidden field
-selects which AutomationRuleAdminService.save_*() runs), same pattern
-as admin_settings_routes.py. Org-wide only for now - no per-Group
-override UI yet, see AutomationRuleAdminService's module docstring.
+Each rule-type form section posts independently (a `section` hidden
+field selects which AutomationRuleAdminService.save_*() runs), same
+pattern as admin_settings_routes.py. A `group_id` selector (query
+param on GET, hidden field on every rule-type POST) switches which
+scope is being edited: blank/absent means the organization-wide
+default, a Group's id means that Group's own override - see
+AutomationRuleAdminService's module docstring for when an override
+actually takes effect. The two scheduling-mode sections
+(shift_scheduling_mode/oncall_scheduling_mode) are deliberately NOT
+scoped by group_id - they're the org-wide switch that decides whether
+per-Group overrides get looked up at all, so a "per-Group override of
+the mode toggle itself" wouldn't be meaningful.
 """
 
 from flask import flash, redirect, render_template, request, url_for
 from flask_babel import gettext as _
 
 from app.auth.decorators import admin_required
+from app.models import Group
+from app.repositories.user_repository import GroupRepository
 from app.routes.admin import admin_bp
 from app.services import AutomationRuleAdminService, SettingsService
 from app.services.shift_type_service import ShiftTypeService
@@ -54,11 +64,17 @@ def _flash_result(error: str | None, success_message: str) -> None:
         flash(success_message, "success")
 
 
+def _resolve_group(group_id_raw: str | None) -> Group | None:
+    group_id = _parse_int(group_id_raw) if group_id_raw else None
+    return GroupRepository.get_by_id(group_id) if group_id is not None else None
+
+
 @admin_bp.route("/admin/automation/rules", methods=["GET", "POST"])
 @admin_required
 def automation_rules_dashboard():
     if request.method == "POST":
         section = request.form.get("section")
+        group = _resolve_group(request.form.get("group_id"))
 
         if section == "shift_slots":
             oncall_id = _parse_int(request.form.get("oncall_shift_type_id", ""))
@@ -68,7 +84,7 @@ def automation_rules_dashboard():
                 flash(_("Erreur : sélection de créneau invalide"), "danger")
             else:
                 error = AutomationRuleAdminService.save_shift_slots(
-                    oncall_id, rotation_id, default_id
+                    oncall_id, rotation_id, default_id, group=group
                 )
                 _flash_result(error, _("Créneaux de shift enregistrés"))
 
@@ -77,7 +93,9 @@ def automation_rules_dashboard():
             if None in days:
                 flash(_("Erreur : jour invalide"), "danger")
             else:
-                error = AutomationRuleAdminService.save_weekend_definition(days)
+                error = AutomationRuleAdminService.save_weekend_definition(
+                    days, group=group
+                )
                 _flash_result(error, _("Définition du week-end enregistrée"))
 
         elif section == "oncall_spacing":
@@ -85,7 +103,9 @@ def automation_rules_dashboard():
             if weeks is None:
                 flash(_("Erreur : valeur invalide"), "danger")
             else:
-                error = AutomationRuleAdminService.save_oncall_spacing(weeks)
+                error = AutomationRuleAdminService.save_oncall_spacing(
+                    weeks, group=group
+                )
                 _flash_result(error, _("Espacement des astreintes enregistré"))
 
         elif section == "oncall_anchor":
@@ -96,7 +116,7 @@ def automation_rules_dashboard():
                 flash(_("Erreur : valeur invalide"), "danger")
             else:
                 error = AutomationRuleAdminService.save_oncall_anchor(
-                    weekday, start_hour, end_hour
+                    weekday, start_hour, end_hour, group=group
                 )
                 _flash_result(error, _("Ancrage de la semaine d'astreinte enregistré"))
 
@@ -107,7 +127,7 @@ def automation_rules_dashboard():
                 max_value = _parse_int(request.form.get(f"max_{shift_type.id}", ""))
                 if min_value is not None or max_value is not None:
                     limits[shift_type.id] = (min_value, max_value)
-            error = AutomationRuleAdminService.save_staffing_limits(limits)
+            error = AutomationRuleAdminService.save_staffing_limits(limits, group=group)
             _flash_result(error, _("Effectifs enregistrés"))
 
         elif section == "mandatory_shift":
@@ -117,7 +137,9 @@ def automation_rules_dashboard():
             if None in ids:
                 flash(_("Erreur : sélection invalide"), "danger")
             else:
-                error = AutomationRuleAdminService.save_mandatory_shift(ids)
+                error = AutomationRuleAdminService.save_mandatory_shift(
+                    ids, group=group
+                )
                 _flash_result(error, _("Créneaux obligatoires enregistrés"))
 
         elif section == "rest_after_oncall":
@@ -125,12 +147,16 @@ def automation_rules_dashboard():
             if hours is None:
                 flash(_("Erreur : valeur invalide"), "danger")
             else:
-                error = AutomationRuleAdminService.save_rest_after_oncall(hours)
+                error = AutomationRuleAdminService.save_rest_after_oncall(
+                    hours, group=group
+                )
                 _flash_result(error, _("Repos après astreinte enregistré"))
 
         elif section == "oncall_shift_overlap":
             block = request.form.get("block") == "on"
-            error = AutomationRuleAdminService.save_oncall_shift_overlap(block)
+            error = AutomationRuleAdminService.save_oncall_shift_overlap(
+                block, group=group
+            )
             _flash_result(error, _("Règle de chevauchement enregistrée"))
 
         elif section == "shift_scheduling_mode":
@@ -143,27 +169,36 @@ def automation_rules_dashboard():
             error = SettingsService.set_oncall_scheduling_mode(mode)
             _flash_result(error, _("Mode de planification des astreintes enregistré"))
 
-        return redirect(url_for("admin.automation_rules_dashboard"))
+        return redirect(
+            url_for(
+                "admin.automation_rules_dashboard",
+                group_id=group.id if group is not None else None,
+            )
+        )
 
+    group = _resolve_group(request.args.get("group_id"))
+    groups = GroupRepository.get_all()
     shift_types = ShiftTypeService.list_all()
     weekday_choices = list(enumerate(WEEKDAY_LABELS))
     staffing_limits = {
-        shift_type.id: StaffingLimitsRule.get_limits(shift_type.id)
+        shift_type.id: StaffingLimitsRule.get_limits(shift_type.id, group=group)
         for shift_type in shift_types
     }
 
     return render_template(
         "admin/automation/rules.html",
+        groups=groups,
+        selected_group=group,
         shift_types=shift_types,
         weekday_choices=weekday_choices,
-        shift_slots=ShiftSlotsRule.resolve(),
-        weekend_definition=WeekendDefinitionRule.resolve(),
-        oncall_spacing=OnCallSpacingRule.resolve(),
-        oncall_anchor=OnCallAnchorRule.resolve(),
+        shift_slots=ShiftSlotsRule.resolve(group=group),
+        weekend_definition=WeekendDefinitionRule.resolve(group=group),
+        oncall_spacing=OnCallSpacingRule.resolve(group=group),
+        oncall_anchor=OnCallAnchorRule.resolve(group=group),
         staffing_limits=staffing_limits,
-        mandatory_shift=MandatoryShiftRule.resolve(),
-        rest_after_oncall=RestAfterOnCallRule.resolve(),
-        oncall_shift_overlap=OnCallShiftOverlapRule.resolve(),
+        mandatory_shift=MandatoryShiftRule.resolve(group=group),
+        rest_after_oncall=RestAfterOnCallRule.resolve(group=group),
+        oncall_shift_overlap=OnCallShiftOverlapRule.resolve(group=group),
         shift_scheduling_mode=SettingsService.get_shift_scheduling_mode(),
         oncall_scheduling_mode=SettingsService.get_oncall_scheduling_mode(),
     )

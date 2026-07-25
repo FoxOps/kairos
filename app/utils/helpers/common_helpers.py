@@ -436,17 +436,33 @@ def check_shift_rule_violations(user, date, shift_type=None, exclude_shift_id=No
     `exclude_shift_id`: the shift's own id, when checking a move
     (ShiftService.api_update) rather than a fresh creation - excludes
     it from the staffing_limits headcount so moving a shift to the
-    same date/type it's already on doesn't count itself twice."""
+    same date/type it's already on doesn't count itself twice.
+
+    Resolves `user`'s own Group's rule overrides instead of the
+    org-wide default when SettingsService.get_shift_scheduling_mode()
+    is "per_group" - mirrors the same gating already used by automatic
+    generation (AutomationAdminService.generate_full()), so manual
+    creation/move stays consistent with what generation would have
+    produced. "shared" (the default) always resolves org-wide, exactly
+    today's behavior, regardless of whether a Group override happens
+    to exist in the database."""
     if shift_type is None:
         return None
 
+    from app.services import SettingsService
     from app.utils.automation.rules import (
         OnCallShiftOverlapRule,
         RestAfterOnCallRule,
         StaffingLimitsRule,
     )
 
-    limits = StaffingLimitsRule.get_limits(shift_type.id)
+    group = (
+        user.group
+        if SettingsService.get_shift_scheduling_mode() == "per_group"
+        else None
+    )
+
+    limits = StaffingLimitsRule.get_limits(shift_type.id, group=group)
     if limits["max"] is not None:
         count_query = Shift.query.filter(
             Shift.shift_type_id == shift_type.id, Shift.date == date
@@ -467,7 +483,7 @@ def check_shift_rule_violations(user, date, shift_type=None, exclude_shift_id=No
         hour=shift_type.end_hour
     )
 
-    if OnCallShiftOverlapRule.resolve()["block"] and _has_overlapping_oncall(
+    if OnCallShiftOverlapRule.resolve(group=group)["block"] and _has_overlapping_oncall(
         user.id, start_time, end_time
     ):
         return _(
@@ -475,7 +491,7 @@ def check_shift_rule_violations(user, date, shift_type=None, exclude_shift_id=No
             name=user.name,
         )
 
-    min_rest_hours = RestAfterOnCallRule.resolve()["min_rest_hours"]
+    min_rest_hours = RestAfterOnCallRule.resolve(group=group)["min_rest_hours"]
     if min_rest_hours > 0:
         last_oncall = (
             OnCall.query.filter(
@@ -503,10 +519,23 @@ def check_oncall_rule_violations(user, start_time, end_time, exclude_oncall_id=N
     oncall_shift_overlap, else None. `exclude_oncall_id` is accepted
     for symmetry with check_shift_rule_violations() but unused here -
     the check queries Shift, not OnCall, so the on-call being moved
-    never counts against itself."""
+    never counts against itself.
+
+    Resolves `user`'s own Group's oncall_shift_overlap override
+    instead of the org-wide default when
+    SettingsService.get_oncall_scheduling_mode() is "per_group" - same
+    gating rule as check_shift_rule_violations(), mirrored from its own
+    mode setting since this validates an on-call, not a shift."""
+    from app.services import SettingsService
     from app.utils.automation.rules import OnCallShiftOverlapRule
 
-    if OnCallShiftOverlapRule.resolve()["block"]:
+    group = (
+        user.group
+        if SettingsService.get_oncall_scheduling_mode() == "per_group"
+        else None
+    )
+
+    if OnCallShiftOverlapRule.resolve(group=group)["block"]:
         overlapping_shift = _get_overlapping_shift(
             user.id, start_time.date(), end_time.date()
         )
