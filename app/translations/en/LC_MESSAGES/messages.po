@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-25 13:57+0200\n"
+"POT-Creation-Date: 2026-07-25 20:29+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: en <LL@li.org>\n"
@@ -577,7 +577,7 @@ msgid "Congé ajouté. Aucun shift à recalculer."
 msgstr "Leave added. No shifts to recalculate."
 
 #: app/routes/leave_routes.py:92
-msgid "Conge ajoute avec succes !"
+msgid "Congé ajouté avec succès !"
 msgstr "Leave successfully added!"
 
 #: app/routes/leave_routes.py:97 app/routes/oncall_routes.py:77
@@ -594,7 +594,7 @@ msgid "Congé supprimé. Aucun shift à recalculer."
 msgstr "Leave deleted. No shifts to recalculate."
 
 #: app/routes/leave_routes.py:132
-msgid "Conge supprime avec succes !"
+msgid "Congé supprimé avec succès !"
 msgstr "Leave successfully deleted!"
 
 #: app/routes/leave_routes.py:145 app/routes/leave_routes.py:180
@@ -641,12 +641,12 @@ msgstr "%(count)s read notification(s) deleted."
 
 #: app/routes/oncall_routes.py:69
 msgid ""
-"Astreinte ajoutee avec succes ! (Du vendredi 21h au vendredi suivant 07h)"
+"Astreinte ajoutée avec succès ! (Du vendredi 21h au vendredi suivant 07h)"
 msgstr ""
 "On-call successfully added! (From Friday 9pm to the following Friday 7am)"
 
 #: app/routes/oncall_routes.py:98
-msgid "Astreinte supprimee avec succes !"
+msgid "Astreinte supprimée avec succès !"
 msgstr "On-call successfully deleted!"
 
 #: app/routes/oncall_routes.py:115
@@ -660,7 +660,7 @@ msgstr "No on-calls to delete."
 
 #: app/routes/oncall_routes.py:139
 #, python-format
-msgid "Aucun astreinte trouvée pour %(name)s."
+msgid "Aucune astreinte trouvée pour %(name)s."
 msgstr "No on-call found for %(name)s."
 
 #: app/routes/oncall_routes.py:144
@@ -679,7 +679,7 @@ msgid "Type de shift invalide."
 msgstr "Invalid shift type."
 
 #: app/routes/shift_routes.py:72
-msgid "La date de debut doit etre anterieure a la date de fin."
+msgid "La date de début doit être antérieure à la date de fin."
 msgstr "The start date must be before the end date."
 
 #: app/routes/shift_routes.py:84
@@ -689,11 +689,11 @@ msgstr "Unable to add this shift (on %(strftime)s)."
 
 #: app/routes/shift_routes.py:94
 #, python-format
-msgid "Shifts ajoutes avec succes pour les dates : %(join)s !"
+msgid "Shifts ajoutés avec succès pour les dates : %(join)s !"
 msgstr "Shifts successfully added for the dates: %(join)s!"
 
 #: app/routes/shift_routes.py:101
-msgid "Aucun shift ajoute (periode invalide ou jours non ouvres)."
+msgid "Aucun shift ajouté (période invalide ou jours non ouvrés)."
 msgstr "No shift added (invalid period or non-working days)."
 
 #: app/routes/shift_routes.py:109
@@ -702,7 +702,7 @@ msgid "Format de date invalide : %(val0)s. Utilisez le format AAAA-MM-JJ."
 msgstr "Invalid date format: %(val0)s. Use the YYYY-MM-DD format."
 
 #: app/routes/shift_routes.py:135
-msgid "Shift supprime avec succes !"
+msgid "Shift supprimé avec succès !"
 msgstr "Shift successfully deleted!"
 
 #: app/routes/shift_routes.py:152
@@ -2876,7 +2876,7 @@ msgid ""
 " hebdomadaires (shifts et astreintes)."
 msgstr ""
 "General system alerts, notably failures sending the weekly reminder emails "
-"(shifts and on-call)."
+"(shifts and on-calls)."
 
 #: app/templates/admin/_notification_target_form.html:48
 msgid ""
@@ -3053,7 +3053,7 @@ msgstr "Full name"
 
 #: app/templates/admin/add_user.html:30
 msgid "Ex: Jean Dupont"
-msgstr "E.g.: Jean Dupont"
+msgstr "E.g.: John Smith"
 
 #: app/templates/admin/add_user.html:31
 msgid "Exemple : Jean Dupont"
@@ -3065,7 +3065,7 @@ msgstr "Email address"
 
 #: app/templates/admin/add_user.html:36
 msgid "Ex: jean.dupont@exemple.com"
-msgstr "E.g.: jean.dupont@exemple.com"
+msgstr "E.g.: john.smith@example.com"
 
 #: app/templates/admin/add_user.html:37
 msgid "Exemple : jean.dupont@exemple.com"
@@ -4619,7 +4619,7 @@ msgstr "This is a preview. No data has been saved to the database."
 
 #: app/templates/admin/automation/full_dry_run.html:20
 #, python-format
-msgid "Période : %(start)s au %(end)s"
+msgid "Période : du %(start)s au %(end)s"
 msgstr "Period: %(start)s to %(end)s"
 
 #: app/templates/admin/automation/full_dry_run.html:28

@@ -66,7 +66,7 @@ def add_oncall():
 
             flash(
                 _(
-                    "Astreinte ajoutee avec succes ! (Du vendredi 21h au vendredi suivant 07h)"
+                    "Astreinte ajoutée avec succès ! (Du vendredi 21h au vendredi suivant 07h)"
                 ),
                 "success",
             )
@@ -95,7 +95,7 @@ def delete_oncall(oncall_id):
 
     try:
         OnCallService.delete_oncall(oncall_id)
-        flash(_("Astreinte supprimee avec succes !"), "success")
+        flash(_("Astreinte supprimée avec succès !"), "success")
     except Exception as e:
         db.session.rollback()
         flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
@@ -136,7 +136,7 @@ def delete_all_oncalls_for_user(user_id):
         count = OnCallService.delete_all_for_user(user_id)
         if count == 0:
             flash(
-                _("Aucun astreinte trouvée pour %(name)s.", name=user.name), "warning"
+                _("Aucune astreinte trouvée pour %(name)s.", name=user.name), "warning"
             )
         else:
             flash(

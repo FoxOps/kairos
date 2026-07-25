@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-25 13:57+0200\n"
+"POT-Creation-Date: 2026-07-25 20:29+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: fr <LL@li.org>\n"
@@ -580,8 +580,8 @@ msgid "Congé ajouté. Aucun shift à recalculer."
 msgstr "Congé ajouté. Aucun shift à recalculer."
 
 #: app/routes/leave_routes.py:92
-msgid "Conge ajoute avec succes !"
-msgstr "Conge ajoute avec succes !"
+msgid "Congé ajouté avec succès !"
+msgstr "Congé ajouté avec succès !"
 
 #: app/routes/leave_routes.py:97 app/routes/oncall_routes.py:77
 msgid "Format de date invalide. Utilisez le format AAAA-MM-JJ."
@@ -597,8 +597,8 @@ msgid "Congé supprimé. Aucun shift à recalculer."
 msgstr "Congé supprimé. Aucun shift à recalculer."
 
 #: app/routes/leave_routes.py:132
-msgid "Conge supprime avec succes !"
-msgstr "Conge supprime avec succes !"
+msgid "Congé supprimé avec succès !"
+msgstr "Congé supprimé avec succès !"
 
 #: app/routes/leave_routes.py:145 app/routes/leave_routes.py:180
 #: app/services/leave_service.py:93
@@ -644,13 +644,13 @@ msgstr "%(count)s notification(s) lue(s) supprimée(s)."
 
 #: app/routes/oncall_routes.py:69
 msgid ""
-"Astreinte ajoutee avec succes ! (Du vendredi 21h au vendredi suivant 07h)"
+"Astreinte ajoutée avec succès ! (Du vendredi 21h au vendredi suivant 07h)"
 msgstr ""
-"Astreinte ajoutee avec succes ! (Du vendredi 21h au vendredi suivant 07h)"
+"Astreinte ajoutée avec succès ! (Du vendredi 21h au vendredi suivant 07h)"
 
 #: app/routes/oncall_routes.py:98
-msgid "Astreinte supprimee avec succes !"
-msgstr "Astreinte supprimee avec succes !"
+msgid "Astreinte supprimée avec succès !"
+msgstr "Astreinte supprimée avec succès !"
 
 #: app/routes/oncall_routes.py:115
 #, python-format
@@ -663,8 +663,8 @@ msgstr "Aucune astreinte à supprimer."
 
 #: app/routes/oncall_routes.py:139
 #, python-format
-msgid "Aucun astreinte trouvée pour %(name)s."
-msgstr "Aucun astreinte trouvée pour %(name)s."
+msgid "Aucune astreinte trouvée pour %(name)s."
+msgstr "Aucune astreinte trouvée pour %(name)s."
 
 #: app/routes/oncall_routes.py:144
 #, python-format
@@ -683,8 +683,8 @@ msgid "Type de shift invalide."
 msgstr "Type de shift invalide."
 
 #: app/routes/shift_routes.py:72
-msgid "La date de debut doit etre anterieure a la date de fin."
-msgstr "La date de debut doit etre anterieure a la date de fin."
+msgid "La date de début doit être antérieure à la date de fin."
+msgstr "La date de début doit être antérieure à la date de fin."
 
 #: app/routes/shift_routes.py:84
 #, python-format
@@ -693,12 +693,12 @@ msgstr "Impossible d'ajouter ce shift (le %(strftime)s)."
 
 #: app/routes/shift_routes.py:94
 #, python-format
-msgid "Shifts ajoutes avec succes pour les dates : %(join)s !"
-msgstr "Shifts ajoutes avec succes pour les dates : %(join)s !"
+msgid "Shifts ajoutés avec succès pour les dates : %(join)s !"
+msgstr "Shifts ajoutés avec succès pour les dates : %(join)s !"
 
 #: app/routes/shift_routes.py:101
-msgid "Aucun shift ajoute (periode invalide ou jours non ouvres)."
-msgstr "Aucun shift ajoute (periode invalide ou jours non ouvres)."
+msgid "Aucun shift ajouté (période invalide ou jours non ouvrés)."
+msgstr "Aucun shift ajouté (période invalide ou jours non ouvrés)."
 
 #: app/routes/shift_routes.py:109
 #, python-format
@@ -706,8 +706,8 @@ msgid "Format de date invalide : %(val0)s. Utilisez le format AAAA-MM-JJ."
 msgstr "Format de date invalide : %(val0)s. Utilisez le format AAAA-MM-JJ."
 
 #: app/routes/shift_routes.py:135
-msgid "Shift supprime avec succes !"
-msgstr "Shift supprime avec succes !"
+msgid "Shift supprimé avec succès !"
+msgstr "Shift supprimé avec succès !"
 
 #: app/routes/shift_routes.py:152
 #, python-format
@@ -4681,8 +4681,8 @@ msgstr ""
 
 #: app/templates/admin/automation/full_dry_run.html:20
 #, python-format
-msgid "Période : %(start)s au %(end)s"
-msgstr "Période : %(start)s au %(end)s"
+msgid "Période : du %(start)s au %(end)s"
+msgstr "Période : du %(start)s au %(end)s"
 
 #: app/templates/admin/automation/full_dry_run.html:28
 #, python-format

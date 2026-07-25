@@ -69,7 +69,7 @@ def add_shift():
 
             if start_date > end_date:
                 flash(
-                    _("La date de debut doit etre anterieure a la date de fin."),
+                    _("La date de début doit être antérieure à la date de fin."),
                     "danger",
                 )
                 return redirect(url_for("main.add_shift"))
@@ -91,14 +91,14 @@ def add_shift():
             if shifts_added:
                 flash(
                     _(
-                        "Shifts ajoutes avec succes pour les dates : %(join)s !",
+                        "Shifts ajoutés avec succès pour les dates : %(join)s !",
                         join=", ".join(shifts_added),
                     ),
                     "success",
                 )
             else:
                 flash(
-                    _("Aucun shift ajoute (periode invalide ou jours non ouvres)."),
+                    _("Aucun shift ajouté (période invalide ou jours non ouvrés)."),
                     "danger",
                 )
             return redirect(url_for("main.schedule"))
@@ -132,7 +132,7 @@ def delete_shift(shift_id):
 
     try:
         ShiftService.delete_shift(shift_id)
-        flash(_("Shift supprime avec succes !"), "success")
+        flash(_("Shift supprimé avec succès !"), "success")
     except Exception as e:
         db.session.rollback()
         flash(_("Erreur : %(val0)s", val0=str(e)), "danger")

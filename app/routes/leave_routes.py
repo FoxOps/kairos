@@ -89,7 +89,7 @@ def add_leave():
             else:
                 flash(_("Congé ajouté. Aucun shift à recalculer."), "success")
 
-            flash(_("Conge ajoute avec succes !"), "success")
+            flash(_("Congé ajouté avec succès !"), "success")
             return redirect(url_for("main.leave"))
         except ValueError:
             db.session.rollback()
@@ -129,7 +129,7 @@ def delete_leave(leave_id):
         else:
             flash(_("Congé supprimé. Aucun shift à recalculer."), "success")
 
-        flash(_("Conge supprime avec succes !"), "success")
+        flash(_("Congé supprimé avec succès !"), "success")
     except Exception as e:
         db.session.rollback()
         flash(_("Erreur : %(val0)s", val0=str(e)), "danger")

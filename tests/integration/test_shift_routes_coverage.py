@@ -103,7 +103,7 @@ class TestAddShiftValidation:
             follow_redirects=True,
         )
         assert resp.status_code == 200
-        assert b"anterieure" in resp.data
+        assert "antérieure" in resp.get_data(as_text=True)
 
     def test_conflict_date_shows_error(
         self, test_app, logged_in_client, test_user, test_shift_type
