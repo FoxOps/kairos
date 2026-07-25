@@ -606,6 +606,41 @@ class TestGenerateDailyShifts:
         assert len(shifts) == 3  # generation itself is unaffected
         assert any("obligatoire" in msg for msg in messages)
 
+    def test_generate_full_schedule_surfaces_unfilled_mandatory_slot(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Regression test: generate_full_schedule() used to discard
+        every per-day message (including the [ALERT] mandatory-shift
+        one covered above) and return only its own aggregate period
+        summary - the real /admin/automation "Générer" entry point
+        calls generate_full_schedule(), not generate_daily_shifts()
+        directly, so this alert never actually reached an admin."""
+        from app.models import AutomationRule
+        from app.utils.automation.rules import ShiftSlotsRule
+
+        user3 = User(
+            name="Third User",
+            email="third-mandatory-full@test.com",
+            password_hash=generate_password_hash("third-password"),
+            is_admin=False,
+            group_id=test_group.id,
+        )
+        db.session.add(user3)
+        db.session.commit()
+
+        oncall_shift_type_id = ShiftSlotsRule.resolve()["oncall_shift_type_id"]
+        AutomationRule.set(
+            "mandatory_shift", {"shift_type_ids": [oncall_shift_type_id]}
+        )
+
+        test_date = date(2023, 12, 15)
+        shifts, messages, _unfilled = AdvancedShiftAutomation.generate_full_schedule(
+            test_date, test_date, dry_run=True
+        )
+
+        assert len(shifts) == 3  # generation itself is unaffected
+        assert any("obligatoire" in msg for msg in messages)
+
     def test_generate_daily_shifts_ensures_07_15_coverage_with_three_users(
         self, test_app, test_group, test_user, second_user
     ):

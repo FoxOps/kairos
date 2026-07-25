@@ -689,11 +689,23 @@ class AdvancedShiftAutomation:
         know *which* dates need manual attention. The caller is
         responsible for notifying admins once this method's own
         generation has actually completed, same rule as every other
-        notify-worthy list in this module."""
+        notify-worthy list in this module.
+
+        messages also includes every per-day [ALERT] raised by
+        generate_daily_shifts() (mandatory_shift, see
+        _check_mandatory_coverage()) - every other per-day message
+        ([OK]/[WARN]/[SKIP]) is intentionally NOT propagated here,
+        already folded into this method's own aggregate summary below
+        (or, for [WARN], into unfilled_shift_dates) - only [ALERT] has
+        no other representation in this method's return value, and
+        silently dropping it would mean a mandatory slot going unfilled
+        never actually reaches an admin (regression test:
+        test_generate_full_schedule_surfaces_unfilled_mandatory_slot)."""
         all_shifts = []
         days_with_shifts = 0
         days_skipped = 0
         unfilled_shift_dates = []
+        alert_messages: list = []
         from datetime import timedelta
 
         current_date = start_date
@@ -702,6 +714,7 @@ class AdvancedShiftAutomation:
                 current_date, dry_run=dry_run, group=group
             )
             all_shifts.extend(shifts)
+            alert_messages.extend(m for m in messages if "[ALERT]" in m)
             if shifts:
                 days_with_shifts += 1
             else:
@@ -733,7 +746,7 @@ class AdvancedShiftAutomation:
                 with_shifts=days_with_shifts,
                 skipped=days_skipped,
             )
-        return all_shifts, [msg], unfilled_shift_dates
+        return all_shifts, [msg, *alert_messages], unfilled_shift_dates
 
     @staticmethod
     def _rebalance_shift_days(

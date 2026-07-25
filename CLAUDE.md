@@ -503,11 +503,17 @@ field on every rule-type POST) switches every form between editing the organizat
 (`group_id` absent) and a specific `Group`'s own override (`AutomationRuleAdminService.save_*()`'s
 optional `group` parameter) — the two scheduling-mode sections themselves are deliberately **not**
 group-scoped, since they're the org-wide switch that decides whether per-Group overrides get looked
-up at all. One separate, pre-existing gap found (not fixed) while building this:
-`AdvancedShiftAutomation.generate_full_schedule()` discards each day's own messages (including a
-`mandatory_shift` `[ALERT]`) and returns only one aggregate period summary — `generate_daily_shifts()`
-itself does return them correctly, so this only affects the full-period entry point; out of scope
-for the per-Group work, worth fixing separately. **Still not wired to either scheduling mode** at
+up at all. A separate, pre-existing bug was found and fixed while building this:
+`AdvancedShiftAutomation.generate_full_schedule()` discarded each day's own messages (including a
+`mandatory_shift` `[ALERT]`) and returned only one aggregate period summary, even though
+`generate_daily_shifts()` itself always returned them correctly — meaning the mandatory-shift
+`[ALERT]` never actually reached an admin through the real `/admin/automation` "Générer" entry
+point, which calls `generate_full_schedule()`, not `generate_daily_shifts()` directly. Fixed by
+collecting every per-day `[ALERT]` (and only `[ALERT]` — `[OK]`/`[WARN]`/`[SKIP]` are already
+folded into the aggregate summary or `unfilled_shift_dates`) into `alert_messages` and appending
+them after the summary in the returned `messages` list (regression test:
+`test_generate_full_schedule_surfaces_unfilled_mandatory_slot`). **Still not wired to either
+scheduling mode** at
 all, for eligible-user pooling *or* rule values: `fill_oncall_gaps()`, `rebalance_after_leave()`,
 and `refresh_shifts()` (narrower advanced workflows) keep pooling/org-wide regardless of the
 setting, and the calendar has no per-group display (color/legend/filter) — both tracked as the
