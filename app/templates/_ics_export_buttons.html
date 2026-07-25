@@ -5,6 +5,14 @@
    - resource_name: nom affiché de la ressource ('shifts', 'astreintes', ou 'congés')
    - show_all: booléen pour afficher le bouton "Tous" (défaut: true)
    - show_my: booléen pour afficher le bouton "Mes" (défaut: true)
+
+   Chaque bouton ouvre une modale (checkbox daisyUI, pas de <dialog> -
+   le contenu est entièrement connu au rendu de la page, pas besoin de
+   JS pour la construire dynamiquement comme la modale de création de
+   shift) montrant l'URL copiable, un bouton Télécharger et un bouton
+   Fermer - voir app/static/js/ics-export/ics-export-modal.js pour le
+   peu de JS encore nécessaire (fermeture au clic sur Télécharger et à
+   Échap, la modale checkbox n'a pas d'équivalent natif à <dialog>).
 #}
 
 {% set show_all = show_all|default(true) %}
@@ -12,20 +20,64 @@
 
 {% if current_user.is_authenticated and current_user.ics_token %}
     {% if show_all %}
-    <a class="btn btn-success"
-       href="{{ (public_base_url or request.host_url.rstrip('/')) ~ current_user.get_ics_export_url(resource_type, 'all') }}"
-       aria-label="{{ _("Exporter tous les %(resource_name)s au format iCalendar", resource_name=resource_name) }}"
-       title="{{ _("Exporter tous les %(resource_name)s", resource_name=resource_name) }}">
-        <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; {{ _("Exporter tous les %(resource_name)s", resource_name=resource_name) }}
-    </a>
+    {% set modal_id = "ics-modal-" ~ resource_type ~ "-all" %}
+    {% set url = (public_base_url or request.host_url.rstrip('/')) ~ current_user.get_ics_export_url(resource_type, 'all') %}
+    {% set label = _("Exporter tous les %(resource_name)s", resource_name=resource_name) %}
+    <label for="{{ modal_id }}" class="btn btn-success"
+           aria-label="{{ _("Exporter tous les %(resource_name)s au format iCalendar", resource_name=resource_name) }}"
+           title="{{ label }}">
+        <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; {{ label }}
+    </label>
+    <input type="checkbox" id="{{ modal_id }}" class="modal-toggle ics-modal-toggle">
+    <div class="modal" role="dialog" aria-labelledby="{{ modal_id }}-title">
+        <div class="modal-box">
+            <h3 id="{{ modal_id }}-title" class="font-bold text-lg">{{ label }}</h3>
+            <div class="join w-full my-4">
+                <input type="text" id="{{ modal_id }}-input" class="input join-item flex-1" value="{{ url }}" readonly>
+                <button type="button" class="btn btn-primary join-item no-hover-transform" data-copy-target="{{ modal_id }}-input" onclick="Kairos.copyByTarget(event)">
+                    <i class="fas fa-copy"></i>
+                    <span>{{ _("Copier") }}</span>
+                </button>
+            </div>
+            <div class="modal-action">
+                <label for="{{ modal_id }}" class="btn">{{ _("Fermer") }}</label>
+                <a href="{{ url }}" class="btn btn-primary" onclick="Kairos.closeIcsModal('{{ modal_id }}')">
+                    <i class="fas fa-download" aria-hidden="true"></i> {{ _("Télécharger") }}
+                </a>
+            </div>
+        </div>
+        <label class="modal-backdrop" for="{{ modal_id }}">{{ _("Fermer") }}</label>
+    </div>
     {% endif %}
 
     {% if show_my %}
-    <a class="btn btn-success"
-       href="{{ (public_base_url or request.host_url.rstrip('/')) ~ current_user.get_ics_export_url(resource_type, 'my') }}"
-       aria-label="{{ _("Exporter mes %(resource_name)s au format iCalendar", resource_name=resource_name) }}"
-       title="{{ _("Exporter mes %(resource_name)s", resource_name=resource_name) }}">
-        <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; {{ _("Exporter mes %(resource_name)s", resource_name=resource_name) }}
-    </a>
+    {% set modal_id = "ics-modal-" ~ resource_type ~ "-my" %}
+    {% set url = (public_base_url or request.host_url.rstrip('/')) ~ current_user.get_ics_export_url(resource_type, 'my') %}
+    {% set label = _("Exporter mes %(resource_name)s", resource_name=resource_name) %}
+    <label for="{{ modal_id }}" class="btn btn-success"
+           aria-label="{{ _("Exporter mes %(resource_name)s au format iCalendar", resource_name=resource_name) }}"
+           title="{{ label }}">
+        <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; {{ label }}
+    </label>
+    <input type="checkbox" id="{{ modal_id }}" class="modal-toggle ics-modal-toggle">
+    <div class="modal" role="dialog" aria-labelledby="{{ modal_id }}-title">
+        <div class="modal-box">
+            <h3 id="{{ modal_id }}-title" class="font-bold text-lg">{{ label }}</h3>
+            <div class="join w-full my-4">
+                <input type="text" id="{{ modal_id }}-input" class="input join-item flex-1" value="{{ url }}" readonly>
+                <button type="button" class="btn btn-primary join-item no-hover-transform" data-copy-target="{{ modal_id }}-input" onclick="Kairos.copyByTarget(event)">
+                    <i class="fas fa-copy"></i>
+                    <span>{{ _("Copier") }}</span>
+                </button>
+            </div>
+            <div class="modal-action">
+                <label for="{{ modal_id }}" class="btn">{{ _("Fermer") }}</label>
+                <a href="{{ url }}" class="btn btn-primary" onclick="Kairos.closeIcsModal('{{ modal_id }}')">
+                    <i class="fas fa-download" aria-hidden="true"></i> {{ _("Télécharger") }}
+                </a>
+            </div>
+        </div>
+        <label class="modal-backdrop" for="{{ modal_id }}">{{ _("Fermer") }}</label>
+    </div>
     {% endif %}
 {% endif %}

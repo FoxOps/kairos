@@ -803,6 +803,25 @@ since `close` fires for both. User-supplied strings (names, emails, labels) inte
 modal's generated HTML go through an `escapeHtml()` helper first — the innerHTML-template-literal
 pattern doesn't escape by default.
 
+The ICS export modal (`_ics_export_buttons.html`, opened from `schedule.html`/`oncall.html`/
+`leave.html`/`admin/dashboard.html`'s export buttons) is deliberately the *other* modal pattern —
+a daisyUI checkbox-toggle modal (`<input type="checkbox" class="modal-toggle">` + sibling
+`.modal`/`.modal-box`, same mechanism as the mobile drawer above and this session's settings-page
+`collapse` accordions), fully server-rendered, not JS-built like the shift-creation modal. The
+distinction is deliberate: the shift-creation modal needs JS because its content is genuinely
+dynamic (fetches users/shift-types per click); the ICS modal's content (the export URL) is fully
+known at page render, so building it in JS would solve a problem this case doesn't have. Trade-off
+accepted for this: a checkbox-toggle modal has no native equivalent to `<dialog>`'s free
+focus-trap/Escape/`.close()` — `app/static/js/ics-export/ics-export-modal.js` covers only what the
+checkbox can't do on its own (`closeIcsModal()` for the "Télécharger" button, which downloads via
+a plain `<a href>` — `Content-Disposition: attachment` already forces a download rather than a
+navigation, see `export.py::_ics_response()` — and `initIcsModalEscapeHandling()`, one shared
+`keydown` listener). No focus trap. Copy-to-clipboard (`app/static/js/utils/clipboard.js`'s
+`copyInputValue()`/`copyByTarget()`) is shared with the profile ICS-token page
+(`auth/ics_token.html`'s `copy-token.js`, which imports `copyInputValue` from here instead of
+defining its own copy) — `execCommand('copy')` on a selected `<input>`, not
+`navigator.clipboard.writeText`, for consistency with that pre-existing page.
+
 FullCalendar stayed on **6.1.21** (not upgraded to 7.0.0 as originally planned) — loaded from
 `cdn.jsdelivr.net`, the one deliberate exception to "everything via cdnjs" (cdnjs doesn't host
 this package's locale files for any version tested). 7.0.0 was attempted three ways (cdnjs, plain
