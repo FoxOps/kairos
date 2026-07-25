@@ -641,6 +641,34 @@ class TestGenerateDailyShifts:
         assert len(shifts) == 3  # generation itself is unaffected
         assert any("obligatoire" in msg for msg in messages)
 
+    def test_generate_full_schedule_aggregates_repeated_mandatory_alerts(
+        self, test_app, test_group, test_user
+    ):
+        """Regression test: a mandatory slot left unfilled on every day
+        of a multi-day period used to produce one [ALERT] flash message
+        per day (a wall of dozens of near-identical toasts on a real
+        multi-month regeneration) - generate_full_schedule() must
+        collapse them into a single summary message per unfilled
+        ShiftType instead, mirroring the existing period-summary style
+        already used for the [OK]/count message."""
+        from app.models import AutomationRule
+        from app.utils.automation.rules import ShiftSlotsRule
+
+        oncall_shift_type_id = ShiftSlotsRule.resolve()["oncall_shift_type_id"]
+        AutomationRule.set(
+            "mandatory_shift", {"shift_type_ids": [oncall_shift_type_id]}
+        )
+
+        start_date = date(2023, 12, 4)
+        end_date = date(2023, 12, 8)  # 5 weekdays, all unfilled the same way
+        _shifts, messages, _unfilled = AdvancedShiftAutomation.generate_full_schedule(
+            start_date, end_date, dry_run=True
+        )
+
+        alert_messages = [m for m in messages if "[ALERT]" in m]
+        assert len(alert_messages) == 1
+        assert "5" in alert_messages[0]
+
     def test_generate_daily_shifts_ensures_07_15_coverage_with_three_users(
         self, test_app, test_group, test_user, second_user
     ):

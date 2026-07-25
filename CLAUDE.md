@@ -508,12 +508,22 @@ up at all. A separate, pre-existing bug was found and fixed while building this:
 `mandatory_shift` `[ALERT]`) and returned only one aggregate period summary, even though
 `generate_daily_shifts()` itself always returned them correctly — meaning the mandatory-shift
 `[ALERT]` never actually reached an admin through the real `/admin/automation` "Générer" entry
-point, which calls `generate_full_schedule()`, not `generate_daily_shifts()` directly. Fixed by
-collecting every per-day `[ALERT]` (and only `[ALERT]` — `[OK]`/`[WARN]`/`[SKIP]` are already
-folded into the aggregate summary or `unfilled_shift_dates`) into `alert_messages` and appending
-them after the summary in the returned `messages` list (regression test:
-`test_generate_full_schedule_surfaces_unfilled_mandatory_slot`). **Still not wired to either
-scheduling mode** at
+point, which calls `generate_full_schedule()`, not `generate_daily_shifts()` directly. First fixed
+by collecting every per-day `[ALERT]` into the returned `messages` list — which then immediately
+surfaced a second, related bug on a real multi-month regeneration with a mandatory slot missed on
+most days: one `[ALERT]` (or, symmetrically, one on-call `[WARN]`) *per day* flooded the admin with
+dozens of near-identical flash toasts. `generate_full_schedule()` now aggregates via
+`_mandatory_coverage_gap_names()` (extracted from `_check_mandatory_coverage()`, which keeps
+returning one message per day for direct single-day callers) into one summary per unfilled
+`ShiftType` — count + date range, e.g. `[ALERT] Créneau obligatoire "Soir" non pourvu à 12 reprises
+entre le 12/11/2026 et le 08/01/2027.` — mirroring the existing `[OK]` period-summary style.
+`OnCallAutomation.generate_oncall_schedule()` got the symmetric fix: it collapses every unfilled
+Friday's individual `[WARN]` (from `_generate_for_fridays()`, still per-week for
+`fill_oncall_gaps()`, which only ever targets a handful of already-known-missing Fridays) into one
+`[WARN]` count + date range, using the already-returned `unfilled_dates` list rather than parsing
+formatted text. Regression tests:
+`test_generate_full_schedule_aggregates_repeated_mandatory_alerts`,
+`test_aggregates_repeated_unfilled_oncall_warnings`. **Still not wired to either scheduling mode** at
 all, for eligible-user pooling *or* rule values: `fill_oncall_gaps()`, `rebalance_after_leave()`,
 and `refresh_shifts()` (narrower advanced workflows) keep pooling/org-wide regardless of the
 setting, and the calendar has no per-group display (color/legend/filter) — both tracked as the

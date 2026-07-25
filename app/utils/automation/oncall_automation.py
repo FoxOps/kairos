@@ -680,7 +680,16 @@ class OnCallAutomation:
             permutation of the period's assignments could satisfy the
             legal spacing constraint for that week - only notify admins
             about these once the caller's own commit has actually
-            succeeded, never before).
+            succeeded, never before). messages collapses every
+            unfilled Friday into a single aggregate [WARN] (count +
+            date range) instead of one message per Friday, so a long
+            period with many unfillable weeks doesn't flood the caller
+            with dozens of near-identical messages - unfilled_dates
+            (already structured) carries the full list for any caller
+            that needs it. fill_oncall_gaps() below calls
+            _generate_for_fridays() directly and keeps its own
+            per-Friday messages, since it only ever targets the
+            specific Fridays already known to be missing an on-call.
         """
         eligible_users = OnCallAutomation.get_eligible_users(group=group)
         if not eligible_users:
@@ -710,7 +719,7 @@ class OnCallAutomation:
         # whose Friday landed exactly on end_date.
         fridays = _fridays_in_range(start_date, end_date, group=group)
 
-        return _generate_for_fridays(
+        oncalls, messages, unfilled_dates = _generate_for_fridays(
             fridays,
             rotation_order,
             index,
@@ -719,6 +728,17 @@ class OnCallAutomation:
             commit=commit,
             preferred_assignments=preferred_assignments,
         )
+        if unfilled_dates:
+            summary = _(
+                "[WARN] %(count)s astreintes non générées entre le %(start)s "
+                "et le %(end)s (délai légal non respecté) - assignation "
+                "manuelle nécessaire.",
+                count=len(unfilled_dates),
+                start=min(unfilled_dates).strftime("%d/%m/%Y"),
+                end=max(unfilled_dates).strftime("%d/%m/%Y"),
+            )
+            messages = [summary, *(m for m in messages if "[WARN]" not in m)]
+        return oncalls, messages, unfilled_dates
 
     @staticmethod
     def capture_existing_assignments(start_date, end_date) -> dict[date, int]:

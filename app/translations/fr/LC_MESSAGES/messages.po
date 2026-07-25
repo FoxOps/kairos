@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-25 06:55+0200\n"
+"POT-Creation-Date: 2026-07-25 12:54+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: fr <LL@li.org>\n"
@@ -5401,45 +5401,54 @@ msgstr "Voir le planning : %(url)s"
 msgid "Se déconnecter"
 msgstr "Se déconnecter"
 
-#: app/utils/automation/advanced_shift_automation.py:436
+#: app/utils/automation/advanced_shift_automation.py:457
 #, python-format
 msgid "[ALERT] Créneau obligatoire non pourvu pour le %(date)s : %(name)s."
 msgstr "[ALERT] Créneau obligatoire non pourvu pour le %(date)s : %(name)s."
 
-#: app/utils/automation/advanced_shift_automation.py:476
-#: app/utils/automation/advanced_shift_automation.py:658
+#: app/utils/automation/advanced_shift_automation.py:497
+#: app/utils/automation/advanced_shift_automation.py:679
 #, python-format
 msgid "[SKIP] Pas de shift généré pour le %(date)s (week-end)"
 msgstr "[SKIP] Pas de shift généré pour le %(date)s (week-end)"
 
-#: app/utils/automation/advanced_shift_automation.py:488
+#: app/utils/automation/advanced_shift_automation.py:509
 #, python-format
 msgid "[WARN] Aucun utilisateur disponible pour le %(date)s"
 msgstr "[WARN] Aucun utilisateur disponible pour le %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:524
-#: app/utils/automation/advanced_shift_automation.py:571
-#: app/utils/automation/advanced_shift_automation.py:637
+#: app/utils/automation/advanced_shift_automation.py:545
+#: app/utils/automation/advanced_shift_automation.py:592
+#: app/utils/automation/advanced_shift_automation.py:658
 #, python-format
 msgid "[ERROR] Erreur : %(error)s"
 msgstr "[ERROR] Erreur : %(error)s"
 
-#: app/utils/automation/advanced_shift_automation.py:529
+#: app/utils/automation/advanced_shift_automation.py:550
 #, python-format
 msgid "[OK] 1 shift généré pour le %(date)s (effectif minimum : %(name)s)"
 msgstr "[OK] 1 shift généré pour le %(date)s (effectif minimum : %(name)s)"
 
-#: app/utils/automation/advanced_shift_automation.py:644
+#: app/utils/automation/advanced_shift_automation.py:665
 #, python-format
 msgid "[OK] %(count)s shifts générés pour le %(date)s"
 msgstr "[OK] %(count)s shifts générés pour le %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:665
+#: app/utils/automation/advanced_shift_automation.py:686
 #, python-format
 msgid "[WARN] Aucun shift généré pour le %(date)s"
 msgstr "[WARN] Aucun shift généré pour le %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:731
+#: app/utils/automation/advanced_shift_automation.py:755
+#, python-format
+msgid ""
+"[ALERT] Créneau obligatoire \"%(name)s\" non pourvu à %(count)s reprises "
+"entre le %(start)s et le %(end)s."
+msgstr ""
+"[ALERT] Créneau obligatoire \"%(name)s\" non pourvu à %(count)s reprises "
+"entre le %(start)s et le %(end)s."
+
+#: app/utils/automation/advanced_shift_automation.py:770
 #, python-format
 msgid ""
 "[PREVIEW] Prévisualisation : %(count)s shifts seraient générés pour la "
@@ -5448,23 +5457,23 @@ msgstr ""
 "[PREVIEW] Prévisualisation : %(count)s shifts seraient générés pour la "
 "période du %(start)s au %(end)s"
 
-#: app/utils/automation/advanced_shift_automation.py:738
+#: app/utils/automation/advanced_shift_automation.py:777
 #, python-format
 msgid "[OK] %(count)s shifts générés pour la période du %(start)s au %(end)s"
 msgstr "[OK] %(count)s shifts générés pour la période du %(start)s au %(end)s"
 
-#: app/utils/automation/advanced_shift_automation.py:745
+#: app/utils/automation/advanced_shift_automation.py:784
 #, python-format
 msgid "(%(with_shifts)s jours avec shifts, %(skipped)s jours sans)"
 msgstr "(%(with_shifts)s jours avec shifts, %(skipped)s jours sans)"
 
-#: app/utils/automation/advanced_shift_automation.py:778
-#: app/utils/automation/advanced_shift_automation.py:811
+#: app/utils/automation/advanced_shift_automation.py:817
+#: app/utils/automation/advanced_shift_automation.py:850
 #, python-format
 msgid "[DELETED] %(count)s shifts supprimés pour le %(date)s"
 msgstr "[DELETED] %(count)s shifts supprimés pour le %(date)s"
 
-#: app/utils/automation/advanced_shift_automation.py:830
+#: app/utils/automation/advanced_shift_automation.py:869
 #, python-format
 msgid ""
 "[ERROR] Échec de la régénération du %(date)s : %(error)s - ce jour n'a pas "
@@ -5473,7 +5482,7 @@ msgstr ""
 "[ERROR] Échec de la régénération du %(date)s : %(error)s - ce jour n'a pas "
 "été modifié, action manuelle nécessaire"
 
-#: app/utils/automation/advanced_shift_automation.py:914
+#: app/utils/automation/advanced_shift_automation.py:953
 #, python-format
 msgid ""
 "[DELETED] %(count)s astreinte(s) supplémentaire(s) supprimée(s) dans la "
@@ -5482,14 +5491,14 @@ msgstr ""
 "[DELETED] %(count)s astreinte(s) supplémentaire(s) supprimée(s) dans la "
 "période étendue avant régénération"
 
-#: app/utils/automation/advanced_shift_automation.py:935
+#: app/utils/automation/advanced_shift_automation.py:974
 #, python-format
 msgid ""
 "[REGEN] %(count)s astreintes régénérées pour la période %(start)s - %(end)s"
 msgstr ""
 "[REGEN] %(count)s astreintes régénérées pour la période %(start)s - %(end)s"
 
-#: app/utils/automation/advanced_shift_automation.py:945
+#: app/utils/automation/advanced_shift_automation.py:984
 #, python-format
 msgid ""
 "[ERROR] Échec de la régénération des astreintes pour la période %(start)s - "
@@ -5500,7 +5509,7 @@ msgstr ""
 "%(end)s : %(error)s - les astreintes de cette période n'ont pas été "
 "modifiées, action manuelle nécessaire"
 
-#: app/utils/automation/advanced_shift_automation.py:1053
+#: app/utils/automation/advanced_shift_automation.py:1092
 #, python-format
 msgid ""
 "[DELETED] %(count)s astreintes supprimées pour l'utilisateur %(user_id)s"
@@ -5523,17 +5532,26 @@ msgstr ""
 msgid "[OK] %(count)s astreintes générées."
 msgstr "[OK] %(count)s astreintes générées."
 
-#: app/utils/automation/oncall_automation.py:687
-#: app/utils/automation/oncall_automation.py:777
+#: app/utils/automation/oncall_automation.py:696
+#: app/utils/automation/oncall_automation.py:797
 msgid "Aucun utilisateur éligible pour les astreintes."
 msgstr "Aucun utilisateur éligible pour les astreintes."
 
-#: app/utils/automation/oncall_automation.py:693
-#: app/utils/automation/oncall_automation.py:781
+#: app/utils/automation/oncall_automation.py:702
+#: app/utils/automation/oncall_automation.py:801
 msgid "Impossible de déterminer l'ordre de rotation."
 msgstr "Impossible de déterminer l'ordre de rotation."
 
-#: app/utils/automation/oncall_automation.py:812
+#: app/utils/automation/oncall_automation.py:733
+#, python-format
+msgid ""
+"[WARN] %(count)s astreintes non générées entre le %(start)s et le %(end)s "
+"(délai légal non respecté) - assignation manuelle nécessaire."
+msgstr ""
+"[WARN] %(count)s astreintes non générées entre le %(start)s et le %(end)s "
+"(délai légal non respecté) - assignation manuelle nécessaire."
+
+#: app/utils/automation/oncall_automation.py:832
 msgid "[OK] Aucune astreinte manquante sur cette période."
 msgstr "[OK] Aucune astreinte manquante sur cette période."
 

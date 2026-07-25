@@ -400,18 +400,14 @@ class AdvancedShiftAutomation:
         return generated_shifts, None
 
     @staticmethod
-    def _check_mandatory_coverage(
-        generated_shifts: list, date: "date", group: "Group | None" = None
+    def _mandatory_coverage_gap_names(
+        generated_shifts: list, group: "Group | None" = None
     ) -> list:
-        """Rule engine addition (MandatoryShiftRule, no prior
-        equivalent): for each ShiftType an admin flagged mandatory, if
-        the day's generated shifts don't cover it, raise an elevated
-        message - distinct from the generic "no available user"/
-        "no shift generated" messages elsewhere in this method, so an
-        admin can tell "a mandatory slot specifically went unfilled"
-        apart from the ordinary unfilled-slot case. Stays within the
-        existing "leave unfilled + notify, never block" philosophy
-        (ROADMAP.md) - this never prevents generation/commit.
+        """Labels of every mandatory-flagged ShiftType (MandatoryShiftRule)
+        NOT covered by `generated_shifts` - the data _check_mandatory_coverage()
+        below formats into a per-day message, extracted separately so
+        generate_full_schedule() can aggregate gaps across a whole period
+        without parsing already-formatted, locale-dependent text.
 
         `group`: when given, resolves the Group's own mandatory_shift
         override instead of the org-wide default - see
@@ -425,12 +421,37 @@ class AdvancedShiftAutomation:
             return []
 
         covered_ids = {shift.shift_type_id for shift in generated_shifts}
-        messages = []
+        names = []
         for shift_type_id in mandatory_ids:
             if shift_type_id in covered_ids:
                 continue
             shift_type = db.session.get(ShiftType, shift_type_id)
-            name = shift_type.label if shift_type else shift_type_id
+            names.append(shift_type.label if shift_type else shift_type_id)
+        return names
+
+    @staticmethod
+    def _check_mandatory_coverage(
+        generated_shifts: list, date: "date", group: "Group | None" = None
+    ) -> list:
+        """Rule engine addition (MandatoryShiftRule, no prior
+        equivalent): for each ShiftType an admin flagged mandatory, if
+        the day's generated shifts don't cover it, raise an elevated
+        message - distinct from the generic "no available user"/
+        "no shift generated" messages elsewhere in this method, so an
+        admin can tell "a mandatory slot specifically went unfilled"
+        apart from the ordinary unfilled-slot case. Stays within the
+        existing "leave unfilled + notify, never block" philosophy
+        (ROADMAP.md) - this never prevents generation/commit.
+
+        One message per day, used directly by callers that only care
+        about a single day (e.g. generate_daily_shifts() itself);
+        generate_full_schedule() aggregates across the whole period
+        instead via _mandatory_coverage_gap_names() to avoid one flash
+        message per unfilled day (see its own docstring)."""
+        messages = []
+        for name in AdvancedShiftAutomation._mandatory_coverage_gap_names(
+            generated_shifts, group=group
+        ):
             messages.append(
                 _(
                     "[ALERT] Créneau obligatoire non pourvu pour le %(date)s : "
@@ -691,37 +712,55 @@ class AdvancedShiftAutomation:
         generation has actually completed, same rule as every other
         notify-worthy list in this module.
 
-        messages also includes every per-day [ALERT] raised by
-        generate_daily_shifts() (mandatory_shift, see
-        _check_mandatory_coverage()) - every other per-day message
-        ([OK]/[WARN]/[SKIP]) is intentionally NOT propagated here,
-        already folded into this method's own aggregate summary below
-        (or, for [WARN], into unfilled_shift_dates) - only [ALERT] has
-        no other representation in this method's return value, and
-        silently dropping it would mean a mandatory slot going unfilled
-        never actually reaches an admin (regression test:
-        test_generate_full_schedule_surfaces_unfilled_mandatory_slot)."""
+        messages also includes one aggregate [ALERT] per mandatory_shift
+        ShiftType left unfilled anywhere in the period (mandatory_shift,
+        see _mandatory_coverage_gap_names()) - count + date range, not
+        one message per unfilled day, so a mandatory slot missed on
+        every day of a multi-month period doesn't flood the caller with
+        dozens of near-identical messages (regression test:
+        test_generate_full_schedule_aggregates_repeated_mandatory_alerts).
+        Every other per-day message ([OK]/[WARN]/[SKIP]) is intentionally
+        NOT propagated here, already folded into this method's own
+        aggregate summary below (or, for [WARN], into
+        unfilled_shift_dates)."""
+        from collections import defaultdict
+        from datetime import timedelta
+
         all_shifts = []
         days_with_shifts = 0
         days_skipped = 0
         unfilled_shift_dates = []
-        alert_messages: list = []
-        from datetime import timedelta
+        mandatory_gap_dates: dict = defaultdict(list)
 
         current_date = start_date
         while current_date <= end_date:
-            shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(
+            shifts, _messages = AdvancedShiftAutomation.generate_daily_shifts(
                 current_date, dry_run=dry_run, group=group
             )
             all_shifts.extend(shifts)
-            alert_messages.extend(m for m in messages if "[ALERT]" in m)
             if shifts:
                 days_with_shifts += 1
+                for name in AdvancedShiftAutomation._mandatory_coverage_gap_names(
+                    shifts, group=group
+                ):
+                    mandatory_gap_dates[name].append(current_date)
             else:
                 days_skipped += 1
                 if current_date.weekday() < 5:
                     unfilled_shift_dates.append(current_date)
             current_date += timedelta(days=1)
+
+        alert_messages = [
+            _(
+                '[ALERT] Créneau obligatoire "%(name)s" non pourvu à %(count)s '
+                "reprises entre le %(start)s et le %(end)s.",
+                name=name,
+                count=len(dates),
+                start=min(dates).strftime("%d/%m/%Y"),
+                end=max(dates).strftime("%d/%m/%Y"),
+            )
+            for name, dates in mandatory_gap_dates.items()
+        ]
 
         # Return a summary
         period_start = start_date.strftime("%d/%m/%Y")
