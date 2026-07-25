@@ -246,6 +246,13 @@ class TestShiftRepository:
         db.session.commit()
         assert ShiftRepository.get_by_id(shift.id) is not None
 
+    def test_list_dates_for_user(self, test_app, test_user, test_shift):
+        dates = ShiftRepository.list_dates_for_user(test_user.id)
+        assert dates == [test_shift.date]
+
+    def test_list_dates_for_user_empty(self, test_app, test_user):
+        assert ShiftRepository.list_dates_for_user(test_user.id) == []
+
 
 class TestLeaveRepository:
     def test_get_by_id(self, test_app, test_leave):
@@ -294,6 +301,13 @@ class TestLeaveRepository:
         LeaveRepository.delete(leave)
         db.session.commit()
         assert LeaveRepository.get_by_id(leave.id) is None
+
+    def test_list_spans_for_user(self, test_app, test_user, test_leave):
+        spans = LeaveRepository.list_spans_for_user(test_user.id)
+        assert spans == [(test_leave.start_date, test_leave.end_date)]
+
+    def test_list_spans_for_user_empty(self, test_app, test_user):
+        assert LeaveRepository.list_spans_for_user(test_user.id) == []
 
 
 class TestOnCallRepository:
@@ -434,3 +448,10 @@ class TestOnCallRepository:
         OnCallRepository.delete(oncall)
         db.session.commit()
         assert OnCallRepository.get_by_id(oncall.id) is None
+
+    def test_list_spans_for_user(self, test_app, test_user, test_oncall):
+        spans = OnCallRepository.list_spans_for_user(test_user.id)
+        assert spans == [(test_oncall.start_time, test_oncall.end_time)]
+
+    def test_list_spans_for_user_empty(self, test_app, test_user):
+        assert OnCallRepository.list_spans_for_user(test_user.id) == []

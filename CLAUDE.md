@@ -1155,6 +1155,33 @@ own timezone and silently shift the day. (`app/static/js/utils/date.js`, a simil
 previously used by the old requester-side swap form's dynamically-fetched target-shift dropdown, was
 removed as dead code along with that dropdown — see "Shift swaps" above.)
 
+### Dashboard day-based stats
+
+`/dashboard`'s top 3 stat cards (`app/routes/dashboard_routes.py::user_dashboard()`,
+`app/services/dashboard_service.py::DashboardService`) show **day counts, not row/event counts** —
+a `Shift` row is always exactly one calendar day, but an `OnCall` row spans roughly a week and a
+`Leave` row spans a date range, so counting rows there was misleading (user-reported). `get_stats(user)`
+returns, per shift/on-call/leave, an all-time `total`, `this_month`, `last_month`, and a `trend`
+delta (`this_month - last_month`) — "month" is the full calendar month window
+(`_month_bounds()`), not clipped to today, so a shift already scheduled later this month still
+counts for "this month" (a deliberate asymmetry: this month is naturally a mix of past-actual and
+future-scheduled, last month is fully settled). On-call/leave **spans** straddling a month
+boundary are split proportionally between the two months via a shared `_clipped_days()` helper
+(`max(0, (min(end, window_end) - max(start, window_start)).days + 1)`), rather than being wholly
+attributed to whichever month the span starts in. The on-call headline total is `round()`ed to a
+whole day (no decimal-duration precedent anywhere in this app's templates) — the exact hour figure
+stays available via `OnCall.duration()` elsewhere, not hidden, just not the headline. Three new
+columns-only repository methods back this (`ShiftRepository.list_dates_for_user()`,
+`OnCallRepository.list_spans_for_user()`, `LeaveRepository.list_spans_for_user()`) — no SQL-side
+date-diff aggregation (dialect-risky across this app's 3 supported DB engines), Python-side
+summation over an already-fetched small row set instead, appropriate at this per-user dashboard's
+scale. `DashboardService.get_dashboard_data(user)` also bundles the pre-existing upcoming/recent
+lists and shift-type chart queries, moved here from the route as-is — fixes a routes→services→
+repositories layering violation (the route used to query `Shift`/`OnCall`/`Leave` directly), not a
+logic change. `dashboard.html`'s leave-days text now calls `Leave.duration()` instead of
+re-deriving the same inclusive-day formula inline (`(end - start).days + 1`) — a correctness/
+consistency drive-by, since that duplicated formula already exists as the model's own method.
+
 ## Testing conventions
 
 `tests/conftest.py` defines the fixture chain: `test_app` builds a fresh app via

@@ -73,6 +73,18 @@ class LeaveRepository:
         return Leave.query.filter_by(user_id=user_id).count()
 
     @staticmethod
+    def list_spans_for_user(user_id: int) -> list[tuple[date, date]]:
+        """Every (start_date, end_date) pair for this user's leaves -
+        columns-only (no joinedload, no full Leave objects), used by
+        the dashboard's day-count stats."""
+        return [
+            (row.start_date, row.end_date)
+            for row in db.session.query(Leave.start_date, Leave.end_date)
+            .filter(Leave.user_id == user_id)
+            .all()
+        ]
+
+    @staticmethod
     def exists_for_user(user_id: int) -> bool:
         return Leave.query.filter_by(user_id=user_id).first() is not None
 

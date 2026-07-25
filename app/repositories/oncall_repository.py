@@ -93,6 +93,18 @@ class OnCallRepository:
         return OnCall.query.filter_by(user_id=user_id).count()
 
     @staticmethod
+    def list_spans_for_user(user_id: int) -> list[tuple[datetime, datetime]]:
+        """Every (start_time, end_time) pair for this user's on-calls -
+        columns-only (no joinedload, no full OnCall objects), used by
+        the dashboard's day-count stats."""
+        return [
+            (row.start_time, row.end_time)
+            for row in db.session.query(OnCall.start_time, OnCall.end_time)
+            .filter(OnCall.user_id == user_id)
+            .all()
+        ]
+
+    @staticmethod
     def count_for_group(group_id: int) -> int:
         """OnCall has no group_id column of its own - reachable only via
         its owning User."""

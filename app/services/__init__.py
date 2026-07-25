@@ -44,6 +44,10 @@ Services:
   rules/) - one save_*() per rule type, org-wide only for now (no
   per-Group override UI yet). Not to be confused with
   automation_admin_service above (rotation order + generation actions).
+- dashboard_service: Business logic for /dashboard (the personal
+  landing page) - day-based shift/on-call/leave stats (total/this-month/
+  last-month/trend, not row counts) plus the upcoming/recent lists and
+  shift-type chart data, all previously computed inline in the route.
 """
 
 from app.services.app_notification_service import AppNotificationService
@@ -52,6 +56,7 @@ from app.services.audit_service import AuditService
 from app.services.automation_admin_service import AutomationAdminService
 from app.services.automation_rule_admin_service import AutomationRuleAdminService
 from app.services.backup_service import BackupService
+from app.services.dashboard_service import DashboardService
 from app.services.export_service import ExportService
 from app.services.group_service import GroupService
 from app.services.leave_service import LeaveService
@@ -86,4 +91,5 @@ __all__ = [
     "AppriseNotificationService",
     "ServiceAccountService",
     "ScheduleCleanupService",
+    "DashboardService",
 ]

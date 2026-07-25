@@ -104,6 +104,18 @@ class ShiftRepository:
         return Shift.query.filter_by(user_id=user_id).count()
 
     @staticmethod
+    def list_dates_for_user(user_id: int) -> list[date]:
+        """Every date this user has a shift on - columns-only (no
+        joinedload, no full Shift objects) since callers (dashboard
+        day-count stats) only need the date column."""
+        return [
+            row[0]
+            for row in db.session.query(Shift.date)
+            .filter(Shift.user_id == user_id)
+            .all()
+        ]
+
+    @staticmethod
     def count_for_group(group_id: int) -> int:
         """Shift has no group_id column of its own - reachable only via
         its owning User."""

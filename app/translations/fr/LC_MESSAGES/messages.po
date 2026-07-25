@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-25 21:12+0200\n"
+"POT-Creation-Date: 2026-07-25 21:59+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: fr <LL@li.org>\n"
@@ -1974,14 +1974,14 @@ msgstr "Shifts"
 #: app/templates/admin/automation/rules.html:66
 #: app/templates/admin/automation/rules.html:161
 #: app/templates/admin/dashboard.html:54 app/templates/base.html:91
-#: app/templates/dashboard.html:28 app/templates/index.html:136
-#: app/templates/oncall.html:3 app/templates/oncall.html:8
+#: app/templates/index.html:136 app/templates/oncall.html:3
+#: app/templates/oncall.html:8
 msgid "Astreintes"
 msgstr "Astreintes"
 
 #: app/templates/admin/dashboard.html:65 app/templates/base.html:92
-#: app/templates/dashboard.html:36 app/templates/index.html:137
-#: app/templates/leave.html:3 app/templates/leave.html:8
+#: app/templates/index.html:137 app/templates/leave.html:3
+#: app/templates/leave.html:8
 msgid "Congés"
 msgstr "Congés"
 
@@ -2158,120 +2158,151 @@ msgstr "Mon Tableau de bord"
 msgid "Bienvenue, %(name)s ! Voici votre vue d'ensemble personnalisée."
 msgstr "Bienvenue, %(name)s ! Voici votre vue d'ensemble personnalisée."
 
-#: app/templates/dashboard.html:15
+#: app/templates/dashboard.html:18
 msgid "Statistiques principales"
 msgstr "Statistiques principales"
 
-#: app/templates/dashboard.html:20
-msgid "Shifts totaux"
-msgstr "Shifts totaux"
+#: app/templates/dashboard.html:23
+msgid "Jours de shift"
+msgstr "Jours de shift"
 
-#: app/templates/dashboard.html:21
+#: app/templates/dashboard.html:24
 #, python-format
-msgid "Nombre total de shifts : %(total_shifts)s"
-msgstr "Nombre total de shifts : %(total_shifts)s"
+msgid "Nombre total de jours de shift : %(total)s"
+msgstr "Nombre total de jours de shift : %(total)s"
 
-#: app/templates/dashboard.html:29
+#: app/templates/dashboard.html:26 app/templates/dashboard.html:44
+#: app/templates/dashboard.html:62
 #, python-format
-msgid "Nombre total d'astreintes : %(total_oncalls)s"
-msgstr "Nombre total d'astreintes : %(total_oncalls)s"
+msgid "%(count)s ce mois-ci"
+msgstr "%(count)s ce mois-ci"
 
-#: app/templates/dashboard.html:37
+#: app/templates/dashboard.html:28 app/templates/dashboard.html:46
+#: app/templates/dashboard.html:64
 #, python-format
-msgid "Nombre total de congés : %(total_leaves)s"
-msgstr "Nombre total de congés : %(total_leaves)s"
+msgid "+%(delta)s vs mois dernier"
+msgstr "+%(delta)s vs mois dernier"
 
-#: app/templates/dashboard.html:48
+#: app/templates/dashboard.html:30 app/templates/dashboard.html:48
+#: app/templates/dashboard.html:66
+#, python-format
+msgid "%(delta)s vs mois dernier"
+msgstr "%(delta)s vs mois dernier"
+
+#: app/templates/dashboard.html:32 app/templates/dashboard.html:50
+#: app/templates/dashboard.html:68
+msgid "stable vs mois dernier"
+msgstr "stable vs mois dernier"
+
+#: app/templates/dashboard.html:41
+msgid "Jours d'astreinte"
+msgstr "Jours d'astreinte"
+
+#: app/templates/dashboard.html:42
+#, python-format
+msgid "Nombre total de jours d'astreinte : %(total)s"
+msgstr "Nombre total de jours d'astreinte : %(total)s"
+
+#: app/templates/dashboard.html:59
+msgid "Jours de congé"
+msgstr "Jours de congé"
+
+#: app/templates/dashboard.html:60
+#, python-format
+msgid "Nombre total de jours de congé : %(total)s"
+msgstr "Nombre total de jours de congé : %(total)s"
+
+#: app/templates/dashboard.html:81
 msgid "Répartition par type de shift"
 msgstr "Répartition par type de shift"
 
-#: app/templates/dashboard.html:49
+#: app/templates/dashboard.html:82
 msgid "Nombre de shifts par créneau horaire (ex: 07h-15h, 09h-17h, 13h-21h)"
 msgstr "Nombre de shifts par créneau horaire (ex: 07h-15h, 09h-17h, 13h-21h)"
 
-#: app/templates/dashboard.html:50
+#: app/templates/dashboard.html:83
 msgid "Graphique à barres de la répartition des types de shifts"
 msgstr "Graphique à barres de la répartition des types de shifts"
 
-#: app/templates/dashboard.html:56
+#: app/templates/dashboard.html:89
 #, python-format
 msgid "Type %(label)s : %(count)s shifts"
 msgstr "Type %(label)s : %(count)s shifts"
 
-#: app/templates/dashboard.html:69
+#: app/templates/dashboard.html:102
 msgid "Prochains Shifts"
 msgstr "Prochains Shifts"
 
-#: app/templates/dashboard.html:71
+#: app/templates/dashboard.html:104
 msgid "Liste des prochains shifts"
 msgstr "Liste des prochains shifts"
 
-#: app/templates/dashboard.html:77 app/templates/dashboard.html:161
+#: app/templates/dashboard.html:110 app/templates/dashboard.html:194
 #, python-format
 msgid "à %(start)s - %(end)s"
 msgstr "à %(start)s - %(end)s"
 
-#: app/templates/dashboard.html:91
+#: app/templates/dashboard.html:124
 msgid "Aucun shift à venir"
 msgstr "Aucun shift à venir"
 
-#: app/templates/dashboard.html:99
+#: app/templates/dashboard.html:132
 msgid "Prochaines Astreintes"
 msgstr "Prochaines Astreintes"
 
-#: app/templates/dashboard.html:101
+#: app/templates/dashboard.html:134
 msgid "Liste des prochaines astreintes"
 msgstr "Liste des prochaines astreintes"
 
-#: app/templates/dashboard.html:107
+#: app/templates/dashboard.html:140
 #, python-format
 msgid "de %(start)s à %(end)s"
 msgstr "de %(start)s à %(end)s"
 
-#: app/templates/dashboard.html:109
+#: app/templates/dashboard.html:142
 msgid "Astreinte programmée"
 msgstr "Astreinte programmée"
 
-#: app/templates/dashboard.html:117
+#: app/templates/dashboard.html:150
 msgid "Aucune astreinte à venir"
 msgstr "Aucune astreinte à venir"
 
-#: app/templates/dashboard.html:125
+#: app/templates/dashboard.html:158
 msgid "Prochains Congés"
 msgstr "Prochains Congés"
 
-#: app/templates/dashboard.html:127
+#: app/templates/dashboard.html:160
 msgid "Liste des prochains congés"
 msgstr "Liste des prochains congés"
 
-#: app/templates/dashboard.html:132
+#: app/templates/dashboard.html:165
 #, python-format
 msgid "Du %(start)s"
 msgstr "Du %(start)s"
 
-#: app/templates/dashboard.html:133
+#: app/templates/dashboard.html:166
 #, python-format
 msgid "au %(end)s"
 msgstr "au %(end)s"
 
-#: app/templates/dashboard.html:136
+#: app/templates/dashboard.html:169
 #, python-format
 msgid "%(days)s jour(s)"
 msgstr "%(days)s jour(s)"
 
-#: app/templates/dashboard.html:145
+#: app/templates/dashboard.html:178
 msgid "Aucun congé à venir"
 msgstr "Aucun congé à venir"
 
-#: app/templates/dashboard.html:153
+#: app/templates/dashboard.html:186
 msgid "Shifts récents"
 msgstr "Shifts récents"
 
-#: app/templates/dashboard.html:155
+#: app/templates/dashboard.html:188
 msgid "Liste des shifts récents"
 msgstr "Liste des shifts récents"
 
-#: app/templates/dashboard.html:175
+#: app/templates/dashboard.html:208
 msgid "Aucun shift récent"
 msgstr "Aucun shift récent"
 
@@ -4364,7 +4395,6 @@ msgid "Non applicable (mode commun)"
 msgstr "Non applicable (mode commun)"
 
 #: app/templates/admin/automation/dashboard.html:136
-#, python-format
 msgid "Aucun groupe créé pour le moment."
 msgstr "Aucun groupe créé pour le moment."
 
@@ -6135,3 +6165,6 @@ msgstr "Le mot de passe ne doit pas contenir votre adresse email."
 #~ msgstr ""
 #~ "Une rotation simple où chaque semaine un membre différent est désigné. "
 #~ "Utilisez \"Génération complète\" pour configurer l'ordre de rotation."
+
+#~ msgid "Shifts totaux"
+#~ msgstr "Shifts totaux"
