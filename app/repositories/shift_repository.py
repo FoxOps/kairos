@@ -10,7 +10,7 @@ from datetime import date, datetime
 from sqlalchemy.orm import joinedload
 
 from app import db
-from app.models import Shift, ShiftType
+from app.models import Shift, ShiftType, User
 
 
 class ShiftTypeRepository:
@@ -102,6 +102,16 @@ class ShiftRepository:
     @staticmethod
     def count_for_user(user_id: int) -> int:
         return Shift.query.filter_by(user_id=user_id).count()
+
+    @staticmethod
+    def count_for_group(group_id: int) -> int:
+        """Shift has no group_id column of its own - reachable only via
+        its owning User."""
+        return (
+            Shift.query.join(User, Shift.user_id == User.id)
+            .filter(User.group_id == group_id)
+            .count()
+        )
 
     @staticmethod
     def count_for_date(on_date: date) -> int:

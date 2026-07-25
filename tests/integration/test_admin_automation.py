@@ -27,6 +27,15 @@ class TestAutomationDashboard:
         assert response.status_code == 200
         assert b"Combler ces trous" not in response.data
 
+    def test_dashboard_shows_per_group_stats(self, logged_in_client):
+        # logged_in_client's own login flow already creates a group
+        # ("Test Group Login") - no groups are ever truly absent once
+        # an admin can even log in, so this covers the realistic case.
+        response = logged_in_client.get("/admin/automation")
+        assert response.status_code == 200
+        assert b"Test Group Login" in response.data
+        assert b"Statistiques par groupe" in response.data
+
     def test_dashboard_shows_gap_alert_and_deep_link(self, logged_in_client, test_user):
         """Regression test: an admin ran a refresh with the page's
         default dates (starting today) and concluded nothing happened,

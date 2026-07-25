@@ -344,3 +344,107 @@ class TestMandatoryShiftRuleValueGroupScoping:
 
         assert any("[ALERT]" in m for m in msgs_a)
         assert not any("[ALERT]" in m for m in msgs_b)
+
+
+class TestGetAutomationStatusGroupScoping:
+    def test_counts_scoped_to_group(self, test_app, test_group, test_shift_type):
+        from app.models import Shift
+        from app.utils.automation import get_automation_status
+
+        other_group = Group(name="Other", is_part_of_schedule=True)
+        db.session.add(other_group)
+        db.session.commit()
+        user_a = _make_user("A", "a@test.com", test_group)
+        user_b = _make_user("B", "b@test.com", other_group)
+
+        db.session.add(
+            Shift(
+                user_id=user_a.id,
+                shift_type_id=test_shift_type.id,
+                date=date(2023, 12, 4),
+                start_time=datetime(2023, 12, 4, 7, 0),
+                end_time=datetime(2023, 12, 4, 15, 0),
+            )
+        )
+        db.session.add(
+            OnCall(
+                user_id=user_a.id,
+                start_time=datetime(2023, 12, 1, 21, 0),
+                end_time=datetime(2023, 12, 8, 7, 0),
+            )
+        )
+        db.session.add(
+            Shift(
+                user_id=user_b.id,
+                shift_type_id=test_shift_type.id,
+                date=date(2023, 12, 4),
+                start_time=datetime(2023, 12, 4, 7, 0),
+                end_time=datetime(2023, 12, 4, 15, 0),
+            )
+        )
+        db.session.commit()
+
+        status_a = get_automation_status(group=test_group)
+        status_b = get_automation_status(group=other_group)
+
+        assert status_a["shift_count"] == 1
+        assert status_a["oncall_count"] == 1
+        assert status_b["shift_count"] == 1
+        assert status_b["oncall_count"] == 0
+
+    def test_eligible_users_scoped_to_group(self, test_app, test_group):
+        from app.utils.automation import get_automation_status
+
+        other_group = Group(
+            name="Other", is_part_of_schedule=True, is_part_of_oncall=True
+        )
+        db.session.add(other_group)
+        db.session.commit()
+        _make_user("A", "a@test.com", test_group)
+        _make_user("B", "b@test.com", other_group)
+        _make_user("C", "c@test.com", other_group)
+
+        status_a = get_automation_status(group=test_group)
+        status_b = get_automation_status(group=other_group)
+
+        assert status_a["oncall_eligible_users"] == 1
+        assert status_a["shift_eligible_users"] == 1
+        assert status_b["oncall_eligible_users"] == 2
+        assert status_b["shift_eligible_users"] == 2
+
+    def test_include_next_available_false_skips_computation(self, test_app, test_group):
+        from app.utils.automation import get_automation_status
+
+        status = get_automation_status(group=test_group, include_next_available=False)
+        assert status["next_available_oncall_date"] is None
+
+    def test_next_available_oncall_date_does_not_leak_across_groups(
+        self, test_app, test_group
+    ):
+        """Regression test, same class as
+        TestGetOnCallForDateGroupScoping above: in per_group mode two
+        groups can have a concurrent on-call for the same anchor week -
+        the per-group "next available" computation must not see the
+        other group's on-call and think this group's slot is taken."""
+        from app.utils.automation import get_automation_status
+
+        other_group = Group(name="Other", is_part_of_oncall=True)
+        db.session.add(other_group)
+        db.session.commit()
+        _make_user("A", "a@test.com", test_group)
+        user_b = _make_user("B", "b@test.com", other_group)
+
+        anchor_start = datetime(2023, 12, 1, 21, 0)  # Friday 21:00
+        anchor_end = anchor_start + timedelta(days=7, hours=-14)
+        db.session.add(
+            OnCall(user_id=user_b.id, start_time=anchor_start, end_time=anchor_end)
+        )
+        db.session.commit()
+
+        status_a = get_automation_status(group=test_group)
+
+        # test_group's own slot for that same Friday is still free -
+        # only other_group's user is on call - so it must NOT be
+        # reported as unavailable just because *a* on-call exists for
+        # that instant.
+        assert status_a["next_available_oncall_date"] is not None

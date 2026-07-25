@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-25 20:29+0200\n"
+"POT-Creation-Date: 2026-07-25 21:12+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: fr <LL@li.org>\n"
@@ -27,8 +27,8 @@ msgstr "Vous devez choisir un nouveau mot de passe avant de continuer."
 msgid "Accès refusé : vous devez être administrateur."
 msgstr "Accès refusé : vous devez être administrateur."
 
-#: app/auth/decorators.py:91 app/routes/admin_automation_routes.py:197
-#: app/routes/admin_automation_routes.py:301
+#: app/auth/decorators.py:91 app/routes/admin_automation_routes.py:221
+#: app/routes/admin_automation_routes.py:325
 #: app/routes/admin_group_routes.py:89
 #: app/routes/admin_shift_type_routes.py:111
 #: app/routes/admin_user_routes.py:118 app/routes/auth.py:438
@@ -63,11 +63,11 @@ msgstr ""
 msgid "%(count)s entrée(s) d'historique purgée(s)."
 msgstr "%(count)s entrée(s) d'historique purgée(s)."
 
-#: app/routes/admin_automation_routes.py:70 app/services/leave_service.py:180
+#: app/routes/admin_automation_routes.py:72 app/services/leave_service.py:180
 msgid "Génération d'astreintes incomplète"
 msgstr "Génération d'astreintes incomplète"
 
-#: app/routes/admin_automation_routes.py:72
+#: app/routes/admin_automation_routes.py:74
 #, python-format
 msgid ""
 "Aucun utilisateur disponible dans le respect du délai légal de 2 semaines "
@@ -76,11 +76,11 @@ msgstr ""
 "Aucun utilisateur disponible dans le respect du délai légal de 2 semaines "
 "pour : %(dates)s. Assignation manuelle nécessaire dans /admin/automation."
 
-#: app/routes/admin_automation_routes.py:87 app/services/leave_service.py:229
+#: app/routes/admin_automation_routes.py:89 app/services/leave_service.py:229
 msgid "Génération de shifts incomplète"
 msgstr "Génération de shifts incomplète"
 
-#: app/routes/admin_automation_routes.py:89
+#: app/routes/admin_automation_routes.py:91
 #, python-format
 msgid ""
 "Aucun utilisateur disponible pour générer un shift pour : %(dates)s. "
@@ -89,45 +89,45 @@ msgstr ""
 "Aucun utilisateur disponible pour générer un shift pour : %(dates)s. "
 "Assignation manuelle nécessaire dans /admin/automation."
 
-#: app/routes/admin_automation_routes.py:160
-#: app/routes/admin_automation_routes.py:264
+#: app/routes/admin_automation_routes.py:184
+#: app/routes/admin_automation_routes.py:288
 #, python-format
 msgid "%(oncalls_deleted)s astreintes existantes supprimées pour la période"
 msgstr "%(oncalls_deleted)s astreintes existantes supprimées pour la période"
 
-#: app/routes/admin_automation_routes.py:175
+#: app/routes/admin_automation_routes.py:199
 #, python-format
 msgid "%(deleted)s shifts existants supprimés pour la période"
 msgstr "%(deleted)s shifts existants supprimés pour la période"
 
-#: app/routes/admin_automation_routes.py:188
+#: app/routes/admin_automation_routes.py:212
 #, python-format
 msgid "%(val0)s shifts régénérés avec succès !"
 msgstr "%(val0)s shifts régénérés avec succès !"
 
-#: app/routes/admin_automation_routes.py:194
-#: app/routes/admin_automation_routes.py:299
+#: app/routes/admin_automation_routes.py:218
+#: app/routes/admin_automation_routes.py:323
 #, python-format
 msgid "Format de date invalide : %(val0)s"
 msgstr "Format de date invalide : %(val0)s"
 
-#: app/routes/admin_automation_routes.py:213
+#: app/routes/admin_automation_routes.py:237
 #, python-format
 msgid "Erreur lors de la sauvegarde de l'ordre : %(error)s"
 msgstr "Erreur lors de la sauvegarde de l'ordre : %(error)s"
 
-#: app/routes/admin_automation_routes.py:221
+#: app/routes/admin_automation_routes.py:245
 msgid ""
 "Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour appliquer."
 msgstr ""
 "Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour appliquer."
 
-#: app/routes/admin_automation_routes.py:272
+#: app/routes/admin_automation_routes.py:296
 #, python-format
 msgid "%(shifts_deleted)s shifts existants supprimés pour la période"
 msgstr "%(shifts_deleted)s shifts existants supprimés pour la période"
 
-#: app/routes/admin_automation_routes.py:290
+#: app/routes/admin_automation_routes.py:314
 #, python-format
 msgid ""
 "Régénération complète terminée pour la période du %(strftime)s au "
@@ -1958,6 +1958,7 @@ msgstr "Accueil"
 msgid "Tableau de bord"
 msgstr "Tableau de bord"
 
+#: app/templates/admin/automation/dashboard.html:111
 #: app/templates/admin/automation/full_dry_run.html:61
 #: app/templates/admin/automation/full_dry_run.html:141
 #: app/templates/admin/automation/rules.html:52
@@ -1967,6 +1968,7 @@ msgstr "Tableau de bord"
 msgid "Shifts"
 msgstr "Shifts"
 
+#: app/templates/admin/automation/dashboard.html:107
 #: app/templates/admin/automation/full_dry_run.html:24
 #: app/templates/admin/automation/full_dry_run.html:127
 #: app/templates/admin/automation/rules.html:66
@@ -2043,8 +2045,8 @@ msgstr "Administration"
 msgid "Utilisateurs"
 msgstr "Utilisateurs"
 
-#: app/templates/admin/automation/dashboard.html:8
-#: app/templates/admin/automation/dashboard.html:11
+#: app/templates/admin/automation/dashboard.html:9
+#: app/templates/admin/automation/dashboard.html:12
 #: app/templates/admin/automation/full.html:12
 #: app/templates/admin/automation/full_dry_run.html:8
 #: app/templates/admin/automation/rules.html:11
@@ -3156,7 +3158,7 @@ msgid "Historique des modifications"
 msgstr "Historique des modifications"
 
 #: app/templates/admin/audit_log.html:7
-#: app/templates/admin/automation/dashboard.html:5
+#: app/templates/admin/automation/dashboard.html:6
 #: app/templates/admin/automation/full.html:9
 #: app/templates/admin/automation/full_dry_run.html:5
 #: app/templates/admin/automation/rules.html:8
@@ -3344,7 +3346,7 @@ msgstr "Génération automatique"
 msgid "Configurer l'automatisation"
 msgstr "Configurer l'automatisation"
 
-#: app/templates/admin/automation/dashboard.html:63
+#: app/templates/admin/automation/dashboard.html:64
 #: app/templates/admin/dashboard.html:91
 #: app/templates/admin/dashboard.html:124
 #: app/templates/admin/dashboard.html:146
@@ -3510,14 +3512,14 @@ msgstr "Actions groupes"
 msgid "Ajouter un nouveau groupe"
 msgstr "Ajouter un nouveau groupe"
 
-#: app/templates/admin/automation/dashboard.html:15
+#: app/templates/admin/automation/dashboard.html:16
 #: app/templates/admin/backups/dashboard.html:15
 #: app/templates/admin/groups.html:24 app/templates/admin/users.html:25
 msgid "Retour à l'administration"
 msgstr "Retour à l'administration"
 
-#: app/templates/admin/automation/dashboard.html:15
 #: app/templates/admin/automation/dashboard.html:16
+#: app/templates/admin/automation/dashboard.html:17
 #: app/templates/admin/backups/dashboard.html:15
 #: app/templates/admin/backups/dashboard.html:16
 #: app/templates/admin/groups.html:24 app/templates/admin/groups.html:25
@@ -4238,11 +4240,11 @@ msgstr "Êtes-vous sûr de vouloir supprimer l'utilisateur %(name)s ?"
 msgid "Supprimer l'utilisateur %(name)s"
 msgstr "Supprimer l'utilisateur %(name)s"
 
-#: app/templates/admin/automation/dashboard.html:13
+#: app/templates/admin/automation/dashboard.html:14
 msgid "Actions automatisation"
 msgstr "Actions automatisation"
 
-#: app/templates/admin/automation/dashboard.html:21
+#: app/templates/admin/automation/dashboard.html:22
 msgid ""
 "Ce module permet de générer automatiquement les astreintes. Les shifts sont "
 "générés automatiquement après les astreintes selon les règles métiers."
@@ -4250,12 +4252,12 @@ msgstr ""
 "Ce module permet de générer automatiquement les astreintes. Les shifts sont "
 "générés automatiquement après les astreintes selon les règles métiers."
 
-#: app/templates/admin/automation/dashboard.html:29
+#: app/templates/admin/automation/dashboard.html:30
 #, python-format
 msgid "%(count)s semaine(s) sans astreinte détectée(s) :"
 msgstr "%(count)s semaine(s) sans astreinte détectée(s) :"
 
-#: app/templates/admin/automation/dashboard.html:33
+#: app/templates/admin/automation/dashboard.html:34
 msgid ""
 "Ces trous peuvent être en dehors de la période affichée par défaut sur la "
 "page de génération (qui part d'aujourd'hui) - le lien ci-dessous ouvre "
@@ -4267,16 +4269,16 @@ msgstr ""
 "directement la bonne période, mode \"Combler les trous d'astreintes\" "
 "présélectionné."
 
-#: app/templates/admin/automation/dashboard.html:38
+#: app/templates/admin/automation/dashboard.html:39
 msgid "Combler ces trous"
 msgstr "Combler ces trous"
 
-#: app/templates/admin/automation/dashboard.html:47
+#: app/templates/admin/automation/dashboard.html:48
 #: app/templates/admin/automation/full.html:16
 msgid "Générer / rafraîchir le planning"
 msgstr "Générer / rafraîchir le planning"
 
-#: app/templates/admin/automation/dashboard.html:48
+#: app/templates/admin/automation/dashboard.html:49
 msgid ""
 "Générer les astreintes et les shifts, prévisualiser le résultat, ou "
 "recalculer uniquement les shifts en conservant les astreintes actuelles."
@@ -4284,17 +4286,18 @@ msgstr ""
 "Générer les astreintes et les shifts, prévisualiser le résultat, ou "
 "recalculer uniquement les shifts en conservant les astreintes actuelles."
 
-#: app/templates/admin/automation/dashboard.html:51
+#: app/templates/admin/automation/dashboard.html:52
 msgid "Lancer"
 msgstr "Lancer"
 
-#: app/templates/admin/automation/dashboard.html:59
+#: app/templates/admin/automation/dashboard.html:60
+#: app/templates/admin/automation/dashboard.html:147
 #: app/templates/admin/automation/rules.html:4
 #: app/templates/admin/automation/rules.html:16
 msgid "Règles d'automatisation"
 msgstr "Règles d'automatisation"
 
-#: app/templates/admin/automation/dashboard.html:60
+#: app/templates/admin/automation/dashboard.html:61
 msgid ""
 "Configurer les règles utilisées par la génération : créneaux, week-end, "
 "espacement des astreintes, effectifs minimum/maximum, créneaux obligatoires,"
@@ -4304,71 +4307,126 @@ msgstr ""
 "espacement des astreintes, effectifs minimum/maximum, créneaux obligatoires,"
 " repos après astreinte."
 
-#: app/templates/admin/automation/dashboard.html:71
+#: app/templates/admin/automation/dashboard.html:72
 #: app/templates/admin/automation/full_dry_run.html:105
 msgid "Total astreintes"
 msgstr "Total astreintes"
 
-#: app/templates/admin/automation/dashboard.html:75
+#: app/templates/admin/automation/dashboard.html:76
 #: app/templates/admin/automation/full_dry_run.html:109
 msgid "Total shifts"
 msgstr "Total shifts"
 
-#: app/templates/admin/automation/dashboard.html:79
+#: app/templates/admin/automation/dashboard.html:80
 msgid "Utilisateurs astreintes"
 msgstr "Utilisateurs astreintes"
 
-#: app/templates/admin/automation/dashboard.html:83
+#: app/templates/admin/automation/dashboard.html:84
 msgid "Utilisateurs shifts"
 msgstr "Utilisateurs shifts"
 
-#: app/templates/admin/automation/dashboard.html:87
+#: app/templates/admin/automation/dashboard.html:88
+#: app/templates/admin/automation/dashboard.html:119
 msgid "Prochaine astreinte disponible"
 msgstr "Prochaine astreinte disponible"
 
-#: app/templates/admin/automation/dashboard.html:92
+#: app/templates/admin/automation/dashboard.html:93
+#: app/templates/admin/automation/dashboard.html:127
 msgid "Aucune date disponible trouvée"
 msgstr "Aucune date disponible trouvée"
 
 #: app/templates/admin/automation/dashboard.html:98
+#: app/templates/admin/automation/dashboard.html:100
+msgid "Statistiques par groupe"
+msgstr "Statistiques par groupe"
+
+#: app/templates/admin/automation/dashboard.html:105
+#, python-format
+msgid "Statistiques pour %(name)s"
+msgstr "Statistiques pour %(name)s"
+
+#: app/templates/admin/automation/dashboard.html:108
+#, python-format
+msgid "%(count)s astreintes pour %(name)s"
+msgstr "%(count)s astreintes pour %(name)s"
+
+#: app/templates/admin/automation/dashboard.html:112
+#, python-format
+msgid "%(count)s shifts pour %(name)s"
+msgstr "%(count)s shifts pour %(name)s"
+
+#: app/templates/admin/automation/dashboard.html:115
+msgid "Éligibles astreintes / shifts"
+msgstr "Éligibles astreintes / shifts"
+
+#: app/templates/admin/automation/dashboard.html:124
+msgid "Non applicable (mode commun)"
+msgstr "Non applicable (mode commun)"
+
+#: app/templates/admin/automation/dashboard.html:136
+#, python-format
+msgid "Aucun groupe créé pour le moment."
+msgstr "Aucun groupe créé pour le moment."
+
+#: app/templates/admin/automation/dashboard.html:141
 msgid "Afficher/masquer l'aide"
 msgstr "Afficher/masquer l'aide"
 
-#: app/templates/admin/automation/dashboard.html:100
+#: app/templates/admin/automation/dashboard.html:143
 msgid "Aide"
 msgstr "Aide"
 
-#: app/templates/admin/automation/dashboard.html:104
-msgid "Rotation des astreintes :"
-msgstr "Rotation des astreintes :"
+#: app/templates/admin/automation/dashboard.html:147
+msgid "Règles configurables :"
+msgstr "Règles configurables :"
 
-#: app/templates/admin/automation/dashboard.html:104
+#: app/templates/admin/automation/dashboard.html:147
 msgid ""
-"Une rotation simple où chaque semaine un membre différent est désigné. "
-"Utilisez \"Génération complète\" pour configurer l'ordre de rotation."
+"Les règles utilisées par la génération (créneaux, définition du week-end, "
+"espacement des astreintes, effectifs, créneaux obligatoires, repos après "
+"astreinte) se configurent sur la page"
 msgstr ""
-"Une rotation simple où chaque semaine un membre différent est désigné. "
-"Utilisez \"Génération complète\" pour configurer l'ordre de rotation."
+"Les règles utilisées par la génération (créneaux, définition du week-end, "
+"espacement des astreintes, effectifs, créneaux obligatoires, repos après "
+"astreinte) se configurent sur la page"
 
-#: app/templates/admin/automation/dashboard.html:105
+#: app/templates/admin/automation/dashboard.html:147
+msgid "globalement ou avec une valeur spécifique par groupe."
+msgstr "globalement ou avec une valeur spécifique par groupe."
+
+#: app/templates/admin/automation/dashboard.html:148
+msgid "Mode de planification :"
+msgstr "Mode de planification :"
+
+#: app/templates/admin/automation/dashboard.html:148
+msgid ""
+"Shifts et astreintes ont chacun un mode indépendant, réglable sur la même "
+"page : \"Commune\" (une seule rotation partagée par tous les groupes, le "
+"comportement historique) ou \"Par groupe\" (chaque groupe a sa propre "
+"rotation indépendante, avec ses propres statistiques ci-dessus)."
+msgstr ""
+"Shifts et astreintes ont chacun un mode indépendant, réglable sur la même "
+"page : \"Commune\" (une seule rotation partagée par tous les groupes, le "
+"comportement historique) ou \"Par groupe\" (chaque groupe a sa propre "
+"rotation indépendante, avec ses propres statistiques ci-dessus)."
+
+#: app/templates/admin/automation/dashboard.html:149
 msgid "Génération automatique des shifts :"
 msgstr "Génération automatique des shifts :"
 
-#: app/templates/admin/automation/dashboard.html:105
+#: app/templates/admin/automation/dashboard.html:149
 msgid ""
 "Après la génération des astreintes, les shifts sont automatiquement créés "
-"selon les règles métiers (13h-21h pour l'astreinte, rotation des créneaux, "
-"etc.)."
+"selon les créneaux configurés et la rotation des rôles."
 msgstr ""
 "Après la génération des astreintes, les shifts sont automatiquement créés "
-"selon les règles métiers (13h-21h pour l'astreinte, rotation des créneaux, "
-"etc.)."
+"selon les créneaux configurés et la rotation des rôles."
 
-#: app/templates/admin/automation/dashboard.html:106
+#: app/templates/admin/automation/dashboard.html:150
 msgid "Rafraîchissement manuel :"
 msgstr "Rafraîchissement manuel :"
 
-#: app/templates/admin/automation/dashboard.html:106
+#: app/templates/admin/automation/dashboard.html:150
 msgid ""
 "Utilisez le bouton \"Rafraîchir les shifts\" pour recalculer les shifts si "
 "vous avez modifié manuellement les astreintes, sans relancer toute la "
@@ -4378,11 +4436,11 @@ msgstr ""
 "vous avez modifié manuellement les astreintes, sans relancer toute la "
 "rotation."
 
-#: app/templates/admin/automation/dashboard.html:107
+#: app/templates/admin/automation/dashboard.html:151
 msgid "Période par défaut :"
 msgstr "Période par défaut :"
 
-#: app/templates/admin/automation/dashboard.html:107
+#: app/templates/admin/automation/dashboard.html:151
 msgid "6 mois à l'avance."
 msgstr "6 mois à l'avance."
 
@@ -6067,3 +6125,13 @@ msgstr "Le mot de passe ne doit pas contenir votre adresse email."
 
 #~ msgid "Portée de la rotation des astreintes"
 #~ msgstr "Portée de la rotation des astreintes"
+
+#~ msgid "Rotation des astreintes :"
+#~ msgstr "Rotation des astreintes :"
+
+#~ msgid ""
+#~ "Une rotation simple où chaque semaine un membre différent est désigné. "
+#~ "Utilisez \"Génération complète\" pour configurer l'ordre de rotation."
+#~ msgstr ""
+#~ "Une rotation simple où chaque semaine un membre différent est désigné. "
+#~ "Utilisez \"Génération complète\" pour configurer l'ordre de rotation."

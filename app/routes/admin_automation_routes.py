@@ -11,11 +11,13 @@ from flask_babel import gettext as _
 
 from app import db
 from app.auth.decorators import admin_required
+from app.repositories.user_repository import GroupRepository
 from app.routes.admin import admin_bp
 from app.services import (
     AppNotificationService,
     AppriseNotificationService,
     AutomationAdminService,
+    SettingsService,
 )
 from app.utils.automation import (
     OnCallAutomation,
@@ -101,10 +103,32 @@ def automation_dashboard():
     status = get_automation_status()
     oncall_gaps = OnCallAutomation.detect_oncall_gaps()
 
+    shift_scheduling_mode = SettingsService.get_shift_scheduling_mode()
+    oncall_scheduling_mode = SettingsService.get_oncall_scheduling_mode()
+    # Computed unconditionally, not gated behind either mode: a
+    # Shift/OnCall row's group membership (via its owning User) is real
+    # and correct regardless of how generation currently pools groups
+    # together, so the counts are always honest numbers, not a
+    # per_group-only preview. Only the "next available" sub-computation
+    # is mode-gated (below) - it only means something when that group
+    # actually runs its own independent rotation.
+    group_statuses = [
+        (
+            g,
+            get_automation_status(
+                group=g, include_next_available=oncall_scheduling_mode == "per_group"
+            ),
+        )
+        for g in GroupRepository.get_all()
+    ]
+
     return render_template(
         "admin/automation/dashboard.html",
         status=status,
         oncall_gaps=oncall_gaps,
+        group_statuses=group_statuses,
+        shift_scheduling_mode=shift_scheduling_mode,
+        oncall_scheduling_mode=oncall_scheduling_mode,
     )
 
 

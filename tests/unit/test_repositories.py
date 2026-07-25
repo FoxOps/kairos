@@ -174,6 +174,27 @@ class TestShiftRepository:
         assert ShiftRepository.count_all() == 1
         assert ShiftRepository.count_for_user(test_user.id) == 1
 
+    def test_count_for_group(self, test_app, test_group, test_shift):
+        from werkzeug.security import generate_password_hash
+
+        from app.models import Group, User
+
+        other_group = Group(name="Other")
+        db.session.add(other_group)
+        db.session.commit()
+        other_user = User(
+            name="Other",
+            email="other-shift-group@test.com",
+            password_hash=generate_password_hash("x"),
+            is_admin=False,
+            group_id=other_group.id,
+        )
+        db.session.add(other_user)
+        db.session.commit()
+
+        assert ShiftRepository.count_for_group(test_group.id) == 1
+        assert ShiftRepository.count_for_group(other_group.id) == 0
+
     def test_exists_for_user(self, test_app, test_user, second_user, test_shift):
         assert ShiftRepository.exists_for_user(test_user.id) is True
         assert ShiftRepository.exists_for_user(second_user.id) is False
@@ -307,6 +328,60 @@ class TestOnCallRepository:
         assert OnCallRepository.count_for_user(test_user.id) == 1
         assert OnCallRepository.exists_for_user(test_user.id) is True
         assert OnCallRepository.exists_for_user(second_user.id) is False
+
+    def test_count_for_group(self, test_app, test_group, test_oncall):
+        from werkzeug.security import generate_password_hash
+
+        from app.models import Group, User
+
+        other_group = Group(name="Other")
+        db.session.add(other_group)
+        db.session.commit()
+        other_user = User(
+            name="Other",
+            email="other-oncall-group@test.com",
+            password_hash=generate_password_hash("x"),
+            is_admin=False,
+            group_id=other_group.id,
+        )
+        db.session.add(other_user)
+        db.session.commit()
+
+        assert OnCallRepository.count_for_group(test_group.id) == 1
+        assert OnCallRepository.count_for_group(other_group.id) == 0
+
+    def test_get_starting_at_scoped_to_group(self, test_app, test_group, test_oncall):
+        from werkzeug.security import generate_password_hash
+
+        from app.models import Group, User
+
+        other_group = Group(name="Other")
+        db.session.add(other_group)
+        db.session.commit()
+        other_user = User(
+            name="Other",
+            email="other-starting-at@test.com",
+            password_hash=generate_password_hash("x"),
+            is_admin=False,
+            group_id=other_group.id,
+        )
+        db.session.add(other_user)
+        db.session.commit()
+
+        assert (
+            OnCallRepository.get_starting_at(
+                test_oncall.start_time, group_id=test_group.id
+            )
+            is not None
+        )
+        assert (
+            OnCallRepository.get_starting_at(
+                test_oncall.start_time, group_id=other_group.id
+            )
+            is None
+        )
+        # group_id=None (default) preserves today's ungrouped behavior
+        assert OnCallRepository.get_starting_at(test_oncall.start_time) is not None
 
     def test_list_overlapping_range(self, test_app, test_oncall):
         oncalls = OnCallRepository.list_overlapping_range(

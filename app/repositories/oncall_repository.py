@@ -10,7 +10,7 @@ from datetime import datetime
 from sqlalchemy.orm import joinedload
 
 from app import db
-from app.models import OnCall
+from app.models import OnCall, User
 
 
 class OnCallRepository:
@@ -93,18 +93,37 @@ class OnCallRepository:
         return OnCall.query.filter_by(user_id=user_id).count()
 
     @staticmethod
+    def count_for_group(group_id: int) -> int:
+        """OnCall has no group_id column of its own - reachable only via
+        its owning User."""
+        return (
+            OnCall.query.join(User, OnCall.user_id == User.id)
+            .filter(User.group_id == group_id)
+            .count()
+        )
+
+    @staticmethod
     def exists_for_user(user_id: int) -> bool:
         return OnCall.query.filter_by(user_id=user_id).first() is not None
 
     @staticmethod
-    def get_starting_at(start_time: datetime) -> OnCall | None:
+    def get_starting_at(
+        start_time: datetime, group_id: int | None = None
+    ) -> OnCall | None:
         """On-call that starts at exactly this instant (used to find the
-        upcoming Friday 9pm on-call for notifications)."""
-        return (
-            OnCall.query.options(joinedload(OnCall.user))
-            .filter(OnCall.start_time == start_time)
-            .first()
+        upcoming Friday 9pm on-call for notifications). `group_id`: when
+        given, only an on-call held by a member of that Group counts -
+        used by get_automation_status()'s per-group "next available"
+        computation, where more than one group can have a concurrent
+        on-call for the same slot in "per_group" scheduling mode."""
+        query = OnCall.query.options(joinedload(OnCall.user)).filter(
+            OnCall.start_time == start_time
         )
+        if group_id is not None:
+            query = query.join(User, OnCall.user_id == User.id).filter(
+                User.group_id == group_id
+            )
+        return query.first()
 
     @staticmethod
     def _overlapping_range_filter(start_date, end_date):

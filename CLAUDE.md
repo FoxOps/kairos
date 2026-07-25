@@ -529,6 +529,25 @@ and `refresh_shifts()` (narrower advanced workflows) keep pooling/org-wide regar
 setting, and the calendar has no per-group display (color/legend/filter) — both tracked as the
 "Future ideas" entry in `ROADMAP.md`, not silently forgotten.
 
+`/admin/automation` (`app/utils/automation/status.py::get_automation_status()`) shows both an
+org-wide summary (unchanged) and a per-group breakdown card for every `Group`
+(`GroupRepository.get_all()`) — `oncall_count`/`shift_count` scoped via
+`OnCallRepository.count_for_group()`/`ShiftRepository.count_for_group()` (joined through
+`User.group_id`, since neither model has its own `group_id` column), `oncall_eligible_users`/
+`shift_eligible_users` via the same group-aware helpers used by generation. Computed
+unconditionally regardless of `shift_scheduling_mode`/`oncall_scheduling_mode` — a `Shift`/`OnCall`
+row's group membership is real independent of how generation currently pools groups together, so
+the counts stay honest either way. Only `next_available_oncall_date` is mode-gated
+(`include_next_available` param, skipped — always `None` — for a group when
+`oncall_scheduling_mode` isn't `"per_group"`, since that number only means something when the group
+actually runs its own independent rotation) — the template shows "Non applicable (mode commun)"
+instead of a potentially-misleading date in that case. `get_automation_status(group=None)` (the
+default) preserves the original org-wide-only behavior exactly, same optional-param convention as
+every other group-aware helper in this module. The page's "Aide" section was also rewritten to
+mention the rule engine and the two independent scheduling modes — it used to hardcode "13h-21h
+pour l'astreinte" as if that were fixed, which stopped being true once `shift_slots` became
+admin-configurable.
+
 ### In-app notifications
 
 `AppNotification` (`app/models/app_notification.py`) is the bell-icon notification shown in the
