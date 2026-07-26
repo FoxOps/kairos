@@ -202,6 +202,47 @@ def delete_filtered_shifts():
     return redirect(url_for("main.schedule", **redirect_args))
 
 
+@main_bp.route("/shift/delete-selected", methods=["POST"])
+@login_required
+@admin_required
+def delete_selected_shifts():
+    """Delete exactly the shifts checked via the table's row checkboxes
+    (`name="ids"`, one value per checked row) - complements
+    delete-filtered (which acts on everything the current filters
+    match) with a way to act on a hand-picked subset instead. Same
+    filter-preserving redirect as delete-filtered, read from the same
+    hidden fields carried on this form."""
+    ids = request.form.getlist("ids", type=int)
+    user_id = request.form.get("user_id", type=int)
+    group_id = request.form.get("group_id", type=int)
+    shift_type_id = request.form.get("shift_type_id", type=int)
+    date_from, date_to, date_from_str, date_to_str = parse_date_range_filter(
+        request.form
+    )
+    redirect_args = {
+        "user_id": user_id,
+        "group_id": group_id,
+        "shift_type_id": shift_type_id,
+        "date_from": date_from_str,
+        "date_to": date_to_str,
+    }
+
+    if not ids:
+        flash(_("Aucun shift sélectionné."), "warning")
+        return redirect(url_for("main.schedule", **redirect_args))
+
+    try:
+        count = ShiftService.delete_filtered(ids=ids)
+        flash(
+            _("%(count)s shift(s) supprimé(s) avec succès !", count=count),
+            "success",
+        )
+    except Exception as e:
+        db.session.rollback()
+        flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
+    return redirect(url_for("main.schedule", **redirect_args))
+
+
 # ========== API ENDPOINTS FOR DRAG & DROP ====================
 
 

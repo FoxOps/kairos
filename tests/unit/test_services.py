@@ -376,6 +376,11 @@ class TestShiftService:
         )
         assert count == 1
 
+    def test_delete_filtered_by_ids(self, test_app, test_shift):
+        count = ShiftService.delete_filtered(ids=[test_shift.id])
+        assert count == 1
+        assert ShiftRepository.count_all() == 0
+
     def test_api_create_rejects_weekend(self, test_app, test_user, test_shift_type):
         saturday = date.today()
         while saturday.weekday() != 5:
@@ -532,6 +537,9 @@ class TestOnCallService:
     def test_delete_filtered_by_user_id(self, test_app, test_user, test_oncall):
         assert OnCallService.delete_filtered(user_id=test_user.id) == 1
 
+    def test_delete_filtered_by_ids(self, test_app, test_oncall):
+        assert OnCallService.delete_filtered(ids=[test_oncall.id]) == 1
+
     def test_api_update_rejects_non_friday(self, test_app, test_oncall):
         not_friday = date.today()
         while not_friday.weekday() == 4:
@@ -622,6 +630,11 @@ class TestLeaveService:
     def test_delete_filtered_by_user_id(self, test_app, test_user, test_leave):
         count = LeaveService.delete_filtered(user_id=test_user.id)
         assert count == 1
+
+    def test_delete_filtered_by_ids(self, test_app, test_leave):
+        count = LeaveService.delete_filtered(ids=[test_leave.id])
+        assert count == 1
+        assert LeaveRepository.get_by_id(test_leave.id) is None
 
     def test_add_leave_notifies_admins_on_oncall_gap(
         self, test_app, admin_user, test_user, second_user

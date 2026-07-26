@@ -158,6 +158,45 @@ def delete_filtered_oncalls():
     return redirect(url_for("main.oncall", **redirect_args))
 
 
+@main_bp.route("/oncall/delete-selected", methods=["POST"])
+@login_required
+@admin_required
+def delete_selected_oncalls():
+    """Delete exactly the on-calls checked via the table's row
+    checkboxes (`name="ids"`, one value per checked row) - complements
+    delete-filtered (which acts on everything the current filters
+    match) with a way to act on a hand-picked subset instead. Same
+    filter-preserving redirect as delete-filtered, read from the same
+    hidden fields carried on this form."""
+    ids = request.form.getlist("ids", type=int)
+    user_id = request.form.get("user_id", type=int)
+    group_id = request.form.get("group_id", type=int)
+    date_from, date_to, date_from_str, date_to_str = parse_date_range_filter(
+        request.form
+    )
+    redirect_args = {
+        "user_id": user_id,
+        "group_id": group_id,
+        "date_from": date_from_str,
+        "date_to": date_to_str,
+    }
+
+    if not ids:
+        flash(_("Aucune astreinte sélectionnée."), "warning")
+        return redirect(url_for("main.oncall", **redirect_args))
+
+    try:
+        count = OnCallService.delete_filtered(ids=ids)
+        flash(
+            _("%(count)s astreinte(s) supprimée(s) avec succès !", count=count),
+            "success",
+        )
+    except Exception as e:
+        db.session.rollback()
+        flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
+    return redirect(url_for("main.oncall", **redirect_args))
+
+
 @main_bp.route("/api/oncall/<int:oncall_id>", methods=["DELETE"])
 @login_required
 @admin_required

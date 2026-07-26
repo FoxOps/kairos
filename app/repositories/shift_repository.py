@@ -64,11 +64,14 @@ class ShiftRepository:
         date_from: date | None = None,
         date_to: date | None = None,
         shift_type_id: int | None = None,
+        ids: list[int] | None = None,
     ):
         """Shared WHERE clause for list_paginated()/delete_filtered() -
         backs the /schedule filter bar (user/group/date range/shift
-        type). group_id requires a join through User (Shift has no
-        group_id column of its own, same as count_for_group())."""
+        type) and the checkbox row-selection ("delete selection" is
+        just delete_filtered(ids=[...]), no separate code path). group_id
+        requires a join through User (Shift has no group_id column of
+        its own, same as count_for_group())."""
         query = Shift.query
         if user_id is not None:
             query = query.filter(Shift.user_id == user_id)
@@ -82,6 +85,8 @@ class ShiftRepository:
             query = query.filter(Shift.date <= date_to)
         if shift_type_id is not None:
             query = query.filter(Shift.shift_type_id == shift_type_id)
+        if ids is not None:
+            query = query.filter(Shift.id.in_(ids))
         return query
 
     @staticmethod
@@ -93,10 +98,11 @@ class ShiftRepository:
         date_from: date | None = None,
         date_to: date | None = None,
         shift_type_id: int | None = None,
+        ids: list[int] | None = None,
     ):
         return (
             ShiftRepository._filtered_query(
-                user_id, group_id, date_from, date_to, shift_type_id
+                user_id, group_id, date_from, date_to, shift_type_id, ids
             )
             .options(joinedload(Shift.user), joinedload(Shift.shift_type))
             .order_by(Shift.start_time)
@@ -110,6 +116,7 @@ class ShiftRepository:
         date_from: date | None = None,
         date_to: date | None = None,
         shift_type_id: int | None = None,
+        ids: list[int] | None = None,
     ) -> int:
         """Bulk-deletes every Shift matching the given filters (no
         filters = matches everything) - backs /shift/delete-filtered,
@@ -118,7 +125,7 @@ class ShiftRepository:
         (not False, see delete_in_date_range()'s own comment above): a
         caller can hold an already-loaded Shift instance across this call."""
         return ShiftRepository._filtered_query(
-            user_id, group_id, date_from, date_to, shift_type_id
+            user_id, group_id, date_from, date_to, shift_type_id, ids
         ).delete(synchronize_session="evaluate")
 
     @staticmethod

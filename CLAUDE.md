@@ -1267,6 +1267,34 @@ page's `_action_legend.html` `action_items` list shrank to just the remaining pe
 entry (the filter bar's own buttons are labeled buttons, not icon-only, so they don't need a legend
 entry either).
 
+**Checkbox row-selection ("delete selection")** complements "delete filtered result": instead of
+acting on everything the current filters match, an admin checks specific rows and deletes just
+those. Implemented as a **new filter dimension**, not a parallel code path: `ids: list[int] | None`
+threaded through the same `_filtered_query()`/`list_paginated()`/`delete_filtered()` (and
+`LeaveRepository.list_filtered()`) added for the filter bar above — `Model.id.in_(ids)` when given.
+`delete_filtered(ids=[...])` **is** "delete selection"; no separate service/repository method
+exists for it. `list_paginated(..., ids=...)` also works (unused by any route today, but kept
+symmetric with every other filter dimension rather than special-cased out).
+
+HTML structure: each row's checkbox (`name="ids"`, `class="js-row-select"`) lives inside the table
+`<td>`, but the actual `<form>` it submits into (`delete_selected_form()` macro, new in
+`list_filters.html`) is a separate, otherwise-empty `<form id="...">` placed near the top of the
+page (CSRF token + the same `hidden_fields` filter dict as `delete_filtered_button()`) — the two
+can't be nested (a `<form>` can't contain another `<form>`, and the per-row single-delete `<form>`
+already occupies that table cell), so checkboxes associate with the external form via the HTML5
+`form="..."` attribute instead of DOM nesting. Each page uses its own form id
+(`shift-delete-selected-form`/`oncall-delete-selected-form`/`leave-delete-selected-form`) since all
+three can theoretically render at once in different tabs. The submit button starts `disabled` in
+markup (inert with JS off, avoiding a submit of an always-empty selection) — `app/static/js/utils/
+row-select.js::initRowSelectCheckboxes()` (wired into `main.js` like every other delegated-listener
+init) toggles `.js-select-all` against every `.js-row-select`, keeps `.js-select-all`'s own checked
+state in sync when rows are checked/unchecked individually, and enables/disables the submit button
+based on whether anything is checked — one generic init, since each page only ever has one such
+trio in the DOM at a time. Routes (`delete_selected_shifts`/`delete_selected_oncalls`/
+`delete_selected_leaves`, admin-only) still handle an empty submission gracefully server-side
+(flashes "no selection", no-op) as defense-in-depth against a bypassed/JS-disabled client, not just
+relying on the disabled button. Same filter-preserving redirect as delete-filtered.
+
 ## Testing conventions
 
 `tests/conftest.py` defines the fixture chain: `test_app` builds a fresh app via

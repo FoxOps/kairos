@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/list_filters.html" import filter_bar, delete_filtered_button %}
+{% from "macros/list_filters.html" import filter_bar, delete_filtered_button, delete_selected_form %}
 
 {% block title %}{{ _("Astreintes") }} - Kairos{% endblock %}
 
@@ -35,6 +35,13 @@
             _("Êtes-vous SÛR de vouloir supprimer les %(count)s astreinte(s) actuellement affichée(s) selon les filtres ? Cette action est irréversible !", count=on_calls.total),
             _("Supprimer le résultat filtré (%(count)s astreinte(s))", count=on_calls.total)
         ) }}
+        {{ delete_selected_form(
+            url_for('main.delete_selected_oncalls'),
+            'oncall-delete-selected-form',
+            extra_params,
+            _("Supprimer les astreintes sélectionnées ? Cette action est irréversible !"),
+            _("Supprimer la sélection")
+        ) }}
     </div>
     {% endif %}
 
@@ -52,6 +59,11 @@
             <caption class="sr-only">{{ _("Liste des astreintes") }}</caption>
             <thead>
                 <tr>
+                    {% if current_user.is_admin %}
+                    <th scope="col">
+                        <input type="checkbox" class="checkbox checkbox-sm js-select-all" aria-label="{{ _("Tout sélectionner") }}">
+                    </th>
+                    {% endif %}
                     <th scope="col">ID</th>
                     <th scope="col">{{ _("Utilisateur") }}</th>
                     <th scope="col">{{ _("Début") }}</th>
@@ -62,6 +74,11 @@
             <tbody>
                 {% for oncall in on_calls.items %}
                 <tr>
+                    {% if current_user.is_admin %}
+                    <td>
+                        <input type="checkbox" name="ids" value="{{ oncall.id }}" form="oncall-delete-selected-form" class="checkbox checkbox-sm js-row-select" aria-label="{{ _("Sélectionner cette astreinte") }}">
+                    </td>
+                    {% endif %}
                     <td>{{ oncall.id }}</td>
                     <td>{{ oncall.user.name }}</td>
                     <td>{{ oncall.start_time|format_datetime }}</td>

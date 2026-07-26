@@ -74,3 +74,28 @@
     </button>
 </form>
 {% endmacro %}
+
+{# The "delete selection" form is deliberately empty (no visible fields,
+   just CSRF + the current filters as hidden inputs) and lives outside
+   the table - each row's checkbox is associated with it via the HTML5
+   `form="{{ form_id }}"` attribute instead of physically nesting inside
+   it, since a <form> can't legally nest inside the per-row single-delete
+   <form> that already lives in the same table cell area. The submit
+   button starts `disabled` - row-select.js enables it once at least one
+   row checkbox is checked, so it's inert with JS off (progressive
+   enhancement) rather than submitting an always-empty selection. #}
+{% macro delete_selected_form(action_url, form_id, hidden_fields, confirm_message, button_label) %}
+<form method="POST" action="{{ action_url }}" id="{{ form_id }}" class="mb-0">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% for field_name, field_value in hidden_fields.items() %}
+    {% if field_value %}
+    <input type="hidden" name="{{ field_name }}" value="{{ field_value }}">
+    {% endif %}
+    {% endfor %}
+    <button type="submit" class="btn btn-warning btn-sm js-confirm-delete js-delete-selected-submit" disabled
+            data-confirm-message="{{ confirm_message }}"
+            aria-label="{{ button_label }}" title="{{ button_label }}">
+        <i class="fas fa-trash-alt" aria-hidden="true"></i> {{ button_label }}
+    </button>
+</form>
+{% endmacro %}

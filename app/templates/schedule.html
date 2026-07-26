@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/list_filters.html" import filter_bar, delete_filtered_button %}
+{% from "macros/list_filters.html" import filter_bar, delete_filtered_button, delete_selected_form %}
 
 {% block title %}{{ _("Emploi du temps") }} - Kairos{% endblock %}
 
@@ -36,6 +36,13 @@
                 _("Supprimer les %(count)s shift(s) actuellement affiché(s) selon les filtres ? Cette action est irréversible !", count=shifts.total),
                 _("Supprimer le résultat filtré (%(count)s shift(s))", count=shifts.total)
             ) }}
+            {{ delete_selected_form(
+                url_for('main.delete_selected_shifts'),
+                'shift-delete-selected-form',
+                extra_params,
+                _("Supprimer les shifts sélectionnés ? Cette action est irréversible !"),
+                _("Supprimer la sélection")
+            ) }}
         </div>
         {% endif %}
 
@@ -55,6 +62,11 @@
                 <caption class="sr-only">{{ _("Liste des shifts avec les utilisateurs, types, dates et heures") }}</caption>
                 <thead>
                     <tr>
+                        {% if current_user.is_admin %}
+                        <th scope="col">
+                            <input type="checkbox" class="checkbox checkbox-sm js-select-all" aria-label="{{ _("Tout sélectionner") }}">
+                        </th>
+                        {% endif %}
                         <th scope="col">{{ _("Utilisateur") }}</th>
                         <th scope="col">{{ _("Type de shift") }}</th>
                         <th scope="col">{{ _("Date") }}</th>
@@ -69,6 +81,11 @@
                     {% set is_first_date = namespace(value=(shift.date not in seen_dates)) %}
 
                     <tr>
+                        {% if current_user.is_admin %}
+                        <td>
+                            <input type="checkbox" name="ids" value="{{ shift.id }}" form="shift-delete-selected-form" class="checkbox checkbox-sm js-row-select" aria-label="{{ _("Sélectionner ce shift") }}">
+                        </td>
+                        {% endif %}
                         <td>
                             {% if is_first_user.value %}
                                 {{ shift.user.name }}

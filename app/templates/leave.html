@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/list_filters.html" import filter_bar, delete_filtered_button %}
+{% from "macros/list_filters.html" import filter_bar, delete_filtered_button, delete_selected_form %}
 
 {% block title %}{{ _("Congés") }} - Kairos{% endblock %}
 
@@ -35,6 +35,13 @@
             _("Êtes-vous SÛR de vouloir supprimer les %(count)s congé(s) actuellement affiché(s) selon les filtres ? Cette action est irréversible !", count=leaves.total),
             _("Supprimer le résultat filtré (%(count)s congé(s))", count=leaves.total)
         ) }}
+        {{ delete_selected_form(
+            url_for('main.delete_selected_leaves'),
+            'leave-delete-selected-form',
+            extra_params,
+            _("Supprimer les congés sélectionnés ? Cette action est irréversible !"),
+            _("Supprimer la sélection")
+        ) }}
     </div>
     {% endif %}
 
@@ -52,6 +59,11 @@
             <caption class="sr-only">{{ _("Liste des congés") }}</caption>
             <thead>
                 <tr>
+                    {% if current_user.is_admin %}
+                    <th scope="col">
+                        <input type="checkbox" class="checkbox checkbox-sm js-select-all" aria-label="{{ _("Tout sélectionner") }}">
+                    </th>
+                    {% endif %}
                     <th scope="col">{{ _("Utilisateur") }}</th>
                     <th scope="col">{{ _("Début") }}</th>
                     <th scope="col">{{ _("Fin") }}</th>
@@ -61,6 +73,11 @@
             <tbody>
                 {% for leave in leaves.items %}
                 <tr>
+                    {% if current_user.is_admin %}
+                    <td>
+                        <input type="checkbox" name="ids" value="{{ leave.id }}" form="leave-delete-selected-form" class="checkbox checkbox-sm js-row-select" aria-label="{{ _("Sélectionner ce congé") }}">
+                    </td>
+                    {% endif %}
                     <td>{{ leave.user.name }}</td>
                     <td>{{ leave.start_date|format_date }}</td>
                     <td>{{ leave.end_date|format_date }}</td>

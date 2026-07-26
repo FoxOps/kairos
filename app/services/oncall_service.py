@@ -32,9 +32,10 @@ class OnCallService:
         group_id: int | None = None,
         date_from: date | None = None,
         date_to: date | None = None,
+        ids: list[int] | None = None,
     ):
         return OnCallRepository.list_paginated(
-            page, per_page, user_id, group_id, date_from, date_to
+            page, per_page, user_id, group_id, date_from, date_to, ids
         )
 
     @staticmethod
@@ -94,12 +95,17 @@ class OnCallService:
         group_id: int | None = None,
         date_from: date | None = None,
         date_to: date | None = None,
+        ids: list[int] | None = None,
     ) -> int:
         """Bulk-deletes every OnCall matching the given filters (no
         filters = matches everything, same as the old delete_all()) -
         backs the /oncall filter bar's "delete filtered result" action,
-        replacing the old delete_all/delete_all_for_user."""
-        count = OnCallRepository.delete_filtered(user_id, group_id, date_from, date_to)
+        replacing the old delete_all/delete_all_for_user. `ids`: backs
+        the checkbox row-selection "delete selection" action - same
+        entrypoint, just another filter dimension."""
+        count = OnCallRepository.delete_filtered(
+            user_id, group_id, date_from, date_to, ids
+        )
         if count > 0:
             db.session.commit()
             AuditService.log(
@@ -107,7 +113,8 @@ class OnCallService:
                 resource_type="OnCall",
                 details=(
                     f"{count} on-call(s) - filters: user_id={user_id}, "
-                    f"group_id={group_id}, date_from={date_from}, date_to={date_to}"
+                    f"group_id={group_id}, date_from={date_from}, "
+                    f"date_to={date_to}, ids={ids}"
                 ),
             )
         return count

@@ -335,6 +335,47 @@ class TestShiftRepository:
         assert deleted == 0
         assert ShiftRepository.get_by_id(test_shift.id) is not None
 
+    def test_delete_filtered_by_ids_only_deletes_selected(
+        self, test_app, test_user, second_user, test_shift_type, test_shift
+    ):
+        test_shift_id = test_shift.id
+        other_shift = ShiftRepository.create(
+            second_user.id,
+            test_shift_type.id,
+            datetime.combine(date.today(), datetime.min.time()),
+            datetime.combine(date.today(), datetime.max.time()),
+            date.today(),
+        )
+        db.session.commit()
+        other_shift_id = other_shift.id
+
+        deleted = ShiftRepository.delete_filtered(ids=[test_shift_id])
+        db.session.commit()
+
+        assert deleted == 1
+        assert ShiftRepository.get_by_id(test_shift_id) is None
+        assert ShiftRepository.get_by_id(other_shift_id) is not None
+
+    def test_list_paginated_filters_by_ids(
+        self, test_app, test_user, second_user, test_shift_type, test_shift
+    ):
+        other_shift = ShiftRepository.create(
+            second_user.id,
+            test_shift_type.id,
+            datetime.combine(date.today(), datetime.min.time()),
+            datetime.combine(date.today(), datetime.max.time()),
+            date.today(),
+        )
+        db.session.commit()
+
+        assert ShiftRepository.list_paginated(1, 10, ids=[test_shift.id]).total == 1
+        assert (
+            ShiftRepository.list_paginated(
+                1, 10, ids=[test_shift.id, other_shift.id]
+            ).total
+            == 2
+        )
+
 
 class TestLeaveRepository:
     def test_get_by_id(self, test_app, test_leave):
@@ -436,6 +477,33 @@ class TestLeaveRepository:
     ):
         assert len(LeaveRepository.list_filtered(user_id=test_user.id)) == 1
         assert LeaveRepository.list_filtered(user_id=second_user.id) == []
+
+    def test_list_filtered_by_ids(self, test_app, test_user, test_leave):
+        other = LeaveRepository.create(
+            test_user.id,
+            test_leave.end_date + timedelta(days=10),
+            test_leave.end_date + timedelta(days=12),
+        )
+        db.session.commit()
+
+        assert [
+            leave.id for leave in LeaveRepository.list_filtered(ids=[test_leave.id])
+        ] == [test_leave.id]
+        assert len(LeaveRepository.list_filtered(ids=[test_leave.id, other.id])) == 2
+
+    def test_list_paginated_filters_by_ids(self, test_app, test_user, test_leave):
+        other = LeaveRepository.create(
+            test_user.id,
+            test_leave.end_date + timedelta(days=10),
+            test_leave.end_date + timedelta(days=12),
+        )
+        db.session.commit()
+
+        assert LeaveRepository.list_paginated(1, 10, ids=[test_leave.id]).total == 1
+        assert (
+            LeaveRepository.list_paginated(1, 10, ids=[test_leave.id, other.id]).total
+            == 2
+        )
 
 
 class TestOnCallRepository:
@@ -637,3 +705,36 @@ class TestOnCallRepository:
         assert deleted == 1
         assert OnCallRepository.get_by_id(test_oncall_id) is None
         assert OnCallRepository.get_by_id(other_oncall_id) is not None
+
+    def test_delete_filtered_by_ids_only_deletes_selected(
+        self, test_app, test_user, second_user, test_oncall
+    ):
+        test_oncall_id = test_oncall.id
+        other_oncall = OnCallRepository.create(
+            second_user.id, datetime.now(), datetime.now() + timedelta(days=7)
+        )
+        db.session.commit()
+        other_oncall_id = other_oncall.id
+
+        deleted = OnCallRepository.delete_filtered(ids=[test_oncall_id])
+        db.session.commit()
+
+        assert deleted == 1
+        assert OnCallRepository.get_by_id(test_oncall_id) is None
+        assert OnCallRepository.get_by_id(other_oncall_id) is not None
+
+    def test_list_paginated_filters_by_ids(
+        self, test_app, test_user, second_user, test_oncall
+    ):
+        other_oncall = OnCallRepository.create(
+            second_user.id, datetime.now(), datetime.now() + timedelta(days=7)
+        )
+        db.session.commit()
+
+        assert OnCallRepository.list_paginated(1, 10, ids=[test_oncall.id]).total == 1
+        assert (
+            OnCallRepository.list_paginated(
+                1, 10, ids=[test_oncall.id, other_oncall.id]
+            ).total
+            == 2
+        )

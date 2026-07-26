@@ -33,9 +33,10 @@ class ShiftService:
         date_from: date | None = None,
         date_to: date | None = None,
         shift_type_id: int | None = None,
+        ids: list[int] | None = None,
     ):
         return ShiftRepository.list_paginated(
-            page, per_page, user_id, group_id, date_from, date_to, shift_type_id
+            page, per_page, user_id, group_id, date_from, date_to, shift_type_id, ids
         )
 
     @staticmethod
@@ -104,14 +105,17 @@ class ShiftService:
         date_from: date | None = None,
         date_to: date | None = None,
         shift_type_id: int | None = None,
+        ids: list[int] | None = None,
     ) -> int:
         """Bulk-deletes every Shift matching the given filters (no
         filters = matches everything, same as the old delete_all()) -
         backs the /schedule filter bar's "delete filtered result"
         action, replacing the old delete_all/delete_all_for_user/
-        delete_for_day/delete_for_week."""
+        delete_for_day/delete_for_week. `ids`: backs the checkbox
+        row-selection "delete selection" action - same entrypoint, just
+        another filter dimension."""
         count = ShiftRepository.delete_filtered(
-            user_id, group_id, date_from, date_to, shift_type_id
+            user_id, group_id, date_from, date_to, shift_type_id, ids
         )
         if count > 0:
             db.session.commit()
@@ -121,7 +125,8 @@ class ShiftService:
                 details=(
                     f"{count} shift(s) - filters: user_id={user_id}, "
                     f"group_id={group_id}, date_from={date_from}, "
-                    f"date_to={date_to}, shift_type_id={shift_type_id}"
+                    f"date_to={date_to}, shift_type_id={shift_type_id}, "
+                    f"ids={ids}"
                 ),
             )
         return count

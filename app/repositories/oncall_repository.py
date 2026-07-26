@@ -34,9 +34,12 @@ class OnCallRepository:
         group_id: int | None = None,
         date_from: date | None = None,
         date_to: date | None = None,
+        ids: list[int] | None = None,
     ):
         """Shared WHERE clause for list_paginated()/delete_filtered() -
-        backs the /oncall filter bar (user/group/date range). OnCall is
+        backs the /oncall filter bar (user/group/date range) and the
+        checkbox row-selection ("delete selection" is just
+        delete_filtered(ids=[...]), no separate code path). OnCall is
         a span, not a single day, so date_from/date_to use the same
         "overlap" semantics as list_in_window()/_overlapping_range_filter(),
         just with each bound independently optional."""
@@ -56,6 +59,8 @@ class OnCallRepository:
                 OnCall.start_time
                 < datetime.combine(date_to + timedelta(days=1), datetime.min.time())
             )
+        if ids is not None:
+            query = query.filter(OnCall.id.in_(ids))
         return query
 
     @staticmethod
@@ -66,9 +71,10 @@ class OnCallRepository:
         group_id: int | None = None,
         date_from: date | None = None,
         date_to: date | None = None,
+        ids: list[int] | None = None,
     ):
         return (
-            OnCallRepository._filtered_query(user_id, group_id, date_from, date_to)
+            OnCallRepository._filtered_query(user_id, group_id, date_from, date_to, ids)
             .options(joinedload(OnCall.user))
             .order_by(OnCall.start_time)
             .paginate(page=page, per_page=per_page, error_out=False)
@@ -80,6 +86,7 @@ class OnCallRepository:
         group_id: int | None = None,
         date_from: date | None = None,
         date_to: date | None = None,
+        ids: list[int] | None = None,
     ) -> int:
         """Bulk-deletes every OnCall matching the given filters (no
         filters = matches everything) - backs /oncall/delete-filtered,
@@ -88,7 +95,7 @@ class OnCallRepository:
         delete_overlapping_range()'s own comment above): a caller can
         hold an already-loaded OnCall instance across this call."""
         return OnCallRepository._filtered_query(
-            user_id, group_id, date_from, date_to
+            user_id, group_id, date_from, date_to, ids
         ).delete(synchronize_session="evaluate")
 
     @staticmethod

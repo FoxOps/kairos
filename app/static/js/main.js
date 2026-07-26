@@ -29,6 +29,7 @@ import { copyByTarget } from './utils/clipboard.js';
 import { saveRotationOrder } from './automation/rotation-order.js';
 import { initDatePickers } from './utils/date-picker.js';
 import { closeIcsModal, initIcsModalEscapeHandling } from './ics-export/ics-export-modal.js';
+import { initRowSelectCheckboxes } from './utils/row-select.js';
 
 let themeManager;
 let navbarMenu;
@@ -44,6 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // separately, since they don't exist yet at this point.
     initDatePickers();
     initIcsModalEscapeHandling();
+    initRowSelectCheckboxes();
 });
 
 // Export functions for the templates (inline onclick, FullCalendar callbacks)

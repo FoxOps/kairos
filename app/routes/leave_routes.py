@@ -191,6 +191,45 @@ def delete_filtered_leaves():
     return redirect(url_for("main.leave", **redirect_args))
 
 
+@main_bp.route("/leave/delete-selected", methods=["POST"])
+@login_required
+@admin_required
+def delete_selected_leaves():
+    """Delete exactly the leaves checked via the table's row checkboxes
+    (`name="ids"`, one value per checked row) - complements
+    delete-filtered (which acts on everything the current filters
+    match) with a way to act on a hand-picked subset instead. Same
+    filter-preserving redirect as delete-filtered, read from the same
+    hidden fields carried on this form."""
+    ids = request.form.getlist("ids", type=int)
+    user_id = request.form.get("user_id", type=int)
+    group_id = request.form.get("group_id", type=int)
+    date_from, date_to, date_from_str, date_to_str = parse_date_range_filter(
+        request.form
+    )
+    redirect_args = {
+        "user_id": user_id,
+        "group_id": group_id,
+        "date_from": date_from_str,
+        "date_to": date_to_str,
+    }
+
+    if not ids:
+        flash(_("Aucun congé sélectionné."), "warning")
+        return redirect(url_for("main.leave", **redirect_args))
+
+    try:
+        count = LeaveService.delete_filtered(ids=ids)
+        flash(
+            _("%(count)s congé(s) supprimé(s) avec succès !", count=count),
+            "success",
+        )
+    except Exception as e:
+        db.session.rollback()
+        flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
+    return redirect(url_for("main.leave", **redirect_args))
+
+
 @main_bp.route("/api/leave/<int:leave_id>", methods=["DELETE"])
 @login_required
 def api_delete_leave(leave_id):

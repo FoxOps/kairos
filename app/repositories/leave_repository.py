@@ -32,9 +32,12 @@ class LeaveRepository:
         group_id: int | None = None,
         date_from: date | None = None,
         date_to: date | None = None,
+        ids: list[int] | None = None,
     ):
         """Shared WHERE clause for list_paginated()/list_filtered() -
-        backs the /leave filter bar (user/group/date range). Leave is a
+        backs the /leave filter bar (user/group/date range) and the
+        checkbox row-selection ("delete selection" is just
+        list_filtered(ids=[...]), no separate code path). Leave is a
         span, not a single day, so date_from/date_to use the same
         "overlap" semantics already established by list_in_window()."""
         query = Leave.query
@@ -48,6 +51,8 @@ class LeaveRepository:
             query = query.filter(Leave.end_date >= date_from)
         if date_to is not None:
             query = query.filter(Leave.start_date <= date_to)
+        if ids is not None:
+            query = query.filter(Leave.id.in_(ids))
         return query
 
     @staticmethod
@@ -58,9 +63,10 @@ class LeaveRepository:
         group_id: int | None = None,
         date_from: date | None = None,
         date_to: date | None = None,
+        ids: list[int] | None = None,
     ):
         return (
-            LeaveRepository._filtered_query(user_id, group_id, date_from, date_to)
+            LeaveRepository._filtered_query(user_id, group_id, date_from, date_to, ids)
             .options(joinedload(Leave.user))
             .order_by(Leave.start_date)
             .paginate(page=page, per_page=per_page, error_out=False)
@@ -72,13 +78,14 @@ class LeaveRepository:
         group_id: int | None = None,
         date_from: date | None = None,
         date_to: date | None = None,
+        ids: list[int] | None = None,
     ) -> list[Leave]:
         """Every Leave matching the given filters (no filters = matches
         everything), unpaginated - used by LeaveService.delete_filtered(),
         which must loop delete_leave() per row (rebalance side effect),
         not a single bulk SQL DELETE like Shift/OnCall's delete_filtered()."""
         return (
-            LeaveRepository._filtered_query(user_id, group_id, date_from, date_to)
+            LeaveRepository._filtered_query(user_id, group_id, date_from, date_to, ids)
             .order_by(Leave.start_date)
             .all()
         )

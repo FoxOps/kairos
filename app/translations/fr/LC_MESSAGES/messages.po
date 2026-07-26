@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-26 05:03+0200\n"
+"POT-Creation-Date: 2026-07-26 05:35+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: fr <LL@li.org>\n"
@@ -33,10 +33,11 @@ msgstr "Accès refusé : vous devez être administrateur."
 #: app/routes/admin_shift_type_routes.py:111
 #: app/routes/admin_user_routes.py:118 app/routes/auth.py:438
 #: app/routes/leave_routes.py:121 app/routes/leave_routes.py:154
-#: app/routes/leave_routes.py:190 app/routes/oncall_routes.py:101
-#: app/routes/oncall_routes.py:120 app/routes/oncall_routes.py:157
+#: app/routes/leave_routes.py:190 app/routes/leave_routes.py:229
+#: app/routes/oncall_routes.py:101 app/routes/oncall_routes.py:120
+#: app/routes/oncall_routes.py:157 app/routes/oncall_routes.py:196
 #: app/routes/shift_routes.py:139 app/routes/shift_routes.py:160
-#: app/routes/shift_routes.py:201
+#: app/routes/shift_routes.py:201 app/routes/shift_routes.py:242
 #, python-format
 msgid "Erreur : %(val0)s"
 msgstr "Erreur : %(val0)s"
@@ -62,7 +63,7 @@ msgstr ""
 msgid "%(count)s entrée(s) d'historique purgée(s)."
 msgstr "%(count)s entrée(s) d'historique purgée(s)."
 
-#: app/routes/admin_automation_routes.py:72 app/services/leave_service.py:213
+#: app/routes/admin_automation_routes.py:72 app/services/leave_service.py:219
 msgid "Génération d'astreintes incomplète"
 msgstr "Génération d'astreintes incomplète"
 
@@ -75,7 +76,7 @@ msgstr ""
 "Aucun utilisateur disponible dans le respect du délai légal de 2 semaines "
 "pour : %(dates)s. Assignation manuelle nécessaire dans /admin/automation."
 
-#: app/routes/admin_automation_routes.py:89 app/services/leave_service.py:262
+#: app/routes/admin_automation_routes.py:89 app/services/leave_service.py:268
 msgid "Génération de shifts incomplète"
 msgstr "Génération de shifts incomplète"
 
@@ -598,48 +599,52 @@ msgstr "Congé supprimé. Aucun shift à recalculer."
 msgid "Congé supprimé avec succès !"
 msgstr "Congé supprimé avec succès !"
 
-#: app/routes/leave_routes.py:183
+#: app/routes/leave_routes.py:183 app/routes/leave_routes.py:224
 #, python-format
 msgid "%(count)s congé(s) supprimé(s) avec succès !"
 msgstr "%(count)s congé(s) supprimé(s) avec succès !"
 
-#: app/routes/leave_routes.py:187 app/templates/leave.html:88
+#: app/routes/leave_routes.py:187 app/templates/leave.html:105
 msgid "Aucun congé ne correspond à ces filtres."
 msgstr "Aucun congé ne correspond à ces filtres."
 
-#: app/routes/leave_routes.py:200 app/routes/leave_routes.py:235
-#: app/services/leave_service.py:126
+#: app/routes/leave_routes.py:218
+msgid "Aucun congé sélectionné."
+msgstr "Aucun congé sélectionné."
+
+#: app/routes/leave_routes.py:239 app/routes/leave_routes.py:274
+#: app/services/leave_service.py:132
 msgid "Congé non trouvé"
 msgstr "Congé non trouvé"
 
-#: app/routes/leave_routes.py:208
+#: app/routes/leave_routes.py:247
 msgid "Vous ne pouvez supprimer que vos propres congés"
 msgstr "Vous ne pouvez supprimer que vos propres congés"
 
-#: app/routes/leave_routes.py:224 app/routes/leave_routes.py:309
-#: app/routes/oncall_routes.py:175 app/routes/oncall_routes.py:245
-#: app/routes/shift_routes.py:283 app/routes/shift_routes.py:354
-#: app/routes/shift_routes.py:373
+#: app/routes/leave_routes.py:263 app/routes/leave_routes.py:348
+#: app/routes/oncall_routes.py:214 app/routes/oncall_routes.py:284
+#: app/routes/shift_routes.py:324 app/routes/shift_routes.py:395
+#: app/routes/shift_routes.py:414
 #, python-format
 msgid "Erreur: %(val0)s"
 msgstr "Erreur: %(val0)s"
 
-#: app/routes/leave_routes.py:243
+#: app/routes/leave_routes.py:282
 msgid "Vous ne pouvez modifier que vos propres congés"
 msgstr "Vous ne pouvez modifier que vos propres congés"
 
-#: app/routes/leave_routes.py:251 app/routes/oncall_routes.py:191
-#: app/routes/shift_routes.py:215 app/routes/shift_routes.py:299
+#: app/routes/leave_routes.py:290 app/routes/oncall_routes.py:230
+#: app/routes/shift_routes.py:256 app/routes/shift_routes.py:340
 msgid "Aucune donnée reçue"
 msgstr "Aucune donnée reçue"
 
-#: app/routes/leave_routes.py:259 app/routes/oncall_routes.py:199
-#: app/routes/shift_routes.py:307
+#: app/routes/leave_routes.py:298 app/routes/oncall_routes.py:238
+#: app/routes/shift_routes.py:348
 msgid "Date de début manquante"
 msgstr "Date de début manquante"
 
-#: app/routes/leave_routes.py:301 app/routes/oncall_routes.py:237
-#: app/routes/shift_routes.py:346
+#: app/routes/leave_routes.py:340 app/routes/oncall_routes.py:276
+#: app/routes/shift_routes.py:387
 #, python-format
 msgid "Format de date invalide: %(val0)s"
 msgstr "Format de date invalide: %(val0)s"
@@ -659,17 +664,21 @@ msgstr ""
 msgid "Astreinte supprimée avec succès !"
 msgstr "Astreinte supprimée avec succès !"
 
-#: app/routes/oncall_routes.py:150
+#: app/routes/oncall_routes.py:150 app/routes/oncall_routes.py:191
 #, python-format
 msgid "%(count)s astreinte(s) supprimée(s) avec succès !"
 msgstr "%(count)s astreinte(s) supprimée(s) avec succès !"
 
-#: app/routes/oncall_routes.py:154 app/templates/oncall.html:90
+#: app/routes/oncall_routes.py:154 app/templates/oncall.html:107
 msgid "Aucune astreinte ne correspond à ces filtres."
 msgstr "Aucune astreinte ne correspond à ces filtres."
 
-#: app/routes/oncall_routes.py:167 app/routes/oncall_routes.py:187
-#: app/services/oncall_service.py:138
+#: app/routes/oncall_routes.py:185
+msgid "Aucune astreinte sélectionnée."
+msgstr "Aucune astreinte sélectionnée."
+
+#: app/routes/oncall_routes.py:206 app/routes/oncall_routes.py:226
+#: app/services/oncall_service.py:145
 msgid "Astreinte non trouvée"
 msgstr "Astreinte non trouvée"
 
@@ -704,34 +713,38 @@ msgstr "Format de date invalide : %(val0)s. Utilisez le format AAAA-MM-JJ."
 msgid "Shift supprimé avec succès !"
 msgstr "Shift supprimé avec succès !"
 
-#: app/routes/shift_routes.py:194
+#: app/routes/shift_routes.py:194 app/routes/shift_routes.py:237
 #, python-format
 msgid "%(count)s shift(s) supprimé(s) avec succès !"
 msgstr "%(count)s shift(s) supprimé(s) avec succès !"
 
-#: app/routes/shift_routes.py:198 app/templates/schedule.html:110
+#: app/routes/shift_routes.py:198 app/templates/schedule.html:127
 msgid "Aucun shift ne correspond à ces filtres."
 msgstr "Aucun shift ne correspond à ces filtres."
 
-#: app/routes/shift_routes.py:224
+#: app/routes/shift_routes.py:231
+msgid "Aucun shift sélectionné."
+msgstr "Aucun shift sélectionné."
+
+#: app/routes/shift_routes.py:265
 msgid "Données manquantes"
 msgstr "Données manquantes"
 
-#: app/routes/shift_routes.py:232
+#: app/routes/shift_routes.py:273
 msgid "Utilisateur non trouvé"
 msgstr "Utilisateur non trouvé"
 
-#: app/routes/shift_routes.py:239
+#: app/routes/shift_routes.py:280
 msgid "Type de shift non trouvé"
 msgstr "Type de shift non trouvé"
 
-#: app/routes/shift_routes.py:276
+#: app/routes/shift_routes.py:317
 #, python-format
 msgid "Format invalide: %(val0)s"
 msgstr "Format invalide: %(val0)s"
 
-#: app/routes/shift_routes.py:295 app/routes/shift_routes.py:365
-#: app/services/shift_service.py:160
+#: app/routes/shift_routes.py:336 app/routes/shift_routes.py:406
+#: app/services/shift_service.py:165
 msgid "Shift non trouvé"
 msgstr "Shift non trouvé"
 
@@ -933,16 +946,16 @@ msgstr "Un groupe avec ce nom existe déjà."
 msgid "Impossible de supprimer ce groupe : des utilisateurs y sont associés."
 msgstr "Impossible de supprimer ce groupe : des utilisateurs y sont associés."
 
-#: app/services/leave_service.py:129
+#: app/services/leave_service.py:135
 msgid "La date de fin doit être après la date de début"
 msgstr "La date de fin doit être après la date de début"
 
-#: app/services/leave_service.py:138
+#: app/services/leave_service.py:144
 #, python-format
 msgid "Un congé existe déjà pour %(name)s pendant cette période"
 msgstr "Un congé existe déjà pour %(name)s pendant cette période"
 
-#: app/services/leave_service.py:150
+#: app/services/leave_service.py:156
 msgid ""
 "Impossible : l'effectif disponible tomberait à 0 sur au moins un jour de "
 "cette période"
@@ -950,7 +963,7 @@ msgstr ""
 "Impossible : l'effectif disponible tomberait à 0 sur au moins un jour de "
 "cette période"
 
-#: app/services/leave_service.py:215
+#: app/services/leave_service.py:221
 #, python-format
 msgid ""
 "Aucun utilisateur disponible dans le respect du délai légal de 2 semaines "
@@ -961,11 +974,11 @@ msgstr ""
 "pour : %(dates)s (rééquilibrage après congé). Assignation manuelle "
 "nécessaire dans /admin/automation."
 
-#: app/services/leave_service.py:228
+#: app/services/leave_service.py:234
 msgid "Régénération de shifts incomplète"
 msgstr "Régénération de shifts incomplète"
 
-#: app/services/leave_service.py:230
+#: app/services/leave_service.py:236
 #, python-format
 msgid ""
 "Échec de la régénération automatique des shifts pour : %(dates)s "
@@ -976,11 +989,11 @@ msgstr ""
 "(rééquilibrage après congé). Ces jours n'ont pas été modifiés. Assignation "
 "manuelle nécessaire dans /admin/automation."
 
-#: app/services/leave_service.py:246
+#: app/services/leave_service.py:252
 msgid "Régénération d'astreintes échouée"
 msgstr "Régénération d'astreintes échouée"
 
-#: app/services/leave_service.py:248
+#: app/services/leave_service.py:254
 #, python-format
 msgid ""
 "Échec de la régénération automatique des astreintes pour la période du "
@@ -991,7 +1004,7 @@ msgstr ""
 "%(start)s au %(end)s (rééquilibrage après congé). Ces astreintes n'ont pas "
 "été modifiées. Assignation manuelle nécessaire dans /admin/automation."
 
-#: app/services/leave_service.py:264
+#: app/services/leave_service.py:270
 #, python-format
 msgid ""
 "Aucun utilisateur disponible pour générer un shift pour : %(dates)s "
@@ -1034,11 +1047,11 @@ msgstr "Échec d'envoi du rappel d'astreinte"
 msgid "Le rappel d'astreinte pour %(email)s n'a pas pu être envoyé."
 msgstr "Le rappel d'astreinte pour %(email)s n'a pas pu être envoyé."
 
-#: app/services/oncall_service.py:51
+#: app/services/oncall_service.py:52
 msgid "L'astreinte doit commencer un vendredi."
 msgstr "L'astreinte doit commencer un vendredi."
 
-#: app/services/oncall_service.py:60
+#: app/services/oncall_service.py:61
 msgid ""
 "Impossible d'ajouter cette astreinte (période déjà couverte ou congé sur la "
 "période)."
@@ -1046,16 +1059,16 @@ msgstr ""
 "Impossible d'ajouter cette astreinte (période déjà couverte ou congé sur la "
 "période)."
 
-#: app/services/oncall_service.py:141
+#: app/services/oncall_service.py:148
 msgid "L'astreinte doit commencer un vendredi"
 msgstr "L'astreinte doit commencer un vendredi"
 
-#: app/services/oncall_service.py:150
+#: app/services/oncall_service.py:157
 #, python-format
 msgid "Une astreinte existe déjà pour %(name)s pendant cette période"
 msgstr "Une astreinte existe déjà pour %(name)s pendant cette période"
 
-#: app/services/oncall_service.py:162
+#: app/services/oncall_service.py:169
 #, python-format
 msgid "%(name)s est en congé pendant cette période"
 msgstr "%(name)s est en congé pendant cette période"
@@ -1119,24 +1132,24 @@ msgstr "La durée de rétention ne peut pas être négative"
 msgid "La durée d'expiration doit être positive"
 msgstr "La durée d'expiration doit être positive"
 
-#: app/services/shift_service.py:136
+#: app/services/shift_service.py:141
 msgid "Impossible de créer un shift pour un week-end"
 msgstr "Impossible de créer un shift pour un week-end"
 
-#: app/services/shift_service.py:139
+#: app/services/shift_service.py:144
 msgid "Conflit détecté pour ce shift"
 msgstr "Conflit détecté pour ce shift"
 
-#: app/services/shift_service.py:164
+#: app/services/shift_service.py:169
 msgid "Impossible de déplacer vers un week-end (samedi/dimanche)"
 msgstr "Impossible de déplacer vers un week-end (samedi/dimanche)"
 
-#: app/services/shift_service.py:173
+#: app/services/shift_service.py:178
 #, python-format
 msgid "Un shift existe déjà pour %(name)s le %(date)s"
 msgstr "Un shift existe déjà pour %(name)s le %(date)s"
 
-#: app/services/shift_service.py:187 app/services/swap_service.py:75
+#: app/services/shift_service.py:192 app/services/swap_service.py:75
 #, python-format
 msgid "%(name)s est en congé le %(date)s"
 msgstr "%(name)s est en congé le %(date)s"
@@ -1696,9 +1709,9 @@ msgstr "Ajouter un congé"
 #: app/templates/add_shift.html:16
 #: app/templates/admin/automation/full_dry_run.html:36
 #: app/templates/admin/automation/full_dry_run.html:75
-#: app/templates/auth/profile.html:34 app/templates/leave.html:55
-#: app/templates/macros/list_filters.html:12 app/templates/oncall.html:56
-#: app/templates/schedule.html:58 app/utils/helpers/js_translations.py:40
+#: app/templates/auth/profile.html:34 app/templates/leave.html:67
+#: app/templates/macros/list_filters.html:12 app/templates/oncall.html:68
+#: app/templates/schedule.html:70 app/utils/helpers/js_translations.py:40
 msgid "Utilisateur"
 msgstr "Utilisateur"
 
@@ -1832,7 +1845,7 @@ msgstr "Sélectionnez l'utilisateur pour ce shift"
 
 #: app/templates/add_shift.html:27
 #: app/templates/admin/automation/rules.html:129
-#: app/templates/macros/list_filters.html:39 app/templates/schedule.html:59
+#: app/templates/macros/list_filters.html:39 app/templates/schedule.html:71
 #: app/utils/helpers/js_translations.py:42
 msgid "Type de shift"
 msgstr "Type de shift"
@@ -2073,8 +2086,8 @@ msgstr "Laissez vide pour accepter le shift sans rien proposer en retour."
 #: app/templates/admin/service_accounts.html:41
 #: app/templates/admin/shift_types.html:35 app/templates/admin/swaps.html:79
 #: app/templates/admin/swaps.html:150 app/templates/admin/users.html:42
-#: app/templates/confirm_swap.html:42 app/templates/leave.html:58
-#: app/templates/oncall.html:59 app/templates/schedule.html:63
+#: app/templates/confirm_swap.html:42 app/templates/leave.html:70
+#: app/templates/oncall.html:71 app/templates/schedule.html:75
 #: app/templates/swaps.html:36 app/templates/swaps.html:88
 msgid "Actions"
 msgstr "Actions"
@@ -2436,7 +2449,7 @@ msgid "Actions principales"
 msgstr "Actions principales"
 
 #: app/templates/admin/dashboard.html:190 app/templates/leave.html:23
-#: app/templates/leave.html:45 app/templates/leave.html:101
+#: app/templates/leave.html:52 app/templates/leave.html:118
 msgid "congés"
 msgstr "congés"
 
@@ -2460,37 +2473,56 @@ msgstr ""
 msgid "Supprimer le résultat filtré (%(count)s congé(s))"
 msgstr "Supprimer le résultat filtré (%(count)s congé(s))"
 
-#: app/templates/leave.html:52
+#: app/templates/leave.html:42
+#, python-format
+msgid "Supprimer les congés sélectionnés ? Cette action est irréversible !"
+msgstr "Supprimer les congés sélectionnés ? Cette action est irréversible !"
+
+#: app/templates/leave.html:43 app/templates/oncall.html:43
+#: app/templates/schedule.html:44
+msgid "Supprimer la sélection"
+msgstr "Supprimer la sélection"
+
+#: app/templates/leave.html:59
 msgid "Liste des congés"
 msgstr "Liste des congés"
 
+#: app/templates/leave.html:64 app/templates/oncall.html:64
+#: app/templates/schedule.html:67
+msgid "Tout sélectionner"
+msgstr "Tout sélectionner"
+
 #: app/templates/admin/automation/full_dry_run.html:37
-#: app/templates/leave.html:56 app/templates/oncall.html:57
+#: app/templates/leave.html:68 app/templates/oncall.html:69
 msgid "Début"
 msgstr "Début"
 
 #: app/templates/admin/automation/full_dry_run.html:38
-#: app/templates/leave.html:57 app/templates/oncall.html:58
+#: app/templates/leave.html:69 app/templates/oncall.html:70
 msgid "Fin"
 msgstr "Fin"
 
-#: app/templates/leave.html:69
+#: app/templates/leave.html:78
+msgid "Sélectionner ce congé"
+msgstr "Sélectionner ce congé"
+
+#: app/templates/leave.html:86
 msgid "Actions pour ce congé"
 msgstr "Actions pour ce congé"
 
-#: app/templates/leave.html:73
+#: app/templates/leave.html:90
 msgid "Êtes-vous sûr de vouloir supprimer ce congé ?"
 msgstr "Êtes-vous sûr de vouloir supprimer ce congé ?"
 
-#: app/templates/leave.html:74
+#: app/templates/leave.html:91
 msgid "Supprimer le congé"
 msgstr "Supprimer le congé"
 
-#: app/templates/leave.html:74 app/templates/leave.html:93
+#: app/templates/leave.html:91 app/templates/leave.html:110
 msgid "Supprimer ce congé"
 msgstr "Supprimer ce congé"
 
-#: app/templates/leave.html:93
+#: app/templates/leave.html:110
 msgid "Supprimer le congé sélectionné"
 msgstr "Supprimer le congé sélectionné"
 
@@ -2535,7 +2567,7 @@ msgid "Aucune notification."
 msgstr "Aucune notification."
 
 #: app/templates/admin/dashboard.html:185 app/templates/oncall.html:23
-#: app/templates/oncall.html:45 app/templates/oncall.html:105
+#: app/templates/oncall.html:52 app/templates/oncall.html:122
 msgid "astreintes"
 msgstr "astreintes"
 
@@ -2553,27 +2585,38 @@ msgstr ""
 msgid "Supprimer le résultat filtré (%(count)s astreinte(s))"
 msgstr "Supprimer le résultat filtré (%(count)s astreinte(s))"
 
-#: app/templates/oncall.html:52
+#: app/templates/oncall.html:42
+#, python-format
+msgid ""
+"Supprimer les astreintes sélectionnées ? Cette action est irréversible !"
+msgstr ""
+"Supprimer les astreintes sélectionnées ? Cette action est irréversible !"
+
+#: app/templates/oncall.html:59
 msgid "Liste des astreintes"
 msgstr "Liste des astreintes"
 
-#: app/templates/oncall.html:71
+#: app/templates/oncall.html:79
+msgid "Sélectionner cette astreinte"
+msgstr "Sélectionner cette astreinte"
+
+#: app/templates/oncall.html:88
 msgid "Actions pour cette astreinte"
 msgstr "Actions pour cette astreinte"
 
-#: app/templates/oncall.html:75
+#: app/templates/oncall.html:92
 msgid "Êtes-vous sûr de vouloir supprimer cette astreinte ?"
 msgstr "Êtes-vous sûr de vouloir supprimer cette astreinte ?"
 
-#: app/templates/oncall.html:76
+#: app/templates/oncall.html:93
 msgid "Supprimer l'astreinte"
 msgstr "Supprimer l'astreinte"
 
-#: app/templates/oncall.html:76 app/templates/oncall.html:96
+#: app/templates/oncall.html:93 app/templates/oncall.html:113
 msgid "Supprimer cette astreinte"
 msgstr "Supprimer cette astreinte"
 
-#: app/templates/oncall.html:96
+#: app/templates/oncall.html:113
 msgid "Supprimer l'astreinte sélectionnée"
 msgstr "Supprimer l'astreinte sélectionnée"
 
@@ -2586,7 +2629,7 @@ msgid "Ajouter un nouveau shift"
 msgstr "Ajouter un nouveau shift"
 
 #: app/templates/admin/dashboard.html:180 app/templates/schedule.html:24
-#: app/templates/schedule.html:46 app/templates/schedule.html:125
+#: app/templates/schedule.html:53 app/templates/schedule.html:142
 msgid "shifts"
 msgstr "shifts"
 
@@ -2604,7 +2647,12 @@ msgstr ""
 msgid "Supprimer le résultat filtré (%(count)s shift(s))"
 msgstr "Supprimer le résultat filtré (%(count)s shift(s))"
 
-#: app/templates/schedule.html:55
+#: app/templates/schedule.html:43
+#, python-format
+msgid "Supprimer les shifts sélectionnés ? Cette action est irréversible !"
+msgstr "Supprimer les shifts sélectionnés ? Cette action est irréversible !"
+
+#: app/templates/schedule.html:62
 msgid "Liste des shifts avec les utilisateurs, types, dates et heures"
 msgstr "Liste des shifts avec les utilisateurs, types, dates et heures"
 
@@ -2612,41 +2660,45 @@ msgstr "Liste des shifts avec les utilisateurs, types, dates et heures"
 #: app/templates/admin/automation/full_dry_run.html:73
 #: app/templates/admin/backups/dashboard.html:76
 #: app/templates/admin/backups/dashboard.html:113
-#: app/templates/emails/shift_weekly.html:25 app/templates/schedule.html:60
+#: app/templates/emails/shift_weekly.html:25 app/templates/schedule.html:72
 msgid "Date"
 msgstr "Date"
 
 #: app/templates/admin/add_shift_type.html:28
 #: app/templates/admin/automation/rules.html:179
 #: app/templates/admin/edit_shift_type.html:28
-#: app/templates/admin/shift_types.html:33 app/templates/schedule.html:61
+#: app/templates/admin/shift_types.html:33 app/templates/schedule.html:73
 msgid "Heure de début"
 msgstr "Heure de début"
 
 #: app/templates/admin/add_shift_type.html:34
 #: app/templates/admin/edit_shift_type.html:34
-#: app/templates/admin/shift_types.html:34 app/templates/schedule.html:62
+#: app/templates/admin/shift_types.html:34 app/templates/schedule.html:74
 msgid "Heure de fin"
 msgstr "Heure de fin"
 
-#: app/templates/schedule.html:89
+#: app/templates/schedule.html:86
+msgid "Sélectionner ce shift"
+msgstr "Sélectionner ce shift"
+
+#: app/templates/schedule.html:106
 msgid "Actions pour ce shift"
 msgstr "Actions pour ce shift"
 
-#: app/templates/schedule.html:94
+#: app/templates/schedule.html:111
 msgid "Êtes-vous sûr de vouloir supprimer ce shift ?"
 msgstr "Êtes-vous sûr de vouloir supprimer ce shift ?"
 
-#: app/templates/schedule.html:95
+#: app/templates/schedule.html:112
 #, python-format
 msgid "Supprimer le shift du %(date)s"
 msgstr "Supprimer le shift du %(date)s"
 
-#: app/templates/schedule.html:96 app/templates/schedule.html:116
+#: app/templates/schedule.html:113 app/templates/schedule.html:133
 msgid "Supprimer ce shift"
 msgstr "Supprimer ce shift"
 
-#: app/templates/schedule.html:116
+#: app/templates/schedule.html:133
 msgid "Supprimer le shift sélectionné"
 msgstr "Supprimer le shift sélectionné"
 
