@@ -249,3 +249,55 @@ class TestCalendarFunctions:
 
         assert len(events) == 1
         assert events[0]["title"] == f"{test_user.name} - {test_shift_type.label}"
+        props = events[0]["extendedProps"]
+        assert props["userId"] == test_user.id
+        assert props["groupId"] == test_user.group_id
+        assert props["userName"] == test_user.name
+        assert props["shiftTypeId"] == test_shift_type.id
+        assert props["shiftTypeLabel"] == test_shift_type.label
+
+    def test_build_calendar_events_oncall_and_leave_extended_props(
+        self, test_app, test_user, test_oncall, test_leave
+    ):
+        """The on-call/leave event dicts also carry userId/groupId/
+        userName in extendedProps - needed by the calendar's click-to-edit
+        modals and group-color accent dot, neither of which existed
+        before this feature."""
+        from app.services.schedule_service import ScheduleService
+
+        events = ScheduleService.build_calendar_events(
+            [], [test_oncall], [test_leave], test_user
+        )
+        oncall_event = next(e for e in events if e["extendedProps"]["type"] == "oncall")
+        leave_event = next(e for e in events if e["extendedProps"]["type"] == "leave")
+
+        assert oncall_event["extendedProps"]["userId"] == test_user.id
+        assert oncall_event["extendedProps"]["groupId"] == test_user.group_id
+        assert oncall_event["extendedProps"]["userName"] == test_user.name
+
+        assert leave_event["extendedProps"]["userId"] == test_user.id
+        assert leave_event["extendedProps"]["groupId"] == test_user.group_id
+        assert leave_event["extendedProps"]["userName"] == test_user.name
+
+    def test_get_calendar_events_for_range_filters_by_group_ids(
+        self, test_app, test_group, test_user, test_shift
+    ):
+        from app.models import Group
+        from app.services.schedule_service import ScheduleService
+
+        other_group = Group(name="Other Group Calendar Range")
+        db.session.add(other_group)
+        db.session.commit()
+
+        window_start = datetime.combine(test_shift.date, datetime.min.time())
+        window_end = datetime.combine(test_shift.date, datetime.max.time())
+
+        events = ScheduleService.get_calendar_events_for_range(
+            test_user, window_start, window_end, group_ids=[test_group.id]
+        )
+        assert len(events) == 1
+
+        events = ScheduleService.get_calendar_events_for_range(
+            test_user, window_start, window_end, group_ids=[other_group.id]
+        )
+        assert events == []

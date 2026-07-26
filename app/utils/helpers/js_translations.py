@@ -15,12 +15,6 @@ from flask_babel import gettext as _
 
 def get_js_translations() -> dict[str, str]:
     return {
-        "edit_mode_on": _("Mode édition activé"),
-        "edit_mode_off": _("Mode édition désactivé"),
-        "disable_edit_mode": _("Désactiver le mode édition"),
-        "enable_edit_mode": _("Activer le mode édition"),
-        "disable_edit_mode_short": _("Désactiver l'édition"),
-        "enable_edit_mode_short": _("Activer l'édition"),
         "hide_tips": _("Cacher les conseils"),
         "show_tips": _("Afficher les conseils"),
         "hide_tips_short": _("Cacher conseils"),
@@ -65,4 +59,25 @@ def get_js_translations() -> dict[str, str]:
         "dark_theme_enabled": _("Thème sombre activé"),
         "light_theme_enabled": _("Thème clair activé"),
         "copied": _("Copié !"),
+        "no_groups_selected": _("Aucun groupe sélectionné : le calendrier est vide."),
+        "edit_cancelled": _("Modification annulée."),
+        "view_shift_title": _("Détails du shift"),
+        "edit_shift_title": _("Modifier le shift"),
+        "owner": _("Propriétaire"),
+        "shift_date": _("Date du shift"),
+        "delete": _("Supprimer"),
+        "save": _("Enregistrer"),
+        "shift_updated": _("Shift modifié avec succès."),
+        "shift_update_error": _(
+            "Une erreur est survenue lors de la modification du shift."
+        ),
+        "view_oncall_title": _("Détails de l'astreinte"),
+        "edit_oncall_title": _("Modifier l'astreinte"),
+        "start_day": _("Jour de début"),
+        "oncall_updated": _("Astreinte modifiée avec succès."),
+        "oncall_update_error": _(
+            "Une erreur est survenue lors de la modification de l'astreinte."
+        ),
+        "view_leave_title": _("Détails du congé"),
+        "period": _("Période"),
     }

@@ -43,13 +43,19 @@ class OnCallService:
         user: User, start_date: datetime
     ) -> tuple[OnCall | None, str | None]:
         """
-        Create a one-week on-call starting from the given Friday 9pm.
+        Create a one-week on-call starting from the given anchor day
+        (OnCallAnchorRule, default Friday 21:00, configurable per Group).
 
         Returns:
             (oncall, error_message)
         """
-        if start_date.weekday() != 4:
-            return None, _("L'astreinte doit commencer un vendredi.")
+        from app.utils.automation.rules import OnCallAnchorRule
+
+        anchor_weekday = OnCallAnchorRule.resolve(group=user.group)["weekday"]
+        if start_date.weekday() != anchor_weekday:
+            return None, _(
+                "L'astreinte doit commencer le jour configuré pour ce groupe."
+            )
 
         start_time = datetime.combine(start_date, datetime.min.time()).replace(hour=21)
         end_time = start_time + timedelta(days=7, hours=-14)
@@ -137,37 +143,65 @@ class OnCallService:
 
     @staticmethod
     def api_update(
-        oncall_id: int, new_start: datetime, new_end: datetime
+        oncall_id: int,
+        new_start: datetime,
+        new_end: datetime,
+        new_user_id: int | None = None,
     ) -> tuple[OnCall | None, str | None]:
-        """Update an on-call from the drag & drop API. Returns (oncall, error_message)."""
+        """Update an on-call from the drag & drop API, or from the
+        calendar's click-to-edit modal (which can also reassign the
+        on-call person - `new_user_id`, optional, default None = "keep
+        current", so the drag/resize call site - which never sends it -
+        is unaffected). Returns (oncall, error_message)."""
+        from app.utils.automation.rules import OnCallAnchorRule
+
         oncall = OnCallRepository.get_by_id(oncall_id)
         if not oncall:
             return None, _("Astreinte non trouvée")
 
-        if new_start.weekday() != 4:
-            return None, _("L'astreinte doit commencer un vendredi")
+        if new_user_id is not None and new_user_id != oncall.user_id:
+            effective_user = db.session.get(User, new_user_id)
+            if not effective_user:
+                return None, _("Utilisateur non trouvé")
+        else:
+            effective_user = oncall.user
 
+        # Resolved against the *target* group (the reassignment target,
+        # if any) - a simultaneous reassignment to a different group
+        # must be validated against that group's own configured anchor
+        # day, matching how OnCallAnchorRule.resolve(group=group) is
+        # used everywhere else (oncall_automation.py).
+        anchor_weekday = OnCallAnchorRule.resolve(group=effective_user.group)["weekday"]
+        if new_start.weekday() != anchor_weekday:
+            return None, _(
+                "L'astreinte doit commencer le jour configuré pour ce groupe"
+            )
+
+        # Every check below runs against the *effective* user (the
+        # reassignment target, if any) - not the on-call's original
+        # owner - since that's the actual point of allowing
+        # reassignment through this method.
         conflict = OnCallRepository.find_conflict(
-            oncall.user_id, new_start, new_end, exclude_id=oncall_id
+            effective_user.id, new_start, new_end, exclude_id=oncall_id
         )
         if conflict:
             return (
                 None,
                 _(
                     "Une astreinte existe déjà pour %(name)s pendant cette période",
-                    name=oncall.user.name,
+                    name=effective_user.name,
                 ),
             )
 
         # Originally missing: the creation path (add_oncall) goes through
         # can_add_oncall(), which also checks leave over the period - drag
         # & drop didn't (same class of bug as ShiftService.api_update).
-        if _get_overlapping_leave(oncall.user_id, new_start.date(), new_end.date()):
+        if _get_overlapping_leave(effective_user.id, new_start.date(), new_end.date()):
             return (
                 None,
                 _(
                     "%(name)s est en congé pendant cette période",
-                    name=oncall.user.name,
+                    name=effective_user.name,
                 ),
             )
 
@@ -175,18 +209,27 @@ class OnCallService:
         # rule - the creation path (add_oncall) already goes through
         # can_add_oncall(), which calls this too.
         violation = check_oncall_rule_violations(
-            oncall.user, new_start, new_end, exclude_oncall_id=oncall_id
+            effective_user, new_start, new_end, exclude_oncall_id=oncall_id
         )
         if violation is not None:
             return None, violation
 
+        # Captured before mutating - oncall.user reflects the *new* FK
+        # once the relationship refreshes after commit.
+        original_user_name = oncall.user.name
+
         oncall.start_time = new_start
         oncall.end_time = new_end
+        oncall.user_id = effective_user.id
         db.session.commit()
+
+        details = f"{original_user_name} -> {new_start.strftime('%d/%m/%Y')}"
+        if effective_user.name != original_user_name:
+            details += f", user {original_user_name}->{effective_user.name}"
         AuditService.log(
             "oncall.update",
             resource_type="OnCall",
             resource_id=oncall.id,
-            details=f"{oncall.user.name} -> {new_start.strftime('%d/%m/%Y')}",
+            details=details,
         )
         return oncall, None

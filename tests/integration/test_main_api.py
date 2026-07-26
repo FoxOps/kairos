@@ -4,6 +4,7 @@ Covers API routes not previously tested.
 """
 
 import json
+from datetime import date
 
 
 class TestAPIGetShifts:
@@ -114,6 +115,27 @@ class TestAPIGetShifts:
         assert response.status_code == 200
         assert isinstance(response.json, list)
 
+    def test_filters_by_group_ids(self, test_app, logged_in_client, test_shift):
+        """The calendar's multi-group filter - repeated `group_ids`
+        query params, matching URLSearchParams.append()'s natural
+        shape."""
+        from app import db
+        from app.models import Group
+
+        other_group = Group(name="Other Group API Filter")
+        db.session.add(other_group)
+        db.session.commit()
+
+        response = logged_in_client.get(
+            f"/api/shifts?group_ids={test_shift.user.group_id}"
+        )
+        ids = {e["extendedProps"]["resourceId"] for e in response.json}
+        assert test_shift.id in ids
+
+        response = logged_in_client.get(f"/api/shifts?group_ids={other_group.id}")
+        ids = {e["extendedProps"]["resourceId"] for e in response.json}
+        assert test_shift.id not in ids
+
 
 class TestAPIGetUsers:
     """Tests for GET /api/users."""
@@ -194,6 +216,61 @@ class TestAPIUpdateShift:
         assert response.status_code == 404
         data = json.loads(response.data)
         assert data["success"] is False
+
+    def test_reassigns_user_and_shift_type(
+        self, test_app, logged_in_client, second_user, test_shift, afternoon_shift_type
+    ):
+        """The calendar's shift-edit modal can reassign the person and
+        the shift type via the same PATCH endpoint the drag/resize path
+        already uses."""
+        from datetime import datetime, timedelta
+
+        target_day = date.today() + timedelta(days=1)
+        while target_day.weekday() >= 5:
+            target_day += timedelta(days=1)
+        new_start = datetime.combine(target_day, datetime.min.time())
+        new_end = new_start + timedelta(hours=8)
+
+        response = logged_in_client.patch(
+            f"/api/shifts/{test_shift.id}",
+            json={
+                "start": new_start.isoformat(),
+                "end": new_end.isoformat(),
+                "userId": second_user.id,
+                "shiftTypeId": afternoon_shift_type.id,
+            },
+        )
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["success"] is True
+
+        from app import db
+        from app.models import Shift
+
+        updated = db.session.get(Shift, test_shift.id)
+        assert updated.user_id == second_user.id
+        assert updated.shift_type_id == afternoon_shift_type.id
+
+    def test_nonexistent_target_user_rejected(
+        self, test_app, logged_in_client, test_shift
+    ):
+        from datetime import datetime, timedelta
+
+        target_day = date.today() + timedelta(days=1)
+        while target_day.weekday() >= 5:
+            target_day += timedelta(days=1)
+        new_start = datetime.combine(target_day, datetime.min.time())
+
+        response = logged_in_client.patch(
+            f"/api/shifts/{test_shift.id}",
+            json={
+                "start": new_start.isoformat(),
+                "end": (new_start + timedelta(hours=8)).isoformat(),
+                "userId": 999999,
+            },
+        )
+        assert response.status_code == 400
+        assert response.get_json()["success"] is False
 
 
 class TestAPIDeleteShift:

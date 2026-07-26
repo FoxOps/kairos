@@ -241,6 +241,29 @@
     color: var(--color-error-content, #fffbeb);
 }
 
+/* Group-accent dot (see fullcalendar-config.js's eventDidMount) - a
+   fresh element with no competing selector, so it's immune to
+   dark.css's !important background/border overrides on .fc-event-*
+   (those only target the existing .fc-event-shift/-oncall/-leave
+   selectors, never a brand-new sibling). Sized to sit inline with the
+   existing time+title flex row (gap already set on
+   .fc-event-shift/-oncall/-leave > div:first-child above). The border
+   uses --fc-event-text-color (already the correct high-contrast
+   content color for whichever type background it's sitting on) rather
+   than a fixed white/black, so it stays visible even if a group's
+   assigned accent color happens to match the event's own background
+   color. */
+.fc-event-group-dot {
+    display: inline-block;
+    align-self: center;
+    width: 0.55em;
+    height: 0.55em;
+    border-radius: 50%;
+    flex: none;
+    background-color: var(--group-dot-color, currentColor);
+    border: 1px solid var(--fc-event-text-color, currentColor);
+}
+
 /* v7 confirmed dead (0 matches in the v7 bundle/skeleton/any bundled
    theme's CSS), removed rather than left as misleading no-op selectors:
    .fc-event-main (text color already inherits fine from .fc-event-shift/

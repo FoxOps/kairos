@@ -1295,6 +1295,112 @@ trio in the DOM at a time. Routes (`delete_selected_shifts`/`delete_selected_onc
 (flashes "no selection", no-op) as defense-in-depth against a bypassed/JS-disabled client, not just
 relying on the disabled button. Same filter-preserving redirect as delete-filtered.
 
+### `/` (main calendar) — group colors, multi-group filter, click-to-edit modals
+
+The FullCalendar-based home page (`app/templates/index.html`, `app/static/js/calendar/
+fullcalendar-config.js`) predated this session's per-group scheduling work and had no
+group-awareness at all. Now: every event carries a small colored accent dot for the owning user's
+**group** (never the event's dominant background color, which stays the existing per-*type* scheme
+— shift=primary, on-call=info, leave=error); a multi-group filter lets any viewer show one or
+several groups at once (admins default to every group checked, regular users to their own — a
+default, not a restriction, same non-restrictive viewing model as `/schedule`/`/oncall`/`/leave`);
+and clicking any event opens a view/edit modal instead of the old "Mode édition" toggle's
+click-to-delete-only behavior. Drag & drop reschedule is unchanged, just always live for admins now
+(no more toggle gating it).
+
+**Group colors, no migration**: `Group` (`app/models/user.py`) has no color column.
+`app/utils/helpers/common_helpers.py::build_group_color_map()` follows the exact same stateless,
+rank-based scheme as the pre-existing `build_shift_type_color_map()` (both now call a shared
+`_build_id_color_map(ids, palette)`) — `GROUP_COLOR_PALETTE = SHIFT_TYPE_COLOR_PALETTE`, same 6
+daisyUI tokens, no separate palette invented. Recomputed on every render, survives group
+delete/recreate without a migration, same tradeoff already accepted for shift types.
+
+**CSS conflict, designed around, not worked around**: `app/static/css/themes/dark.css` sets
+`background-color`/`border-color` on `.fc-event-shift/-oncall/-leave` with `!important` in dark
+mode. Since the group accent must never touch those properties (it would be silently overridden),
+it's rendered as a brand-new DOM element instead — `eventDidMount` inserts a
+`<span class="fc-event-group-dot">` (new rule in `fullcalendar-overrides.css`) before the event's
+title, colored via `var(--color-<daisyui-name>)` — a fresh element has no competing `!important`
+rule to lose to, and the CSS-variable syntax makes it automatically theme-correct (Dracula/Alucard)
+for free. `groupId: null` (a user with no group) renders no dot.
+
+**Server-side group filtering**: `ShiftRepository`/`OnCallRepository`/`LeaveRepository`'s
+`list_in_window()` all gained an optional `group_ids: list[int] | None`, filtering via
+`.join(User).filter(User.group_id.in_(group_ids))` — same join-through-User shape already
+established this session on `/schedule`/`/oncall`/`/leave`'s `_filtered_query()` methods, just
+`.in_()` instead of `==`. `ScheduleService.get_calendar_events_for_range()` threads it through;
+`GET /api/shifts` (`app/routes/dashboard_routes.py::api_get_shifts` — misleadingly named given the
+URL, but this is where it's always lived) reads `request.args.getlist("group_ids", type=int)`
+(repeated-param convention, `?group_ids=1&group_ids=2`, matching `URLSearchParams.append()`'s
+natural shape). No server-side enforcement of a viewer's default selection — purely a display
+convenience, consistent with the rest of this app's calendar/list pages.
+
+**Event data**: `ScheduleService.build_calendar_events()`'s three event-dict builders (shift/
+on-call/leave) all gained `extendedProps.userId`/`groupId`/`userName`; shift also gained
+`shiftTypeId`/`shiftTypeLabel`. The `userName`/`shiftTypeLabel` additions (beyond the literal
+group/color ask) let the new **read-only** modal variant (shown to a non-admin, or a leave the
+viewer doesn't own) render full details with zero extra fetch, instead of parsing the localized
+`title` string.
+
+**Reassignment support, a real gap the modals' "change the person"/"change the type" ask required**:
+`ShiftService.api_update()`/`OnCallService.api_update()` (the drag/resize PATCH handlers) used to
+only ever change `start`/`end`. Both gained optional `new_user_id`/(`ShiftService` only)
+`new_shift_type_id` params, defaulting to `None` = "keep current" so the drag/resize call site
+(which never sends either) is unaffected. Every existing validation check (conflict, leave overlap,
+rule violations) now runs against the *effective* (possibly reassigned) user/type, not the
+resource's original owner — that re-validation is the actual point of allowing reassignment through
+this method, not just a signature change. `app/routes/shift_routes.py::api_update_shift`/
+`app/routes/oncall_routes.py::api_update_oncall` read `userId`/`shiftTypeId` from the request JSON
+and pass them through. `UserService.visible_users_for_oncall()` (new, mirrors
+`visible_users_for_schedule`) backs a new `GET /api/oncall-users` (same shape as the pre-existing
+`GET /api/users`, but scoped to the oncall-eligible group, not the schedule-eligible one) — the
+on-call-edit modal's person picker needs the oncall group specifically.
+
+**Real bug found and fixed in the same pass, directly in this feature's critical path**:
+`OnCallService.api_update()` hardcoded `if new_start.weekday() != 4: ... "doit commencer un
+vendredi"` regardless of the app's own configurable `OnCallAnchorRule`
+(`app/utils/automation/rules/oncall_anchor.py`, already respected by the real generation engine).
+Since the new modal's "change start day" feature routes directly through this check, it now resolves
+`OnCallAnchorRule.resolve(group=effective_user.group)["weekday"]` instead — the *target* group's own
+configured anchor day, so a simultaneous reassignment-to-a-different-group validates correctly too.
+The identical hardcoded check existed in **two more places** in the same file/module, found while
+fixing the first: `OnCallService.add_oncall()` (the `/oncall/add` creation path) and
+`can_add_oncall()` (`app/utils/helpers/common_helpers.py`, which `add_oncall()` itself calls,
+hardcoding both weekday *and* hour independently) — both fixed the same way, since leaving either
+half-fixed would have been strictly worse than not touching them (an admin using a non-Friday
+anchor could pass the modal's check yet still get rejected by a sibling code path). The error
+message changed from a hardcoded "vendredi" claim to a generic "jour configuré pour ce groupe" —
+accurate now that the day is genuinely configurable, not universally Friday.
+
+**Removed**: the "Mode édition" toggle (`#toggle-edit-mode`/`#edit-mode-status-tag`, the
+`editModeEnabled`/`updateEditModeState()` JS, the `?edit=true` URL-param persistence) — confirmed via
+direct question rather than assumed. `editable`/`selectable`/`droppable` are now plain `isAdmin`;
+`eventClick` always dispatches to the relevant modal (`openShiftEditModal`/`openOnCallEditModal`
+for shift/on-call, admin gets a full edit form + Delete, anyone else gets a read-only view;
+`openLeaveModal` for leave, no date-editing UI since none was requested — dates stay
+drag/resize-only — but Delete is available to an admin or the leave's own owner, preserving the
+capability the old toggle used to gate). The three new modal-builder functions share one
+`openEditModal(modalId, titleId, titleText, bodyHtml, onOpen)` helper for the common `<dialog>`
+chrome/lifecycle (backdrop-click, Escape, Close button), structurally following the pre-existing
+`openShiftCreationModal`'s conventions (`escapeHtml()` for interpolated user data, `initDatePicker`,
+UTC-getter-only date handling under `timeZone: 'UTC'`). `deleteEvent()` gained an optional
+`onSuccess` callback (closes whichever modal invoked it) and switched its success path from
+`location.reload()` to `event.remove(); calendar.refetchEvents();` — required once it's reused
+inside a modal; `openShiftCreationModal`'s own creation-success path got the same refetch-based
+swap for consistency. The Delete-key shortcut's capability check changed from
+`editModeEnabled && isAdmin` to `isAdmin || (type === 'leave' && ownedByViewer)`, preserving the
+leave-owner's delete capability the removed toggle used to gate alongside everything else.
+
+**Group filter UI**: a native `<details class="dropdown">` (daisyUI 5, no JS needed to open/close —
+same "prefer native HTML disclosure over hand-rolled JS toggles" precedent as the mobile drawer and
+the ICS export modal) wrapping a checkbox list styled like the existing repeated-checkbox convention
+in `profile_settings.html`, visible to **every** logged-in user (not admin-gated — the whole point
+is regular users get to filter too). Checking/unchecking calls `calendar.refetchEvents()`; the
+`events` fetch function reads the checked ids into repeated `group_ids` params, with one client-side
+edge case handled explicitly: if every checkbox is unchecked, it short-circuits before the fetch
+(`successCallback([])` directly) rather than sending an ambiguous empty-vs-absent `group_ids` param
+for the server to guess about.
+
 ## Testing conventions
 
 `tests/conftest.py` defines the fixture chain: `test_app` builds a fresh app via

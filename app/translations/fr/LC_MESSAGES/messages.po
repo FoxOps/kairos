@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-26 05:35+0200\n"
+"POT-Creation-Date: 2026-07-26 11:05+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: fr <LL@li.org>\n"
@@ -622,9 +622,9 @@ msgid "Vous ne pouvez supprimer que vos propres congés"
 msgstr "Vous ne pouvez supprimer que vos propres congés"
 
 #: app/routes/leave_routes.py:263 app/routes/leave_routes.py:348
-#: app/routes/oncall_routes.py:214 app/routes/oncall_routes.py:284
-#: app/routes/shift_routes.py:324 app/routes/shift_routes.py:395
-#: app/routes/shift_routes.py:414
+#: app/routes/oncall_routes.py:214 app/routes/oncall_routes.py:292
+#: app/routes/shift_routes.py:324 app/routes/shift_routes.py:405
+#: app/routes/shift_routes.py:424
 #, python-format
 msgid "Erreur: %(val0)s"
 msgstr "Erreur: %(val0)s"
@@ -633,18 +633,18 @@ msgstr "Erreur: %(val0)s"
 msgid "Vous ne pouvez modifier que vos propres congés"
 msgstr "Vous ne pouvez modifier que vos propres congés"
 
-#: app/routes/leave_routes.py:290 app/routes/oncall_routes.py:230
-#: app/routes/shift_routes.py:256 app/routes/shift_routes.py:340
+#: app/routes/leave_routes.py:290 app/routes/oncall_routes.py:233
+#: app/routes/shift_routes.py:256 app/routes/shift_routes.py:343
 msgid "Aucune donnée reçue"
 msgstr "Aucune donnée reçue"
 
-#: app/routes/leave_routes.py:298 app/routes/oncall_routes.py:238
-#: app/routes/shift_routes.py:348
+#: app/routes/leave_routes.py:298 app/routes/oncall_routes.py:241
+#: app/routes/shift_routes.py:351
 msgid "Date de début manquante"
 msgstr "Date de début manquante"
 
-#: app/routes/leave_routes.py:340 app/routes/oncall_routes.py:276
-#: app/routes/shift_routes.py:387
+#: app/routes/leave_routes.py:340 app/routes/oncall_routes.py:284
+#: app/routes/shift_routes.py:397
 #, python-format
 msgid "Format de date invalide: %(val0)s"
 msgstr "Format de date invalide: %(val0)s"
@@ -677,8 +677,8 @@ msgstr "Aucune astreinte ne correspond à ces filtres."
 msgid "Aucune astreinte sélectionnée."
 msgstr "Aucune astreinte sélectionnée."
 
-#: app/routes/oncall_routes.py:206 app/routes/oncall_routes.py:226
-#: app/services/oncall_service.py:145
+#: app/routes/oncall_routes.py:206 app/routes/oncall_routes.py:229
+#: app/services/oncall_service.py:160
 msgid "Astreinte non trouvée"
 msgstr "Astreinte non trouvée"
 
@@ -730,11 +730,12 @@ msgstr "Aucun shift sélectionné."
 msgid "Données manquantes"
 msgstr "Données manquantes"
 
-#: app/routes/shift_routes.py:273
+#: app/routes/shift_routes.py:273 app/services/oncall_service.py:165
+#: app/services/shift_service.py:183
 msgid "Utilisateur non trouvé"
 msgstr "Utilisateur non trouvé"
 
-#: app/routes/shift_routes.py:280
+#: app/routes/shift_routes.py:280 app/services/shift_service.py:190
 msgid "Type de shift non trouvé"
 msgstr "Type de shift non trouvé"
 
@@ -743,8 +744,8 @@ msgstr "Type de shift non trouvé"
 msgid "Format invalide: %(val0)s"
 msgstr "Format invalide: %(val0)s"
 
-#: app/routes/shift_routes.py:336 app/routes/shift_routes.py:406
-#: app/services/shift_service.py:165
+#: app/routes/shift_routes.py:339 app/routes/shift_routes.py:416
+#: app/services/shift_service.py:174
 msgid "Shift non trouvé"
 msgstr "Shift non trouvé"
 
@@ -1047,11 +1048,11 @@ msgstr "Échec d'envoi du rappel d'astreinte"
 msgid "Le rappel d'astreinte pour %(email)s n'a pas pu être envoyé."
 msgstr "Le rappel d'astreinte pour %(email)s n'a pas pu être envoyé."
 
-#: app/services/oncall_service.py:52
-msgid "L'astreinte doit commencer un vendredi."
-msgstr "L'astreinte doit commencer un vendredi."
+#: app/services/oncall_service.py:57
+msgid "L'astreinte doit commencer le jour configuré pour ce groupe."
+msgstr "L'astreinte doit commencer le jour configuré pour ce groupe."
 
-#: app/services/oncall_service.py:61
+#: app/services/oncall_service.py:67
 msgid ""
 "Impossible d'ajouter cette astreinte (période déjà couverte ou congé sur la "
 "période)."
@@ -1059,26 +1060,26 @@ msgstr ""
 "Impossible d'ajouter cette astreinte (période déjà couverte ou congé sur la "
 "période)."
 
-#: app/services/oncall_service.py:148
-msgid "L'astreinte doit commencer un vendredi"
-msgstr "L'astreinte doit commencer un vendredi"
+#: app/services/oncall_service.py:177
+msgid "L'astreinte doit commencer le jour configuré pour ce groupe"
+msgstr "L'astreinte doit commencer le jour configuré pour ce groupe"
 
-#: app/services/oncall_service.py:157
+#: app/services/oncall_service.py:191
 #, python-format
 msgid "Une astreinte existe déjà pour %(name)s pendant cette période"
 msgstr "Une astreinte existe déjà pour %(name)s pendant cette période"
 
-#: app/services/oncall_service.py:169
+#: app/services/oncall_service.py:203
 #, python-format
 msgid "%(name)s est en congé pendant cette période"
 msgstr "%(name)s est en congé pendant cette période"
 
-#: app/services/schedule_service.py:85 app/utils/export/ics_exporter.py:71
+#: app/services/schedule_service.py:100 app/utils/export/ics_exporter.py:71
 #, python-format
 msgid "Astreinte - %(name)s"
 msgstr "Astreinte - %(name)s"
 
-#: app/services/schedule_service.py:97 app/utils/export/ics_exporter.py:76
+#: app/services/schedule_service.py:118 app/utils/export/ics_exporter.py:76
 #, python-format
 msgid "Congé - %(name)s"
 msgstr "Congé - %(name)s"
@@ -1140,16 +1141,16 @@ msgstr "Impossible de créer un shift pour un week-end"
 msgid "Conflit détecté pour ce shift"
 msgstr "Conflit détecté pour ce shift"
 
-#: app/services/shift_service.py:169
+#: app/services/shift_service.py:178
 msgid "Impossible de déplacer vers un week-end (samedi/dimanche)"
 msgstr "Impossible de déplacer vers un week-end (samedi/dimanche)"
 
-#: app/services/shift_service.py:178
+#: app/services/shift_service.py:205
 #, python-format
 msgid "Un shift existe déjà pour %(name)s le %(date)s"
 msgstr "Un shift existe déjà pour %(name)s le %(date)s"
 
-#: app/services/shift_service.py:192 app/services/swap_service.py:75
+#: app/services/shift_service.py:219 app/services/swap_service.py:75
 #, python-format
 msgid "%(name)s est en congé le %(date)s"
 msgstr "%(name)s est en congé le %(date)s"
@@ -1332,11 +1333,11 @@ msgstr "Échange de shift rejeté"
 msgid "%(requester)s <-> %(target)s : demande rejetée par %(admin)s."
 msgstr "%(requester)s <-> %(target)s : demande rejetée par %(admin)s."
 
-#: app/services/user_service.py:66 app/services/user_service.py:101
+#: app/services/user_service.py:77 app/services/user_service.py:112
 msgid "Un utilisateur avec cet email existe déjà."
 msgstr "Un utilisateur avec cet email existe déjà."
 
-#: app/services/user_service.py:139
+#: app/services/user_service.py:150
 msgid ""
 "Impossible de supprimer cet utilisateur : il a des shifts, astreintes ou "
 "congés associés."
@@ -1625,7 +1626,7 @@ msgstr "Copier"
 #: app/templates/_ics_export_buttons.html:58
 #: app/templates/_ics_export_buttons.html:83
 #: app/templates/_ics_export_buttons.html:89
-#: app/utils/helpers/js_translations.py:28
+#: app/utils/helpers/js_translations.py:22
 msgid "Fermer"
 msgstr "Fermer"
 
@@ -1700,7 +1701,7 @@ msgid "Annulée"
 msgstr "Annulée"
 
 #: app/templates/add_leave.html:3 app/templates/add_leave.html:8
-#: app/templates/index.html:91 app/templates/index.html:92
+#: app/templates/index.html:108 app/templates/index.html:109
 #: app/templates/leave.html:16 app/templates/leave.html:17
 msgid "Ajouter un congé"
 msgstr "Ajouter un congé"
@@ -1711,12 +1712,12 @@ msgstr "Ajouter un congé"
 #: app/templates/admin/automation/full_dry_run.html:75
 #: app/templates/auth/profile.html:34 app/templates/leave.html:67
 #: app/templates/macros/list_filters.html:12 app/templates/oncall.html:68
-#: app/templates/schedule.html:70 app/utils/helpers/js_translations.py:40
+#: app/templates/schedule.html:70 app/utils/helpers/js_translations.py:34
 msgid "Utilisateur"
 msgstr "Utilisateur"
 
 #: app/templates/add_leave.html:18 app/templates/add_oncall.html:18
-#: app/utils/helpers/js_translations.py:41
+#: app/utils/helpers/js_translations.py:35
 msgid "Sélectionnez un utilisateur"
 msgstr "Sélectionnez un utilisateur"
 
@@ -1768,6 +1769,7 @@ msgstr "Enregistrer le congé"
 #: app/templates/admin/edit_shift_type.html:41
 #: app/templates/admin/edit_user.html:56
 #: app/templates/admin/macros/settings_card.html:54
+#: app/utils/helpers/js_translations.py:69
 msgid "Enregistrer"
 msgstr "Enregistrer"
 
@@ -1799,12 +1801,12 @@ msgstr "Annuler et retourner à la liste"
 #: app/templates/auth/profile_settings.html:134
 #: app/templates/auth/update_profile.html:77
 #: app/templates/confirm_swap.html:46 app/templates/confirm_swap.html:47
-#: app/templates/swaps.html:65 app/utils/helpers/js_translations.py:29
+#: app/templates/swaps.html:65 app/utils/helpers/js_translations.py:23
 msgid "Annuler"
 msgstr "Annuler"
 
 #: app/templates/add_oncall.html:3 app/templates/add_oncall.html:8
-#: app/templates/index.html:88 app/templates/index.html:89
+#: app/templates/index.html:105 app/templates/index.html:106
 #: app/templates/oncall.html:16 app/templates/oncall.html:17
 msgid "Ajouter une astreinte"
 msgstr "Ajouter une astreinte"
@@ -1830,7 +1832,7 @@ msgid "Enregistrer l'astreinte"
 msgstr "Enregistrer l'astreinte"
 
 #: app/templates/add_shift.html:3 app/templates/add_shift.html:8
-#: app/templates/index.html:85 app/templates/index.html:86
+#: app/templates/index.html:102 app/templates/index.html:103
 #: app/templates/schedule.html:18
 msgid "Ajouter un shift"
 msgstr "Ajouter un shift"
@@ -1846,7 +1848,7 @@ msgstr "Sélectionnez l'utilisateur pour ce shift"
 #: app/templates/add_shift.html:27
 #: app/templates/admin/automation/rules.html:129
 #: app/templates/macros/list_filters.html:39 app/templates/schedule.html:71
-#: app/utils/helpers/js_translations.py:42
+#: app/utils/helpers/js_translations.py:36
 msgid "Type de shift"
 msgstr "Type de shift"
 
@@ -1937,7 +1939,7 @@ msgstr "Tableau de bord"
 #: app/templates/admin/automation/rules.html:52
 #: app/templates/admin/automation/rules.html:82
 #: app/templates/admin/dashboard.html:32 app/templates/base.html:90
-#: app/templates/index.html:135
+#: app/templates/index.html:152
 msgid "Shifts"
 msgstr "Shifts"
 
@@ -1947,13 +1949,13 @@ msgstr "Shifts"
 #: app/templates/admin/automation/rules.html:66
 #: app/templates/admin/automation/rules.html:161
 #: app/templates/admin/dashboard.html:54 app/templates/base.html:91
-#: app/templates/index.html:136 app/templates/oncall.html:4
+#: app/templates/index.html:153 app/templates/oncall.html:4
 #: app/templates/oncall.html:9
 msgid "Astreintes"
 msgstr "Astreintes"
 
 #: app/templates/admin/dashboard.html:65 app/templates/base.html:92
-#: app/templates/index.html:137 app/templates/leave.html:4
+#: app/templates/index.html:154 app/templates/leave.html:4
 #: app/templates/leave.html:9
 msgid "Congés"
 msgstr "Congés"
@@ -2027,7 +2029,7 @@ msgstr "Utilisateurs"
 msgid "Automatisation"
 msgstr "Automatisation"
 
-#: app/templates/base.html:248 app/templates/index.html:101
+#: app/templates/base.html:248 app/templates/index.html:118
 msgid "Admin"
 msgstr "Admin"
 
@@ -2097,7 +2099,7 @@ msgid "Confirmer l'échange"
 msgstr "Confirmer l'échange"
 
 #: app/templates/confirm_swap.html:44 app/templates/swaps.html:115
-#: app/utils/helpers/js_translations.py:35
+#: app/utils/helpers/js_translations.py:29
 msgid "Confirmer"
 msgstr "Confirmer"
 
@@ -2287,56 +2289,53 @@ msgstr "Calendrier - Kairos"
 msgid "Calendrier"
 msgstr "Calendrier"
 
-#: app/templates/index.html:36
+#: app/templates/index.html:35
 msgid "Options du calendrier"
 msgstr "Options du calendrier"
 
-#: app/templates/index.html:38 app/templates/index.html:60
-#: app/utils/helpers/js_translations.py:19
-msgid "Mode édition désactivé"
-msgstr "Mode édition désactivé"
+#: app/templates/index.html:42 app/templates/index.html:45
+#: app/templates/index.html:75
+msgid "Filtrer par groupe"
+msgstr "Filtrer par groupe"
 
-#: app/templates/index.html:40 app/utils/helpers/js_translations.py:21
-msgid "Activer le mode édition"
-msgstr "Activer le mode édition"
+#: app/templates/admin/dashboard.html:21 app/templates/admin/groups.html:10
+#: app/templates/index.html:43 app/templates/index.html:159
+msgid "Groupes"
+msgstr "Groupes"
 
-#: app/templates/index.html:41 app/utils/helpers/js_translations.py:23
-msgid "Activer l'édition"
-msgstr "Activer l'édition"
-
-#: app/templates/index.html:43 app/utils/helpers/js_translations.py:25
+#: app/templates/index.html:59 app/utils/helpers/js_translations.py:19
 msgid "Afficher les conseils"
 msgstr "Afficher les conseils"
 
-#: app/templates/index.html:44 app/utils/helpers/js_translations.py:27
+#: app/templates/index.html:60 app/utils/helpers/js_translations.py:21
 msgid "Afficher conseils"
 msgstr "Afficher conseils"
 
-#: app/templates/index.html:52
+#: app/templates/index.html:67
 msgid "Conseils d'utilisation"
 msgstr "Conseils d'utilisation"
 
-#: app/templates/index.html:54
+#: app/templates/index.html:69
 msgid "Conseils d'utilisation :"
 msgstr "Conseils d'utilisation :"
 
-#: app/templates/index.html:56 app/utils/helpers/js_translations.py:18
-msgid "Mode édition activé"
-msgstr "Mode édition activé"
+#: app/templates/index.html:71
+msgid "Modifier un événement"
+msgstr "Modifier un événement"
 
-#: app/templates/index.html:56
+#: app/templates/index.html:71
 msgid ""
-"Le drag & drop est activé. Cliquez sur un événement (shift, astreinte, "
-"congé) pour le supprimer (avec confirmation)."
+"Cliquez sur un événement (shift, astreinte, congé) pour ouvrir sa fiche : "
+"modification et suppression."
 msgstr ""
-"Le drag & drop est activé. Cliquez sur un événement (shift, astreinte, "
-"congé) pour le supprimer (avec confirmation)."
+"Cliquez sur un événement (shift, astreinte, congé) pour ouvrir sa fiche : "
+"modification et suppression."
 
-#: app/templates/index.html:57
+#: app/templates/index.html:72
 msgid "Déplacer un événement"
 msgstr "Déplacer un événement"
 
-#: app/templates/index.html:57
+#: app/templates/index.html:72
 msgid ""
 "Cliquez et faites glisser un événement (shift, astreinte, congé) vers une "
 "nouvelle date/heure"
@@ -2344,11 +2343,11 @@ msgstr ""
 "Cliquez et faites glisser un événement (shift, astreinte, congé) vers une "
 "nouvelle date/heure"
 
-#: app/templates/index.html:58
+#: app/templates/index.html:73
 msgid "Redimensionner un événement"
 msgstr "Redimensionner un événement"
 
-#: app/templates/index.html:58
+#: app/templates/index.html:73
 msgid ""
 "Passez la souris sur le bord d'un événement et faites glisser pour modifier "
 "la durée"
@@ -2356,90 +2355,94 @@ msgstr ""
 "Passez la souris sur le bord d'un événement et faites glisser pour modifier "
 "la durée"
 
-#: app/templates/index.html:59
+#: app/templates/index.html:74
 msgid "Créer un shift"
 msgstr "Créer un shift"
 
-#: app/templates/index.html:59
+#: app/templates/index.html:74
 msgid "Sélectionnez une plage horaire vide dans le calendrier"
 msgstr "Sélectionnez une plage horaire vide dans le calendrier"
 
-#: app/templates/index.html:60
-msgid "Le drag & drop est désactivé. Cliquer sur un événement ne fait rien."
-msgstr "Le drag & drop est désactivé. Cliquer sur un événement ne fait rien."
+#: app/templates/index.html:75
+msgid ""
+"Utilisez le bouton \"Groupes\" pour afficher un ou plusieurs groupes à la "
+"fois."
+msgstr ""
+"Utilisez le bouton \"Groupes\" pour afficher un ou plusieurs groupes à la "
+"fois."
 
-#: app/templates/index.html:61
+#: app/templates/index.html:76
 msgid "Contraintes"
 msgstr "Contraintes"
 
-#: app/templates/index.html:61
+#: app/templates/index.html:76
 msgid ""
-"Les astreintes doivent commencer un vendredi. Les congés et shifts ne "
-"peuvent pas être placés sur des week-ends."
+"Les astreintes doivent commencer le jour configuré pour le groupe. Les "
+"congés et shifts ne peuvent pas être placés sur des week-ends."
 msgstr ""
-"Les astreintes doivent commencer un vendredi. Les congés et shifts ne "
-"peuvent pas être placés sur des week-ends."
+"Les astreintes doivent commencer le jour configuré pour le groupe. Les "
+"congés et shifts ne peuvent pas être placés sur des week-ends."
 
-#: app/templates/index.html:71
+#: app/templates/index.html:86
 msgid "Calendrier interactif"
 msgstr "Calendrier interactif"
 
-#: app/templates/admin/dashboard.html:154 app/templates/index.html:81
-#: app/templates/index.html:83
+#: app/templates/admin/dashboard.html:154 app/templates/index.html:98
+#: app/templates/index.html:100
 msgid "Actions rapides"
 msgstr "Actions rapides"
 
-#: app/templates/admin/automation/full.html:167 app/templates/index.html:94
-#: app/templates/index.html:95
+#: app/templates/admin/automation/full.html:167 app/templates/index.html:111
+#: app/templates/index.html:112
 msgid "Gérer les utilisateurs"
 msgstr "Gérer les utilisateurs"
 
-#: app/templates/admin/automation/full.html:164 app/templates/index.html:97
-#: app/templates/index.html:98
+#: app/templates/admin/automation/full.html:164 app/templates/index.html:114
+#: app/templates/index.html:115
 msgid "Gérer les groupes"
 msgstr "Gérer les groupes"
 
-#: app/templates/index.html:100
+#: app/templates/index.html:117
 msgid "Tableau de bord administrateur"
 msgstr "Tableau de bord administrateur"
 
-#: app/templates/index.html:106
+#: app/templates/index.html:123
 msgid "Exporter le calendrier complet de l'équipe"
 msgstr "Exporter le calendrier complet de l'équipe"
 
-#: app/templates/index.html:107
+#: app/templates/index.html:124
 msgid "Exporter le calendrier complet"
 msgstr "Exporter le calendrier complet"
 
-#: app/templates/index.html:109 app/templates/index.html:110
+#: app/templates/index.html:126 app/templates/index.html:127
 msgid "Exporter mes shifts"
 msgstr "Exporter mes shifts"
 
-#: app/templates/index.html:112 app/templates/index.html:113
+#: app/templates/index.html:129 app/templates/index.html:130
 msgid "Exporter mes astreintes"
 msgstr "Exporter mes astreintes"
 
-#: app/templates/index.html:115 app/templates/index.html:116
+#: app/templates/index.html:132 app/templates/index.html:133
 msgid "Exporter mes congés"
 msgstr "Exporter mes congés"
 
-#: app/templates/index.html:118
+#: app/templates/index.html:135
 msgid "Plus d'options d'export ICS"
 msgstr "Plus d'options d'export ICS"
 
-#: app/templates/index.html:119
+#: app/templates/index.html:136
 msgid "Plus d'options"
 msgstr "Plus d'options"
 
-#: app/templates/index.html:122 app/templates/index.html:123
+#: app/templates/index.html:139 app/templates/index.html:140
 msgid "Générer mon export ICS"
 msgstr "Générer mon export ICS"
 
-#: app/templates/index.html:133
+#: app/templates/index.html:150
 msgid "Légende"
 msgstr "Légende"
 
-#: app/templates/index.html:134
+#: app/templates/index.html:151
 msgid "Types d'événements"
 msgstr "Types d'événements"
 
@@ -2474,7 +2477,6 @@ msgid "Supprimer le résultat filtré (%(count)s congé(s))"
 msgstr "Supprimer le résultat filtré (%(count)s congé(s))"
 
 #: app/templates/leave.html:42
-#, python-format
 msgid "Supprimer les congés sélectionnés ? Cette action est irréversible !"
 msgstr "Supprimer les congés sélectionnés ? Cette action est irréversible !"
 
@@ -2586,7 +2588,6 @@ msgid "Supprimer le résultat filtré (%(count)s astreinte(s))"
 msgstr "Supprimer le résultat filtré (%(count)s astreinte(s))"
 
 #: app/templates/oncall.html:42
-#, python-format
 msgid ""
 "Supprimer les astreintes sélectionnées ? Cette action est irréversible !"
 msgstr ""
@@ -2648,7 +2649,6 @@ msgid "Supprimer le résultat filtré (%(count)s shift(s))"
 msgstr "Supprimer le résultat filtré (%(count)s shift(s))"
 
 #: app/templates/schedule.html:43
-#, python-format
 msgid "Supprimer les shifts sélectionnés ? Cette action est irréversible !"
 msgstr "Supprimer les shifts sélectionnés ? Cette action est irréversible !"
 
@@ -2982,7 +2982,7 @@ msgstr ""
 "Notez-le immédiatement : il ne pourra plus jamais être ré-affiché."
 
 #: app/templates/admin/add_service_account.html:40
-#: app/utils/helpers/js_translations.py:44
+#: app/utils/helpers/js_translations.py:38
 msgid "Créer"
 msgstr "Créer"
 
@@ -3263,10 +3263,6 @@ msgstr "Voir la liste des utilisateurs"
 #: app/templates/admin/dashboard.html:113
 msgid "Voir la liste"
 msgstr "Voir la liste"
-
-#: app/templates/admin/dashboard.html:21 app/templates/admin/groups.html:10
-msgid "Groupes"
-msgstr "Groupes"
 
 #: app/templates/admin/dashboard.html:24
 msgid "Voir la liste des groupes"
@@ -3569,6 +3565,7 @@ msgstr "Modifier"
 #: app/templates/admin/service_accounts.html:83
 #: app/templates/admin/service_accounts.html:99
 #: app/templates/admin/shift_types.html:74 app/templates/admin/users.html:95
+#: app/utils/helpers/js_translations.py:68
 msgid "Supprimer"
 msgstr "Supprimer"
 
@@ -4427,6 +4424,7 @@ msgstr ""
 "astreintes actuelles."
 
 #: app/templates/admin/automation/full.html:27
+#: app/utils/helpers/js_translations.py:82
 msgid "Période"
 msgstr "Période"
 
@@ -4887,6 +4885,7 @@ msgid "Ancrage de la semaine d'astreinte"
 msgstr "Ancrage de la semaine d'astreinte"
 
 #: app/templates/admin/automation/rules.html:171
+#: app/utils/helpers/js_translations.py:76
 msgid "Jour de début"
 msgstr "Jour de début"
 
@@ -5617,7 +5616,7 @@ msgstr "Type: %(type)s"
 msgid "Utilisateur: %(name)s"
 msgstr "Utilisateur: %(name)s"
 
-#: app/utils/helpers/common_helpers.py:474
+#: app/utils/helpers/common_helpers.py:504
 #, python-format
 msgid ""
 "Impossible d'ajouter ce shift : effectif maximum (%(max)s) déjà atteint pour"
@@ -5626,12 +5625,12 @@ msgstr ""
 "Impossible d'ajouter ce shift : effectif maximum (%(max)s) déjà atteint pour"
 " ce créneau."
 
-#: app/utils/helpers/common_helpers.py:490
+#: app/utils/helpers/common_helpers.py:520
 #, python-format
 msgid "Impossible d'ajouter ce shift : chevauche une astreinte de %(name)s."
 msgstr "Impossible d'ajouter ce shift : chevauche une astreinte de %(name)s."
 
-#: app/utils/helpers/common_helpers.py:507
+#: app/utils/helpers/common_helpers.py:537
 #, python-format
 msgid ""
 "Impossible d'ajouter ce shift : %(name)s doit se reposer %(hours)sh après "
@@ -5640,99 +5639,91 @@ msgstr ""
 "Impossible d'ajouter ce shift : %(name)s doit se reposer %(hours)sh après "
 "son astreinte."
 
-#: app/utils/helpers/common_helpers.py:544
+#: app/utils/helpers/common_helpers.py:574
 #, python-format
 msgid "Impossible d'ajouter cette astreinte : chevauche un shift de %(name)s."
 msgstr ""
 "Impossible d'ajouter cette astreinte : chevauche un shift de %(name)s."
 
-#: app/utils/helpers/js_translations.py:20
-msgid "Désactiver le mode édition"
-msgstr "Désactiver le mode édition"
-
-#: app/utils/helpers/js_translations.py:22
-msgid "Désactiver l'édition"
-msgstr "Désactiver l'édition"
-
-#: app/utils/helpers/js_translations.py:24
+#: app/utils/helpers/js_translations.py:18
 msgid "Cacher les conseils"
 msgstr "Cacher les conseils"
 
-#: app/utils/helpers/js_translations.py:26
+#: app/utils/helpers/js_translations.py:20
 msgid "Cacher conseils"
 msgstr "Cacher conseils"
 
-#: app/utils/helpers/js_translations.py:30
+#: app/utils/helpers/js_translations.py:24
 msgid "Créer le shift"
 msgstr "Créer le shift"
 
-#: app/utils/helpers/js_translations.py:31
+#: app/utils/helpers/js_translations.py:25
 msgid "Voulez-vous supprimer ce shift ?"
 msgstr "Voulez-vous supprimer ce shift ?"
 
-#: app/utils/helpers/js_translations.py:32
+#: app/utils/helpers/js_translations.py:26
 msgid "Voulez-vous supprimer cette astreinte ?"
 msgstr "Voulez-vous supprimer cette astreinte ?"
 
-#: app/utils/helpers/js_translations.py:33
+#: app/utils/helpers/js_translations.py:27
 msgid "Voulez-vous supprimer ce congé ?"
 msgstr "Voulez-vous supprimer ce congé ?"
 
-#: app/utils/helpers/js_translations.py:34
+#: app/utils/helpers/js_translations.py:28
 msgid "Confirmation"
 msgstr "Confirmation"
 
-#: app/utils/helpers/js_translations.py:36
+#: app/utils/helpers/js_translations.py:30
 msgid "Êtes-vous sûr ?"
 msgstr "Êtes-vous sûr ?"
 
-#: app/utils/helpers/js_translations.py:37
+#: app/utils/helpers/js_translations.py:31
 msgid "Créer un nouveau shift"
 msgstr "Créer un nouveau shift"
 
-#: app/utils/helpers/js_translations.py:38
+#: app/utils/helpers/js_translations.py:32
 msgid "Date et heure de début"
 msgstr "Date et heure de début"
 
-#: app/utils/helpers/js_translations.py:39
+#: app/utils/helpers/js_translations.py:33
 msgid "Date et heure de fin"
 msgstr "Date et heure de fin"
 
-#: app/utils/helpers/js_translations.py:43
+#: app/utils/helpers/js_translations.py:37
 msgid "Sélectionnez un type de shift"
 msgstr "Sélectionnez un type de shift"
 
-#: app/utils/helpers/js_translations.py:46
+#: app/utils/helpers/js_translations.py:40
 msgid ""
 "Événement mis à jour, mais le rééquilibrage automatique des shifts a échoué."
 msgstr ""
 "Événement mis à jour, mais le rééquilibrage automatique des shifts a échoué."
 
-#: app/utils/helpers/js_translations.py:48
+#: app/utils/helpers/js_translations.py:42
 msgid "Erreur: "
 msgstr "Erreur: "
 
-#: app/utils/helpers/js_translations.py:49
+#: app/utils/helpers/js_translations.py:43
 msgid "Une erreur est survenue lors de la mise à jour."
 msgstr "Une erreur est survenue lors de la mise à jour."
 
-#: app/utils/helpers/js_translations.py:50
+#: app/utils/helpers/js_translations.py:44
 msgid "Une erreur est survenue lors du redimensionnement."
 msgstr "Une erreur est survenue lors du redimensionnement."
 
-#: app/utils/helpers/js_translations.py:51
+#: app/utils/helpers/js_translations.py:45
 msgid "Événement supprimé avec succès."
 msgstr "Événement supprimé avec succès."
 
-#: app/utils/helpers/js_translations.py:52
+#: app/utils/helpers/js_translations.py:46
 msgid "Une erreur est survenue lors de la suppression."
 msgstr "Une erreur est survenue lors de la suppression."
 
-#: app/utils/helpers/js_translations.py:53
+#: app/utils/helpers/js_translations.py:47
 msgid "Suppression annulée."
 msgstr "Suppression annulée."
 
-#: app/utils/helpers/js_translations.py:55
+#: app/utils/helpers/js_translations.py:49
 msgid ""
 "Les shifts ne peuvent pas être créés ou déplacés vers les week-ends "
 "(samedi/dimanche)."
@@ -5740,37 +5731,89 @@ msgstr ""
 "Les shifts ne peuvent pas être créés ou déplacés vers les week-ends "
 "(samedi/dimanche)."
 
-#: app/utils/helpers/js_translations.py:58
+#: app/utils/helpers/js_translations.py:52
 msgid "Création de shift annulée."
 msgstr "Création de shift annulée."
 
-#: app/utils/helpers/js_translations.py:59
+#: app/utils/helpers/js_translations.py:53
 msgid "Veuillez remplir tous les champs obligatoires."
 msgstr "Veuillez remplir tous les champs obligatoires."
 
-#: app/utils/helpers/js_translations.py:60
+#: app/utils/helpers/js_translations.py:54
 msgid "Shift créé avec succès."
 msgstr "Shift créé avec succès."
 
-#: app/utils/helpers/js_translations.py:62
+#: app/utils/helpers/js_translations.py:56
 msgid "Une erreur est survenue lors de la création du shift."
 msgstr "Une erreur est survenue lors de la création du shift."
 
-#: app/utils/helpers/js_translations.py:64
+#: app/utils/helpers/js_translations.py:58
 msgid "Une erreur est survenue lors du chargement des données."
 msgstr "Une erreur est survenue lors du chargement des données."
 
-#: app/utils/helpers/js_translations.py:65
+#: app/utils/helpers/js_translations.py:59
 msgid "Thème sombre activé"
 msgstr "Thème sombre activé"
 
-#: app/utils/helpers/js_translations.py:66
+#: app/utils/helpers/js_translations.py:60
 msgid "Thème clair activé"
 msgstr "Thème clair activé"
 
-#: app/utils/helpers/js_translations.py:67
+#: app/utils/helpers/js_translations.py:61
 msgid "Copié !"
 msgstr "Copié !"
+
+#: app/utils/helpers/js_translations.py:62
+msgid "Aucun groupe sélectionné : le calendrier est vide."
+msgstr "Aucun groupe sélectionné : le calendrier est vide."
+
+#: app/utils/helpers/js_translations.py:63
+msgid "Modification annulée."
+msgstr "Modification annulée."
+
+#: app/utils/helpers/js_translations.py:64
+msgid "Détails du shift"
+msgstr "Détails du shift"
+
+#: app/utils/helpers/js_translations.py:65
+msgid "Modifier le shift"
+msgstr "Modifier le shift"
+
+#: app/utils/helpers/js_translations.py:66
+msgid "Propriétaire"
+msgstr "Propriétaire"
+
+#: app/utils/helpers/js_translations.py:67
+msgid "Date du shift"
+msgstr "Date du shift"
+
+#: app/utils/helpers/js_translations.py:70
+msgid "Shift modifié avec succès."
+msgstr "Shift modifié avec succès."
+
+#: app/utils/helpers/js_translations.py:72
+msgid "Une erreur est survenue lors de la modification du shift."
+msgstr "Une erreur est survenue lors de la modification du shift."
+
+#: app/utils/helpers/js_translations.py:74
+msgid "Détails de l'astreinte"
+msgstr "Détails de l'astreinte"
+
+#: app/utils/helpers/js_translations.py:75
+msgid "Modifier l'astreinte"
+msgstr "Modifier l'astreinte"
+
+#: app/utils/helpers/js_translations.py:77
+msgid "Astreinte modifiée avec succès."
+msgstr "Astreinte modifiée avec succès."
+
+#: app/utils/helpers/js_translations.py:79
+msgid "Une erreur est survenue lors de la modification de l'astreinte."
+msgstr "Une erreur est survenue lors de la modification de l'astreinte."
+
+#: app/utils/helpers/js_translations.py:81
+msgid "Détails du congé"
+msgstr "Détails du congé"
 
 #: app/utils/helpers/password_helpers.py:123
 #, python-format
@@ -6228,3 +6271,31 @@ msgstr "Le mot de passe ne doit pas contenir votre adresse email."
 
 #~ msgid "Supprimer tous les shifts d'une semaine"
 #~ msgstr "Supprimer tous les shifts d'une semaine"
+
+#~ msgid "Mode édition désactivé"
+#~ msgstr "Mode édition désactivé"
+
+#~ msgid "Activer le mode édition"
+#~ msgstr "Activer le mode édition"
+
+#~ msgid "Activer l'édition"
+#~ msgstr "Activer l'édition"
+
+#~ msgid "Mode édition activé"
+#~ msgstr "Mode édition activé"
+
+#~ msgid ""
+#~ "Le drag & drop est activé. Cliquez sur un événement (shift, astreinte, "
+#~ "congé) pour le supprimer (avec confirmation)."
+#~ msgstr ""
+#~ "Le drag & drop est activé. Cliquez sur un événement (shift, astreinte, "
+#~ "congé) pour le supprimer (avec confirmation)."
+
+#~ msgid "Le drag & drop est désactivé. Cliquer sur un événement ne fait rien."
+#~ msgstr "Le drag & drop est désactivé. Cliquer sur un événement ne fait rien."
+
+#~ msgid "Désactiver le mode édition"
+#~ msgstr "Désactiver le mode édition"
+
+#~ msgid "Désactiver l'édition"
+#~ msgstr "Désactiver l'édition"

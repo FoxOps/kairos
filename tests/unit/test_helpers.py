@@ -712,6 +712,56 @@ class TestBuildShiftTypeColorMap:
         assert "error" not in SHIFT_TYPE_COLOR_PALETTE
 
 
+class TestBuildGroupColorMap:
+    """Same rank-based scheme as build_shift_type_color_map (see that
+    class's tests) - group colors are also stateless/recomputed, no
+    Group.color column."""
+
+    def test_all_colors_within_palette(self):
+        from app.utils.helpers.common_helpers import (
+            GROUP_COLOR_PALETTE,
+            build_group_color_map,
+        )
+
+        color_map = build_group_color_map([1, 2, 3])
+        assert all(c in GROUP_COLOR_PALETTE for c in color_map.values())
+
+    def test_distinct_colors_for_non_contiguous_ids(self):
+        from app.utils.helpers.common_helpers import (
+            GROUP_COLOR_PALETTE,
+            build_group_color_map,
+        )
+
+        n = len(GROUP_COLOR_PALETTE)
+        color_map = build_group_color_map([2, 2 + n])
+        assert color_map[2] != color_map[2 + n]
+
+    def test_deterministic_for_same_input(self):
+        from app.utils.helpers.common_helpers import build_group_color_map
+
+        assert build_group_color_map([5, 1, 3]) == build_group_color_map([1, 3, 5])
+
+    def test_ignores_none(self):
+        from app.utils.helpers.common_helpers import build_group_color_map
+
+        color_map = build_group_color_map([1, None, 2])
+        assert None not in color_map
+
+    def test_empty_input(self):
+        from app.utils.helpers.common_helpers import build_group_color_map
+
+        assert build_group_color_map([]) == {}
+
+    def test_shares_palette_with_shift_type_colors(self):
+        """Deliberate: no separate palette was invented for groups."""
+        from app.utils.helpers.common_helpers import (
+            GROUP_COLOR_PALETTE,
+            SHIFT_TYPE_COLOR_PALETTE,
+        )
+
+        assert GROUP_COLOR_PALETTE == SHIFT_TYPE_COLOR_PALETTE
+
+
 class TestOverlappingShiftAndOnCallHelpers:
     def test_get_overlapping_shift_found(self, test_app, test_user, test_shift_type):
         with test_app.app_context():

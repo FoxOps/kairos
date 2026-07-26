@@ -135,6 +135,18 @@ SHIFT_TYPE_COLOR_PALETTE = [
 ]
 
 
+def _build_id_color_map(ids, palette: list[str]) -> dict:
+    """Shared rank-based id -> daisyUI color assignment (see
+    build_shift_type_color_map's own docstring for why RANK, not
+    `id % len(palette)`). Duplicates/None in `ids` are tolerated."""
+    unique_sorted_ids = sorted({item_id for item_id in ids if item_id is not None})
+    palette_size = len(palette)
+    return {
+        item_id: palette[index % palette_size]
+        for index, item_id in enumerate(unique_sorted_ids)
+    }
+
+
 def build_shift_type_color_map(shift_type_ids) -> dict:
     """
     Map each ShiftType.id to a daisyUI semantic color, guaranteed
@@ -155,12 +167,20 @@ def build_shift_type_color_map(shift_type_ids) -> dict:
     Returns:
         Dict {shift_type_id: daisyui_color_name}
     """
-    unique_sorted_ids = sorted({sid for sid in shift_type_ids if sid is not None})
-    palette_size = len(SHIFT_TYPE_COLOR_PALETTE)
-    return {
-        shift_type_id: SHIFT_TYPE_COLOR_PALETTE[index % palette_size]
-        for index, shift_type_id in enumerate(unique_sorted_ids)
-    }
+    return _build_id_color_map(shift_type_ids, SHIFT_TYPE_COLOR_PALETTE)
+
+
+# Same 6 tokens as SHIFT_TYPE_COLOR_PALETTE - no separate palette invented
+# for groups, same rationale (daisyUI-semantic, already theme-tested).
+GROUP_COLOR_PALETTE = SHIFT_TYPE_COLOR_PALETTE
+
+
+def build_group_color_map(group_ids) -> dict:
+    """Map each Group.id to a daisyUI semantic color, same stateless
+    rank-based scheme as build_shift_type_color_map - no Group.color
+    column, recomputed on every render so it survives group
+    delete/recreate without a migration."""
+    return _build_id_color_map(group_ids, GROUP_COLOR_PALETTE)
 
 
 # ---------------------------------------------------------------------------
@@ -326,8 +346,18 @@ def can_add_oncall(user=None, start_time=None, end_time=None):
     if start_time is None or end_time is None:
         return False
 
-    # On-call must start on a Friday at 9pm
-    if start_time.weekday() != 4 or start_time.hour != 21:
+    # On-call must start on the group's configured anchor day/hour
+    # (OnCallAnchorRule, default Friday 21:00) - was previously
+    # hardcoded here independently of OnCallService.add_oncall()'s own
+    # (now also fixed) anchor check, silently rejecting a legitimately
+    # configured non-Friday group.
+    from app.utils.automation.rules import OnCallAnchorRule
+
+    anchor = OnCallAnchorRule.resolve(group=user.group)
+    if (
+        start_time.weekday() != anchor["weekday"]
+        or start_time.hour != anchor["start_hour"]
+    ):
         return False
 
     # The user can't have an on-call while on leave over the period

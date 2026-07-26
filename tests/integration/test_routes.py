@@ -326,13 +326,16 @@ class TestOnCallRoutes:
         assert len(on_calls) >= 1
 
     def test_add_oncall_post_invalid_day(self, logged_in_client, test_user):
-        """Test adding an on-call on an invalid day."""
+        """Test adding an on-call on an invalid day. Default
+        OnCallAnchorRule (unconfigured) = Friday - the flashed error is
+        now generic ("jour configuré"), not hardcoded to say "vendredi",
+        since the anchor day is per-group configurable."""
         data = {"user_id": test_user.id, "start_date": "2023-12-02"}
         response = logged_in_client.post(
             "/oncall/add", data=data, follow_redirects=True
         )
         assert response.status_code == 200
-        assert b"vendredi" in response.data.lower()
+        assert "jour configuré".encode() in response.data
 
     def test_delete_oncall_post(self, logged_in_client, test_oncall):
         """Test deleting an on-call."""

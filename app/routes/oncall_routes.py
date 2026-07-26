@@ -220,7 +220,10 @@ def api_delete_oncall(oncall_id):
 @login_required
 @admin_required
 def api_update_oncall(oncall_id):
-    """API endpoint to update an on-call via drag & drop."""
+    """API endpoint to update an on-call via drag & drop, or via the
+    calendar's click-to-edit modal (which can also send `userId` to
+    reassign the on-call person - optional, omitted by the drag/resize
+    path)."""
     oncall_obj = OnCallRepository.get_by_id(oncall_id)
     if not oncall_obj:
         return jsonify({"success": False, "error": _("Astreinte non trouvée")}), 404
@@ -247,7 +250,12 @@ def api_update_oncall(oncall_id):
             duration = oncall_obj.end_time - oncall_obj.start_time
             new_end = new_start + duration
 
-        updated_oncall, error = OnCallService.api_update(oncall_id, new_start, new_end)
+        user_id = data.get("userId")
+        new_user_id = int(user_id) if user_id else None
+
+        updated_oncall, error = OnCallService.api_update(
+            oncall_id, new_start, new_end, new_user_id
+        )
         if error:
             return jsonify({"success": False, "error": error}), 400
 
@@ -284,3 +292,19 @@ def api_update_oncall(oncall_id):
             jsonify({"success": False, "error": _("Erreur: %(val0)s", val0=str(e))}),
             500,
         )
+
+
+@main_bp.route("/api/oncall-users", methods=["GET"])
+@login_required
+def api_get_oncall_users():
+    """API endpoint to fetch the list of on-call-eligible users, for the
+    calendar's on-call-edit modal person picker - mirrors api_get_users()
+    (shift_routes.py) but scoped to the oncall-eligible group, not the
+    schedule-eligible one (see UserService.visible_users_for_oncall)."""
+    users = UserService.visible_users_for_oncall(current_user)
+
+    users_list = [
+        {"id": user.id, "name": user.name, "email": user.email} for user in users
+    ]
+
+    return jsonify(users_list)

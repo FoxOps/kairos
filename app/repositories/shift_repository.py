@@ -129,16 +129,22 @@ class ShiftRepository:
         ).delete(synchronize_session="evaluate")
 
     @staticmethod
-    def list_in_window(window_start: datetime, window_end: datetime) -> list[Shift]:
-        return (
-            Shift.query.options(joinedload(Shift.user), joinedload(Shift.shift_type))
-            .filter(
-                Shift.start_time >= window_start,
-                Shift.start_time <= window_end,
-            )
-            .order_by(Shift.start_time)
-            .all()
+    def list_in_window(
+        window_start: datetime,
+        window_end: datetime,
+        group_ids: list[int] | None = None,
+    ) -> list[Shift]:
+        query = Shift.query.options(
+            joinedload(Shift.user), joinedload(Shift.shift_type)
+        ).filter(
+            Shift.start_time >= window_start,
+            Shift.start_time <= window_end,
         )
+        if group_ids is not None:
+            query = query.join(User, Shift.user_id == User.id).filter(
+                User.group_id.in_(group_ids)
+            )
+        return query.order_by(Shift.start_time).all()
 
     @staticmethod
     def list_for_user(user_id: int) -> list[Shift]:

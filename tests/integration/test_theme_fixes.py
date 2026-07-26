@@ -186,7 +186,12 @@ class TestInlineStylesReplacement:
             assert "var(--bulma-grey)" not in dashboard_content
 
     def test_index_uses_min_w_classes(self, test_app):
-        """Test that index.html uses the min-w-* classes instead of inline styles."""
+        """Test that index.html uses the min-w-* classes instead of inline
+        styles. The "Mode édition" toggle/status-tag this test originally
+        checked (badge-error/btn-success, both min-w-180) was removed
+        along with the edit-mode concept itself (see the calendar rehaul:
+        drag & drop is always live for admins now, no toggle) - the
+        #toggle-tips button is the one surviving min-w-180 usage."""
         with test_app.app_context():
             index_template_path = os.path.join(
                 current_app.template_folder, "index.html"
@@ -194,8 +199,7 @@ class TestInlineStylesReplacement:
             with open(index_template_path) as f:
                 index_content = f.read()
 
-            assert 'class="badge badge-error min-w-180"' in index_content
-            assert 'class="btn btn-success btn-sm min-w-180"' in index_content
+            assert 'class="btn btn-info btn-sm min-w-180"' in index_content
 
             assert 'style="min-width: 180px"' not in index_content
 

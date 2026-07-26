@@ -330,7 +330,10 @@ def api_create_shift():
 @login_required
 @admin_required
 def api_update_shift(shift_id):
-    """API endpoint to update a shift via drag & drop."""
+    """API endpoint to update a shift via drag & drop, or via the
+    calendar's click-to-edit modal (which can also send `userId`/
+    `shiftTypeId` to reassign the person/type - both optional, omitted
+    by the drag/resize path)."""
     shift = ShiftRepository.get_by_id(shift_id)
     if not shift:
         return jsonify({"success": False, "error": _("Shift non trouvé")}), 404
@@ -357,7 +360,14 @@ def api_update_shift(shift_id):
             duration = shift.end_time - shift.start_time
             new_end = new_start + duration
 
-        updated_shift, error = ShiftService.api_update(shift_id, new_start, new_end)
+        user_id = data.get("userId")
+        shift_type_id = data.get("shiftTypeId")
+        new_user_id = int(user_id) if user_id else None
+        new_shift_type_id = int(shift_type_id) if shift_type_id else None
+
+        updated_shift, error = ShiftService.api_update(
+            shift_id, new_start, new_end, new_user_id, new_shift_type_id
+        )
         if error:
             return jsonify({"success": False, "error": error}), 400
 

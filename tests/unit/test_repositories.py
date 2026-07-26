@@ -153,6 +153,39 @@ class TestShiftRepository:
         assert len(shifts) == 1
         assert shifts[0].id == test_shift.id
 
+    def test_list_in_window_no_group_filter(self, test_app, test_shift):
+        window_start = datetime.combine(test_shift.date, datetime.min.time())
+        window_end = datetime.combine(test_shift.date, datetime.max.time())
+        shifts = ShiftRepository.list_in_window(window_start, window_end)
+        assert [s.id for s in shifts] == [test_shift.id]
+
+    def test_list_in_window_filters_by_group_ids(
+        self, test_app, test_group, test_shift
+    ):
+        from app.models import Group
+
+        other_group = Group(name="Other Group Window")
+        db.session.add(other_group)
+        db.session.commit()
+
+        window_start = datetime.combine(test_shift.date, datetime.min.time())
+        window_end = datetime.combine(test_shift.date, datetime.max.time())
+
+        assert (
+            len(
+                ShiftRepository.list_in_window(
+                    window_start, window_end, group_ids=[test_group.id]
+                )
+            )
+            == 1
+        )
+        assert (
+            ShiftRepository.list_in_window(
+                window_start, window_end, group_ids=[other_group.id]
+            )
+            == []
+        )
+
     def test_find_conflict(self, test_app, test_user, test_shift):
         conflict = ShiftRepository.find_conflict(test_user.id, test_shift.date)
         assert conflict is not None
@@ -387,6 +420,34 @@ class TestLeaveRepository:
         assert len(leaves) == 1
         assert leaves[0].id == test_leave.id
 
+    def test_list_in_window_filters_by_group_ids(
+        self, test_app, test_group, test_leave
+    ):
+        from app.models import Group
+
+        other_group = Group(name="Other Group Leave Window")
+        db.session.add(other_group)
+        db.session.commit()
+
+        assert (
+            len(
+                LeaveRepository.list_in_window(
+                    test_leave.start_date,
+                    test_leave.end_date,
+                    group_ids=[test_group.id],
+                )
+            )
+            == 1
+        )
+        assert (
+            LeaveRepository.list_in_window(
+                test_leave.start_date,
+                test_leave.end_date,
+                group_ids=[other_group.id],
+            )
+            == []
+        )
+
     def test_find_conflict_overlapping(self, test_app, test_user, test_leave):
         conflict = LeaveRepository.find_conflict(
             test_user.id, test_leave.start_date, test_leave.end_date
@@ -515,6 +576,34 @@ class TestOnCallRepository:
         oncalls = OnCallRepository.list_for_user(test_user.id)
         assert len(oncalls) == 1
         assert oncalls[0].id == test_oncall.id
+
+    def test_list_in_window_filters_by_group_ids(
+        self, test_app, test_group, test_oncall
+    ):
+        from app.models import Group
+
+        other_group = Group(name="Other Group OnCall Window")
+        db.session.add(other_group)
+        db.session.commit()
+
+        assert (
+            len(
+                OnCallRepository.list_in_window(
+                    test_oncall.start_time,
+                    test_oncall.end_time,
+                    group_ids=[test_group.id],
+                )
+            )
+            == 1
+        )
+        assert (
+            OnCallRepository.list_in_window(
+                test_oncall.start_time,
+                test_oncall.end_time,
+                group_ids=[other_group.id],
+            )
+            == []
+        )
 
     def test_find_conflict_overlapping(self, test_app, test_user, test_oncall):
         conflict = OnCallRepository.find_conflict(

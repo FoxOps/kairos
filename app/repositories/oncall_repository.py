@@ -99,16 +99,20 @@ class OnCallRepository:
         ).delete(synchronize_session="evaluate")
 
     @staticmethod
-    def list_in_window(window_start: datetime, window_end: datetime) -> list[OnCall]:
-        return (
-            OnCall.query.options(joinedload(OnCall.user))
-            .filter(
-                OnCall.start_time <= window_end,
-                OnCall.end_time >= window_start,
-            )
-            .order_by(OnCall.start_time)
-            .all()
+    def list_in_window(
+        window_start: datetime,
+        window_end: datetime,
+        group_ids: list[int] | None = None,
+    ) -> list[OnCall]:
+        query = OnCall.query.options(joinedload(OnCall.user)).filter(
+            OnCall.start_time <= window_end,
+            OnCall.end_time >= window_start,
         )
+        if group_ids is not None:
+            query = query.join(User, OnCall.user_id == User.id).filter(
+                User.group_id.in_(group_ids)
+            )
+        return query.order_by(OnCall.start_time).all()
 
     @staticmethod
     def delete_older_than(cutoff: datetime) -> int:

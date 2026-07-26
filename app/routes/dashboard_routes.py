@@ -8,8 +8,10 @@ from datetime import datetime
 from flask import jsonify, render_template, request
 from flask_login import current_user, login_required
 
+from app.repositories.user_repository import GroupRepository
 from app.routes.main import main_bp
 from app.services import DashboardService, ScheduleService
+from app.utils.helpers import build_group_color_map
 
 # Hard ceiling on a single api_get_shifts() request's span, independent
 # of the ±180-day *default* (ScheduleService.CALENDAR_WINDOW_DAYS) - the
@@ -32,8 +34,24 @@ def index():
     for whatever range it's currently viewing (see
     fullcalendar-config.js) - no events are embedded server-side here
     anymore, so navigating far into the past/future is never capped by
-    a fixed window (see api_get_shifts()'s own docstring)."""
-    return render_template("index.html")
+    a fixed window (see api_get_shifts()'s own docstring). Also
+    server-renders the multi-group filter and its color legend - an
+    admin (or a groupless user, who has no natural single default)
+    defaults to every group checked, a regular user defaults to just
+    their own; either way it's a default, not a restriction, the same
+    non-restrictive viewing model already established on /schedule,
+    /oncall, /leave."""
+    groups = GroupRepository.get_all()
+    if current_user.is_admin or current_user.group_id is None:
+        default_group_ids = {g.id for g in groups}
+    else:
+        default_group_ids = {current_user.group_id}
+    return render_template(
+        "index.html",
+        groups=groups,
+        default_group_ids=default_group_ids,
+        group_color_map=build_group_color_map(g.id for g in groups),
+    )
 
 
 def _parse_calendar_bound(value: str) -> datetime | None:
@@ -71,7 +89,11 @@ def api_get_shifts():
     MAX_CALENDAR_RANGE_DAYS, or with end before start, is rejected the
     same way as an unparseable one (falls back to the default window)
     rather than trusting an arbitrarily large client-supplied span for
-    the underlying query - see that constant's own docstring."""
+    the underlying query - see that constant's own docstring.
+    `group_ids` (repeated query param, e.g. `?group_ids=1&group_ids=2`):
+    the calendar's multi-group filter - omitted/empty means every group
+    (no server-side enforcement of the viewer's default selection, see
+    index()'s own docstring)."""
     start_str = request.args.get("start")
     end_str = request.args.get("end")
 
@@ -86,8 +108,9 @@ def api_get_shifts():
     ):
         window_start, window_end = ScheduleService.calendar_window()
 
+    group_ids = request.args.getlist("group_ids", type=int) or None
     events = ScheduleService.get_calendar_events_for_range(
-        current_user, window_start, window_end
+        current_user, window_start, window_end, group_ids=group_ids
     )
     return jsonify(events)
 

@@ -50,6 +50,17 @@ class UserService:
         return [current_user]
 
     @staticmethod
+    def visible_users_for_oncall(current_user: User) -> list[User]:
+        """An admin sees the oncall-eligible group's users, a regular
+        user only sees themselves - backs the calendar's on-call-edit
+        modal person picker (GET /api/oncall-users), which needs the
+        oncall-eligible group, not the schedule-eligible one
+        visible_users_for_schedule() serves."""
+        if current_user.is_admin:
+            return UserRepository.get_for_oncall_group()
+        return [current_user]
+
+    @staticmethod
     def create(
         name: str, email: str, group_id: int, password: str = ""  # nosec B107
     ) -> tuple[User | None, str | None, str | None]:

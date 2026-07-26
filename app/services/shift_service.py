@@ -12,7 +12,7 @@ from flask_babel import gettext as _
 
 from app import db
 from app.models import Shift, ShiftType, User
-from app.repositories.shift_repository import ShiftRepository
+from app.repositories.shift_repository import ShiftRepository, ShiftTypeRepository
 from app.services.audit_service import AuditService
 from app.utils.helpers import (
     can_add_shift,
@@ -157,9 +157,18 @@ class ShiftService:
 
     @staticmethod
     def api_update(
-        shift_id: int, new_start: datetime, new_end: datetime
+        shift_id: int,
+        new_start: datetime,
+        new_end: datetime,
+        new_user_id: int | None = None,
+        new_shift_type_id: int | None = None,
     ) -> tuple[Shift | None, str | None]:
-        """Update a shift from the drag & drop API. Returns (shift, error_message)."""
+        """Update a shift from the drag & drop API, or from the
+        calendar's click-to-edit modal (which can also reassign the
+        person/shift type - `new_user_id`/`new_shift_type_id`, both
+        optional and default None = "keep current", so the drag/resize
+        call site - which never sends either - is unaffected). Returns
+        (shift, error_message)."""
         shift = ShiftRepository.get_by_id(shift_id)
         if not shift:
             return None, _("Shift non trouvé")
@@ -168,15 +177,33 @@ class ShiftService:
         if new_date.weekday() >= 5:
             return None, _("Impossible de déplacer vers un week-end (samedi/dimanche)")
 
+        if new_user_id is not None and new_user_id != shift.user_id:
+            effective_user = db.session.get(User, new_user_id)
+            if not effective_user:
+                return None, _("Utilisateur non trouvé")
+        else:
+            effective_user = shift.user
+
+        if new_shift_type_id is not None and new_shift_type_id != shift.shift_type_id:
+            effective_shift_type = ShiftTypeRepository.get_by_id(new_shift_type_id)
+            if not effective_shift_type:
+                return None, _("Type de shift non trouvé")
+        else:
+            effective_shift_type = shift.shift_type
+
+        # Every check below runs against the *effective* user/type
+        # (the reassignment target, if any) - not the shift's original
+        # owner/type - since that's the actual point of allowing
+        # reassignment through this method.
         conflict = ShiftRepository.find_conflict(
-            shift.user_id, new_date, exclude_id=shift_id
+            effective_user.id, new_date, exclude_id=shift_id
         )
         if conflict:
             return (
                 None,
                 _(
                     "Un shift existe déjà pour %(name)s le %(date)s",
-                    name=shift.user.name,
+                    name=effective_user.name,
                     date=new_date.strftime("%d/%m/%Y"),
                 ),
             )
@@ -185,12 +212,12 @@ class ShiftService:
         # add_shifts_for_range) goes through can_add_shift(), which also
         # checks leave - drag & drop didn't, and could drop a shift onto
         # a day the user is on leave.
-        if is_user_on_leave(shift.user_id, new_date):
+        if is_user_on_leave(effective_user.id, new_date):
             return (
                 None,
                 _(
                     "%(name)s est en congé le %(date)s",
-                    name=shift.user.name,
+                    name=effective_user.name,
                     date=new_date.strftime("%d/%m/%Y"),
                 ),
             )
@@ -200,20 +227,37 @@ class ShiftService:
         # rest_after_oncall, oncall_shift_overlap) - the creation path
         # already goes through can_add_shift(), which calls this too.
         violation = check_shift_rule_violations(
-            shift.user, new_date, shift.shift_type, exclude_shift_id=shift_id
+            effective_user, new_date, effective_shift_type, exclude_shift_id=shift_id
         )
         if violation is not None:
             return None, violation
 
+        # Captured before mutating - shift.user/shift.shift_type reflect
+        # the *new* FK once the relationship refreshes after commit.
+        original_user_name = shift.user.name
+        original_shift_type_label = (
+            shift.shift_type.label if shift.shift_type else shift.shift_type
+        )
+
         shift.start_time = new_start
         shift.end_time = new_end
         shift.date = new_date
+        shift.user_id = effective_user.id
+        shift.shift_type_id = effective_shift_type.id
         db.session.commit()
+
+        details = f"{original_user_name} -> {new_date.strftime('%d/%m/%Y')}"
+        if effective_user.name != original_user_name:
+            details += f", user {original_user_name}->{effective_user.name}"
+        if effective_shift_type.label != original_shift_type_label:
+            details += (
+                f", type {original_shift_type_label}->{effective_shift_type.label}"
+            )
         AuditService.log(
             "shift.update",
             resource_type="Shift",
             resource_id=shift.id,
-            details=f"{shift.user.name} -> {new_date.strftime('%d/%m/%Y')}",
+            details=details,
         )
         return shift, None
 
