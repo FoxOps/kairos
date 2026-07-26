@@ -10,7 +10,7 @@ from datetime import date
 from sqlalchemy.orm import joinedload
 
 from app import db
-from app.models import Leave
+from app.models import Leave, User
 
 
 class LeaveRepository:
@@ -27,11 +27,60 @@ class LeaveRepository:
         )
 
     @staticmethod
-    def list_paginated(page: int, per_page: int):
+    def _filtered_query(
+        user_id: int | None = None,
+        group_id: int | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ):
+        """Shared WHERE clause for list_paginated()/list_filtered() -
+        backs the /leave filter bar (user/group/date range). Leave is a
+        span, not a single day, so date_from/date_to use the same
+        "overlap" semantics already established by list_in_window()."""
+        query = Leave.query
+        if user_id is not None:
+            query = query.filter(Leave.user_id == user_id)
+        if group_id is not None:
+            query = query.join(User, Leave.user_id == User.id).filter(
+                User.group_id == group_id
+            )
+        if date_from is not None:
+            query = query.filter(Leave.end_date >= date_from)
+        if date_to is not None:
+            query = query.filter(Leave.start_date <= date_to)
+        return query
+
+    @staticmethod
+    def list_paginated(
+        page: int,
+        per_page: int,
+        user_id: int | None = None,
+        group_id: int | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ):
         return (
-            Leave.query.options(joinedload(Leave.user))
+            LeaveRepository._filtered_query(user_id, group_id, date_from, date_to)
+            .options(joinedload(Leave.user))
             .order_by(Leave.start_date)
             .paginate(page=page, per_page=per_page, error_out=False)
+        )
+
+    @staticmethod
+    def list_filtered(
+        user_id: int | None = None,
+        group_id: int | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> list[Leave]:
+        """Every Leave matching the given filters (no filters = matches
+        everything), unpaginated - used by LeaveService.delete_filtered(),
+        which must loop delete_leave() per row (rebalance side effect),
+        not a single bulk SQL DELETE like Shift/OnCall's delete_filtered()."""
+        return (
+            LeaveRepository._filtered_query(user_id, group_id, date_from, date_to)
+            .order_by(Leave.start_date)
+            .all()
         )
 
     @staticmethod

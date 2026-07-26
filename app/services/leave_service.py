@@ -28,8 +28,41 @@ class LeaveService:
     """Business logic for leaves."""
 
     @staticmethod
-    def list_paginated(page: int, per_page: int):
-        return LeaveRepository.list_paginated(page, per_page)
+    def list_paginated(
+        page: int,
+        per_page: int,
+        user_id: int | None = None,
+        group_id: int | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ):
+        return LeaveRepository.list_paginated(
+            page, per_page, user_id, group_id, date_from, date_to
+        )
+
+    @staticmethod
+    def delete_filtered(
+        user_id: int | None = None,
+        group_id: int | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> int:
+        """Bulk-deletes every Leave matching the given filters (no
+        filters = matches everything) - backs the /leave filter bar's
+        "delete filtered result" action. Unlike Shift/OnCall's
+        delete_filtered() (a single bulk SQL DELETE), this loops
+        delete_leave() per matching leave: each deletion triggers a
+        shift rebalance (_rebalance_after_leave) that a raw bulk DELETE
+        would skip, leaving stale shift assignments for the affected
+        users/dates. Slower for a large filtered set, but correctness
+        over speed here - the confirm dialog shows the count before an
+        admin commits to it."""
+        leaves = LeaveRepository.list_filtered(user_id, group_id, date_from, date_to)
+        count = 0
+        for leave in leaves:
+            LeaveService.delete_leave(leave.id)
+            count += 1
+        return count
 
     @staticmethod
     def add_leave(

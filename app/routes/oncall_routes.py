@@ -13,9 +13,14 @@ from app import db
 from app.auth.decorators import admin_required
 from app.models import User
 from app.repositories.oncall_repository import OnCallRepository
+from app.repositories.user_repository import GroupRepository, UserRepository
 from app.routes.main import main_bp
 from app.services import OnCallService, UserService
-from app.utils.helpers.pagination_helpers import PER_PAGE_OPTIONS, resolve_per_page
+from app.utils.helpers.pagination_helpers import (
+    PER_PAGE_OPTIONS,
+    parse_date_range_filter,
+    resolve_per_page,
+)
 from app.utils.helpers.timezone_helpers import (
     parse_fullcalendar_datetime,
     to_viewer_timezone,
@@ -28,13 +33,27 @@ def oncall():
     page = request.args.get("page", 1, type=int)
     per_page = resolve_per_page(request.args)
 
-    on_calls_paginated = OnCallService.list_paginated(page, per_page)
+    user_id = request.args.get("user_id", type=int)
+    group_id = request.args.get("group_id", type=int)
+    date_from, date_to, date_from_str, date_to_str = parse_date_range_filter(
+        request.args
+    )
+
+    on_calls_paginated = OnCallService.list_paginated(
+        page, per_page, user_id, group_id, date_from, date_to
+    )
 
     return render_template(
         "oncall.html",
         on_calls=on_calls_paginated,
         per_page=per_page,
         per_page_options=PER_PAGE_OPTIONS,
+        users=UserRepository.get_all(),
+        groups=GroupRepository.get_all(),
+        selected_user_id=user_id,
+        selected_group_id=group_id,
+        date_from=date_from_str,
+        date_to=date_to_str,
     )
 
 
@@ -102,55 +121,41 @@ def delete_oncall(oncall_id):
     return redirect(url_for("main.oncall"))
 
 
-@main_bp.route("/oncall/delete-all", methods=["POST"])
+@main_bp.route("/oncall/delete-filtered", methods=["POST"])
 @login_required
 @admin_required
-def delete_all_oncalls():
-    """Delete all on-calls."""
+def delete_filtered_oncalls():
+    """Delete every on-call matching the filter bar's current filters
+    (no filters = every on-call, same as the old "delete all") -
+    replaces the old delete-all/delete-all-for-user routes. Filters are
+    carried as hidden fields on the same POST form the filter bar
+    renders them into, and threaded back into the redirect so the
+    admin lands on the same (now emptied/reduced) filtered view."""
+    user_id = request.form.get("user_id", type=int)
+    group_id = request.form.get("group_id", type=int)
+    date_from, date_to, date_from_str, date_to_str = parse_date_range_filter(
+        request.form
+    )
+    redirect_args = {
+        "user_id": user_id,
+        "group_id": group_id,
+        "date_from": date_from_str,
+        "date_to": date_to_str,
+    }
+
     try:
-        count = OnCallService.delete_all()
+        count = OnCallService.delete_filtered(user_id, group_id, date_from, date_to)
         if count > 0:
             flash(
-                _(
-                    "Toutes les %(count)s astreintes ont été supprimées avec succès !",
-                    count=count,
-                ),
+                _("%(count)s astreinte(s) supprimée(s) avec succès !", count=count),
                 "success",
             )
         else:
-            flash(_("Aucune astreinte à supprimer."), "warning")
+            flash(_("Aucune astreinte ne correspond à ces filtres."), "warning")
     except Exception as e:
         db.session.rollback()
         flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
-    return redirect(url_for("main.oncall"))
-
-
-@main_bp.route("/oncall/delete-all-for-user/<int:user_id>", methods=["POST"])
-@login_required
-@admin_required
-def delete_all_oncalls_for_user(user_id):
-    """Delete all on-calls for a specific user."""
-    user = db.session.get(User, user_id) or abort(404)
-
-    try:
-        count = OnCallService.delete_all_for_user(user_id)
-        if count == 0:
-            flash(
-                _("Aucune astreinte trouvée pour %(name)s.", name=user.name), "warning"
-            )
-        else:
-            flash(
-                _(
-                    "Toutes les %(count)s astreintes de %(name)s ont été supprimées avec succès !",
-                    count=count,
-                    name=user.name,
-                ),
-                "success",
-            )
-    except Exception as e:
-        db.session.rollback()
-        flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
-    return redirect(url_for("main.oncall"))
+    return redirect(url_for("main.oncall", **redirect_args))
 
 
 @main_bp.route("/api/oncall/<int:oncall_id>", methods=["DELETE"])

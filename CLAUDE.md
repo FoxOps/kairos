@@ -1182,6 +1182,91 @@ logic change. `dashboard.html`'s leave-days text now calls `Leave.duration()` in
 re-deriving the same inclusive-day formula inline (`(end - start).days + 1`) — a correctness/
 consistency drive-by, since that duplicated formula already exists as the model's own method.
 
+### `/schedule`, `/oncall`, `/leave` filter bar + unified "delete filtered result"
+
+These three pages used to only offer a scattering of single-purpose admin-only bulk-delete
+buttons — `/schedule` had "delete all"/"delete all for this user" (shown once per user's first
+row)/"delete all for this day"/"delete all for this week" (4 separate routes); `/oncall` had
+"delete all"/"delete all for this user" (2 routes); `/leave` had no bulk delete at all, only
+per-row delete. User-reported: interesting functionality, but unnecessarily complex UI. Replaced
+with one pattern reused across all three: a **filter bar** (user/group/date-range, `+shift_type`
+on `/schedule` only) that narrows what's *shown*, and a single **"delete filtered result"** action
+scoped to whatever the filters currently match — no filters applied = matches everything = the old
+"delete all" behavior. This also subsumes delete-by-day/delete-by-week: a day is
+`date_from == date_to`, a week is `date_from`=Monday/`date_to`=Friday, no dedicated routes needed.
+The filter bar itself is visible to **every** logged-in user (these pages are `@login_required`
+only, not admin-only, and already show every user's data — filtering is a real browsing win for a
+large team's schedule); the delete-filtered action stays admin-only, matching the old buttons.
+Modeled closely on the pre-existing `/admin/audit-log` filter card
+(`app/routes/admin_audit_routes.py`/`app/templates/admin/audit_log.html`) — same GET-form-card +
+"Filtrer"/"Réinitialiser" shape, generalized from actor/domain to user/group.
+
+**Repository layer**: `ShiftRepository`/`OnCallRepository`/`LeaveRepository` each gained a private
+`_filtered_query(user_id=None, group_id=None, date_from=None, date_to=None, ...)` building the
+shared `WHERE` clause, reused by both `list_paginated()` (now accepting these same optional kwargs)
+and `delete_filtered()`/`list_filtered()`. `group_id` requires a join through `User` (none of the
+three models has its own `group_id` column, same join shape as the pre-existing
+`count_for_group()` methods). `Shift.date` is a plain date column (`>=`/`<=`); `OnCall`/`Leave` are
+spans, so `date_from`/`date_to` use the same "overlap" semantics already established by
+`list_in_window()` (a span counts as matching if it overlaps the range at all), each bound
+independently optional. `ShiftRepository.delete_filtered()`/`OnCallRepository.delete_filtered()`
+use `synchronize_session="evaluate"` (not `False`) for the same reason as the pre-existing
+`delete_in_date_range()`/`delete_overlapping_range()`: a caller can hold an already-loaded instance
+across the call. Several now-fully-dead single-purpose repository methods were removed in the same
+pass once confirmed to have zero remaining callers anywhere (including tests):
+`ShiftRepository.count_for_user`/`count_for_date`/`count_for_dates`/`delete_all`/`delete_for_user`/
+`delete_for_date`/`delete_for_dates`, `OnCallRepository.count_for_user`/`delete_all`/
+`delete_for_user` — their generic-CRUD-looking names hid the fact that they only ever existed to
+back the routes this feature removed.
+
+**Service layer**: `ShiftService.delete_filtered()`/`OnCallService.delete_filtered()` are thin
+wrappers (repository call + commit + one `AuditService.log("shift.bulk_delete"/"oncall.bulk_delete", ...)`,
+same audit action names as before, now covering every case the old 4/2 routes covered).
+`LeaveService.delete_filtered()` is different on purpose: `LeaveService.delete_leave()` triggers a
+full shift rebalance (`AdvancedShiftAutomation.rebalance_after_leave`) per leave, so a raw bulk SQL
+`DELETE` would silently skip it and leave stale shift assignments for the affected users/dates —
+`delete_filtered()` instead fetches `LeaveRepository.list_filtered()` and loops `delete_leave()` per
+match (each iteration already commits + audits `leave.delete` + rebalances). Slower than
+Shift/OnCall's single bulk `DELETE` for a large filtered set, but correctness over speed here — the
+confirm dialog shows the count before an admin commits to it. This means the Audit trail section's
+former "no `bulk_delete` — none exists in `LeaveService`" statement is no longer accurate: `/leave`
+now has bulk deletion, just expressed as N× `leave.delete` audit entries rather than a single
+`leave.bulk_delete` action, since it reuses the existing single-delete code path rather than adding
+a second one.
+
+**Routes**: `schedule()`/`oncall()`/`leave()` read `user_id`/`group_id`/`date_from`/`date_to`
+(+`shift_type_id` for schedule) from `request.args` via the new
+`app/utils/helpers/pagination_helpers.py::parse_date_range_filter()` (same `"%Y-%m-%d"` parsing as
+`admin_audit_routes.py::audit_log()`, centralized here since all three routes need it identically —
+that module, previously scoped to just `resolve_per_page()`, is now more broadly "pagination/filter-bar
+helpers for these three pages," per its own docstring). New POST routes —
+`/shift/delete-filtered`, `/oncall/delete-filtered`, `/leave/delete-filtered` — replace
+`/shift/delete-all`, `/shift/delete-all-for-user/<id>`, `/shift/delete-day/<date_str>`,
+`/shift/delete-week/<date_str>`, `/oncall/delete-all`, `/oncall/delete-all-for-user/<id>` (all
+removed); each reads the same filter fields back from the POST form (carried as hidden inputs) and
+redirects to the list route with those same filters preserved in the query string, so the admin
+lands on the same (now emptied/reduced) filtered view rather than a silently-reset unfiltered one.
+
+**Templates**: `app/templates/macros/list_filters.html` (new) holds `filter_bar()` (the GET-form
+filter card, an optional `shift_types`/`selected_shift_type_id` pair for the schedule-only 4th
+filter) and `delete_filtered_button()` (a POST form looping a caller-supplied `hidden_fields` dict
+into hidden inputs, `js-confirm-delete` + `data-confirm-message`, same delegated-listener JS
+mechanism as every other confirm-guarded delete button in this app — no new JS needed). Confirm/
+button text stays owned by each calling template (passed in already `_()`-wrapped), not baked into
+the macro, so the correct grammatical gender is preserved per page (masculine "shift(s)"/"congé(s)",
+feminine "astreinte(s)") — same fix precedent as this session's earlier "toutes les astreintes" bug.
+`_pagination.html` gained an optional `extra_params` dict (default `{}`, splatted into its
+`url_for()` calls and the per-page form's hidden inputs) so paging through a filtered result
+doesn't silently drop the active filters — safe to extend since this partial has no callers besides
+these exact three pages. The old per-row bulk buttons (schedule's delete-all-for-user/delete-week/
+delete-day, oncall's delete-all-for-user) are gone from the table rows; `schedule.html`'s
+`seen_users`/`seen_dates` bookkeeping stays (still needed for the "show username/date only once"
+display grouping, unrelated to deletion) but its `is_monday` tracking (delete-week-only) is gone;
+`oncall.html` had no other use for `seen_users`, so that tracking is gone entirely there. Each
+page's `_action_legend.html` `action_items` list shrank to just the remaining per-row single-delete
+entry (the filter bar's own buttons are labeled buttons, not icon-only, so they don't need a legend
+entry either).
+
 ## Testing conventions
 
 `tests/conftest.py` defines the fixture chain: `test_app` builds a fresh app via

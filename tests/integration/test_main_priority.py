@@ -8,21 +8,25 @@ from app import db
 from app.models import OnCall, Shift, User
 
 
-class TestDeleteAllShifts:
-    """Tests for /shift/delete-all."""
+class TestDeleteFilteredShiftsNoFilter:
+    """Tests for /shift/delete-filtered with no filters (replaces the
+    old dedicated /shift/delete-all route)."""
 
     def test_delete_all_shifts(self, logged_in_client, test_shift):
         """Test deleting all shifts."""
         initial_count = Shift.query.count()
         assert initial_count > 0
 
-        response = logged_in_client.post("/shift/delete-all", follow_redirects=True)
+        response = logged_in_client.post(
+            "/shift/delete-filtered", follow_redirects=True
+        )
         assert response.status_code == 200
         assert Shift.query.count() == 0
 
 
-class TestDeleteAllShiftsForUser:
-    """Tests for /shift/delete-all-for-user/<user_id>."""
+class TestDeleteFilteredShiftsByUser:
+    """Tests for /shift/delete-filtered with user_id (replaces the old
+    dedicated /shift/delete-all-for-user/<user_id> route)."""
 
     def test_delete_all_shifts_for_user(
         self, logged_in_client, test_user, test_shift_type
@@ -42,15 +46,17 @@ class TestDeleteAllShiftsForUser:
         db.session.commit()
 
         response = logged_in_client.post(
-            f"/shift/delete-all-for-user/{test_user.id}",
+            "/shift/delete-filtered",
+            data={"user_id": str(test_user.id)},
             follow_redirects=True,
         )
         assert response.status_code == 200
         assert Shift.query.filter_by(user_id=test_user.id).count() == 0
 
 
-class TestDeleteAllShiftsForDay:
-    """Tests for /shift/delete-day/<date_str>."""
+class TestDeleteFilteredShiftsByDay:
+    """Tests for /shift/delete-filtered with date_from=date_to=<day>
+    (replaces the old dedicated /shift/delete-day/<date_str> route)."""
 
     def test_delete_all_shifts_for_day(
         self, logged_in_client, test_user, test_shift_type
@@ -87,15 +93,20 @@ class TestDeleteAllShiftsForDay:
         db.session.commit()
 
         response = logged_in_client.post(
-            f"/shift/delete-day/{today.strftime('%Y-%m-%d')}",
+            "/shift/delete-filtered",
+            data={
+                "date_from": today.strftime("%Y-%m-%d"),
+                "date_to": today.strftime("%Y-%m-%d"),
+            },
             follow_redirects=True,
         )
         assert response.status_code == 200
         assert Shift.query.filter_by(date=today).count() == 0
 
 
-class TestDeleteAllShiftsForWeek:
-    """Tests for /shift/delete-week/<date_str>."""
+class TestDeleteFilteredShiftsByWeek:
+    """Tests for /shift/delete-filtered with a Monday-Friday date range
+    (replaces the old dedicated /shift/delete-week/<date_str> route)."""
 
     def test_delete_all_shifts_for_week(
         self, logged_in_client, test_user, test_shift_type
@@ -103,6 +114,7 @@ class TestDeleteAllShiftsForWeek:
         """Test deleting all shifts for a week."""
         today = datetime.now().date()
         monday = today - timedelta(days=today.weekday())
+        friday = monday + timedelta(days=4)
 
         # Create shifts for the week
         for day in range(5):
@@ -121,7 +133,11 @@ class TestDeleteAllShiftsForWeek:
         db.session.commit()
 
         response = logged_in_client.post(
-            f"/shift/delete-week/{monday.strftime('%Y-%m-%d')}",
+            "/shift/delete-filtered",
+            data={
+                "date_from": monday.strftime("%Y-%m-%d"),
+                "date_to": friday.strftime("%Y-%m-%d"),
+            },
             follow_redirects=True,
         )
         assert response.status_code == 200
@@ -133,21 +149,25 @@ class TestDeleteAllShiftsForWeek:
         )
 
 
-class TestDeleteAllOnCalls:
-    """Tests for /oncall/delete-all."""
+class TestDeleteFilteredOnCallsNoFilter:
+    """Tests for /oncall/delete-filtered with no filters (replaces the
+    old dedicated /oncall/delete-all route)."""
 
     def test_delete_all_oncalls(self, logged_in_client, test_oncall):
         """Test deleting all on-calls."""
         initial_count = OnCall.query.count()
         assert initial_count > 0
 
-        response = logged_in_client.post("/oncall/delete-all", follow_redirects=True)
+        response = logged_in_client.post(
+            "/oncall/delete-filtered", follow_redirects=True
+        )
         assert response.status_code == 200
         assert OnCall.query.count() == 0
 
 
-class TestDeleteAllOnCallsForUser:
-    """Tests for /oncall/delete-all-for-user/<user_id>."""
+class TestDeleteFilteredOnCallsByUser:
+    """Tests for /oncall/delete-filtered with user_id (replaces the old
+    dedicated /oncall/delete-all-for-user/<user_id> route)."""
 
     def test_delete_all_oncalls_for_user(self, logged_in_client, test_user):
         """Test deleting all on-calls for a user."""
@@ -167,7 +187,8 @@ class TestDeleteAllOnCallsForUser:
         db.session.commit()
 
         response = logged_in_client.post(
-            f"/oncall/delete-all-for-user/{test_user.id}",
+            "/oncall/delete-filtered",
+            data={"user_id": str(test_user.id)},
             follow_redirects=True,
         )
         assert response.status_code == 200

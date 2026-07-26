@@ -58,12 +58,68 @@ class ShiftRepository:
         )
 
     @staticmethod
-    def list_paginated(page: int, per_page: int):
+    def _filtered_query(
+        user_id: int | None = None,
+        group_id: int | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        shift_type_id: int | None = None,
+    ):
+        """Shared WHERE clause for list_paginated()/delete_filtered() -
+        backs the /schedule filter bar (user/group/date range/shift
+        type). group_id requires a join through User (Shift has no
+        group_id column of its own, same as count_for_group())."""
+        query = Shift.query
+        if user_id is not None:
+            query = query.filter(Shift.user_id == user_id)
+        if group_id is not None:
+            query = query.join(User, Shift.user_id == User.id).filter(
+                User.group_id == group_id
+            )
+        if date_from is not None:
+            query = query.filter(Shift.date >= date_from)
+        if date_to is not None:
+            query = query.filter(Shift.date <= date_to)
+        if shift_type_id is not None:
+            query = query.filter(Shift.shift_type_id == shift_type_id)
+        return query
+
+    @staticmethod
+    def list_paginated(
+        page: int,
+        per_page: int,
+        user_id: int | None = None,
+        group_id: int | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        shift_type_id: int | None = None,
+    ):
         return (
-            Shift.query.options(joinedload(Shift.user), joinedload(Shift.shift_type))
+            ShiftRepository._filtered_query(
+                user_id, group_id, date_from, date_to, shift_type_id
+            )
+            .options(joinedload(Shift.user), joinedload(Shift.shift_type))
             .order_by(Shift.start_time)
             .paginate(page=page, per_page=per_page, error_out=False)
         )
+
+    @staticmethod
+    def delete_filtered(
+        user_id: int | None = None,
+        group_id: int | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        shift_type_id: int | None = None,
+    ) -> int:
+        """Bulk-deletes every Shift matching the given filters (no
+        filters = matches everything) - backs /shift/delete-filtered,
+        the single action replacing the old delete-all/delete-all-for-
+        user/delete-day/delete-week routes. synchronize_session="evaluate"
+        (not False, see delete_in_date_range()'s own comment above): a
+        caller can hold an already-loaded Shift instance across this call."""
+        return ShiftRepository._filtered_query(
+            user_id, group_id, date_from, date_to, shift_type_id
+        ).delete(synchronize_session="evaluate")
 
     @staticmethod
     def list_in_window(window_start: datetime, window_end: datetime) -> list[Shift]:
@@ -100,10 +156,6 @@ class ShiftRepository:
         return Shift.query.count()
 
     @staticmethod
-    def count_for_user(user_id: int) -> int:
-        return Shift.query.filter_by(user_id=user_id).count()
-
-    @staticmethod
     def list_dates_for_user(user_id: int) -> list[date]:
         """Every date this user has a shift on - columns-only (no
         joinedload, no full Shift objects) since callers (dashboard
@@ -124,14 +176,6 @@ class ShiftRepository:
             .filter(User.group_id == group_id)
             .count()
         )
-
-    @staticmethod
-    def count_for_date(on_date: date) -> int:
-        return Shift.query.filter_by(date=on_date).count()
-
-    @staticmethod
-    def count_for_dates(dates: list[date]) -> int:
-        return Shift.query.filter(Shift.date.in_(dates)).count()
 
     @staticmethod
     def exists_for_user(user_id: int) -> bool:
@@ -195,19 +239,3 @@ class ShiftRepository:
     @staticmethod
     def delete(shift: Shift) -> None:
         db.session.delete(shift)
-
-    @staticmethod
-    def delete_all() -> None:
-        Shift.query.delete(synchronize_session=False)
-
-    @staticmethod
-    def delete_for_user(user_id: int) -> None:
-        Shift.query.filter_by(user_id=user_id).delete(synchronize_session=False)
-
-    @staticmethod
-    def delete_for_date(on_date: date) -> None:
-        Shift.query.filter_by(date=on_date).delete(synchronize_session=False)
-
-    @staticmethod
-    def delete_for_dates(dates: list[date]) -> None:
-        Shift.query.filter(Shift.date.in_(dates)).delete(synchronize_session=False)

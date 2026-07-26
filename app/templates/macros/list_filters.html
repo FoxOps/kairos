@@ -1,0 +1,76 @@
+{# Shared filter bar + "delete filtered result" action for /schedule,
+   /oncall, /leave - mirrors admin/audit_log.html's own filter card
+   (actor/domain/date-range) almost exactly, generalized to
+   user/group/date-range (+ optional shift type, schedule only). #}
+
+{% macro filter_bar(list_url, reset_url, users, groups, selected_user_id, selected_group_id, date_from, date_to, per_page, shift_types=none, selected_shift_type_id=none) %}
+<form method="GET" action="{{ list_url }}" class="card card-sm bg-base-100 shadow-md mb-4" aria-labelledby="list-filters-title">
+    <div class="card-body gap-4">
+        <h2 class="font-semibold" id="list-filters-title">{{ _("Filtres") }}</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend">{{ _("Utilisateur") }}</legend>
+                <select class="select w-full" name="user_id">
+                    <option value="">{{ _("Tous") }}</option>
+                    {% for u in users %}
+                    <option value="{{ u.id }}" {% if selected_user_id == u.id %}selected{% endif %}>{{ u.name }}</option>
+                    {% endfor %}
+                </select>
+            </fieldset>
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend">{{ _("Groupe") }}</legend>
+                <select class="select w-full" name="group_id">
+                    <option value="">{{ _("Tous") }}</option>
+                    {% for g in groups %}
+                    <option value="{{ g.id }}" {% if selected_group_id == g.id %}selected{% endif %}>{{ g.name }}</option>
+                    {% endfor %}
+                </select>
+            </fieldset>
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend">{{ _("Du") }}</legend>
+                <input class="input w-full" type="date" name="date_from" value="{{ date_from }}">
+            </fieldset>
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend">{{ _("Au") }}</legend>
+                <input class="input w-full" type="date" name="date_to" value="{{ date_to }}">
+            </fieldset>
+            {% if shift_types is not none %}
+            <fieldset class="fieldset">
+                <legend class="fieldset-legend">{{ _("Type de shift") }}</legend>
+                <select class="select w-full" name="shift_type_id">
+                    <option value="">{{ _("Tous") }}</option>
+                    {% for shift_type in shift_types %}
+                    <option value="{{ shift_type.id }}" {% if selected_shift_type_id == shift_type.id %}selected{% endif %}>{{ shift_type.label }}</option>
+                    {% endfor %}
+                </select>
+            </fieldset>
+            {% endif %}
+        </div>
+        <input type="hidden" name="per_page" value="{{ per_page }}">
+        <div class="flex flex-wrap gap-2">
+            <button class="btn btn-primary btn-sm" type="submit">
+                <i class="fas fa-filter" aria-hidden="true"></i> {{ _("Filtrer") }}
+            </button>
+            <a class="btn btn-ghost btn-sm" href="{{ reset_url }}">
+                <i class="fas fa-eraser" aria-hidden="true"></i> {{ _("Réinitialiser") }}
+            </a>
+        </div>
+    </div>
+</form>
+{% endmacro %}
+
+{% macro delete_filtered_button(action_url, hidden_fields, confirm_message, button_label) %}
+<form method="POST" action="{{ action_url }}" class="mb-0">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% for field_name, field_value in hidden_fields.items() %}
+    {% if field_value %}
+    <input type="hidden" name="{{ field_name }}" value="{{ field_value }}">
+    {% endif %}
+    {% endfor %}
+    <button type="submit" class="btn btn-error btn-sm js-confirm-delete"
+            data-confirm-message="{{ confirm_message }}"
+            aria-label="{{ button_label }}" title="{{ button_label }}">
+        <i class="fas fa-trash-alt" aria-hidden="true"></i> {{ button_label }}
+    </button>
+</form>
+{% endmacro %}

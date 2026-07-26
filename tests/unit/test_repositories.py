@@ -170,9 +170,8 @@ class TestShiftRepository:
         other_date = test_shift.date + timedelta(days=1)
         assert ShiftRepository.find_conflict(test_user.id, other_date) is None
 
-    def test_count_all_and_for_user(self, test_app, test_user, test_shift):
+    def test_count_all(self, test_app, test_shift):
         assert ShiftRepository.count_all() == 1
-        assert ShiftRepository.count_for_user(test_user.id) == 1
 
     def test_count_for_group(self, test_app, test_group, test_shift):
         from werkzeug.security import generate_password_hash
@@ -227,16 +226,6 @@ class TestShiftRepository:
         assert deleted == 1
         assert calls == []
 
-    def test_delete_all(self, test_app, test_shift):
-        ShiftRepository.delete_all()
-        db.session.commit()
-        assert ShiftRepository.count_all() == 0
-
-    def test_delete_for_user(self, test_app, test_user, test_shift):
-        ShiftRepository.delete_for_user(test_user.id)
-        db.session.commit()
-        assert ShiftRepository.count_for_user(test_user.id) == 0
-
     def test_create(self, test_app, test_user, test_shift_type):
         start = datetime.combine(date.today(), datetime.min.time())
         end = start + timedelta(hours=8)
@@ -252,6 +241,99 @@ class TestShiftRepository:
 
     def test_list_dates_for_user_empty(self, test_app, test_user):
         assert ShiftRepository.list_dates_for_user(test_user.id) == []
+
+    def test_list_paginated_no_filters_returns_everything(
+        self, test_app, test_user, test_shift
+    ):
+        page = ShiftRepository.list_paginated(1, 10)
+        assert page.total == 1
+
+    def test_list_paginated_filters_by_user_id(
+        self, test_app, test_user, second_user, test_shift
+    ):
+        assert ShiftRepository.list_paginated(1, 10, user_id=test_user.id).total == 1
+        assert ShiftRepository.list_paginated(1, 10, user_id=second_user.id).total == 0
+
+    def test_list_paginated_filters_by_group_id(self, test_app, test_group, test_shift):
+
+        from app.models import Group
+
+        other_group = Group(name="Other Group Paginated")
+        db.session.add(other_group)
+        db.session.commit()
+
+        assert ShiftRepository.list_paginated(1, 10, group_id=test_group.id).total == 1
+        assert ShiftRepository.list_paginated(1, 10, group_id=other_group.id).total == 0
+
+    def test_list_paginated_filters_by_date_range(self, test_app, test_shift):
+        today = test_shift.date
+        assert (
+            ShiftRepository.list_paginated(1, 10, date_from=today, date_to=today).total
+            == 1
+        )
+        assert (
+            ShiftRepository.list_paginated(
+                1, 10, date_from=today + timedelta(days=1)
+            ).total
+            == 0
+        )
+        assert (
+            ShiftRepository.list_paginated(
+                1, 10, date_to=today - timedelta(days=1)
+            ).total
+            == 0
+        )
+
+    def test_list_paginated_filters_by_shift_type_id(
+        self, test_app, test_shift_type, afternoon_shift_type, test_shift
+    ):
+        assert (
+            ShiftRepository.list_paginated(
+                1, 10, shift_type_id=test_shift_type.id
+            ).total
+            == 1
+        )
+        assert (
+            ShiftRepository.list_paginated(
+                1, 10, shift_type_id=afternoon_shift_type.id
+            ).total
+            == 0
+        )
+
+    def test_delete_filtered_no_filters_deletes_everything(self, test_app, test_shift):
+        deleted = ShiftRepository.delete_filtered()
+        db.session.commit()
+        assert deleted == 1
+        assert ShiftRepository.count_all() == 0
+
+    def test_delete_filtered_by_user_id_only_deletes_matching(
+        self, test_app, test_user, second_user, test_shift_type, test_shift
+    ):
+        test_shift_id = test_shift.id
+        other_shift = ShiftRepository.create(
+            second_user.id,
+            test_shift_type.id,
+            datetime.combine(date.today(), datetime.min.time()),
+            datetime.combine(date.today(), datetime.max.time()),
+            date.today(),
+        )
+        db.session.commit()
+        other_shift_id = other_shift.id
+
+        deleted = ShiftRepository.delete_filtered(user_id=test_user.id)
+        db.session.commit()
+
+        assert deleted == 1
+        assert ShiftRepository.get_by_id(test_shift_id) is None
+        assert ShiftRepository.get_by_id(other_shift_id) is not None
+
+    def test_delete_filtered_by_date_range(self, test_app, test_shift):
+        deleted = ShiftRepository.delete_filtered(
+            date_from=test_shift.date + timedelta(days=1)
+        )
+        db.session.commit()
+        assert deleted == 0
+        assert ShiftRepository.get_by_id(test_shift.id) is not None
 
 
 class TestLeaveRepository:
@@ -309,6 +391,52 @@ class TestLeaveRepository:
     def test_list_spans_for_user_empty(self, test_app, test_user):
         assert LeaveRepository.list_spans_for_user(test_user.id) == []
 
+    def test_list_paginated_filters_by_user_id(
+        self, test_app, test_user, second_user, test_leave
+    ):
+        assert LeaveRepository.list_paginated(1, 10, user_id=test_user.id).total == 1
+        assert LeaveRepository.list_paginated(1, 10, user_id=second_user.id).total == 0
+
+    def test_list_paginated_filters_by_group_id(self, test_app, test_group, test_leave):
+        from app.models import Group
+
+        other_group = Group(name="Other Group Leave Paginated")
+        db.session.add(other_group)
+        db.session.commit()
+
+        assert LeaveRepository.list_paginated(1, 10, group_id=test_group.id).total == 1
+        assert LeaveRepository.list_paginated(1, 10, group_id=other_group.id).total == 0
+
+    def test_list_paginated_filters_by_date_range_overlap(self, test_app, test_leave):
+        assert (
+            LeaveRepository.list_paginated(
+                1, 10, date_from=test_leave.start_date, date_to=test_leave.start_date
+            ).total
+            == 1
+        )
+        assert (
+            LeaveRepository.list_paginated(
+                1, 10, date_from=test_leave.end_date + timedelta(days=1)
+            ).total
+            == 0
+        )
+        assert (
+            LeaveRepository.list_paginated(
+                1, 10, date_to=test_leave.start_date - timedelta(days=1)
+            ).total
+            == 0
+        )
+
+    def test_list_filtered_no_filters_returns_everything(self, test_app, test_leave):
+        leaves = LeaveRepository.list_filtered()
+        assert [leave.id for leave in leaves] == [test_leave.id]
+
+    def test_list_filtered_by_user_id(
+        self, test_app, test_user, second_user, test_leave
+    ):
+        assert len(LeaveRepository.list_filtered(user_id=test_user.id)) == 1
+        assert LeaveRepository.list_filtered(user_id=second_user.id) == []
+
 
 class TestOnCallRepository:
     def test_get_by_id(self, test_app, test_oncall):
@@ -335,11 +463,10 @@ class TestOnCallRepository:
         )
         assert conflict is None
 
-    def test_count_and_exists_for_user(
+    def test_count_all_and_exists_for_user(
         self, test_app, test_user, second_user, test_oncall
     ):
         assert OnCallRepository.count_all() == 1
-        assert OnCallRepository.count_for_user(test_user.id) == 1
         assert OnCallRepository.exists_for_user(test_user.id) is True
         assert OnCallRepository.exists_for_user(second_user.id) is False
 
@@ -428,16 +555,6 @@ class TestOnCallRepository:
         assert deleted == 1
         assert calls == []
 
-    def test_delete_all(self, test_app, test_oncall):
-        OnCallRepository.delete_all()
-        db.session.commit()
-        assert OnCallRepository.count_all() == 0
-
-    def test_delete_for_user(self, test_app, test_user, test_oncall):
-        OnCallRepository.delete_for_user(test_user.id)
-        db.session.commit()
-        assert OnCallRepository.count_for_user(test_user.id) == 0
-
     def test_create_and_delete(self, test_app, test_user):
         start = datetime.now()
         end = start + timedelta(days=7)
@@ -455,3 +572,68 @@ class TestOnCallRepository:
 
     def test_list_spans_for_user_empty(self, test_app, test_user):
         assert OnCallRepository.list_spans_for_user(test_user.id) == []
+
+    def test_list_paginated_filters_by_user_id(
+        self, test_app, test_user, second_user, test_oncall
+    ):
+        assert OnCallRepository.list_paginated(1, 10, user_id=test_user.id).total == 1
+        assert OnCallRepository.list_paginated(1, 10, user_id=second_user.id).total == 0
+
+    def test_list_paginated_filters_by_group_id(
+        self, test_app, test_group, test_oncall
+    ):
+        from app.models import Group
+
+        other_group = Group(name="Other Group OnCall Paginated")
+        db.session.add(other_group)
+        db.session.commit()
+
+        assert OnCallRepository.list_paginated(1, 10, group_id=test_group.id).total == 1
+        assert (
+            OnCallRepository.list_paginated(1, 10, group_id=other_group.id).total == 0
+        )
+
+    def test_list_paginated_filters_by_date_range_overlap(self, test_app, test_oncall):
+        start_date = test_oncall.start_time.date()
+        end_date = test_oncall.end_time.date()
+        assert (
+            OnCallRepository.list_paginated(
+                1, 10, date_from=start_date, date_to=start_date
+            ).total
+            == 1
+        )
+        assert (
+            OnCallRepository.list_paginated(
+                1, 10, date_from=end_date + timedelta(days=1)
+            ).total
+            == 0
+        )
+        assert (
+            OnCallRepository.list_paginated(
+                1, 10, date_to=start_date - timedelta(days=1)
+            ).total
+            == 0
+        )
+
+    def test_delete_filtered_no_filters_deletes_everything(self, test_app, test_oncall):
+        deleted = OnCallRepository.delete_filtered()
+        db.session.commit()
+        assert deleted == 1
+        assert OnCallRepository.count_all() == 0
+
+    def test_delete_filtered_by_user_id_only_deletes_matching(
+        self, test_app, test_user, second_user, test_oncall
+    ):
+        test_oncall_id = test_oncall.id
+        other_oncall = OnCallRepository.create(
+            second_user.id, datetime.now(), datetime.now() + timedelta(days=7)
+        )
+        db.session.commit()
+        other_oncall_id = other_oncall.id
+
+        deleted = OnCallRepository.delete_filtered(user_id=test_user.id)
+        db.session.commit()
+
+        assert deleted == 1
+        assert OnCallRepository.get_by_id(test_oncall_id) is None
+        assert OnCallRepository.get_by_id(other_oncall_id) is not None

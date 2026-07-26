@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/list_filters.html" import filter_bar, delete_filtered_button %}
 
 {% block title %}{{ _("Emploi du temps") }} - Kairos{% endblock %}
 
@@ -9,7 +10,7 @@
             <i class="fas fa-calendar-alt" aria-hidden="true"></i> {{ _("Emploi du temps") }}
         </h1>
 
-        <!-- Add, export, and delete buttons -->
+        <!-- Add and export buttons -->
         <div class="flex flex-wrap gap-2 mb-4" role="group" aria-label="{{ _("Actions principales") }}">
             {% if current_user.is_admin %}
             <a class="btn btn-primary" href="{{ url_for('main.add_shift') }}"
@@ -22,18 +23,21 @@
             {% set resource_type = 'shifts' %}
             {% set resource_name = _('shifts') %}
             {% include "_ics_export_buttons.html" %}
-
-            {% if current_user.is_admin %}
-            <form method="POST" action="{{ url_for('main.delete_all_shifts') }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-error js-confirm-delete"
-                        data-confirm-message="{{ _("Êtes-vous SÛR de vouloir supprimer TOUS les shifts ? Cette action est irréversible !") }}"
-                        aria-label="{{ _("Supprimer tous les shifts") }}" title="{{ _("Supprimer tous les shifts") }}">
-                    <i class="fas fa-trash-alt" aria-hidden="true"></i> {{ _("Supprimer TOUS les shifts") }}
-                </button>
-            </form>
-            {% endif %}
         </div>
+
+        {% set extra_params = {'user_id': selected_user_id, 'group_id': selected_group_id, 'shift_type_id': selected_shift_type_id, 'date_from': date_from, 'date_to': date_to} %}
+        {{ filter_bar(url_for('main.schedule'), url_for('main.schedule'), users, groups, selected_user_id, selected_group_id, date_from, date_to, per_page, shift_types=shift_types, selected_shift_type_id=selected_shift_type_id) }}
+
+        {% if current_user.is_admin %}
+        <div class="flex flex-wrap gap-2 mb-4" role="group" aria-label="{{ _("Actions globales") }}">
+            {{ delete_filtered_button(
+                url_for('main.delete_filtered_shifts'),
+                extra_params,
+                _("Supprimer les %(count)s shift(s) actuellement affiché(s) selon les filtres ? Cette action est irréversible !", count=shifts.total),
+                _("Supprimer le résultat filtré (%(count)s shift(s))", count=shifts.total)
+            ) }}
+        </div>
+        {% endif %}
 
         <!-- Pagination at the top + selector -->
         {% if shifts.has_prev or shifts.has_next or shifts.total > 0 %}
@@ -63,7 +67,6 @@
                     {% for shift in shifts.items %}
                     {% set is_first_user = namespace(value=(shift.user.id not in seen_users)) %}
                     {% set is_first_date = namespace(value=(shift.date not in seen_dates)) %}
-                    {% set is_monday = namespace(value=(shift.date.weekday() == 0)) %}
 
                     <tr>
                         <td>
@@ -94,45 +97,6 @@
                                         <i class="fas fa-trash" aria-hidden="true"></i>
                                     </button>
                                 </form>
-
-                                <!-- Button to delete all of this user's shifts (1st occurrence) -->
-                                {% if is_first_user.value %}
-                                <form method="POST" action="{{ url_for('main.delete_all_shifts_for_user', user_id=shift.user.id) }}" class="mb-0">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-warning btn-sm js-confirm-delete"
-                                            data-confirm-message="{{ _("Êtes-vous sûr de vouloir supprimer TOUS les shifts de %(name)s ?", name=shift.user.name) }}"
-                                            aria-label="{{ _("Supprimer tous les shifts de %(name)s", name=shift.user.name) }}"
-                                            title="{{ _("Supprimer TOUS les shifts de %(name)s", name=shift.user.name) }}">
-                                        <i class="fas fa-user-times" aria-hidden="true"></i>
-                                    </button>
-                                </form>
-                                {% endif %}
-
-                                <!-- Button to delete all shifts for the week (Monday only, 1st occurrence) -->
-                                {% if is_monday.value and is_first_date.value %}
-                                <form method="POST" action="{{ url_for('main.delete_all_shifts_for_week', date_str=shift.date.strftime('%Y-%m-%d')) }}" class="mb-0">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-primary btn-sm js-confirm-delete"
-                                            data-confirm-message="{{ _("Êtes-vous SÛR de vouloir supprimer TOUS les shifts de la SEMAINE du %(date)s ?", date=shift.date|format_date) }}"
-                                            aria-label="{{ _("Supprimer tous les shifts de la semaine du %(date)s", date=shift.date|format_date) }}"
-                                            title="{{ _("Supprimer TOUS les shifts de la semaine") }}">
-                                        <i class="fas fa-calendar-week" aria-hidden="true"></i>
-                                    </button>
-                                </form>
-                                {% endif %}
-
-                                <!-- Button to delete all shifts for the day (1st occurrence) -->
-                                {% if is_first_date.value %}
-                                <form method="POST" action="{{ url_for('main.delete_all_shifts_for_day', date_str=shift.date.strftime('%Y-%m-%d')) }}" class="mb-0">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-info btn-sm js-confirm-delete"
-                                            data-confirm-message="{{ _("Êtes-vous sûr de vouloir supprimer TOUS les shifts du %(date)s ?", date=shift.date|format_date) }}"
-                                            aria-label="{{ _("Supprimer tous les shifts de la journée du %(date)s", date=shift.date|format_date) }}"
-                                            title="{{ _("Supprimer TOUS les shifts du %(date)s", date=shift.date|format_date) }}">
-                                        <i class="fas fa-calendar-day" aria-hidden="true"></i>
-                                    </button>
-                                </form>
-                                {% endif %}
                             </div>
                             {% endif %}
                         </td>
@@ -142,13 +106,14 @@
             </table>
         </div>
 
+        {% if not shifts.items %}
+        <p class="text-base-content/70">{{ _("Aucun shift ne correspond à ces filtres.") }}</p>
+        {% endif %}
+
         <!-- Action legend -->
         {% if current_user.is_admin %}
         {% set action_items = [
-            {'class': 'btn-error btn-sm min-w-140', 'icon': 'trash', 'label': _('Supprimer ce shift'), 'description': _('Supprimer le shift sélectionné')},
-            {'class': 'btn-warning btn-sm min-w-140', 'icon': 'user-times', 'label': _('Supprimer TOUS les shifts de cet utilisateur'), 'description': _('Supprimer tous les shifts d\'un utilisateur')},
-            {'class': 'btn-info btn-sm min-w-140', 'icon': 'calendar-day', 'label': _('Supprimer TOUS les shifts de cette journée'), 'description': _('Supprimer tous les shifts d\'une journée')},
-            {'class': 'btn-primary btn-sm min-w-140', 'icon': 'calendar-week', 'label': _('Supprimer TOUS les shifts de cette semaine'), 'description': _('Supprimer tous les shifts d\'une semaine')}
+            {'class': 'btn-error btn-sm min-w-140', 'icon': 'trash', 'label': _('Supprimer ce shift'), 'description': _('Supprimer le shift sélectionné')}
         ] %}
         {% include "_action_legend.html" %}
         {% endif %}

@@ -323,7 +323,7 @@ class TestShiftService:
         )
         assert conflict_date is None
         assert len(added) == 5
-        assert ShiftRepository.count_for_user(test_user.id) == 5
+        assert len(ShiftRepository.list_for_user(test_user.id)) == 5
 
     def test_add_shifts_for_range_writes_audit_log_entry(
         self, test_app, test_user, test_shift_type
@@ -361,17 +361,19 @@ class TestShiftService:
     def test_delete_shift_missing(self, test_app):
         assert ShiftService.delete_shift(999999) is None
 
-    def test_delete_all(self, test_app, test_shift):
-        count = ShiftService.delete_all()
+    def test_delete_filtered_no_filters_deletes_everything(self, test_app, test_shift):
+        count = ShiftService.delete_filtered()
         assert count == 1
         assert ShiftRepository.count_all() == 0
 
-    def test_delete_all_for_user(self, test_app, test_user, test_shift):
-        count = ShiftService.delete_all_for_user(test_user.id)
+    def test_delete_filtered_by_user_id(self, test_app, test_user, test_shift):
+        count = ShiftService.delete_filtered(user_id=test_user.id)
         assert count == 1
 
-    def test_delete_for_day(self, test_app, test_shift):
-        count = ShiftService.delete_for_day(test_shift.date)
+    def test_delete_filtered_by_date_range(self, test_app, test_shift):
+        count = ShiftService.delete_filtered(
+            date_from=test_shift.date, date_to=test_shift.date
+        )
         assert count == 1
 
     def test_api_create_rejects_weekend(self, test_app, test_user, test_shift_type):
@@ -524,11 +526,11 @@ class TestOnCallService:
     def test_delete_oncall_missing(self, test_app):
         assert OnCallService.delete_oncall(999999) is None
 
-    def test_delete_all(self, test_app, test_oncall):
-        assert OnCallService.delete_all() == 1
+    def test_delete_filtered_no_filters_deletes_everything(self, test_app, test_oncall):
+        assert OnCallService.delete_filtered() == 1
 
-    def test_delete_all_for_user(self, test_app, test_user, test_oncall):
-        assert OnCallService.delete_all_for_user(test_user.id) == 1
+    def test_delete_filtered_by_user_id(self, test_app, test_user, test_oncall):
+        assert OnCallService.delete_filtered(user_id=test_user.id) == 1
 
     def test_api_update_rejects_non_friday(self, test_app, test_oncall):
         not_friday = date.today()
@@ -611,6 +613,15 @@ class TestLeaveService:
         entry = AuditLog.query.filter_by(action="leave.create").first()
         assert entry is not None
         assert entry.resource_id == leave.id
+
+    def test_delete_filtered_no_filters_deletes_everything(self, test_app, test_leave):
+        count = LeaveService.delete_filtered()
+        assert count == 1
+        assert LeaveRepository.get_by_id(test_leave.id) is None
+
+    def test_delete_filtered_by_user_id(self, test_app, test_user, test_leave):
+        count = LeaveService.delete_filtered(user_id=test_user.id)
+        assert count == 1
 
     def test_add_leave_notifies_admins_on_oncall_gap(
         self, test_app, admin_user, test_user, second_user

@@ -85,30 +85,15 @@ class TestDeleteOncall:
 
 
 class TestBulkDeleteExceptions:
-    def test_delete_all_exception_handled(
+    def test_delete_filtered_exception_handled(
         self, test_app, logged_in_client, test_oncall
     ):
         with patch(
-            "app.routes.oncall_routes.OnCallService.delete_all",
-            side_effect=RuntimeError("boom"),
-        ):
-            resp = logged_in_client.post("/oncall/delete-all", follow_redirects=True)
-        assert resp.status_code == 200
-        assert b"Erreur" in resp.data
-
-    def test_delete_all_for_user_not_found_404(self, test_app, logged_in_client):
-        resp = logged_in_client.post("/oncall/delete-all-for-user/999999")
-        assert resp.status_code == 404
-
-    def test_delete_all_for_user_exception_handled(
-        self, test_app, logged_in_client, test_user, test_oncall
-    ):
-        with patch(
-            "app.routes.oncall_routes.OnCallService.delete_all_for_user",
+            "app.routes.oncall_routes.OnCallService.delete_filtered",
             side_effect=RuntimeError("boom"),
         ):
             resp = logged_in_client.post(
-                f"/oncall/delete-all-for-user/{test_user.id}", follow_redirects=True
+                "/oncall/delete-filtered", follow_redirects=True
             )
         assert resp.status_code == 200
         assert b"Erreur" in resp.data

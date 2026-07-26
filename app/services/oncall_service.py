@@ -6,7 +6,7 @@ they parse the request, call this service, and turn the result into a
 flash message / redirect / JSON response.
 """
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from flask_babel import gettext as _
 
@@ -25,8 +25,17 @@ class OnCallService:
     """Business logic for on-call duties."""
 
     @staticmethod
-    def list_paginated(page: int, per_page: int):
-        return OnCallRepository.list_paginated(page, per_page)
+    def list_paginated(
+        page: int,
+        per_page: int,
+        user_id: int | None = None,
+        group_id: int | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ):
+        return OnCallRepository.list_paginated(
+            page, per_page, user_id, group_id, date_from, date_to
+        )
 
     @staticmethod
     def add_oncall(
@@ -80,29 +89,26 @@ class OnCallService:
         return oncall
 
     @staticmethod
-    def delete_all() -> int:
-        count = OnCallRepository.count_all()
+    def delete_filtered(
+        user_id: int | None = None,
+        group_id: int | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> int:
+        """Bulk-deletes every OnCall matching the given filters (no
+        filters = matches everything, same as the old delete_all()) -
+        backs the /oncall filter bar's "delete filtered result" action,
+        replacing the old delete_all/delete_all_for_user."""
+        count = OnCallRepository.delete_filtered(user_id, group_id, date_from, date_to)
         if count > 0:
-            OnCallRepository.delete_all()
             db.session.commit()
             AuditService.log(
                 "oncall.bulk_delete",
                 resource_type="OnCall",
-                details=f"{count} on-call(s) - all",
-            )
-        return count
-
-    @staticmethod
-    def delete_all_for_user(user_id: int) -> int:
-        count = OnCallRepository.count_for_user(user_id)
-        if count > 0:
-            OnCallRepository.delete_for_user(user_id)
-            db.session.commit()
-            AuditService.log(
-                "oncall.bulk_delete",
-                resource_type="User",
-                resource_id=user_id,
-                details=f"{count} on-call(s) for user {user_id}",
+                details=(
+                    f"{count} on-call(s) - filters: user_id={user_id}, "
+                    f"group_id={group_id}, date_from={date_from}, date_to={date_to}"
+                ),
             )
         return count
 

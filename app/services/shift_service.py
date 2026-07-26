@@ -25,8 +25,18 @@ class ShiftService:
     """Business logic for shifts."""
 
     @staticmethod
-    def list_paginated(page: int, per_page: int):
-        return ShiftRepository.list_paginated(page, per_page)
+    def list_paginated(
+        page: int,
+        per_page: int,
+        user_id: int | None = None,
+        group_id: int | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        shift_type_id: int | None = None,
+    ):
+        return ShiftRepository.list_paginated(
+            page, per_page, user_id, group_id, date_from, date_to, shift_type_id
+        )
 
     @staticmethod
     def add_shifts_for_range(
@@ -88,54 +98,31 @@ class ShiftService:
         return shift
 
     @staticmethod
-    def delete_all() -> int:
-        count = ShiftRepository.count_all()
+    def delete_filtered(
+        user_id: int | None = None,
+        group_id: int | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        shift_type_id: int | None = None,
+    ) -> int:
+        """Bulk-deletes every Shift matching the given filters (no
+        filters = matches everything, same as the old delete_all()) -
+        backs the /schedule filter bar's "delete filtered result"
+        action, replacing the old delete_all/delete_all_for_user/
+        delete_for_day/delete_for_week."""
+        count = ShiftRepository.delete_filtered(
+            user_id, group_id, date_from, date_to, shift_type_id
+        )
         if count > 0:
-            ShiftRepository.delete_all()
             db.session.commit()
             AuditService.log(
                 "shift.bulk_delete",
                 resource_type="Shift",
-                details=f"{count} shift(s) - all",
-            )
-        return count
-
-    @staticmethod
-    def delete_all_for_user(user_id: int) -> int:
-        count = ShiftRepository.count_for_user(user_id)
-        if count > 0:
-            ShiftRepository.delete_for_user(user_id)
-            db.session.commit()
-            AuditService.log(
-                "shift.bulk_delete",
-                resource_type="User",
-                resource_id=user_id,
-                details=f"{count} shift(s) for user {user_id}",
-            )
-        return count
-
-    @staticmethod
-    def delete_for_day(on_date: date) -> int:
-        count = ShiftRepository.count_for_date(on_date)
-        if count > 0:
-            ShiftRepository.delete_for_date(on_date)
-            db.session.commit()
-            AuditService.log(
-                "shift.bulk_delete",
-                details=f"{count} shift(s) on {on_date.strftime('%d/%m/%Y')}",
-            )
-        return count
-
-    @staticmethod
-    def delete_for_week(monday: date) -> int:
-        dates = [monday + timedelta(days=day) for day in range(5)]
-        count = ShiftRepository.count_for_dates(dates)
-        if count > 0:
-            ShiftRepository.delete_for_dates(dates)
-            db.session.commit()
-            AuditService.log(
-                "shift.bulk_delete",
-                details=f"{count} shift(s), week of {monday.strftime('%d/%m/%Y')}",
+                details=(
+                    f"{count} shift(s) - filters: user_id={user_id}, "
+                    f"group_id={group_id}, date_from={date_from}, "
+                    f"date_to={date_to}, shift_type_id={shift_type_id}"
+                ),
             )
         return count
 

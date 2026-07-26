@@ -5,7 +5,7 @@ Data access layer for the OnCall model - no business logic, no Flask
 request/response handling, just queries.
 """
 
-from datetime import datetime
+from datetime import date, datetime, timedelta
 
 from sqlalchemy.orm import joinedload
 
@@ -29,12 +29,67 @@ class OnCallRepository:
         )
 
     @staticmethod
-    def list_paginated(page: int, per_page: int):
+    def _filtered_query(
+        user_id: int | None = None,
+        group_id: int | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ):
+        """Shared WHERE clause for list_paginated()/delete_filtered() -
+        backs the /oncall filter bar (user/group/date range). OnCall is
+        a span, not a single day, so date_from/date_to use the same
+        "overlap" semantics as list_in_window()/_overlapping_range_filter(),
+        just with each bound independently optional."""
+        query = OnCall.query
+        if user_id is not None:
+            query = query.filter(OnCall.user_id == user_id)
+        if group_id is not None:
+            query = query.join(User, OnCall.user_id == User.id).filter(
+                User.group_id == group_id
+            )
+        if date_from is not None:
+            query = query.filter(
+                OnCall.end_time >= datetime.combine(date_from, datetime.min.time())
+            )
+        if date_to is not None:
+            query = query.filter(
+                OnCall.start_time
+                < datetime.combine(date_to + timedelta(days=1), datetime.min.time())
+            )
+        return query
+
+    @staticmethod
+    def list_paginated(
+        page: int,
+        per_page: int,
+        user_id: int | None = None,
+        group_id: int | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ):
         return (
-            OnCall.query.options(joinedload(OnCall.user))
+            OnCallRepository._filtered_query(user_id, group_id, date_from, date_to)
+            .options(joinedload(OnCall.user))
             .order_by(OnCall.start_time)
             .paginate(page=page, per_page=per_page, error_out=False)
         )
+
+    @staticmethod
+    def delete_filtered(
+        user_id: int | None = None,
+        group_id: int | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> int:
+        """Bulk-deletes every OnCall matching the given filters (no
+        filters = matches everything) - backs /oncall/delete-filtered,
+        the single action replacing the old delete-all/delete-all-for-
+        user routes. synchronize_session="evaluate" (not False, see
+        delete_overlapping_range()'s own comment above): a caller can
+        hold an already-loaded OnCall instance across this call."""
+        return OnCallRepository._filtered_query(
+            user_id, group_id, date_from, date_to
+        ).delete(synchronize_session="evaluate")
 
     @staticmethod
     def list_in_window(window_start: datetime, window_end: datetime) -> list[OnCall]:
@@ -87,10 +142,6 @@ class OnCallRepository:
     @staticmethod
     def count_all() -> int:
         return OnCall.query.count()
-
-    @staticmethod
-    def count_for_user(user_id: int) -> int:
-        return OnCall.query.filter_by(user_id=user_id).count()
 
     @staticmethod
     def list_spans_for_user(user_id: int) -> list[tuple[datetime, datetime]]:
@@ -175,11 +226,3 @@ class OnCallRepository:
     @staticmethod
     def delete(oncall: OnCall) -> None:
         db.session.delete(oncall)
-
-    @staticmethod
-    def delete_all() -> None:
-        OnCall.query.delete(synchronize_session=False)
-
-    @staticmethod
-    def delete_for_user(user_id: int) -> None:
-        OnCall.query.filter_by(user_id=user_id).delete(synchronize_session=False)

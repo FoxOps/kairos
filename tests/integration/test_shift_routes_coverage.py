@@ -192,52 +192,15 @@ class TestDeleteShift:
 
 
 class TestBulkDeleteExceptions:
-    def test_delete_all_shifts_exception_handled(
+    def test_delete_filtered_exception_handled(
         self, test_app, logged_in_client, test_shift
     ):
         with patch(
-            "app.routes.shift_routes.ShiftService.delete_all",
-            side_effect=RuntimeError("boom"),
-        ):
-            resp = logged_in_client.post("/shift/delete-all", follow_redirects=True)
-        assert resp.status_code == 200
-        assert b"Erreur" in resp.data
-
-    def test_delete_all_for_user_exception_handled(
-        self, test_app, logged_in_client, test_user, test_shift
-    ):
-        with patch(
-            "app.routes.shift_routes.ShiftService.delete_all_for_user",
+            "app.routes.shift_routes.ShiftService.delete_filtered",
             side_effect=RuntimeError("boom"),
         ):
             resp = logged_in_client.post(
-                f"/shift/delete-all-for-user/{test_user.id}", follow_redirects=True
-            )
-        assert resp.status_code == 200
-        assert b"Erreur" in resp.data
-
-    def test_delete_for_day_exception_handled(
-        self, test_app, logged_in_client, test_shift
-    ):
-        with patch(
-            "app.routes.shift_routes.ShiftService.delete_for_day",
-            side_effect=RuntimeError("boom"),
-        ):
-            resp = logged_in_client.post(
-                f"/shift/delete-day/{date.today().isoformat()}", follow_redirects=True
-            )
-        assert resp.status_code == 200
-        assert b"Erreur" in resp.data
-
-    def test_delete_for_week_exception_handled(
-        self, test_app, logged_in_client, test_shift
-    ):
-        with patch(
-            "app.routes.shift_routes.ShiftService.delete_for_week",
-            side_effect=RuntimeError("boom"),
-        ):
-            resp = logged_in_client.post(
-                f"/shift/delete-week/{date.today().isoformat()}", follow_redirects=True
+                "/shift/delete-filtered", follow_redirects=True
             )
         assert resp.status_code == 200
         assert b"Erreur" in resp.data
