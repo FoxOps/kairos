@@ -253,6 +253,25 @@ class TestHandleOauthCallback:
                 is None
             )
 
+    def test_invalid_state_flashes_a_translated_message(
+        self, configured_auth, test_app
+    ):
+        """Regression test: this flash() call used to be a hardcoded
+        English literal with no gettext wrapping at all (this module had
+        no `from flask_babel import gettext as _` import), so it never
+        respected the org/user's configured language - see the i18n
+        audit that found this."""
+        with test_app.test_request_context("/oidc/callback?state=wrong&code=abc"):
+            from flask import get_flashed_messages, session
+
+            session["oidc_state"] = "expected-state"
+            configured_auth.handle_oauth_callback(__import__("flask").request)
+
+            messages = get_flashed_messages()
+            assert len(messages) == 1
+            assert "Authentication error" not in messages[0]
+            assert "authentification" in messages[0].lower()
+
     def test_missing_code_returns_none(self, configured_auth, test_app):
         with test_app.test_request_context("/oidc/callback?state=s1"):
             from flask import session

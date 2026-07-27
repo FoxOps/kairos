@@ -12,6 +12,7 @@ import logging
 
 from authlib.integrations.flask_client import OAuth
 from flask import flash, session
+from flask_babel import gettext as _
 from flask_login import login_user
 
 from config_oidc import OIDCConfig
@@ -381,7 +382,7 @@ class OIDCAuthLib:
 
         if not state or state != session_state:
             logger.error("Invalid OIDC state")
-            flash("Authentication error: invalid state", "danger")
+            flash(_("Erreur d'authentification : état invalide."), "danger")
             return None
 
         # Verify the code
@@ -390,20 +391,23 @@ class OIDCAuthLib:
             error = request.args.get("error", "Missing code")
             error_description = request.args.get("error_description", "")
             logger.error(f"OIDC error: {error} - {error_description}")
-            flash(f"Authentication error: {error}", "danger")
+            flash(_("Erreur d'authentification : %(error)s.", error=error), "danger")
             return None
 
         # Exchange the code for a token
         token_data = self.exchange_code_for_token(code)
         if not token_data:
             logger.error("Failed to exchange the code for a token")
-            flash("Authentication error: failed to exchange the code", "danger")
+            flash(
+                _("Erreur d'authentification : échec de l'échange du code."),
+                "danger",
+            )
             return None
 
         # Verify the token
         if not self.verify_token(token_data):
             logger.error("Invalid OIDC token")
-            flash("Authentication error: invalid token", "danger")
+            flash(_("Erreur d'authentification : jeton invalide."), "danger")
             return None
 
         # Fetch user information
@@ -417,7 +421,10 @@ class OIDCAuthLib:
 
         if not user_data or "email" not in user_data:
             logger.error("Could not extract the OIDC user's email")
-            flash("Authentication error: could not fetch the email", "danger")
+            flash(
+                _("Erreur d'authentification : impossible de récupérer l'email."),
+                "danger",
+            )
             return None
 
         return user_data

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-27 16:42+0200\n"
+"POT-Creation-Date: 2026-07-27 20:42+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: fr <LL@li.org>\n"
@@ -45,6 +45,27 @@ msgstr "Erreur : %(val0)s"
 #: app/auth/decorators.py:149
 msgid "Accès refusé : vous ne pouvez modifier que vos propres données."
 msgstr "Accès refusé : vous ne pouvez modifier que vos propres données."
+
+#: app/auth/oidc_auth.py:385
+msgid "Erreur d'authentification : état invalide."
+msgstr "Erreur d'authentification : état invalide."
+
+#: app/auth/oidc_auth.py:394
+#, python-format
+msgid "Erreur d'authentification : %(error)s."
+msgstr "Erreur d'authentification : %(error)s."
+
+#: app/auth/oidc_auth.py:402
+msgid "Erreur d'authentification : échec de l'échange du code."
+msgstr "Erreur d'authentification : échec de l'échange du code."
+
+#: app/auth/oidc_auth.py:410
+msgid "Erreur d'authentification : jeton invalide."
+msgstr "Erreur d'authentification : jeton invalide."
+
+#: app/auth/oidc_auth.py:425
+msgid "Erreur d'authentification : impossible de récupérer l'email."
+msgstr "Erreur d'authentification : impossible de récupérer l'email."
 
 #: app/routes/admin_audit_routes.py:64
 msgid "Date invalide."
@@ -242,6 +263,10 @@ msgstr "Mode de planification des astreintes enregistré"
 #: app/routes/admin_backup_routes.py:39
 msgid "Sauvegarde créée avec succès."
 msgstr "Sauvegarde créée avec succès."
+
+#: app/routes/admin_backup_routes.py:41
+msgid "erreur inconnue"
+msgstr "erreur inconnue"
 
 #: app/routes/admin_backup_routes.py:42
 #, python-format
@@ -3422,6 +3447,12 @@ msgstr "Modifier un utilisateur"
 #: app/templates/admin/edit_user.html:18
 msgid "Nom complet de l'utilisateur"
 msgstr "Nom complet de l'utilisateur"
+
+#: app/templates/admin/edit_user.html:22 app/templates/admin/users.html:39
+#: app/templates/auth/profile.html:19
+#: app/templates/auth/update_profile.html:28
+msgid "Email"
+msgstr "Email"
 
 #: app/templates/admin/edit_user.html:24
 msgid "Adresse email de l'utilisateur"
