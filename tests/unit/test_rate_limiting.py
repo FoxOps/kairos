@@ -49,3 +49,29 @@ def test_default_rate_limit_actually_throttles_requests(monkeypatch):
         "again (see app/__init__.py's ordering of limiter.init_app() vs "
         "the RATE_LIMIT_ENABLED block)"
     )
+
+
+def test_login_has_a_dedicated_tighter_rate_limit(monkeypatch):
+    """/login relied solely on the app-wide default ("200 per day, 50
+    per hour" - no per-minute cap at all), generous enough that a
+    brute-force burst was never meaningfully throttled within any short
+    window. Now carries its own @limiter.limit(), same
+    per-route-decorator pattern already established by the public API
+    (app/api/rate_limit.py)."""
+    monkeypatch.setattr(TestingConfig, "RATE_LIMIT_ENABLED", True)
+
+    from app import create_app, db
+
+    app = create_app("app.config.TestingConfig")
+    with app.app_context():
+        db.create_all()
+
+        client = app.test_client()
+        statuses = [client.get("/login").status_code for _ in range(11)]
+
+        db.drop_all()
+
+    assert 429 in statuses, (
+        "11 rapid GET /login requests should trip the route's own "
+        "dedicated rate limit well before the generous app-wide default"
+    )

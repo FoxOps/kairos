@@ -395,22 +395,22 @@ class TestUserPurgeSwaps:
             assert SwapRequest.query.count() == 1
 
 
-class TestSwapRequestSurvivesUserDeletion:
-    """Bug hunt regression: SwapRequest.requester_id/target_user_id are
-    plain FKs with no db.relationship() (see app/models/swap_request.py),
-    so deleting a User has no cascade and no block on their swap history -
-    UserService.delete() only checks Shift/OnCall/Leave, not SwapRequest.
-    A one-way give-away already APPROVED leaves the requester with zero
-    shifts of their own (the shift's ownership moved to the target), so
-    UserService.delete() happily allows it, leaving requester_id dangling.
-    swap.requester then evaluates to None at render time - the templates
-    must show a fallback rather than leaving the cell blank (Jinja's
-    default Undefined swallows None.name into an empty string silently,
-    not a crash, but still a real loss of who requested/received the swap
-    in a resolved-history page an admin may need to audit)."""
+class TestSwapRequestBlocksUserDeletion:
+    """Former bug hunt finding, now fixed:
+    SwapRequest.requester_id/target_user_id/reviewed_by_id are plain FKs
+    with no db.relationship() (see app/models/swap_request.py) and no
+    cascade - UserService.delete() used to only check Shift/OnCall/Leave,
+    not SwapRequest, so a one-way give-away already APPROVED (the
+    requester ends up with zero shifts of their own once ownership moves
+    to the target) let a user with real swap history be deleted, leaving
+    requester_id dangling and raising an uncaught IntegrityError on
+    Postgres/MySQL (both supported engines - SQLite doesn't enforce FKs
+    by default, which is why this was never caught locally).
+    UserService.delete() now checks SwapRequestRepository.exists_for_user()
+    the same way it already did for Shift/OnCall/Leave."""
 
-    def test_admin_swaps_page_shows_fallback_for_deleted_requester(
-        self, test_app, logged_in_client, test_group, test_shift_type
+    def test_deleting_a_requester_with_swap_history_is_blocked(
+        self, test_app, test_group, test_shift_type
     ):
         with test_app.app_context():
             requester = User(
@@ -446,13 +446,73 @@ class TestSwapRequestSurvivesUserDeletion:
             )
             db.session.add(swap)
             # One-way give-away approval: ownership moves to the target,
-            # so the requester now has zero shifts of their own.
+            # so the requester now has zero shifts of their own - without
+            # the SwapRequest check, only this swap history is what
+            # should still block the deletion.
             shift.user_id = target.id
             db.session.commit()
 
             ok, error = UserService.delete(requester.id)
-            assert ok is True, error
-            assert swap.requester is None
+            assert ok is False
+            assert error is not None
+            assert db.session.get(User, requester.id) is not None
+
+
+class TestSwapsPageFallbackForOrphanedReference:
+    """The admin/user-facing swap templates fall back to "Utilisateur
+    supprimé" instead of crashing when swap.requester/target_user
+    evaluates to None - defense in depth for data that predates the
+    UserService.delete() guard above, or a row edited directly in the
+    database outside the app. Constructs that state directly (bypassing
+    UserService.delete()) rather than relying on the guard *not*
+    catching something, since the guard is now expected to always
+    catch it via the normal deletion path."""
+
+    def test_admin_swaps_page_shows_fallback_for_orphaned_requester(
+        self, test_app, logged_in_client, test_group, test_shift_type
+    ):
+        with test_app.app_context():
+            requester = User(
+                name="Alice Orphan",
+                email="alice-orphan@example.com",
+                group_id=test_group.id,
+            )
+            requester.set_password("x")
+            target = User(
+                name="Bob Orphan",
+                email="bob-orphan@example.com",
+                group_id=test_group.id,
+            )
+            target.set_password("x")
+            db.session.add_all([requester, target])
+            db.session.commit()
+
+            from datetime import datetime
+
+            shift = Shift(
+                user_id=target.id,
+                shift_type_id=test_shift_type.id,
+                start_time=datetime(2026, 8, 3, 7, 0),
+                end_time=datetime(2026, 8, 3, 15, 0),
+                date=datetime(2026, 8, 3).date(),
+            )
+            db.session.add(shift)
+            db.session.commit()
+
+            swap = SwapRequest(
+                requester_id=requester.id,
+                target_user_id=target.id,
+                shift_id=shift.id,
+                status=SwapRequest.APPROVED,
+            )
+            db.session.add(swap)
+            db.session.commit()
+
+            # Simulate an orphaned reference directly, bypassing
+            # UserService.delete() (and its FK-aware guard) entirely -
+            # e.g. a raw DB edit, or data from before this guard existed.
+            db.session.delete(requester)
+            db.session.commit()
 
         resp = logged_in_client.get("/admin/swaps")
         assert resp.status_code == 200

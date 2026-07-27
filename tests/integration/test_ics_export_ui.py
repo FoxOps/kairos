@@ -83,6 +83,19 @@ class TestUnifiedExportButton:
         assert "checked" not in toggle_tag
         assert "disabled" not in toggle_tag
 
+    def test_export_url_input_has_an_aria_label(self, test_app, logged_in_client):
+        """The copyable URL <input> has no visible <label> (the
+        "Copier" button next to it is the only visible affordance) -
+        without an aria-label, a screen reader announces it as an
+        unlabelled text field."""
+        _give_logged_in_client_a_token(logged_in_client)
+        resp = logged_in_client.get("/schedule")
+        body = resp.get_data(as_text=True)
+
+        input_pos = body.index('id="ics-modal-shifts-input"')
+        input_tag = body[input_pos - 50 : input_pos + 300]
+        assert "aria-label=" in input_tag
+
     def test_oncall_and_leave_also_have_single_export_button(
         self, test_app, logged_in_client
     ):

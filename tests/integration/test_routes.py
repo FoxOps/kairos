@@ -89,6 +89,25 @@ class TestAuthRoutes:
         assert response.status_code == 200
         assert b"Email ou mot de passe incorrect" in response.data
 
+    def test_login_pays_hash_cost_for_nonexistent_email(self, client, test_app):
+        """Login timing side-channel fix: `user and user.check_password(...)`
+        used to short-circuit on a nonexistent email (one query, no
+        password-hash check), while a real email always paid the PBKDF2/
+        scrypt cost - a measurable response-time signal an attacker could
+        use to enumerate valid emails. A nonexistent email must now pay
+        the same hash-check cost via a dummy comparison."""
+        from unittest.mock import patch
+
+        with patch(
+            "app.routes.auth.check_password_hash", return_value=False
+        ) as mock_check:
+            client.post(
+                "/login",
+                data={"email": "nonexistent@test.com", "password": "wrongpassword"},
+                follow_redirects=True,
+            )
+            mock_check.assert_called_once()
+
     def test_login_post_valid_writes_audit_log_entry(self, client, test_user, test_app):
         with test_app.app_context():
             client.post(

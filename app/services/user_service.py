@@ -15,6 +15,7 @@ from app.models import User
 from app.repositories.leave_repository import LeaveRepository
 from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository
+from app.repositories.swap_request_repository import SwapRequestRepository
 from app.repositories.user_repository import UserRepository
 from app.services.audit_service import AuditService
 from app.utils.helpers.password_helpers import check_password_strength
@@ -149,6 +150,16 @@ class UserService:
                 _(
                     "Impossible de supprimer cet utilisateur : il a des shifts, "
                     "astreintes ou congés associés."
+                ),
+            )
+
+        if SwapRequestRepository.exists_for_user(user_id):
+            return (
+                False,
+                _(
+                    "Impossible de supprimer cet utilisateur : il est impliqué "
+                    "dans un ou plusieurs échanges de shifts (demandeur, "
+                    "destinataire, ou décision d'un administrateur)."
                 ),
             )
 

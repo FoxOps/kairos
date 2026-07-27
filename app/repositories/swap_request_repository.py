@@ -115,6 +115,28 @@ class SwapRequestRepository:
         return SwapRequestRepository._preload_related(results)
 
     @staticmethod
+    def exists_for_user(user_id: int) -> bool:
+        """True if user_id is referenced by any SwapRequest row at all -
+        as requester, target, or reviewer. All three are NOT-NULL-or-not
+        FKs to user.id (reviewed_by_id is nullable but still an FK once
+        set) with no ON DELETE clause, so deleting a user still
+        referenced by any of them raises an IntegrityError on Postgres/
+        MySQL (SQLite doesn't enforce FKs by default, which is why this
+        wasn't caught by the existing test suite) - used as a delete
+        guard the same way ShiftRepository/OnCallRepository/
+        LeaveRepository.exists_for_user() already are."""
+        return (
+            SwapRequest.query.filter(
+                or_(
+                    SwapRequest.requester_id == user_id,
+                    SwapRequest.target_user_id == user_id,
+                    SwapRequest.reviewed_by_id == user_id,
+                )
+            ).first()
+            is not None
+        )
+
+    @staticmethod
     def list_by_status(status: str) -> list[SwapRequest]:
         results = (
             SwapRequest.query.filter(SwapRequest.status == status)

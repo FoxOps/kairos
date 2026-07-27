@@ -1,11 +1,13 @@
+import secrets
 from urllib.parse import urljoin, urlparse
 from zoneinfo import available_timezones
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_babel import gettext as _
 from flask_login import current_user, login_required, login_user, logout_user
+from werkzeug.security import check_password_hash, generate_password_hash
 
-from app import db
+from app import db, limiter
 from app.auth.oidc_auth import oidc_auth
 from app.models import User
 from app.repositories.notification_target_repository import (
@@ -24,6 +26,17 @@ from config_oidc import OIDCConfig
 
 # Create blueprint
 auth_bp = Blueprint("auth", __name__)
+
+# Precomputed once at import time (paying werkzeug's PBKDF2/scrypt cost
+# exactly once per process, not per request) - used by login() to check
+# a password against when the submitted email doesn't match any user,
+# so that branch pays the same hash-check cost a real user's branch
+# does. Without this, `user and user.check_password(password)` short-
+# circuits on a nonexistent email (one query, no hash check) while a
+# real email always pays the hash cost before failing - a timing
+# side-channel an attacker can use to enumerate valid emails by
+# response time.
+_DUMMY_PASSWORD_HASH = generate_password_hash(secrets.token_urlsafe(32))
 
 
 def is_basic_auth_disabled():
@@ -74,6 +87,7 @@ def register():
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("10 per minute")
 def login():
     """Login page."""
     if current_user.is_authenticated:
@@ -100,8 +114,13 @@ def login():
             return redirect(url_for("auth.login"))
 
         user = User.query.filter_by(email=email).first()
+        password_ok = (
+            user.check_password(password)
+            if user
+            else check_password_hash(_DUMMY_PASSWORD_HASH, password)
+        )
 
-        if user and user.check_password(password):
+        if user and password_ok:
             login_user(user, remember=remember)
             AuditService.log(
                 "auth.login_success",

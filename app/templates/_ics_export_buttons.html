@@ -82,7 +82,8 @@
         {% endif %}
 
         <div class="join w-full my-4">
-            <input type="text" id="{{ modal_id }}-input" class="input join-item flex-1" value="{{ initial_url }}" readonly>
+            <input type="text" id="{{ modal_id }}-input" class="input join-item flex-1" value="{{ initial_url }}" readonly
+                   aria-label="{{ _("URL d'abonnement au calendrier") }}">
             <button type="button" class="btn btn-primary join-item no-hover-transform" data-copy-target="{{ modal_id }}-input" onclick="Kairos.copyByTarget(event)">
                 <i class="fas fa-copy"></i>
                 <span>{{ _("Copier") }}</span>

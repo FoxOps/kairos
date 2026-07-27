@@ -463,6 +463,70 @@ class AdvancedShiftAutomation:
         return messages
 
     @staticmethod
+    def _staffing_min_gap_names(
+        generated_shifts: list, group: "Group | None" = None
+    ) -> list:
+        """Labels of every ShiftType whose configured StaffingLimitsRule
+        `min` bound is not met by `generated_shifts` for a single day -
+        the min companion to the pre-existing `max` bound (already
+        enforced as a hard block at creation time by
+        check_shift_rule_violations()). Under-staffing can't be
+        enforced the same way - there's nothing to block, the problem
+        is too few people, not too many - so it's surfaced as a
+        coverage-gap warning instead, same shape as
+        _mandatory_coverage_gap_names()."""
+        from app import db
+        from app.models import ShiftType
+        from app.utils.automation.rules import StaffingLimitsRule
+
+        params = StaffingLimitsRule.resolve(group=group)
+        if not params:
+            return []
+
+        counts: dict[int, int] = {}
+        for shift in generated_shifts:
+            counts[shift.shift_type_id] = counts.get(shift.shift_type_id, 0) + 1
+
+        names = []
+        for key, limits in params.items():
+            min_value = limits.get("min")
+            if not min_value:
+                continue
+            try:
+                shift_type_id = int(key)
+            except (TypeError, ValueError):
+                continue
+            if counts.get(shift_type_id, 0) >= min_value:
+                continue
+            shift_type = db.session.get(ShiftType, shift_type_id)
+            names.append(shift_type.label if shift_type else key)
+        return names
+
+    @staticmethod
+    def _check_staffing_min_coverage(
+        generated_shifts: list, date: "date", group: "Group | None" = None
+    ) -> list:
+        """Per-day [WARN] message for each staffing_limits `min` gap
+        (see _staffing_min_gap_names()) - same call-site shape as
+        _check_mandatory_coverage(), used directly by callers that
+        only care about a single day; generate_full_schedule()
+        aggregates across the whole period instead, same reasoning as
+        the mandatory-shift [ALERT] aggregation."""
+        messages = []
+        for name in AdvancedShiftAutomation._staffing_min_gap_names(
+            generated_shifts, group=group
+        ):
+            messages.append(
+                _(
+                    "[WARN] Effectif minimum non atteint pour le %(date)s : "
+                    "%(name)s.",
+                    date=date.strftime("%d/%m/%Y"),
+                    name=name,
+                )
+            )
+        return messages
+
+    @staticmethod
     def generate_daily_shifts(
         date: "date",
         dry_run: bool = False,
@@ -557,6 +621,11 @@ class AdvancedShiftAutomation:
                     generated_shifts, date, group=group
                 )
             )
+            messages.extend(
+                AdvancedShiftAutomation._check_staffing_min_coverage(
+                    generated_shifts, date, group=group
+                )
+            )
             return generated_shifts, messages
 
         # Special case: only 2 people available
@@ -594,6 +663,11 @@ class AdvancedShiftAutomation:
 
                 messages.extend(
                     AdvancedShiftAutomation._check_mandatory_coverage(
+                        generated_shifts, date, group=group
+                    )
+                )
+                messages.extend(
+                    AdvancedShiftAutomation._check_staffing_min_coverage(
                         generated_shifts, date, group=group
                     )
                 )
@@ -672,6 +746,11 @@ class AdvancedShiftAutomation:
                     generated_shifts, date, group=group
                 )
             )
+            summary_messages.extend(
+                AdvancedShiftAutomation._check_staffing_min_coverage(
+                    generated_shifts, date, group=group
+                )
+            )
             return generated_shifts, summary_messages
         elif WeekendDefinitionRule.is_weekend(date, group=group):
             return [], [
@@ -719,10 +798,11 @@ class AdvancedShiftAutomation:
         every day of a multi-month period doesn't flood the caller with
         dozens of near-identical messages (regression test:
         test_generate_full_schedule_aggregates_repeated_mandatory_alerts).
-        Every other per-day message ([OK]/[WARN]/[SKIP]) is intentionally
-        NOT propagated here, already folded into this method's own
-        aggregate summary below (or, for [WARN], into
-        unfilled_shift_dates)."""
+        Same aggregation, one [WARN] per ShiftType, for staffing_limits
+        `min` gaps (see _staffing_min_gap_names()). Every other per-day
+        message ([OK]/[WARN]/[SKIP]) is intentionally NOT propagated
+        here, already folded into this method's own aggregate summary
+        below (or, for [WARN], into unfilled_shift_dates)."""
         from collections import defaultdict
         from datetime import timedelta
 
@@ -731,6 +811,7 @@ class AdvancedShiftAutomation:
         days_skipped = 0
         unfilled_shift_dates = []
         mandatory_gap_dates: dict = defaultdict(list)
+        staffing_min_gap_dates: dict = defaultdict(list)
 
         current_date = start_date
         while current_date <= end_date:
@@ -744,6 +825,10 @@ class AdvancedShiftAutomation:
                     shifts, group=group
                 ):
                     mandatory_gap_dates[name].append(current_date)
+                for name in AdvancedShiftAutomation._staffing_min_gap_names(
+                    shifts, group=group
+                ):
+                    staffing_min_gap_dates[name].append(current_date)
             else:
                 days_skipped += 1
                 if current_date.weekday() < 5:
@@ -760,6 +845,17 @@ class AdvancedShiftAutomation:
                 end=max(dates).strftime("%d/%m/%Y"),
             )
             for name, dates in mandatory_gap_dates.items()
+        ]
+        staffing_warn_messages = [
+            _(
+                '[WARN] Effectif minimum non atteint pour "%(name)s" à '
+                "%(count)s reprises entre le %(start)s et le %(end)s.",
+                name=name,
+                count=len(dates),
+                start=min(dates).strftime("%d/%m/%Y"),
+                end=max(dates).strftime("%d/%m/%Y"),
+            )
+            for name, dates in staffing_min_gap_dates.items()
         ]
 
         # Return a summary
@@ -785,7 +881,11 @@ class AdvancedShiftAutomation:
                 with_shifts=days_with_shifts,
                 skipped=days_skipped,
             )
-        return all_shifts, [msg, *alert_messages], unfilled_shift_dates
+        return (
+            all_shifts,
+            [msg, *alert_messages, *staffing_warn_messages],
+            unfilled_shift_dates,
+        )
 
     @staticmethod
     def _rebalance_shift_days(

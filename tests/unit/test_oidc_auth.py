@@ -74,7 +74,7 @@ class TestGetAuthorizationUrl:
         auth.authorization_endpoint = None
         assert auth.get_authorization_url() is None
 
-    def test_builds_url_with_state_and_nonce(self, configured_auth, test_app):
+    def test_builds_url_with_state(self, configured_auth, test_app):
         with test_app.test_request_context():
             url = configured_auth.get_authorization_url()
 
@@ -82,25 +82,29 @@ class TestGetAuthorizationUrl:
             assert "client_id=test-client-id" in url
             assert "response_type=code" in url
             assert "state=" in url
-            assert "nonce=" in url
 
-    def test_stores_state_and_nonce_in_session(self, configured_auth, test_app):
+    def test_no_nonce_generated_or_sent(self, configured_auth, test_app):
+        """A nonce claim can only meaningfully be checked against a
+        verified id_token - this app deliberately never decodes/
+        verifies the id_token JWT payload (see
+        extract_user_info_from_token's own docstring), so a nonce here
+        would be pure security theater: an attacker able to forge the
+        id_token payload can just as easily forge a matching nonce
+        claim. Not generating one at all is more honest than storing
+        one that's never actually validated on callback."""
         with test_app.test_request_context():
             from flask import session
 
-            configured_auth.get_authorization_url()
-            assert session.get("oidc_state")
-            assert session.get("oidc_nonce")
+            url = configured_auth.get_authorization_url()
+            assert "nonce" not in url
+            assert "oidc_nonce" not in session
 
-    def test_uses_provided_state_and_nonce(self, configured_auth, test_app):
+    def test_uses_provided_state(self, configured_auth, test_app):
         with test_app.test_request_context():
             from flask import session
 
-            url = configured_auth.get_authorization_url(
-                state="fixed-state", nonce="fixed-nonce"
-            )
+            url = configured_auth.get_authorization_url(state="fixed-state")
             assert "state=fixed-state" in url
-            assert "nonce=fixed-nonce" in url
             assert session["oidc_state"] == "fixed-state"
 
 

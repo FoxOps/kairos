@@ -173,8 +173,20 @@ class OIDCAuthLib:
             )
         )
 
-    def get_authorization_url(self, state=None, nonce=None):
-        """Generate the OIDC authorization URL."""
+    def get_authorization_url(self, state=None):
+        """Generate the OIDC authorization URL.
+
+        Deliberately doesn't send/store an OIDC `nonce`: a nonce is only
+        a meaningful replay defense when checked against a *verified*
+        id_token claim, and this class never decodes/verifies the
+        id_token JWT payload (see extract_user_info_from_token's own
+        docstring - no JWKS signature verification available here). A
+        nonce whose value is never actually checked on callback is
+        security theater, not a real control: an attacker able to forge
+        the id_token payload can just as easily forge a matching nonce
+        claim. Was previously generated/stored/sent but never validated
+        on callback - removed rather than left looking like protection
+        it wasn't providing."""
         if not self.oidc_client:
             logger.error("OIDC client not configured. Check the OIDC configuration.")
             return None
@@ -186,12 +198,9 @@ class OIDCAuthLib:
 
             if state is None:
                 state = self._generate_state()
-            if nonce is None:
-                nonce = self._generate_nonce()
 
-            # Store the state and nonce in the session
+            # Store the state in the session
             session["oidc_state"] = state
-            session["oidc_nonce"] = nonce
 
             logger.info(f"Generated state: {state}")
             logger.info(f"State stored in session: {session.get('oidc_state')}")
@@ -204,7 +213,6 @@ class OIDCAuthLib:
                 "redirect_uri": OIDCConfig.REDIRECT_URI,
                 "scope": OIDCConfig.SCOPE,
                 "state": state,
-                "nonce": nonce,
             }
 
             return f"{self.authorization_endpoint}?{urlencode(params)}"
@@ -215,12 +223,6 @@ class OIDCAuthLib:
 
     def _generate_state(self):
         """Generate a random state."""
-        import secrets
-
-        return secrets.token_urlsafe(32)
-
-    def _generate_nonce(self):
-        """Generate a random nonce."""
         import secrets
 
         return secrets.token_urlsafe(32)
@@ -362,8 +364,12 @@ class OIDCAuthLib:
 
     def handle_oauth_callback(self, request):
         """Handle the OIDC callback after authentication."""
-        logger.info(f"[callback] request.args: {dict(request.args)}")
-        logger.info(f"[callback] session: {dict(session)}")
+        # Deliberately not logging the raw request.args/session dicts at
+        # INFO: session holds oidc_state (a CSRF-style secret) and, once
+        # exchange_code_for_token() runs, oidc_id_token; request.args
+        # carries the one-time authorization code. The state-comparison
+        # log lines right below already give everything needed to debug
+        # a mismatch without dumping either dict wholesale.
 
         # Verify the state
         state = request.args.get("state")

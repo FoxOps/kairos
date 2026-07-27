@@ -669,6 +669,63 @@ class TestGenerateDailyShifts:
         assert len(alert_messages) == 1
         assert "5" in alert_messages[0]
 
+    def test_generate_daily_shifts_flags_unfilled_staffing_min_gap(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """staffing_limits' `min` bound (the min companion to the
+        pre-existing `max` bound, already enforced as a hard block by
+        check_shift_rule_violations()) had no check anywhere - dead
+        configuration. A min set higher than the whole team's headcount
+        can never be met, so it must raise an elevated [WARN] message
+        (never a hard block - under-staffing can't be fixed by blocking
+        an add, there's nothing to block)."""
+        from app.models import AutomationRule
+        from app.utils.automation.rules import ShiftSlotsRule
+
+        user3 = User(
+            name="Third User Staffing",
+            email="third-staffing@test.com",
+            password_hash=generate_password_hash("third-password"),
+            is_admin=False,
+            group_id=test_group.id,
+        )
+        db.session.add(user3)
+        db.session.commit()
+
+        default_shift_type_id = ShiftSlotsRule.resolve()["default_shift_type_id"]
+        AutomationRule.set("staffing_limits", {str(default_shift_type_id): {"min": 10}})
+
+        test_date = date(2023, 12, 15)
+        shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(
+            test_date, dry_run=True
+        )
+
+        assert len(shifts) == 3  # generation itself is unaffected
+        assert any("[WARN]" in msg and "minimum" in msg for msg in messages)
+
+    def test_generate_full_schedule_aggregates_repeated_staffing_min_gaps(
+        self, test_app, test_group, test_user
+    ):
+        """Same aggregation guarantee as the mandatory_shift [ALERT]
+        above, for the staffing_limits `min` [WARN]: a gap repeated on
+        every day of a period must collapse into one summary message,
+        not one per day."""
+        from app.models import AutomationRule
+        from app.utils.automation.rules import ShiftSlotsRule
+
+        default_shift_type_id = ShiftSlotsRule.resolve()["default_shift_type_id"]
+        AutomationRule.set("staffing_limits", {str(default_shift_type_id): {"min": 10}})
+
+        start_date = date(2023, 12, 4)
+        end_date = date(2023, 12, 8)  # 5 weekdays, all unfilled the same way
+        _shifts, messages, _unfilled = AdvancedShiftAutomation.generate_full_schedule(
+            start_date, end_date, dry_run=True
+        )
+
+        warn_messages = [m for m in messages if "[WARN]" in m and "minimum" in m]
+        assert len(warn_messages) == 1
+        assert "5" in warn_messages[0]
+
     def test_generate_daily_shifts_ensures_07_15_coverage_with_three_users(
         self, test_app, test_group, test_user, second_user
     ):
@@ -1346,3 +1403,91 @@ class TestRebalanceAfterLeave:
             assert len(regenerated_shifts) > 0
             for shift in regenerated_shifts:
                 assert db.session.get(Shift, shift.id) is not None
+
+    def test_rebalance_after_leave_crossing_year_boundary(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """No test previously exercised the ±30-day padding window
+        (see this method's own docstring) crossing a calendar year
+        boundary - a plausible spot for a latent date-arithmetic bug
+        (e.g. any code computing "next year" or formatting dates as
+        strings instead of using plain date/timedelta math). A leave
+        during the last on-call week of December pads the regeneration
+        window on both sides by 30 days, reaching back into November
+        and forward into February of the following year."""
+        with test_app.app_context():
+            # A 3rd user is required: with only 2 rotating users, the
+            # default 2-week minimum on-call spacing constraint makes
+            # every other consecutive Friday unfillable regardless of
+            # the year-boundary question this test targets (confirmed
+            # by first running this test with just test_user/
+            # second_user: 3 Fridays came back unfilled with a
+            # "délai légal non respecté" warning, an expected
+            # consequence of too few users, not a bug).
+            user3 = User(
+                name="Third User Boundary",
+                email="third-boundary@test.com",
+                password_hash=generate_password_hash("third-password"),
+                is_admin=False,
+                group_id=test_group.id,
+            )
+            db.session.add(user3)
+            db.session.commit()
+
+            # Last Friday of 2023, on-call spans the year boundary
+            # itself (Fri 29/12/2023 21:00 -> Fri 05/01/2024 07:00).
+            friday = date(2023, 12, 29)
+            start_time = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+            end_time = start_time + timedelta(days=7, hours=-14)
+            oncall = OnCall(
+                user_id=test_user.id, start_time=start_time, end_time=end_time
+            )
+            db.session.add(oncall)
+
+            # Leave falls inside that on-call week, in January of the
+            # new year.
+            leave = Leave(
+                user_id=test_user.id,
+                start_date=date(2024, 1, 1),
+                end_date=date(2024, 1, 2),
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            (
+                regenerated_shifts,
+                messages,
+                _unfilled,
+                failed_shift_dates,
+                failed_oncall_period,
+                _unfilled_shifts,
+            ) = AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
+
+            # No day/section in the padded window (roughly late
+            # November 2023 through early February 2024) failed.
+            assert failed_shift_dates == []
+            assert failed_oncall_period == []
+
+            # The old on-call spanning the boundary was replaced by a
+            # freshly regenerated one for the same Friday, still
+            # correctly dated in 2023 (not shifted a year by mistake).
+            regenerated_oncall = OnCall.query.filter(
+                OnCall.start_time == start_time
+            ).first()
+            assert regenerated_oncall is not None
+            assert regenerated_oncall.start_time.year == 2023
+            assert regenerated_oncall.end_time.year == 2024
+
+            # Shifts were regenerated into January AND February of the
+            # new year, both with the correct year - not silently
+            # dropped or misdated at the boundary.
+            shift_years = {shift.date.year for shift in regenerated_shifts}
+            assert 2023 in shift_years
+            assert 2024 in shift_years
+            february_shifts = [
+                shift for shift in regenerated_shifts if shift.date.month == 2
+            ]
+            assert february_shifts, (
+                "the +30 day padding past the last Friday (05/01/2024) "
+                "should reach into February 2024"
+            )

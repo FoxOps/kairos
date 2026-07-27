@@ -192,6 +192,46 @@ class TestUserService:
         assert ok is False
         assert error is None
 
+    def test_delete_blocked_by_swap_request_as_requester(
+        self, test_app, test_user, second_user, test_swap_request, test_swap_shift
+    ):
+        """test_swap_request has test_user as requester_id (a NOT NULL FK
+        to user.id) - deleting them without this check would raise an
+        uncaught IntegrityError on Postgres/MySQL (both supported
+        engines; SQLite's lack of FK enforcement is why this was never
+        caught by the existing suite). test_swap_shift is reassigned to
+        second_user first so the pre-existing Shift check doesn't mask
+        this one (shift_id is itself a NOT NULL FK on SwapRequest, so
+        the shift can't just be deleted) - simulates an
+        already-approved swap, where the requester no longer owns any
+        shift but the historical SwapRequest row still references
+        them."""
+        test_swap_shift.user_id = second_user.id
+        db.session.commit()
+
+        ok, error = UserService.delete(test_user.id)
+        assert ok is False
+        assert error is not None
+
+    def test_delete_blocked_by_swap_request_as_target(
+        self, test_app, second_user, test_swap_request
+    ):
+        ok, error = UserService.delete(second_user.id)
+        assert ok is False
+        assert error is not None
+
+    def test_delete_blocked_by_swap_request_as_reviewer(
+        self, test_app, admin_user, test_swap_request
+    ):
+        from app.models import SwapRequest
+
+        test_swap_request.mark_reviewed(admin_user.id, SwapRequest.APPROVED)
+        db.session.commit()
+
+        ok, error = UserService.delete(admin_user.id)
+        assert ok is False
+        assert error is not None
+
 
 class TestGroupService:
     def test_create_success(self, test_app):
