@@ -752,14 +752,22 @@ class TestBuildGroupColorMap:
 
         assert build_group_color_map([]) == {}
 
-    def test_shares_palette_with_shift_type_colors(self):
-        """Deliberate: no separate palette was invented for groups."""
+    def test_uses_dedicated_high_contrast_palette(self):
+        """Deliberate exception to this app's Dracula/Alucard-only rule:
+        group dots render on top of an event's own type background
+        (shift=primary/on-call=info/leave=error), so a daisyUI token
+        shared with SHIFT_TYPE_COLOR_PALETTE could exactly match that
+        background and become invisible (confirmed via a real-browser
+        screenshot: a "primary"-ranked group's dot vanished on a shift
+        event). Group colors now use a fixed, colorblind-safe hex
+        palette (Okabe-Ito) instead of daisyUI theme tokens."""
         from app.utils.helpers.common_helpers import (
             GROUP_COLOR_PALETTE,
             SHIFT_TYPE_COLOR_PALETTE,
         )
 
-        assert GROUP_COLOR_PALETTE == SHIFT_TYPE_COLOR_PALETTE
+        assert GROUP_COLOR_PALETTE != SHIFT_TYPE_COLOR_PALETTE
+        assert all(c.startswith("#") for c in GROUP_COLOR_PALETTE)
 
 
 class TestOverlappingShiftAndOnCallHelpers:

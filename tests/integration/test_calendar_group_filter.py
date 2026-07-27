@@ -59,9 +59,27 @@ class TestCalendarGroupFilterDefaults:
 
 class TestCalendarGroupColorData:
     def test_group_color_map_injected_for_js(self, test_app, logged_in_client):
+        """Must be a <script type="application/json"> block (same pattern
+        as #i18n-strings), not a data-* HTML attribute: tojson's raw
+        double quotes terminate an attribute early and truncate the
+        value, breaking JSON.parse client-side (real bug caught via a
+        browser console SyntaxError)."""
+        import re
+
         resp = logged_in_client.get("/")
         body = resp.get_data(as_text=True)
-        assert "data-group-color-map=" in body
+        assert "data-group-color-map=" not in body
+
+        match = re.search(
+            r'<script type="application/json" id="group-color-map-data">'
+            r"(.*?)</script>",
+            body,
+            re.DOTALL,
+        )
+        assert match is not None
+        import json
+
+        json.loads(match.group(1))
 
     def test_current_user_id_injected_for_js(self, test_app, logged_in_client):
         from app.models import User

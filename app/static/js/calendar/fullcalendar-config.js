@@ -55,8 +55,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // Group.id -> daisyUI semantic color name (e.g. "primary"), the same
     // map the server used to render the filter/legend dots - reused here
     // so the calendar's own event dots are guaranteed pixel-identical,
-    // with zero extra client-server round trip.
-    const groupColorMap = JSON.parse(calendarEl.dataset.groupColorMap || '{}');
+    // with zero extra client-server round trip. Read from a JSON <script>
+    // block (not a data-* attribute - tojson's raw double quotes would
+    // truncate an HTML attribute value early).
+    const groupColorMapEl = document.getElementById('group-color-map-data');
+    const groupColorMap = groupColorMapEl ? JSON.parse(groupColorMapEl.textContent) : {};
     // Viewer/org-configurable time format (12h AM/PM vs 24h, see
     // app.get_time_format() and base.html's <body data-time-format>) -
     // drives FullCalendar's own event/slot time rendering below.
@@ -229,6 +232,17 @@ document.addEventListener('DOMContentLoaded', function () {
             .map(checkbox => Number(checkbox.value));
     }
 
+    // Swaps the loading skeleton (daisyUI skeleton) for the calendar -
+    // idempotent, safe to call more than once (see the loading/datesSet
+    // callbacks below, which both call this as independent triggers).
+    function revealCalendar() {
+        const calendarSkeleton = document.getElementById('calendar-skeleton');
+        if (calendarSkeleton) {
+            calendarSkeleton.classList.add('hidden');
+        }
+        calendarEl.classList.remove('hidden');
+    }
+
     document.querySelectorAll('.group-filter-checkbox').forEach(checkbox => {
         checkbox.addEventListener('change', () => calendar.refetchEvents());
     });
@@ -248,6 +262,14 @@ document.addEventListener('DOMContentLoaded', function () {
         // shift-creation modal below.
         timeZone: 'UTC',
         initialView: 'dayGridMonth',
+        // Caps rendered rows per day cell to what actually fits, showing
+        // a "+N de plus" popover link for the rest - without this, a day
+        // with e.g. 40 shifts stacked 40 rows tall in month view, making
+        // the whole page enormous and slow to lay out/scroll (real
+        // regression reported after the group-color rehaul, confirmed
+        // via a synthetic heavy dataset: page height collapsed from ~40
+        // rows/cell to a fixed height once this was set).
+        dayMaxEvents: true,
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
@@ -333,19 +355,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
         },
         loading: function (isLoading) {
-            if (isLoading) {
-                return;
+            if (!isLoading) {
+                revealCalendar();
             }
-            // Swap the loading skeleton (daisyUI skeleton) for the
-            // calendar once its first real data fetch has settled -
-            // calendar.render() itself returns before an async events
-            // source resolves, so hiding it any earlier would flash an
-            // empty grid.
-            const calendarSkeleton = document.getElementById('calendar-skeleton');
-            if (calendarSkeleton) {
-                calendarSkeleton.classList.add('hidden');
-            }
-            calendarEl.classList.remove('hidden');
+        },
+        // Backup trigger for the same reveal: on a slow/flaky events
+        // fetch, `loading(false)` can be delayed well past the point the
+        // toolbar/grid frame itself has already painted (calendar.render()
+        // draws that frame synchronously, independent of the async events
+        // source) - datesSet fires once that frame is genuinely on
+        // screen for the current view, on first render and on every
+        // navigation, so it's a strictly safer/earlier-or-equal signal
+        // that the skeleton can be removed. revealCalendar() is
+        // idempotent (classList add/remove of an already-set state is a
+        // no-op), so having two triggers can't cause a flicker either way.
+        datesSet: function () {
+            revealCalendar();
         },
         locale: calendarLocale,
         firstDay: 1,
@@ -422,10 +447,11 @@ document.addEventListener('DOMContentLoaded', function () {
             // !important overrides on .fc-event-shift/-oncall/-leave
             // only target those existing selectors, so a brand-new
             // sibling element has nothing to lose a specificity fight
-            // against. var(--color-<name>) (daisyUI semantic token, not
-            // a raw hex) makes it automatically theme-correct
-            // (Dracula/Alucard) for free, same as every other
-            // daisyUI-driven color in this app.
+            // against. groupColorMap holds raw hex (GROUP_COLOR_PALETTE,
+            // common_helpers.py), not a daisyUI var(--color-<name>)
+            // token - a daisyUI token could exactly match the event's
+            // own type-background color and become invisible (real bug,
+            // confirmed via a real-browser screenshot).
             const groupId = info.event.extendedProps.groupId;
             if (groupId == null) return;
 
@@ -434,7 +460,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const dot = document.createElement('span');
             dot.className = 'fc-event-group-dot';
-            dot.style.setProperty('--group-dot-color', `var(--color-${groupColorMap[groupId] || 'neutral'})`);
+            dot.style.setProperty('--group-dot-color', groupColorMap[groupId] || '#888888');
             dot.setAttribute('aria-hidden', 'true');
             wrapper.insertBefore(dot, wrapper.firstChild);
         },

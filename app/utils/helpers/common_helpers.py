@@ -170,15 +170,32 @@ def build_shift_type_color_map(shift_type_ids) -> dict:
     return _build_id_color_map(shift_type_ids, SHIFT_TYPE_COLOR_PALETTE)
 
 
-# Same 6 tokens as SHIFT_TYPE_COLOR_PALETTE - no separate palette invented
-# for groups, same rationale (daisyUI-semantic, already theme-tested).
-GROUP_COLOR_PALETTE = SHIFT_TYPE_COLOR_PALETTE
+# Deliberate exception to this app's Dracula/Alucard-only palette rule
+# (see CLAUDE.md "Frontend"): a group's color dot renders on top of an
+# event's own type background (shift=primary/on-call=info/leave=error),
+# so a daisyUI token shared with SHIFT_TYPE_COLOR_PALETTE could exactly
+# match that background and become invisible - confirmed via a real
+# browser screenshot (a "primary"-ranked group's dot vanished on a
+# shift event). Fixed, colorblind-safe hex palette (Okabe-Ito, minus
+# black - black would blend into the dot's own dark-mode border) used
+# instead of daisyUI theme tokens, so a group's dot stays visually
+# distinct from the 3 event background colors and from every other
+# group regardless of theme.
+GROUP_COLOR_PALETTE = [
+    "#E69F00",  # orange
+    "#56B4E9",  # sky blue
+    "#009E73",  # bluish green
+    "#F0E442",  # yellow
+    "#0072B2",  # blue
+    "#D55E00",  # vermillion
+    "#CC79A7",  # reddish purple
+]
 
 
 def build_group_color_map(group_ids) -> dict:
-    """Map each Group.id to a daisyUI semantic color, same stateless
-    rank-based scheme as build_shift_type_color_map - no Group.color
-    column, recomputed on every render so it survives group
+    """Map each Group.id to a hex color from GROUP_COLOR_PALETTE, same
+    stateless rank-based scheme as build_shift_type_color_map - no
+    Group.color column, recomputed on every render so it survives group
     delete/recreate without a migration."""
     return _build_id_color_map(group_ids, GROUP_COLOR_PALETTE)
 
