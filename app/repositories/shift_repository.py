@@ -52,10 +52,13 @@ class ShiftRepository:
         return db.session.get(Shift, shift_id)
 
     @staticmethod
-    def list_all_with_user() -> list[Shift]:
-        return (
-            Shift.query.options(joinedload(Shift.user)).order_by(Shift.start_time).all()
-        )
+    def list_all_with_user(group_ids: list[int] | None = None) -> list[Shift]:
+        query = Shift.query.options(joinedload(Shift.user))
+        if group_ids is not None:
+            query = query.join(User, Shift.user_id == User.id).filter(
+                User.group_id.in_(group_ids)
+            )
+        return query.order_by(Shift.start_time).all()
 
     @staticmethod
     def _filtered_query(

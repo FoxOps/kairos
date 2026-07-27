@@ -176,6 +176,26 @@ class TestShiftRepository:
         assert len(shifts) == 1
         assert shifts[0].id == test_shift.id
 
+    def test_list_all_with_user_no_group_filter(self, test_app, test_shift):
+        assert [s.id for s in ShiftRepository.list_all_with_user()] == [test_shift.id]
+
+    def test_list_all_with_user_filters_by_group_ids(
+        self, test_app, test_group, test_shift
+    ):
+        """group_ids=None (the ICS export URL's existing shape, no param)
+        stays fully unfiltered - the backward-compat guarantee for every
+        already-copied/subscribed export URL."""
+        from app.models import Group
+
+        other_group = Group(name="Other Group AllWithUser")
+        db.session.add(other_group)
+        db.session.commit()
+
+        assert [
+            s.id for s in ShiftRepository.list_all_with_user(group_ids=[test_group.id])
+        ] == [test_shift.id]
+        assert ShiftRepository.list_all_with_user(group_ids=[other_group.id]) == []
+
     def test_list_in_window_no_group_filter(self, test_app, test_shift):
         window_start = datetime.combine(test_shift.date, datetime.min.time())
         window_end = datetime.combine(test_shift.date, datetime.max.time())
@@ -443,6 +463,24 @@ class TestLeaveRepository:
         assert len(leaves) == 1
         assert leaves[0].id == test_leave.id
 
+    def test_list_all_with_user_filters_by_group_ids(
+        self, test_app, test_group, test_leave
+    ):
+        from app.models import Group
+
+        other_group = Group(name="Other Group Leave AllWithUser")
+        db.session.add(other_group)
+        db.session.commit()
+
+        assert [
+            leave.id
+            for leave in LeaveRepository.list_all_with_user(group_ids=[test_group.id])
+        ] == [test_leave.id]
+        assert LeaveRepository.list_all_with_user(group_ids=[other_group.id]) == []
+        assert [leave.id for leave in LeaveRepository.list_all_with_user()] == [
+            test_leave.id
+        ]
+
     def test_list_in_window_filters_by_group_ids(
         self, test_app, test_group, test_leave
     ):
@@ -599,6 +637,24 @@ class TestOnCallRepository:
         oncalls = OnCallRepository.list_for_user(test_user.id)
         assert len(oncalls) == 1
         assert oncalls[0].id == test_oncall.id
+
+    def test_list_all_with_user_filters_by_group_ids(
+        self, test_app, test_group, test_oncall
+    ):
+        from app.models import Group
+
+        other_group = Group(name="Other Group OnCall AllWithUser")
+        db.session.add(other_group)
+        db.session.commit()
+
+        assert [
+            oc.id
+            for oc in OnCallRepository.list_all_with_user(group_ids=[test_group.id])
+        ] == [test_oncall.id]
+        assert OnCallRepository.list_all_with_user(group_ids=[other_group.id]) == []
+        assert [oc.id for oc in OnCallRepository.list_all_with_user()] == [
+            test_oncall.id
+        ]
 
     def test_list_in_window_filters_by_group_ids(
         self, test_app, test_group, test_oncall

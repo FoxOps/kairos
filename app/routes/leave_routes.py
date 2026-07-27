@@ -46,6 +46,7 @@ def leave():
         per_page_options=PER_PAGE_OPTIONS,
         users=UserRepository.get_all(),
         groups=GroupRepository.get_all(),
+        export_groups=GroupRepository.get_rotation_eligible(),
         selected_user_id=user_id,
         selected_group_id=group_id,
         date_from=date_from_str,

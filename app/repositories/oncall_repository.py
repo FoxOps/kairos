@@ -21,12 +21,13 @@ class OnCallRepository:
         return db.session.get(OnCall, oncall_id)
 
     @staticmethod
-    def list_all_with_user() -> list[OnCall]:
-        return (
-            OnCall.query.options(joinedload(OnCall.user))
-            .order_by(OnCall.start_time)
-            .all()
-        )
+    def list_all_with_user(group_ids: list[int] | None = None) -> list[OnCall]:
+        query = OnCall.query.options(joinedload(OnCall.user))
+        if group_ids is not None:
+            query = query.join(User, OnCall.user_id == User.id).filter(
+                User.group_id.in_(group_ids)
+            )
+        return query.order_by(OnCall.start_time).all()
 
     @staticmethod
     def _filtered_query(

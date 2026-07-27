@@ -823,10 +823,12 @@ modal's generated HTML go through an `escapeHtml()` helper first — the innerHT
 pattern doesn't escape by default.
 
 The ICS export modal (`_ics_export_buttons.html`, opened from `schedule.html`/`oncall.html`/
-`leave.html`/`admin/dashboard.html`'s export buttons) is deliberately the *other* modal pattern —
-a daisyUI checkbox-toggle modal (`<input type="checkbox" class="modal-toggle">` + sibling
-`.modal`/`.modal-box`, same mechanism as the mobile drawer above and this session's settings-page
-`collapse` accordions), fully server-rendered, not JS-built like the shift-creation modal. The
+`leave.html`/`admin/dashboard.html`/`auth/ics_token.html`'s single export button per resource
+type — see "ICS export" below for the group-scoping this modal now offers) is deliberately the
+*other* modal pattern — a daisyUI checkbox-toggle modal (`<input type="checkbox" class="modal-toggle">`
++ sibling `.modal`/`.modal-box`, same mechanism as the mobile drawer above and this session's
+settings-page `collapse` accordions), fully server-rendered, not JS-built like the shift-creation
+modal. The
 distinction is deliberate: the shift-creation modal needs JS because its content is genuinely
 dynamic (fetches users/shift-types per click); the ICS modal's content (the export URL) is fully
 known at page render, so building it in JS would solve a problem this case doesn't have. Trade-off
@@ -1400,6 +1402,66 @@ is regular users get to filter too). Checking/unchecking calls `calendar.refetch
 edge case handled explicitly: if every checkbox is unchecked, it short-circuits before the fetch
 (`successCallback([])` directly) rather than sending an ambiguous empty-vs-absent `group_ids` param
 for the server to guess about.
+
+### ICS export — group-scoped, unified single-button modal
+
+Predates this session's group work and had zero group awareness: `ExportService.export_shifts/
+export_oncall/export_leaves(scope, user)` only ever supported a binary `scope` (`"my"` = the
+exporting user's own events via `*Repository.list_for_user(user.id)`, `"all"` = the *entire org*,
+unfiltered, via `*Repository.list_all_with_user()`). `_ics_export_buttons.html` rendered **two**
+buttons/modals per resource type (`show_all`/`show_my`) to expose that binary choice — 2×3 = 6
+modal blocks spread across `/schedule`/`/oncall`/`/leave` alone, plus `/profile/ics-token`
+duplicating the same 6 combinations as static readonly URL rows. Collapsed to **one** button/modal
+per resource type everywhere (`/profile/ics-token` now `{% include %}`s the same partial 3 times
+instead of hand-rolling its own markup), with the scope *and* a new group dimension chosen **inside**
+the modal via daisyUI controls instead of by which button was clicked.
+
+**Backend**: `ShiftRepository`/`OnCallRepository`/`LeaveRepository.list_all_with_user()` gained an
+optional `group_ids: list[int] | None = None`, joining through `User` exactly like each repo's own
+`_filtered_query()`/`list_in_window()` already do — `group_ids=None` (the param simply absent from
+the URL) stays fully unfiltered, the load-bearing backward-compat guarantee for every ICS URL
+already copied into a real calendar app (Thunderbird/Google Calendar/Outlook polling that exact URL
+on a schedule). `ExportService.export_*(scope, user, group_ids=None)` threads it into
+`list_all_with_user()` only on the `scope="all"` branch — `scope="my"` always means "this token's
+own user's events" regardless of any group selection (a user belongs to exactly one `Group`, so
+group-filtering "my own events" is either a no-op or empty; the UI encodes this directly, see
+below). `User.get_ics_export_url(export_type, scope, group_ids=None)` appends repeated
+`&group_ids=` params, same convention as `/api/shifts?group_ids=1&group_ids=2`
+(`dashboard_routes.py::api_get_shifts`); `app/routes/export.py`'s three routes read
+`request.args.getlist("group_ids", type=int) or None` and pass it straight through.
+
+**Modal contents** (`_ics_export_buttons.html`): a group **checkbox list** (`GroupRepository.get_rotation_eligible()`,
+same exclude-groups-in-neither-schedule-nor-oncall rule as the main calendar's own group filter —
+passed as a *new*, deliberately separate `export_groups` context var, not the pre-existing `groups`
+var `/schedule`/`/oncall`/`/leave` already pass for their own unrelated single-select row-filter
+dropdown, built via `GroupRepository.get_all()` for a different purpose) plus a daisyUI **`toggle`**
+("Moi"/"Tout le monde" — first use of this component in the codebase). Default (everywhere except
+`/admin/dashboard`): only the viewer's own group checked, toggle on "Moi" — a deliberately
+*different* default rule than the main calendar's own group filter (which defaults admins to every
+group), confirmed via direct question. `default_all_groups=True` (new param, `admin/dashboard.html`'s
+3 includes only, confirmed via direct question — an admin viewing the org-wide dashboard wants the
+full-org export by default) checks every `export_groups` entry instead. `show_my=False` (existing
+param, unchanged meaning) omits the toggle entirely, forcing "Tout le monde" permanently.
+
+**Interaction rule** (`app/static/js/ics-export/ics-export-modal.js::initIcsExportGroupScopeControls()`):
+if the viewer's own group gets unchecked, the toggle is forced to "Tout le monde" and `disabled`
+until the own group is re-checked — exporting "Moi" for a group the viewer isn't part of would
+silently produce an empty calendar. Re-checking the own group only re-enables the toggle, it
+doesn't snap the choice back to "Moi" on its own (least-surprise: don't silently revert a scope the
+viewer explicitly chose). The copyable URL input and the "Télécharger" link's `href` recompute live
+from `data-*` attributes on the modal root (`data-resource-type`/`data-base-url`/`data-token`/
+`data-own-group-id`) as checkboxes/toggle change — no server round-trip for the recompute itself.
+**Zero groups checked** is handled the same way the main calendar's own group filter already does
+it (`fullcalendar-config.js`'s `events` function): a `group_ids=` with zero values is
+indistinguishable server-side from "no `group_ids` param at all" (i.e. unfiltered/everyone) — rather
+than silently producing that surprising result, the Copier button and download link are disabled
+instead of emitting a misleading URL.
+
+Dead code removed in the same pass: `app/static/js/clipboard/copy-token.js`'s 6 per-URL copy
+functions (`copyUrlShiftsAll`/`copyUrlShiftsMy`/etc.) — `/profile/ics-token`'s old 6 static inputs
+are gone, replaced by the shared partial's own generic `Kairos.copyByTarget(event)` (same as
+`/schedule`/`/oncall`/`/leave` already used) — only `copyToken()` (the raw-token input, unrelated to
+this feature) remains in that file.
 
 ## Testing conventions
 

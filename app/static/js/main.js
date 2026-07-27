@@ -16,19 +16,15 @@ import {
     initConfirmDeleteActions,
 } from './utils/accessibility.js';
 import { initFlashMessages } from './notifications/flash-messages.js';
-import {
-    copyToken,
-    copyUrlShiftsAll,
-    copyUrlShiftsMy,
-    copyUrlOncallAll,
-    copyUrlOncallMy,
-    copyUrlLeavesAll,
-    copyUrlLeavesMy,
-} from './clipboard/copy-token.js';
+import { copyToken } from './clipboard/copy-token.js';
 import { copyByTarget } from './utils/clipboard.js';
 import { saveRotationOrder } from './automation/rotation-order.js';
 import { initDatePickers } from './utils/date-picker.js';
-import { closeIcsModal, initIcsModalEscapeHandling } from './ics-export/ics-export-modal.js';
+import {
+    closeIcsModal,
+    initIcsModalEscapeHandling,
+    initIcsExportGroupScopeControls,
+} from './ics-export/ics-export-modal.js';
 import { initRowSelectCheckboxes } from './utils/row-select.js';
 
 let themeManager;
@@ -45,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // separately, since they don't exist yet at this point.
     initDatePickers();
     initIcsModalEscapeHandling();
+    initIcsExportGroupScopeControls();
     initRowSelectCheckboxes();
 });
 
@@ -55,12 +52,6 @@ window.Kairos = {
     announceToScreenReader,
     focusElement,
     copyToken,
-    copyUrlShiftsAll,
-    copyUrlShiftsMy,
-    copyUrlOncallAll,
-    copyUrlOncallMy,
-    copyUrlLeavesAll,
-    copyUrlLeavesMy,
     copyByTarget,
     closeIcsModal,
     saveRotationOrder,

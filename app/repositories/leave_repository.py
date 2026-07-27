@@ -21,10 +21,13 @@ class LeaveRepository:
         return db.session.get(Leave, leave_id)
 
     @staticmethod
-    def list_all_with_user() -> list[Leave]:
-        return (
-            Leave.query.options(joinedload(Leave.user)).order_by(Leave.start_date).all()
-        )
+    def list_all_with_user(group_ids: list[int] | None = None) -> list[Leave]:
+        query = Leave.query.options(joinedload(Leave.user))
+        if group_ids is not None:
+            query = query.join(User, Leave.user_id == User.id).filter(
+                User.group_id.in_(group_ids)
+            )
+        return query.order_by(Leave.start_date).all()
 
     @staticmethod
     def _filtered_query(

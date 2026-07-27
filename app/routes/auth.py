@@ -11,6 +11,7 @@ from app.models import User
 from app.repositories.notification_target_repository import (
     NotificationTargetRepository,
 )
+from app.repositories.user_repository import GroupRepository
 from app.services import AuditService, SettingsService
 from app.utils.helpers.common_helpers import (
     get_date_format_choices,
@@ -440,4 +441,9 @@ def generate_ics_token():
     # Show the page with the current token
     token = current_user.ics_token
 
-    return render_template("auth/ics_token.html", user=current_user, token=token)
+    return render_template(
+        "auth/ics_token.html",
+        user=current_user,
+        token=token,
+        export_groups=GroupRepository.get_rotation_eligible(),
+    )

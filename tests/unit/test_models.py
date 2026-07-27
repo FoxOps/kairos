@@ -346,6 +346,38 @@ class TestUserModel:
 
             assert test_user.is_ics_token_expired() is False
 
+    def test_get_ics_export_url_no_group_ids(self, test_app, test_user):
+        with test_app.app_context():
+            test_user.generate_ics_token()
+            db.session.commit()
+
+            url = test_user.get_ics_export_url("shifts", "all")
+
+            assert "group_ids" not in url
+            assert url == f"/export/shifts?scope=all&token={test_user.ics_token}"
+
+    def test_get_ics_export_url_with_group_ids(self, test_app, test_user):
+        with test_app.app_context():
+            test_user.generate_ics_token()
+            db.session.commit()
+
+            url = test_user.get_ics_export_url("shifts", "all", group_ids=[1, 2])
+
+            assert "group_ids=1" in url
+            assert "group_ids=2" in url
+            assert url.count("group_ids=") == 2
+
+    def test_get_ics_export_url_empty_group_ids_list_omits_param(
+        self, test_app, test_user
+    ):
+        with test_app.app_context():
+            test_user.generate_ics_token()
+            db.session.commit()
+
+            url = test_user.get_ics_export_url("shifts", "all", group_ids=[])
+
+            assert "group_ids" not in url
+
     def test_is_ics_token_expired_no_token(self, test_app, test_user):
         with test_app.app_context():
             assert test_user.ics_token is None

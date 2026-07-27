@@ -1004,3 +1004,71 @@ class TestExportService:
     def test_export_leaves(self, test_app, test_user, test_leave):
         ics = ExportService.export_leaves("my", test_user)
         assert "BEGIN:VCALENDAR" in ics
+
+    def test_export_shifts_all_scope_filters_by_group_ids(
+        self, test_app, test_group, test_user, test_shift, second_user, test_shift_type
+    ):
+        """group_ids only applies on scope='all' - test_user (test_group)
+        stays in, second_user (a different group) is excluded."""
+        from datetime import timedelta
+
+        from app import db
+        from app.models import Group, Shift
+
+        other_group = Group(name="Other Group Export Scope")
+        db.session.add(other_group)
+        db.session.commit()
+        second_user.group_id = other_group.id
+        db.session.commit()
+
+        other_shift = Shift(
+            user_id=second_user.id,
+            shift_type_id=test_shift_type.id,
+            date=test_shift.date + timedelta(days=1),
+            start_time=test_shift.start_time + timedelta(days=1),
+            end_time=test_shift.end_time + timedelta(days=1),
+        )
+        db.session.add(other_shift)
+        db.session.commit()
+
+        ics = ExportService.export_shifts("all", test_user, group_ids=[test_group.id])
+        assert test_user.name in ics
+        assert second_user.name not in ics
+
+    def test_export_shifts_my_scope_ignores_group_ids(
+        self, test_app, test_user, test_shift
+    ):
+        """scope='my' always means the token's own user's events,
+        regardless of any group_ids passed alongside it."""
+        ics = ExportService.export_shifts("my", test_user, group_ids=[999999])
+        assert test_user.name in ics
+
+    def test_export_shifts_all_scope_no_group_ids_is_unfiltered(
+        self, test_app, test_group, test_user, test_shift, second_user, test_shift_type
+    ):
+        """group_ids=None (the default, no param) stays fully
+        unfiltered - backward compat for already-copied export URLs."""
+        from datetime import timedelta
+
+        from app import db
+        from app.models import Group, Shift
+
+        other_group = Group(name="Other Group Export Unfiltered")
+        db.session.add(other_group)
+        db.session.commit()
+        second_user.group_id = other_group.id
+        db.session.commit()
+
+        other_shift = Shift(
+            user_id=second_user.id,
+            shift_type_id=test_shift_type.id,
+            date=test_shift.date + timedelta(days=1),
+            start_time=test_shift.start_time + timedelta(days=1),
+            end_time=test_shift.end_time + timedelta(days=1),
+        )
+        db.session.add(other_shift)
+        db.session.commit()
+
+        ics = ExportService.export_shifts("all", test_user)
+        assert test_user.name in ics
+        assert second_user.name in ics

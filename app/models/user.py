@@ -219,20 +219,29 @@ class User(BaseModel, UserMixin):
         return self.ics_token_created_at + timedelta(days=expiry_days)
 
     def get_ics_export_url(
-        self, export_type: str = "shifts", scope: str = "all"
+        self,
+        export_type: str = "shifts",
+        scope: str = "all",
+        group_ids: list[int] | None = None,
     ) -> str | None:
         """Get the ICS export URL with the user's token.
 
         Args:
             export_type: Type of export - "shifts", "oncall", or "leaves"
             scope: Scope of export - "all" or "my"
+            group_ids: Groups to scope the export to (repeated query
+                param, same convention as /api/shifts?group_ids=1&group_ids=2)
+                - omitted entirely means unfiltered, same as today.
 
         Returns:
             The ICS export URL or None if no token is set
         """
         if not self.ics_token:
             return None
-        return f"/export/{export_type}?scope={scope}&token={self.ics_token}"
+        url = f"/export/{export_type}?scope={scope}&token={self.ics_token}"
+        for group_id in group_ids or []:
+            url += f"&group_ids={group_id}"
+        return url
 
     def effective_timezone(self) -> str:
         """The IANA timezone to use for this user: their own preference if

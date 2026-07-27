@@ -14,6 +14,7 @@ from sqlalchemy import func
 from app import db
 from app.auth.decorators import admin_required
 from app.models import Group, Leave, OnCall, Shift, SwapRequest, User
+from app.repositories.user_repository import GroupRepository
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -40,6 +41,8 @@ def admin_dashboard():
         leaves_count=leaves_count,
         groups_count=groups_count,
         pending_swaps_count=pending_swaps_count,
+        export_groups=GroupRepository.get_rotation_eligible(),
+        default_all_groups=True,
     )
 
 
