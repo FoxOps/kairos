@@ -1,0 +1,30 @@
+{# daisyUI breadcrumbs with icons (https://daisyui.com/components/breadcrumbs/#breadcrumbs-with-icons)
+   - `items` is a list of (icon, label, url) tuples - plain tuples, not
+   dicts: a dict-literal's `"key": "value"` shape inside {{ }} trips up
+   djlint's H037 duplicate-attribute check (it reads as attribute-like
+   syntax), confirmed by trying it first. `url` falsy (empty string or
+   omitted from the tuple) renders that item as plain text, not a link -
+   the current/last page in the trail. Font Awesome (`fas`), not the raw
+   SVGs from the daisyUI docs, for consistency with every other icon in
+   this app. `mr-2` on the icon, not a text-space/&nbsp; after it: some
+   glyphs (fa-robot confirmed) have near-zero built-in right padding, so
+   a single space character visually collapses against the following
+   text - a real margin survives Font Awesome's SVG+JS replacement
+   (which preserves the original <i> element's classes on the generated
+   <svg>, see base.html's own comment on this), a text character's
+   rendered width doesn't reliably clear every glyph's bounding box. #}
+{% macro breadcrumbs(items) %}
+<div class="breadcrumbs text-sm mb-2" aria-label="{{ _("Fil d'Ariane") }}">
+    <ul>
+        {% for icon, label, url in items %}
+        <li>
+            {% if url %}
+            <a href="{{ url }}"><i class="fas {{ icon }} mr-2" aria-hidden="true"></i>{{ label }}</a>
+            {% else %}
+            <i class="fas {{ icon }} mr-2" aria-hidden="true"></i>{{ label }}
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endmacro %}
