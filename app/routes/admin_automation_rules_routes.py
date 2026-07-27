@@ -178,7 +178,13 @@ def automation_rules_dashboard():
         )
 
     group = _resolve_group(request.args.get("group_id"))
-    groups = GroupRepository.get_all()
+    # Rotation-eligible only: a group in neither shift scheduling nor
+    # on-call rotation has no rotation to scope a rule to, so offering
+    # it in the "Portée éditée" selector is pure noise. _resolve_group()
+    # itself is intentionally unfiltered - a pre-existing override for a
+    # group later toggled ineligible must stay reachable via a direct
+    # ?group_id= link, not silently lock the admin out of viewing it.
+    groups = GroupRepository.get_rotation_eligible()
     shift_types = ShiftTypeService.list_all()
     weekday_choices = list(enumerate(WEEKDAY_LABELS))
     staffing_limits = {

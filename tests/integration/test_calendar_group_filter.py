@@ -14,7 +14,11 @@ class TestCalendarGroupFilterDefaults:
     def test_admin_defaults_to_every_group_checked(
         self, test_app, logged_in_client, test_group
     ):
-        other_group = Group(name="Other Group Calendar Default")
+        other_group = Group(
+            name="Other Group Calendar Default",
+            is_part_of_schedule=True,
+            is_part_of_oncall=False,
+        )
         db.session.add(other_group)
         db.session.commit()
 
@@ -29,7 +33,11 @@ class TestCalendarGroupFilterDefaults:
     def test_regular_user_defaults_to_own_group_only(
         self, test_app, non_admin_client, test_user, test_group
     ):
-        other_group = Group(name="Other Group Non Admin Default")
+        other_group = Group(
+            name="Other Group Non Admin Default",
+            is_part_of_schedule=False,
+            is_part_of_oncall=True,
+        )
         db.session.add(other_group)
         db.session.commit()
 
@@ -47,6 +55,17 @@ class TestCalendarGroupFilterDefaults:
         other_group_pos = body.index(f'value="{other_group.id}"')
         other_group_checked = "checked" in body[other_group_pos : other_group_pos + 120]
         assert not other_group_checked
+
+    def test_excludes_group_in_neither_schedule_nor_oncall(
+        self, test_app, logged_in_client, test_group, group_not_in_schedule
+    ):
+        """A group flagged for neither shift scheduling nor on-call
+        rotation never has events to show here, so it's excluded from
+        the filter/legend entirely - unlike test_group and other_group
+        above, which are always eligible for at least one."""
+        resp = logged_in_client.get("/")
+        body = resp.get_data(as_text=True)
+        assert f'value="{group_not_in_schedule.id}"' not in body
 
     def test_filter_not_restricted_to_admin(self, test_app, non_admin_client):
         """The group filter dropdown must be visible to every logged-in

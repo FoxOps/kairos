@@ -262,14 +262,11 @@ document.addEventListener('DOMContentLoaded', function () {
         // shift-creation modal below.
         timeZone: 'UTC',
         initialView: 'dayGridMonth',
-        // Caps rendered rows per day cell to what actually fits, showing
-        // a "+N de plus" popover link for the rest - without this, a day
-        // with e.g. 40 shifts stacked 40 rows tall in month view, making
-        // the whole page enormous and slow to lay out/scroll (real
-        // regression reported after the group-color rehaul, confirmed
-        // via a synthetic heavy dataset: page height collapsed from ~40
-        // rows/cell to a fixed height once this was set).
-        dayMaxEvents: true,
+        // dayMaxEvents (a "+N de plus" popover capping rows per day cell)
+        // was tried to shrink an exploding page height with many events
+        // on one day, but real usage reported it hurt clarity more than
+        // it helped (a hidden shift is a shift a viewer can miss) - every
+        // event stays directly visible instead, unbounded.
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',

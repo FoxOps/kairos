@@ -40,8 +40,11 @@ def index():
     defaults to every group checked, a regular user defaults to just
     their own; either way it's a default, not a restriction, the same
     non-restrictive viewing model already established on /schedule,
-    /oncall, /leave."""
-    groups = GroupRepository.get_all()
+    /oncall, /leave. Uses get_rotation_eligible(), not get_all(): a
+    group in neither shift scheduling nor on-call rotation never has
+    events to show here, so listing it is pure noise (and, at scale,
+    extra unused checkboxes/legend entries to render)."""
+    groups = GroupRepository.get_rotation_eligible()
     if current_user.is_admin or current_user.group_id is None:
         default_group_ids = {g.id for g in groups}
     else:

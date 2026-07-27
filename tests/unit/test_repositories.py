@@ -123,6 +123,29 @@ class TestGroupRepository:
         db.session.commit()
         assert GroupRepository.get_by_id(group.id) is None
 
+    def test_get_rotation_eligible_excludes_group_in_neither(self, test_app):
+        """Only groups flagged for shift scheduling and/or on-call
+        rotation - a group in neither (e.g. a leftover seed group no
+        one assigns shifts to) is excluded, unlike get_all()."""
+        schedule_only = GroupRepository.create("Schedule Only", True, False)
+        oncall_only = GroupRepository.create("Oncall Only", False, True)
+        both = GroupRepository.create("Both", True, True)
+        neither = GroupRepository.create("Neither", False, False)
+        db.session.commit()
+
+        eligible_ids = {g.id for g in GroupRepository.get_rotation_eligible()}
+        assert schedule_only.id in eligible_ids
+        assert oncall_only.id in eligible_ids
+        assert both.id in eligible_ids
+        assert neither.id not in eligible_ids
+
+    def test_get_rotation_eligible_ordered_by_name(self, test_app):
+        GroupRepository.create("Zeta", True, False)
+        GroupRepository.create("Alpha", False, True)
+        db.session.commit()
+        names = [g.name for g in GroupRepository.get_rotation_eligible()]
+        assert names == sorted(names)
+
 
 class TestShiftTypeRepository:
     def test_get_by_id(self, test_app, test_shift_type):
