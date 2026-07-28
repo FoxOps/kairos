@@ -221,13 +221,28 @@ class OnCallRepository:
         ).all()
 
     @staticmethod
-    def delete_overlapping_range(start_date, end_date) -> int:
+    def delete_overlapping_range(start_date, end_date, group_id=None) -> int:
         # synchronize_session="evaluate": see the identical comment on
         # ShiftRepository.delete_in_date_range() - callers here can hold
-        # an already-loaded OnCall instance across the delete.
-        return OnCall.query.filter(
+        # an already-loaded OnCall instance across the delete. group_id
+        # uses a subquery, not a join: SQLAlchemy's bulk delete()
+        # rejects a query with join()/outerjoin() already applied
+        # ("Can't call Query.update() or Query.delete() when join()...
+        # has been called").
+        query = OnCall.query.filter(
             *OnCallRepository._overlapping_range_filter(start_date, end_date)
-        ).delete(synchronize_session="evaluate")
+        )
+        sync_mode = "evaluate"
+        if group_id is not None:
+            group_user_ids = User.query.filter_by(group_id=group_id).with_entities(
+                User.id
+            )
+            query = query.filter(OnCall.user_id.in_(group_user_ids))
+            # "evaluate" can't reconcile a subquery IN-clause against
+            # already-loaded session objects in Python - "fetch" runs
+            # one extra SELECT for matching PKs first instead.
+            sync_mode = "fetch"
+        return query.delete(synchronize_session=sync_mode)
 
     @staticmethod
     def create(user_id: int, start_time: datetime, end_time: datetime) -> OnCall:

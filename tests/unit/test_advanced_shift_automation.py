@@ -1491,3 +1491,123 @@ class TestRebalanceAfterLeave:
                 "the +30 day padding past the last Friday (05/01/2024) "
                 "should reach into February 2024"
             )
+
+    def test_rebalance_after_leave_per_group_mode_does_not_lose_other_groups_oncall(
+        self, test_app, test_group, test_user
+    ):
+        """Regression test: under oncall_scheduling_mode="per_group",
+        concurrent on-calls (one per group, for the same Friday) are
+        expected and valid. A leave for a group-A user rebalancing
+        group A's own window must not wipe a concurrent group-B
+        on-call that happens to fall in the same ±30-day window and
+        then fail to restore it (the regeneration, correctly scoped to
+        group A only, has no way to recreate group B's on-call) - see
+        OnCallRepository.delete_overlapping_range()'s new `group_id`
+        param, added specifically to close this gap."""
+        from app.services import SettingsService
+
+        SettingsService.set_oncall_scheduling_mode("per_group")
+
+        group_b = Group(name="Rebalance Group B", is_part_of_oncall=True)
+        db.session.add(group_b)
+        db.session.commit()
+        user_b = User(
+            name="Group B User",
+            email="group-b-rebalance@test.com",
+            password_hash=generate_password_hash("password123"),
+            is_admin=False,
+            group_id=group_b.id,
+        )
+        db.session.add(user_b)
+        db.session.commit()
+
+        friday = date(2023, 12, 15)
+        start_time = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+        end_time = start_time + timedelta(days=7, hours=-14)
+
+        group_a_oncall = OnCall(
+            user_id=test_user.id, start_time=start_time, end_time=end_time
+        )
+        group_b_oncall = OnCall(
+            user_id=user_b.id, start_time=start_time, end_time=end_time
+        )
+        db.session.add_all([group_a_oncall, group_b_oncall])
+        db.session.commit()
+        group_b_oncall_id = group_b_oncall.id
+
+        leave = Leave(
+            user_id=test_user.id,
+            start_date=date(2023, 12, 16),
+            end_date=date(2023, 12, 18),
+        )
+        db.session.add(leave)
+        db.session.commit()
+
+        AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
+
+        # Group B's on-call must survive completely untouched - same
+        # row, same user, same times - even though group A's own
+        # on-call for that same Friday was correctly regenerated.
+        survivor = db.session.get(OnCall, group_b_oncall_id)
+        assert survivor is not None
+        assert survivor.user_id == user_b.id
+        assert survivor.start_time == start_time
+        assert survivor.end_time == end_time
+
+    def test_rebalance_after_leave_per_group_mode_honors_group_rule_override(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """The leave-owner's own Group's rule overrides (e.g. a
+        custom on-call anchor weekday) must actually be resolved
+        during the rebalance, not the org-wide default - mirrors the
+        same per-group rule-value gating already covered for
+        check_shift_rule_violations()/check_oncall_rule_violations()."""
+        from app.models import AutomationRule
+        from app.services import SettingsService
+
+        SettingsService.set_oncall_scheduling_mode("per_group")
+
+        user3 = User(
+            name="Third User Rebalance Group",
+            email="third-rebalance-group@test.com",
+            password_hash=generate_password_hash("third-password"),
+            is_admin=False,
+            group_id=test_group.id,
+        )
+        db.session.add(user3)
+        db.session.commit()
+
+        # test_group's own override: on-call weeks start on Thursday
+        # (weekday=3), not the org-wide default Friday (weekday=4).
+        AutomationRule.set(
+            "oncall_anchor",
+            {"weekday": 3, "start_hour": 21, "end_hour": 7},
+            group=test_group,
+        )
+
+        thursday = date(2023, 12, 14)
+        start_time = datetime.combine(thursday, datetime.min.time()).replace(hour=21)
+        end_time = start_time + timedelta(days=7, hours=-14)
+        db.session.add(
+            OnCall(user_id=test_user.id, start_time=start_time, end_time=end_time)
+        )
+        db.session.commit()
+
+        leave = Leave(
+            user_id=test_user.id,
+            start_date=date(2023, 12, 15),
+            end_date=date(2023, 12, 16),
+        )
+        db.session.add(leave)
+        db.session.commit()
+
+        AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
+
+        # The regenerated on-calls in this window must still start on
+        # Thursday (the group's own override), not fall back to the
+        # org-wide Friday default.
+        regenerated = OnCall.query.filter(
+            OnCall.start_time >= datetime.combine(thursday, datetime.min.time())
+        ).all()
+        assert regenerated
+        assert all(oc.start_time.weekday() == 3 for oc in regenerated)

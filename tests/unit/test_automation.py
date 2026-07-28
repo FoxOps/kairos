@@ -655,6 +655,40 @@ class TestFillOnCallGaps:
             assert OnCall.query.count() == count_before
             assert any("Aucune astreinte manquante" in msg for msg in messages)
 
+    def test_group_param_scopes_eligibility_and_rotation(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """`group`: same convention as generate_oncall_schedule() -
+        when given, restricts eligibility/rotation to that Group only,
+        needed so refresh_shifts() can run one independent gap-fill
+        pass per group under "per_group" oncall_scheduling_mode
+        instead of always pooling every eligible user org-wide."""
+        with test_app.app_context():
+            other_group = Group(name="Other Fill Gaps Group", is_part_of_oncall=True)
+            db.session.add(other_group)
+            db.session.commit()
+            other_user = User(
+                name="Other Group User",
+                email="other-fill-gaps@test.com",
+                password_hash="x",
+                is_admin=False,
+                group_id=other_group.id,
+            )
+            db.session.add(other_user)
+            db.session.commit()
+
+            oncalls, _messages, unfilled_dates = OnCallAutomation.fill_oncall_gaps(
+                date(2024, 1, 5),
+                date(2024, 1, 5),
+                dry_run=False,
+                group=test_group,
+            )
+
+            assert unfilled_dates == []
+            assert len(oncalls) == 1
+            assert oncalls[0].user_id in {test_user.id, second_user.id}
+            assert oncalls[0].user_id != other_user.id
+
 
 class TestDetectOnCallGaps:
     """Tests for OnCallAutomation.detect_oncall_gaps() - proactively

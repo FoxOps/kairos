@@ -774,6 +774,49 @@ class TestOnCallRepository:
         assert deleted == 1
         assert OnCallRepository.get_by_id(test_oncall.id) is None
 
+    def test_delete_overlapping_range_scoped_to_group(
+        self, test_app, test_group, test_oncall
+    ):
+        """group_id restricts the bulk delete to that group's on-calls
+        only - needed so a per-group leave rebalance can wipe just the
+        affected group's window without also deleting (and never
+        regenerating) a concurrent on-call belonging to a different
+        group in the same window."""
+        from werkzeug.security import generate_password_hash
+
+        from app.models import Group, OnCall, User
+
+        other_group = Group(name="Other Delete Scope Group")
+        db.session.add(other_group)
+        db.session.commit()
+        other_user = User(
+            name="Other",
+            email="other-delete-scope@test.com",
+            password_hash=generate_password_hash("x"),
+            is_admin=False,
+            group_id=other_group.id,
+        )
+        db.session.add(other_user)
+        db.session.commit()
+        other_oncall = OnCall(
+            user_id=other_user.id,
+            start_time=test_oncall.start_time,
+            end_time=test_oncall.end_time,
+        )
+        db.session.add(other_oncall)
+        db.session.commit()
+
+        deleted = OnCallRepository.delete_overlapping_range(
+            test_oncall.start_time.date(),
+            test_oncall.end_time.date(),
+            group_id=test_group.id,
+        )
+        db.session.commit()
+
+        assert deleted == 1
+        assert OnCallRepository.get_by_id(test_oncall.id) is None
+        assert OnCallRepository.get_by_id(other_oncall.id) is not None
+
     def test_delete_overlapping_range_uses_a_single_bulk_delete(
         self, test_app, test_oncall, monkeypatch
     ):

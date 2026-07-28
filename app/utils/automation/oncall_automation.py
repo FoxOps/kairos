@@ -250,9 +250,8 @@ def _fridays_in_range(
     `group`: when given, resolves that Group's own oncall_anchor
     override instead of the org-wide default - see
     generate_oncall_schedule()'s own `group` docstring. Callers that
-    don't pass it (fill_oncall_gaps()) keep resolving the org-wide
-    anchor, consistent with those callers not being wired to
-    "per_group" scheduling mode at all yet."""
+    don't pass it (fill_oncall_gaps() called without a `group`, i.e.
+    "shared" scheduling mode) keep resolving the org-wide anchor."""
     from app.utils.automation.rules import OnCallAnchorRule
 
     anchor_weekday = OnCallAnchorRule.resolve(group=group)["weekday"]
@@ -337,10 +336,10 @@ def _generate_for_fridays(
     week - is filtered out like anyone else, no special-casing).
 
     `group`: when given, resolves that Group's own oncall_anchor/
-    oncall_spacing overrides instead of the org-wide default - only
-    generate_oncall_schedule() passes it; fill_oncall_gaps() leaves it
-    None (not yet wired to "per_group" scheduling mode, see that
-    method's own docstring)."""
+    oncall_spacing overrides instead of the org-wide default - passed
+    by both generate_oncall_schedule() and fill_oncall_gaps() when
+    their own caller is looping per-group under "per_group" scheduling
+    mode."""
     from app import db
     from app.utils.automation.rules import OnCallAnchorRule, OnCallSpacingRule
 
@@ -776,6 +775,7 @@ class OnCallAutomation:
         rotation_order_ids: list[int] | None = None,
         dry_run: bool = True,
         commit: bool = True,
+        group: Group | None = None,
     ):
         """
         Like generate_oncall_schedule(), but only ever *creates*
@@ -788,15 +788,24 @@ class OnCallAutomation:
         period first), this is for filling gaps in an otherwise-already
         -planned schedule without disturbing what's already there.
 
+        `group`: same convention as generate_oncall_schedule() - when
+        given, restricts eligibility/rotation order and rule-value
+        resolution to that Group only. Callers (e.g. refresh_shifts())
+        loop over every eligible Group and call this once per group
+        under "per_group" oncall_scheduling_mode, exactly like
+        generate_full()/generate_oncall_schedule() already do.
+
         Returns the same 3-tuple shape as generate_oncall_schedule():
         (list of newly created OnCall objects, messages,
         list of Friday dates still left unassigned).
         """
-        eligible_users = OnCallAutomation.get_eligible_users()
+        eligible_users = OnCallAutomation.get_eligible_users(group=group)
         if not eligible_users:
             return [], [_("Aucun utilisateur éligible pour les astreintes.")], []
 
-        rotation_order = OnCallAutomation.get_rotation_order(rotation_order_ids)
+        rotation_order = OnCallAutomation.get_rotation_order(
+            rotation_order_ids, group=group
+        )
         if not rotation_order:
             return [], [_("Impossible de déterminer l'ordre de rotation.")], []
 
@@ -804,27 +813,35 @@ class OnCallAutomation:
 
         index = AvailabilityIndex(
             (user.id for user in eligible_users),
-            min_spacing_weeks=OnCallSpacingRule.resolve()["min_spacing_weeks"],
+            min_spacing_weeks=OnCallSpacingRule.resolve(group=group)[
+                "min_spacing_weeks"
+            ],
         )
 
         # AvailabilityIndex doesn't expose "which Fridays already have
         # *someone* assigned" (its intervals are keyed per user, not
         # per slot) - a direct query is simplest and correct here.
+        # Scoped to `group` when given: under "per_group" scheduling
+        # mode, concurrent on-calls (one per group) for the same Friday
+        # are expected and valid (see generate_oncall_schedule()'s own
+        # `group` docstring) - group B already having an on-call for a
+        # Friday must NOT make that same Friday look "covered" for
+        # group A's own independent gap-fill pass.
         from app.models import OnCall as OnCallModel
 
-        already_covered = {
-            oncall.start_time.date()
-            for oncall in OnCallModel.query.filter(
-                OnCallModel.start_time
-                >= datetime.combine(start_date, datetime.min.time()),
-                OnCallModel.start_time
-                <= datetime.combine(end_date, datetime.max.time()),
-            ).all()
-        }
+        covered_query = OnCallModel.query.filter(
+            OnCallModel.start_time >= datetime.combine(start_date, datetime.min.time()),
+            OnCallModel.start_time <= datetime.combine(end_date, datetime.max.time()),
+        )
+        if group is not None:
+            covered_query = covered_query.join(
+                User, OnCallModel.user_id == User.id
+            ).filter(User.group_id == group.id)
+        already_covered = {oncall.start_time.date() for oncall in covered_query.all()}
 
         missing_fridays = [
             friday
-            for friday in _fridays_in_range(start_date, end_date)
+            for friday in _fridays_in_range(start_date, end_date, group=group)
             if friday not in already_covered
         ]
 
@@ -832,5 +849,10 @@ class OnCallAutomation:
             return [], [_("[OK] Aucune astreinte manquante sur cette période.")], []
 
         return _generate_for_fridays(
-            missing_fridays, rotation_order, index, dry_run=dry_run, commit=commit
+            missing_fridays,
+            rotation_order,
+            index,
+            dry_run=dry_run,
+            commit=commit,
+            group=group,
         )
