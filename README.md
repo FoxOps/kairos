@@ -13,7 +13,7 @@ actually understands legal rest constraints.
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="Docs/assets/screenshots/calendar-dark.png">
     <source media="(prefers-color-scheme: light)" srcset="Docs/assets/screenshots/calendar-light.png">
-    <img src="Docs/assets/screenshots/calendar-light.png" alt="Monthly calendar view with shifts, on-call, and leave" width="820">
+    <img src="Docs/assets/screenshots/calendar-light.png" alt="Monthly calendar view with shifts, on-call, and leave, color-coded by group" width="820">
   </picture>
 </p>
 

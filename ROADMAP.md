@@ -1,6 +1,6 @@
 # Roadmap
 
-**Current version: 1.1.0** — feature-complete, tested (1390+
+**Current version: 1.1.0** — feature-complete, tested (1680+
 automated tests), and used for real team scheduling.
 
 ## ✅ Done
@@ -14,6 +14,20 @@ automated tests), and used for real team scheduling.
   (requester → target confirms → admin approves)
 - User and group management, with per-group participation in
   scheduling/on-call
+- Main calendar shows a color-coded dot per event's group (with a
+  legend) and a multi-group filter, on top of the existing per-type
+  colors (shift/on-call/leave); clicking an event opens a view/edit
+  modal (admins can reassign the user, type, or time) instead of the
+  old click-to-delete-only toggle
+- `/schedule`, `/oncall`, and `/leave` share one filter bar (user,
+  group, date range) plus a unified "delete filtered result"/"delete
+  selection" action, replacing what used to be six separate
+  single-purpose bulk-delete buttons
+- Dashboard stat cards count days, not rows (a multi-day on-call or
+  leave used to inflate the count), with a month-over-month trend
+- ICS export collapsed to one button/modal per resource type, scoped
+  by group and by "me"/"everyone" inside the modal, reused as-is on
+  the profile page instead of six static links
 
 **Automation**
 - Rule-based automatic shift generation (on-call coverage, rotation,
@@ -59,27 +73,22 @@ automated tests), and used for real team scheduling.
 
 ## 🔧 In progress
 
-**1.1.0** — next development cycle, just started, nothing landed yet.
+Nothing currently in flight — everything landed in this 1.1.0 cycle so
+far is already listed under "Done". Not yet tagged/released.
 
 ## 🔭 Future ideas
 
 Larger features, not yet started, not committed to a timeline.
 
-- **Per-group calendar display.** The configurable automation rules
-  engine (see "Done") supports per-`Group` overrides end to end —
-  both the eligible-user pool *and* rule values (weekend/slots/
-  spacing/anchor/mandatory/staffing/rest/overlap) resolve per Group,
-  editable on `/admin/automation/rules` via its group selector — and
-  `shift_scheduling_mode`/`oncall_scheduling_mode` (each independently
-  shared/per_group) are wired all the way into generation:
-  `AutomationAdminService.generate_full()` runs one independent pass
-  per eligible `Group` when a mode is `per_group`. What's still
-  missing is the calendar itself: no per-group color/legend/filter, so
-  a `per_group` deployment can't visually distinguish which rotation
-  an event belongs to. `fill_oncall_gaps()`/`rebalance_after_leave()`/
-  `refresh_shifts()` (narrower advanced workflows) also still pool
-  regardless of the setting. Deliberately left for a dedicated
-  follow-up rather than bundled into the rules-engine work.
+- **Per-group generation for the narrower advanced workflows.** The
+  configurable automation rules engine and `shift_scheduling_mode`/
+  `oncall_scheduling_mode` (each independently shared/per_group) are
+  wired into the main generation path and the calendar display (both
+  now listed under "Done"), but `fill_oncall_gaps()`,
+  `rebalance_after_leave()`, and `refresh_shifts()` — narrower,
+  targeted workflows rather than full-period generation — still pool
+  every eligible user regardless of the setting. Deliberately left for
+  a dedicated follow-up.
 - **On-call intervention reports.** A way to log what happened during
   an on-call shift (time spent, actions taken) — useful both for
   payroll and as an audit trail of interventions.
