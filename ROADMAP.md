@@ -44,6 +44,10 @@ automated tests), and used for real team scheduling.
   rest after an on-call, and shift/on-call overlap blocking. Each
   rule's default matches the previously hardcoded behavior exactly.
   Org-wide for now — see "Future ideas" for per-group rules
+- Per-group scoping (`shift_scheduling_mode`/`oncall_scheduling_mode`)
+  covers every generation entry point, including the narrower ones
+  (filling on-call gaps, refreshing a period, rebalancing after a
+  leave) — not just the main "Générer" action
 
 **Access & integration**
 - Session login and SSO/OIDC (Keycloak, Okta, Auth0-compatible
@@ -80,15 +84,6 @@ far is already listed under "Done". Not yet tagged/released.
 
 Larger features, not yet started, not committed to a timeline.
 
-- **Per-group generation for the narrower advanced workflows.** The
-  configurable automation rules engine and `shift_scheduling_mode`/
-  `oncall_scheduling_mode` (each independently shared/per_group) are
-  wired into the main generation path and the calendar display (both
-  now listed under "Done"), but `fill_oncall_gaps()`,
-  `rebalance_after_leave()`, and `refresh_shifts()` — narrower,
-  targeted workflows rather than full-period generation — still pool
-  every eligible user regardless of the setting. Deliberately left for
-  a dedicated follow-up.
 - **On-call intervention reports.** A way to log what happened during
   an on-call shift (time spent, actions taken) — useful both for
   payroll and as an audit trail of interventions.
