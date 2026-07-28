@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "arial",
+        "createdAt": "2026-07-28T01:27:03.882Z",
+        "reason": "User confirmed Arial is intentional (email-safe font, not a stylistic AI-slop choice) for the two weekly-reminder email templates"
+      }
+    ]
+  }
+}
