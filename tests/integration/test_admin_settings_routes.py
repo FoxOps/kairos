@@ -146,6 +146,29 @@ class TestSettingsGeneralSection:
 
         assert SettingsService.get_public_base_url() == "https://schedule.example.com"
 
+    def test_error_branch_when_service_reports_failure(
+        self, logged_in_client, monkeypatch
+    ):
+        """set_public_base_url() never actually returns an error today
+        (no validation exists on this field) - this exercises the
+        route's own error-flash branch directly, the same way every
+        other section's error branch is real-input-reachable, so this
+        one isn't left silently uncovered just because the service
+        happens not to validate anything yet."""
+        from app.services import SettingsService
+
+        monkeypatch.setattr(
+            SettingsService, "set_public_base_url", lambda url: "erreur simulée"
+        )
+
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={"section": "general", "public_base_url": "https://example.com"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
+
 
 class TestSettingsPaginationSection:
     def test_valid_pagination_persists(self, logged_in_client):
@@ -178,6 +201,23 @@ class TestSettingsPaginationSection:
         assert response.status_code == 200
         assert b"Erreur" in response.data
 
+    def test_non_numeric_pagination_flashes_error(self, logged_in_client):
+        """Fails to even parse as int (_parse_int_fields returns None) -
+        a different code path than test_invalid_pagination_flashes_error
+        above, which parses fine but fails SettingsService's own
+        validation."""
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={
+                "section": "pagination",
+                "items_per_page": "abc",
+                "max_per_page": "50",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"invalide" in response.data or b"Erreur" in response.data
+
 
 class TestSettingsNotificationsSection:
     def test_checkbox_checked_enables(self, logged_in_client):
@@ -204,6 +244,28 @@ class TestSettingsNotificationsSection:
 
         assert SettingsService.get_notifications_enabled() is False
 
+    def test_error_branch_when_service_reports_failure(
+        self, logged_in_client, monkeypatch
+    ):
+        """set_notifications_enabled() never actually returns an error
+        today (no validation exists on this boolean field) - same
+        reasoning as TestSettingsGeneralSection's equivalent test."""
+        from app.services import SettingsService
+
+        monkeypatch.setattr(
+            SettingsService,
+            "set_notifications_enabled",
+            lambda enabled: "erreur simulée",
+        )
+
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={"section": "notifications", "notifications_enabled": "on"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
+
 
 class TestSettingsBackupsSection:
     def test_valid_retention_persists(self, logged_in_client):
@@ -223,6 +285,32 @@ class TestSettingsBackupsSection:
         assert SettingsService.get_backup_retention_days() == 60
         assert SettingsService.get_backup_max_backups() == 15
 
+    def test_non_numeric_retention_flashes_error(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={
+                "section": "backups",
+                "backup_retention_days": "abc",
+                "backup_max_backups": "15",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"invalide" in response.data or b"Erreur" in response.data
+
+    def test_non_positive_retention_rejected(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={
+                "section": "backups",
+                "backup_retention_days": "0",
+                "backup_max_backups": "15",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
+
 
 class TestSettingsIcsSection:
     def test_valid_expiry_persists(self, logged_in_client):
@@ -236,6 +324,24 @@ class TestSettingsIcsSection:
         from app.services import SettingsService
 
         assert SettingsService.get_ics_token_expiry_days() == 30
+
+    def test_non_numeric_expiry_flashes_error(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={"section": "ics", "ics_token_expiry_days": "abc"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"invalide" in response.data or b"Erreur" in response.data
+
+    def test_non_positive_expiry_rejected(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={"section": "ics", "ics_token_expiry_days": "0"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
 
 
 class TestSettingsScheduleRetentionSection:
@@ -275,3 +381,44 @@ class TestSettingsScheduleRetentionSection:
         from app.services import SettingsService
 
         assert SettingsService.get_schedule_retention_days() == 365
+
+    def test_non_numeric_value_flashes_error(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={"section": "schedule", "schedule_retention_days": "abc"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"invalide" in response.data or b"Erreur" in response.data
+
+
+class TestSettingsAuditSection:
+    def test_valid_retention_persists(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={"section": "audit", "audit_log_retention_days": "180"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+
+        from app.services import SettingsService
+
+        assert SettingsService.get_audit_log_retention_days() == 180
+
+    def test_non_numeric_value_flashes_error(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={"section": "audit", "audit_log_retention_days": "abc"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"invalide" in response.data or b"Erreur" in response.data
+
+    def test_non_positive_value_rejected(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/settings",
+            data={"section": "audit", "audit_log_retention_days": "0"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data

@@ -102,6 +102,25 @@ class TestCreateNow:
         assert results["success"] is False
         assert "BACKUP_ENABLED" in results["errors"][0]
 
+    def test_notifies_on_failure_when_db_not_found(self, monkeypatch):
+        """Enabled, but detect_db_path() can't locate a database - a
+        real create_backup() failure (not the disabled-guard above),
+        hitting the AppriseNotificationService.notify "failure" branch
+        instead of the "success" one. detect_db_path() is monkeypatched
+        because the real repo checkout has its own instance/app.db,
+        which detect_db_path() would otherwise find regardless of
+        DATABASE_URL/cwd (it resolves paths from the script's own
+        file location, not the isolated tmp_path)."""
+        monkeypatch.setenv("BACKUP_ENABLED", "true")
+        monkeypatch.setattr(
+            "scripts.backup_database.detect_db_path", lambda config: None
+        )
+
+        results = BackupService.create_now()
+
+        assert results["success"] is False
+        assert results["errors"]
+
 
 class TestCleanupNow:
     def test_returns_counts(self):
@@ -146,3 +165,35 @@ class TestGetLocalBackupPath:
 class TestDownloadS3BackupToTemp:
     def test_returns_none_when_s3_disabled(self):
         assert BackupService.download_s3_backup_to_temp("some/key.gz") is None
+
+    def test_returns_temp_path_on_success(self, monkeypatch):
+        monkeypatch.setenv("BACKUP_S3_ENABLED", "true")
+        monkeypatch.setenv("BACKUP_S3_BUCKET", "my-bucket")
+
+        def fake_download_from_s3(bucket, key, file_path, config, logger):
+            with open(file_path, "wb") as f:
+                f.write(b"data")
+            return True, "ok"
+
+        monkeypatch.setattr(
+            "app.services.backup_service.download_from_s3", fake_download_from_s3
+        )
+
+        result = BackupService.download_s3_backup_to_temp("some/key.gz")
+        assert result is not None
+        assert os.path.isfile(result)
+        os.remove(result)
+
+    def test_returns_none_and_cleans_up_on_failure(self, monkeypatch):
+        monkeypatch.setenv("BACKUP_S3_ENABLED", "true")
+        monkeypatch.setenv("BACKUP_S3_BUCKET", "my-bucket")
+
+        def fake_download_from_s3(bucket, key, file_path, config, logger):
+            return False, "download failed"
+
+        monkeypatch.setattr(
+            "app.services.backup_service.download_from_s3", fake_download_from_s3
+        )
+
+        result = BackupService.download_s3_backup_to_temp("some/key.gz")
+        assert result is None

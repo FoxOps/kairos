@@ -78,6 +78,30 @@ class TestStaffingLimitsRule:
     def test_validate_params_accepts_empty(self):
         assert StaffingLimitsRule.validate_params({}) == []
 
+    def test_validate_params_rejects_non_integer_key(self, test_app):
+        errors = StaffingLimitsRule.validate_params({"not-an-id": {"min": 1}})
+        assert errors
+        assert "not-an-id" in errors[0]
+
+    def test_validate_params_rejects_non_dict_limits(self, test_app, test_shift_type):
+        errors = StaffingLimitsRule.validate_params({str(test_shift_type.id): "oops"})
+        assert errors
+        assert "must be an object" in errors[0]
+
+    def test_validate_params_rejects_negative_min(self, test_app, test_shift_type):
+        errors = StaffingLimitsRule.validate_params(
+            {str(test_shift_type.id): {"min": -1}}
+        )
+        assert errors
+        assert "non-negative integer" in errors[0]
+
+    def test_validate_params_rejects_non_integer_max(self, test_app, test_shift_type):
+        errors = StaffingLimitsRule.validate_params(
+            {str(test_shift_type.id): {"max": "many"}}
+        )
+        assert errors
+        assert "non-negative integer" in errors[0]
+
 
 class TestMandatoryShiftRule:
     def test_default_has_nothing_mandatory(self, test_app):

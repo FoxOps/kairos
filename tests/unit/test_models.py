@@ -10,6 +10,8 @@ from sqlalchemy.exc import IntegrityError
 from app import db
 from app.models import (
     AppNotification,
+    AuditLog,
+    AutomationConfig,
     Group,
     Leave,
     NotificationLog,
@@ -874,3 +876,56 @@ class TestSettingModel:
             assert Setting.get("key_a") == "value_a"
             assert Setting.get("key_b") == "value_b"
             assert Setting.query.count() == 2
+
+
+class TestAuditLogModel:
+    """AuditLog.actor is a plain @property, not a db.relationship() (see
+    the model's own docstring) - AuditLogRepository's list-fetching
+    methods preload it in bulk (_preload_related, stashed on
+    _cached_actor) for pages of entries, but a bare AuditLog row
+    fetched any other way (e.g. straight from AuditLogRepository.create())
+    has no cache populated yet, so `.actor` must fall back to a direct
+    lookup - this is that fallback path's own coverage, not exercised
+    by any of the repository/route-level tests."""
+
+    def test_actor_property_looks_up_uncached_actor(self, test_app, test_user):
+        with test_app.app_context():
+            entry = AuditLog(actor_id=test_user.id, action="shift.create")
+            db.session.add(entry)
+            db.session.commit()
+
+            # Fresh from the DB (no _preload_related call in this path),
+            # so _cached_actor is still the _NOT_PRELOADED sentinel.
+            fetched = db.session.get(AuditLog, entry.id)
+            assert fetched.actor is not None
+            assert fetched.actor.id == test_user.id
+
+    def test_actor_property_returns_none_when_actor_id_is_none(self, test_app):
+        with test_app.app_context():
+            entry = AuditLog(actor_id=None, action="setting.update")
+            db.session.add(entry)
+            db.session.commit()
+
+            fetched = db.session.get(AuditLog, entry.id)
+            assert fetched.actor is None
+
+
+class TestAutomationConfigModel:
+    def test_set_config_updates_existing_row_in_place(self, test_app):
+        with test_app.app_context():
+            AutomationConfig.set_config("test_key", "a")
+            AutomationConfig.set_config("test_key", "b")
+
+            assert AutomationConfig.get_config("test_key") == "b"
+            assert AutomationConfig.query.filter_by(config_key="test_key").count() == 1
+
+    def test_get_config_falls_back_to_raw_value_on_invalid_json(self, test_app):
+        """A plain (non-JSON-encoded) string value stored via
+        set_config() - it stores str values as-is, unquoted (see its
+        own ternary) - so json.loads() on read raises JSONDecodeError;
+        get_config() must fall back to the raw stored string rather
+        than propagating that exception."""
+        with test_app.app_context():
+            AutomationConfig.set_config("test_key", "not valid json")
+
+            assert AutomationConfig.get_config("test_key") == "not valid json"

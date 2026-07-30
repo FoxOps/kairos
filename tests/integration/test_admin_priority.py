@@ -96,6 +96,57 @@ class TestEditShiftType:
         assert updated.label == "Updated Label"
         assert updated.start_hour == 8
 
+    def test_edit_shift_type_post_missing_field(
+        self, logged_in_client, test_shift_type
+    ):
+        """A required field left empty - route-level validation, before
+        ShiftTypeService is even called."""
+        response = logged_in_client.post(
+            f"/admin/shift-types/edit/{test_shift_type.id}",
+            data={"name": "", "label": "Updated", "start_hour": "8", "end_hour": "16"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"obligatoire" in response.data
+
+    def test_edit_shift_type_post_non_numeric_hours(
+        self, logged_in_client, test_shift_type
+    ):
+        """int(start_hour)/int(end_hour) raises ValueError - a
+        different code path than a value that parses fine but fails
+        ShiftTypeService's own range validation."""
+        response = logged_in_client.post(
+            f"/admin/shift-types/edit/{test_shift_type.id}",
+            data={
+                "name": "morning",
+                "label": "Updated",
+                "start_hour": "abc",
+                "end_hour": "16",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"nombres entiers" in response.data or b"Erreur" in response.data
+
+    def test_edit_shift_type_post_duplicate_name(
+        self, logged_in_client, test_shift_type, afternoon_shift_type
+    ):
+        """Renaming to another shift type's already-taken name - the
+        ShiftTypeService.update() error branch, not the route's own
+        field/parse validation."""
+        response = logged_in_client.post(
+            f"/admin/shift-types/edit/{test_shift_type.id}",
+            data={
+                "name": afternoon_shift_type.name,
+                "label": "Updated",
+                "start_hour": "8",
+                "end_hour": "16",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"existe d\xc3\xa9j\xc3\xa0" in response.data
+
 
 class TestDeleteGroup:
     """Tests for /admin/groups/delete/<group_id>."""
@@ -222,6 +273,36 @@ class TestDeleteShiftType:
         )
         assert response.status_code == 200
         assert b"Impossible" in response.data
+        assert db.session.get(ShiftType, test_shift_type.id) is not None
+
+    def test_delete_shift_type_not_found(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/shift-types/delete/999999",
+            follow_redirects=True,
+        )
+        assert response.status_code == 404
+
+    def test_delete_shift_type_service_raises_exception(
+        self, logged_in_client, test_shift_type, monkeypatch
+    ):
+        """The route's own except Exception fallback - not reachable
+        through any real input today (ShiftTypeService.delete()'s
+        "in use" case is a checked guard, not a raised exception, see
+        test_delete_shift_type_in_use above), so this exercises it
+        directly rather than leaving it silently uncovered."""
+        from app.services import ShiftTypeService
+
+        def _raise(shift_type_id):
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr(ShiftTypeService, "delete", _raise)
+
+        response = logged_in_client.post(
+            f"/admin/shift-types/delete/{test_shift_type.id}",
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
         assert db.session.get(ShiftType, test_shift_type.id) is not None
 
 

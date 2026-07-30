@@ -218,6 +218,24 @@ class TestAddShiftType:
         assert response.status_code == 200
         assert b"existe" in response.data or b"already" in response.data
 
+    def test_add_shift_type_post_non_numeric_hours(self, logged_in_client):
+        """int(start_hour)/int(end_hour) raises ValueError - a
+        different code path than test_add_shift_type_post_invalid_hours
+        in test_routes.py, which uses out-of-range-but-parseable ints
+        (25/6) to hit ShiftTypeService's own validation instead."""
+        response = logged_in_client.post(
+            "/admin/shift-types/add",
+            data={
+                "name": "non-numeric",
+                "label": "Test",
+                "start_hour": "abc",
+                "end_hour": "17",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"nombres entiers" in response.data or b"Erreur" in response.data
+
 
 class TestAdminDashboard:
     """Tests for /admin."""
