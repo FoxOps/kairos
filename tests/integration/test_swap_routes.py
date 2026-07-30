@@ -44,6 +44,22 @@ class TestUserSwapRoutes:
         with test_app.app_context():
             assert SwapRequest.query.count() == 0
 
+    def test_add_swap_nonexistent_shift_or_user_rejected(
+        self, test_app, non_admin_client, second_user
+    ):
+        """Both shift_id/target_user_id are present (past the missing-
+        fields check) but reference nothing real - a different branch
+        than test_add_swap_missing_fields above."""
+        resp = non_admin_client.post(
+            "/swaps/add",
+            data={"shift_id": 999999, "target_user_id": second_user.id},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        assert b"invalide" in resp.data
+        with test_app.app_context():
+            assert SwapRequest.query.count() == 0
+
     def test_add_swap_not_owner_rejected(
         self, test_app, non_admin_client, second_user, test_swap_shift, test_user
     ):
@@ -120,6 +136,25 @@ class TestUserSwapRoutes:
             swap = db.session.get(SwapRequest, test_swap_request.id)
             assert swap.status == SwapRequest.AWAITING_ADMIN
 
+    def test_confirm_post_error_flashed_when_already_confirmed(
+        self, test_app, client, second_user, confirmed_swap_request
+    ):
+        """confirmed_swap_request is already AWAITING_ADMIN (not
+        PENDING) - SwapService.confirm_swap()'s own
+        is_awaiting_target() error branch."""
+        client.post(
+            "/login",
+            data={"email": second_user.email, "password": "test123"},
+            follow_redirects=True,
+        )
+        resp = client.post(
+            f"/swaps/{confirmed_swap_request.id}/confirm",
+            data={},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        assert b"plus en attente" in resp.data
+
     def test_confirm_page_survives_deleted_shift(
         self, test_app, client, second_user, test_swap_request, test_swap_shift
     ):
@@ -154,6 +189,22 @@ class TestUserSwapRoutes:
             swap = db.session.get(SwapRequest, test_swap_request.id)
             assert swap.status == SwapRequest.REJECTED
             assert swap.admin_comment == "Pas disponible"
+
+    def test_target_reject_post_error_flashed_when_already_confirmed(
+        self, test_app, client, second_user, confirmed_swap_request
+    ):
+        client.post(
+            "/login",
+            data={"email": second_user.email, "password": "test123"},
+            follow_redirects=True,
+        )
+        resp = client.post(
+            f"/swaps/{confirmed_swap_request.id}/target-reject",
+            data={},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        assert b"plus en attente" in resp.data
 
     def test_confirm_page_by_non_target_404(
         self, test_app, non_admin_client, test_swap_request
@@ -204,6 +255,26 @@ class TestUserSwapRoutes:
     def test_cancel_swap_nonexistent_404(self, test_app, non_admin_client):
         resp = non_admin_client.post("/swaps/999999/cancel")
         assert resp.status_code == 404
+
+    def test_cancel_swap_error_flashed_for_non_requester(
+        self, test_app, client, second_user, test_swap_request
+    ):
+        """second_user is the target, not the requester (test_user) nor
+        an admin - SwapService.cancel_swap()'s own permission-check
+        error branch."""
+        client.post(
+            "/login",
+            data={"email": second_user.email, "password": "test123"},
+            follow_redirects=True,
+        )
+        resp = client.post(
+            f"/swaps/{test_swap_request.id}/cancel", follow_redirects=True
+        )
+        assert resp.status_code == 200
+        assert b"demandeur" in resp.data or b"administrateur" in resp.data
+        with test_app.app_context():
+            swap = db.session.get(SwapRequest, test_swap_request.id)
+            assert swap.status == SwapRequest.PENDING
 
 
 class TestAdminSwapRoutes:
@@ -285,6 +356,28 @@ class TestAdminSwapRoutes:
     def test_approve_nonexistent_404(self, test_app, logged_in_client):
         resp = logged_in_client.post("/admin/swaps/999999/approve")
         assert resp.status_code == 404
+
+    def test_reject_nonexistent_404(self, test_app, logged_in_client):
+        resp = logged_in_client.post("/admin/swaps/999999/reject")
+        assert resp.status_code == 404
+
+    def test_reject_swap_still_pending_flashes_error(
+        self, test_app, logged_in_client, test_swap_request
+    ):
+        """Rejecting a request the target hasn't confirmed yet (still
+        PENDING, not AWAITING_ADMIN) - SwapService.reject_swap()'s own
+        error branch, a different scenario than test_reject_swap above
+        (which rejects an already-confirmed request)."""
+        resp = logged_in_client.post(
+            f"/admin/swaps/{test_swap_request.id}/reject",
+            data={"reason": "trop tot"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        assert b"pas en attente" in resp.data.lower() or b"Erreur" in resp.data
+        with test_app.app_context():
+            swap = db.session.get(SwapRequest, test_swap_request.id)
+            assert swap.status == SwapRequest.PENDING
 
     def test_list_swaps_shows_approved(
         self, test_app, logged_in_client, confirmed_swap_request

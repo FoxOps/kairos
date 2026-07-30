@@ -96,6 +96,54 @@ class TestSyncUserFromOidcNewUser:
         )
         assert user.is_admin is True
 
+    def test_groups_claim_syncs_groups_for_new_user(
+        self, test_app, user_manager, monkeypatch, caplog
+    ):
+        """_sync_user_groups() only logs the OIDC groups today (see its
+        own docstring) - this exercises that call site (new-user branch)
+        and the method body itself, including its single-value-to-list
+        wrapping branch."""
+        monkeypatch.setattr(OIDCConfig, "GROUPS_CLAIM", "groups")
+        # logger="..." needed because app.logger (Flask's own, name
+        # "app") sets propagate=False, and this module's logger
+        # ("app.auth.user_manager") is a child of it - caplog's default
+        # root-logger handler never sees it otherwise.
+        with caplog.at_level("INFO", logger="app.auth.user_manager"):
+            user = user_manager.sync_user_from_oidc(
+                {
+                    "email": "grouped-oidc@example.com",
+                    "name": "Grouped OIDC",
+                    "groups": "engineering",
+                }
+            )
+        assert user is not None
+        assert "engineering" in caplog.text
+
+
+class TestSyncUserFromOidcGroupsClaimExistingUser:
+    def test_groups_claim_syncs_groups_for_existing_user(
+        self, test_app, test_group, user_manager, monkeypatch, caplog
+    ):
+        existing = User(
+            name="Existing Grouped",
+            email="existing-grouped@example.com",
+            group_id=test_group.id,
+        )
+        db.session.add(existing)
+        db.session.commit()
+
+        monkeypatch.setattr(OIDCConfig, "GROUPS_CLAIM", "groups")
+        with caplog.at_level("INFO", logger="app.auth.user_manager"):
+            user = user_manager.sync_user_from_oidc(
+                {
+                    "email": "existing-grouped@example.com",
+                    "name": "Existing Grouped",
+                    "groups": ["engineering", "oncall"],
+                }
+            )
+        assert user.id == existing.id
+        assert "engineering" in caplog.text
+
 
 class TestSyncUserFromOidcExistingUser:
     def test_updates_name_of_existing_user(self, test_app, test_group, user_manager):

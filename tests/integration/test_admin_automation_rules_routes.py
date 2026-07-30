@@ -38,6 +38,18 @@ class TestWeekendDefinitionSection:
         assert response.status_code == 200
         assert b"Erreur" in response.data
 
+    def test_non_numeric_day_flashes_error(self, logged_in_client):
+        """Fails to even parse as int - a different code path than
+        test_no_days_selected_flashes_error above, which parses fine
+        (empty list) but fails the service's own validation."""
+        response = logged_in_client.post(
+            "/admin/automation/rules",
+            data={"section": "weekend_definition", "weekend_days": ["abc"]},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
+
 
 class TestOnCallSpacingSection:
     def test_valid_weeks_persist(self, logged_in_client):
@@ -53,6 +65,15 @@ class TestOnCallSpacingSection:
         assert AutomationRule.resolve_params("oncall_spacing") == {
             "min_spacing_weeks": 3
         }
+
+    def test_non_numeric_weeks_flashes_error(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/automation/rules",
+            data={"section": "oncall_spacing", "min_spacing_weeks": "abc"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
 
 
 class TestOnCallShiftOverlapSection:
@@ -155,6 +176,15 @@ class TestMandatoryShiftSection:
             "shift_type_ids": []
         }
 
+    def test_non_numeric_id_flashes_error(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/automation/rules",
+            data={"section": "mandatory_shift", "mandatory_shift_type_ids": ["abc"]},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
+
 
 class TestRestAfterOnCallSection:
     def test_valid_hours_persist(self, logged_in_client):
@@ -170,6 +200,15 @@ class TestRestAfterOnCallSection:
         assert AutomationRule.resolve_params("rest_after_oncall") == {
             "min_rest_hours": 8
         }
+
+    def test_non_numeric_hours_flashes_error(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/automation/rules",
+            data={"section": "rest_after_oncall", "min_rest_hours": "abc"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
 
 
 class TestOnCallAnchorSection:
@@ -193,6 +232,20 @@ class TestOnCallAnchorSection:
             "start_hour": 21,
             "end_hour": 7,
         }
+
+    def test_non_numeric_field_flashes_error(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/automation/rules",
+            data={
+                "section": "oncall_anchor",
+                "weekday": "abc",
+                "start_hour": "21",
+                "end_hour": "7",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
 
 
 class TestSchedulingModeSection:
@@ -346,3 +399,17 @@ class TestShiftSlotsSection:
             "rotation_shift_type_id": test_shift_type.id,
             "default_shift_type_id": test_shift_type.id,
         }
+
+    def test_non_numeric_id_flashes_error(self, logged_in_client, test_shift_type):
+        response = logged_in_client.post(
+            "/admin/automation/rules",
+            data={
+                "section": "shift_slots",
+                "oncall_shift_type_id": "abc",
+                "rotation_shift_type_id": str(test_shift_type.id),
+                "default_shift_type_id": str(test_shift_type.id),
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data

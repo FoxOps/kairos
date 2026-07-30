@@ -43,6 +43,23 @@ class TestEditGroup:
         assert response.status_code == 200
         assert b"obligatoire" in response.data
 
+    def test_edit_group_post_duplicate_name(
+        self, logged_in_client, group_not_in_schedule, test_group
+    ):
+        """Renaming to another group's already-taken name - the
+        GroupService.update() error branch."""
+        response = logged_in_client.post(
+            f"/admin/groups/edit/{group_not_in_schedule.id}",
+            data={
+                "name": test_group.name,
+                "is_part_of_schedule": "on",
+                "is_part_of_oncall": "on",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"existe" in response.data or b"already" in response.data
+
 
 class TestEditUser:
     """Tests for /admin/users/edit/<user_id>."""
@@ -69,6 +86,15 @@ class TestEditUser:
         updated_user = db.session.get(User, test_user.id)
         assert updated_user.name == "Updated User"
         assert updated_user.email == "updated@test.com"
+
+    def test_edit_user_post_missing_field(self, logged_in_client, test_user):
+        response = logged_in_client.post(
+            f"/admin/users/edit/{test_user.id}",
+            data={"name": "", "email": "", "group_id": "", "is_admin": "off"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"obligatoires" in response.data
 
 
 class TestEditShiftType:
@@ -188,6 +214,35 @@ class TestDeleteGroup:
         assert b"Impossible" in response.data
         assert db.session.get(Group, test_group.id) is not None
 
+    def test_delete_group_not_found(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/groups/delete/999999",
+            follow_redirects=True,
+        )
+        assert response.status_code == 404
+
+    def test_delete_group_service_raises_exception(
+        self, logged_in_client, group_not_in_schedule, monkeypatch
+    ):
+        """The route's own except Exception fallback - not reachable
+        through any real input today (GroupService.delete()'s "has
+        users" case is a checked guard, not a raised exception, see
+        test_delete_group_with_users above)."""
+        from app.services import GroupService
+
+        def _raise(group_id):
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr(GroupService, "delete", _raise)
+
+        response = logged_in_client.post(
+            f"/admin/groups/delete/{group_not_in_schedule.id}",
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
+        assert db.session.get(Group, group_not_in_schedule.id) is not None
+
 
 class TestDeleteUser:
     """Tests for /admin/users/delete/<user_id>."""
@@ -236,6 +291,35 @@ class TestDeleteUser:
         assert response.status_code == 200
         assert b"Impossible" in response.data
         assert db.session.get(User, test_user.id) is not None
+
+    def test_delete_user_not_found(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/users/delete/999999",
+            follow_redirects=True,
+        )
+        assert response.status_code == 404
+
+    def test_delete_user_service_raises_exception(
+        self, logged_in_client, second_user, monkeypatch
+    ):
+        """The route's own except Exception fallback - not reachable
+        through any real input today (UserService.delete()'s "has
+        resources" case is a checked guard, not a raised exception, see
+        test_delete_user_with_shifts above)."""
+        from app.services import UserService
+
+        def _raise(user_id):
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr(UserService, "delete", _raise)
+
+        response = logged_in_client.post(
+            f"/admin/users/delete/{second_user.id}",
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
+        assert db.session.get(User, second_user.id) is not None
 
 
 class TestDeleteShiftType:

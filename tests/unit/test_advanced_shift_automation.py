@@ -5,6 +5,7 @@ Tests for the advanced shift automation module.
 from datetime import date, datetime, timedelta
 from unittest.mock import patch
 
+import pytest
 from werkzeug.security import generate_password_hash
 
 from app import db
@@ -191,6 +192,90 @@ class TestGetShiftTypeForSlot:
         )
         assert shift_type.id == custom.id
         assert (shift_type.start_hour, shift_type.end_hour) == (6, 14)
+
+    def test_falls_back_to_hours_based_lookup_when_configured_id_deleted(
+        self, test_app
+    ):
+        """The configured ShiftType row was deleted outside the normal
+        delete-protection guard (e.g. direct DB manipulation) - resolve
+        falls back to the historical hours-based fetch-or-create rather
+        than crashing."""
+        from app.models import AutomationRule, ShiftType
+        from app.utils.automation.rules import ShiftSlotsRule
+
+        custom = ShiftType(name="custom2", label="Custom2", start_hour=6, end_hour=14)
+        db.session.add(custom)
+        db.session.commit()
+        custom_id = custom.id
+
+        default_params = ShiftSlotsRule.resolve()
+        AutomationRule.set(
+            "shift_slots",
+            {**default_params, "rotation_shift_type_id": custom_id},
+        )
+
+        db.session.delete(custom)
+        db.session.commit()
+
+        shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(
+            AdvancedShiftAutomation.SHIFT_07_15
+        )
+        assert shift_type is not None
+        assert (shift_type.start_hour, shift_type.end_hour) == (7, 15)
+
+
+class TestPersistShifts:
+    def test_commit_failure_rolls_back_and_returns_error(self, test_app, monkeypatch):
+        def _raise():
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr(db.session, "commit", _raise)
+
+        shifts, error = AdvancedShiftAutomation._persist_shifts(
+            [], dry_run=False, commit=True
+        )
+        assert shifts == []
+        assert error == "boom"
+
+
+class TestStaffingMinGapNames:
+    def test_zero_or_none_min_is_skipped(self, test_app, test_shift_type):
+        from app.models import AutomationRule
+
+        AutomationRule.set("staffing_limits", {str(test_shift_type.id): {"min": 0}})
+        names = AdvancedShiftAutomation._staffing_min_gap_names([])
+        assert names == []
+
+    def test_non_numeric_key_is_skipped(self, test_app):
+        from app.models import AutomationRule
+
+        AutomationRule.set("staffing_limits", {"not-an-id": {"min": 2}})
+        names = AdvancedShiftAutomation._staffing_min_gap_names([])
+        assert names == []
+
+    def test_min_already_met_has_no_gap(self, test_app, test_shift_type):
+        from app.models import AutomationRule
+
+        AutomationRule.set("staffing_limits", {str(test_shift_type.id): {"min": 1}})
+
+        class _FakeShift:
+            shift_type_id = test_shift_type.id
+
+        names = AdvancedShiftAutomation._staffing_min_gap_names([_FakeShift()])
+        assert names == []
+
+
+class TestMandatoryCoverageGapNames:
+    def test_covered_mandatory_type_has_no_gap(self, test_app, test_shift_type):
+        from app.models import AutomationRule
+
+        AutomationRule.set("mandatory_shift", {"shift_type_ids": [test_shift_type.id]})
+
+        class _FakeShift:
+            shift_type_id = test_shift_type.id
+
+        names = AdvancedShiftAutomation._mandatory_coverage_gap_names([_FakeShift()])
+        assert names == []
 
 
 class TestDetermineShiftForUser:
@@ -491,6 +576,29 @@ class TestGenerateDailyShifts:
             assert shifts[0].start_time.hour == 7
             assert shifts[0].end_time.hour == 15
 
+    def test_generate_daily_shifts_one_user_commit_failure(
+        self, test_app, test_group, test_user, second_user, monkeypatch
+    ):
+        with test_app.app_context():
+            test_date = date(2023, 12, 15)
+            leave = Leave(
+                user_id=second_user.id, start_date=test_date, end_date=test_date
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            monkeypatch.setattr(
+                db.session,
+                "commit",
+                lambda: (_ for _ in ()).throw(RuntimeError("boom")),
+            )
+
+            shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(
+                test_date, dry_run=False
+            )
+            assert shifts == []
+            assert any("[ERROR]" in m for m in messages)
+
     def test_generate_daily_shifts_honors_configured_rotation_shift_type(
         self, test_app, test_group, test_user, second_user
     ):
@@ -547,6 +655,23 @@ class TestGenerateDailyShifts:
             assert any(test_user.id == s.user_id for s in shifts)
             assert any(second_user.id == s.user_id for s in shifts)
 
+    def test_generate_daily_shifts_two_users_commit_failure(
+        self, test_app, test_group, test_user, second_user, test_shift_type, monkeypatch
+    ):
+        with test_app.app_context():
+            test_date = date(2023, 12, 15)
+            monkeypatch.setattr(
+                db.session,
+                "commit",
+                lambda: (_ for _ in ()).throw(RuntimeError("boom")),
+            )
+
+            shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(
+                test_date, dry_run=False
+            )
+            assert shifts == []
+            assert any("[ERROR]" in m for m in messages)
+
     def test_generate_daily_shifts_with_three_users(
         self, test_app, test_group, test_user, second_user
     ):
@@ -570,6 +695,124 @@ class TestGenerateDailyShifts:
 
             # Should generate shifts for all 3 users
             assert len(shifts) == 3
+
+    def test_generate_daily_shifts_three_plus_users_commit_failure(
+        self, test_app, test_group, test_user, second_user, monkeypatch
+    ):
+        with test_app.app_context():
+            user3 = User(
+                name="Third User Commit",
+                email="third-commit@test.com",
+                password_hash=generate_password_hash("third-password"),
+                is_admin=False,
+                group_id=test_group.id,
+            )
+            db.session.add(user3)
+            db.session.commit()
+
+            test_date = date(2023, 12, 15)
+            monkeypatch.setattr(
+                db.session,
+                "commit",
+                lambda: (_ for _ in ()).throw(RuntimeError("boom")),
+            )
+
+            shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(
+                test_date, dry_run=False
+            )
+            assert shifts == []
+            assert any("[ERROR]" in m for m in messages)
+
+    def test_generate_daily_shifts_no_shifts_generated_warns(
+        self, test_app, test_group, test_user, second_user, monkeypatch
+    ):
+        """generated_shifts stays empty for the 3+-users path despite
+        real available users - structurally only reachable if
+        schedule_users diverges from available_users between the two
+        get_users_in_schedule_groups() calls inside this code path (an
+        invariant that always holds in practice, since both derive from
+        the same query), so forced here via a second-call override."""
+        user3 = User(
+            name="Third User Warn",
+            email="third-warn@test.com",
+            password_hash=generate_password_hash("third-password"),
+            is_admin=False,
+            group_id=test_group.id,
+        )
+        db.session.add(user3)
+        db.session.commit()
+
+        test_date = date(2023, 12, 15)
+        real_get_users = AdvancedShiftAutomation.get_users_in_schedule_groups
+        calls = {"n": 0}
+
+        def flaky_get_users(group=None):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return real_get_users(group=group)
+            return []
+
+        monkeypatch.setattr(
+            AdvancedShiftAutomation, "get_users_in_schedule_groups", flaky_get_users
+        )
+
+        shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(
+            test_date, dry_run=True
+        )
+        assert shifts == []
+        assert any("[WARN]" in m and "Aucun shift" in m for m in messages)
+
+    def test_no_shifts_generated_on_a_weekend_flags_skip(
+        self, test_app, test_group, test_user, second_user, monkeypatch
+    ):
+        """The "elif WeekendDefinitionRule.is_weekend(...)" branch right
+        after the empty-generated_shifts check - structurally
+        unreachable via any real weekday/weekend combination, since a
+        real weekend is already filtered out by this same method's own
+        early check a few lines above (before even fetching available
+        users). Forced here via a call-counter so the top check sees
+        "not weekend" but this later check sees "weekend"."""
+        from app.utils.automation.rules import WeekendDefinitionRule
+
+        user3 = User(
+            name="Third User Weekend",
+            email="third-weekend@test.com",
+            password_hash=generate_password_hash("third-password"),
+            is_admin=False,
+            group_id=test_group.id,
+        )
+        db.session.add(user3)
+        db.session.commit()
+
+        test_date = date(2023, 12, 15)
+        calls = {"n": 0}
+
+        def flaky_is_weekend(d, group=None):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return False
+            return True
+
+        monkeypatch.setattr(WeekendDefinitionRule, "is_weekend", flaky_is_weekend)
+
+        real_get_users = AdvancedShiftAutomation.get_users_in_schedule_groups
+        user_calls = {"n": 0}
+
+        def flaky_get_users(group=None):
+            user_calls["n"] += 1
+            if user_calls["n"] == 1:
+                return real_get_users(group=group)
+            return []
+
+        monkeypatch.setattr(
+            AdvancedShiftAutomation, "get_users_in_schedule_groups", flaky_get_users
+        )
+
+        shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(
+            test_date, dry_run=True
+        )
+        assert shifts == []
+        assert any("[SKIP]" in m and "week-end" in m for m in messages)
 
     def test_generate_daily_shifts_flags_unfilled_mandatory_slot(
         self, test_app, test_group, test_user, second_user
@@ -985,6 +1228,70 @@ class TestRebalanceAfterLeave:
             # No change should be committed
             final_count = Shift.query.count()
             assert final_count == initial_count
+
+    def test_rebalance_after_leave_dry_run_reports_deleted_shifts(
+        self, test_app, test_group, test_user, test_shift_type
+    ):
+        """dry_run's own "[DELETED] N shifts" flash - needs a
+        pre-existing shift on one of the rebalanced days, unlike
+        test_rebalance_after_leave_dry_run above (no pre-existing
+        shifts there)."""
+        with test_app.app_context():
+            leave_date = date(2023, 12, 15)
+            existing_shift = Shift(
+                date=leave_date,
+                start_time=datetime.combine(leave_date, datetime.min.time()).replace(
+                    hour=7
+                ),
+                end_time=datetime.combine(leave_date, datetime.min.time()).replace(
+                    hour=15
+                ),
+                user_id=test_user.id,
+                shift_type_id=test_shift_type.id,
+            )
+            db.session.add(existing_shift)
+            leave = Leave(
+                user_id=test_user.id, start_date=leave_date, end_date=leave_date
+            )
+            db.session.add(leave)
+            db.session.commit()
+
+            _shifts, messages, *_rest = AdvancedShiftAutomation.rebalance_after_leave(
+                leave, dry_run=True
+            )
+            assert any("[DELETED]" in m for m in messages)
+
+    def test_rebalance_after_leave_deletes_existing_shifts(
+        self, test_app, test_group, test_user, test_shift_type
+    ):
+        """Same as above, non-dry-run: existing shifts on a rebalanced
+        day actually get deleted inside the per-day SAVEPOINT."""
+        with test_app.app_context():
+            leave_date = date(2023, 12, 15)
+            existing_shift = Shift(
+                date=leave_date,
+                start_time=datetime.combine(leave_date, datetime.min.time()).replace(
+                    hour=7
+                ),
+                end_time=datetime.combine(leave_date, datetime.min.time()).replace(
+                    hour=15
+                ),
+                user_id=test_user.id,
+                shift_type_id=test_shift_type.id,
+            )
+            db.session.add(existing_shift)
+            leave = Leave(
+                user_id=test_user.id, start_date=leave_date, end_date=leave_date
+            )
+            db.session.add(leave)
+            db.session.commit()
+            existing_shift_id = existing_shift.id
+
+            _shifts, messages, *_rest = AdvancedShiftAutomation.rebalance_after_leave(
+                leave, dry_run=False
+            )
+            assert any("[DELETED]" in m for m in messages)
+            assert db.session.get(Shift, existing_shift_id) is None
 
     def test_rebalance_after_leave_with_oncall(self, test_app, test_group, test_user):
         """Test rebalancing with an overlapping on-call."""
@@ -1611,3 +1918,29 @@ class TestRebalanceAfterLeave:
         ).all()
         assert regenerated
         assert all(oc.start_time.weekday() == 3 for oc in regenerated)
+
+    def test_rebalance_after_leave_setup_failure_rolls_back_and_reraises(
+        self, test_app, test_group, test_user, monkeypatch
+    ):
+        """A failure in the setup step (before the per-day loop even
+        starts) - nothing has been generated yet, so this is a full
+        rollback + re-raise, not the per-day isolation used once the
+        loop is under way (see this method's own docstring)."""
+        leave = Leave(
+            user_id=test_user.id,
+            start_date=date(2023, 12, 15),
+            end_date=date(2023, 12, 15),
+        )
+        db.session.add(leave)
+        db.session.commit()
+
+        from app.services import SettingsService
+
+        monkeypatch.setattr(
+            SettingsService,
+            "get_shift_scheduling_mode",
+            lambda: (_ for _ in ()).throw(RuntimeError("boom")),
+        )
+
+        with pytest.raises(RuntimeError):
+            AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=True)

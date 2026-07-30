@@ -76,6 +76,28 @@ class TestAutomationFull:
             or b"Automatisation" in response.data
         )
 
+    def test_automation_full_get_advances_default_start_to_next_friday(
+        self, logged_in_client, monkeypatch
+    ):
+        """start_date_default's own while-loop advance to the next
+        Friday - only actually iterates when today isn't already a
+        Friday, so date.today() is faked here rather than depending on
+        which day the suite happens to run on."""
+        import datetime as dt
+
+        from app.routes import admin_automation_routes
+
+        class FakeDate(dt.date):
+            @classmethod
+            def today(cls):
+                return dt.date(2026, 7, 27)  # a Monday
+
+        monkeypatch.setattr(admin_automation_routes, "date", FakeDate)
+
+        response = logged_in_client.get("/admin/automation/full")
+        assert response.status_code == 200
+        assert b"2026-07-31" in response.data  # the following Friday
+
     def test_automation_full_prefills_dates_and_mode_from_query_args(
         self, logged_in_client
     ):
@@ -113,6 +135,32 @@ class TestAutomationFull:
         )
         assert response.status_code == 200
         assert b"ordre" in response.data.lower() or b"Order" in response.data
+
+    def test_automation_full_post_save_order_error_flashed(
+        self, logged_in_client, test_user, monkeypatch
+    ):
+        """save_rotation_order()'s error branch - AutomationConfig.
+        set_rotation_order() never actually fails on valid input, so
+        this is exercised via monkeypatch at the service boundary."""
+        from app.services import AutomationAdminService
+
+        monkeypatch.setattr(
+            AutomationAdminService,
+            "save_rotation_order",
+            lambda ids: "erreur simulée",
+        )
+
+        response = logged_in_client.post(
+            "/admin/automation/full",
+            data={
+                "action": "save_order",
+                f"rotation_order_{test_user.id}": "1",
+                f"include_{test_user.id}": "1",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
 
     def test_automation_full_form_has_single_action_field(self, logged_in_client):
         """Regression test: the form used to also have a static hidden
@@ -186,6 +234,78 @@ class TestAutomationFull:
             or b"invalid" in response.data
             or b"Erreur" in response.data
         )
+
+    def test_automation_full_post_generate_reports_deleted_shifts(
+        self, logged_in_client, test_app, test_user, test_shift_type
+    ):
+        """The real (non-dry-run) "generate" action's own
+        `if result.shifts_deleted:` flash branch - needs a pre-existing
+        shift inside the period for generate_full()'s own clear_period()
+        to actually delete something."""
+        from datetime import datetime as dt
+
+        from app.models import Shift
+
+        today = date.today()
+        start_date = today
+        while start_date.weekday() != 4:  # Friday
+            start_date += timedelta(days=1)
+        end_date = start_date + timedelta(days=7)
+
+        with test_app.app_context():
+            shift = Shift(
+                date=start_date,
+                start_time=dt.combine(start_date, dt.min.time()),
+                end_time=dt.combine(start_date, dt.max.time()),
+                user_id=test_user.id,
+                shift_type_id=test_shift_type.id,
+            )
+            db.session.add(shift)
+            db.session.commit()
+
+        response = logged_in_client.post(
+            "/admin/automation/full",
+            data={
+                "action": "generate",
+                "start_date": start_date.strftime("%Y-%m-%d"),
+                "end_date": end_date.strftime("%Y-%m-%d"),
+                f"rotation_order_{test_user.id}": "1",
+                f"include_{test_user.id}": "1",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"supprim" in response.data
+
+    def test_automation_full_post_generate_generic_exception(
+        self, logged_in_client, test_user, monkeypatch
+    ):
+        from app.services import AutomationAdminService
+
+        def _raise(*args, **kwargs):
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr(AutomationAdminService, "generate_full", _raise)
+
+        today = date.today()
+        start_date = today
+        while start_date.weekday() != 4:  # Friday
+            start_date += timedelta(days=1)
+        end_date = start_date + timedelta(days=7)
+
+        response = logged_in_client.post(
+            "/admin/automation/full",
+            data={
+                "action": "generate",
+                "start_date": start_date.strftime("%Y-%m-%d"),
+                "end_date": end_date.strftime("%Y-%m-%d"),
+                f"rotation_order_{test_user.id}": "1",
+                f"include_{test_user.id}": "1",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
 
     def test_automation_full_post_generate_notifies_admins_on_gap(
         self, logged_in_client, test_user, second_user
@@ -493,6 +613,65 @@ class TestAutomationFullRefreshMode:
             or b"invalid" in response.data
             or b"Erreur" in response.data
         )
+
+    def test_refresh_shifts_post_reports_deleted_shifts(
+        self, logged_in_client, test_app, test_user, test_shift_type
+    ):
+        from datetime import datetime as dt
+
+        from app.models import Shift
+
+        today = date.today()
+        end_date = today + timedelta(days=7)
+
+        with test_app.app_context():
+            shift = Shift(
+                date=today,
+                start_time=dt.combine(today, dt.min.time()),
+                end_time=dt.combine(today, dt.max.time()),
+                user_id=test_user.id,
+                shift_type_id=test_shift_type.id,
+            )
+            db.session.add(shift)
+            db.session.commit()
+
+        response = logged_in_client.post(
+            "/admin/automation/full",
+            data={
+                "action": "refresh_shifts",
+                "start_date": today.strftime("%Y-%m-%d"),
+                "end_date": end_date.strftime("%Y-%m-%d"),
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"supprim" in response.data
+
+    def test_refresh_shifts_post_generic_exception(self, logged_in_client, monkeypatch):
+        """The refresh_shifts action's own generic except Exception
+        branch - distinct from the ValueError branch already covered by
+        test_refresh_shifts_post_invalid_date above."""
+        from app.services import AutomationAdminService
+
+        def _raise(*args, **kwargs):
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr(AutomationAdminService, "refresh_shifts", _raise)
+
+        today = date.today()
+        end_date = today + timedelta(days=7)
+
+        response = logged_in_client.post(
+            "/admin/automation/full",
+            data={
+                "action": "refresh_shifts",
+                "start_date": today.strftime("%Y-%m-%d"),
+                "end_date": end_date.strftime("%Y-%m-%d"),
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
 
 
 class TestAutomationFullRefreshOncallMode:

@@ -61,6 +61,27 @@ class TestCommonWeakPasswords:
         error = check_password_strength("admin123")
         assert error is not None
 
+    def test_blocklist_check_itself_fires_independently_of_earlier_checks(
+        self, monkeypatch
+    ):
+        """Every real _COMMON_WEAK_PASSWORDS entry is simple enough
+        (single case, no digits/specials) to already fail the length
+        or complexity check first - this module's own blocklist-
+        specific error message is therefore never actually reached
+        through any real entry today. Monkeypatches the set with an
+        otherwise-compliant password to prove the blocklist check
+        itself works, independent of that pre-existing gap."""
+        import app.utils.helpers.password_helpers as password_helpers_module
+
+        monkeypatch.setattr(
+            password_helpers_module,
+            "_COMMON_WEAK_PASSWORDS",
+            {"correcthorse9!batt"},
+        )
+        error = check_password_strength("Correct-Horse-9!Batt".replace("-", ""))
+        assert error is not None
+        assert "courant" in error
+
 
 class TestSequentialPatterns:
     def test_rejects_ascending_digit_sequence(self):
@@ -77,16 +98,23 @@ class TestSequentialPatterns:
 
 class TestPersonalInformation:
     def test_rejects_password_containing_name(self):
+        """ "1234" would itself be flagged by the sequential-pattern
+        check first (see TestSequentialPatterns) - digits chosen here
+        specifically avoid that, so this actually exercises the name
+        check's own branch, not an earlier one that happens to also
+        return non-None."""
         error = check_password_strength(
-            "Benjamin1234!!", name="Benjamin Dupont", email="other@test.com"
+            "Benjamin29!Zq", name="Benjamin Dupont", email="other@test.com"
         )
         assert error is not None
+        assert "nom" in error
 
     def test_rejects_password_containing_email_local_part(self):
         error = check_password_strength(
-            "Jdupont1234!!", name="Someone Else", email="jdupont@test.com"
+            "Jdupont29!Zq", name="Someone Else", email="jdupont@test.com"
         )
         assert error is not None
+        assert "email" in error
 
     def test_accepts_unrelated_password(self):
         assert (

@@ -65,6 +65,22 @@ class TestWeekEndForStart:
         monday = date(2026, 7, 13)
         assert NotificationService._week_end_for_start(monday) == date(2026, 7, 15)
 
+    def test_every_day_configured_as_weekend_falls_back_to_friday(self, test_app):
+        """Degenerate case: WeekendDefinitionRule.validate_params()
+        doesn't reject a weekend covering all 7 days, even though it's
+        not a sane configuration - falls back to the historical
+        week_start + 4 days shape rather than finding no candidate at
+        all."""
+        from app.models.automation_rule import AutomationRule
+
+        AutomationRule.set(
+            "weekend_definition", {"weekend_days": [0, 1, 2, 3, 4, 5, 6]}
+        )
+        db.session.commit()
+
+        monday = date(2026, 7, 13)
+        assert NotificationService._week_end_for_start(monday) == date(2026, 7, 17)
+
 
 class TestSendWeeklyShiftNotifications:
     def test_sends_one_email_per_user_with_shifts(
@@ -303,6 +319,37 @@ class TestSendWeeklyOncallNotification:
 
             assert result.sent == [test_user.email]
             instance.sendmail.assert_called_once()
+
+    def test_smtp_failure_is_logged_and_notifies_via_apprise(
+        self, test_app, test_group, test_user
+    ):
+        with test_app.app_context():
+            thursday = date(2026, 7, 9)
+            friday = NotificationService.next_friday(thursday)
+            start = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+            end = start + timedelta(days=7, hours=-14)
+            db.session.add(OnCall(user_id=test_user.id, start_time=start, end_time=end))
+            db.session.commit()
+
+            with (
+                patch("app.utils.notifications.email_sender.smtplib.SMTP") as mock_smtp,
+                patch(
+                    "app.services.notification_service.AppriseNotificationService.notify"
+                ) as mock_notify,
+            ):
+                instance = MagicMock()
+                instance.sendmail.side_effect = OSError("boom")
+                mock_smtp.return_value.__enter__.return_value = instance
+                result = NotificationService.send_weekly_oncall_notification(
+                    SMTP_CONFIG, reference_date=thursday
+                )
+
+            assert result.sent == []
+            assert len(result.failed) == 1
+            assert result.failed[0][0] == test_user.email
+            assert NotificationLog.query.count() == 0
+            mock_notify.assert_called_once()
+            assert mock_notify.call_args[0][0] == "system"
 
     def test_no_oncall_assigned_sends_nothing(self, test_app, test_group):
         with test_app.app_context():

@@ -79,6 +79,34 @@ class TestAuthRoutes:
             assert response.status_code == 200
             assert b"Kairos" in response.data or b"Schedule" in response.data
 
+    def test_login_post_valid_redirects_to_safe_next_url(
+        self, client, test_user, test_app
+    ):
+        """A same-origin ?next= redirects there instead of main.index -
+        _is_safe_next_url()'s True branch, not exercised by
+        test_login_post_valid above (no ?next= param there)."""
+        with test_app.app_context():
+            response = client.post(
+                "/login?next=/profile",
+                data={"email": test_user.email, "password": "test123"},
+                follow_redirects=False,
+            )
+            assert response.status_code == 302
+            assert response.location.endswith("/profile")
+
+    def test_is_safe_next_url_rejects_empty_and_cross_origin(self, test_app):
+        """Direct test of _is_safe_next_url() - the empty-target and
+        cross-origin-rejection branches are guarded at the one real call
+        site (login()'s `next_page and _is_safe_next_url(...)`) in a way
+        that never actually calls the function with an empty/absent
+        target, so those branches are exercised directly here."""
+        from app.routes.auth import _is_safe_next_url
+
+        with test_app.test_request_context("/login"):
+            assert _is_safe_next_url("") is False
+            assert _is_safe_next_url("https://evil.example.com/phish") is False
+            assert _is_safe_next_url("/profile") is True
+
     def test_login_post_invalid_credentials(self, client):
         """Test logging in with invalid credentials."""
         response = client.post(

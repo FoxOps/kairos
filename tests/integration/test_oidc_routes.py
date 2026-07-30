@@ -66,6 +66,13 @@ class TestLoginRedirectsToOidcWhenBasicAuthDisabled:
         assert resp.status_code == 200
         assert b"password" in resp.data.lower() or b"mot de passe" in resp.data.lower()
 
+    def test_register_redirects_to_oidc_login(self, test_app, oidc_mode, client):
+        """register()'s own is_basic_auth_disabled() branch - distinct
+        route from /login above, same guard."""
+        resp = client.get("/register", follow_redirects=False)
+        assert resp.status_code == 302
+        assert "/oidc/login" in resp.headers["Location"]
+
 
 class TestOidcLoginRoute:
     def test_redirects_to_provider_authorization_url(self, test_app, oidc_mode, client):

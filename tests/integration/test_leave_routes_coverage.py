@@ -61,6 +61,44 @@ class TestAddLeaveEdgeCases:
             )
         assert resp.status_code == 200
 
+    def test_rebalance_failure_flashes_warning(
+        self, test_app, logged_in_client, test_leave, test_user
+    ):
+        with patch(
+            "app.routes.leave_routes.LeaveService.add_leave",
+            return_value=(test_leave, None),
+        ):
+            resp = logged_in_client.post(
+                "/leave/add",
+                data={
+                    "user_id": str(test_user.id),
+                    "start_date": date.today().isoformat(),
+                    "end_date": (date.today() + timedelta(days=1)).isoformat(),
+                },
+                follow_redirects=True,
+            )
+        assert resp.status_code == 200
+        assert b"chou" in resp.data.lower() or b"chec" in resp.data.lower()
+
+    def test_no_shifts_to_recalculate_flashes_message(
+        self, test_app, logged_in_client, test_leave, test_user
+    ):
+        with patch(
+            "app.routes.leave_routes.LeaveService.add_leave",
+            return_value=(test_leave, []),
+        ):
+            resp = logged_in_client.post(
+                "/leave/add",
+                data={
+                    "user_id": str(test_user.id),
+                    "start_date": date.today().isoformat(),
+                    "end_date": (date.today() + timedelta(days=1)).isoformat(),
+                },
+                follow_redirects=True,
+            )
+        assert resp.status_code == 200
+        assert b"Aucun shift" in resp.data
+
 
 class TestDeleteLeave:
     def test_delete_nonexistent_leave_404(self, test_app, logged_in_client):
@@ -76,6 +114,60 @@ class TestDeleteLeave:
         ):
             resp = logged_in_client.post(
                 f"/leave/delete/{test_leave.id}", follow_redirects=True
+            )
+        assert resp.status_code == 200
+        assert b"Erreur" in resp.data
+
+    def test_rebalance_failure_flashes_warning(
+        self, test_app, logged_in_client, test_leave
+    ):
+        with patch(
+            "app.routes.leave_routes.LeaveService.delete_leave",
+            return_value=(test_leave, None),
+        ):
+            resp = logged_in_client.post(
+                f"/leave/delete/{test_leave.id}", follow_redirects=True
+            )
+        assert resp.status_code == 200
+        assert b"chou" in resp.data.lower()
+
+    def test_no_shifts_to_recalculate_flashes_message(
+        self, test_app, logged_in_client, test_leave
+    ):
+        with patch(
+            "app.routes.leave_routes.LeaveService.delete_leave",
+            return_value=(test_leave, []),
+        ):
+            resp = logged_in_client.post(
+                f"/leave/delete/{test_leave.id}", follow_redirects=True
+            )
+        assert resp.status_code == 200
+        assert b"Aucun shift" in resp.data
+
+
+class TestDeleteFilteredLeaves:
+    def test_exception_handled(self, test_app, logged_in_client):
+        with patch(
+            "app.routes.leave_routes.LeaveService.delete_filtered",
+            side_effect=RuntimeError("boom"),
+        ):
+            resp = logged_in_client.post(
+                "/leave/delete-filtered", data={}, follow_redirects=True
+            )
+        assert resp.status_code == 200
+        assert b"Erreur" in resp.data
+
+
+class TestDeleteSelectedLeaves:
+    def test_exception_handled(self, test_app, logged_in_client, test_leave):
+        with patch(
+            "app.routes.leave_routes.LeaveService.delete_filtered",
+            side_effect=RuntimeError("boom"),
+        ):
+            resp = logged_in_client.post(
+                "/leave/delete-selected",
+                data={"ids": [str(test_leave.id)]},
+                follow_redirects=True,
             )
         assert resp.status_code == 200
         assert b"Erreur" in resp.data
@@ -166,8 +258,15 @@ class TestApiUpdateLeave:
         assert resp.status_code == 400
 
     def test_missing_start(self, test_app, logged_in_client, test_leave):
-        resp = logged_in_client.patch(f"/api/leave/{test_leave.id}", json={})
+        """A non-empty body without "start" - json={} would be falsy
+        and hit the earlier "Aucune donnee recue" guard instead (see
+        test_no_json_body above), never reaching this "Date de debut
+        manquante" branch."""
+        resp = logged_in_client.patch(
+            f"/api/leave/{test_leave.id}", json={"end": "2023-12-20"}
+        )
         assert resp.status_code == 400
+        assert "manquante" in resp.get_json()["error"]
 
     def test_success_without_end_uses_original_duration(
         self, test_app, logged_in_client, test_user
@@ -196,6 +295,35 @@ class TestApiUpdateLeave:
             f"/api/leave/{test_leave.id}", json={"start": "bogus"}
         )
         assert resp.status_code == 400
+
+    def test_explicit_end_date_is_used(self, test_app, logged_in_client, test_leave):
+        """Passing both start and end - a different branch than
+        test_success_without_end_uses_original_duration above, which
+        derives `end` from the leave's own existing duration."""
+        new_start = date.today() + timedelta(days=10)
+        new_end = date.today() + timedelta(days=12)
+        resp = logged_in_client.patch(
+            f"/api/leave/{test_leave.id}",
+            json={"start": new_start.isoformat(), "end": new_end.isoformat()},
+        )
+        assert resp.status_code == 200
+        data = resp.get_json()["leave"]
+        assert data["start"] == new_start.isoformat()
+        assert data["end"] == new_end.isoformat()
+
+    def test_service_reports_validation_error(
+        self, test_app, logged_in_client, test_leave
+    ):
+        with patch(
+            "app.routes.leave_routes.LeaveService.api_update",
+            return_value=(None, "erreur simulée", False),
+        ):
+            resp = logged_in_client.patch(
+                f"/api/leave/{test_leave.id}",
+                json={"start": date.today().isoformat()},
+            )
+        assert resp.status_code == 400
+        assert resp.get_json()["error"] == "erreur simulée"
 
     def test_unexpected_exception_returns_500(
         self, test_app, logged_in_client, test_leave

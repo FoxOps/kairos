@@ -516,6 +516,18 @@ class TestExportRoutesTokenAuth:
         # Should return 401, 200, or redirect to login (302)
         assert response.status_code in [401, 200, 302]
 
+    def test_export_shifts_unauthorized_returns_401_for_calendar_client(self, client):
+        """A real calendar client (Accept: text/calendar) polling an
+        expired/invalid token gets a bare 401, not an HTML login-page
+        redirect it can't do anything with - _unauthorized_response()'s
+        JSON/text-calendar branch, distinct from the browser-facing
+        redirect exercised by every other unauthenticated test here."""
+        response = client.get(
+            "/export/shifts?scope=my",
+            headers={"Accept": "text/calendar"},
+        )
+        assert response.status_code == 401
+
     def test_export_oncall_with_token(self, client, test_user, test_app):
         """Test exporting on-calls with a valid token."""
         with test_app.app_context():

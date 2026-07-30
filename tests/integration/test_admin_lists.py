@@ -236,6 +236,33 @@ class TestAddShiftType:
         assert response.status_code == 200
         assert b"nombres entiers" in response.data or b"Erreur" in response.data
 
+    def test_add_shift_type_post_generic_exception_hits_handle_form_errors(
+        self, logged_in_client, monkeypatch
+    ):
+        """A non-ValueError exception from the service - the
+        @handle_form_errors decorator's own generic except branch
+        (app/auth/decorators.py), distinct from add_shift_type()'s own
+        inline `except ValueError` a few lines above."""
+        from app.services import ShiftTypeService
+
+        def _raise(*args, **kwargs):
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr(ShiftTypeService, "create", _raise)
+
+        response = logged_in_client.post(
+            "/admin/shift-types/add",
+            data={
+                "name": "night",
+                "label": "Nuit",
+                "start_hour": "22",
+                "end_hour": "23",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
+
 
 class TestAdminDashboard:
     """Tests for /admin."""

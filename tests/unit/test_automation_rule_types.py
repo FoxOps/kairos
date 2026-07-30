@@ -86,6 +86,12 @@ class TestOnCallAnchorRule:
             {"weekday": 4, "start_hour": 24, "end_hour": 7}
         )
 
+    def test_validate_params_rejects_invalid_weekday(self):
+        errors = OnCallAnchorRule.validate_params(
+            {"weekday": 7, "start_hour": 21, "end_hour": 7}
+        )
+        assert any("weekday" in e for e in errors)
+
     def test_validate_params_accepts_valid_anchor(self):
         assert (
             OnCallAnchorRule.validate_params(

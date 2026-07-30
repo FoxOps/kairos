@@ -56,6 +56,22 @@ class TestMarkNotificationRead:
             updated = AppNotificationRepository.get_by_id(notification_id)
             assert updated.read_at is not None
 
+    def test_mark_read_without_link_redirects_to_notifications(
+        self, test_app, non_admin_client, test_user
+    ):
+        with test_app.app_context():
+            notification = AppNotificationRepository.create(
+                test_user.id, "swap_approved", "Test"
+            )
+            db.session.commit()
+            notification_id = notification.id
+
+        resp = non_admin_client.post(
+            f"/notifications/{notification_id}/read", follow_redirects=False
+        )
+        assert resp.status_code == 302
+        assert resp.headers.get("Location") == "/notifications"
+
     def test_mark_read_nonexistent_404(self, test_app, non_admin_client):
         resp = non_admin_client.post("/notifications/999999/read")
         assert resp.status_code == 404

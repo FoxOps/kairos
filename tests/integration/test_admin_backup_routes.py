@@ -172,3 +172,22 @@ class TestBackupsDownloadS3:
     def test_download_when_s3_disabled_returns_404(self, logged_in_client):
         response = logged_in_client.get("/admin/backups/download/s3/some/key.gz")
         assert response.status_code == 404
+
+    def test_download_success_streams_file(
+        self, logged_in_client, tmp_path, monkeypatch
+    ):
+        from app.services import BackupService
+
+        tmp_file = tmp_path / "downloaded.sqlite.gz"
+        tmp_file.write_bytes(b"s3 backup content")
+
+        monkeypatch.setattr(
+            BackupService,
+            "download_s3_backup_to_temp",
+            staticmethod(lambda key: str(tmp_file)),
+        )
+
+        response = logged_in_client.get("/admin/backups/download/s3/some/key.gz")
+
+        assert response.status_code == 200
+        assert response.data == b"s3 backup content"

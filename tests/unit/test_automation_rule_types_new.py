@@ -123,6 +123,10 @@ class TestMandatoryShiftRule:
             == []
         )
 
+    def test_validate_params_rejects_non_list(self, test_app):
+        errors = MandatoryShiftRule.validate_params({"shift_type_ids": "not-a-list"})
+        assert errors == ["shift_type_ids must be a list"]
+
 
 class TestRestAfterOnCallRule:
     def test_default_requires_no_rest(self, test_app):

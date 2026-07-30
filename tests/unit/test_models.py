@@ -325,6 +325,20 @@ class TestUserModel:
             assert test_user.apprise_shift_target_ids is None
             assert test_user.get_apprise_shift_target_ids() == []
 
+    def test_get_apprise_shift_target_ids_malformed_json_returns_empty(
+        self, test_app, test_user
+    ):
+        with test_app.app_context():
+            test_user.apprise_shift_target_ids = "not-json"
+            assert test_user.get_apprise_shift_target_ids() == []
+
+    def test_get_apprise_oncall_target_ids_malformed_json_returns_empty(
+        self, test_app, test_user
+    ):
+        with test_app.app_context():
+            test_user.apprise_oncall_target_ids = "not-json"
+            assert test_user.get_apprise_oncall_target_ids() == []
+
     def test_generate_ics_token_sets_created_at(self, test_app, test_user):
         with test_app.app_context():
             assert test_user.ics_token_created_at is None
@@ -379,6 +393,11 @@ class TestUserModel:
             url = test_user.get_ics_export_url("shifts", "all", group_ids=[])
 
             assert "group_ids" not in url
+
+    def test_get_ics_export_url_no_token_returns_none(self, test_app, test_user):
+        with test_app.app_context():
+            assert test_user.ics_token is None
+            assert test_user.get_ics_export_url("shifts", "all") is None
 
     def test_is_ics_token_expired_no_token(self, test_app, test_user):
         with test_app.app_context():
@@ -650,6 +669,30 @@ class TestLeaveModel:
 
             assert leave.id is not None
 
+    def test_is_active_true_within_window(self, test_app, test_user):
+        with test_app.app_context():
+            from datetime import date, timedelta
+
+            today = date.today()
+            leave = Leave(
+                user_id=test_user.id,
+                start_date=today - timedelta(days=1),
+                end_date=today + timedelta(days=1),
+            )
+            assert leave.is_active() is True
+
+    def test_is_active_false_outside_window(self, test_app, test_user):
+        with test_app.app_context():
+            from datetime import date, timedelta
+
+            today = date.today()
+            leave = Leave(
+                user_id=test_user.id,
+                start_date=today - timedelta(days=10),
+                end_date=today - timedelta(days=5),
+            )
+            assert leave.is_active() is False
+
 
 class TestNotificationLogModel:
     """Tests for the NotificationLog model."""
@@ -802,6 +845,27 @@ class TestSwapRequestModel:
             assert test_swap_request.reviewed_at is not None
             assert test_swap_request.admin_comment == "Conflit de planning"
 
+    def test_reviewer_property_looks_up_uncached_reviewer(
+        self, test_app, test_swap_request, second_user
+    ):
+        """reviewer is a plain @property (see the model's own docstring),
+        not a db.relationship() - a freshly reviewed_by_id assignment
+        has no preloaded _cached_reviewer, so this exercises the
+        uncached db.session.get() lookup branch."""
+        with test_app.app_context():
+            from app.models.swap_request import _NOT_PRELOADED
+
+            test_swap_request.mark_reviewed(second_user.id, SwapRequest.REJECTED)
+            assert test_swap_request._cached_reviewer is _NOT_PRELOADED
+            assert test_swap_request.reviewer.id == second_user.id
+
+    def test_reviewer_property_uses_preloaded_cache(
+        self, test_app, test_swap_request, second_user
+    ):
+        with test_app.app_context():
+            test_swap_request._cached_reviewer = second_user
+            assert test_swap_request.reviewer is second_user
+
 
 class TestAppNotificationModel:
     """Tests for the AppNotification model."""
@@ -876,6 +940,23 @@ class TestSettingModel:
             assert Setting.get("key_a") == "value_a"
             assert Setting.get("key_b") == "value_b"
             assert Setting.query.count() == 2
+
+    def test_get_falls_back_to_default_on_db_error(self, test_app, monkeypatch):
+        """get() is called from a context processor on every page render,
+        including error pages - a DB hiccup here must never crash the
+        page (see the method's own docstring)."""
+        from unittest.mock import MagicMock
+
+        from sqlalchemy.exc import SQLAlchemyError
+
+        with test_app.app_context():
+            broken_query = MagicMock()
+            broken_query.filter_by.return_value.first.side_effect = SQLAlchemyError(
+                "db unavailable"
+            )
+            monkeypatch.setattr(Setting, "query", broken_query)
+
+            assert Setting.get("default_timezone", default="fallback") == "fallback"
 
 
 class TestAuditLogModel:

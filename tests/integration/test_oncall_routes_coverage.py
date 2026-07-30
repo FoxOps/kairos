@@ -101,6 +101,21 @@ class TestBulkDeleteExceptions:
         assert resp.status_code == 200
         assert b"Erreur" in resp.data
 
+    def test_delete_selected_exception_handled(
+        self, test_app, logged_in_client, test_oncall
+    ):
+        with patch(
+            "app.routes.oncall_routes.OnCallService.delete_filtered",
+            side_effect=RuntimeError("boom"),
+        ):
+            resp = logged_in_client.post(
+                "/oncall/delete-selected",
+                data={"ids": [str(test_oncall.id)]},
+                follow_redirects=True,
+            )
+        assert resp.status_code == 200
+        assert b"Erreur" in resp.data
+
 
 class TestApiDeleteOncall:
     def test_not_found(self, test_app, logged_in_client):
@@ -139,8 +154,27 @@ class TestApiUpdateOncall:
         assert resp.status_code == 400
 
     def test_missing_start(self, test_app, logged_in_client, test_oncall):
-        resp = logged_in_client.patch(f"/api/oncall/{test_oncall.id}", json={})
+        """A non-empty body without "start" - json={} would be falsy
+        and hit the earlier "Aucune donnee recue" guard instead."""
+        resp = logged_in_client.patch(
+            f"/api/oncall/{test_oncall.id}", json={"end": "2023-12-20T21:00:00"}
+        )
         assert resp.status_code == 400
+        assert "manquante" in resp.get_json()["error"]
+
+    def test_service_reports_validation_error(
+        self, test_app, logged_in_client, test_oncall
+    ):
+        with patch(
+            "app.routes.oncall_routes.OnCallService.api_update",
+            return_value=(None, "erreur simulée"),
+        ):
+            resp = logged_in_client.patch(
+                f"/api/oncall/{test_oncall.id}",
+                json={"start": datetime.now().isoformat()},
+            )
+        assert resp.status_code == 400
+        assert resp.get_json()["error"] == "erreur simulée"
 
     def test_success_without_end_uses_original_duration(
         self, test_app, logged_in_client, test_user

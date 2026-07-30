@@ -538,3 +538,158 @@ class TestPurgeSwaps:
         count = SwapService.purge_all_resolved()
         assert count == 0
         assert SwapRequest.query.count() == 1
+
+
+class TestValidationError:
+    """Direct tests of SwapService._validation_error() - the shared
+    re-validation logic called from request_swap/confirm_swap/
+    approve_swap. Branches not otherwise reachable through the higher-
+    level flows exercised elsewhere in this file."""
+
+    def test_shift_none_is_rejected(self, test_app, test_user, second_user):
+        with test_app.app_context():
+            error = SwapService._validation_error(test_user, None, second_user, None)
+            assert error == "Shift introuvable"
+
+    def test_target_user_none_is_rejected(self, test_app, test_user, test_swap_shift):
+        with test_app.app_context():
+            error = SwapService._validation_error(
+                test_user, test_swap_shift, None, None
+            )
+            assert error == "Utilisateur cible introuvable"
+
+    def test_target_shift_not_owned_by_target_user(
+        self, test_app, test_user, second_user, test_swap_shift, test_shift_type
+    ):
+        """target_shift belongs to someone other than target_user - can
+        happen if it was reassigned between the target picking it and
+        this re-validation running."""
+        with test_app.app_context():
+            someone_elses_shift = Shift(
+                date=test_swap_shift.date + timedelta(days=1),
+                start_time=test_swap_shift.start_time + timedelta(days=1),
+                end_time=test_swap_shift.end_time + timedelta(days=1),
+                user_id=test_user.id,
+                shift_type_id=test_shift_type.id,
+            )
+            db.session.add(someone_elses_shift)
+            db.session.commit()
+
+            error = SwapService._validation_error(
+                test_user, test_swap_shift, second_user, someone_elses_shift
+            )
+            assert "n'appartient plus" in error
+
+    def test_requester_on_leave_during_target_shift_date(
+        self, test_app, test_user, second_user, test_swap_shift, test_shift_type
+    ):
+        with test_app.app_context():
+            target_shift = Shift(
+                date=test_swap_shift.date + timedelta(days=1),
+                start_time=test_swap_shift.start_time + timedelta(days=1),
+                end_time=test_swap_shift.end_time + timedelta(days=1),
+                user_id=second_user.id,
+                shift_type_id=test_shift_type.id,
+            )
+            db.session.add(target_shift)
+            db.session.add(
+                Leave(
+                    user_id=test_user.id,
+                    start_date=target_shift.date,
+                    end_date=target_shift.date,
+                )
+            )
+            db.session.commit()
+
+            error = SwapService._validation_error(
+                test_user, test_swap_shift, second_user, target_shift
+            )
+            assert "en congé" in error
+
+    def test_requester_has_other_shift_on_target_shift_date(
+        self, test_app, test_user, second_user, test_swap_shift, test_shift_type
+    ):
+        with test_app.app_context():
+            target_shift = Shift(
+                date=test_swap_shift.date + timedelta(days=1),
+                start_time=test_swap_shift.start_time + timedelta(days=1),
+                end_time=test_swap_shift.end_time + timedelta(days=1),
+                user_id=second_user.id,
+                shift_type_id=test_shift_type.id,
+            )
+            db.session.add(target_shift)
+            db.session.add(
+                Shift(
+                    date=target_shift.date,
+                    start_time=target_shift.start_time,
+                    end_time=target_shift.end_time,
+                    user_id=test_user.id,
+                    shift_type_id=test_shift_type.id,
+                )
+            )
+            db.session.commit()
+
+            error = SwapService._validation_error(
+                test_user, test_swap_shift, second_user, target_shift
+            )
+            assert "déjà un autre shift" in error
+
+
+class TestApproveSwapRevalidation:
+    def test_approve_fails_when_shift_reassigned_since_confirmation(
+        self, test_app, confirmed_swap_request, admin_user, second_user
+    ):
+        """confirmed_swap_request's shift gets reassigned to a third
+        party between the target's confirmation and the admin's
+        approval - approve_swap()'s own re-validation error branch."""
+        with test_app.app_context():
+            shift = db.session.get(Shift, confirmed_swap_request.shift_id)
+            shift.user_id = second_user.id
+            db.session.commit()
+
+            error = SwapService.approve_swap(confirmed_swap_request, admin_user)
+            assert error is not None
+            assert "invalide" in error
+            assert confirmed_swap_request.status == SwapRequest.AWAITING_ADMIN
+
+
+class TestRevertSwapTargetShiftDrift:
+    def test_revert_target_shift_reassigned_since_fails(
+        self,
+        test_app,
+        test_user,
+        second_user,
+        test_swap_shift,
+        test_shift_type,
+        admin_user,
+    ):
+        """Same class of drift as test_revert_shift_reassigned_since_fails
+        above, but on the reciprocal target_shift side instead of the
+        primary shift."""
+        with test_app.app_context():
+            target_shift = Shift(
+                date=test_swap_shift.date + timedelta(days=1),
+                start_time=test_swap_shift.start_time + timedelta(days=1),
+                end_time=test_swap_shift.end_time + timedelta(days=1),
+                user_id=second_user.id,
+                shift_type_id=test_shift_type.id,
+            )
+            db.session.add(target_shift)
+            db.session.commit()
+
+            swap_request, error = SwapService.request_swap(
+                test_user, test_swap_shift, second_user
+            )
+            assert error is None
+            SwapService.confirm_swap(swap_request, second_user, target_shift)
+            SwapService.approve_swap(swap_request, admin_user)
+
+            # After approval, target_shift belongs to the requester
+            # (test_user) - reassigning it back to second_user simulates
+            # drift since approval.
+            target_shift.user_id = second_user.id
+            db.session.commit()
+
+            error = SwapService.revert_swap(swap_request, admin_user)
+            assert error is not None
+            assert swap_request.status == SwapRequest.APPROVED

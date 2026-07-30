@@ -282,6 +282,15 @@ class TestGroupService:
         assert ok is False
         assert "utilisateurs" in error
 
+    def test_delete_missing_group(self, test_app):
+        """The route's own delete_group() already 404s on a missing id
+        before ever calling GroupService.delete() (see
+        admin_group_routes.py), so this "not found" return is only
+        reachable by calling the service directly."""
+        ok, error = GroupService.delete(999999)
+        assert ok is False
+        assert error is None
+
 
 class TestShiftTypeService:
     def test_create_success(self, test_app):
@@ -326,9 +335,32 @@ class TestShiftTypeService:
         assert updated is None
         assert error is None
 
+    def test_update_rejects_invalid_hour_range(self, test_app, test_shift_type):
+        updated, error = ShiftTypeService.update(
+            test_shift_type.id, "morning", "Matin", 5, 30
+        )
+        assert updated is None
+        assert "comprises entre 0 et 23" in error
+
+    def test_update_rejects_start_after_end(self, test_app, test_shift_type):
+        updated, error = ShiftTypeService.update(
+            test_shift_type.id, "morning", "Matin", 18, 8
+        )
+        assert updated is None
+        assert "antérieure" in error
+
     def test_delete_success(self, test_app, test_shift_type):
         ok, error = ShiftTypeService.delete(test_shift_type.id)
         assert ok is True
+        assert error is None
+
+    def test_delete_missing(self, test_app):
+        """The route's own delete_shift_type() already 404s on a missing
+        id before ever calling ShiftTypeService.delete() (see
+        admin_shift_type_routes.py), so this "not found" return is only
+        reachable by calling the service directly."""
+        ok, error = ShiftTypeService.delete(999999)
+        assert ok is False
         assert error is None
 
     def test_delete_blocked_by_existing_shift(
@@ -451,6 +483,19 @@ class TestShiftService:
         assert error is None
         assert shift is not None
 
+    def test_api_create_rejects_conflict(self, test_app, test_user, test_shift_type):
+        weekday = _next_weekday()
+        start = datetime.combine(weekday, datetime.min.time())
+        ShiftService.api_create(
+            test_user, test_shift_type, start, start + timedelta(hours=8)
+        )
+
+        shift, error = ShiftService.api_create(
+            test_user, test_shift_type, start, start + timedelta(hours=8)
+        )
+        assert shift is None
+        assert "Conflit" in error
+
     def test_api_update_rejects_weekend(self, test_app, test_shift):
         saturday = date.today()
         while saturday.weekday() != 5:
@@ -498,6 +543,18 @@ class TestShiftService:
         )
         assert error is None
         assert shift.user_id == second_user.id
+
+    def test_api_update_reassign_to_nonexistent_shift_type(self, test_app, test_shift):
+        target_day = _next_weekday()
+        new_start = datetime.combine(target_day, datetime.min.time())
+        shift, error = ShiftService.api_update(
+            test_shift.id,
+            new_start,
+            new_start + timedelta(hours=8),
+            new_shift_type_id=999999,
+        )
+        assert shift is None
+        assert "Type de shift non trouv" in error
 
     def test_api_update_reassigns_shift_type(
         self, test_app, test_shift, afternoon_shift_type
@@ -667,6 +724,19 @@ class TestOnCallService:
         assert entry is not None
         assert entry.resource_id == oncall.id
 
+    def test_add_oncall_rejects_when_period_already_covered(self, test_app, test_user):
+        friday = _next_friday()
+        start = datetime.combine(friday, datetime.min.time())
+        OnCallService.add_oncall(test_user, start)
+
+        oncall, error = OnCallService.add_oncall(test_user, start)
+        assert oncall is None
+        assert "Impossible" in error
+
+    def test_api_delete_success_and_missing(self, test_app, test_oncall):
+        assert OnCallService.api_delete(test_oncall.id) is True
+        assert OnCallService.api_delete(test_oncall.id) is False
+
     def test_delete_oncall(self, test_app, test_oncall):
         deleted = OnCallService.delete_oncall(test_oncall.id)
         assert deleted is not None
@@ -752,6 +822,17 @@ class TestOnCallService:
         )
         assert error is None
         assert oncall.user_id == second_user.id
+
+    def test_api_update_reassign_to_nonexistent_user(self, test_app, test_oncall):
+        friday = _next_friday()
+        new_start = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+        new_end = new_start + timedelta(days=7, hours=-14)
+
+        oncall, error = OnCallService.api_update(
+            test_oncall.id, new_start, new_end, new_user_id=999999
+        )
+        assert oncall is None
+        assert "Utilisateur non trouv" in error
 
     def test_api_update_reassignment_rejects_conflict_for_new_user(
         self, test_app, second_user, test_oncall
@@ -973,6 +1054,20 @@ class TestLeaveService:
         assert deleted is not None
         assert LeaveRepository.get_by_id(test_leave.id) is None
 
+    def test_rebalance_after_leave_exception_is_caught(self, test_app, test_leave):
+        """_rebalance_after_leave()'s own except branch - only reached
+        by a failure in AdvancedShiftAutomation.rebalance_after_leave's
+        setup step itself (its per-day/per-section failures are already
+        isolated and reported without raising, see the method's own
+        docstring), so exercised here via a direct mock."""
+        with patch(
+            "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
+            side_effect=RuntimeError("boom"),
+        ):
+            deleted, rebalance_failed = LeaveService.api_delete(test_leave.id)
+        assert deleted is True
+        assert rebalance_failed is True
+
     def test_delete_leave_missing(self, test_app):
         deleted, regenerated = LeaveService.delete_leave(999999)
         assert deleted is None
@@ -994,6 +1089,25 @@ class TestLeaveService:
         )
         assert leave is None
         assert error == "Congé non trouvé"
+        assert rebalance_failed is False
+
+    def test_api_update_rejects_conflict(self, test_app, test_user, test_leave):
+        """Moving a different leave onto test_leave's own dates - a
+        different branch than test_api_update_rejects_end_before_start
+        above."""
+        other_leave = Leave(
+            user_id=test_user.id,
+            start_date=test_leave.start_date + timedelta(days=30),
+            end_date=test_leave.end_date + timedelta(days=30),
+        )
+        db.session.add(other_leave)
+        db.session.commit()
+
+        leave, error, rebalance_failed = LeaveService.api_update(
+            other_leave.id, test_leave.start_date, test_leave.end_date
+        )
+        assert leave is None
+        assert "existe déjà" in error
         assert rebalance_failed is False
 
     def test_api_delete(self, test_app, test_leave):
@@ -1112,3 +1226,17 @@ class TestExportService:
         ics = ExportService.export_shifts("all", test_user)
         assert test_user.name in ics
         assert second_user.name in ics
+
+
+class TestScheduleService:
+    def test_get_calendar_events_uses_default_180_day_window(
+        self, test_app, test_user, test_shift
+    ):
+        """get_calendar_events() - kept for callers that don't need a
+        specific range (see its own docstring), currently only used
+        via this default-window convenience wrapper around
+        get_calendar_events_for_range()."""
+        from app.services.schedule_service import ScheduleService
+
+        events = ScheduleService.get_calendar_events(test_user)
+        assert any(e["id"] == f"shift-{test_shift.id}" for e in events)

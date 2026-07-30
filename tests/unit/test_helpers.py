@@ -142,8 +142,50 @@ class TestHelperFunctions:
             assert result is None
 
 
+class TestResolveAuthenticatedUser:
+    """Direct tests of _resolve_authenticated_user() - can_add_shift/
+    can_add_leave/can_add_oncall are always called with an explicit
+    user in the rest of this file, so the "default to current_user"
+    branch needs a real request context instead."""
+
+    def test_defaults_to_current_user_and_rejects_anonymous(self, test_app):
+        from app.utils.helpers.common_helpers import _resolve_authenticated_user
+
+        with test_app.test_request_context("/"):
+            assert _resolve_authenticated_user(None) is None
+
+    def test_defaults_to_current_user_when_logged_in(self, test_app, test_user):
+        from flask_login import login_user
+
+        from app.utils.helpers.common_helpers import _resolve_authenticated_user
+
+        with test_app.test_request_context("/"):
+            login_user(test_user)
+            resolved = _resolve_authenticated_user(None)
+            assert resolved is not None
+            assert resolved.id == test_user.id
+
+
 class TestCanAddShift:
     """Tests for can_add_shift."""
+
+    def test_can_add_shift_returns_false_when_no_user_and_unauthenticated(
+        self, test_app
+    ):
+        with test_app.test_request_context("/"):
+            assert can_add_shift(None, date(2023, 12, 1), None) is False
+
+    def test_can_add_shift_defaults_date_to_today_when_omitted(
+        self, test_app, test_user
+    ):
+        from flask_login import login_user
+
+        with test_app.test_request_context("/"):
+            login_user(test_user)
+            # Just proving the default-date branch runs without raising -
+            # today's actual weekday determines the result.
+            result = can_add_shift(test_user)
+            assert result in (True, False)
 
     def test_can_add_shift_valid(self, test_app, test_user):
         """Test that a shift can be added on a valid date."""
@@ -167,7 +209,12 @@ class TestCanAddShift:
             assert not can_add
 
     def test_can_add_shift_user_on_leave(self, test_app, test_user):
-        """Test that a shift can't be added if the user is on leave."""
+        """Test that a shift can't be added if the user is on leave.
+
+        Dec 10, 2023 (the leave's own start_date) is a Sunday - using
+        it as shift_date would hit the earlier weekend check instead
+        of the leave-conflict branch this test is meant to exercise,
+        so Dec 11 (Monday, still inside the leave) is used instead."""
         with test_app.app_context():
             # Create a leave
             start_date = datetime(2023, 12, 10).date()
@@ -178,7 +225,7 @@ class TestCanAddShift:
             db.session.add(leave)
             db.session.commit()
 
-            shift_date = leave.start_date  # Leave start date
+            shift_date = datetime(2023, 12, 11).date()  # Monday, inside the leave
             can_add = can_add_shift(test_user, shift_date, None)
             assert not can_add
 
@@ -222,6 +269,21 @@ class TestCanAddShift:
 
 class TestCanAddOnCall:
     """Tests for can_add_oncall."""
+
+    def test_can_add_oncall_returns_false_when_no_user_and_unauthenticated(
+        self, test_app
+    ):
+        with test_app.test_request_context("/"):
+            start_time = datetime(2023, 12, 1, 21, 0)
+            end_time = start_time + timedelta(days=7, hours=-14)
+            assert can_add_oncall(None, start_time, end_time) is False
+
+    def test_can_add_oncall_returns_false_when_times_missing(self, test_app, test_user):
+        with test_app.app_context():
+            start_time = datetime(2023, 12, 1, 21, 0)
+            end_time = start_time + timedelta(days=7, hours=-14)
+            assert can_add_oncall(test_user, None, end_time) is False
+            assert can_add_oncall(test_user, start_time, None) is False
 
     def test_can_add_oncall_valid(self, test_app, test_user):
         """Test that an on-call can be added on a Friday at 21h."""
@@ -469,6 +531,42 @@ class TestCanAddOnCallNewRules:
 
 class TestCanAddLeave:
     """Tests for can_add_leave."""
+
+    def test_can_add_leave_returns_false_when_no_user_and_unauthenticated(
+        self, test_app
+    ):
+        with test_app.test_request_context("/"):
+            assert can_add_leave(None, date(2023, 12, 20), date(2023, 12, 20)) is False
+
+    def test_can_add_leave_returns_false_when_dates_missing(self, test_app, test_user):
+        with test_app.app_context():
+            assert can_add_leave(test_user, None, date(2023, 12, 20)) is False
+            assert can_add_leave(test_user, date(2023, 12, 20), None) is False
+
+    def test_leave_keeps_minimum_headcount_true_for_non_schedule_user(
+        self, test_app, group_not_in_schedule
+    ):
+        """A user outside every schedule-eligible group can't affect
+        that headcount at all - leave_keeps_minimum_headcount()'s own
+        early-exit branch."""
+        from app.models import User
+        from app.utils.helpers.common_helpers import leave_keeps_minimum_headcount
+
+        with test_app.app_context():
+            outside_user = User(
+                name="Outside Schedule",
+                email="outside-schedule@test.com",
+                group_id=group_not_in_schedule.id,
+            )
+            db.session.add(outside_user)
+            db.session.commit()
+
+            assert (
+                leave_keeps_minimum_headcount(
+                    outside_user, date(2023, 12, 20), date(2023, 12, 20)
+                )
+                is True
+            )
 
     def test_can_add_leave_valid(self, test_app, test_user, second_user):
         """Test that a leave can be added over a valid period."""
