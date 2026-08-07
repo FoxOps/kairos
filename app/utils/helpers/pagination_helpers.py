@@ -64,11 +64,19 @@ def parse_date_range_filter(
     date_to_str = request_args.get("date_to", "").strip()
     date_from: date | None = None
     date_to: date | None = None
+
+    # Parsed independently - one malformed field must not also discard
+    # the other field's already-valid value.
     try:
         if date_from_str:
             date_from = datetime.strptime(date_from_str, "%Y-%m-%d").date()
+    except ValueError:
+        date_from_str = ""
+
+    try:
         if date_to_str:
             date_to = datetime.strptime(date_to_str, "%Y-%m-%d").date()
     except ValueError:
-        return None, None, "", ""
+        date_to_str = ""
+
     return date_from, date_to, date_from_str, date_to_str
