@@ -39,11 +39,32 @@ def _clipped_days(
 ) -> int:
     """Inclusive days of [span_start, span_end] that fall within
     [window_start, window_end] - 0 if there's no overlap. Used to split
-    an on-call/leave span proportionally across a month boundary instead
-    of wholly attributing it to whichever month it starts in."""
+    a date-only span (Leave) proportionally across a month boundary
+    instead of wholly attributing it to whichever month it starts in."""
     overlap_start = max(span_start, window_start)
     overlap_end = min(span_end, window_end)
     return max(0, (overlap_end - overlap_start).days + 1)
+
+
+def _clipped_duration_days(
+    span_start: datetime, span_end: datetime, window_start: date, window_end: date
+) -> float:
+    """Fractional-day overlap between a datetime span [span_start,
+    span_end] (OnCall - not whole calendar days) and an inclusive
+    calendar-day window [window_start, window_end] - same seconds/86400
+    unit as the all-time total below, so a month's count can never
+    exceed it. Using _clipped_days() (whole inclusive calendar days) on
+    an OnCall's .date()-truncated bounds instead of this would
+    overcount: e.g. a ~6.4-day on-call (Fri 21:00 -> next Fri 07:00)
+    rounds to a total of 6, but its two calendar-day dates are 7 days
+    apart, i.e. 8 inclusive days - a real bug caught during this pass."""
+    window_start_dt = datetime.combine(window_start, datetime.min.time())
+    window_end_dt = datetime.combine(
+        window_end + timedelta(days=1), datetime.min.time()
+    )
+    overlap_start = max(span_start, window_start_dt)
+    overlap_end = min(span_end, window_end_dt)
+    return max(0.0, (overlap_end - overlap_start).total_seconds() / 86400)
 
 
 class DashboardService:
@@ -68,17 +89,20 @@ class DashboardService:
         shift_last_month = sum(1 for d in shift_dates if last_start <= d <= last_end)
 
         oncall_spans = OnCallRepository.list_spans_for_user(user.id)
-        oncall_day_spans = [(start.date(), end.date()) for start, end in oncall_spans]
         oncall_total = round(
             sum((end - start).total_seconds() / 86400 for start, end in oncall_spans)
         )
-        oncall_this_month = sum(
-            _clipped_days(start, end, this_start, this_end)
-            for start, end in oncall_day_spans
+        oncall_this_month = round(
+            sum(
+                _clipped_duration_days(start, end, this_start, this_end)
+                for start, end in oncall_spans
+            )
         )
-        oncall_last_month = sum(
-            _clipped_days(start, end, last_start, last_end)
-            for start, end in oncall_day_spans
+        oncall_last_month = round(
+            sum(
+                _clipped_duration_days(start, end, last_start, last_end)
+                for start, end in oncall_spans
+            )
         )
 
         leave_spans = LeaveRepository.list_spans_for_user(user.id)

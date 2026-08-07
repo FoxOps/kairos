@@ -115,6 +115,30 @@ class TestDashboardServiceOnCallDays:
         assert stats["oncall"]["this_month"] == 3
         assert stats["oncall"]["last_month"] == 4
 
+    def test_oncall_this_month_never_exceeds_total_for_a_span_within_one_month(
+        self, test_app, test_user
+    ):
+        """Regression test: this_month/last_month used to sum whole
+        inclusive calendar days from .date()-truncated bounds, while
+        total summed fractional duration (seconds/86400) - for a
+        ~6.4-day span entirely inside one month, this_month (8,
+        date-based: 7 days apart + 1 inclusive) could exceed total (6,
+        duration-based)."""
+        this_month_first, _ = _month_bounds(date.today())
+        start = datetime.combine(
+            this_month_first + timedelta(days=5), datetime.min.time()
+        ) + timedelta(hours=21)
+        end = start + timedelta(hours=154)  # ~6.4167 days later, same month
+
+        db.session.add(OnCall(user_id=test_user.id, start_time=start, end_time=end))
+        db.session.commit()
+
+        stats = DashboardService.get_stats(test_user)
+
+        assert stats["oncall"]["total"] == 6
+        assert stats["oncall"]["this_month"] == 6
+        assert stats["oncall"]["this_month"] <= stats["oncall"]["total"]
+
 
 class TestDashboardServiceLeaveDays:
     def test_leave_days_uses_inclusive_duration(self, test_app, test_user):
