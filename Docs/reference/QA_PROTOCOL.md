@@ -29,6 +29,26 @@ Same [SemVer](VERSIONING.md) meaning as everywhere else in this project:
 The skill asks which tier applies if not told — never guesses. Each tier
 includes everything from the tier(s) below it.
 
+## Finding the diff range: `$BASE_REF`
+
+Several steps below need "everything new since the last release." The
+naive `git describe --tags --abbrev=0` **fails outright**
+(`fatal: No tag can describe '<HEAD>'`) whenever the release branch was
+cut before the previous tag's own final commit landed — `git describe`
+requires the tag to be a reachable ancestor of `HEAD`, which a
+long-lived feature/release branch doesn't guarantee (confirmed by
+hitting this directly while dogfooding this protocol for 1.1.0: the
+`1.0.0` tag isn't an ancestor of the `1.1.0` branch at all, since
+`1.1.0` branched before `main` got its final `1.0.0` version-bump
+commit). Resolve `$BASE_REF` robustly instead — prefer the most recent
+stable tag that *is* actually merged into `HEAD`, fall back to
+`origin/main` if none is:
+
+```bash
+BASE_REF=$(git tag --merged HEAD --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+BASE_REF=${BASE_REF:-origin/main}
+```
+
 ## §0 — Always, every tier
 
 Run first: cheapest checks, catch the most common problems.
@@ -37,17 +57,22 @@ Run first: cheapest checks, catch the most common problems.
    No tolerance here, unlike CI's `e2e` job (see §0.3) — a failure at
    this stage blocks everything else.
 2. **Migration round-trip check** — only if `migrations/versions/`
-   gained a file since the last tag:
+   gained a file since the release base (see "Finding the diff range"
+   below for `$BASE_REF`):
    ```bash
-   git diff --stat "$(git describe --tags --abbrev=0 --match '[0-9]*.[0-9]*.[0-9]*' --exclude '*-*')"..HEAD -- migrations/versions/
+   git diff --stat "$BASE_REF"..HEAD -- migrations/versions/
    # if non-empty:
    rm -f /tmp/kairos_migration_check.db
    FLASK_APP=run.py DATABASE_URL=sqlite:////tmp/kairos_migration_check.db flask db upgrade
-   FLASK_APP=run.py DATABASE_URL=sqlite:////tmp/kairos_migration_check.db flask db downgrade -1
+   FLASK_APP=run.py DATABASE_URL=sqlite:////tmp/kairos_migration_check.db flask db downgrade -- -1
    FLASK_APP=run.py DATABASE_URL=sqlite:////tmp/kairos_migration_check.db flask db upgrade
    ```
-   Confirms both directions actually run — catches a migration missing a
-   working `downgrade()`. If there's no new migration this release, say
+   `-- -1` (not bare `-1`): Flask-Migrate's Click-based CLI parses a
+   leading `-1` as an unknown option without the `--` separator, fails
+   with `Error: No such option '-1'` — confirmed by hitting this
+   directly while dogfooding this protocol for 1.1.0. Confirms both
+   directions actually run — catches a migration missing a working
+   `downgrade()`. If there's no new migration this release, say
    so explicitly rather than silently skipping the line.
 3. **E2E Playwright, blocking here**: `tests/e2e/test_browser_flows.py`
    stays `continue-on-error: true` in regular CI (informational there —
@@ -63,7 +88,48 @@ Run first: cheapest checks, catch the most common problems.
    reverted mid-cycle.
 5. **`ROADMAP.md`**: bump the `**Current version**` line, move any
    completed "In progress" items into "Done".
-6. **Manual smoke test** — see §4. Always run, every tier: it's the
+6. **Lightweight doc-accuracy check, every tier** — distinct from the
+   full multi-agent doc-sync pass (§2.8, minor+ only, which re-reads
+   whole docs against the whole diff): even a patch release must not
+   ship with documentation that now actively contradicts the code. Diff
+   `$BASE_REF..HEAD` for the files this release actually touched, then
+   grep those same files' names/behavior across `CLAUDE.md`,
+   `README.md`, and `ROADMAP.md` — does any surviving sentence describe
+   the *old* behavior? A patch fixing a bug that a doc explicitly called
+   out as a "known limitation" is the sharpest version of this: forgetting
+   to remove that note is a real, easy-to-miss regression in the docs
+   even though the code is correct. Not a full read-every-doc pass —
+   just "does anything I changed have a stale mention," every release,
+   no exceptions.
+7. **Numbers/badges sanity check** — a class of staleness distinct from
+   the doc-sync pass (§2.8, minor+ only): free-floating *numbers* in
+   prose that silently drift every release even when the surrounding
+   text stays accurate. Recompute and compare against what's currently
+   written, every tier, every release (cheap, mechanical, no reason to
+   gate it behind the minor-tier doc-sync pass):
+   - Test count: `ROADMAP.md`'s `**Current version**` line (e.g. "1930+
+     automated tests") against `python -m pytest tests/ --collect-only -q`'s
+     final count.
+   - Coverage %: `README.md`'s coverage badge and
+     `report/TESTING_SUMMARY.md`'s stated percentage against
+     `make test-coverage`'s actual `TOTAL` line.
+   - `report/TESTING_SUMMARY.md`'s per-layer breakdown (unit/
+     integration/e2e counts, "Last updated" line) — this file has
+     drifted badly before (caught during 1.1.0's own QA-protocol
+     dogfood run: it still said "1394" tests and "July 2026 —
+     1.0.0-RC2" against an actual 1930/1.1.0), specifically because
+     nothing else in this checklist touches it by default. Update it
+     whenever any of the counts above moved.
+8. **`report/` folder maintenance** — create `report/<version>/` for
+   this release's own reports (see "`report/` naming and layout"
+   below) before writing any of them. While in there, a quick look for
+   any report file that's a genuine same-content duplicate of another,
+   fully superseded one (not just "old" — see that section's narrow
+   exception to "`report/*.md` stays untouched"): propose the specific
+   files to the user by name and wait for explicit confirmation before
+   deleting anything. Skip this sub-step entirely if nothing looks
+   duplicate — it's opportunistic, not a mandatory every-release task.
+9. **Manual smoke test** — see §4. Always run, every tier: it's the
    cheapest real check and the only one with a human's judgment in the
    loop.
 
@@ -77,7 +143,7 @@ code that didn't change.
 §0, plus:
 
 7. **Multi-agent bug-hunt pass** (full spec below) →
-   `report/BUG_HUNT_<version>.md` plus grouped `fix:`/`perf:`/`test:`
+   `report/<version>/BUG_HUNT_<version>.md` plus grouped `fix:`/`perf:`/`test:`
    commits, TDD throughout (reproduce red, fix, confirm green).
 8. **Documentation-sync pass** (full spec below) → `docs:` commit(s).
 9. **`report/TESTING_SUMMARY.md`**: update the numbers if the test count
@@ -87,7 +153,7 @@ code that didn't change.
     ```bash
     ./scripts/load_test.sh
     ```
-    Produce `report/LOAD_TEST_<version>.md`, diffed against the most
+    Produce `report/<version>/LOAD_TEST_<version>.md`, diffed against the most
     recent prior `LOAD_TEST_*.md` for regressions (same methodology:
     same endpoint set unless new routes were added, note why if it
     changed). If nothing perf-sensitive changed, say so explicitly
@@ -104,7 +170,7 @@ code that didn't change.
     paths, since a major release's diff can touch security-sensitive
     surface indirectly. `bandit`/`pip-audit` (already run in §0.1) are a
     baseline here, not re-litigated in depth. Produce
-    `report/SECURITY_AUDIT_<version>.md`: `## Summary`, `## Fixes
+    `report/<version>/SECURITY_AUDIT_<version>.md`: `## Summary`, `## Fixes
     applied during this audit` (severity-tagged, root cause +
     reproduction + fix), `## Findings not fixed` (documented, not
     silently dropped). Any HIGH/CRITICAL finding blocks the release
@@ -151,10 +217,8 @@ failures — by design, not something to automate away.
 
 ## Multi-agent bug-hunt pass — reusable spec
 
-1. **Diff range**: last stable tag to `HEAD`.
-   ```bash
-   git describe --tags --abbrev=0 --match '[0-9]*.[0-9]*.[0-9]*' --exclude '*-*'
-   ```
+1. **Diff range**: `$BASE_REF` to `HEAD` — see "Finding the diff range"
+   above.
 2. **Partition** changed files under `app/` into 4-6 axis buckets by
    path glob — starting point (adjust to what the diff actually
    touched; merge a near-empty bucket into a neighbor, split an
@@ -175,11 +239,11 @@ failures — by design, not something to automate away.
    "nothing found" explicitly rather than padding the report.
 4. **Triage** in the main thread: dedupe overlapping findings at bucket
    boundaries, discard false positives with a stated reason each (see
-   the historical `report/BUG_HUNT_v1.1.md`'s "Investigated, confirmed
+   the historical `report/1.0.0/BUG_HUNT_v1.1.md`'s "Investigated, confirmed
    not a bug" section for the pattern).
 5. **TDD fix loop** per real finding: reproduce red, apply the minimal
    fix, confirm green, land as its own commit grouped by concern.
-6. **Write up**: `report/BUG_HUNT_<version>.md` (provenance blockquote,
+6. **Write up**: `report/<version>/BUG_HUNT_<version>.md` (provenance blockquote,
    `## Fixed in this PR`, `## Investigated, confirmed not a bug`,
    `## Verdict`); tag new `CHANGELOG.md` entries `**[Optimization
    pass]**` inside their normal `### Fixed`/`### Changed` section.
@@ -201,18 +265,37 @@ report every stale, contradictory, or "not yet implemented"/"planned"
 claim the diff shows has actually shipped, or the reverse. Report-only;
 apply fixes as grouped `docs:` commits.
 
-## `report/` naming
+## `report/` naming and layout
 
-Bare three-component SemVer, no `v` prefix: `report/BUG_HUNT_1.1.0.md`,
-`report/SECURITY_AUDIT_1.1.0.md` (major tier only),
-`report/LOAD_TEST_1.1.0.md`. This is deliberately distinct from the
-older `BUG_HUNT_v1.0.md`/`v1.1.md`, `LOAD_TEST_v1.0.md`/`v1.1.md`/`v1.2.md`,
-`SECURITY_AUDIT_v1.0.md`/`v1.1.md` files, which carry a literal `v`
-prefix and a two-component number that was a pre-1.0.0
-stabilization-batch counter, not a real release version — don't reuse
-that scheme, and note the distinction in each new report's own
-provenance blockquote so a future reader isn't confused about which
-numbering era a file belongs to.
+One subfolder per released version, bare three-component SemVer, no `v`
+prefix: `report/1.1.0/BUG_HUNT_1.1.0.md`,
+`report/1.1.0/SECURITY_AUDIT_1.1.0.md` (major tier only),
+`report/1.1.0/LOAD_TEST_1.1.0.md`. Adopted starting with 1.1.0's own
+release-qa run, which also reorganized every pre-1.1.0 report file this
+way: everything from before the 1.0.0 release (the old
+`BUG_HUNT_v1.0.md`/`v1.1.md`, `LOAD_TEST_v1.0.md`/`v1.1.md`/`v1.2.md`,
+`SECURITY_AUDIT_v1.0.md`/`v1.1.md`, and every other one-off
+pre-1.0.0-era investigation doc) moved into `report/1.0.0/` as-is (`git
+mv`, history preserved) — their own `v1.0`/`v1.1`/`v1.2` filenames are
+pre-1.0.0 stabilization-batch counters, not real release versions, kept
+unrenamed inside the folder since renaming an already-referenced
+historical file is its own hazard; the *folder* is what now disambiguates
+which real release a batch of reports belongs to. `report/BUG_HUNT_GUIDE.md`
+(methodology reference) and `report/TESTING_SUMMARY.md` (continuously
+updated, not tied to one release) stay at `report/`'s root, not inside a
+version folder.
+
+A handful of same-audit-run, fully-superseded-by-a-later-file reports
+(3 different-format outputs of one early bug-hunt run, one early
+security-audit report — all replaced by the properly structured
+versioned files that became this project's actual methodology) were
+deleted outright rather than moved, on explicit confirmation — git
+history still has them if ever needed. This is the one narrow exception
+to "`report/*.md` stays untouched" (see `CLAUDE.md`'s "Language"
+section for that rule's actual scope: it's about the repo-wide
+French→English comment translation sweep specifically, not a blanket
+ban on ever touching this directory) — reserve it for genuine
+same-content duplicates superseded by a later file, not just "old."
 
 ## Where this fits in the release flow
 

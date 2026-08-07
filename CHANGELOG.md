@@ -7,7 +7,7 @@ versions match the bare (no `v` prefix) git tags this project actually
 pushes, e.g. `1.1.0`, not `v1.1.0` — see `.github/workflows/tests.yml`'s
 tag trigger for why.
 
-## [Unreleased] — 1.1.0
+## [1.1.0] — 2026-08-07
 
 ### Added
 - Configurable automation rules engine, admin-editable at
@@ -33,6 +33,10 @@ tag trigger for why.
   trend.
 - Admin breadcrumb trail with daisyUI icons.
 - This CHANGELOG.
+- A tiered (patch/minor/major) pre-release QA protocol
+  (`Docs/reference/QA_PROTOCOL.md`, driven by the `release-qa` skill),
+  formalizing the optimization/bug-hunt and doc-sync passes below into a
+  repeatable process for every future release.
 
 ### Fixed
 - `generate_full_schedule()` no longer discards mandatory-shift ALERT
@@ -67,6 +71,20 @@ tag trigger for why.
   unscoped even under "per_group" mode, while the regeneration loop
   right after only recreates data for currently-eligible groups. The
   delete is now scoped to exactly the groups about to be regenerated.
+- **[Optimization pass]** `/dashboard`'s shift stats returned
+  `decimal.Decimal` instead of `int` for `this_month`/`last_month` on
+  MySQL/MariaDB (its `SUM()` of an exact-numeric expression returns
+  `DECIMAL`, unlike SQLite/PostgreSQL) — an inconsistent shape versus
+  the on-call/leave stats, invisible under this repo's SQLite-only test
+  suite. Found while dogfooding the new release QA protocol on this
+  same release.
+- **[Optimization pass]** The new `AutomationRuleType.resolve()`
+  per-request cache had no invalidation path: a same-request
+  `AutomationRule.set()` followed by another `resolve()` call would have
+  silently returned the stale pre-save value. Not reachable by any
+  current caller (the admin route always redirects after saving), but
+  now enforced rather than left to that caller discipline. Also found
+  while dogfooding the release QA protocol.
 
 ### Changed
 - Automation status messages use plain-text severity tags instead of
@@ -91,8 +109,8 @@ tag trigger for why.
 ## [1.0.0] — first stable release
 
 First stable release. Security audit, targeted bug hunt, and load test
-completed — see `report/SECURITY_AUDIT_v1.0.md`, `report/BUG_HUNT_v1.0.md`,
-`report/LOAD_TEST_v1.0.md`. Full feature set at this point: shift/on-call/
+completed — see `report/1.0.0/SECURITY_AUDIT_v1.0.md`, `report/1.0.0/BUG_HUNT_v1.0.md`,
+`report/1.0.0/LOAD_TEST_v1.0.md`. Full feature set at this point: shift/on-call/
 leave scheduling with drag & drop, rule-based automatic generation with
 legal rest constraints, shift swaps (three-party approval), SSO/OIDC, ICS
 export, a read-only public REST API (`/api/v1/*`), outbound notifications

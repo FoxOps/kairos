@@ -97,7 +97,7 @@ configured" from "explicitly cleared". Regression test added
 
 ### 4. Cross-cutting bug found while digging into Bandit B104: `PROMETHEUS_ENABLED` never wired up
 
-Documented and fixed in `report/SECURITY_AUDIT_v1.0.md` (section
+Documented and fixed in `SECURITY_AUDIT_v1.0.md` (section
 "Fixes applied") rather than repeated here - found during the security
 audit, not this pass, but worth a cross-reference: the `/metrics`
 feature was structurally unreachable in a real deployment, masked by a

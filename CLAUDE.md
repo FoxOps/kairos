@@ -51,7 +51,9 @@ soon as it happens, not retrospectively.
 Kairos is a Flask web app for team shift scheduling, on-call rotations, and leave
 management, with ICS calendar export. Active development, French-language docs/commit history.
 v1.0 stabilization complete (security audit, targeted bug hunt, load test — see
-`report/SECURITY_AUDIT_v1.0.md`, `report/BUG_HUNT_v1.0.md`, `report/LOAD_TEST_v1.0.md`, and
+`report/1.0.0/SECURITY_AUDIT_v1.0.md`, `report/1.0.0/BUG_HUNT_v1.0.md`, `report/1.0.0/LOAD_TEST_v1.0.md`
+— `report/` is organized into one subfolder per released version, e.g. `report/1.1.0/`; see
+`Docs/reference/QA_PROTOCOL.md`'s "report/ naming" section — and
 ROADMAP.md's "Done" section). `CHANGELOG.md` (Keep-a-Changelog-ish, versions match this project's
 bare git tags — `1.1.0`, not `v1.1.0`) is kept up to date between releases starting with the 1.1.0
 cycle — update it alongside `ROADMAP.md` when landing anything user-facing, don't let it drift.
@@ -1507,7 +1509,7 @@ an admin user via a real POST to `/login`. Model fixtures (`test_user`, `admin_u
 `test_leave`, `test_oncall`, `test_shift_type`, etc.) build on `test_app`/`test_group`. Reuse these
 fixtures rather than constructing app instances manually in new tests.
 
-`tests/e2e/` has two layers, deliberately kept separate (see `report/E2E Playwright - Tests
+`tests/e2e/` has two layers, deliberately kept separate (see `report/1.0.0/E2E Playwright - Tests
 navigateur réel.md`): `test_user_flows.py` uses the Flask test client (no browser, fast, good for
 permissions/redirects/data) and `test_browser_flows.py` drives real Chromium via Playwright
 (`tests/e2e/conftest.py`'s `live_server_url` fixture runs the app in a thread with Talisman/CSP

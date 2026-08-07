@@ -174,7 +174,7 @@ Size compared with `docker images`: 415 MB (optimized, multi-stage)
 vs. 926 MB (old Dockerfile, single-stage) — a bit more than 2x
 lighter. `docker/Dockerfile.optimized` replaced `docker/Dockerfile`
 (promotion following the plan already written in
-`report/DOCKER_OPTIMIZED_TEST.md` §"Next steps"), the old file
+`DOCKER_OPTIMIZED_TEST.md` §"Next steps"), the old file
 removed to avoid drift between two Dockerfiles.
 Default `FLASK_ENV` reset to `development` in the image (the
 optimized one had `production` by default, which would have run

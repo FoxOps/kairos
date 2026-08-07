@@ -2,11 +2,11 @@
 
 ## 📊 Global Overview
 
-- **Last updated**: July 21, 2026 (1.0.0-RC2 full validation pass)
-- **Total number of tests**: 1394 (720 unit + 642 integration + 32 e2e)
-- **Tests passing**: 1394 ✅
+- **Last updated**: August 7, 2026 (1.1.0 release QA protocol pass)
+- **Total number of tests**: 1932 (1082 unit + 818 integration + 32 e2e)
+- **Tests passing**: 1932 ✅
 - **Tests failing**: 0
-- **Code coverage**: **94%** (`--cov=app`)
+- **Code coverage**: **100%** (`--cov=app`)
 - **Lint (ruff)**: clean - **0 errors**
 - **Types (mypy)**: clean - **0 errors**
 - **Formatting (black)**: compliant
@@ -64,7 +64,7 @@ tests/
 ├── conftest.py                      # Fixture chain: test_app, client, logged_in_client
 ├── fixtures/                        # test_user, test_group, test_shift, test_leave, test_oncall...
 │
-├── unit/                            # 682 tests - isolated components, no HTTP
+├── unit/                            # 1082 tests - isolated components, no HTTP
 │   ├── test_service_account_model.py     # ServiceAccount: SHA-256 token/hash, is_valid()
 │   ├── test_service_account_repository.py
 │   ├── test_service_account_service.py   # create/revoke/regenerate + audit trail
@@ -91,7 +91,7 @@ tests/
 │   ├── test_backup_service.py       # BackupService (/admin/backups support layer)
 │   └── test_settings_service.py     # SettingsService (timezone, language, date/time formats...)
 │
-├── integration/                     # 629 tests - Flask routes, test client
+├── integration/                     # 818 tests - Flask routes, test client
 │   ├── test_routes.py, test_*_priority.py, test_*_coverage.py
 │   ├── test_admin_*.py              # Admin routes (users/groups/shift-types/automation/backups,
 │   │                                 #   service accounts)
@@ -150,7 +150,7 @@ What this layer verifies that no other layer can:
   finding and fixing a real blocking bug (infinite redirect loop
   `/login` ↔ `/oidc/login` on any forced SSO failure).
 
-Full detail: `report/E2E Playwright - Tests navigateur réel.md`.
+Full detail: `report/1.0.0/E2E Playwright - Tests navigateur réel.md`.
 
 ---
 
@@ -159,7 +159,7 @@ Full detail: `report/E2E Playwright - Tests navigateur réel.md`.
 Zero tests existed before July 13, 2026 despite ~450 lines of logic
 (`config_oidc.py`, `app/auth/oidc_auth.py`, `app/auth/user_manager.py`).
 Three levels, deliberately complementary (see
-`report/E2E Playwright - Tests navigateur réel.md` for the rationale):
+`report/1.0.0/E2E Playwright - Tests navigateur réel.md` for the rationale):
 
 1. **Unit** (68 tests): each method isolated, network calls
    (`requests.get/post`) mocked, unsigned test JWT (the code never
@@ -537,9 +537,9 @@ pip-audit -r requirements.txt   # no API key required (replaced `safety scan`)
   forces `SESSION_COOKIE_SECURE=True` independently of
   `TALISMAN_FORCE_HTTPS` (broke login on any plain-HTTP deployment,
   the documented default mode) - both were coupled and fixed
-  together. See `report/SECURITY_AUDIT_v1.0.md`,
-  `report/BUG_HUNT_v1.0.md`, `report/LOAD_TEST_v1.0.md` for the full
-  detail.
+  together. See `report/1.0.0/SECURITY_AUDIT_v1.0.md`,
+  `report/1.0.0/BUG_HUNT_v1.0.md`, `report/1.0.0/LOAD_TEST_v1.0.md` for
+  the full detail.
 - **July 19, 2026**: 1343 tests (0 failing, +29), coverage ~92% → 94%.
   Production-readiness audit, batch 1 (PR #145): translated the
   automation engine's hardcoded French messages
@@ -579,6 +579,21 @@ pip-audit -r requirements.txt   # no API key required (replaced `safety scan`)
   GET link against a POST-only route); full i18n audit of templates/
   routes/services/JS (10 hardcoded-string sites fixed); `fr.po` policy
   reversed to explicit `msgstr` (was empty + gettext fallback), now
-  automated via `scripts/fill_fr_catalog.py`. See `report/
-  LOAD_TEST_v1.2.md` for this batch's load-test re-run (zero
-  regression, zero errors).
+  automated via `scripts/fill_fr_catalog.py`. See
+  `report/1.0.0/LOAD_TEST_v1.2.md` for this batch's load-test re-run
+  (zero regression, zero errors).
+- **August 7, 2026**: 1932 tests (0 failing, +538 since the entry
+  above), coverage back to 100%. 1.1.0 release: the configurable
+  automation rules engine, per-group scheduling, calendar group
+  colors/filter, unified filter-bar bulk-delete, ICS export modal,
+  dashboard day-based stats (see `ROADMAP.md`'s "Done" section for the
+  full feature list) plus a 1.1.0-specific optimization/bug-hunt pass
+  (crash fix, data-loss fix, i18n fixes, N+1 fixes - see
+  `report/1.1.0/BUG_HUNT_1.1.0.md`) and, this same day, the first real run of
+  the new tiered pre-release QA protocol
+  (`Docs/reference/QA_PROTOCOL.md`), which itself found 2 more real
+  bugs (a MySQL/MariaDB `Decimal`-vs-`int` type mismatch in the new
+  dashboard SQL aggregation, and an unenforced cache-invalidation
+  invariant in the new rule-resolution cache) plus several stale
+  numbers in this very file, `ROADMAP.md`, and `THIRD_PARTY_NOTICES.md`
+  (missing `pytest-xdist`/`boto3`/`botocore`/`gunicorn` entries).
