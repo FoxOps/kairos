@@ -41,7 +41,7 @@ jobs:
           cache: "pip"
       - run: pip install -r requirements.txt
       - run: pip install -r docker/requirements.txt
-      - run: pytest tests/ -v --tb=short --junitxml=junit.xml --cov=app --cov-report=term-missing
+      - run: pytest tests/ -v --tb=short --junitxml=junit.xml --cov=app --cov-report=term-missing -n auto
       - uses: actions/upload-artifact@v7
         if: always()
         with:

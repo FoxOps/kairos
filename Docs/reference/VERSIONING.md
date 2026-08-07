@@ -88,9 +88,14 @@ ROADMAP.md's own changelog-style references to `1.0.0-rc2`). Instead, the
 script prints every line in those files that still contains the old
 version, as a checklist for a manual pass.
 
-Typical flow for a new release candidate:
+Typical flow for a new release candidate - **run the `release-qa` skill
+first** (see [`QA_PROTOCOL.md`](QA_PROTOCOL.md)), before any of the
+steps below: it's what actually checks the release is good, not just
+that the version string and tag agree:
 
 ```bash
+# release-qa skill (see QA_PROTOCOL.md) runs first, produces its own
+# commits/reports, ends on a manual smoke-test sign-off
 make bump-version VERSION=1.0.0-rc4
 # review/update the prose docs the script listed
 git add -A && git commit -m "chore: bump la version à 1.0.0-rc4"

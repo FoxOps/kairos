@@ -48,8 +48,9 @@
 |---|---|
 | [`ENVIRONMENT_VARIABLES.md`](reference/ENVIRONMENT_VARIABLES.md) | Every environment variable actually read by the application |
 | [`ERROR_HANDLING.md`](reference/ERROR_HANDLING.md) | Error pages, HTTP handlers, logging system |
-| [`PERFORMANCE_OPTIMIZATION.md`](reference/PERFORMANCE_OPTIMIZATION.md) | Cache, `eager_load`, database indexes |
+| [`PERFORMANCE_OPTIMIZATION.md`](reference/PERFORMANCE_OPTIMIZATION.md) | N+1 avoidance, `flask.g` request-scoped caching, database indexes |
 | [`VERSIONING.md`](reference/VERSIONING.md) | SemVer policy, `make bump-version`/`check-version`, Docker image tagging |
+| [`QA_PROTOCOL.md`](reference/QA_PROTOCOL.md) | Pre-release QA checklist (tiered by patch/minor/major), driven by the `release-qa` skill |
 
 ## Contributing to the documentation
 
