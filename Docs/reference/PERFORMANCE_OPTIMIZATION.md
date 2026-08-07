@@ -40,23 +40,31 @@ initially missed this pattern: `AdvancedShiftAutomation`/
 call them once per day/per user inside a generation or validation loop
 — caught and fixed as part of the 1.1.0 optimization pass.
 
-**Known gap, not yet cached**: `AutomationRule.resolve_params()` (used
-by every rule type in `app/utils/automation/rules/`) still hits the DB
-on every call, with no `flask.g` cache — `AdvancedShiftAutomation`'s
-shift-slot resolution and mandatory/staffing-coverage checks each
-re-resolve the same rule once per user/per day inside `generate_daily_shifts()`,
-and `generate_full_schedule()` separately recomputes the same coverage
-gaps `generate_daily_shifts()` already computed internally. Both are
-real, identified N+1/duplicate-work patterns in the rule-resolution
-path, deliberately left unfixed in the 1.1.0 pass — they require
-restructuring the generation loop itself (hoisting rule resolution
-above the per-user/per-day loop), not just adding a cache, and that
-code is dense enough (see the "real regression caught by..." comments
-throughout `automation_admin_service.py`) to warrant its own dedicated
-pass rather than a rushed pre-release change. Composite index on
+**`AutomationRuleType.resolve()`** (`app/utils/automation/rules/base.py`
+— the base class every rule type in `app/utils/automation/rules/`
+inherits, so this one fix covers all of them) is cached the same way,
+keyed by `(rule_type, group_id)`: `AdvancedShiftAutomation`'s shift-slot
+resolution and mandatory/staffing-coverage checks call it once per
+user/per day inside `generate_daily_shifts()`, and
+`generate_full_schedule()` separately recomputes the same coverage gaps
+`generate_daily_shifts()` already computed internally — without the
+cache, a multi-week generation run issued one `AutomationRule` query
+per rule *per day* instead of one per rule for the whole run. Fixed as
+part of the 1.1.0 optimization pass (initially left as a known gap,
+then addressed once the risk of the single-point base-class fix was
+confirmed low - see `tests/integration/test_performance.py::
+TestNPlusOneQueries::test_generate_full_schedule_query_count_stable_across_period_length`,
+which asserts the query count stays bounded, not proportional to the
+period length). `generate_full_schedule()`'s duplicate *computation*
+of the same coverage gaps `generate_daily_shifts()` already computed
+internally is a separate, much smaller concern now that the query cost
+behind it is gone (it's cheap in-memory list/dict work over
+already-fetched, session-identity-mapped rows) - not restructured, not
+worth the risk of touching this generation loop's return-value contract
+for a purely CPU-level saving. Composite index on
 `AutomationRule(rule_type, group_id)` (migration `b8e2f4a91c6d`) was
-added regardless, since every real lookup filters on both columns
-together.
+added alongside the cache, since every real lookup filters on both
+columns together.
 
 ## Database indexes
 
@@ -72,21 +80,36 @@ be preserved if you modify query patterns in `app/repositories/`:
 
 See [`architecture/ERD.md`](../architecture/ERD.md) for the full schema.
 
-## Dashboard stats: full history fetched into Python
+## Dashboard stats: Shift aggregated in SQL, OnCall/Leave stay in Python
 
 `DashboardService.get_stats()` (`/dashboard`'s day-based total/this-month/
-last-month counts) pulls every shift/on-call/leave row a user has ever
-had via `ShiftRepository.list_dates_for_user()`/`OnCallRepository.list_spans_for_user()`/
-`LeaveRepository.list_spans_for_user()` — no date bound at all — then
-does the month-boundary math with Python loops over that full list.
-Cost grows unbounded with a user's tenure: a long-employed user's
-dashboard load does 3 full-history table scans on every visit instead
-of DB-side aggregation (`func.count`/`func.sum` with a `CASE WHEN`/date
-filter). Identified during the 1.1.0 optimization pass, deliberately
-not rewritten in that pass — it would change the aggregation logic
-this file's own straddle-a-month-boundary tests exercise closely, a
-larger and riskier change than fits a pre-release cleanup. Revisit if
-dashboard load time becomes a real complaint.
+last-month counts) used to pull every shift/on-call/leave row a user
+had ever had into Python — no date bound at all — and do the
+month-boundary math there. Cost grew unbounded with a user's tenure: a
+long-employed user's dashboard load did 3 full-history table scans on
+every visit. Fixed for `Shift` (the dominant volume driver — one row
+per person per work day, easily thousands over a few years, versus at
+most ~52 `OnCall` rows/year and a handful of `Leave` rows/year):
+`ShiftRepository.get_day_count_stats()` replaces
+`list_dates_for_user()` + a Python loop with one SQL aggregate query
+(`COUNT` + conditional `SUM`) — plain, portable SQL with no date
+arithmetic, safe across all 3 supported engines (SQLite/PostgreSQL/
+MySQL). See `tests/integration/test_performance.py::TestNPlusOneQueries::
+test_dashboard_get_stats_query_count_stable_across_shift_count`.
+
+**`OnCall`/`Leave` deliberately still compute in Python**, not pushed
+into SQL: their "this month"/"last month" figures need each span's
+duration *clipped* to the month window (`_clipped_duration_days()`/
+`_clipped_days()` in `dashboard_service.py`), which requires either
+per-row date/datetime arithmetic (`LEAST`/`GREATEST`-style clipping) or
+engine-specific SQL — this app deliberately supports SQLite, PostgreSQL,
+and MySQL (see CLAUDE.md's Database section), and this repo's test
+suite only exercises SQLite, so shipping unverified cross-engine SQL
+arithmetic here isn't a decision to make without a way to check it
+against a real Postgres/MySQL instance. Given the low row count in
+practice, the Python-side cost is not the same class of problem `Shift`
+was. Revisit with real multi-engine test coverage if it ever becomes
+one.
 
 ## Pagination
 

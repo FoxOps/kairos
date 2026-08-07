@@ -61,6 +61,12 @@ tag trigger for why.
 - **[Optimization pass]** The `/schedule`/`/oncall`/`/leave` date-range
   filter discarded an already-valid `date_from`/`date_to` whenever the
   *other* field was malformed.
+- **[Optimization pass]** Per-group "regenerate" could permanently lose
+  on-calls/shifts belonging to a group that had been toggled out of
+  rotation eligibility after they were created — the delete was
+  unscoped even under "per_group" mode, while the regeneration loop
+  right after only recreates data for currently-eligible groups. The
+  delete is now scoped to exactly the groups about to be regenerated.
 
 ### Changed
 - Automation status messages use plain-text severity tags instead of
@@ -68,22 +74,19 @@ tag trigger for why.
 - `/admin/settings` and `/admin/automation/rules` redesigned with
   grouped, collapsible sections.
 - **[Optimization pass]** Scheduling-mode setting lookups
-  (`get_shift_scheduling_mode`/`get_oncall_scheduling_mode`) now cached
-  per-request, fixing an N+1 in shift/on-call generation and rule
-  validation.
+  (`get_shift_scheduling_mode`/`get_oncall_scheduling_mode`) and the
+  whole configurable automation rules engine's resolution path
+  (`AutomationRuleType.resolve()`) now cached per-request, fixing an
+  N+1 in shift/on-call generation and rule validation — a multi-week
+  generation run went from one `AutomationRule` query per rule *per
+  day* to one per rule for the whole run.
+- **[Optimization pass]** `/dashboard`'s shift stats (total/this-month/
+  last-month) now computed with a single SQL aggregate query instead of
+  fetching a user's entire shift history into Python on every load.
+  On-call/leave stats stay Python-side (see
+  `Docs/reference/PERFORMANCE_OPTIMIZATION.md` for why).
 - **[Optimization pass]** Test suite parallelized with pytest-xdist
   (`make test`) — ~3.3x faster locally (548s → 166s on 4 cores).
-
-### Known limitations
-- Per-group "regenerate" can lose on-calls/shifts belonging to a group
-  that was toggled out of rotation eligibility after they were created —
-  see `ROADMAP.md`'s "Known limitations" section.
-- Automation rule resolution inside shift generation is still
-  re-queried per user/per day in places (not cached/batched) — see
-  `Docs/reference/PERFORMANCE_OPTIMIZATION.md`.
-- `/dashboard` fetches a user's full shift/on-call/leave history,
-  unbounded by date, on every load — see
-  `Docs/reference/PERFORMANCE_OPTIMIZATION.md`.
 
 ## [1.0.0] — first stable release
 
