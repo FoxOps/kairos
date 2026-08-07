@@ -489,6 +489,10 @@ document.addEventListener('DOMContentLoaded', function () {
         return div.innerHTML;
     }
 
+    // Shared by every UTC-digits date/time formatter below (previously
+    // redefined identically in each one).
+    const pad = (num) => num.toString().padStart(2, '0');
+
     // Format a date for a datetime-local input
     function formatDateForInput(date) {
         // UTC getters, not local ones: under timeZone: 'UTC' (see the
@@ -496,7 +500,6 @@ document.addEventListener('DOMContentLoaded', function () {
         // viewer's own wall-clock digits in their UTC components - local
         // getters would reapply the browser's real system offset on top,
         // shifting the digits a second time.
-        const pad = (num) => num.toString().padStart(2, '0');
         return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
     }
 
@@ -505,7 +508,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // is either preserved from the original event or, for a shift whose
     // type changed, taken from the new type's own configured hours).
     function formatDateOnlyForInput(date) {
-        const pad = (num) => num.toString().padStart(2, '0');
         return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
     }
 
@@ -514,7 +516,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // the timeZone: 'UTC' comment above) - used by the edit modals to
     // change the day while preserving the original event's time of day.
     function combineDateWithTime(dateStr, timeSource) {
-        const pad = (num) => num.toString().padStart(2, '0');
         return `${dateStr}T${pad(timeSource.getUTCHours())}:${pad(timeSource.getUTCMinutes())}:${pad(timeSource.getUTCSeconds())}Z`;
     }
 
@@ -830,7 +831,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 let start, end;
                 if (shiftTypeChanged) {
                     const st = shiftTypesById[shiftTypeId];
-                    const pad = (num) => num.toString().padStart(2, '0');
                     start = `${pickedDate}T${pad(st.start_hour)}:00:00Z`;
                     end = `${pickedDate}T${pad(st.end_hour)}:00:00Z`;
                 } else {

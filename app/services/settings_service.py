@@ -168,10 +168,27 @@ class SettingsService:
 
     @staticmethod
     def get_shift_scheduling_mode() -> str:
-        value = Setting.get(SHIFT_SCHEDULING_MODE_KEY)
-        if value:
-            return str(value)
-        return FALLBACK_SCHEDULING_MODE
+        """Cached on flask.g for the lifetime of the request, same
+        pattern/rationale as get_default_timezone() above: schedule
+        generation (AdvancedShiftAutomation) and rule-violation checks
+        (common_helpers.py::check_shift_rule_violations) call this once
+        per day/per user in a loop - without the cache, that's a real
+        N+1 (one Setting.get() per iteration) instead of one query for
+        the whole request. Safe to cache: the setting cannot change
+        mid-request."""
+        from flask import g, has_request_context
+
+        if not has_request_context():
+            value = Setting.get(SHIFT_SCHEDULING_MODE_KEY)
+            return str(value) if value else FALLBACK_SCHEDULING_MODE
+
+        if not hasattr(g, "_resolved_shift_scheduling_mode"):
+            value = Setting.get(SHIFT_SCHEDULING_MODE_KEY)
+            g._resolved_shift_scheduling_mode = (
+                str(value) if value else FALLBACK_SCHEDULING_MODE
+            )
+
+        return g._resolved_shift_scheduling_mode
 
     @staticmethod
     def set_shift_scheduling_mode(mode: str) -> str | None:
@@ -183,10 +200,21 @@ class SettingsService:
 
     @staticmethod
     def get_oncall_scheduling_mode() -> str:
-        value = Setting.get(ONCALL_SCHEDULING_MODE_KEY)
-        if value:
-            return str(value)
-        return FALLBACK_SCHEDULING_MODE
+        """Cached on flask.g - see get_shift_scheduling_mode() above,
+        same pattern/rationale, on-call side."""
+        from flask import g, has_request_context
+
+        if not has_request_context():
+            value = Setting.get(ONCALL_SCHEDULING_MODE_KEY)
+            return str(value) if value else FALLBACK_SCHEDULING_MODE
+
+        if not hasattr(g, "_resolved_oncall_scheduling_mode"):
+            value = Setting.get(ONCALL_SCHEDULING_MODE_KEY)
+            g._resolved_oncall_scheduling_mode = (
+                str(value) if value else FALLBACK_SCHEDULING_MODE
+            )
+
+        return g._resolved_oncall_scheduling_mode
 
     @staticmethod
     def set_oncall_scheduling_mode(mode: str) -> str | None:

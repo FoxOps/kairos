@@ -76,10 +76,10 @@ export function initIcsExportGroupScopeControls() {
             // download actions instead of emitting a misleading URL.
             const nothingSelected = scope === 'all' && groupIds.length === 0;
 
-            let url = `${baseUrl}/export/${resourceType}?scope=${scope}&token=${token}`;
+            let url = `${baseUrl}/export/${resourceType}?scope=${scope}&token=${encodeURIComponent(token)}`;
             if (scope === 'all') {
                 groupIds.forEach((id) => {
-                    url += `&group_ids=${id}`;
+                    url += `&group_ids=${encodeURIComponent(id)}`;
                 });
             }
 

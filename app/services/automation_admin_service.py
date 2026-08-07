@@ -97,7 +97,17 @@ class AutomationAdminService:
     @staticmethod
     def clear_period(start_date: date, end_date: date) -> tuple[int, int]:
         """Delete existing on-calls and shifts overlapping the period.
-        Returns (oncalls_deleted, shifts_deleted)."""
+        Returns (oncalls_deleted, shifts_deleted). Deliberately unscoped
+        by group even when generate_full() (its only caller) is about to
+        regenerate per-group: the regeneration loop right after this call
+        covers every *currently eligible* group. KNOWN GAP (see
+        ROADMAP.md, not fixed in this pass): if a Group was toggled out
+        of is_part_of_oncall/is_part_of_schedule between when its
+        on-calls/shifts in this window were created and this call, this
+        still deletes them, but they're never recreated (the
+        regeneration loop only iterates currently-eligible groups) - a
+        narrow, real data-loss edge case, not just a theoretical one.
+        Same gap in refresh_shifts()'s "regenerate" branch below."""
         oncalls_deleted = OnCallRepository.delete_overlapping_range(
             start_date, end_date
         )
@@ -170,10 +180,17 @@ class AutomationAdminService:
                 oncall_regen_start, end_date
             )
             # Deliberately unscoped even under "per_group": the loop
-            # below regenerates every eligible group's slice of the
-            # deleted window before returning, so nothing deleted here
-            # is left unregenerated - same reasoning as generate_full()'s
-            # own clear_period()/loop pair.
+            # below regenerates every *currently eligible* group's slice
+            # of the deleted window - same reasoning as generate_full()'s
+            # own clear_period()/loop pair. KNOWN GAP (see ROADMAP.md,
+            # not fixed in this pass): if a Group was toggled out of
+            # is_part_of_oncall between when its on-calls in this window
+            # were created and this regenerate call, this delete still
+            # wipes them (unscoped), but the loop below - which only
+            # iterates Group.query.filter_by(is_part_of_oncall=True) -
+            # never recreates them. Data loss, narrow window (requires a
+            # group participation toggle + a regenerate covering a period
+            # that group already had data in).
             oncalls_deleted = OnCallRepository.delete_overlapping_range(
                 start_date, end_date
             )
