@@ -226,7 +226,16 @@ class ShiftRepository:
             .filter(Shift.user_id == user_id)
             .one()
         )
-        return total or 0, this_month or 0, last_month or 0
+        # int(...), not just `or 0`: MySQL/MariaDB's SUM() of an exact-
+        # numeric CASE (the 1/0 literals above) returns DECIMAL, so
+        # PyMySQL hands back decimal.Decimal here even though every
+        # other stat in DashboardService.get_stats() (on_call/leave) is
+        # a plain int - without this, the three would return an
+        # inconsistent shape on MySQL/MariaDB (SQLite/PostgreSQL already
+        # return int/int-like), invisible under this repo's SQLite-only
+        # test suite but a real TypeError if this dict ever went through
+        # jsonify().
+        return int(total or 0), int(this_month or 0), int(last_month or 0)
 
     @staticmethod
     def count_for_group(group_id: int) -> int:

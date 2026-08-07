@@ -349,6 +349,14 @@ class TestShiftRepository:
         assert total == 3
         assert this_month == 1
         assert last_month == 1
+        # Regression: MySQL/MariaDB's SUM() of an exact-numeric CASE
+        # returns decimal.Decimal, not int - get_day_count_stats() must
+        # coerce to int so the three shift/oncall/leave stats in
+        # DashboardService.get_stats() share a consistent return shape
+        # regardless of DB engine (see app/repositories/shift_repository.py).
+        assert type(total) is int
+        assert type(this_month) is int
+        assert type(last_month) is int
 
     def test_get_day_count_stats_empty(self, test_app, test_user):
         total, this_month, last_month = ShiftRepository.get_day_count_stats(

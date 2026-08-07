@@ -90,7 +90,24 @@ class AutomationRule(BaseModel):
             row.set_params(params)
             db.session.add(row)
         db.session.commit()
+        cls._invalidate_resolve_cache(rule_type, group_id)
         return row
+
+    @staticmethod
+    def _invalidate_resolve_cache(rule_type: str, group_id: int | None) -> None:
+        """Drops this (rule_type, group_id)'s entry from
+        AutomationRuleType.resolve()'s flask.g cache (see
+        app/utils/automation/rules/base.py), if present. Today's only
+        caller of set() (admin_automation_rules_routes.py) always
+        redirects after saving, so this is currently unreachable in
+        practice - added as a real enforced invariant rather than
+        relying on that caller discipline staying true forever (e.g. a
+        future "save and preview" action calling resolve() again in the
+        same request)."""
+        from flask import g, has_request_context
+
+        if has_request_context() and hasattr(g, "_resolved_automation_rules"):
+            g._resolved_automation_rules.pop((rule_type, group_id), None)
 
     @classmethod
     def has_group_override(cls, rule_type: str, group) -> bool:
