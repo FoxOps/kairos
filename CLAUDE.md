@@ -404,7 +404,7 @@ later than before) fires on confirmation, not creation; `notify_target_rejection
 target declines (requester only); `notify_swap_decision()` (unchanged) fires on the admin's
 approve/reject/revert. Every one of these five call sites also has a matching
 `AppriseNotificationService.notify("swap", ...)` call right after it (see "External notifications
-(Apprise)" above).
+(Apprise)" below).
 
 ### Configurable automation rules
 
@@ -601,7 +601,7 @@ cross-cutting effect already documented under "Shift swaps" above), `setting` (o
 `setting.update`, for every `SettingsService` setter — `resource_type="Setting"`, `details` is a
 plain `"key=value"` string since `Setting` rows have no admin-facing PK), `automation_rule` (one
 action, `automation_rule.update`, for every `AutomationRuleAdminService` save — see "Configurable
-automation rules" below), and `auth`/`profile`
+automation rules" above), and `auth`/`profile`
 (`auth.register`, `auth.login_success`, `auth.login_failure`, `auth.logout`,
 `profile.password_change`). Deliberately out of scope: no field-by-field before/after diff, just
 who/what/when/which-resource plus a short human-readable `details` summary — a future enhancement,
@@ -666,7 +666,7 @@ Call sites (post-commit, same placement rule as `AppNotificationService`/`AuditS
 `SwapService` (`swap` category, one call after each existing `AppNotificationService` call —
 request/approve/revert/reject), `BackupService.create_now()`/`cleanup_now()` (`backup` category,
 admin-UI-triggered paths only — **not** wired into `scripts/backup_database.py`, which must never
-import `app/`, see "Database backups" above), and `NotificationService`'s weekly batches. The latter
+import `app/`, see "Database backups" below), and `NotificationService`'s weekly batches. The latter
 fires twice: a `system`-category alert only when `result.failed` is non-empty (safe to call from
 there since, unlike `backup_database.py`, `NotificationService` already lives in `app/` and its
 cron scripts import `app/` freely), and — on every *successful* per-recipient send — a relay
@@ -699,6 +699,45 @@ view (only pre-filled on the edit form's own input), never interpolated into any
 (`slack://TokenA/TokenB/TokenC`), which that regex would **not** catch if one ever leaked into a
 log line. The actual mitigation is discipline at the call sites above (never log `apprise_url`),
 not a regex extension.
+
+### Email notifications
+
+Weekly reminder emails (shifts + on-call) are sent by two standalone scripts —
+`scripts/send_shift_notifications.py` (Sunday, 24h before Monday's shifts) and
+`scripts/send_oncall_notifications.py` (Thursday, 24h before Friday 21h on-call start) — triggered
+by external cron, not by the Flask app (no APScheduler; same pattern as
+`scripts/backup_database.py`/`backup_config.py`). Config lives in `scripts/notification_config.py`
+(dataclass, env-var driven — `NOTIFICATIONS_ENABLED`, `SMTP_HOST`, etc., see `.env.example`); both
+scripts no-op silently (exit 0) if notifications aren't enabled or SMTP config is incomplete. Both
+scripts also check `SettingsService.get_notifications_enabled()` (DB-stored `Setting` override,
+admin-editable at `/admin/settings`, falls back to the `NOTIFICATIONS_ENABLED` env var) inside
+their existing `app.app_context()`, in addition to (not instead of) the SMTP-completeness check —
+SMTP host/credentials stay env-only (secrets, not migrated to `Setting`).
+`app/services/notification_service.py::NotificationService` does the actual work (date math via
+`next_monday()`/`next_friday()`, always strictly future even if run on the target weekday itself;
+per-recipient SMTP failures are logged and don't block the rest of the batch); it calls
+`app/utils/notifications/email_sender.py::send_email()` (stdlib `smtplib`/`email`, no Flask-Mail
+dependency) with Jinja2 templates rendered from `app/templates/emails/`. `NotificationLog` is the
+idempotency guard — re-running a script for an already-processed period is a no-op.
+
+Two independent gates, checked in order — don't conflate them: the org-wide
+`SettingsService.get_notifications_enabled()` above short-circuits the entire script (no user gets
+anything); `User.shift_notifications_enabled`/`oncall_notifications_enabled` (both default `True`)
+are then checked per-recipient inside `send_weekly_shift_notifications()`/
+`send_weekly_oncall_notification()` — a user who opted out is skipped (tracked in
+`NotificationBatchResult.skipped_disabled_by_user`, distinct from `skipped_already_sent`) *without*
+writing a `NotificationLog` row, so re-enabling mid-week and rerunning the script still catches
+them up. A third, independent mechanism (`User.apprise_shift_target_ids`/`apprise_oncall_target_ids`
+— a user-picked *set of channels*, not a boolean toggle) additionally relays each successful send
+to whichever external notification target(s) the user selected — see "External notifications
+(Apprise)" above, this is a separate channel, not a replacement for the email gates above. Editable
+at `/profile/settings`
+(`app/routes/auth.py::profile_settings`) — a page separate
+from `/profile/update` (name/email/password only) since the notification section there is
+conditionally shown/hidden based on the org-wide toggle, which doesn't belong mixed into an
+identity-focused form. Submitting the notification checkboxes while the org-wide toggle is off is
+deliberately ignored server-side (not just hidden client-side), so a stale form can't silently flip
+a preference the user never actually saw.
 
 ### API publique (flask-smorest)
 
@@ -876,45 +915,6 @@ history.
 CSP (`app/__init__.py`'s `CSP_POLICY`) allows `cdnjs.cloudflare.com` (script/style/font) and
 `cdn.jsdelivr.net` (script, FullCalendar only) plus `data:` for `img-src` (daisyUI's noise-texture
 SVG background on some components).
-
-### Email notifications
-
-Weekly reminder emails (shifts + on-call) are sent by two standalone scripts —
-`scripts/send_shift_notifications.py` (Sunday, 24h before Monday's shifts) and
-`scripts/send_oncall_notifications.py` (Thursday, 24h before Friday 21h on-call start) — triggered
-by external cron, not by the Flask app (no APScheduler; same pattern as
-`scripts/backup_database.py`/`backup_config.py`). Config lives in `scripts/notification_config.py`
-(dataclass, env-var driven — `NOTIFICATIONS_ENABLED`, `SMTP_HOST`, etc., see `.env.example`); both
-scripts no-op silently (exit 0) if notifications aren't enabled or SMTP config is incomplete. Both
-scripts also check `SettingsService.get_notifications_enabled()` (DB-stored `Setting` override,
-admin-editable at `/admin/settings`, falls back to the `NOTIFICATIONS_ENABLED` env var) inside
-their existing `app.app_context()`, in addition to (not instead of) the SMTP-completeness check —
-SMTP host/credentials stay env-only (secrets, not migrated to `Setting`).
-`app/services/notification_service.py::NotificationService` does the actual work (date math via
-`next_monday()`/`next_friday()`, always strictly future even if run on the target weekday itself;
-per-recipient SMTP failures are logged and don't block the rest of the batch); it calls
-`app/utils/notifications/email_sender.py::send_email()` (stdlib `smtplib`/`email`, no Flask-Mail
-dependency) with Jinja2 templates rendered from `app/templates/emails/`. `NotificationLog` is the
-idempotency guard — re-running a script for an already-processed period is a no-op.
-
-Two independent gates, checked in order — don't conflate them: the org-wide
-`SettingsService.get_notifications_enabled()` above short-circuits the entire script (no user gets
-anything); `User.shift_notifications_enabled`/`oncall_notifications_enabled` (both default `True`)
-are then checked per-recipient inside `send_weekly_shift_notifications()`/
-`send_weekly_oncall_notification()` — a user who opted out is skipped (tracked in
-`NotificationBatchResult.skipped_disabled_by_user`, distinct from `skipped_already_sent`) *without*
-writing a `NotificationLog` row, so re-enabling mid-week and rerunning the script still catches
-them up. A third, independent mechanism (`User.apprise_shift_target_ids`/`apprise_oncall_target_ids`
-— a user-picked *set of channels*, not a boolean toggle) additionally relays each successful send
-to whichever external notification target(s) the user selected — see "External notifications
-(Apprise)" below, this is a separate channel, not a replacement for the email gates above. Editable
-at `/profile/settings`
-(`app/routes/auth.py::profile_settings`) — a page separate
-from `/profile/update` (name/email/password only) since the notification section there is
-conditionally shown/hidden based on the org-wide toggle, which doesn't belong mixed into an
-identity-focused form. Submitting the notification checkboxes while the org-wide toggle is off is
-deliberately ignored server-side (not just hidden client-side), so a stale form can't silently flip
-a preference the user never actually saw.
 
 ### Database backups
 
