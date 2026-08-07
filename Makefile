@@ -27,14 +27,17 @@ install: ## Install project dependencies (+ boto3: pip install boto3, for S3 bac
 	pip install -r requirements.txt
 	@echo "$(GREEN)✓ Dépendances installées$(NC)"
 
-test: ## Run the full test suite
+test: ## Run the full test suite (parallelized via pytest-xdist)
 	@echo "$(YELLOW)Exécution des tests...$(NC)"
-	python -m pytest tests/ -v --tb=short
+	python -m pytest tests/ -v --tb=short -n auto
 	# A targeted subset: pytest tests/unit/ -v (or tests/integration/, tests/e2e/, a specific file)
+	# -n auto spreads tests across CPU cores (pytest-xdist) - drop it for
+	# a single-worker run (e.g. to get deterministic top-to-bottom -v
+	# output while debugging one failure).
 
 test-coverage: ## Run the tests with code coverage (terminal)
 	@echo "$(YELLOW)Exécution des tests avec couverture...$(NC)"
-	python -m pytest tests/ --cov=app --cov-report=term-missing
+	python -m pytest tests/ --cov=app --cov-report=term-missing -n auto
 	# HTML report: add --cov-report=html (opens htmlcov/index.html)
 	# JSON report: add --cov-report=json
 
