@@ -95,26 +95,71 @@ class AutomationAdminService:
             return None
 
     @staticmethod
-    def clear_period(start_date: date, end_date: date) -> tuple[int, int]:
+    def _delete_oncalls_scoped(
+        start_date: date, end_date: date, groups: list[Group | None]
+    ) -> int:
+        """Sums delete_overlapping_range() across `groups` - `[None]`
+        (the default everywhere "shared" mode applies) reduces to a
+        single unscoped delete (group_id=None); a real list of Group
+        rows deletes once per group instead, so a group absent from
+        that list is never touched."""
+        return sum(
+            OnCallRepository.delete_overlapping_range(
+                start_date,
+                end_date,
+                group_id=(group.id if group is not None else None),
+            )
+            for group in groups
+        )
+
+    @staticmethod
+    def _delete_shifts_scoped(
+        start_date: date, end_date: date, groups: list[Group | None]
+    ) -> int:
+        """Shift equivalent of _delete_oncalls_scoped() above."""
+        return sum(
+            ShiftRepository.delete_in_date_range(
+                start_date,
+                end_date,
+                group_id=(group.id if group is not None else None),
+            )
+            for group in groups
+        )
+
+    @staticmethod
+    def clear_period(
+        start_date: date,
+        end_date: date,
+        oncall_groups: list[Group | None] | None = None,
+        shift_groups: list[Group | None] | None = None,
+    ) -> tuple[int, int]:
         """Delete existing on-calls and shifts overlapping the period.
-        Returns (oncalls_deleted, shifts_deleted). Deliberately unscoped
-        by group even when generate_full() (its only caller) is about to
-        regenerate per-group: the regeneration loop right after this call
-        covers every *currently eligible* group. KNOWN GAP (see
-        ROADMAP.md, not fixed in this pass): if a Group was toggled out
-        of is_part_of_oncall/is_part_of_schedule between when its
-        on-calls/shifts in this window were created and this call, this
-        still deletes them, but they're never recreated (the
-        regeneration loop only iterates currently-eligible groups) - a
-        narrow, real data-loss edge case, not just a theoretical one.
-        Same gap in refresh_shifts()'s "regenerate" branch below."""
-        oncalls_deleted = OnCallRepository.delete_overlapping_range(
-            start_date, end_date
+        Returns (oncalls_deleted, shifts_deleted). `oncall_groups`/
+        `shift_groups`: the exact list of groups (or `[None]`/omitted
+        for unscoped - correct under "shared" mode, where nothing is
+        group-partitioned to begin with) the caller is about to
+        regenerate right after this call - reuse generate_full()'s own
+        `oncall_groups`/`schedule_groups` list here rather than
+        recomputing it, so the delete can never diverge from what the
+        regeneration loop actually repopulates. Real bug fixed here: an
+        earlier version deleted everyone in this window unconditionally
+        even under "per_group" mode, silently losing any on-call/shift
+        belonging to a group that had since been toggled out of
+        eligibility (is_part_of_oncall/is_part_of_schedule) - deleted,
+        never regenerated because the loop only iterates
+        currently-eligible groups."""
+        oncall_groups = oncall_groups if oncall_groups is not None else [None]
+        shift_groups = shift_groups if shift_groups is not None else [None]
+
+        oncalls_deleted = AutomationAdminService._delete_oncalls_scoped(
+            start_date, end_date, oncall_groups
         )
         if oncalls_deleted:
             db.session.commit()
 
-        shifts_deleted = ShiftRepository.delete_in_date_range(start_date, end_date)
+        shifts_deleted = AutomationAdminService._delete_shifts_scoped(
+            start_date, end_date, shift_groups
+        )
         if shifts_deleted:
             db.session.commit()
 
@@ -144,6 +189,16 @@ class AutomationAdminService:
         oncall_groups = (
             Group.query.filter_by(is_part_of_oncall=True).all()
             if oncall_per_group
+            else [None]
+        )
+        # Computed here (not just before the shift delete further down)
+        # so that delete can be scoped to exactly these groups too - see
+        # clear_period()'s docstring for why an unscoped delete under
+        # "per_group" mode is a real data-loss bug otherwise.
+        shift_per_group = SettingsService.get_shift_scheduling_mode() == "per_group"
+        schedule_groups = (
+            Group.query.filter_by(is_part_of_schedule=True).all()
+            if shift_per_group
             else [None]
         )
 
@@ -179,20 +234,13 @@ class AutomationAdminService:
             preferred_assignments = OnCallAutomation.capture_existing_assignments(
                 oncall_regen_start, end_date
             )
-            # Deliberately unscoped even under "per_group": the loop
-            # below regenerates every *currently eligible* group's slice
-            # of the deleted window - same reasoning as generate_full()'s
-            # own clear_period()/loop pair. KNOWN GAP (see ROADMAP.md,
-            # not fixed in this pass): if a Group was toggled out of
-            # is_part_of_oncall between when its on-calls in this window
-            # were created and this regenerate call, this delete still
-            # wipes them (unscoped), but the loop below - which only
-            # iterates Group.query.filter_by(is_part_of_oncall=True) -
-            # never recreates them. Data loss, narrow window (requires a
-            # group participation toggle + a regenerate covering a period
-            # that group already had data in).
-            oncalls_deleted = OnCallRepository.delete_overlapping_range(
-                start_date, end_date
+            # Scoped to oncall_groups (same list the loop below
+            # regenerates from) rather than deleted unconditionally - see
+            # clear_period()'s docstring for why an unscoped delete under
+            # "per_group" mode would otherwise silently lose data for a
+            # group toggled out of eligibility since it was created.
+            oncalls_deleted = AutomationAdminService._delete_oncalls_scoped(
+                start_date, end_date, oncall_groups
             )
             if oncalls_deleted:
                 db.session.commit()
@@ -215,18 +263,17 @@ class AutomationAdminService:
 
         # Only deletes shifts (never on-calls beyond what oncall_mode
         # above already handled): this recomputes shifts, taking
-        # whatever on-calls now exist into account.
-        shifts_deleted = ShiftRepository.delete_in_date_range(start_date, end_date)
+        # whatever on-calls now exist into account. Scoped to
+        # schedule_groups (computed above, same list the loop below
+        # regenerates from) rather than deleted unconditionally - same
+        # reasoning as the oncall delete above.
+        shifts_deleted = AutomationAdminService._delete_shifts_scoped(
+            start_date, end_date, schedule_groups
+        )
         if shifts_deleted:
             db.session.commit()
         result.shifts_deleted = shifts_deleted
 
-        shift_per_group = SettingsService.get_shift_scheduling_mode() == "per_group"
-        schedule_groups = (
-            Group.query.filter_by(is_part_of_schedule=True).all()
-            if shift_per_group
-            else [None]
-        )
         for group in schedule_groups:
             shifts, shift_messages, shift_unfilled_dates = (
                 AdvancedShiftAutomation.generate_full_schedule(
@@ -281,11 +328,6 @@ class AutomationAdminService:
             oncall_regen_start, end_date
         )
 
-        if not dry_run:
-            result.oncalls_deleted, result.shifts_deleted = (
-                AutomationAdminService.clear_period(start_date, end_date)
-            )
-
         # oncall_scheduling_mode/shift_scheduling_mode="per_group"
         # (SettingsService) each independently run one generation pass
         # per eligible Group instead of pooling every group into a
@@ -297,12 +339,32 @@ class AutomationAdminService:
         # don't have to be scoped the same way. Rule *values* (weekend/
         # slots/spacing/anchor) stay org-wide either way in this
         # increment - only the eligible-user pool is partitioned.
+        # Computed before clear_period() below (not just before the
+        # generation loops) so the delete can be scoped to exactly these
+        # groups too - see clear_period()'s docstring.
         oncall_per_group = SettingsService.get_oncall_scheduling_mode() == "per_group"
         oncall_groups = (
             Group.query.filter_by(is_part_of_oncall=True).all()
             if oncall_per_group
             else [None]
         )
+        shift_per_group = SettingsService.get_shift_scheduling_mode() == "per_group"
+        schedule_groups = (
+            Group.query.filter_by(is_part_of_schedule=True).all()
+            if shift_per_group
+            else [None]
+        )
+
+        if not dry_run:
+            result.oncalls_deleted, result.shifts_deleted = (
+                AutomationAdminService.clear_period(
+                    start_date,
+                    end_date,
+                    oncall_groups=oncall_groups,
+                    shift_groups=schedule_groups,
+                )
+            )
+
         for group in oncall_groups:
             oncalls, oncall_messages, oncall_unfilled_dates = (
                 OnCallAutomation.generate_oncall_schedule(
@@ -322,12 +384,7 @@ class AutomationAdminService:
         # on-calls already in the database for the period (the on-call
         # dry_run above doesn't save anything) - it can therefore differ
         # from the final result if no on-call exists yet for this period.
-        shift_per_group = SettingsService.get_shift_scheduling_mode() == "per_group"
-        schedule_groups = (
-            Group.query.filter_by(is_part_of_schedule=True).all()
-            if shift_per_group
-            else [None]
-        )
+        # schedule_groups computed above, alongside oncall_groups.
         for group in schedule_groups:
             shifts, shift_messages, shift_unfilled_dates = (
                 AdvancedShiftAutomation.generate_full_schedule(

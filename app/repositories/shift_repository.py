@@ -222,7 +222,9 @@ class ShiftRepository:
         )
 
     @staticmethod
-    def delete_in_date_range(start_date: date, end_date: date) -> int:
+    def delete_in_date_range(
+        start_date: date, end_date: date, group_id: int | None = None
+    ) -> int:
         # synchronize_session="evaluate" (not False, unlike the other
         # delete_* methods below): those never had callers holding an
         # already-loaded Shift instance across the delete, this one can
@@ -230,10 +232,21 @@ class ShiftRepository:
         # range) - "evaluate" keeps any such in-session objects properly
         # expunged/detached instead of raising ObjectDeletedError on
         # next access, at zero extra query cost (evaluated in Python
-        # against the identity map, no extra SELECT).
-        return Shift.query.filter(
-            Shift.date >= start_date, Shift.date <= end_date
-        ).delete(synchronize_session="evaluate")
+        # against the identity map, no extra SELECT). group_id (optional,
+        # used by AutomationAdminService to scope a per-group regenerate)
+        # is resolved via a User.id subquery, not a join - same reason as
+        # delete_filtered() above - and forces synchronize_session="fetch"
+        # instead, since "evaluate" can't reconcile a subquery IN-clause
+        # against already-loaded session objects in Python.
+        query = Shift.query.filter(Shift.date >= start_date, Shift.date <= end_date)
+        sync_mode = "evaluate"
+        if group_id is not None:
+            group_user_ids = User.query.filter_by(group_id=group_id).with_entities(
+                User.id
+            )
+            query = query.filter(Shift.user_id.in_(group_user_ids))
+            sync_mode = "fetch"
+        return query.delete(synchronize_session=sync_mode)
 
     @staticmethod
     def delete_older_than(cutoff_date: date) -> int:
