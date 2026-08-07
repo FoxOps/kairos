@@ -312,12 +312,53 @@ class TestShiftRepository:
         db.session.commit()
         assert ShiftRepository.get_by_id(shift.id) is not None
 
-    def test_list_dates_for_user(self, test_app, test_user, test_shift):
-        dates = ShiftRepository.list_dates_for_user(test_user.id)
-        assert dates == [test_shift.date]
+    def test_get_day_count_stats_splits_total_this_month_last_month(
+        self, test_app, test_user, test_shift_type
+    ):
+        ShiftRepository.create(
+            test_user.id,
+            test_shift_type.id,
+            datetime(2026, 3, 10, 7, 0),
+            datetime(2026, 3, 10, 15, 0),
+            date(2026, 3, 10),
+        )
+        ShiftRepository.create(
+            test_user.id,
+            test_shift_type.id,
+            datetime(2026, 2, 10, 7, 0),
+            datetime(2026, 2, 10, 15, 0),
+            date(2026, 2, 10),
+        )
+        ShiftRepository.create(
+            test_user.id,
+            test_shift_type.id,
+            datetime(2026, 1, 10, 7, 0),
+            datetime(2026, 1, 10, 15, 0),
+            date(2026, 1, 10),
+        )
+        db.session.commit()
 
-    def test_list_dates_for_user_empty(self, test_app, test_user):
-        assert ShiftRepository.list_dates_for_user(test_user.id) == []
+        total, this_month, last_month = ShiftRepository.get_day_count_stats(
+            test_user.id,
+            date(2026, 3, 1),
+            date(2026, 3, 31),
+            date(2026, 2, 1),
+            date(2026, 2, 28),
+        )
+
+        assert total == 3
+        assert this_month == 1
+        assert last_month == 1
+
+    def test_get_day_count_stats_empty(self, test_app, test_user):
+        total, this_month, last_month = ShiftRepository.get_day_count_stats(
+            test_user.id,
+            date(2026, 3, 1),
+            date(2026, 3, 31),
+            date(2026, 2, 1),
+            date(2026, 2, 28),
+        )
+        assert (total, this_month, last_month) == (0, 0, 0)
 
     def test_list_paginated_no_filters_returns_everything(
         self, test_app, test_user, test_shift

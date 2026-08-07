@@ -183,16 +183,50 @@ class ShiftRepository:
         return Shift.query.count()
 
     @staticmethod
-    def list_dates_for_user(user_id: int) -> list[date]:
-        """Every date this user has a shift on - columns-only (no
-        joinedload, no full Shift objects) since callers (dashboard
-        day-count stats) only need the date column."""
-        return [
-            row[0]
-            for row in db.session.query(Shift.date)
+    def get_day_count_stats(
+        user_id: int,
+        this_month_start: date,
+        this_month_end: date,
+        last_month_start: date,
+        last_month_end: date,
+    ) -> tuple[int, int, int]:
+        """(total, this_month, last_month) shift counts for the
+        dashboard's day-based stats - one SQL aggregate query (COUNT +
+        conditional SUM) instead of fetching every date this user has
+        ever had a shift on into Python and counting there. Replaces
+        the previous list_dates_for_user() + Python loop, which grew
+        unbounded with a user's tenure (one row transferred per shift
+        ever assigned, on every /dashboard load). COUNT/SUM/CASE are
+        plain portable SQL - no date arithmetic, works identically on
+        SQLite/PostgreSQL/MySQL."""
+        from sqlalchemy import case, func
+
+        total, this_month, last_month = (
+            db.session.query(
+                func.count(Shift.id),
+                func.sum(
+                    case(
+                        (
+                            Shift.date.between(this_month_start, this_month_end),
+                            1,
+                        ),
+                        else_=0,
+                    )
+                ),
+                func.sum(
+                    case(
+                        (
+                            Shift.date.between(last_month_start, last_month_end),
+                            1,
+                        ),
+                        else_=0,
+                    )
+                ),
+            )
             .filter(Shift.user_id == user_id)
-            .all()
-        ]
+            .one()
+        )
+        return total or 0, this_month or 0, last_month or 0
 
     @staticmethod
     def count_for_group(group_id: int) -> int:

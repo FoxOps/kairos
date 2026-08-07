@@ -83,10 +83,11 @@ class DashboardService:
         today = date.today()
         this_start, this_end, last_start, last_end = _month_bounds(today)
 
-        shift_dates = ShiftRepository.list_dates_for_user(user.id)
-        shift_total = len(shift_dates)
-        shift_this_month = sum(1 for d in shift_dates if this_start <= d <= this_end)
-        shift_last_month = sum(1 for d in shift_dates if last_start <= d <= last_end)
+        shift_total, shift_this_month, shift_last_month = (
+            ShiftRepository.get_day_count_stats(
+                user.id, this_start, this_end, last_start, last_end
+            )
+        )
 
         oncall_spans = OnCallRepository.list_spans_for_user(user.id)
         oncall_total = round(

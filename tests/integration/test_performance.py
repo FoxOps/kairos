@@ -454,6 +454,44 @@ class TestNPlusOneQueries:
             f"{len(shifts)} shifts - rule resolution not cached per request?"
         )
 
+    def test_dashboard_get_stats_query_count_stable_across_shift_count(
+        self, test_app, test_user, test_shift_type
+    ):
+        """Regression test: DashboardService.get_stats() used to fetch
+        every shift date a user had ever been assigned into Python
+        (ShiftRepository.list_dates_for_user(), unbounded by tenure) and
+        count there - one row transferred per shift, on every /dashboard
+        load. Now a single SQL aggregate query (COUNT + conditional SUM)
+        via ShiftRepository.get_day_count_stats()."""
+        from app.services.dashboard_service import DashboardService
+
+        today = date.today()
+
+        with count_queries() as few_queries:
+            DashboardService.get_stats(test_user)
+
+        for i in range(60):
+            on_date = today - timedelta(days=i + 400)
+            db.session.add(
+                Shift(
+                    user_id=test_user.id,
+                    shift_type_id=test_shift_type.id,
+                    date=on_date,
+                    start_time=datetime.combine(on_date, datetime.min.time()),
+                    end_time=datetime.combine(on_date, datetime.min.time())
+                    + timedelta(hours=8),
+                )
+            )
+        db.session.commit()
+
+        with count_queries() as many_queries:
+            DashboardService.get_stats(test_user)
+
+        assert len(many_queries) <= len(few_queries), (
+            f"{len(few_queries)} queries with 0 shifts, {len(many_queries)} "
+            "with 60 - possible unbounded full-history fetch"
+        )
+
     def test_audit_log_repository_preloads_actor(self, test_app, test_group):
         """AuditLog.actor is a plain @property (see app/models/audit_log.py),
         not a real relationship - AuditLogRepository.list_paginated()
