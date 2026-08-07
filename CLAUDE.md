@@ -52,7 +52,10 @@ Kairos is a Flask web app for team shift scheduling, on-call rotations, and leav
 management, with ICS calendar export. Active development, French-language docs/commit history.
 v1.0 stabilization complete (security audit, targeted bug hunt, load test — see
 `report/SECURITY_AUDIT_v1.0.md`, `report/BUG_HUNT_v1.0.md`, `report/LOAD_TEST_v1.0.md`, and
-ROADMAP.md's "Done" section). Tests run on GitHub Actions
+ROADMAP.md's "Done" section). `CHANGELOG.md` (Keep-a-Changelog-ish, versions match this project's
+bare git tags — `1.1.0`, not `v1.1.0`) is kept up to date between releases starting with the 1.1.0
+cycle — update it alongside `ROADMAP.md` when landing anything user-facing, don't let it drift.
+Tests run on GitHub Actions
 (`.github/workflows/tests.yml`, named `Tests` — not `ci.yml`/`CI`, renamed to say what it actually
 does now that Docker publishing lives in its own separate workflow, see below — the GitLab CI config
 this repo used to carry was removed — GitLab never actually executed against this
@@ -94,10 +97,13 @@ pip install -r requirements.txt
 python run.py                              # http://localhost:5000
 
 # Tests
-python -m pytest tests/ -v --tb=short              # all tests (make test)
+python -m pytest tests/ -v --tb=short -n auto       # all tests (make test) - pytest-xdist,
+                                                     # ~3.3x faster (548s -> 166s on 4 cores);
+                                                     # drop -n auto for deterministic top-to-
+                                                     # bottom -v output while debugging one failure
 python -m pytest tests/unit/test_models.py -v      # one file
 python -m pytest tests/unit/test_models.py::TestUserModel::test_user_creation -v  # one test
-python -m pytest tests/ --cov=app --cov-report=term-missing    # coverage
+python -m pytest tests/ --cov=app --cov-report=term-missing -n auto   # coverage
 
 # Real-browser E2E tests (optional, not in requirements.txt - skipped cleanly if absent)
 pip install -r requirements-e2e.txt && playwright install chromium
@@ -523,11 +529,16 @@ Friday's individual `[WARN]` (from `_generate_for_fridays()`, still per-week for
 `[WARN]` count + date range, using the already-returned `unfilled_dates` list rather than parsing
 formatted text. Regression tests:
 `test_generate_full_schedule_aggregates_repeated_mandatory_alerts`,
-`test_aggregates_repeated_unfilled_oncall_warnings`. **Still not wired to either scheduling mode** at
-all, for eligible-user pooling *or* rule values: `fill_oncall_gaps()`, `rebalance_after_leave()`,
-and `refresh_shifts()` (narrower advanced workflows) keep pooling/org-wide regardless of the
-setting, and the calendar has no per-group display (color/legend/filter) — both tracked as the
-"Future ideas" entry in `ROADMAP.md`, not silently forgotten.
+`test_aggregates_repeated_unfilled_oncall_warnings`. **Now also wired** (later in the 1.1.0 cycle,
+this paragraph previously said otherwise — corrected): `fill_oncall_gaps()`/`refresh_shifts()` take
+the same optional `group` parameter as the main generation path (looped per eligible `Group` from
+`AutomationAdminService.refresh_shifts()` when the relevant mode is `"per_group"`, same as
+`generate_full()`); `rebalance_after_leave()` doesn't take an explicit `group` parameter but
+resolves it implicitly from `leave.user.group` when `shift_scheduling_mode`/`oncall_scheduling_mode`
+is `"per_group"` — correct by construction since a leave is always tied to exactly one user/group,
+unlike the period-wide generation entry points. The main calendar also gained a per-group display
+(color-coded dot per event's group + legend + multi-group filter) later in this same cycle — see
+"`/` (main calendar) — group colors, multi-group filter, click-to-edit modals" below.
 
 `/admin/automation` (`app/utils/automation/status.py::get_automation_status()`) shows both an
 org-wide summary (unchanged) and a per-group breakdown card for every `Group`
@@ -843,13 +854,22 @@ navigation, see `export.py::_ics_response()` — and `initIcsModalEscapeHandling
 defining its own copy) — `execCommand('copy')` on a selected `<input>`, not
 `navigator.clipboard.writeText`, for consistency with that pre-existing page.
 
-FullCalendar stayed on **6.1.21** (not upgraded to 7.0.0 as originally planned) — loaded from
-`cdn.jsdelivr.net`, the one deliberate exception to "everything via cdnjs" (cdnjs doesn't host
-this package's locale files for any version tested). 7.0.0 was attempted three ways (cdnjs, plain
-jsDelivr ESM imports, esm.sh's auto-bundled imports) and hit a real runtime bug in FullCalendar's
-own compiled Preact rendering code every time ("Class constructor ... cannot be invoked without
-'new'") — not a hosting or import-resolution issue, so not something fixable from this side.
-Revisit if a later 7.x patch lands.
+FullCalendar is now on **7.0.1** (this 1.1.0 cycle's upgrade from 6.1.21, revisiting the earlier
+"stayed on 6.1.21" decision) — loaded from `cdn.jsdelivr.net`, the one deliberate exception to
+"everything via cdnjs" (cdnjs doesn't host this package's locale files for any version tested).
+7.0.0 had been attempted three ways before (cdnjs, plain jsDelivr ESM imports, esm.sh's
+auto-bundled imports) and hit a real runtime bug in FullCalendar's own compiled Preact rendering
+code every time ("Class constructor ... cannot be invoked without 'new'"), root-caused (see
+fullcalendar/fullcalendar#7472/#7474 upstream) to jsDelivr's `/+esm` transform endpoint specifically
+(a Rollup+Terser build/dedup bug on jsDelivr's side, not FullCalendar's) — every one of those three
+prior attempts loaded it via an ESM import path that goes through that exact endpoint. 7.0.1 is
+loaded as the single-file global bundle instead (`all/global.min.js`, a plain non-module `<script>`,
+see `index.html`), which never touches `/+esm` — confirmed working in a real browser (no console
+errors, correct rendering, French locale, drag & drop) before this upgrade landed. The
+endpoint-specific root cause is fixed by construction for this global-bundle loading method, but
+re-verify rather than assume if the loading method ever changes (e.g. a future move back to ESM
+imports). See `app/static/js/calendar/fullcalendar-config.js`'s own header comment for the same
+history.
 
 CSP (`app/__init__.py`'s `CSP_POLICY`) allows `cdnjs.cloudflare.com` (script/style/font) and
 `cdn.jsdelivr.net` (script, FullCalendar only) plus `data:` for `img-src` (daisyUI's noise-texture

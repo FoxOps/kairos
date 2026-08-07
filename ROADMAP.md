@@ -75,10 +75,61 @@ automated tests), and used for real team scheduling.
 - Prometheus metrics and Kubernetes health/readiness endpoints
 - Docker image and Kubernetes manifests provided for deployment
 
+**Optimization & release prep**
+- A dedicated optimization/bug-hunt pass over the code that landed this
+  cycle (the automation rules engine, per-group scoping, dashboard,
+  calendar JS) — this code hadn't had one yet, unlike the pre-1.1.0
+  codebase's dedicated 1.0.0 security audit/bug hunt/load test. Fixed:
+  a crash (500) on `/schedule`/`/oncall`'s "delete filtered result" when
+  a group filter was active (`Query.delete()` on a query with `.join()`
+  already applied — SQLAlchemy rejects that combination), a dashboard
+  stat inconsistency (on-call `this_month` could exceed `total`), two
+  real i18n bugs (a weekday-label list frozen to whichever locale was
+  active at process startup instead of resolving per-request; 12
+  "Admin" breadcrumb labels never routed through `_()`), a filter-bar
+  bug (one malformed date field discarded the other, already-valid
+  one), and an N+1 in the two scheduling-mode setting lookups (now
+  cached on `flask.g`, same pattern as the timezone/date-format
+  resolvers). Added a composite DB index on
+  `AutomationRule(rule_type, group_id)` — see
+  `Docs/reference/PERFORMANCE_OPTIMIZATION.md`. Test suite parallelized
+  via pytest-xdist (`make test`), ~3.3x faster (548s → 166s on 4 cores).
+- `CHANGELOG.md` introduced — kept up to date between releases from now
+  on, alongside this file.
+
 ## 🔧 In progress
 
 Nothing currently in flight — everything landed in this 1.1.0 cycle so
 far is already listed under "Done". Not yet tagged/released.
+
+## ⚠️ Known limitations
+
+Identified during the 1.1.0 optimization pass, deliberately not fixed
+in that pass — each would need its own careful change rather than a
+rushed pre-release one. Tracked here so they're visible, not silent.
+
+- **Per-group regenerate can lose data for a group toggled out of
+  rotation mid-cycle.** `AutomationAdminService.clear_period()`/
+  `refresh_shifts()`'s "regenerate" action deletes on-calls/shifts for
+  the whole period unconditionally, then only regenerates
+  currently-eligible groups (`is_part_of_oncall`/`is_part_of_schedule`).
+  If a Group had on-calls/shifts in that period from before it was
+  toggled out of eligibility, this delete-then-regenerate cycle
+  silently drops them. Narrow window (requires a participation toggle
+  *and* a regenerate covering a period that group already had data in)
+  but real data loss, not just theoretical — see the comments on
+  `clear_period()`/`refresh_shifts()` in `app/services/automation_admin_service.py`.
+- **Rule resolution inside shift generation isn't cached or
+  batched.** `AutomationRule.resolve_params()` is re-queried once per
+  user/per day inside `AdvancedShiftAutomation.generate_daily_shifts()`
+  (shift-slot resolution, mandatory/staffing coverage checks), and
+  `generate_full_schedule()` separately recomputes coverage gaps
+  `generate_daily_shifts()` already computed. Real N+1/duplicate work
+  on a generation run over a long period. See
+  `Docs/reference/PERFORMANCE_OPTIMIZATION.md`.
+- **`/dashboard`'s stats fetch a user's full shift/on-call/leave
+  history**, unbounded by date, on every page load — see
+  `Docs/reference/PERFORMANCE_OPTIMIZATION.md`.
 
 ## 🔭 Future ideas
 

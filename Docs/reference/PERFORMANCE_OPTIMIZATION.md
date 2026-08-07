@@ -27,12 +27,36 @@ dataset displayed — see that file for the pattern if you want to verify
 another route.
 
 A related pattern, not about query count but about repeated identical
-queries within a single request: `SettingsService.get_default_timezone()`
-and `app/__init__.py`'s `get_date_format()`/`get_time_format()` cache
+queries within a single request: `SettingsService.get_default_timezone()`,
+`get_shift_scheduling_mode()`/`get_oncall_scheduling_mode()`, and
+`app/__init__.py`'s `get_date_format()`/`get_time_format()` cache
 their resolved `Setting` lookup on `flask.g` for the lifetime of the
 request — without it, rendering a page with many shifts/on-calls would
 run one `Setting.get()` per row instead of one per request, since these
-resolvers are called once per displayed item.
+resolvers are called once per displayed item. The two scheduling-mode
+getters were added by the configurable automation rules engine and
+initially missed this pattern: `AdvancedShiftAutomation`/
+`check_shift_rule_violations()` (`app/utils/helpers/common_helpers.py`)
+call them once per day/per user inside a generation or validation loop
+— caught and fixed as part of the 1.1.0 optimization pass.
+
+**Known gap, not yet cached**: `AutomationRule.resolve_params()` (used
+by every rule type in `app/utils/automation/rules/`) still hits the DB
+on every call, with no `flask.g` cache — `AdvancedShiftAutomation`'s
+shift-slot resolution and mandatory/staffing-coverage checks each
+re-resolve the same rule once per user/per day inside `generate_daily_shifts()`,
+and `generate_full_schedule()` separately recomputes the same coverage
+gaps `generate_daily_shifts()` already computed internally. Both are
+real, identified N+1/duplicate-work patterns in the rule-resolution
+path, deliberately left unfixed in the 1.1.0 pass — they require
+restructuring the generation loop itself (hoisting rule resolution
+above the per-user/per-day loop), not just adding a cache, and that
+code is dense enough (see the "real regression caught by..." comments
+throughout `automation_admin_service.py`) to warrant its own dedicated
+pass rather than a rushed pre-release change. Composite index on
+`AutomationRule(rule_type, group_id)` (migration `b8e2f4a91c6d`) was
+added regardless, since every real lookup filters on both columns
+together.
 
 ## Database indexes
 
@@ -44,8 +68,25 @@ be preserved if you modify query patterns in `app/repositories/`:
 | `Shift` | `(user_id, date)`, `(date, start_time)` |
 | `OnCall` | `(user_id, start_time, end_time)` |
 | `Leave` | `(user_id, start_date, end_date)` |
+| `AutomationRule` | `(rule_type, group_id)` |
 
 See [`architecture/ERD.md`](../architecture/ERD.md) for the full schema.
+
+## Dashboard stats: full history fetched into Python
+
+`DashboardService.get_stats()` (`/dashboard`'s day-based total/this-month/
+last-month counts) pulls every shift/on-call/leave row a user has ever
+had via `ShiftRepository.list_dates_for_user()`/`OnCallRepository.list_spans_for_user()`/
+`LeaveRepository.list_spans_for_user()` — no date bound at all — then
+does the month-boundary math with Python loops over that full list.
+Cost grows unbounded with a user's tenure: a long-employed user's
+dashboard load does 3 full-history table scans on every visit instead
+of DB-side aggregation (`func.count`/`func.sum` with a `CASE WHEN`/date
+filter). Identified during the 1.1.0 optimization pass, deliberately
+not rewritten in that pass — it would change the aggregation logic
+this file's own straddle-a-month-boundary tests exercise closely, a
+larger and riskier change than fits a pre-release cleanup. Revisit if
+dashboard load time becomes a real complaint.
 
 ## Pagination
 

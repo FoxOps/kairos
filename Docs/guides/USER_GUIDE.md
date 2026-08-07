@@ -277,7 +277,8 @@ To export your schedule to an external calendar:
 
 | Element | Description | Access |
 |---------|-------------|-------|
-| **Home** | Dashboard with calendar | All |
+| **Home** | Interactive calendar | All |
+| **Tableau de bord** (Dashboard) | Your own stats + upcoming/recent shifts, on-calls, leave | All |
 | **Schedule** | List and management of shifts | All |
 | **On-Call** | List and management of on-call periods | All |
 | **Leave** | List and management of leave | All |
@@ -288,6 +289,19 @@ To export your schedule to an external calendar:
 - **Notifications**: Displays messages and alerts
 - **Profile**: Access to your user profile
 - **Logout**: Exit the application
+
+### Your personal dashboard (`/dashboard`)
+
+Distinct from the **Home** calendar and from the admin-only dashboard
+below — this is a personal stats page every user has. It shows:
+
+- Three stat cards (shifts, on-calls, leave), each with an all-time
+  total, a this-month count, and a month-over-month trend — counted in
+  **days**, not rows/events, so a single multi-day on-call or leave
+  period doesn't inflate the count the way a raw row count would.
+- Your next 5 upcoming shifts/on-calls/leave, and your 5 most recent
+  past shifts.
+- A breakdown of your shifts by shift type.
 
 ---
 
@@ -455,8 +469,14 @@ A shift represents a work period assigned to a user for a specific day. It conta
    - **Shifts**: Displayed in purple (theme primary color)
    - **On-Call**: Displayed in cyan (theme info color)
    - **Leave**: Displayed in red (theme error/danger color)
-3. Navigate between months using the arrows
-4. Click an event for more details
+   - A small color-coded dot on each event showing its group (with a
+     legend), on top of the type colors above
+3. A **multi-group filter** above the calendar narrows it down to one
+   or more groups
+4. Navigate between months using the arrows
+5. Click an event for more details — this opens a view/edit modal for
+   shifts and on-calls (admins can reassign the user, type, or time
+   directly there), or a read-only view for a leave period
 
 #### Method 2: List of shifts
 
@@ -490,14 +510,16 @@ A shift represents a work period assigned to a user for a specific day. It conta
 
 ### Editing a shift
 
-**Administrator only.** On the home page calendar, enable **edit mode**,
-then drag and drop the shift to its new date/time, or resize it to
-change its duration. The change is saved immediately (no separate
-"Save" button).
+**Administrator only.** On the home page calendar, drag and drop the
+shift to its new date/time, or resize it to change its duration — this
+is always live for admins, no "edit mode" toggle to enable first. The
+change is saved immediately (no separate "Save" button).
 
-There is no dedicated editing form (no "Edit this shift" page) — only
-drag-and-drop on the calendar allows direct modification. Otherwise,
-delete the shift and create a new one via **Schedule > Add a shift**.
+Clicking any shift on the calendar also opens a view/edit modal (a
+dedicated editing form does exist, unlike in earlier versions): admins
+can reassign the user, shift type, or time directly there. A non-admin
+viewer, or an admin viewing a shift that isn't theirs to change, gets a
+read-only version of the same modal.
 
 ### Deleting a shift
 
@@ -508,31 +530,9 @@ delete the shift and create a new one via **Schedule > Add a shift**.
 
 ### Deleting multiple shifts
 
-#### Deleting all shifts for a user
-
-1. Go to **Schedule**
-2. Click **"Delete all shifts for [Name]"**
-3. Confirm the deletion
-
-#### Deleting all shifts for a day
-
-1. Go to **Schedule**
-2. Click **"Delete all shifts for [Date]"**
-3. Confirm the deletion
-
-#### Deleting all shifts for a week
-
-1. Go to **Schedule**
-2. Click **"Delete all shifts for the week of [Date]"**
-3. Confirm the deletion
-
-#### Deleting ALL shifts
-
-1. Go to **Schedule**
-2. Click **"Delete all shifts"**
-3. Confirm the deletion
-
-> ⚠️ **Warning**: This action is irreversible!
+`/schedule`, `/oncall`, and `/leave` all share the same filter bar and
+bulk-delete mechanism, described once here — see "Filtering and bulk
+deletion" further below in this guide.
 
 ---
 
@@ -575,10 +575,10 @@ An on-call period is a time during which a user is responsible and reachable out
 
 ### Editing an on-call period
 
-**Administrator only.** Same as for shifts: enable edit mode on the
-home page calendar, then drag and drop the on-call period. No dedicated
-editing form — otherwise, delete it and recreate it via
-**On-Call > Add an on-call period**.
+**Administrator only.** Same as for shifts: drag and drop the on-call
+period on the home page calendar (always live, no "edit mode" toggle),
+or click it to open a view/edit modal where the user, type, or time can
+be reassigned directly.
 
 ### Deleting an on-call period
 
@@ -589,19 +589,8 @@ editing form — otherwise, delete it and recreate it via
 
 ### Deleting multiple on-call periods
 
-#### Deleting all on-call periods for a user
-
-1. Go to **On-Call**
-2. Click **"Delete all on-call periods for [Name]"**
-3. Confirm the deletion
-
-#### Deleting ALL on-call periods
-
-1. Go to **On-Call**
-2. Click **"Delete all on-call periods"**
-3. Confirm the deletion
-
-> ⚠️ **Warning**: This action is irreversible!
+Same shared filter bar and bulk-delete mechanism as shifts — see
+"Filtering and bulk deletion" further below.
 
 ---
 
@@ -669,12 +658,14 @@ an already scheduled shift or on-call period.
 > of the leave period. A message indicates the number of shifts
 > recalculated after the addition.
 
-### Editing a leave period
+### Viewing and deleting a leave period from the calendar
 
-Drag-and-drop on the calendar (edit mode) is only enabled for
-administrators, including for a regular user's leave periods. There is
-no dedicated editing form: to change the dates of a leave period,
-delete it and create a new one via **Leave > Add a leave period**.
+Clicking a leave period on the home page calendar opens a read-only
+view (owner, period) with a **Delete** button if you're allowed to
+delete it (your own leave, or any leave if you're an administrator).
+Leave periods have no drag-and-drop or field-editing on the calendar —
+to change the dates of a leave period, delete it and create a new one
+via **Leave > Add a leave period**.
 
 ### Deleting a leave period
 
@@ -683,7 +674,26 @@ delete it and create a new one via **Leave > Add a leave period**.
 3. Click the **🗑️ Delete** icon
 4. Confirm the deletion
 
+Or bulk-delete several at once — see "Filtering and bulk deletion"
+below.
+
 > ⚠️ **Restriction**: You can only delete your own leave periods, unless you are an administrator.
+
+### Filtering and bulk deletion
+
+`/schedule`, `/oncall`, and `/leave` each have a shared filter bar
+above the list: user, group, and date range. Applying filters narrows
+the list and also scopes the **Delete filtered result** button — it
+deletes every row currently matching the filters, not just what's
+visible on the current page. Each row also has its own checkbox for
+selecting a specific subset; with at least one checked, a **Delete
+selection** button appears to delete exactly those rows instead. This
+single mechanism replaced what used to be several separate
+single-purpose buttons ("delete all for this user", "delete all for
+this day/week", "delete everything") on each of these three pages.
+
+> ⚠️ **Warning**: Both bulk-delete actions are irreversible — always
+> check the filtered/selected count before confirming.
 
 ---
 
@@ -705,44 +715,42 @@ The **iCalendar (ICS)** format is a standard for exchanging calendar information
 1. Log in to Kairos
 2. Go to **Profile** > **ICS Token**
 3. Click **"Generate a token"**
-4. Copy the generated token
 
-#### Step 2: Get the export URL
+(You no longer need to copy the token by hand for step 2 below — it's
+embedded automatically in the modal's URL. Only copy it separately if
+you're building a URL manually, e.g. for a script.)
 
-Your personal export URL is:
+#### Step 2: Get the export URL from the export modal
+
+Every export button (on `/profile/ics-token`, and on `/schedule`,
+`/oncall`, `/leave`) opens the same modal: one **Copier** button (copies
+the URL to your clipboard) and one **Télécharger** link (downloads the
+`.ics` file once, instead of subscribing to it), plus two controls
+inside the modal to scope what the URL includes:
+
+- A **group checkbox list** — which group(s)' events to include. By
+  default only your own group is checked (the org-wide `/admin/dashboard`
+  page defaults to every group instead, since an admin viewing that page
+  usually wants the full export).
+- A **Moi / Tout le monde** toggle — "Moi" restricts the export to your
+  own events; unchecking your own group in the list above forces this
+  to "Tout le monde" and disables the toggle (exporting "Moi" for a
+  group you're not part of would silently produce an empty calendar).
+
+The resulting URL follows this shape:
 ```
 http://your-server:5000/export/shifts?scope=my&token=YOUR_TOKEN
 ```
-
-Replace:
-- `your-server`: The address of your Kairos instance
-- `YOUR_TOKEN`: The token you generated
+— `scope` is `my` or `all`, and one or more `group_ids=` parameters are
+appended when a group scope is chosen (omitted entirely = every group,
+still the default for a URL you may already have saved from before this
+group scoping existed — fully backward compatible).
 
 ### Exporting other data
 
-Kairos also allows you to export:
-
-#### Exporting on-call periods
-```
-http://your-server:5000/export/oncall?scope=my&token=YOUR_TOKEN
-```
-
-#### Exporting leave
-```
-http://your-server:5000/export/leaves?scope=my&token=YOUR_TOKEN
-```
-
-#### Exporting everything (any user, not admin-restricted)
-```
-# All shifts
-http://your-server:5000/export/shifts?scope=all&token=YOUR_TOKEN
-
-# All on-call periods
-http://your-server:5000/export/oncall?scope=all&token=YOUR_TOKEN
-
-# All leave
-http://your-server:5000/export/leaves?scope=all&token=YOUR_TOKEN
-```
+The same modal, group scoping, and URL shape apply to on-call periods
+(`/export/oncall`) and leave (`/export/leaves`) — swap `shifts` for
+`oncall`/`leaves` in the URL if building one by hand.
 
 #### Step 3: Import into your calendar
 
