@@ -73,15 +73,21 @@ class ShiftRepository:
         backs the /schedule filter bar (user/group/date range/shift
         type) and the checkbox row-selection ("delete selection" is
         just delete_filtered(ids=[...]), no separate code path). group_id
-        requires a join through User (Shift has no group_id column of
-        its own, same as count_for_group())."""
+        is resolved via a User.id subquery, not a join (Shift has no
+        group_id column of its own, same as count_for_group()) -
+        SQLAlchemy's bulk Query.delete() rejects a query that already
+        has a join()/outerjoin() applied ("Can't call Query.update() or
+        Query.delete() when join()... has been called"), and this WHERE
+        clause is shared with delete_filtered(), so it must stay
+        delete()-safe. Same pattern as delete_overlapping_range()."""
         query = Shift.query
         if user_id is not None:
             query = query.filter(Shift.user_id == user_id)
         if group_id is not None:
-            query = query.join(User, Shift.user_id == User.id).filter(
-                User.group_id == group_id
+            group_user_ids = User.query.filter_by(group_id=group_id).with_entities(
+                User.id
             )
+            query = query.filter(Shift.user_id.in_(group_user_ids))
         if date_from is not None:
             query = query.filter(Shift.date >= date_from)
         if date_to is not None:
@@ -126,10 +132,15 @@ class ShiftRepository:
         the single action replacing the old delete-all/delete-all-for-
         user/delete-day/delete-week routes. synchronize_session="evaluate"
         (not False, see delete_in_date_range()'s own comment above): a
-        caller can hold an already-loaded Shift instance across this call."""
+        caller can hold an already-loaded Shift instance across this call.
+        Except when group_id is set: "evaluate" can't reconcile a
+        subquery IN-clause against already-loaded session objects in
+        Python - "fetch" runs one extra SELECT for matching PKs first
+        instead (same as delete_overlapping_range())."""
+        sync_mode = "fetch" if group_id is not None else "evaluate"
         return ShiftRepository._filtered_query(
             user_id, group_id, date_from, date_to, shift_type_id, ids
-        ).delete(synchronize_session="evaluate")
+        ).delete(synchronize_session=sync_mode)
 
     @staticmethod
     def list_in_window(

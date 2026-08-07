@@ -9,6 +9,7 @@ repositories directly, without going through the Flask test client.
 from datetime import date, datetime, timedelta
 
 from app import db
+from app.models import Group, User
 from app.repositories.leave_repository import LeaveRepository
 from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository, ShiftTypeRepository
@@ -426,6 +427,43 @@ class TestShiftRepository:
         other_shift_id = other_shift.id
 
         deleted = ShiftRepository.delete_filtered(ids=[test_shift_id])
+        db.session.commit()
+
+        assert deleted == 1
+        assert ShiftRepository.get_by_id(test_shift_id) is None
+        assert ShiftRepository.get_by_id(other_shift_id) is not None
+
+    def test_delete_filtered_by_group_id_only_deletes_matching_group(
+        self, test_app, test_user, test_group, test_shift_type, test_shift
+    ):
+        """Regression test: _filtered_query() used to build the group_id
+        branch with .join(User, ...), and SQLAlchemy's bulk Query.delete()
+        raises InvalidRequestError on a query that already has a join()
+        applied - this used to be a 500 on /schedule's "delete filtered
+        result" whenever a group filter was active."""
+        test_shift_id = test_shift.id
+        other_group = Group(name="Other Group")
+        db.session.add(other_group)
+        db.session.commit()
+        other_user = User(
+            name="Other User",
+            email="other-group-user@test.com",
+            password_hash="x",
+            group_id=other_group.id,
+        )
+        db.session.add(other_user)
+        db.session.commit()
+        other_shift = ShiftRepository.create(
+            other_user.id,
+            test_shift_type.id,
+            datetime.combine(date.today(), datetime.min.time()),
+            datetime.combine(date.today(), datetime.max.time()),
+            date.today(),
+        )
+        db.session.commit()
+        other_shift_id = other_shift.id
+
+        deleted = ShiftRepository.delete_filtered(group_id=test_group.id)
         db.session.commit()
 
         assert deleted == 1
@@ -928,6 +966,37 @@ class TestOnCallRepository:
         other_oncall_id = other_oncall.id
 
         deleted = OnCallRepository.delete_filtered(ids=[test_oncall_id])
+        db.session.commit()
+
+        assert deleted == 1
+        assert OnCallRepository.get_by_id(test_oncall_id) is None
+        assert OnCallRepository.get_by_id(other_oncall_id) is not None
+
+    def test_delete_filtered_by_group_id_only_deletes_matching_group(
+        self, test_app, test_user, test_group, test_oncall
+    ):
+        """Regression test: same InvalidRequestError as
+        ShiftRepository's equivalent test - .delete() on a query built
+        with .join(User, ...) for the group_id filter."""
+        test_oncall_id = test_oncall.id
+        other_group = Group(name="Other Group")
+        db.session.add(other_group)
+        db.session.commit()
+        other_user = User(
+            name="Other User",
+            email="other-group-user@test.com",
+            password_hash="x",
+            group_id=other_group.id,
+        )
+        db.session.add(other_user)
+        db.session.commit()
+        other_oncall = OnCallRepository.create(
+            other_user.id, datetime.now(), datetime.now() + timedelta(days=7)
+        )
+        db.session.commit()
+        other_oncall_id = other_oncall.id
+
+        deleted = OnCallRepository.delete_filtered(group_id=test_group.id)
         db.session.commit()
 
         assert deleted == 1

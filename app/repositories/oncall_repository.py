@@ -43,14 +43,20 @@ class OnCallRepository:
         delete_filtered(ids=[...]), no separate code path). OnCall is
         a span, not a single day, so date_from/date_to use the same
         "overlap" semantics as list_in_window()/_overlapping_range_filter(),
-        just with each bound independently optional."""
+        just with each bound independently optional. group_id is resolved
+        via a User.id subquery, not a join - SQLAlchemy's bulk
+        Query.delete() rejects a query that already has a join()/
+        outerjoin() applied, and this WHERE clause is shared with
+        delete_filtered(), so it must stay delete()-safe. Same pattern
+        as delete_overlapping_range()."""
         query = OnCall.query
         if user_id is not None:
             query = query.filter(OnCall.user_id == user_id)
         if group_id is not None:
-            query = query.join(User, OnCall.user_id == User.id).filter(
-                User.group_id == group_id
+            group_user_ids = User.query.filter_by(group_id=group_id).with_entities(
+                User.id
             )
+            query = query.filter(OnCall.user_id.in_(group_user_ids))
         if date_from is not None:
             query = query.filter(
                 OnCall.end_time >= datetime.combine(date_from, datetime.min.time())
@@ -94,10 +100,14 @@ class OnCallRepository:
         the single action replacing the old delete-all/delete-all-for-
         user routes. synchronize_session="evaluate" (not False, see
         delete_overlapping_range()'s own comment above): a caller can
-        hold an already-loaded OnCall instance across this call."""
+        hold an already-loaded OnCall instance across this call. Except
+        when group_id is set: "evaluate" can't reconcile a subquery
+        IN-clause against already-loaded session objects in Python -
+        "fetch" runs one extra SELECT for matching PKs first instead."""
+        sync_mode = "fetch" if group_id is not None else "evaluate"
         return OnCallRepository._filtered_query(
             user_id, group_id, date_from, date_to, ids
-        ).delete(synchronize_session="evaluate")
+        ).delete(synchronize_session=sync_mode)
 
     @staticmethod
     def list_in_window(
