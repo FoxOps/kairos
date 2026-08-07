@@ -1187,17 +1187,32 @@ returns, per shift/on-call/leave, an all-time `total`, `this_month`, `last_month
 delta (`this_month - last_month`) — "month" is the full calendar month window
 (`_month_bounds()`), not clipped to today, so a shift already scheduled later this month still
 counts for "this month" (a deliberate asymmetry: this month is naturally a mix of past-actual and
-future-scheduled, last month is fully settled). On-call/leave **spans** straddling a month
-boundary are split proportionally between the two months via a shared `_clipped_days()` helper
-(`max(0, (min(end, window_end) - max(start, window_start)).days + 1)`), rather than being wholly
-attributed to whichever month the span starts in. The on-call headline total is `round()`ed to a
-whole day (no decimal-duration precedent anywhere in this app's templates) — the exact hour figure
-stays available via `OnCall.duration()` elsewhere, not hidden, just not the headline. Three new
-columns-only repository methods back this (`ShiftRepository.list_dates_for_user()`,
-`OnCallRepository.list_spans_for_user()`, `LeaveRepository.list_spans_for_user()`) — no SQL-side
-date-diff aggregation (dialect-risky across this app's 3 supported DB engines), Python-side
-summation over an already-fetched small row set instead, appropriate at this per-user dashboard's
-scale. `DashboardService.get_dashboard_data(user)` also bundles the pre-existing upcoming/recent
+future-scheduled, last month is fully settled). `Leave` spans straddling a month boundary are split
+proportionally between the two months via `_clipped_days()` (whole inclusive calendar days:
+`max(0, (min(end, window_end) - max(start, window_start)).days + 1)`), rather than being wholly
+attributed to whichever month the span starts in. `OnCall` spans use a *different* helper,
+`_clipped_duration_days()` (fractional: seconds-based overlap / 86400) — a real bug found and fixed
+in the 1.1.0 optimization pass: `_clipped_days()` on an on-call's `.date()`-truncated bounds
+overcounts relative to the fractional `total` (e.g. a ~6.4-day on-call rounds to `total=6`, but its
+two calendar-day dates are 7 days apart = 8 inclusive days), so `this_month` could exceed `total`.
+Both helpers still round their sum to a whole day at the end (no decimal-duration precedent anywhere
+in this app's templates) — the exact hour figure stays available via `OnCall.duration()` elsewhere,
+not hidden, just not the headline.
+
+`Shift`'s three figures (`total`/`this_month`/`last_month`) are computed with a single SQL
+aggregate query, `ShiftRepository.get_day_count_stats()` (`COUNT` + conditional `SUM` via `CASE`) —
+plain portable SQL, no date arithmetic, safe across this app's 3 supported DB engines. This replaced
+an earlier `list_dates_for_user()` + Python-loop version that fetched a user's entire shift history
+on every `/dashboard` load, unbounded by tenure — fixed in the same optimization pass, since `Shift`
+is by far the highest-volume of the three tables (one row per person per work day). `OnCall`/`Leave`
+deliberately still fetch into Python (`OnCallRepository.list_spans_for_user()`/
+`LeaveRepository.list_spans_for_user()`, columns-only, no `joinedload`) rather than getting the same
+SQL-aggregate treatment: their month-clipping math needs per-row date/datetime arithmetic
+(`_clipped_days()`/`_clipped_duration_days()` above), which would mean either dialect-specific SQL
+or unverified cross-engine arithmetic (this repo's test suite only exercises SQLite) — not worth the
+risk given their volume is much lower than `Shift`'s (at most ~52 `OnCall` rows/year, a handful of
+`Leave` rows/year) — see `Docs/reference/PERFORMANCE_OPTIMIZATION.md` for the full reasoning.
+`DashboardService.get_dashboard_data(user)` also bundles the pre-existing upcoming/recent
 lists and shift-type chart queries, moved here from the route as-is — fixes a routes→services→
 repositories layering violation (the route used to query `Shift`/`OnCall`/`Leave` directly), not a
 logic change. `dashboard.html`'s leave-days text now calls `Leave.duration()` instead of
