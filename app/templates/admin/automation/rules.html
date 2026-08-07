@@ -7,7 +7,7 @@
 {% block admin_content %}
 <section class="p-3 md:p-4 max-w-3xl mx-auto">
     {{ breadcrumbs([
-        ("fa-cog", "Admin", url_for('admin.admin_dashboard')),
+        ("fa-cog", _("Admin"), url_for('admin.admin_dashboard')),
         ("fa-robot", _("Automatisation"), url_for('admin.automation_dashboard')),
         ("fa-sliders", _("Règles"), ""),
     ]) }}

@@ -5,7 +5,7 @@
 {% block admin_content %}
 <section class="p-3 md:p-4 max-w-6xl mx-auto">
     {{ breadcrumbs([
-        ("fa-cog", "Admin", url_for('admin.admin_dashboard')),
+        ("fa-cog", _("Admin"), url_for('admin.admin_dashboard')),
         ("fa-robot", _("Automatisation"), ""),
     ]) }}
     <h1 class="text-2xl font-bold mb-4"><i class="fas fa-robot mr-2" aria-hidden="true"></i>{{ _("Automatisation") }}</h1>

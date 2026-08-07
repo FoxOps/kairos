@@ -40,15 +40,22 @@ from app.utils.automation.rules import (
     WeekendDefinitionRule,
 )
 
-WEEKDAY_LABELS = [
-    _("Lundi"),
-    _("Mardi"),
-    _("Mercredi"),
-    _("Jeudi"),
-    _("Vendredi"),
-    _("Samedi"),
-    _("Dimanche"),
-]
+
+def _weekday_labels() -> list[str]:
+    # Built inside a function, not at module scope: a module-level list
+    # would call _() once at process import time (no request context),
+    # freezing every viewer's weekday names to whatever locale happened
+    # to be active at startup instead of resolving per-request like
+    # every other _() call in this codebase.
+    return [
+        _("Lundi"),
+        _("Mardi"),
+        _("Mercredi"),
+        _("Jeudi"),
+        _("Vendredi"),
+        _("Samedi"),
+        _("Dimanche"),
+    ]
 
 
 def _parse_int(value: str) -> int | None:
@@ -186,7 +193,7 @@ def automation_rules_dashboard():
     # ?group_id= link, not silently lock the admin out of viewing it.
     groups = GroupRepository.get_rotation_eligible()
     shift_types = ShiftTypeService.list_all()
-    weekday_choices = list(enumerate(WEEKDAY_LABELS))
+    weekday_choices = list(enumerate(_weekday_labels()))
     staffing_limits = {
         shift_type.id: StaffingLimitsRule.get_limits(shift_type.id, group=group)
         for shift_type in shift_types
