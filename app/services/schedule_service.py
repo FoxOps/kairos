@@ -41,7 +41,10 @@ class ScheduleService:
 
     @staticmethod
     def get_calendar_events_for_range(
-        viewer, window_start: datetime, window_end: datetime
+        viewer,
+        window_start: datetime,
+        window_end: datetime,
+        group_ids: list[int] | None = None,
     ) -> list[dict]:
         """Fetch shifts/on-calls/leaves within an arbitrary window and
         convert them into FullCalendar events, translated into the
@@ -49,10 +52,14 @@ class ScheduleService:
         dynamic events source (see dashboard_routes.py::api_get_shifts)
         - called with whatever range the calendar is currently viewing,
         not capped to the ±180-day default the way a one-shot page-load
-        embed would be."""
-        shifts = ShiftRepository.list_in_window(window_start, window_end)
-        on_calls = OnCallRepository.list_in_window(window_start, window_end)
-        leaves = LeaveRepository.list_in_window(window_start.date(), window_end.date())
+        embed would be. `group_ids`: the calendar's multi-group filter -
+        None means no filtering (every group), matching the repository
+        layer's own None-means-unfiltered convention."""
+        shifts = ShiftRepository.list_in_window(window_start, window_end, group_ids)
+        on_calls = OnCallRepository.list_in_window(window_start, window_end, group_ids)
+        leaves = LeaveRepository.list_in_window(
+            window_start.date(), window_end.date(), group_ids
+        )
 
         return ScheduleService.build_calendar_events(shifts, on_calls, leaves, viewer)
 
@@ -74,7 +81,15 @@ class ScheduleService:
                     "start": to_viewer_timezone(shift.start_time, viewer).isoformat(),
                     "end": to_viewer_timezone(shift.end_time, viewer).isoformat(),
                     "className": "fc-event-shift",
-                    "extendedProps": {"type": "shift", "resourceId": shift.id},
+                    "extendedProps": {
+                        "type": "shift",
+                        "resourceId": shift.id,
+                        "userId": shift.user_id,
+                        "groupId": shift.user.group_id,
+                        "userName": shift.user.name,
+                        "shiftTypeId": shift.shift_type_id,
+                        "shiftTypeLabel": label,
+                    },
                 }
             )
 
@@ -86,7 +101,13 @@ class ScheduleService:
                     "start": to_viewer_timezone(oncall.start_time, viewer).isoformat(),
                     "end": to_viewer_timezone(oncall.end_time, viewer).isoformat(),
                     "className": "fc-event-oncall",
-                    "extendedProps": {"type": "oncall", "resourceId": oncall.id},
+                    "extendedProps": {
+                        "type": "oncall",
+                        "resourceId": oncall.id,
+                        "userId": oncall.user_id,
+                        "groupId": oncall.user.group_id,
+                        "userName": oncall.user.name,
+                    },
                 }
             )
 
@@ -99,7 +120,13 @@ class ScheduleService:
                     "end": (leave.end_date + timedelta(days=1)).isoformat(),
                     "className": "fc-event-leave",
                     "allDay": True,
-                    "extendedProps": {"type": "leave", "resourceId": leave.id},
+                    "extendedProps": {
+                        "type": "leave",
+                        "resourceId": leave.id,
+                        "userId": leave.user_id,
+                        "groupId": leave.user.group_id,
+                        "userName": leave.user.name,
+                    },
                 }
             )
 

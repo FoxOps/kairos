@@ -16,17 +16,16 @@ import {
     initConfirmDeleteActions,
 } from './utils/accessibility.js';
 import { initFlashMessages } from './notifications/flash-messages.js';
-import {
-    copyToken,
-    copyUrlShiftsAll,
-    copyUrlShiftsMy,
-    copyUrlOncallAll,
-    copyUrlOncallMy,
-    copyUrlLeavesAll,
-    copyUrlLeavesMy,
-} from './clipboard/copy-token.js';
+import { copyToken } from './clipboard/copy-token.js';
+import { copyByTarget } from './utils/clipboard.js';
 import { saveRotationOrder } from './automation/rotation-order.js';
 import { initDatePickers } from './utils/date-picker.js';
+import {
+    closeIcsModal,
+    initIcsModalEscapeHandling,
+    initIcsExportGroupScopeControls,
+} from './ics-export/ics-export-modal.js';
+import { initRowSelectCheckboxes } from './utils/row-select.js';
 
 let themeManager;
 let navbarMenu;
@@ -41,6 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // shift-creation modal in fullcalendar-config.js) bind themselves
     // separately, since they don't exist yet at this point.
     initDatePickers();
+    initIcsModalEscapeHandling();
+    initIcsExportGroupScopeControls();
+    initRowSelectCheckboxes();
 });
 
 // Export functions for the templates (inline onclick, FullCalendar callbacks)
@@ -50,12 +52,8 @@ window.Kairos = {
     announceToScreenReader,
     focusElement,
     copyToken,
-    copyUrlShiftsAll,
-    copyUrlShiftsMy,
-    copyUrlOncallAll,
-    copyUrlOncallMy,
-    copyUrlLeavesAll,
-    copyUrlLeavesMy,
+    copyByTarget,
+    closeIcsModal,
     saveRotationOrder,
     // ThemeManager instance (initialized on load)
     get themeManager() {

@@ -16,7 +16,19 @@ history, ops output) documented in this file, which are unrelated and untouched.
 stated-but-unenforced rule for a long time — a repo-wide sweep translated
 every remaining French code comment/docstring to English (Python, Dockerfile, entrypoint.sh,
 Makefile, .ruff.toml, k8s/*.yaml, docker-compose*.yml). Keep new comments/docstrings in English
-going forward. Two deliberate carve-outs, not oversights:
+going forward.
+
+**This overrides the caveman plugin's "preserve user's dominant language" rule** (`caveman`
+skill: "User write Portuguese → reply Portuguese caveman... Compress the style, not the
+language."), which is otherwise active in this project's Claude Code sessions. Caveman mode's
+*compression* (dropped articles/filler, fragments) still applies — only its language-mirroring
+clause is overridden. Regardless of what language the user's message is written in, respond in
+English, compressed per whatever caveman intensity is active. This is a project-level instruction
+override, not a caveman config setting — the plugin itself has no per-project language option
+(only intensity: `off`/`lite`/`full`/`ultra`/`wenyan-*`, resolved via `.caveman/config.json` or
+`~/.config/caveman/config.json` — see `caveman-config.js`), so there is nothing to configure
+there; this note is the actual fix, read and honored the same way any other CLAUDE.md instruction
+is. Two deliberate carve-outs, not oversights:
 - **Runtime CLI/ops output stays French** — `print()`/`logger`/`echo` messages in
   `scripts/backup_database.py`, `docker/entrypoint.sh`, `Makefile` targets, etc. are operator-facing
   text (what a French-speaking admin sees when running the command), not developer-facing
@@ -26,13 +38,26 @@ going forward. Two deliberate carve-outs, not oversights:
   excluded them (later reversed only for the literal old-repo-name references, on explicit request —
   this translation sweep is a separate, narrower concern and that reversal doesn't extend to it).
 
+## Memory
+
+Update the persistent auto-memory system (feedback/user/project/reference entries) proactively and
+often during a session, not just at natural stopping points or when explicitly asked. This project
+has real, recurring friction (see the language-drift history above) that's easy to under-document if
+memory writes are deferred until a session's end — capture a correction or a confirmed approach as
+soon as it happens, not retrospectively.
+
 ## Project
 
 Kairos is a Flask web app for team shift scheduling, on-call rotations, and leave
 management, with ICS calendar export. Active development, French-language docs/commit history.
 v1.0 stabilization complete (security audit, targeted bug hunt, load test — see
-`report/SECURITY_AUDIT_v1.0.md`, `report/BUG_HUNT_v1.0.md`, `report/LOAD_TEST_v1.0.md`, and
-ROADMAP.md's "Done" section). Tests run on GitHub Actions
+`report/1.0.0/SECURITY_AUDIT_v1.0.md`, `report/1.0.0/BUG_HUNT_v1.0.md`, `report/1.0.0/LOAD_TEST_v1.0.md`
+— `report/` is organized into one subfolder per released version, e.g. `report/1.1.0/`; see
+`Docs/reference/QA_PROTOCOL.md`'s "report/ naming" section — and
+ROADMAP.md's "Done" section). `CHANGELOG.md` (Keep-a-Changelog-ish, versions match this project's
+bare git tags — `1.1.0`, not `v1.1.0`) is kept up to date between releases starting with the 1.1.0
+cycle — update it alongside `ROADMAP.md` when landing anything user-facing, don't let it drift.
+Tests run on GitHub Actions
 (`.github/workflows/tests.yml`, named `Tests` — not `ci.yml`/`CI`, renamed to say what it actually
 does now that Docker publishing lives in its own separate workflow, see below — the GitLab CI config
 this repo used to carry was removed — GitLab never actually executed against this
@@ -74,10 +99,13 @@ pip install -r requirements.txt
 python run.py                              # http://localhost:5000
 
 # Tests
-python -m pytest tests/ -v --tb=short              # all tests (make test)
+python -m pytest tests/ -v --tb=short -n auto       # all tests (make test) - pytest-xdist,
+                                                     # ~3.3x faster (548s -> 166s on 4 cores);
+                                                     # drop -n auto for deterministic top-to-
+                                                     # bottom -v output while debugging one failure
 python -m pytest tests/unit/test_models.py -v      # one file
 python -m pytest tests/unit/test_models.py::TestUserModel::test_user_creation -v  # one test
-python -m pytest tests/ --cov=app --cov-report=term-missing    # coverage
+python -m pytest tests/ --cov=app --cov-report=term-missing -n auto   # coverage
 
 # Real-browser E2E tests (optional, not in requirements.txt - skipped cleanly if absent)
 pip install -r requirements-e2e.txt && playwright install chromium
@@ -142,11 +170,15 @@ touching auth flows.
   actually wiring it into `create_app()`.
 - A third layer sits on top of both: `Setting` (`app/models/setting.py`, generic key/value store,
   same EAV shape as `AutomationConfig`) + `app/services/settings_service.py::SettingsService`
-  (typed getters/setters) for settings an admin can change at runtime from `/admin/settings`
-  without redeploying — `default_timezone`, `default_language`, `public_base_url`,
+  (typed getters/setters) for settings an admin can change at runtime without redeploying —
+  most editable from `/admin/settings`: `default_timezone`, `default_language`, `public_base_url`,
   `items_per_page`/`max_per_page`, `notifications_enabled`,
   `backup_retention_days`/`backup_max_backups`, `ics_token_expiry_days` (currently unenforced, see
-  "Multi-timezone support" below). Rule: a `Setting` row, if present, always wins; if absent, the
+  "Multi-timezone support" below). `shift_scheduling_mode`/`oncall_scheduling_mode` (each
+  independently `shared`/`per_group`, same no-env-var-fallback shape as `default_language` below)
+  are the one exception: edited on `/admin/automation/rules` instead, alongside the rest of the
+  rule engine they scope — see "Configurable automation rules" for what each actually changes and
+  what's still not wired to it. Rule: a `Setting` row, if present, always wins; if absent, the
   getter falls back **live** to the matching `app.config`/env value (never a one-time seed written
   to the DB) — so an env-var-only deployment behaves identically to before this feature existed,
   until an admin actually saves a value through the new page. Don't remove the underlying env vars
@@ -200,8 +232,13 @@ touching auth flows.
 
 `app/models/` is a package (`base.py` defines the shared `BaseModel` with `id`/`created_at`/
 `updated_at` and CRUD helpers like `.save()`/`.update()`/`.to_dict()`; `user.py`, `shift.py`,
-`oncall.py`, `leave.py`, `automation_config.py`, `notification_log.py`, `swap_request.py`,
-`setting.py` hold the domain models, all subclassing `BaseModel`). `User.timezone` (nullable
+`oncall.py`, `leave.py`, `automation_config.py`, `automation_rule.py`, `notification_log.py`,
+`swap_request.py`, `setting.py` hold the domain models, all subclassing `BaseModel`).
+`AutomationRule` is **not** the same thing as `AutomationConfig` — the former is a per-`rule_type`,
+optionally per-`Group`-scoped store for the configurable automation rules engine (see "Configurable
+automation rules" below), the latter remains a single global EAV row solely for the on-call rotation
+order (`AutomationConfig.get_rotation_order()`) — don't confuse the two when searching for
+"automation" in this codebase. `User.timezone` (nullable
 String) is the user's personal display timezone preference — `None` means "use the org's
 `default_timezone` Setting", resolved at read time via `User.effective_timezone()`, not baked
 into the column (see "Multi-timezone support" below). `User.language` (nullable `String(5)`)
@@ -233,7 +270,8 @@ query per access) — acceptable at this app's scale.
 `ShiftTypeRepository`, `OnCallRepository`, `LeaveRepository`, `SwapRequestRepository`) and
 `app/services/` (business logic — `UserService`, `GroupService`, `ShiftService`, `ShiftTypeService`,
 `OnCallService`, `LeaveService`, `SwapService`, `ExportService`, `ScheduleService`,
-`AutomationAdminService`, `NotificationService`, `BackupService`) are implemented and wired up.
+`AutomationAdminService`, `AutomationRuleAdminService`, `NotificationService`, `BackupService`) are
+implemented and wired up.
 Routes in `app/routes/` (both the `main` and `admin` blueprints, split across multiple files — e.g.
 `shift_routes.py`, `admin_user_routes.py` — that all register onto the same blueprint object defined
 in `main.py`/`admin.py`) parse the request, call a service, and turn the result into a
@@ -366,7 +404,162 @@ later than before) fires on confirmation, not creation; `notify_target_rejection
 target declines (requester only); `notify_swap_decision()` (unchanged) fires on the admin's
 approve/reject/revert. Every one of these five call sites also has a matching
 `AppriseNotificationService.notify("swap", ...)` call right after it (see "External notifications
-(Apprise)" above).
+(Apprise)" below).
+
+### Configurable automation rules
+
+Business rules that drive shift/on-call generation (`app/utils/automation/`:
+`AdvancedShiftAutomation`, `OnCallAutomation`) used to be Python literals, identical for every team.
+`AutomationRule` (`app/models/automation_rule.py`) plus a plugin-style registry
+(`app/utils/automation/rules/`, one small class per rule type subclassing `AutomationRuleType` in
+`base.py`) replace 4 of those literals and add 4 genuinely new rule types with no prior hardcoded
+equivalent — admin-editable at `/admin/automation/rules`
+(`app/routes/admin_automation_rules_routes.py`, `app/services/automation_rule_admin_service.py::AutomationRuleAdminService`,
+one `save_*()` method per rule type, mirroring `SettingsService`'s per-section setter pattern).
+
+**Storage and resolution.** One `AutomationRule` row = one `rule_type` key + JSON `params`, either
+the org-wide default (`group_id IS NULL`) or a specific `Group`'s override.
+`AutomationRule.resolve_params(rule_type, group=None)` returns the `Group`'s own row if one exists
+and is enabled, else the org-default row, else `None` (callers fall back to that rule type's own
+`default_params()`, which is chosen to match the previously hardcoded value exactly — introducing
+this engine is behavior-neutral until an admin actually configures something; the `automation_rules`
+table starts **empty**, no seeded default row). Deliberately **not** a DB-level unique constraint on
+`(group_id, rule_type)`: SQL treats two `NULL group_id` values as distinct, so such a constraint
+wouldn't actually prevent duplicate org-default rows — dedup is enforced by `AutomationRule.set()`
+instead (query-then-update, same pattern as `AutomationConfig.set_config`).
+
+**The 4 transposed rule types** (replacing a prior hardcoded literal 1:1): `weekend_definition`
+(`weekend_days`, was `date.weekday() >= 5`), `oncall_spacing` (`min_spacing_weeks`, was a literal
+`2` duplicated in two places in `oncall_automation.py`), `oncall_anchor` (`weekday`/`start_hour`/
+`end_hour`, was hardcoded Friday 21:00 → Friday 07:00), and `shift_slots`
+(`oncall_shift_type_id`/`rotation_shift_type_id`/`default_shift_type_id`, was the 3 class constants
+`SHIFT_07_15`/`SHIFT_09_17`/`SHIFT_13_21`). `shift_slots` deliberately **FKs to existing `ShiftType`
+rows** (reusing `/admin/shift-types`) instead of duplicating hour inputs — unlike every other rule
+type, its `default_params()` can't be a static dict (`ShiftType` ids vary per database), so it falls
+back to the historical hours-based fetch-or-create (`AdvancedShiftAutomation.get_shift_type_by_hours()`)
+when unconfigured. Fixed a real pre-existing bug found while building this: that hours-based lookup
+matched by raw hours, not id, so an admin editing a referenced `ShiftType`'s hours via
+`/admin/shift-types` silently orphaned it (minted a duplicate row instead). The 3 role-slot call
+sites in `AdvancedShiftAutomation` now resolve through `get_shift_type_for_slot()` (by configured id)
+instead, and `ShiftTypeService.delete()`'s existing usage guard (blocks deleting a `ShiftType`
+referenced by a real `Shift`) now also blocks one referenced by a configured `shift_slots` rule.
+
+**The 4 new rule types** (no prior hardcoded equivalent — confirmed by exploration before building
+this): `staffing_limits` (min/max headcount per `ShiftType`, JSON keyed by `ShiftType` id since one
+row covers every type), `mandatory_shift` (`shift_type_ids` that must never go unfilled — an unfilled
+one raises a `[ALERT]`-tagged message, always classified `danger` regardless of the caller's default
+category, distinct from the pre-existing `[WARN]` "unfilled slot" case; stays within this app's
+"leave unfilled + notify, never block" philosophy, see "Automation" in the Done section of
+`ROADMAP.md` — no new blocking mechanism), `rest_after_oncall` (`min_rest_hours` between a user's
+on-call ending and a shift starting), and `oncall_shift_overlap` (blocks a shift/on-call overlapping
+the same user's existing on-call/shift — **on by default**, unlike the other 3, since an unblocked
+overlap is a data-integrity problem, not a preference). The last 3 are wired into `can_add_shift()`/
+`can_add_oncall()` (`app/utils/helpers/common_helpers.py`, via `check_shift_rule_violations()`/
+`check_oncall_rule_violations()`), resurrecting `_has_overlapping_oncall`/`_get_overlapping_shift`/
+`_get_overlapping_oncall` — 3 helpers that existed but were never called from production code before
+this — and into both drag & drop `api_update()` paths (`ShiftService`, `OnCallService`), which
+previously skipped these checks entirely, same class of pre-existing gap already documented for the
+leave check in those methods. `can_add_shift()`'s third parameter changed from an unused
+`shift_type_id` string (every real caller actually passed `shift_type.name`, silently inert) to the
+`ShiftType` object itself, now genuinely used.
+
+**Message severity tags, not emoji.** `app/utils/automation/`'s generated messages used to encode
+severity as a leading emoji, stripped before ever reaching `flash()`/a template — this app doesn't
+use emoji anywhere (see `tests/unit/test_flash_message_icons.py`), so it's now a plain-text
+`"[TAG] "` marker (`[OK]`/`[WARN]`/`[ERROR]`/`[ALERT]`/`[SKIP]`/`[PREVIEW]`/`[DELETED]`/`[REGEN]`)
+instead — `admin_automation_routes.py::_classify_automation_message()` matches on the tag, not
+Unicode ranges, same severity mapping as before.
+
+**`shift_scheduling_mode`/`oncall_scheduling_mode` (each independently `shared`/`per_group`
+`Setting`, defaults to `shared`, edited on `/admin/automation/rules`, not `/admin/settings`)**
+control whether generation pools every eligible `Group` into one shared rotation (the only behavior
+that ever existed before this feature) or runs one independent generation pass per eligible `Group`
+— separately for shifts and for on-calls, since a team's on-call rotation doesn't have to be scoped
+the same way as its shift rotation. `AutomationAdminService.generate_full()` branches on each
+independently: `oncall_scheduling_mode="per_group"` loops over every on-call-eligible `Group`;
+`shift_scheduling_mode="per_group"` loops over every schedule-eligible `Group`; either one calls the
+*same* single-group code path once per group and concatenates results — the core solver
+(`_solve_max_filled_weeks`, `AvailabilityIndex`, `determine_shift_for_user`'s rule logic) is
+untouched, only the query layer that decides "who is eligible" gained an optional `group` parameter
+(threaded through `get_users_in_schedule_groups`/`get_available_users_for_date`/`get_oncall_for_date`/
+`get_oncall_user_for_date`/`determine_shift_for_user`/`handle_two_users_case` in
+`AdvancedShiftAutomation`, and `get_eligible_users`/`get_rotation_order`/`generate_oncall_schedule`
+in `OnCallAutomation`). `group=None` (unchanged everywhere) preserves pooled behavior exactly. A
+real correctness gap was found and fixed while wiring this: `get_oncall_for_date()`'s anchor-time
+lookup used an unscoped `.first()` — in `per_group` mode two groups can have a genuinely concurrent
+on-call for the same week, and the unscoped query could silently pick a *different* group's on-call,
+misattributing the on-call shift-slot rule within the group actually being generated; it now filters
+by the given group's membership.
+
+**Rule *values* are also resolved per Group**, not just the eligible-user pool: every rule-value
+lookup inside the generation call sites above (`WeekendDefinitionRule.is_weekend()`,
+`get_shift_type_for_slot()`/`ShiftSlotsRule`, `MandatoryShiftRule.resolve()` in
+`AdvancedShiftAutomation`; `OnCallAnchorRule`/`OnCallSpacingRule.resolve()` in `_fridays_in_range()`/
+`_generate_for_fridays()`/`generate_oncall_schedule()`'s own `AvailabilityIndex` construction in
+`OnCallAutomation`) now threads the same `group` parameter through to `AutomationRule.resolve_params(rule_type,
+group=group)`, so a Group override actually takes effect during that group's own generation pass —
+previously these all resolved org-wide regardless of `group`, even though the model-layer resolution
+(`AutomationRule.resolve_params`) already supported it. The same threading was extended to the
+manual create/move validation path (`app/utils/helpers/common_helpers.py`'s
+`check_shift_rule_violations()`/`check_oncall_rule_violations()`, called by `ShiftService`/
+`OnCallService`): each resolves the acting user's own `Group` (`user.group`) instead of `None`
+**only when the relevant scheduling mode is `"per_group"`** (`shift_scheduling_mode` for the former,
+`oncall_scheduling_mode` for the latter) — mirrors generation's own gating, so a Group override
+saved while its mode is still `"shared"` persists but has no effect anywhere until the mode is
+flipped. `/admin/automation/rules` exposes this: a `group_id` selector (query param on GET, hidden
+field on every rule-type POST) switches every form between editing the organization-wide default
+(`group_id` absent) and a specific `Group`'s own override (`AutomationRuleAdminService.save_*()`'s
+optional `group` parameter) — the two scheduling-mode sections themselves are deliberately **not**
+group-scoped, since they're the org-wide switch that decides whether per-Group overrides get looked
+up at all. A separate, pre-existing bug was found and fixed while building this:
+`AdvancedShiftAutomation.generate_full_schedule()` discarded each day's own messages (including a
+`mandatory_shift` `[ALERT]`) and returned only one aggregate period summary, even though
+`generate_daily_shifts()` itself always returned them correctly — meaning the mandatory-shift
+`[ALERT]` never actually reached an admin through the real `/admin/automation` "Générer" entry
+point, which calls `generate_full_schedule()`, not `generate_daily_shifts()` directly. First fixed
+by collecting every per-day `[ALERT]` into the returned `messages` list — which then immediately
+surfaced a second, related bug on a real multi-month regeneration with a mandatory slot missed on
+most days: one `[ALERT]` (or, symmetrically, one on-call `[WARN]`) *per day* flooded the admin with
+dozens of near-identical flash toasts. `generate_full_schedule()` now aggregates via
+`_mandatory_coverage_gap_names()` (extracted from `_check_mandatory_coverage()`, which keeps
+returning one message per day for direct single-day callers) into one summary per unfilled
+`ShiftType` — count + date range, e.g. `[ALERT] Créneau obligatoire "Soir" non pourvu à 12 reprises
+entre le 12/11/2026 et le 08/01/2027.` — mirroring the existing `[OK]` period-summary style.
+`OnCallAutomation.generate_oncall_schedule()` got the symmetric fix: it collapses every unfilled
+Friday's individual `[WARN]` (from `_generate_for_fridays()`, still per-week for
+`fill_oncall_gaps()`, which only ever targets a handful of already-known-missing Fridays) into one
+`[WARN]` count + date range, using the already-returned `unfilled_dates` list rather than parsing
+formatted text. Regression tests:
+`test_generate_full_schedule_aggregates_repeated_mandatory_alerts`,
+`test_aggregates_repeated_unfilled_oncall_warnings`. **Now also wired** (later in the 1.1.0 cycle,
+this paragraph previously said otherwise — corrected): `fill_oncall_gaps()`/`refresh_shifts()` take
+the same optional `group` parameter as the main generation path (looped per eligible `Group` from
+`AutomationAdminService.refresh_shifts()` when the relevant mode is `"per_group"`, same as
+`generate_full()`); `rebalance_after_leave()` doesn't take an explicit `group` parameter but
+resolves it implicitly from `leave.user.group` when `shift_scheduling_mode`/`oncall_scheduling_mode`
+is `"per_group"` — correct by construction since a leave is always tied to exactly one user/group,
+unlike the period-wide generation entry points. The main calendar also gained a per-group display
+(color-coded dot per event's group + legend + multi-group filter) later in this same cycle — see
+"`/` (main calendar) — group colors, multi-group filter, click-to-edit modals" below.
+
+`/admin/automation` (`app/utils/automation/status.py::get_automation_status()`) shows both an
+org-wide summary (unchanged) and a per-group breakdown card for every `Group`
+(`GroupRepository.get_all()`) — `oncall_count`/`shift_count` scoped via
+`OnCallRepository.count_for_group()`/`ShiftRepository.count_for_group()` (joined through
+`User.group_id`, since neither model has its own `group_id` column), `oncall_eligible_users`/
+`shift_eligible_users` via the same group-aware helpers used by generation. Computed
+unconditionally regardless of `shift_scheduling_mode`/`oncall_scheduling_mode` — a `Shift`/`OnCall`
+row's group membership is real independent of how generation currently pools groups together, so
+the counts stay honest either way. Only `next_available_oncall_date` is mode-gated
+(`include_next_available` param, skipped — always `None` — for a group when
+`oncall_scheduling_mode` isn't `"per_group"`, since that number only means something when the group
+actually runs its own independent rotation) — the template shows "Non applicable (mode commun)"
+instead of a potentially-misleading date in that case. `get_automation_status(group=None)` (the
+default) preserves the original org-wide-only behavior exactly, same optional-param convention as
+every other group-aware helper in this module. The page's "Aide" section was also rewritten to
+mention the rule engine and the two independent scheduling modes — it used to hardcode "13h-21h
+pour l'astreinte" as if that were fixed, which stopped being true once `shift_slots` became
+admin-configurable.
 
 ### In-app notifications
 
@@ -406,7 +599,9 @@ Domains in use: `user`, `group`, `shift` (plus `shift.bulk_delete` for the multi
 `shift_type`, `swap` (`request`/`cancel`/`approve`/`reject`/`revert`/`purge`, mirroring every
 cross-cutting effect already documented under "Shift swaps" above), `setting` (one action,
 `setting.update`, for every `SettingsService` setter — `resource_type="Setting"`, `details` is a
-plain `"key=value"` string since `Setting` rows have no admin-facing PK), and `auth`/`profile`
+plain `"key=value"` string since `Setting` rows have no admin-facing PK), `automation_rule` (one
+action, `automation_rule.update`, for every `AutomationRuleAdminService` save — see "Configurable
+automation rules" above), and `auth`/`profile`
 (`auth.register`, `auth.login_success`, `auth.login_failure`, `auth.logout`,
 `profile.password_change`). Deliberately out of scope: no field-by-field before/after diff, just
 who/what/when/which-resource plus a short human-readable `details` summary — a future enhancement,
@@ -471,7 +666,7 @@ Call sites (post-commit, same placement rule as `AppNotificationService`/`AuditS
 `SwapService` (`swap` category, one call after each existing `AppNotificationService` call —
 request/approve/revert/reject), `BackupService.create_now()`/`cleanup_now()` (`backup` category,
 admin-UI-triggered paths only — **not** wired into `scripts/backup_database.py`, which must never
-import `app/`, see "Database backups" above), and `NotificationService`'s weekly batches. The latter
+import `app/`, see "Database backups" below), and `NotificationService`'s weekly batches. The latter
 fires twice: a `system`-category alert only when `result.failed` is non-empty (safe to call from
 there since, unlike `backup_database.py`, `NotificationService` already lives in `app/` and its
 cron scripts import `app/` freely), and — on every *successful* per-recipient send — a relay
@@ -504,6 +699,45 @@ view (only pre-filled on the edit form's own input), never interpolated into any
 (`slack://TokenA/TokenB/TokenC`), which that regex would **not** catch if one ever leaked into a
 log line. The actual mitigation is discipline at the call sites above (never log `apprise_url`),
 not a regex extension.
+
+### Email notifications
+
+Weekly reminder emails (shifts + on-call) are sent by two standalone scripts —
+`scripts/send_shift_notifications.py` (Sunday, 24h before Monday's shifts) and
+`scripts/send_oncall_notifications.py` (Thursday, 24h before Friday 21h on-call start) — triggered
+by external cron, not by the Flask app (no APScheduler; same pattern as
+`scripts/backup_database.py`/`backup_config.py`). Config lives in `scripts/notification_config.py`
+(dataclass, env-var driven — `NOTIFICATIONS_ENABLED`, `SMTP_HOST`, etc., see `.env.example`); both
+scripts no-op silently (exit 0) if notifications aren't enabled or SMTP config is incomplete. Both
+scripts also check `SettingsService.get_notifications_enabled()` (DB-stored `Setting` override,
+admin-editable at `/admin/settings`, falls back to the `NOTIFICATIONS_ENABLED` env var) inside
+their existing `app.app_context()`, in addition to (not instead of) the SMTP-completeness check —
+SMTP host/credentials stay env-only (secrets, not migrated to `Setting`).
+`app/services/notification_service.py::NotificationService` does the actual work (date math via
+`next_monday()`/`next_friday()`, always strictly future even if run on the target weekday itself;
+per-recipient SMTP failures are logged and don't block the rest of the batch); it calls
+`app/utils/notifications/email_sender.py::send_email()` (stdlib `smtplib`/`email`, no Flask-Mail
+dependency) with Jinja2 templates rendered from `app/templates/emails/`. `NotificationLog` is the
+idempotency guard — re-running a script for an already-processed period is a no-op.
+
+Two independent gates, checked in order — don't conflate them: the org-wide
+`SettingsService.get_notifications_enabled()` above short-circuits the entire script (no user gets
+anything); `User.shift_notifications_enabled`/`oncall_notifications_enabled` (both default `True`)
+are then checked per-recipient inside `send_weekly_shift_notifications()`/
+`send_weekly_oncall_notification()` — a user who opted out is skipped (tracked in
+`NotificationBatchResult.skipped_disabled_by_user`, distinct from `skipped_already_sent`) *without*
+writing a `NotificationLog` row, so re-enabling mid-week and rerunning the script still catches
+them up. A third, independent mechanism (`User.apprise_shift_target_ids`/`apprise_oncall_target_ids`
+— a user-picked *set of channels*, not a boolean toggle) additionally relays each successful send
+to whichever external notification target(s) the user selected — see "External notifications
+(Apprise)" above, this is a separate channel, not a replacement for the email gates above. Editable
+at `/profile/settings`
+(`app/routes/auth.py::profile_settings`) — a page separate
+from `/profile/update` (name/email/password only) since the notification section there is
+conditionally shown/hidden based on the org-wide toggle, which doesn't belong mixed into an
+identity-focused form. Submitting the notification checkboxes while the org-wide toggle is off is
+deliberately ignored server-side (not just hidden client-side), so a stale form can't silently flip
+a preference the user never actually saw.
 
 ### API publique (flask-smorest)
 
@@ -640,56 +874,47 @@ since `close` fires for both. User-supplied strings (names, emails, labels) inte
 modal's generated HTML go through an `escapeHtml()` helper first — the innerHTML-template-literal
 pattern doesn't escape by default.
 
-FullCalendar stayed on **6.1.21** (not upgraded to 7.0.0 as originally planned) — loaded from
-`cdn.jsdelivr.net`, the one deliberate exception to "everything via cdnjs" (cdnjs doesn't host
-this package's locale files for any version tested). 7.0.0 was attempted three ways (cdnjs, plain
-jsDelivr ESM imports, esm.sh's auto-bundled imports) and hit a real runtime bug in FullCalendar's
-own compiled Preact rendering code every time ("Class constructor ... cannot be invoked without
-'new'") — not a hosting or import-resolution issue, so not something fixable from this side.
-Revisit if a later 7.x patch lands.
+The ICS export modal (`_ics_export_buttons.html`, opened from `schedule.html`/`oncall.html`/
+`leave.html`/`admin/dashboard.html`/`auth/ics_token.html`'s single export button per resource
+type — see "ICS export" below for the group-scoping this modal now offers) is deliberately the
+*other* modal pattern — a daisyUI checkbox-toggle modal (`<input type="checkbox" class="modal-toggle">`
++ sibling `.modal`/`.modal-box`, same mechanism as the mobile drawer above and this session's
+settings-page `collapse` accordions), fully server-rendered, not JS-built like the shift-creation
+modal. The
+distinction is deliberate: the shift-creation modal needs JS because its content is genuinely
+dynamic (fetches users/shift-types per click); the ICS modal's content (the export URL) is fully
+known at page render, so building it in JS would solve a problem this case doesn't have. Trade-off
+accepted for this: a checkbox-toggle modal has no native equivalent to `<dialog>`'s free
+focus-trap/Escape/`.close()` — `app/static/js/ics-export/ics-export-modal.js` covers only what the
+checkbox can't do on its own (`closeIcsModal()` for the "Télécharger" button, which downloads via
+a plain `<a href>` — `Content-Disposition: attachment` already forces a download rather than a
+navigation, see `export.py::_ics_response()` — and `initIcsModalEscapeHandling()`, one shared
+`keydown` listener). No focus trap. Copy-to-clipboard (`app/static/js/utils/clipboard.js`'s
+`copyInputValue()`/`copyByTarget()`) is shared with the profile ICS-token page
+(`auth/ics_token.html`'s `copy-token.js`, which imports `copyInputValue` from here instead of
+defining its own copy) — `execCommand('copy')` on a selected `<input>`, not
+`navigator.clipboard.writeText`, for consistency with that pre-existing page.
+
+FullCalendar is now on **7.0.1** (this 1.1.0 cycle's upgrade from 6.1.21, revisiting the earlier
+"stayed on 6.1.21" decision) — loaded from `cdn.jsdelivr.net`, the one deliberate exception to
+"everything via cdnjs" (cdnjs doesn't host this package's locale files for any version tested).
+7.0.0 had been attempted three ways before (cdnjs, plain jsDelivr ESM imports, esm.sh's
+auto-bundled imports) and hit a real runtime bug in FullCalendar's own compiled Preact rendering
+code every time ("Class constructor ... cannot be invoked without 'new'"), root-caused (see
+fullcalendar/fullcalendar#7472/#7474 upstream) to jsDelivr's `/+esm` transform endpoint specifically
+(a Rollup+Terser build/dedup bug on jsDelivr's side, not FullCalendar's) — every one of those three
+prior attempts loaded it via an ESM import path that goes through that exact endpoint. 7.0.1 is
+loaded as the single-file global bundle instead (`all/global.min.js`, a plain non-module `<script>`,
+see `index.html`), which never touches `/+esm` — confirmed working in a real browser (no console
+errors, correct rendering, French locale, drag & drop) before this upgrade landed. The
+endpoint-specific root cause is fixed by construction for this global-bundle loading method, but
+re-verify rather than assume if the loading method ever changes (e.g. a future move back to ESM
+imports). See `app/static/js/calendar/fullcalendar-config.js`'s own header comment for the same
+history.
 
 CSP (`app/__init__.py`'s `CSP_POLICY`) allows `cdnjs.cloudflare.com` (script/style/font) and
 `cdn.jsdelivr.net` (script, FullCalendar only) plus `data:` for `img-src` (daisyUI's noise-texture
 SVG background on some components).
-
-### Email notifications
-
-Weekly reminder emails (shifts + on-call) are sent by two standalone scripts —
-`scripts/send_shift_notifications.py` (Sunday, 24h before Monday's shifts) and
-`scripts/send_oncall_notifications.py` (Thursday, 24h before Friday 21h on-call start) — triggered
-by external cron, not by the Flask app (no APScheduler; same pattern as
-`scripts/backup_database.py`/`backup_config.py`). Config lives in `scripts/notification_config.py`
-(dataclass, env-var driven — `NOTIFICATIONS_ENABLED`, `SMTP_HOST`, etc., see `.env.example`); both
-scripts no-op silently (exit 0) if notifications aren't enabled or SMTP config is incomplete. Both
-scripts also check `SettingsService.get_notifications_enabled()` (DB-stored `Setting` override,
-admin-editable at `/admin/settings`, falls back to the `NOTIFICATIONS_ENABLED` env var) inside
-their existing `app.app_context()`, in addition to (not instead of) the SMTP-completeness check —
-SMTP host/credentials stay env-only (secrets, not migrated to `Setting`).
-`app/services/notification_service.py::NotificationService` does the actual work (date math via
-`next_monday()`/`next_friday()`, always strictly future even if run on the target weekday itself;
-per-recipient SMTP failures are logged and don't block the rest of the batch); it calls
-`app/utils/notifications/email_sender.py::send_email()` (stdlib `smtplib`/`email`, no Flask-Mail
-dependency) with Jinja2 templates rendered from `app/templates/emails/`. `NotificationLog` is the
-idempotency guard — re-running a script for an already-processed period is a no-op.
-
-Two independent gates, checked in order — don't conflate them: the org-wide
-`SettingsService.get_notifications_enabled()` above short-circuits the entire script (no user gets
-anything); `User.shift_notifications_enabled`/`oncall_notifications_enabled` (both default `True`)
-are then checked per-recipient inside `send_weekly_shift_notifications()`/
-`send_weekly_oncall_notification()` — a user who opted out is skipped (tracked in
-`NotificationBatchResult.skipped_disabled_by_user`, distinct from `skipped_already_sent`) *without*
-writing a `NotificationLog` row, so re-enabling mid-week and rerunning the script still catches
-them up. A third, independent mechanism (`User.apprise_shift_target_ids`/`apprise_oncall_target_ids`
-— a user-picked *set of channels*, not a boolean toggle) additionally relays each successful send
-to whichever external notification target(s) the user selected — see "External notifications
-(Apprise)" below, this is a separate channel, not a replacement for the email gates above. Editable
-at `/profile/settings`
-(`app/routes/auth.py::profile_settings`) — a page separate
-from `/profile/update` (name/email/password only) since the notification section there is
-conditionally shown/hidden based on the org-wide toggle, which doesn't belong mixed into an
-identity-focused form. Submitting the notification checkboxes while the org-wide toggle is off is
-deliberately ignored server-side (not just hidden client-side), so a stale form can't silently flip
-a preference the user never actually saw.
 
 ### Database backups
 
@@ -954,6 +1179,327 @@ own timezone and silently shift the day. (`app/static/js/utils/date.js`, a simil
 previously used by the old requester-side swap form's dynamically-fetched target-shift dropdown, was
 removed as dead code along with that dropdown — see "Shift swaps" above.)
 
+### Dashboard day-based stats
+
+`/dashboard`'s top 3 stat cards (`app/routes/dashboard_routes.py::user_dashboard()`,
+`app/services/dashboard_service.py::DashboardService`) show **day counts, not row/event counts** —
+a `Shift` row is always exactly one calendar day, but an `OnCall` row spans roughly a week and a
+`Leave` row spans a date range, so counting rows there was misleading (user-reported). `get_stats(user)`
+returns, per shift/on-call/leave, an all-time `total`, `this_month`, `last_month`, and a `trend`
+delta (`this_month - last_month`) — "month" is the full calendar month window
+(`_month_bounds()`), not clipped to today, so a shift already scheduled later this month still
+counts for "this month" (a deliberate asymmetry: this month is naturally a mix of past-actual and
+future-scheduled, last month is fully settled). `Leave` spans straddling a month boundary are split
+proportionally between the two months via `_clipped_days()` (whole inclusive calendar days:
+`max(0, (min(end, window_end) - max(start, window_start)).days + 1)`), rather than being wholly
+attributed to whichever month the span starts in. `OnCall` spans use a *different* helper,
+`_clipped_duration_days()` (fractional: seconds-based overlap / 86400) — a real bug found and fixed
+in the 1.1.0 optimization pass: `_clipped_days()` on an on-call's `.date()`-truncated bounds
+overcounts relative to the fractional `total` (e.g. a ~6.4-day on-call rounds to `total=6`, but its
+two calendar-day dates are 7 days apart = 8 inclusive days), so `this_month` could exceed `total`.
+Both helpers still round their sum to a whole day at the end (no decimal-duration precedent anywhere
+in this app's templates) — the exact hour figure stays available via `OnCall.duration()` elsewhere,
+not hidden, just not the headline.
+
+`Shift`'s three figures (`total`/`this_month`/`last_month`) are computed with a single SQL
+aggregate query, `ShiftRepository.get_day_count_stats()` (`COUNT` + conditional `SUM` via `CASE`) —
+plain portable SQL, no date arithmetic, safe across this app's 3 supported DB engines. This replaced
+an earlier `list_dates_for_user()` + Python-loop version that fetched a user's entire shift history
+on every `/dashboard` load, unbounded by tenure — fixed in the same optimization pass, since `Shift`
+is by far the highest-volume of the three tables (one row per person per work day). `OnCall`/`Leave`
+deliberately still fetch into Python (`OnCallRepository.list_spans_for_user()`/
+`LeaveRepository.list_spans_for_user()`, columns-only, no `joinedload`) rather than getting the same
+SQL-aggregate treatment: their month-clipping math needs per-row date/datetime arithmetic
+(`_clipped_days()`/`_clipped_duration_days()` above), which would mean either dialect-specific SQL
+or unverified cross-engine arithmetic (this repo's test suite only exercises SQLite) — not worth the
+risk given their volume is much lower than `Shift`'s (at most ~52 `OnCall` rows/year, a handful of
+`Leave` rows/year) — see `Docs/reference/PERFORMANCE_OPTIMIZATION.md` for the full reasoning.
+`DashboardService.get_dashboard_data(user)` also bundles the pre-existing upcoming/recent
+lists and shift-type chart queries, moved here from the route as-is — fixes a routes→services→
+repositories layering violation (the route used to query `Shift`/`OnCall`/`Leave` directly), not a
+logic change. `dashboard.html`'s leave-days text now calls `Leave.duration()` instead of
+re-deriving the same inclusive-day formula inline (`(end - start).days + 1`) — a correctness/
+consistency drive-by, since that duplicated formula already exists as the model's own method.
+
+### `/schedule`, `/oncall`, `/leave` filter bar + unified "delete filtered result"
+
+These three pages used to only offer a scattering of single-purpose admin-only bulk-delete
+buttons — `/schedule` had "delete all"/"delete all for this user" (shown once per user's first
+row)/"delete all for this day"/"delete all for this week" (4 separate routes); `/oncall` had
+"delete all"/"delete all for this user" (2 routes); `/leave` had no bulk delete at all, only
+per-row delete. User-reported: interesting functionality, but unnecessarily complex UI. Replaced
+with one pattern reused across all three: a **filter bar** (user/group/date-range, `+shift_type`
+on `/schedule` only) that narrows what's *shown*, and a single **"delete filtered result"** action
+scoped to whatever the filters currently match — no filters applied = matches everything = the old
+"delete all" behavior. This also subsumes delete-by-day/delete-by-week: a day is
+`date_from == date_to`, a week is `date_from`=Monday/`date_to`=Friday, no dedicated routes needed.
+The filter bar itself is visible to **every** logged-in user (these pages are `@login_required`
+only, not admin-only, and already show every user's data — filtering is a real browsing win for a
+large team's schedule); the delete-filtered action stays admin-only, matching the old buttons.
+Modeled closely on the pre-existing `/admin/audit-log` filter card
+(`app/routes/admin_audit_routes.py`/`app/templates/admin/audit_log.html`) — same GET-form-card +
+"Filtrer"/"Réinitialiser" shape, generalized from actor/domain to user/group.
+
+**Repository layer**: `ShiftRepository`/`OnCallRepository`/`LeaveRepository` each gained a private
+`_filtered_query(user_id=None, group_id=None, date_from=None, date_to=None, ...)` building the
+shared `WHERE` clause, reused by both `list_paginated()` (now accepting these same optional kwargs)
+and `delete_filtered()`/`list_filtered()`. `group_id` requires a join through `User` (none of the
+three models has its own `group_id` column, same join shape as the pre-existing
+`count_for_group()` methods). `Shift.date` is a plain date column (`>=`/`<=`); `OnCall`/`Leave` are
+spans, so `date_from`/`date_to` use the same "overlap" semantics already established by
+`list_in_window()` (a span counts as matching if it overlaps the range at all), each bound
+independently optional. `ShiftRepository.delete_filtered()`/`OnCallRepository.delete_filtered()`
+use `synchronize_session="evaluate"` (not `False`) for the same reason as the pre-existing
+`delete_in_date_range()`/`delete_overlapping_range()`: a caller can hold an already-loaded instance
+across the call. Several now-fully-dead single-purpose repository methods were removed in the same
+pass once confirmed to have zero remaining callers anywhere (including tests):
+`ShiftRepository.count_for_user`/`count_for_date`/`count_for_dates`/`delete_all`/`delete_for_user`/
+`delete_for_date`/`delete_for_dates`, `OnCallRepository.count_for_user`/`delete_all`/
+`delete_for_user` — their generic-CRUD-looking names hid the fact that they only ever existed to
+back the routes this feature removed.
+
+**Service layer**: `ShiftService.delete_filtered()`/`OnCallService.delete_filtered()` are thin
+wrappers (repository call + commit + one `AuditService.log("shift.bulk_delete"/"oncall.bulk_delete", ...)`,
+same audit action names as before, now covering every case the old 4/2 routes covered).
+`LeaveService.delete_filtered()` is different on purpose: `LeaveService.delete_leave()` triggers a
+full shift rebalance (`AdvancedShiftAutomation.rebalance_after_leave`) per leave, so a raw bulk SQL
+`DELETE` would silently skip it and leave stale shift assignments for the affected users/dates —
+`delete_filtered()` instead fetches `LeaveRepository.list_filtered()` and loops `delete_leave()` per
+match (each iteration already commits + audits `leave.delete` + rebalances). Slower than
+Shift/OnCall's single bulk `DELETE` for a large filtered set, but correctness over speed here — the
+confirm dialog shows the count before an admin commits to it. This means the Audit trail section's
+former "no `bulk_delete` — none exists in `LeaveService`" statement is no longer accurate: `/leave`
+now has bulk deletion, just expressed as N× `leave.delete` audit entries rather than a single
+`leave.bulk_delete` action, since it reuses the existing single-delete code path rather than adding
+a second one.
+
+**Routes**: `schedule()`/`oncall()`/`leave()` read `user_id`/`group_id`/`date_from`/`date_to`
+(+`shift_type_id` for schedule) from `request.args` via the new
+`app/utils/helpers/pagination_helpers.py::parse_date_range_filter()` (same `"%Y-%m-%d"` parsing as
+`admin_audit_routes.py::audit_log()`, centralized here since all three routes need it identically —
+that module, previously scoped to just `resolve_per_page()`, is now more broadly "pagination/filter-bar
+helpers for these three pages," per its own docstring). New POST routes —
+`/shift/delete-filtered`, `/oncall/delete-filtered`, `/leave/delete-filtered` — replace
+`/shift/delete-all`, `/shift/delete-all-for-user/<id>`, `/shift/delete-day/<date_str>`,
+`/shift/delete-week/<date_str>`, `/oncall/delete-all`, `/oncall/delete-all-for-user/<id>` (all
+removed); each reads the same filter fields back from the POST form (carried as hidden inputs) and
+redirects to the list route with those same filters preserved in the query string, so the admin
+lands on the same (now emptied/reduced) filtered view rather than a silently-reset unfiltered one.
+
+**Templates**: `app/templates/macros/list_filters.html` (new) holds `filter_bar()` (the GET-form
+filter card, an optional `shift_types`/`selected_shift_type_id` pair for the schedule-only 4th
+filter) and `delete_filtered_button()` (a POST form looping a caller-supplied `hidden_fields` dict
+into hidden inputs, `js-confirm-delete` + `data-confirm-message`, same delegated-listener JS
+mechanism as every other confirm-guarded delete button in this app — no new JS needed). Confirm/
+button text stays owned by each calling template (passed in already `_()`-wrapped), not baked into
+the macro, so the correct grammatical gender is preserved per page (masculine "shift(s)"/"congé(s)",
+feminine "astreinte(s)") — same fix precedent as this session's earlier "toutes les astreintes" bug.
+`_pagination.html` gained an optional `extra_params` dict (default `{}`, splatted into its
+`url_for()` calls and the per-page form's hidden inputs) so paging through a filtered result
+doesn't silently drop the active filters — safe to extend since this partial has no callers besides
+these exact three pages. The old per-row bulk buttons (schedule's delete-all-for-user/delete-week/
+delete-day, oncall's delete-all-for-user) are gone from the table rows; `schedule.html`'s
+`seen_users`/`seen_dates` bookkeeping stays (still needed for the "show username/date only once"
+display grouping, unrelated to deletion) but its `is_monday` tracking (delete-week-only) is gone;
+`oncall.html` had no other use for `seen_users`, so that tracking is gone entirely there. Each
+page's `_action_legend.html` `action_items` list shrank to just the remaining per-row single-delete
+entry (the filter bar's own buttons are labeled buttons, not icon-only, so they don't need a legend
+entry either).
+
+**Checkbox row-selection ("delete selection")** complements "delete filtered result": instead of
+acting on everything the current filters match, an admin checks specific rows and deletes just
+those. Implemented as a **new filter dimension**, not a parallel code path: `ids: list[int] | None`
+threaded through the same `_filtered_query()`/`list_paginated()`/`delete_filtered()` (and
+`LeaveRepository.list_filtered()`) added for the filter bar above — `Model.id.in_(ids)` when given.
+`delete_filtered(ids=[...])` **is** "delete selection"; no separate service/repository method
+exists for it. `list_paginated(..., ids=...)` also works (unused by any route today, but kept
+symmetric with every other filter dimension rather than special-cased out).
+
+HTML structure: each row's checkbox (`name="ids"`, `class="js-row-select"`) lives inside the table
+`<td>`, but the actual `<form>` it submits into (`delete_selected_form()` macro, new in
+`list_filters.html`) is a separate, otherwise-empty `<form id="...">` placed near the top of the
+page (CSRF token + the same `hidden_fields` filter dict as `delete_filtered_button()`) — the two
+can't be nested (a `<form>` can't contain another `<form>`, and the per-row single-delete `<form>`
+already occupies that table cell), so checkboxes associate with the external form via the HTML5
+`form="..."` attribute instead of DOM nesting. Each page uses its own form id
+(`shift-delete-selected-form`/`oncall-delete-selected-form`/`leave-delete-selected-form`) since all
+three can theoretically render at once in different tabs. The submit button starts `disabled` in
+markup (inert with JS off, avoiding a submit of an always-empty selection) — `app/static/js/utils/
+row-select.js::initRowSelectCheckboxes()` (wired into `main.js` like every other delegated-listener
+init) toggles `.js-select-all` against every `.js-row-select`, keeps `.js-select-all`'s own checked
+state in sync when rows are checked/unchecked individually, and enables/disables the submit button
+based on whether anything is checked — one generic init, since each page only ever has one such
+trio in the DOM at a time. Routes (`delete_selected_shifts`/`delete_selected_oncalls`/
+`delete_selected_leaves`, admin-only) still handle an empty submission gracefully server-side
+(flashes "no selection", no-op) as defense-in-depth against a bypassed/JS-disabled client, not just
+relying on the disabled button. Same filter-preserving redirect as delete-filtered.
+
+### `/` (main calendar) — group colors, multi-group filter, click-to-edit modals
+
+The FullCalendar-based home page (`app/templates/index.html`, `app/static/js/calendar/
+fullcalendar-config.js`) predated this session's per-group scheduling work and had no
+group-awareness at all. Now: every event carries a small colored accent dot for the owning user's
+**group** (never the event's dominant background color, which stays the existing per-*type* scheme
+— shift=primary, on-call=info, leave=error); a multi-group filter lets any viewer show one or
+several groups at once (admins default to every group checked, regular users to their own — a
+default, not a restriction, same non-restrictive viewing model as `/schedule`/`/oncall`/`/leave`);
+and clicking any event opens a view/edit modal instead of the old "Mode édition" toggle's
+click-to-delete-only behavior. Drag & drop reschedule is unchanged, just always live for admins now
+(no more toggle gating it).
+
+**Group colors, no migration**: `Group` (`app/models/user.py`) has no color column.
+`app/utils/helpers/common_helpers.py::build_group_color_map()` follows the exact same stateless,
+rank-based scheme as the pre-existing `build_shift_type_color_map()` (both now call a shared
+`_build_id_color_map(ids, palette)`) — `GROUP_COLOR_PALETTE = SHIFT_TYPE_COLOR_PALETTE`, same 6
+daisyUI tokens, no separate palette invented. Recomputed on every render, survives group
+delete/recreate without a migration, same tradeoff already accepted for shift types.
+
+**CSS conflict, designed around, not worked around**: `app/static/css/themes/dark.css` sets
+`background-color`/`border-color` on `.fc-event-shift/-oncall/-leave` with `!important` in dark
+mode. Since the group accent must never touch those properties (it would be silently overridden),
+it's rendered as a brand-new DOM element instead — `eventDidMount` inserts a
+`<span class="fc-event-group-dot">` (new rule in `fullcalendar-overrides.css`) before the event's
+title, colored via `var(--color-<daisyui-name>)` — a fresh element has no competing `!important`
+rule to lose to, and the CSS-variable syntax makes it automatically theme-correct (Dracula/Alucard)
+for free. `groupId: null` (a user with no group) renders no dot.
+
+**Server-side group filtering**: `ShiftRepository`/`OnCallRepository`/`LeaveRepository`'s
+`list_in_window()` all gained an optional `group_ids: list[int] | None`, filtering via
+`.join(User).filter(User.group_id.in_(group_ids))` — same join-through-User shape already
+established this session on `/schedule`/`/oncall`/`/leave`'s `_filtered_query()` methods, just
+`.in_()` instead of `==`. `ScheduleService.get_calendar_events_for_range()` threads it through;
+`GET /api/shifts` (`app/routes/dashboard_routes.py::api_get_shifts` — misleadingly named given the
+URL, but this is where it's always lived) reads `request.args.getlist("group_ids", type=int)`
+(repeated-param convention, `?group_ids=1&group_ids=2`, matching `URLSearchParams.append()`'s
+natural shape). No server-side enforcement of a viewer's default selection — purely a display
+convenience, consistent with the rest of this app's calendar/list pages.
+
+**Event data**: `ScheduleService.build_calendar_events()`'s three event-dict builders (shift/
+on-call/leave) all gained `extendedProps.userId`/`groupId`/`userName`; shift also gained
+`shiftTypeId`/`shiftTypeLabel`. The `userName`/`shiftTypeLabel` additions (beyond the literal
+group/color ask) let the new **read-only** modal variant (shown to a non-admin, or a leave the
+viewer doesn't own) render full details with zero extra fetch, instead of parsing the localized
+`title` string.
+
+**Reassignment support, a real gap the modals' "change the person"/"change the type" ask required**:
+`ShiftService.api_update()`/`OnCallService.api_update()` (the drag/resize PATCH handlers) used to
+only ever change `start`/`end`. Both gained optional `new_user_id`/(`ShiftService` only)
+`new_shift_type_id` params, defaulting to `None` = "keep current" so the drag/resize call site
+(which never sends either) is unaffected. Every existing validation check (conflict, leave overlap,
+rule violations) now runs against the *effective* (possibly reassigned) user/type, not the
+resource's original owner — that re-validation is the actual point of allowing reassignment through
+this method, not just a signature change. `app/routes/shift_routes.py::api_update_shift`/
+`app/routes/oncall_routes.py::api_update_oncall` read `userId`/`shiftTypeId` from the request JSON
+and pass them through. `UserService.visible_users_for_oncall()` (new, mirrors
+`visible_users_for_schedule`) backs a new `GET /api/oncall-users` (same shape as the pre-existing
+`GET /api/users`, but scoped to the oncall-eligible group, not the schedule-eligible one) — the
+on-call-edit modal's person picker needs the oncall group specifically.
+
+**Real bug found and fixed in the same pass, directly in this feature's critical path**:
+`OnCallService.api_update()` hardcoded `if new_start.weekday() != 4: ... "doit commencer un
+vendredi"` regardless of the app's own configurable `OnCallAnchorRule`
+(`app/utils/automation/rules/oncall_anchor.py`, already respected by the real generation engine).
+Since the new modal's "change start day" feature routes directly through this check, it now resolves
+`OnCallAnchorRule.resolve(group=effective_user.group)["weekday"]` instead — the *target* group's own
+configured anchor day, so a simultaneous reassignment-to-a-different-group validates correctly too.
+The identical hardcoded check existed in **two more places** in the same file/module, found while
+fixing the first: `OnCallService.add_oncall()` (the `/oncall/add` creation path) and
+`can_add_oncall()` (`app/utils/helpers/common_helpers.py`, which `add_oncall()` itself calls,
+hardcoding both weekday *and* hour independently) — both fixed the same way, since leaving either
+half-fixed would have been strictly worse than not touching them (an admin using a non-Friday
+anchor could pass the modal's check yet still get rejected by a sibling code path). The error
+message changed from a hardcoded "vendredi" claim to a generic "jour configuré pour ce groupe" —
+accurate now that the day is genuinely configurable, not universally Friday.
+
+**Removed**: the "Mode édition" toggle (`#toggle-edit-mode`/`#edit-mode-status-tag`, the
+`editModeEnabled`/`updateEditModeState()` JS, the `?edit=true` URL-param persistence) — confirmed via
+direct question rather than assumed. `editable`/`selectable`/`droppable` are now plain `isAdmin`;
+`eventClick` always dispatches to the relevant modal (`openShiftEditModal`/`openOnCallEditModal`
+for shift/on-call, admin gets a full edit form + Delete, anyone else gets a read-only view;
+`openLeaveModal` for leave, no date-editing UI since none was requested — dates stay
+drag/resize-only — but Delete is available to an admin or the leave's own owner, preserving the
+capability the old toggle used to gate). The three new modal-builder functions share one
+`openEditModal(modalId, titleId, titleText, bodyHtml, onOpen)` helper for the common `<dialog>`
+chrome/lifecycle (backdrop-click, Escape, Close button), structurally following the pre-existing
+`openShiftCreationModal`'s conventions (`escapeHtml()` for interpolated user data, `initDatePicker`,
+UTC-getter-only date handling under `timeZone: 'UTC'`). `deleteEvent()` gained an optional
+`onSuccess` callback (closes whichever modal invoked it) and switched its success path from
+`location.reload()` to `event.remove(); calendar.refetchEvents();` — required once it's reused
+inside a modal; `openShiftCreationModal`'s own creation-success path got the same refetch-based
+swap for consistency. The Delete-key shortcut's capability check changed from
+`editModeEnabled && isAdmin` to `isAdmin || (type === 'leave' && ownedByViewer)`, preserving the
+leave-owner's delete capability the removed toggle used to gate alongside everything else.
+
+**Group filter UI**: a native `<details class="dropdown">` (daisyUI 5, no JS needed to open/close —
+same "prefer native HTML disclosure over hand-rolled JS toggles" precedent as the mobile drawer and
+the ICS export modal) wrapping a checkbox list styled like the existing repeated-checkbox convention
+in `profile_settings.html`, visible to **every** logged-in user (not admin-gated — the whole point
+is regular users get to filter too). Checking/unchecking calls `calendar.refetchEvents()`; the
+`events` fetch function reads the checked ids into repeated `group_ids` params, with one client-side
+edge case handled explicitly: if every checkbox is unchecked, it short-circuits before the fetch
+(`successCallback([])` directly) rather than sending an ambiguous empty-vs-absent `group_ids` param
+for the server to guess about.
+
+### ICS export — group-scoped, unified single-button modal
+
+Predates this session's group work and had zero group awareness: `ExportService.export_shifts/
+export_oncall/export_leaves(scope, user)` only ever supported a binary `scope` (`"my"` = the
+exporting user's own events via `*Repository.list_for_user(user.id)`, `"all"` = the *entire org*,
+unfiltered, via `*Repository.list_all_with_user()`). `_ics_export_buttons.html` rendered **two**
+buttons/modals per resource type (`show_all`/`show_my`) to expose that binary choice — 2×3 = 6
+modal blocks spread across `/schedule`/`/oncall`/`/leave` alone, plus `/profile/ics-token`
+duplicating the same 6 combinations as static readonly URL rows. Collapsed to **one** button/modal
+per resource type everywhere (`/profile/ics-token` now `{% include %}`s the same partial 3 times
+instead of hand-rolling its own markup), with the scope *and* a new group dimension chosen **inside**
+the modal via daisyUI controls instead of by which button was clicked.
+
+**Backend**: `ShiftRepository`/`OnCallRepository`/`LeaveRepository.list_all_with_user()` gained an
+optional `group_ids: list[int] | None = None`, joining through `User` exactly like each repo's own
+`_filtered_query()`/`list_in_window()` already do — `group_ids=None` (the param simply absent from
+the URL) stays fully unfiltered, the load-bearing backward-compat guarantee for every ICS URL
+already copied into a real calendar app (Thunderbird/Google Calendar/Outlook polling that exact URL
+on a schedule). `ExportService.export_*(scope, user, group_ids=None)` threads it into
+`list_all_with_user()` only on the `scope="all"` branch — `scope="my"` always means "this token's
+own user's events" regardless of any group selection (a user belongs to exactly one `Group`, so
+group-filtering "my own events" is either a no-op or empty; the UI encodes this directly, see
+below). `User.get_ics_export_url(export_type, scope, group_ids=None)` appends repeated
+`&group_ids=` params, same convention as `/api/shifts?group_ids=1&group_ids=2`
+(`dashboard_routes.py::api_get_shifts`); `app/routes/export.py`'s three routes read
+`request.args.getlist("group_ids", type=int) or None` and pass it straight through.
+
+**Modal contents** (`_ics_export_buttons.html`): a group **checkbox list** (`GroupRepository.get_rotation_eligible()`,
+same exclude-groups-in-neither-schedule-nor-oncall rule as the main calendar's own group filter —
+passed as a *new*, deliberately separate `export_groups` context var, not the pre-existing `groups`
+var `/schedule`/`/oncall`/`/leave` already pass for their own unrelated single-select row-filter
+dropdown, built via `GroupRepository.get_all()` for a different purpose) plus a daisyUI **`toggle`**
+("Moi"/"Tout le monde" — first use of this component in the codebase). Default (everywhere except
+`/admin/dashboard`): only the viewer's own group checked, toggle on "Moi" — a deliberately
+*different* default rule than the main calendar's own group filter (which defaults admins to every
+group), confirmed via direct question. `default_all_groups=True` (new param, `admin/dashboard.html`'s
+3 includes only, confirmed via direct question — an admin viewing the org-wide dashboard wants the
+full-org export by default) checks every `export_groups` entry instead. `show_my=False` (existing
+param, unchanged meaning) omits the toggle entirely, forcing "Tout le monde" permanently.
+
+**Interaction rule** (`app/static/js/ics-export/ics-export-modal.js::initIcsExportGroupScopeControls()`):
+if the viewer's own group gets unchecked, the toggle is forced to "Tout le monde" and `disabled`
+until the own group is re-checked — exporting "Moi" for a group the viewer isn't part of would
+silently produce an empty calendar. Re-checking the own group only re-enables the toggle, it
+doesn't snap the choice back to "Moi" on its own (least-surprise: don't silently revert a scope the
+viewer explicitly chose). The copyable URL input and the "Télécharger" link's `href` recompute live
+from `data-*` attributes on the modal root (`data-resource-type`/`data-base-url`/`data-token`/
+`data-own-group-id`) as checkboxes/toggle change — no server round-trip for the recompute itself.
+**Zero groups checked** is handled the same way the main calendar's own group filter already does
+it (`fullcalendar-config.js`'s `events` function): a `group_ids=` with zero values is
+indistinguishable server-side from "no `group_ids` param at all" (i.e. unfiltered/everyone) — rather
+than silently producing that surprising result, the Copier button and download link are disabled
+instead of emitting a misleading URL.
+
+Dead code removed in the same pass: `app/static/js/clipboard/copy-token.js`'s 6 per-URL copy
+functions (`copyUrlShiftsAll`/`copyUrlShiftsMy`/etc.) — `/profile/ics-token`'s old 6 static inputs
+are gone, replaced by the shared partial's own generic `Kairos.copyByTarget(event)` (same as
+`/schedule`/`/oncall`/`/leave` already used) — only `copyToken()` (the raw-token input, unrelated to
+this feature) remains in that file.
+
 ## Testing conventions
 
 `tests/conftest.py` defines the fixture chain: `test_app` builds a fresh app via
@@ -963,7 +1509,7 @@ an admin user via a real POST to `/login`. Model fixtures (`test_user`, `admin_u
 `test_leave`, `test_oncall`, `test_shift_type`, etc.) build on `test_app`/`test_group`. Reuse these
 fixtures rather than constructing app instances manually in new tests.
 
-`tests/e2e/` has two layers, deliberately kept separate (see `report/E2E Playwright - Tests
+`tests/e2e/` has two layers, deliberately kept separate (see `report/1.0.0/E2E Playwright - Tests
 navigateur réel.md`): `test_user_flows.py` uses the Flask test client (no browser, fast, good for
 permissions/redirects/data) and `test_browser_flows.py` drives real Chromium via Playwright
 (`tests/e2e/conftest.py`'s `live_server_url` fixture runs the app in a thread with Talisman/CSP

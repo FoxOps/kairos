@@ -19,7 +19,7 @@
                 </fieldset>
 
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">Email <span class="text-error">*</span></legend>
+                    <legend class="fieldset-legend">{{ _("Email") }} <span class="text-error">*</span></legend>
                     <input class="input w-full validator" type="email" id="email" name="email" value="{{ user.email }}" required aria-required="true" aria-describedby="email-help">
                     <p class="text-sm text-base-content/70" id="email-help">{{ _("Adresse email de l'utilisateur") }}</p>
                 </fieldset>

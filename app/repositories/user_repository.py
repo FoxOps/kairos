@@ -5,6 +5,8 @@ Data access layer for User and Group models - no business logic, no
 Flask request/response handling, just queries.
 """
 
+from sqlalchemy import or_
+
 from app import db
 from app.models import Group, User
 
@@ -84,6 +86,25 @@ class GroupRepository:
     @staticmethod
     def get_all() -> list[Group]:
         return Group.query.order_by(Group.name).all()
+
+    @staticmethod
+    def get_rotation_eligible() -> list[Group]:
+        """Groups flagged for shift scheduling and/or on-call rotation
+        (is_part_of_schedule / is_part_of_oncall) - unlike get_all(),
+        excludes a group in neither (e.g. a leftover seed group no one
+        ever assigns shifts to), for display contexts where showing it
+        would just be noise (calendar group filter/legend, the
+        rotation-rules scope selector)."""
+        return (
+            Group.query.filter(
+                or_(
+                    Group.is_part_of_schedule.is_(True),
+                    Group.is_part_of_oncall.is_(True),
+                )
+            )
+            .order_by(Group.name)
+            .all()
+        )
 
     @staticmethod
     def name_taken(name: str, exclude_id: int | None = None) -> bool:

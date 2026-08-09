@@ -1,31 +1,101 @@
-{# Template partiel pour les boutons d'export ICS #}
+{# Template partiel pour le bouton d'export ICS #}
 {# Variables requises dans le contexte :
    - current_user: l'utilisateur actuel (doit avoir is_authenticated et ics_token)
    - resource_type: type de ressource ('shifts', 'oncall', ou 'leaves')
    - resource_name: nom affiché de la ressource ('shifts', 'astreintes', ou 'congés')
-   - show_all: booléen pour afficher le bouton "Tous" (défaut: true)
-   - show_my: booléen pour afficher le bouton "Mes" (défaut: true)
+   - export_groups: groupes éligibles à l'export (GroupRepository.get_rotation_eligible())
+   Variables optionnelles :
+   - show_my: booléen, affiche le bascule "Moi"/"Tout le monde" (défaut: true) -
+     admin/dashboard.html le passe à false (aperçu organisation, pas de portée
+     personnelle pertinente)
+   - default_all_groups: booléen, coche tous les export_groups par défaut au lieu
+     du seul groupe du visualiseur (défaut: false) - admin/dashboard.html le passe
+     à true
+
+   Un seul bouton par resource_type ouvre une modale (checkbox daisyUI, pas de
+   <dialog>) contenant une liste de cases à cocher par groupe et un bascule
+   "Moi"/"Tout le monde" - le choix se fait DANS la modale plutôt qu'en ouvrant
+   l'une de deux modales séparées comme avant. Si le groupe du visualiseur est
+   décoché, le bascule est grisé et forcé sur "Tout le monde" (exporter "Moi"
+   pour un groupe où le visualiseur n'est pas présent donnerait un calendrier
+   vide) - voir app/static/js/ics-export/ics-export-modal.js pour cette logique
+   et la recalcul en direct de l'URL copiable/du lien de téléchargement.
 #}
 
-{% set show_all = show_all|default(true) %}
 {% set show_my = show_my|default(true) %}
+{% set default_all_groups = default_all_groups|default(false) %}
 
 {% if current_user.is_authenticated and current_user.ics_token %}
-    {% if show_all %}
-    <a class="btn btn-success"
-       href="{{ (public_base_url or request.host_url.rstrip('/')) ~ current_user.get_ics_export_url(resource_type, 'all') }}"
-       aria-label="{{ _("Exporter tous les %(resource_name)s au format iCalendar", resource_name=resource_name) }}"
-       title="{{ _("Exporter tous les %(resource_name)s", resource_name=resource_name) }}">
-        <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; {{ _("Exporter tous les %(resource_name)s", resource_name=resource_name) }}
-    </a>
-    {% endif %}
+{% set modal_id = "ics-modal-" ~ resource_type %}
+{% set base_url = (public_base_url or request.host_url.rstrip('/')) %}
+{% set own_group_id = current_user.group_id %}
+{% set eligible_ids = export_groups|map(attribute='id')|list %}
+{# "Utilisable" = pas en mode default_all_groups, le visualiseur a bien un
+   groupe, et ce groupe fait partie des groupes éligibles à l'export - sinon
+   il n'y a pas de case "mon groupe" à cocher pour justifier le scope "Moi". #}
+{% set own_group_usable = (not default_all_groups) and own_group_id is not none and own_group_id in eligible_ids %}
+{% set default_scope = 'my' if (show_my and own_group_usable) else 'all' %}
+{% set initial_group_ids = eligible_ids if default_scope == 'all' else none %}
+{% set label = _("Exporter les %(resource_name)s", resource_name=resource_name) %}
+{% set initial_url = base_url ~ current_user.get_ics_export_url(resource_type, default_scope, initial_group_ids) %}
 
-    {% if show_my %}
-    <a class="btn btn-success"
-       href="{{ (public_base_url or request.host_url.rstrip('/')) ~ current_user.get_ics_export_url(resource_type, 'my') }}"
-       aria-label="{{ _("Exporter mes %(resource_name)s au format iCalendar", resource_name=resource_name) }}"
-       title="{{ _("Exporter mes %(resource_name)s", resource_name=resource_name) }}">
-        <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; {{ _("Exporter mes %(resource_name)s", resource_name=resource_name) }}
-    </a>
-    {% endif %}
+<label for="{{ modal_id }}" class="btn btn-success"
+       aria-label="{{ _("Exporter les %(resource_name)s au format iCalendar", resource_name=resource_name) }}"
+       title="{{ label }}">
+    <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; {{ label }}
+</label>
+<input type="checkbox" id="{{ modal_id }}" class="modal-toggle ics-modal-toggle">
+<div class="modal" role="dialog" aria-labelledby="{{ modal_id }}-title">
+    <div class="modal-box ics-export-modal-root"
+         id="{{ modal_id }}-root"
+         data-resource-type="{{ resource_type }}"
+         data-base-url="{{ base_url }}"
+         data-token="{{ current_user.ics_token }}"
+         data-own-group-id="{{ own_group_id if own_group_id is not none else '' }}">
+        <h3 id="{{ modal_id }}-title" class="font-bold text-lg">{{ label }}</h3>
+
+        {% if export_groups %}
+        <div class="mt-3">
+            <p class="text-sm font-semibold mb-1">{{ _("Groupes") }}</p>
+            <div class="flex flex-col gap-1 max-h-40 overflow-y-auto border border-base-300 rounded-box p-2">
+                {% for g in export_groups %}
+                <label class="label cursor-pointer justify-start gap-2 py-1">
+                    <input type="checkbox" class="checkbox checkbox-sm ics-export-group-checkbox"
+                           value="{{ g.id }}"
+                           {% if (own_group_usable and g.id == own_group_id) or not own_group_usable %}checked{% endif %}>
+                    <span>{{ g.name }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if show_my %}
+        <div class="flex items-center gap-2 mt-3">
+            <span class="text-sm">{{ _("Moi") }}</span>
+            <input type="checkbox" id="{{ modal_id }}-scope-toggle" class="toggle toggle-sm ics-export-scope-toggle"
+                   aria-label="{{ _("Exporter mes seuls événements, ou ceux de tout le monde dans les groupes sélectionnés") }}"
+                   {% if default_scope == 'all' %}checked{% endif %}
+                   {% if not own_group_usable %}disabled{% endif %}>
+            <span class="text-sm">{{ _("Tout le monde") }}</span>
+        </div>
+        {% endif %}
+
+        <div class="join w-full my-4">
+            <input type="text" id="{{ modal_id }}-input" class="input join-item flex-1" value="{{ initial_url }}" readonly
+                   aria-label="{{ _("URL d'abonnement au calendrier") }}">
+            <button type="button" class="btn btn-primary join-item no-hover-transform" data-copy-target="{{ modal_id }}-input" onclick="Kairos.copyByTarget(event)">
+                <i class="fas fa-copy"></i>
+                <span>{{ _("Copier") }}</span>
+            </button>
+        </div>
+        <div class="modal-action">
+            <label for="{{ modal_id }}" class="btn">{{ _("Fermer") }}</label>
+            <a href="{{ initial_url }}" id="{{ modal_id }}-download" class="btn btn-primary" onclick="Kairos.closeIcsModal('{{ modal_id }}')">
+                <i class="fas fa-download" aria-hidden="true"></i> {{ _("Télécharger") }}
+            </a>
+        </div>
+    </div>
+    <label class="modal-backdrop" for="{{ modal_id }}">{{ _("Fermer") }}</label>
+</div>
 {% endif %}

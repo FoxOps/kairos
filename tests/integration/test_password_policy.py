@@ -106,6 +106,46 @@ class TestForcedPasswordChangeEnforcement:
         resp = logged_in_client.get("/dashboard", follow_redirects=False)
         assert resp.status_code == 200
 
+    def test_current_user_resolution_failure_fails_open(
+        self, test_app, logged_in_client, monkeypatch, caplog
+    ):
+        """enforce_password_change()'s except Exception branch - a UX
+        nicety must never take the whole app down.
+
+        Patches flask_login.utils._get_user (the function current_user's
+        LocalProxy actually calls) rather than
+        login_manager._user_callback: with this app's
+        SESSION_PROTECTION="strong" default, Flask-Login's own
+        _session_protection_failed() check can clear the session's
+        _user_id and short-circuit _load_user() before it ever reaches
+        _user_callback, making a _user_callback-only patch silently
+        never fire (confirmed empirically - it left current_user
+        resolving to anonymous instead of raising, a different,
+        already-covered branch of this same function). Raises on the
+        first call only (the one inside enforce_password_change
+        itself), then resolves normally for every later call within the
+        same request (e.g. base.html's own current_user access) - a
+        permanently-raising patch would 500 the whole request instead
+        of exercising just this one hook."""
+        import flask_login.utils as flask_login_utils
+
+        original_get_user = flask_login_utils._get_user
+        calls = {"n": 0}
+
+        def flaky_get_user():
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise RuntimeError("boom")
+            return original_get_user()
+
+        monkeypatch.setattr(flask_login_utils, "_get_user", flaky_get_user)
+
+        with caplog.at_level("WARNING", logger="app"):
+            resp = logged_in_client.get("/dashboard", follow_redirects=False)
+
+        assert resp.status_code == 200
+        assert "failed to resolve current_user" in caplog.text
+
     def test_update_profile_blocks_name_only_submit_while_forced(
         self, client, test_group
     ):

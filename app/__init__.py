@@ -506,7 +506,7 @@ def create_app(config_object: str | None = None):
 
     @app.context_processor
     def inject_app_version():
-        return {"app_version": os.environ.get("APP_VERSION", APP_VERSION_DEFAULT)}
+        return {"app_version": os.environ.get("APP_VERSION") or APP_VERSION_DEFAULT}
 
     # Explicit fallback for absolute links (ICS export) when the reverse
     # proxy doesn't correctly forward X-Forwarded-Host to ProxyFix above

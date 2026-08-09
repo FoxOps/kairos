@@ -4,11 +4,15 @@ Covers functions and classes not previously tested.
 """
 
 from datetime import date, datetime, timedelta
+from types import SimpleNamespace
 
 from app import db
 from app.models import Group, OnCall
-from app.utils.automation import OnCallAutomation
-from app.utils.automation.oncall_automation import AvailabilityIndex
+from app.utils.automation import OnCallAutomation, oncall_automation
+from app.utils.automation.oncall_automation import (
+    AvailabilityIndex,
+    _solve_max_filled_weeks,
+)
 
 
 class TestOnCallAutomationGetEligibleUsers:
@@ -169,3 +173,66 @@ class TestOnCallAutomationGenerateSchedule:
             # Check that nothing was saved
             count_after = OnCall.query.count()
             assert count_after == count_before
+
+
+class TestSolveMaxFilledWeeksSearchCap:
+    """_MAX_SEARCH_NODES is a safety valve for _solve_max_filled_weeks'
+    branch-and-bound search on pathological inputs (many weeks, many
+    candidates, few real conflicts). No test exercised the truncation
+    branch itself before this - these don't need a DB/app context at
+    all, since the solver only touches its own in-memory arguments."""
+
+    def _weeks(self, count):
+        weeks = []
+        start = datetime(2024, 1, 5, 21, 0)  # a Friday
+        for i in range(count):
+            week_start = start + timedelta(days=7 * i)
+            week_end = week_start + timedelta(days=7)
+            weeks.append((week_start.date(), week_start, week_end))
+        return weeks
+
+    def test_returns_best_found_so_far_when_node_budget_is_exhausted(self, monkeypatch):
+        monkeypatch.setattr(oncall_automation, "_MAX_SEARCH_NODES", 3)
+
+        users = [SimpleNamespace(id=1), SimpleNamespace(id=2), SimpleNamespace(id=3)]
+        weeks = self._weeks(8)
+        week_candidates = [users for _ in weeks]
+        index = AvailabilityIndex([])
+
+        assignment = _solve_max_filled_weeks(weeks, week_candidates, index)
+
+        # Truncation must never crash and must never return more weeks
+        # than exist, or assign a candidate that wasn't actually offered
+        # for that week.
+        assert isinstance(assignment, dict)
+        assert len(assignment) <= len(weeks)
+        for week_index, user in assignment.items():
+            assert user in week_candidates[week_index]
+
+        # Every returned assignment must still respect the 2-week
+        # spacing constraint against every other returned assignment
+        # for the same user - a truncated search must not fabricate an
+        # invalid solution, only a possibly-incomplete one.
+        by_user: dict[int, list[tuple[datetime, datetime]]] = {}
+        for week_index, user in assignment.items():
+            _friday, start_time, end_time = weeks[week_index]
+            by_user.setdefault(user.id, []).append((start_time, end_time))
+        for intervals in by_user.values():
+            intervals.sort()
+            for (_start_a, end_a), (start_b, _end_b) in zip(
+                intervals, intervals[1:], strict=False
+            ):
+                assert (start_b - end_a).days / 7 >= 2
+
+    def test_full_search_still_fills_every_week_when_budget_is_not_hit(self):
+        """Same scenario, but with the real (huge) _MAX_SEARCH_NODES -
+        confirms the tiny-budget test above is actually truncating
+        something real, not just hitting an already-trivial search."""
+        users = [SimpleNamespace(id=1), SimpleNamespace(id=2), SimpleNamespace(id=3)]
+        weeks = self._weeks(8)
+        week_candidates = [users for _ in weeks]
+        index = AvailabilityIndex([])
+
+        assignment = _solve_max_filled_weeks(weeks, week_candidates, index)
+
+        assert len(assignment) == len(weeks)

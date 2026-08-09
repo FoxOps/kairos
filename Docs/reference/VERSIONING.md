@@ -88,9 +88,14 @@ ROADMAP.md's own changelog-style references to `1.0.0-rc2`). Instead, the
 script prints every line in those files that still contains the old
 version, as a checklist for a manual pass.
 
-Typical flow for a new release candidate:
+Typical flow for a new release candidate - **run the `release-qa` skill
+first** (see [`QA_PROTOCOL.md`](QA_PROTOCOL.md)), before any of the
+steps below: it's what actually checks the release is good, not just
+that the version string and tag agree:
 
 ```bash
+# release-qa skill (see QA_PROTOCOL.md) runs first, produces its own
+# commits/reports, ends on a manual smoke-test sign-off
 make bump-version VERSION=1.0.0-rc4
 # review/update the prose docs the script listed
 git add -A && git commit -m "chore: bump la version à 1.0.0-rc4"
@@ -138,3 +143,59 @@ follow (`python:3.12`, `postgres:16`...). To set this up:
 
 Not implemented yet - this section is the plan to follow when the
 project cuts its first fully stable (non-RC) release.
+
+## Dev build metadata: `.github/workflows/docker-dev-build.yml`
+
+`APP_VERSION_DEFAULT`/the git tag are for actual releases only - bumped
+deliberately, once per release, per the flow above. In between releases,
+a dev branch can be built and pushed as a disposable test image without
+touching that version string at all, via a separate, `main`-excluded
+workflow.
+
+`docker-dev-build.yml` (manual-only, `workflow_dispatch`, same
+minutes-conscious philosophy as `docker-release.yml`) computes a version
+string of the form `<APP_VERSION_DEFAULT>+dev.<run number>.<short sha>` -
+SemVer **build metadata** (the `+...` suffix defined by the spec itself,
+never affecting version precedence/ordering, so it can never be mistaken
+for or outrank a real release version) - and passes it into the image
+build as the `APP_VERSION` build-arg (`docker/Dockerfile`). The running
+container then reports this full string at `/version` and in the app
+footer, with no extra runtime configuration needed - `os.environ.get
+("APP_VERSION") or APP_VERSION_DEFAULT` (both call sites, `app/__init__.py`
+and `app/utils/health.py`) already picks it up.
+
+This is what "verify a test build is on the latest code" means in
+practice: compare the short SHA shown at `/version` against `git
+rev-parse --short HEAD` of the branch the image is supposed to have been
+built from. The run number exists alongside the SHA as a free,
+already-unique, monotonically increasing counter - nothing hand-maintained
+to keep in sync across parallel branches, unlike a manually incremented
+build counter would be.
+
+**`main` never carries build metadata.** `docker-dev-build.yml`'s
+`require-not-main` job refuses to run at all if triggered from `main` -
+main is production, and a build produced by `docker-release.yml` always
+reports a clean `APP_VERSION_DEFAULT` with no `+dev...` suffix (the
+`APP_VERSION` build-arg is simply never passed on that path, so it stays
+present-but-empty and falls back). This is a deliberate, enforced split,
+not just a convention: a "production" image with build metadata attached
+would blur the one thing `/version` exists to answer unambiguously - is
+this exact container a real release, or a disposable test build.
+
+Image tags: dev builds are pushed to the same `ghcr.io/foxops/kairos`
+package as releases, but as `dev-<branch-slug>-<short-sha>` - never
+`:latest` (reserved for the last real `docker-release.yml` build from
+`main`) and never a bare version tag (reserved for an actual release).
+Each dev build also gets the floating `:dev` tag, moved to point at
+whichever dev build ran most recently (any branch) - "give me the
+newest test image" without knowing the exact tag, same idea as
+`:latest` but scoped to dev builds and never mixed with it.
+
+**Retention: only the 5 most recent dev builds are kept.** A
+`cleanup-old-dev-builds` job runs after every push
+(`actions/delete-package-versions`), keeping the 5 newest package
+versions and deleting the rest - `ignore-versions` excludes anything
+tagged `latest`, `dev`, or a bare SemVer version from ever being counted
+or deleted by this job, so it only ever prunes old
+`dev-<branch-slug>-<short-sha>` versions, never a release. Without this,
+a disposable-by-design build would accumulate in the registry forever.

@@ -3,22 +3,23 @@ Regression test: flash() messages must never contain an emoji.
 
 base.html's flash block already prepends a Font Awesome icon based on
 the flash category (success/danger/warning/info) - a message text that
-also starts with an emoji (✅/❌/⚠️/etc.) renders two icons side by side.
-Font Awesome is this project's only icon convention; emoji are never
-used alongside or instead of it.
+also starts with an emoji renders two icons side by side. Font Awesome
+is this project's only icon convention; emoji are never used anywhere
+in this app, alongside or instead of it.
 
 Scans source rather than rendering routes: cheaper, and catches the bug
 at the only place it can be introduced (a flash() call embedding an
 emoji), regardless of which route/branch would exercise it.
 
 app/utils/automation/ is deliberately excluded: those modules encode a
-generated message's severity as a leading emoji, consumed and stripped
-by app/routes/admin_automation_routes.py's _classify_automation_message()
-before ever reaching flash() or a template - the emoji there is
-compile-time-invisible to the pattern below anyway (never inside a
-flash() call), so no special-casing is needed for this test's method,
-but the reasoning is worth keeping visible so nobody "fixes" the emoji
-in that file by analogy with this test.
+generated message's severity as a leading plain-text "[TAG] " marker
+(no emoji - see _classify_automation_message()'s own docstring for
+why), consumed and stripped by
+app/routes/admin_automation_routes.py's _classify_automation_message()
+before ever reaching flash() or a template - never inside a flash()
+call, so no special-casing is needed for this test's method, but the
+reasoning is worth keeping visible so nobody reintroduces emoji there
+by analogy with this test.
 """
 
 import ast

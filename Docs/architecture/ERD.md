@@ -16,6 +16,7 @@ erDiagram
     SHIFT ||--o{ SWAP_REQUEST : "shift/target_shift (2 FK)"
     USER ||--o{ AUDIT_LOG : "actor (nullable)"
     SHIFT_TYPE ||--o{ SHIFT : "defines the slot for"
+    GROUP ||--o{ AUTOMATION_RULE : "override scope (nullable group_id)"
 
     GROUP {
         int id PK
@@ -148,6 +149,16 @@ erDiagram
         datetime updated_at
     }
 
+    AUTOMATION_RULE {
+        int id PK
+        int group_id FK "nullable - null = org-wide default"
+        string rule_type "e.g. weekend_definition, oncall_spacing - indexed"
+        text params "JSON encoded, shape defined by rule_type"
+        bool enabled "default true - disabled row treated as absent"
+        datetime created_at
+        datetime updated_at
+    }
+
     NOTIFICATION_TARGET {
         int id PK
         string name
@@ -187,6 +198,20 @@ erDiagram
   rotation order across restarts). Absent from any previous
   documentation despite its real use in
   `app/utils/automation/`.
+- **`AutomationRule`**: backs the configurable automation rules engine
+  (`/admin/automation/rules`, `app/utils/automation/rules/`) — one row
+  per `rule_type`, either the org-wide default (`group_id` NULL) or a
+  specific `Group`'s override. Not related to `AutomationConfig`
+  (rotation order only) despite the similar name. **No DB-level unique
+  constraint** on `(group_id, rule_type)`: SQL treats two NULL
+  `group_id` values as distinct, so such a constraint wouldn't actually
+  prevent duplicate global rows — dedup is enforced in application code
+  instead (`AutomationRule.set()`: query-then-update). A disabled row
+  (`enabled=False`) is treated as "not configured" by `resolve_params()`,
+  same as if it didn't exist. Composite index on `(rule_type, group_id)`
+  in addition to the two single-column indexes, added once this became
+  the hottest query path in shift/on-call generation (see
+  `reference/PERFORMANCE_OPTIMIZATION.md`).
 - **`Leave` has no `reason` field** — the old API documentation
   described a `reason: string` field on leaves that never
   existed in the model.
@@ -199,6 +224,7 @@ erDiagram
   - `Shift(user_id, date)` and `Shift(date, start_time)`
   - `OnCall(user_id, start_time, end_time)`
   - `Leave(user_id, start_date, end_date)`
+  - `AutomationRule(rule_type, group_id)`
 
   Preserve these indexes if you modify the query patterns in
   `app/repositories/`.

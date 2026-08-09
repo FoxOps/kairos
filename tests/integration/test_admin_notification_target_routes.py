@@ -56,6 +56,29 @@ class TestToggleMasterSwitch:
         with test_app.app_context():
             assert SettingsService.get_apprise_notifications_enabled() is False
 
+    def test_error_branch_when_service_reports_failure(
+        self, test_app, logged_in_client, monkeypatch
+    ):
+        """set_apprise_notifications_enabled() never actually returns an
+        error today (no validation exists on this boolean field) - same
+        reasoning as the other SettingsService monkeypatch-based error
+        tests in this project (e.g. test_admin_settings_routes.py)."""
+        from app.services import SettingsService
+
+        monkeypatch.setattr(
+            SettingsService,
+            "set_apprise_notifications_enabled",
+            lambda enabled: "erreur simulée",
+        )
+
+        resp = logged_in_client.post(
+            "/admin/notification-targets/toggle",
+            data={"enabled": "on"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        assert b"Erreur" in resp.data
+
 
 class TestAddTarget:
     def test_requires_admin(self, test_app, non_admin_client):
@@ -144,6 +167,36 @@ class TestEditTarget:
     def test_nonexistent_404(self, test_app, logged_in_client):
         resp = logged_in_client.get("/admin/notification-targets/edit/999999")
         assert resp.status_code == 404
+
+    def test_get_renders_form_with_existing_values(self, test_app, logged_in_client):
+        with test_app.app_context():
+            target = NotificationTargetRepository.create(
+                "Slack", "json://localhost", True, ["swap"]
+            )
+            db.session.commit()
+            target_id = target.id
+
+        resp = logged_in_client.get(f"/admin/notification-targets/edit/{target_id}")
+        assert resp.status_code == 200
+        assert b"Slack" in resp.data
+
+    def test_missing_fields_rejected(self, test_app, logged_in_client):
+        with test_app.app_context():
+            target = NotificationTargetRepository.create(
+                "Slack", "json://localhost", True, []
+            )
+            db.session.commit()
+            target_id = target.id
+
+        resp = logged_in_client.post(
+            f"/admin/notification-targets/edit/{target_id}",
+            data={"name": "", "apprise_url": ""},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with test_app.app_context():
+            unchanged = NotificationTargetRepository.get_by_id(target_id)
+            assert unchanged.name == "Slack"
 
 
 class TestDeleteTarget:

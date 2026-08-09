@@ -397,6 +397,101 @@ class TestNPlusOneQueries:
             "possible N+1 (broken AvailabilityIndex?)"
         )
 
+    def test_generate_full_schedule_query_count_stable_across_period_length(
+        self, test_app, test_group
+    ):
+        """Regression test: AutomationRuleType.resolve() (backing
+        get_shift_type_for_slot()'s shift-slot resolution and the
+        mandatory/staffing coverage checks) used to hit the DB on every
+        call - once per assigned user per day inside
+        generate_daily_shifts(), plus again per day inside
+        generate_full_schedule()'s own gap-aggregation pass - so a
+        multi-week generation run issued a query per rule per day
+        instead of one per rule for the whole run. Now cached on
+        flask.g per (rule_type, group_id) for the request - see
+        AutomationRuleType.resolve() in
+        app/utils/automation/rules/base.py. Only measurable inside a
+        real request context (has_request_context() gates the cache -
+        outside one, e.g. a cron script, every call stays uncached by
+        design, since nothing outside a request can safely share it
+        across calls)."""
+        from app.utils.automation import AdvancedShiftAutomation
+
+        # 3+ users so the "normal case" branch runs (one
+        # get_shift_type_for_slot() call per assigned user per day).
+        for i in range(4):
+            db.session.add(
+                User(
+                    name=f"U{i}",
+                    email=f"u{i}@test.com",
+                    password_hash="x",
+                    group_id=test_group.id,
+                )
+            )
+        db.session.commit()
+
+        start_date = date(2024, 1, 8)  # Monday
+        # ~5 weeks: enough business days that an uncached, once-per-day
+        # (or once-per-user-per-day) resolve() would produce dozens of
+        # automation_rules queries if the cache weren't working.
+        end_date = start_date + timedelta(days=34)
+
+        with test_app.test_request_context("/"):
+            with count_queries() as queries:
+                shifts, _, _ = AdvancedShiftAutomation.generate_full_schedule(
+                    start_date, end_date, dry_run=True
+                )
+        assert len(shifts) > 20  # sanity check: the period actually generated shifts
+
+        rule_queries = [q for q in queries if "automation_rules" in q]
+        # One query per distinct rule type actually resolved during this
+        # run (weekend_definition, shift_slots, mandatory_shift,
+        # staffing_limits - each cached after its first resolve()), not
+        # one per day or per assigned user.
+        assert 0 < len(rule_queries) <= 6, (
+            f"{len(rule_queries)} automation_rules queries for a "
+            f"{(end_date - start_date).days + 1}-day run generating "
+            f"{len(shifts)} shifts - rule resolution not cached per request?"
+        )
+
+    def test_dashboard_get_stats_query_count_stable_across_shift_count(
+        self, test_app, test_user, test_shift_type
+    ):
+        """Regression test: DashboardService.get_stats() used to fetch
+        every shift date a user had ever been assigned into Python
+        (ShiftRepository.list_dates_for_user(), unbounded by tenure) and
+        count there - one row transferred per shift, on every /dashboard
+        load. Now a single SQL aggregate query (COUNT + conditional SUM)
+        via ShiftRepository.get_day_count_stats()."""
+        from app.services.dashboard_service import DashboardService
+
+        today = date.today()
+
+        with count_queries() as few_queries:
+            DashboardService.get_stats(test_user)
+
+        for i in range(60):
+            on_date = today - timedelta(days=i + 400)
+            db.session.add(
+                Shift(
+                    user_id=test_user.id,
+                    shift_type_id=test_shift_type.id,
+                    date=on_date,
+                    start_time=datetime.combine(on_date, datetime.min.time()),
+                    end_time=datetime.combine(on_date, datetime.min.time())
+                    + timedelta(hours=8),
+                )
+            )
+        db.session.commit()
+
+        with count_queries() as many_queries:
+            DashboardService.get_stats(test_user)
+
+        assert len(many_queries) <= len(few_queries), (
+            f"{len(few_queries)} queries with 0 shifts, {len(many_queries)} "
+            "with 60 - possible unbounded full-history fetch"
+        )
+
     def test_audit_log_repository_preloads_actor(self, test_app, test_group):
         """AuditLog.actor is a plain @property (see app/models/audit_log.py),
         not a real relationship - AuditLogRepository.list_paginated()

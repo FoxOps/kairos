@@ -229,6 +229,72 @@ class TestConfigEnvironmentVariables:
         assert Config().PROMETHEUS_ENABLED is False
 
 
+class TestGetBoolFromEnv:
+    """Direct tests of get_bool_from_env() - doesn't need the module-reload
+    dance the class-attribute tests above use, since it's a plain function."""
+
+    def test_unrecognized_value_warns_and_returns_default(self, monkeypatch, caplog):
+        from app.config.base import get_bool_from_env
+
+        monkeypatch.setenv("SOME_BOOL_VAR", "maybe")
+        with caplog.at_level("WARNING"):
+            result = get_bool_from_env("SOME_BOOL_VAR", default=True)
+        assert result is True
+        assert "Unrecognized value" in caplog.text
+
+    def test_recognized_false_value_returns_false(self, monkeypatch):
+        from app.config.base import get_bool_from_env
+
+        monkeypatch.setenv("SOME_BOOL_VAR", "false")
+        assert get_bool_from_env("SOME_BOOL_VAR", default=True) is False
+
+
+class TestGetIntFromEnv:
+    def test_non_integer_value_warns_and_returns_default(self, monkeypatch, caplog):
+        from app.config.base import get_int_from_env
+
+        monkeypatch.setenv("SOME_INT_VAR", "not-a-number")
+        with caplog.at_level("WARNING"):
+            result = get_int_from_env("SOME_INT_VAR", default=42)
+        assert result == 42
+        assert "Non-integer value" in caplog.text
+
+
+class TestGetJsonFromEnv:
+    def test_invalid_json_warns_and_returns_default(self, monkeypatch, caplog):
+        from app.config.base import get_json_from_env
+
+        monkeypatch.setenv("SOME_JSON_VAR", "{not valid json")
+        with caplog.at_level("WARNING"):
+            result = get_json_from_env("SOME_JSON_VAR", default={"fallback": True})
+        assert result == {"fallback": True}
+        assert "Invalid JSON value" in caplog.text
+
+
+class TestConfigFromObjectAndToDict:
+    def test_from_object_copies_uppercase_attributes_only(self):
+        from app.config.base import Config
+
+        class Overrides:
+            CUSTOM_SETTING = "custom-value"
+            lowercase_ignored = "should not be copied"
+            _PRIVATE_IGNORED = "should not be copied either"
+
+        Config.from_object(Overrides)
+        try:
+            assert Config.CUSTOM_SETTING == "custom-value"
+            assert not hasattr(Config, "lowercase_ignored")
+        finally:
+            del Config.CUSTOM_SETTING
+
+    def test_to_dict_returns_only_uppercase_keys(self):
+        from app.config.base import Config
+
+        result = Config.to_dict()
+        assert "SECRET_KEY" in result
+        assert all(key.isupper() for key in result)
+
+
 class TestNormalizeDatabaseUri:
     """Tests for normalize_database_uri() (app/config/base.py) - the fix for
     a real bug found while building MySQL support: SQLAlchemy's bare

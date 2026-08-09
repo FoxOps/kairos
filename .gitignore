@@ -234,3 +234,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Impeccable design-hook session cache (local, absolute paths - not
+# the shared config.json/config.local.json ignore lists, which are
+# meant to be committed/kept locally respectively)
+.impeccable/hook.cache.json

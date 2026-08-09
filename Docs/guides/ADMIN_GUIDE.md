@@ -474,10 +474,14 @@ From the dashboard, you can access:
 A single sidebar entry, **Admin > Automation**, covers everything below -
 there is no separate "Shifts" page and no separate "Refresh shifts" page
 anymore (older versions had two pages here; they were merged into one for
-clarity). It opens on a dashboard with at-a-glance stats and, when
-relevant, a proactive alert (see "Gap alert" below); the **Générer /
-rafraîchir le planning** button on that dashboard takes you to the
-actual generation/refresh page.
+clarity). It opens on a dashboard with at-a-glance stats, a per-group
+breakdown card for every group (counts, eligible users, and — only when
+the corresponding scheduling mode is **Par groupe** — that group's own
+next-available-on-call date), and, when relevant, a proactive alert (see
+"Gap alert" below); the **Générer / rafraîchir le planning** button on
+that dashboard takes you to the actual generation/refresh page, and
+**Règles** (see "Configurable Automation Rules" below) takes you to the
+rule-editing page.
 
 ```mermaid
 graph TB
@@ -527,27 +531,30 @@ earlier, avoidable choice used up the wrong person.
 
 ### Automatic Shift Generation
 
-There is no dedicated "Shifts" automation page and no configurable
-per-day/per-shift-type headcount setting. Shifts are generated
-automatically as part of **Generate** above, from a fixed set of
-business rules implemented in `AdvancedShiftAutomation`
-(`app/utils/automation/advanced_shift_automation.py`):
+Shifts are generated automatically as part of **Generate** above, from
+the same rule engine described in "Configurable Automation Rules"
+below:
 
-- The 1pm-9pm slot is reserved for that week's on-call person, if they
-  belong to a schedule group
-- Slot rotation: whoever was on the 1pm-9pm slot one week must be on the
-  7am-3pm slot the following week
-- Everyone else defaults to the 9am-5pm slot (several people can share it)
+- The role each shift type plays (which one covers the on-call slot,
+  which one covers the week-after-on-call rotation slot, which one is
+  the default) is set by the **Créneaux de shift** rule, not hardcoded
+  — see below.
+- Slot rotation: whoever covered the on-call-adjacent slot one week must
+  be on the rotation slot the following week.
+- Everyone else defaults to the default slot (several people can share
+  it).
 - If only 2 people are available on a given day, the one who is *not*
-  on-call is put on the 7am-3pm slot
-- **7am-3pm minimum coverage**: at least one person must always be on this
-  slot. If the rotation above doesn't naturally put anyone there (e.g. the
-  person due for it isn't available/eligible that day), one available
-  person is reassigned to it instead - the first one in the configured
-  rotation order, so the choice stays predictable. With only 1 person
-  available that day, they're placed directly on 7am-3pm rather than the
-  usual 9am-5pm default, for the same reason.
-- Monday to Friday only, respecting existing leave and on-call periods
+  on-call is put on the rotation slot.
+- **Minimum coverage** on the rotation slot: at least one person must
+  always be on it. If the rotation above doesn't naturally put anyone
+  there (e.g. the person due for it isn't available/eligible that day),
+  one available person is reassigned to it instead - the first one in
+  the configured rotation order, so the choice stays predictable. With
+  only 1 person available that day, they're placed directly on the
+  rotation slot rather than the default slot, for the same reason.
+- Monday to Friday only ("weekend" itself is now admin-configurable —
+  see the **Définition du week-end** rule below), respecting existing
+  leave and on-call periods.
 
 If you need to touch shifts without regenerating on-call periods, use
 **Refresh Shifts** below instead of **Generate**.
@@ -599,24 +606,30 @@ figure out.
 
 ### Business Rules
 
-These rules are **hardcoded** in the automation classes, not stored in a
-config file or database row you can inspect/edit. The only thing that is
-actually persisted and editable through the admin UI is the on-call
-**rotation order** (a plain list of user ids, `AutomationConfig` key
-`rotation_order`, set via **Admin > Automation > Générer / rafraîchir le
-planning**, see above) - everything else below is a fixed constant in
-the code.
+The on-call **rotation order** (a plain list of user ids,
+`AutomationConfig` key `rotation_order`, set via **Admin > Automation >
+Générer / rafraîchir le planning**, see above) has always been
+persisted and admin-editable. Since the 1.1.0 configurable automation
+rules engine, the rest of the business rules below are **also**
+persisted and admin-editable at **Admin > Automation > Règles** — not
+hardcoded constants anymore. Each rule has a default value equal to the
+historical hardcoded behavior, so nothing changes for you until you
+actually edit a rule. See "Configurable Automation Rules" below for how
+to use that page, including per-group overrides.
 
 #### On-call (`app/utils/automation/oncall_automation.py`)
 
-- Each on-call period always lasts 7 days, from Friday 9:00 PM (21h) to
-  the following Friday 7:00 AM (7h) - not configurable
+- Each on-call period lasts 7 days, from the start day/hour to the same
+  weekday one week later — configurable via the **Ancrage de la semaine
+  d'astreinte** rule (defaults to Friday 9:00 PM → the following Friday
+  7:00 AM, the historical fixed value).
 - Rotation follows the saved `rotation_order`, chosen by a backtracking
   search that maximizes the number of filled weeks (see "Step 3:
-  Generate" above), not a first-available-candidate greedy pick
-- Minimum 2-week gap enforced between two on-calls for the same user,
-  checked against every on-call the user has (past and future), not just
-  their single most recent one
+  Generate" above), not a first-available-candidate greedy pick.
+- Minimum gap enforced between two on-calls for the same user —
+  configurable via the **Espacement minimum entre astreintes** rule
+  (defaults to 2 weeks) — checked against every on-call the user has
+  (past and future), not just their single most recent one.
 - When on-calls are wiped and regenerated for a period (the automatic
   rebalance after a leave is added, and "Rafraîchir > Régénérer
   entièrement" - never the "Générer" button, an explicit full reset)
@@ -625,30 +638,60 @@ the code.
   already-working schedule gets reshuffled on every rebalance. Not a
   guarantee: a week whose occupant has a real conflict (on leave,
   overlapping another on-call) falls back to the rotation order for
-  that week exactly like before
+  that week exactly like before.
 
 #### Shifts (`app/utils/automation/advanced_shift_automation.py`)
 
-- Fixed time slots: `SHIFT_07_15` (7am-3pm), `SHIFT_09_17` (9am-5pm, the
-  default), `SHIFT_13_21` (1pm-9pm, reserved for that week's on-call
-  person)
-- 7am-3pm minimum coverage is enforced separately from the per-user
-  rotation rules above (`_ensure_minimum_07_15_coverage()`): if none of
-  them puts anyone on that slot for a given day, one available person is
-  reassigned to it - the first one in the configured rotation order
-  (falls back to the first available person if the rotation order is
-  empty or none of its users are available that day)
-- Monday to Friday only ("weekend excluded" is not a toggle, it's simply
-  never generated)
-- No "number of people per shift type per day" setting exists anywhere
-  in the UI or config
+- Which `ShiftType` covers which role (the on-call-adjacent slot, the
+  rotation slot, the default slot) is set by the **Créneaux de shift**
+  rule — manage the shift types themselves on the **Types de shift**
+  page first, then point this rule at them.
+- Minimum coverage on the rotation slot is enforced separately from the
+  per-user rotation rules above: if none of them puts anyone on that
+  slot for a given day, one available person is reassigned to it - the
+  first one in the configured rotation order (falls back to the first
+  available person if the rotation order is empty or none of its users
+  are available that day).
+- Which days count as "weekend" (excluded from generation) is set by
+  the **Définition du week-end** rule, defaulting to Saturday/Sunday.
+- Per-`ShiftType` minimum/maximum headcount is set by the **Effectif
+  minimum/maximum par créneau** rule (empty = no limit).
+- Slots that must never go unfilled are set by the **Créneaux
+  obligatoires** rule — an unfilled one raises a distinct `[ALERT]`,
+  still never blocking generation.
+- Minimum rest hours between an on-call ending and a shift starting is
+  set by the **Repos minimum après une astreinte** rule.
+- Whether a shift/on-call overlapping an existing on-call/shift for the
+  same user is blocked outright is set by the **Chevauchement shift /
+  astreinte** rule (on by default, unlike the others above).
 
-### Customizing Rules
+### Configurable Automation Rules
 
-The rotation order is the only piece of this that's customizable from
-the UI (**Admin > Automation > Générer / rafraîchir le planning**).
-Changing the fixed business rules above requires a code change to
-`app/utils/automation/`.
+**Admin > Automation > Règles** (`/admin/automation/rules`) is where
+every business rule above is actually edited — grouped into "Shifts",
+"Astreintes", and "Commun" sections, each with a short description and
+its own **Enregistrer** button (each section saves independently, not
+one big form).
+
+- **Portée éditée** (top of the page): a dropdown to switch between
+  editing the organization-wide default (**Organisation (par
+  défaut)**) and a specific group's own override. A group override
+  only has any effect once that group's scheduling mode (below) is set
+  to **Par groupe** — saving an override while still on **Commune**
+  persists it but doesn't change anything yet.
+- **Mode de planification** (its own card at the top, deliberately
+  *not* scoped to a group — it's the org-wide switch controlling
+  whether per-group overrides get looked up at all): two independent
+  toggles, one for **Shifts** and one for **Astreintes**, each either
+  **Commune** (every group shares one pooled rotation — the only
+  behavior that existed before 1.1.0) or **Par groupe** (each group
+  runs its own independent rotation). A team's shift rotation and its
+  on-call rotation don't have to be scoped the same way, hence two
+  separate toggles.
+
+This covers the main "Générer / rafraîchir le planning" action, gap
+filling, period refresh, and the automatic rebalance after a leave is
+added — every generation entry point.
 
 ---
 

@@ -32,33 +32,48 @@
                         {{ _("Calendrier") }}
                     </h2>
 
-                    {% if current_user.is_admin %}
                     <div class="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto" role="group" aria-label="{{ _("Options du calendrier") }}">
-                        <span class="badge badge-error min-w-180" id="edit-mode-status-tag" role="status" aria-live="polite">
-                            <i class="fas fa-edit" aria-hidden="true"></i> {{ _("Mode édition désactivé") }}
-                        </span>
-                        <button class="btn btn-success btn-sm min-w-180" id="toggle-edit-mode" aria-label="{{ _("Activer le mode édition") }}">
-                            <i class="fas fa-toggle-on" aria-hidden="true"></i> {{ _("Activer l'édition") }}
-                        </button>
+                        {# Group filter - visible to everyone (default selection differs
+                           by role, not the ability to see it - see index()'s docstring).
+                           A native <details>/<summary> disclosure (daisyUI 5 "dropdown"),
+                           no JS needed to open/close it, same "prefer native HTML
+                           disclosure" precedent as the mobile drawer and the ICS modal. #}
+                        <details class="dropdown">
+                            <summary class="btn btn-sm btn-outline" aria-label="{{ _("Filtrer par groupe") }}">
+                                <i class="fas fa-filter" aria-hidden="true"></i> {{ _("Groupes") }}
+                            </summary>
+                            <ul class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-56 z-10 flex flex-col gap-1" aria-label="{{ _("Filtrer par groupe") }}">
+                                {% for group in groups %}
+                                <li>
+                                    <label class="label cursor-pointer justify-start gap-2">
+                                        <input type="checkbox" class="checkbox checkbox-sm group-filter-checkbox" value="{{ group.id }}"
+                                               {% if group.id in default_group_ids %}checked{% endif %}>
+                                        <span class="inline-block w-3 h-3 rounded-full" style="background-color: {{ group_color_map[group.id] }};" aria-hidden="true"></span>
+                                        <span>{{ group.name }}</span>
+                                    </label>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </details>
+                        {% if current_user.is_admin %}
                         <button class="btn btn-info btn-sm min-w-180" id="toggle-tips" aria-label="{{ _("Afficher les conseils") }}">
                             <i class="fas fa-eye" aria-hidden="true"></i> {{ _("Afficher conseils") }}
                         </button>
+                        {% endif %}
                     </div>
-                    {% endif %}
                 </div>
 
-                <!-- Container for external events (used to create new shifts) -->
                 {% if current_user.is_admin %}
                 <div class="alert alert-info mt-3 hidden" id="tips-container" role="status" aria-live="polite" aria-label="{{ _("Conseils d'utilisation") }}">
                     <div>
                         <p><strong><i class="fas fa-info-circle" aria-hidden="true"></i> {{ _("Conseils d'utilisation :") }}</strong></p>
                         <ul class="list-disc list-inside">
-                            <li><strong>{{ _("Mode édition activé") }}</strong> : {{ _("Le drag & drop est activé. Cliquez sur un événement (shift, astreinte, congé) pour le supprimer (avec confirmation).") }}</li>
+                            <li><strong>{{ _("Modifier un événement") }}</strong> : {{ _("Cliquez sur un événement (shift, astreinte, congé) pour ouvrir sa fiche : modification et suppression.") }}</li>
                             <li><strong>{{ _("Déplacer un événement") }}</strong> : {{ _("Cliquez et faites glisser un événement (shift, astreinte, congé) vers une nouvelle date/heure") }}</li>
                             <li><strong>{{ _("Redimensionner un événement") }}</strong> : {{ _("Passez la souris sur le bord d'un événement et faites glisser pour modifier la durée") }}</li>
                             <li><strong>{{ _("Créer un shift") }}</strong> : {{ _("Sélectionnez une plage horaire vide dans le calendrier") }}</li>
-                            <li><strong>{{ _("Mode édition désactivé") }}</strong> : {{ _("Le drag & drop est désactivé. Cliquer sur un événement ne fait rien.") }}</li>
-                            <li><strong>{{ _("Contraintes") }}</strong> : {{ _("Les astreintes doivent commencer un vendredi. Les congés et shifts ne peuvent pas être placés sur des week-ends.") }}</li>
+                            <li><strong>{{ _("Filtrer par groupe") }}</strong> : {{ _("Utilisez le bouton \"Groupes\" pour afficher un ou plusieurs groupes à la fois.") }}</li>
+                            <li><strong>{{ _("Contraintes") }}</strong> : {{ _("Les astreintes doivent commencer le jour configuré pour le groupe. Les congés et shifts ne peuvent pas être placés sur des week-ends.") }}</li>
                         </ul>
                     </div>
                 </div>
@@ -69,7 +84,12 @@
                     <div class="skeleton h-96 w-full"></div>
                 </div>
                 <div id="calendar" class="mt-3 w-full hidden" role="application" aria-label="{{ _("Calendrier interactif") }}"
-                     data-is-admin="{{ current_user.is_admin|tojson }}"></div>
+                     data-is-admin="{{ current_user.is_admin|tojson }}"
+                     data-current-user-id="{{ current_user.id }}"></div>
+                <!-- tojson's raw double quotes would break a data-* HTML attribute
+                     (they terminate it early) - a JSON script block, same pattern
+                     as #i18n-strings in base.html, is the safe way to inject this. -->
+                <script type="application/json" id="group-color-map-data">{{ group_color_map|tojson }}</script>
             </div>
         </div>
 
@@ -136,6 +156,18 @@
                         <span class="badge badge-info badge-lg justify-start" role="listitem"><i class="fas fa-moon" aria-hidden="true"></i> {{ _("Astreintes") }}</span>
                         <span class="badge badge-error badge-lg justify-start" role="listitem"><i class="fas fa-umbrella-beach" aria-hidden="true"></i> {{ _("Congés") }}</span>
                     </div>
+
+                    {% if groups %}
+                    <div class="divider my-1"></div>
+                    <div class="flex flex-col gap-2" role="list" aria-label="{{ _("Groupes") }}">
+                        {% for group in groups %}
+                        <span class="badge badge-outline badge-lg justify-start gap-2" role="listitem">
+                            <span class="inline-block w-3 h-3 rounded-full" style="background-color: {{ group_color_map[group.id] }};" aria-hidden="true"></span>
+                            {{ group.name }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

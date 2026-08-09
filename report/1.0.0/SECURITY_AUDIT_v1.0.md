@@ -59,7 +59,7 @@ read from the environment** in `app/config/base.py::Config` — the
 `/metrics` feature was therefore structurally unreachable in a real
 deployment, regardless of the env var set, masked by a test that forced
 `app.config["PROMETHEUS_ENABLED"] = True` directly instead of going
-through the real `create_app()` path. See `report/BUG_HUNT_v1.0.md`
+through the real `create_app()` path. See `BUG_HUNT_v1.0.md`
 for the full detail and the fix (wiring added + removal of the
 duplicated and buggy `/health`/`/ready` routes in that same module,
 already correctly served by `app/utils/health.py`).

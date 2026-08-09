@@ -23,7 +23,7 @@
                 <div class="alert alert-warning mb-4">
                     <p>
                         <i class="fas fa-exclamation-triangle"></i>
-                        <strong>{{ _("Attention :") }}</strong> {{ _("Ce token permet d'accéder à TOUS les shifts (scope=all). Utilisez-le avec précaution.") }}
+                        <strong>{{ _("Attention :") }}</strong> {{ _("Ce token donne accès aux calendriers ICS ci-dessous, selon les groupes et le scope choisis à chaque export. Utilisez-le avec précaution.") }}
                     </p>
                 </div>
 
@@ -45,103 +45,18 @@
                     {% endif %}
                 </div>
 
-                <!-- Shift URLs -->
-                <div class="mb-4">
-                    <label class="label">{{ _("URL Shifts (Tous)") }}</label>
-                    <div class="join w-full">
-                        <input class="input join-item flex-1" type="text"
-                               value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('shifts', 'all') }}"
-                               id="urlShiftsAllInput" readonly>
-                        <button class="btn btn-primary join-item no-hover-transform" onclick="Kairos.copyUrlShiftsAll(event)">
-                            <i class="fas fa-copy"></i>
-                            <span>{{ _("Copier") }}</span>
-                        </button>
-                    </div>
-                    <p class="text-sm text-base-content/70">
-                        {{ _("URL pour exporter TOUS les shifts (scope=all)") }}
-                    </p>
-                </div>
+                <div class="flex flex-wrap gap-2 mb-4">
+                    {% set resource_type = 'shifts' %}
+                    {% set resource_name = _('shifts') %}
+                    {% include "_ics_export_buttons.html" %}
 
-                <div class="mb-4">
-                    <label class="label">{{ _("URL Shifts (Perso)") }}</label>
-                    <div class="join w-full">
-                        <input class="input join-item flex-1" type="text"
-                               value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('shifts', 'my') }}"
-                               id="urlShiftsMyInput" readonly>
-                        <button class="btn btn-primary join-item no-hover-transform" onclick="Kairos.copyUrlShiftsMy(event)">
-                            <i class="fas fa-copy"></i>
-                            <span>{{ _("Copier") }}</span>
-                        </button>
-                    </div>
-                    <p class="text-sm text-base-content/70">
-                        {{ _("URL pour exporter uniquement vos shifts (scope=my)") }}
-                    </p>
-                </div>
+                    {% set resource_type = 'oncall' %}
+                    {% set resource_name = _('astreintes') %}
+                    {% include "_ics_export_buttons.html" %}
 
-                <!-- OnCall URLs -->
-                <div class="mb-4">
-                    <label class="label">{{ _("URL Astreintes (Tous)") }}</label>
-                    <div class="join w-full">
-                        <input class="input join-item flex-1" type="text"
-                               value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('oncall', 'all') }}"
-                               id="urlOncallAllInput" readonly>
-                        <button class="btn btn-primary join-item no-hover-transform" onclick="Kairos.copyUrlOncallAll(event)">
-                            <i class="fas fa-copy"></i>
-                            <span>{{ _("Copier") }}</span>
-                        </button>
-                    </div>
-                    <p class="text-sm text-base-content/70">
-                        {{ _("URL pour exporter TOUTES les astreintes (scope=all)") }}
-                    </p>
-                </div>
-
-                <div class="mb-4">
-                    <label class="label">{{ _("URL Astreintes (Perso)") }}</label>
-                    <div class="join w-full">
-                        <input class="input join-item flex-1" type="text"
-                               value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('oncall', 'my') }}"
-                               id="urlOncallMyInput" readonly>
-                        <button class="btn btn-primary join-item no-hover-transform" onclick="Kairos.copyUrlOncallMy(event)">
-                            <i class="fas fa-copy"></i>
-                            <span>{{ _("Copier") }}</span>
-                        </button>
-                    </div>
-                    <p class="text-sm text-base-content/70">
-                        {{ _("URL pour exporter uniquement vos astreintes (scope=my)") }}
-                    </p>
-                </div>
-
-                <!-- Leaves URLs -->
-                <div class="mb-4">
-                    <label class="label">{{ _("URL Congés (Tous)") }}</label>
-                    <div class="join w-full">
-                        <input class="input join-item flex-1" type="text"
-                               value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('leaves', 'all') }}"
-                               id="urlLeavesAllInput" readonly>
-                        <button class="btn btn-primary join-item no-hover-transform" onclick="Kairos.copyUrlLeavesAll(event)">
-                            <i class="fas fa-copy"></i>
-                            <span>{{ _("Copier") }}</span>
-                        </button>
-                    </div>
-                    <p class="text-sm text-base-content/70">
-                        {{ _("URL pour exporter TOUS les congés (scope=all)") }}
-                    </p>
-                </div>
-
-                <div class="mb-4">
-                    <label class="label">{{ _("URL Congés (Perso)") }}</label>
-                    <div class="join w-full">
-                        <input class="input join-item flex-1" type="text"
-                               value="{{ (public_base_url or request.host_url.rstrip('/')) ~ user.get_ics_export_url('leaves', 'my') }}"
-                               id="urlLeavesMyInput" readonly>
-                        <button class="btn btn-primary join-item no-hover-transform" onclick="Kairos.copyUrlLeavesMy(event)">
-                            <i class="fas fa-copy"></i>
-                            <span>{{ _("Copier") }}</span>
-                        </button>
-                    </div>
-                    <p class="text-sm text-base-content/70">
-                        {{ _("URL pour exporter uniquement vos congés (scope=my)") }}
-                    </p>
+                    {% set resource_type = 'leaves' %}
+                    {% set resource_name = _('congés') %}
+                    {% include "_ics_export_buttons.html" %}
                 </div>
 
                 <div class="alert alert-warning mb-4">

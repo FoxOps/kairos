@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     # block, these names weren't imported anywhere: harmless at runtime
     # (a quoted annotation is never evaluated), but broke any tool that
     # resolves them (mypy, typing.get_type_hints()).
-    from app.models import Leave, OnCall, ShiftType, User
+    from app.models import Group, Leave, OnCall, ShiftType, User
 
 # Sentinel distinct from None: None is a valid value (no on-call that
 # day) for oncall_today/oncall_user_last_week in determine_shift_for_user
@@ -71,19 +71,67 @@ class AdvancedShiftAutomation:
         return new_shift_type
 
     @staticmethod
-    def get_users_in_schedule_groups() -> list:
-        """Fetch users belonging to groups that can be added to the schedule."""
-        from app.models import Group, User
+    def get_shift_type_for_slot(hours: tuple, group=None) -> "ShiftType":
+        """Resolve the actual configured ShiftType for one of the 3
+        role slots (SHIFT_13_21/SHIFT_07_15/SHIFT_09_17 - used
+        internally purely as role markers, not literal hours anymore)
+        via ShiftSlotsRule, instead of re-deriving a ShiftType from raw
+        hours (get_shift_type_by_hours). Fixes a bug in the latter:
+        editing a referenced ShiftType's hours via /admin/shift-types
+        made the hours-based lookup miss the renamed row and silently
+        mint an orphaning duplicate. Callers must use the returned
+        ShiftType's own start_hour/end_hour for the Shift's
+        start_time/end_time - never the role marker's hours, which may
+        now differ from the configured ShiftType."""
+        from app import db
+        from app.models import ShiftType
+        from app.utils.automation.rules import ShiftSlotsRule
+        from app.utils.automation.rules.shift_slots import (
+            DEFAULT_KEY,
+            ONCALL_KEY,
+            ROTATION_KEY,
+        )
 
-        return User.query.join(Group).filter(Group.is_part_of_schedule.is_(True)).all()
+        role_key = {
+            AdvancedShiftAutomation.SHIFT_13_21: ONCALL_KEY,
+            AdvancedShiftAutomation.SHIFT_07_15: ROTATION_KEY,
+            AdvancedShiftAutomation.SHIFT_09_17: DEFAULT_KEY,
+        }[hours]
+        shift_type_id = ShiftSlotsRule.resolve(group=group)[role_key]
+        shift_type = db.session.get(ShiftType, shift_type_id)
+        if shift_type is not None:
+            return shift_type
+        # Configured id no longer exists (e.g. the ShiftType row was
+        # deleted outside the delete-protection guard) - fall back to
+        # the historical hours-based fetch-or-create rather than crash.
+        return AdvancedShiftAutomation.get_shift_type_by_hours(*hours)
 
     @staticmethod
-    def get_available_users_for_date(date: "date") -> list:
+    def get_users_in_schedule_groups(group: "Group | None" = None) -> list:
+        """Fetch users belonging to groups that can be added to the
+        schedule. `group`: when given, restricts to that single
+        Group's members instead of pooling every schedule-eligible
+        group - used by "per_group" scheduling mode to run each
+        group's own independent generation. None (the default)
+        preserves today's pooled behavior."""
+        from app.models import Group, User
+
+        query = User.query.join(Group).filter(Group.is_part_of_schedule.is_(True))
+        if group is not None:
+            query = query.filter(User.group_id == group.id)
+        return query.all()
+
+    @staticmethod
+    def get_available_users_for_date(
+        date: "date", group: "Group | None" = None
+    ) -> list:
         """Fetch users available for a given date (not on leave)."""
         from app import db
         from app.models import Leave
 
-        eligible_users = AdvancedShiftAutomation.get_users_in_schedule_groups()
+        eligible_users = AdvancedShiftAutomation.get_users_in_schedule_groups(
+            group=group
+        )
 
         if not eligible_users:
             return []
@@ -112,7 +160,9 @@ class AdvancedShiftAutomation:
         return available_users
 
     @staticmethod
-    def get_oncall_for_date(date: "date") -> "OnCall | None":
+    def get_oncall_for_date(
+        date: "date", group: "Group | None" = None
+    ) -> "OnCall | None":
         """Fetch the on-call (OnCall) covering the Monday-Friday shift
         week that `date` belongs to, for shift-assignment purposes only
         (see determine_shift_for_user()/handle_two_users_case() below -
@@ -134,32 +184,52 @@ class AdvancedShiftAutomation:
         that evening isn't yet (they keep whatever they were already on
         the day before, until the following Monday). A plain interval
         overlap query can't distinguish the two and picks one of them
-        arbitrarily via an unordered `.first()`."""
+        arbitrarily via an unordered `.first()`.
+
+        `group`: when given, restricts to an on-call held by a member
+        of that Group - required in "per_group" scheduling mode, where
+        more than one group can have a concurrent on-call for the same
+        week (see generate_oncall_schedule()'s docstring); without
+        this filter, the unordered `.first()` above could pick a
+        *different* group's on-call and silently misattribute rule 1
+        (the 13h-21h slot) within the group currently being generated."""
         from datetime import datetime, timedelta
 
         from app import db
-        from app.models import OnCall
+        from app.models import OnCall, User
+        from app.utils.automation.rules import OnCallAnchorRule
 
+        anchor = OnCallAnchorRule.resolve(group=group)
+        # Days before this week's Monday (weekday 0) that the on-call
+        # anchor weekday falls on - generalizes the previous hardcoded
+        # "Friday = Monday minus 3 days" to any configured anchor
+        # weekday (e.g. anchor weekday 0 = Monday itself, offset 0).
+        days_before_monday = (0 - anchor["weekday"]) % 7
         week_monday = date - timedelta(days=date.weekday())
-        anchor_friday = week_monday - timedelta(days=3)
-        anchor_start = datetime.combine(anchor_friday, datetime.min.time()).replace(
-            hour=21
+        anchor_day = week_monday - timedelta(days=days_before_monday)
+        anchor_start = datetime.combine(anchor_day, datetime.min.time()).replace(
+            hour=anchor["start_hour"]
         )
 
         # Optimization: use a query with JOIN to avoid lazy loading
-        oncall = (
+        query = (
             db.session.query(OnCall)
             .options(db.joinedload(OnCall.user))
             .filter(OnCall.start_time == anchor_start)
-            .first()
         )
+        if group is not None:
+            query = query.join(User, OnCall.user_id == User.id).filter(
+                User.group_id == group.id
+            )
 
-        return oncall
+        return query.first()
 
     @staticmethod
-    def get_oncall_user_for_date(date: "date") -> "User | None":
+    def get_oncall_user_for_date(
+        date: "date", group: "Group | None" = None
+    ) -> "User | None":
         """Fetch the on-call user for a given date."""
-        oncall = AdvancedShiftAutomation.get_oncall_for_date(date)
+        oncall = AdvancedShiftAutomation.get_oncall_for_date(date, group=group)
         return oncall.user if oncall else None
 
     @staticmethod
@@ -168,6 +238,7 @@ class AdvancedShiftAutomation:
         date: "date",
         oncall_today: "OnCall | None | object" = _UNSET,
         oncall_user_last_week: "User | None | object" = _UNSET,
+        group: "Group | None" = None,
     ) -> "tuple[int, int]":
         """
         Determine the shift slot for a user on a given date.
@@ -197,7 +268,7 @@ class AdvancedShiftAutomation:
         # included (an on-call runs Friday 9pm to the following Friday
         # 7am, so both transition Fridays are still on-call days).
         if oncall_today is _UNSET:
-            oncall = AdvancedShiftAutomation.get_oncall_for_date(date)
+            oncall = AdvancedShiftAutomation.get_oncall_for_date(date, group=group)
         else:
             oncall = cast("OnCall | None", oncall_today)
         if oncall and oncall.user_id == user.id:
@@ -218,7 +289,7 @@ class AdvancedShiftAutomation:
         if oncall_user_last_week is _UNSET:
             previous_week_date = date - timedelta(days=7)
             previous_oncall_user = AdvancedShiftAutomation.get_oncall_user_for_date(
-                previous_week_date
+                previous_week_date, group=group
             )
         else:
             previous_oncall_user = cast("User | None", oncall_user_last_week)
@@ -229,7 +300,9 @@ class AdvancedShiftAutomation:
         return AdvancedShiftAutomation.SHIFT_09_17
 
     @staticmethod
-    def handle_two_users_case(available_users: list, date: "date") -> "dict":
+    def handle_two_users_case(
+        available_users: list, date: "date", group: "Group | None" = None
+    ) -> "dict":
         """
         Handle the special case where only 2 people are available. The
         on-call person is on 1pm-9pm, the other on 7am-3pm. No schedule-
@@ -241,7 +314,9 @@ class AdvancedShiftAutomation:
         if len(available_users) != 2:
             return {}
 
-        oncall_user = AdvancedShiftAutomation.get_oncall_user_for_date(date)
+        oncall_user = AdvancedShiftAutomation.get_oncall_user_for_date(
+            date, group=group
+        )
         assignments = {}
 
         for user in available_users:
@@ -325,8 +400,138 @@ class AdvancedShiftAutomation:
         return generated_shifts, None
 
     @staticmethod
+    def _mandatory_coverage_gap_names(
+        generated_shifts: list, group: "Group | None" = None
+    ) -> list:
+        """Labels of every mandatory-flagged ShiftType (MandatoryShiftRule)
+        NOT covered by `generated_shifts` - the data _check_mandatory_coverage()
+        below formats into a per-day message, extracted separately so
+        generate_full_schedule() can aggregate gaps across a whole period
+        without parsing already-formatted, locale-dependent text.
+
+        `group`: when given, resolves the Group's own mandatory_shift
+        override instead of the org-wide default - see
+        generate_daily_shifts()'s own `group` docstring."""
+        from app import db
+        from app.models import ShiftType
+        from app.utils.automation.rules import MandatoryShiftRule
+
+        mandatory_ids = MandatoryShiftRule.resolve(group=group)["shift_type_ids"]
+        if not mandatory_ids:
+            return []
+
+        covered_ids = {shift.shift_type_id for shift in generated_shifts}
+        names = []
+        for shift_type_id in mandatory_ids:
+            if shift_type_id in covered_ids:
+                continue
+            shift_type = db.session.get(ShiftType, shift_type_id)
+            names.append(shift_type.label if shift_type else shift_type_id)
+        return names
+
+    @staticmethod
+    def _check_mandatory_coverage(
+        generated_shifts: list, date: "date", group: "Group | None" = None
+    ) -> list:
+        """Rule engine addition (MandatoryShiftRule, no prior
+        equivalent): for each ShiftType an admin flagged mandatory, if
+        the day's generated shifts don't cover it, raise an elevated
+        message - distinct from the generic "no available user"/
+        "no shift generated" messages elsewhere in this method, so an
+        admin can tell "a mandatory slot specifically went unfilled"
+        apart from the ordinary unfilled-slot case. Stays within the
+        existing "leave unfilled + notify, never block" philosophy
+        (ROADMAP.md) - this never prevents generation/commit.
+
+        One message per day, used directly by callers that only care
+        about a single day (e.g. generate_daily_shifts() itself);
+        generate_full_schedule() aggregates across the whole period
+        instead via _mandatory_coverage_gap_names() to avoid one flash
+        message per unfilled day (see its own docstring)."""
+        messages = []
+        for name in AdvancedShiftAutomation._mandatory_coverage_gap_names(
+            generated_shifts, group=group
+        ):
+            messages.append(
+                _(
+                    "[ALERT] Créneau obligatoire non pourvu pour le %(date)s : "
+                    "%(name)s.",
+                    date=date.strftime("%d/%m/%Y"),
+                    name=name,
+                )
+            )
+        return messages
+
+    @staticmethod
+    def _staffing_min_gap_names(
+        generated_shifts: list, group: "Group | None" = None
+    ) -> list:
+        """Labels of every ShiftType whose configured StaffingLimitsRule
+        `min` bound is not met by `generated_shifts` for a single day -
+        the min companion to the pre-existing `max` bound (already
+        enforced as a hard block at creation time by
+        check_shift_rule_violations()). Under-staffing can't be
+        enforced the same way - there's nothing to block, the problem
+        is too few people, not too many - so it's surfaced as a
+        coverage-gap warning instead, same shape as
+        _mandatory_coverage_gap_names()."""
+        from app import db
+        from app.models import ShiftType
+        from app.utils.automation.rules import StaffingLimitsRule
+
+        params = StaffingLimitsRule.resolve(group=group)
+        if not params:
+            return []
+
+        counts: dict[int, int] = {}
+        for shift in generated_shifts:
+            counts[shift.shift_type_id] = counts.get(shift.shift_type_id, 0) + 1
+
+        names = []
+        for key, limits in params.items():
+            min_value = limits.get("min")
+            if not min_value:
+                continue
+            try:
+                shift_type_id = int(key)
+            except (TypeError, ValueError):
+                continue
+            if counts.get(shift_type_id, 0) >= min_value:
+                continue
+            shift_type = db.session.get(ShiftType, shift_type_id)
+            names.append(shift_type.label if shift_type else key)
+        return names
+
+    @staticmethod
+    def _check_staffing_min_coverage(
+        generated_shifts: list, date: "date", group: "Group | None" = None
+    ) -> list:
+        """Per-day [WARN] message for each staffing_limits `min` gap
+        (see _staffing_min_gap_names()) - same call-site shape as
+        _check_mandatory_coverage(), used directly by callers that
+        only care about a single day; generate_full_schedule()
+        aggregates across the whole period instead, same reasoning as
+        the mandatory-shift [ALERT] aggregation."""
+        messages = []
+        for name in AdvancedShiftAutomation._staffing_min_gap_names(
+            generated_shifts, group=group
+        ):
+            messages.append(
+                _(
+                    "[WARN] Effectif minimum non atteint pour le %(date)s : "
+                    "%(name)s.",
+                    date=date.strftime("%d/%m/%Y"),
+                    name=name,
+                )
+            )
+        return messages
+
+    @staticmethod
     def generate_daily_shifts(
-        date: "date", dry_run: bool = False, commit: bool = True
+        date: "date",
+        dry_run: bool = False,
+        commit: bool = True,
+        group: "Group | None" = None,
     ) -> "tuple[list, list]":
         """Generate the shifts for a day per the new business rules.
 
@@ -336,28 +541,36 @@ class AdvancedShiftAutomation:
         to commit/rollback. Any exception during the flush is then not
         absorbed here: it propagates so the caller can undo the whole
         operation.
+
+        `group`: when given, restricts eligible users to that Group
+        only (see get_users_in_schedule_groups()) - used by
+        "per_group" scheduling mode to run each group's own
+        independent generation for the same day.
         """
         from datetime import datetime, timedelta
 
         from app.models import Shift
+        from app.utils.automation.rules import WeekendDefinitionRule
 
         messages = []
         generated_shifts = []
 
-        if date.weekday() >= 5:
+        if WeekendDefinitionRule.is_weekend(date, group=group):
             return [], [
                 _(
-                    "⏭️ Pas de shift généré pour le %(date)s (week-end)",
+                    "[SKIP] Pas de shift généré pour le %(date)s (week-end)",
                     date=date.strftime("%d/%m/%Y"),
                 )
             ]
 
-        available_users = AdvancedShiftAutomation.get_available_users_for_date(date)
+        available_users = AdvancedShiftAutomation.get_available_users_for_date(
+            date, group=group
+        )
 
         if not available_users:
             return [], [
                 _(
-                    "⚠️ Aucun utilisateur disponible pour le %(date)s",
+                    "[WARN] Aucun utilisateur disponible pour le %(date)s",
                     date=date.strftime("%d/%m/%Y"),
                 )
             ]
@@ -371,15 +584,14 @@ class AdvancedShiftAutomation:
         # person and no 14h shift type).
         if len(available_users) == 1:
             sole_user = available_users[0]
-            start_hour, end_hour = AdvancedShiftAutomation.SHIFT_07_15
-            shift_type = AdvancedShiftAutomation.get_shift_type_by_hours(
-                start_hour, end_hour
+            shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(
+                AdvancedShiftAutomation.SHIFT_07_15, group=group
             )
             start_time = datetime.combine(date, datetime.min.time()).replace(
-                hour=start_hour
+                hour=shift_type.start_hour
             )
             end_time = datetime.combine(date, datetime.min.time()).replace(
-                hour=end_hour
+                hour=shift_type.end_hour
             )
             shift = Shift(
                 user_id=sole_user.id,
@@ -394,14 +606,24 @@ class AdvancedShiftAutomation:
                 generated_shifts, dry_run, commit
             )
             if error is not None:
-                messages.append(_("❌ Erreur : %(error)s", error=error))
+                messages.append(_("[ERROR] Erreur : %(error)s", error=error))
                 return [], messages
 
             messages.append(
                 _(
-                    "✅ 1 shift généré pour le %(date)s (effectif minimum : %(name)s)",
+                    "[OK] 1 shift généré pour le %(date)s (effectif minimum : %(name)s)",
                     date=date.strftime("%d/%m/%Y"),
                     name=sole_user.name,
+                )
+            )
+            messages.extend(
+                AdvancedShiftAutomation._check_mandatory_coverage(
+                    generated_shifts, date, group=group
+                )
+            )
+            messages.extend(
+                AdvancedShiftAutomation._check_staffing_min_coverage(
+                    generated_shifts, date, group=group
                 )
             )
             return generated_shifts, messages
@@ -409,18 +631,18 @@ class AdvancedShiftAutomation:
         # Special case: only 2 people available
         if len(available_users) == 2:
             assignments = AdvancedShiftAutomation.handle_two_users_case(
-                available_users, date
+                available_users, date, group=group
             )
             if assignments:
-                for user, (start_hour, end_hour) in assignments.items():
-                    shift_type = AdvancedShiftAutomation.get_shift_type_by_hours(
-                        start_hour, end_hour
+                for user, hours in assignments.items():
+                    shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(
+                        hours, group=group
                     )
                     start_time = datetime.combine(date, datetime.min.time()).replace(
-                        hour=start_hour
+                        hour=shift_type.start_hour
                     )
                     end_time = datetime.combine(date, datetime.min.time()).replace(
-                        hour=end_hour
+                        hour=shift_type.end_hour
                     )
 
                     shift = Shift(
@@ -436,23 +658,35 @@ class AdvancedShiftAutomation:
                     generated_shifts, dry_run, commit
                 )
                 if error is not None:
-                    messages.append(_("❌ Erreur : %(error)s", error=error))
+                    messages.append(_("[ERROR] Erreur : %(error)s", error=error))
                     return [], messages
 
+                messages.extend(
+                    AdvancedShiftAutomation._check_mandatory_coverage(
+                        generated_shifts, date, group=group
+                    )
+                )
+                messages.extend(
+                    AdvancedShiftAutomation._check_staffing_min_coverage(
+                        generated_shifts, date, group=group
+                    )
+                )
                 return generated_shifts, messages
 
         # Normal case: 3+ users
         # Optimization: use a set for available user_ids to avoid linear lookups
         available_user_ids = {user.id for user in available_users}
-        schedule_users = AdvancedShiftAutomation.get_users_in_schedule_groups()
+        schedule_users = AdvancedShiftAutomation.get_users_in_schedule_groups(
+            group=group
+        )
 
         # Fetched once for the day (instead of one OnCall query per user
         # in determine_shift_for_user - the day's on-call doesn't depend
         # on the user being iterated).
-        oncall_today = AdvancedShiftAutomation.get_oncall_for_date(date)
+        oncall_today = AdvancedShiftAutomation.get_oncall_for_date(date, group=group)
         previous_week_date = date - timedelta(days=7)
         oncall_user_last_week = AdvancedShiftAutomation.get_oncall_user_for_date(
-            previous_week_date
+            previous_week_date, group=group
         )
 
         shift_assignments: list[tuple[User, tuple[int, int]]] = []
@@ -461,7 +695,7 @@ class AdvancedShiftAutomation:
                 continue
 
             hours = AdvancedShiftAutomation.determine_shift_for_user(
-                user, date, oncall_today, oncall_user_last_week
+                user, date, oncall_today, oncall_user_last_week, group=group
             )
             shift_assignments.append((user, hours))
 
@@ -470,15 +704,15 @@ class AdvancedShiftAutomation:
                 shift_assignments
             )
 
-        for user, (start_hour, end_hour) in shift_assignments:
-            shift_type = AdvancedShiftAutomation.get_shift_type_by_hours(
-                start_hour, end_hour
+        for user, hours in shift_assignments:
+            shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(
+                hours, group=group
             )
             start_time = datetime.combine(date, datetime.min.time()).replace(
-                hour=start_hour
+                hour=shift_type.start_hour
             )
             end_time = datetime.combine(date, datetime.min.time()).replace(
-                hour=end_hour
+                hour=shift_type.end_hour
             )
 
             shift = Shift(
@@ -495,82 +729,148 @@ class AdvancedShiftAutomation:
                 generated_shifts, dry_run, commit
             )
             if error is not None:
-                messages.append(_("❌ Erreur : %(error)s", error=error))
+                messages.append(_("[ERROR] Erreur : %(error)s", error=error))
                 return [], messages
 
         # Return a summary instead of detailed messages
         if generated_shifts:
-            return generated_shifts, [
+            summary_messages = [
                 _(
-                    "✅ %(count)s shifts générés pour le %(date)s",
+                    "[OK] %(count)s shifts générés pour le %(date)s",
                     count=len(generated_shifts),
                     date=date.strftime("%d/%m/%Y"),
                 )
             ]
-        elif date.weekday() >= 5:
+            summary_messages.extend(
+                AdvancedShiftAutomation._check_mandatory_coverage(
+                    generated_shifts, date, group=group
+                )
+            )
+            summary_messages.extend(
+                AdvancedShiftAutomation._check_staffing_min_coverage(
+                    generated_shifts, date, group=group
+                )
+            )
+            return generated_shifts, summary_messages
+        elif WeekendDefinitionRule.is_weekend(date, group=group):
             return [], [
                 _(
-                    "⏭️ Pas de shift généré pour le %(date)s (week-end)",
+                    "[SKIP] Pas de shift généré pour le %(date)s (week-end)",
                     date=date.strftime("%d/%m/%Y"),
                 )
             ]
         else:
             return [], [
                 _(
-                    "⚠️ Aucun shift généré pour le %(date)s",
+                    "[WARN] Aucun shift généré pour le %(date)s",
                     date=date.strftime("%d/%m/%Y"),
                 )
             ]
 
     @staticmethod
     def generate_full_schedule(
-        start_date: "date", end_date: "date", dry_run: bool = False
+        start_date: "date",
+        end_date: "date",
+        dry_run: bool = False,
+        group: "Group | None" = None,
     ) -> "tuple[list, list, list]":
         """Generate the shifts for an entire period.
 
+        `group`: when given, restricts generation to that Group only
+        (see generate_daily_shifts()) - used by "per_group" scheduling
+        mode, called once per eligible group for the same period.
+
         Returns (all_shifts, messages, unfilled_shift_dates).
         unfilled_shift_dates lists weekdays where generate_daily_shifts()
-        produced zero shifts because no one was available (the "⚠️ Aucun
+        produced zero shifts because no one was available (the "[WARN] Aucun
         shift généré" business-rule case, not an exception) - previously
         silently folded into the "days_skipped" count alongside ordinary
         weekends, with no way for the caller to tell the two apart or
         know *which* dates need manual attention. The caller is
         responsible for notifying admins once this method's own
         generation has actually completed, same rule as every other
-        notify-worthy list in this module."""
+        notify-worthy list in this module.
+
+        messages also includes one aggregate [ALERT] per mandatory_shift
+        ShiftType left unfilled anywhere in the period (mandatory_shift,
+        see _mandatory_coverage_gap_names()) - count + date range, not
+        one message per unfilled day, so a mandatory slot missed on
+        every day of a multi-month period doesn't flood the caller with
+        dozens of near-identical messages (regression test:
+        test_generate_full_schedule_aggregates_repeated_mandatory_alerts).
+        Same aggregation, one [WARN] per ShiftType, for staffing_limits
+        `min` gaps (see _staffing_min_gap_names()). Every other per-day
+        message ([OK]/[WARN]/[SKIP]) is intentionally NOT propagated
+        here, already folded into this method's own aggregate summary
+        below (or, for [WARN], into unfilled_shift_dates)."""
+        from collections import defaultdict
+        from datetime import timedelta
+
         all_shifts = []
         days_with_shifts = 0
         days_skipped = 0
         unfilled_shift_dates = []
-        from datetime import timedelta
+        mandatory_gap_dates: dict = defaultdict(list)
+        staffing_min_gap_dates: dict = defaultdict(list)
 
         current_date = start_date
         while current_date <= end_date:
-            shifts, messages = AdvancedShiftAutomation.generate_daily_shifts(
-                current_date, dry_run=dry_run
+            shifts, _messages = AdvancedShiftAutomation.generate_daily_shifts(
+                current_date, dry_run=dry_run, group=group
             )
             all_shifts.extend(shifts)
             if shifts:
                 days_with_shifts += 1
+                for name in AdvancedShiftAutomation._mandatory_coverage_gap_names(
+                    shifts, group=group
+                ):
+                    mandatory_gap_dates[name].append(current_date)
+                for name in AdvancedShiftAutomation._staffing_min_gap_names(
+                    shifts, group=group
+                ):
+                    staffing_min_gap_dates[name].append(current_date)
             else:
                 days_skipped += 1
                 if current_date.weekday() < 5:
                     unfilled_shift_dates.append(current_date)
             current_date += timedelta(days=1)
 
+        alert_messages = [
+            _(
+                '[ALERT] Créneau obligatoire "%(name)s" non pourvu à %(count)s '
+                "reprises entre le %(start)s et le %(end)s.",
+                name=name,
+                count=len(dates),
+                start=min(dates).strftime("%d/%m/%Y"),
+                end=max(dates).strftime("%d/%m/%Y"),
+            )
+            for name, dates in mandatory_gap_dates.items()
+        ]
+        staffing_warn_messages = [
+            _(
+                '[WARN] Effectif minimum non atteint pour "%(name)s" à '
+                "%(count)s reprises entre le %(start)s et le %(end)s.",
+                name=name,
+                count=len(dates),
+                start=min(dates).strftime("%d/%m/%Y"),
+                end=max(dates).strftime("%d/%m/%Y"),
+            )
+            for name, dates in staffing_min_gap_dates.items()
+        ]
+
         # Return a summary
         period_start = start_date.strftime("%d/%m/%Y")
         period_end = end_date.strftime("%d/%m/%Y")
         if dry_run:
             msg = _(
-                "📋 Prévisualisation : %(count)s shifts seraient générés pour la période du %(start)s au %(end)s",
+                "[PREVIEW] Prévisualisation : %(count)s shifts seraient générés pour la période du %(start)s au %(end)s",
                 count=len(all_shifts),
                 start=period_start,
                 end=period_end,
             )
         else:
             msg = _(
-                "🎉 %(count)s shifts générés pour la période du %(start)s au %(end)s",
+                "[OK] %(count)s shifts générés pour la période du %(start)s au %(end)s",
                 count=len(all_shifts),
                 start=period_start,
                 end=period_end,
@@ -581,15 +881,25 @@ class AdvancedShiftAutomation:
                 with_shifts=days_with_shifts,
                 skipped=days_skipped,
             )
-        return all_shifts, [msg], unfilled_shift_dates
+        return (
+            all_shifts,
+            [msg, *alert_messages, *staffing_warn_messages],
+            unfilled_shift_dates,
+        )
 
     @staticmethod
     def _rebalance_shift_days(
-        shift_period_start: "date", shift_period_end: "date", dry_run: bool
+        shift_period_start: "date",
+        shift_period_end: "date",
+        dry_run: bool,
+        group: "Group | None" = None,
     ) -> "tuple[list, list, list, list]":
         """Day-by-day shift regeneration for the affected window,
         extracted from rebalance_after_leave() (see its own docstring
         for the per-day SAVEPOINT rationale - unchanged here, only moved).
+        `group`: resolved by the caller from the leave owner's own
+        Group under "per_group" shift_scheduling_mode, threaded into
+        each day's generate_daily_shifts() call.
         Returns (regenerated_shifts, messages, unfilled_shift_dates,
         failed_shift_dates)."""
         from datetime import timedelta
@@ -610,14 +920,14 @@ class AdvancedShiftAutomation:
                     if existing_shifts:
                         messages.append(
                             _(
-                                "🗑️ %(count)s shifts supprimés pour le %(date)s",
+                                "[DELETED] %(count)s shifts supprimés pour le %(date)s",
                                 count=len(existing_shifts),
                                 date=current_date.strftime("%d/%m/%Y"),
                             )
                         )
                     shifts, date_messages = (
                         AdvancedShiftAutomation.generate_daily_shifts(
-                            current_date, dry_run=True, commit=False
+                            current_date, dry_run=True, commit=False, group=group
                         )
                     )
                     regenerated_shifts.extend(shifts)
@@ -643,7 +953,7 @@ class AdvancedShiftAutomation:
                                 db.session.flush()
                                 messages.append(
                                     _(
-                                        "🗑️ %(count)s shifts supprimés pour le %(date)s",
+                                        "[DELETED] %(count)s shifts supprimés pour le %(date)s",
                                         count=len(existing_shifts),
                                         date=current_date.strftime("%d/%m/%Y"),
                                     )
@@ -651,7 +961,10 @@ class AdvancedShiftAutomation:
 
                             shifts, date_messages = (
                                 AdvancedShiftAutomation.generate_daily_shifts(
-                                    current_date, dry_run=False, commit=False
+                                    current_date,
+                                    dry_run=False,
+                                    commit=False,
+                                    group=group,
                                 )
                             )
                             regenerated_shifts.extend(shifts)
@@ -662,7 +975,7 @@ class AdvancedShiftAutomation:
                         failed_shift_dates.append(current_date)
                         messages.append(
                             _(
-                                "❌ Échec de la régénération du %(date)s : "
+                                "[ERROR] Échec de la régénération du %(date)s : "
                                 "%(error)s - ce jour n'a pas été modifié, "
                                 "action manuelle nécessaire",
                                 date=current_date.strftime("%d/%m/%Y"),
@@ -675,7 +988,9 @@ class AdvancedShiftAutomation:
 
     @staticmethod
     def _rebalance_oncall_section(
-        shift_period_start: "date", shift_period_end: "date"
+        shift_period_start: "date",
+        shift_period_end: "date",
+        group: "Group | None" = None,
     ) -> "tuple[list, list, list, list]":
         """On-call regeneration for the affected window, extracted from
         rebalance_after_leave() - only called by it when
@@ -684,6 +999,13 @@ class AdvancedShiftAutomation:
         _rebalance_shift_days above). Isolated in its own SAVEPOINT for
         the same reason as each shift day: an error here must not
         discard the shift days already regenerated by the caller.
+        `group`: resolved by the caller from the leave owner's own
+        Group under "per_group" oncall_scheduling_mode - threaded into
+        both the delete (group_id, so a concurrent on-call belonging to
+        a *different* group in the same window is never deleted - it
+        has no group of its own to be regenerated back into, since
+        this call only regenerates `group`'s own eligible users) and
+        the regeneration itself.
         Returns (regenerated_oncalls, messages, unfilled_oncall_dates,
         failed_oncall_period)."""
         from app import db
@@ -740,13 +1062,15 @@ class AdvancedShiftAutomation:
                 )
 
                 other_oncalls_deleted = OnCallRepository.delete_overlapping_range(
-                    shift_period_start, shift_period_end
+                    shift_period_start,
+                    shift_period_end,
+                    group_id=group.id if group is not None else None,
                 )
                 if other_oncalls_deleted:
                     db.session.flush()
                     messages.append(
                         _(
-                            "🗑️ %(count)s astreinte(s) supplémentaire(s) "
+                            "[DELETED] %(count)s astreinte(s) supplémentaire(s) "
                             "supprimée(s) dans la période étendue avant régénération",
                             count=other_oncalls_deleted,
                         )
@@ -760,6 +1084,7 @@ class AdvancedShiftAutomation:
                         dry_run=False,
                         commit=False,
                         preferred_assignments=preferred_assignments,
+                        group=group,
                     )
                 )
                 regenerated_oncalls.extend(oncalls)
@@ -767,7 +1092,7 @@ class AdvancedShiftAutomation:
                 unfilled_oncall_dates.extend(oncall_unfilled_dates)
                 messages.append(
                     _(
-                        "🔄 %(count)s astreintes régénérées pour la période %(start)s - %(end)s",
+                        "[REGEN] %(count)s astreintes régénérées pour la période %(start)s - %(end)s",
                         count=len(oncalls),
                         start=shift_period_start.strftime("%d/%m/%Y"),
                         end=shift_period_end.strftime("%d/%m/%Y"),
@@ -777,7 +1102,7 @@ class AdvancedShiftAutomation:
             failed_oncall_period = [shift_period_start, shift_period_end]
             messages.append(
                 _(
-                    "❌ Échec de la régénération des astreintes pour la "
+                    "[ERROR] Échec de la régénération des astreintes pour la "
                     "période %(start)s - %(end)s : %(error)s - les "
                     "astreintes de cette période n'ont pas été "
                     "modifiées, action manuelle nécessaire",
@@ -847,6 +1172,7 @@ class AdvancedShiftAutomation:
 
         from app import db
         from app.models import OnCall
+        from app.services import SettingsService
 
         messages = []
         regenerated_shifts = []
@@ -885,7 +1211,7 @@ class AdvancedShiftAutomation:
                 db.session.flush()
                 messages.append(
                     _(
-                        "🗑️ %(count)s astreintes supprimées pour l'utilisateur %(user_id)s",
+                        "[DELETED] %(count)s astreintes supprimées pour l'utilisateur %(user_id)s",
                         count=len(overlapping_oncalls),
                         user_id=leave.user_id,
                     )
@@ -919,6 +1245,17 @@ class AdvancedShiftAutomation:
                     days=30
                 )  # Take 30 days after
 
+            # Resolved per the leave owner's own Group, only under
+            # "per_group" mode - same gating already used by
+            # check_shift_rule_violations()/check_oncall_rule_violations()
+            # in common_helpers.py, so manual rule-violation checks and
+            # this automatic rebalance stay consistent with each other.
+            shift_group = (
+                leave.user.group
+                if SettingsService.get_shift_scheduling_mode() == "per_group"
+                else None
+            )
+
             # Delete and regenerate shifts for the whole affected period.
             (
                 shift_results_shifts,
@@ -926,7 +1263,7 @@ class AdvancedShiftAutomation:
                 shift_results_unfilled,
                 shift_results_failed,
             ) = AdvancedShiftAutomation._rebalance_shift_days(
-                shift_period_start, shift_period_end, dry_run
+                shift_period_start, shift_period_end, dry_run, group=shift_group
             )
             regenerated_shifts.extend(shift_results_shifts)
             messages.extend(shift_results_messages)
@@ -936,13 +1273,18 @@ class AdvancedShiftAutomation:
             # Regenerate on-calls for the affected period
             # If on-calls were deleted, we need to recompute them
             if oncall_periods_to_regenerate and not dry_run:
+                oncall_group = (
+                    leave.user.group
+                    if SettingsService.get_oncall_scheduling_mode() == "per_group"
+                    else None
+                )
                 (
                     oncall_results_oncalls,
                     oncall_results_messages,
                     oncall_results_unfilled,
                     oncall_results_failed,
                 ) = AdvancedShiftAutomation._rebalance_oncall_section(
-                    shift_period_start, shift_period_end
+                    shift_period_start, shift_period_end, group=oncall_group
                 )
                 regenerated_oncalls.extend(oncall_results_oncalls)
                 messages.extend(oncall_results_messages)

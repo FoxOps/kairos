@@ -3,7 +3,7 @@ Routes for shifts (schedule, CRUD, drag & drop API). Registered on
 main_bp (see app/routes/main.py).
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from flask import abort, flash, jsonify, redirect, render_template, request, url_for
 from flask_babel import gettext as _
@@ -13,9 +13,14 @@ from app import db
 from app.auth.decorators import admin_required
 from app.models import User
 from app.repositories.shift_repository import ShiftRepository, ShiftTypeRepository
+from app.repositories.user_repository import GroupRepository, UserRepository
 from app.routes.main import main_bp
 from app.services import ShiftService, UserService
-from app.utils.helpers.pagination_helpers import PER_PAGE_OPTIONS, resolve_per_page
+from app.utils.helpers.pagination_helpers import (
+    PER_PAGE_OPTIONS,
+    parse_date_range_filter,
+    resolve_per_page,
+)
 from app.utils.helpers.timezone_helpers import (
     parse_fullcalendar_datetime,
     to_viewer_timezone,
@@ -28,13 +33,31 @@ def schedule():
     page = request.args.get("page", 1, type=int)
     per_page = resolve_per_page(request.args)
 
-    shifts_paginated = ShiftService.list_paginated(page, per_page)
+    user_id = request.args.get("user_id", type=int)
+    group_id = request.args.get("group_id", type=int)
+    shift_type_id = request.args.get("shift_type_id", type=int)
+    date_from, date_to, date_from_str, date_to_str = parse_date_range_filter(
+        request.args
+    )
+
+    shifts_paginated = ShiftService.list_paginated(
+        page, per_page, user_id, group_id, date_from, date_to, shift_type_id
+    )
 
     return render_template(
         "schedule.html",
         shifts=shifts_paginated,
         per_page=per_page,
         per_page_options=PER_PAGE_OPTIONS,
+        users=UserRepository.get_all(),
+        groups=GroupRepository.get_all(),
+        export_groups=GroupRepository.get_rotation_eligible(),
+        shift_types=ShiftTypeRepository.get_all(),
+        selected_user_id=user_id,
+        selected_group_id=group_id,
+        selected_shift_type_id=shift_type_id,
+        date_from=date_from_str,
+        date_to=date_to_str,
     )
 
 
@@ -69,7 +92,7 @@ def add_shift():
 
             if start_date > end_date:
                 flash(
-                    _("La date de debut doit etre anterieure a la date de fin."),
+                    _("La date de début doit être antérieure à la date de fin."),
                     "danger",
                 )
                 return redirect(url_for("main.add_shift"))
@@ -91,14 +114,14 @@ def add_shift():
             if shifts_added:
                 flash(
                     _(
-                        "Shifts ajoutes avec succes pour les dates : %(join)s !",
+                        "Shifts ajoutés avec succès pour les dates : %(join)s !",
                         join=", ".join(shifts_added),
                     ),
                     "success",
                 )
             else:
                 flash(
-                    _("Aucun shift ajoute (periode invalide ou jours non ouvres)."),
+                    _("Aucun shift ajouté (période invalide ou jours non ouvrés)."),
                     "danger",
                 )
             return redirect(url_for("main.schedule"))
@@ -132,130 +155,93 @@ def delete_shift(shift_id):
 
     try:
         ShiftService.delete_shift(shift_id)
-        flash(_("Shift supprime avec succes !"), "success")
+        flash(_("Shift supprimé avec succès !"), "success")
     except Exception as e:
         db.session.rollback()
         flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
     return redirect(url_for("main.schedule"))
 
 
-@main_bp.route("/shift/delete-all", methods=["POST"])
+@main_bp.route("/shift/delete-filtered", methods=["POST"])
 @login_required
 @admin_required
-def delete_all_shifts():
-    """Delete all shifts."""
+def delete_filtered_shifts():
+    """Delete every shift matching the filter bar's current filters (no
+    filters = every shift, same as the old "delete all") - replaces the
+    old delete-all/delete-all-for-user/delete-day/delete-week routes.
+    Filters are carried as hidden fields on the same POST form the
+    filter bar renders them into, and threaded back into the redirect
+    so the admin lands on the same (now emptied/reduced) filtered view."""
+    user_id = request.form.get("user_id", type=int)
+    group_id = request.form.get("group_id", type=int)
+    shift_type_id = request.form.get("shift_type_id", type=int)
+    date_from, date_to, date_from_str, date_to_str = parse_date_range_filter(
+        request.form
+    )
+    redirect_args = {
+        "user_id": user_id,
+        "group_id": group_id,
+        "shift_type_id": shift_type_id,
+        "date_from": date_from_str,
+        "date_to": date_to_str,
+    }
+
     try:
-        count = ShiftService.delete_all()
+        count = ShiftService.delete_filtered(
+            user_id, group_id, date_from, date_to, shift_type_id
+        )
         if count > 0:
             flash(
-                _(
-                    "Tous les %(count)s shifts ont été supprimés avec succès !",
-                    count=count,
-                ),
+                _("%(count)s shift(s) supprimé(s) avec succès !", count=count),
                 "success",
             )
         else:
-            flash(_("Aucun shift à supprimer."), "warning")
+            flash(_("Aucun shift ne correspond à ces filtres."), "warning")
     except Exception as e:
         db.session.rollback()
         flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
-    return redirect(url_for("main.schedule"))
+    return redirect(url_for("main.schedule", **redirect_args))
 
 
-@main_bp.route("/shift/delete-all-for-user/<int:user_id>", methods=["POST"])
+@main_bp.route("/shift/delete-selected", methods=["POST"])
 @login_required
 @admin_required
-def delete_all_shifts_for_user(user_id):
-    """Delete all shifts for a specific user."""
-    user = db.session.get(User, user_id) or abort(404)
+def delete_selected_shifts():
+    """Delete exactly the shifts checked via the table's row checkboxes
+    (`name="ids"`, one value per checked row) - complements
+    delete-filtered (which acts on everything the current filters
+    match) with a way to act on a hand-picked subset instead. Same
+    filter-preserving redirect as delete-filtered, read from the same
+    hidden fields carried on this form."""
+    ids = request.form.getlist("ids", type=int)
+    user_id = request.form.get("user_id", type=int)
+    group_id = request.form.get("group_id", type=int)
+    shift_type_id = request.form.get("shift_type_id", type=int)
+    date_from, date_to, date_from_str, date_to_str = parse_date_range_filter(
+        request.form
+    )
+    redirect_args = {
+        "user_id": user_id,
+        "group_id": group_id,
+        "shift_type_id": shift_type_id,
+        "date_from": date_from_str,
+        "date_to": date_to_str,
+    }
+
+    if not ids:
+        flash(_("Aucun shift sélectionné."), "warning")
+        return redirect(url_for("main.schedule", **redirect_args))
 
     try:
-        count = ShiftService.delete_all_for_user(user_id)
-        if count == 0:
-            flash(_("Aucun shift trouvé pour %(name)s.", name=user.name), "warning")
-        else:
-            flash(
-                _(
-                    "Tous les %(count)s shifts de %(name)s ont été supprimés avec succès !",
-                    count=count,
-                    name=user.name,
-                ),
-                "success",
-            )
+        count = ShiftService.delete_filtered(ids=ids)
+        flash(
+            _("%(count)s shift(s) supprimé(s) avec succès !", count=count),
+            "success",
+        )
     except Exception as e:
         db.session.rollback()
         flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
-    return redirect(url_for("main.schedule"))
-
-
-@main_bp.route("/shift/delete-day/<date_str>", methods=["POST"])
-@login_required
-@admin_required
-def delete_all_shifts_for_day(date_str):
-    """Delete all shifts for a specific day."""
-    try:
-        date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
-        count = ShiftService.delete_for_day(date_obj)
-
-        if count == 0:
-            flash(
-                _(
-                    "Aucun shift trouvé pour le %(strftime)s.",
-                    strftime=date_obj.strftime("%d/%m/%Y"),
-                ),
-                "warning",
-            )
-        else:
-            flash(
-                _(
-                    "Tous les %(count)s shifts du %(strftime)s ont été supprimés avec succès !",
-                    count=count,
-                    strftime=date_obj.strftime("%d/%m/%Y"),
-                ),
-                "success",
-            )
-    except ValueError:
-        flash(_("Format de date invalide."), "danger")
-    except Exception as e:
-        db.session.rollback()
-        flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
-    return redirect(url_for("main.schedule"))
-
-
-@main_bp.route("/shift/delete-week/<date_str>", methods=["POST"])
-@login_required
-@admin_required
-def delete_all_shifts_for_week(date_str):
-    """Delete all shifts for a full week (Monday-Friday)."""
-    try:
-        date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
-        monday = date_obj - timedelta(days=date_obj.weekday())
-
-        count = ShiftService.delete_for_week(monday)
-
-        if count == 0:
-            flash(
-                _(
-                    "Aucun shift trouvé pour la semaine du %(strftime)s.",
-                    strftime=monday.strftime("%d/%m/%Y"),
-                ),
-                "warning",
-            )
-        else:
-            flash(
-                _(
-                    "Tous les %(count)s shifts de la semaine du %(strftime)s ont été supprimés avec succès !",
-                    count=count,
-                    strftime=monday.strftime("%d/%m/%Y"),
-                ),
-                "success",
-            )
-    except ValueError:
-        flash(_("Format de date invalide."), "danger")
-    except Exception as e:
-        db.session.rollback()
-        flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
-    return redirect(url_for("main.schedule"))
+    return redirect(url_for("main.schedule", **redirect_args))
 
 
 # ========== API ENDPOINTS FOR DRAG & DROP ====================
@@ -345,7 +331,10 @@ def api_create_shift():
 @login_required
 @admin_required
 def api_update_shift(shift_id):
-    """API endpoint to update a shift via drag & drop."""
+    """API endpoint to update a shift via drag & drop, or via the
+    calendar's click-to-edit modal (which can also send `userId`/
+    `shiftTypeId` to reassign the person/type - both optional, omitted
+    by the drag/resize path)."""
     shift = ShiftRepository.get_by_id(shift_id)
     if not shift:
         return jsonify({"success": False, "error": _("Shift non trouvé")}), 404
@@ -372,7 +361,14 @@ def api_update_shift(shift_id):
             duration = shift.end_time - shift.start_time
             new_end = new_start + duration
 
-        updated_shift, error = ShiftService.api_update(shift_id, new_start, new_end)
+        user_id = data.get("userId")
+        shift_type_id = data.get("shiftTypeId")
+        new_user_id = int(user_id) if user_id else None
+        new_shift_type_id = int(shift_type_id) if shift_type_id else None
+
+        updated_shift, error = ShiftService.api_update(
+            shift_id, new_start, new_end, new_user_id, new_shift_type_id
+        )
         if error:
             return jsonify({"success": False, "error": error}), 400
 

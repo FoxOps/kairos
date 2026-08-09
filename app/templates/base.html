@@ -167,7 +167,7 @@
                     </button>
                 </div>
                 <div class="navbar-center">
-                    <a class="text-lg font-extrabold text-primary" href="{{ url_for("main.index") }}" aria-label="{{ _("Accueil - Kairos") }}">Kairos</a>
+                    <a class="text-2xl font-extrabold text-primary" href="{{ url_for("main.index") }}" aria-label="{{ _("Accueil - Kairos") }}">Kairos</a>
                 </div>
                 <div class="navbar-end w-10"></div>
             </header>
@@ -198,9 +198,11 @@
 
             <footer class="footer footer-center bg-base-200 text-base-content p-3 text-sm" role="contentinfo">
                 <div>
-                    <p>
-                        <strong>Kairos</strong> - {{ _("Gestion des plannings, astreintes et congés d'équipe.") }}
-                        {{ _("Version %(app_version)s © 2026", app_version=app_version) }}
+                    <p class="inline-flex flex-wrap items-center justify-center gap-x-1">
+                        <span>
+                            <strong>Kairos</strong> - {{ _("Gestion des plannings, astreintes et congés d'équipe.") }}
+                            {{ _("Version %(app_version)s © 2026", app_version=app_version) }}
+                        </span>
                         {# Inline SVG, not a Font Awesome <i> icon: this
                            project deliberately loads only the FA
                            "solid" (fas) style bundle, not "brands"
@@ -208,9 +210,25 @@
                            of this file. Adding brands.min.js just for
                            this one icon would undercut that payload
                            optimization; GitHub's own mark is a single
-                           tiny path, cheaper inlined than fetched. #}
-                        <a href="https://github.com/FoxOps/kairos" target="_blank" rel="noopener noreferrer" aria-label="{{ _("Dépôt GitHub de Kairos") }}" class="ml-1 align-middle text-base-content/70 hover:text-base-content">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true" class="inline-block align-text-bottom">
+                           tiny path, cheaper inlined than fetched.
+                           inline-flex items-center (not vertical-align)
+                           on both this <a> and the <p> wrapping it:
+                           vertical-align:middle centers an inline box
+                           against the parent's x-height midpoint, not
+                           its visual line box - fine for text-sized
+                           inline content, but a 16px icon next to 14px
+                           text visibly hangs low with it regardless of
+                           which inline element(s) carry align-middle
+                           (confirmed with a real rendered screenshot,
+                           not just computed-style inspection - see the
+                           bug report this fixed). Flexbox centers by
+                           actual box height instead, sidestepping font
+                           metrics entirely - same pattern already used
+                           for icon+text pairs elsewhere in this file
+                           (the sidebar brand link, the theme toggle
+                           row). #}
+                        <a href="https://github.com/FoxOps/kairos" target="_blank" rel="noopener noreferrer" aria-label="{{ _("Dépôt GitHub de Kairos") }}" class="inline-flex items-center text-base-content/70 hover:text-base-content">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true">
                                 <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
                             </svg>
                         </a>
@@ -224,7 +242,7 @@
             <label for="mobile-drawer" aria-label="{{ _("Fermer le menu") }}" class="drawer-overlay lg:hidden"></label>
             <aside class="bg-base-200 text-base-content min-h-full w-64 flex flex-col" role="navigation" aria-label="{{ _("Navigation principale") }}">
                 <div class="p-4">
-                    <a href="{{ url_for("main.index") }}" class="text-lg font-extrabold text-primary flex items-center gap-2" aria-label="{{ _("Accueil - Kairos") }}">
+                    <a href="{{ url_for("main.index") }}" class="text-2xl font-extrabold text-primary flex items-center gap-2" aria-label="{{ _("Accueil - Kairos") }}">
                         <i class="fas fa-calendar-alt" aria-hidden="true"></i> Kairos
                     </a>
                 </div>

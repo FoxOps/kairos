@@ -59,6 +59,28 @@ class TestAuditLogRoute:
         assert resp.status_code == 200
         assert b"Aucune entr" in resp.data
 
+    def test_filters_by_date_to(self, test_app, logged_in_client, test_user):
+        with test_app.app_context():
+            AuditService.log("shift.create", actor=test_user)
+
+        far_past = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
+        resp = logged_in_client.get(f"/admin/audit-log?date_to={far_past}")
+        assert resp.status_code == 200
+        assert b"Aucune entr" in resp.data
+
+    def test_invalid_date_flashes_error(self, test_app, logged_in_client, test_user):
+        resp = logged_in_client.get(
+            "/admin/audit-log?date_from=not-a-date", follow_redirects=True
+        )
+        assert resp.status_code == 200
+        assert b"Date invalide" in resp.data
+
+    def test_invalid_per_page_falls_back_to_default(
+        self, test_app, logged_in_client, test_user
+    ):
+        resp = logged_in_client.get("/admin/audit-log?per_page=999")
+        assert resp.status_code == 200
+
 
 class TestPurgeAuditLog:
     def test_purge_without_retention_configured_refuses(

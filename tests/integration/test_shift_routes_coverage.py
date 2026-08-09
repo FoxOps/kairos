@@ -103,7 +103,7 @@ class TestAddShiftValidation:
             follow_redirects=True,
         )
         assert resp.status_code == 200
-        assert b"anterieure" in resp.data
+        assert "antérieure" in resp.get_data(as_text=True)
 
     def test_conflict_date_shows_error(
         self, test_app, logged_in_client, test_user, test_shift_type
@@ -192,52 +192,30 @@ class TestDeleteShift:
 
 
 class TestBulkDeleteExceptions:
-    def test_delete_all_shifts_exception_handled(
+    def test_delete_filtered_exception_handled(
         self, test_app, logged_in_client, test_shift
     ):
         with patch(
-            "app.routes.shift_routes.ShiftService.delete_all",
-            side_effect=RuntimeError("boom"),
-        ):
-            resp = logged_in_client.post("/shift/delete-all", follow_redirects=True)
-        assert resp.status_code == 200
-        assert b"Erreur" in resp.data
-
-    def test_delete_all_for_user_exception_handled(
-        self, test_app, logged_in_client, test_user, test_shift
-    ):
-        with patch(
-            "app.routes.shift_routes.ShiftService.delete_all_for_user",
+            "app.routes.shift_routes.ShiftService.delete_filtered",
             side_effect=RuntimeError("boom"),
         ):
             resp = logged_in_client.post(
-                f"/shift/delete-all-for-user/{test_user.id}", follow_redirects=True
+                "/shift/delete-filtered", follow_redirects=True
             )
         assert resp.status_code == 200
         assert b"Erreur" in resp.data
 
-    def test_delete_for_day_exception_handled(
+    def test_delete_selected_exception_handled(
         self, test_app, logged_in_client, test_shift
     ):
         with patch(
-            "app.routes.shift_routes.ShiftService.delete_for_day",
+            "app.routes.shift_routes.ShiftService.delete_filtered",
             side_effect=RuntimeError("boom"),
         ):
             resp = logged_in_client.post(
-                f"/shift/delete-day/{date.today().isoformat()}", follow_redirects=True
-            )
-        assert resp.status_code == 200
-        assert b"Erreur" in resp.data
-
-    def test_delete_for_week_exception_handled(
-        self, test_app, logged_in_client, test_shift
-    ):
-        with patch(
-            "app.routes.shift_routes.ShiftService.delete_for_week",
-            side_effect=RuntimeError("boom"),
-        ):
-            resp = logged_in_client.post(
-                f"/shift/delete-week/{date.today().isoformat()}", follow_redirects=True
+                "/shift/delete-selected",
+                data={"ids": [str(test_shift.id)]},
+                follow_redirects=True,
             )
         assert resp.status_code == 200
         assert b"Erreur" in resp.data
@@ -410,8 +388,13 @@ class TestApiUpdateShift:
         assert resp.status_code == 400
 
     def test_missing_start(self, test_app, logged_in_client, test_shift):
-        resp = logged_in_client.patch(f"/api/shifts/{test_shift.id}", json={})
+        """A non-empty body without "start" - json={} would be falsy
+        and hit the earlier "Aucune donnee recue" guard instead."""
+        resp = logged_in_client.patch(
+            f"/api/shifts/{test_shift.id}", json={"end": "2023-12-20T15:00:00"}
+        )
         assert resp.status_code == 400
+        assert "manquante" in resp.get_json()["error"]
 
     def test_success_without_end_uses_original_duration(
         self, test_app, logged_in_client, test_user, test_shift_type
@@ -465,6 +448,11 @@ class TestApiDeleteShift:
     def test_not_found(self, test_app, logged_in_client):
         resp = logged_in_client.delete("/api/shifts/999999")
         assert resp.status_code == 404
+
+    def test_success(self, test_app, logged_in_client, test_shift):
+        resp = logged_in_client.delete(f"/api/shifts/{test_shift.id}")
+        assert resp.status_code == 200
+        assert resp.get_json()["success"] is True
 
     def test_unexpected_exception_returns_500(
         self, test_app, logged_in_client, test_shift

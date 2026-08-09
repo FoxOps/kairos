@@ -74,10 +74,13 @@ graph LR
         admin_group[admin_group_routes.py]
         admin_shift_type[admin_shift_type_routes.py]
         admin_automation[admin_automation_routes.py]
+        admin_automation_rules[admin_automation_rules_routes.py]
         admin_backup[admin_backup_routes.py]
         admin_swap[admin_swap_routes.py]
         admin_settings[admin_settings_routes.py]
         admin_audit[admin_audit_routes.py]
+        admin_notification_target[admin_notification_target_routes.py]
+        admin_service_account[admin_service_account_routes.py]
     end
 ```
 
@@ -92,33 +95,51 @@ app/
 ├── auth/                  # decorators.py (route guards), user_manager.py,
 │                          # oidc_auth.py (SSO via Authlib)
 ├── models/                 # BaseModel + Group, User, ShiftType, Shift, OnCall,
-│                          # Leave, AutomationConfig, NotificationLog, Setting,
-│                          # SwapRequest, AppNotification, AuditLog
+│                          # Leave, AutomationConfig, AutomationRule (configurable
+│                          # rules engine, org default + per-Group override - distinct
+│                          # from AutomationConfig, which only stores the on-call
+│                          # rotation order), NotificationLog, Setting, SwapRequest,
+│                          # AppNotification, AuditLog, NotificationTarget (outbound
+│                          # Slack/Discord/Telegram/webhook destinations, see
+│                          # AppriseNotificationService), ServiceAccount (bearer
+│                          # credentials for the public REST API, see app/api/)
 ├── repositories/           # UserRepository, GroupRepository, ShiftRepository,
 │                          # ShiftTypeRepository, OnCallRepository, LeaveRepository,
 │                          # SwapRequestRepository, AppNotificationRepository,
-│                          # AuditLogRepository (no dedicated repository for
-│                          # Setting - Setting.get()/set() are methods on the
-│                          # model itself)
+│                          # AuditLogRepository, NotificationTargetRepository,
+│                          # ServiceAccountRepository (no dedicated repository for
+│                          # Setting/AutomationRule - Setting.get()/set() and
+│                          # AutomationRule.resolve_params()/set() are methods on
+│                          # the model itself)
 ├── services/               # UserService, GroupService, ShiftService,
 │                          # ShiftTypeService, OnCallService, LeaveService,
-│                          # ExportService, ScheduleService, AutomationAdminService,
+│                          # ExportService, ScheduleService, DashboardService
+│                          # (day-based stat counts for /dashboard, moved out of
+│                          # the route), AutomationAdminService, AutomationRuleAdminService
+│                          # (admin CRUD for the configurable rules engine),
 │                          # SwapService, SettingsService (DB-backed admin
 │                          # settings with env fallback, see ERD.md), AuditService
 │                          # (single write point for the audit trail),
 │                          # NotificationService (email reminders, called by
 │                          # scripts/send_*_notifications.py, not by a route),
 │                          # AppNotificationService (in-app bell, called by
-│                          # SwapService on swap events),
-│                          # BackupService (wraps scripts/backup_database.py
-│                          # for /admin/backups)
+│                          # SwapService on swap events), AppriseNotificationService
+│                          # (outbound Slack/Discord/Telegram/webhook via Apprise),
+│                          # ServiceAccountService, BackupService (wraps
+│                          # scripts/backup_database.py for /admin/backups)
 ├── routes/                 # auth.py, main.py + {dashboard,shift,oncall,leave,
 │                          # swap,notification}_routes.py, admin.py +
-│                          # admin_{user,group,shift_type,automation,backup,
-│                          # swap,settings,audit}_routes.py, export.py
+│                          # admin_{user,group,shift_type,automation,automation_rules,
+│                          # backup,swap,settings,audit,notification_target,
+│                          # service_account}_routes.py, export.py
 ├── utils/
 │   ├── automation/         # AdvancedShiftAutomation (single shift generation
-│   │                      # engine), OnCallAutomation, status
+│   │                      # engine), OnCallAutomation, status, rules/ (one class
+│   │                      # per configurable rule type - weekend_definition,
+│   │                      # oncall_anchor, oncall_spacing, oncall_shift_overlap,
+│   │                      # rest_after_oncall, shift_slots, staffing_limits,
+│   │                      # mandatory_shift - each interpreting one AutomationRule's
+│   │                      # params, base.py defines the shared resolve() shape)
 │   ├── export/              # ICS generation (icalendar), zoneinfo (not pytz)
 │   ├── helpers/             # common_helpers.py (can_add_shift/leave/oncall,
 │   │                      # date formatting/parsing, Jinja filters
@@ -193,11 +214,12 @@ scans classes directly in the browser - no `package.json`/npm in this project,
 a deliberate choice). No Bulma or other legacy CSS framework: no vendor
 directory or download script, Font Awesome (7.2.0, SVG+JS mode -
 cdnjs's `.woff2` files for this version are corrupted, rejected by Chromium's
-font sanitizer) and FullCalendar (stayed on 6.1.21, loaded from `cdn.jsdelivr.net` -
-the one exception to "everything via cdnjs", since cdnjs doesn't host its locale
-files; version 7.0.0 was tested via three different CDNs and consistently raises
-a real runtime error in FullCalendar's own compiled Preact rendering, not a
-hosting issue) are also 100% CDN.
+font sanitizer) and FullCalendar (7.0.1, loaded from `cdn.jsdelivr.net` as the
+single-file global bundle - the one exception to "everything via cdnjs", since
+cdnjs doesn't host its locale files; 7.0.0 previously failed via every ESM
+import path tried, root-caused to a jsDelivr `/+esm` transform bug, not a
+FullCalendar bug - see CLAUDE.md's "Frontend" section for the full history)
+are also 100% CDN.
 `app/static/css/variables.css` bridges daisyUI's `--color-*` variables to
 stable application-level names (`--app-color-primary`, `--bg-primary`...) used
 by the small amount of remaining custom CSS.
@@ -246,6 +268,15 @@ runtime (`/admin/settings`). `SwapRequest` carries 3 FKs to `User`
 `/admin/audit-log`) are both 1:N from `User` but serve different
 purposes and must not be confused with each other or with
 `NotificationLog` (the email-reminder dedup table above).
+`AutomationRule` (rule_type + optional `group_id` FK to `Group`, JSON
+`params`) backs the configurable automation rules engine
+(`/admin/automation/rules`) - one row per rule type's org-wide default
+(`group_id` NULL) or a specific Group's override; not related to
+`AutomationConfig` (rotation order only). `NotificationTarget` is an
+admin-managed outbound Slack/Discord/Telegram/webhook destination (via
+Apprise), unrelated to `NotificationLog`/`AppNotification`.
+`ServiceAccount` is a bearer-token credential for the public REST API
+(`/api/v1/*`), not a `User` - see "Public API v1" below.
 
 ## Authentication
 

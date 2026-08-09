@@ -77,6 +77,23 @@ class TestUserOwnsResourceDecorator:
 
         assert callable(test_function)
 
+    def test_lets_through_when_resource_id_param_missing(self, test_app, test_user):
+        """No route in this app actually omits the URL variable the
+        decorator checks for (Flask always supplies it when the rule
+        matches), so this early-return branch is only reachable by
+        calling the decorated function directly without that kwarg."""
+        from flask_login import login_user
+
+        from app.models import Leave
+
+        @user_owns_resource(Leave, "leave_id")
+        def view():
+            return "reached"
+
+        with test_app.test_request_context("/"):
+            login_user(test_user)
+            assert view() == "reached"
+
 
 class TestDecoratorChaining:
     """Tests for chaining decorators."""

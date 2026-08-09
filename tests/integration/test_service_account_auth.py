@@ -31,6 +31,17 @@ class TestResolveServiceAccount:
             with pytest.raises(Unauthorized):
                 resolve_service_account()
 
+    def test_empty_token_after_prefix_aborts_401(self, test_app):
+        """ "Bearer " with nothing after it - starts with the prefix
+        (passes the first check) but strips down to an empty token, a
+        different branch than the missing-header case above."""
+        with test_app.test_request_context(
+            "/api/v1/shifts", headers={"Authorization": "Bearer "}
+        ):
+            with pytest.raises(Unauthorized) as exc_info:
+                resolve_service_account()
+            assert exc_info.value.data["message"].startswith("Missing")
+
     def test_unknown_token_aborts_401(self, test_app):
         with test_app.test_request_context(
             "/api/v1/shifts", headers={"Authorization": "Bearer ksak_doesnotexist"}

@@ -5,7 +5,12 @@
    - per_page: nombre d'éléments par page
    - per_page_options: liste des options [5, 10, 25, 50, 100]
    - pagination_total_name: nom des éléments (shifts, astreintes, congés)
+   - extra_params (optionnel, dict) : filtres actifs (user_id, group_id,
+     date_from, date_to, ...) à conserver dans les liens de pagination -
+     sans quoi changer de page réinitialiserait silencieusement les
+     filtres de la barre de filtres (schedule/oncall/leave).
 #}
+{% set extra_params = extra_params or {} %}
 
 {% if pagination.has_prev or pagination.has_next or pagination.total > 0 %}
 {# Pattern "Extra small buttons" de daisyUI (join à 3 items : prev, label
@@ -21,14 +26,14 @@
 <div class="flex flex-wrap justify-between items-center gap-2 my-2">
     <nav class="join" role="navigation" aria-label="{{ _("Pagination") }}">
         <a class="join-item btn btn-sm {% if not pagination.has_prev %}btn-disabled{% endif %}"
-           href="{{ url_for(route, page=pagination.prev_num, per_page=per_page) if pagination.has_prev else '#' }}"
+           href="{{ url_for(route, page=pagination.prev_num, per_page=per_page, **extra_params) if pagination.has_prev else '#' }}"
            aria-label="{{ _("Page précédente") }}"
            {% if not pagination.has_prev %}aria-disabled="true" tabindex="-1"{% endif %}>
             <i class="fas fa-chevron-left" aria-hidden="true"></i>
         </a>
         <span class="join-item btn btn-sm btn-disabled" aria-current="page">{{ _("Page %(page)s / %(pages)s", page=pagination.page, pages=pagination.pages or 1) }}</span>
         <a class="join-item btn btn-sm {% if not pagination.has_next %}btn-disabled{% endif %}"
-           href="{{ url_for(route, page=pagination.next_num, per_page=per_page) if pagination.has_next else '#' }}"
+           href="{{ url_for(route, page=pagination.next_num, per_page=per_page, **extra_params) if pagination.has_next else '#' }}"
            aria-label="{{ _("Page suivante") }}"
            {% if not pagination.has_next %}aria-disabled="true" tabindex="-1"{% endif %}>
             <i class="fas fa-chevron-right" aria-hidden="true"></i>
@@ -44,6 +49,11 @@
             <option value="0" {% if per_page == 999999 %}selected{% endif %}>{{ _("Tout") }}</option>
         </select>
         <input type="hidden" name="page" value="1">
+        {% for param_name, param_value in extra_params.items() %}
+        {% if param_value %}
+        <input type="hidden" name="{{ param_name }}" value="{{ param_value }}">
+        {% endif %}
+        {% endfor %}
         <small class="text-base-content/70 whitespace-nowrap">
             {{ pagination.items|length }} / {{ pagination.total }} {{ pagination_total_name }}
         </small>

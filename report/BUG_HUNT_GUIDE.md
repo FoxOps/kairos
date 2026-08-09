@@ -1,5 +1,12 @@
 # 🎯 **Bug Hunt Guide - Kairos**
 
+> **Superseded** by [`Docs/reference/QA_PROTOCOL.md`](../Docs/reference/QA_PROTOCOL.md)
+> and the `release-qa` skill (`.claude/skills/release-qa/SKILL.md`), which
+> run a multi-agent bug-hunt pass as part of every minor/major release.
+> Some commands below reference removed Makefile targets and a `reports/`
+> directory that no longer exists - kept here for historical methodology
+> reference only, not as a current how-to.
+
 *How to use bug hunting tools to improve code quality*
 
 ---

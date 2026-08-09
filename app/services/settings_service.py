@@ -27,6 +27,8 @@ logger = get_logger(__name__)
 
 DEFAULT_TIMEZONE_KEY = "default_timezone"
 DEFAULT_LANGUAGE_KEY = "default_language"
+SHIFT_SCHEDULING_MODE_KEY = "shift_scheduling_mode"
+ONCALL_SCHEDULING_MODE_KEY = "oncall_scheduling_mode"
 DEFAULT_DATE_FORMAT_KEY = "default_date_format"
 DEFAULT_TIME_FORMAT_KEY = "default_time_format"
 PUBLIC_BASE_URL_KEY = "public_base_url"
@@ -51,6 +53,21 @@ FALLBACK_DEFAULT_TIMEZONE = "Europe/Paris"
 # per-request locale can be resolved).
 FALLBACK_DEFAULT_LANGUAGE = "fr"
 SUPPORTED_LANGUAGES = ("fr", "en")
+
+# Same no-env-var-equivalent situation as language above: whether
+# generation pools every eligible Group into one shared rotation
+# ("shared", the only behavior that ever existed before this feature)
+# or gives each Group its own independent rotation ("per_group") was
+# never a configurable concept before. Shifts and on-calls each get
+# their own independent setting (SHIFT_SCHEDULING_MODE_KEY/
+# ONCALL_SCHEDULING_MODE_KEY above) - a team's on-call rotation and
+# its shift rotation don't have to be scoped the same way (e.g. one
+# shared on-call pool across the whole org, but each team running its
+# own independent shift rotation). Calendar display doesn't
+# distinguish per-group shifts/on-calls yet regardless of either
+# setting - see ROADMAP.md.
+FALLBACK_SCHEDULING_MODE = "shared"
+SUPPORTED_SCHEDULING_MODES = ("shared", "per_group")
 
 # Same no-env-var-equivalent situation as language above: date/time
 # display format was never a configurable concept before this Setting
@@ -145,6 +162,66 @@ class SettingsService:
             return _("Langue invalide : %(lang_code)s", lang_code=lang_code)
         return SettingsService._set_with_audit(
             {DEFAULT_LANGUAGE_KEY: lang_code}, f"default_language={lang_code}"
+        )
+
+    # --- scheduling mode ---
+
+    @staticmethod
+    def get_shift_scheduling_mode() -> str:
+        """Cached on flask.g for the lifetime of the request, same
+        pattern/rationale as get_default_timezone() above: schedule
+        generation (AdvancedShiftAutomation) and rule-violation checks
+        (common_helpers.py::check_shift_rule_violations) call this once
+        per day/per user in a loop - without the cache, that's a real
+        N+1 (one Setting.get() per iteration) instead of one query for
+        the whole request. Safe to cache: the setting cannot change
+        mid-request."""
+        from flask import g, has_request_context
+
+        if not has_request_context():
+            value = Setting.get(SHIFT_SCHEDULING_MODE_KEY)
+            return str(value) if value else FALLBACK_SCHEDULING_MODE
+
+        if not hasattr(g, "_resolved_shift_scheduling_mode"):
+            value = Setting.get(SHIFT_SCHEDULING_MODE_KEY)
+            g._resolved_shift_scheduling_mode = (
+                str(value) if value else FALLBACK_SCHEDULING_MODE
+            )
+
+        return g._resolved_shift_scheduling_mode
+
+    @staticmethod
+    def set_shift_scheduling_mode(mode: str) -> str | None:
+        if mode not in SUPPORTED_SCHEDULING_MODES:
+            return _("Mode de planification invalide : %(mode)s", mode=mode)
+        return SettingsService._set_with_audit(
+            {SHIFT_SCHEDULING_MODE_KEY: mode}, f"shift_scheduling_mode={mode}"
+        )
+
+    @staticmethod
+    def get_oncall_scheduling_mode() -> str:
+        """Cached on flask.g - see get_shift_scheduling_mode() above,
+        same pattern/rationale, on-call side."""
+        from flask import g, has_request_context
+
+        if not has_request_context():
+            value = Setting.get(ONCALL_SCHEDULING_MODE_KEY)
+            return str(value) if value else FALLBACK_SCHEDULING_MODE
+
+        if not hasattr(g, "_resolved_oncall_scheduling_mode"):
+            value = Setting.get(ONCALL_SCHEDULING_MODE_KEY)
+            g._resolved_oncall_scheduling_mode = (
+                str(value) if value else FALLBACK_SCHEDULING_MODE
+            )
+
+        return g._resolved_oncall_scheduling_mode
+
+    @staticmethod
+    def set_oncall_scheduling_mode(mode: str) -> str | None:
+        if mode not in SUPPORTED_SCHEDULING_MODES:
+            return _("Mode de planification invalide : %(mode)s", mode=mode)
+        return SettingsService._set_with_audit(
+            {ONCALL_SCHEDULING_MODE_KEY: mode}, f"oncall_scheduling_mode={mode}"
         )
 
     # --- date/time format ---

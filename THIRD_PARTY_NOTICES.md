@@ -45,6 +45,17 @@ or statically linked, which keeps it clear of source-disclosure obligations.
 | marshmallow | MIT | [marshmallow-code/marshmallow](https://github.com/marshmallow-code/marshmallow) |
 | polib | MIT | [izimobil/polib](https://github.com/izimobil/polib) |
 
+## Backend, production/Docker-only (`docker/requirements.txt`)
+
+Not in the root `requirements.txt` - see `CLAUDE.md`'s "Project" section for
+why `docker/requirements.txt` is a separate, deliberately trimmed file.
+
+| Library | License | Source |
+|---|---|---|
+| Gunicorn | MIT | [benoitc/gunicorn](https://github.com/benoitc/gunicorn) |
+| boto3 | Apache-2.0 | [boto/boto3](https://github.com/boto/boto3) |
+| botocore | Apache-2.0 | [boto/botocore](https://github.com/boto/botocore) |
+
 ## Frontend (CDN, no bundler - see `app/templates/base.html`)
 
 | Library | License | Source |
@@ -72,6 +83,7 @@ invented or computed hues.
 | pytest | MIT | [pytest-dev/pytest](https://github.com/pytest-dev/pytest) |
 | pytest-flask | MIT | [pytest-dev/pytest-flask](https://github.com/pytest-dev/pytest-flask) |
 | pytest-cov | MIT | [pytest-dev/pytest-cov](https://github.com/pytest-dev/pytest-cov) |
+| pytest-xdist | MIT | [pytest-dev/pytest-xdist](https://github.com/pytest-dev/pytest-xdist) |
 | Ruff | MIT | [astral-sh/ruff](https://github.com/astral-sh/ruff) |
 | mypy | MIT | [python/mypy](https://github.com/python/mypy) |
 | Black | MIT | [psf/black](https://github.com/psf/black) |

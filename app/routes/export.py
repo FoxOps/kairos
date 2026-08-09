@@ -11,6 +11,12 @@ def _get_export_scope():
     return ExportService.normalize_scope(request.args.get("scope"))
 
 
+def _get_export_group_ids():
+    """Groups to scope the export to - absent entirely means
+    unfiltered, same convention as /api/shifts?group_ids=...."""
+    return request.args.getlist("group_ids", type=int) or None
+
+
 def _get_user_for_export():
     """
     Get the user for the export.
@@ -44,7 +50,9 @@ def export_shifts():
         return _unauthorized_response()
 
     scope = _get_export_scope()
-    ics_content = ExportService.export_shifts(scope, user)
+    ics_content = ExportService.export_shifts(
+        scope, user, group_ids=_get_export_group_ids()
+    )
     return _ics_response(ics_content, f"shifts_{'all' if scope == 'all' else 'my'}.ics")
 
 
@@ -56,7 +64,9 @@ def export_oncall():
         return _unauthorized_response()
 
     scope = _get_export_scope()
-    ics_content = ExportService.export_oncall(scope, user)
+    ics_content = ExportService.export_oncall(
+        scope, user, group_ids=_get_export_group_ids()
+    )
     return _ics_response(ics_content, f"oncall_{'all' if scope == 'all' else 'my'}.ics")
 
 
@@ -68,5 +78,7 @@ def export_leaves():
         return _unauthorized_response()
 
     scope = _get_export_scope()
-    ics_content = ExportService.export_leaves(scope, user)
+    ics_content = ExportService.export_leaves(
+        scope, user, group_ids=_get_export_group_ids()
+    )
     return _ics_response(ics_content, f"leaves_{'all' if scope == 'all' else 'my'}.ics")

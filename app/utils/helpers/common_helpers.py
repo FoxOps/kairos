@@ -7,6 +7,7 @@ This module provides general utility functions used throughout the application.
 from datetime import date, datetime, timedelta
 from zoneinfo import available_timezones
 
+from flask_babel import gettext as _
 from flask_login import current_user
 
 from app import db
@@ -134,6 +135,18 @@ SHIFT_TYPE_COLOR_PALETTE = [
 ]
 
 
+def _build_id_color_map(ids, palette: list[str]) -> dict:
+    """Shared rank-based id -> daisyUI color assignment (see
+    build_shift_type_color_map's own docstring for why RANK, not
+    `id % len(palette)`). Duplicates/None in `ids` are tolerated."""
+    unique_sorted_ids = sorted({item_id for item_id in ids if item_id is not None})
+    palette_size = len(palette)
+    return {
+        item_id: palette[index % palette_size]
+        for index, item_id in enumerate(unique_sorted_ids)
+    }
+
+
 def build_shift_type_color_map(shift_type_ids) -> dict:
     """
     Map each ShiftType.id to a daisyUI semantic color, guaranteed
@@ -154,12 +167,37 @@ def build_shift_type_color_map(shift_type_ids) -> dict:
     Returns:
         Dict {shift_type_id: daisyui_color_name}
     """
-    unique_sorted_ids = sorted({sid for sid in shift_type_ids if sid is not None})
-    palette_size = len(SHIFT_TYPE_COLOR_PALETTE)
-    return {
-        shift_type_id: SHIFT_TYPE_COLOR_PALETTE[index % palette_size]
-        for index, shift_type_id in enumerate(unique_sorted_ids)
-    }
+    return _build_id_color_map(shift_type_ids, SHIFT_TYPE_COLOR_PALETTE)
+
+
+# Deliberate exception to this app's Dracula/Alucard-only palette rule
+# (see CLAUDE.md "Frontend"): a group's color dot renders on top of an
+# event's own type background (shift=primary/on-call=info/leave=error),
+# so a daisyUI token shared with SHIFT_TYPE_COLOR_PALETTE could exactly
+# match that background and become invisible - confirmed via a real
+# browser screenshot (a "primary"-ranked group's dot vanished on a
+# shift event). Fixed, colorblind-safe hex palette (Okabe-Ito, minus
+# black - black would blend into the dot's own dark-mode border) used
+# instead of daisyUI theme tokens, so a group's dot stays visually
+# distinct from the 3 event background colors and from every other
+# group regardless of theme.
+GROUP_COLOR_PALETTE = [
+    "#E69F00",  # orange
+    "#56B4E9",  # sky blue
+    "#009E73",  # bluish green
+    "#F0E442",  # yellow
+    "#0072B2",  # blue
+    "#D55E00",  # vermillion
+    "#CC79A7",  # reddish purple
+]
+
+
+def build_group_color_map(group_ids) -> dict:
+    """Map each Group.id to a hex color from GROUP_COLOR_PALETTE, same
+    stateless rank-based scheme as build_shift_type_color_map - no
+    Group.color column, recomputed on every render so it survives group
+    delete/recreate without a migration."""
+    return _build_id_color_map(group_ids, GROUP_COLOR_PALETTE)
 
 
 # ---------------------------------------------------------------------------
@@ -178,14 +216,17 @@ def _resolve_authenticated_user(user):
     return user
 
 
-def can_add_shift(user=None, date=None, shift_type_id=None):
+def can_add_shift(user=None, date=None, shift_type=None):
     """
     Check if a user can add a shift on a specific date.
 
     Args:
         user: User to check (default: current_user)
         date: Date to check (default: today)
-        shift_type_id: Shift type ID to check
+        shift_type: ShiftType the shift would use - optional (the
+            configured-rule checks in check_shift_rule_violations()
+            are skipped when not given, same "not enough information,
+            don't block" stance as the rest of this function)
 
     Returns:
         True if user can add a shift, False otherwise
@@ -206,7 +247,10 @@ def can_add_shift(user=None, date=None, shift_type_id=None):
         return False
 
     # Check if user already has a shift on this date
-    return not is_user_on_shift(user.id, date)
+    if is_user_on_shift(user.id, date):
+        return False
+
+    return check_shift_rule_violations(user, date, shift_type) is None
 
 
 def can_add_leave(user=None, start_date=None, end_date=None, exclude_leave_id=None):
@@ -319,8 +363,18 @@ def can_add_oncall(user=None, start_time=None, end_time=None):
     if start_time is None or end_time is None:
         return False
 
-    # On-call must start on a Friday at 9pm
-    if start_time.weekday() != 4 or start_time.hour != 21:
+    # On-call must start on the group's configured anchor day/hour
+    # (OnCallAnchorRule, default Friday 21:00) - was previously
+    # hardcoded here independently of OnCallService.add_oncall()'s own
+    # (now also fixed) anchor check, silently rejecting a legitimately
+    # configured non-Friday group.
+    from app.utils.automation.rules import OnCallAnchorRule
+
+    anchor = OnCallAnchorRule.resolve(group=user.group)
+    if (
+        start_time.weekday() != anchor["weekday"]
+        or start_time.hour != anchor["start_hour"]
+    ):
         return False
 
     # The user can't have an on-call while on leave over the period
@@ -333,8 +387,10 @@ def can_add_oncall(user=None, start_time=None, end_time=None):
         OnCall.start_time <= end_time,
         OnCall.end_time >= start_time,
     ).first()
+    if overlapping_oncall is not None:
+        return False
 
-    return overlapping_oncall is None
+    return check_oncall_rule_violations(user, start_time, end_time) is None
 
 
 # ---------------------------------------------------------------------------
@@ -407,3 +463,134 @@ def _get_overlapping_oncall(user_id, start_date, end_date):
         )
         .first()
     )
+
+
+# ---------------------------------------------------------------------------
+# Configurable automation rule checks (see app/utils/automation/rules/) -
+# none of these 3 rule types existed in any form before this feature;
+# each check is a no-op until an admin actually configures the rule
+# (oncall_shift_overlap is the one exception, on by default - see its
+# rule class docstring for why).
+# ---------------------------------------------------------------------------
+
+
+def check_shift_rule_violations(user, date, shift_type=None, exclude_shift_id=None):
+    """Returns a translated error message if creating/moving a shift
+    for `user` on `date` into `shift_type` would violate a configured
+    automation rule (staffing_limits max, rest_after_oncall,
+    oncall_shift_overlap), else None. `shift_type` is optional - the
+    checks that need it (all 3, currently) are skipped when it's None.
+    `exclude_shift_id`: the shift's own id, when checking a move
+    (ShiftService.api_update) rather than a fresh creation - excludes
+    it from the staffing_limits headcount so moving a shift to the
+    same date/type it's already on doesn't count itself twice.
+
+    Resolves `user`'s own Group's rule overrides instead of the
+    org-wide default when SettingsService.get_shift_scheduling_mode()
+    is "per_group" - mirrors the same gating already used by automatic
+    generation (AutomationAdminService.generate_full()), so manual
+    creation/move stays consistent with what generation would have
+    produced. "shared" (the default) always resolves org-wide, exactly
+    today's behavior, regardless of whether a Group override happens
+    to exist in the database."""
+    if shift_type is None:
+        return None
+
+    from app.services import SettingsService
+    from app.utils.automation.rules import (
+        OnCallShiftOverlapRule,
+        RestAfterOnCallRule,
+        StaffingLimitsRule,
+    )
+
+    group = (
+        user.group
+        if SettingsService.get_shift_scheduling_mode() == "per_group"
+        else None
+    )
+
+    limits = StaffingLimitsRule.get_limits(shift_type.id, group=group)
+    if limits["max"] is not None:
+        count_query = Shift.query.filter(
+            Shift.shift_type_id == shift_type.id, Shift.date == date
+        )
+        if exclude_shift_id is not None:
+            count_query = count_query.filter(Shift.id != exclude_shift_id)
+        if count_query.count() >= limits["max"]:
+            return _(
+                "Impossible d'ajouter ce shift : effectif maximum (%(max)s) "
+                "déjà atteint pour ce créneau.",
+                max=limits["max"],
+            )
+
+    start_time = datetime.combine(date, datetime.min.time()).replace(
+        hour=shift_type.start_hour
+    )
+    end_time = datetime.combine(date, datetime.min.time()).replace(
+        hour=shift_type.end_hour
+    )
+
+    if OnCallShiftOverlapRule.resolve(group=group)["block"] and _has_overlapping_oncall(
+        user.id, start_time, end_time
+    ):
+        return _(
+            "Impossible d'ajouter ce shift : chevauche une astreinte de %(name)s.",
+            name=user.name,
+        )
+
+    min_rest_hours = RestAfterOnCallRule.resolve(group=group)["min_rest_hours"]
+    if min_rest_hours > 0:
+        last_oncall = (
+            OnCall.query.filter(
+                OnCall.user_id == user.id, OnCall.end_time <= start_time
+            )
+            .order_by(OnCall.end_time.desc())
+            .first()
+        )
+        if last_oncall and (start_time - last_oncall.end_time) < timedelta(
+            hours=min_rest_hours
+        ):
+            return _(
+                "Impossible d'ajouter ce shift : %(name)s doit se reposer "
+                "%(hours)sh après son astreinte.",
+                name=user.name,
+                hours=min_rest_hours,
+            )
+
+    return None
+
+
+def check_oncall_rule_violations(user, start_time, end_time, exclude_oncall_id=None):
+    """Returns a translated error message if creating/moving an on-call
+    for `user` over [start_time, end_time] would violate
+    oncall_shift_overlap, else None. `exclude_oncall_id` is accepted
+    for symmetry with check_shift_rule_violations() but unused here -
+    the check queries Shift, not OnCall, so the on-call being moved
+    never counts against itself.
+
+    Resolves `user`'s own Group's oncall_shift_overlap override
+    instead of the org-wide default when
+    SettingsService.get_oncall_scheduling_mode() is "per_group" - same
+    gating rule as check_shift_rule_violations(), mirrored from its own
+    mode setting since this validates an on-call, not a shift."""
+    from app.services import SettingsService
+    from app.utils.automation.rules import OnCallShiftOverlapRule
+
+    group = (
+        user.group
+        if SettingsService.get_oncall_scheduling_mode() == "per_group"
+        else None
+    )
+
+    if OnCallShiftOverlapRule.resolve(group=group)["block"]:
+        overlapping_shift = _get_overlapping_shift(
+            user.id, start_time.date(), end_time.date()
+        )
+        if overlapping_shift is not None:
+            return _(
+                "Impossible d'ajouter cette astreinte : chevauche un shift de "
+                "%(name)s.",
+                name=user.name,
+            )
+
+    return None

@@ -57,6 +57,32 @@ class TestOnCallAutomationGenerateScheduleFull:
             assert len(oncalls) == 4
             assert len(unfilled) == 2
 
+    def test_aggregates_repeated_unfilled_oncall_warnings(
+        self, test_app, test_user, test_group
+    ):
+        """Regression test: several consecutive Fridays left unassigned
+        (legal spacing constraint, too few rotating users) used to
+        produce one [WARN] flash message per Friday - a wall of
+        near-identical toasts on a real multi-month regeneration.
+        generate_oncall_schedule() must collapse them into a single
+        summary message instead, mirroring the existing [OK] count
+        message and the analogous fix for the shift-side mandatory
+        [ALERT] flood (see test_advanced_shift_automation.py)."""
+        test_group.is_part_of_oncall = True
+        db.session.commit()
+
+        friday = date(2023, 12, 1)
+        end_date = friday + timedelta(days=35)  # 6 Fridays, only 1 user
+
+        _oncalls, messages, unfilled = OnCallAutomation.generate_oncall_schedule(
+            friday, end_date, rotation_order_ids=[test_user.id], dry_run=True
+        )
+
+        warn_messages = [m for m in messages if "[WARN]" in m]
+        assert len(unfilled) > 1
+        assert len(warn_messages) == 1
+        assert str(len(unfilled)) in warn_messages[0]
+
     def test_respects_start_date(self, test_app, test_user, test_group):
         """Test that generate_oncall_schedule respects the start date."""
         with test_app.app_context():

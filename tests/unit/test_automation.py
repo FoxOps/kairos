@@ -14,6 +14,84 @@ from app.utils.automation import (
 from app.utils.automation.oncall_automation import AvailabilityIndex
 
 
+class TestAvailabilityIndex:
+    def test_meets_spacing_constraint_checks_future_intervals_too(self, test_app):
+        """meets_spacing_constraint()'s own docstring: a future on-call
+        recorded for a user must also respect the spacing constraint,
+        not just past ones - the "existing_start >= end_time" branch,
+        distinct from the "already ended before this candidate" branch
+        exercised elsewhere via generate_oncall_schedule()."""
+        with test_app.app_context():
+            index = AvailabilityIndex([], min_spacing_weeks=2)
+            future_start = datetime(2024, 2, 1, 21, 0)
+            future_end = future_start + timedelta(days=7, hours=-14)
+            index.record_assignment(1, future_start, future_end)
+
+            # Ends well before the recorded future interval starts, but
+            # only 6 days apart - under the 2-week (14-day) minimum
+            # spacing.
+            candidate_start = datetime(2024, 1, 19, 21, 0)
+            candidate_end = candidate_start + timedelta(days=7, hours=-14)
+
+            assert (
+                index.meets_spacing_constraint(1, candidate_start, candidate_end)
+                is False
+            )
+
+    def test_meets_spacing_constraint_overlap_is_a_conflict_not_spacing(self, test_app):
+        """An overlapping existing interval is has_oncall_conflict's own
+        concern, not a spacing issue (see the method's own comment) -
+        meets_spacing_constraint() must not report False for it."""
+        with test_app.app_context():
+            index = AvailabilityIndex([], min_spacing_weeks=2)
+            existing_start = datetime(2024, 1, 5, 21, 0)
+            existing_end = existing_start + timedelta(days=7, hours=-14)
+            index.record_assignment(1, existing_start, existing_end)
+
+            # Overlaps the existing interval directly.
+            candidate_start = existing_start + timedelta(days=1)
+            candidate_end = candidate_start + timedelta(days=7, hours=-14)
+
+            assert (
+                index.meets_spacing_constraint(1, candidate_start, candidate_end)
+                is True
+            )
+
+
+class TestSolveMaxFilledWeeksSpacingOverlap:
+    def test_overlapping_existing_interval_is_treated_as_a_conflict_not_spacing(
+        self, test_app, test_user
+    ):
+        """_solve_max_filled_weeks()'s own local meets_spacing() has the
+        same overlap-is-not-a-spacing-issue branch as
+        AvailabilityIndex.meets_spacing_constraint() (see that method's
+        docstring) - week_candidates are always pre-filtered upstream
+        to exclude a user with a genuinely conflicting on-call for that
+        exact week (see this function's own docstring), so this branch
+        is only reachable by constructing the inputs directly rather
+        than through the real generate_oncall_schedule() pipeline."""
+        from app.utils.automation.oncall_automation import (
+            AvailabilityIndex,
+            _solve_max_filled_weeks,
+        )
+
+        with test_app.app_context():
+            week_start = datetime(2024, 1, 5, 21, 0)
+            week_end = week_start + timedelta(days=7, hours=-14)
+            weeks = [(date(2024, 1, 5), week_start, week_end)]
+            week_candidates = [[test_user]]
+
+            index = AvailabilityIndex([])
+            # Directly recorded so it overlaps this exact week's own
+            # interval - real callers never reach this state, since
+            # week_candidates would already exclude test_user for a
+            # week their own on-call conflicts with.
+            index.record_assignment(test_user.id, week_start, week_end)
+
+            assignment = _solve_max_filled_weeks(weeks, week_candidates, index)
+            assert assignment == {0: test_user}
+
+
 class TestOnCallAutomation:
     """Tests for the on-call automation."""
 
@@ -159,6 +237,24 @@ class TestOnCallAutomation:
                     days=7
                 )
 
+    def test_generate_oncall_schedule_no_rotation_order(
+        self, test_app, test_group, test_user, monkeypatch
+    ):
+        """get_rotation_order() always returns a non-empty list once
+        eligible_users is non-empty (own-eligible-users fallback, see
+        its own body) - this branch is only reachable via a direct
+        monkeypatch."""
+        monkeypatch.setattr(OnCallAutomation, "get_rotation_order", lambda *a, **k: [])
+
+        start_date = date(2024, 1, 5)
+        end_date = date(2024, 1, 12)
+        oncalls, messages, unfilled = OnCallAutomation.generate_oncall_schedule(
+            start_date, end_date, dry_run=True
+        )
+        assert oncalls == []
+        assert unfilled == []
+        assert "rotation" in messages[0]
+
     def test_generate_oncall_schedule_summary_message_translates_to_english(
         self, test_app, test_group, test_user, second_user
     ):
@@ -279,6 +375,64 @@ class TestFullScheduleGeneration:
             # Check the values
             assert status["oncall_eligible_users"] == 3
             assert status["shift_eligible_users"] == 3
+
+    def test_next_available_oncall_date_skips_already_covered_weeks(
+        self, test_app, test_user
+    ):
+        """The very next anchor date already has an on-call - the search
+        must keep walking forward a week at a time (status.py's own
+        while-loop continuation branch) instead of returning an already-
+        covered date."""
+        with test_app.app_context():
+            from datetime import date, datetime, timedelta
+
+            today = date.today()
+            next_friday = today
+            while next_friday.weekday() != 4:
+                next_friday += timedelta(days=1)
+
+            start = datetime.combine(next_friday, datetime.min.time()).replace(hour=21)
+            end = start + timedelta(days=7, hours=-14)
+            oncall = OnCall(user_id=test_user.id, start_time=start, end_time=end)
+            db.session.add(oncall)
+            db.session.commit()
+
+            status = get_automation_status()
+
+            assert status["next_available_oncall_date"] != next_friday.strftime(
+                "%Y-%m-%d"
+            )
+            assert status["next_available_oncall_date"] == (
+                next_friday + timedelta(days=7)
+            ).strftime("%Y-%m-%d")
+
+    def test_next_available_oncall_date_advances_to_configured_anchor_weekday(
+        self, test_app, test_group, test_user
+    ):
+        """status.py's own while-loop that walks `current_date` forward
+        until it lands on the configured anchor weekday - only actually
+        iterates when today isn't already that weekday, so a group
+        anchor deliberately different from today's own weekday is used
+        here instead of depending on which day the suite happens to
+        run on."""
+        from app.models import AutomationRule
+
+        with test_app.app_context():
+            today = date.today()
+            not_today_weekday = (today.weekday() + 1) % 7
+            AutomationRule.set(
+                "oncall_anchor",
+                {"weekday": not_today_weekday, "start_hour": 21, "end_hour": 7},
+                group=test_group,
+            )
+
+            status = get_automation_status(group=test_group)
+
+            next_date = datetime.strptime(
+                status["next_available_oncall_date"], "%Y-%m-%d"
+            ).date()
+            assert next_date.weekday() == not_today_weekday
+            assert next_date >= today
 
 
 class TestEdgeCases:
@@ -588,6 +742,30 @@ class TestFillOnCallGaps:
     Friday that already has an on-call (even a manually-assigned one),
     only create ones for Fridays that have none."""
 
+    def test_no_eligible_users_returns_empty(self, test_app):
+        oncalls, messages, unfilled = OnCallAutomation.fill_oncall_gaps(
+            date(2024, 1, 5), date(2024, 1, 19), dry_run=True
+        )
+        assert oncalls == []
+        assert unfilled == []
+        assert "ligible" in messages[0]
+
+    def test_no_rotation_order_returns_empty(
+        self, test_app, test_group, test_user, monkeypatch
+    ):
+        """Same structurally-dead branch as
+        TestOnCallAutomation::test_generate_oncall_schedule_no_rotation_order -
+        get_rotation_order() always returns a non-empty list once
+        eligible_users is non-empty."""
+        monkeypatch.setattr(OnCallAutomation, "get_rotation_order", lambda *a, **k: [])
+
+        oncalls, messages, unfilled = OnCallAutomation.fill_oncall_gaps(
+            date(2024, 1, 5), date(2024, 1, 19), dry_run=True
+        )
+        assert oncalls == []
+        assert unfilled == []
+        assert "rotation" in messages[0]
+
     def test_leaves_existing_oncalls_untouched(
         self, test_app, test_group, test_user, second_user
     ):
@@ -654,6 +832,40 @@ class TestFillOnCallGaps:
             assert unfilled_dates == []
             assert OnCall.query.count() == count_before
             assert any("Aucune astreinte manquante" in msg for msg in messages)
+
+    def test_group_param_scopes_eligibility_and_rotation(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """`group`: same convention as generate_oncall_schedule() -
+        when given, restricts eligibility/rotation to that Group only,
+        needed so refresh_shifts() can run one independent gap-fill
+        pass per group under "per_group" oncall_scheduling_mode
+        instead of always pooling every eligible user org-wide."""
+        with test_app.app_context():
+            other_group = Group(name="Other Fill Gaps Group", is_part_of_oncall=True)
+            db.session.add(other_group)
+            db.session.commit()
+            other_user = User(
+                name="Other Group User",
+                email="other-fill-gaps@test.com",
+                password_hash="x",
+                is_admin=False,
+                group_id=other_group.id,
+            )
+            db.session.add(other_user)
+            db.session.commit()
+
+            oncalls, _messages, unfilled_dates = OnCallAutomation.fill_oncall_gaps(
+                date(2024, 1, 5),
+                date(2024, 1, 5),
+                dry_run=False,
+                group=test_group,
+            )
+
+            assert unfilled_dates == []
+            assert len(oncalls) == 1
+            assert oncalls[0].user_id in {test_user.id, second_user.id}
+            assert oncalls[0].user_id != other_user.id
 
 
 class TestDetectOnCallGaps:

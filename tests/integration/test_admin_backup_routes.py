@@ -57,6 +57,80 @@ class TestBackupsCreate:
         assert response.status_code == 200
         assert b"succ\xc3\xa8s" in response.data or b"success" in response.data.lower()
 
+    def test_create_failure_with_no_errors_uses_translated_fallback(
+        self, test_app, client, monkeypatch
+    ):
+        """Regression test: the "no error details available" fallback
+        used to be a bare Python string literal ("erreur inconnue"),
+        interpolated into an otherwise-_()-wrapped flash message -
+        never translatable regardless of locale, so an English-locale
+        admin would see a half-translated "Backup failed: erreur
+        inconnue" instead of an English fallback - found by the i18n
+        audit.
+
+        Sets the org default language to "en" BEFORE logging in (same
+        pattern as test_i18n.py's own
+        test_login_page_renders_in_english) rather than switching it
+        mid-session via `logged_in_client` - changing the language for
+        an *already-logged-in* session was observed, independently of
+        this fix, to not reliably take effect on that same session's
+        very next request in this test suite; that's a separate,
+        pre-existing quirk outside this fix's scope, not something to
+        paper over here."""
+        from werkzeug.security import generate_password_hash
+
+        from app import db
+        from app.models import Group, User
+        from app.services import BackupService, SettingsService
+
+        with test_app.app_context():
+            SettingsService.set_default_language("en")
+            group = Group(
+                name="Backup Fallback Test Group",
+                is_part_of_schedule=True,
+                is_part_of_oncall=True,
+            )
+            db.session.add(group)
+            db.session.commit()
+            user = User(
+                email="backup-fallback-admin@example.com",
+                name="Backup Fallback Admin",
+                password_hash=generate_password_hash("password123"),
+                is_admin=True,
+                group_id=group.id,
+            )
+            db.session.add(user)
+            db.session.commit()
+
+        login_resp = client.post(
+            "/login",
+            data={
+                "email": "backup-fallback-admin@example.com",
+                "password": "password123",
+            },
+            follow_redirects=True,
+        )
+        assert login_resp.status_code == 200
+
+        monkeypatch.setattr(
+            BackupService,
+            "create_now",
+            staticmethod(
+                lambda: {
+                    "success": False,
+                    "local": None,
+                    "s3": None,
+                    "timestamp": None,
+                    "errors": [],
+                }
+            ),
+        )
+
+        response = client.post("/admin/backups/create", follow_redirects=True)
+
+        assert response.status_code == 200
+        assert b"erreur inconnue" not in response.data
+
 
 class TestBackupsCleanup:
     def test_cleanup_redirects(self, logged_in_client):
@@ -98,3 +172,22 @@ class TestBackupsDownloadS3:
     def test_download_when_s3_disabled_returns_404(self, logged_in_client):
         response = logged_in_client.get("/admin/backups/download/s3/some/key.gz")
         assert response.status_code == 404
+
+    def test_download_success_streams_file(
+        self, logged_in_client, tmp_path, monkeypatch
+    ):
+        from app.services import BackupService
+
+        tmp_file = tmp_path / "downloaded.sqlite.gz"
+        tmp_file.write_bytes(b"s3 backup content")
+
+        monkeypatch.setattr(
+            BackupService,
+            "download_s3_backup_to_temp",
+            staticmethod(lambda key: str(tmp_file)),
+        )
+
+        response = logged_in_client.get("/admin/backups/download/s3/some/key.gz")
+
+        assert response.status_code == 200
+        assert response.data == b"s3 backup content"

@@ -543,6 +543,31 @@ class TestSensitiveDataFilter:
             assert "PASSWORD=***" in record.msg
             assert "Secret123" not in record.msg
 
+    def test_filter_masks_in_dict_args(self, test_app):
+        """%-style logging also accepts a dict for args (e.g.
+        logger.info("%(user)s", {"user": ...})) - a different branch
+        than the tuple-args case above."""
+        with test_app.app_context():
+            import logging
+
+            from app import SensitiveDataFilter
+
+            filter = SensitiveDataFilter()
+
+            record = logging.LogRecord(
+                name="test",
+                level=logging.INFO,
+                pathname="",
+                lineno=0,
+                msg="Login attempt: %(creds)s",
+                args=({"creds": "password=secret123"},),
+                exc_info=None,
+            )
+
+            filter.filter(record)
+            assert "password=***" in record.args["creds"]
+            assert "secret123" not in record.args["creds"]
+
     def test_filter_preserves_non_sensitive_data(self, test_app):
         """Test that the filter preserves non-sensitive data."""
         with test_app.app_context():
@@ -661,3 +686,85 @@ class TestGetLogger:
 
             # Should have at least one handler
             assert len(custom_logger.handlers) > 0
+
+
+class TestConfigureLoggingWithoutApp:
+    """configure_logging(app=None) - the create_app() flow always
+    passes a real app, so these branches (env-only level/format,
+    sqlalchemy_level's own else) are otherwise never exercised."""
+
+    def test_uses_env_level_and_default_format_and_sqlalchemy_default(
+        self, monkeypatch
+    ):
+        from app.utils.logging import logger as logger_module
+
+        monkeypatch.delenv("LOG_FILE", raising=False)
+        monkeypatch.setenv("LOG_LEVEL", "WARNING")
+
+        root_logger = logging.getLogger()
+        previous_handlers = root_logger.handlers[:]
+        try:
+            logger_module.configure_logging(app=None)
+
+            assert root_logger.level == logging.WARNING
+            assert (
+                root_logger.handlers[0].formatter._fmt
+                == "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+            )
+            sqlalchemy_logger = logging.getLogger("sqlalchemy.engine")
+            assert sqlalchemy_logger.level == logging.WARNING
+        finally:
+            for handler in root_logger.handlers[:]:
+                root_logger.removeHandler(handler)
+            for handler in previous_handlers:
+                root_logger.addHandler(handler)
+
+
+class TestConfigureLoggingFileHandler:
+    """configure_logging()'s `if log_file:` block - never hit by
+    create_app() in the test suite (TestingConfig sets no LOG_FILE)."""
+
+    def test_creates_log_file_and_directory(self, tmp_path, monkeypatch):
+        from logging.handlers import RotatingFileHandler
+
+        from app.utils.logging import logger as logger_module
+
+        log_file = tmp_path / "nested" / "app.log"
+        monkeypatch.setenv("LOG_FILE", str(log_file))
+
+        root_logger = logging.getLogger()
+        previous_handlers = root_logger.handlers[:]
+        try:
+            logger_module.configure_logging(app=None)
+
+            assert log_file.parent.is_dir()
+            assert any(isinstance(h, RotatingFileHandler) for h in root_logger.handlers)
+        finally:
+            for handler in root_logger.handlers[:]:
+                handler.close()
+                root_logger.removeHandler(handler)
+            for handler in previous_handlers:
+                root_logger.addHandler(handler)
+
+
+class TestConfigureLoggingUncreatableAppLogDir:
+    """When the logs/ directory (for app/http_errors/audit files) can't
+    be created (os.makedirs raises OSError), configure_logging() must
+    degrade to StreamHandlers instead of crashing the app."""
+
+    def test_falls_back_to_stream_handlers(self, monkeypatch):
+        from app.utils.logging import logger as logger_module
+
+        monkeypatch.delenv("LOG_FILE", raising=False)
+
+        def _raise_oserror(path, exist_ok=True):
+            raise OSError("read-only filesystem")
+
+        monkeypatch.setattr(logger_module.os, "makedirs", _raise_oserror)
+
+        logger_module.configure_logging(app=None)
+
+        http_logger = logging.getLogger("http_errors")
+        audit_logger = logging.getLogger("audit")
+        assert isinstance(http_logger.handlers[-1], logging.StreamHandler)
+        assert isinstance(audit_logger.handlers[-1], logging.StreamHandler)

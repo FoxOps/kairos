@@ -121,6 +121,40 @@ class TestEditServiceAccount:
         resp = logged_in_client.get("/admin/service-accounts/edit/999999")
         assert resp.status_code == 404
 
+    def test_missing_name_rejected(self, test_app, logged_in_client):
+        with test_app.app_context():
+            sa, _ = ServiceAccountService.create_account("Zapier")
+            db.session.commit()
+            sa_id = sa.id
+
+        resp = logged_in_client.post(
+            f"/admin/service-accounts/edit/{sa_id}",
+            data={"name": "", "expires_at": ""},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with test_app.app_context():
+            from app.repositories.service_account_repository import (
+                ServiceAccountRepository,
+            )
+
+            unchanged = ServiceAccountRepository.get_by_id(sa_id)
+            assert unchanged.name == "Zapier"
+
+    def test_invalid_expiry_rejected(self, test_app, logged_in_client):
+        with test_app.app_context():
+            sa, _ = ServiceAccountService.create_account("Zapier")
+            db.session.commit()
+            sa_id = sa.id
+
+        resp = logged_in_client.post(
+            f"/admin/service-accounts/edit/{sa_id}",
+            data={"name": "Zapier", "expires_at": "not-a-date"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        assert b"invalide" in resp.data or b"Erreur" in resp.data
+
 
 class TestRegenerateSecret:
     def test_requires_admin(self, test_app, non_admin_client):

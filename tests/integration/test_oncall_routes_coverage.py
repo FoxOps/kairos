@@ -31,6 +31,9 @@ class TestAddOncallEdgeCases:
         assert b"Utilisateur invalide" in resp.data
 
     def test_service_error_flashed(self, test_app, logged_in_client, test_user):
+        """Default OnCallAnchorRule (unconfigured) = Friday - the flashed
+        error message is now generic ("jour configuré"), not hardcoded
+        to say "vendredi", since the anchor day is per-group configurable."""
         not_friday = date.today()
         while not_friday.weekday() == 4:
             not_friday += timedelta(days=1)
@@ -40,7 +43,7 @@ class TestAddOncallEdgeCases:
             follow_redirects=True,
         )
         assert resp.status_code == 200
-        assert b"vendredi" in resp.data
+        assert "jour configuré".encode() in resp.data
 
     def test_invalid_date_format(self, test_app, logged_in_client, test_user):
         resp = logged_in_client.post(
@@ -85,30 +88,30 @@ class TestDeleteOncall:
 
 
 class TestBulkDeleteExceptions:
-    def test_delete_all_exception_handled(
+    def test_delete_filtered_exception_handled(
         self, test_app, logged_in_client, test_oncall
     ):
         with patch(
-            "app.routes.oncall_routes.OnCallService.delete_all",
-            side_effect=RuntimeError("boom"),
-        ):
-            resp = logged_in_client.post("/oncall/delete-all", follow_redirects=True)
-        assert resp.status_code == 200
-        assert b"Erreur" in resp.data
-
-    def test_delete_all_for_user_not_found_404(self, test_app, logged_in_client):
-        resp = logged_in_client.post("/oncall/delete-all-for-user/999999")
-        assert resp.status_code == 404
-
-    def test_delete_all_for_user_exception_handled(
-        self, test_app, logged_in_client, test_user, test_oncall
-    ):
-        with patch(
-            "app.routes.oncall_routes.OnCallService.delete_all_for_user",
+            "app.routes.oncall_routes.OnCallService.delete_filtered",
             side_effect=RuntimeError("boom"),
         ):
             resp = logged_in_client.post(
-                f"/oncall/delete-all-for-user/{test_user.id}", follow_redirects=True
+                "/oncall/delete-filtered", follow_redirects=True
+            )
+        assert resp.status_code == 200
+        assert b"Erreur" in resp.data
+
+    def test_delete_selected_exception_handled(
+        self, test_app, logged_in_client, test_oncall
+    ):
+        with patch(
+            "app.routes.oncall_routes.OnCallService.delete_filtered",
+            side_effect=RuntimeError("boom"),
+        ):
+            resp = logged_in_client.post(
+                "/oncall/delete-selected",
+                data={"ids": [str(test_oncall.id)]},
+                follow_redirects=True,
             )
         assert resp.status_code == 200
         assert b"Erreur" in resp.data
@@ -151,8 +154,27 @@ class TestApiUpdateOncall:
         assert resp.status_code == 400
 
     def test_missing_start(self, test_app, logged_in_client, test_oncall):
-        resp = logged_in_client.patch(f"/api/oncall/{test_oncall.id}", json={})
+        """A non-empty body without "start" - json={} would be falsy
+        and hit the earlier "Aucune donnee recue" guard instead."""
+        resp = logged_in_client.patch(
+            f"/api/oncall/{test_oncall.id}", json={"end": "2023-12-20T21:00:00"}
+        )
         assert resp.status_code == 400
+        assert "manquante" in resp.get_json()["error"]
+
+    def test_service_reports_validation_error(
+        self, test_app, logged_in_client, test_oncall
+    ):
+        with patch(
+            "app.routes.oncall_routes.OnCallService.api_update",
+            return_value=(None, "erreur simulée"),
+        ):
+            resp = logged_in_client.patch(
+                f"/api/oncall/{test_oncall.id}",
+                json={"start": datetime.now().isoformat()},
+            )
+        assert resp.status_code == 400
+        assert resp.get_json()["error"] == "erreur simulée"
 
     def test_success_without_end_uses_original_duration(
         self, test_app, logged_in_client, test_user
@@ -175,6 +197,57 @@ class TestApiUpdateOncall:
         )
         assert resp.status_code == 200
         assert resp.get_json()["success"] is True
+
+    def test_reassigns_user(self, test_app, logged_in_client, test_user, second_user):
+        """The calendar's on-call-edit modal can reassign the on-call
+        person via the same PATCH endpoint the drag/resize path
+        already uses."""
+        from app import db
+        from app.models import OnCall
+
+        friday = _next_friday()
+        start = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+        end = start + timedelta(days=7, hours=-14)
+        oncall = OnCall(user_id=test_user.id, start_time=start, end_time=end)
+        db.session.add(oncall)
+        db.session.commit()
+
+        resp = logged_in_client.patch(
+            f"/api/oncall/{oncall.id}",
+            json={
+                "start": start.isoformat(),
+                "end": end.isoformat(),
+                "userId": second_user.id,
+            },
+        )
+        assert resp.status_code == 200
+        assert resp.get_json()["success"] is True
+
+        updated = db.session.get(OnCall, oncall.id)
+        assert updated.user_id == second_user.id
+
+
+class TestApiGetOncallUsers:
+    """Tests for GET /api/oncall-users - populates the calendar's
+    on-call-edit modal person picker, scoped to the oncall-eligible
+    group (unlike /api/users, which is schedule-eligible-group-scoped)."""
+
+    def test_requires_login(self, test_app, client):
+        resp = client.get("/api/oncall-users")
+        assert resp.status_code in (302, 401)
+
+    def test_admin_sees_oncall_group(self, test_app, logged_in_client, test_user):
+        resp = logged_in_client.get("/api/oncall-users")
+        assert resp.status_code == 200
+        ids = {u["id"] for u in resp.get_json()}
+        assert test_user.id in ids
+
+    def test_non_admin_sees_only_self(self, test_app, non_admin_client, test_user):
+        resp = non_admin_client.get("/api/oncall-users")
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert len(data) == 1
+        assert data[0]["id"] == test_user.id
 
     def test_invalid_date_format(self, test_app, logged_in_client, test_oncall):
         resp = logged_in_client.patch(

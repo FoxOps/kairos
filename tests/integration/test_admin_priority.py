@@ -43,6 +43,23 @@ class TestEditGroup:
         assert response.status_code == 200
         assert b"obligatoire" in response.data
 
+    def test_edit_group_post_duplicate_name(
+        self, logged_in_client, group_not_in_schedule, test_group
+    ):
+        """Renaming to another group's already-taken name - the
+        GroupService.update() error branch."""
+        response = logged_in_client.post(
+            f"/admin/groups/edit/{group_not_in_schedule.id}",
+            data={
+                "name": test_group.name,
+                "is_part_of_schedule": "on",
+                "is_part_of_oncall": "on",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"existe" in response.data or b"already" in response.data
+
 
 class TestEditUser:
     """Tests for /admin/users/edit/<user_id>."""
@@ -70,6 +87,15 @@ class TestEditUser:
         assert updated_user.name == "Updated User"
         assert updated_user.email == "updated@test.com"
 
+    def test_edit_user_post_missing_field(self, logged_in_client, test_user):
+        response = logged_in_client.post(
+            f"/admin/users/edit/{test_user.id}",
+            data={"name": "", "email": "", "group_id": "", "is_admin": "off"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"obligatoires" in response.data
+
 
 class TestEditShiftType:
     """Tests for /admin/shift-types/edit/<shift_type_id>."""
@@ -95,6 +121,57 @@ class TestEditShiftType:
         updated = db.session.get(ShiftType, test_shift_type.id)
         assert updated.label == "Updated Label"
         assert updated.start_hour == 8
+
+    def test_edit_shift_type_post_missing_field(
+        self, logged_in_client, test_shift_type
+    ):
+        """A required field left empty - route-level validation, before
+        ShiftTypeService is even called."""
+        response = logged_in_client.post(
+            f"/admin/shift-types/edit/{test_shift_type.id}",
+            data={"name": "", "label": "Updated", "start_hour": "8", "end_hour": "16"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"obligatoire" in response.data
+
+    def test_edit_shift_type_post_non_numeric_hours(
+        self, logged_in_client, test_shift_type
+    ):
+        """int(start_hour)/int(end_hour) raises ValueError - a
+        different code path than a value that parses fine but fails
+        ShiftTypeService's own range validation."""
+        response = logged_in_client.post(
+            f"/admin/shift-types/edit/{test_shift_type.id}",
+            data={
+                "name": "morning",
+                "label": "Updated",
+                "start_hour": "abc",
+                "end_hour": "16",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"nombres entiers" in response.data or b"Erreur" in response.data
+
+    def test_edit_shift_type_post_duplicate_name(
+        self, logged_in_client, test_shift_type, afternoon_shift_type
+    ):
+        """Renaming to another shift type's already-taken name - the
+        ShiftTypeService.update() error branch, not the route's own
+        field/parse validation."""
+        response = logged_in_client.post(
+            f"/admin/shift-types/edit/{test_shift_type.id}",
+            data={
+                "name": afternoon_shift_type.name,
+                "label": "Updated",
+                "start_hour": "8",
+                "end_hour": "16",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"existe d\xc3\xa9j\xc3\xa0" in response.data
 
 
 class TestDeleteGroup:
@@ -136,6 +213,35 @@ class TestDeleteGroup:
         assert response.status_code == 200
         assert b"Impossible" in response.data
         assert db.session.get(Group, test_group.id) is not None
+
+    def test_delete_group_not_found(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/groups/delete/999999",
+            follow_redirects=True,
+        )
+        assert response.status_code == 404
+
+    def test_delete_group_service_raises_exception(
+        self, logged_in_client, group_not_in_schedule, monkeypatch
+    ):
+        """The route's own except Exception fallback - not reachable
+        through any real input today (GroupService.delete()'s "has
+        users" case is a checked guard, not a raised exception, see
+        test_delete_group_with_users above)."""
+        from app.services import GroupService
+
+        def _raise(group_id):
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr(GroupService, "delete", _raise)
+
+        response = logged_in_client.post(
+            f"/admin/groups/delete/{group_not_in_schedule.id}",
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
+        assert db.session.get(Group, group_not_in_schedule.id) is not None
 
 
 class TestDeleteUser:
@@ -186,6 +292,35 @@ class TestDeleteUser:
         assert b"Impossible" in response.data
         assert db.session.get(User, test_user.id) is not None
 
+    def test_delete_user_not_found(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/users/delete/999999",
+            follow_redirects=True,
+        )
+        assert response.status_code == 404
+
+    def test_delete_user_service_raises_exception(
+        self, logged_in_client, second_user, monkeypatch
+    ):
+        """The route's own except Exception fallback - not reachable
+        through any real input today (UserService.delete()'s "has
+        resources" case is a checked guard, not a raised exception, see
+        test_delete_user_with_shifts above)."""
+        from app.services import UserService
+
+        def _raise(user_id):
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr(UserService, "delete", _raise)
+
+        response = logged_in_client.post(
+            f"/admin/users/delete/{second_user.id}",
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
+        assert db.session.get(User, second_user.id) is not None
+
 
 class TestDeleteShiftType:
     """Tests for /admin/shift-types/delete/<shift_type_id>."""
@@ -222,6 +357,36 @@ class TestDeleteShiftType:
         )
         assert response.status_code == 200
         assert b"Impossible" in response.data
+        assert db.session.get(ShiftType, test_shift_type.id) is not None
+
+    def test_delete_shift_type_not_found(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/shift-types/delete/999999",
+            follow_redirects=True,
+        )
+        assert response.status_code == 404
+
+    def test_delete_shift_type_service_raises_exception(
+        self, logged_in_client, test_shift_type, monkeypatch
+    ):
+        """The route's own except Exception fallback - not reachable
+        through any real input today (ShiftTypeService.delete()'s
+        "in use" case is a checked guard, not a raised exception, see
+        test_delete_shift_type_in_use above), so this exercises it
+        directly rather than leaving it silently uncovered."""
+        from app.services import ShiftTypeService
+
+        def _raise(shift_type_id):
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr(ShiftTypeService, "delete", _raise)
+
+        response = logged_in_client.post(
+            f"/admin/shift-types/delete/{test_shift_type.id}",
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert b"Erreur" in response.data
         assert db.session.get(ShiftType, test_shift_type.id) is not None
 
 

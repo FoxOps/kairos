@@ -142,32 +142,79 @@ class TestHelperFunctions:
             assert result is None
 
 
+class TestResolveAuthenticatedUser:
+    """Direct tests of _resolve_authenticated_user() - can_add_shift/
+    can_add_leave/can_add_oncall are always called with an explicit
+    user in the rest of this file, so the "default to current_user"
+    branch needs a real request context instead."""
+
+    def test_defaults_to_current_user_and_rejects_anonymous(self, test_app):
+        from app.utils.helpers.common_helpers import _resolve_authenticated_user
+
+        with test_app.test_request_context("/"):
+            assert _resolve_authenticated_user(None) is None
+
+    def test_defaults_to_current_user_when_logged_in(self, test_app, test_user):
+        from flask_login import login_user
+
+        from app.utils.helpers.common_helpers import _resolve_authenticated_user
+
+        with test_app.test_request_context("/"):
+            login_user(test_user)
+            resolved = _resolve_authenticated_user(None)
+            assert resolved is not None
+            assert resolved.id == test_user.id
+
+
 class TestCanAddShift:
     """Tests for can_add_shift."""
+
+    def test_can_add_shift_returns_false_when_no_user_and_unauthenticated(
+        self, test_app
+    ):
+        with test_app.test_request_context("/"):
+            assert can_add_shift(None, date(2023, 12, 1), None) is False
+
+    def test_can_add_shift_defaults_date_to_today_when_omitted(
+        self, test_app, test_user
+    ):
+        from flask_login import login_user
+
+        with test_app.test_request_context("/"):
+            login_user(test_user)
+            # Just proving the default-date branch runs without raising -
+            # today's actual weekday determines the result.
+            result = can_add_shift(test_user)
+            assert result in (True, False)
 
     def test_can_add_shift_valid(self, test_app, test_user):
         """Test that a shift can be added on a valid date."""
         with test_app.app_context():
             shift_date = datetime(2023, 12, 1).date()  # Monday
-            can_add = can_add_shift(test_user, shift_date, "morning")
+            can_add = can_add_shift(test_user, shift_date, None)
             assert can_add is True
 
     def test_can_add_shift_weekend_saturday(self, test_app, test_user):
         """Test that a shift can't be added on a Saturday."""
         with test_app.app_context():
             shift_date = datetime(2023, 12, 2).date()  # Saturday
-            can_add = can_add_shift(test_user, shift_date, "morning")
+            can_add = can_add_shift(test_user, shift_date, None)
             assert not can_add
 
     def test_can_add_shift_weekend_sunday(self, test_app, test_user):
         """Test that a shift can't be added on a Sunday."""
         with test_app.app_context():
             shift_date = datetime(2023, 12, 3).date()  # Sunday
-            can_add = can_add_shift(test_user, shift_date, "morning")
+            can_add = can_add_shift(test_user, shift_date, None)
             assert not can_add
 
     def test_can_add_shift_user_on_leave(self, test_app, test_user):
-        """Test that a shift can't be added if the user is on leave."""
+        """Test that a shift can't be added if the user is on leave.
+
+        Dec 10, 2023 (the leave's own start_date) is a Sunday - using
+        it as shift_date would hit the earlier weekend check instead
+        of the leave-conflict branch this test is meant to exercise,
+        so Dec 11 (Monday, still inside the leave) is used instead."""
         with test_app.app_context():
             # Create a leave
             start_date = datetime(2023, 12, 10).date()
@@ -178,8 +225,8 @@ class TestCanAddShift:
             db.session.add(leave)
             db.session.commit()
 
-            shift_date = leave.start_date  # Leave start date
-            can_add = can_add_shift(test_user, shift_date, "morning")
+            shift_date = datetime(2023, 12, 11).date()  # Monday, inside the leave
+            can_add = can_add_shift(test_user, shift_date, None)
             assert not can_add
 
     def test_can_add_shift_user_already_has_shift(
@@ -201,7 +248,7 @@ class TestCanAddShift:
             db.session.commit()
 
             shift_date = shift.date
-            can_add = can_add_shift(test_user, shift_date, "morning")
+            can_add = can_add_shift(test_user, shift_date, None)
             assert not can_add
 
     def test_can_add_shift_multiple_users_same_day(
@@ -212,16 +259,31 @@ class TestCanAddShift:
             shift_date = datetime(2023, 12, 1).date()  # Monday
 
             # Add a shift for the first user
-            can_add1 = can_add_shift(test_user, shift_date, "morning")
+            can_add1 = can_add_shift(test_user, shift_date, None)
             assert can_add1 is True
 
             # Add a shift for the second user on the same day
-            can_add2 = can_add_shift(second_user, shift_date, "morning")
+            can_add2 = can_add_shift(second_user, shift_date, None)
             assert can_add2 is True
 
 
 class TestCanAddOnCall:
     """Tests for can_add_oncall."""
+
+    def test_can_add_oncall_returns_false_when_no_user_and_unauthenticated(
+        self, test_app
+    ):
+        with test_app.test_request_context("/"):
+            start_time = datetime(2023, 12, 1, 21, 0)
+            end_time = start_time + timedelta(days=7, hours=-14)
+            assert can_add_oncall(None, start_time, end_time) is False
+
+    def test_can_add_oncall_returns_false_when_times_missing(self, test_app, test_user):
+        with test_app.app_context():
+            start_time = datetime(2023, 12, 1, 21, 0)
+            end_time = start_time + timedelta(days=7, hours=-14)
+            assert can_add_oncall(test_user, None, end_time) is False
+            assert can_add_oncall(test_user, start_time, None) is False
 
     def test_can_add_oncall_valid(self, test_app, test_user):
         """Test that an on-call can be added on a Friday at 21h."""
@@ -316,8 +378,195 @@ class TestCanAddOnCall:
             assert can_add2 is True
 
 
+class TestCanAddShiftNewRules:
+    """Tests for the 3 new configurable rule checks wired into
+    can_add_shift(): staffing_limits (max), rest_after_oncall,
+    oncall_shift_overlap. None of these existed before this feature -
+    each defaults to not blocking anything until configured (except
+    oncall_shift_overlap, which defaults to blocking - see its rule
+    class docstring)."""
+
+    def test_staffing_max_not_reached_allows_shift(
+        self, test_app, test_user, second_user, test_shift_type
+    ):
+        from app.models import AutomationRule
+
+        AutomationRule.set("staffing_limits", {str(test_shift_type.id): {"max": 2}})
+        shift = Shift(
+            user_id=second_user.id,
+            shift_type_id=test_shift_type.id,
+            start_time=datetime(2023, 12, 1, 7, 0),
+            end_time=datetime(2023, 12, 1, 15, 0),
+            date=date(2023, 12, 1),
+        )
+        db.session.add(shift)
+        db.session.commit()
+
+        assert can_add_shift(test_user, date(2023, 12, 1), test_shift_type) is True
+
+    def test_staffing_max_reached_blocks_shift(
+        self, test_app, test_user, second_user, test_shift_type
+    ):
+        from app.models import AutomationRule
+
+        AutomationRule.set("staffing_limits", {str(test_shift_type.id): {"max": 1}})
+        shift = Shift(
+            user_id=second_user.id,
+            shift_type_id=test_shift_type.id,
+            start_time=datetime(2023, 12, 1, 7, 0),
+            end_time=datetime(2023, 12, 1, 15, 0),
+            date=date(2023, 12, 1),
+        )
+        db.session.add(shift)
+        db.session.commit()
+
+        assert can_add_shift(test_user, date(2023, 12, 1), test_shift_type) is False
+
+    def test_rest_after_oncall_blocks_shift_too_soon(
+        self, test_app, test_user, test_shift_type
+    ):
+        from app.models import AutomationRule
+
+        AutomationRule.set("rest_after_oncall", {"min_rest_hours": 12})
+        oncall = OnCall(
+            user_id=test_user.id,
+            start_time=datetime(2023, 11, 24, 21, 0),
+            end_time=datetime(2023, 12, 1, 7, 0),  # ends Friday 07:00
+        )
+        db.session.add(oncall)
+        db.session.commit()
+
+        # test_shift_type is 07-15: shift would start at the exact
+        # moment the on-call ends - 0h of rest, less than the 12h
+        # configured minimum.
+        assert can_add_shift(test_user, date(2023, 12, 1), test_shift_type) is False
+
+    def test_rest_after_oncall_allows_shift_with_enough_gap(
+        self, test_app, test_user, test_shift_type
+    ):
+        from app.models import AutomationRule
+
+        AutomationRule.set("rest_after_oncall", {"min_rest_hours": 1})
+        oncall = OnCall(
+            user_id=test_user.id,
+            start_time=datetime(2023, 11, 17, 21, 0),
+            end_time=datetime(2023, 11, 24, 7, 0),  # ends the previous Friday
+        )
+        db.session.add(oncall)
+        db.session.commit()
+
+        assert can_add_shift(test_user, date(2023, 12, 1), test_shift_type) is True
+
+    def test_oncall_overlap_blocked_by_default(
+        self, test_app, test_user, test_shift_type
+    ):
+        # test_shift_type is 07h-15h on 2023-12-01 (a Friday).
+        oncall = OnCall(
+            user_id=test_user.id,
+            start_time=datetime(2023, 11, 24, 21, 0),
+            end_time=datetime(2023, 12, 1, 7, 0) + timedelta(hours=10),
+        )
+        db.session.add(oncall)
+        db.session.commit()
+
+        assert can_add_shift(test_user, date(2023, 12, 1), test_shift_type) is False
+
+    def test_oncall_overlap_allowed_when_rule_disabled(
+        self, test_app, test_user, test_shift_type
+    ):
+        from app.models import AutomationRule
+
+        AutomationRule.set("oncall_shift_overlap", {"block": False})
+        oncall = OnCall(
+            user_id=test_user.id,
+            start_time=datetime(2023, 11, 24, 21, 0),
+            end_time=datetime(2023, 12, 1, 7, 0) + timedelta(hours=10),
+        )
+        db.session.add(oncall)
+        db.session.commit()
+
+        assert can_add_shift(test_user, date(2023, 12, 1), test_shift_type) is True
+
+
+class TestCanAddOnCallNewRules:
+    """Tests for oncall_shift_overlap wired into can_add_oncall()."""
+
+    def test_overlapping_shift_blocked_by_default(
+        self, test_app, test_user, test_shift_type
+    ):
+        shift = Shift(
+            user_id=test_user.id,
+            shift_type_id=test_shift_type.id,
+            start_time=datetime(2023, 12, 1, 7, 0),
+            end_time=datetime(2023, 12, 1, 15, 0),
+            date=date(2023, 12, 1),
+        )
+        db.session.add(shift)
+        db.session.commit()
+
+        start_time = datetime(2023, 12, 1, 21, 0)  # Friday 21h
+        end_time = start_time + timedelta(days=7, hours=-14)
+        assert can_add_oncall(test_user, start_time, end_time) is False
+
+    def test_overlapping_shift_allowed_when_rule_disabled(
+        self, test_app, test_user, test_shift_type
+    ):
+        from app.models import AutomationRule
+
+        AutomationRule.set("oncall_shift_overlap", {"block": False})
+        shift = Shift(
+            user_id=test_user.id,
+            shift_type_id=test_shift_type.id,
+            start_time=datetime(2023, 12, 1, 7, 0),
+            end_time=datetime(2023, 12, 1, 15, 0),
+            date=date(2023, 12, 1),
+        )
+        db.session.add(shift)
+        db.session.commit()
+
+        start_time = datetime(2023, 12, 1, 21, 0)  # Friday 21h
+        end_time = start_time + timedelta(days=7, hours=-14)
+        assert can_add_oncall(test_user, start_time, end_time) is True
+
+
 class TestCanAddLeave:
     """Tests for can_add_leave."""
+
+    def test_can_add_leave_returns_false_when_no_user_and_unauthenticated(
+        self, test_app
+    ):
+        with test_app.test_request_context("/"):
+            assert can_add_leave(None, date(2023, 12, 20), date(2023, 12, 20)) is False
+
+    def test_can_add_leave_returns_false_when_dates_missing(self, test_app, test_user):
+        with test_app.app_context():
+            assert can_add_leave(test_user, None, date(2023, 12, 20)) is False
+            assert can_add_leave(test_user, date(2023, 12, 20), None) is False
+
+    def test_leave_keeps_minimum_headcount_true_for_non_schedule_user(
+        self, test_app, group_not_in_schedule
+    ):
+        """A user outside every schedule-eligible group can't affect
+        that headcount at all - leave_keeps_minimum_headcount()'s own
+        early-exit branch."""
+        from app.models import User
+        from app.utils.helpers.common_helpers import leave_keeps_minimum_headcount
+
+        with test_app.app_context():
+            outside_user = User(
+                name="Outside Schedule",
+                email="outside-schedule@test.com",
+                group_id=group_not_in_schedule.id,
+            )
+            db.session.add(outside_user)
+            db.session.commit()
+
+            assert (
+                leave_keeps_minimum_headcount(
+                    outside_user, date(2023, 12, 20), date(2023, 12, 20)
+                )
+                is True
+            )
 
     def test_can_add_leave_valid(self, test_app, test_user, second_user):
         """Test that a leave can be added over a valid period."""
@@ -559,6 +808,64 @@ class TestBuildShiftTypeColorMap:
         from app.utils.helpers.common_helpers import SHIFT_TYPE_COLOR_PALETTE
 
         assert "error" not in SHIFT_TYPE_COLOR_PALETTE
+
+
+class TestBuildGroupColorMap:
+    """Same rank-based scheme as build_shift_type_color_map (see that
+    class's tests) - group colors are also stateless/recomputed, no
+    Group.color column."""
+
+    def test_all_colors_within_palette(self):
+        from app.utils.helpers.common_helpers import (
+            GROUP_COLOR_PALETTE,
+            build_group_color_map,
+        )
+
+        color_map = build_group_color_map([1, 2, 3])
+        assert all(c in GROUP_COLOR_PALETTE for c in color_map.values())
+
+    def test_distinct_colors_for_non_contiguous_ids(self):
+        from app.utils.helpers.common_helpers import (
+            GROUP_COLOR_PALETTE,
+            build_group_color_map,
+        )
+
+        n = len(GROUP_COLOR_PALETTE)
+        color_map = build_group_color_map([2, 2 + n])
+        assert color_map[2] != color_map[2 + n]
+
+    def test_deterministic_for_same_input(self):
+        from app.utils.helpers.common_helpers import build_group_color_map
+
+        assert build_group_color_map([5, 1, 3]) == build_group_color_map([1, 3, 5])
+
+    def test_ignores_none(self):
+        from app.utils.helpers.common_helpers import build_group_color_map
+
+        color_map = build_group_color_map([1, None, 2])
+        assert None not in color_map
+
+    def test_empty_input(self):
+        from app.utils.helpers.common_helpers import build_group_color_map
+
+        assert build_group_color_map([]) == {}
+
+    def test_uses_dedicated_high_contrast_palette(self):
+        """Deliberate exception to this app's Dracula/Alucard-only rule:
+        group dots render on top of an event's own type background
+        (shift=primary/on-call=info/leave=error), so a daisyUI token
+        shared with SHIFT_TYPE_COLOR_PALETTE could exactly match that
+        background and become invisible (confirmed via a real-browser
+        screenshot: a "primary"-ranked group's dot vanished on a shift
+        event). Group colors now use a fixed, colorblind-safe hex
+        palette (Okabe-Ito) instead of daisyUI theme tokens."""
+        from app.utils.helpers.common_helpers import (
+            GROUP_COLOR_PALETTE,
+            SHIFT_TYPE_COLOR_PALETTE,
+        )
+
+        assert GROUP_COLOR_PALETTE != SHIFT_TYPE_COLOR_PALETTE
+        assert all(c.startswith("#") for c in GROUP_COLOR_PALETTE)
 
 
 class TestOverlappingShiftAndOnCallHelpers:

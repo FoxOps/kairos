@@ -2,14 +2,14 @@
 
 {% block title %}{{ _("Notifications externes") }} - Administration{% endblock %}
 
+{% from "macros/breadcrumbs.html" import breadcrumbs %}
+
 {% block admin_content %}
 <section class="p-3 md:p-4 max-w-6xl mx-auto">
-    <div class="breadcrumbs text-sm mb-2" aria-label="{{ _("Fil d'Ariane") }}">
-        <ul>
-            <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
-            <li>{{ _("Notifications externes") }}</li>
-        </ul>
-    </div>
+    {{ breadcrumbs([
+        ("fa-cog", _("Admin"), url_for('admin.admin_dashboard')),
+        ("fa-paper-plane", _("Notifications externes"), ""),
+    ]) }}
     <h1 class="text-2xl font-bold mb-4">
         <i class="fas fa-paper-plane" aria-hidden="true"></i> {{ _("Notifications externes") }}
     </h1>

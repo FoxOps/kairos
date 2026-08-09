@@ -43,11 +43,13 @@ class ExportService:
         return None
 
     @staticmethod
-    def export_shifts(scope: str, user: User) -> str:
+    def export_shifts(
+        scope: str, user: User, group_ids: list[int] | None = None
+    ) -> str:
         shifts = (
             ShiftRepository.list_for_user(user.id)
             if scope == "my"
-            else ShiftRepository.list_all_with_user()
+            else ShiftRepository.list_all_with_user(group_ids=group_ids)
         )
         with force_locale(SettingsService.get_default_language()):
             return export_to_ics(
@@ -57,11 +59,13 @@ class ExportService:
             )
 
     @staticmethod
-    def export_oncall(scope: str, user: User) -> str:
+    def export_oncall(
+        scope: str, user: User, group_ids: list[int] | None = None
+    ) -> str:
         on_calls = (
             OnCallRepository.list_for_user(user.id)
             if scope == "my"
-            else OnCallRepository.list_all_with_user()
+            else OnCallRepository.list_all_with_user(group_ids=group_ids)
         )
         with force_locale(SettingsService.get_default_language()):
             return export_to_ics(
@@ -71,11 +75,13 @@ class ExportService:
             )
 
     @staticmethod
-    def export_leaves(scope: str, user: User) -> str:
+    def export_leaves(
+        scope: str, user: User, group_ids: list[int] | None = None
+    ) -> str:
         leaves = (
             LeaveRepository.list_for_user(user.id)
             if scope == "my"
-            else LeaveRepository.list_all_with_user()
+            else LeaveRepository.list_all_with_user(group_ids=group_ids)
         )
         with force_locale(SettingsService.get_default_language()):
             return export_to_ics(

@@ -1,13 +1,12 @@
 {% extends "admin/base_admin.html" %}
+{% from "macros/breadcrumbs.html" import breadcrumbs %}
 
 {% block admin_content %}
 <section class="p-3 md:p-4 max-w-6xl mx-auto">
-    <div class="breadcrumbs text-sm mb-2" aria-label="{{ _("Fil d'Ariane") }}">
-        <ul>
-            <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
-            <li>{{ _("Sauvegardes") }}</li>
-        </ul>
-    </div>
+    {{ breadcrumbs([
+        ("fa-cog", _("Admin"), url_for('admin.admin_dashboard')),
+        ("fa-database", _("Sauvegardes"), ""),
+    ]) }}
     <h1 class="text-2xl font-bold mb-4"><i class="fas fa-database" aria-hidden="true"></i> {{ _("Sauvegardes") }}</h1>
 
     <div class="flex gap-2 mb-4" role="group" aria-label="{{ _("Actions sauvegardes") }}">

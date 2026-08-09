@@ -41,6 +41,11 @@ class TestOnCallEndpoint:
         assert data["total"] == 1
         assert data["items"][0]["id"] == test_oncall.id
 
+    def test_detail_returns_oncall(self, service_account_client, test_oncall):
+        response = service_account_client.get(f"/api/v1/oncall/{test_oncall.id}")
+        assert response.status_code == 200
+        assert response.get_json()["id"] == test_oncall.id
+
     def test_detail_404_for_unknown_id(self, service_account_client, test_oncall):
         response = service_account_client.get("/api/v1/oncall/999999")
         assert response.status_code == 404
@@ -57,6 +62,11 @@ class TestLeaveEndpoint:
         data = response.get_json()
         assert data["total"] == 1
         assert data["items"][0]["id"] == test_leave.id
+
+    def test_detail_returns_leave(self, service_account_client, test_leave):
+        response = service_account_client.get(f"/api/v1/leave/{test_leave.id}")
+        assert response.status_code == 200
+        assert response.get_json()["id"] == test_leave.id
 
     def test_detail_404_for_unknown_id(self, service_account_client, test_leave):
         response = service_account_client.get("/api/v1/leave/999999")
@@ -78,6 +88,11 @@ class TestUsersEndpoint:
         for u in users:
             assert "password_hash" not in u
             assert "ics_token" not in u
+
+    def test_detail_returns_user(self, service_account_client, test_user):
+        response = service_account_client.get(f"/api/v1/users/{test_user.id}")
+        assert response.status_code == 200
+        assert response.get_json()["id"] == test_user.id
 
     def test_detail_404_for_unknown_id(self, service_account_client, test_user):
         response = service_account_client.get("/api/v1/users/999999")

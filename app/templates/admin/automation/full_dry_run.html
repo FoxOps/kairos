@@ -1,14 +1,13 @@
 {% extends "admin/base_admin.html" %}
+{% from "macros/breadcrumbs.html" import breadcrumbs %}
 
 {% block admin_content %}
 <section class="p-3 md:p-4 max-w-6xl mx-auto">
-    <div class="breadcrumbs text-sm mb-2" aria-label="{{ _("Fil d'Ariane") }}">
-        <ul>
-            <li><a href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
-            <li><a href="{{ url_for('admin.automation_dashboard') }}">{{ _("Automatisation") }}</a></li>
-            <li>{{ _("Prévisualisation") }}</li>
-        </ul>
-    </div>
+    {{ breadcrumbs([
+        ("fa-cog", _("Admin"), url_for('admin.admin_dashboard')),
+        ("fa-robot", _("Automatisation"), url_for('admin.automation_dashboard')),
+        ("fa-eye", _("Prévisualisation"), ""),
+    ]) }}
     <h1 class="text-2xl font-bold mb-4"><i class="fas fa-eye" aria-hidden="true"></i> {{ _("Prévisualisation - Génération complète") }}</h1>
 
     <div class="alert alert-info mb-4">
@@ -17,7 +16,7 @@
 
     <div class="card card-sm bg-base-100 shadow-md mb-4">
         <div class="card-body">
-            <h2 class="text-lg font-semibold"><i class="fas fa-calendar-alt" aria-hidden="true"></i> {{ _("Période : %(start)s au %(end)s", start=start_date|format_date, end=end_date|format_date) }}</h2>
+            <h2 class="text-lg font-semibold"><i class="fas fa-calendar-alt" aria-hidden="true"></i> {{ _("Période : du %(start)s au %(end)s", start=start_date|format_date, end=end_date|format_date) }}</h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>

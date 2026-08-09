@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/list_filters.html" import filter_bar, delete_filtered_button, delete_selected_form %}
 
 {% block title %}{{ _("Congés") }} - Kairos{% endblock %}
 
@@ -23,6 +24,27 @@
         {% include "_ics_export_buttons.html" %}
     </div>
 
+    {% set extra_params = {'user_id': selected_user_id, 'group_id': selected_group_id, 'date_from': date_from, 'date_to': date_to} %}
+    {{ filter_bar(url_for('main.leave'), url_for('main.leave'), users, groups, selected_user_id, selected_group_id, date_from, date_to, per_page) }}
+
+    {% if current_user.is_admin %}
+    <div class="flex flex-wrap gap-2 mb-4" role="group" aria-label="{{ _("Actions globales") }}">
+        {{ delete_filtered_button(
+            url_for('main.delete_filtered_leaves'),
+            extra_params,
+            _("Êtes-vous SÛR de vouloir supprimer les %(count)s congé(s) actuellement affiché(s) selon les filtres ? Cette action est irréversible !", count=leaves.total),
+            _("Supprimer le résultat filtré (%(count)s congé(s))", count=leaves.total)
+        ) }}
+        {{ delete_selected_form(
+            url_for('main.delete_selected_leaves'),
+            'leave-delete-selected-form',
+            extra_params,
+            _("Supprimer les congés sélectionnés ? Cette action est irréversible !"),
+            _("Supprimer la sélection")
+        ) }}
+    </div>
+    {% endif %}
+
     <!-- Pagination at the top + selector -->
     {% if leaves.has_prev or leaves.has_next or leaves.total > 0 %}
     {% set pagination = leaves %}
@@ -37,6 +59,11 @@
             <caption class="sr-only">{{ _("Liste des congés") }}</caption>
             <thead>
                 <tr>
+                    {% if current_user.is_admin %}
+                    <th scope="col">
+                        <input type="checkbox" class="checkbox checkbox-sm js-select-all" aria-label="{{ _("Tout sélectionner") }}">
+                    </th>
+                    {% endif %}
                     <th scope="col">{{ _("Utilisateur") }}</th>
                     <th scope="col">{{ _("Début") }}</th>
                     <th scope="col">{{ _("Fin") }}</th>
@@ -46,6 +73,11 @@
             <tbody>
                 {% for leave in leaves.items %}
                 <tr>
+                    {% if current_user.is_admin %}
+                    <td>
+                        <input type="checkbox" name="ids" value="{{ leave.id }}" form="leave-delete-selected-form" class="checkbox checkbox-sm js-row-select" aria-label="{{ _("Sélectionner ce congé") }}">
+                    </td>
+                    {% endif %}
                     <td>{{ leave.user.name }}</td>
                     <td>{{ leave.start_date|format_date }}</td>
                     <td>{{ leave.end_date|format_date }}</td>
@@ -68,6 +100,10 @@
             </tbody>
         </table>
     </div>
+
+    {% if not leaves.items %}
+    <p class="text-base-content/70">{{ _("Aucun congé ne correspond à ces filtres.") }}</p>
+    {% endif %}
 
     <!-- Action legend -->
     {% set action_items = [

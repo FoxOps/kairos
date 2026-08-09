@@ -11,11 +11,13 @@ from flask_babel import gettext as _
 
 from app import db
 from app.auth.decorators import admin_required
+from app.repositories.user_repository import GroupRepository
 from app.routes.admin import admin_bp
 from app.services import (
     AppNotificationService,
     AppriseNotificationService,
     AutomationAdminService,
+    SettingsService,
 )
 from app.utils.automation import (
     OnCallAutomation,
@@ -23,27 +25,36 @@ from app.utils.automation import (
 )
 
 # app/utils/automation/ (AdvancedShiftAutomation/OnCallAutomation) encodes
-# each generated message's severity as a leading emoji rather than a
-# separate field. Detect the category from it here, then strip the emoji
-# before display - Font Awesome icons, not emoji, are this project's icon
-# convention (see base.html's flash rendering, which already prepends a
-# category icon; keeping the emoji too would show it twice).
-_EMOJI_PREFIX_RE = re.compile(r"^[\U0001F300-\U0001FAFF☀-➿️]+\s*")
+# each generated message's severity as a leading plain-text "[TAG] "
+# marker rather than a separate field - deliberately not emoji, this
+# app never shows emoji anywhere (see test_flash_message_icons.py).
+# Detect the category from it here, then strip the tag before display -
+# Font Awesome icons are this project's only icon convention (see
+# base.html's flash rendering, which already prepends a category icon).
+_TAG_PREFIX_RE = re.compile(r"^\[[A-Z]+\]\s*")
 
 
 def _classify_automation_message(
     msg: str, default_category: str = "info"
 ) -> tuple[str, str]:
-    """Returns (category, message with its leading emoji stripped)."""
-    if "✅" in msg or "🎉" in msg:
+    """Returns (category, message with its leading "[TAG] " marker
+    stripped)."""
+    if "[ALERT]" in msg:
+        # Elevated severity (MandatoryShiftRule: a slot flagged
+        # mandatory went unfilled) - always "danger", regardless of
+        # default_category, so it's visually distinct from the
+        # ordinary "[WARN] unfilled slot" case even on the
+        # shift-messages path (whose default_category is "info").
+        category = "danger"
+    elif "[OK]" in msg:
         category = "success"
-    elif "⚠️" in msg:
+    elif "[WARN]" in msg:
         category = "warning"
     elif default_category == "info":
         category = "info"
     else:
         category = "danger"
-    return category, _EMOJI_PREFIX_RE.sub("", msg)
+    return category, _TAG_PREFIX_RE.sub("", msg)
 
 
 def _flash_automation_messages(messages, default_category="info"):
@@ -92,10 +103,32 @@ def automation_dashboard():
     status = get_automation_status()
     oncall_gaps = OnCallAutomation.detect_oncall_gaps()
 
+    shift_scheduling_mode = SettingsService.get_shift_scheduling_mode()
+    oncall_scheduling_mode = SettingsService.get_oncall_scheduling_mode()
+    # Computed unconditionally, not gated behind either mode: a
+    # Shift/OnCall row's group membership (via its owning User) is real
+    # and correct regardless of how generation currently pools groups
+    # together, so the counts are always honest numbers, not a
+    # per_group-only preview. Only the "next available" sub-computation
+    # is mode-gated (below) - it only means something when that group
+    # actually runs its own independent rotation.
+    group_statuses = [
+        (
+            g,
+            get_automation_status(
+                group=g, include_next_available=oncall_scheduling_mode == "per_group"
+            ),
+        )
+        for g in GroupRepository.get_all()
+    ]
+
     return render_template(
         "admin/automation/dashboard.html",
         status=status,
         oncall_gaps=oncall_gaps,
+        group_statuses=group_statuses,
+        shift_scheduling_mode=shift_scheduling_mode,
+        oncall_scheduling_mode=oncall_scheduling_mode,
     )
 
 

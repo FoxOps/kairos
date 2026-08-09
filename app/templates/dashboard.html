@@ -11,30 +11,63 @@
     <h1 id="page-title" class="text-xl font-bold"><i class="fas fa-tachometer-alt" aria-hidden="true"></i> {{ _("Mon Tableau de bord") }}</h1>
     <p class="text-base-content/70 mb-3">{{ _("Bienvenue, %(name)s ! Voici votre vue d'ensemble personnalisée.", name=user.name) }}</p>
 
-    <!-- Main statistics -->
+    <!-- Main statistics - day counts, not row/event counts (see
+         DashboardService.get_stats(): a Shift row is always one day, but
+         an OnCall/Leave row spans several - counting rows there would be
+         misleading). -->
     <div class="stats stats-vertical sm:stats-horizontal shadow-md bg-base-100 w-full mb-3" role="list" aria-label="{{ _("Statistiques principales") }}">
         <div class="stat" role="region" aria-labelledby="shifts-total-title">
             <div class="stat-figure text-primary">
                 <i class="fas fa-2x fa-calendar-check" aria-hidden="true"></i>
             </div>
-            <div id="shifts-total-title" class="stat-title">{{ _("Shifts totaux") }}</div>
-            <div class="stat-value text-primary" aria-label="{{ _("Nombre total de shifts : %(total_shifts)s", total_shifts=total_shifts) }}">{{ total_shifts }}</div>
+            <div id="shifts-total-title" class="stat-title">{{ _("Jours de shift") }}</div>
+            <div class="stat-value text-primary" aria-label="{{ _("Nombre total de jours de shift : %(total)s", total=stats.shift.total) }}">{{ stats.shift.total }}</div>
+            <div class="stat-desc">
+                {{ _("%(count)s ce mois-ci", count=stats.shift.this_month) }}
+                {% if stats.shift.trend > 0 %}
+                    ({{ _("+%(delta)s vs mois dernier", delta=stats.shift.trend) }})
+                {% elif stats.shift.trend < 0 %}
+                    ({{ _("%(delta)s vs mois dernier", delta=stats.shift.trend) }})
+                {% else %}
+                    ({{ _("stable vs mois dernier") }})
+                {% endif %}
+            </div>
         </div>
 
         <div class="stat" role="region" aria-labelledby="oncall-total-title">
             <div class="stat-figure text-info">
                 <i class="fas fa-2x fa-moon" aria-hidden="true"></i>
             </div>
-            <div id="oncall-total-title" class="stat-title">{{ _("Astreintes") }}</div>
-            <div class="stat-value text-info" aria-label="{{ _("Nombre total d'astreintes : %(total_oncalls)s", total_oncalls=total_oncalls) }}">{{ total_oncalls }}</div>
+            <div id="oncall-total-title" class="stat-title">{{ _("Jours d'astreinte") }}</div>
+            <div class="stat-value text-info" aria-label="{{ _("Nombre total de jours d'astreinte : %(total)s", total=stats.oncall.total) }}">{{ stats.oncall.total }}</div>
+            <div class="stat-desc">
+                {{ _("%(count)s ce mois-ci", count=stats.oncall.this_month) }}
+                {% if stats.oncall.trend > 0 %}
+                    ({{ _("+%(delta)s vs mois dernier", delta=stats.oncall.trend) }})
+                {% elif stats.oncall.trend < 0 %}
+                    ({{ _("%(delta)s vs mois dernier", delta=stats.oncall.trend) }})
+                {% else %}
+                    ({{ _("stable vs mois dernier") }})
+                {% endif %}
+            </div>
         </div>
 
         <div class="stat" role="region" aria-labelledby="leaves-total-title">
             <div class="stat-figure text-warning">
                 <i class="fas fa-2x fa-umbrella-beach" aria-hidden="true"></i>
             </div>
-            <div id="leaves-total-title" class="stat-title">{{ _("Congés") }}</div>
-            <div class="stat-value text-warning" aria-label="{{ _("Nombre total de congés : %(total_leaves)s", total_leaves=total_leaves) }}">{{ total_leaves }}</div>
+            <div id="leaves-total-title" class="stat-title">{{ _("Jours de congé") }}</div>
+            <div class="stat-value text-warning" aria-label="{{ _("Nombre total de jours de congé : %(total)s", total=stats.leave.total) }}">{{ stats.leave.total }}</div>
+            <div class="stat-desc">
+                {{ _("%(count)s ce mois-ci", count=stats.leave.this_month) }}
+                {% if stats.leave.trend > 0 %}
+                    ({{ _("+%(delta)s vs mois dernier", delta=stats.leave.trend) }})
+                {% elif stats.leave.trend < 0 %}
+                    ({{ _("%(delta)s vs mois dernier", delta=stats.leave.trend) }})
+                {% else %}
+                    ({{ _("stable vs mois dernier") }})
+                {% endif %}
+            </div>
         </div>
     </div>
 
@@ -133,7 +166,7 @@
                                     {{ _("au %(end)s", end=leave.end_date|format_date) }}
                                 </p>
                                 <p class="text-base-content/70">
-                                    {{ _("%(days)s jour(s)", days=(leave.end_date - leave.start_date).days + 1) }}
+                                    {{ _("%(days)s jour(s)", days=leave.duration()) }}
                                 </p>
                             </div>
                         </li>

@@ -34,6 +34,7 @@ python-dotenv==1.2.2
 pytest==9.1.1
 pytest-flask==1.3.0
 pytest-cov==7.1.0
+pytest-xdist==3.8.0
 
 # Linting et formatage
 ruff==0.15.22

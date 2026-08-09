@@ -63,6 +63,116 @@ def _fake_jwt(payload: dict) -> str:
     return f"{header}.{body}.fakesignature"
 
 
+class TestInitApp:
+    def test_constructor_with_app_calls_init_app(self, test_app):
+        """OIDCAuthLib(app=...) - the module-level `oidc_auth` singleton
+        is always built with no app (app=None), so this branch is
+        otherwise never exercised."""
+        with test_app.app_context():
+            auth = OIDCAuthLib(app=test_app)
+        assert auth.oauth is not None
+
+
+class TestConfigureOauth:
+    def test_no_oauth_object_logs_and_returns(self, caplog):
+        auth = OIDCAuthLib()
+        auth.oauth = None
+        with caplog.at_level("WARNING", logger="app.auth.oidc_auth"):
+            auth._configure_oauth()
+        assert "OAuth is not initialized" in caplog.text
+
+    def test_full_discovery_success_configures_client(self, test_app, monkeypatch):
+        monkeypatch.setattr(OIDCConfig, "ENABLED", True)
+        monkeypatch.setattr(OIDCConfig, "ISSUER", "https://idp.example.com")
+        monkeypatch.setattr(OIDCConfig, "INTERNAL_ISSUER", "https://internal-idp:8080")
+        monkeypatch.setattr(OIDCConfig, "CLIENT_ID", "cid")
+        monkeypatch.setattr(OIDCConfig, "CLIENT_SECRET", "csecret")
+        monkeypatch.setattr(
+            OIDCConfig, "REDIRECT_URI", "https://app.example.com/oidc/callback"
+        )
+        monkeypatch.setattr(OIDCConfig, "SCOPE", "openid profile email")
+
+        discovery_response = MagicMock()
+        discovery_response.raise_for_status.return_value = None
+        discovery_response.json.return_value = {
+            "authorization_endpoint": "https://internal-idp:8080/auth",
+            "token_endpoint": "https://internal-idp:8080/token",
+            "userinfo_endpoint": "https://internal-idp:8080/userinfo",
+            "end_session_endpoint": "https://internal-idp:8080/logout",
+        }
+
+        auth = OIDCAuthLib()
+        with test_app.app_context():
+            with patch("requests.get", return_value=discovery_response):
+                auth.init_app(test_app)
+
+        assert auth.oidc_client is not None
+        # authorization_endpoint/end_session_endpoint are browser-facing,
+        # rehosted to the public issuer; token/userinfo are server-to-
+        # server, stay on the internal issuer.
+        assert auth.authorization_endpoint == "https://idp.example.com/auth"
+        assert auth.end_session_endpoint == "https://idp.example.com/logout"
+        assert auth.token_endpoint == "https://internal-idp:8080/token"
+        assert auth.userinfo_endpoint == "https://internal-idp:8080/userinfo"
+
+    def test_discovery_unreachable_leaves_client_unconfigured(
+        self, test_app, monkeypatch
+    ):
+        monkeypatch.setattr(OIDCConfig, "ENABLED", True)
+        monkeypatch.setattr(OIDCConfig, "ISSUER", "https://idp.example.com")
+        monkeypatch.setattr(OIDCConfig, "CLIENT_ID", "cid")
+        monkeypatch.setattr(OIDCConfig, "CLIENT_SECRET", "csecret")
+        monkeypatch.setattr(
+            OIDCConfig, "REDIRECT_URI", "https://app.example.com/oidc/callback"
+        )
+
+        import requests
+
+        auth = OIDCAuthLib()
+        with test_app.app_context():
+            with patch(
+                "requests.get",
+                side_effect=requests.RequestException("connection refused"),
+            ):
+                auth.init_app(test_app)
+
+        assert auth.oidc_client is None
+
+    def test_generic_failure_after_discovery_leaves_client_none(
+        self, test_app, monkeypatch
+    ):
+        """The outer except Exception - distinct from the inner
+        except requests.RequestException tested above, which only
+        covers the discovery HTTP call itself. This one catches a
+        later failure in the same try block (here: oauth.register()
+        itself raising)."""
+        monkeypatch.setattr(OIDCConfig, "ENABLED", True)
+        monkeypatch.setattr(OIDCConfig, "ISSUER", "https://idp.example.com")
+        monkeypatch.setattr(OIDCConfig, "CLIENT_ID", "cid")
+        monkeypatch.setattr(OIDCConfig, "CLIENT_SECRET", "csecret")
+        monkeypatch.setattr(
+            OIDCConfig, "REDIRECT_URI", "https://app.example.com/oidc/callback"
+        )
+
+        discovery_response = MagicMock()
+        discovery_response.raise_for_status.return_value = None
+        discovery_response.json.return_value = {
+            "authorization_endpoint": "https://idp.example.com/auth",
+            "token_endpoint": "https://idp.example.com/token",
+            "userinfo_endpoint": "https://idp.example.com/userinfo",
+            "end_session_endpoint": "https://idp.example.com/logout",
+        }
+
+        auth = OIDCAuthLib()
+        with test_app.app_context():
+            with patch("requests.get", return_value=discovery_response):
+                auth.oauth = MagicMock()
+                auth.oauth.register.side_effect = RuntimeError("registration boom")
+                auth._configure_oauth()
+
+        assert auth.oidc_client is None
+
+
 class TestGetAuthorizationUrl:
     def test_returns_none_without_configured_client(self):
         auth = OIDCAuthLib()
@@ -74,7 +184,7 @@ class TestGetAuthorizationUrl:
         auth.authorization_endpoint = None
         assert auth.get_authorization_url() is None
 
-    def test_builds_url_with_state_and_nonce(self, configured_auth, test_app):
+    def test_builds_url_with_state(self, configured_auth, test_app):
         with test_app.test_request_context():
             url = configured_auth.get_authorization_url()
 
@@ -82,25 +192,36 @@ class TestGetAuthorizationUrl:
             assert "client_id=test-client-id" in url
             assert "response_type=code" in url
             assert "state=" in url
-            assert "nonce=" in url
 
-    def test_stores_state_and_nonce_in_session(self, configured_auth, test_app):
+    def test_no_nonce_generated_or_sent(self, configured_auth, test_app):
+        """A nonce claim can only meaningfully be checked against a
+        verified id_token - this app deliberately never decodes/
+        verifies the id_token JWT payload (see
+        extract_user_info_from_token's own docstring), so a nonce here
+        would be pure security theater: an attacker able to forge the
+        id_token payload can just as easily forge a matching nonce
+        claim. Not generating one at all is more honest than storing
+        one that's never actually validated on callback."""
         with test_app.test_request_context():
             from flask import session
 
-            configured_auth.get_authorization_url()
-            assert session.get("oidc_state")
-            assert session.get("oidc_nonce")
+            url = configured_auth.get_authorization_url()
+            assert "nonce" not in url
+            assert "oidc_nonce" not in session
 
-    def test_uses_provided_state_and_nonce(self, configured_auth, test_app):
+    def test_exception_during_generation_returns_none(self, configured_auth, test_app):
+        with test_app.test_request_context():
+            with patch.object(
+                configured_auth, "_generate_state", side_effect=RuntimeError("boom")
+            ):
+                assert configured_auth.get_authorization_url() is None
+
+    def test_uses_provided_state(self, configured_auth, test_app):
         with test_app.test_request_context():
             from flask import session
 
-            url = configured_auth.get_authorization_url(
-                state="fixed-state", nonce="fixed-nonce"
-            )
+            url = configured_auth.get_authorization_url(state="fixed-state")
             assert "state=fixed-state" in url
-            assert "nonce=fixed-nonce" in url
             assert session["oidc_state"] == "fixed-state"
 
 
@@ -138,11 +259,20 @@ class TestExchangeCodeForToken:
             with patch("requests.post", side_effect=requests.RequestException("boom")):
                 assert configured_auth.exchange_code_for_token("some-code") is None
 
+    def test_returns_none_without_token_endpoint(self, configured_auth, test_app):
+        configured_auth.token_endpoint = None
+        with test_app.test_request_context():
+            assert configured_auth.exchange_code_for_token("some-code") is None
+
 
 class TestGetUserInfo:
     def test_returns_none_without_configured_client(self):
         auth = OIDCAuthLib()
         assert auth.get_user_info("some-access-token") is None
+
+    def test_returns_none_without_userinfo_endpoint(self, configured_auth):
+        configured_auth.userinfo_endpoint = None
+        assert configured_auth.get_user_info("some-access-token") is None
 
     def test_success_returns_user_info(self, configured_auth):
         fake_response = MagicMock()
@@ -249,6 +379,25 @@ class TestHandleOauthCallback:
                 is None
             )
 
+    def test_invalid_state_flashes_a_translated_message(
+        self, configured_auth, test_app
+    ):
+        """Regression test: this flash() call used to be a hardcoded
+        English literal with no gettext wrapping at all (this module had
+        no `from flask_babel import gettext as _` import), so it never
+        respected the org/user's configured language - see the i18n
+        audit that found this."""
+        with test_app.test_request_context("/oidc/callback?state=wrong&code=abc"):
+            from flask import get_flashed_messages, session
+
+            session["oidc_state"] = "expected-state"
+            configured_auth.handle_oauth_callback(__import__("flask").request)
+
+            messages = get_flashed_messages()
+            assert len(messages) == 1
+            assert "Authentication error" not in messages[0]
+            assert "authentification" in messages[0].lower()
+
     def test_missing_code_returns_none(self, configured_auth, test_app):
         with test_app.test_request_context("/oidc/callback?state=s1"):
             from flask import session
@@ -287,6 +436,28 @@ class TestHandleOauthCallback:
                 )
 
         assert user_data["email"] == "dave@example.com"
+
+    def test_expired_token_flashes_and_returns_none(self, configured_auth, test_app):
+        """A successful exchange whose token_data still fails
+        verify_token() (e.g. already-expired expires_at) - a different
+        branch than test_token_exchange_failure_returns_none below,
+        which fails during the exchange itself."""
+        token_response = MagicMock()
+        token_response.json.return_value = {
+            "access_token": "at-1",
+            "expires_at": time.time() - 3600,
+        }
+        token_response.raise_for_status.return_value = None
+
+        with test_app.test_request_context("/oidc/callback?state=s1&code=abc"):
+            from flask import session
+
+            session["oidc_state"] = "s1"
+            with patch("requests.post", return_value=token_response):
+                result = configured_auth.handle_oauth_callback(
+                    __import__("flask").request
+                )
+        assert result is None
 
     def test_token_exchange_failure_returns_none(self, configured_auth, test_app):
         with test_app.test_request_context("/oidc/callback?state=s1&code=abc"):
@@ -327,6 +498,28 @@ class TestHandleOauthCallback:
                     configured_auth.handle_oauth_callback(__import__("flask").request)
                     is None
                 )
+
+
+class TestLoginUser:
+    def test_success_logs_in_and_returns_user(self, test_app, test_user):
+        with test_app.test_request_context("/"):
+            auth = OIDCAuthLib()
+            with patch(
+                "app.auth.user_manager.UserManager.sync_user_from_oidc",
+                return_value=test_user,
+            ):
+                result = auth.login_user({"email": test_user.email})
+            assert result is test_user
+
+    def test_sync_failure_returns_none(self, test_app):
+        with test_app.test_request_context("/"):
+            auth = OIDCAuthLib()
+            with patch(
+                "app.auth.user_manager.UserManager.sync_user_from_oidc",
+                return_value=None,
+            ):
+                result = auth.login_user({"email": "nope@example.com"})
+            assert result is None
 
 
 class TestBuildLogoutUrl:

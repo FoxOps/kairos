@@ -79,6 +79,34 @@ class TestAuthRoutes:
             assert response.status_code == 200
             assert b"Kairos" in response.data or b"Schedule" in response.data
 
+    def test_login_post_valid_redirects_to_safe_next_url(
+        self, client, test_user, test_app
+    ):
+        """A same-origin ?next= redirects there instead of main.index -
+        _is_safe_next_url()'s True branch, not exercised by
+        test_login_post_valid above (no ?next= param there)."""
+        with test_app.app_context():
+            response = client.post(
+                "/login?next=/profile",
+                data={"email": test_user.email, "password": "test123"},
+                follow_redirects=False,
+            )
+            assert response.status_code == 302
+            assert response.location.endswith("/profile")
+
+    def test_is_safe_next_url_rejects_empty_and_cross_origin(self, test_app):
+        """Direct test of _is_safe_next_url() - the empty-target and
+        cross-origin-rejection branches are guarded at the one real call
+        site (login()'s `next_page and _is_safe_next_url(...)`) in a way
+        that never actually calls the function with an empty/absent
+        target, so those branches are exercised directly here."""
+        from app.routes.auth import _is_safe_next_url
+
+        with test_app.test_request_context("/login"):
+            assert _is_safe_next_url("") is False
+            assert _is_safe_next_url("https://evil.example.com/phish") is False
+            assert _is_safe_next_url("/profile") is True
+
     def test_login_post_invalid_credentials(self, client):
         """Test logging in with invalid credentials."""
         response = client.post(
@@ -88,6 +116,25 @@ class TestAuthRoutes:
         )
         assert response.status_code == 200
         assert b"Email ou mot de passe incorrect" in response.data
+
+    def test_login_pays_hash_cost_for_nonexistent_email(self, client, test_app):
+        """Login timing side-channel fix: `user and user.check_password(...)`
+        used to short-circuit on a nonexistent email (one query, no
+        password-hash check), while a real email always paid the PBKDF2/
+        scrypt cost - a measurable response-time signal an attacker could
+        use to enumerate valid emails. A nonexistent email must now pay
+        the same hash-check cost via a dummy comparison."""
+        from unittest.mock import patch
+
+        with patch(
+            "app.routes.auth.check_password_hash", return_value=False
+        ) as mock_check:
+            client.post(
+                "/login",
+                data={"email": "nonexistent@test.com", "password": "wrongpassword"},
+                follow_redirects=True,
+            )
+            mock_check.assert_called_once()
 
     def test_login_post_valid_writes_audit_log_entry(self, client, test_user, test_app):
         with test_app.app_context():
@@ -326,13 +373,16 @@ class TestOnCallRoutes:
         assert len(on_calls) >= 1
 
     def test_add_oncall_post_invalid_day(self, logged_in_client, test_user):
-        """Test adding an on-call on an invalid day."""
+        """Test adding an on-call on an invalid day. Default
+        OnCallAnchorRule (unconfigured) = Friday - the flashed error is
+        now generic ("jour configuré"), not hardcoded to say "vendredi",
+        since the anchor day is per-group configurable."""
         data = {"user_id": test_user.id, "start_date": "2023-12-02"}
         response = logged_in_client.post(
             "/oncall/add", data=data, follow_redirects=True
         )
         assert response.status_code == 200
-        assert b"vendredi" in response.data.lower()
+        assert "jour configuré".encode() in response.data
 
     def test_delete_oncall_post(self, logged_in_client, test_oncall):
         """Test deleting an on-call."""

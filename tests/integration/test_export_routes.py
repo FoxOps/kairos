@@ -366,6 +366,107 @@ class TestExportRoutesAdminScope:
         assert content.count("BEGIN:VEVENT") == 2
 
 
+class TestExportRoutesGroupScope:
+    """Tests for the group_ids query param added for group-scoped export."""
+
+    def test_export_shifts_filters_by_group_ids(
+        self,
+        logged_in_client,
+        test_user,
+        test_group,
+        second_user,
+        test_shift_type,
+        test_app,
+    ):
+        with test_app.app_context():
+            from app.models import Group
+
+            other_group = Group(name="Other Group Export Route Scope")
+            db.session.add(other_group)
+            db.session.commit()
+            second_user.group_id = other_group.id
+            db.session.commit()
+
+            shift_date = datetime(2023, 12, 1).date()
+            start_time = datetime.combine(shift_date, datetime.min.time()).replace(
+                hour=7
+            )
+            end_time = start_time + timedelta(hours=8)
+            shift1 = Shift(
+                user_id=test_user.id,
+                shift_type_id=test_shift_type.id,
+                start_time=start_time,
+                end_time=end_time,
+                date=shift_date,
+            )
+            shift2 = Shift(
+                user_id=second_user.id,
+                shift_type_id=test_shift_type.id,
+                start_time=start_time + timedelta(days=1),
+                end_time=end_time + timedelta(days=1),
+                date=shift_date + timedelta(days=1),
+            )
+            db.session.add(shift1)
+            db.session.add(shift2)
+            db.session.commit()
+            group_id = test_group.id
+
+        response = logged_in_client.get(
+            f"/export/shifts?scope=all&group_ids={group_id}"
+        )
+        assert response.status_code == 200
+        content = response.data.decode("utf-8")
+        assert content.count("BEGIN:VEVENT") == 1
+
+    def test_export_shifts_no_group_ids_stays_unfiltered(
+        self,
+        logged_in_client,
+        test_user,
+        second_user,
+        test_shift_type,
+        test_app,
+    ):
+        """No group_ids param (every already-copied/subscribed export
+        URL) must keep returning everything, unfiltered - backward
+        compat regression guard."""
+        with test_app.app_context():
+            from app.models import Group
+
+            other_group = Group(name="Other Group Export Route Unfiltered")
+            db.session.add(other_group)
+            db.session.commit()
+            second_user.group_id = other_group.id
+            db.session.commit()
+
+            shift_date = datetime(2023, 12, 1).date()
+            start_time = datetime.combine(shift_date, datetime.min.time()).replace(
+                hour=7
+            )
+            end_time = start_time + timedelta(hours=8)
+            shift1 = Shift(
+                user_id=test_user.id,
+                shift_type_id=test_shift_type.id,
+                start_time=start_time,
+                end_time=end_time,
+                date=shift_date,
+            )
+            shift2 = Shift(
+                user_id=second_user.id,
+                shift_type_id=test_shift_type.id,
+                start_time=start_time + timedelta(days=1),
+                end_time=end_time + timedelta(days=1),
+                date=shift_date + timedelta(days=1),
+            )
+            db.session.add(shift1)
+            db.session.add(shift2)
+            db.session.commit()
+
+        response = logged_in_client.get("/export/shifts?scope=all")
+        assert response.status_code == 200
+        content = response.data.decode("utf-8")
+        assert content.count("BEGIN:VEVENT") == 2
+
+
 class TestExportRoutesTokenAuth:
     """Tests for token-based authentication on the ICS export routes."""
 
@@ -414,6 +515,18 @@ class TestExportRoutesTokenAuth:
         response = client.get("/export/shifts?scope=my")
         # Should return 401, 200, or redirect to login (302)
         assert response.status_code in [401, 200, 302]
+
+    def test_export_shifts_unauthorized_returns_401_for_calendar_client(self, client):
+        """A real calendar client (Accept: text/calendar) polling an
+        expired/invalid token gets a bare 401, not an HTML login-page
+        redirect it can't do anything with - _unauthorized_response()'s
+        JSON/text-calendar branch, distinct from the browser-facing
+        redirect exercised by every other unauthenticated test here."""
+        response = client.get(
+            "/export/shifts?scope=my",
+            headers={"Accept": "text/calendar"},
+        )
+        assert response.status_code == 401
 
     def test_export_oncall_with_token(self, client, test_user, test_app):
         """Test exporting on-calls with a valid token."""

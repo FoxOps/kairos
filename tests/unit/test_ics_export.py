@@ -163,6 +163,19 @@ class TestICSExport:
             assert "BEGIN:VCALENDAR" in ics_content
             assert ics_content.count("BEGIN:VEVENT") == 0
 
+    def test_generate_ics_skips_unknown_event_type(self, test_app, test_shift):
+        """generate_ics_standard() dispatches purely on
+        __class__.__name__ (Shift/OnCall/Leave) - an object of any
+        other type is silently skipped rather than crashing, so a
+        future caller passing an unsupported type degrades gracefully
+        instead of breaking the whole export."""
+
+        class _Unsupported:
+            id = 1
+
+        ics_content = generate_ics_standard([_Unsupported(), test_shift], "Kairos")
+        assert ics_content.count("BEGIN:VEVENT") == 1
+
     def test_generate_ics_standard_with_mixed_events(
         self, test_app, test_user, test_shift_type
     ):

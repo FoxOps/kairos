@@ -38,7 +38,7 @@ def backups_create():
     if results["success"]:
         flash(_("Sauvegarde créée avec succès."), "success")
     else:
-        errors = "; ".join(results.get("errors", [])) or "erreur inconnue"
+        errors = "; ".join(results.get("errors", [])) or _("erreur inconnue")
         flash(_("Échec de la sauvegarde : %(errors)s", errors=errors), "danger")
 
     return redirect(url_for("admin.backups_dashboard"))

@@ -11,7 +11,7 @@ from datetime import date, datetime, timedelta
 from unittest.mock import patch
 
 from app import db
-from app.models import Leave
+from app.models import Leave, Shift
 from app.repositories.leave_repository import LeaveRepository
 from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository
@@ -63,6 +63,16 @@ class TestUserService:
         self, test_app, test_user
     ):
         visible = UserService.visible_users_for_schedule(test_user)
+        assert visible == [test_user]
+
+    def test_visible_users_for_oncall_admin_sees_oncall_group(
+        self, test_app, test_user, admin_user
+    ):
+        visible = UserService.visible_users_for_oncall(admin_user)
+        assert test_user in visible
+
+    def test_visible_users_for_oncall_regular_sees_only_self(self, test_app, test_user):
+        visible = UserService.visible_users_for_oncall(test_user)
         assert visible == [test_user]
 
     def test_create_success(self, test_app, test_group):
@@ -182,6 +192,46 @@ class TestUserService:
         assert ok is False
         assert error is None
 
+    def test_delete_blocked_by_swap_request_as_requester(
+        self, test_app, test_user, second_user, test_swap_request, test_swap_shift
+    ):
+        """test_swap_request has test_user as requester_id (a NOT NULL FK
+        to user.id) - deleting them without this check would raise an
+        uncaught IntegrityError on Postgres/MySQL (both supported
+        engines; SQLite's lack of FK enforcement is why this was never
+        caught by the existing suite). test_swap_shift is reassigned to
+        second_user first so the pre-existing Shift check doesn't mask
+        this one (shift_id is itself a NOT NULL FK on SwapRequest, so
+        the shift can't just be deleted) - simulates an
+        already-approved swap, where the requester no longer owns any
+        shift but the historical SwapRequest row still references
+        them."""
+        test_swap_shift.user_id = second_user.id
+        db.session.commit()
+
+        ok, error = UserService.delete(test_user.id)
+        assert ok is False
+        assert error is not None
+
+    def test_delete_blocked_by_swap_request_as_target(
+        self, test_app, second_user, test_swap_request
+    ):
+        ok, error = UserService.delete(second_user.id)
+        assert ok is False
+        assert error is not None
+
+    def test_delete_blocked_by_swap_request_as_reviewer(
+        self, test_app, admin_user, test_swap_request
+    ):
+        from app.models import SwapRequest
+
+        test_swap_request.mark_reviewed(admin_user.id, SwapRequest.APPROVED)
+        db.session.commit()
+
+        ok, error = UserService.delete(admin_user.id)
+        assert ok is False
+        assert error is not None
+
 
 class TestGroupService:
     def test_create_success(self, test_app):
@@ -232,6 +282,15 @@ class TestGroupService:
         assert ok is False
         assert "utilisateurs" in error
 
+    def test_delete_missing_group(self, test_app):
+        """The route's own delete_group() already 404s on a missing id
+        before ever calling GroupService.delete() (see
+        admin_group_routes.py), so this "not found" return is only
+        reachable by calling the service directly."""
+        ok, error = GroupService.delete(999999)
+        assert ok is False
+        assert error is None
+
 
 class TestShiftTypeService:
     def test_create_success(self, test_app):
@@ -276,14 +335,57 @@ class TestShiftTypeService:
         assert updated is None
         assert error is None
 
+    def test_update_rejects_invalid_hour_range(self, test_app, test_shift_type):
+        updated, error = ShiftTypeService.update(
+            test_shift_type.id, "morning", "Matin", 5, 30
+        )
+        assert updated is None
+        assert "comprises entre 0 et 23" in error
+
+    def test_update_rejects_start_after_end(self, test_app, test_shift_type):
+        updated, error = ShiftTypeService.update(
+            test_shift_type.id, "morning", "Matin", 18, 8
+        )
+        assert updated is None
+        assert "antérieure" in error
+
     def test_delete_success(self, test_app, test_shift_type):
         ok, error = ShiftTypeService.delete(test_shift_type.id)
         assert ok is True
         assert error is None
 
+    def test_delete_missing(self, test_app):
+        """The route's own delete_shift_type() already 404s on a missing
+        id before ever calling ShiftTypeService.delete() (see
+        admin_shift_type_routes.py), so this "not found" return is only
+        reachable by calling the service directly."""
+        ok, error = ShiftTypeService.delete(999999)
+        assert ok is False
+        assert error is None
+
     def test_delete_blocked_by_existing_shift(
         self, test_app, test_shift_type, test_shift
     ):
+        ok, error = ShiftTypeService.delete(test_shift_type.id)
+        assert ok is False
+        assert "utilisé" in error
+
+    def test_delete_blocked_by_automation_rule_reference(
+        self, test_app, test_shift_type
+    ):
+        """A ShiftType referenced by a configured shift_slots rule
+        (app/utils/automation/rules/shift_slots.py) must not be
+        deletable - doing so would silently break slot resolution for
+        whichever role referenced it."""
+        from app.models import AutomationRule
+        from app.utils.automation.rules import ShiftSlotsRule
+
+        default_params = ShiftSlotsRule.resolve()
+        AutomationRule.set(
+            "shift_slots",
+            {**default_params, "rotation_shift_type_id": test_shift_type.id},
+        )
+
         ok, error = ShiftTypeService.delete(test_shift_type.id)
         assert ok is False
         assert "utilisé" in error
@@ -303,7 +405,7 @@ class TestShiftService:
         )
         assert conflict_date is None
         assert len(added) == 5
-        assert ShiftRepository.count_for_user(test_user.id) == 5
+        assert len(ShiftRepository.list_for_user(test_user.id)) == 5
 
     def test_add_shifts_for_range_writes_audit_log_entry(
         self, test_app, test_user, test_shift_type
@@ -341,18 +443,25 @@ class TestShiftService:
     def test_delete_shift_missing(self, test_app):
         assert ShiftService.delete_shift(999999) is None
 
-    def test_delete_all(self, test_app, test_shift):
-        count = ShiftService.delete_all()
+    def test_delete_filtered_no_filters_deletes_everything(self, test_app, test_shift):
+        count = ShiftService.delete_filtered()
         assert count == 1
         assert ShiftRepository.count_all() == 0
 
-    def test_delete_all_for_user(self, test_app, test_user, test_shift):
-        count = ShiftService.delete_all_for_user(test_user.id)
+    def test_delete_filtered_by_user_id(self, test_app, test_user, test_shift):
+        count = ShiftService.delete_filtered(user_id=test_user.id)
         assert count == 1
 
-    def test_delete_for_day(self, test_app, test_shift):
-        count = ShiftService.delete_for_day(test_shift.date)
+    def test_delete_filtered_by_date_range(self, test_app, test_shift):
+        count = ShiftService.delete_filtered(
+            date_from=test_shift.date, date_to=test_shift.date
+        )
         assert count == 1
+
+    def test_delete_filtered_by_ids(self, test_app, test_shift):
+        count = ShiftService.delete_filtered(ids=[test_shift.id])
+        assert count == 1
+        assert ShiftRepository.count_all() == 0
 
     def test_api_create_rejects_weekend(self, test_app, test_user, test_shift_type):
         saturday = date.today()
@@ -374,6 +483,19 @@ class TestShiftService:
         assert error is None
         assert shift is not None
 
+    def test_api_create_rejects_conflict(self, test_app, test_user, test_shift_type):
+        weekday = _next_weekday()
+        start = datetime.combine(weekday, datetime.min.time())
+        ShiftService.api_create(
+            test_user, test_shift_type, start, start + timedelta(hours=8)
+        )
+
+        shift, error = ShiftService.api_create(
+            test_user, test_shift_type, start, start + timedelta(hours=8)
+        )
+        assert shift is None
+        assert "Conflit" in error
+
     def test_api_update_rejects_weekend(self, test_app, test_shift):
         saturday = date.today()
         while saturday.weekday() != 5:
@@ -389,6 +511,87 @@ class TestShiftService:
         shift, error = ShiftService.api_update(999999, datetime.now(), datetime.now())
         assert shift is None
         assert error == "Shift non trouvé"
+
+    def test_api_update_backward_compat_no_reassignment(self, test_app, test_shift):
+        """The drag/resize call site never sends new_user_id/
+        new_shift_type_id - calling api_update() with only
+        (id, start, end), as it always has, must leave the owner/type
+        untouched."""
+        original_user_id = test_shift.user_id
+        original_shift_type_id = test_shift.shift_type_id
+        target_day = _next_weekday()
+        new_start = datetime.combine(target_day, datetime.min.time())
+
+        shift, error = ShiftService.api_update(
+            test_shift.id, new_start, new_start + timedelta(hours=8)
+        )
+
+        assert error is None
+        assert shift.user_id == original_user_id
+        assert shift.shift_type_id == original_shift_type_id
+
+    def test_api_update_reassigns_user(
+        self, test_app, test_user, second_user, test_shift
+    ):
+        target_day = _next_weekday()
+        new_start = datetime.combine(target_day, datetime.min.time())
+        shift, error = ShiftService.api_update(
+            test_shift.id,
+            new_start,
+            new_start + timedelta(hours=8),
+            new_user_id=second_user.id,
+        )
+        assert error is None
+        assert shift.user_id == second_user.id
+
+    def test_api_update_reassign_to_nonexistent_shift_type(self, test_app, test_shift):
+        target_day = _next_weekday()
+        new_start = datetime.combine(target_day, datetime.min.time())
+        shift, error = ShiftService.api_update(
+            test_shift.id,
+            new_start,
+            new_start + timedelta(hours=8),
+            new_shift_type_id=999999,
+        )
+        assert shift is None
+        assert "Type de shift non trouv" in error
+
+    def test_api_update_reassigns_shift_type(
+        self, test_app, test_shift, afternoon_shift_type
+    ):
+        target_day = _next_weekday()
+        new_start = datetime.combine(target_day, datetime.min.time())
+        shift, error = ShiftService.api_update(
+            test_shift.id,
+            new_start,
+            new_start + timedelta(hours=8),
+            new_shift_type_id=afternoon_shift_type.id,
+        )
+        assert error is None
+        assert shift.shift_type_id == afternoon_shift_type.id
+
+    def test_api_update_reassignment_rejects_conflict_for_new_user(
+        self, test_app, test_user, second_user, test_shift, test_shift_type
+    ):
+        """The conflict/leave/rule checks must run against the *new*
+        user being reassigned to, not the shift's original owner."""
+        target_day = _next_weekday()
+        new_start = datetime.combine(target_day, datetime.min.time())
+        new_end = new_start + timedelta(hours=8)
+        other_shift = ShiftRepository.create(
+            second_user.id, test_shift_type.id, new_start, new_end, target_day
+        )
+        db.session.commit()
+
+        shift, error = ShiftService.api_update(
+            test_shift.id,
+            new_start,
+            new_end,
+            new_user_id=second_user.id,
+        )
+        assert shift is None
+        assert second_user.name in error
+        assert db.session.get(Shift, other_shift.id) is not None
 
     def test_api_update_rejects_move_onto_leave(self, test_app, test_user, test_shift):
         """Regression test: unlike api_create, api_update (drag & drop)
@@ -407,20 +610,100 @@ class TestShiftService:
         assert shift is None
         assert "congé" in error
 
+    def test_api_update_rejects_move_onto_overlapping_oncall(
+        self, test_app, test_user, test_shift, test_shift_type
+    ):
+        """Regression test: the drag & drop path used to skip the new
+        configurable automation-rule checks entirely - same class of
+        gap as the pre-existing leave check above."""
+        from app.models import OnCall
+
+        target_day = _next_weekday()
+        new_start = datetime.combine(target_day, datetime.min.time()).replace(
+            hour=test_shift_type.start_hour
+        )
+        new_end = datetime.combine(target_day, datetime.min.time()).replace(
+            hour=test_shift_type.end_hour
+        )
+        db.session.add(
+            OnCall(
+                user_id=test_user.id,
+                start_time=new_start - timedelta(hours=1),
+                end_time=new_end + timedelta(hours=1),
+            )
+        )
+        db.session.commit()
+
+        shift, error = ShiftService.api_update(test_shift.id, new_start, new_end)
+        assert shift is None
+        assert "astreinte" in error
+
+    def test_api_update_rejects_move_when_staffing_max_reached(
+        self, test_app, test_user, second_user, test_shift, test_shift_type
+    ):
+        from app.models import AutomationRule
+
+        target_day = _next_weekday()
+        AutomationRule.set("staffing_limits", {str(test_shift_type.id): {"max": 1}})
+        other_shift = Shift(
+            date=target_day,
+            start_time=datetime.combine(target_day, datetime.min.time()),
+            end_time=datetime.combine(target_day, datetime.max.time()),
+            user_id=second_user.id,
+            shift_type_id=test_shift_type.id,
+        )
+        db.session.add(other_shift)
+        db.session.commit()
+
+        new_start = datetime.combine(target_day, datetime.min.time()).replace(
+            hour=test_shift_type.start_hour
+        )
+        new_end = datetime.combine(target_day, datetime.min.time()).replace(
+            hour=test_shift_type.end_hour
+        )
+        shift, error = ShiftService.api_update(test_shift.id, new_start, new_end)
+        assert shift is None
+        assert "effectif maximum" in error
+
     def test_api_delete(self, test_app, test_shift):
         assert ShiftService.api_delete(test_shift.id) is True
         assert ShiftService.api_delete(test_shift.id) is False
 
 
 class TestOnCallService:
-    def test_add_oncall_rejects_non_friday(self, test_app, test_user):
+    def test_add_oncall_rejects_wrong_anchor_weekday(self, test_app, test_user):
+        """Default OnCallAnchorRule (unconfigured) = Friday."""
         not_friday = date.today()
         while not_friday.weekday() == 4:
             not_friday += timedelta(days=1)
         start = datetime.combine(not_friday, datetime.min.time())
         oncall, error = OnCallService.add_oncall(test_user, start)
         assert oncall is None
-        assert "vendredi" in error
+        assert "jour configuré" in error
+
+    def test_add_oncall_accepts_configured_non_friday_anchor(self, test_app, test_user):
+        """Same fix as OnCallService.api_update() - add_oncall() must
+        also respect the group's own configured OnCallAnchorRule
+        instead of hardcoding Friday, or a group configured for a
+        different day could never create an on-call at all."""
+        from app.models import AutomationRule
+
+        AutomationRule.set(
+            "oncall_anchor",
+            {"weekday": 2, "start_hour": 21, "end_hour": 7},  # Wednesday
+            group=test_user.group,
+        )
+        db.session.commit()
+
+        wednesday = date.today()
+        while wednesday.weekday() != 2:
+            wednesday += timedelta(days=1)
+        start = datetime.combine(wednesday, datetime.min.time())
+
+        oncall, error = OnCallService.add_oncall(test_user, start)
+        assert error is None
+        assert oncall is not None
+        assert oncall.start_time.hour == 21
 
     def test_add_oncall_success(self, test_app, test_user):
         friday = _next_friday()
@@ -441,6 +724,19 @@ class TestOnCallService:
         assert entry is not None
         assert entry.resource_id == oncall.id
 
+    def test_add_oncall_rejects_when_period_already_covered(self, test_app, test_user):
+        friday = _next_friday()
+        start = datetime.combine(friday, datetime.min.time())
+        OnCallService.add_oncall(test_user, start)
+
+        oncall, error = OnCallService.add_oncall(test_user, start)
+        assert oncall is None
+        assert "Impossible" in error
+
+    def test_api_delete_success_and_missing(self, test_app, test_oncall):
+        assert OnCallService.api_delete(test_oncall.id) is True
+        assert OnCallService.api_delete(test_oncall.id) is False
+
     def test_delete_oncall(self, test_app, test_oncall):
         deleted = OnCallService.delete_oncall(test_oncall.id)
         assert deleted is not None
@@ -449,13 +745,18 @@ class TestOnCallService:
     def test_delete_oncall_missing(self, test_app):
         assert OnCallService.delete_oncall(999999) is None
 
-    def test_delete_all(self, test_app, test_oncall):
-        assert OnCallService.delete_all() == 1
+    def test_delete_filtered_no_filters_deletes_everything(self, test_app, test_oncall):
+        assert OnCallService.delete_filtered() == 1
 
-    def test_delete_all_for_user(self, test_app, test_user, test_oncall):
-        assert OnCallService.delete_all_for_user(test_user.id) == 1
+    def test_delete_filtered_by_user_id(self, test_app, test_user, test_oncall):
+        assert OnCallService.delete_filtered(user_id=test_user.id) == 1
 
-    def test_api_update_rejects_non_friday(self, test_app, test_oncall):
+    def test_delete_filtered_by_ids(self, test_app, test_oncall):
+        assert OnCallService.delete_filtered(ids=[test_oncall.id]) == 1
+
+    def test_api_update_rejects_wrong_anchor_weekday(self, test_app, test_oncall):
+        """Default OnCallAnchorRule (unconfigured) = Friday - moving to
+        any other weekday must still be rejected."""
         not_friday = date.today()
         while not_friday.weekday() == 4:
             not_friday += timedelta(days=1)
@@ -464,12 +765,93 @@ class TestOnCallService:
             test_oncall.id, new_start, new_start + timedelta(days=7)
         )
         assert oncall is None
-        assert "vendredi" in error
+        assert "jour configuré" in error
+
+    def test_api_update_accepts_configured_non_friday_anchor(
+        self, test_app, test_user, test_oncall
+    ):
+        """Real bug fix: api_update() used to hardcode weekday()!=4
+        regardless of the group's own configured OnCallAnchorRule - the
+        exact day a real generation run would use for this group must
+        be accepted here too, not rejected as "not a Friday"."""
+        from app.models import AutomationRule
+
+        AutomationRule.set(
+            "oncall_anchor",
+            {"weekday": 2, "start_hour": 21, "end_hour": 7},  # Wednesday
+            group=test_user.group,
+        )
+        db.session.commit()
+
+        wednesday = date.today()
+        while wednesday.weekday() != 2:
+            wednesday += timedelta(days=1)
+        new_start = datetime.combine(wednesday, datetime.min.time()).replace(hour=21)
+        new_end = new_start + timedelta(days=7, hours=-14)
+
+        oncall, error = OnCallService.api_update(test_oncall.id, new_start, new_end)
+        assert error is None
+        assert oncall.start_time == new_start
 
     def test_api_update_missing(self, test_app):
         oncall, error = OnCallService.api_update(999999, datetime.now(), datetime.now())
         assert oncall is None
         assert error == "Astreinte non trouvée"
+
+    def test_api_update_backward_compat_no_reassignment(self, test_app, test_oncall):
+        """The drag/resize call site never sends new_user_id - calling
+        api_update() with only (id, start, end) must leave the owner
+        untouched."""
+        original_user_id = test_oncall.user_id
+        friday = _next_friday()
+        new_start = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+        new_end = new_start + timedelta(days=7, hours=-14)
+
+        oncall, error = OnCallService.api_update(test_oncall.id, new_start, new_end)
+
+        assert error is None
+        assert oncall.user_id == original_user_id
+
+    def test_api_update_reassigns_user(self, test_app, second_user, test_oncall):
+        friday = _next_friday()
+        new_start = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+        new_end = new_start + timedelta(days=7, hours=-14)
+
+        oncall, error = OnCallService.api_update(
+            test_oncall.id, new_start, new_end, new_user_id=second_user.id
+        )
+        assert error is None
+        assert oncall.user_id == second_user.id
+
+    def test_api_update_reassign_to_nonexistent_user(self, test_app, test_oncall):
+        friday = _next_friday()
+        new_start = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+        new_end = new_start + timedelta(days=7, hours=-14)
+
+        oncall, error = OnCallService.api_update(
+            test_oncall.id, new_start, new_end, new_user_id=999999
+        )
+        assert oncall is None
+        assert "Utilisateur non trouv" in error
+
+    def test_api_update_reassignment_rejects_conflict_for_new_user(
+        self, test_app, second_user, test_oncall
+    ):
+        from app.models import OnCall
+
+        friday = _next_friday()
+        new_start = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+        new_end = new_start + timedelta(days=7, hours=-14)
+        db.session.add(
+            OnCall(user_id=second_user.id, start_time=new_start, end_time=new_end)
+        )
+        db.session.commit()
+
+        oncall, error = OnCallService.api_update(
+            test_oncall.id, new_start, new_end, new_user_id=second_user.id
+        )
+        assert oncall is None
+        assert second_user.name in error
 
     def test_api_update_rejects_move_onto_leave(self, test_app, test_user, test_oncall):
         """Regression test: same bug as ShiftService.api_update, on the
@@ -490,6 +872,33 @@ class TestOnCallService:
         assert oncall is None
         assert "congé" in error
 
+    def test_api_update_rejects_move_onto_overlapping_shift(
+        self, test_app, test_user, test_oncall, test_shift_type
+    ):
+        """Regression test: same class of gap as the leave check above,
+        for the new configurable oncall_shift_overlap rule."""
+        friday = _next_friday()
+        new_start = datetime.combine(friday, datetime.min.time()).replace(hour=21)
+        new_end = new_start + timedelta(days=7, hours=-14)
+        db.session.add(
+            Shift(
+                date=friday,
+                start_time=datetime.combine(friday, datetime.min.time()).replace(
+                    hour=test_shift_type.start_hour
+                ),
+                end_time=datetime.combine(friday, datetime.min.time()).replace(
+                    hour=test_shift_type.end_hour
+                ),
+                user_id=test_user.id,
+                shift_type_id=test_shift_type.id,
+            )
+        )
+        db.session.commit()
+
+        oncall, error = OnCallService.api_update(test_oncall.id, new_start, new_end)
+        assert oncall is None
+        assert "shift" in error
+
 
 class TestLeaveService:
     def test_add_leave_success(self, test_app, test_user, second_user):
@@ -509,6 +918,20 @@ class TestLeaveService:
         entry = AuditLog.query.filter_by(action="leave.create").first()
         assert entry is not None
         assert entry.resource_id == leave.id
+
+    def test_delete_filtered_no_filters_deletes_everything(self, test_app, test_leave):
+        count = LeaveService.delete_filtered()
+        assert count == 1
+        assert LeaveRepository.get_by_id(test_leave.id) is None
+
+    def test_delete_filtered_by_user_id(self, test_app, test_user, test_leave):
+        count = LeaveService.delete_filtered(user_id=test_user.id)
+        assert count == 1
+
+    def test_delete_filtered_by_ids(self, test_app, test_leave):
+        count = LeaveService.delete_filtered(ids=[test_leave.id])
+        assert count == 1
+        assert LeaveRepository.get_by_id(test_leave.id) is None
 
     def test_add_leave_notifies_admins_on_oncall_gap(
         self, test_app, admin_user, test_user, second_user
@@ -631,6 +1054,20 @@ class TestLeaveService:
         assert deleted is not None
         assert LeaveRepository.get_by_id(test_leave.id) is None
 
+    def test_rebalance_after_leave_exception_is_caught(self, test_app, test_leave):
+        """_rebalance_after_leave()'s own except branch - only reached
+        by a failure in AdvancedShiftAutomation.rebalance_after_leave's
+        setup step itself (its per-day/per-section failures are already
+        isolated and reported without raising, see the method's own
+        docstring), so exercised here via a direct mock."""
+        with patch(
+            "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
+            side_effect=RuntimeError("boom"),
+        ):
+            deleted, rebalance_failed = LeaveService.api_delete(test_leave.id)
+        assert deleted is True
+        assert rebalance_failed is True
+
     def test_delete_leave_missing(self, test_app):
         deleted, regenerated = LeaveService.delete_leave(999999)
         assert deleted is None
@@ -652,6 +1089,25 @@ class TestLeaveService:
         )
         assert leave is None
         assert error == "Congé non trouvé"
+        assert rebalance_failed is False
+
+    def test_api_update_rejects_conflict(self, test_app, test_user, test_leave):
+        """Moving a different leave onto test_leave's own dates - a
+        different branch than test_api_update_rejects_end_before_start
+        above."""
+        other_leave = Leave(
+            user_id=test_user.id,
+            start_date=test_leave.start_date + timedelta(days=30),
+            end_date=test_leave.end_date + timedelta(days=30),
+        )
+        db.session.add(other_leave)
+        db.session.commit()
+
+        leave, error, rebalance_failed = LeaveService.api_update(
+            other_leave.id, test_leave.start_date, test_leave.end_date
+        )
+        assert leave is None
+        assert "existe déjà" in error
         assert rebalance_failed is False
 
     def test_api_delete(self, test_app, test_leave):
@@ -702,3 +1158,85 @@ class TestExportService:
     def test_export_leaves(self, test_app, test_user, test_leave):
         ics = ExportService.export_leaves("my", test_user)
         assert "BEGIN:VCALENDAR" in ics
+
+    def test_export_shifts_all_scope_filters_by_group_ids(
+        self, test_app, test_group, test_user, test_shift, second_user, test_shift_type
+    ):
+        """group_ids only applies on scope='all' - test_user (test_group)
+        stays in, second_user (a different group) is excluded."""
+        from datetime import timedelta
+
+        from app import db
+        from app.models import Group, Shift
+
+        other_group = Group(name="Other Group Export Scope")
+        db.session.add(other_group)
+        db.session.commit()
+        second_user.group_id = other_group.id
+        db.session.commit()
+
+        other_shift = Shift(
+            user_id=second_user.id,
+            shift_type_id=test_shift_type.id,
+            date=test_shift.date + timedelta(days=1),
+            start_time=test_shift.start_time + timedelta(days=1),
+            end_time=test_shift.end_time + timedelta(days=1),
+        )
+        db.session.add(other_shift)
+        db.session.commit()
+
+        ics = ExportService.export_shifts("all", test_user, group_ids=[test_group.id])
+        assert test_user.name in ics
+        assert second_user.name not in ics
+
+    def test_export_shifts_my_scope_ignores_group_ids(
+        self, test_app, test_user, test_shift
+    ):
+        """scope='my' always means the token's own user's events,
+        regardless of any group_ids passed alongside it."""
+        ics = ExportService.export_shifts("my", test_user, group_ids=[999999])
+        assert test_user.name in ics
+
+    def test_export_shifts_all_scope_no_group_ids_is_unfiltered(
+        self, test_app, test_group, test_user, test_shift, second_user, test_shift_type
+    ):
+        """group_ids=None (the default, no param) stays fully
+        unfiltered - backward compat for already-copied export URLs."""
+        from datetime import timedelta
+
+        from app import db
+        from app.models import Group, Shift
+
+        other_group = Group(name="Other Group Export Unfiltered")
+        db.session.add(other_group)
+        db.session.commit()
+        second_user.group_id = other_group.id
+        db.session.commit()
+
+        other_shift = Shift(
+            user_id=second_user.id,
+            shift_type_id=test_shift_type.id,
+            date=test_shift.date + timedelta(days=1),
+            start_time=test_shift.start_time + timedelta(days=1),
+            end_time=test_shift.end_time + timedelta(days=1),
+        )
+        db.session.add(other_shift)
+        db.session.commit()
+
+        ics = ExportService.export_shifts("all", test_user)
+        assert test_user.name in ics
+        assert second_user.name in ics
+
+
+class TestScheduleService:
+    def test_get_calendar_events_uses_default_180_day_window(
+        self, test_app, test_user, test_shift
+    ):
+        """get_calendar_events() - kept for callers that don't need a
+        specific range (see its own docstring), currently only used
+        via this default-window convenience wrapper around
+        get_calendar_events_for_range()."""
+        from app.services.schedule_service import ScheduleService
+
+        events = ScheduleService.get_calendar_events(test_user)
+        assert any(e["id"] == f"shift-{test_shift.id}" for e in events)

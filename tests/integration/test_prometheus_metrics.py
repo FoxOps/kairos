@@ -97,6 +97,82 @@ class TestSystemMetricsUpdate:
             # Must never raise, even if psutil fails (broad try/except on the source side).
             _update_system_metrics()
 
+    def test_swallows_import_error_when_psutil_missing(
+        self, prometheus_app, monkeypatch
+    ):
+        import sys
+
+        from app.utils.prometheus_metrics import _update_system_metrics
+
+        monkeypatch.setitem(sys.modules, "psutil", None)
+
+        with prometheus_app.app_context():
+            # Must not raise even though `import psutil` fails inside the
+            # function (sys.modules[name] = None forces ImportError).
+            _update_system_metrics()
+
+    def test_swallows_generic_exception_from_psutil(self, prometheus_app, monkeypatch):
+        import psutil
+
+        from app.utils.prometheus_metrics import _update_system_metrics
+
+        def _raise(*args, **kwargs):
+            raise RuntimeError("psutil boom")
+
+        monkeypatch.setattr(psutil, "cpu_percent", _raise)
+
+        with prometheus_app.app_context():
+            # Must not raise - a non-ImportError from psutil is also
+            # caught (broad except Exception, distinct from the
+            # ImportError branch above).
+            _update_system_metrics()
+
+
+class TestBeforeRequestAlreadyTracking:
+    def test_second_call_is_a_no_op(self, prometheus_app):
+        """before_request()'s early return when _prometheus_start_time
+        is already set - can't happen through a single real request
+        (Flask calls it once per request), so called directly twice."""
+        from app.utils.prometheus_metrics import before_request
+
+        with prometheus_app.app_context():
+            from flask import current_app
+
+            before_request()
+            first_time = current_app._prometheus_start_time
+
+            before_request()
+            assert current_app._prometheus_start_time == first_time
+
+
+class TestAfterRequestWithoutTracking:
+    def test_returns_response_unchanged_when_not_tracking(self, prometheus_app):
+        """after_request()'s early return when no matching before_request
+        ran (_prometheus_start_time never set)."""
+        from flask import current_app
+
+        from app.utils.prometheus_metrics import after_request
+
+        with prometheus_app.app_context():
+            assert not hasattr(current_app, "_prometheus_start_time")
+            response = object()
+            assert after_request(response) is response
+
+
+class TestHandleException:
+    def test_increments_error_count_and_returns_the_error(self, prometheus_app):
+        from app.utils.prometheus_metrics import ERROR_COUNT, handle_exception
+
+        with prometheus_app.app_context():
+            before = ERROR_COUNT.labels(error_type="ValueError")._value.get()
+            error = ValueError("boom")
+
+            result = handle_exception(error)
+
+            after = ERROR_COUNT.labels(error_type="ValueError")._value.get()
+            assert after == before + 1
+            assert result is error
+
 
 class TestRealAppFactoryWithPrometheusEnabled:
     """Regression test for a real production bug: init_prometheus() ended
