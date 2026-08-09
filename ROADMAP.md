@@ -109,8 +109,8 @@ automated tests), and used for real team scheduling.
 
 ## 🔧 In progress
 
-Nothing currently in flight — everything landed in this 1.1.0 cycle so
-far is already listed under "Done". Not yet tagged/released.
+Nothing currently in flight — everything for this cycle is already
+listed under "Done". 1.1.0 is tagged and merging into `main`.
 
 ## 🔭 Future ideas
 
