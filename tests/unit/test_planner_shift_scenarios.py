@@ -30,6 +30,7 @@ BASE_RULES = ResolvedRules(
     default_shift_type_id=300,
     default_slot_hours=(9, 17),
 )
+EPOCH = date(2000, 1, 3)
 
 
 def _users(n):
@@ -52,7 +53,9 @@ def test_uniform_algorithm_covers_1_2_3_and_many_users_identically():
     for headcount in (1, 2, 3, 6):
         users = rotation_order[:headcount]
         oncall_id = 1 if headcount >= 2 else None
-        result = assign_shift_slots_for_day(users, oncall_id, None, rotation_order, {})
+        result = assign_shift_slots_for_day(
+            EPOCH, users, oncall_id, None, None, rotation_order, EPOCH, {}
+        )
         assert set(result.keys()) == {u.id for u in users}
         _assert_exactly_one_oncall_and_one_rotation(result, oncall_id)
 
@@ -62,22 +65,41 @@ def test_single_user_gets_rotation_slot_not_default():
     on the rotation-equivalent slot (7am-3pm) - the uniform algorithm
     must reduce to the same outcome via its rule-7 fallback."""
     users = (UserRef(1, "A", None),)
-    result = assign_shift_slots_for_day(users, None, None, users, {})
+    result = assign_shift_slots_for_day(
+        EPOCH, users, None, None, None, users, EPOCH, {}
+    )
     assert result[1] == "rotation"
 
 
 def test_two_users_oncall_gets_oncall_other_gets_rotation():
     a, b = UserRef(1, "A", None), UserRef(2, "B", None)
-    result = assign_shift_slots_for_day((a, b), 1, None, (a, b), {})
+    result = assign_shift_slots_for_day(EPOCH, (a, b), 1, None, None, (a, b), EPOCH, {})
     assert result[1] == "oncall"
     assert result[2] == "rotation"
 
 
+def test_next_week_oncall_gets_rotation_slot_symmetric_with_last_week():
+    """Rule 2 is symmetric: a user who will be on-call NEXT week gets
+    the rotation slot exactly like one who was on-call LAST week -
+    matters whenever this group's on-call turns are sparse relative to
+    other groups sharing the same rotation pool (see module docstring,
+    commit b2a225c)."""
+    a, b, c = UserRef(1, "A", None), UserRef(2, "B", None), UserRef(3, "C", None)
+    users = (a, b, c)
+    result = assign_shift_slots_for_day(EPOCH, users, None, None, 2, users, EPOCH, {})
+    assert result[2] == "rotation"
+    assert list(result.values()).count("rotation") == 1
+
+
 def test_many_users_only_one_rotation_slot_filled_by_fallback():
     users = _users(5)
-    result = assign_shift_slots_for_day(users, None, None, users, {})
-    # No on-call/last-week info at all: rule 7's fallback must still
-    # guarantee exactly one rotation slot (first rotation_order member).
+    result = assign_shift_slots_for_day(
+        EPOCH, users, None, None, None, users, EPOCH, {}
+    )
+    # No on-call/last/next-week info at all: rule 7's fallback must
+    # still guarantee exactly one rotation slot - EPOCH itself as the
+    # day gives a zero rotation offset, so the first rotation_order
+    # member still wins deterministically.
     assert result[1] == "rotation"
     assert all(result[u.id] == "default" for u in users[1:])
 
@@ -100,6 +122,7 @@ def test_custom_weekend_definition_skips_configured_days_only():
         locked=frozenset(),
         published={},
         rotation_order=users,
+        rotation_anchor_epoch=EPOCH,
         rules=custom_rules,
     )
     days_with_shifts = {s.date for s in fragment.proposed}

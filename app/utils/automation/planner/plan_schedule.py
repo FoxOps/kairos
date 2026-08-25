@@ -149,6 +149,7 @@ def plan_schedule(request: PlanningRequest) -> SchedulePlan:
             locked=request.locked_shifts,
             published=request.published_shifts,
             rotation_order=request.rotation_order.get(group_id, ()),
+            rotation_anchor_epoch=request.rotation_anchor_epoch,
             rules=request.resolved_rules[group_id],
         )
         for group_id in request.schedule_groups

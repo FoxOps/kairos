@@ -14,13 +14,21 @@ does - see rules/predicates.py, used here too) and defect #8/#9
 (weekend definition and every other rule value always resolved through
 ResolvedRules, never hardcoded).
 
-Deliberately narrower than the legacy determine_shift_for_user() in one
-respect: only *today's* and *last week's* on-call feed the rotation
-slot (rules 1/2 as actually implemented and tested). A "next week's
-on-call also gets the rotation slot" idea exists in the legacy module
-(get_upcoming_oncall_user()) but is dead code with zero callers and zero
-test coverage anywhere in this codebase - not a real behavior to carry
-forward, and not something audit defect #10 asked to change.
+Rule 2 (rotation slot) is symmetric - both last week's AND next week's
+on-call get it, matching AdvancedShiftAutomation.determine_shift_for_user()/
+get_upcoming_oncall_user() (fixed on this same branch, see commit
+b2a225c: without the forward-looking half, a group whose on-call turns
+are sparse relative to other groups sharing the same rotation pool
+would fall through to the static default slot every week, never
+varying). The rule 7 fallback (guaranteeing at least one rotation-slot
+person when neither half of rule 2 matches anyone present) also rotates
+the narrowed-to-present candidate list by the day's absolute week index
+(rotation.rotate(), the same date-derived mechanism used for on-call
+rotation - see rotation.py) rather than always picking the same
+present candidate - the identical staleness bug that commit's own
+_ensure_minimum_07_15_coverage fix addressed in the legacy engine
+(confirmed there by direct reproduction: 60 weeks, one of 3 group
+members never once selected).
 
 No DB access anywhere in this module - every input arrives as
 already-loaded snapshot data via PlanningRequest.
@@ -29,6 +37,7 @@ already-loaded snapshot data via PlanningRequest.
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
+from app.utils.automation.planner.rotation import rotate
 from app.utils.automation.planner.types import (
     LeaveSpan,
     ProposedShift,
@@ -63,10 +72,13 @@ def _is_on_leave(user_id: int, day: date, leaves: tuple[LeaveSpan, ...]) -> bool
 
 
 def assign_shift_slots_for_day(
+    day: date,
     available_users: tuple[UserRef, ...],
     oncall_user_id_today: int | None,
     oncall_user_id_last_week: int | None,
+    oncall_user_id_next_week: int | None,
     rotation_order: tuple[UserRef, ...],
+    rotation_anchor_epoch: date,
     published_slot_by_user: dict[int, str],
 ) -> dict[int, str]:
     """Assigns a role slot ("oncall"/"rotation"/"default") to each of
@@ -74,21 +86,24 @@ def assign_shift_slots_for_day(
     count-based special case:
 
     1. The on-call-today user (if among available_users) gets "oncall".
-    2. Any remaining available user who was on-call last week gets
-       "rotation".
-    3. If nobody has "rotation" yet, the configured rotation order picks
-       one remaining available user for it (rule 7: at least one
-       rotation-slot person every day) - preferring whoever already had
-       it in the published schedule (minimal perturbation), else the
-       first rotation_order member still available, else the first
-       remaining available user.
+    2. Any remaining available user who was on-call last week OR will be
+       on-call next week gets "rotation" (symmetric - see module
+       docstring for why the forward-looking half matters).
+    3. If nobody has "rotation" yet, one remaining available user is
+       picked for it (rule 7: at least one rotation-slot person every
+       day) - preferring whoever already had it in the published
+       schedule (minimal perturbation), else the configured rotation
+       order narrowed to today's remaining candidates and rotated by
+       the day's absolute week index (never a fixed "first present"
+       pick - see module docstring for the staleness bug that would
+       otherwise reintroduce).
     4. Everyone else gets "default".
 
-    A single available user with no on-call today/last week still ends
-    up with "rotation" via step 3 (nothing else to prefer, they're the
-    only remaining candidate) - this is what step 6 of the old rules
-    ("minimum headcount: 1 person covers 7am-3pm alone") reduces to
-    under this general algorithm, without a dedicated 1-user branch.
+    A single available user with no on-call today/last/next week still
+    ends up with "rotation" via step 3 (nothing else to prefer, they're
+    the only remaining candidate) - this is what step 6 of the old
+    rules ("minimum headcount: 1 person covers 7am-3pm alone") reduces
+    to under this general algorithm, without a dedicated 1-user branch.
     """
     slot_by_user: dict[int, str] = {}
     available_by_id = {user.id: user for user in available_users}
@@ -96,12 +111,13 @@ def assign_shift_slots_for_day(
     if oncall_user_id_today is not None and oncall_user_id_today in available_by_id:
         slot_by_user[oncall_user_id_today] = "oncall"
 
-    if (
-        oncall_user_id_last_week is not None
-        and oncall_user_id_last_week in available_by_id
-        and oncall_user_id_last_week not in slot_by_user
-    ):
-        slot_by_user[oncall_user_id_last_week] = "rotation"
+    for candidate_id in (oncall_user_id_last_week, oncall_user_id_next_week):
+        if (
+            candidate_id is not None
+            and candidate_id in available_by_id
+            and candidate_id not in slot_by_user
+        ):
+            slot_by_user[candidate_id] = "rotation"
 
     if not any(slot == "rotation" for slot in slot_by_user.values()):
         remaining = [u for u in available_users if u.id not in slot_by_user]
@@ -116,8 +132,9 @@ def assign_shift_slots_for_day(
                 None,
             )
             if fallback_id is None:
+                rotated_order = rotate(rotation_order, day, rotation_anchor_epoch)
                 fallback_id = next(
-                    (u.id for u in rotation_order if u.id in remaining_ids),
+                    (u.id for u in rotated_order if u.id in remaining_ids),
                     remaining[0].id,
                 )
             slot_by_user[fallback_id] = "rotation"
@@ -139,6 +156,7 @@ def plan_shifts_for_scope(
     locked: frozenset[tuple[date, int]],
     published: dict[tuple[date, int], int],
     rotation_order: tuple[UserRef, ...],
+    rotation_anchor_epoch: date,
     rules: ResolvedRules,
 ) -> ShiftPlanFragment:
     """Plans shift assignments for one scope over [start_date, end_date].
@@ -193,6 +211,19 @@ def plan_shifts_for_scope(
         last_week_friday = _covering_friday(day - timedelta(days=7), rules)
         oncall_user_id_last_week = proposed_oncalls.get((last_week_friday, group_id))
 
+        # Symmetric forward-looking half of rule 2 - only credited if
+        # that on-call genuinely starts after `day` (mirrors
+        # AdvancedShiftAutomation.get_upcoming_oncall_user()'s own
+        # guard): on a transition Friday, `day + 7 days` can land on
+        # the tail end of an on-call that started that same evening,
+        # which is not a genuinely future one.
+        next_week_friday = _covering_friday(day + timedelta(days=7), rules)
+        oncall_user_id_next_week = (
+            proposed_oncalls.get((next_week_friday, group_id))
+            if next_week_friday > day
+            else None
+        )
+
         published_slot_by_user = {
             user_id: _role_slot_for_shift_type(shift_type_id, rules)
             for (pub_date, user_id), shift_type_id in published.items()
@@ -200,10 +231,13 @@ def plan_shifts_for_scope(
         }
 
         slot_by_user = assign_shift_slots_for_day(
+            day,
             available_today,
             oncall_user_id_today,
             oncall_user_id_last_week,
+            oncall_user_id_next_week,
             rotation_order,
+            rotation_anchor_epoch,
             published_slot_by_user,
         )
 
