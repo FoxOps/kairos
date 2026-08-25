@@ -7,6 +7,25 @@ versions match the bare (no `v` prefix) git tags this project actually
 pushes, e.g. `1.1.0`, not `v1.1.0` — see `.github/workflows/tests.yml`'s
 tag trigger for why.
 
+## [Unreleased]
+
+### Fixed
+- Shift generation rotation, two compounding bugs in a group whose
+  on-call turns are sparse (e.g. `oncall_scheduling_mode` shared/pooled
+  across several groups while `shift_scheduling_mode` is per-group) —
+  reported as "the same shift order repeats every week" on long (6+
+  month) generation runs:
+  - A user due on-call the *following* week is now also considered for
+    the 7am-3pm rotation slot (previously only "on-call last week" was
+    checked), so a group gets a second, forward-looking chance to vary
+    the assignment instead of defaulting everyone to 9am-5pm.
+  - When neither check matches anyone, the minimum-coverage fallback
+    that force-assigns one person to 7am-3pm (guaranteeing the slot is
+    never left empty) now rotates through the configured rotation
+    order by week instead of always picking the same person - it was
+    previously static, so a group stuck relying on this fallback for
+    consecutive weeks saw the identical person on 7am-3pm indefinitely.
+
 ## [1.1.0] — 2026-08-07
 
 ### Added

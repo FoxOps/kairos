@@ -233,12 +233,39 @@ class AdvancedShiftAutomation:
         return oncall.user if oncall else None
 
     @staticmethod
+    def get_upcoming_oncall_user(
+        date: "date", group: "Group | None" = None
+    ) -> "User | None":
+        """Fetch the user on-call the week following `date`'s own shift
+        week, for determine_shift_for_user()'s forward-looking rule 2 -
+        but only if that on-call genuinely starts after `date`.
+
+        Without that guard, `date + 7 days` on a transition Friday (the
+        day an on-call starts that evening) lands on the *tail end* of
+        that same just-starting on-call - not a genuinely future one -
+        since it spans a full 7 days from its own start. Naively crediting
+        that would give the incoming person 7am-3pm on the very day their
+        on-call starts, when the documented rule is that they keep
+        whatever they had the day before until the following Monday (see
+        get_oncall_for_date()'s own docstring)."""
+        from datetime import timedelta
+
+        next_week_date = date + timedelta(days=7)
+        next_oncall = AdvancedShiftAutomation.get_oncall_for_date(
+            next_week_date, group=group
+        )
+        if next_oncall and next_oncall.start_time.date() > date:
+            return next_oncall.user
+        return None
+
+    @staticmethod
     def determine_shift_for_user(
         user: "User",
         date: "date",
         oncall_today: "OnCall | None | object" = _UNSET,
         oncall_user_last_week: "User | None | object" = _UNSET,
         group: "Group | None" = None,
+        oncall_user_next_week: "User | None | object" = _UNSET,
     ) -> "tuple[int, int]":
         """
         Determine the shift slot for a user on a given date.
@@ -249,16 +276,25 @@ class AdvancedShiftAutomation:
            person whose on-call is ENDING that Friday, not the one
            starting that evening, since shift changes only happen on
            Monday) -> 1pm-9pm (if eligible)
-        2. If the user was on-call the previous week (and not this week) -> 7am-3pm (rotation)
+        2. If the user was on-call the previous week, OR will be on-call
+           the following week (and isn't already covered by rule 1) ->
+           7am-3pm (rotation). The forward-looking half matters whenever
+           this group's own on-call turns are sparse (e.g. on-call pooled/
+           shared across several groups, so this group's members are only
+           on-call a fraction of the weeks): without it, every week where
+           nobody here was on-call last week either falls through to rule
+           3 for everyone, which never varies - see
+           _ensure_minimum_07_15_coverage's own static fallback.
         3. Otherwise -> 9am-5pm (this is also what a user whose on-call
            starts on a transition Friday gets that day - same as the day
            before, since they're not "this week's on-call" for shift
            purposes until the following Monday)
 
-        `oncall_today`/`oncall_user_last_week`: passed by the caller (a
-        single query per day in generate_daily_shifts) instead of being
-        queried once per user - they stay optional for callers that
-        invoke this method in isolation (notably tests).
+        `oncall_today`/`oncall_user_last_week`/`oncall_user_next_week`:
+        passed by the caller (a single query per day in
+        generate_daily_shifts) instead of being queried once per user -
+        they stay optional for callers that invoke this method in
+        isolation (notably tests).
         """
         from datetime import timedelta
         from typing import cast
@@ -285,7 +321,8 @@ class AdvancedShiftAutomation:
             if user_in_schedule:
                 return AdvancedShiftAutomation.SHIFT_13_21
 
-        # Rule 2: check whether the user was on-call the previous week
+        # Rule 2: check whether the user was on-call the previous week,
+        # or will be on-call the following week.
         if oncall_user_last_week is _UNSET:
             previous_week_date = date - timedelta(days=7)
             previous_oncall_user = AdvancedShiftAutomation.get_oncall_user_for_date(
@@ -294,6 +331,15 @@ class AdvancedShiftAutomation:
         else:
             previous_oncall_user = cast("User | None", oncall_user_last_week)
         if previous_oncall_user and previous_oncall_user.id == user.id:
+            return AdvancedShiftAutomation.SHIFT_07_15
+
+        if oncall_user_next_week is _UNSET:
+            next_oncall_user = AdvancedShiftAutomation.get_upcoming_oncall_user(
+                date, group=group
+            )
+        else:
+            next_oncall_user = cast("User | None", oncall_user_next_week)
+        if next_oncall_user and next_oncall_user.id == user.id:
             return AdvancedShiftAutomation.SHIFT_07_15
 
         # Rule 3: default slot
@@ -330,12 +376,13 @@ class AdvancedShiftAutomation:
     @staticmethod
     def _ensure_minimum_07_15_coverage(
         assignments: "list[tuple[User, tuple[int, int]]]",
+        date: "date | None" = None,
     ) -> "list[tuple[User, tuple[int, int]]]":
         """Rule 7: at least one person must always be on the 7am-3pm slot.
         determine_shift_for_user() only assigns it via rule 2 (the
-        previous week's on-call person, rotation) - if that person isn't
-        among today's available/eligible users, nobody gets it and rules
-        1/3 alone can leave 7am-9am and 5pm-9pm completely uncovered.
+        previous/next week's on-call person, rotation) - if nobody
+        eligible today matches either, nobody gets it and rules 1/3
+        alone can leave 7am-9am and 5pm-9pm completely uncovered.
 
         Only called from the 3+ users branch of generate_daily_shifts()
         - the 1-user case (rule 6) and handle_two_users_case() (2-user
@@ -344,10 +391,23 @@ class AdvancedShiftAutomation:
         If no assignment already covers the slot, overrides one: the
         first available user in the configured rotation order
         (AutomationConfig.get_rotation_order(), same order already used
-        for on-call assignment - reusing it here means the fallback
-        stays predictable for admins who already rely on that order),
-        falling back to the first entry in `assignments` if the rotation
-        order is empty or none of its users are in `assignments`.
+        for on-call assignment), rotated by `date`'s week number - a
+        fixed (non-rotating) starting point would pick the *same* person
+        every time this fallback triggers, which for a group whose
+        on-call turns are sparse (e.g. on-call pooled/shared across
+        several groups) can mean the identical person for weeks or
+        months on end. The rotation is applied *after* narrowing the
+        configured order down to today's actually-present candidates,
+        not before: rotating the full (possibly org-wide, multi-group)
+        rotation order first and then picking "whoever's present" can
+        phase-lock with the on-call rotation's own use of that same
+        list (both cycling with the same period) and permanently skip
+        one of this group's members - confirmed by direct reproduction
+        (60 weeks, one of 3 group members never once selected).
+        `date=None` (isolated callers, notably tests) preserves the
+        previous static "first match" behavior - falling back to the
+        first entry in `assignments` if the rotation order is empty or
+        none of its users are in `assignments`.
         """
         if any(
             hours == AdvancedShiftAutomation.SHIFT_07_15 for _, hours in assignments
@@ -358,6 +418,17 @@ class AdvancedShiftAutomation:
 
         rotation_order_ids = AutomationConfig.get_rotation_order() or []
         index_by_user_id = {user.id: i for i, (user, _hours) in enumerate(assignments)}
+
+        present_rotation_ids = [
+            user_id for user_id in rotation_order_ids if user_id in index_by_user_id
+        ]
+        if date is not None and present_rotation_ids:
+            week_number = date.toordinal() // 7
+            offset = week_number % len(present_rotation_ids)
+            present_rotation_ids = (
+                present_rotation_ids[offset:] + present_rotation_ids[:offset]
+            )
+        rotation_order_ids = present_rotation_ids
 
         fallback_index = 0
         for user_id in rotation_order_ids:
@@ -688,6 +759,9 @@ class AdvancedShiftAutomation:
         oncall_user_last_week = AdvancedShiftAutomation.get_oncall_user_for_date(
             previous_week_date, group=group
         )
+        oncall_user_next_week = AdvancedShiftAutomation.get_upcoming_oncall_user(
+            date, group=group
+        )
 
         shift_assignments: list[tuple[User, tuple[int, int]]] = []
         for user in schedule_users:
@@ -695,13 +769,18 @@ class AdvancedShiftAutomation:
                 continue
 
             hours = AdvancedShiftAutomation.determine_shift_for_user(
-                user, date, oncall_today, oncall_user_last_week, group=group
+                user,
+                date,
+                oncall_today,
+                oncall_user_last_week,
+                group=group,
+                oncall_user_next_week=oncall_user_next_week,
             )
             shift_assignments.append((user, hours))
 
         if shift_assignments:
             shift_assignments = AdvancedShiftAutomation._ensure_minimum_07_15_coverage(
-                shift_assignments
+                shift_assignments, date
             )
 
         for user, hours in shift_assignments:

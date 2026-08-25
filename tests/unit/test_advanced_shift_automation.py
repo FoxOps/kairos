@@ -377,6 +377,36 @@ class TestDetermineShiftForUser:
             # SHIFT_09_17 (rule 3) instead of SHIFT_13_21 (rule 1).
             assert shift_hours == AdvancedShiftAutomation.SHIFT_13_21
 
+    def test_determine_shift_rotation_before_oncall_next_week(
+        self, test_app, test_group, test_user
+    ):
+        """Symmetric to test_determine_shift_rotation_after_oncall: a user
+        who will be on-call *next* week should also get 07h-15h this week,
+        not just a user who was on-call last week. Without this, a group
+        whose on-call turns are sparse (e.g. shared/pooled across several
+        groups) never rotates onto 07h-15h except on the rare week a
+        member's on-call already ended - this restores a second, forward-
+        looking chance to vary the assignment instead of always falling
+        through to the static minimum-coverage fallback."""
+        with test_app.app_context():
+            next_friday = date(2023, 12, 8)  # Friday, the week after test_date
+            start_time = datetime.combine(next_friday, datetime.min.time()).replace(
+                hour=21
+            )
+            end_time = start_time + timedelta(days=7, hours=-14)
+            oncall = OnCall(
+                user_id=test_user.id, start_time=start_time, end_time=end_time
+            )
+            db.session.add(oncall)
+            db.session.commit()
+
+            test_date = date(2023, 12, 4)  # Monday, the week before the on-call
+            shift_hours = AdvancedShiftAutomation.determine_shift_for_user(
+                test_user, test_date
+            )
+
+            assert shift_hours == AdvancedShiftAutomation.SHIFT_07_15
+
     def test_determine_shift_transition_friday_outgoing_vs_incoming(
         self, test_app, test_group, test_user, second_user
     ):
@@ -1032,6 +1062,56 @@ class TestGenerateDailyShifts:
             ]
             assert len(covering_07_15) == 1
             assert covering_07_15[0].user_id == user3.id
+
+    def test_generate_daily_shifts_07_15_fallback_rotates_across_weeks(
+        self, test_app, test_group, test_user, second_user
+    ):
+        """Regression test: the rule 7 fallback must not pick the same
+        person every time it triggers - it should rotate week over week,
+        same as every other rule in this engine. Without this, a group
+        whose on-call turns are sparse (no natural rule 1/2 match for
+        weeks at a time) would see the identical person parked on
+        7am-3pm indefinitely, and everyone else frozen on 9am-5pm - the
+        exact "no rotation between weeks" bug this test guards against."""
+        with test_app.app_context():
+            user3 = User(
+                name="Third User",
+                email="third@test.com",
+                password_hash=generate_password_hash("third-password"),
+                is_admin=False,
+                group_id=test_group.id,
+            )
+            db.session.add(user3)
+            db.session.commit()
+
+            AutomationConfig.set_rotation_order(
+                [user3.id, second_user.id, test_user.id]
+            )
+
+            def fallback_user_id(test_date):
+                shifts, _messages = AdvancedShiftAutomation.generate_daily_shifts(
+                    test_date, dry_run=True
+                )
+                covering_07_15 = [
+                    shift
+                    for shift in shifts
+                    if shift.start_time.hour == 7 and shift.end_time.hour == 15
+                ]
+                assert len(covering_07_15) == 1
+                return covering_07_15[0].user_id
+
+            week1 = date(2023, 12, 15)  # Friday
+            week2 = week1 + timedelta(days=7)
+            week3 = week1 + timedelta(days=14)
+
+            picks = {
+                fallback_user_id(week1),
+                fallback_user_id(week2),
+                fallback_user_id(week3),
+            }
+            # 3 users in rotation, 3 consecutive weeks -> all 3 must
+            # appear, not the same one every time.
+            assert picks == {user3.id, second_user.id, test_user.id}
 
     def test_generate_daily_shifts_dry_run_no_commit(
         self, test_app, test_group, test_user, test_shift_type
