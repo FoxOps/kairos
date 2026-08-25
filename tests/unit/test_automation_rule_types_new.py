@@ -141,11 +141,12 @@ class TestRestAfterOnCallRule:
 
 
 class TestOnCallShiftOverlapRule:
-    def test_default_blocks_overlap(self, test_app):
-        # Safe default: block overlap unless an admin explicitly opts out -
-        # unlike the other 3 new rule types, "off" would silently allow a
-        # data-integrity problem (a user double-booked on the same instant).
-        assert OnCallShiftOverlapRule.resolve() == {"block": True}
+    def test_default_allows_overlap(self, test_app):
+        # On-call duty coexists with normal shifts by default - a
+        # week-long on-call naturally overlaps its holder's daytime
+        # shift hours, which is expected, not a conflict. An org that
+        # wants the old stricter behavior can opt in per group.
+        assert OnCallShiftOverlapRule.resolve() == {"block": False}
 
     def test_validate_params_rejects_non_bool(self):
         assert OnCallShiftOverlapRule.validate_params({"block": "yes"})

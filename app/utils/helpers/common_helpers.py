@@ -238,8 +238,9 @@ def can_add_shift(user=None, date=None, shift_type=None):
     if date is None:
         date = datetime.now().date()
 
-    # Shifts can only be added Monday through Friday
-    if date.weekday() >= 5:
+    from app.utils.automation.rules import WeekendDefinitionRule
+
+    if WeekendDefinitionRule.is_weekend(date, group=user.group):
         return False
 
     # The user can't have a shift while on leave
@@ -304,6 +305,7 @@ def leave_keeps_minimum_headcount(
     shifts - a leave for someone outside these groups doesn't affect
     this headcount."""
     from app.utils.automation.advanced_shift_automation import AdvancedShiftAutomation
+    from app.utils.automation.rules import WeekendDefinitionRule
 
     schedule_users = AdvancedShiftAutomation.get_users_in_schedule_groups()
     schedule_user_ids = {u.id for u in schedule_users}
@@ -327,7 +329,7 @@ def leave_keeps_minimum_headcount(
 
     current_date = start_date
     while current_date <= end_date:
-        if current_date.weekday() < 5:  # Shifts are generated Monday-Friday
+        if not WeekendDefinitionRule.is_weekend(current_date, group=user.group):
             other_users_on_leave = {
                 leave.user_id
                 for leave in other_leaves
@@ -469,8 +471,8 @@ def _get_overlapping_oncall(user_id, start_date, end_date):
 # Configurable automation rule checks (see app/utils/automation/rules/) -
 # none of these 3 rule types existed in any form before this feature;
 # each check is a no-op until an admin actually configures the rule
-# (oncall_shift_overlap is the one exception, on by default - see its
-# rule class docstring for why).
+# (including oncall_shift_overlap - on-call duty coexists with normal
+# shifts by default, see its rule class docstring).
 # ---------------------------------------------------------------------------
 
 
@@ -502,6 +504,11 @@ def check_shift_rule_violations(user, date, shift_type=None, exclude_shift_id=No
         RestAfterOnCallRule,
         StaffingLimitsRule,
     )
+    from app.utils.automation.rules.predicates import (
+        shift_violates_oncall_overlap,
+        shift_violates_rest_after_oncall,
+        shift_violates_staffing_max,
+    )
 
     group = (
         user.group
@@ -516,7 +523,7 @@ def check_shift_rule_violations(user, date, shift_type=None, exclude_shift_id=No
         )
         if exclude_shift_id is not None:
             count_query = count_query.filter(Shift.id != exclude_shift_id)
-        if count_query.count() >= limits["max"]:
+        if shift_violates_staffing_max(count_query.count(), limits["max"]):
             return _(
                 "Impossible d'ajouter ce shift : effectif maximum (%(max)s) "
                 "déjà atteint pour ce créneau.",
@@ -530,8 +537,9 @@ def check_shift_rule_violations(user, date, shift_type=None, exclude_shift_id=No
         hour=shift_type.end_hour
     )
 
-    if OnCallShiftOverlapRule.resolve(group=group)["block"] and _has_overlapping_oncall(
-        user.id, start_time, end_time
+    block_oncall_overlap = OnCallShiftOverlapRule.resolve(group=group)["block"]
+    if block_oncall_overlap and shift_violates_oncall_overlap(
+        _has_overlapping_oncall(user.id, start_time, end_time), block_oncall_overlap
     ):
         return _(
             "Impossible d'ajouter ce shift : chevauche une astreinte de %(name)s.",
@@ -547,8 +555,9 @@ def check_shift_rule_violations(user, date, shift_type=None, exclude_shift_id=No
             .order_by(OnCall.end_time.desc())
             .first()
         )
-        if last_oncall and (start_time - last_oncall.end_time) < timedelta(
-            hours=min_rest_hours
+        last_oncall_end = last_oncall.end_time if last_oncall else None
+        if shift_violates_rest_after_oncall(
+            start_time, last_oncall_end, min_rest_hours
         ):
             return _(
                 "Impossible d'ajouter ce shift : %(name)s doit se reposer "
@@ -575,6 +584,7 @@ def check_oncall_rule_violations(user, start_time, end_time, exclude_oncall_id=N
     mode setting since this validates an on-call, not a shift."""
     from app.services import SettingsService
     from app.utils.automation.rules import OnCallShiftOverlapRule
+    from app.utils.automation.rules.predicates import oncall_violates_shift_overlap
 
     group = (
         user.group
@@ -582,11 +592,14 @@ def check_oncall_rule_violations(user, start_time, end_time, exclude_oncall_id=N
         else None
     )
 
-    if OnCallShiftOverlapRule.resolve(group=group)["block"]:
+    block_oncall_overlap = OnCallShiftOverlapRule.resolve(group=group)["block"]
+    if block_oncall_overlap:
         overlapping_shift = _get_overlapping_shift(
             user.id, start_time.date(), end_time.date()
         )
-        if overlapping_shift is not None:
+        if oncall_violates_shift_overlap(
+            overlapping_shift is not None, block_oncall_overlap
+        ):
             return _(
                 "Impossible d'ajouter cette astreinte : chevauche un shift de "
                 "%(name)s.",

@@ -255,8 +255,18 @@ class OnCallRepository:
         return query.delete(synchronize_session=sync_mode)
 
     @staticmethod
-    def create(user_id: int, start_time: datetime, end_time: datetime) -> OnCall:
-        oncall = OnCall(user_id=user_id, start_time=start_time, end_time=end_time)
+    def create(
+        user_id: int,
+        start_time: datetime,
+        end_time: datetime,
+        group_id: int | None = None,
+    ) -> OnCall:
+        oncall = OnCall(
+            user_id=user_id,
+            start_time=start_time,
+            end_time=end_time,
+            group_id=group_id,
+        )
         db.session.add(oncall)
         return oncall
 

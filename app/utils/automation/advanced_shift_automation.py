@@ -670,6 +670,7 @@ class AdvancedShiftAutomation:
                 start_time=start_time,
                 end_time=end_time,
                 date=date,
+                group_id=sole_user.group_id,
             )
             generated_shifts.append(shift)
 
@@ -722,6 +723,7 @@ class AdvancedShiftAutomation:
                         start_time=start_time,
                         end_time=end_time,
                         date=date,
+                        group_id=user.group_id,
                     )
                     generated_shifts.append(shift)
 
@@ -800,6 +802,7 @@ class AdvancedShiftAutomation:
                 start_time=start_time,
                 end_time=end_time,
                 date=date,
+                group_id=user.group_id,
             )
             generated_shifts.append(shift)
 

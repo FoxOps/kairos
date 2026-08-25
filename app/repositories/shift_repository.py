@@ -308,6 +308,7 @@ class ShiftRepository:
         start_time: datetime,
         end_time: datetime,
         on_date: date,
+        group_id: int | None = None,
     ) -> Shift:
         shift = Shift(
             user_id=user_id,
@@ -315,6 +316,7 @@ class ShiftRepository:
             start_time=start_time,
             end_time=end_time,
             date=on_date,
+            group_id=group_id,
         )
         db.session.add(shift)
         return shift

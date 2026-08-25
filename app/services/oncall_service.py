@@ -69,7 +69,9 @@ class OnCallService:
                 ),
             )
 
-        oncall = OnCallRepository.create(user.id, start_time, end_time)
+        oncall = OnCallRepository.create(
+            user.id, start_time, end_time, group_id=user.group_id
+        )
         db.session.commit()
         AuditService.log(
             "oncall.create",
@@ -221,6 +223,7 @@ class OnCallService:
         oncall.start_time = new_start
         oncall.end_time = new_end
         oncall.user_id = effective_user.id
+        oncall.group_id = effective_user.group_id
         db.session.commit()
 
         details = f"{original_user_name} -> {new_start.strftime('%d/%m/%Y')}"
