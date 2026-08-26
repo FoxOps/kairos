@@ -177,6 +177,11 @@ def automation_rules_dashboard():
             error = SettingsService.set_oncall_scheduling_mode(mode)
             _flash_result(error, _("Mode de planification des astreintes enregistré"))
 
+        elif section == "new_automation_engine_enabled":
+            enabled = request.form.get("enabled") == "on"
+            error = SettingsService.set_new_automation_engine_enabled(enabled)
+            _flash_result(error, _("Réglage du moteur d'automatisation enregistré"))
+
         return redirect(
             url_for(
                 "admin.automation_rules_dashboard",
@@ -224,4 +229,5 @@ def automation_rules_dashboard():
         oncall_shift_overlap=OnCallShiftOverlapRule.resolve(group=group),
         shift_scheduling_mode=SettingsService.get_shift_scheduling_mode(),
         oncall_scheduling_mode=SettingsService.get_oncall_scheduling_mode(),
+        new_automation_engine_enabled=SettingsService.get_new_automation_engine_enabled(),
     )

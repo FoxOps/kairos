@@ -382,9 +382,10 @@ class TestCanAddShiftNewRules:
     """Tests for the 3 new configurable rule checks wired into
     can_add_shift(): staffing_limits (max), rest_after_oncall,
     oncall_shift_overlap. None of these existed before this feature -
-    each defaults to not blocking anything until configured (except
-    oncall_shift_overlap, which defaults to blocking - see its rule
-    class docstring)."""
+    each defaults to not blocking anything until configured, including
+    oncall_shift_overlap: on-call duty coexists with normal shifts by
+    default (see its rule class docstring) - an org can still opt into
+    the old stricter behavior per group."""
 
     def test_staffing_max_not_reached_allows_shift(
         self, test_app, test_user, second_user, test_shift_type
@@ -457,26 +458,11 @@ class TestCanAddShiftNewRules:
 
         assert can_add_shift(test_user, date(2023, 12, 1), test_shift_type) is True
 
-    def test_oncall_overlap_blocked_by_default(
+    def test_oncall_overlap_allowed_by_default(
         self, test_app, test_user, test_shift_type
     ):
-        # test_shift_type is 07h-15h on 2023-12-01 (a Friday).
-        oncall = OnCall(
-            user_id=test_user.id,
-            start_time=datetime(2023, 11, 24, 21, 0),
-            end_time=datetime(2023, 12, 1, 7, 0) + timedelta(hours=10),
-        )
-        db.session.add(oncall)
-        db.session.commit()
-
-        assert can_add_shift(test_user, date(2023, 12, 1), test_shift_type) is False
-
-    def test_oncall_overlap_allowed_when_rule_disabled(
-        self, test_app, test_user, test_shift_type
-    ):
-        from app.models import AutomationRule
-
-        AutomationRule.set("oncall_shift_overlap", {"block": False})
+        # test_shift_type is 07h-15h on 2023-12-01 (a Friday). On-call
+        # coexists with a normal shift by default - not blocked.
         oncall = OnCall(
             user_id=test_user.id,
             start_time=datetime(2023, 11, 24, 21, 0),
@@ -487,33 +473,29 @@ class TestCanAddShiftNewRules:
 
         assert can_add_shift(test_user, date(2023, 12, 1), test_shift_type) is True
 
-
-class TestCanAddOnCallNewRules:
-    """Tests for oncall_shift_overlap wired into can_add_oncall()."""
-
-    def test_overlapping_shift_blocked_by_default(
-        self, test_app, test_user, test_shift_type
-    ):
-        shift = Shift(
-            user_id=test_user.id,
-            shift_type_id=test_shift_type.id,
-            start_time=datetime(2023, 12, 1, 7, 0),
-            end_time=datetime(2023, 12, 1, 15, 0),
-            date=date(2023, 12, 1),
-        )
-        db.session.add(shift)
-        db.session.commit()
-
-        start_time = datetime(2023, 12, 1, 21, 0)  # Friday 21h
-        end_time = start_time + timedelta(days=7, hours=-14)
-        assert can_add_oncall(test_user, start_time, end_time) is False
-
-    def test_overlapping_shift_allowed_when_rule_disabled(
+    def test_oncall_overlap_blocked_when_rule_enabled(
         self, test_app, test_user, test_shift_type
     ):
         from app.models import AutomationRule
 
-        AutomationRule.set("oncall_shift_overlap", {"block": False})
+        AutomationRule.set("oncall_shift_overlap", {"block": True})
+        oncall = OnCall(
+            user_id=test_user.id,
+            start_time=datetime(2023, 11, 24, 21, 0),
+            end_time=datetime(2023, 12, 1, 7, 0) + timedelta(hours=10),
+        )
+        db.session.add(oncall)
+        db.session.commit()
+
+        assert can_add_shift(test_user, date(2023, 12, 1), test_shift_type) is False
+
+
+class TestCanAddOnCallNewRules:
+    """Tests for oncall_shift_overlap wired into can_add_oncall()."""
+
+    def test_overlapping_shift_allowed_by_default(
+        self, test_app, test_user, test_shift_type
+    ):
         shift = Shift(
             user_id=test_user.id,
             shift_type_id=test_shift_type.id,
@@ -527,6 +509,26 @@ class TestCanAddOnCallNewRules:
         start_time = datetime(2023, 12, 1, 21, 0)  # Friday 21h
         end_time = start_time + timedelta(days=7, hours=-14)
         assert can_add_oncall(test_user, start_time, end_time) is True
+
+    def test_overlapping_shift_blocked_when_rule_enabled(
+        self, test_app, test_user, test_shift_type
+    ):
+        from app.models import AutomationRule
+
+        AutomationRule.set("oncall_shift_overlap", {"block": True})
+        shift = Shift(
+            user_id=test_user.id,
+            shift_type_id=test_shift_type.id,
+            start_time=datetime(2023, 12, 1, 7, 0),
+            end_time=datetime(2023, 12, 1, 15, 0),
+            date=date(2023, 12, 1),
+        )
+        db.session.add(shift)
+        db.session.commit()
+
+        start_time = datetime(2023, 12, 1, 21, 0)  # Friday 21h
+        end_time = start_time + timedelta(days=7, hours=-14)
+        assert can_add_oncall(test_user, start_time, end_time) is False
 
 
 class TestCanAddLeave:

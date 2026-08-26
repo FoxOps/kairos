@@ -5,12 +5,30 @@ This module provides automation functionality for on-call duties.
 """
 
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable, Sequence
 from datetime import date, datetime, timedelta
+from typing import Protocol, TypeVar
 
 from flask_babel import gettext as _
 
 from app.models import Group, Leave, OnCall, User
+
+
+class _HasId(Protocol):
+    """Structural type for _solve_max_filled_weeks()'s candidates - the
+    function only ever reads `.id`, so it accepts both the real `User`
+    model (every pre-existing caller) and the pure planner's `UserRef`
+    dataclass (app/utils/automation/planner/types.py), which has no
+    dependency on this module's `User` import. Declared as a read-only
+    property (not a plain attribute) so a frozen dataclass like
+    `UserRef` - whose fields mypy treats as read-only - satisfies it;
+    a plain mutable-attribute Protocol member would reject it."""
+
+    @property
+    def id(self) -> int: ...
+
+
+_T = TypeVar("_T", bound=_HasId)
 
 
 class AvailabilityIndex:
@@ -114,6 +132,37 @@ class AvailabilityIndex:
         below."""
         return list(self._oncall_intervals.get(user_id, []))
 
+    @classmethod
+    def from_snapshots(
+        cls,
+        oncall_snapshots: Iterable,
+        leave_snapshots: Iterable,
+        min_spacing_weeks: int = 2,
+    ) -> "AvailabilityIndex":
+        """Alternate constructor building the exact same internal state
+        as __init__, from pre-loaded snapshot data instead of querying
+        OnCall/Leave directly - the pure automation planner (app/utils/
+        automation/planner/) has no DB access of its own, so it builds
+        this index from data resolved once by its own (non-pure) adapter
+        layer. Snapshot objects only need .user_id/.start_time/.end_time
+        (on-calls) or .user_id/.start_date/.end_date (leaves) - duck
+        typed rather than importing the planner's own dataclasses, so
+        this module has no dependency on the planner package (the
+        dependency flows the other way: planner imports this class)."""
+        index = cls.__new__(cls)
+        index._min_spacing_weeks = min_spacing_weeks
+        index._oncall_intervals = defaultdict(list)
+        index._leave_intervals = defaultdict(list)
+        for oncall in oncall_snapshots:
+            index._oncall_intervals[oncall.user_id].append(
+                (oncall.start_time, oncall.end_time)
+            )
+        for leave in leave_snapshots:
+            index._leave_intervals[leave.user_id].append(
+                (leave.start_date, leave.end_date)
+            )
+        return index
+
 
 # Hard cap on search nodes for _solve_max_filled_weeks() below - a safety
 # valve against pathological inputs (many weeks, many candidates, few
@@ -129,14 +178,26 @@ _MAX_SEARCH_NODES = 200_000
 
 def _solve_max_filled_weeks(
     weeks: list[tuple[date, datetime, datetime]],
-    week_candidates: list[list[User]],
+    week_candidates: Sequence[Sequence[_T]],
     index: AvailabilityIndex,
     min_spacing_weeks: int = 2,
-) -> dict[int, User]:
+    fairness_key: Callable[[dict[int, _T]], tuple] | None = None,
+) -> dict[int, _T]:
     """
     Branch-and-bound search that maximizes the number of on-call weeks
     that can be filled, respecting the legal spacing constraint (see
     OnCallSpacingRule, default 2 weeks).
+
+    `fairness_key`, if given, breaks ties among plans that fill the same
+    number of weeks - the default (None) preserves this function's
+    original behavior exactly (best_assignment only replaced on strict
+    improvement, so the first-found max-coverage plan wins ties by DFS/
+    candidate order, byte-identical to every pre-existing caller). Only
+    the automation planner (app/utils/automation/planner/) passes one,
+    to prefer - among equal-coverage plans - the one closer to the
+    published schedule / more balanced on-call counts / more faithful
+    to rotation order (lower key wins, same semantics as Python's own
+    `sorted(key=...)`).
 
     Why this exists: a plain greedy pass (try the first available
     candidate for week 1, then week 2, ...) can commit to a locally-fine
@@ -183,8 +244,8 @@ def _solve_max_filled_weeks(
                 intervals[user.id] = index.get_intervals(user.id)
 
     best_count = 0
-    best_assignment: dict[int, User] = {}
-    current: dict[int, User] = {}
+    best_assignment: dict[int, _T] = {}
+    current: dict[int, _T] = {}
     nodes_explored = 0
 
     def meets_spacing(user_id: int, start_time: datetime, end_time: datetime) -> bool:
@@ -202,7 +263,11 @@ def _solve_max_filled_weeks(
     def recurse(week_index: int, filled_count: int) -> None:
         nonlocal nodes_explored, best_count, best_assignment
 
-        if filled_count > best_count:
+        if filled_count > best_count or (
+            filled_count == best_count
+            and fairness_key is not None
+            and fairness_key(current) < fairness_key(best_assignment)
+        ):
             best_count = filled_count
             best_assignment = dict(current)
 
@@ -211,9 +276,20 @@ def _solve_max_filled_weeks(
             return
 
         weeks_remaining = total_weeks - week_index
-        if filled_count + weeks_remaining <= best_count:
-            # No assignment of the remaining weeks could beat the best
-            # found so far, even filling every single one of them.
+        # Without a fairness_key, a branch that can only TIE the best
+        # found so far (not beat it) is safe to prune - the first
+        # max-coverage plan found already wins ties by DFS/candidate
+        # order, so exploring another tying branch could never change
+        # the result. With a fairness_key, that tying branch might
+        # still win the tie-break - it must not be pruned away before
+        # its fairness_key is ever compared, so the bound only prunes
+        # branches that can't even reach a tie (strict `<`).
+        cannot_improve = (
+            filled_count + weeks_remaining < best_count
+            if fairness_key is not None
+            else filled_count + weeks_remaining <= best_count
+        )
+        if cannot_improve:
             return
 
         _friday, start_time, end_time = weeks[week_index]
@@ -428,6 +504,7 @@ def _generate_for_fridays(
             user_id=assigned_user.id,
             start_time=start_time,
             end_time=end_time,
+            group_id=assigned_user.group_id,
         )
         oncalls.append(oncall)
         if not dry_run:

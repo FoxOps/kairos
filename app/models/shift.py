@@ -59,6 +59,23 @@ class Shift(BaseModel):
     start_time = db.Column(db.DateTime, nullable=False, index=True)
     end_time = db.Column(db.DateTime, nullable=False, index=True)
     date = db.Column(db.Date, nullable=False, index=True)
+    # Point-in-time snapshot of the user's group at assignment time - NOT
+    # re-derived from user.group_id (a live, mutable FK), so a later group
+    # change never retroactively "moves" a historical shift. Nullable:
+    # rows created before this column existed were backfilled from
+    # user.group_id as it stood at migration time (see migration
+    # 9c3e7a1f4b6d), a one-time snapshot rather than original intent.
+    group_id = db.Column(
+        db.Integer, db.ForeignKey("groups.id"), nullable=True, index=True
+    )
+    # Manually pinned - the automation planner (app/utils/automation/
+    # planner/) excludes a locked row from its candidate pool entirely,
+    # so a correctly-wired plan can never propose reassigning/removing
+    # it (see PlanningRequest.locked_shifts). No admin UI sets this yet
+    # (phase 5 of the automation engine rework adds the column and its
+    # read-side only) - default False preserves today's behavior
+    # exactly (nothing is locked) until a future UI exists to set it.
+    locked = db.Column(db.Boolean, nullable=False, default=False)
 
     # Composite indexes for frequent queries, plus a unique constraint
     # closing the can_add_shift() check-then-insert race: the business

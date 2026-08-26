@@ -297,6 +297,38 @@ class TestSchedulingModeSection:
         assert SettingsService.get_shift_scheduling_mode() == "shared"
 
 
+class TestNewAutomationEngineEnabledSection:
+    def test_defaults_to_disabled(self, logged_in_client):
+        from app.services import SettingsService
+
+        assert SettingsService.get_new_automation_engine_enabled() is False
+
+    def test_checking_the_box_enables_it(self, logged_in_client):
+        response = logged_in_client.post(
+            "/admin/automation/rules",
+            data={"section": "new_automation_engine_enabled", "enabled": "on"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+
+        from app.services import SettingsService
+
+        assert SettingsService.get_new_automation_engine_enabled() is True
+
+    def test_omitting_the_checkbox_disables_it(self, logged_in_client):
+        from app.services import SettingsService
+
+        SettingsService.set_new_automation_engine_enabled(True)
+
+        response = logged_in_client.post(
+            "/admin/automation/rules",
+            data={"section": "new_automation_engine_enabled"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert SettingsService.get_new_automation_engine_enabled() is False
+
+
 class TestGroupScopedRuleEditing:
     def test_dashboard_get_with_group_id_shows_group_scoped_value(
         self, logged_in_client, test_group

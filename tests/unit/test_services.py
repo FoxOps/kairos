@@ -615,9 +615,13 @@ class TestShiftService:
     ):
         """Regression test: the drag & drop path used to skip the new
         configurable automation-rule checks entirely - same class of
-        gap as the pre-existing leave check above."""
-        from app.models import OnCall
+        gap as the pre-existing leave check above. oncall_shift_overlap
+        no longer blocks by default (on-call coexists with shifts), so
+        this test explicitly opts into the stricter behavior to keep
+        exercising the drag & drop path's rule-check wiring."""
+        from app.models import AutomationRule, OnCall
 
+        AutomationRule.set("oncall_shift_overlap", {"block": True})
         target_day = _next_weekday()
         new_start = datetime.combine(target_day, datetime.min.time()).replace(
             hour=test_shift_type.start_hour
@@ -876,7 +880,14 @@ class TestOnCallService:
         self, test_app, test_user, test_oncall, test_shift_type
     ):
         """Regression test: same class of gap as the leave check above,
-        for the new configurable oncall_shift_overlap rule."""
+        for the configurable oncall_shift_overlap rule.
+        oncall_shift_overlap no longer blocks by default (on-call
+        coexists with shifts), so this test explicitly opts into the
+        stricter behavior to keep exercising the drag & drop path's
+        rule-check wiring."""
+        from app.models import AutomationRule
+
+        AutomationRule.set("oncall_shift_overlap", {"block": True})
         friday = _next_friday()
         new_start = datetime.combine(friday, datetime.min.time()).replace(hour=21)
         new_end = new_start + timedelta(days=7, hours=-14)

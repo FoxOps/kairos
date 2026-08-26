@@ -315,6 +315,18 @@ class TestAppriseNotificationsEnabled:
             assert SettingsService.get_apprise_notifications_enabled() is True
 
 
+class TestNewAutomationEngineEnabled:
+    def test_defaults_to_false(self, test_app):
+        with test_app.app_context():
+            assert SettingsService.get_new_automation_engine_enabled() is False
+
+    def test_db_override_wins(self, test_app):
+        with test_app.app_context():
+            error = SettingsService.set_new_automation_engine_enabled(True)
+            assert error is None
+            assert SettingsService.get_new_automation_engine_enabled() is True
+
+
 class TestSetWithAuditFailurePath:
     """_set_with_audit() (the shared skeleton every setter above now
     goes through) - an unexpected failure must never raise (returned as
