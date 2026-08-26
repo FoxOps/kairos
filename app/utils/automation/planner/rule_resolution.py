@@ -1,6 +1,7 @@
-"""Non-pure adapter layer: the only file in the planner package allowed
-to touch the DB / Flask request context (flask.g rule-resolution
-cache). Wraps the existing AutomationRuleType.resolve() calls (rule
+"""Non-pure adapter layer: one of two files in the planner package
+allowed to touch the DB / Flask request context (the other is
+adapters.py, which calls into this module rather than resolving rules
+itself). Wraps the existing AutomationRuleType.resolve() calls (rule
 engine, unchanged) and AutomationConfig.get_rotation_epoch(), so the
 pure planner core (plan_schedule.py and everything it calls) never
 resolves anything itself - it only ever consumes the already-resolved
