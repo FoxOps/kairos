@@ -29,11 +29,17 @@ class GenerationRun(BaseModel):
         input_fingerprint: SchedulePlan.input_fingerprint (sha256 hex) -
             lets a later investigation confirm whether apply ran
             against a plan computed from stale input.
-        outcome: "applied" or "failed" - a plain string, matching this
-            codebase's existing convention for planner-adjacent status
-            fields (ProposedOnCall.change_type, RuleViolation.severity),
-            not a new SQL enum type.
-        error_detail: Populated only when outcome != "applied".
+        outcome: "applied", "failed", or "partial" - a plain string,
+            matching this codebase's existing convention for
+            planner-adjacent status fields (ProposedOnCall.change_type,
+            RuleViolation.severity), not a new SQL enum type. "partial"
+            is only produced by AutomationApplyService.apply_plan(
+            atomic=False) (the per-entry-isolated mode used by
+            AdvancedShiftAutomation.rebalance_after_leave()'s own
+            cutover): at least one diff entry's own SAVEPOINT rolled
+            back while every other entry still committed - see
+            error_detail for the failure count.
+        error_detail: Populated when outcome != "applied".
         actor_id: Foreign key to User who triggered the apply - nullable,
             same reasoning as AuditLog.actor_id (a future
             automatically-triggered apply, e.g. a cron-driven refresh,

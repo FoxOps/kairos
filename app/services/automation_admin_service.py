@@ -11,20 +11,23 @@ around it rather than duplicating it.
 
 from dataclasses import dataclass, field, replace
 from datetime import date, timedelta
-from types import SimpleNamespace
 
 from flask import has_request_context
-from flask_babel import gettext as _
 from flask_login import current_user
 
 from app import db
-from app.models import Group, ShiftType, User
+from app.models import Group, User
 from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository
 from app.services.automation_apply_service import AutomationApplyService
 from app.services.settings_service import SettingsService
 from app.utils.automation import AdvancedShiftAutomation, OnCallAutomation
 from app.utils.automation.planner import build_planning_request, plan_schedule
+from app.utils.automation.planner.presentation import (
+    plan_messages,
+    plan_oncall_namespaces,
+    plan_shift_namespaces,
+)
 from app.utils.automation.planner.types import SchedulePlan
 
 
@@ -534,127 +537,6 @@ class AutomationAdminService:
         return result
 
     @staticmethod
-    def _plan_oncall_namespaces(plan: SchedulePlan) -> list:
-        """`SimpleNamespace` stand-ins for full_dry_run.html's
-        oncall.user.name/.start_time/.end_time reads - see
-        _generate_result_from_plan()'s own docstring for why a real
-        (transient) OnCall instance is deliberately not used here.
-        Shared by the dry_run preview and the real-apply result, so
-        both ever show the exact same shape for the exact same plan."""
-        return [
-            SimpleNamespace(
-                user=db.session.get(User, o.user_id),
-                start_time=o.start_time,
-                end_time=o.end_time,
-            )
-            for o in plan.oncalls
-            if o.change_type != "unchanged"
-        ]
-
-    @staticmethod
-    def _plan_shift_namespaces(plan: SchedulePlan) -> list:
-        """Shift equivalent of _plan_oncall_namespaces() above."""
-        return [
-            SimpleNamespace(
-                user=db.session.get(User, s.user_id),
-                shift_type=db.session.get(ShiftType, s.shift_type_id),
-                date=s.date,
-            )
-            for s in plan.shifts
-            if s.change_type != "unchanged"
-        ]
-
-    @staticmethod
-    def _plan_messages(plan: SchedulePlan) -> tuple[list, list, list, list]:
-        """Builds the same "[TAG] text" message strings the legacy path
-        produces (see _generate_result_from_plan()'s own docstring for
-        why - admin_automation_routes.py's _classify_automation_message()
-        already parses this exact convention, no route changes needed)
-        from a plan's unfilled/violations. Returns (oncall_messages,
-        oncall_unfilled_dates, shift_messages, shift_unfilled_dates).
-        Shared by generate_full()'s and refresh_shifts()'s new-engine
-        result builders.
-
-        Entries whose reason_code is "locked_but_no_published_assignment"
-        are always skipped: that reason code only ever means a caller
-        (refresh_shifts()'s oncall_mode="none"/"fill_gaps" widened
-        locking, see _refresh_shifts_new_engine() below) deliberately
-        locked a slot that happens to have nothing published - the
-        caller already knows and chose that, so it must never surface
-        as an admin-facing "unfilled"/"gap" notification."""
-        oncall_messages: list = []
-        oncall_unfilled_dates: list = []
-        shift_messages: list = []
-        shift_unfilled_dates: list = []
-
-        for unfilled in plan.unfilled:
-            if unfilled.reason_code == "locked_but_no_published_assignment":
-                continue
-
-            if unfilled.kind == "oncall_week":
-                oncall_unfilled_dates.append(unfilled.date)
-                oncall_messages.append(
-                    _(
-                        "[WARN] Aucune astreinte générée pour le %(date)s "
-                        "(aucun utilisateur ne respecte le délai légal entre "
-                        "deux astreintes) - assignation manuelle nécessaire.",
-                        date=unfilled.date.strftime("%d/%m/%Y"),
-                    )
-                )
-                continue
-
-            shift_unfilled_dates.append(unfilled.date)
-            shift_type = None
-            if unfilled.detail:
-                shift_type = db.session.get(ShiftType, int(unfilled.detail))
-            label = shift_type.label if shift_type else unfilled.detail
-
-            if unfilled.kind == "mandatory_shift":
-                shift_messages.append(
-                    _(
-                        "[ALERT] Créneau obligatoire non pourvu pour le "
-                        "%(date)s : %(name)s.",
-                        date=unfilled.date.strftime("%d/%m/%Y"),
-                        name=label,
-                    )
-                )
-            else:  # staffing_min
-                shift_messages.append(
-                    _(
-                        "[WARN] Effectif minimum non atteint pour le "
-                        "%(date)s : %(name)s.",
-                        date=unfilled.date.strftime("%d/%m/%Y"),
-                        name=label,
-                    )
-                )
-
-        # The only rule_type any planner module currently raises a
-        # RuleViolation for is rest_after_oncall (shift_planner.py) -
-        # always shift-scoped. A future rule type producing on-call-
-        # side violations would need its own branch here.
-        for violation in plan.violations:
-            user = (
-                db.session.get(User, violation.user_id) if violation.user_id else None
-            )
-            tag = "[ALERT]" if violation.severity == "hard_blocked" else "[WARN]"
-            shift_messages.append(
-                _(
-                    "%(tag)s %(name)s n'a pas pu être affecté au %(date)s : "
-                    "repos insuffisant après son astreinte.",
-                    tag=tag,
-                    name=user.name if user else _("Utilisateur inconnu"),
-                    date=violation.date.strftime("%d/%m/%Y"),
-                )
-            )
-
-        return (
-            oncall_messages,
-            oncall_unfilled_dates,
-            shift_messages,
-            shift_unfilled_dates,
-        )
-
-    @staticmethod
     def _generate_result_from_plan(
         plan: SchedulePlan,
         dry_run: bool,
@@ -703,14 +585,14 @@ class AutomationAdminService:
             oncalls_deleted=oncalls_deleted,
             shifts_deleted=shifts_deleted,
         )
-        result.oncalls = AutomationAdminService._plan_oncall_namespaces(plan)
-        result.shifts = AutomationAdminService._plan_shift_namespaces(plan)
+        result.oncalls = plan_oncall_namespaces(plan)
+        result.shifts = plan_shift_namespaces(plan)
         (
             result.oncall_messages,
             result.oncall_unfilled_dates,
             result.shift_messages,
             result.shift_unfilled_dates,
-        ) = AutomationAdminService._plan_messages(plan)
+        ) = plan_messages(plan)
         return result
 
     @staticmethod
@@ -741,8 +623,9 @@ class AutomationAdminService:
           "shifts recomputed from whatever on-calls already exist, even
           manually modified ones" contract exactly. A locked date with
           nothing published produces an UnfilledRequirement tagged
-          "locked_but_no_published_assignment", which _plan_messages()
-          always filters out - "none" mode must never surface an
+          "locked_but_no_published_assignment", which plan_messages()
+          (app/utils/automation/planner/presentation.py) always filters
+          out - "none" mode must never surface an
           on-call gap it was never asked to fill.
         - "fill_gaps": only dates that already have a published
           assignment are locked (frozenset(request.published_oncalls) -
@@ -795,11 +678,11 @@ class AutomationAdminService:
             shifts_deleted=apply_result.shifts_deleted,
             oncall_messages_category=oncall_messages_category,
         )
-        result.shifts = AutomationAdminService._plan_shift_namespaces(plan)
+        result.shifts = plan_shift_namespaces(plan)
         (
             result.oncall_messages,
             result.oncall_unfilled_dates,
             result.shift_messages,
             result.shift_unfilled_dates,
-        ) = AutomationAdminService._plan_messages(plan)
+        ) = plan_messages(plan)
         return result

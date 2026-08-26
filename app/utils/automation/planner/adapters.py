@@ -52,7 +52,10 @@ def _group_or_none(group_id: int | None) -> Group | None:
 
 
 def build_planning_request(
-    start_date: date, end_date: date, shift_start_date: date | None = None
+    start_date: date,
+    end_date: date,
+    shift_start_date: date | None = None,
+    restrict_to_group_id: int | None = None,
 ) -> PlanningRequest:
     """The DB-to-PlanningRequest boundary. Read-only - never writes
     anything. Reproduces the exact scoping/eligibility/rotation logic
@@ -68,7 +71,22 @@ def build_planning_request(
     call site through phase 6) means "no widening happened, use
     start_date for shifts too" - published_shifts/locked_shifts are then
     fetched over the same [start_date, end_date] range as before,
-    unchanged behavior."""
+    unchanged behavior.
+
+    `restrict_to_group_id`: narrows oncall_groups/schedule_groups to at
+    most that one group id, mirroring how
+    AdvancedShiftAutomation.rebalance_after_leave()'s legacy code scopes
+    itself to the leave owner's own Group under "per_group" mode instead
+    of replanning every other group's schedule too. Only has an effect
+    when the relevant scheduling mode is "per_group" (oncall_groups/
+    schedule_groups is otherwise always `(None,)`, "shared" mode's one
+    pooled scope, which a single group id cannot meaningfully narrow -
+    same reasoning the legacy code already applies via its own
+    `... if mode == "per_group" else None` fallback). Expressed as an
+    intersection with the normal eligible-groups computation, not a
+    separate lookup - a group ineligible for that scope still narrows to
+    an empty tuple, exactly like today's behavior when no groups are
+    eligible at all."""
     effective_shift_start = shift_start_date or start_date
     oncall_groups = _scoped_group_ids(
         SettingsService.get_oncall_scheduling_mode() == "per_group",
@@ -78,6 +96,17 @@ def build_planning_request(
         SettingsService.get_shift_scheduling_mode() == "per_group",
         "is_part_of_schedule",
     )
+    if restrict_to_group_id is not None:
+        # (None,) is the "shared" mode sentinel, not a real group id -
+        # `None == restrict_to_group_id` is always False, so filtering
+        # it unconditionally would wrongly collapse shared mode's one
+        # pooled scope to an empty tuple instead of leaving it alone.
+        if oncall_groups != (None,):
+            oncall_groups = tuple(g for g in oncall_groups if g == restrict_to_group_id)
+        if schedule_groups != (None,):
+            schedule_groups = tuple(
+                g for g in schedule_groups if g == restrict_to_group_id
+            )
 
     eligible_oncall_users = {
         group_id: _user_refs(
@@ -169,6 +198,22 @@ def build_planning_request(
     # this is a no-op there.
     oncall_mode_is_shared = oncall_groups == (None,)
     overlapping_oncalls = OnCallRepository.list_overlapping_range(start_date, end_date)
+    if restrict_to_group_id is not None:
+        # Without this, an on-call belonging to a group OUTSIDE the
+        # restriction (never planned by this request at all, since
+        # oncall_groups was narrowed above) would still show up in
+        # published_oncalls unfiltered - compute_diff() would then see
+        # it published but never re-proposed (this request's
+        # oncall_groups never included that group's scope) and mark it
+        # "removed", and apply_plan would delete another group's
+        # on-call nobody asked to touch. Restricting to `all_user_ids`
+        # (this request's own real population, already computed above)
+        # is the same principle existing_oncalls/existing_leaves
+        # already apply a few lines up - published_oncalls/published_shifts
+        # were the one place that had forgotten to.
+        overlapping_oncalls = [
+            o for o in overlapping_oncalls if o.user_id in all_user_ids
+        ]
     published_oncalls = {
         (
             o.start_time.date(),
@@ -193,6 +238,13 @@ def build_planning_request(
     shifts_in_range = ShiftRepository.list_in_date_range_with_user(
         effective_shift_start, end_date
     )
+    if restrict_to_group_id is not None:
+        # Same reasoning as overlapping_oncalls above: a shift belonging
+        # to a user outside this request's own restricted population
+        # would otherwise be misdiffed as "removed" (published, but
+        # eligible_shift_users never includes that user under the
+        # restriction, so no scope ever re-proposes it) and deleted.
+        shifts_in_range = [s for s in shifts_in_range if s.user_id in all_user_ids]
     published_shifts = {(s.date, s.user_id): s.shift_type_id for s in shifts_in_range}
     locked_shifts = frozenset((s.date, s.user_id) for s in shifts_in_range if s.locked)
 

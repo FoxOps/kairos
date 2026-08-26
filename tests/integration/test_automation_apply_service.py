@@ -227,3 +227,105 @@ class TestApplyPlanRollback:
         assert run.outcome == "failed"
         assert Shift.query.filter_by(date=target_date).count() == 0
         assert Shift.query.filter_by(date=control_date).count() == 1
+
+
+class TestApplyPlanNonAtomic:
+    """Phase 7 follow-up: apply_plan(atomic=False), used by
+    AdvancedShiftAutomation.rebalance_after_leave()'s own cutover - each
+    diff entry gets its own SAVEPOINT instead of one transaction for the
+    whole plan, so one bad entry doesn't discard every other entry's
+    already-applied change."""
+
+    def test_one_bad_entry_does_not_roll_back_the_others(self, test_app):
+        """Same forced uq_shift_user_date IntegrityError trick as
+        test_mid_apply_failure_rolls_back_the_whole_transaction above
+        (two "added" entries for the identical (user_id, date)), but in
+        atomic=False mode: exactly one of the two duplicate inserts
+        must survive (the other's own SAVEPOINT rolled back alone), the
+        overall result must still report success, and the failure must
+        be recorded in failed_entries rather than silently dropped."""
+        group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
+        user = _make_user("U0", "u0@x.com", group)
+        shift_type = ShiftType(name="t1", label="T1", start_hour=9, end_hour=17)
+        db.session.add(shift_type)
+        db.session.commit()
+
+        control_date = date(2026, 9, 1)
+        control = Shift(
+            user_id=user.id,
+            shift_type_id=shift_type.id,
+            date=control_date,
+            start_time=datetime(2026, 9, 1, 9, 0),
+            end_time=datetime(2026, 9, 1, 17, 0),
+        )
+        db.session.add(control)
+        db.session.commit()
+
+        target_date = date(2026, 9, 8)
+        proposed = ProposedShift(
+            date=target_date,
+            user_id=user.id,
+            shift_type_id=shift_type.id,
+            start_time=datetime(2026, 9, 8, 9, 0),
+            end_time=datetime(2026, 9, 8, 17, 0),
+            group_id=None,
+            role_slot="default",
+            change_type="added",
+        )
+        diff = (
+            ScheduleDiffEntry(
+                kind="shift",
+                date=target_date,
+                group_id=None,
+                published_user_id=None,
+                proposed_user_id=user.id,
+                change_type="added",
+            ),
+            ScheduleDiffEntry(
+                kind="shift",
+                date=target_date,
+                group_id=None,
+                published_user_id=None,
+                proposed_user_id=user.id,
+                change_type="added",
+            ),
+        )
+        plan = SchedulePlan(
+            start_date=target_date,
+            end_date=target_date,
+            generated_at=datetime.now(),
+            oncalls=(),
+            shifts=(proposed,),
+            unfilled=(),
+            violations=(),
+            fairness=FairnessMetrics(),
+            diff=diff,
+            safe_to_apply=True,
+            safe_to_apply_reasons=(),
+            input_fingerprint="deadbeef",
+        )
+
+        result = AutomationApplyService.apply_plan(plan, atomic=False)
+
+        assert result.success is True
+        assert len(result.failed_entries) == 1
+        run = db.session.get(GenerationRun, result.generation_run_id)
+        assert run is not None
+        assert run.outcome == "partial"
+        assert Shift.query.filter_by(date=target_date).count() == 1
+        assert Shift.query.filter_by(date=control_date).count() == 1
+
+    def test_no_failures_records_applied_outcome(self, test_app):
+        group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
+        for i in range(3):
+            _make_user(f"U{i}", f"u{i}@x.com", group)
+
+        plan = plan_schedule(
+            adapters.build_planning_request(date(2026, 9, 4), date(2026, 9, 10))
+        )
+        result = AutomationApplyService.apply_plan(plan, atomic=False)
+
+        assert result.success is True
+        assert result.failed_entries == []
+        run = db.session.get(GenerationRun, result.generation_run_id)
+        assert run.outcome == "applied"

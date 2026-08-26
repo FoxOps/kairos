@@ -1202,6 +1202,50 @@ class AdvancedShiftAutomation:
         )
 
     @staticmethod
+    def _leave_rebalance_window(leave: "Leave") -> "tuple[date, date, list]":
+        """Read-only: the on-calls overlapping `leave`, and the shift
+        regeneration window they imply - extracted verbatim (no logic
+        change) from rebalance_after_leave()'s own former inline setup
+        step, so both the legacy and new-engine paths below compute the
+        exact same window from one shared implementation.
+
+        Returns (shift_period_start, shift_period_end,
+        overlapping_oncalls) - `overlapping_oncalls` empty means the
+        leave doesn't overlap any on-call at all: no on-call
+        regeneration is needed, and shift_period_start/end just span
+        the leave's own dates."""
+        from datetime import datetime, timedelta
+
+        from app.models import OnCall
+
+        overlapping_oncalls = OnCall.query.filter(
+            OnCall.user_id == leave.user_id,
+            OnCall.start_time
+            < datetime.combine(leave.end_date + timedelta(days=1), datetime.min.time()),
+            OnCall.end_time > datetime.combine(leave.start_date, datetime.min.time()),
+        ).all()
+
+        shift_period_start = leave.start_date
+        shift_period_end = leave.end_date
+
+        if overlapping_oncalls:
+            # Find the period to cover: from the first Friday before
+            # the leave to the last Friday after the leave ends + 30
+            # days (to cover the whole on-call).
+            first_friday = leave.start_date
+            while first_friday.weekday() != 4:  # 4 = Friday
+                first_friday -= timedelta(days=1)
+
+            last_friday = leave.end_date
+            while last_friday.weekday() != 4:
+                last_friday += timedelta(days=1)
+
+            shift_period_start = first_friday - timedelta(days=30)
+            shift_period_end = last_friday + timedelta(days=30)
+
+        return shift_period_start, shift_period_end, overlapping_oncalls
+
+    @staticmethod
     def rebalance_after_leave(
         leave: "Leave", dry_run: bool = False
     ) -> "tuple[list, list, list, list, list, list]":
@@ -1210,6 +1254,41 @@ class AdvancedShiftAutomation:
         Called automatically when a leave is added. Leaves take
         priority: they remove and recompute overlapping shifts and
         on-calls.
+
+        Phase 7 follow-up of the automation engine rework: routes
+        through the new planner + AutomationApplyService.apply_plan(
+        atomic=False) instead of the legacy per-day/per-section
+        SAVEPOINT code below, when
+        SettingsService.get_new_automation_engine_enabled() is True AND
+        dry_run=False - the only way this method is ever really invoked
+        in production (LeaveService never passes dry_run=True; that
+        value only exists for direct test/inspection use, which stays
+        on the legacy path unconditionally since nothing production-
+        facing depends on a new-engine dry-run variant of this
+        specific method).
+
+        Returns (regenerated_shifts, messages, unfilled_oncall_dates,
+        failed_shift_dates, failed_oncall_period, unfilled_shift_dates) -
+        identical shape from both paths, see
+        _rebalance_after_leave_legacy()'s own docstring for what each
+        element means."""
+        from app.services import SettingsService
+
+        if not dry_run and SettingsService.get_new_automation_engine_enabled():
+            return AdvancedShiftAutomation._rebalance_after_leave_new_engine(leave)
+        return AdvancedShiftAutomation._rebalance_after_leave_legacy(leave, dry_run)
+
+    @staticmethod
+    def _rebalance_after_leave_legacy(
+        leave: "Leave", dry_run: bool = False
+    ) -> "tuple[list, list, list, list, list, list]":
+        """
+        The pre-phase-7-follow-up rebalance algorithm, kept directly
+        callable (same pattern as AutomationAdminService's own
+        _generate_full_legacy()/_refresh_shifts_legacy()) - reached by
+        rebalance_after_leave() above whenever the cutover toggle is
+        off, or dry_run=True (never cut over, see that method's own
+        docstring).
 
         Per-day/per-section isolation when dry_run=False, not one
         all-or-nothing transaction: each day in the shift loop below,
@@ -1250,10 +1329,7 @@ class AdvancedShiftAutomation:
         notify admins once this method's own commit has actually
         succeeded.
         """
-        from datetime import datetime, timedelta
-
         from app import db
-        from app.models import OnCall
         from app.services import SettingsService
 
         messages = []
@@ -1265,26 +1341,9 @@ class AdvancedShiftAutomation:
         unfilled_shift_dates: list = []
 
         try:
-            # Find the on-call period to recompute
-            # On-calls span from Friday 9pm to the following Friday 7am
-            # We need to find all Fridays that have overlapping on-calls
-            oncall_periods_to_regenerate = set()
-
-            # Find on-calls overlapping the leave
-            overlapping_oncalls = OnCall.query.filter(
-                OnCall.user_id == leave.user_id,
-                OnCall.start_time
-                < datetime.combine(
-                    leave.end_date + timedelta(days=1), datetime.min.time()
-                ),
-                OnCall.end_time
-                > datetime.combine(leave.start_date, datetime.min.time()),
-            ).all()
-
-            for oncall in overlapping_oncalls:
-                # Find the starting Friday of this on-call
-                friday_start = oncall.start_time.date()
-                oncall_periods_to_regenerate.add(friday_start)
+            shift_period_start, shift_period_end, overlapping_oncalls = (
+                AdvancedShiftAutomation._leave_rebalance_window(leave)
+            )
 
             # Delete the overlapping on-calls
             if overlapping_oncalls and not dry_run:
@@ -1298,34 +1357,6 @@ class AdvancedShiftAutomation:
                         user_id=leave.user_id,
                     )
                 )
-
-            # Determine the full period to recompute
-            # If on-calls were deleted, we need to recompute shifts for the whole affected period
-            shift_period_start = leave.start_date
-            shift_period_end = leave.end_date
-
-            if oncall_periods_to_regenerate:
-                # Find the period to cover: from the first Friday before
-                # the leave to the last Friday after the leave ends + 30
-                # days (to cover the whole on-call)
-
-                # Find the first Friday before or during the leave
-                first_friday = leave.start_date
-                while first_friday.weekday() != 4:  # 4 = Friday
-                    first_friday -= timedelta(days=1)
-
-                # Find the last Friday after or during the leave
-                last_friday = leave.end_date
-                while last_friday.weekday() != 4:
-                    last_friday += timedelta(days=1)
-
-                # Extend the period to cover complete on-calls
-                shift_period_start = first_friday - timedelta(
-                    days=30
-                )  # Take 30 days before
-                shift_period_end = last_friday + timedelta(
-                    days=30
-                )  # Take 30 days after
 
             # Resolved per the leave owner's own Group, only under
             # "per_group" mode - same gating already used by
@@ -1354,7 +1385,7 @@ class AdvancedShiftAutomation:
 
             # Regenerate on-calls for the affected period
             # If on-calls were deleted, we need to recompute them
-            if oncall_periods_to_regenerate and not dry_run:
+            if overlapping_oncalls and not dry_run:
                 oncall_group = (
                     leave.user.group
                     if SettingsService.get_oncall_scheduling_mode() == "per_group"
@@ -1383,6 +1414,131 @@ class AdvancedShiftAutomation:
             # _rebalance_after_leave already catches and logs it.
             db.session.rollback()
             raise
+
+        return (
+            regenerated_shifts,
+            messages,
+            unfilled_oncall_dates,
+            failed_shift_dates,
+            failed_oncall_period,
+            unfilled_shift_dates,
+        )
+
+    @staticmethod
+    def _rebalance_after_leave_new_engine(
+        leave: "Leave",
+    ) -> "tuple[list, list, list, list, list, list]":
+        """Phase 7 follow-up: rebalance_after_leave()'s new-engine path.
+
+        `restrict_to_group_id=leave.user.group_id` scopes planning to
+        the leave owner's own Group (mirrors the legacy method's own
+        shift_group/oncall_group resolution above) - a no-op when
+        scheduling mode is "shared" (build_planning_request only
+        narrows under "per_group"), so a leave never triggers replanning
+        for every other unrelated group's schedule.
+
+        On-calls are only ever replanned when the leave actually
+        overlaps one, exactly like the legacy branch's own
+        `if overlapping_oncalls and not dry_run:` gate - achieved here
+        by fully locking every (date, scope) in the window when there's
+        nothing to regenerate (same "none" trick as
+        AutomationAdminService._refresh_shifts_new_engine's
+        oncall_mode="none"), so on-call planning becomes a structural
+        no-op instead of a second code path to keep in sync.
+
+        apply_plan(atomic=False) gives each diff entry its own
+        SAVEPOINT - the same "one bad entry doesn't lose everything
+        else" guarantee _rebalance_shift_days()/_rebalance_oncall_section()
+        provided via their own hand-rolled db.session.begin_nested()
+        calls above, now expressed as a general AutomationApplyService
+        capability. failed_entries (per-entry (ScheduleDiffEntry, error)
+        pairs) are translated back into this method's own
+        failed_shift_dates/failed_oncall_period shape so LeaveService's
+        existing notification code needs no changes."""
+        from dataclasses import replace
+        from datetime import timedelta
+
+        from app.services.automation_apply_service import AutomationApplyService
+        from app.utils.automation.oncall_automation import OnCallAutomation
+        from app.utils.automation.planner import build_planning_request, plan_schedule
+        from app.utils.automation.planner.presentation import (
+            plan_messages,
+            plan_shift_namespaces,
+        )
+
+        shift_period_start, shift_period_end, overlapping_oncalls = (
+            AdvancedShiftAutomation._leave_rebalance_window(leave)
+        )
+
+        if overlapping_oncalls:
+            oncall_window_start = OnCallAutomation.align_regeneration_start(
+                shift_period_start
+            )
+        else:
+            oncall_window_start = shift_period_start
+
+        request = build_planning_request(
+            oncall_window_start,
+            shift_period_end,
+            shift_start_date=shift_period_start,
+            restrict_to_group_id=leave.user.group_id,
+        )
+
+        if not overlapping_oncalls:
+            all_dates = []
+            current = oncall_window_start
+            while current <= shift_period_end:
+                all_dates.append(current)
+                current += timedelta(days=1)
+            extra_locked = frozenset(
+                (day, scope) for scope in request.oncall_groups for day in all_dates
+            )
+            request = replace(
+                request, locked_oncalls=request.locked_oncalls | extra_locked
+            )
+
+        plan = plan_schedule(request)
+        apply_result = AutomationApplyService.apply_plan(plan, actor=None, atomic=False)
+
+        regenerated_shifts = plan_shift_namespaces(plan)
+        (
+            oncall_messages,
+            unfilled_oncall_dates,
+            shift_messages,
+            unfilled_shift_dates,
+        ) = plan_messages(plan)
+        messages = oncall_messages + shift_messages
+
+        failed_shift_dates: list = []
+        failed_oncall_period: list = []
+        for entry, error in apply_result.failed_entries:
+            if entry.kind == "shift":
+                failed_shift_dates.append(entry.date)
+                messages.append(
+                    _(
+                        "[ERROR] Échec de la régénération du %(date)s : "
+                        "%(error)s - ce jour n'a pas été modifié, "
+                        "action manuelle nécessaire",
+                        date=entry.date.strftime("%d/%m/%Y"),
+                        error=error,
+                    )
+                )
+            elif not failed_oncall_period:
+                # At most one on-call period per call (same convention
+                # as the legacy path) - report the whole window once,
+                # not once per failed Friday.
+                failed_oncall_period = [shift_period_start, shift_period_end]
+                messages.append(
+                    _(
+                        "[ERROR] Échec de la régénération des astreintes pour la "
+                        "période %(start)s - %(end)s : %(error)s - les "
+                        "astreintes de cette période n'ont pas été "
+                        "modifiées, action manuelle nécessaire",
+                        start=shift_period_start.strftime("%d/%m/%Y"),
+                        end=shift_period_end.strftime("%d/%m/%Y"),
+                        error=error,
+                    )
+                )
 
         return (
             regenerated_shifts,

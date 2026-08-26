@@ -13,10 +13,12 @@ delete shift rows before the caller's literal requested start) - see
 PlanningRequest.shift_start_date.
 
 AdvancedShiftAutomation.rebalance_after_leave() (the automatic
-leave-triggered rebalance) is deliberately NOT gated by this toggle at
-all - its per-day/per-section SAVEPOINT isolation has no equivalent in
-apply_plan()'s all-or-nothing transaction model, a mismatch flagged for
-its own dedicated design decision rather than cut over here."""
+leave-triggered rebalance) is ALSO gated by this same toggle, as of the
+phase 7 follow-up - see test_leave_rebalance_new_engine.py for its own
+dedicated coverage (it needed a non-atomic, per-entry-isolated
+apply_plan() mode, since its legacy per-day/per-section SAVEPOINT
+isolation has no equivalent in apply_plan()'s default all-or-nothing
+transaction model)."""
 
 from datetime import date, datetime
 
@@ -248,11 +250,13 @@ class TestRefreshShiftsRealGenerationCutover:
         assert result.oncall_messages_category == "danger"
 
 
-class TestRebalanceAfterLeaveStaysOnLegacyEngine:
-    def test_leave_rebalance_never_uses_apply_plan_regardless_of_toggle(self, test_app):
+class TestRebalanceAfterLeaveToggleGating:
+    def test_toggle_off_never_uses_apply_plan(self, test_app):
+        """Default (off): rebalance_after_leave() stays on its legacy
+        per-day/per-section SAVEPOINT code - see
+        test_leave_rebalance_new_engine.py for the toggle-on path."""
         group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
         users = [_make_user(f"U{i}", f"u{i}@x.com", group) for i in range(3)]
-        SettingsService.set_new_automation_engine_enabled(True)
 
         leave, regenerated_shifts = LeaveService.add_leave(
             users[0], date(2026, 9, 8), date(2026, 9, 10)
@@ -260,6 +264,4 @@ class TestRebalanceAfterLeaveStaysOnLegacyEngine:
 
         assert leave is not None
         assert regenerated_shifts is not None
-        # rebalance_after_leave() never calls AutomationApplyService -
-        # a GenerationRun row would only exist if it had.
         assert GenerationRun.query.count() == 0
