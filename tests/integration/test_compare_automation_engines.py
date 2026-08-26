@@ -4,7 +4,13 @@ correctly distinguishes "legacy_dry_run_self_inconsistency" (defect #1
 on-call preview, computed moments earlier in the same call, was never
 persisted) from genuine "algorithm_difference" disagreements, and never
 manufactures false on-call disagreements from the two engines' differing
-(but each intentional) group_id semantics."""
+(but each intentional) group_id semantics.
+
+Exercises AutomationAdminService._generate_full_legacy() directly, NOT
+generate_full() - phase 6 retargeted generate_full(dry_run=True) itself
+to the new engine, so it can no longer demonstrate defect #1 (that's
+the point of phase 6); _generate_full_legacy() keeps the actual legacy
+algorithm reachable for this comparison until phase 8 deletes it."""
 
 from datetime import date, datetime
 
@@ -39,7 +45,10 @@ def _make_user(name, email, group):
 
 
 def _run_comparison(start_date, end_date):
-    legacy = AutomationAdminService.generate_full(
+    # _generate_full_legacy, not generate_full: phase 6 retargeted
+    # generate_full(dry_run=True) itself to the new engine, so calling
+    # it here would compare the new engine against itself.
+    legacy = AutomationAdminService._generate_full_legacy(
         start_date, end_date, rotation_order_ids=[], dry_run=True
     )
     db.session.rollback()

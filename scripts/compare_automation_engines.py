@@ -4,10 +4,13 @@ Kairos - Compare the legacy automation engine against the new planner
 =======================================================================
 
 Diagnostic-only tool (phase 4 of the automation engine rework, see the
-audit that motivated it). Runs the legacy
-AutomationAdminService.generate_full(dry_run=True) preview and the new
-pure planner (app/utils/automation/planner) over the SAME period and
-DB state, then prints a structured JSON diff report.
+audit that motivated it). Runs the legacy generation algorithm
+(AutomationAdminService._generate_full_legacy(dry_run=True) - called
+directly, NOT generate_full() itself, which phase 6 retargeted so
+production dry-run previews already use the new engine; this script
+still needs the actual legacy algorithm to compare against) and the
+new pure planner (app/utils/automation/planner) over the SAME period
+and DB state, then prints a structured JSON diff report.
 
 DISAGREEMENT IS THE POINT OF THIS TOOL, NOT A FAILURE. The legacy
 engine's own dry-run preview is known to diverge from what real
@@ -157,7 +160,7 @@ def main() -> int:
         # identically to the saved AutomationConfig.get_rotation_order()
         # - matching build_planning_request's own rotation_order
         # derivation without passing it explicitly twice.
-        legacy = AutomationAdminService.generate_full(
+        legacy = AutomationAdminService._generate_full_legacy(
             args.start_date, args.end_date, rotation_order_ids=[], dry_run=True
         )
         # dry_run never persists, but be defensive: undo anything
