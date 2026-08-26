@@ -109,6 +109,21 @@ def build_planning_request(start_date: date, end_date: date) -> PlanningRequest:
     ):
         all_user_ids.update(u.id for u in users)
 
+    # Excludes on-calls whose own anchor date falls INSIDE
+    # [start_date, end_date] - those are exactly the assignments this
+    # same request is (re)planning, not fixed external history. Without
+    # this exclusion, re-planning an already-applied window would see a
+    # user's own just-applied on-call for that same week as a self-
+    # conflict (identical interval overlaps itself) via
+    # AvailabilityIndex.has_oncall_conflict(), forcing a spurious
+    # reassignment on every subsequent plan of the same window - the
+    # exact "delete before regenerate" problem this rework's apply_plan
+    # (never deletes before planning) was designed to avoid, resurfacing
+    # here if not filtered. Spacing/conflict checks against on-calls
+    # OUTSIDE the window (before start_date or after end_date) are still
+    # needed and kept - inter-week spacing WITHIN the window is already
+    # enforced by the solver's own backtracking search state, not by
+    # this snapshot list.
     existing_oncalls = tuple(
         OnCallSnapshot(
             user_id=o.user_id,
@@ -117,6 +132,7 @@ def build_planning_request(start_date: date, end_date: date) -> PlanningRequest:
             end_time=o.end_time,
         )
         for o in OnCall.query.filter(OnCall.user_id.in_(all_user_ids)).all()
+        if not (start_date <= o.start_time.date() <= end_date)
     )
     existing_leaves = tuple(
         LeaveSpan(
@@ -127,14 +143,35 @@ def build_planning_request(start_date: date, end_date: date) -> PlanningRequest:
         for leave in Leave.query.filter(Leave.user_id.in_(all_user_ids)).all()
     )
 
+    # Keyed by SCOPE group_id (matching oncall_groups/what
+    # plan_oncalls_for_scope actually looks up), NOT the row's own
+    # group_id column - in "shared" mode oncall_groups is always
+    # (None,), but an OnCall row's own group_id is still the assigned
+    # user's real (snapshotted) group, never None. Keying by the row's
+    # own group_id here would make every existing on-call invisible to
+    # published_oncalls/locked_oncalls lookups whenever mode is shared
+    # (the common case), since plan_oncalls_for_scope only ever queries
+    # (friday, None) in that mode. In "per_group" mode the row's own
+    # group_id already equals the scope it was generated under, so
+    # this is a no-op there.
+    oncall_mode_is_shared = oncall_groups == (None,)
+    overlapping_oncalls = OnCallRepository.list_overlapping_range(start_date, end_date)
     published_oncalls = {
-        (o.start_time.date(), o.group_id): o.user_id
-        for o in OnCallRepository.list_overlapping_range(start_date, end_date)
+        (
+            o.start_time.date(),
+            None if oncall_mode_is_shared else o.group_id,
+        ): o.user_id
+        for o in overlapping_oncalls
     }
-    published_shifts = {
-        (s.date, s.user_id): s.shift_type_id
-        for s in ShiftRepository.list_in_date_range_with_user(start_date, end_date)
-    }
+    locked_oncalls = frozenset(
+        (o.start_time.date(), None if oncall_mode_is_shared else o.group_id)
+        for o in overlapping_oncalls
+        if o.locked
+    )
+
+    shifts_in_range = ShiftRepository.list_in_date_range_with_user(start_date, end_date)
+    published_shifts = {(s.date, s.user_id): s.shift_type_id for s in shifts_in_range}
+    locked_shifts = frozenset((s.date, s.user_id) for s in shifts_in_range if s.locked)
 
     return PlanningRequest(
         start_date=start_date,
@@ -149,11 +186,12 @@ def build_planning_request(start_date: date, end_date: date) -> PlanningRequest:
         existing_leaves=existing_leaves,
         published_oncalls=published_oncalls,
         published_shifts=published_shifts,
-        # No `locked` column exists yet (added in phase 5) - nothing is
-        # locked today, matching that this adapter is the sole source
-        # of truth for "what does DB state say is locked."
-        locked_oncalls=frozenset(),
-        locked_shifts=frozenset(),
+        # Reflects the real `locked` column - this adapter is the sole
+        # source of truth for "what does DB state say is locked." No
+        # admin UI sets `locked=True` yet (phase 5 ships the column and
+        # this read-side only), so both are empty until one exists.
+        locked_oncalls=locked_oncalls,
+        locked_shifts=locked_shifts,
         # Seeded from published state - the long-term replacement for
         # OnCallAutomation.capture_existing_assignments() (see phase 8):
         # the new pipeline never deletes before planning, so "preferred"

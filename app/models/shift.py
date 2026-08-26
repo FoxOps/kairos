@@ -68,6 +68,14 @@ class Shift(BaseModel):
     group_id = db.Column(
         db.Integer, db.ForeignKey("groups.id"), nullable=True, index=True
     )
+    # Manually pinned - the automation planner (app/utils/automation/
+    # planner/) excludes a locked row from its candidate pool entirely,
+    # so a correctly-wired plan can never propose reassigning/removing
+    # it (see PlanningRequest.locked_shifts). No admin UI sets this yet
+    # (phase 5 of the automation engine rework adds the column and its
+    # read-side only) - default False preserves today's behavior
+    # exactly (nothing is locked) until a future UI exists to set it.
+    locked = db.Column(db.Boolean, nullable=False, default=False)
 
     # Composite indexes for frequent queries, plus a unique constraint
     # closing the can_add_shift() check-then-insert race: the business
