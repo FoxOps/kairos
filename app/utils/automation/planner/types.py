@@ -221,3 +221,17 @@ class PlanningRequest:
     )
 
     resolved_rules: dict[int | None, ResolvedRules] = field(default_factory=dict)
+
+    # On-call planning's own Friday search (oncall_planner._fridays_in_range)
+    # legitimately needs `start_date` widened to the covering Friday when a
+    # caller's literal requested start falls mid-on-call-week (see
+    # OnCallAutomation.align_regeneration_start) - otherwise the boundary
+    # week's already-published on-call would be misdiffed as "removed"
+    # (present in published_oncalls via a true datetime-overlap fetch, but
+    # never re-proposed since the Friday-date search starts too late to see
+    # it). Shift planning must NOT inherit that same widening: a caller
+    # asking to (re)generate shifts "from Monday" must never touch shift
+    # rows on the preceding Fri/Sat/Sun just because the on-call side had to
+    # look further back. `None` (every phase 4-6 call site) means "use
+    # start_date for shifts too" - today's behavior, unchanged.
+    shift_start_date: date | None = None

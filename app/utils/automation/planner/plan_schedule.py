@@ -137,9 +137,10 @@ def plan_schedule(request: PlanningRequest) -> SchedulePlan:
     # through the database (see module docstring).
     proposed_oncalls_by_scope = merge_oncall_fragments(oncall_fragments)
 
+    shift_start_date = request.shift_start_date or request.start_date
     shift_fragments = {
         group_id: plan_shifts_for_scope(
-            start_date=request.start_date,
+            start_date=shift_start_date,
             end_date=request.end_date,
             group_id=group_id,
             eligible_users=request.eligible_shift_users.get(group_id, ()),

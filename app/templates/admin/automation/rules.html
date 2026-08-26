@@ -76,6 +76,26 @@
         </div>
     </div>
 
+    <div class="card card-sm bg-base-100 shadow-md mb-4 border border-warning">
+        <div class="card-body gap-2">
+            <h2 class="font-semibold flex items-center gap-2"><i class="fas fa-triangle-exclamation text-warning" aria-hidden="true"></i> {{ _("Moteur d'automatisation") }}</h2>
+            <p class="text-sm text-base-content/70">
+                {{ _("Nouveau moteur de planification (aperçu \"Dry Run\" déjà basé dessus). Une fois activé, les actions \"Générer\" et \"Recalculer les shifts\" de la page Automatisation l'utilisent aussi pour écrire réellement en base. Le rééquilibrage automatique après une absence continue d'utiliser l'ancien moteur dans tous les cas. Désactiver ce réglage revient immédiatement à l'ancien moteur, sans modification de code.") }}
+            </p>
+            <form method="POST" action="{{ url_for('admin.automation_rules_dashboard') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="section" value="new_automation_engine_enabled">
+                <label class="label cursor-pointer justify-start gap-2" for="new_automation_engine_enabled">
+                    <input type="checkbox" class="checkbox checkbox-warning" id="new_automation_engine_enabled" name="enabled" {% if new_automation_engine_enabled %}checked{% endif %}>
+                    <span>{{ _("Utiliser le nouveau moteur pour la génération réelle") }}</span>
+                </label>
+                <button class="btn btn-warning btn-sm mt-2" type="submit">
+                    <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
+                </button>
+            </form>
+        </div>
+    </div>
+
     {% set group_id = selected_group.id if selected_group else '' %}
 
     {% call settings_section(_("Shifts"), "fa-clock") %}

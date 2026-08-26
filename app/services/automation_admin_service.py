@@ -9,16 +9,19 @@ business-logic layer - this service wraps the admin-specific glue
 around it rather than duplicating it.
 """
 
-from dataclasses import dataclass, field
-from datetime import date
+from dataclasses import dataclass, field, replace
+from datetime import date, timedelta
 from types import SimpleNamespace
 
+from flask import has_request_context
 from flask_babel import gettext as _
+from flask_login import current_user
 
 from app import db
 from app.models import Group, ShiftType, User
 from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository
+from app.services.automation_apply_service import AutomationApplyService
 from app.services.settings_service import SettingsService
 from app.utils.automation import AdvancedShiftAutomation, OnCallAutomation
 from app.utils.automation.planner import build_planning_request, plan_schedule
@@ -180,6 +183,26 @@ class AutomationAdminService:
         on oncall_mode ("none"/"fill_gaps"/"regenerate", see that
         route's own docstring).
 
+        Phase 7 of the automation engine rework: gated by
+        SettingsService.get_new_automation_engine_enabled(), same toggle
+        as generate_full()'s dry_run=False branch below."""
+        if SettingsService.get_new_automation_engine_enabled():
+            return AutomationAdminService._refresh_shifts_new_engine(
+                start_date, end_date, oncall_mode
+            )
+        return AutomationAdminService._refresh_shifts_legacy(
+            start_date, end_date, oncall_mode
+        )
+
+    @staticmethod
+    def _refresh_shifts_legacy(
+        start_date: date, end_date: date, oncall_mode: str = "none"
+    ) -> RefreshResult:
+        """The pre-phase-7 refresh_shifts algorithm, kept directly
+        callable the same way _generate_full_legacy() is (see its own
+        docstring) - reached by refresh_shifts() above whenever the
+        cutover toggle is off.
+
         oncall_scheduling_mode/shift_scheduling_mode="per_group" each
         independently run one pass per eligible Group instead of
         pooling every group into one shared pass - same loop shape as
@@ -306,28 +329,91 @@ class AutomationAdminService:
         generate_full_schedule() actually persist their result.
 
         Phase 6 of the automation engine rework (see
-        app/utils/automation/planner/): the dry_run branch now routes
-        through the new pure planner instead of the legacy path below,
+        app/utils/automation/planner/): the dry_run branch always routes
+        through the new pure planner instead of the legacy path,
         fixing the "shift preview reads real on-calls from the DB
-        while its own on-call preview was only ever in-memory" defect
-        documented on the comment further down (still accurate for the
-        untouched dry_run=False branch, which phase 7 will cut over
-        separately). rotation_order_ids has no equivalent on the new
-        engine's path - rotation order is only ever read from
+        while its own on-call preview was only ever in-memory" defect.
+        rotation_order_ids has no equivalent on the new engine's path -
+        rotation order is only ever read from
         AutomationConfig.get_rotation_order() (see
         AutomationRuleAdminService/save_order), so a `generate`/
         `dry_run` form submission's own rotation_order_ids value is
         simply unused for the preview; `save_order` itself is
         unaffected and still writes AutomationConfig for the next call
-        to read."""
+        to read.
+
+        Phase 7: the dry_run=False branch is gated by
+        SettingsService.get_new_automation_engine_enabled() - off by
+        default, so real generation keeps using the legacy engine until
+        an admin explicitly opts in. The preview above always uses the
+        new planner regardless of this toggle, same as before phase 7 -
+        an admin previewing before opting in sees exactly what they'd
+        get if they did."""
         if dry_run:
-            oncall_regen_start = OnCallAutomation.align_regeneration_start(start_date)
-            request = build_planning_request(oncall_regen_start, end_date)
-            plan = plan_schedule(request)
-            return AutomationAdminService._generate_result_from_plan(plan)
+            plan = AutomationAdminService._build_new_engine_plan(start_date, end_date)
+            return AutomationAdminService._generate_result_from_plan(plan, dry_run=True)
+
+        if SettingsService.get_new_automation_engine_enabled():
+            return AutomationAdminService._generate_full_new_engine(
+                start_date, end_date
+            )
 
         return AutomationAdminService._generate_full_legacy(
             start_date, end_date, rotation_order_ids, dry_run
+        )
+
+    @staticmethod
+    def _build_new_engine_plan(start_date: date, end_date: date) -> SchedulePlan:
+        """Shared by generate_full()'s preview branch and
+        _generate_full_new_engine() below, so the preview an admin sees
+        and what "Générer" actually applies are always built from the
+        exact same request-shaping - the whole point of phase 6/7 is
+        eliminating preview/apply divergence (audit defect #1), so this
+        must never fork into two slightly-different code paths.
+
+        oncall_regen_start widens the on-call side's Friday search to
+        the covering Friday when start_date falls mid-week (see
+        OnCallAutomation.align_regeneration_start); shift_start_date
+        keeps the literal caller-requested start_date for shift planning
+        - see PlanningRequest.shift_start_date's own docstring for why
+        the two must NOT share the same effective start."""
+        oncall_regen_start = OnCallAutomation.align_regeneration_start(start_date)
+        request = build_planning_request(
+            oncall_regen_start, end_date, shift_start_date=start_date
+        )
+        return plan_schedule(request)
+
+    @staticmethod
+    def _current_actor() -> User | None:
+        return (
+            current_user
+            if has_request_context() and current_user.is_authenticated
+            else None
+        )
+
+    @staticmethod
+    def _generate_full_new_engine(start_date: date, end_date: date) -> GenerateResult:
+        """Phase 7: real (dry_run=False) generation routed through the
+        new planner + AutomationApplyService.apply_plan() - reached by
+        generate_full() above only when
+        SettingsService.get_new_automation_engine_enabled() is True.
+        Raises on an unsuccessful apply (rather than returning a result
+        with the failure silently absorbed) so
+        admin_automation_routes.py's existing `except Exception as e:
+        flash(...)` handling surfaces it exactly like any other
+        generation failure - no route changes needed."""
+        plan = AutomationAdminService._build_new_engine_plan(start_date, end_date)
+        apply_result = AutomationApplyService.apply_plan(
+            plan, actor=AutomationAdminService._current_actor()
+        )
+        if not apply_result.success:
+            raise RuntimeError(apply_result.error or "apply_plan failed")
+
+        return AutomationAdminService._generate_result_from_plan(
+            plan,
+            dry_run=False,
+            oncalls_deleted=apply_result.oncalls_deleted,
+            shifts_deleted=apply_result.shifts_deleted,
         )
 
     @staticmethod
@@ -448,11 +534,141 @@ class AutomationAdminService:
         return result
 
     @staticmethod
-    def _generate_result_from_plan(plan: SchedulePlan) -> GenerateResult:
-        """Presentation shim (phase 6): translates a pure SchedulePlan
-        into the exact GenerateResult shape generate_full()'s legacy
-        dry_run path already returns, so admin_automation_routes.py's
-        automation_full() and full_dry_run.html need ZERO changes.
+    def _plan_oncall_namespaces(plan: SchedulePlan) -> list:
+        """`SimpleNamespace` stand-ins for full_dry_run.html's
+        oncall.user.name/.start_time/.end_time reads - see
+        _generate_result_from_plan()'s own docstring for why a real
+        (transient) OnCall instance is deliberately not used here.
+        Shared by the dry_run preview and the real-apply result, so
+        both ever show the exact same shape for the exact same plan."""
+        return [
+            SimpleNamespace(
+                user=db.session.get(User, o.user_id),
+                start_time=o.start_time,
+                end_time=o.end_time,
+            )
+            for o in plan.oncalls
+            if o.change_type != "unchanged"
+        ]
+
+    @staticmethod
+    def _plan_shift_namespaces(plan: SchedulePlan) -> list:
+        """Shift equivalent of _plan_oncall_namespaces() above."""
+        return [
+            SimpleNamespace(
+                user=db.session.get(User, s.user_id),
+                shift_type=db.session.get(ShiftType, s.shift_type_id),
+                date=s.date,
+            )
+            for s in plan.shifts
+            if s.change_type != "unchanged"
+        ]
+
+    @staticmethod
+    def _plan_messages(plan: SchedulePlan) -> tuple[list, list, list, list]:
+        """Builds the same "[TAG] text" message strings the legacy path
+        produces (see _generate_result_from_plan()'s own docstring for
+        why - admin_automation_routes.py's _classify_automation_message()
+        already parses this exact convention, no route changes needed)
+        from a plan's unfilled/violations. Returns (oncall_messages,
+        oncall_unfilled_dates, shift_messages, shift_unfilled_dates).
+        Shared by generate_full()'s and refresh_shifts()'s new-engine
+        result builders.
+
+        Entries whose reason_code is "locked_but_no_published_assignment"
+        are always skipped: that reason code only ever means a caller
+        (refresh_shifts()'s oncall_mode="none"/"fill_gaps" widened
+        locking, see _refresh_shifts_new_engine() below) deliberately
+        locked a slot that happens to have nothing published - the
+        caller already knows and chose that, so it must never surface
+        as an admin-facing "unfilled"/"gap" notification."""
+        oncall_messages: list = []
+        oncall_unfilled_dates: list = []
+        shift_messages: list = []
+        shift_unfilled_dates: list = []
+
+        for unfilled in plan.unfilled:
+            if unfilled.reason_code == "locked_but_no_published_assignment":
+                continue
+
+            if unfilled.kind == "oncall_week":
+                oncall_unfilled_dates.append(unfilled.date)
+                oncall_messages.append(
+                    _(
+                        "[WARN] Aucune astreinte générée pour le %(date)s "
+                        "(aucun utilisateur ne respecte le délai légal entre "
+                        "deux astreintes) - assignation manuelle nécessaire.",
+                        date=unfilled.date.strftime("%d/%m/%Y"),
+                    )
+                )
+                continue
+
+            shift_unfilled_dates.append(unfilled.date)
+            shift_type = None
+            if unfilled.detail:
+                shift_type = db.session.get(ShiftType, int(unfilled.detail))
+            label = shift_type.label if shift_type else unfilled.detail
+
+            if unfilled.kind == "mandatory_shift":
+                shift_messages.append(
+                    _(
+                        "[ALERT] Créneau obligatoire non pourvu pour le "
+                        "%(date)s : %(name)s.",
+                        date=unfilled.date.strftime("%d/%m/%Y"),
+                        name=label,
+                    )
+                )
+            else:  # staffing_min
+                shift_messages.append(
+                    _(
+                        "[WARN] Effectif minimum non atteint pour le "
+                        "%(date)s : %(name)s.",
+                        date=unfilled.date.strftime("%d/%m/%Y"),
+                        name=label,
+                    )
+                )
+
+        # The only rule_type any planner module currently raises a
+        # RuleViolation for is rest_after_oncall (shift_planner.py) -
+        # always shift-scoped. A future rule type producing on-call-
+        # side violations would need its own branch here.
+        for violation in plan.violations:
+            user = (
+                db.session.get(User, violation.user_id) if violation.user_id else None
+            )
+            tag = "[ALERT]" if violation.severity == "hard_blocked" else "[WARN]"
+            shift_messages.append(
+                _(
+                    "%(tag)s %(name)s n'a pas pu être affecté au %(date)s : "
+                    "repos insuffisant après son astreinte.",
+                    tag=tag,
+                    name=user.name if user else _("Utilisateur inconnu"),
+                    date=violation.date.strftime("%d/%m/%Y"),
+                )
+            )
+
+        return (
+            oncall_messages,
+            oncall_unfilled_dates,
+            shift_messages,
+            shift_unfilled_dates,
+        )
+
+    @staticmethod
+    def _generate_result_from_plan(
+        plan: SchedulePlan,
+        dry_run: bool,
+        oncalls_deleted: int = 0,
+        shifts_deleted: int = 0,
+    ) -> GenerateResult:
+        """Presentation shim: translates a pure SchedulePlan into the
+        exact GenerateResult shape generate_full()'s legacy path already
+        returns, so admin_automation_routes.py's automation_full() and
+        full_dry_run.html need ZERO changes. Used both for the dry_run
+        preview (phase 6, oncalls_deleted/shifts_deleted always 0 - a
+        preview never deletes anything) and, once applied, for the real
+        result (phase 7, oncalls_deleted/shifts_deleted come from the
+        matching ApplyResult) - see _generate_full_new_engine() below.
 
         `result.oncalls`/`result.shifts` hold plain `SimpleNamespace`
         objects, NOT real OnCall/Shift ORM instances - full_dry_run.html
@@ -481,97 +697,109 @@ class AutomationAdminService:
         change_type != "unchanged" are included, matching the legacy
         dry_run's own implicit behavior (it only ever built objects for
         slots it was actually assigning, never for untouched rows).
-
-        Messages are built as the same "[TAG] text" strings the legacy
-        path produces, not pre-classified (category, text) tuples -
-        admin_automation_routes.py's automation_full() already runs
-        every message through _classify_automation_message() before
-        handing them to the template, so producing the same tagged-
-        string convention here means that route needs no changes
-        either.
         """
-        result = GenerateResult(dry_run=True)
+        result = GenerateResult(
+            dry_run=dry_run,
+            oncalls_deleted=oncalls_deleted,
+            shifts_deleted=shifts_deleted,
+        )
+        result.oncalls = AutomationAdminService._plan_oncall_namespaces(plan)
+        result.shifts = AutomationAdminService._plan_shift_namespaces(plan)
+        (
+            result.oncall_messages,
+            result.oncall_unfilled_dates,
+            result.shift_messages,
+            result.shift_unfilled_dates,
+        ) = AutomationAdminService._plan_messages(plan)
+        return result
 
-        for proposed_oncall in plan.oncalls:
-            if proposed_oncall.change_type == "unchanged":
-                continue
-            user = db.session.get(User, proposed_oncall.user_id)
-            result.oncalls.append(
-                SimpleNamespace(
-                    user=user,
-                    start_time=proposed_oncall.start_time,
-                    end_time=proposed_oncall.end_time,
+    @staticmethod
+    def _iter_dates(start: date, end: date):
+        current = start
+        while current <= end:
+            yield current
+            current += timedelta(days=1)
+
+    @staticmethod
+    def _refresh_shifts_new_engine(
+        start_date: date, end_date: date, oncall_mode: str
+    ) -> RefreshResult:
+        """Phase 7: refresh_shifts()'s new-engine path, reached only
+        when SettingsService.get_new_automation_engine_enabled() is
+        True. Always plans over the exact same
+        [oncall_regen_start, end_date] / shift_start_date=start_date
+        request-shaping as generate_full()'s own new-engine path (see
+        _build_new_engine_plan()'s docstring) - oncall_mode then adds an
+        EXTRA, purely additive lock on top of the request's own
+        DB-`locked`-column-derived locked_oncalls (phase 5), expressing
+        each mode as a request-shaping choice rather than new
+        planner-core logic:
+
+        - "none": every (date, scope) in the window gets locked, whether
+          or not anything is currently published there - on-calls are
+          left completely untouched, matching the legacy "none" mode's
+          "shifts recomputed from whatever on-calls already exist, even
+          manually modified ones" contract exactly. A locked date with
+          nothing published produces an UnfilledRequirement tagged
+          "locked_but_no_published_assignment", which _plan_messages()
+          always filters out - "none" mode must never surface an
+          on-call gap it was never asked to fill.
+        - "fill_gaps": only dates that already have a published
+          assignment are locked (frozenset(request.published_oncalls) -
+          the two are the same set by construction), so an existing
+          on-call can never be reassigned but a genuinely empty Friday
+          still flows through normal solving and gets filled.
+        - "regenerate": no extra locking - a full, unlocked re-solve of
+          on-calls over the (aligned) window, identical to
+          generate_full()'s own on-call planning.
+
+        Shift planning itself is never locked in any of the three modes
+        (locked_shifts stays whatever the request's own DB-column-derived
+        value already is) - refresh_shifts always recomputes shifts,
+        that is the one thing every mode has in common."""
+        oncall_regen_start = OnCallAutomation.align_regeneration_start(start_date)
+        request = build_planning_request(
+            oncall_regen_start, end_date, shift_start_date=start_date
+        )
+
+        if oncall_mode == "none":
+            extra_locked = frozenset(
+                (day, group_id)
+                for group_id in request.oncall_groups
+                for day in AutomationAdminService._iter_dates(
+                    oncall_regen_start, end_date
                 )
             )
-
-        for proposed_shift in plan.shifts:
-            if proposed_shift.change_type == "unchanged":
-                continue
-            user = db.session.get(User, proposed_shift.user_id)
-            shift_type = db.session.get(ShiftType, proposed_shift.shift_type_id)
-            result.shifts.append(
-                SimpleNamespace(
-                    user=user,
-                    shift_type=shift_type,
-                    date=proposed_shift.date,
-                )
+            request = replace(
+                request, locked_oncalls=request.locked_oncalls | extra_locked
             )
-
-        for unfilled in plan.unfilled:
-            if unfilled.kind == "oncall_week":
-                result.oncall_unfilled_dates.append(unfilled.date)
-                result.oncall_messages.append(
-                    _(
-                        "[WARN] Aucune astreinte générée pour le %(date)s "
-                        "(aucun utilisateur ne respecte le délai légal entre "
-                        "deux astreintes) - assignation manuelle nécessaire.",
-                        date=unfilled.date.strftime("%d/%m/%Y"),
-                    )
-                )
-                continue
-
-            result.shift_unfilled_dates.append(unfilled.date)
-            shift_type = None
-            if unfilled.detail:
-                shift_type = db.session.get(ShiftType, int(unfilled.detail))
-            label = shift_type.label if shift_type else unfilled.detail
-
-            if unfilled.kind == "mandatory_shift":
-                result.shift_messages.append(
-                    _(
-                        "[ALERT] Créneau obligatoire non pourvu pour le "
-                        "%(date)s : %(name)s.",
-                        date=unfilled.date.strftime("%d/%m/%Y"),
-                        name=label,
-                    )
-                )
-            else:  # staffing_min
-                result.shift_messages.append(
-                    _(
-                        "[WARN] Effectif minimum non atteint pour le "
-                        "%(date)s : %(name)s.",
-                        date=unfilled.date.strftime("%d/%m/%Y"),
-                        name=label,
-                    )
-                )
-
-        # The only rule_type any planner module currently raises a
-        # RuleViolation for is rest_after_oncall (shift_planner.py) -
-        # always shift-scoped. A future rule type producing on-call-
-        # side violations would need its own branch here.
-        for violation in plan.violations:
-            user = (
-                db.session.get(User, violation.user_id) if violation.user_id else None
+            oncall_messages_category = "info"
+        elif oncall_mode == "fill_gaps":
+            extra_locked = frozenset(request.published_oncalls.keys())
+            request = replace(
+                request, locked_oncalls=request.locked_oncalls | extra_locked
             )
-            tag = "[ALERT]" if violation.severity == "hard_blocked" else "[WARN]"
-            result.shift_messages.append(
-                _(
-                    "%(tag)s %(name)s n'a pas pu être affecté au %(date)s : "
-                    "repos insuffisant après son astreinte.",
-                    tag=tag,
-                    name=user.name if user else _("Utilisateur inconnu"),
-                    date=violation.date.strftime("%d/%m/%Y"),
-                )
-            )
+            oncall_messages_category = "info"
+        else:  # "regenerate"
+            oncall_messages_category = "danger"
 
+        plan = plan_schedule(request)
+        apply_result = AutomationApplyService.apply_plan(
+            plan, actor=AutomationAdminService._current_actor()
+        )
+        if not apply_result.success:
+            raise RuntimeError(apply_result.error or "apply_plan failed")
+
+        result = RefreshResult(
+            oncalls_deleted=apply_result.oncalls_deleted,
+            shifts_deleted=apply_result.shifts_deleted,
+            oncall_messages_category=oncall_messages_category,
+        )
+        result.shifts = AutomationAdminService._plan_shift_namespaces(plan)
+        (
+            result.oncall_messages,
+            result.oncall_unfilled_dates,
+            result.shift_messages,
+            result.shift_unfilled_dates,
+        ) = AutomationAdminService._plan_messages(plan)
         return result

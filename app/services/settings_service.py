@@ -40,6 +40,7 @@ BACKUP_MAX_BACKUPS_KEY = "backup_max_backups"
 AUDIT_LOG_RETENTION_DAYS_KEY = "audit_log_retention_days"
 SCHEDULE_RETENTION_DAYS_KEY = "schedule_retention_days"
 APPRISE_NOTIFICATIONS_ENABLED_KEY = "apprise_notifications_enabled"
+NEW_AUTOMATION_ENGINE_ENABLED_KEY = "new_automation_engine_enabled"
 # Setting key name, not a secret
 ICS_TOKEN_EXPIRY_DAYS_KEY = "ics_token_expiry_days"  # noqa: S105 # nosec B105
 
@@ -418,6 +419,35 @@ class SettingsService:
         return SettingsService._set_with_audit(
             {APPRISE_NOTIFICATIONS_ENABLED_KEY: bool(enabled)},
             f"apprise_notifications_enabled={enabled}",
+        )
+
+    # --- automation engine rework cutover toggle (phase 7) ---
+
+    @staticmethod
+    def get_new_automation_engine_enabled() -> bool:
+        """No env var fallback - same footnote as apprise_notifications_enabled
+        above, a brand-new concept. Defaults to False: real (dry_run=False)
+        generation keeps using the legacy engine
+        (AutomationAdminService._generate_full_legacy/_refresh_shifts_legacy)
+        until an admin explicitly opts in, and flipping this back to False
+        rolls back to legacy without a code revert if a production issue
+        surfaces post-cutover. Only gates AutomationAdminService.generate_full()'s
+        dry_run=False branch and refresh_shifts() - the dry_run=True preview
+        already always uses the new planner regardless of this flag (phase 6),
+        and AdvancedShiftAutomation.rebalance_after_leave() (the automatic
+        leave-triggered rebalance) is deliberately NOT gated by this flag at
+        all: its per-day/per-section SAVEPOINT isolation has no equivalent in
+        AutomationApplyService.apply_plan()'s all-or-nothing transaction model,
+        a mismatch that needs its own dedicated design decision before that
+        path can be cut over - see the automation engine rework plan."""
+        value = Setting.get(NEW_AUTOMATION_ENGINE_ENABLED_KEY)
+        return bool(value) if value is not None else False
+
+    @staticmethod
+    def set_new_automation_engine_enabled(enabled: bool) -> str | None:
+        return SettingsService._set_with_audit(
+            {NEW_AUTOMATION_ENGINE_ENABLED_KEY: bool(enabled)},
+            f"new_automation_engine_enabled={enabled}",
         )
 
     # --- ICS token expiry ---

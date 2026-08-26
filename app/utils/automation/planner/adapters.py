@@ -51,12 +51,25 @@ def _group_or_none(group_id: int | None) -> Group | None:
     return db.session.get(Group, group_id) if group_id is not None else None
 
 
-def build_planning_request(start_date: date, end_date: date) -> PlanningRequest:
+def build_planning_request(
+    start_date: date, end_date: date, shift_start_date: date | None = None
+) -> PlanningRequest:
     """The DB-to-PlanningRequest boundary. Read-only - never writes
     anything. Reproduces the exact scoping/eligibility/rotation logic
     `AutomationAdminService.generate_full()`/`refresh_shifts()` already
     use, so a `PlanningRequest` built here plans over the same
-    population the legacy engine would."""
+    population the legacy engine would.
+
+    `shift_start_date`: pass the caller's literal (unwidened) requested
+    start when `start_date` itself has been widened to a covering Friday
+    (see OnCallAutomation.align_regeneration_start) for on-call boundary
+    correctness - see PlanningRequest.shift_start_date's own docstring
+    for why shift planning must not inherit that widening. `None` (every
+    call site through phase 6) means "no widening happened, use
+    start_date for shifts too" - published_shifts/locked_shifts are then
+    fetched over the same [start_date, end_date] range as before,
+    unchanged behavior."""
+    effective_shift_start = shift_start_date or start_date
     oncall_groups = _scoped_group_ids(
         SettingsService.get_oncall_scheduling_mode() == "per_group",
         "is_part_of_oncall",
@@ -169,7 +182,17 @@ def build_planning_request(start_date: date, end_date: date) -> PlanningRequest:
         if o.locked
     )
 
-    shifts_in_range = ShiftRepository.list_in_date_range_with_user(start_date, end_date)
+    # Fetched over [effective_shift_start, end_date], NOT the (possibly
+    # widened) [start_date, end_date] - shift planning's own day-loop
+    # starts at effective_shift_start too (see plan_schedule.py), so
+    # published_shifts must match that exact range. Fetching the wider
+    # range here would include shifts on days the day-loop never visits,
+    # which compute_diff() would then misdiff as "removed" (published
+    # but never re-proposed) - apply_plan would delete them despite
+    # nobody ever asking to regenerate that far back.
+    shifts_in_range = ShiftRepository.list_in_date_range_with_user(
+        effective_shift_start, end_date
+    )
     published_shifts = {(s.date, s.user_id): s.shift_type_id for s in shifts_in_range}
     locked_shifts = frozenset((s.date, s.user_id) for s in shifts_in_range if s.locked)
 
@@ -198,4 +221,5 @@ def build_planning_request(start_date: date, end_date: date) -> PlanningRequest:
         # is simply "whatever is currently published."
         preferred_oncall_assignments=dict(published_oncalls),
         resolved_rules=resolve_rules_for_groups(all_group_ids),
+        shift_start_date=shift_start_date,
     )
