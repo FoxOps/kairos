@@ -180,7 +180,54 @@ class TestCreateDefaultData:
             # auto-generated) must be replaced on first login.
             assert user.must_change_password is True
 
-            # Check that the password is correct
+    def test_auto_generated_password_is_printed_when_env_var_absent(
+        self, test_app, monkeypatch, capsys
+    ):
+        """Real bug found in production QA: when DEFAULT_ADMIN_PASSWORD
+        isn't set, create_default_data() generates a random password via
+        secrets.token_urlsafe(16) but used to never display it anywhere -
+        the admin account was created with a password nobody could ever
+        know, and since must_change_password only takes effect AFTER a
+        successful first login, the account was permanently locked out.
+        Fixed by printing the generated password - this test asserts the
+        printed value is the one actually usable to log in, not just
+        that something got printed."""
+        monkeypatch.delenv("DEFAULT_ADMIN_PASSWORD", raising=False)
+        with test_app.app_context():
+            User.query.delete()
+            Group.query.delete()
+            db.session.commit()
+
+            create_default_data()
+
+            captured = capsys.readouterr()
+            assert "Auto-generated password:" in captured.out
+
+            printed_password = (
+                captured.out.split("Auto-generated password:")[1]
+                .splitlines()[0]
+                .strip()
+            )
+            user = User.query.filter_by(email="admin@kairos.local").first()
+            assert user.check_password(printed_password) is True
+
+    def test_no_password_printed_when_env_var_is_set(
+        self, test_app, monkeypatch, capsys
+    ):
+        """The opposite case: an operator-provided password is already
+        known to them - echoing it back in the logs would be pure
+        noise (and a mild secret-hygiene smell), so this branch must
+        stay silent."""
+        monkeypatch.setenv("DEFAULT_ADMIN_PASSWORD", "a-strong-operator-password")
+        with test_app.app_context():
+            User.query.delete()
+            Group.query.delete()
+            db.session.commit()
+
+            create_default_data()
+
+            captured = capsys.readouterr()
+            assert "Auto-generated password" not in captured.out
 
     def test_create_default_data_does_not_duplicate(self, test_app):
         """Test that create_default_data doesn't duplicate data."""

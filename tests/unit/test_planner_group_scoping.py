@@ -102,6 +102,30 @@ def test_shared_oncall_with_per_group_shifts_reverse_configuration():
     shift_group_ids = {s.group_id for s in plan.shifts}
     assert shift_group_ids == {10, 20}
 
+    # Real bug regression (v1.1.1 production report, "shift per_group +
+    # oncall shared"): shift planning for a per_group scope used to look
+    # up on-call info keyed by ITS OWN group_id (10 or 20), but on-calls
+    # here are proposed under scope None (shared) - the lookup always
+    # missed, so the on-call person never got their own "oncall" role
+    # slot during their on-call week, and the previous test's assertions
+    # above were too shallow to catch it (they only check a shift EXISTS
+    # and is tagged with the right group, never which role slot it got).
+    # 2026-01-07 (Wednesday) falls inside the on-call week that started
+    # Friday 2026-01-02 - assert whoever that week's on-call user is
+    # gets shift_type_id == oncall_shift_type_id that Wednesday.
+    oncall_by_friday = {o.friday: o.user_id for o in plan.oncalls}
+    week_start_friday = date(2026, 1, 2)
+    assert week_start_friday in oncall_by_friday
+    oncall_user_id = oncall_by_friday[week_start_friday]
+
+    wednesday_shift = next(
+        s
+        for s in plan.shifts
+        if s.date == date(2026, 1, 7) and s.user_id == oncall_user_id
+    )
+    assert wednesday_shift.shift_type_id == RULES.oncall_shift_type_id
+    assert wednesday_shift.role_slot == "oncall"
+
 
 def test_user_group_change_only_affects_new_rows_not_snapshot_input():
     """A UserRef's group_id changing between two plan calls only shows

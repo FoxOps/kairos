@@ -111,6 +111,23 @@ def create_default_data():
         db.session.add(admin_user)
         db.session.commit()
         print(f"✅ Admin user created: {default_admin_email}")
+        if not os.environ.get("DEFAULT_ADMIN_PASSWORD"):
+            # Real bug found in production QA: this branch used to
+            # generate a random password and never display it anywhere -
+            # every fresh install without DEFAULT_ADMIN_PASSWORD set
+            # locked the admin out permanently, with no way to recover
+            # the password (must_change_password=True is useless if you
+            # can never complete the FIRST login to reach it). Printed
+            # here (reaches `docker logs` for the Docker path via
+            # entrypoint.sh) exactly once, at creation time only - never
+            # re-printed on subsequent starts (the "already exists"
+            # branch below has no access to the plaintext password
+            # anyway, by design).
+            print(f"🔑 Auto-generated password: {default_admin_password}")
+            print(
+                "   Save this now - it will not be shown again. "
+                "You must change it on first login."
+            )
     else:
         print(f"✅ Admin user already exists: {default_admin_email}")
 

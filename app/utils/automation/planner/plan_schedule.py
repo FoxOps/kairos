@@ -137,12 +137,22 @@ def plan_schedule(request: PlanningRequest) -> SchedulePlan:
     # through the database (see module docstring).
     proposed_oncalls_by_scope = merge_oncall_fragments(oncall_fragments)
 
+    # Which key in proposed_oncalls_by_scope holds a given shift scope's
+    # on-call info - only equal to that shift scope's own group_id when
+    # oncall_scheduling_mode is ALSO "per_group". When oncall mode is
+    # "shared", on-calls are proposed under scope None regardless of how
+    # many shift scopes exist - see plan_shifts_for_scope()'s own
+    # docstring for the real bug this distinction fixes (shift
+    # "per_group" + oncall "shared" silently blinded every on-call-aware
+    # shift rule).
+    oncall_mode_is_shared = request.oncall_groups == (None,)
     shift_start_date = request.shift_start_date or request.start_date
     shift_fragments = {
         group_id: plan_shifts_for_scope(
             start_date=shift_start_date,
             end_date=request.end_date,
             group_id=group_id,
+            oncall_group_id=(None if oncall_mode_is_shared else group_id),
             eligible_users=request.eligible_shift_users.get(group_id, ()),
             proposed_oncalls=proposed_oncalls_by_scope,
             existing_oncalls=request.existing_oncalls,

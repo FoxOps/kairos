@@ -149,6 +149,7 @@ def plan_shifts_for_scope(
     start_date: date,
     end_date: date,
     group_id: int | None,
+    oncall_group_id: int | None,
     eligible_users: tuple[UserRef, ...],
     proposed_oncalls: dict[tuple[date, int | None], int],
     existing_oncalls: tuple,
@@ -164,7 +165,27 @@ def plan_shifts_for_scope(
     produced by oncall_planner.merge_oncall_fragments() - shift planning
     NEVER reads on-calls from the database, which is the structural fix
     for audit defect #1 (preview computing shifts from real on-calls in
-    the DB while the on-call preview itself was only ever in-memory)."""
+    the DB while the on-call preview itself was only ever in-memory).
+
+    `group_id` (this shift scope's own identity, used to tag
+    ProposedShift.group_id and for staffing-limit bookkeeping) and
+    `oncall_group_id` (which key in `proposed_oncalls` holds THIS
+    scope's on-call info) are deliberately two separate parameters, NOT
+    one - they only happen to be equal when shift_scheduling_mode and
+    oncall_scheduling_mode are both "per_group". When they differ (e.g.
+    shifts "per_group" but on-calls "shared" - an explicitly supported,
+    documented combination), on-calls are proposed under scope `None`
+    while shift planning runs once per real group id - looking up
+    `(friday, group_id)` in that case would never match anything
+    (`group_id` is never `None`), silently blinding every rule-1/rule-2
+    on-call-aware slot assignment below for that entire scope. Real bug
+    found in production (v1.1.1, "shift per_group + oncall shared"):
+    every day's shift got the exact same slot assignment every week,
+    and the on-call person never received their own "oncall" slot
+    during their own on-call week, because these lookups always missed.
+    Caller (plan_schedule.py) computes the correct value: `None` when
+    oncall_scheduling_mode is "shared", else this scope's own
+    `group_id` when oncall_scheduling_mode is "per_group"."""
     proposed: list[ProposedShift] = []
     unfilled: list[UnfilledRequirement] = []
     violations: list[RuleViolation] = []
@@ -184,7 +205,7 @@ def plan_shifts_for_scope(
         if current is None or oncall.end_time > current:
             last_oncall_end_by_user[oncall.user_id] = oncall.end_time
     for (friday, oc_group_id), user_id in proposed_oncalls.items():
-        if oc_group_id != group_id:
+        if oc_group_id != oncall_group_id:
             continue
         end_time = datetime.combine(
             friday + timedelta(days=7), datetime.min.time()
@@ -206,10 +227,12 @@ def plan_shifts_for_scope(
         )
 
         oncall_user_id_today = proposed_oncalls.get(
-            (_covering_friday(day, rules), group_id)
+            (_covering_friday(day, rules), oncall_group_id)
         )
         last_week_friday = _covering_friday(day - timedelta(days=7), rules)
-        oncall_user_id_last_week = proposed_oncalls.get((last_week_friday, group_id))
+        oncall_user_id_last_week = proposed_oncalls.get(
+            (last_week_friday, oncall_group_id)
+        )
 
         # Symmetric forward-looking half of rule 2 - only credited if
         # that on-call genuinely starts after `day` (mirrors
@@ -219,7 +242,7 @@ def plan_shifts_for_scope(
         # which is not a genuinely future one.
         next_week_friday = _covering_friday(day + timedelta(days=7), rules)
         oncall_user_id_next_week = (
-            proposed_oncalls.get((next_week_friday, group_id))
+            proposed_oncalls.get((next_week_friday, oncall_group_id))
             if next_week_friday > day
             else None
         )
