@@ -71,12 +71,19 @@ def _evaluate_safety(
     """safe_to_apply is a defense-in-depth internal-consistency flag,
     NOT "coverage is complete" - an unfilled on-call week or an
     understaffed day is an expected, non-blocking planner output
-    (see UnfilledRequirement), never reflected here. False only means:
-    a hard_blocked violation slipped through hard-constraint filtering
-    (should be structurally impossible if the planner is wired
-    correctly), or a locked slot appears in the diff as reassigned/
-    removed (locked slots are excluded from the candidate pool
-    entirely, so this should also be impossible in correctly-wired
+    (see UnfilledRequirement), never reflected here. Only a
+    "hard_blocked" RuleViolation counts below - a "warning" one (e.g.
+    shift_planner.py's routine per-day rest_after_oncall exclusions,
+    already self-mitigated via `continue` and surfaced to the admin as
+    an ordinary message) is expected to fire regularly and must never
+    abort an otherwise-fine multi-month apply (real production bug:
+    it used to, via the wrong severity - any org with rest_after_oncall
+    configured could never apply a generation run at all). False here
+    means: a hard_blocked violation slipped through hard-constraint
+    filtering (should be structurally impossible if the planner is
+    wired correctly), or a locked slot appears in the diff as
+    reassigned/removed (locked slots are excluded from the candidate
+    pool entirely, so this should also be impossible in correctly-wired
     code) - a loud, typed signal instead of a silently wrong plan."""
     reasons: list[str] = []
 

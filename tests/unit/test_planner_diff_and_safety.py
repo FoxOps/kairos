@@ -156,3 +156,27 @@ def test_safe_to_apply_flips_false_when_a_locked_slot_is_reassigned():
     assert safe is False
     assert len(reasons) == 1
     assert "locked oncall slot changed" in reasons[0]
+
+
+def test_rest_after_oncall_exclusions_never_flip_safe_to_apply():
+    """Real production bug: with rest_after_oncall configured, a
+    3-week+ generation run routinely excludes the departing on-call
+    holder from their own same-day rotation slot on every transition
+    Friday (on-call ends 07:00, rotation slot would start 07:00- 0h
+    rest). That's an expected, already self-mitigated exclusion (see
+    shift_planner.py's "continue"), not a plan-breaking defect - it
+    must never make safe_to_apply False, or a whole multi-month
+    generation run becomes impossible to apply for any org that
+    configures this rule at all."""
+    rules_with_rest = ResolvedRules(**{**RULES.__dict__, "rest_after_oncall_hours": 12})
+    request = _base_request(
+        end_date=date(2026, 2, 26),  # ~8 weeks: several transitions across 3 users
+        resolved_rules={None: rules_with_rest},
+    )
+
+    plan = plan_schedule(request)
+
+    assert any(v.rule_type == "rest_after_oncall" for v in plan.violations)
+    assert all(v.severity == "warning" for v in plan.violations)
+    assert plan.safe_to_apply is True
+    assert plan.safe_to_apply_reasons == ()

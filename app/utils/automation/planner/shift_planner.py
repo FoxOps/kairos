@@ -309,9 +309,22 @@ def plan_shifts_for_scope(
                 _last_oncall_end_before(user.id, shift_start, oncall_ends_by_user),
                 rules.rest_after_oncall_hours,
             ):
+                # "warning", not "hard_blocked": this user is already
+                # excluded from this one day right below (continue) -
+                # same non-fatal, self-mitigated shape as an unfilled
+                # staffing_min slot, expected to fire routinely (every
+                # transition Friday where the departing on-call holder
+                # would otherwise get the same-day rotation slot - see
+                # test_rest_after_oncall_violation_produces_shift_message).
+                # "hard_blocked" is reserved for _evaluate_safety's own
+                # defense-in-depth cases (plan_schedule.py) - it aborts
+                # the ENTIRE apply, which a single routine per-day
+                # exclusion must never do (real bug: it used to, making
+                # any org with rest_after_oncall configured unable to
+                # ever apply a multi-month generation).
                 violations.append(
                     RuleViolation(
-                        severity="hard_blocked",
+                        severity="warning",
                         rule_type="rest_after_oncall",
                         group_id=group_id,
                         date=day,
