@@ -7,9 +7,16 @@ versions match the bare (no `v` prefix) git tags this project actually
 pushes, e.g. `1.1.0`, not `v1.1.0` — see `.github/workflows/tests.yml`'s
 tag trigger for why.
 
-## [Unreleased]
+## [1.1.1] — 2026-08-27
 
 ### Fixed
+- Automation "Générer/rafraîchir le planning" could fail on every day of
+  a multi-month generation run with a flood of false `rest_after_oncall`
+  `hard_blocked` violations: the planner picked each user's on-call end
+  time as the single latest one across the *entire* planning window
+  instead of the most recent one that had actually already happened by
+  the day being planned, so an on-call scheduled months later falsely
+  blocked shifts earlier in the same run.
 - Shift generation rotation, two compounding bugs in a group whose
   on-call turns are sparse (e.g. `oncall_scheduling_mode` shared/pooled
   across several groups while `shift_scheduling_mode` is per-group) —

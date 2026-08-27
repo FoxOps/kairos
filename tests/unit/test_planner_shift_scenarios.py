@@ -5,7 +5,7 @@ tests' own assertions either - the same helper works for every
 headcount), and a custom (non Mon-Fri) weekend definition is honored
 with no hardcoded fallback. No DB/app context needed - pure functions."""
 
-from datetime import date
+from datetime import date, datetime
 
 from app.utils.automation.planner.shift_planner import (
     assign_shift_slots_for_day,
@@ -135,3 +135,74 @@ def test_custom_weekend_definition_skips_configured_days_only():
     # Saturday - the default weekend day, now a working day here.
     for d in (6, 7, 8, 9, 10):
         assert date(2026, 1, d) in days_with_shifts
+
+
+def test_rest_after_oncall_ignores_a_later_on_call_in_the_same_plan():
+    """Real production bug (v1.1.1): a user's on-call further ahead in
+    the planning window must never count as "already ended" for a shift
+    earlier in the window - it hasn't happened yet as of that shift's
+    day. Before the fix, last-oncall-end was precomputed as the single
+    global max across the whole plan, so a February on-call blocked
+    every August shift for the same user with a false rest_after_oncall
+    hard_blocked violation, day after day, for the entire plan."""
+    user = UserRef(1, "A", None)
+    rules = ResolvedRules(**{**BASE_RULES.__dict__, "rest_after_oncall_hours": 11})
+
+    fragment = plan_shifts_for_scope(
+        start_date=date(2026, 8, 3),  # Monday, well before the on-call
+        end_date=date(2026, 8, 7),
+        group_id=None,
+        oncall_group_id=None,
+        eligible_users=(user,),
+        # This user's only on-call in the plan starts months later.
+        proposed_oncalls={(date(2027, 2, 19), None): 1},
+        existing_oncalls=(),
+        existing_leaves=(),
+        locked=frozenset(),
+        published={},
+        rotation_order=(user,),
+        rotation_anchor_epoch=EPOCH,
+        rules=rules,
+    )
+
+    assert fragment.violations == ()
+    assert {s.date for s in fragment.proposed} == {
+        date(2026, 8, 3),
+        date(2026, 8, 4),
+        date(2026, 8, 5),
+        date(2026, 8, 6),
+        date(2026, 8, 7),
+    }
+
+
+def test_rest_after_oncall_still_blocks_shift_right_after_a_past_on_call():
+    """Sanity check for the fix above: an on-call that genuinely already
+    ended before the shift day must still be honored."""
+    user = UserRef(1, "A", None)
+    rules = ResolvedRules(**{**BASE_RULES.__dict__, "rest_after_oncall_hours": 11})
+
+    fragment = plan_shifts_for_scope(
+        start_date=date(2026, 8, 3),  # Monday right after the on-call
+        end_date=date(2026, 8, 3),
+        group_id=None,
+        oncall_group_id=None,
+        eligible_users=(user,),
+        proposed_oncalls={},
+        existing_oncalls=(_OnCallStub(user_id=1, end_time=datetime(2026, 8, 3, 3, 0)),),
+        existing_leaves=(),
+        locked=frozenset(),
+        published={},
+        rotation_order=(user,),
+        rotation_anchor_epoch=EPOCH,
+        rules=rules,
+    )
+
+    assert len(fragment.violations) == 1
+    assert fragment.violations[0].rule_type == "rest_after_oncall"
+    assert fragment.proposed == ()
+
+
+class _OnCallStub:
+    def __init__(self, user_id, end_time):
+        self.user_id = user_id
+        self.end_time = end_time

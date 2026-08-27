@@ -34,6 +34,7 @@ No DB access anywhere in this module - every input arrives as
 already-loaded snapshot data via PlanningRequest.
 """
 
+from bisect import bisect_right
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
@@ -196,23 +197,25 @@ def plan_shifts_for_scope(
         "default": (rules.default_shift_type_id, rules.default_slot_hours),
     }
 
-    # Most recent on-call end time per user, from both real history and
-    # this same plan's own proposed on-calls (never a DB read) - used
-    # for the rest_after_oncall hard constraint below.
-    last_oncall_end_by_user: dict[int, datetime] = {}
+    # Every on-call end time per user, from both real history and this
+    # same plan's own proposed on-calls (never a DB read) - used for the
+    # rest_after_oncall hard constraint below. Kept as a sorted list per
+    # user (not a single "most recent" value) because "most recent" is
+    # relative to the shift day being evaluated: a user's on-call later
+    # in the planning window must not count as already-ended for a shift
+    # earlier in the window - see _last_oncall_end_before().
+    oncall_ends_by_user: dict[int, list[datetime]] = {}
     for oncall in existing_oncalls:
-        current = last_oncall_end_by_user.get(oncall.user_id)
-        if current is None or oncall.end_time > current:
-            last_oncall_end_by_user[oncall.user_id] = oncall.end_time
+        oncall_ends_by_user.setdefault(oncall.user_id, []).append(oncall.end_time)
     for (friday, oc_group_id), user_id in proposed_oncalls.items():
         if oc_group_id != oncall_group_id:
             continue
         end_time = datetime.combine(
             friday + timedelta(days=7), datetime.min.time()
         ).replace(hour=rules.oncall_anchor_end_hour)
-        current = last_oncall_end_by_user.get(user_id)
-        if current is None or end_time > current:
-            last_oncall_end_by_user[user_id] = end_time
+        oncall_ends_by_user.setdefault(user_id, []).append(end_time)
+    for ends in oncall_ends_by_user.values():
+        ends.sort()
 
     day = start_date
     while day <= end_date:
@@ -303,7 +306,7 @@ def plan_shifts_for_scope(
 
             if shift_violates_rest_after_oncall(
                 shift_start,
-                last_oncall_end_by_user.get(user.id),
+                _last_oncall_end_before(user.id, shift_start, oncall_ends_by_user),
                 rules.rest_after_oncall_hours,
             ):
                 violations.append(
@@ -367,6 +370,19 @@ def plan_shifts_for_scope(
     return ShiftPlanFragment(
         proposed=tuple(proposed), unfilled=tuple(unfilled), violations=tuple(violations)
     )
+
+
+def _last_oncall_end_before(
+    user_id: int, before: datetime, ends_by_user: dict[int, list[datetime]]
+) -> datetime | None:
+    """The most recent on-call end time for `user_id` that is not later
+    than `before` (an already-sorted list per user) - a future on-call
+    (relative to `before`) must never count as "already ended"."""
+    ends = ends_by_user.get(user_id)
+    if not ends:
+        return None
+    idx = bisect_right(ends, before)
+    return ends[idx - 1] if idx > 0 else None
 
 
 def _covering_friday(day: date, rules: ResolvedRules) -> date:

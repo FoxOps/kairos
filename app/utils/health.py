@@ -19,7 +19,7 @@ from sqlalchemy import text
 # app/__init__.py (footer context_processor) so /version and the
 # footer never show two different values (this already happened once:
 # the footer stayed stuck on "0.6.0" after a bump here).
-APP_VERSION_DEFAULT = "1.1.0"
+APP_VERSION_DEFAULT = "1.1.1"
 
 
 def register_health_endpoints(app: Flask) -> None:
