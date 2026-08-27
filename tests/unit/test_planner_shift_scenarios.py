@@ -115,6 +115,7 @@ def test_custom_weekend_definition_skips_configured_days_only():
         start_date=date(2026, 1, 5),  # Monday
         end_date=date(2026, 1, 11),  # Sunday
         group_id=None,
+        oncall_group_id=None,
         eligible_users=users,
         proposed_oncalls={},
         existing_oncalls=(),

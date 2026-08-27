@@ -190,7 +190,7 @@ Read once, when the database is first created (`run.py::create_default_data`).
 | Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
 | `DEFAULT_ADMIN_EMAIL` | string | `admin@kairos.local` | Email of the default admin user | ❌ No |
-| `DEFAULT_ADMIN_PASSWORD` | string | *(random, printed to the log on first run — `admin123` in the Docker image specifically)* | **DANGER**: password of the default admin user. The account is created with a forced password-change flag, so a policy-compliant password is required at first login regardless of this value (see "Password policy" in the [Administrator Guide](../guides/ADMIN_GUIDE.md#password-policy)) - still set it to something strong before the very first startup rather than relying on that. | ❌ No |
+| `DEFAULT_ADMIN_PASSWORD` | string | *(random, printed to the console/log exactly once on first run if unset - identical behavior in both the bare-metal and Docker paths)* | **DANGER**: password of the default admin user. The account is created with a forced password-change flag, so a policy-compliant password is required at first login regardless of this value (see "Password policy" in the [Administrator Guide](../guides/ADMIN_GUIDE.md#password-policy)) - still set it to something strong before the very first startup rather than relying on that. | ❌ No |
 | `DEFAULT_GROUP_NAME` | string | `Defaut` | Name of the default group | ❌ No |
 | `DEFAULT_GROUP_IN_SCHEDULE` | boolean | `true` | The default group is part of the schedule | ❌ No |
 | `DEFAULT_GROUP_IN_ONCALL` | boolean | `true` | The default group is part of the on-call rotation | ❌ No |

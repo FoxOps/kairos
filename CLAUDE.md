@@ -135,8 +135,22 @@ never actually run in this repo (`reports/` didn't exist) and already diverged f
 (its own `ruff check` skipped `--config=.ruff.toml`). `find-duplicates` (`scripts/find_duplicates.py`)
 was the only genuinely non-redundant piece of that old bug-hunt block and is kept as its own target.
 
-Default admin created on first run: `admin@kairos.local` / `admin123` (override via
-`DEFAULT_ADMIN_EMAIL` / `DEFAULT_ADMIN_PASSWORD` env vars).
+Default admin created on first run: `admin@kairos.local` (override via `DEFAULT_ADMIN_EMAIL`).
+Password is `admin123` only because `.env.example`/`docker/.env.example` ship
+`DEFAULT_ADMIN_PASSWORD=admin123` uncommented as a documented quick-start convenience value — if
+that var is unset (e.g. an operator sets env vars directly instead of copying the example file,
+which is what this file's own Deployment section recommends for production), `create_default_data()`
+(`run.py`, shared by both the bare-metal and Docker bootstrap paths — see below) generates a random
+password via `secrets.token_urlsafe(16)` and prints it once, at creation time, to stdout/log —
+there is no other way to retrieve it, and the account's `must_change_password` flag can't help since
+it only takes effect *after* a successful first login. Real bug found and fixed during production
+QA (2026-08-27): `docker/init_database.py` used to duplicate this bootstrap logic by hand with a
+literally hardcoded password, never reading `DEFAULT_ADMIN_PASSWORD` at all, and `run.py`'s own
+auto-generated-password branch never printed anything — every Docker deployment got the exact same
+known password regardless of `.env`, and every bare-metal install without the env var set was
+permanently locked out. Fixed by making `docker/init_database.py` delegate to `run.py`'s
+`create_default_data()` instead of duplicating it, and by adding the missing print statement — both
+paths now behave identically.
 
 ## Architecture
 
