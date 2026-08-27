@@ -16,12 +16,12 @@ New structure:
 import os
 
 from flask import Flask, render_template
-from flask_babel import Babel
+from flask_babel import Babel, gettext
 from flask_compress import Compress
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_login import LOGIN_MESSAGE, LoginManager
+from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_talisman import Talisman
@@ -36,6 +36,13 @@ db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
 login_manager.login_message_category = "danger"
+# login_message below is set to the raw (French) msgid, never pre-
+# translated - localize_callback runs it through gettext() lazily,
+# inside unauthorized()'s own per-request context, so it resolves to
+# whichever locale that specific requester is in (same as every other
+# flash in this app) instead of freezing in whatever locale happened
+# to be active at create_app() time.
+login_manager.localize_callback = gettext
 # storage_uri set explicitly (single-process deployment, see
 # docker/entrypoint.sh's gunicorn --workers 1) so Flask-Limiter doesn't
 # fall back to its own default and warn about it on every init.
@@ -484,10 +491,16 @@ def create_app(config_object: str | None = None):
         login_manager.login_view = "auth.login"
         # login_manager is a module-level singleton reused by every
         # create_app() call in the same process (tests included) -
-        # explicitly restore Flask-Login's default, otherwise an
-        # earlier call in OIDC mode (branch above) leaves login_message
-        # at None here too.
-        login_manager.login_message = LOGIN_MESSAGE
+        # explicitly restore this default, otherwise an earlier call in
+        # OIDC mode (branch above) leaves login_message at None here
+        # too. Raw French msgid (not Flask-Login's own English
+        # LOGIN_MESSAGE constant, and not pre-wrapped in _() here
+        # either - see localize_callback above for why) so it renders
+        # in French/English exactly like every other flash in the app,
+        # instead of always being English regardless of locale.
+        login_manager.login_message = (
+            "Veuillez vous connecter pour accéder à cette page."
+        )
 
     # Store the global instance for backward compatibility
     _app = app

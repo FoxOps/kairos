@@ -8,19 +8,20 @@
         <i class="fas fa-user-edit" aria-hidden="true"></i> {{ _("Modifier un utilisateur") }}
     </h1>
 
+    {% set is_admin_checked = ('is_admin' in request.form) if request.method == 'POST' else user.is_admin %}
     <form method="POST" action="{{ url_for('admin.edit_user', user_id=user.id) }}" aria-labelledby="form-title">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="card card-sm bg-base-100 shadow-md">
             <div class="card-body gap-4">
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">{{ _("Nom") }} <span class="text-error">*</span></legend>
-                    <input class="input w-full validator" type="text" id="name" name="name" value="{{ user.name }}" required aria-required="true" aria-describedby="name-help">
+                    <input class="input w-full validator" type="text" id="name" name="name" value="{{ request.form.get('name', user.name) }}" required aria-required="true" aria-describedby="name-help">
                     <p class="text-sm text-base-content/70" id="name-help">{{ _("Nom complet de l'utilisateur") }}</p>
                 </fieldset>
 
                 <fieldset class="fieldset">
                     <legend class="fieldset-legend">{{ _("Email") }} <span class="text-error">*</span></legend>
-                    <input class="input w-full validator" type="email" id="email" name="email" value="{{ user.email }}" required aria-required="true" aria-describedby="email-help">
+                    <input class="input w-full validator" type="email" id="email" name="email" value="{{ request.form.get('email', user.email) }}" required aria-required="true" aria-describedby="email-help">
                     <p class="text-sm text-base-content/70" id="email-help">{{ _("Adresse email de l'utilisateur") }}</p>
                 </fieldset>
 
@@ -28,7 +29,7 @@
                     <legend class="fieldset-legend">{{ _("Groupe") }} <span class="text-error">*</span></legend>
                     <select class="select w-full validator" id="group_id" name="group_id" required aria-required="true" aria-describedby="group-help">
                         {% for group in groups %}
-                        <option value="{{ group.id }}" {% if group.id == user.group_id %}selected{% endif %}>
+                        <option value="{{ group.id }}" {% if group.id|string == request.form.get('group_id', user.group_id|string) %}selected{% endif %}>
                             {{ group.name }}
                         </option>
                         {% endfor %}
@@ -38,7 +39,7 @@
 
                 <div>
                     <label class="label cursor-pointer justify-start gap-2" for="is_admin">
-                        <input type="checkbox" class="checkbox" id="is_admin" name="is_admin" {% if user.is_admin %}checked{% endif %}>
+                        <input type="checkbox" class="checkbox" id="is_admin" name="is_admin" {% if is_admin_checked %}checked{% endif %}>
                         <span>{{ _("Oui, cet utilisateur est administrateur") }}</span>
                     </label>
                 </div>

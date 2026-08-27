@@ -54,7 +54,10 @@ def add_user():
             # One-time reveal, same pattern as ServiceAccount tokens
             # (see admin_service_account_routes.py) - this value is
             # never stored anywhere else, so this flash is the only
-            # chance to hand it to the admin.
+            # chance to hand it to the admin. "warning-persist" opts
+            # this one flash out of the universal 6s auto-dismiss
+            # (base.html) - unlike every other flash, losing this one
+            # before it's read/copied is unrecoverable.
             flash(
                 _(
                     "Mot de passe généré automatiquement : %(password)s "
@@ -63,7 +66,7 @@ def add_user():
                     "ne sera plus jamais affiché).",
                     password=generated_password,
                 ),
-                "warning",
+                "warning-persist",
             )
         return redirect(url_for("admin.list_users"))
 

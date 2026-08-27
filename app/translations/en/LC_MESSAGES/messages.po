@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-08-26 22:17+0200\n"
+"POT-Creation-Date: 2026-08-27 09:26+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: app/__init__.py:448 app/routes/auth.py:255
+#: app/__init__.py:455 app/routes/auth.py:255
 #: app/templates/auth/update_profile.html:15
 msgid "Vous devez choisir un nouveau mot de passe avant de continuer."
 msgstr "You must choose a new password before continuing."
@@ -31,7 +31,7 @@ msgstr "Access denied: you must be an administrator."
 #: app/routes/admin_automation_routes.py:325
 #: app/routes/admin_group_routes.py:89
 #: app/routes/admin_shift_type_routes.py:111
-#: app/routes/admin_user_routes.py:118 app/routes/auth.py:458
+#: app/routes/admin_user_routes.py:121 app/routes/auth.py:458
 #: app/routes/leave_routes.py:122 app/routes/leave_routes.py:155
 #: app/routes/leave_routes.py:191 app/routes/leave_routes.py:230
 #: app/routes/oncall_routes.py:102 app/routes/oncall_routes.py:121
@@ -426,7 +426,7 @@ msgstr "ICS expiry duration saved"
 
 #: app/routes/admin_shift_type_routes.py:34
 #: app/routes/admin_shift_type_routes.py:69 app/routes/admin_user_routes.py:42
-#: app/routes/admin_user_routes.py:88 app/routes/oncall_routes.py:70
+#: app/routes/admin_user_routes.py:91 app/routes/oncall_routes.py:70
 #: app/routes/shift_routes.py:75
 msgid "Tous les champs sont obligatoires."
 msgstr "All fields are required."
@@ -469,7 +469,7 @@ msgstr "%(count)s completed request(s) deleted (all users)."
 msgid "Utilisateur ajouté avec succès !"
 msgstr "User successfully added!"
 
-#: app/routes/admin_user_routes.py:60
+#: app/routes/admin_user_routes.py:63
 #, python-format
 msgid ""
 "Mot de passe généré automatiquement : %(password)s (à communiquer à "
@@ -480,11 +480,11 @@ msgstr ""
 "they will have to change it on their first login, this password will "
 "never be shown again)."
 
-#: app/routes/admin_user_routes.py:98
+#: app/routes/admin_user_routes.py:101
 msgid "Utilisateur modifié avec succès !"
 msgstr "User successfully updated!"
 
-#: app/routes/admin_user_routes.py:115
+#: app/routes/admin_user_routes.py:118
 msgid "Utilisateur supprimé avec succès !"
 msgstr "User successfully deleted!"
 
@@ -495,6 +495,15 @@ msgstr "Public registration is disabled. Use OIDC authentication."
 #: app/routes/auth.py:83
 msgid "L'inscription publique est désactivée. Contactez l'administrateur."
 msgstr "Public registration is disabled. Contact the administrator."
+
+#: app/__init__.py:501
+#. Flask-Login's LoginManager.login_message - not wrapped in _() in
+#. source (see localize_callback in app/__init__.py), so pybabel
+#. extract can't find it; kept in sync with app/__init__.py manually.
+#. Not extracted by `make babel-update` - if that ever obsoletes this
+#. entry (moves it to a `#~` block), move it back here by hand.
+msgid "Veuillez vous connecter pour accéder à cette page."
+msgstr "Please log in to access this page."
 
 #: app/routes/auth.py:113
 msgid "Email et mot de passe sont obligatoires."
@@ -1471,7 +1480,7 @@ msgstr ""
 "The server received a request with a method (GET, POST, PUT, DELETE, "
 "etc.) that is not supported for this URL."
 
-#: app/templates/405.html:17 app/templates/admin/automation/full.html:156
+#: app/templates/405.html:17 app/templates/admin/automation/full.html:158
 msgid "Vérifiez que :"
 msgstr "Check that:"
 
@@ -1615,7 +1624,7 @@ msgid "Exporter les %(resource_name)s au format iCalendar"
 msgstr "Export %(resource_name)s in iCalendar format"
 
 #: app/templates/_ics_export_buttons.html:59
-#: app/templates/admin/dashboard.html:21 app/templates/admin/groups.html:11
+#: app/templates/admin/dashboard.html:23 app/templates/admin/groups.html:11
 #: app/templates/index.html:43 app/templates/index.html:162
 msgid "Groupes"
 msgstr "Groups"
@@ -1650,10 +1659,10 @@ msgid "Fermer"
 msgstr "Close"
 
 #: app/templates/_ics_export_buttons.html:95
-#: app/templates/admin/backups/dashboard.html:87
-#: app/templates/admin/backups/dashboard.html:88
-#: app/templates/admin/backups/dashboard.html:124
-#: app/templates/admin/backups/dashboard.html:125
+#: app/templates/admin/backups/dashboard.html:89
+#: app/templates/admin/backups/dashboard.html:90
+#: app/templates/admin/backups/dashboard.html:126
+#: app/templates/admin/backups/dashboard.html:127
 msgid "Télécharger"
 msgstr "Download"
 
@@ -1734,7 +1743,7 @@ msgid "Sélectionnez l'utilisateur pour ce congé"
 msgstr "Select the user for this leave"
 
 #: app/templates/add_leave.html:27 app/templates/add_shift.html:39
-#: app/templates/admin/automation/full.html:29
+#: app/templates/admin/automation/full.html:31
 msgid "Date de début"
 msgstr "Start date"
 
@@ -1743,7 +1752,7 @@ msgid "Date de début du congé"
 msgstr "Leave start date"
 
 #: app/templates/add_leave.html:33 app/templates/add_shift.html:45
-#: app/templates/admin/automation/full.html:35
+#: app/templates/admin/automation/full.html:37
 msgid "Date de fin"
 msgstr "End date"
 
@@ -1756,7 +1765,7 @@ msgstr "Leave end date"
 #: app/templates/admin/_notification_target_form.html:61
 #: app/templates/admin/edit_group.html:33
 #: app/templates/admin/edit_shift_type.html:39
-#: app/templates/admin/edit_user.html:54
+#: app/templates/admin/edit_user.html:55
 msgid "Actions du formulaire"
 msgstr "Form actions"
 
@@ -1776,7 +1785,7 @@ msgstr "Save the leave"
 #: app/templates/admin/edit_group.html:35
 #: app/templates/admin/edit_service_account.html:38
 #: app/templates/admin/edit_shift_type.html:41
-#: app/templates/admin/edit_user.html:56
+#: app/templates/admin/edit_user.html:57
 #: app/templates/admin/macros/settings_card.html:54
 #: app/utils/helpers/js_translations.py:69
 msgid "Enregistrer"
@@ -1787,7 +1796,7 @@ msgstr "Save"
 #: app/templates/admin/_notification_target_form.html:65
 #: app/templates/admin/edit_group.html:37
 #: app/templates/admin/edit_shift_type.html:43
-#: app/templates/admin/edit_user.html:58 app/templates/confirm_swap.html:46
+#: app/templates/admin/edit_user.html:59 app/templates/confirm_swap.html:46
 msgid "Annuler et retourner à la liste"
 msgstr "Cancel and return to the list"
 
@@ -1805,7 +1814,7 @@ msgstr "Cancel and return to the list"
 #: app/templates/admin/edit_service_account.html:40
 #: app/templates/admin/edit_shift_type.html:43
 #: app/templates/admin/edit_shift_type.html:44
-#: app/templates/admin/edit_user.html:58 app/templates/admin/edit_user.html:59
+#: app/templates/admin/edit_user.html:59 app/templates/admin/edit_user.html:60
 #: app/templates/admin/swaps.html:179
 #: app/templates/auth/profile_settings.html:134
 #: app/templates/auth/update_profile.html:77 app/templates/confirm_swap.html:46
@@ -1945,7 +1954,7 @@ msgstr "Dashboard"
 #: app/templates/admin/automation/full_dry_run.html:140
 #: app/templates/admin/automation/rules.html:51
 #: app/templates/admin/automation/rules.html:101
-#: app/templates/admin/dashboard.html:32 app/templates/base.html:90
+#: app/templates/admin/dashboard.html:34 app/templates/base.html:90
 #: app/templates/index.html:155
 msgid "Shifts"
 msgstr "Shifts"
@@ -1955,13 +1964,13 @@ msgstr "Shifts"
 #: app/templates/admin/automation/full_dry_run.html:126
 #: app/templates/admin/automation/rules.html:65
 #: app/templates/admin/automation/rules.html:180
-#: app/templates/admin/dashboard.html:54 app/templates/base.html:91
+#: app/templates/admin/dashboard.html:56 app/templates/base.html:91
 #: app/templates/index.html:156 app/templates/oncall.html:4
 #: app/templates/oncall.html:9
 msgid "Astreintes"
 msgstr "On-calls"
 
-#: app/templates/admin/dashboard.html:65 app/templates/base.html:92
+#: app/templates/admin/dashboard.html:67 app/templates/base.html:92
 #: app/templates/index.html:157 app/templates/leave.html:4
 #: app/templates/leave.html:9
 msgid "Congés"
@@ -2022,26 +2031,26 @@ msgstr "Notifications"
 msgid "Administration"
 msgstr "Administration"
 
-#: app/templates/admin/dashboard.html:10 app/templates/admin/users.html:11
+#: app/templates/admin/dashboard.html:12 app/templates/admin/users.html:11
 #: app/templates/base.html:264
 msgid "Utilisateurs"
 msgstr "Users"
 
 #: app/templates/admin/automation/dashboard.html:9
 #: app/templates/admin/automation/dashboard.html:11
-#: app/templates/admin/automation/full.html:12
+#: app/templates/admin/automation/full.html:14
 #: app/templates/admin/automation/full_dry_run.html:8
 #: app/templates/admin/automation/rules.html:11
-#: app/templates/admin/dashboard.html:87 app/templates/base.html:265
+#: app/templates/admin/dashboard.html:89 app/templates/base.html:265
 msgid "Automatisation"
 msgstr "Automation"
 
 #: app/templates/admin/audit_log.html:10
 #: app/templates/admin/automation/dashboard.html:8
-#: app/templates/admin/automation/full.html:11
+#: app/templates/admin/automation/full.html:13
 #: app/templates/admin/automation/full_dry_run.html:7
 #: app/templates/admin/automation/rules.html:10
-#: app/templates/admin/backups/dashboard.html:7
+#: app/templates/admin/backups/dashboard.html:9
 #: app/templates/admin/groups.html:10
 #: app/templates/admin/notification_targets.html:10
 #: app/templates/admin/service_accounts.html:10
@@ -2394,17 +2403,17 @@ msgstr ""
 msgid "Calendrier interactif"
 msgstr "Interactive calendar"
 
-#: app/templates/admin/dashboard.html:154 app/templates/index.html:101
+#: app/templates/admin/dashboard.html:156 app/templates/index.html:101
 #: app/templates/index.html:103
 msgid "Actions rapides"
 msgstr "Quick actions"
 
-#: app/templates/admin/automation/full.html:166 app/templates/index.html:114
+#: app/templates/admin/automation/full.html:168 app/templates/index.html:114
 #: app/templates/index.html:115
 msgid "Gérer les utilisateurs"
 msgstr "Manage users"
 
-#: app/templates/admin/automation/full.html:163 app/templates/index.html:117
+#: app/templates/admin/automation/full.html:165 app/templates/index.html:117
 #: app/templates/index.html:118
 msgid "Gérer les groupes"
 msgstr "Manage groups"
@@ -2458,7 +2467,7 @@ msgstr "Event types"
 msgid "Actions principales"
 msgstr "Main actions"
 
-#: app/templates/admin/dashboard.html:190 app/templates/auth/ics_token.html:58
+#: app/templates/admin/dashboard.html:192 app/templates/auth/ics_token.html:58
 #: app/templates/leave.html:23 app/templates/leave.html:52
 #: app/templates/leave.html:118
 msgid "congés"
@@ -2576,7 +2585,7 @@ msgstr "Mark as read"
 msgid "Aucune notification."
 msgstr "No notifications."
 
-#: app/templates/admin/dashboard.html:185 app/templates/auth/ics_token.html:54
+#: app/templates/admin/dashboard.html:187 app/templates/auth/ics_token.html:54
 #: app/templates/oncall.html:23 app/templates/oncall.html:52
 #: app/templates/oncall.html:122
 msgid "astreintes"
@@ -2637,7 +2646,7 @@ msgstr "Schedule"
 msgid "Ajouter un nouveau shift"
 msgstr "Add a new shift"
 
-#: app/templates/admin/dashboard.html:180 app/templates/auth/ics_token.html:50
+#: app/templates/admin/dashboard.html:182 app/templates/auth/ics_token.html:50
 #: app/templates/schedule.html:24 app/templates/schedule.html:53
 #: app/templates/schedule.html:142
 msgid "shifts"
@@ -2667,8 +2676,8 @@ msgstr "List of shifts with users, types, dates, and times"
 
 #: app/templates/admin/audit_log.html:87
 #: app/templates/admin/automation/full_dry_run.html:72
-#: app/templates/admin/backups/dashboard.html:75
-#: app/templates/admin/backups/dashboard.html:112
+#: app/templates/admin/backups/dashboard.html:77
+#: app/templates/admin/backups/dashboard.html:114
 #: app/templates/emails/shift_weekly.html:25 app/templates/schedule.html:72
 msgid "Date"
 msgstr "Date"
@@ -2711,7 +2720,7 @@ msgstr "Delete this shift"
 msgid "Supprimer le shift sélectionné"
 msgstr "Delete the selected shift"
 
-#: app/templates/admin/dashboard.html:76 app/templates/admin/swaps.html:3
+#: app/templates/admin/dashboard.html:78 app/templates/admin/swaps.html:3
 #: app/templates/admin/swaps.html:11 app/templates/admin/swaps.html:14
 #: app/templates/swaps.html:3 app/templates/swaps.html:8
 msgid "Échanges de shifts"
@@ -2824,7 +2833,7 @@ msgstr ""
 #: app/templates/admin/add_shift_type.html:16
 #: app/templates/admin/edit_service_account.html:16
 #: app/templates/admin/edit_shift_type.html:16
-#: app/templates/admin/edit_user.html:16 app/templates/admin/groups.html:36
+#: app/templates/admin/edit_user.html:17 app/templates/admin/groups.html:36
 #: app/templates/admin/notification_targets.html:45
 #: app/templates/admin/service_accounts.html:36
 #: app/templates/admin/shift_types.html:31 app/templates/admin/users.html:38
@@ -2913,15 +2922,15 @@ msgstr "Enabled"
 #: app/templates/admin/_notification_target_form.html:62
 #: app/templates/admin/edit_group.html:34
 #: app/templates/admin/edit_shift_type.html:40
-#: app/templates/admin/edit_user.html:55
+#: app/templates/admin/edit_user.html:56
 #: app/templates/auth/profile_settings.html:131
 #: app/templates/auth/update_profile.html:73
 msgid "Enregistrer les modifications"
 msgstr "Save changes"
 
 #: app/templates/admin/add_group.html:3 app/templates/admin/add_group.html:8
-#: app/templates/admin/dashboard.html:164
-#: app/templates/admin/dashboard.html:166 app/templates/admin/groups.html:19
+#: app/templates/admin/dashboard.html:166
+#: app/templates/admin/dashboard.html:168 app/templates/admin/groups.html:19
 msgid "Ajouter un groupe"
 msgstr "Add a group"
 
@@ -2991,8 +3000,8 @@ msgstr "Create"
 
 #: app/templates/admin/add_shift_type.html:3
 #: app/templates/admin/add_shift_type.html:8
-#: app/templates/admin/dashboard.html:171
 #: app/templates/admin/dashboard.html:173
+#: app/templates/admin/dashboard.html:175
 #: app/templates/admin/shift_types.html:19
 msgid "Ajouter un type de shift"
 msgstr "Add a shift type"
@@ -3044,8 +3053,8 @@ msgid "Heure de fin du shift (0-23)"
 msgstr "Shift end hour (0-23)"
 
 #: app/templates/admin/add_user.html:3 app/templates/admin/add_user.html:8
-#: app/templates/admin/dashboard.html:157
-#: app/templates/admin/dashboard.html:159 app/templates/admin/users.html:20
+#: app/templates/admin/dashboard.html:159
+#: app/templates/admin/dashboard.html:161 app/templates/admin/users.html:20
 msgid "Ajouter un utilisateur"
 msgstr "Add a user"
 
@@ -3077,7 +3086,7 @@ msgstr "E.g.: john.smith@example.com"
 msgid "Exemple : jean.dupont@exemple.com"
 msgstr "Example: john.smith@example.com"
 
-#: app/templates/admin/add_user.html:41 app/templates/admin/edit_user.html:28
+#: app/templates/admin/add_user.html:41 app/templates/admin/edit_user.html:29
 #: app/templates/admin/users.html:40 app/templates/auth/profile.html:24
 #: app/templates/macros/list_filters.html:21
 msgid "Groupe"
@@ -3121,7 +3130,7 @@ msgid "Annuler et retourner à la liste des utilisateurs"
 msgstr "Cancel and return to the user list"
 
 #: app/templates/admin/audit_log.html:3 app/templates/admin/audit_log.html:11
-#: app/templates/admin/audit_log.html:14 app/templates/admin/dashboard.html:109
+#: app/templates/admin/audit_log.html:14 app/templates/admin/dashboard.html:111
 msgid "Historique des modifications"
 msgstr "Change history"
 
@@ -3228,145 +3237,146 @@ msgstr "entries"
 msgid "Aucune entrée d'historique ne correspond à ces filtres."
 msgstr "No history entries match these filters."
 
-#: app/templates/admin/dashboard.html:5
+#: app/templates/admin/dashboard.html:3 app/templates/admin/dashboard.html:7
 msgid "Tableau de bord Admin"
 msgstr "Admin Dashboard"
 
-#: app/templates/admin/dashboard.html:11 app/templates/admin/dashboard.html:22
-#: app/templates/admin/dashboard.html:33 app/templates/admin/dashboard.html:55
-#: app/templates/admin/dashboard.html:66
+#: app/templates/admin/dashboard.html:13 app/templates/admin/dashboard.html:24
+#: app/templates/admin/dashboard.html:35 app/templates/admin/dashboard.html:57
+#: app/templates/admin/dashboard.html:68
 #, python-format
 msgid "Nombre total : %(count)s"
 msgstr "Total number: %(count)s"
 
-#: app/templates/admin/dashboard.html:13
+#: app/templates/admin/dashboard.html:15
 msgid "Voir la liste des utilisateurs"
 msgstr "View the user list"
 
-#: app/templates/admin/dashboard.html:14 app/templates/admin/dashboard.html:25
-#: app/templates/admin/dashboard.html:36 app/templates/admin/dashboard.html:47
-#: app/templates/admin/dashboard.html:58 app/templates/admin/dashboard.html:69
-#: app/templates/admin/dashboard.html:80 app/templates/admin/dashboard.html:113
+#: app/templates/admin/dashboard.html:16 app/templates/admin/dashboard.html:27
+#: app/templates/admin/dashboard.html:38 app/templates/admin/dashboard.html:49
+#: app/templates/admin/dashboard.html:60 app/templates/admin/dashboard.html:71
+#: app/templates/admin/dashboard.html:82 app/templates/admin/dashboard.html:115
 msgid "Voir la liste"
 msgstr "View the list"
 
-#: app/templates/admin/dashboard.html:24
+#: app/templates/admin/dashboard.html:26
 msgid "Voir la liste des groupes"
 msgstr "View the group list"
 
-#: app/templates/admin/dashboard.html:35
+#: app/templates/admin/dashboard.html:37
 msgid "Voir la liste des shifts"
 msgstr "View the shift list"
 
-#: app/templates/admin/dashboard.html:43 app/templates/admin/shift_types.html:3
+#: app/templates/admin/dashboard.html:45 app/templates/admin/shift_types.html:3
 #: app/templates/admin/shift_types.html:11
 msgid "Types de shifts"
 msgstr "Shift types"
 
-#: app/templates/admin/dashboard.html:44
+#: app/templates/admin/dashboard.html:46
 msgid "Gérer les types"
 msgstr "Manage types"
 
-#: app/templates/admin/dashboard.html:46
+#: app/templates/admin/dashboard.html:48
 msgid "Voir la liste des types de shifts"
 msgstr "View the shift type list"
 
-#: app/templates/admin/dashboard.html:57
+#: app/templates/admin/dashboard.html:59
 msgid "Voir la liste des astreintes"
 msgstr "View the on-call list"
 
-#: app/templates/admin/dashboard.html:68
+#: app/templates/admin/dashboard.html:70
 msgid "Voir la liste des congés"
 msgstr "View the leave list"
 
-#: app/templates/admin/dashboard.html:77
+#: app/templates/admin/dashboard.html:79
 #, python-format
 msgid "En attente : %(count)s"
 msgstr "Pending: %(count)s"
 
-#: app/templates/admin/dashboard.html:79
+#: app/templates/admin/dashboard.html:81
 msgid "Voir les demandes d'échange"
 msgstr "View swap requests"
 
-#: app/templates/admin/dashboard.html:88
+#: app/templates/admin/dashboard.html:90
 msgid "Génération automatique"
 msgstr "Automatic generation"
 
-#: app/templates/admin/dashboard.html:90
+#: app/templates/admin/dashboard.html:92
 msgid "Configurer l'automatisation"
 msgstr "Configure automation"
 
 #: app/templates/admin/automation/dashboard.html:63
-#: app/templates/admin/dashboard.html:91 app/templates/admin/dashboard.html:124
-#: app/templates/admin/dashboard.html:146
+#: app/templates/admin/dashboard.html:93 app/templates/admin/dashboard.html:126
+#: app/templates/admin/dashboard.html:148
 msgid "Configurer"
 msgstr "Configure"
 
-#: app/templates/admin/backups/dashboard.html:8
+#: app/templates/admin/backups/dashboard.html:4
 #: app/templates/admin/backups/dashboard.html:10
-#: app/templates/admin/dashboard.html:98 app/templates/admin/settings.html:105
+#: app/templates/admin/backups/dashboard.html:12
+#: app/templates/admin/dashboard.html:100 app/templates/admin/settings.html:105
 msgid "Sauvegardes"
 msgstr "Backups"
 
-#: app/templates/admin/dashboard.html:101
+#: app/templates/admin/dashboard.html:103
 msgid "Gérer les sauvegardes"
 msgstr "Manage backups"
 
-#: app/templates/admin/dashboard.html:102
-#: app/templates/admin/dashboard.html:135
+#: app/templates/admin/dashboard.html:104
+#: app/templates/admin/dashboard.html:137
 msgid "Gérer"
 msgstr "Manage"
 
-#: app/templates/admin/dashboard.html:110 app/templates/admin/settings.html:118
+#: app/templates/admin/dashboard.html:112 app/templates/admin/settings.html:118
 msgid "Audit trail"
 msgstr "Audit trail"
 
-#: app/templates/admin/dashboard.html:112
+#: app/templates/admin/dashboard.html:114
 msgid "Voir l'historique des modifications"
 msgstr "View the change history"
 
-#: app/templates/admin/dashboard.html:120
+#: app/templates/admin/dashboard.html:122
 #: app/templates/admin/notification_targets.html:3
 #: app/templates/admin/notification_targets.html:11
 #: app/templates/admin/notification_targets.html:14
 msgid "Notifications externes"
 msgstr "External notifications"
 
-#: app/templates/admin/dashboard.html:121
+#: app/templates/admin/dashboard.html:123
 msgid "Slack, Discord, Telegram, webhooks..."
 msgstr "Slack, Discord, Telegram, webhooks..."
 
-#: app/templates/admin/dashboard.html:123
+#: app/templates/admin/dashboard.html:125
 msgid "Configurer les notifications externes"
 msgstr "Configure external notifications"
 
-#: app/templates/admin/dashboard.html:131
+#: app/templates/admin/dashboard.html:133
 #: app/templates/admin/service_accounts.html:11
 msgid "API publique"
 msgstr "Public API"
 
-#: app/templates/admin/dashboard.html:132
+#: app/templates/admin/dashboard.html:134
 msgid "Comptes de service pour intégrations tierces"
 msgstr "Service accounts for third-party integrations"
 
-#: app/templates/admin/dashboard.html:134
+#: app/templates/admin/dashboard.html:136
 msgid "Gérer les comptes de service"
 msgstr "Manage service accounts"
 
-#: app/templates/admin/dashboard.html:142 app/templates/admin/settings.html:4
+#: app/templates/admin/dashboard.html:144 app/templates/admin/settings.html:4
 #: app/templates/admin/settings.html:9
 msgid "Paramètres"
 msgstr "Settings"
 
-#: app/templates/admin/dashboard.html:143
+#: app/templates/admin/dashboard.html:145
 msgid "Fuseau horaire, pagination, notifications..."
 msgstr "Timezone, pagination, notifications..."
 
-#: app/templates/admin/dashboard.html:145
+#: app/templates/admin/dashboard.html:147
 msgid "Gérer les paramètres"
 msgstr "Manage settings"
 
-#: app/templates/admin/dashboard.html:155
+#: app/templates/admin/dashboard.html:157
 msgid "Actions rapides administrateur"
 msgstr "Administrator quick actions"
 
@@ -3409,39 +3419,39 @@ msgstr "Edit a shift type"
 msgid "Modifier un utilisateur"
 msgstr "Edit a user"
 
-#: app/templates/admin/edit_user.html:18
+#: app/templates/admin/edit_user.html:19
 msgid "Nom complet de l'utilisateur"
 msgstr "User's full name"
 
-#: app/templates/admin/edit_user.html:22 app/templates/admin/users.html:39
+#: app/templates/admin/edit_user.html:23 app/templates/admin/users.html:39
 #: app/templates/auth/profile.html:19 app/templates/auth/update_profile.html:28
 msgid "Email"
 msgstr "Email"
 
-#: app/templates/admin/edit_user.html:24
+#: app/templates/admin/edit_user.html:25
 msgid "Adresse email de l'utilisateur"
 msgstr "User's email address"
 
-#: app/templates/admin/edit_user.html:36
+#: app/templates/admin/edit_user.html:37
 msgid "Groupe auquel appartient l'utilisateur"
 msgstr "Group the user belongs to"
 
-#: app/templates/admin/edit_user.html:42
+#: app/templates/admin/edit_user.html:43
 msgid "Oui, cet utilisateur est administrateur"
 msgstr "Yes, this user is an administrator"
 
-#: app/templates/admin/edit_user.html:47
+#: app/templates/admin/edit_user.html:48
 #: app/templates/auth/update_profile.html:48
 msgid "Nouveau mot de passe"
 msgstr "New password"
 
-#: app/templates/admin/edit_user.html:48
+#: app/templates/admin/edit_user.html:49
 #: app/templates/auth/update_profile.html:52
 #: app/templates/auth/update_profile.html:66
 msgid "Laisser vide pour ne pas changer"
 msgstr "Leave empty to keep unchanged"
 
-#: app/templates/admin/edit_user.html:50
+#: app/templates/admin/edit_user.html:51
 msgid ""
 "Laisser vide pour conserver le mot de passe actuel. Sinon, au moins 12 "
 "caractères avec au moins 3 des 4 types suivants : minuscules, majuscules,"
@@ -3466,15 +3476,15 @@ msgid "Ajouter un nouveau groupe"
 msgstr "Add a new group"
 
 #: app/templates/admin/automation/dashboard.html:15
-#: app/templates/admin/backups/dashboard.html:14
+#: app/templates/admin/backups/dashboard.html:16
 #: app/templates/admin/groups.html:24 app/templates/admin/users.html:25
 msgid "Retour à l'administration"
 msgstr "Back to administration"
 
 #: app/templates/admin/automation/dashboard.html:15
 #: app/templates/admin/automation/dashboard.html:16
-#: app/templates/admin/backups/dashboard.html:14
-#: app/templates/admin/backups/dashboard.html:15
+#: app/templates/admin/backups/dashboard.html:16
+#: app/templates/admin/backups/dashboard.html:17
 #: app/templates/admin/groups.html:24 app/templates/admin/groups.html:25
 #: app/templates/admin/users.html:25 app/templates/admin/users.html:26
 msgid "Retour à l'admin"
@@ -4224,7 +4234,8 @@ msgid "Combler ces trous"
 msgstr "Fill these gaps"
 
 #: app/templates/admin/automation/dashboard.html:47
-#: app/templates/admin/automation/full.html:15
+#: app/templates/admin/automation/full.html:4
+#: app/templates/admin/automation/full.html:17
 msgid "Générer / rafraîchir le planning"
 msgstr "Generate / refresh the schedule"
 
@@ -4242,6 +4253,8 @@ msgstr "Launch"
 
 #: app/templates/admin/automation/dashboard.html:59
 #: app/templates/admin/automation/dashboard.html:146
+#: app/templates/admin/automation/full.html:234
+#: app/templates/admin/automation/full.html:238
 #: app/templates/admin/automation/rules.html:5
 #: app/templates/admin/automation/rules.html:15
 msgid "Règles d'automatisation"
@@ -4390,11 +4403,11 @@ msgstr "Default period:"
 msgid "6 mois à l'avance."
 msgstr "6 months ahead."
 
-#: app/templates/admin/automation/full.html:13
+#: app/templates/admin/automation/full.html:15
 msgid "Générer / rafraîchir"
 msgstr "Generate / refresh"
 
-#: app/templates/admin/automation/full.html:18
+#: app/templates/admin/automation/full.html:20
 msgid ""
 "Générez les astreintes et les shifts, prévisualisez le résultat avant de "
 "l'appliquer, ou recalculez uniquement les shifts en conservant les "
@@ -4403,49 +4416,49 @@ msgstr ""
 "Generate on-calls and shifts, preview the result before applying it, or "
 "only recalculate shifts while keeping current on-calls."
 
-#: app/templates/admin/automation/full.html:26
+#: app/templates/admin/automation/full.html:28
 #: app/utils/helpers/js_translations.py:82
 msgid "Période"
 msgstr "Period"
 
-#: app/templates/admin/automation/full.html:32
+#: app/templates/admin/automation/full.html:34
 msgid "Premier vendredi à partir de cette date"
 msgstr "First Friday from this date"
 
-#: app/templates/admin/automation/full.html:38
+#: app/templates/admin/automation/full.html:40
 msgid "Dernier jour de la période (6 mois par défaut)"
 msgstr "Last day of the period (6 months by default)"
 
-#: app/templates/admin/automation/full.html:46
+#: app/templates/admin/automation/full.html:48
 msgid "Utilisateurs éligibles pour les astreintes"
 msgstr "Eligible users for on-calls"
 
-#: app/templates/admin/automation/full.html:50
+#: app/templates/admin/automation/full.html:52
 #, python-format
 msgid "%(count)s utilisateur(s) éligible(s) trouvé(s)"
 msgstr "%(count)s eligible user(s) found"
 
-#: app/templates/admin/automation/full.html:55
+#: app/templates/admin/automation/full.html:57
 msgid "Ordre de rotation actuel :"
 msgstr "Current rotation order:"
 
-#: app/templates/admin/automation/full.html:64
+#: app/templates/admin/automation/full.html:66
 msgid "Glissez-déposez les utilisateurs ci-dessous pour modifier l'ordre."
 msgstr "Drag and drop the users below to change the order."
 
-#: app/templates/admin/automation/full.html:68
+#: app/templates/admin/automation/full.html:70
 msgid "Ordre de rotation"
 msgstr "Rotation order"
 
-#: app/templates/admin/automation/full.html:68
+#: app/templates/admin/automation/full.html:70
 msgid "Glissez-déposez pour réorganiser, cochez pour inclure dans la rotation"
 msgstr "Drag and drop to reorder, check to include in the rotation"
 
-#: app/templates/admin/automation/full.html:70
+#: app/templates/admin/automation/full.html:72
 msgid "Définissez l'ordre de rotation"
 msgstr "Set the rotation order"
 
-#: app/templates/admin/automation/full.html:70
+#: app/templates/admin/automation/full.html:72
 msgid ""
 "en glissant-déposant les utilisateurs. La rotation se fera dans l'ordre "
 "affiché."
@@ -4453,46 +4466,46 @@ msgstr ""
 "by dragging and dropping the users. The rotation will follow the "
 "displayed order."
 
-#: app/templates/admin/automation/full.html:89
-#: app/templates/admin/automation/full.html:110
-#: app/templates/admin/automation/full.html:130
+#: app/templates/admin/automation/full.html:91
+#: app/templates/admin/automation/full.html:112
+#: app/templates/admin/automation/full.html:132
 msgid "Inclure"
 msgstr "Include"
 
-#: app/templates/admin/automation/full.html:142
+#: app/templates/admin/automation/full.html:144
 msgid "Sauvegarder l'ordre"
 msgstr "Save the order"
 
-#: app/templates/admin/automation/full.html:145
+#: app/templates/admin/automation/full.html:147
 msgid "Générer les astreintes et shifts"
 msgstr "Generate on-calls and shifts"
 
-#: app/templates/admin/automation/full.html:148
+#: app/templates/admin/automation/full.html:150
 msgid "Prévisualiser (Dry Run)"
 msgstr "Preview (Dry Run)"
 
-#: app/templates/admin/automation/full.html:155
+#: app/templates/admin/automation/full.html:157
 msgid "Aucun utilisateur éligible trouvé pour les astreintes."
 msgstr "No eligible user found for on-calls."
 
-#: app/templates/admin/automation/full.html:158
+#: app/templates/admin/automation/full.html:160
 msgid "Des utilisateurs existent"
 msgstr "Users exist"
 
-#: app/templates/admin/automation/full.html:159
+#: app/templates/admin/automation/full.html:161
 msgid "Les utilisateurs appartiennent à un groupe configuré dans"
 msgstr "Users belong to a group configured in"
 
-#: app/templates/admin/automation/full.html:159
+#: app/templates/admin/automation/full.html:161
 msgid "la configuration"
 msgstr "the configuration"
 
-#: app/templates/admin/automation/full.html:177
-#: app/templates/admin/automation/full.html:206
+#: app/templates/admin/automation/full.html:179
+#: app/templates/admin/automation/full.html:208
 msgid "Rafraîchir les shifts"
 msgstr "Refresh shifts"
 
-#: app/templates/admin/automation/full.html:178
+#: app/templates/admin/automation/full.html:180
 msgid ""
 "Recalcule les shifts d'après les astreintes en base, en choisissant ci-"
 "dessous comment traiter les astreintes elles-mêmes."
@@ -4500,11 +4513,11 @@ msgstr ""
 "Recalculates shifts from the on-calls in the database, choosing below how"
 " to handle the on-calls themselves."
 
-#: app/templates/admin/automation/full.html:184
+#: app/templates/admin/automation/full.html:186
 msgid "Ne pas toucher aux astreintes"
 msgstr "Don't touch the on-calls"
 
-#: app/templates/admin/automation/full.html:185
+#: app/templates/admin/automation/full.html:187
 msgid ""
 "Recalcule seulement les shifts, en tenant compte des astreintes actuelles"
 " (même modifiées manuellement)."
@@ -4512,11 +4525,11 @@ msgstr ""
 "Only recalculates shifts, taking current on-calls into account (even if "
 "manually modified)."
 
-#: app/templates/admin/automation/full.html:191
+#: app/templates/admin/automation/full.html:193
 msgid "Combler les trous d'astreintes"
 msgstr "Fill on-call gaps"
 
-#: app/templates/admin/automation/full.html:192
+#: app/templates/admin/automation/full.html:194
 msgid ""
 "Assigne une astreinte uniquement aux semaines qui n'en ont aucune - les "
 "astreintes déjà assignées (même modifiées manuellement) ne sont jamais "
@@ -4525,11 +4538,11 @@ msgstr ""
 "Assigns an on-call only to weeks that have none - on-calls already "
 "assigned (even manually modified) are never touched."
 
-#: app/templates/admin/automation/full.html:198
+#: app/templates/admin/automation/full.html:200
 msgid "Régénérer entièrement les astreintes"
 msgstr "Fully regenerate the on-calls"
 
-#: app/templates/admin/automation/full.html:199
+#: app/templates/admin/automation/full.html:201
 msgid ""
 "Supprime et régénère toutes les astreintes de la période selon l'ordre de"
 " rotation configuré - écrase les modifications manuelles."
@@ -4537,20 +4550,20 @@ msgstr ""
 "Deletes and regenerates every on-call for the period according to the "
 "configured rotation order - overwrites manual changes."
 
-#: app/templates/admin/automation/full.html:214
+#: app/templates/admin/automation/full.html:216
 #: app/templates/auth/profile.html:54
 msgid "Retour"
 msgstr "Back"
 
-#: app/templates/admin/automation/full.html:221
+#: app/templates/admin/automation/full.html:223
 msgid "Comment ça marche ?"
 msgstr "How does it work?"
 
-#: app/templates/admin/automation/full.html:222
+#: app/templates/admin/automation/full.html:224
 msgid "Génération complète :"
 msgstr "Full generation:"
 
-#: app/templates/admin/automation/full.html:224
+#: app/templates/admin/automation/full.html:226
 msgid ""
 "Définissez l'ordre de rotation en glissant-déposant les utilisateurs, et "
 "cochez ceux à inclure."
@@ -4558,30 +4571,36 @@ msgstr ""
 "Set the rotation order by dragging and dropping users, and check those to"
 " include."
 
-#: app/templates/admin/automation/full.html:225
+#: app/templates/admin/automation/full.html:227
 msgid "Choisissez la période (date de début et de fin)."
 msgstr "Choose the period (start and end date)."
 
-#: app/templates/admin/automation/full.html:226
+#: app/templates/admin/automation/full.html:228
 msgid ""
 "Utilisez \"Prévisualiser\" pour voir ce qui sera généré sans rien "
 "sauvegarder."
 msgstr "Use the \"Preview\" button to see what will be generated without saving."
 
-#: app/templates/admin/automation/full.html:227
+#: app/templates/admin/automation/full.html:229
 msgid ""
 "Cliquez sur \"Générer les astreintes et shifts\" pour créer astreintes et"
 " shifts en base de données. Les astreintes et shifts existants sur la "
-"période sont remplacés."
+"période peuvent être modifiés ou remplacés - l'étendue exacte dépend du "
+"moteur de génération actif (page Règles d'automatisation) ; utilisez "
+"\"Prévisualiser\" pour voir précisément ce qui va changer avant de "
+"confirmer."
 msgstr ""
-"Click \"Generate on-calls and shifts\" to create the on-calls and shifts "
-"in the database. Existing on-calls and shifts on the period are replaced."
+"Click \"Generate on-calls and shifts\" to create on-calls and shifts in "
+"the database. Existing on-calls and shifts in the period may be modified "
+"or replaced - the exact extent depends on the active generation engine "
+"(Automation rules page); use \"Preview\" to see precisely what will "
+"change before confirming."
 
-#: app/templates/admin/automation/full.html:229
+#: app/templates/admin/automation/full.html:231
 msgid "Rafraîchir les shifts :"
 msgstr "Refresh shifts:"
 
-#: app/templates/admin/automation/full.html:229
+#: app/templates/admin/automation/full.html:231
 msgid ""
 "recalcule les shifts d'après les astreintes en base. Choisissez comment "
 "traiter les astreintes elles-mêmes : ne pas y toucher, combler uniquement"
@@ -4591,27 +4610,25 @@ msgstr ""
 "handle the on-calls themselves: don't touch them, only fill gaps, or "
 "fully regenerate them."
 
-#: app/templates/admin/automation/full.html:230
+#: app/templates/admin/automation/full.html:232
 msgid "Règles appliquées à la génération des astreintes :"
 msgstr "Rules applied to on-call generation:"
 
-#: app/templates/admin/automation/full.html:232
-msgid "Chaque astreinte commence selon la configuration (par défaut"
-msgstr "Each on-call starts according to the configuration (by default"
+#: app/templates/admin/automation/full.html:234
+msgid ""
+"Chaque astreinte commence et se termine selon le jour et les horaires "
+"configurés sur la page"
+msgstr "Each on-call starts and ends according to the day and hours configured on the"
 
-#: app/templates/admin/automation/full.html:232
-msgid "vendredi à 21h"
-msgstr "Friday at 9pm"
+#: app/templates/admin/automation/full.html:234
+msgid ""
+"comportement historique par défaut tant qu'aucune règle n'est enregistrée"
+" : vendredi 21h à vendredi 07h suivant"
+msgstr ""
+"default historical behavior as long as no rule is saved: Friday 9 PM to "
+"the following Friday 7 AM"
 
-#: app/templates/admin/automation/full.html:232
-msgid "et se termine selon la configuration (par défaut"
-msgstr "and ends according to the configuration (by default"
-
-#: app/templates/admin/automation/full.html:232
-msgid "vendredi suivant à 07h"
-msgstr "the following Friday at 7am"
-
-#: app/templates/admin/automation/full.html:233
+#: app/templates/admin/automation/full.html:235
 msgid ""
 "La rotation suit l'ordre que vous avez défini et sauvegardé. Cet ordre "
 "est stocké dans la configuration et sera réutilisé pour les prochaines "
@@ -4620,7 +4637,7 @@ msgstr ""
 "The rotation follows the order you defined and saved. This order is "
 "stored in the configuration and will be reused for future generations."
 
-#: app/templates/admin/automation/full.html:234
+#: app/templates/admin/automation/full.html:236
 msgid ""
 "Si un utilisateur n'est pas disponible (congé, astreinte existante), le "
 "système passe au suivant dans la rotation."
@@ -4628,30 +4645,30 @@ msgstr ""
 "If a user is not available (leave, existing on-call), the system moves to"
 " the next one in the rotation."
 
-#: app/templates/admin/automation/full.html:235
+#: app/templates/admin/automation/full.html:237
 msgid ""
 "Un message d'avertissement est affiché si aucun utilisateur n'est "
 "disponible pour une période."
 msgstr "A warning message is displayed if no user is available for a period."
 
-#: app/templates/admin/automation/full.html:236
+#: app/templates/admin/automation/full.html:238
 msgid "Les shifts sont générés automatiquement"
 msgstr "Shifts are automatically generated"
 
-#: app/templates/admin/automation/full.html:236
-msgid ""
-"après les astreintes selon les règles métiers (13h-21h pour l'astreinte, "
-"rotation des créneaux, etc.)."
-msgstr ""
-"after on-calls according to the business rules (1pm-9pm for the on-call "
-"person, slot rotation, etc.)."
+#: app/templates/admin/automation/full.html:238
+msgid "après les astreintes selon les créneaux configurés sur la page"
+msgstr "after on-calls according to the slots configured on the"
 
-#: app/templates/admin/automation/full.html:239
+#: app/templates/admin/automation/full.html:238
+msgid "(rotation des créneaux, etc.)."
+msgstr "(slot rotation, etc.)."
+
+#: app/templates/admin/automation/full.html:241
 #: app/templates/auth/ics_token.html:65
 msgid "Note :"
 msgstr "Note:"
 
-#: app/templates/admin/automation/full.html:239
+#: app/templates/admin/automation/full.html:241
 msgid ""
 "L'ordre de rotation est sauvegardé automatiquement dans la base de "
 "données lorsque vous cliquez sur \"Sauvegarder l'ordre\"."
@@ -4909,11 +4926,11 @@ msgstr ""
 "Block creating a shift/on-call that overlaps an existing on-call/shift "
 "for the same user"
 
-#: app/templates/admin/backups/dashboard.html:12
+#: app/templates/admin/backups/dashboard.html:14
 msgid "Actions sauvegardes"
 msgstr "Backup actions"
 
-#: app/templates/admin/backups/dashboard.html:21
+#: app/templates/admin/backups/dashboard.html:23
 #, python-format
 msgid ""
 "Les sauvegardes sont désactivées (%(var)s). La création de nouvelles "
@@ -4924,98 +4941,98 @@ msgstr ""
 "manual) is blocked; existing backups remain viewable and downloadable "
 "below."
 
-#: app/templates/admin/backups/dashboard.html:27
+#: app/templates/admin/backups/dashboard.html:29
 msgid "Configuration"
 msgstr "Configuration"
 
-#: app/templates/admin/backups/dashboard.html:30
+#: app/templates/admin/backups/dashboard.html:32
 msgid "Sauvegardes automatiques"
 msgstr "Automatic backups"
 
-#: app/templates/admin/backups/dashboard.html:31
+#: app/templates/admin/backups/dashboard.html:33
 msgid "Activées"
 msgstr "Enabled"
 
-#: app/templates/admin/backups/dashboard.html:31
+#: app/templates/admin/backups/dashboard.html:33
 msgid "Désactivées"
 msgstr "Disabled"
 
-#: app/templates/admin/backups/dashboard.html:34
+#: app/templates/admin/backups/dashboard.html:36
 msgid "Locale"
 msgstr "Local"
 
-#: app/templates/admin/backups/dashboard.html:35
+#: app/templates/admin/backups/dashboard.html:37
 #, python-format
 msgid "Activée (%(dir)s)"
 msgstr "Enabled (%(dir)s)"
 
-#: app/templates/admin/backups/dashboard.html:35
-#: app/templates/admin/backups/dashboard.html:39
+#: app/templates/admin/backups/dashboard.html:37
+#: app/templates/admin/backups/dashboard.html:41
 msgid "Désactivée"
 msgstr "Disabled"
 
-#: app/templates/admin/backups/dashboard.html:39
+#: app/templates/admin/backups/dashboard.html:41
 #, python-format
 msgid "Activée (%(bucket)s)"
 msgstr "Enabled (%(bucket)s)"
 
-#: app/templates/admin/backups/dashboard.html:42
+#: app/templates/admin/backups/dashboard.html:44
 msgid "Rétention"
 msgstr "Retention"
 
-#: app/templates/admin/backups/dashboard.html:43
+#: app/templates/admin/backups/dashboard.html:45
 #, python-format
 msgid "%(days)s jours / %(max)s max"
 msgstr "%(days)s days / %(max)s max"
 
-#: app/templates/admin/backups/dashboard.html:51
+#: app/templates/admin/backups/dashboard.html:53
 msgid "Activez BACKUP_ENABLED pour créer une sauvegarde"
 msgstr "Enable BACKUP_ENABLED to create a backup"
 
-#: app/templates/admin/backups/dashboard.html:52
+#: app/templates/admin/backups/dashboard.html:54
 msgid "Créer une sauvegarde maintenant"
 msgstr "Create a backup now"
 
-#: app/templates/admin/backups/dashboard.html:58
+#: app/templates/admin/backups/dashboard.html:60
 msgid "Nettoyer les sauvegardes expirées"
 msgstr "Clean up expired backups"
 
-#: app/templates/admin/backups/dashboard.html:67
+#: app/templates/admin/backups/dashboard.html:69
 msgid "Sauvegardes locales"
 msgstr "Local backups"
 
-#: app/templates/admin/backups/dashboard.html:73
+#: app/templates/admin/backups/dashboard.html:75
 msgid "Fichier"
 msgstr "File"
 
-#: app/templates/admin/backups/dashboard.html:74
-#: app/templates/admin/backups/dashboard.html:111
+#: app/templates/admin/backups/dashboard.html:76
+#: app/templates/admin/backups/dashboard.html:113
 msgid "Taille"
 msgstr "Size"
 
-#: app/templates/admin/backups/dashboard.html:87
+#: app/templates/admin/backups/dashboard.html:89
 #, python-format
 msgid "Télécharger %(filename)s"
 msgstr "Download %(filename)s"
 
-#: app/templates/admin/backups/dashboard.html:97
+#: app/templates/admin/backups/dashboard.html:99
 msgid "Aucune sauvegarde locale disponible."
 msgstr "No local backup available."
 
-#: app/templates/admin/backups/dashboard.html:104
+#: app/templates/admin/backups/dashboard.html:106
 msgid "Sauvegardes S3"
 msgstr "S3 backups"
 
-#: app/templates/admin/backups/dashboard.html:110
+#: app/templates/admin/backups/dashboard.html:112
 msgid "Clé"
 msgstr "Key"
 
-#: app/templates/admin/backups/dashboard.html:124
+#: app/templates/admin/backups/dashboard.html:126
 #, python-format
 msgid "Télécharger %(key)s"
 msgstr "Download %(key)s"
 
-#: app/templates/admin/backups/dashboard.html:134
+#: app/templates/admin/backups/dashboard.html:136
 msgid "Aucune sauvegarde S3 disponible."
 msgstr "No S3 backup available."
 
@@ -6305,4 +6322,22 @@ msgstr "The password must not contain your email address."
 
 #~ msgid "URL pour exporter uniquement vos congés (scope=my)"
 #~ msgstr "URL to export only your leaves (scope=my)"
+
+#~ msgid "vendredi à 21h"
+#~ msgstr "Friday at 9pm"
+
+#~ msgid "et se termine selon la configuration (par défaut"
+#~ msgstr "and ends according to the configuration (by default"
+
+#~ msgid "vendredi suivant à 07h"
+#~ msgstr "the following Friday at 7am"
+
+#~ msgid ""
+#~ "après les astreintes selon les règles"
+#~ " métiers (13h-21h pour l'astreinte, "
+#~ "rotation des créneaux, etc.)."
+#~ msgstr ""
+#~ "after on-calls according to the "
+#~ "business rules (1pm-9pm for the "
+#~ "on-call person, slot rotation, etc.)."
 
