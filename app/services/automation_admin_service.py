@@ -100,9 +100,8 @@ class AutomationAdminService:
         exactly like the legacy engine (which read the submitted ids
         directly, always in sync by construction).
 
-        Only resets AutomationConfig's rotation epoch to today when the
-        order's *content* actually changes (including going from empty
-        to non-empty) - a second real bug found in production: with the
+        Always resets AutomationConfig's rotation epoch to today, on
+        every call - a second real bug found in production: with the
         epoch left untouched forever, the rotation phase stayed pinned
         to AutomationConfig.FALLBACK_ROTATION_EPOCH (a fixed date from
         year 2000), so the first user in a freshly configured rotation
@@ -113,18 +112,27 @@ class AutomationAdminService:
         date (always within 0-6 days of today, whatever weekday it
         falls on) land on offset 0, i.e. rotation_order[0] - matching
         the "the order I configured should start applying now"
-        expectation. Gating the reset on an actual content change
-        (rather than resetting unconditionally on every generate/dry_run
-        call, now that this runs on every one of them) is what avoids
-        reintroducing the exact staleness bug this epoch mechanism was
-        built to fix (see rotation.py's module docstring, defect #4):
-        repeatedly generating with the *same*, already-in-effect order
-        must never re-shuffle an already-running rotation's phase."""
+        expectation.
+
+        This used to only reset the epoch when the order's *content*
+        changed, to avoid re-shuffling an already-running rotation's
+        phase on a same-order regenerate (rotation.py's module
+        docstring, defect #4). Removed after a real production report:
+        the admin's own order was correctly saved and correctly read,
+        but the *first pick* still didn't match rotation_order[0]
+        because the calendar had been cleared (for testing) without the
+        order itself changing, so the epoch - set days earlier - had
+        already drifted the offset away from 0 by elapsed time alone.
+        The user's explicit call: the configured order must always be
+        authoritative for non-locked weeks, full stop, even at the cost
+        of the old "same Friday always maps to the same offset
+        regardless of which call computed it" guarantee for two
+        *overlapping* generate calls made on different days with an
+        unchanged order - see [[project-automation-engine-rework]]."""
         try:
             from app.models import AutomationConfig
 
-            if AutomationConfig.get_rotation_order() != rotation_order_ids:
-                AutomationConfig.set_rotation_epoch(date.today())
+            AutomationConfig.set_rotation_epoch(date.today())
             AutomationConfig.set_rotation_order(rotation_order_ids)
             return None
         except Exception as e:

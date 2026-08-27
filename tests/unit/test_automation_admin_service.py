@@ -39,24 +39,23 @@ class TestSaveRotationOrder:
         AutomationAdminService.save_rotation_order([1, 2, 3])
         assert AutomationConfig.get_rotation_epoch() == date.today()
 
-    def test_does_not_reset_epoch_when_order_content_is_unchanged(self, test_app):
-        """Defect #4 (rotation.py's module docstring): repeatedly saving/
-        generating with the *same* already-in-effect order must never
-        re-shuffle an already-running rotation's phase - only an actual
-        content change should reset the epoch."""
+    def test_resets_epoch_even_when_order_content_is_unchanged(self, test_app):
+        """Real production bug: a stale epoch (set days earlier, e.g. by
+        an unrelated prior save) drifted the rotation offset away from 0
+        even when the order itself was never actually re-shuffled - the
+        admin's own calendar had merely been cleared for testing between
+        two generate attempts with the same order. The configured order
+        must always be authoritative for non-locked weeks, so every
+        save/generate call realigns the epoch to today unconditionally
+        (see [[project-automation-engine-rework]] for the full incident)."""
         from datetime import date
 
         from app.models import AutomationConfig
 
         AutomationAdminService.save_rotation_order([1, 2, 3])
-        sentinel = date(2020, 5, 1)
-        AutomationConfig.set_rotation_epoch(sentinel)
+        AutomationConfig.set_rotation_epoch(date(2020, 5, 1))
 
         AutomationAdminService.save_rotation_order([1, 2, 3])
-        assert AutomationConfig.get_rotation_epoch() == sentinel
-
-        # Sanity: a genuinely different order still resets it.
-        AutomationAdminService.save_rotation_order([3, 2, 1])
         assert AutomationConfig.get_rotation_epoch() == date.today()
 
 

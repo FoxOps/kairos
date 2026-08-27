@@ -1,15 +1,21 @@
 """
-Tests for the 4 automation rule types with no prior hardcoded
-equivalent (see plan): staffing_limits, mandatory_shift,
-rest_after_oncall, oncall_shift_overlap. Unlike the 4 "transposed"
-rule types, none of these existed in any form before - default_params()
-for each is chosen so nothing is enforced until an admin actually
-configures it (zero regression on introduction).
-"""
+Tests for the 3 remaining automation rule types with no prior hardcoded
+equivalent (see plan): staffing_limits, rest_after_oncall,
+oncall_shift_overlap. Unlike the 4 "transposed" rule types, none of
+these existed in any form before - default_params() for each is chosen
+so nothing is enforced until an admin actually configures it (zero
+regression on introduction).
+
+mandatory_shift (a 4th rule type from that same original plan) and the
+`min` half of staffing_limits were later removed entirely: coverage for
+the role-governed shift types (rotation/oncall, see ShiftSlotsRule) is
+already structurally guaranteed by the generation algorithm itself, so
+a separate admin-configured minimum/mandatory layer only produced false
+"unfilled" alerts when the two didn't line up, without adding any real
+guarantee - see [[project-automation-engine-rework]]."""
 
 from app.models import AutomationRule
 from app.utils.automation.rules import (
-    MandatoryShiftRule,
     OnCallShiftOverlapRule,
     RestAfterOnCallRule,
     StaffingLimitsRule,
@@ -20,112 +26,54 @@ class TestStaffingLimitsRule:
     def test_default_has_no_limits(self, test_app):
         assert StaffingLimitsRule.resolve() == {}
 
-    def test_get_limits_unconfigured_type_returns_no_limits(
-        self, test_app, test_shift_type
-    ):
-        assert StaffingLimitsRule.get_limits(test_shift_type.id) == {
-            "min": None,
-            "max": None,
-        }
+    def test_get_max_unconfigured_type_returns_none(self, test_app, test_shift_type):
+        assert StaffingLimitsRule.get_max(test_shift_type.id) is None
 
-    def test_get_limits_returns_configured_values(self, test_app, test_shift_type):
-        AutomationRule.set(
-            "staffing_limits", {str(test_shift_type.id): {"min": 1, "max": 3}}
-        )
-        assert StaffingLimitsRule.get_limits(test_shift_type.id) == {
-            "min": 1,
-            "max": 3,
-        }
+    def test_get_max_returns_configured_value(self, test_app, test_shift_type):
+        AutomationRule.set("staffing_limits", {str(test_shift_type.id): 3})
+        assert StaffingLimitsRule.get_max(test_shift_type.id) == 3
 
-    def test_get_limits_group_override_falls_back_to_global(
+    def test_get_max_group_override_falls_back_to_global(
         self, test_app, test_group, test_shift_type
     ):
-        AutomationRule.set(
-            "staffing_limits", {str(test_shift_type.id): {"min": 1, "max": 3}}
-        )
+        AutomationRule.set("staffing_limits", {str(test_shift_type.id): 3})
         AutomationRule.set(
             "staffing_limits",
-            {str(test_shift_type.id): {"min": 2, "max": 5}},
+            {str(test_shift_type.id): 5},
             group=test_group,
         )
-        assert StaffingLimitsRule.get_limits(test_shift_type.id) == {
-            "min": 1,
-            "max": 3,
-        }
-        assert StaffingLimitsRule.get_limits(test_shift_type.id, group=test_group) == {
-            "min": 2,
-            "max": 5,
-        }
+        assert StaffingLimitsRule.get_max(test_shift_type.id) == 3
+        assert StaffingLimitsRule.get_max(test_shift_type.id, group=test_group) == 5
 
     def test_validate_params_rejects_unknown_shift_type_key(self, test_app):
-        errors = StaffingLimitsRule.validate_params({"999999": {"min": 1}})
+        errors = StaffingLimitsRule.validate_params({"999999": 1})
         assert errors
 
-    def test_validate_params_rejects_min_greater_than_max(
-        self, test_app, test_shift_type
-    ):
-        errors = StaffingLimitsRule.validate_params(
-            {str(test_shift_type.id): {"min": 5, "max": 2}}
-        )
-        assert errors
-
-    def test_validate_params_accepts_valid_limits(self, test_app, test_shift_type):
-        errors = StaffingLimitsRule.validate_params(
-            {str(test_shift_type.id): {"min": 1, "max": 3}}
-        )
+    def test_validate_params_accepts_valid_max(self, test_app, test_shift_type):
+        errors = StaffingLimitsRule.validate_params({str(test_shift_type.id): 3})
         assert errors == []
 
     def test_validate_params_accepts_empty(self):
         assert StaffingLimitsRule.validate_params({}) == []
 
     def test_validate_params_rejects_non_integer_key(self, test_app):
-        errors = StaffingLimitsRule.validate_params({"not-an-id": {"min": 1}})
+        errors = StaffingLimitsRule.validate_params({"not-an-id": 1})
         assert errors
         assert "not-an-id" in errors[0]
 
-    def test_validate_params_rejects_non_dict_limits(self, test_app, test_shift_type):
-        errors = StaffingLimitsRule.validate_params({str(test_shift_type.id): "oops"})
-        assert errors
-        assert "must be an object" in errors[0]
-
-    def test_validate_params_rejects_negative_min(self, test_app, test_shift_type):
-        errors = StaffingLimitsRule.validate_params(
-            {str(test_shift_type.id): {"min": -1}}
-        )
+    def test_validate_params_rejects_negative_max(self, test_app, test_shift_type):
+        errors = StaffingLimitsRule.validate_params({str(test_shift_type.id): -1})
         assert errors
         assert "non-negative integer" in errors[0]
 
     def test_validate_params_rejects_non_integer_max(self, test_app, test_shift_type):
-        errors = StaffingLimitsRule.validate_params(
-            {str(test_shift_type.id): {"max": "many"}}
-        )
+        errors = StaffingLimitsRule.validate_params({str(test_shift_type.id): "many"})
         assert errors
         assert "non-negative integer" in errors[0]
 
-
-class TestMandatoryShiftRule:
-    def test_default_has_nothing_mandatory(self, test_app):
-        assert MandatoryShiftRule.resolve() == {"shift_type_ids": []}
-
-    def test_is_mandatory_false_by_default(self, test_app, test_shift_type):
-        assert MandatoryShiftRule.is_mandatory(test_shift_type.id) is False
-
-    def test_is_mandatory_true_once_configured(self, test_app, test_shift_type):
-        AutomationRule.set("mandatory_shift", {"shift_type_ids": [test_shift_type.id]})
-        assert MandatoryShiftRule.is_mandatory(test_shift_type.id) is True
-
-    def test_validate_params_rejects_unknown_shift_type_id(self, test_app):
-        assert MandatoryShiftRule.validate_params({"shift_type_ids": [999999]})
-
-    def test_validate_params_accepts_known_ids(self, test_app, test_shift_type):
-        assert (
-            MandatoryShiftRule.validate_params({"shift_type_ids": [test_shift_type.id]})
-            == []
-        )
-
-    def test_validate_params_rejects_non_list(self, test_app):
-        errors = MandatoryShiftRule.validate_params({"shift_type_ids": "not-a-list"})
-        assert errors == ["shift_type_ids must be a list"]
+    def test_validate_params_accepts_none_value(self, test_app, test_shift_type):
+        errors = StaffingLimitsRule.validate_params({str(test_shift_type.id): None})
+        assert errors == []
 
 
 class TestRestAfterOnCallRule:

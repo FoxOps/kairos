@@ -267,11 +267,6 @@ def build_planning_request(
         # this read-side only), so both are empty until one exists.
         locked_oncalls=locked_oncalls,
         locked_shifts=locked_shifts,
-        # Seeded from published state - the long-term replacement for
-        # OnCallAutomation.capture_existing_assignments() (see phase 8):
-        # the new pipeline never deletes before planning, so "preferred"
-        # is simply "whatever is currently published."
-        preferred_oncall_assignments=dict(published_oncalls),
         resolved_rules=resolve_rules_for_groups(all_group_ids),
         shift_start_date=shift_start_date,
     )

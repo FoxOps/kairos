@@ -303,7 +303,7 @@ def plan_shifts_for_scope(
                 if published_shift_type_id is None:
                     unfilled.append(
                         UnfilledRequirement(
-                            kind="staffing_min",
+                            kind="staffing_max",
                             date=day,
                             group_id=group_id,
                             reason_code="locked_but_no_published_assignment",
@@ -361,8 +361,8 @@ def plan_shifts_for_scope(
                 # after an on-call week).
                 # "warning", not "hard_blocked": this user is already
                 # excluded from this one day right below (continue) -
-                # same non-fatal, self-mitigated shape as an unfilled
-                # staffing_min slot, expected to fire routinely (every
+                # same non-fatal, self-mitigated shape as a staffing_max
+                # gap, expected to fire routinely (every
                 # transition Friday where the departing on-call holder
                 # would otherwise get the same-day rotation slot - see
                 # test_rest_after_oncall_violation_produces_shift_message).
@@ -384,7 +384,7 @@ def plan_shifts_for_scope(
                 )
                 continue
 
-            max_limit = rules.staffing_limits.get(shift_type_id, {}).get("max")
+            max_limit = rules.staffing_limits.get(shift_type_id)
             if max_limit is not None:
                 current_count = sum(
                     1
@@ -394,7 +394,7 @@ def plan_shifts_for_scope(
                 if current_count >= max_limit:
                     unfilled.append(
                         UnfilledRequirement(
-                            kind="staffing_min",
+                            kind="staffing_max",
                             date=day,
                             group_id=group_id,
                             reason_code="staffing_max_reached",
@@ -423,10 +423,6 @@ def plan_shifts_for_scope(
                     (f"role slot: {role_slot}",),
                 )
             )
-
-        unfilled.extend(
-            _mandatory_and_staffing_min_gaps(proposed, day, group_id, rules)
-        )
 
         day += timedelta(days=1)
 
@@ -489,42 +485,3 @@ def _build_proposed_shift(
         change_type=change_type,  # type: ignore[arg-type]
         explanation=explanation,
     )
-
-
-def _mandatory_and_staffing_min_gaps(
-    proposed: list[ProposedShift], day: date, group_id: int | None, rules: ResolvedRules
-) -> list[UnfilledRequirement]:
-    today_shift_type_ids = {s.shift_type_id for s in proposed if s.date == day}
-    gaps: list[UnfilledRequirement] = []
-
-    for shift_type_id in rules.mandatory_shift_type_ids:
-        if shift_type_id not in today_shift_type_ids:
-            gaps.append(
-                UnfilledRequirement(
-                    kind="mandatory_shift",
-                    date=day,
-                    group_id=group_id,
-                    reason_code="mandatory_shift_type_unfilled",
-                    detail=str(shift_type_id),
-                )
-            )
-
-    for shift_type_id, limits in rules.staffing_limits.items():
-        min_limit = limits.get("min")
-        if min_limit is None:
-            continue
-        current_count = sum(
-            1 for s in proposed if s.date == day and s.shift_type_id == shift_type_id
-        )
-        if current_count < min_limit:
-            gaps.append(
-                UnfilledRequirement(
-                    kind="staffing_min",
-                    date=day,
-                    group_id=group_id,
-                    reason_code="staffing_min_not_met",
-                    detail=str(shift_type_id),
-                )
-            )
-
-    return gaps

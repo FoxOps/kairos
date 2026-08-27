@@ -392,7 +392,7 @@ class TestCanAddShiftNewRules:
     ):
         from app.models import AutomationRule
 
-        AutomationRule.set("staffing_limits", {str(test_shift_type.id): {"max": 2}})
+        AutomationRule.set("staffing_limits", {str(test_shift_type.id): 2})
         shift = Shift(
             user_id=second_user.id,
             shift_type_id=test_shift_type.id,
@@ -410,7 +410,7 @@ class TestCanAddShiftNewRules:
     ):
         from app.models import AutomationRule
 
-        AutomationRule.set("staffing_limits", {str(test_shift_type.id): {"max": 1}})
+        AutomationRule.set("staffing_limits", {str(test_shift_type.id): 1})
         shift = Shift(
             user_id=second_user.id,
             shift_type_id=test_shift_type.id,

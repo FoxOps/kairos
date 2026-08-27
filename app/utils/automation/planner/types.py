@@ -65,8 +65,7 @@ class ResolvedRules:
     oncall_anchor_end_hour: int
     oncall_spacing_weeks: int
     weekend_days: frozenset[int]
-    staffing_limits: dict[int, dict[str, int | None]]
-    mandatory_shift_type_ids: frozenset[int]
+    staffing_limits: dict[int, int | None]
     rest_after_oncall_hours: int
     oncall_shift_overlap_block: bool
     # Each role slot's resolved ShiftType id plus its (start_hour,
@@ -114,7 +113,7 @@ class ProposedShift:
 
 @dataclass(frozen=True)
 class UnfilledRequirement:
-    kind: Literal["oncall_week", "mandatory_shift", "staffing_min"]
+    kind: Literal["oncall_week", "staffing_max"]
     date: date
     group_id: int | None
     reason_code: str
@@ -213,12 +212,6 @@ class PlanningRequest:
         default_factory=frozenset
     )
     locked_shifts: frozenset[tuple[date, int]] = field(default_factory=frozenset)
-
-    # Minimal-perturbation seed for the on-call solver's fairness
-    # tie-break - group-aware for the same reason published_oncalls is.
-    preferred_oncall_assignments: dict[tuple[date, int | None], int] = field(
-        default_factory=dict
-    )
 
     resolved_rules: dict[int | None, ResolvedRules] = field(default_factory=dict)
 

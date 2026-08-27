@@ -134,7 +134,6 @@ def plan_schedule(request: PlanningRequest) -> SchedulePlan:
             existing_leaves=request.existing_leaves,
             locked=request.locked_oncalls,
             published=request.published_oncalls,
-            preferred=request.preferred_oncall_assignments,
             rules=request.resolved_rules[group_id],
         )
         for group_id in request.oncall_groups

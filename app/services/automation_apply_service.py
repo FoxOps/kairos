@@ -196,6 +196,17 @@ class AutomationApplyService:
             if existing is not None:
                 OnCallRepository.delete(existing)
                 result.oncalls_deleted += 1
+                # Real bug found in production: without flushing here,
+                # this DELETE stays merely staged - when a later entry's
+                # own lookup query (_find_oncall/_find_shift) triggers
+                # SQLAlchemy's autoflush, the unit of work can batch
+                # every pending INSERT before every pending DELETE
+                # (no FK dependency forces otherwise for these unrelated
+                # rows), so a same-day INSERT for a *different* user can
+                # be attempted before this DELETE has actually run - see
+                # _apply_shift_entry's identical fix below for the
+                # concrete unique-constraint failure this caused.
+                db.session.flush()
 
         if entry.change_type in ("added", "reassigned"):
             proposed = proposed_oncalls_by_key[(entry.date, entry.group_id)]
@@ -226,6 +237,28 @@ class AutomationApplyService:
             if existing is not None:
                 ShiftRepository.delete(existing)
                 result.shifts_deleted += 1
+                # Real bug found in production, surfaced by the rotation-
+                # order fix ([[project-automation-engine-rework]]): a
+                # "reassigned" shift entry has published_user_id ==
+                # proposed_user_id (same user, only shift_type_id
+                # changes - see diff.py's own docstring), so this
+                # deletes the user's existing (user_id, date) row and
+                # the block below creates a fresh one for that exact
+                # same key. Without flushing here, the DELETE stays
+                # merely staged - when regenerating a day where several
+                # users are reassigned at once (now routine, since the
+                # configured rotation order is always followed), a
+                # later entry's own _find_shift() lookup triggers
+                # SQLAlchemy's autoflush, which can batch every pending
+                # INSERT before every pending DELETE (no FK dependency
+                # forces otherwise for these unrelated rows) - one
+                # user's still-undeleted old row then collides with
+                # another's new INSERT under the (user_id, date) unique
+                # constraint. Reproduced directly: 4 users reassigned on
+                # the same day raised "UNIQUE constraint failed:
+                # shift.user_id, shift.date" via autoflush before this
+                # fix.
+                db.session.flush()
 
         if entry.change_type in ("added", "reassigned"):
             proposed = proposed_shifts_by_key[(entry.date, entry.proposed_user_id)]

@@ -50,7 +50,7 @@ class TestCheckShiftRuleViolationsStaffingLimitsGroupScoping:
         user = _make_user("A", "a@test.com", test_group)
         AutomationRule.set(
             "staffing_limits",
-            {str(test_shift_type.id): {"min": None, "max": 0}},
+            {str(test_shift_type.id): 0},
             group=test_group,
         )
 
@@ -67,7 +67,7 @@ class TestCheckShiftRuleViolationsStaffingLimitsGroupScoping:
         user = _make_user("A", "a@test.com", test_group)
         AutomationRule.set(
             "staffing_limits",
-            {str(test_shift_type.id): {"min": None, "max": 0}},
+            {str(test_shift_type.id): 0},
             group=test_group,
         )
 
@@ -211,7 +211,7 @@ class TestGroupScopingDoesNotAffectOtherGroup:
         user_b = _make_user("B", "b@test.com", other_group)
         AutomationRule.set(
             "staffing_limits",
-            {str(test_shift_type.id): {"min": None, "max": 0}},
+            {str(test_shift_type.id): 0},
             group=test_group,
         )
 

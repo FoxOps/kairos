@@ -39,11 +39,14 @@ automated tests), and used for real team scheduling.
 - Configurable automation rules, admin-editable at
   `/admin/automation/rules`: weekend definition, on-call spacing/week
   anchor, shift slots (which `ShiftType` covers on-call/rotation/
-  default), minimum/maximum staffing per shift type, mandatory slots
-  (unfilled raises an elevated alert, never a hard block), minimum
-  rest after an on-call, and shift/on-call overlap blocking. Each
-  rule's default matches the previously hardcoded behavior exactly.
-  Org-wide for now — see "Future ideas" for per-group rules
+  default), maximum staffing per shift type, minimum rest after an
+  on-call, and shift/on-call overlap blocking. Each rule's default
+  matches the previously hardcoded behavior exactly. Org-wide for now —
+  see "Future ideas" for per-group rules. (Minimum staffing and a
+  separate "mandatory slots" rule existed briefly but were removed —
+  coverage for the rotation/on-call shift types is already guaranteed
+  by the generation algorithm itself, so the extra min/mandatory layer
+  only produced confusing, occasionally-false "unfilled" alerts.)
 - Per-group scoping (`shift_scheduling_mode`/`oncall_scheduling_mode`)
   covers every generation entry point, including the narrower ones
   (filling on-call gaps, refreshing a period, rebalancing after a

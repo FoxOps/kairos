@@ -140,13 +140,12 @@
     </fieldset>
     {% endcall %}
 
-    {% call settings_form_card(_("Effectif minimum/maximum par créneau"), "fa-users", "staffing_limits", url_for('admin.automation_rules_dashboard'), group_id=group_id, description=_("Laisser vide = pas de limite."), badge_html=(override_badge(overrides.get("staffing_limits")) if selected_group else none)) %}
+    {% call settings_form_card(_("Effectif maximum par créneau"), "fa-users", "staffing_limits", url_for('admin.automation_rules_dashboard'), group_id=group_id, description=_("Laisser vide = pas de limite. Le créneau de rotation et le créneau d'astreinte (configurés ci-dessus) sont déjà couverts automatiquement par la génération - inutile de leur fixer un minimum."), badge_html=(override_badge(overrides.get("staffing_limits")) if selected_group else none)) %}
     <div class="overflow-x-auto">
         <table class="table">
             <thead>
                 <tr>
                     <th>{{ _("Type de shift") }}</th>
-                    <th>{{ _("Minimum") }}</th>
                     <th>{{ _("Maximum") }}</th>
                 </tr>
             </thead>
@@ -154,26 +153,12 @@
                 {% for st in shift_types %}
                 <tr>
                     <td>{{ st.label }}</td>
-                    <td><input type="number" class="input input-sm w-24" name="min_{{ st.id }}" min="0" value="{{ staffing_limits[st.id].min if staffing_limits[st.id].min is not none else '' }}"></td>
-                    <td><input type="number" class="input input-sm w-24" name="max_{{ st.id }}" min="0" value="{{ staffing_limits[st.id].max if staffing_limits[st.id].max is not none else '' }}"></td>
+                    <td><input type="number" class="input input-sm w-24" name="max_{{ st.id }}" min="0" value="{{ staffing_limits[st.id] if staffing_limits[st.id] is not none else '' }}"></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    {% endcall %}
-
-    {% call settings_form_card(_("Créneaux obligatoires"), "fa-triangle-exclamation", "mandatory_shift", url_for('admin.automation_rules_dashboard'), group_id=group_id, description=_("Un créneau obligatoire non pourvu déclenche une alerte distincte, sans jamais bloquer la génération."), badge_html=(override_badge(overrides.get("mandatory_shift")) if selected_group else none)) %}
-    <fieldset class="fieldset">
-        <div class="flex flex-wrap gap-3">
-            {% for st in shift_types %}
-            <label class="label cursor-pointer gap-2">
-                <input type="checkbox" class="checkbox" name="mandatory_shift_type_ids" value="{{ st.id }}" {% if st.id in mandatory_shift.shift_type_ids %}checked{% endif %}>
-                {{ st.label }}
-            </label>
-            {% endfor %}
-        </div>
-    </fieldset>
     {% endcall %}
     {% endcall %}
 

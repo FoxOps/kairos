@@ -16,7 +16,6 @@ from app.models import AutomationConfig, Group
 from app.utils.automation.advanced_shift_automation import AdvancedShiftAutomation
 from app.utils.automation.planner.types import ResolvedRules
 from app.utils.automation.rules import (
-    MandatoryShiftRule,
     OnCallAnchorRule,
     OnCallShiftOverlapRule,
     OnCallSpacingRule,
@@ -31,7 +30,6 @@ def _resolve_one(group: Group | None) -> ResolvedRules:
     spacing = OnCallSpacingRule.resolve(group=group)
     weekend = WeekendDefinitionRule.resolve(group=group)
     staffing = StaffingLimitsRule.resolve(group=group)
-    mandatory = MandatoryShiftRule.resolve(group=group)
     rest = RestAfterOnCallRule.resolve(group=group)
     overlap = OnCallShiftOverlapRule.resolve(group=group)
     # Reuses get_shift_type_for_slot() - the exact same resolution
@@ -56,10 +54,9 @@ def _resolve_one(group: Group | None) -> ResolvedRules:
         oncall_spacing_weeks=spacing["min_spacing_weeks"],
         weekend_days=frozenset(weekend["weekend_days"]),
         staffing_limits={
-            int(shift_type_id): {"min": limits.get("min"), "max": limits.get("max")}
-            for shift_type_id, limits in staffing.items()
+            int(shift_type_id): max_value
+            for shift_type_id, max_value in staffing.items()
         },
-        mandatory_shift_type_ids=frozenset(mandatory["shift_type_ids"]),
         rest_after_oncall_hours=rest["min_rest_hours"],
         oncall_shift_overlap_block=overlap["block"],
         oncall_shift_type_id=oncall_shift_type.id,

@@ -5,7 +5,7 @@ entry points - both halves of "per_group" scheduling mode
 partitioning the eligible-user pool so two groups don't compete for the
 same on-call/staffing budget (TestGetEligibleUsersGroupScoping and
 friends below), and resolving rule *values* (weekend/slots/spacing/
-anchor/mandatory) per Group instead of a single org-wide value
+anchor) per Group instead of a single org-wide value
 (TestWeekendDefinitionRuleValueGroupScoping and friends further down -
 each configures a Group-specific AutomationRule override via
 AutomationRule.set(rule_type, params, group=group) and proves it only
@@ -306,44 +306,6 @@ class TestOnCallSpacingRuleValueGroupScoping:
         assert len(oncalls_a) == 2
         assert unfilled_a == []
         assert {o.user_id for o in oncalls_a} == {u1.id}
-
-
-class TestMandatoryShiftRuleValueGroupScoping:
-    def test_group_override_only_alerts_for_that_group(self, test_app, test_group):
-        other_group = Group(name="Other", is_part_of_schedule=True)
-        db.session.add(other_group)
-        db.session.commit()
-        _make_user("A", "a@test.com", test_group)
-        _make_user("B", "b@test.com", other_group)
-
-        # The "1 available user" path always covers the rotation slot
-        # (07-15) and never the on-call slot (13-21) - flagging the
-        # on-call slot mandatory for test_group only should raise
-        # [ALERT] there, never for other_group (no override -> org
-        # default, empty).
-        oncall_type = AdvancedShiftAutomation.get_shift_type_by_hours(13, 21)
-        db.session.commit()
-
-        AutomationRule.set(
-            "mandatory_shift",
-            {"shift_type_ids": [oncall_type.id]},
-            group=test_group,
-        )
-
-        # generate_daily_shifts() directly, not generate_full_schedule()
-        # (which only returns one aggregate period summary and
-        # discards each day's own messages, including this ALERT - a
-        # separate pre-existing gap, out of scope here).
-        monday = date(2023, 12, 4)
-        _shifts_a, msgs_a = AdvancedShiftAutomation.generate_daily_shifts(
-            monday, group=test_group
-        )
-        _shifts_b, msgs_b = AdvancedShiftAutomation.generate_daily_shifts(
-            monday, group=other_group
-        )
-
-        assert any("[ALERT]" in m for m in msgs_a)
-        assert not any("[ALERT]" in m for m in msgs_b)
 
 
 class TestGetAutomationStatusGroupScoping:

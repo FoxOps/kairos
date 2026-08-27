@@ -15,7 +15,6 @@ BASE_RULES = ResolvedRules(
     oncall_spacing_weeks=2,
     weekend_days=frozenset({5, 6}),
     staffing_limits={},
-    mandatory_shift_type_ids=frozenset(),
     rest_after_oncall_hours=0,
     oncall_shift_overlap_block=False,
     oncall_shift_type_id=100,
@@ -36,7 +35,6 @@ def _plan(rotation_order, start, end, rules=BASE_RULES, **kwargs):
         "existing_leaves": (),
         "locked": frozenset(),
         "published": {},
-        "preferred": {},
     }
     defaults.update(kwargs)
     return plan_oncalls_for_scope(
@@ -48,39 +46,33 @@ def _plan(rotation_order, start, end, rules=BASE_RULES, **kwargs):
     )
 
 
-def test_subrange_regeneration_preserves_published_assignments():
-    """Regenerating a subrange of an already-published schedule, with
-    the currently published assignments fed forward as `published`/
-    `preferred` (the real production usage - see
-    OnCallAutomation.capture_existing_assignments(), which this
-    mirrors), must reproduce those exact assignments rather than
-    reshuffling them.
-
-    Note: two *independent, blind* generations (no shared
-    published/preferred state) over a subrange vs. the equivalent slice
-    of a full range are NOT guaranteed to agree once a fairness_key is
-    involved - the whole-range search optimizes fairness (e.g. minimal
-    on-call count variance) over its own larger set of weeks, which can
-    legitimately pick a different, equally-valid tie-broken solution
-    than a narrower search with less context ever would. What IS
-    guaranteed (and fixes audit defect #4) is that the *rotation
-    offset* for a given date is date-derived and absolute - see
-    test_planner_rotation_anchor.py - and that explicitly threading
-    forward prior state (as below) reproduces it exactly."""
+def test_regenerate_with_unchanged_order_and_no_prior_state_reproduces_offsets():
+    """A full range generated twice, back to back, with the *same*
+    rotation order and no prior on-call history in between, must
+    produce identical assignments - the rotation offset for a given
+    date is date-derived and absolute (rotation.py's
+    absolute_week_index(), see test_planner_rotation_anchor.py), so two
+    blind generations over the same range with the same inputs always
+    agree. This replaces the old
+    test_subrange_regeneration_preserves_published_assignments, which
+    asserted a *subrange* regeneration reproduces a prior full-range
+    result by threading `preferred` (already-published state) forward
+    to force it - that "minimal perturbation" mechanism was removed:
+    the configured rotation order must always be authoritative, with
+    no stickiness to old state for non-locked weeks (see
+    plan_oncalls_for_scope()'s own docstring). A subrange generation is
+    therefore no longer guaranteed to reproduce a full-range one (its
+    fairness-variance tie-breaking has a different, smaller set of
+    weeks to balance against) - only same-range, same-input determinism
+    is guaranteed."""
     users = tuple(UserRef(id=i, name=f"U{i}", group_id=None) for i in (1, 2, 3))
-    full = _plan(users, date(2026, 1, 1), date(2026, 3, 31))
+    first = _plan(users, date(2026, 1, 1), date(2026, 3, 31))
+    second = _plan(users, date(2026, 1, 1), date(2026, 3, 31))
 
-    published = {(p.friday, None): p.user_id for p in full.proposed}
-    subrange = _plan(
-        users,
-        date(2026, 2, 1),
-        date(2026, 2, 28),
-        published=published,
-        preferred=published,
-    )
-    full_by_friday = {p.friday: p.user_id for p in full.proposed}
-    for proposed in subrange.proposed:
-        assert full_by_friday[proposed.friday] == proposed.user_id
+    first_by_friday = {p.friday: p.user_id for p in first.proposed}
+    second_by_friday = {p.friday: p.user_id for p in second.proposed}
+    assert first_by_friday == second_by_friday
+    assert first_by_friday[date(2026, 1, 2)] == users[0].id
 
 
 def test_insufficient_users_for_spacing_reports_unfilled():
@@ -110,7 +102,6 @@ def test_leave_overlapping_oncall_week_excludes_candidate():
         existing_leaves=(leave,),
         locked=frozenset(),
         published={},
-        preferred={},
         rules=BASE_RULES,
     )
     assert len(fragment.proposed) == 1
@@ -137,7 +128,6 @@ def test_leave_before_and_after_oncall_week_does_not_exclude_candidate():
         existing_leaves=(before, after),
         locked=frozenset(),
         published={},
-        preferred={},
         rules=BASE_RULES,
     )
     assert len(fragment.proposed) == 1

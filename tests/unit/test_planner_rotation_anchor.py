@@ -18,7 +18,6 @@ RULES = ResolvedRules(
     oncall_spacing_weeks=2,
     weekend_days=frozenset({5, 6}),
     staffing_limits={},
-    mandatory_shift_type_ids=frozenset(),
     rest_after_oncall_hours=0,
     oncall_shift_overlap_block=False,
     oncall_shift_type_id=100,
@@ -43,7 +42,6 @@ def _plan(start, end, existing_oncalls=()):
         existing_leaves=(),
         locked=frozenset(),
         published={},
-        preferred={},
         rules=RULES,
     )
 

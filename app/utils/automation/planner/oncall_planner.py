@@ -67,28 +67,20 @@ class OnCallPlanFragment:
 
 
 def _fairness_key_factory(
-    weeks: list[tuple[date, datetime, datetime]],
-    group_id: int | None,
-    preferred: dict[tuple[date, int | None], int],
     prior_counts: dict[int, int],
     rotation_order: tuple[UserRef, ...],
 ):
     """Builds the tie-break key used when two candidate plans fill the
     same number of weeks - evaluated by _solve_max_filled_weeks only
-    when coverage already ties, in the priority order requested by the
-    audit: minimize change from the previously published/preferred
-    schedule, then balance total on-call counts, then follow rotation
-    order. Lower key wins (same convention as sorted(key=...))."""
+    when coverage already ties: balance total on-call counts, then
+    follow rotation order. Lower key wins (same convention as
+    sorted(key=...)). Deliberately does NOT bias toward the previously
+    published schedule - the configured rotation order must always be
+    authoritative for non-locked weeks, never sticky to old state (see
+    plan_oncalls_for_scope()'s own docstring)."""
     rotation_position = {user.id: i for i, user in enumerate(rotation_order)}
 
-    def fairness_key(assignment: dict[int, UserRef]) -> tuple[int, float, int]:
-        mismatch = 0
-        for week_index, user in assignment.items():
-            friday = weeks[week_index][0]
-            preferred_user_id = preferred.get((friday, group_id))
-            if preferred_user_id is not None and preferred_user_id != user.id:
-                mismatch += 1
-
+    def fairness_key(assignment: dict[int, UserRef]) -> tuple[float, int]:
         counts = dict(prior_counts)
         for user in assignment.values():
             counts[user.id] = counts.get(user.id, 0) + 1
@@ -102,7 +94,7 @@ def _fairness_key_factory(
             rotation_position.get(user.id, 0) for user in assignment.values()
         )
 
-        return (mismatch, variance, rotation_deviation)
+        return (variance, rotation_deviation)
 
     return fairness_key
 
@@ -117,12 +109,17 @@ def plan_oncalls_for_scope(
     existing_leaves: tuple[LeaveSpan, ...],
     locked: frozenset[tuple[date, int | None]],
     published: dict[tuple[date, int | None], int],
-    preferred: dict[tuple[date, int | None], int],
     rules: ResolvedRules,
 ) -> OnCallPlanFragment:
     """Plans on-call assignments for one scope over [start_date, end_date].
     `rotation_order` is this scope's eligible-user rotation order - an
-    empty tuple means no eligible users, every week comes back unfilled."""
+    empty tuple means no eligible users, every week comes back unfilled.
+
+    Non-locked weeks always follow `rotation_order` (rotated by
+    absolute week index, see rotation.py) - deliberately no bias
+    toward whatever is already published for that week. The configured
+    order must always be authoritative; only an explicitly `locked`
+    week is carried through unchanged (see the second loop below)."""
     fridays = _fridays_in_range(start_date, end_date, rules.oncall_anchor_weekday)
     if not fridays:
         return OnCallPlanFragment(proposed=(), unfilled=())
@@ -130,7 +127,6 @@ def plan_oncalls_for_scope(
     index = AvailabilityIndex.from_snapshots(
         existing_oncalls, existing_leaves, min_spacing_weeks=rules.oncall_spacing_weeks
     )
-    rotation_by_id = {user.id: user for user in rotation_order}
 
     weeks: list[tuple[date, datetime, datetime]] = []
     for friday in fridays:
@@ -150,23 +146,12 @@ def plan_oncalls_for_scope(
             week_candidates.append([])
             continue
 
-        preferred_order = rotate(rotation_order, friday, rotation_anchor_epoch)
-
-        preferred_user_id = preferred.get((friday, group_id))
-        preferred_user = (
-            rotation_by_id.get(preferred_user_id)
-            if preferred_user_id is not None
-            else None
-        )
-        if preferred_user is not None:
-            preferred_order = (preferred_user,) + tuple(
-                user for user in preferred_order if user.id != preferred_user_id
-            )
+        candidate_order = rotate(rotation_order, friday, rotation_anchor_epoch)
 
         week_candidates.append(
             [
                 user
-                for user in preferred_order
+                for user in candidate_order
                 if not index.has_oncall_conflict(user.id, start_time, end_time)
                 and not index.has_leave_conflict(
                     user.id, start_time.date(), end_time.date()
@@ -180,9 +165,7 @@ def plan_oncalls_for_scope(
         if snapshot.user_id in relevant_user_ids:
             prior_counts[snapshot.user_id] = prior_counts.get(snapshot.user_id, 0) + 1
 
-    fairness_key = _fairness_key_factory(
-        weeks, group_id, preferred, prior_counts, rotation_order
-    )
+    fairness_key = _fairness_key_factory(prior_counts, rotation_order)
 
     assignment = (
         _solve_max_filled_weeks(
@@ -252,12 +235,7 @@ def plan_oncalls_for_scope(
             change_type = "reassigned"
         else:
             change_type = "added"
-        explanation = []
-        preferred_user_id = preferred.get((friday, group_id))
-        if preferred_user_id == assigned_user.id:
-            explanation.append("kept from published (minimal perturbation)")
-        else:
-            explanation.append("rotation order")
+        explanation = ["rotation order"]
 
         proposed.append(
             ProposedOnCall(

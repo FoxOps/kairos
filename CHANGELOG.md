@@ -90,6 +90,39 @@ tag trigger for why.
     order by week instead of always picking the same person - it was
     previously static, so a group stuck relying on this fallback for
     consecutive weeks saw the identical person on 7am-3pm indefinitely.
+- Rotation order still not respected on regenerate, still present after
+  the fixes above (two compounding bugs, both fixed): the new engine's
+  solver kept whoever was already published for a given on-call week
+  ahead of the freshly configured order's first pick, and the rotation
+  phase's reference date only ever reset when the submitted order's
+  *content* changed - regenerating a range that had already been
+  generated once (e.g. after clearing it for testing) kept the old,
+  possibly-stale pick either way. Regenerating now always follows the
+  currently configured order for any non-locked week.
+- Regenerating a day where several users get reassigned at once (now a
+  routine outcome of the fix above) could raise `UNIQUE constraint
+  failed: shift.user_id, shift.date` and abort the whole apply -
+  SQLAlchemy's autoflush could batch a new assignment's INSERT ahead of
+  the old one's DELETE for unrelated users on the same day.
+- The mandatory on-call coverage shift (e.g. 13h-21h) was flagged
+  "unfilled" whenever that week's on-call holder belonged to a
+  different group than the shift schedule being generated (a
+  `shift_scheduling_mode=per_group` + `oncall_scheduling_mode=shared`
+  combination) - structurally impossible to fill by design, not an
+  actual gap. The separate min/mandatory coverage layer that produced
+  this false alert (`mandatory_shift` rule type, and the `min` half of
+  `staffing_limits`) has been removed outright: coverage for the
+  rotation/on-call shift types is already guaranteed by the generation
+  algorithm itself, and the min/mandatory settings only added confusing,
+  occasionally-misleading configuration on top of it.
+
+### Changed
+- Automation rules page: "Créneaux obligatoires" section removed and
+  "Effectif minimum/maximum par créneau" is now "Effectif maximum par
+  créneau" - the min/mandatory-shift settings were confusing (they only
+  ever meant "alert if this structurally-guaranteed slot can't be
+  filled", not a real, independently-enforceable staffing minimum), so
+  they were removed rather than clarified.
 
 ## [1.1.0] — 2026-08-07
 

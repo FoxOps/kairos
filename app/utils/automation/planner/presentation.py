@@ -74,11 +74,10 @@ def plan_messages(plan: SchedulePlan) -> tuple[list, list, list, list]:
     Every message is aggregated - one line per (kind, shift type) or
     per violation rule_type, with a count and a date range - never one
     line per individual day. Real production bug: a multi-month
-    generation run with a recurring gap (a mandatory slot missed every
-    week, or - before shift_planner.py's own rest_after_oncall/"oncall"
-    role_slot fix - a rest_after_oncall exclusion firing on literally
-    every transition Friday) flooded the admin with one flash toast per
-    occurrence, sometimes hundreds. AdvancedShiftAutomation.
+    generation run with a recurring gap (before shift_planner.py's own
+    rest_after_oncall/"oncall" role_slot fix, a rest_after_oncall
+    exclusion firing on literally every transition Friday) flooded the
+    admin with one flash toast per occurrence, sometimes hundreds. AdvancedShiftAutomation.
     generate_full_schedule()/OnCallAutomation.generate_oncall_schedule()
     (the legacy engine) already solved this exact problem the same way
     (see their own docstrings) - this is that same fix, ported to the
@@ -101,8 +100,7 @@ def plan_messages(plan: SchedulePlan) -> tuple[list, list, list, list]:
     shift_messages: list = []
     shift_unfilled_dates: list = []
 
-    mandatory_gap_dates: dict = defaultdict(list)
-    staffing_min_gap_dates: dict = defaultdict(list)
+    staffing_max_gap_dates: dict = defaultdict(list)
 
     for unfilled in plan.unfilled:
         if unfilled.reason_code == "locked_but_no_published_assignment":
@@ -118,10 +116,7 @@ def plan_messages(plan: SchedulePlan) -> tuple[list, list, list, list]:
             shift_type = db.session.get(ShiftType, int(unfilled.detail))
         label = shift_type.label if shift_type else unfilled.detail
 
-        if unfilled.kind == "mandatory_shift":
-            mandatory_gap_dates[label].append(unfilled.date)
-        else:  # staffing_min
-            staffing_min_gap_dates[label].append(unfilled.date)
+        staffing_max_gap_dates[label].append(unfilled.date)
 
     if oncall_unfilled_dates:
         count, start, end = _date_range_suffix(oncall_unfilled_dates)
@@ -136,24 +131,13 @@ def plan_messages(plan: SchedulePlan) -> tuple[list, list, list, list]:
             )
         )
 
-    for label, dates in mandatory_gap_dates.items():
+    for label, dates in staffing_max_gap_dates.items():
         count, start, end = _date_range_suffix(dates)
         shift_messages.append(
             _(
-                '[ALERT] Créneau obligatoire "%(name)s" non pourvu à '
-                "%(count)s reprises entre le %(start)s et le %(end)s.",
-                name=label,
-                count=count,
-                start=start,
-                end=end,
-            )
-        )
-    for label, dates in staffing_min_gap_dates.items():
-        count, start, end = _date_range_suffix(dates)
-        shift_messages.append(
-            _(
-                '[WARN] Effectif minimum non atteint pour "%(name)s" à '
-                "%(count)s reprises entre le %(start)s et le %(end)s.",
+                '[WARN] Effectif maximum déjà atteint pour "%(name)s" à '
+                "%(count)s reprises entre le %(start)s et le %(end)s - "
+                "assignation manuelle nécessaire.",
                 name=label,
                 count=count,
                 start=start,

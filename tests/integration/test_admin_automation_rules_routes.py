@@ -103,12 +103,11 @@ class TestOnCallShiftOverlapSection:
 
 
 class TestStaffingLimitsSection:
-    def test_valid_limits_persist(self, logged_in_client, test_shift_type):
+    def test_valid_max_persists(self, logged_in_client, test_shift_type):
         response = logged_in_client.post(
             "/admin/automation/rules",
             data={
                 "section": "staffing_limits",
-                f"min_{test_shift_type.id}": "1",
                 f"max_{test_shift_type.id}": "3",
             },
             follow_redirects=True,
@@ -118,15 +117,14 @@ class TestStaffingLimitsSection:
         from app.models import AutomationRule
 
         assert AutomationRule.resolve_params("staffing_limits") == {
-            str(test_shift_type.id): {"min": 1, "max": 3}
+            str(test_shift_type.id): 3
         }
 
-    def test_blank_fields_mean_no_limit(self, logged_in_client, test_shift_type):
+    def test_blank_field_means_no_limit(self, logged_in_client, test_shift_type):
         response = logged_in_client.post(
             "/admin/automation/rules",
             data={
                 "section": "staffing_limits",
-                f"min_{test_shift_type.id}": "",
                 f"max_{test_shift_type.id}": "",
             },
             follow_redirects=True,
@@ -135,55 +133,10 @@ class TestStaffingLimitsSection:
 
         from app.utils.automation.rules import StaffingLimitsRule
 
-        # Blank fields are omitted from storage entirely (the route
-        # doesn't write a no-op entry) - get_limits() still correctly
-        # reports "no limit either way" via its own missing-key default.
-        assert StaffingLimitsRule.get_limits(test_shift_type.id) == {
-            "min": None,
-            "max": None,
-        }
-
-
-class TestMandatoryShiftSection:
-    def test_selected_ids_persist(self, logged_in_client, test_shift_type):
-        response = logged_in_client.post(
-            "/admin/automation/rules",
-            data={
-                "section": "mandatory_shift",
-                "mandatory_shift_type_ids": [str(test_shift_type.id)],
-            },
-            follow_redirects=True,
-        )
-        assert response.status_code == 200
-
-        from app.models import AutomationRule
-
-        assert AutomationRule.resolve_params("mandatory_shift") == {
-            "shift_type_ids": [test_shift_type.id]
-        }
-
-    def test_none_selected_persists_empty(self, logged_in_client):
-        response = logged_in_client.post(
-            "/admin/automation/rules",
-            data={"section": "mandatory_shift"},
-            follow_redirects=True,
-        )
-        assert response.status_code == 200
-
-        from app.models import AutomationRule
-
-        assert AutomationRule.resolve_params("mandatory_shift") == {
-            "shift_type_ids": []
-        }
-
-    def test_non_numeric_id_flashes_error(self, logged_in_client):
-        response = logged_in_client.post(
-            "/admin/automation/rules",
-            data={"section": "mandatory_shift", "mandatory_shift_type_ids": ["abc"]},
-            follow_redirects=True,
-        )
-        assert response.status_code == 200
-        assert b"Erreur" in response.data
+        # Blank field is omitted from storage entirely (the route
+        # doesn't write a no-op entry) - get_max() still correctly
+        # reports "no limit" via its own missing-key default.
+        assert StaffingLimitsRule.get_max(test_shift_type.id) is None
 
 
 class TestRestAfterOnCallSection:

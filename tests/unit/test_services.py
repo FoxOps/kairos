@@ -648,7 +648,7 @@ class TestShiftService:
         from app.models import AutomationRule
 
         target_day = _next_weekday()
-        AutomationRule.set("staffing_limits", {str(test_shift_type.id): {"max": 1}})
+        AutomationRule.set("staffing_limits", {str(test_shift_type.id): 1})
         other_shift = Shift(
             date=target_day,
             start_time=datetime.combine(target_day, datetime.min.time()),

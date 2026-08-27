@@ -142,72 +142,38 @@ class TestSaveOnCallAnchor:
 
 
 class TestSaveStaffingLimits:
-    def test_valid_limits_persist(self, test_app, test_shift_type):
+    def test_valid_max_persists(self, test_app, test_shift_type):
         from app.services.automation_rule_admin_service import (
             AutomationRuleAdminService,
         )
 
-        error = AutomationRuleAdminService.save_staffing_limits(
-            {test_shift_type.id: (1, 3)}
-        )
+        error = AutomationRuleAdminService.save_staffing_limits({test_shift_type.id: 3})
         assert error is None
         assert AutomationRule.resolve_params("staffing_limits") == {
-            str(test_shift_type.id): {"min": 1, "max": 3}
+            str(test_shift_type.id): 3
         }
 
-    def test_min_greater_than_max_rejected(self, test_app, test_shift_type):
+    def test_negative_max_rejected(self, test_app, test_shift_type):
         from app.services.automation_rule_admin_service import (
             AutomationRuleAdminService,
         )
 
         error = AutomationRuleAdminService.save_staffing_limits(
-            {test_shift_type.id: (5, 2)}
+            {test_shift_type.id: -1}
         )
         assert error is not None
 
-    def test_empty_values_mean_no_limit(self, test_app, test_shift_type):
+    def test_none_value_means_no_limit(self, test_app, test_shift_type):
         from app.services.automation_rule_admin_service import (
             AutomationRuleAdminService,
         )
 
         error = AutomationRuleAdminService.save_staffing_limits(
-            {test_shift_type.id: (None, None)}
+            {test_shift_type.id: None}
         )
         assert error is None
         assert AutomationRule.resolve_params("staffing_limits") == {
-            str(test_shift_type.id): {"min": None, "max": None}
-        }
-
-
-class TestSaveMandatoryShift:
-    def test_valid_ids_persist(self, test_app, test_shift_type):
-        from app.services.automation_rule_admin_service import (
-            AutomationRuleAdminService,
-        )
-
-        error = AutomationRuleAdminService.save_mandatory_shift([test_shift_type.id])
-        assert error is None
-        assert AutomationRule.resolve_params("mandatory_shift") == {
-            "shift_type_ids": [test_shift_type.id]
-        }
-
-    def test_unknown_id_rejected(self, test_app):
-        from app.services.automation_rule_admin_service import (
-            AutomationRuleAdminService,
-        )
-
-        error = AutomationRuleAdminService.save_mandatory_shift([999999])
-        assert error is not None
-
-    def test_empty_list_persists_as_nothing_mandatory(self, test_app):
-        from app.services.automation_rule_admin_service import (
-            AutomationRuleAdminService,
-        )
-
-        error = AutomationRuleAdminService.save_mandatory_shift([])
-        assert error is None
-        assert AutomationRule.resolve_params("mandatory_shift") == {
-            "shift_type_ids": []
+            str(test_shift_type.id): None
         }
 
 

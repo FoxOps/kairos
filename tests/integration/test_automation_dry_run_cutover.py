@@ -11,6 +11,7 @@ from werkzeug.security import generate_password_hash
 from app import db
 from app.models import Group, OnCall, Shift, User
 from app.services.automation_admin_service import AutomationAdminService
+from app.services.settings_service import SettingsService
 
 
 def _make_group(name, **kwargs):
@@ -143,6 +144,74 @@ class TestGenerateFullPersistsRotationOrder:
 
         first_oncall = min(result.oncalls, key=lambda o: o.start_time)
         assert first_oncall.user.id == users[0].id
+
+    def test_regenerate_with_new_order_overrides_already_published_week(self, test_app):
+        """Real production bug (QA report, "still present" after the
+        rotation-order-persistence fix above): once a week already has
+        a published on-call from a prior generate, regenerating with a
+        *reordered* rotation used to keep the old holder instead of the
+        new order's first pick ("minimal perturbation" bias in
+        oncall_planner.py, now removed - the configured order must
+        always be authoritative for non-locked weeks)."""
+        SettingsService.set_new_automation_engine_enabled(True)
+        group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
+        users = [_make_user(f"U{i}", f"u{i}@x.com", group) for i in range(4)]
+
+        AutomationAdminService.generate_full(
+            date(2026, 8, 28),
+            date(2026, 9, 4),
+            rotation_order_ids=[u.id for u in users],
+            dry_run=False,
+        )
+        first_oncall = OnCall.query.order_by(OnCall.start_time).first()
+        assert first_oncall.user_id == users[0].id
+
+        reordered = [users[3].id, users[2].id, users[1].id, users[0].id]
+        AutomationAdminService.generate_full(
+            date(2026, 8, 28),
+            date(2026, 9, 4),
+            rotation_order_ids=reordered,
+            dry_run=False,
+        )
+        first_oncall = OnCall.query.order_by(OnCall.start_time).first()
+        assert first_oncall.user_id == users[3].id
+
+    def test_regenerate_after_clearing_calendar_still_starts_at_order_first_entry(
+        self, test_app
+    ):
+        """Second half of the same QA report: even with the on-call
+        table emptied between two generate attempts (simulating "cleared
+        for testing"), an *unchanged* rotation order must still put its
+        first entry on-call first - previously a stale rotation-phase
+        epoch (only reset when the order's content changed) drifted the
+        pick away from order[0] purely from elapsed time, even though
+        the order itself was correctly saved and read
+        (save_rotation_order() now always resets the epoch)."""
+        SettingsService.set_new_automation_engine_enabled(True)
+        group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
+        users = [_make_user(f"U{i}", f"u{i}@x.com", group) for i in range(4)]
+
+        AutomationAdminService.generate_full(
+            date(2026, 8, 28),
+            date(2026, 9, 4),
+            rotation_order_ids=[u.id for u in users],
+            dry_run=False,
+        )
+
+        from app.models import AutomationConfig
+
+        AutomationConfig.set_rotation_epoch(date(2020, 1, 1))
+        OnCall.query.delete()
+        db.session.commit()
+
+        AutomationAdminService.generate_full(
+            date(2026, 8, 28),
+            date(2026, 9, 4),
+            rotation_order_ids=[u.id for u in users],
+            dry_run=False,
+        )
+        first_oncall = OnCall.query.order_by(OnCall.start_time).first()
+        assert first_oncall.user_id == users[0].id
 
 
 class TestGenerateFullDryRunMessages:

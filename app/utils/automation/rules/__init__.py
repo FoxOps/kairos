@@ -11,7 +11,6 @@ AutomationRule.params is generic JSON.
 """
 
 from app.utils.automation.rules.base import AutomationRuleType
-from app.utils.automation.rules.mandatory_shift import MandatoryShiftRule
 from app.utils.automation.rules.oncall_anchor import OnCallAnchorRule
 from app.utils.automation.rules.oncall_shift_overlap import OnCallShiftOverlapRule
 from app.utils.automation.rules.oncall_spacing import OnCallSpacingRule
@@ -28,7 +27,6 @@ RULE_TYPES: dict[str, type[AutomationRuleType]] = {
         ShiftSlotsRule,
         WeekendDefinitionRule,
         StaffingLimitsRule,
-        MandatoryShiftRule,
         RestAfterOnCallRule,
         OnCallShiftOverlapRule,
     )
@@ -42,7 +40,6 @@ __all__ = [
     "ShiftSlotsRule",
     "WeekendDefinitionRule",
     "StaffingLimitsRule",
-    "MandatoryShiftRule",
     "RestAfterOnCallRule",
     "OnCallShiftOverlapRule",
 ]

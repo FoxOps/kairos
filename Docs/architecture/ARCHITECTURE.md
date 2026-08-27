@@ -137,8 +137,8 @@ app/
 │   │                      # engine), OnCallAutomation, status, rules/ (one class
 │   │                      # per configurable rule type - weekend_definition,
 │   │                      # oncall_anchor, oncall_spacing, oncall_shift_overlap,
-│   │                      # rest_after_oncall, shift_slots, staffing_limits,
-│   │                      # mandatory_shift - each interpreting one AutomationRule's
+│   │                      # rest_after_oncall, shift_slots, staffing_limits
+│   │                      # (max-only) - each interpreting one AutomationRule's
 │   │                      # params, base.py defines the shared resolve() shape)
 │   ├── export/              # ICS generation (icalendar), zoneinfo (not pytz)
 │   ├── helpers/             # common_helpers.py (can_add_shift/leave/oncall,

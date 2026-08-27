@@ -34,7 +34,7 @@ def _plan(unfilled=(), violations=()):
     )
 
 
-def test_repeated_mandatory_gaps_for_the_same_shift_type_produce_one_message(
+def test_repeated_staffing_max_gaps_for_the_same_shift_type_produce_one_message(
     test_app,
 ):
     shift_type = ShiftType(name="oncall", label="13h-21h", start_hour=13, end_hour=21)
@@ -43,10 +43,10 @@ def test_repeated_mandatory_gaps_for_the_same_shift_type_produce_one_message(
 
     unfilled = tuple(
         UnfilledRequirement(
-            kind="mandatory_shift",
+            kind="staffing_max",
             date=date(2026, 1, d),
             group_id=None,
-            reason_code="mandatory_shift_type_unfilled",
+            reason_code="staffing_max_reached",
             detail=str(shift_type.id),
         )
         for d in (2, 9, 16, 23, 30)
@@ -67,36 +67,34 @@ def test_repeated_mandatory_gaps_for_the_same_shift_type_produce_one_message(
 
 
 def test_different_shift_types_produce_separate_messages(test_app):
-    mandatory_type = ShiftType(
-        name="oncall", label="13h-21h", start_hour=13, end_hour=21
-    )
-    staffing_type = ShiftType(
+    oncall_type = ShiftType(name="oncall", label="13h-21h", start_hour=13, end_hour=21)
+    rotation_type = ShiftType(
         name="rotation", label="07h-15h", start_hour=7, end_hour=15
     )
-    db.session.add_all([mandatory_type, staffing_type])
+    db.session.add_all([oncall_type, rotation_type])
     db.session.commit()
 
     unfilled = (
         UnfilledRequirement(
-            kind="mandatory_shift",
+            kind="staffing_max",
             date=date(2026, 1, 2),
             group_id=None,
-            reason_code="mandatory_shift_type_unfilled",
-            detail=str(mandatory_type.id),
+            reason_code="staffing_max_reached",
+            detail=str(oncall_type.id),
         ),
         UnfilledRequirement(
-            kind="staffing_min",
+            kind="staffing_max",
             date=date(2026, 1, 2),
             group_id=None,
-            reason_code="staffing_min_not_met",
-            detail=str(staffing_type.id),
+            reason_code="staffing_max_reached",
+            detail=str(rotation_type.id),
         ),
     )
 
     _, _, shift_messages, _ = plan_messages(_plan(unfilled=unfilled))
 
     assert len(shift_messages) == 2
-    assert any("[ALERT]" in m and "13h-21h" in m for m in shift_messages)
+    assert any("[WARN]" in m and "13h-21h" in m for m in shift_messages)
     assert any("[WARN]" in m and "07h-15h" in m for m in shift_messages)
 
 
@@ -146,7 +144,7 @@ def test_repeated_rest_after_oncall_violations_produce_one_message(test_app):
 def test_locked_but_no_published_assignment_is_never_surfaced(test_app):
     unfilled = (
         UnfilledRequirement(
-            kind="staffing_min",
+            kind="staffing_max",
             date=date(2026, 1, 2),
             group_id=None,
             reason_code="locked_but_no_published_assignment",

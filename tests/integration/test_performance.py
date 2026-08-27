@@ -401,13 +401,11 @@ class TestNPlusOneQueries:
         self, test_app, test_group
     ):
         """Regression test: AutomationRuleType.resolve() (backing
-        get_shift_type_for_slot()'s shift-slot resolution and the
-        mandatory/staffing coverage checks) used to hit the DB on every
-        call - once per assigned user per day inside
-        generate_daily_shifts(), plus again per day inside
-        generate_full_schedule()'s own gap-aggregation pass - so a
-        multi-week generation run issued a query per rule per day
-        instead of one per rule for the whole run. Now cached on
+        get_shift_type_for_slot()'s shift-slot resolution) used to hit
+        the DB on every call - once per assigned user per day inside
+        generate_daily_shifts() - so a multi-week generation run issued
+        a query per rule per day instead of one per rule for the whole
+        run. Now cached on
         flask.g per (rule_type, group_id) for the request - see
         AutomationRuleType.resolve() in
         app/utils/automation/rules/base.py. Only measurable inside a
@@ -445,9 +443,8 @@ class TestNPlusOneQueries:
 
         rule_queries = [q for q in queries if "automation_rules" in q]
         # One query per distinct rule type actually resolved during this
-        # run (weekend_definition, shift_slots, mandatory_shift,
-        # staffing_limits - each cached after its first resolve()), not
-        # one per day or per assigned user.
+        # run (weekend_definition, shift_slots - each cached after its
+        # first resolve()), not one per day or per assigned user.
         assert 0 < len(rule_queries) <= 6, (
             f"{len(rule_queries)} automation_rules queries for a "
             f"{(end_date - start_date).days + 1}-day run generating "

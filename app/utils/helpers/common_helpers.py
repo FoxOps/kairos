@@ -516,18 +516,18 @@ def check_shift_rule_violations(user, date, shift_type=None, exclude_shift_id=No
         else None
     )
 
-    limits = StaffingLimitsRule.get_limits(shift_type.id, group=group)
-    if limits["max"] is not None:
+    max_limit = StaffingLimitsRule.get_max(shift_type.id, group=group)
+    if max_limit is not None:
         count_query = Shift.query.filter(
             Shift.shift_type_id == shift_type.id, Shift.date == date
         )
         if exclude_shift_id is not None:
             count_query = count_query.filter(Shift.id != exclude_shift_id)
-        if shift_violates_staffing_max(count_query.count(), limits["max"]):
+        if shift_violates_staffing_max(count_query.count(), max_limit):
             return _(
                 "Impossible d'ajouter ce shift : effectif maximum (%(max)s) "
                 "déjà atteint pour ce créneau.",
-                max=limits["max"],
+                max=max_limit,
             )
 
     start_time = datetime.combine(date, datetime.min.time()).replace(

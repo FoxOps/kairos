@@ -477,6 +477,37 @@ leave check in those methods. `can_add_shift()`'s third parameter changed from a
 `shift_type_id` string (every real caller actually passed `shift_type.name`, silently inert) to the
 `ShiftType` object itself, now genuinely used.
 
+**`mandatory_shift` was later removed entirely, and `staffing_limits` is now max-only** (this
+paragraph previously described 4 new rule types with a min/max `staffing_limits` shape — corrected):
+a 2026-08-27 production report ("some shifts stay unfilled even though the rules allow it") traced
+to `mandatory_shift`/`staffing_limits.min` re-checking coverage for the two role-governed shift
+types (`ShiftSlotsRule`'s `rotation`/`oncall` slots) independently of the generation algorithm's own
+guarantees — `assign_shift_slots_for_day()` (`app/utils/automation/planner/shift_planner.py`)
+already guarantees a `rotation` slot fill whenever anyone is available (fallback "rule 7") and an
+`oncall` slot fill whenever that week's on-call holder belongs to the shift scope being planned; a
+separate admin-configured minimum/mandatory layer on top only produced false "unfilled" alerts when
+shift and on-call scoping didn't line up (e.g. `shift_scheduling_mode="per_group"` with
+`oncall_scheduling_mode="shared"` and a scope narrower than the on-call pool), without adding any
+real coverage guarantee the algorithm didn't already provide. `mandatory_shift`
+(`app/utils/automation/rules/mandatory_shift.py`, `MandatoryShiftRule`) was deleted outright;
+`staffing_limits` (`app/utils/automation/rules/staffing_limits.py`, `StaffingLimitsRule`) kept —
+`max` is a real, distinct concept (headcount cap, still enforced both at generation time and at
+manual shift-creation time via `shift_violates_staffing_max`) — but dropped `min`, so `params` is
+now `{"<shift_type_id>": int|None}` (a flat max value) instead of `{"<shift_type_id>": {"min":..,
+"max":..}}`. `/admin/automation/rules`'s "Créneaux obligatoires" card is gone and "Effectif
+minimum/maximum par créneau" is now "Effectif maximum par créneau" — the min/mandatory knobs were
+also the exact UI confusion the reporting user flagged directly ("the min/max setting for a slot is
+confusing users"). Both engines' aggregate-alert machinery for this (`_mandatory_coverage_gap_names`/
+`_check_mandatory_coverage`/`_staffing_min_gap_names`/`_check_staffing_min_coverage` in
+`AdvancedShiftAutomation`; `_mandatory_and_staffing_min_gaps()` in `shift_planner.py`) was removed
+with it — see the two paragraphs below for the aggregation history this superseded, kept for context
+on the `[ALERT]`-tag convention and the flood-of-messages fix, both still relevant to
+`rest_after_oncall`/`oncall_week` messages. A second, independent bug found in the same investigation
+(`oncall_planner.py`'s "keep whoever's already published" minimal-perturbation bias, and a
+rotation-phase epoch only reset when the configured order's content changed) made the configured
+rotation order not actually win on regenerate even when unrelated to the above — both fixed the same
+session; see `[[project-automation-engine-rework]]`.
+
 **Message severity tags, not emoji.** `app/utils/automation/`'s generated messages used to encode
 severity as a leading emoji, stripped before ever reaching `flash()`/a template — this app doesn't
 use emoji anywhere (see `tests/unit/test_flash_message_icons.py`), so it's now a plain-text

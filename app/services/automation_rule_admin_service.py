@@ -88,20 +88,15 @@ class AutomationRuleAdminService:
 
     @staticmethod
     def save_staffing_limits(
-        limits: dict[int, tuple[int | None, int | None]],
+        limits: dict[int, int | None],
         group=None,
     ) -> str | None:
-        """`limits`: {shift_type_id: (min, max)} - either bound may be
-        None (no limit on that side)."""
+        """`limits`: {shift_type_id: max} - a missing/None value means
+        no limit for that ShiftType."""
         params = {
-            str(shift_type_id): {"min": min_value, "max": max_value}
-            for shift_type_id, (min_value, max_value) in limits.items()
+            str(shift_type_id): max_value for shift_type_id, max_value in limits.items()
         }
         return _save("staffing_limits", params, group=group)
-
-    @staticmethod
-    def save_mandatory_shift(shift_type_ids: list[int], group=None) -> str | None:
-        return _save("mandatory_shift", {"shift_type_ids": shift_type_ids}, group=group)
 
     @staticmethod
     def save_rest_after_oncall(min_rest_hours: int, group=None) -> str | None:
