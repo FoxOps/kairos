@@ -63,7 +63,7 @@ def test_repeated_mandatory_gaps_for_the_same_shift_type_produce_one_message(
     assert "13h-21h" in shift_messages[0]
     assert "02/01/2026" in shift_messages[0]
     assert "30/01/2026" in shift_messages[0]
-    assert shift_unfilled == list(u.date for u in unfilled)
+    assert shift_unfilled == [u.date for u in unfilled]
 
 
 def test_different_shift_types_produce_separate_messages(test_app):
@@ -119,7 +119,7 @@ def test_repeated_oncall_week_gaps_produce_one_warning_message(test_app):
     assert "[WARN]" in oncall_messages[0]
     assert "3" in oncall_messages[0]
     assert shift_messages == []
-    assert oncall_unfilled == list(u.date for u in unfilled)
+    assert oncall_unfilled == [u.date for u in unfilled]
 
 
 def test_repeated_rest_after_oncall_violations_produce_one_message(test_app):
