@@ -26,6 +26,30 @@ tag trigger for why.
   the moment any single transition day hit this normal, expected
   exclusion — any org with a `rest_after_oncall` minimum configured
   could never apply a generation run at all.
+- On-call rotation order ignored on a fresh/reordered rotation: the
+  rotation phase stayed pinned to a fixed year-2000 reference date
+  forever (no way to reset it), so the first user actually put
+  on-call after saving a new order was an arbitrary position, not
+  rotation order's own first entry. Saving the order now resets the
+  rotation phase so the very next on-call turn starts from position 0.
+- The on-call user's own mandatory coverage shift (the "oncall" role
+  slot, e.g. 13h-21h on the transition day) could be excluded by
+  `rest_after_oncall` — comparing it against the on-call that had
+  *just* ended that same morning — leaving that mandatory slot
+  permanently unfilled every single week for any org with this rule
+  configured. On-call and its own coverage shift are meant to
+  coexist; `rest_after_oncall` now only applies to unrelated
+  ("rotation"/"default") shifts.
+- Automation flash messages were never aggregated on the new planner
+  engine (unlike the legacy one, which already had this fix): a
+  recurring gap over a multi-month run produced one flash toast per
+  occurrence, sometimes hundreds. Now grouped into one message per
+  shift type/rule with a count and date range.
+- Purging read notifications used the browser's native `confirm()`
+  dialog instead of the app's own modal.
+- Sidebar avatar letter was slightly off-center.
+- Automation rules page: the scope selector and its description text
+  could wrap onto separate, inconsistently-positioned lines.
 - Shift generation rotation, two compounding bugs in a group whose
   on-call turns are sparse (e.g. `oncall_scheduling_mode` shared/pooled
   across several groups while `shift_scheduling_mode` is per-group) —

@@ -25,6 +25,20 @@ class TestSaveRotationOrder:
         error = AutomationAdminService.save_rotation_order([])
         assert error is None
 
+    def test_resets_rotation_epoch_to_today(self, test_app):
+        """Real production bug: with the epoch left at its year-2000
+        fallback forever, a freshly saved rotation order's first user
+        was essentially never the first one actually put on-call (an
+        arbitrary offset unrelated to the order just configured).
+        Saving must reset the epoch so the very next anchor date lands
+        on offset 0 - i.e. rotation_order[0]."""
+        from datetime import date
+
+        from app.models import AutomationConfig
+
+        AutomationAdminService.save_rotation_order([1, 2, 3])
+        assert AutomationConfig.get_rotation_epoch() == date.today()
+
 
 class TestGetRotationOrder:
     def test_returns_none_on_failure(self, test_app, monkeypatch):

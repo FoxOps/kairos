@@ -15,9 +15,9 @@
         <i class="fas fa-sliders" aria-hidden="true"></i> {{ _("Règles d'automatisation") }}
     </h1>
 
-    <div class="bg-base-200 rounded-box p-3 mb-4 flex flex-wrap items-center gap-3">
-        <i class="fas fa-users-rectangle text-lg text-primary" aria-hidden="true"></i>
-        <form method="GET" action="{{ url_for('admin.automation_rules_dashboard') }}" class="flex-1 flex flex-wrap items-center gap-3">
+    <div class="bg-base-200 rounded-box p-3 mb-4 flex flex-col gap-2">
+        <form method="GET" action="{{ url_for('admin.automation_rules_dashboard') }}" class="flex flex-wrap items-center gap-3">
+            <i class="fas fa-users-rectangle text-lg text-primary" aria-hidden="true"></i>
             <label class="font-semibold" for="group_id">{{ _("Portée éditée") }}</label>
             <select class="select select-sm w-auto" id="group_id" name="group_id" onchange="this.form.submit()">
                 <option value="" {% if not selected_group %}selected{% endif %}>{{ _("Organisation (par défaut)") }}</option>
@@ -30,9 +30,9 @@
             </noscript>
         </form>
         {% if selected_group %}
-        <span class="text-sm">{{ _("Édition des réglages du groupe : %(name)s", name=selected_group.name) }}</span>
+        <span class="text-sm pl-1">{{ _("Édition des réglages du groupe : %(name)s", name=selected_group.name) }}</span>
         {% else %}
-        <span class="text-sm">{{ _("Édition des réglages par défaut de l'organisation") }}</span>
+        <span class="text-sm pl-1">{{ _("Édition des réglages par défaut de l'organisation") }}</span>
         {% endif %}
     </div>
 

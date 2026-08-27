@@ -159,24 +159,37 @@ def test_safe_to_apply_flips_false_when_a_locked_slot_is_reassigned():
 
 
 def test_rest_after_oncall_exclusions_never_flip_safe_to_apply():
-    """Real production bug: with rest_after_oncall configured, a
-    3-week+ generation run routinely excludes the departing on-call
-    holder from their own same-day rotation slot on every transition
-    Friday (on-call ends 07:00, rotation slot would start 07:00- 0h
-    rest). That's an expected, already self-mitigated exclusion (see
-    shift_planner.py's "continue"), not a plan-breaking defect - it
-    must never make safe_to_apply False, or a whole multi-month
-    generation run becomes impossible to apply for any org that
-    configures this rule at all."""
-    rules_with_rest = ResolvedRules(**{**RULES.__dict__, "rest_after_oncall_hours": 12})
-    request = _base_request(
-        end_date=date(2026, 2, 26),  # ~8 weeks: several transitions across 3 users
-        resolved_rules={None: rules_with_rest},
+    """Real production bug: a rest_after_oncall exclusion is expected,
+    already self-mitigated by shift_planner.py itself (the user is
+    simply skipped for that one day, "continue") - not a plan-breaking
+    defect. It must never make safe_to_apply False, or a whole
+    multi-month generation run becomes impossible to apply for any org
+    that configures this rule at all. Exercised directly against
+    _evaluate_safety() (same pattern as the locked-slot test below)
+    since shift_planner.py's own role_slot != "oncall" guard (see its
+    module) now makes this violation genuinely rare in a plain rotation
+    scenario - this test must keep passing regardless of how often the
+    planner actually produces one."""
+    from app.utils.automation.planner.plan_schedule import _evaluate_safety
+    from app.utils.automation.planner.types import RuleViolation
+
+    warning_violation = (
+        RuleViolation(
+            severity="warning",
+            rule_type="rest_after_oncall",
+            group_id=None,
+            date=date(2026, 1, 2),
+            user_id=1,
+            message="rest_after_oncall violated - user excluded from this day",
+        ),
     )
 
-    plan = plan_schedule(request)
+    safe, reasons = _evaluate_safety(
+        violations=warning_violation,
+        diff=(),
+        locked_oncalls=frozenset(),
+        locked_shifts=frozenset(),
+    )
 
-    assert any(v.rule_type == "rest_after_oncall" for v in plan.violations)
-    assert all(v.severity == "warning" for v in plan.violations)
-    assert plan.safe_to_apply is True
-    assert plan.safe_to_apply_reasons == ()
+    assert safe is True
+    assert reasons == ()

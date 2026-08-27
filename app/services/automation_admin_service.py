@@ -86,11 +86,31 @@ class AutomationAdminService:
 
     @staticmethod
     def save_rotation_order(rotation_order_ids: list[int]) -> str | None:
-        """Returns error_message, or None on success."""
+        """Returns error_message, or None on success.
+
+        Also resets AutomationConfig's rotation epoch to today - real
+        bug found in production: with the epoch left untouched, the
+        rotation phase stayed pinned to AutomationConfig.
+        FALLBACK_ROTATION_EPOCH (a fixed date from year 2000) forever,
+        so the very first user in a freshly saved/reordered rotation
+        was essentially never the first one actually put on-call
+        (whichever position `(next_anchor_date - epoch).days // 7 %
+        len(order)` landed on, unrelated to the order an admin just
+        configured). Resetting epoch to today makes the *next* anchor
+        date (always within 0-6 days of today, whatever weekday it
+        falls on) land on offset 0, i.e. rotation_order[0] - matching
+        the "the order I just saved should start applying now"
+        expectation. Deliberately only wired into this explicit
+        "Sauvegarder l'ordre" action, never into generate_full()'s own
+        implicit rotation_order_ids handling - resetting on every
+        generation call would reintroduce the exact staleness bug this
+        epoch mechanism was built to fix (see rotation.py's module
+        docstring, defect #4)."""
         try:
             from app.models import AutomationConfig
 
             AutomationConfig.set_rotation_order(rotation_order_ids)
+            AutomationConfig.set_rotation_epoch(date.today())
             return None
         except Exception as e:
             db.session.rollback()

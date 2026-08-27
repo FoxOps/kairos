@@ -114,21 +114,24 @@ class TestGenerateFullDryRunMessages:
         assert result.oncall_unfilled_dates
         assert any("[WARN]" in m for m in result.oncall_messages)
 
-    def test_rest_after_oncall_violation_produces_shift_message(self, test_app):
+    def test_oncall_role_slot_on_transition_friday_is_never_a_rest_violation(
+        self, test_app
+    ):
+        """Real production bug, fixed in shift_planner.py: the departing
+        on-call holder is still assigned the mandatory on-call coverage
+        shift (role_slot "oncall") on the very Friday their own on-call
+        ends - that slot must never be treated as a rest_after_oncall
+        violation (see shift_planner.py's `role_slot != "oncall"`
+        guard), or the mandatory slot goes unfilled every single week
+        for any org with this rule configured."""
         group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
         from app.models import AutomationRule
 
-        # Org-wide (no group=), not per-group: scheduling mode defaults
-        # to "shared", under which a per-group rule override has no
-        # effect anywhere (documented app behavior) - this test is
-        # about message generation, not group-scoping semantics.
         AutomationRule.set("rest_after_oncall", {"min_rest_hours": 12})
         user = _make_user("U0", "u0@x.com", group)
         _make_user("U1", "u1@x.com", group)
         _make_user("U2", "u2@x.com", group)
 
-        # On-call ending Friday 07:00 - a shift starting the same
-        # morning violates the 12h rest requirement just configured.
         db.session.add(
             OnCall(
                 user_id=user.id,
@@ -143,4 +146,40 @@ class TestGenerateFullDryRunMessages:
             date(2026, 1, 2), date(2026, 1, 2), rotation_order_ids=[], dry_run=True
         )
 
-        assert any("repos insuffisant" in m for m in result.shift_messages)
+        assert not any("Repos insuffisant" in m for m in result.shift_messages)
+        assert not result.shift_unfilled_dates
+
+    def test_rest_after_oncall_violation_produces_shift_message(self, test_app):
+        """Same rule, but for a "default"/"rotation" role slot (an
+        unrelated regular shift, not the on-call coverage slot itself)
+        - this is rest_after_oncall's actual remaining target, still a
+        hard exclusion. Org-wide (no group=), not per-group: scheduling
+        mode defaults to "shared", under which a per-group rule
+        override has no effect anywhere (documented app behavior) -
+        this test is about message generation, not group-scoping
+        semantics."""
+        group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
+        from app.models import AutomationRule
+
+        AutomationRule.set("rest_after_oncall", {"min_rest_hours": 240})
+        user = _make_user("U0", "u0@x.com", group)
+        _make_user("U1", "u1@x.com", group)
+        _make_user("U2", "u2@x.com", group)
+
+        # On-call ending Friday 07:00 - the following Monday's regular
+        # shift is still within a 240h (10-day) rest requirement.
+        db.session.add(
+            OnCall(
+                user_id=user.id,
+                start_time=datetime(2025, 12, 26, 21, 0),
+                end_time=datetime(2026, 1, 2, 7, 0),
+                group_id=group.id,
+            )
+        )
+        db.session.commit()
+
+        result = AutomationAdminService.generate_full(
+            date(2026, 1, 5), date(2026, 1, 5), rotation_order_ids=[], dry_run=True
+        )
+
+        assert any("Repos insuffisant" in m for m in result.shift_messages)

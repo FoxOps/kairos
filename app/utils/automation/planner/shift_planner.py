@@ -304,11 +304,31 @@ def plan_shifts_for_scope(
                 hour=start_hour
             )
 
-            if shift_violates_rest_after_oncall(
+            if role_slot != "oncall" and shift_violates_rest_after_oncall(
                 shift_start,
                 _last_oncall_end_before(user.id, shift_start, oncall_ends_by_user),
                 rules.rest_after_oncall_hours,
             ):
+                # role_slot == "oncall" is deliberately exempt: that
+                # slot IS the on-call user's own coverage shift for the
+                # day their on-call starts/ends (see
+                # AdvancedShiftAutomation.get_oncall_for_date()'s
+                # docstring - the departing holder is still "this
+                # week's on-call for shift purposes" on the transition
+                # Friday) - not a second, independent assignment that
+                # rest could meaningfully apply to. Real bug found in
+                # production: with rest_after_oncall configured (any
+                # legally-required rest value, e.g. 11h), the gap
+                # between an on-call ending 07:00 and this same slot
+                # starting 13:00 (6h) tripped the check on literally
+                # every single transition Friday, forever, leaving the
+                # mandatory on-call shift permanently unfilled - shift
+                # and on-call for the SAME user are meant to coexist,
+                # only shift-shift and on-call-on-call conflicts are
+                # meant to block (rest_after_oncall still applies below
+                # to "rotation"/"default" slots, its actual intended
+                # target: an unrelated regular shift assigned too soon
+                # after an on-call week).
                 # "warning", not "hard_blocked": this user is already
                 # excluded from this one day right below (continue) -
                 # same non-fatal, self-mitigated shape as an unfilled

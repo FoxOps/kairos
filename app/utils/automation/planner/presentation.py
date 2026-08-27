@@ -17,6 +17,7 @@ divergence (audit defect #1), so a second, slightly-different copy of
 this logic would be exactly the kind of drift that created it.
 """
 
+from collections import defaultdict
 from types import SimpleNamespace
 
 from flask_babel import gettext as _
@@ -58,6 +59,10 @@ def plan_shift_namespaces(plan: SchedulePlan) -> list:
     ]
 
 
+def _date_range_suffix(dates: list) -> tuple[int, str, str]:
+    return len(dates), min(dates).strftime("%d/%m/%Y"), max(dates).strftime("%d/%m/%Y")
+
+
 def plan_messages(plan: SchedulePlan) -> tuple[list, list, list, list]:
     """Builds the same "[TAG] text" message strings the legacy engine
     produces (admin_automation_routes.py's own
@@ -65,6 +70,23 @@ def plan_messages(plan: SchedulePlan) -> tuple[list, list, list, list]:
     convention) from a plan's unfilled/violations. Returns
     (oncall_messages, oncall_unfilled_dates, shift_messages,
     shift_unfilled_dates).
+
+    Every message is aggregated - one line per (kind, shift type) or
+    per violation rule_type, with a count and a date range - never one
+    line per individual day. Real production bug: a multi-month
+    generation run with a recurring gap (a mandatory slot missed every
+    week, or - before shift_planner.py's own rest_after_oncall/"oncall"
+    role_slot fix - a rest_after_oncall exclusion firing on literally
+    every transition Friday) flooded the admin with one flash toast per
+    occurrence, sometimes hundreds. AdvancedShiftAutomation.
+    generate_full_schedule()/OnCallAutomation.generate_oncall_schedule()
+    (the legacy engine) already solved this exact problem the same way
+    (see their own docstrings) - this is that same fix, ported to the
+    new planner's presentation layer, which had never had it. Full
+    per-day detail is not lost - it's what the calendar itself already
+    shows, and _notify_shift_unfilled_if_any()/_notify_oncall_gap_if_any()
+    (admin_automation_routes.py) still record every individual date on
+    the notification page.
 
     Entries whose reason_code is "locked_but_no_published_assignment"
     are always skipped: that reason code only ever means a caller
@@ -79,20 +101,15 @@ def plan_messages(plan: SchedulePlan) -> tuple[list, list, list, list]:
     shift_messages: list = []
     shift_unfilled_dates: list = []
 
+    mandatory_gap_dates: dict = defaultdict(list)
+    staffing_min_gap_dates: dict = defaultdict(list)
+
     for unfilled in plan.unfilled:
         if unfilled.reason_code == "locked_but_no_published_assignment":
             continue
 
         if unfilled.kind == "oncall_week":
             oncall_unfilled_dates.append(unfilled.date)
-            oncall_messages.append(
-                _(
-                    "[WARN] Aucune astreinte générée pour le %(date)s "
-                    "(aucun utilisateur ne respecte le délai légal entre "
-                    "deux astreintes) - assignation manuelle nécessaire.",
-                    date=unfilled.date.strftime("%d/%m/%Y"),
-                )
-            )
             continue
 
         shift_unfilled_dates.append(unfilled.date)
@@ -102,38 +119,68 @@ def plan_messages(plan: SchedulePlan) -> tuple[list, list, list, list]:
         label = shift_type.label if shift_type else unfilled.detail
 
         if unfilled.kind == "mandatory_shift":
-            shift_messages.append(
-                _(
-                    "[ALERT] Créneau obligatoire non pourvu pour le "
-                    "%(date)s : %(name)s.",
-                    date=unfilled.date.strftime("%d/%m/%Y"),
-                    name=label,
-                )
-            )
+            mandatory_gap_dates[label].append(unfilled.date)
         else:  # staffing_min
-            shift_messages.append(
-                _(
-                    "[WARN] Effectif minimum non atteint pour le "
-                    "%(date)s : %(name)s.",
-                    date=unfilled.date.strftime("%d/%m/%Y"),
-                    name=label,
-                )
+            staffing_min_gap_dates[label].append(unfilled.date)
+
+    if oncall_unfilled_dates:
+        count, start, end = _date_range_suffix(oncall_unfilled_dates)
+        oncall_messages.append(
+            _(
+                "[WARN] %(count)s astreintes non générées entre le "
+                "%(start)s et le %(end)s (délai légal non respecté) - "
+                "assignation manuelle nécessaire.",
+                count=count,
+                start=start,
+                end=end,
             )
+        )
+
+    for label, dates in mandatory_gap_dates.items():
+        count, start, end = _date_range_suffix(dates)
+        shift_messages.append(
+            _(
+                '[ALERT] Créneau obligatoire "%(name)s" non pourvu à '
+                "%(count)s reprises entre le %(start)s et le %(end)s.",
+                name=label,
+                count=count,
+                start=start,
+                end=end,
+            )
+        )
+    for label, dates in staffing_min_gap_dates.items():
+        count, start, end = _date_range_suffix(dates)
+        shift_messages.append(
+            _(
+                '[WARN] Effectif minimum non atteint pour "%(name)s" à '
+                "%(count)s reprises entre le %(start)s et le %(end)s.",
+                name=label,
+                count=count,
+                start=start,
+                end=end,
+            )
+        )
 
     # The only rule_type any planner module currently raises a
     # RuleViolation for is rest_after_oncall (shift_planner.py) -
     # always shift-scoped. A future rule type producing on-call-side
     # violations would need its own branch here.
+    violation_dates_by_severity: dict = defaultdict(list)
     for violation in plan.violations:
-        user = db.session.get(User, violation.user_id) if violation.user_id else None
-        tag = "[ALERT]" if violation.severity == "hard_blocked" else "[WARN]"
+        violation_dates_by_severity[violation.severity].append(violation.date)
+
+    for severity, dates in violation_dates_by_severity.items():
+        count, start, end = _date_range_suffix(dates)
+        tag = "[ALERT]" if severity == "hard_blocked" else "[WARN]"
         shift_messages.append(
             _(
-                "%(tag)s %(name)s n'a pas pu être affecté au %(date)s : "
-                "repos insuffisant après son astreinte.",
+                "%(tag)s Repos insuffisant après astreinte : %(count)s "
+                "shift(s) non affecté(s) entre le %(start)s et le "
+                "%(end)s.",
                 tag=tag,
-                name=user.name if user else _("Utilisateur inconnu"),
-                date=violation.date.strftime("%d/%m/%Y"),
+                count=count,
+                start=start,
+                end=end,
             )
         )
 

@@ -202,6 +202,46 @@ def test_rest_after_oncall_still_blocks_shift_right_after_a_past_on_call():
     assert fragment.proposed == ()
 
 
+def test_rest_after_oncall_never_excludes_the_oncall_role_slot_itself():
+    """Real production bug: the departing on-call holder is still "this
+    week's on-call for shift purposes" on the transition Friday (see
+    AdvancedShiftAutomation.get_oncall_for_date()'s docstring) and gets
+    role_slot "oncall" (the mandatory on-call coverage shift) that same
+    day - right when their own on-call just ended that morning. With
+    any rest_after_oncall configured, the small same-day gap (here 6h:
+    07:00 to 13:00) tripped the check on literally every single
+    transition Friday forever, leaving the mandatory on-call shift
+    permanently unfilled - on-call and its own coverage shift must
+    always coexist for the same user; rest_after_oncall's real target
+    is an unrelated ("rotation"/"default") shift assigned too soon
+    after on-call, not this slot."""
+    user = UserRef(1, "A", None)
+    rules = ResolvedRules(**{**BASE_RULES.__dict__, "rest_after_oncall_hours": 11})
+
+    fragment = plan_shifts_for_scope(
+        start_date=date(2026, 9, 4),  # Friday
+        end_date=date(2026, 9, 4),
+        group_id=None,
+        oncall_group_id=None,
+        eligible_users=(user,),
+        # covering_friday(2026-09-04) resolves to 2026-08-28 (the week
+        # that's ending that morning) - this is that week's on-call.
+        proposed_oncalls={(date(2026, 8, 28), None): 1},
+        existing_oncalls=(_OnCallStub(user_id=1, end_time=datetime(2026, 9, 4, 7, 0)),),
+        existing_leaves=(),
+        locked=frozenset(),
+        published={},
+        rotation_order=(user,),
+        rotation_anchor_epoch=EPOCH,
+        rules=rules,
+    )
+
+    assert fragment.violations == ()
+    assert len(fragment.proposed) == 1
+    assert fragment.proposed[0].role_slot == "oncall"
+    assert fragment.proposed[0].date == date(2026, 9, 4)
+
+
 class _OnCallStub:
     def __init__(self, user_id, end_time):
         self.user_id = user_id

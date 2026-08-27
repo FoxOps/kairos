@@ -270,7 +270,7 @@
                 <div class="p-2 border-t border-base-300 flex items-center gap-1">
                     <a href="{{ url_for('auth.profile') }}" class="btn btn-ghost btn-sm flex-1 justify-start gap-2 min-w-0" aria-label="{{ _("Mon profil - %(name)s", name=current_user.name) }}">
                         <span class="avatar avatar-placeholder shrink-0">
-                            <span class="bg-neutral text-neutral-content w-6 h-6 rounded-full text-xs">
+                            <span class="bg-neutral text-neutral-content w-6 h-6 rounded-full text-xs flex items-center justify-center">
                                 <span aria-hidden="true">{{ current_user.name[:1] | upper }}</span>
                             </span>
                         </span>
