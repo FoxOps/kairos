@@ -103,21 +103,74 @@ jobs:
           cache-to: type=gha,mode=max
 
   # Keeps the ghcr.io/foxops/kairos package from growing unbounded - dev
-  # builds are disposable and this workflow can be run often. Sorts all
-  # package versions by creation date and deletes everything past the 5
-  # newest, EXCEPT anything matching ignore-versions below - which
-  # protects every release tag (bare SemVer, e.g. "1.1.0"), `:latest`,
-  # and the floating `:dev` tag from ever being counted/deleted here, so
-  # only the disposable dev-<branch>-<sha> versions are actually pruned.
+  # builds are disposable and this workflow can be run often. Deletes
+  # every dev-<branch>-<sha> version past the 5 newest.
+  #
+  # A hand-rolled `gh api` script, not actions/delete-package-versions@v5
+  # (used here previously) - real incident: that action deleted a
+  # production release version (a bare-SemVer/`:latest`-tagged one), even
+  # though `ignore-versions` was configured to protect exactly that
+  # pattern. Root cause, confirmed via that run's own log: the action
+  # silently ran with `num-old-versions-to-delete: 1` - an input this
+  # workflow never set, on top of `min-versions-to-keep: 5` - the two
+  # inputs combine in that action in an undocumented, non-obvious way.
+  # Its log is also opaque either way ("Total versions deleted till now:
+  # 3", no per-item detail), so the exact mechanism that let a protected
+  # version through was never fully diagnosable from the outside.
+  #
+  # This replacement is deliberately the opposite shape: an explicit
+  # allow-list, not a regex deny-list. It only ever *considers* a
+  # version for deletion if every one of its tags matches `^dev-` - a
+  # version carrying `latest`, a bare release tag, or the floating `dev`
+  # tag is excluded from the candidate set before any counting happens,
+  # so it structurally cannot be selected no matter how sorting/counting
+  # behaves. Every kept/deleted version is logged individually.
   cleanup-old-dev-builds:
     needs: docker-build-push
     runs-on: ubuntu-latest
     permissions:
       packages: write
     steps:
-      - uses: actions/delete-package-versions@v5
-        with:
-          package-name: kairos
-          package-type: container
-          min-versions-to-keep: 5
-          ignore-versions: "^(latest|dev|[0-9]+\\.[0-9]+\\.[0-9]+.*)$"
+      - name: Delete old dev-build package versions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          owner="FoxOps"
+          package="kairos"
+          keep=5
+
+          # `--slurp` (one JSON array of all pages) and `--jq` are
+          # mutually exclusive on `gh api` - flatten with a separate
+          # `jq add` pass instead.
+          versions=$(gh api --paginate --slurp \
+            "/users/${owner}/packages/container/${package}/versions?per_page=100" \
+            | jq 'add')
+
+          # Only a version whose tags are ALL "dev-*" is even a
+          # candidate - one stray protected tag on a version excludes it
+          # entirely, never just that one tag.
+          candidates=$(jq '
+            map(select(
+              ((.metadata.container.tags // []) | length) > 0
+              and (.metadata.container.tags | all(test("^dev-")))
+            ))
+            | sort_by(.created_at) | reverse
+          ' <<<"$versions")
+
+          total=$(jq 'length' <<<"$candidates")
+          echo "Found $total dev-build version(s) eligible for cleanup."
+
+          jq -r "to_entries[] | select(.key < $keep) | \"KEEP  \(.value.id)  \(.value.metadata.container.tags | join(\",\"))\"" <<<"$candidates"
+
+          to_delete=$(jq -c ".[$keep:]" <<<"$candidates")
+          delete_count=$(jq 'length' <<<"$to_delete")
+          echo "Deleting $delete_count version(s) past the $keep newest..."
+
+          jq -r '.[] | "\(.id)\t\(.metadata.container.tags | join(","))"' <<<"$to_delete" |
+          while IFS=$'\t' read -r version_id tags; do
+            echo "DELETE $version_id  $tags"
+            gh api --method DELETE \
+              "/users/${owner}/packages/container/${package}/versions/${version_id}"
+          done
