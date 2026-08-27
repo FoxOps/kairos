@@ -75,9 +75,9 @@ def _is_on_leave(user_id: int, day: date, leaves: tuple[LeaveSpan, ...]) -> bool
 def assign_shift_slots_for_day(
     day: date,
     available_users: tuple[UserRef, ...],
-    oncall_user_id_today: int | None,
-    oncall_user_id_last_week: int | None,
-    oncall_user_id_next_week: int | None,
+    oncall_user_ids_today: frozenset[int],
+    oncall_user_ids_last_week: frozenset[int],
+    oncall_user_ids_next_week: frozenset[int],
     rotation_order: tuple[UserRef, ...],
     rotation_anchor_epoch: date,
     published_slot_by_user: dict[int, str],
@@ -86,7 +86,14 @@ def assign_shift_slots_for_day(
     `available_users` - one algorithm for any headcount, not a
     count-based special case:
 
-    1. The on-call-today user (if among available_users) gets "oncall".
+    1. Every on-call-today user (if among available_users) gets
+       "oncall" - a *set*, not a single optional id: when the shift
+       pool is "shared" but on-call is "per_group", more than one
+       group can have a concurrent on-call the same day, each with its
+       own holder who must each get their own "oncall" slot (see
+       plan_shifts_for_scope()'s own docstring for the real bug this
+       fixes - a single-id parameter structurally cannot represent
+       that).
     2. Any remaining available user who was on-call last week OR will be
        on-call next week gets "rotation" (symmetric - see module
        docstring for why the forward-looking half matters).
@@ -109,15 +116,12 @@ def assign_shift_slots_for_day(
     slot_by_user: dict[int, str] = {}
     available_by_id = {user.id: user for user in available_users}
 
-    if oncall_user_id_today is not None and oncall_user_id_today in available_by_id:
-        slot_by_user[oncall_user_id_today] = "oncall"
+    for candidate_id in oncall_user_ids_today:
+        if candidate_id in available_by_id:
+            slot_by_user[candidate_id] = "oncall"
 
-    for candidate_id in (oncall_user_id_last_week, oncall_user_id_next_week):
-        if (
-            candidate_id is not None
-            and candidate_id in available_by_id
-            and candidate_id not in slot_by_user
-        ):
+    for candidate_id in oncall_user_ids_last_week | oncall_user_ids_next_week:
+        if candidate_id in available_by_id and candidate_id not in slot_by_user:
             slot_by_user[candidate_id] = "rotation"
 
     if not any(slot == "rotation" for slot in slot_by_user.values()):
@@ -150,7 +154,7 @@ def plan_shifts_for_scope(
     start_date: date,
     end_date: date,
     group_id: int | None,
-    oncall_group_id: int | None,
+    oncall_group_ids: tuple[int | None, ...],
     eligible_users: tuple[UserRef, ...],
     proposed_oncalls: dict[tuple[date, int | None], int],
     existing_oncalls: tuple,
@@ -170,23 +174,41 @@ def plan_shifts_for_scope(
 
     `group_id` (this shift scope's own identity, used to tag
     ProposedShift.group_id and for staffing-limit bookkeeping) and
-    `oncall_group_id` (which key in `proposed_oncalls` holds THIS
+    `oncall_group_ids` (which keys in `proposed_oncalls` hold THIS
     scope's on-call info) are deliberately two separate parameters, NOT
-    one - they only happen to be equal when shift_scheduling_mode and
-    oncall_scheduling_mode are both "per_group". When they differ (e.g.
-    shifts "per_group" but on-calls "shared" - an explicitly supported,
-    documented combination), on-calls are proposed under scope `None`
-    while shift planning runs once per real group id - looking up
-    `(friday, group_id)` in that case would never match anything
-    (`group_id` is never `None`), silently blinding every rule-1/rule-2
-    on-call-aware slot assignment below for that entire scope. Real bug
-    found in production (v1.1.1, "shift per_group + oncall shared"):
-    every day's shift got the exact same slot assignment every week,
-    and the on-call person never received their own "oncall" slot
-    during their own on-call week, because these lookups always missed.
-    Caller (plan_schedule.py) computes the correct value: `None` when
-    oncall_scheduling_mode is "shared", else this scope's own
-    `group_id` when oncall_scheduling_mode is "per_group"."""
+    one - they only happen to be a single matching id when
+    shift_scheduling_mode and oncall_scheduling_mode are both
+    "per_group". Two real production bugs, both fixed here:
+
+    - shifts "per_group" + on-calls "shared": on-calls are proposed
+      under scope `None` while shift planning runs once per real group
+      id - looking up `(friday, group_id)` would never match anything
+      (`group_id` is never `None`), silently blinding every on-call-
+      aware slot assignment below for that entire scope. Every day's
+      shift got the exact same slot assignment every week, and the
+      on-call person never received their own "oncall" slot during
+      their own on-call week.
+    - shifts "shared" + on-calls "per_group" (the reverse combination):
+      a *single* shift scope (`group_id=None`) can have several
+      *different* groups each running their own concurrent on-call the
+      same week - `oncall_group_ids` must carry every one of those
+      group ids, not just one, or the lookup silently misses every
+      group but (at most) one, again blinding rule 1/2 for everyone
+      else. This is why `oncall_user_ids_*` below are sets, not single
+      optional ids - a day can legitimately have more than one
+      concurrent "today's on-call" holder when this combination is in
+      effect. Mandatory on-call coverage shifts stayed permanently
+      unfilled for every single week under this combination before
+      this fix, regardless of any other rule (rest_after_oncall
+      included - that exclusion never even got a chance to apply,
+      "oncall" role_slot was never assigned to anyone in the first
+      place).
+
+    Caller (plan_schedule.py) computes the correct value: `(None,)`
+    when oncall_scheduling_mode is "shared"; else `(group_id,)` when
+    this shift scope is itself per-group; else (this shift scope is
+    "shared" but on-call is "per_group") every oncall-eligible group id
+    (`request.oncall_groups`)."""
     proposed: list[ProposedShift] = []
     unfilled: list[UnfilledRequirement] = []
     violations: list[RuleViolation] = []
@@ -207,13 +229,21 @@ def plan_shifts_for_scope(
     oncall_ends_by_user: dict[int, list[datetime]] = {}
     for oncall in existing_oncalls:
         oncall_ends_by_user.setdefault(oncall.user_id, []).append(oncall.end_time)
+
+    # Every proposed on-call relevant to this shift scope, grouped by
+    # its own anchor Friday - a plain dict lookup instead of an
+    # `oc_group_id != oncall_group_id` scan per call site, and lets a
+    # single Friday hold more than one concurrently on-call user (see
+    # this function's own docstring for why that's required).
+    oncall_user_ids_by_friday: dict[date, set[int]] = {}
     for (friday, oc_group_id), user_id in proposed_oncalls.items():
-        if oc_group_id != oncall_group_id:
+        if oc_group_id not in oncall_group_ids:
             continue
         end_time = datetime.combine(
             friday + timedelta(days=7), datetime.min.time()
         ).replace(hour=rules.oncall_anchor_end_hour)
         oncall_ends_by_user.setdefault(user_id, []).append(end_time)
+        oncall_user_ids_by_friday.setdefault(friday, set()).add(user_id)
     for ends in oncall_ends_by_user.values():
         ends.sort()
 
@@ -229,12 +259,12 @@ def plan_shifts_for_scope(
             if not _is_on_leave(user.id, day, existing_leaves)
         )
 
-        oncall_user_id_today = proposed_oncalls.get(
-            (_covering_friday(day, rules), oncall_group_id)
+        oncall_user_ids_today = frozenset(
+            oncall_user_ids_by_friday.get(_covering_friday(day, rules), ())
         )
         last_week_friday = _covering_friday(day - timedelta(days=7), rules)
-        oncall_user_id_last_week = proposed_oncalls.get(
-            (last_week_friday, oncall_group_id)
+        oncall_user_ids_last_week = frozenset(
+            oncall_user_ids_by_friday.get(last_week_friday, ())
         )
 
         # Symmetric forward-looking half of rule 2 - only credited if
@@ -244,10 +274,10 @@ def plan_shifts_for_scope(
         # the tail end of an on-call that started that same evening,
         # which is not a genuinely future one.
         next_week_friday = _covering_friday(day + timedelta(days=7), rules)
-        oncall_user_id_next_week = (
-            proposed_oncalls.get((next_week_friday, oncall_group_id))
+        oncall_user_ids_next_week = (
+            frozenset(oncall_user_ids_by_friday.get(next_week_friday, ()))
             if next_week_friday > day
-            else None
+            else frozenset()
         )
 
         published_slot_by_user = {
@@ -259,9 +289,9 @@ def plan_shifts_for_scope(
         slot_by_user = assign_shift_slots_for_day(
             day,
             available_today,
-            oncall_user_id_today,
-            oncall_user_id_last_week,
-            oncall_user_id_next_week,
+            oncall_user_ids_today,
+            oncall_user_ids_last_week,
+            oncall_user_ids_next_week,
             rotation_order,
             rotation_anchor_epoch,
             published_slot_by_user,

@@ -29,8 +29,6 @@ def get_js_translations() -> dict[str, str]:
         "confirm": _("Confirmer"),
         "are_you_sure": _("Êtes-vous sûr ?"),
         "create_new_shift_title": _("Créer un nouveau shift"),
-        "start_datetime": _("Date et heure de début"),
-        "end_datetime": _("Date et heure de fin"),
         "user": _("Utilisateur"),
         "select_user": _("Sélectionnez un utilisateur"),
         "shift_type": _("Type de shift"),
@@ -80,4 +78,5 @@ def get_js_translations() -> dict[str, str]:
         ),
         "view_leave_title": _("Détails du congé"),
         "period": _("Période"),
+        "close_notification": _("Fermer cette notification"),
     }

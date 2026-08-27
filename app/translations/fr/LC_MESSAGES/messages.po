@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-08-27 09:26+0200\n"
+"POT-Creation-Date: 2026-08-27 15:40+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: fr <LL@li.org>\n"
@@ -496,15 +496,6 @@ msgstr ""
 #: app/routes/auth.py:83
 msgid "L'inscription publique est désactivée. Contactez l'administrateur."
 msgstr "L'inscription publique est désactivée. Contactez l'administrateur."
-
-#: app/__init__.py:501
-#. Flask-Login's LoginManager.login_message - not wrapped in _() in
-#. source (see localize_callback in app/__init__.py), so pybabel
-#. extract can't find it; kept in sync with app/__init__.py manually.
-#. Not extracted by `make babel-update` - if that ever obsoletes this
-#. entry (moves it to a `#~` block), move it back here by hand.
-msgid "Veuillez vous connecter pour accéder à cette page."
-msgstr "Veuillez vous connecter pour accéder à cette page."
 
 #: app/routes/auth.py:113
 msgid "Email et mot de passe sont obligatoires."
@@ -1759,12 +1750,12 @@ msgstr "Ajouter un congé"
 #: app/templates/admin/automation/full_dry_run.html:74
 #: app/templates/auth/profile.html:34 app/templates/leave.html:67
 #: app/templates/macros/list_filters.html:12 app/templates/oncall.html:68
-#: app/templates/schedule.html:70 app/utils/helpers/js_translations.py:34
+#: app/templates/schedule.html:70 app/utils/helpers/js_translations.py:32
 msgid "Utilisateur"
 msgstr "Utilisateur"
 
 #: app/templates/add_leave.html:18 app/templates/add_oncall.html:18
-#: app/utils/helpers/js_translations.py:35
+#: app/utils/helpers/js_translations.py:33
 msgid "Sélectionnez un utilisateur"
 msgstr "Sélectionnez un utilisateur"
 
@@ -1817,7 +1808,7 @@ msgstr "Enregistrer le congé"
 #: app/templates/admin/edit_shift_type.html:41
 #: app/templates/admin/edit_user.html:57
 #: app/templates/admin/macros/settings_card.html:54
-#: app/utils/helpers/js_translations.py:69
+#: app/utils/helpers/js_translations.py:67
 msgid "Enregistrer"
 msgstr "Enregistrer"
 
@@ -1896,7 +1887,7 @@ msgstr "Sélectionnez l'utilisateur pour ce shift"
 #: app/templates/add_shift.html:27
 #: app/templates/admin/automation/rules.html:148
 #: app/templates/macros/list_filters.html:39 app/templates/schedule.html:71
-#: app/utils/helpers/js_translations.py:36
+#: app/utils/helpers/js_translations.py:34
 msgid "Type de shift"
 msgstr "Type de shift"
 
@@ -2024,7 +2015,7 @@ msgstr "Menu"
 msgid "Accueil - Kairos"
 msgstr "Accueil - Kairos"
 
-#: app/templates/base.html:186
+#: app/templates/base.html:186 app/utils/helpers/js_translations.py:81
 msgid "Fermer cette notification"
 msgstr "Fermer cette notification"
 
@@ -3039,7 +3030,7 @@ msgstr ""
 "Notez-le immédiatement : il ne pourra plus jamais être ré-affiché."
 
 #: app/templates/admin/add_service_account.html:40
-#: app/utils/helpers/js_translations.py:38
+#: app/utils/helpers/js_translations.py:36
 msgid "Créer"
 msgstr "Créer"
 
@@ -3616,7 +3607,7 @@ msgstr "Modifier"
 #: app/templates/admin/service_accounts.html:84
 #: app/templates/admin/service_accounts.html:100
 #: app/templates/admin/shift_types.html:74 app/templates/admin/users.html:95
-#: app/utils/helpers/js_translations.py:68
+#: app/utils/helpers/js_translations.py:66
 msgid "Supprimer"
 msgstr "Supprimer"
 
@@ -4478,7 +4469,7 @@ msgstr ""
 "astreintes actuelles."
 
 #: app/templates/admin/automation/full.html:28
-#: app/utils/helpers/js_translations.py:82
+#: app/utils/helpers/js_translations.py:80
 msgid "Période"
 msgstr "Période"
 
@@ -4967,7 +4958,7 @@ msgid "Ancrage de la semaine d'astreinte"
 msgstr "Ancrage de la semaine d'astreinte"
 
 #: app/templates/admin/automation/rules.html:190
-#: app/utils/helpers/js_translations.py:76
+#: app/utils/helpers/js_translations.py:74
 msgid "Jour de début"
 msgstr "Jour de début"
 
@@ -5485,13 +5476,11 @@ msgid "Se déconnecter"
 msgstr "Se déconnecter"
 
 #: app/utils/automation/advanced_shift_automation.py:528
-#: app/utils/automation/planner/presentation.py:107
 #, python-format
 msgid "[ALERT] Créneau obligatoire non pourvu pour le %(date)s : %(name)s."
 msgstr "[ALERT] Créneau obligatoire non pourvu pour le %(date)s : %(name)s."
 
 #: app/utils/automation/advanced_shift_automation.py:592
-#: app/utils/automation/planner/presentation.py:116
 #, python-format
 msgid "[WARN] Effectif minimum non atteint pour le %(date)s : %(name)s."
 msgstr "[WARN] Effectif minimum non atteint pour le %(date)s : %(name)s."
@@ -5530,6 +5519,7 @@ msgid "[WARN] Aucun shift généré pour le %(date)s"
 msgstr "[WARN] Aucun shift généré pour le %(date)s"
 
 #: app/utils/automation/advanced_shift_automation.py:922
+#: app/utils/automation/planner/presentation.py:143
 #, python-format
 msgid ""
 "[ALERT] Créneau obligatoire \"%(name)s\" non pourvu à %(count)s reprises "
@@ -5539,6 +5529,7 @@ msgstr ""
 "entre le %(start)s et le %(end)s."
 
 #: app/utils/automation/advanced_shift_automation.py:933
+#: app/utils/automation/planner/presentation.py:155
 #, python-format
 msgid ""
 "[WARN] Effectif minimum non atteint pour \"%(name)s\" à %(count)s reprises "
@@ -5644,6 +5635,7 @@ msgid "Impossible de déterminer l'ordre de rotation."
 msgstr "Impossible de déterminer l'ordre de rotation."
 
 #: app/utils/automation/oncall_automation.py:809
+#: app/utils/automation/planner/presentation.py:130
 #, python-format
 msgid ""
 "[WARN] %(count)s astreintes non générées entre le %(start)s et le %(end)s "
@@ -5656,29 +5648,14 @@ msgstr ""
 msgid "[OK] Aucune astreinte manquante sur cette période."
 msgstr "[OK] Aucune astreinte manquante sur cette période."
 
-#: app/utils/automation/planner/presentation.py:90
+#: app/utils/automation/planner/presentation.py:177
 #, python-format
 msgid ""
-"[WARN] Aucune astreinte générée pour le %(date)s (aucun utilisateur ne "
-"respecte le délai légal entre deux astreintes) - assignation manuelle "
-"nécessaire."
+"%(tag)s Repos insuffisant après astreinte : %(count)s shift(s) non "
+"affecté(s) entre le %(start)s et le %(end)s."
 msgstr ""
-"[WARN] Aucune astreinte générée pour le %(date)s (aucun utilisateur ne "
-"respecte le délai légal entre deux astreintes) - assignation manuelle "
-"nécessaire."
-
-#: app/utils/automation/planner/presentation.py:132
-#, python-format
-msgid ""
-"%(tag)s %(name)s n'a pas pu être affecté au %(date)s : repos insuffisant "
-"après son astreinte."
-msgstr ""
-"%(tag)s %(name)s n'a pas pu être affecté au %(date)s : repos insuffisant "
-"après son astreinte."
-
-#: app/utils/automation/planner/presentation.py:135
-msgid "Utilisateur inconnu"
-msgstr "Utilisateur inconnu"
+"%(tag)s Repos insuffisant après astreinte : %(count)s shift(s) non "
+"affecté(s) entre le %(start)s et le %(end)s."
 
 #: app/utils/export/ics_exporter.py:60
 #, python-format
@@ -5761,49 +5738,41 @@ msgstr "Êtes-vous sûr ?"
 msgid "Créer un nouveau shift"
 msgstr "Créer un nouveau shift"
 
-#: app/utils/helpers/js_translations.py:32
-msgid "Date et heure de début"
-msgstr "Date et heure de début"
-
-#: app/utils/helpers/js_translations.py:33
-msgid "Date et heure de fin"
-msgstr "Date et heure de fin"
-
-#: app/utils/helpers/js_translations.py:37
+#: app/utils/helpers/js_translations.py:35
 msgid "Sélectionnez un type de shift"
 msgstr "Sélectionnez un type de shift"
 
-#: app/utils/helpers/js_translations.py:40
+#: app/utils/helpers/js_translations.py:38
 msgid ""
 "Événement mis à jour, mais le rééquilibrage automatique des shifts a échoué."
 msgstr ""
 "Événement mis à jour, mais le rééquilibrage automatique des shifts a échoué."
 
-#: app/utils/helpers/js_translations.py:42
+#: app/utils/helpers/js_translations.py:40
 msgid "Erreur: "
 msgstr "Erreur: "
 
-#: app/utils/helpers/js_translations.py:43
+#: app/utils/helpers/js_translations.py:41
 msgid "Une erreur est survenue lors de la mise à jour."
 msgstr "Une erreur est survenue lors de la mise à jour."
 
-#: app/utils/helpers/js_translations.py:44
+#: app/utils/helpers/js_translations.py:42
 msgid "Une erreur est survenue lors du redimensionnement."
 msgstr "Une erreur est survenue lors du redimensionnement."
 
-#: app/utils/helpers/js_translations.py:45
+#: app/utils/helpers/js_translations.py:43
 msgid "Événement supprimé avec succès."
 msgstr "Événement supprimé avec succès."
 
-#: app/utils/helpers/js_translations.py:46
+#: app/utils/helpers/js_translations.py:44
 msgid "Une erreur est survenue lors de la suppression."
 msgstr "Une erreur est survenue lors de la suppression."
 
-#: app/utils/helpers/js_translations.py:47
+#: app/utils/helpers/js_translations.py:45
 msgid "Suppression annulée."
 msgstr "Suppression annulée."
 
-#: app/utils/helpers/js_translations.py:49
+#: app/utils/helpers/js_translations.py:47
 msgid ""
 "Les shifts ne peuvent pas être créés ou déplacés vers les week-ends "
 "(samedi/dimanche)."
@@ -5811,87 +5780,87 @@ msgstr ""
 "Les shifts ne peuvent pas être créés ou déplacés vers les week-ends "
 "(samedi/dimanche)."
 
-#: app/utils/helpers/js_translations.py:52
+#: app/utils/helpers/js_translations.py:50
 msgid "Création de shift annulée."
 msgstr "Création de shift annulée."
 
-#: app/utils/helpers/js_translations.py:53
+#: app/utils/helpers/js_translations.py:51
 msgid "Veuillez remplir tous les champs obligatoires."
 msgstr "Veuillez remplir tous les champs obligatoires."
 
-#: app/utils/helpers/js_translations.py:54
+#: app/utils/helpers/js_translations.py:52
 msgid "Shift créé avec succès."
 msgstr "Shift créé avec succès."
 
-#: app/utils/helpers/js_translations.py:56
+#: app/utils/helpers/js_translations.py:54
 msgid "Une erreur est survenue lors de la création du shift."
 msgstr "Une erreur est survenue lors de la création du shift."
 
-#: app/utils/helpers/js_translations.py:58
+#: app/utils/helpers/js_translations.py:56
 msgid "Une erreur est survenue lors du chargement des données."
 msgstr "Une erreur est survenue lors du chargement des données."
 
-#: app/utils/helpers/js_translations.py:59
+#: app/utils/helpers/js_translations.py:57
 msgid "Thème sombre activé"
 msgstr "Thème sombre activé"
 
-#: app/utils/helpers/js_translations.py:60
+#: app/utils/helpers/js_translations.py:58
 msgid "Thème clair activé"
 msgstr "Thème clair activé"
 
-#: app/utils/helpers/js_translations.py:61
+#: app/utils/helpers/js_translations.py:59
 msgid "Copié !"
 msgstr "Copié !"
 
-#: app/utils/helpers/js_translations.py:62
+#: app/utils/helpers/js_translations.py:60
 msgid "Aucun groupe sélectionné : le calendrier est vide."
 msgstr "Aucun groupe sélectionné : le calendrier est vide."
 
-#: app/utils/helpers/js_translations.py:63
+#: app/utils/helpers/js_translations.py:61
 msgid "Modification annulée."
 msgstr "Modification annulée."
 
-#: app/utils/helpers/js_translations.py:64
+#: app/utils/helpers/js_translations.py:62
 msgid "Détails du shift"
 msgstr "Détails du shift"
 
-#: app/utils/helpers/js_translations.py:65
+#: app/utils/helpers/js_translations.py:63
 msgid "Modifier le shift"
 msgstr "Modifier le shift"
 
-#: app/utils/helpers/js_translations.py:66
+#: app/utils/helpers/js_translations.py:64
 msgid "Propriétaire"
 msgstr "Propriétaire"
 
-#: app/utils/helpers/js_translations.py:67
+#: app/utils/helpers/js_translations.py:65
 msgid "Date du shift"
 msgstr "Date du shift"
 
-#: app/utils/helpers/js_translations.py:70
+#: app/utils/helpers/js_translations.py:68
 msgid "Shift modifié avec succès."
 msgstr "Shift modifié avec succès."
 
-#: app/utils/helpers/js_translations.py:72
+#: app/utils/helpers/js_translations.py:70
 msgid "Une erreur est survenue lors de la modification du shift."
 msgstr "Une erreur est survenue lors de la modification du shift."
 
-#: app/utils/helpers/js_translations.py:74
+#: app/utils/helpers/js_translations.py:72
 msgid "Détails de l'astreinte"
 msgstr "Détails de l'astreinte"
 
-#: app/utils/helpers/js_translations.py:75
+#: app/utils/helpers/js_translations.py:73
 msgid "Modifier l'astreinte"
 msgstr "Modifier l'astreinte"
 
-#: app/utils/helpers/js_translations.py:77
+#: app/utils/helpers/js_translations.py:75
 msgid "Astreinte modifiée avec succès."
 msgstr "Astreinte modifiée avec succès."
 
-#: app/utils/helpers/js_translations.py:79
+#: app/utils/helpers/js_translations.py:77
 msgid "Une erreur est survenue lors de la modification de l'astreinte."
 msgstr "Une erreur est survenue lors de la modification de l'astreinte."
 
-#: app/utils/helpers/js_translations.py:81
+#: app/utils/helpers/js_translations.py:79
 msgid "Détails du congé"
 msgstr "Détails du congé"
 
@@ -6450,3 +6419,31 @@ msgstr "Le mot de passe ne doit pas contenir votre adresse email."
 #~ msgstr ""
 #~ "après les astreintes selon les règles métiers (13h-21h pour l'astreinte, "
 #~ "rotation des créneaux, etc.)."
+
+#~ msgid "Veuillez vous connecter pour accéder à cette page."
+#~ msgstr "Veuillez vous connecter pour accéder à cette page."
+
+#~ msgid ""
+#~ "[WARN] Aucune astreinte générée pour le %(date)s (aucun utilisateur ne "
+#~ "respecte le délai légal entre deux astreintes) - assignation manuelle "
+#~ "nécessaire."
+#~ msgstr ""
+#~ "[WARN] Aucune astreinte générée pour le %(date)s (aucun utilisateur ne "
+#~ "respecte le délai légal entre deux astreintes) - assignation manuelle "
+#~ "nécessaire."
+
+#~ msgid ""
+#~ "%(tag)s %(name)s n'a pas pu être affecté au %(date)s : repos insuffisant "
+#~ "après son astreinte."
+#~ msgstr ""
+#~ "%(tag)s %(name)s n'a pas pu être affecté au %(date)s : repos insuffisant "
+#~ "après son astreinte."
+
+#~ msgid "Utilisateur inconnu"
+#~ msgstr "Utilisateur inconnu"
+
+#~ msgid "Date et heure de début"
+#~ msgstr "Date et heure de début"
+
+#~ msgid "Date et heure de fin"
+#~ msgstr "Date et heure de fin"

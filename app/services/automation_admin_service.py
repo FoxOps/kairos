@@ -86,31 +86,46 @@ class AutomationAdminService:
 
     @staticmethod
     def save_rotation_order(rotation_order_ids: list[int]) -> str | None:
-        """Returns error_message, or None on success.
+        """Returns error_message, or None on success. Called both by the
+        explicit "Sauvegarder l'ordre" action AND by generate_full()
+        below on every "generate"/"dry_run" call - real bug found in
+        production: the new engine's rotation order is only ever read
+        from AutomationConfig (never from whatever the admin currently
+        has configured/checked on the same generation form), so
+        clicking "Générer" without a separate, easy-to-miss prior
+        "Sauvegarder l'ordre" click silently fell back to alphabetical
+        order - the admin's own configured order was never actually
+        used. Persisting here on every generate/dry_run call keeps
+        AutomationConfig always in sync with what's visibly on screen,
+        exactly like the legacy engine (which read the submitted ids
+        directly, always in sync by construction).
 
-        Also resets AutomationConfig's rotation epoch to today - real
-        bug found in production: with the epoch left untouched, the
-        rotation phase stayed pinned to AutomationConfig.
-        FALLBACK_ROTATION_EPOCH (a fixed date from year 2000) forever,
-        so the very first user in a freshly saved/reordered rotation
+        Only resets AutomationConfig's rotation epoch to today when the
+        order's *content* actually changes (including going from empty
+        to non-empty) - a second real bug found in production: with the
+        epoch left untouched forever, the rotation phase stayed pinned
+        to AutomationConfig.FALLBACK_ROTATION_EPOCH (a fixed date from
+        year 2000), so the first user in a freshly configured rotation
         was essentially never the first one actually put on-call
         (whichever position `(next_anchor_date - epoch).days // 7 %
-        len(order)` landed on, unrelated to the order an admin just
+        len(order)` landed on, unrelated to the order an admin
         configured). Resetting epoch to today makes the *next* anchor
         date (always within 0-6 days of today, whatever weekday it
         falls on) land on offset 0, i.e. rotation_order[0] - matching
-        the "the order I just saved should start applying now"
-        expectation. Deliberately only wired into this explicit
-        "Sauvegarder l'ordre" action, never into generate_full()'s own
-        implicit rotation_order_ids handling - resetting on every
-        generation call would reintroduce the exact staleness bug this
-        epoch mechanism was built to fix (see rotation.py's module
-        docstring, defect #4)."""
+        the "the order I configured should start applying now"
+        expectation. Gating the reset on an actual content change
+        (rather than resetting unconditionally on every generate/dry_run
+        call, now that this runs on every one of them) is what avoids
+        reintroducing the exact staleness bug this epoch mechanism was
+        built to fix (see rotation.py's module docstring, defect #4):
+        repeatedly generating with the *same*, already-in-effect order
+        must never re-shuffle an already-running rotation's phase."""
         try:
             from app.models import AutomationConfig
 
+            if AutomationConfig.get_rotation_order() != rotation_order_ids:
+                AutomationConfig.set_rotation_epoch(date.today())
             AutomationConfig.set_rotation_order(rotation_order_ids)
-            AutomationConfig.set_rotation_epoch(date.today())
             return None
         except Exception as e:
             db.session.rollback()
@@ -356,14 +371,18 @@ class AutomationAdminService:
         through the new pure planner instead of the legacy path,
         fixing the "shift preview reads real on-calls from the DB
         while its own on-call preview was only ever in-memory" defect.
-        rotation_order_ids has no equivalent on the new engine's path -
-        rotation order is only ever read from
+        The new engine's rotation order is only ever read from
         AutomationConfig.get_rotation_order() (see
-        AutomationRuleAdminService/save_order), so a `generate`/
-        `dry_run` form submission's own rotation_order_ids value is
-        simply unused for the preview; `save_order` itself is
-        unaffected and still writes AutomationConfig for the next call
-        to read.
+        AutomationRuleAdminService/save_order) - so this call always
+        persists `rotation_order_ids` (via save_rotation_order(), same
+        as the explicit "Sauvegarder l'ordre" action) before building
+        the plan, real bug found in production: without this, whatever
+        the admin currently has checked/ordered on the generation form
+        itself was silently ignored by the new engine unless a
+        separate, easy-to-miss "Sauvegarder l'ordre" click had already
+        happened first - AutomationConfig could (and did, in
+        production) stay empty forever, silently falling back to
+        alphabetical order regardless of what the admin configured.
 
         Phase 7: the dry_run=False branch is gated by
         SettingsService.get_new_automation_engine_enabled() - off by
@@ -371,7 +390,11 @@ class AutomationAdminService:
         an admin explicitly opts in. The preview above always uses the
         new planner regardless of this toggle, same as before phase 7 -
         an admin previewing before opting in sees exactly what they'd
-        get if they did."""
+        get if they did. The legacy path below still also receives
+        rotation_order_ids directly (its own long-standing behavior,
+        unaffected by this persistence)."""
+        AutomationAdminService.save_rotation_order(rotation_order_ids)
+
         if dry_run:
             plan = AutomationAdminService._build_new_engine_plan(start_date, end_date)
             return AutomationAdminService._generate_result_from_plan(plan, dry_run=True)

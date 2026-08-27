@@ -144,22 +144,37 @@ def plan_schedule(request: PlanningRequest) -> SchedulePlan:
     # through the database (see module docstring).
     proposed_oncalls_by_scope = merge_oncall_fragments(oncall_fragments)
 
-    # Which key in proposed_oncalls_by_scope holds a given shift scope's
-    # on-call info - only equal to that shift scope's own group_id when
-    # oncall_scheduling_mode is ALSO "per_group". When oncall mode is
-    # "shared", on-calls are proposed under scope None regardless of how
-    # many shift scopes exist - see plan_shifts_for_scope()'s own
-    # docstring for the real bug this distinction fixes (shift
-    # "per_group" + oncall "shared" silently blinded every on-call-aware
-    # shift rule).
+    # Which keys in proposed_oncalls_by_scope hold a given shift scope's
+    # on-call info - see plan_shifts_for_scope()'s own docstring for the
+    # two real bugs this distinction fixes (shift "per_group" + oncall
+    # "shared", and the reverse: shift "shared" + oncall "per_group").
+    # Three cases:
+    #   - oncall mode "shared": on-calls are proposed under scope None
+    #     regardless of how many shift scopes exist -> (None,).
+    #   - this shift scope is itself per-group (`group_id` is a real
+    #     id): only that same group's on-call is relevant -> (group_id,).
+    #   - this shift scope is "shared" (`group_id` is None) while
+    #     oncall is "per_group": every oncall-eligible group can have
+    #     its own concurrent on-call relevant to this one pooled shift
+    #     scope -> every oncall group id.
     oncall_mode_is_shared = request.oncall_groups == (None,)
     shift_start_date = request.shift_start_date or request.start_date
+
+    def _oncall_group_ids_for_shift_scope(
+        shift_group_id: int | None,
+    ) -> tuple[int | None, ...]:
+        if oncall_mode_is_shared:
+            return (None,)
+        if shift_group_id is not None:
+            return (shift_group_id,)
+        return request.oncall_groups
+
     shift_fragments = {
         group_id: plan_shifts_for_scope(
             start_date=shift_start_date,
             end_date=request.end_date,
             group_id=group_id,
-            oncall_group_id=(None if oncall_mode_is_shared else group_id),
+            oncall_group_ids=_oncall_group_ids_for_shift_scope(group_id),
             eligible_users=request.eligible_shift_users.get(group_id, ()),
             proposed_oncalls=proposed_oncalls_by_scope,
             existing_oncalls=request.existing_oncalls,

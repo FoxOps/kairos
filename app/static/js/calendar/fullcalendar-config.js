@@ -41,7 +41,7 @@ import {
     focusElement,
 } from '../utils/accessibility.js';
 import { getString } from '../utils/i18n.js';
-import { initDatePicker, syncDatePicker } from '../utils/date-picker.js';
+import { showFlashMessage } from '../notifications/flash-messages.js';
 
 document.addEventListener('DOMContentLoaded', function () {
     const calendarEl = document.getElementById('calendar');
@@ -157,13 +157,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 } else {
                     info.revert();
-                    announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
+                    showFlashMessage(getString('error_prefix') + data.error, 'danger');
                 }
             })
             .catch(error => {
                 info.revert();
                 console.error('Error:', error);
-                announceToScreenReader(getString(errorKey), 'assertive');
+                showFlashMessage(getString(errorKey), 'danger');
             });
     }
 
@@ -208,12 +208,12 @@ document.addEventListener('DOMContentLoaded', function () {
                             calendar.refetchEvents();
                             if (onSuccess) onSuccess();
                         } else {
-                            announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
+                            showFlashMessage(getString('error_prefix') + data.error, 'danger');
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        announceToScreenReader(getString('delete_error'), 'assertive');
+                        showFlashMessage(getString('delete_error'), 'danger');
                     });
             },
             () => {
@@ -258,7 +258,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // only) - the server does all the real zoneinfo conversion.
         // Every other Date getter/constructor in this file must stay
         // consistent with this (UTC getters, no `new Date(str)` on a
-        // timezone-less string) - see formatDateForInput and the
+        // timezone-less string) - see formatDateOnlyForInput and the
         // shift-creation modal below.
         timeZone: 'UTC',
         initialView: 'dayGridMonth',
@@ -465,7 +465,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Disable drag & drop on weekends
         dateClick: function (info) {
             const date = info.date;
-            // getUTCDay, not getDay - see formatDateForInput's comment.
+            // getUTCDay, not getDay - see the Calendar's timeZone: 'UTC' comment above.
             if (date.getUTCDay() === 0 || date.getUTCDay() === 6) { // Sunday (0) or Saturday (6)
                 announceToScreenReader(getString('weekend_restriction'), 'assertive');
                 return false;
@@ -493,16 +493,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // redefined identically in each one).
     const pad = (num) => num.toString().padStart(2, '0');
 
-    // Format a date for a datetime-local input
-    function formatDateForInput(date) {
-        // UTC getters, not local ones: under timeZone: 'UTC' (see the
-        // Calendar config above), FullCalendar's Date objects carry the
-        // viewer's own wall-clock digits in their UTC components - local
-        // getters would reapply the browser's real system offset on top,
-        // shifting the digits a second time.
-        return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
-    }
-
     // Format a date for a plain <input type="date"> (no time component) -
     // the edit modals only let the *day* change, not the hour (the hour
     // is either preserved from the original event or, for a shift whose
@@ -519,7 +509,15 @@ document.addEventListener('DOMContentLoaded', function () {
         return `${dateStr}T${pad(timeSource.getUTCHours())}:${pad(timeSource.getUTCMinutes())}:${pad(timeSource.getUTCSeconds())}Z`;
     }
 
-    // Open the shift-creation modal
+    // Open the shift-creation modal - a single day, never a period: the
+    // clicked day is the shift's own day, its hours always come from the
+    // chosen ShiftType (same contract as the edit modal's own
+    // "#edit-shift-date" - see combineDateWithTime below), never a
+    // freely-typed date/time range. Real production bug: the previous
+    // two-datetime-local-input form let an admin stretch a single day
+    // click into an arbitrary multi-day/multi-hour range, and clicking
+    // one calendar day is supposed to mean "create a shift for that
+    // day," nothing more.
     function openShiftCreationModal(start, end) {
         // Load the users and shift types
         Promise.all([
@@ -547,12 +545,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         </div>
                         <form id="shift-creation-form" aria-labelledby="create-shift-title" class="flex flex-col gap-4 py-4">
                             <div>
-                                <label class="label" for="shift-start">${getString('start_datetime')}</label>
-                                <input type="datetime-local" id="shift-start" class="input w-full" value="${formatDateForInput(start)}" required aria-required="true">
-                            </div>
-                            <div>
-                                <label class="label" for="shift-end">${getString('end_datetime')}</label>
-                                <input type="datetime-local" id="shift-end" class="input w-full" value="${formatDateForInput(end)}" required aria-required="true">
+                                <label class="label" for="shift-date">${getString('shift_date')}</label>
+                                <input type="date" id="shift-date" class="input w-full" value="${formatDateOnlyForInput(start)}" required aria-required="true">
                             </div>
                             <div>
                                 <label class="label" for="shift-user">${getString('user')}</label>
@@ -565,7 +559,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <label class="label" for="shift-type">${getString('shift_type')}</label>
                                 <select id="shift-type" class="select w-full" required aria-required="true">
                                     <option value="">${getString('select_shift_type')}</option>
-                                    ${shiftTypes.map(st => `<option value="${st.id}">${escapeHtml(st.label)} (${st.start_hour}:00 - ${st.end_hour}:00)</option>`).join('')}
+                                    ${shiftTypes.map(st => `<option value="${st.id}" data-start-hour="${st.start_hour}" data-end-hour="${st.end_hour}">${escapeHtml(st.label)} (${st.start_hour}:00 - ${st.end_hour}:00)</option>`).join('')}
                                 </select>
                             </div>
                         </form>
@@ -599,24 +593,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     announceToScreenReader(getString('shift_creation_cancelled'), 'polite');
                 });
 
-                // Bind the Vanilla Calendar Pro picker on the two
-                // datetime-local inputs - only reachable here, on first
-                // build: these inputs don't exist yet at page load, so
-                // the generic initDatePickers(document) call in main.js
-                // never sees them.
-                initDatePicker(modal.querySelector('#shift-start'));
-                initDatePicker(modal.querySelector('#shift-end'));
+                // No initDatePicker() call here - a plain native
+                // <input type="date"> (the edit modals' own
+                // "#edit-shift-date"/"#edit-oncall-date" follow the same
+                // convention: only datetime-local inputs get the Vanilla
+                // Calendar Pro picker).
             } else {
-                // Update the values, then resync each picker's popup
-                // with the new value - setting .value directly (unlike a
-                // user's click on a day) doesn't go through the
-                // calendar's own change handler.
-                const startInput = modal.querySelector('#shift-start');
-                const endInput = modal.querySelector('#shift-end');
-                startInput.value = formatDateForInput(start);
-                endInput.value = formatDateForInput(end);
-                syncDatePicker(startInput);
-                syncDatePicker(endInput);
+                modal.querySelector('#shift-date').value = formatDateOnlyForInput(start);
             }
 
             // Open the modal (showModal() natively handles the focus trap
@@ -624,7 +607,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // browser's default "first focusable element" focus isn't
             // guaranteed identical across engines).
             modal.showModal();
-            focusElement(modal.querySelector('#shift-start'));
+            focusElement(modal.querySelector('#shift-date'));
 
             // Wire up the buttons
             modal.querySelectorAll('.close-modal').forEach(btn => {
@@ -636,25 +619,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
             modal.querySelector('.create-shift-btn').onclick = () => {
                 const userId = modal.querySelector('#shift-user').value;
-                const shiftTypeId = modal.querySelector('#shift-type').value;
-                const startInput = modal.querySelector('#shift-start').value;
-                const endInput = modal.querySelector('#shift-end').value;
+                const shiftTypeSelect = modal.querySelector('#shift-type');
+                const shiftTypeId = shiftTypeSelect.value;
+                const dateInput = modal.querySelector('#shift-date').value;
 
-                if (!userId || !shiftTypeId || !startInput || !endInput) {
+                if (!userId || !shiftTypeId || !dateInput) {
                     announceToScreenReader(getString('fill_required_fields'), 'assertive');
                     return;
                 }
 
-                // startInput/endInput ("YYYY-MM-DDTHH:MM", from a native
-                // <input type="datetime-local">) must NOT go through
-                // `new Date(str)` - that parses a timezone-less string as
-                // browser-local time and applies a real UTC conversion,
-                // inconsistent with the drag & drop path above (which
-                // sends the viewer's literal wall-clock digits, no real
-                // conversion, matching the server's expectation - see
-                // app/utils/helpers/timezone_helpers.py). Appending
-                // seconds + "Z" keeps the same literal-digits contract.
-                const toLiteralIso = (value) => `${value}:00Z`;
+                // Hours always come from the chosen ShiftType, never
+                // typed freely - same contract as every other shift in
+                // this app. dateInput ("YYYY-MM-DD", from a native
+                // <input type="date">) must NOT go through `new
+                // Date(str)` - see combineDateWithTime's own comment for
+                // why (literal wall-clock digits, no real timezone
+                // conversion, matching the server's expectation).
+                const selectedOption = shiftTypeSelect.selectedOptions[0];
+                const startHour = pad(parseInt(selectedOption.dataset.startHour, 10));
+                const endHour = pad(parseInt(selectedOption.dataset.endHour, 10));
 
                 // Create the shift via the API
                 fetch('/api/shifts', {
@@ -668,8 +651,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     body: JSON.stringify({
                         userId: userId,
                         shiftTypeId: shiftTypeId,
-                        start: toLiteralIso(startInput),
-                        end: toLiteralIso(endInput)
+                        start: `${dateInput}T${startHour}:00:00Z`,
+                        end: `${dateInput}T${endHour}:00:00Z`
                     })
                 })
                     .then(response => response.json())
@@ -677,20 +660,20 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (data.success) {
                             modal.close();
                             console.log('Shift created:', data.message);
-                            announceToScreenReader(getString('shift_created'), 'polite');
+                            showFlashMessage(getString('shift_created'), 'success');
                             calendar.refetchEvents();
                         } else {
-                            announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
+                            showFlashMessage(getString('error_prefix') + data.error, 'danger');
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        announceToScreenReader(getString('shift_creation_error'), 'assertive');
+                        showFlashMessage(getString('shift_creation_error'), 'danger');
                     });
             };
         }).catch(error => {
             console.error('Error loading data:', error);
-            announceToScreenReader(getString('data_load_error'), 'assertive');
+            showFlashMessage(getString('data_load_error'), 'danger');
         });
     }
 

@@ -53,8 +53,16 @@ def test_uniform_algorithm_covers_1_2_3_and_many_users_identically():
     for headcount in (1, 2, 3, 6):
         users = rotation_order[:headcount]
         oncall_id = 1 if headcount >= 2 else None
+        oncall_ids = frozenset({oncall_id}) if oncall_id is not None else frozenset()
         result = assign_shift_slots_for_day(
-            EPOCH, users, oncall_id, None, None, rotation_order, EPOCH, {}
+            EPOCH,
+            users,
+            oncall_ids,
+            frozenset(),
+            frozenset(),
+            rotation_order,
+            EPOCH,
+            {},
         )
         assert set(result.keys()) == {u.id for u in users}
         _assert_exactly_one_oncall_and_one_rotation(result, oncall_id)
@@ -66,14 +74,16 @@ def test_single_user_gets_rotation_slot_not_default():
     must reduce to the same outcome via its rule-7 fallback."""
     users = (UserRef(1, "A", None),)
     result = assign_shift_slots_for_day(
-        EPOCH, users, None, None, None, users, EPOCH, {}
+        EPOCH, users, frozenset(), frozenset(), frozenset(), users, EPOCH, {}
     )
     assert result[1] == "rotation"
 
 
 def test_two_users_oncall_gets_oncall_other_gets_rotation():
     a, b = UserRef(1, "A", None), UserRef(2, "B", None)
-    result = assign_shift_slots_for_day(EPOCH, (a, b), 1, None, None, (a, b), EPOCH, {})
+    result = assign_shift_slots_for_day(
+        EPOCH, (a, b), frozenset({1}), frozenset(), frozenset(), (a, b), EPOCH, {}
+    )
     assert result[1] == "oncall"
     assert result[2] == "rotation"
 
@@ -86,7 +96,9 @@ def test_next_week_oncall_gets_rotation_slot_symmetric_with_last_week():
     commit b2a225c)."""
     a, b, c = UserRef(1, "A", None), UserRef(2, "B", None), UserRef(3, "C", None)
     users = (a, b, c)
-    result = assign_shift_slots_for_day(EPOCH, users, None, None, 2, users, EPOCH, {})
+    result = assign_shift_slots_for_day(
+        EPOCH, users, frozenset(), frozenset(), frozenset({2}), users, EPOCH, {}
+    )
     assert result[2] == "rotation"
     assert list(result.values()).count("rotation") == 1
 
@@ -94,7 +106,7 @@ def test_next_week_oncall_gets_rotation_slot_symmetric_with_last_week():
 def test_many_users_only_one_rotation_slot_filled_by_fallback():
     users = _users(5)
     result = assign_shift_slots_for_day(
-        EPOCH, users, None, None, None, users, EPOCH, {}
+        EPOCH, users, frozenset(), frozenset(), frozenset(), users, EPOCH, {}
     )
     # No on-call/last/next-week info at all: rule 7's fallback must
     # still guarantee exactly one rotation slot - EPOCH itself as the
@@ -115,7 +127,7 @@ def test_custom_weekend_definition_skips_configured_days_only():
         start_date=date(2026, 1, 5),  # Monday
         end_date=date(2026, 1, 11),  # Sunday
         group_id=None,
-        oncall_group_id=None,
+        oncall_group_ids=(None,),
         eligible_users=users,
         proposed_oncalls={},
         existing_oncalls=(),
@@ -152,7 +164,7 @@ def test_rest_after_oncall_ignores_a_later_on_call_in_the_same_plan():
         start_date=date(2026, 8, 3),  # Monday, well before the on-call
         end_date=date(2026, 8, 7),
         group_id=None,
-        oncall_group_id=None,
+        oncall_group_ids=(None,),
         eligible_users=(user,),
         # This user's only on-call in the plan starts months later.
         proposed_oncalls={(date(2027, 2, 19), None): 1},
@@ -185,7 +197,7 @@ def test_rest_after_oncall_still_blocks_shift_right_after_a_past_on_call():
         start_date=date(2026, 8, 3),  # Monday right after the on-call
         end_date=date(2026, 8, 3),
         group_id=None,
-        oncall_group_id=None,
+        oncall_group_ids=(None,),
         eligible_users=(user,),
         proposed_oncalls={},
         existing_oncalls=(_OnCallStub(user_id=1, end_time=datetime(2026, 8, 3, 3, 0)),),
@@ -222,7 +234,7 @@ def test_rest_after_oncall_never_excludes_the_oncall_role_slot_itself():
         start_date=date(2026, 9, 4),  # Friday
         end_date=date(2026, 9, 4),
         group_id=None,
-        oncall_group_id=None,
+        oncall_group_ids=(None,),
         eligible_users=(user,),
         # covering_friday(2026-09-04) resolves to 2026-08-28 (the week
         # that's ending that morning) - this is that week's on-call.

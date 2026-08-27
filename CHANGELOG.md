@@ -50,6 +50,31 @@ tag trigger for why.
 - Sidebar avatar letter was slightly off-center.
 - Automation rules page: the scope selector and its description text
   could wrap onto separate, inconsistently-positioned lines.
+- Rotation order still not respected after the fix above: the new
+  engine only ever read the rotation order from its stored
+  configuration, never from whatever an admin currently had
+  checked/ordered on the generation form itself — clicking "Générer"
+  without a separate, easy-to-miss prior "Sauvegarder l'ordre" click
+  silently fell back to alphabetical order. Generating now always
+  persists the submitted order first (only resetting the rotation
+  phase when the order's content actually changed, to avoid
+  re-shuffling an already-running rotation on a routine repeat call).
+- The on-call user's own mandatory coverage shift stayed permanently
+  unfilled in the "shifts shared across the whole org, on-calls
+  per-group" configuration specifically: a single shared shift scope
+  can have several different groups each running a concurrent
+  on-call, but the lookup only ever checked one group's on-call at a
+  time, silently missing every other group's holder every single
+  week regardless of any other rule.
+- Calendar day-click "create shift" modal let an admin freely type an
+  arbitrary multi-day/multi-hour range instead of just creating a
+  shift for the clicked day; the shift's hours are now always taken
+  from the chosen shift type, like everywhere else in the app. The
+  calendar's create/update/delete actions also only ever announced
+  success/failure to screen readers (an invisible aria-live region) —
+  a sighted admin got no visible confirmation of success and no
+  visible error message at all on failure. These actions now also
+  show a real flash message, same as every other page.
 - Shift generation rotation, two compounding bugs in a group whose
   on-call turns are sparse (e.g. `oncall_scheduling_mode` shared/pooled
   across several groups while `shift_scheduling_mode` is per-group) —

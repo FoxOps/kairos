@@ -97,6 +97,54 @@ class TestGenerateFullDryRunUsesNewEngine:
         assert Shift.query.count() == 0
 
 
+class TestGenerateFullPersistsRotationOrder:
+    """Real production bug: the new engine's rotation order is only
+    ever read from AutomationConfig, never from whatever the admin
+    currently has checked/ordered on the generation form itself - so
+    clicking "Générer"/"Prévisualiser" without a separate, easy-to-miss
+    prior "Sauvegarder l'ordre" click silently fell back to alphabetical
+    order, and AutomationConfig could stay empty forever. generate_full()
+    must now persist rotation_order_ids itself on every call."""
+
+    def test_dry_run_persists_the_submitted_order_without_a_separate_save(
+        self, test_app
+    ):
+        from app.models import AutomationConfig
+
+        group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
+        users = [_make_user(f"U{i}", f"u{i}@x.com", group) for i in range(3)]
+
+        assert AutomationConfig.get_rotation_order() == []
+
+        AutomationAdminService.generate_full(
+            date(2026, 9, 4),
+            date(2026, 9, 17),
+            rotation_order_ids=[u.id for u in users],
+            dry_run=True,
+        )
+
+        assert AutomationConfig.get_rotation_order() == [u.id for u in users]
+
+    def test_dry_run_first_on_call_matches_rotation_order_first_entry(self, test_app):
+        """The exact scenario reported by QA: with a fresh rotation (no
+        prior on-call history), the first user in the configured order
+        must be the first one actually put on-call - previously an
+        arbitrary position, unrelated to the configured order, because
+        AutomationConfig never actually got the submitted order."""
+        group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
+        users = [_make_user(f"U{i}", f"u{i}@x.com", group) for i in range(4)]
+
+        result = AutomationAdminService.generate_full(
+            date(2026, 8, 28),
+            date(2026, 9, 4),
+            rotation_order_ids=[u.id for u in users],
+            dry_run=True,
+        )
+
+        first_oncall = min(result.oncalls, key=lambda o: o.start_time)
+        assert first_oncall.user.id == users[0].id
+
+
 class TestGenerateFullDryRunMessages:
     def test_unfilled_oncall_week_produces_warning_message(self, test_app):
         """2 users, min_spacing_weeks default 2: a 3-week window forces

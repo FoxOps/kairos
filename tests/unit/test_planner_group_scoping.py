@@ -74,6 +74,33 @@ def test_per_group_oncall_with_shared_shifts_no_cross_group_collision():
     shift_user_ids = {s.user_id for s in plan.shifts}
     assert shift_user_ids == {u.id for u in ALL_USERS}
 
+    # Real bug regression (v1.1.1 production report, "shift shared +
+    # oncall per_group" - the reverse of the other regression test
+    # below): a single shared shift scope has only one `group_id`
+    # (None), but on-calls are proposed under TWO different real group
+    # ids for the same Friday - a single-id `oncall_group_id` parameter
+    # can only ever match one of them, so the mandatory "oncall" role
+    # slot silently went unfilled for BOTH groups' holders, every
+    # single week, regardless of any other rule. 2026-01-02 is the
+    # first Friday - both groups' holders for that week must each get
+    # their own role_slot "oncall" shift, concurrently, on the same
+    # shared shift scope.
+    oncall_by_group = {
+        o.group_id: o.user_id for o in plan.oncalls if o.friday == date(2026, 1, 2)
+    }
+    assert set(oncall_by_group) == {10, 20}
+    wednesday_shifts_by_user = {
+        s.user_id: s
+        for s in plan.shifts
+        if s.date == date(2026, 1, 7) and s.user_id in oncall_by_group.values()
+    }
+    for user_id in oncall_by_group.values():
+        assert wednesday_shifts_by_user[user_id].role_slot == "oncall"
+        assert (
+            wednesday_shifts_by_user[user_id].shift_type_id
+            == RULES.oncall_shift_type_id
+        )
+
 
 def test_shared_oncall_with_per_group_shifts_reverse_configuration():
     """The reverse: oncall_groups=(None,) (shared - one pooled
