@@ -84,12 +84,7 @@ def add_oncall():
                 flash(error, "danger")
                 return redirect(url_for("main.add_oncall"))
 
-            flash(
-                _(
-                    "Astreinte ajoutée avec succès ! (Du vendredi 21h au vendredi suivant 07h)"
-                ),
-                "success",
-            )
+            flash(_("Astreinte ajoutée avec succès !"), "success")
             return redirect(url_for("main.oncall"))
         except ValueError:
             db.session.rollback()

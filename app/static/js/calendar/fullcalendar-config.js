@@ -839,12 +839,12 @@ document.addEventListener('DOMContentLoaded', function () {
                             calendar.refetchEvents();
                             announceToScreenReader(getString('shift_updated'), 'polite');
                         } else {
-                            announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
+                            showFlashMessage(getString('error_prefix') + data.error, 'danger');
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        announceToScreenReader(getString('shift_update_error'), 'assertive');
+                        showFlashMessage(getString('shift_update_error'), 'danger');
                     });
             };
         });
@@ -942,12 +942,12 @@ document.addEventListener('DOMContentLoaded', function () {
                             calendar.refetchEvents();
                             announceToScreenReader(getString('oncall_updated'), 'polite');
                         } else {
-                            announceToScreenReader(getString('error_prefix') + data.error, 'assertive');
+                            showFlashMessage(getString('error_prefix') + data.error, 'danger');
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        announceToScreenReader(getString('oncall_update_error'), 'assertive');
+                        showFlashMessage(getString('oncall_update_error'), 'danger');
                     });
             };
         });

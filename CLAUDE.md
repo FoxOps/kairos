@@ -1157,10 +1157,20 @@ with 0 empty/0 fuzzy entries without a manual pass. `en.po` carries the real tra
 prints a reminder to check `en.po` for new empty/fuzzy entries after every run. `.mo` files are
 compiled build artifacts, gitignored (`*.mo`/`*.pot`) — `docker/Dockerfile` runs `pybabel compile`
 during the image build, and `tests/conftest.py`'s session-scoped autouse `_compile_babel_catalogs`
-fixture does the same before the test suite runs. Without one of these, a fresh checkout has no
-`en.mo`, and Flask-Babel silently falls back to the French `msgid` even when `default_language`
-is set to `"en"` — the exact bug class `TestEnCatalogTranslation` in `tests/integration/test_i18n.py`
-exists to catch. That test (and the 1000+ other pre-existing tests) stay green through this policy
+fixture does the same before the test suite runs. Real bug found in production QA: neither of
+those two paths covers a plain bare-metal `python run.py` start (this repo's own documented
+quick-start), so a fresh checkout following those exact steps silently rendered every locale as
+French forever, with no error anywhere — `Flask-Babel` falls back to the French `msgid` when no
+compiled catalog exists, even with `default_language`/a user's own preference set to `"en"`.
+Fixed with a safety net, not a docs-only patch: `app/__init__.py::_compile_missing_translation_catalogs()`
+runs on every `create_app()` call, right before `babel.init_app()` — compiles any `.po` whose `.mo`
+is missing (via `babel.messages.pofile.read_po`/`mofile.write_mo`, the same primitives `pybabel
+compile` itself uses), a no-op once catalogs exist. This covers `python run.py`, `flask run`, and
+gunicorn alike; Docker/tests keep compiling up front as before, so this only ever fires as a
+fallback. `make babel-compile` remains the fast, no-Flask-import way to do this manually (e.g. in
+CI or before running lint/tests directly). This is the exact bug class `TestEnCatalogTranslation`
+in `tests/integration/test_i18n.py` exists to catch. That test (and the 1000+ other pre-existing
+tests) stay green through this policy
 change with zero modifications needed: `BABEL_DEFAULT_LOCALE = "fr"` +
 `FALLBACK_DEFAULT_LANGUAGE = "fr"` mean `get_locale()` resolves to `"fr"` in every fixture-built test
 app, and an explicit `msgstr = msgid` renders byte-identical to the old empty-`msgstr`-falls-back-to-
