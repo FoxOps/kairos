@@ -13,6 +13,7 @@ New structure:
 - Routes organized into blueprints in app/routes/
 """
 
+import logging
 import os
 
 from flask import Flask, render_template
@@ -50,6 +51,44 @@ limiter = Limiter(key_func=get_remote_address, storage_uri="memory://")
 csrf = CSRFProtect()
 compress = Compress()
 babel = Babel()
+
+
+def _compile_missing_translation_catalogs() -> None:
+    """Compile any .po catalog under app/translations/ that has no matching
+    .mo file yet.
+
+    .mo files are gitignored build artifacts - normally produced by
+    `docker/Dockerfile` (image build) or the test suite's own autouse
+    fixture. A plain `python run.py` bare-metal start goes through
+    neither, so a fresh checkout silently renders every locale as
+    French forever (Flask-Babel falls back to the msgid when no
+    compiled catalog exists) - confirmed in production QA. This is a
+    cheap, idempotent safety net: a no-op once catalogs are compiled,
+    a few milliseconds otherwise.
+    """
+    from babel.messages.mofile import write_mo
+    from babel.messages.pofile import read_po
+
+    translations_dir = os.path.join(os.path.dirname(__file__), "translations")
+    if not os.path.isdir(translations_dir):
+        return
+
+    for locale in sorted(os.listdir(translations_dir)):
+        po_path = os.path.join(translations_dir, locale, "LC_MESSAGES", "messages.po")
+        mo_path = os.path.join(translations_dir, locale, "LC_MESSAGES", "messages.mo")
+        if os.path.exists(po_path) and not os.path.exists(mo_path):
+            try:
+                with open(po_path, "rb") as po_file:
+                    catalog = read_po(po_file, locale=locale)
+                with open(mo_path, "wb") as mo_file:
+                    write_mo(mo_file, catalog)
+            except Exception:  # noqa: BLE001 - never block startup over this
+                logging.getLogger(__name__).warning(
+                    "Could not compile translation catalog %s - this locale will fall "
+                    "back to French. Run 'make babel-compile' manually.",
+                    po_path,
+                    exc_info=True,
+                )
 
 
 def get_locale() -> str:
@@ -302,6 +341,7 @@ def create_app(config_object: str | None = None):
     login_manager.init_app(app)
     limiter.init_app(app)
     csrf.init_app(app)
+    _compile_missing_translation_catalogs()
     babel.init_app(app, locale_selector=get_locale)
     # Flask-Babel auto-injects _/gettext/ngettext as Jinja globals (and
     # the {% trans %} extension), but NOT get_locale() itself - register

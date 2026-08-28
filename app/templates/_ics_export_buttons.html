@@ -98,4 +98,10 @@
     </div>
     <label class="modal-backdrop" for="{{ modal_id }}">{{ _("Fermer") }}</label>
 </div>
+{% elif current_user.is_authenticated %}
+<a class="btn btn-outline" href="{{ url_for('auth.generate_ics_token') }}"
+   aria-label="{{ _("Générer un token pour pouvoir exporter les %(resource_name)s au format iCalendar", resource_name=resource_name) }}"
+   title="{{ _("Générer un token ICS pour activer l'export") }}">
+    <i class="fas fa-file-export" aria-hidden="true"></i>&nbsp; {{ _("Exporter les %(resource_name)s", resource_name=resource_name) }}
+</a>
 {% endif %}
