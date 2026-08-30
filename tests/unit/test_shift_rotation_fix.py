@@ -18,9 +18,17 @@ from app.utils.automation import AdvancedShiftAutomation
 @pytest.fixture
 def app_context():
     """Create an app context for the tests."""
-    app = create_app()
-    app.config["TESTING"] = True
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+    # create_app('app.config.TestingConfig') is required here, not bare
+    # create_app() + a post-hoc app.config["SQLALCHEMY_DATABASE_URI"]
+    # override: Flask-SQLAlchemy's init_app() binds the engine eagerly
+    # from whatever URI is set at that call - "Changes to application
+    # config after this call will not be reflected" (its own docstring).
+    # The override was a no-op, so this fixture was silently touching
+    # the default Config's real sqlite file instead of an isolated
+    # in-memory DB - harmless under a single serial process, but a race
+    # (intermittent "no such table") once multiple pytest-xdist workers
+    # can be creating/dropping that same file concurrently.
+    app = create_app("app.config.TestingConfig")
 
     with app.app_context():
         db.create_all()
