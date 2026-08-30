@@ -75,6 +75,50 @@ class TestStaffingLimitsRule:
         errors = StaffingLimitsRule.validate_params({str(test_shift_type.id): None})
         assert errors == []
 
+    def test_get_max_ignores_stale_nested_min_max_shape(
+        self, test_app, test_shift_type
+    ):
+        """Real bug found in production: a row saved under this rule's
+        pre-1.1.1 shape (`{"min": .., "max": ..}` per ShiftType, before
+        it became max-only) crashed generation with `'>=' not
+        supported between instances of 'int' and 'dict'` - resolve()
+        is a raw passthrough of whatever is already in the database,
+        with no shape check. get_max() must treat it as unconfigured
+        rather than propagate the dict to a caller that assumes int."""
+        AutomationRule.set(
+            "staffing_limits",
+            {str(test_shift_type.id): {"min": 2, "max": 5}},
+        )
+        assert StaffingLimitsRule.get_max(test_shift_type.id) is None
+
+    def test_coerce_max_passes_through_valid_values(self):
+        assert StaffingLimitsRule.coerce_max(3) == 3
+        assert StaffingLimitsRule.coerce_max(0) == 0
+        assert StaffingLimitsRule.coerce_max(None) is None
+
+    def test_coerce_max_rejects_non_int_values(self):
+        assert StaffingLimitsRule.coerce_max({"min": 2, "max": 5}) is None
+        assert StaffingLimitsRule.coerce_max("many") is None
+        assert StaffingLimitsRule.coerce_max(True) is None
+
+    def test_resolve_rules_for_groups_does_not_crash_on_stale_shape(
+        self, test_app, test_shift_type
+    ):
+        """End-to-end regression for the same production crash, at the
+        actual boundary "Générer"/"Prévisualiser (Dry Run)" call
+        (app/utils/automation/planner/rule_resolution.py) - a stale
+        nested-shape row must not blow up plan resolution."""
+        from app.utils.automation.planner.rule_resolution import (
+            resolve_rules_for_groups,
+        )
+
+        AutomationRule.set(
+            "staffing_limits",
+            {str(test_shift_type.id): {"min": 2, "max": 5}},
+        )
+        resolved = resolve_rules_for_groups([None])
+        assert resolved[None].staffing_limits[test_shift_type.id] is None
+
 
 class TestRestAfterOnCallRule:
     def test_default_requires_no_rest(self, test_app):
