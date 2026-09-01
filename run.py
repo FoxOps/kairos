@@ -123,10 +123,11 @@ def create_default_data():
             # re-printed on subsequent starts (the "already exists"
             # branch below has no access to the plaintext password
             # anyway, by design).
-            print(f"🔑 Auto-generated password: {default_admin_password}")
+            print(f"🔑 Auto-generated password: {default_admin_password}", flush=True)
             print(
                 "   Save this now - it will not be shown again. "
-                "You must change it on first login."
+                "You must change it on first login.",
+                flush=True,
             )
     else:
         print(f"✅ Admin user already exists: {default_admin_email}")

@@ -10,6 +10,15 @@ tag trigger for why.
 ## [1.1.1] — 2026-08-27
 
 ### Fixed
+- Automation "Générer/rafraîchir le planning" could fail outright with
+  `'>=' not supported between instances of 'int' and 'dict'` whenever a
+  `staffing_limits` rule had been saved under this rule's pre-1.1.1
+  shape (`{"min": .., "max": ..}` per `ShiftType`, before it became
+  max-only) - `resolve()` is a raw passthrough of whatever JSON is
+  already stored, with no shape check on read, so a stale row from
+  before the shape change crashed the whole generation. Now coerced to
+  "no limit configured" (same as an absent entry) instead of
+  propagating a dict where an int is expected.
 - Automation "Générer/rafraîchir le planning" could fail on every day of
   a multi-month generation run with a flood of false `rest_after_oncall`
   `hard_blocked` violations: the planner picked each user's on-call end
@@ -115,6 +124,33 @@ tag trigger for why.
   rotation/on-call shift types is already guaranteed by the generation
   algorithm itself, and the min/mandatory settings only added confusing,
   occasionally-misleading configuration on top of it.
+- i18n was silently 100% non-functional on a plain bare-metal setup
+  (`pip install` then `python run.py`, this project's own documented
+  quick-start): the compiled `.mo` translation catalogs were only ever
+  produced by the Docker image build or the test suite's own fixture,
+  never by this path, so every locale silently fell back to French
+  regardless of any language setting. `create_app()` now compiles any
+  missing catalog itself on startup as a safety net.
+- Shift/on-call reassignment via the calendar's click-to-edit modal
+  failed completely silently on a rejected save (conflict, leave
+  overlap, rule violation, etc.) - the server's error message only
+  reached a screen-reader-only ARIA live region, invisible to sighted
+  users, unlike every other error path in the same file. Now shown as
+  a real visible flash message, same as drag & drop and delete.
+- ICS calendar export was entirely invisible on `/schedule`, `/oncall`,
+  and `/leave` (no button, no hint) for any user who hadn't already
+  generated an ICS token from their profile - including the fresh
+  bootstrap admin. A link to generate one now shows in its place.
+- `/oncall/add`'s label and help text always claimed the on-call must
+  start on Friday at 21h, even for a group with a different configured
+  anchor day - correct submissions could look wrong and incorrect ones
+  looked right, and the mismatch caused real rejected submissions.
+- The auto-generated bootstrap admin password could be silently lost
+  on a bare-metal start: Python's stdout is block-buffered when not
+  attached to a TTY (e.g. `nohup`/`systemd`), so the one-time password
+  print could sit unflushed indefinitely. Now flushed explicitly.
+- `/admin/automation` and the automation "Dry Run" preview page had no
+  browser tab title, unlike every sibling admin page.
 
 ### Changed
 - Automation rules page: "Créneaux obligatoires" section removed and

@@ -54,7 +54,7 @@ def _resolve_one(group: Group | None) -> ResolvedRules:
         oncall_spacing_weeks=spacing["min_spacing_weeks"],
         weekend_days=frozenset(weekend["weekend_days"]),
         staffing_limits={
-            int(shift_type_id): max_value
+            int(shift_type_id): StaffingLimitsRule.coerce_max(max_value)
             for shift_type_id, max_value in staffing.items()
         },
         rest_after_oncall_hours=rest["min_rest_hours"],

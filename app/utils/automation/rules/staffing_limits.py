@@ -65,4 +65,23 @@ class StaffingLimitsRule(AutomationRuleType):
     @classmethod
     def get_max(cls, shift_type_id: int, group=None) -> int | None:
         params = cls.resolve(group=group)
-        return params.get(str(shift_type_id))
+        return cls.coerce_max(params.get(str(shift_type_id)))
+
+    @staticmethod
+    def coerce_max(value: object) -> int | None:
+        """Defends against a stale stored value - e.g. this rule's own
+        pre-1.1.1 `{"min": .., "max": ..}` nested shape, before it
+        became max-only (see module docstring). Every *new* admin save
+        goes through validate_params() above, but resolve() /
+        AutomationRule.resolve_params() is a raw passthrough of
+        whatever JSON is already in the database, so a row saved under
+        the old shape (or otherwise malformed) would silently reach
+        callers as a dict instead of an int|None, crashing generation
+        with `'>=' not supported between instances of 'int' and
+        'dict'` - a real bug found in production. Treated as "no limit
+        configured" instead, the same as an absent entry, rather than
+        failing generation over a value the UI itself would already
+        reject if resaved."""
+        if value is None or (isinstance(value, int) and not isinstance(value, bool)):
+            return value
+        return None
