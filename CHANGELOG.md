@@ -10,6 +10,15 @@ tag trigger for why.
 ## [1.1.1] — 2026-08-27
 
 ### Fixed
+- Automation "Générer/rafraîchir le planning" could fail outright with
+  `'>=' not supported between instances of 'int' and 'dict'` whenever a
+  `staffing_limits` rule had been saved under this rule's pre-1.1.1
+  shape (`{"min": .., "max": ..}` per `ShiftType`, before it became
+  max-only) - `resolve()` is a raw passthrough of whatever JSON is
+  already stored, with no shape check on read, so a stale row from
+  before the shape change crashed the whole generation. Now coerced to
+  "no limit configured" (same as an absent entry) instead of
+  propagating a dict where an int is expected.
 - Automation "Générer/rafraîchir le planning" could fail on every day of
   a multi-month generation run with a flood of false `rest_after_oncall`
   `hard_blocked` violations: the planner picked each user's on-call end
