@@ -85,7 +85,9 @@ class AutomationAdminService:
         return [u["user_id"] for u in user_data_sorted if u["include"]]
 
     @staticmethod
-    def save_rotation_order(rotation_order_ids: list[int]) -> str | None:
+    def save_rotation_order(
+        rotation_order_ids: list[int], reference_date: date | None = None
+    ) -> str | None:
         """Returns error_message, or None on success. Called both by the
         explicit "Sauvegarder l'ordre" action AND by generate_full()
         below on every "generate"/"dry_run" call - real bug found in
@@ -100,19 +102,37 @@ class AutomationAdminService:
         exactly like the legacy engine (which read the submitted ids
         directly, always in sync by construction).
 
-        Always resets AutomationConfig's rotation epoch to today, on
-        every call - a second real bug found in production: with the
-        epoch left untouched forever, the rotation phase stayed pinned
-        to AutomationConfig.FALLBACK_ROTATION_EPOCH (a fixed date from
-        year 2000), so the first user in a freshly configured rotation
-        was essentially never the first one actually put on-call
-        (whichever position `(next_anchor_date - epoch).days // 7 %
-        len(order)` landed on, unrelated to the order an admin
-        configured). Resetting epoch to today makes the *next* anchor
-        date (always within 0-6 days of today, whatever weekday it
-        falls on) land on offset 0, i.e. rotation_order[0] - matching
-        the "the order I configured should start applying now"
-        expectation.
+        Always resets AutomationConfig's rotation epoch to
+        `reference_date` (default: today), on every call - a second real
+        bug found in production: with the epoch left untouched forever,
+        the rotation phase stayed pinned to
+        AutomationConfig.FALLBACK_ROTATION_EPOCH (a fixed date from year
+        2000), so the first user in a freshly configured rotation was
+        essentially never the first one actually put on-call (whichever
+        position `(next_anchor_date - epoch).days // 7 % len(order)`
+        landed on, unrelated to the order an admin configured). Resetting
+        epoch to `reference_date` makes the *next* anchor date on/after
+        it (always within 0-6 days, whatever weekday it falls on) land on
+        offset 0, i.e. rotation_order[0] - matching the "the order I
+        configured should start applying from here" expectation.
+
+        `reference_date` defaults to `date.today()` for the explicit
+        "Sauvegarder l'ordre" action (`app/routes/admin_automation_routes.py`,
+        no generation window involved - "now" is the only sensible
+        reference). generate_full() below instead passes its own
+        `start_date` explicitly - a second real bug found in production:
+        using `date.today()` unconditionally here made rotation_order[0]
+        land on the window being generated only when that window
+        happened to start near the real wall-clock date; a dry-run
+        preview or a backfill for a period far from today (or a test
+        suite with fixed dates - see
+        TestGenerateFullPersistsRotationOrder in
+        tests/integration/test_automation_dry_run_cutover.py, which is
+        exactly how this was caught) silently landed on an unrelated
+        offset instead, unrelated to what was actually being generated.
+        The configured order must be authoritative for *the window being
+        generated*, not for whatever real time the button happened to be
+        clicked at.
 
         This used to only reset the epoch when the order's *content*
         changed, to avoid re-shuffling an already-running rotation's
@@ -132,7 +152,7 @@ class AutomationAdminService:
         try:
             from app.models import AutomationConfig
 
-            AutomationConfig.set_rotation_epoch(date.today())
+            AutomationConfig.set_rotation_epoch(reference_date or date.today())
             AutomationConfig.set_rotation_order(rotation_order_ids)
             return None
         except Exception as e:
@@ -400,8 +420,21 @@ class AutomationAdminService:
         an admin previewing before opting in sees exactly what they'd
         get if they did. The legacy path below still also receives
         rotation_order_ids directly (its own long-standing behavior,
-        unaffected by this persistence)."""
-        AutomationAdminService.save_rotation_order(rotation_order_ids)
+        unaffected by this persistence).
+
+        Passes `reference_date=start_date` to save_rotation_order() -
+        real bug found in production (and by a test suite run on a date
+        far from the fixed dates its own tests use, see
+        TestGenerateFullPersistsRotationOrder): the default
+        `reference_date=date.today()` only makes rotation_order[0] land
+        on this call's own generation window when that window happens to
+        start near the real wall-clock date. Passing start_date makes the
+        window's own first anchor deterministically get offset 0,
+        regardless of when the call actually runs - see
+        save_rotation_order()'s own docstring for the full reasoning."""
+        AutomationAdminService.save_rotation_order(
+            rotation_order_ids, reference_date=start_date
+        )
 
         if dry_run:
             plan = AutomationAdminService._build_new_engine_plan(start_date, end_date)
