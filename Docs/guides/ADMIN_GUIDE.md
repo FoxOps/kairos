@@ -920,6 +920,9 @@ cookie-based `/api/*` routes used by the app's own frontend:
   regenerate, revoke), not a user session
 - Read-only: `GET` list (paginated) and `GET <id>` for shifts, on-call,
   leave, users, and list-only for shift types - no write endpoints in v1
+- `GET /api/v1/oncall/current[?group_id=]` - who's on-call right now
+  (for monitoring/alerting integrations), without pulling the full
+  on-call list
 - Auto-generated OpenAPI spec at `GET /api/v1/openapi.json` (no
   interactive Swagger/Redoc UI is served, to avoid relaxing the CSP for a
   CDN-hosted UI)

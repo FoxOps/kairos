@@ -839,6 +839,30 @@ shift-types — reusing the existing repositories/services directly (`ShiftRepos
 duplicated. Write endpoints are a deliberate v1 omission (would require re-validating the same
 conflict/weekend/leave rules already encapsulated in the service layer for `/api/*`), not an
 oversight — extend here first if that need materializes, don't build a third parallel API surface.
+`GET /api/v1/oncall/current[?group_id=]` (`app/api/resources/oncall.py`) is the one v1 endpoint
+that isn't a plain list/detail: resolves the currently active on-call shift(s) via
+`OnCallRepository.list_active()` (same `start_time <= org_now() <= end_time` comparison as
+`OnCall.is_active()`, expressed as a SQL predicate), for monitoring/alerting integrations (the
+motivating case was Canopsis) that need "who's on-call right now" without pulling the full list
+and re-implementing the org-timezone/active-window logic themselves. `group_id` omitted → a JSON
+array (0+ items — more than one only possible in `per_group` on-call scheduling mode); `group_id`
+given → a single object, either the active shift (with the user's `name`/`email`/`group_id`
+inlined, no second `/api/v1/users/<id>` call needed) or `{"active": false}`. Because the response
+shape genuinely changes with `group_id`, this route doesn't fit flask-smorest's one-schema-per-
+route model (`@blp.response(schema)` normally re-serializes whatever the view returns) — the view
+instead builds and returns its own `flask.jsonify(...)` `Response` object, and `@blp.response` is
+kept purely for OpenAPI documentation: per `flask_smorest.Blueprint.response`'s own docstring, "If
+the decorated function returns a Response object, the schema and status_code parameters are only
+used to document the resource" — confirmed by reading `flask_smorest/response.py` directly, not
+assumed. (An earlier attempt stacked `@blp.alt_response` to document the array/object/`{"active":
+false}` shapes as three separate OpenAPI response entries under the same `200` — flask-smorest
+merges same-status-code docs into one entry rather than keeping them distinct, and reusing one
+example `dict` object across those decorators let that merge mutate it in place, corrupting the
+generated example; reverted to one schema — every field but `active` marked `allow_none` — plus
+the shape nuance spelled out in the response `description` instead.) Every `/api/v1/oncall/*`
+`start_time`/`end_time` (list, detail, and this endpoint) is a timezone-aware ISO 8601 string
+(`timezone_helpers.org_aware()`, the org's `default_timezone` `Setting` as the UTC offset,
+e.g. `2026-09-11T21:00:00+02:00`) — every other v1 resource's datetime/date fields are unaffected.
 `UserSchema` deliberately excludes every sensitive/preference field (`password_hash`, `ics_token`,
 `apprise_*_target_ids`, `timezone`/`language`/`date_format`/`time_format`, notification opt-outs) —
 same public contract as the internal `/api/users` endpoint, plus `group_id`.
