@@ -38,6 +38,18 @@ tag trigger for why.
   Documentation-only, no behavior change.
 
 ### Fixed
+- Generating/previewing on-calls for a period far from the real
+  wall-clock date (a dry-run preview or backfill for a future/past
+  period, or simply this project's own CI running on a different day
+  than the tests were written) could silently put the wrong person
+  on-call first: `generate_full()` reset the rotation-order reference
+  date ("epoch") to real `date.today()` on every call regardless of
+  the actual generation window's `start_date`, so `rotation_order[0]`
+  only landed on offset 0 - the configured "first" person - when the
+  window happened to start near today. Now resets to the window's own
+  `start_date` instead, so the configured order's first entry is
+  deterministically first for whatever period is actually being
+  generated, independent of when the call runs.
 - Automation "Générer/rafraîchir le planning" could fail outright with
   `'>=' not supported between instances of 'int' and 'dict'` whenever a
   `staffing_limits` rule had been saved under this rule's pre-1.1.1

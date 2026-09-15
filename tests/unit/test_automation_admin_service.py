@@ -58,6 +58,24 @@ class TestSaveRotationOrder:
         AutomationAdminService.save_rotation_order([1, 2, 3])
         assert AutomationConfig.get_rotation_epoch() == date.today()
 
+    def test_uses_given_reference_date_instead_of_today(self, test_app):
+        """generate_full() passes its own start_date as reference_date so
+        the generation window's first anchor - not whatever real
+        wall-clock date the call happens to run on - gets rotation
+        offset 0. Real production bug: without this, a dry-run preview
+        or a backfill for a period far from today (or a test suite
+        using fixed dates) silently picked an unrelated offset instead
+        of rotation_order[0] for the window actually being generated."""
+        from datetime import date
+
+        from app.models import AutomationConfig
+
+        AutomationAdminService.save_rotation_order(
+            [1, 2, 3], reference_date=date(2020, 5, 1)
+        )
+        assert AutomationConfig.get_rotation_epoch() == date(2020, 5, 1)
+        assert AutomationConfig.get_rotation_epoch() != date.today()
+
 
 class TestGetRotationOrder:
     def test_returns_none_on_failure(self, test_app, monkeypatch):

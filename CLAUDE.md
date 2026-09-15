@@ -88,6 +88,32 @@ help text, to avoid the install cost for contributors who don't need it). Keep s
 versions identical across all three requirements files when bumping a dependency that appears in
 more than one.
 
+A third workflow, `.github/workflows/docker-dev-build.yml` ("Docker Dev Build"), is the inverse of
+`docker-release.yml`: also `workflow_dispatch`-only, but restricted to **any branch except `main`**
+(a `require-not-main` job fails loudly if run from `main` — a dev build off `main` would tag
+production's own commit with build metadata it should never carry) and also calls `tests.yml` as a
+reusable gate (`needs:`) before building. Exists to answer "is this test container actually running
+the latest commit on this branch?" — see `Docs/reference/VERSIONING.md`. Version is disposable
+SemVer build metadata, `<APP_VERSION_DEFAULT>+dev.<run_number>.<short_sha>` (base extracted from
+`app/utils/health.py`, `+` never affects SemVer precedence/ordering so this can never collide with
+or outrank a real release version; the run number is Actions' own free monotonically-increasing
+counter, no hand-maintained one to keep in sync across branches). Pushes
+`ghcr.io/foxops/kairos:dev-<branch>-<short_sha>` (one exact build) and the floating
+`ghcr.io/foxops/kairos:dev` tag (newest dev build across any branch, convenient "just give me the
+latest test image" — same idea as `:latest` but scoped to dev builds, never mixed with it — never
+`:latest` itself, that tag stays reserved for `docker-release.yml`). A final `cleanup-old-dev-builds`
+job deletes `dev-*`-tagged package versions past the 5 newest, via a hand-rolled `gh api` script —
+deliberately **not** `actions/delete-package-versions@v5` (used here previously): a real incident,
+confirmed via that run's own log, where the action deleted a *production* release version despite
+`ignore-versions` being configured to protect exactly that pattern — root-caused to an undocumented
+interaction between two of that action's inputs (`num-old-versions-to-delete`/`min-versions-to-keep`)
+that this workflow never intentionally set, with no per-item detail in the action's own log to fully
+diagnose the exact mechanism from the outside. The replacement is deliberately an explicit allow-list,
+not a deny-list: a package version is only ever a deletion *candidate* if every one of its tags
+matches `^dev-` — a version carrying `latest`, a bare release tag, or the floating `dev` tag is
+excluded before any counting happens, so it structurally cannot be selected regardless of
+sorting/counting behavior.
+
 ## Commands
 
 ```bash
@@ -506,7 +532,15 @@ on the `[ALERT]`-tag convention and the flood-of-messages fix, both still releva
 (`oncall_planner.py`'s "keep whoever's already published" minimal-perturbation bias, and a
 rotation-phase epoch only reset when the configured order's content changed) made the configured
 rotation order not actually win on regenerate even when unrelated to the above — both fixed the same
-session; see `[[project-automation-engine-rework]]`.
+session; see `[[project-automation-engine-rework]]`. Follow-up fix (2026-09): `generate_full()`'s
+call to `save_rotation_order()` still reset the epoch to real wall-clock `date.today()`
+unconditionally, so `rotation_order[0]` only actually landed on offset 0 *for the window being
+generated* when that window happened to start near real "today" — a dry-run preview or backfill for
+a period far from today (or a test suite using fixed dates, exactly how this was caught) silently
+picked an unrelated offset instead. `generate_full()` now passes `reference_date=start_date` to
+`save_rotation_order()` (a new optional parameter, default `date.today()` — unchanged behavior for
+the explicit "Sauvegarder l'ordre" action, which has no generation window in mind), so the window's
+own first anchor deterministically gets offset 0 regardless of when the call actually runs.
 
 **Message severity tags, not emoji.** `app/utils/automation/`'s generated messages used to encode
 severity as a leading emoji, stripped before ever reaching `flash()`/a template — this app doesn't
