@@ -120,6 +120,15 @@ paths:
           required: false
           description: ISO date/datetime - see `start`.
           schema: { type: string, format: date-time }
+        - name: group_ids
+          in: query
+          required: false
+          description: >
+            Repeated param (?group_ids=1&group_ids=2) - the calendar's
+            multi-group filter. Omitted/empty means every group.
+          schema: { type: array, items: { type: integer } }
+          style: form
+          explode: true
       responses:
         "200":
           description: List of events
@@ -189,7 +198,7 @@ paths:
         required: true
         schema: { type: integer }
     patch:
-      summary: Move/resize a shift (drag & drop)
+      summary: Move/resize a shift (drag & drop), or reassign it (click-to-edit modal)
       operationId: updateShift
       security: [{ sessionCookie: [] }]
       parameters:
@@ -204,10 +213,16 @@ paths:
               properties:
                 start: { type: string, format: date-time }
                 end: { type: string, format: date-time, description: "Optional: keeps the original duration if absent" }
+                userId: { type: integer, description: "Optional: reassigns the shift to a different user. Omitted by the drag/resize path - only the click-to-edit modal sends it." }
+                shiftTypeId: { type: integer, description: "Optional: changes the shift type. Omitted by the drag/resize path - only the click-to-edit modal sends it." }
       responses:
         "200": { description: Shift updated }
         "400":
-          description: Invalid date, weekend, or conflict with an existing shift
+          description: >
+            Invalid date, weekend, conflict with an existing shift, or
+            (when userId/shiftTypeId is given) that reassignment target
+            not found - all returned as 400, not 404, since the shift
+            itself was found
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ApiError" }
@@ -251,6 +266,29 @@ paths:
                 type: array
                 items: { $ref: "#/components/schemas/ShiftType" }
 
+  /api/oncall-users:
+    get:
+      summary: List on-call-eligible users
+      description: >
+        Mirrors GET /api/users but scoped to the oncall-eligible group
+        rather than the schedule-eligible one
+        (UserService.visible_users_for_oncall) - backs the calendar's
+        on-call-edit modal person picker.
+      operationId: listOncallUsers
+      responses:
+        "200":
+          description: List of users (id/name/email only)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: integer }
+                    name: { type: string }
+                    email: { type: string }
+
   /api/oncall/{oncallId}:
     parameters:
       - name: oncallId
@@ -258,7 +296,7 @@ paths:
         required: true
         schema: { type: integer }
     patch:
-      summary: Move an on-call shift (admin only)
+      summary: Move an on-call shift (admin only), or reassign it (click-to-edit modal)
       operationId: updateOncall
       security: [{ sessionCookie: [] }]
       parameters:
@@ -271,12 +309,19 @@ paths:
               type: object
               required: [start]
               properties:
-                start: { type: string, format: date-time, description: "Must fall on a Friday" }
+                start: { type: string, format: date-time, description: "Must fall on the on-call anchor weekday configured for the (possibly newly-assigned, if userId is given) target user's group - OnCallAnchorRule, admin-configurable per group at /admin/automation/rules. Defaults to Friday, but is not hardcoded." }
                 end: { type: string, format: date-time }
+                userId: { type: integer, description: "Optional: reassigns the on-call to a different user. Omitted by the drag/resize path - only the click-to-edit modal sends it." }
       responses:
         "200": { description: On-call shift updated }
         "400":
-          description: "Not a Friday, or conflict with an existing on-call shift"
+          description: >
+            Not the configured anchor weekday for the target group
+            ("L'astreinte doit commencer le jour configuré pour ce
+            groupe"), conflict with an existing on-call shift, or
+            (when userId is given) that reassignment target not found -
+            all returned as 400, not 404, since the on-call itself was
+            found
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ApiError" }

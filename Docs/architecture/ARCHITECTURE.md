@@ -198,7 +198,14 @@ Admin CRUD for these credentials lives at `/admin/service-accounts`.
 shifts/oncall/leave/users, list-only for shift-types - reusing the
 same repositories/services as the internal routes, no business logic
 duplicated. Write endpoints are a deliberate omission, not an
-oversight.
+oversight. One exception to the plain list/detail shape:
+`GET /api/v1/oncall/current[?group_id=]` returns the currently active
+on-call shift(s) - a JSON array when `group_id` is omitted (0+ items),
+or a single object (the active shift, or `{"active": false}`) when
+it's given - resolved via `OnCallRepository.list_active()`, the same
+org-timezone comparison as `OnCall.is_active()`. All
+`/api/v1/oncall/*` `start_time`/`end_time` are timezone-aware ISO 8601
+strings (the org's `default_timezone` `Setting` as the UTC offset).
 
 `GET /api/v1/openapi.json` is generated automatically from the
 marshmallow schemas on every app start, so - unlike the hand-maintained

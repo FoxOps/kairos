@@ -13,6 +13,23 @@ class TestOpenApiJson:
         assert data["openapi"] == "3.0.3"
         assert data["info"]["title"] == "Kairos Public API"
 
+    def test_oncall_current_path_is_documented(self, client):
+        # Regression guard: OnCallCurrent returns its own
+        # flask.jsonify(...) Response instead of a plain dict/list (the
+        # response shape depends on group_id), so @blp.response only
+        # gets used for documentation there (per flask_smorest's own
+        # "Response object" short-circuit) - confirms that trick still
+        # produces a real 200 schema rather than silently documenting
+        # nothing.
+        response = client.get("/api/v1/openapi.json")
+        data = response.get_json()
+        current_get = data["paths"]["/api/v1/oncall/current"]["get"]
+        schema_ref = current_get["responses"]["200"]["content"]["application/json"][
+            "schema"
+        ]
+        assert schema_ref["type"] == "array"
+        assert "$ref" in schema_ref["items"]
+
     def test_no_session_cookie_required(self, client):
         # No login performed - the spec itself must stay reachable
         # without a bearer token or a session, same as e.g. GitHub's

@@ -30,6 +30,28 @@ class OnCallRepository:
         return query.order_by(OnCall.start_time).all()
 
     @staticmethod
+    def list_active(group_id: int | None = None) -> list[OnCall]:
+        """On-calls active right now (org_now(), same comparison as
+        OnCall.is_active(), expressed as a SQL predicate since a Python
+        instance method can't be used in a WHERE clause) - backs
+        GET /api/v1/oncall/current. group_id filters via User.group_id
+        (current/live group), same join-through-User convention as every
+        other group-scoped method in this repository - not the
+        OnCall.group_id snapshot column, which exists for a different
+        purpose (automation planner locking)."""
+        from app.utils.helpers.timezone_helpers import org_now
+
+        now = org_now()
+        query = OnCall.query.options(joinedload(OnCall.user)).filter(
+            OnCall.start_time <= now, OnCall.end_time >= now
+        )
+        if group_id is not None:
+            query = query.join(User, OnCall.user_id == User.id).filter(
+                User.group_id == group_id
+            )
+        return query.order_by(OnCall.start_time).all()
+
+    @staticmethod
     def _filtered_query(
         user_id: int | None = None,
         group_id: int | None = None,

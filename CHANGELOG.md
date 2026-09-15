@@ -9,6 +9,34 @@ tag trigger for why.
 
 ## [1.1.1] — 2026-08-27
 
+### Added
+- `GET /api/v1/oncall/current[?group_id=]` - returns the currently
+  active on-call shift(s) (resolved server-side using the org's
+  configured timezone, same comparison as `OnCall.is_active()`),
+  including the on-call user's name/email inline, for monitoring/
+  alerting integrations (e.g. Canopsis) that need "who's on-call right
+  now" without pulling the full on-call list and re-implementing the
+  timezone/active-window logic themselves. Without `group_id`, returns
+  a JSON array (0+ items - more than one only possible in `per_group`
+  on-call scheduling mode); with `group_id`, a single object, either
+  the active shift or `{"active": false}`.
+
+### Changed
+- `start_time`/`end_time` across `/api/v1/oncall/*` (list, detail, and
+  the new `current` endpoint above) are now timezone-aware ISO 8601
+  strings (e.g. `2026-09-11T21:00:00+02:00`, using the org's
+  `default_timezone` `Setting`) instead of a bare, timezone-less
+  string - safer for external integrations, which previously had to
+  assume the org's timezone out-of-band.
+- Docs corrected against actual code, found stale during this cycle's
+  API doc audit: `Docs/api/openapi.yaml`/`Docs/api/API.md` were
+  missing `GET /api/oncall-users`, `group_ids` on `GET /api/shifts`,
+  and the `userId`/`shiftTypeId` reassignment fields on
+  `PATCH /api/shifts/<id>`/`PATCH /api/oncall/<id>`; the on-call PATCH
+  docs also still claimed a hardcoded Friday anchor, stale since the
+  configurable `OnCallAnchorRule` per-group anchor weekday landed.
+  Documentation-only, no behavior change.
+
 ### Fixed
 - Automation "Générer/rafraîchir le planning" could fail outright with
   `'>=' not supported between instances of 'int' and 'dict'` whenever a

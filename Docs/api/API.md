@@ -35,23 +35,27 @@ from the admin form, etc.), see the
 
 | Method | Route | Auth | Description |
 |---|---|---|---|
-| GET | `/api/shifts` | logged in | Calendar events (shifts **+ on-calls + leaves**, despite the name), FullCalendar format. Accepts `start`/`end` query params (ISO date/datetime) for the requested range — used by FullCalendar itself as its dynamic events source, so a schedule generated arbitrarily far out is always reachable. Falls back to a ±180-day window around today if omitted, unparseable, reversed, or wider than 730 days. |
+| GET | `/api/shifts` | logged in | Calendar events (shifts **+ on-calls + leaves**, despite the name), FullCalendar format. Accepts `start`/`end` query params (ISO date/datetime) for the requested range — used by FullCalendar itself as its dynamic events source, so a schedule generated arbitrarily far out is always reachable. Falls back to a ±180-day window around today if omitted, unparseable, reversed, or wider than 730 days. Also accepts a repeated `group_ids` param (`?group_ids=1&group_ids=2`, the calendar's multi-group filter) — omitted/empty means every group. |
 | POST | `/api/shifts` | admin | Creates a shift (`userId`, `shiftTypeId`, `start`, `end?`) |
-| PATCH/PUT | `/api/shifts/<id>` | admin | Moves/resizes (`start`, `end?` — duration kept if `end` is absent) |
+| PATCH/PUT | `/api/shifts/<id>` | admin | Moves/resizes (`start`, `end?` — duration kept if `end` is absent), or reassigns it (`userId?`/`shiftTypeId?`, both optional — sent by the calendar's click-to-edit modal, never by drag/resize) |
 | DELETE | `/api/shifts/<id>` | admin | Deletes |
 | GET | `/api/users` | logged in | Visible users (admin: all; regular user: themselves) |
+| GET | `/api/oncall-users` | logged in | On-call-eligible users (mirrors `/api/users` but scoped to the oncall-eligible group, not the schedule-eligible one) — backs the calendar's on-call-edit modal person picker |
 | GET | `/api/shift-types` | logged in | List of shift types |
 
 Validation rules shared by POST/PATCH `/api/shifts`:
-- Rejected (`400`) if the date falls on a Saturday/Sunday.
+- Rejected (`400`) if the date falls on a Saturday/Sunday (per the target group's configured `weekend_definition` rule, see `Docs/architecture/ARCHITECTURE.md` "Configurable automation rules").
 - Rejected (`400`) if the user already has a shift that day (conflict).
+- PATCH only: rejected (`400`, not `404`) if a given `userId`/`shiftTypeId` reassignment target doesn't exist.
 
-### On-call (`/api/oncall/<id>`)
+### On-call (`/api/oncall/<id>`, `/api/oncall-users`)
 
 | Method | Route | Auth | Description |
 |---|---|---|---|
-| PATCH/PUT | `/api/oncall/<id>` | admin | Moves (`start` must fall on a **Friday**, `end?`) |
+| PATCH/PUT | `/api/oncall/<id>` | admin | Moves (`start` must fall on the on-call anchor weekday configured for the target group — `OnCallAnchorRule`, admin-editable at `/admin/automation/rules`, defaults to Friday but is **not** hardcoded; `end?`), or reassigns it (`userId?`, optional — sent by the click-to-edit modal, never by drag/resize) |
 | DELETE | `/api/oncall/<id>` | admin | Deletes |
+
+PATCH is rejected (`400`, not `404`) if a given `userId` reassignment target doesn't exist.
 
 There is **no** `POST /api/oncall` — creation only happens
 via the `/oncall/add` form (server-rendered), not through the JSON API.
@@ -148,6 +152,16 @@ use the internal `/api/*` API above, session cookie).
   settings as the admin UI (`items_per_page`/`max_per_page`, `/admin/settings`).
   Write support is not planned for v1 — a future enhancement if a
   real need arises, not an oversight.
+- **`GET /api/v1/oncall/current[?group_id=]`**: the currently active
+  on-call shift(s), for monitoring/alerting integrations that need
+  "who's on-call right now" without pulling the full list and
+  re-implementing the timezone/active-window comparison themselves.
+  Without `group_id`: a JSON array (0+ items — more than one only in
+  `per_group` on-call scheduling mode). With `group_id`: a single
+  object, either the active shift or `{"active": false}`. Every
+  `/api/v1/oncall/*` `start_time`/`end_time` (list, detail, and this
+  endpoint) is a timezone-aware ISO 8601 string using the org's
+  `default_timezone` `Setting` (e.g. `2026-09-11T21:00:00+02:00`).
 - **Machine-readable documentation**: `GET /api/v1/openapi.json`, an
   OpenAPI 3.0.3 spec **automatically generated** from the
   marshmallow schemas (`app/api/schemas/`) on every startup — unlike
