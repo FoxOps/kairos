@@ -1,6 +1,6 @@
 # Roadmap
 
-**Current version: 1.1.1** — feature-complete, tested (1930+
+**Current version: 1.1.1** — feature-complete, tested (2000+
 automated tests), and used for real team scheduling.
 
 ## ✅ Done
@@ -31,7 +31,7 @@ automated tests), and used for real team scheduling.
 
 **Automation**
 - Rule-based automatic shift generation (on-call coverage, rotation,
-  weekend handling, minimum staffing)
+  weekend handling, maximum staffing)
 - Automatic rebalancing of shifts and on-calls when a leave is added
 - If a rule can't be satisfied (e.g. no one eligible for on-call
   duty), the affected slot is left unfilled and admins are notified
@@ -51,6 +51,15 @@ automated tests), and used for real team scheduling.
   covers every generation entry point, including the narrower ones
   (filling on-call gaps, refreshing a period, rebalancing after a
   leave) — not just the main "Générer" action
+- A rewritten, pure generation planner (`app/utils/automation/planner/`):
+  computes a plan (a `GenerationRun`) as data first, then applies it
+  atomically, instead of the legacy engine's read-modify-write-as-you-go
+  approach. Dry-run preview always uses it; real generation/refresh/
+  leave-rebalance stay on the legacy engine until an admin opts in via
+  the **Moteur d'automatisation** toggle on `/admin/automation/rules`
+  (off by default — a diagnostic legacy-vs-new comparison mode confirmed
+  parity, and the toggle lets a production rollback happen without a
+  code revert if an issue surfaces post-cutover)
 
 **Access & integration**
 - Session login and SSO/OIDC (Keycloak, Okta, Auth0-compatible
@@ -58,7 +67,10 @@ automated tests), and used for real team scheduling.
 - ICS calendar export (Google Calendar, Outlook, etc.), by token or
   session
 - A read-only public REST API (`/api/v1/*`) with its own
-  service-account tokens, for third-party integrations
+  service-account tokens, for third-party integrations, including
+  `GET /api/v1/oncall/current` for monitoring/alerting integrations
+  that need "who's on-call right now"; on-call datetimes are
+  timezone-aware ISO 8601 strings
 - Outbound notifications to Slack/Discord/Telegram/webhooks (via
   Apprise), plus in-app and email reminders
 - ICS export tokens expire automatically (admin-configurable duration)
@@ -109,11 +121,19 @@ automated tests), and used for real team scheduling.
   → 166s on 4 cores).
 - `CHANGELOG.md` introduced — kept up to date between releases from now
   on, alongside this file.
+- 1.1.1 cycle: a real-browser QA sweep and a round of production bug
+  reports drove a long tail of on-call/rotation-generation fixes (wrong
+  rotation-order epoch on non-"today" generation windows, a
+  `staffing_limits` shape crash, false `rest_after_oncall` blocks, and
+  several rotation-order/coverage bugs specific to mixed
+  shared/per-group scheduling) plus smaller UI/i18n/accessibility fixes
+  — see `CHANGELOG.md`'s `[1.1.1]` entry for the full list.
 
 ## 🔧 In progress
 
 Nothing currently in flight — everything for this cycle is already
-listed under "Done". 1.1.0 is tagged and merging into `main`.
+listed under "Done". 1.1.1 has completed its release-QA pass and is
+being tagged/published.
 
 ## 🔭 Future ideas
 

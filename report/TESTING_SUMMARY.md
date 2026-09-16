@@ -2,11 +2,14 @@
 
 ## 📊 Global Overview
 
-- **Last updated**: August 7, 2026 (1.1.0 release QA protocol pass)
-- **Total number of tests**: 1932 (1082 unit + 818 integration + 32 e2e)
-- **Tests passing**: 1932 ✅
+- **Last updated**: September 16, 2026 (1.1.1 release QA protocol pass)
+- **Total number of tests**: 2004 (1111 unit + 861 integration + 32 e2e)
+- **Tests passing**: 2004 ✅
 - **Tests failing**: 0
-- **Code coverage**: **100%** (`--cov=app`)
+- **Code coverage**: **99%** (`--cov=app`) - the new planner rework
+  (`app/models/generation_run.py`, `app/utils/automation/planner/**`) landed
+  with a handful of uncovered lines (error/edge branches); see
+  `report/1.1.1/BUG_HUNT_1.1.1.md`
 - **Lint (ruff)**: clean - **0 errors**
 - **Types (mypy)**: clean - **0 errors**
 - **Formatting (black)**: compliant

@@ -7,7 +7,7 @@ versions match the bare (no `v` prefix) git tags this project actually
 pushes, e.g. `1.1.0`, not `v1.1.0` — see `.github/workflows/tests.yml`'s
 tag trigger for why.
 
-## [1.1.1] — 2026-08-27
+## [1.1.1] — 2026-09-16
 
 ### Added
 - `GET /api/v1/oncall/current[?group_id=]` - returns the currently
@@ -19,7 +19,11 @@ tag trigger for why.
   timezone/active-window logic themselves. Without `group_id`, returns
   a JSON array (0+ items - more than one only possible in `per_group`
   on-call scheduling mode); with `group_id`, a single object, either
-  the active shift or `{"active": false}`.
+  the active shift or `{"active": false}` - unless more than one
+  on-call is genuinely concurrent within that group, in which case it
+  falls back to the same array shape rather than silently dropping one
+  (**[Bug-hunt pass]** fixed before this endpoint's first release: it
+  originally always returned just the first match).
 
 ### Changed
 - `start_time`/`end_time` across `/api/v1/oncall/*` (list, detail, and
@@ -36,6 +40,12 @@ tag trigger for why.
   docs also still claimed a hardcoded Friday anchor, stale since the
   configurable `OnCallAnchorRule` per-group anchor weekday landed.
   Documentation-only, no behavior change.
+- Automation rules page: "Créneaux obligatoires" section removed and
+  "Effectif minimum/maximum par créneau" is now "Effectif maximum par
+  créneau" - the min/mandatory-shift settings were confusing (they only
+  ever meant "alert if this structurally-guaranteed slot can't be
+  filled", not a real, independently-enforceable staffing minimum), so
+  they were removed rather than clarified.
 
 ### Fixed
 - Generating/previewing on-calls for a period far from the real
@@ -191,14 +201,6 @@ tag trigger for why.
   print could sit unflushed indefinitely. Now flushed explicitly.
 - `/admin/automation` and the automation "Dry Run" preview page had no
   browser tab title, unlike every sibling admin page.
-
-### Changed
-- Automation rules page: "Créneaux obligatoires" section removed and
-  "Effectif minimum/maximum par créneau" is now "Effectif maximum par
-  créneau" - the min/mandatory-shift settings were confusing (they only
-  ever meant "alert if this structurally-guaranteed slot can't be
-  filled", not a real, independently-enforceable staffing minimum), so
-  they were removed rather than clarified.
 
 ## [1.1.0] — 2026-08-07
 
