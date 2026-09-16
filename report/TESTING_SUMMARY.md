@@ -3,8 +3,8 @@
 ## 📊 Global Overview
 
 - **Last updated**: September 16, 2026 (1.1.1 release QA protocol pass)
-- **Total number of tests**: 2004 (1111 unit + 861 integration + 32 e2e)
-- **Tests passing**: 2004 ✅
+- **Total number of tests**: 2008 (1113 unit + 863 integration + 32 e2e)
+- **Tests passing**: 2008 ✅
 - **Tests failing**: 0
 - **Code coverage**: **99%** (`--cov=app`) - the new planner rework
   (`app/models/generation_run.py`, `app/utils/automation/planner/**`) landed
