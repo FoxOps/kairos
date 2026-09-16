@@ -239,8 +239,11 @@ class ShiftRepository:
 
     @staticmethod
     def count_for_group(group_id: int) -> int:
-        """Shift has no group_id column of its own - reachable only via
-        its owning User."""
+        """Shift.group_id is a planner-locking snapshot, not a general
+        group-membership column (see the model's own comment) - this
+        counts by the live/current User.group_id instead, same
+        join-through-User convention as every other group-scoped query
+        in this repository."""
         return (
             Shift.query.join(User, Shift.user_id == User.id)
             .filter(User.group_id == group_id)

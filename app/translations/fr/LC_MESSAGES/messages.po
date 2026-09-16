@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-16 16:47+0200\n"
+"POT-Creation-Date: 2026-09-16 16:58+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: fr <LL@li.org>\n"
@@ -18,12 +18,12 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: app/__init__.py:507 app/routes/auth.py:255
+#: app/__init__.py:508 app/routes/auth.py:255
 #: app/templates/auth/update_profile.html:15
 msgid "Vous devez choisir un nouveau mot de passe avant de continuer."
 msgstr "Vous devez choisir un nouveau mot de passe avant de continuer."
 
-#: app/__init__.py:554
+#: app/__init__.py:555
 msgid "Veuillez vous connecter pour accéder à cette page."
 msgstr "Veuillez vous connecter pour accéder à cette page."
 
@@ -4878,17 +4878,15 @@ msgstr "Moteur d'automatisation"
 msgid ""
 "Nouveau moteur de planification (aperçu \"Dry Run\" déjà basé dessus). Une "
 "fois activé, les actions \"Générer\" et \"Recalculer les shifts\" de la page"
-" Automatisation l'utilisent aussi pour écrire réellement en base. Le "
-"rééquilibrage automatique après une absence continue d'utiliser l'ancien "
-"moteur dans tous les cas. Désactiver ce réglage revient immédiatement à "
-"l'ancien moteur, sans modification de code."
+" Automatisation l'utilisent aussi pour écrire réellement en base, ainsi que "
+"le rééquilibrage automatique après une absence. Désactiver ce réglage "
+"revient immédiatement à l'ancien moteur, sans modification de code."
 msgstr ""
 "Nouveau moteur de planification (aperçu \"Dry Run\" déjà basé dessus). Une "
 "fois activé, les actions \"Générer\" et \"Recalculer les shifts\" de la page"
-" Automatisation l'utilisent aussi pour écrire réellement en base. Le "
-"rééquilibrage automatique après une absence continue d'utiliser l'ancien "
-"moteur dans tous les cas. Désactiver ce réglage revient immédiatement à "
-"l'ancien moteur, sans modification de code."
+" Automatisation l'utilisent aussi pour écrire réellement en base, ainsi que "
+"le rééquilibrage automatique après une absence. Désactiver ce réglage "
+"revient immédiatement à l'ancien moteur, sans modification de code."
 
 #: app/templates/admin/automation/rules.html:90
 msgid "Utiliser le nouveau moteur pour la génération réelle"

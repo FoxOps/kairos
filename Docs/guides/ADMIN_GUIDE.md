@@ -1,6 +1,6 @@
 # 🛡️ Administrator Guide - Kairos
 
-> **Version**: 1.1.0 | **Last updated**: July 2026
+> **Version**: 1.1.1 | **Last updated**: September 2026
 > **Audience**: Kairos administrators only
 
 ---
@@ -654,16 +654,19 @@ to use that page, including per-group overrides.
   are available that day).
 - Which days count as "weekend" (excluded from generation) is set by
   the **Définition du week-end** rule, defaulting to Saturday/Sunday.
-- Per-`ShiftType` minimum/maximum headcount is set by the **Effectif
-  minimum/maximum par créneau** rule (empty = no limit).
-- Slots that must never go unfilled are set by the **Créneaux
-  obligatoires** rule — an unfilled one raises a distinct `[ALERT]`,
-  still never blocking generation.
+- Per-`ShiftType` maximum headcount is set by the **Effectif maximum
+  par créneau** rule (empty = no limit). There is no minimum/mandatory
+  counterpart — a separate min/mandatory-coverage layer existed briefly
+  but was removed: coverage for the rotation/on-call role slots is
+  already guaranteed by the generation algorithm itself, and the extra
+  layer only produced confusing, occasionally-false "unfilled" alerts.
 - Minimum rest hours between an on-call ending and a shift starting is
   set by the **Repos minimum après une astreinte** rule.
 - Whether a shift/on-call overlapping an existing on-call/shift for the
   same user is blocked outright is set by the **Chevauchement shift /
-  astreinte** rule (on by default, unlike the others above).
+  astreinte** rule (off by default — a week-long on-call naturally
+  overlaps normal shift hours, so that's not treated as a conflict
+  unless a group opts into the stricter behavior).
 
 ### Configurable Automation Rules
 
@@ -692,6 +695,17 @@ one big form).
 This covers the main "Générer / rafraîchir le planning" action, gap
 filling, period refresh, and the automatic rebalance after a leave is
 added — every generation entry point.
+
+- **Moteur d'automatisation** (its own card, also org-wide, not
+  group-scoped): a toggle for a rewritten generation engine introduced
+  in 1.1.1 (computes a plan as data first, then applies it atomically,
+  instead of the previous read-modify-write-as-you-go approach). **Off
+  by default** — real "Générer"/"Rafraîchir" and the automatic
+  leave-rebalance keep using the previous engine until this is
+  switched on; flipping it back off rolls back without needing a
+  redeploy if an issue surfaces. The "Aperçu (Dry Run)" preview always
+  uses the new engine regardless of this toggle, since a diagnostic
+  comparison confirmed it matches the previous engine's output.
 
 ---
 
@@ -1133,11 +1147,15 @@ psql kairos -c "VACUUM ANALYZE;"
 
 **Solution**: Use the format `2026-06-15`.
 
-#### Error: "On-call must start on a Friday"
+#### Error: "The on-call must start on the day configured for this group"
 
-**Cause**: You are trying to create an on-call period that doesn't start on a Friday.
+**Cause**: You are trying to create an on-call period that doesn't start on
+the weekday configured by the group's **Ancrage de la semaine
+d'astreinte** rule (Friday by default, but admin-configurable per group —
+see "Configurable Automation Rules").
 
-**Solution**: Select a Friday as the start date.
+**Solution**: Select that group's configured start day (check
+**Admin > Automation > Règles** if unsure which day applies).
 
 #### Error: "Incorrect email or password"
 

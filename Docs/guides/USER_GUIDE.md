@@ -2,7 +2,7 @@
 
 > **Version**: 1.0.0 - User Documentation
 > **Last updated**: June 2026
-> **Application**: Kairos v1.1.0 (`app/utils/health.py::APP_VERSION_DEFAULT`, also shown at `/version` and in the app footer)
+> **Application**: Kairos v1.1.1 (`app/utils/health.py::APP_VERSION_DEFAULT`, also shown at `/version` and in the app footer)
 
 ---
 
@@ -542,7 +542,8 @@ deletion" further below in this guide.
 
 An on-call period is a time during which a user is responsible and reachable outside normal working hours. In Kairos:
 
-- On-call periods start **on Friday at 9:00 PM**
+- On-call periods start **on Friday at 9:00 PM** by default (your
+  administrator can configure a different weekday/time per group)
 - On-call periods end **the following Friday at 7:00 AM** (i.e. 7 days minus 14 hours)
 - Every eligible user can be on call
 
@@ -568,7 +569,8 @@ An on-call period is a time during which a user is responsible and reachable out
 1. Go to **On-Call** > **Add an on-call period**
 2. Fill in the form:
    - **User** (required): Select an eligible user (member of a group participating in on-call)
-   - **Start date** (required): **Must be a Friday** (the application checks this)
+   - **Start date** (required): **Must be your group's configured start
+     day** (Friday by default; the application checks this)
 3. Click **"Save"**
 
 > 💡 **Tip**: The application automatically calculates the end date (7 days after Friday 9:00 PM, i.e. the following Friday at 7:00 AM).
@@ -844,10 +846,12 @@ Kairos offers a powerful automation system to automatically generate:
 
 #### Automatically generating on-call periods and shifts
 
-There is no separate "Shifts" automation page - shift generation is not
-independently configurable (no per-day/per-shift-type headcount
-setting). A single **Full generation** screen generates both the
-on-call rotation and the shifts that follow from it in one operation:
+There is no separate "Shifts" automation page - both the on-call
+rotation and the shifts that follow from it are generated together by
+a single **Full generation** screen (the underlying business rules,
+including per-shift-type maximum headcount, are configurable by an
+administrator on a separate page - see the Administrator Guide's
+"Configurable Automation Rules" section):
 
 1. Go to **Admin** > **Automation** > **Full generation**
 2. Configure the on-call rotation order (see above)
@@ -873,25 +877,33 @@ If you have manually modified on-call periods and want to recalculate shifts:
 
 ### Default business rules
 
-Kairos uses the following rules by default:
+Kairos uses the following rules by default - every one of them is
+admin-editable at **Admin > Automation > Règles**, per group if needed
+(see the Administrator Guide's "Configurable Automation Rules" section
+for the full list, including two not repeated here: minimum rest hours
+after an on-call, and whether an overlapping shift/on-call is blocked):
 
 #### For on-call periods:
 - Rotation in the order of the list of eligible users
-- Each on-call period lasts 7 days (from Friday 9:00 PM to the following Friday 7:00 AM)
+- Each on-call period lasts 7 days (from Friday 9:00 PM to the following
+  Friday 7:00 AM by default - the start weekday/hour and end hour are
+  admin-configurable per group)
 - Minimum 2-week gap required between two on-calls for the same user
   (stronger than "not two weeks in a row": after finishing an on-call, a
   user is skipped for the next rotation too and can only return on the
-  third one)
+  third one) - the gap length is also admin-configurable
 
-#### For shifts (fixed rules, not configurable through the UI):
+#### For shifts (defaults - see above for where to change them):
 - The 1pm-9pm slot is reserved for that week's on-call person, if they
   belong to a schedule group
 - Slot rotation: whoever was on the 1pm-9pm slot one week must be on the
   7am-3pm slot the following week
-- Everyone else defaults to the 9am-5pm slot (several people can share it)
+- Everyone else defaults to the 9am-5pm slot (several people can share
+  it, up to an optional admin-configured maximum headcount)
 - If only 2 people are available on a given day, the one who is *not*
   on-call is put on the 7am-3pm slot
-- Monday to Friday only
+- Monday to Friday only (which days count as "weekend" is also
+  admin-configurable)
 - Respects leave and on-call periods (no shift is generated for a user on
   leave that day)
 

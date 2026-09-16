@@ -17,6 +17,7 @@ erDiagram
     USER ||--o{ AUDIT_LOG : "actor (nullable)"
     SHIFT_TYPE ||--o{ SHIFT : "defines the slot for"
     GROUP ||--o{ AUTOMATION_RULE : "override scope (nullable group_id)"
+    USER ||--o{ GENERATION_RUN : "actor (nullable)"
 
     GROUP {
         int id PK
@@ -107,6 +108,8 @@ erDiagram
         int id PK
         int user_id FK
         int shift_type_id FK
+        int group_id "snapshot at creation, not a live FK - planner locking/scoping only"
+        bool locked "excludes this row from planner regeneration"
         datetime start_time "indexed"
         datetime end_time "indexed"
         date date "indexed"
@@ -117,8 +120,22 @@ erDiagram
     ON_CALL {
         int id PK
         int user_id FK
+        int group_id "snapshot at creation, not a live FK - planner locking/scoping only"
+        bool locked "excludes this row from planner regeneration"
         datetime start_time "indexed"
         datetime end_time "indexed"
+        datetime created_at
+        datetime updated_at
+    }
+
+    GENERATION_RUN {
+        int id PK
+        date start_date
+        date end_date
+        string input_fingerprint "sha256 hex of the SchedulePlan's input"
+        string outcome "applied / failed / partial"
+        text error_detail "nullable"
+        int actor_id FK "nullable"
         datetime created_at
         datetime updated_at
     }
@@ -258,3 +275,19 @@ erDiagram
   `(resource_type, resource_id)` in addition to the simple indexes on
   `actor_id`/`action`. Single write point: `AuditService.log()` — never
   insert directly via the repository from a route/service.
+- **`Shift.group_id`/`OnCall.group_id`** (1.1.1): a point-in-time
+  snapshot taken at creation, **not** a live FK kept in sync with the
+  user's current group — a user's `group_id` can change later without
+  retroactively changing which scope an already-generated row belongs
+  to. Exists solely for the new pure planner's own locking/scoping
+  (`app/utils/automation/planner/`); every group-membership
+  query/filter/count elsewhere in the codebase still joins through the
+  live `User.group_id` (same convention as before this column existed).
+- **`GenerationRun`** (1.1.1): one row per attempted apply of a new
+  planner `SchedulePlan` (see `AutomationApplyService.apply_plan()`),
+  not an `AuditLog` substitute — `AuditService.log()` still fires
+  separately after a successful commit. Exists so a support engineer
+  can correlate "did this apply run against a stale plan"
+  (`input_fingerprint`) and see why an apply failed (`error_detail`),
+  independent of the general-purpose audit log. `actor_id` nullable,
+  same cautious-default reasoning as `AuditLog.actor_id` above.

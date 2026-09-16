@@ -492,8 +492,10 @@ category, distinct from the pre-existing `[WARN]` "unfilled slot" case; stays wi
 "leave unfilled + notify, never block" philosophy, see "Automation" in the Done section of
 `ROADMAP.md` — no new blocking mechanism), `rest_after_oncall` (`min_rest_hours` between a user's
 on-call ending and a shift starting), and `oncall_shift_overlap` (blocks a shift/on-call overlapping
-the same user's existing on-call/shift — **on by default**, unlike the other 3, since an unblocked
-overlap is a data-integrity problem, not a preference). The last 3 are wired into `can_add_shift()`/
+the same user's existing on-call/shift — on by default at introduction, since an unblocked
+overlap looked like a data-integrity problem, not a preference; **flipped to off by default in the
+1.1.1 automation-engine-rework cycle** — a week-long on-call naturally overlaps normal shift hours,
+so that's expected, not a conflict, unless a group opts back into the stricter behavior). The last 3 are wired into `can_add_shift()`/
 `can_add_oncall()` (`app/utils/helpers/common_helpers.py`, via `check_shift_rule_violations()`/
 `check_oncall_rule_violations()`), resurrecting `_has_overlapping_oncall`/`_get_overlapping_shift`/
 `_get_overlapping_oncall` — 3 helpers that existed but were never called from production code before
@@ -554,10 +556,13 @@ Unicode ranges, same severity mapping as before.
 control whether generation pools every eligible `Group` into one shared rotation (the only behavior
 that ever existed before this feature) or runs one independent generation pass per eligible `Group`
 — separately for shifts and for on-calls, since a team's on-call rotation doesn't have to be scoped
-the same way as its shift rotation. `AutomationAdminService.generate_full()` branches on each
-independently: `oncall_scheduling_mode="per_group"` loops over every on-call-eligible `Group`;
-`shift_scheduling_mode="per_group"` loops over every schedule-eligible `Group`; either one calls the
-*same* single-group code path once per group and concatenates results — the core solver
+the same way as its shift rotation. On the **legacy engine**
+(`AutomationAdminService._generate_full_legacy`/`_refresh_shifts_legacy` — still the default
+production path, see "the new pure planner" below for the newer alternative),
+`generate_full()` branches on each independently: `oncall_scheduling_mode="per_group"` loops
+over every on-call-eligible `Group`; `shift_scheduling_mode="per_group"` loops over every
+schedule-eligible `Group`; either one calls the *same* single-group code path once per group and
+concatenates results — the core solver
 (`_solve_max_filled_weeks`, `AvailabilityIndex`, `determine_shift_for_user`'s rule logic) is
 untouched, only the query layer that decides "who is eligible" gained an optional `group` parameter
 (threaded through `get_users_in_schedule_groups`/`get_available_users_for_date`/`get_oncall_for_date`/
@@ -624,8 +629,10 @@ unlike the period-wide generation entry points. The main calendar also gained a 
 `/admin/automation` (`app/utils/automation/status.py::get_automation_status()`) shows both an
 org-wide summary (unchanged) and a per-group breakdown card for every `Group`
 (`GroupRepository.get_all()`) — `oncall_count`/`shift_count` scoped via
-`OnCallRepository.count_for_group()`/`ShiftRepository.count_for_group()` (joined through
-`User.group_id`, since neither model has its own `group_id` column), `oncall_eligible_users`/
+`OnCallRepository.count_for_group()`/`ShiftRepository.count_for_group()` (joined through the live
+`User.group_id`, same convention as every other group-scoped query in these repositories — not the
+`group_id` snapshot column `Shift`/`OnCall` gained in 1.1.1, which exists for a different purpose,
+see "The new pure planner engine" below), `oncall_eligible_users`/
 `shift_eligible_users` via the same group-aware helpers used by generation. Computed
 unconditionally regardless of `shift_scheduling_mode`/`oncall_scheduling_mode` — a `Shift`/`OnCall`
 row's group membership is real independent of how generation currently pools groups together, so
@@ -639,6 +646,45 @@ every other group-aware helper in this module. The page's "Aide" section was als
 mention the rule engine and the two independent scheduling modes — it used to hardcode "13h-21h
 pour l'astreinte" as if that were fixed, which stopped being true once `shift_slots` became
 admin-configurable.
+
+### The new pure planner engine
+
+A from-scratch rewrite of the generation algorithm, landed across 7 phases in the 1.1.1 cycle
+(`app/utils/automation/planner/`: `adapters.py`, `diff.py`, `fairness.py`, `oncall_planner.py`,
+`plan_schedule.py`, `presentation.py`, `rotation.py`, `rule_resolution.py`, `shift_planner.py`,
+`types.py`). Computes a plan as **data** first (a `SchedulePlan`: proposed shifts/on-calls, a diff
+against current DB state, messages, an `input_fingerprint`), then applies it separately and
+atomically via `AutomationApplyService.apply_plan()` — the opposite of the legacy engine
+(`AdvancedShiftAutomation`/`OnCallAutomation`)'s read-modify-write-as-you-go approach. `GenerationRun`
+(`app/models/generation_run.py`) records one row per apply attempt (`outcome`: `"applied"`/
+`"failed"`/`"partial"`, `input_fingerprint`, `error_detail`) — not an audit-trail substitute
+(`AuditService.log()` still fires separately after a successful commit), this exists so a support
+engineer can correlate "did apply run against a stale plan" independent of the general-purpose
+audit log. `Shift`/`OnCall` also gained a `locked` column (`app/utils/automation/planner/`
+excludes a locked row from its candidate pool entirely and never reassigns it — `PlanningRequest.
+locked_shifts` — no admin UI sets this yet, so it's always `False`/a no-op today) and a `group_id`
+column — **not** a general group-membership field (group counting/filtering everywhere else in
+this codebase still joins through the live `User.group_id`, see `/admin/automation`'s status page
+above) but a point-in-time snapshot the planner uses for its own scoping/locking, since a user's
+`group_id` is a live, mutable FK that could otherwise retroactively change which scope an
+already-generated row belongs to.
+
+**Still off by default in production** — this is not a completed cutover. `SettingsService.
+get_new_automation_engine_enabled()` (a `Setting`, admin-editable via the "Moteur d'automatisation"
+card on `/admin/automation/rules`, no env var fallback, same brand-new-concept pattern as
+`default_language`) gates 3 call sites: `AutomationAdminService.generate_full()`'s `dry_run=False`
+branch, `refresh_shifts()`, and (phase 7 follow-up) `AdvancedShiftAutomation.
+rebalance_after_leave()`'s `dry_run=False` call — all 3 fall back to the legacy engine
+(`_generate_full_legacy`/`_refresh_shifts_legacy`/the pre-existing per-day/per-section SAVEPOINT
+code) when the toggle is off, which is the default, so **the legacy engine is still what actually
+runs in production today**. The one exception: `generate_full()`'s `dry_run=True` branch (the
+"Aperçu (Dry Run)" preview) always uses the new planner regardless of this toggle (phase 6) — a
+diagnostic legacy-vs-new comparison mode (`scripts/compare_automation_engines.py`, phase 4,
+deliberately diagnostic-only: disagreement between the two engines is the point of the tool, not a
+failure, since the legacy engine's own dry-run preview was already known to diverge from what real
+generation produces) confirmed the new planner's preview is trustworthy even before an admin opts
+into it for real writes. Flipping the toggle back off rolls back to legacy immediately, with no
+code revert needed, if a production issue surfaces post-cutover.
 
 ### In-app notifications
 

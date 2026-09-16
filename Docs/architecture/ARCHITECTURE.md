@@ -102,7 +102,9 @@ app/
 │                          # AppNotification, AuditLog, NotificationTarget (outbound
 │                          # Slack/Discord/Telegram/webhook destinations, see
 │                          # AppriseNotificationService), ServiceAccount (bearer
-│                          # credentials for the public REST API, see app/api/)
+│                          # credentials for the public REST API, see app/api/),
+│                          # GenerationRun (one row per attempted apply of a new-
+│                          # planner SchedulePlan - see "new pure planner" in CLAUDE.md)
 ├── repositories/           # UserRepository, GroupRepository, ShiftRepository,
 │                          # ShiftTypeRepository, OnCallRepository, LeaveRepository,
 │                          # SwapRequestRepository, AppNotificationRepository,
@@ -126,20 +128,26 @@ app/
 │                          # SwapService on swap events), AppriseNotificationService
 │                          # (outbound Slack/Discord/Telegram/webhook via Apprise),
 │                          # ServiceAccountService, BackupService (wraps
-│                          # scripts/backup_database.py for /admin/backups)
+│                          # scripts/backup_database.py for /admin/backups),
+│                          # AutomationApplyService (applies a new-planner
+│                          # SchedulePlan atomically, writes GenerationRun)
 ├── routes/                 # auth.py, main.py + {dashboard,shift,oncall,leave,
 │                          # swap,notification}_routes.py, admin.py +
 │                          # admin_{user,group,shift_type,automation,automation_rules,
 │                          # backup,swap,settings,audit,notification_target,
 │                          # service_account}_routes.py, export.py
 ├── utils/
-│   ├── automation/         # AdvancedShiftAutomation (single shift generation
-│   │                      # engine), OnCallAutomation, status, rules/ (one class
+│   ├── automation/         # AdvancedShiftAutomation (legacy shift generation
+│   │                      # engine, still the default production path),
+│   │                      # OnCallAutomation, status, rules/ (one class
 │   │                      # per configurable rule type - weekend_definition,
 │   │                      # oncall_anchor, oncall_spacing, oncall_shift_overlap,
 │   │                      # rest_after_oncall, shift_slots, staffing_limits
 │   │                      # (max-only) - each interpreting one AutomationRule's
-│   │                      # params, base.py defines the shared resolve() shape)
+│   │                      # params, base.py defines the shared resolve() shape),
+│   │                      # planner/ (a newer pure-planner rewrite of the same
+│   │                      # generation algorithm, opt-in via a Setting - see
+│   │                      # "The new pure planner engine" in CLAUDE.md)
 │   ├── export/              # ICS generation (icalendar), zoneinfo (not pytz)
 │   ├── helpers/             # common_helpers.py (can_add_shift/leave/oncall,
 │   │                      # date formatting/parsing, Jinja filters

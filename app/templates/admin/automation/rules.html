@@ -80,7 +80,7 @@
         <div class="card-body gap-2">
             <h2 class="font-semibold flex items-center gap-2"><i class="fas fa-triangle-exclamation text-warning" aria-hidden="true"></i> {{ _("Moteur d'automatisation") }}</h2>
             <p class="text-sm text-base-content/70">
-                {{ _("Nouveau moteur de planification (aperçu \"Dry Run\" déjà basé dessus). Une fois activé, les actions \"Générer\" et \"Recalculer les shifts\" de la page Automatisation l'utilisent aussi pour écrire réellement en base. Le rééquilibrage automatique après une absence continue d'utiliser l'ancien moteur dans tous les cas. Désactiver ce réglage revient immédiatement à l'ancien moteur, sans modification de code.") }}
+                {{ _("Nouveau moteur de planification (aperçu \"Dry Run\" déjà basé dessus). Une fois activé, les actions \"Générer\" et \"Recalculer les shifts\" de la page Automatisation l'utilisent aussi pour écrire réellement en base, ainsi que le rééquilibrage automatique après une absence. Désactiver ce réglage revient immédiatement à l'ancien moteur, sans modification de code.") }}
             </p>
             <form method="POST" action="{{ url_for('admin.automation_rules_dashboard') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
