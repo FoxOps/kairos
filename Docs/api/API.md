@@ -158,7 +158,10 @@ use the internal `/api/*` API above, session cookie).
   re-implementing the timezone/active-window comparison themselves.
   Without `group_id`: a JSON array (0+ items — more than one only in
   `per_group` on-call scheduling mode). With `group_id`: a single
-  object, either the active shift or `{"active": false}`. Every
+  object, either the active shift or `{"active": false}` — unless more
+  than one on-call is genuinely concurrent within that group (a rare
+  admin-created overlap), in which case it falls back to the same
+  array shape rather than silently dropping one. Every
   `/api/v1/oncall/*` `start_time`/`end_time` (list, detail, and this
   endpoint) is a timezone-aware ISO 8601 string using the org's
   `default_timezone` `Setting` (e.g. `2026-09-11T21:00:00+02:00`).

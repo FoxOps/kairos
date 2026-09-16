@@ -105,15 +105,18 @@ class OnCallCurrent(MethodView):
     """Currently active on-call shift(s), resolved using the org's
     configured timezone (OnCallRepository.list_active(), same comparison
     as OnCall.is_active()). The response shape genuinely changes with
-    group_id (array vs. single object vs. {"active": false}), which
-    doesn't fit flask-smorest's one-schema-serializes-the-return-value
-    model - the view builds+returns its own flask.jsonify(...) Response
-    instead of a plain dict/list, and @blp.response below is used purely
-    for OpenAPI documentation: per flask_smorest.Blueprint.response's
-    own docstring, "If the decorated
-    function returns a Response object, the schema and status_code
-    parameters are only used to document the resource" (no re-dump, no
-    interference with the shape actually sent)."""
+    group_id (array vs. single object vs. {"active": false} - and, since
+    a real fix during 1.1.1 release QA, back to an array if more than one
+    on-call is genuinely concurrent within the given group, e.g. an
+    admin-created overlap: the endpoint never silently drops a real
+    active on-call just because group_id was given), which doesn't fit
+    flask-smorest's one-schema-serializes-the-return-value model - the
+    view builds+returns its own flask.jsonify(...) Response instead of a
+    plain dict/list, and @blp.response below is used purely for OpenAPI
+    documentation: per flask_smorest.Blueprint.response's own docstring,
+    "If the decorated function returns a Response object, the schema and
+    status_code parameters are only used to document the resource" (no
+    re-dump, no interference with the shape actually sent)."""
 
     @limiter.limit(API_RATE_LIMIT, key_func=service_account_key)
     @blp.arguments(OnCallCurrentQueryArgsSchema, location="query")
@@ -124,9 +127,13 @@ class OnCallCurrent(MethodView):
             "group_id omitted: JSON array of every currently active "
             "on-call shift (0+ items - more than one only possible in "
             "per_group on-call scheduling mode). group_id given: a "
-            "single object of this same per-item shape - either the "
-            'active shift for that group, or just {"active": false} '
-            "when nothing is currently active for it."
+            "single object of this same per-item shape - the active "
+            'shift for that group, or just {"active": false} when '
+            "nothing is currently active for it - unless more than one "
+            "on-call is genuinely concurrent within that group (a rare "
+            "admin-created overlap), in which case it falls back to the "
+            "same array shape as the group_id-omitted case rather than "
+            "silently dropping one."
         ),
         example=[_CURRENT_ACTIVE_EXAMPLE],
     )
@@ -136,7 +143,15 @@ class OnCallCurrent(MethodView):
         if group_id is not None:
             if not oncalls:
                 return jsonify({"active": False})
-            return jsonify(_serialize_current(oncalls[0]))
+            if len(oncalls) == 1:
+                return jsonify(_serialize_current(oncalls[0]))
+            # More than one genuinely-concurrent on-call in the same
+            # group (e.g. an admin-created overlap) - found during
+            # 1.1.1 release QA: silently returning only oncalls[0]
+            # would drop real data from a monitoring-facing endpoint.
+            # Fall back to the same array shape as the no-group_id
+            # case rather than guessing which one is "the" answer.
+            return jsonify([_serialize_current(oc) for oc in oncalls])
         return jsonify([_serialize_current(oc) for oc in oncalls])
 
 

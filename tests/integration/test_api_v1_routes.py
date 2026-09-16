@@ -7,7 +7,7 @@ Bearer header), exercising auth + serialization + pagination together.
 from datetime import datetime
 
 from app import db
-from app.models import Group
+from app.models import Group, OnCall
 
 
 class TestShiftsEndpoint:
@@ -112,6 +112,44 @@ class TestOnCallCurrentEndpoint:
         assert data["active"] is True
         assert data["id"] == test_oncall.id
         assert data["user_id"] == test_user.id
+
+    def test_two_concurrent_actives_same_group_returns_array(
+        self, service_account_client, test_app, test_oncall, test_user
+    ):
+        """Found during 1.1.1 release QA: with group_id given, only
+        oncalls[0] was ever returned - a second genuinely-concurrent
+        on-call in the same group (e.g. an admin-created overlap) was
+        silently dropped from the response, exactly the kind of data
+        loss this monitoring-facing endpoint exists to avoid."""
+        from werkzeug.security import generate_password_hash
+
+        from app.models import User
+
+        other_user = User(
+            name="Other User",
+            email="other-oncall@test.com",
+            password_hash=generate_password_hash("test123"),
+            is_admin=False,
+            group_id=test_user.group_id,
+        )
+        db.session.add(other_user)
+        db.session.commit()
+
+        overlapping = OnCall(
+            user_id=other_user.id,
+            start_time=test_oncall.start_time,
+            end_time=test_oncall.end_time,
+        )
+        db.session.add(overlapping)
+        db.session.commit()
+
+        response = service_account_client.get(
+            f"/api/v1/oncall/current?group_id={test_user.group_id}"
+        )
+        assert response.status_code == 200
+        data = response.get_json()
+        assert isinstance(data, list)
+        assert {item["user_id"] for item in data} == {test_user.id, other_user.id}
 
     def test_active_other_group_returns_inactive(
         self, service_account_client, test_app, test_oncall
