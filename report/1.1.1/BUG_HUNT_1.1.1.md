@@ -206,6 +206,24 @@ summarized here since most were one-line corrections):
   (`scripts/compare_automation_engines.py`) exists specifically because
   the two engines are different implementations by construction and can
   diverge — not a bug, the documented purpose of that tool.
+- **`handle_two_users_case()` appearing to give every user the same
+  "07h-15h" slot on every day, initially flagged as a severe
+  regression.** First smoke-test pass hit this via an artificial
+  sequence: generate on-calls/shifts for a single user only (leaving
+  the surrounding month with no on-call coverage at all), add a second
+  user afterward, then add a leave — the ±30-day automatic rebalance
+  window landed almost entirely on days with no on-call holder at all,
+  and the 2-user role-split code path (correctly) has no defined
+  behavior for "2 available users, nobody on-call that day," falling
+  back to 07h-15h for both. **Retested end-to-end from a clean 2-user
+  setup** (both users present before the first generation, normal
+  on-call coverage throughout): the 13h-21h/07h-15h split works
+  correctly for every day, including through a leave-triggered
+  rebalance. Not a regression — confirmed by re-running the full
+  smoke-test checklist start to finish a second time. The narrow
+  "2 users, no on-call active that day" fallback behavior is still
+  worth a follow-up decision (split 07h-15h/09h-17h instead of doubling
+  up?) but isn't release-blocking and wasn't introduced this cycle.
 
 ## Verdict
 
@@ -214,11 +232,16 @@ summarized here since most were one-line corrections):
 — 4 from the automated multi-agent pass and 1 (the highest-severity one)
 from manual real-browser smoke testing, underscoring why that step stays
 manual/real-browser rather than something the automated pass alone can
-catch. 2 additional
-plausible-but-narrow findings documented and deliberately deferred —
-both require the new planner engine to be turned on, which it isn't by
-default in production, so current release risk is zero; both are
-tracked here for whoever eventually flips that toggle to default-on. A
-double-digit set of documentation staleness findings (architecture docs,
-admin/user guides, one in-app UI string) fixed alongside. No blockers
-for the 1.1.1 release.
+catch. 2 more small fixes (stale min/mandatory-staffing text on the
+automation dashboard, a corrupted/duplicated `en.po` translation) found
+and fixed during a full second smoke-test redo requested to double-check
+the release. 2 additional plausible-but-narrow findings documented and
+deliberately deferred — both require the new planner engine to be turned
+on, which it isn't by default in production, so current release risk is
+zero; both are tracked here for whoever eventually flips that toggle to
+default-on. One initially-alarming finding (2-user shift assignment
+appearing broken) turned out to be a false alarm from an artificial
+repro sequence, not a real regression — confirmed via a clean retest,
+see above. A double-digit set of documentation staleness findings
+(architecture docs, admin/user guides, in-app UI strings) fixed
+alongside. No blockers for the 1.1.1 release.
