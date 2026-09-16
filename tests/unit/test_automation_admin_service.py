@@ -13,13 +13,39 @@ class TestSaveRotationOrder:
         structurally-dead-except-via-mock tests."""
         from app.models import AutomationConfig
 
-        def _raise(rotation_order):
+        def _raise(rotation_order, commit=True):
             raise RuntimeError("boom")
 
         monkeypatch.setattr(AutomationConfig, "set_rotation_order", _raise)
 
         error = AutomationAdminService.save_rotation_order([1, 2, 3])
         assert error == "boom"
+
+    def test_epoch_write_rolled_back_when_order_write_fails(
+        self, test_app, monkeypatch
+    ):
+        """Found during 1.1.1 release QA: set_rotation_epoch() and
+        set_rotation_order() each used to auto-commit independently -
+        a failure on the second write left the epoch durably persisted
+        without its matching order, silently breaking the invariant
+        the whole rotation-offset feature depends on. Both must now
+        land in the same transaction."""
+        from datetime import date
+
+        from app.models import AutomationConfig
+
+        AutomationConfig.set_rotation_epoch(date(2020, 5, 1))
+
+        def _raise(rotation_order, commit=True):
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr(AutomationConfig, "set_rotation_order", _raise)
+
+        error = AutomationAdminService.save_rotation_order(
+            [1, 2, 3], reference_date=date(2026, 1, 1)
+        )
+        assert error == "boom"
+        assert AutomationConfig.get_rotation_epoch() == date(2020, 5, 1)
 
     def test_returns_none_on_success(self, test_app):
         error = AutomationAdminService.save_rotation_order([])

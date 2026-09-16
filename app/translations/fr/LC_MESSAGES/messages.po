@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-08-28 01:55+0200\n"
+"POT-Creation-Date: 2026-09-16 16:47+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: fr <LL@li.org>\n"
@@ -18,10 +18,14 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: app/__init__.py:492 app/routes/auth.py:255
+#: app/__init__.py:507 app/routes/auth.py:255
 #: app/templates/auth/update_profile.html:15
 msgid "Vous devez choisir un nouveau mot de passe avant de continuer."
 msgstr "Vous devez choisir un nouveau mot de passe avant de continuer."
+
+#: app/__init__.py:554
+msgid "Veuillez vous connecter pour accéder à cette page."
+msgstr "Veuillez vous connecter pour accéder à cette page."
 
 #: app/auth/decorators.py:44
 msgid "Accès refusé : vous devez être administrateur."
@@ -697,7 +701,7 @@ msgid "Aucune astreinte sélectionnée."
 msgstr "Aucune astreinte sélectionnée."
 
 #: app/routes/oncall_routes.py:202 app/routes/oncall_routes.py:225
-#: app/services/oncall_service.py:162
+#: app/services/oncall_service.py:166
 msgid "Astreinte non trouvée"
 msgstr "Astreinte non trouvée"
 
@@ -749,7 +753,7 @@ msgstr "Aucun shift sélectionné."
 msgid "Données manquantes"
 msgstr "Données manquantes"
 
-#: app/routes/shift_routes.py:274 app/services/oncall_service.py:167
+#: app/routes/shift_routes.py:274 app/services/oncall_service.py:171
 #: app/services/shift_service.py:197
 msgid "Utilisateur non trouvé"
 msgstr "Utilisateur non trouvé"
@@ -1071,7 +1075,7 @@ msgstr "Le rappel d'astreinte pour %(email)s n'a pas pu être envoyé."
 msgid "L'astreinte doit commencer le jour configuré pour ce groupe."
 msgstr "L'astreinte doit commencer le jour configuré pour ce groupe."
 
-#: app/services/oncall_service.py:67
+#: app/services/oncall_service.py:71
 msgid ""
 "Impossible d'ajouter cette astreinte (période déjà couverte ou congé sur la "
 "période)."
@@ -1079,16 +1083,16 @@ msgstr ""
 "Impossible d'ajouter cette astreinte (période déjà couverte ou congé sur la "
 "période)."
 
-#: app/services/oncall_service.py:179
+#: app/services/oncall_service.py:183
 msgid "L'astreinte doit commencer le jour configuré pour ce groupe"
 msgstr "L'astreinte doit commencer le jour configuré pour ce groupe"
 
-#: app/services/oncall_service.py:193
+#: app/services/oncall_service.py:197
 #, python-format
 msgid "Une astreinte existe déjà pour %(name)s pendant cette période"
 msgstr "Une astreinte existe déjà pour %(name)s pendant cette période"
 
-#: app/services/oncall_service.py:205
+#: app/services/oncall_service.py:209
 #, python-format
 msgid "%(name)s est en congé pendant cette période"
 msgstr "%(name)s est en congé pendant cette période"

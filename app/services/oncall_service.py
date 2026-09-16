@@ -51,14 +51,18 @@ class OnCallService:
         """
         from app.utils.automation.rules import OnCallAnchorRule
 
-        anchor_weekday = OnCallAnchorRule.resolve(group=user.group)["weekday"]
-        if start_date.weekday() != anchor_weekday:
+        anchor = OnCallAnchorRule.resolve(group=user.group)
+        if start_date.weekday() != anchor["weekday"]:
             return None, _(
                 "L'astreinte doit commencer le jour configuré pour ce groupe."
             )
 
-        start_time = datetime.combine(start_date, datetime.min.time()).replace(hour=21)
-        end_time = start_time + timedelta(days=7, hours=-14)
+        start_time = datetime.combine(start_date, datetime.min.time()).replace(
+            hour=anchor["start_hour"]
+        )
+        end_time = datetime.combine(
+            start_date + timedelta(days=7), datetime.min.time()
+        ).replace(hour=anchor["end_hour"])
 
         if not can_add_oncall(user, start_time, end_time):
             return (

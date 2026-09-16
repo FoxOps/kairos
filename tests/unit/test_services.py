@@ -709,6 +709,29 @@ class TestOnCallService:
         assert oncall is not None
         assert oncall.start_time.hour == 21
 
+    def test_add_oncall_uses_configured_anchor_hours(self, test_app, test_user):
+        """Found during 1.1.1 release QA: the weekday check already
+        respected OnCallAnchorRule, but start_time/end_time were still
+        hardcoded to 21h/07h regardless of the rule's own configured
+        start_hour/end_hour."""
+        from app.models import AutomationRule
+
+        AutomationRule.set(
+            "oncall_anchor",
+            {"weekday": 4, "start_hour": 18, "end_hour": 6},
+            group=test_user.group,
+        )
+        db.session.commit()
+
+        friday = _next_friday()
+        start = datetime.combine(friday, datetime.min.time())
+
+        oncall, error = OnCallService.add_oncall(test_user, start)
+        assert error is None
+        assert oncall is not None
+        assert oncall.start_time.hour == 18
+        assert oncall.end_time.hour == 6
+
     def test_add_oncall_success(self, test_app, test_user):
         friday = _next_friday()
         start = datetime.combine(friday, datetime.min.time())

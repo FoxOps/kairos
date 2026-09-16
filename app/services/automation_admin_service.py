@@ -152,8 +152,18 @@ class AutomationAdminService:
         try:
             from app.models import AutomationConfig
 
-            AutomationConfig.set_rotation_epoch(reference_date or date.today())
-            AutomationConfig.set_rotation_order(rotation_order_ids)
+            # commit=False on both writes, one db.session.commit() at
+            # the end: epoch and order must move together (rotation
+            # phase math depends on both agreeing) - found during 1.1.1
+            # release QA that AutomationConfig.set_config()'s own
+            # per-call auto-commit meant a failure on the second write
+            # left the epoch durably persisted without its matching
+            # order.
+            AutomationConfig.set_rotation_epoch(
+                reference_date or date.today(), commit=False
+            )
+            AutomationConfig.set_rotation_order(rotation_order_ids, commit=False)
+            db.session.commit()
             return None
         except Exception as e:
             db.session.rollback()

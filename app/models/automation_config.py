@@ -59,13 +59,19 @@ class AutomationConfig(BaseModel):
         return default
 
     @classmethod
-    def set_config(cls, key: str, value):
+    def set_config(cls, key: str, value, commit: bool = True):
         """
         Set a configuration value.
 
         Args:
             key: Configuration key
             value: Value to store (will be encoded to JSON if necessary)
+            commit: commit immediately (default). Pass False when the
+                caller needs to write several keys atomically (e.g.
+                AutomationAdminService.save_rotation_order()'s epoch +
+                order pair, which must never be left half-written if
+                the second write fails) - the caller is then
+                responsible for its own single db.session.commit().
 
         Returns:
             The created or updated AutomationConfig instance
@@ -82,7 +88,8 @@ class AutomationConfig(BaseModel):
                 config_value=json.dumps(value) if not isinstance(value, str) else value,
             )
             db.session.add(config)
-        db.session.commit()
+        if commit:
+            db.session.commit()
         return config
 
     @classmethod
@@ -91,9 +98,9 @@ class AutomationConfig(BaseModel):
         return cls.get_config("oncall_rotation_order", [])
 
     @classmethod
-    def set_rotation_order(cls, rotation_order: list):
+    def set_rotation_order(cls, rotation_order: list, commit: bool = True):
         """Set the on-call rotation order."""
-        cls.set_config("oncall_rotation_order", rotation_order)
+        cls.set_config("oncall_rotation_order", rotation_order, commit=commit)
 
     @classmethod
     def get_rotation_epoch(cls) -> date:
@@ -111,9 +118,9 @@ class AutomationConfig(BaseModel):
         return date.fromisoformat(stored)
 
     @classmethod
-    def set_rotation_epoch(cls, epoch: date) -> None:
+    def set_rotation_epoch(cls, epoch: date, commit: bool = True) -> None:
         """Set the on-call rotation-order reference date."""
-        cls.set_config("oncall_rotation_epoch", epoch.isoformat())
+        cls.set_config("oncall_rotation_epoch", epoch.isoformat(), commit=commit)
 
     def __repr__(self) -> str:
         return f"<AutomationConfig {self.config_key} = {self.config_value}>"

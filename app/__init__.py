@@ -33,6 +33,19 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 # Extension initialization
 # ---------------------------------------------------------------------------
 
+
+def N_(message: str) -> str:
+    """Identity marker (Babel's default `N_` extraction keyword) - flags
+    a string for `pybabel extract` without translating it immediately.
+    Needed for login_message below: a plain string literal assignment
+    is invisible to extraction (only calls to a recognized keyword are
+    scanned), which silently dropped this msgid from the catalogs
+    (found stale/obsolete during 1.1.1 release QA - English users saw
+    the raw French text since gettext() had no live translation for
+    an untracked msgid)."""
+    return message
+
+
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
@@ -538,7 +551,7 @@ def create_app(config_object: str | None = None):
         # either - see localize_callback above for why) so it renders
         # in French/English exactly like every other flash in the app,
         # instead of always being English regardless of locale.
-        login_manager.login_message = (
+        login_manager.login_message = N_(
             "Veuillez vous connecter pour accéder à cette page."
         )
 

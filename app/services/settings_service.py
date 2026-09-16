@@ -431,15 +431,15 @@ class SettingsService:
         (AutomationAdminService._generate_full_legacy/_refresh_shifts_legacy)
         until an admin explicitly opts in, and flipping this back to False
         rolls back to legacy without a code revert if a production issue
-        surfaces post-cutover. Only gates AutomationAdminService.generate_full()'s
-        dry_run=False branch and refresh_shifts() - the dry_run=True preview
-        already always uses the new planner regardless of this flag (phase 6),
-        and AdvancedShiftAutomation.rebalance_after_leave() (the automatic
-        leave-triggered rebalance) is deliberately NOT gated by this flag at
-        all: its per-day/per-section SAVEPOINT isolation has no equivalent in
-        AutomationApplyService.apply_plan()'s all-or-nothing transaction model,
-        a mismatch that needs its own dedicated design decision before that
-        path can be cut over - see the automation engine rework plan."""
+        surfaces post-cutover. Gates AutomationAdminService.generate_full()'s
+        dry_run=False branch, refresh_shifts(), and (phase 7 follow-up)
+        AdvancedShiftAutomation.rebalance_after_leave()'s dry_run=False
+        call (the automatic leave-triggered rebalance; its dry_run=True
+        branch stays on the legacy path unconditionally regardless of
+        this flag, since nothing production-facing depends on a
+        new-engine dry-run variant of that specific method) - the
+        dry_run=True preview on generate_full() itself already always
+        uses the new planner regardless of this flag (phase 6)."""
         value = Setting.get(NEW_AUTOMATION_ENGINE_ENABLED_KEY)
         return bool(value) if value is not None else False
 
