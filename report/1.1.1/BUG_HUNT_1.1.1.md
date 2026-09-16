@@ -18,6 +18,31 @@
 
 ## Fixed in this PR
 
+0. **Delete-confirmation dialog invisible when opened from inside a modal.**
+   Found via manual real-browser smoke testing (Playwright driving a real
+   Chromium instance through the §4 manual smoke-test checklist), not the
+   automated pass above — the Flask test client never executes JS or
+   renders layout, so this class of bug is invisible to it and to the
+   existing E2E suite's own assertions before this fix. `confirmActionAccessible()`
+   (`app/static/js/utils/accessibility.js`) built its confirmation prompt
+   as a plain `<div class="modal modal-open">` appended to
+   `document.body`. That works fine standalone, but whenever it's
+   triggered from inside an already-open **native** `<dialog>` — every one
+   of the calendar's new click-to-edit modals for shift/on-call/leave,
+   all new this release — it painted *behind* that dialog's browser top
+   layer, with no `z-index` able to win against the top layer. The
+   confirmation was completely invisible and unreachable by mouse:
+   clicking "Supprimer" inside the edit modal appeared to do nothing at
+   all, silently defeating delete for these brand-new modals. Fixed by
+   making `confirmActionAccessible()` build a native `<dialog>` too (same
+   convention as `fullcalendar-config.js::openEditModal`), which gets its
+   own top-layer slot and stacks correctly above whichever dialog was
+   already open. Updated the 2 pre-existing E2E regression tests
+   (`TestDeleteConfirmationModal`) whose selector targeted the old
+   div-based markup. Severity: high — this broke the Delete action on
+   every new calendar modal for every mouse user, silently (no error, no
+   visible feedback at all).
+
 1. **`OnCallService.add_oncall()` hardcoded on-call hours despite a
    configurable anchor weekday.** The weekday check already resolved
    `OnCallAnchorRule.resolve(group=user.group)["weekday"]`, but
@@ -184,8 +209,12 @@ summarized here since most were one-line corrections):
 
 ## Verdict
 
-4 real, user/admin-facing bugs fixed with regression tests (all green,
-2007 unit+integration+e2e tests total, `make all` clean). 2 additional
+5 real, user/admin-facing bugs fixed with regression tests (all green,
+2008 unit+integration tests plus 20 e2e browser tests, `make all` clean)
+— 4 from the automated multi-agent pass and 1 (the highest-severity one)
+from manual real-browser smoke testing, underscoring why that step stays
+manual/real-browser rather than something the automated pass alone can
+catch. 2 additional
 plausible-but-narrow findings documented and deliberately deferred —
 both require the new planner engine to be turned on, which it isn't by
 default in production, so current release risk is zero; both are
