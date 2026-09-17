@@ -53,7 +53,7 @@ def docs_page():
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body>
-<script id="api-reference" data-url="{openapi_url}"></script>
+<script id="api-reference" data-url="{openapi_url}" data-configuration='{{"theme": "deepSpace"}}'></script>
 <script src="{_SCALAR_JS_URL}"></script>
 </body>
 </html>"""

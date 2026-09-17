@@ -28,6 +28,11 @@ class TestDocsPage:
         assert response.content_type.startswith("text/html")
         assert b"api-reference" in response.data
 
+    def test_uses_deep_space_theme(self, client):
+        response = client.get("/api/v1/docs")
+        assert b"data-configuration" in response.data
+        assert b'"theme": "deepSpace"' in response.data
+
     def test_disabled_via_config(self, test_app, client):
         test_app.config["PUBLIC_API_DOCS_ENABLED"] = False
         try:
