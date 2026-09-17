@@ -8,7 +8,10 @@ that). Uses openapi_spec_validator to confirm the document is valid
 OpenAPI 3.0.3, not just "some JSON that has the right top-level keys".
 """
 
+from flask import Flask
 from openapi_spec_validator import validate
+
+from app.api import init_api
 
 
 class TestOpenApiValidity:
@@ -36,6 +39,31 @@ class TestInfoAndServers:
         spec = client.get("/api/v1/openapi.json").get_json()
         assert spec.get("servers")
         assert spec["servers"][0]["url"]
+
+
+class TestServersUrlFromPublicBaseUrl:
+    """Regression guard: PUBLIC_BASE_URL must be used verbatim as the
+    OpenAPI server origin, never combined with request/app host - a bug
+    report claimed the two get concatenated into e.g.
+    "https://host/host". Exercises init_api() directly on a bare Flask
+    app (bypassing create_app()) since Config.PUBLIC_BASE_URL is a class
+    attribute frozen at module-import time and can't be varied per-test
+    via env vars/monkeypatch without a module reload."""
+
+    def test_uses_configured_public_base_url_verbatim(self):
+        app = Flask(__name__)
+        app.config["PUBLIC_BASE_URL"] = "https://kairos.mydomain.tld"
+        init_api(app)
+
+        url = app.config["API_SPEC_OPTIONS"]["servers"][0]["url"]
+        assert url == "https://kairos.mydomain.tld"
+        assert url.count("kairos.mydomain.tld") == 1
+
+    def test_falls_back_to_relative_root_when_unset(self):
+        app = Flask(__name__)
+        init_api(app)
+
+        assert app.config["API_SPEC_OPTIONS"]["servers"][0]["url"] == "/"
 
 
 class TestSecurityScheme:

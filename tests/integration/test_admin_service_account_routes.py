@@ -23,6 +23,18 @@ class TestListRoute:
         assert resp.status_code == 200
         assert b"Zapier" in resp.data
 
+    def test_documentation_and_openapi_links_are_separate(
+        self, test_app, logged_in_client
+    ):
+        """Bug fix regression: the page used to label a link to the raw
+        /api/v1/openapi.json spec as "Documentation" - it must instead
+        link to /api/v1/docs (the interactive Scalar UI) separately from
+        the raw spec link."""
+        resp = logged_in_client.get("/admin/service-accounts")
+        html = resp.get_data(as_text=True)
+        assert 'href="/api/v1/docs"' in html
+        assert 'href="/api/v1/openapi.json"' in html
+
 
 class TestAddServiceAccount:
     def test_requires_admin(self, test_app, non_admin_client):
