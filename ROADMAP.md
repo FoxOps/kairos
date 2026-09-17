@@ -1,6 +1,6 @@
 # Roadmap
 
-**Current version: 1.1.1** — feature-complete, tested (2000+
+**Current version: 1.2.0** — feature-complete, tested (2000+
 automated tests), and used for real team scheduling.
 
 ## ✅ Done
