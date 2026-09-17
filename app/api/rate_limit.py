@@ -5,12 +5,23 @@ see app/__init__.py), so one integration's traffic never exhausts
 another's quota when both happen to share an egress IP. First use of
 @limiter.limit() on an individual route in this app - until now only
 the app-wide RATELIMIT_DEFAULT existed.
+
+api_rate_limit() is passed as a *callable* limit value (Flask-Limiter
+evaluates it once per request via current_app), not a plain string -
+every @limiter.limit() decorator below is applied at class-definition/
+import time, before any Flask app exists (and this module is imported
+once per process while create_app() runs many times, e.g. in tests), so
+the configured value (app.config["API_RATE_LIMIT"], see
+app/config/base.py) can only be resolved per-request, not baked in at
+decoration time.
 """
 
-from flask import g
+from flask import current_app, g
 from flask_limiter.util import get_remote_address
 
-API_RATE_LIMIT = "60 per minute, 1000 per day"
+
+def api_rate_limit() -> str:
+    return current_app.config["API_RATE_LIMIT"]
 
 
 def service_account_key() -> str:

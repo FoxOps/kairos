@@ -14,6 +14,7 @@
 - [🗄️ Database Configuration](#️-database-configuration)
 - [🔒 Session & Login Configuration](#-session--login-configuration)
 - [🚦 Rate Limiting](#-rate-limiting)
+- [🌐 Public API (/api/v1/*)](#-public-api-apiv1)
 - [🛡️ HTTP Security (Talisman)](#️-http-security-talisman)
 - [📄 Pagination](#-pagination)
 - [📝 Logging Configuration](#-logging-configuration)
@@ -113,8 +114,20 @@ managed offerings).
 
 | Variable | Type | Default | Description | Required |
 |----------|------|--------|-------------|-------------|
-| `RATE_LIMIT_ENABLED` | boolean | `true` | Enables Flask-Limiter | ❌ No |
-| `RATE_LIMIT_DEFAULT` | string | `"200 per day, 50 per hour"` | Default limits, Flask-Limiter format | ❌ No |
+| `RATE_LIMIT_ENABLED` | boolean | `true` | Enables Flask-Limiter — also disables the public API limit below, since both share the same `limiter.enabled` switch | ❌ No |
+| `RATE_LIMIT_DEFAULT` | string | `"200 per day, 50 per hour"` | Default limits for the internal app, Flask-Limiter format | ❌ No |
+| `API_RATE_LIMIT` | string | `"60 per minute, 1000 per day"` | Public API (`/api/v1/*`) limit, applied per ServiceAccount (not by IP) — conceptually separate from `RATE_LIMIT_DEFAULT`. An invalid value (not parseable by Flask-Limiter's own format) makes the app refuse to start, with an error naming the bad value | ❌ No |
+| `RATE_LIMIT_STORAGE_URI` | string | `"memory://"` | Flask-Limiter counter storage backend. `memory://` is per-process only — counters are **not** shared across multiple workers/replicas, each enforces its own independent quota. Use `redis://host:6379/0` (or another backend the `limits` package supports) to share counters across processes for a multi-worker/multi-replica deployment; requires installing the matching optional Python package (e.g. `redis`) yourself — not installed by default | ❌ No |
+
+---
+
+## 🌐 Public API (/api/v1/*)
+
+| Variable | Type | Default | Description | Required |
+|----------|------|--------|-------------|-------------|
+| `PUBLIC_API_DOCS_ENABLED` | boolean | `true` | Serves interactive Scalar documentation at `GET /api/v1/docs`. The raw spec (`GET /api/v1/openapi.json`) stays reachable regardless of this setting — it only gates the HTML page | ❌ No |
+
+See also `PUBLIC_BASE_URL` (Flask Configuration, above) — used as the OpenAPI `servers` origin when set; falls back to a relative `/` otherwise, never an internal hostname. `API_RATE_LIMIT`/`RATE_LIMIT_STORAGE_URI` (Rate Limiting, above) apply to this API specifically.
 
 ---
 

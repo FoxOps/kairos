@@ -909,66 +909,145 @@ returns structured per-field detail there, which a generic override would flatte
 URL prefix is **`/api/v1/*`**, deliberately distinct from the internal `/api/*` (same app, same
 process, different blueprint) to avoid any route collision. `app/api/` layout: `resources/` (one
 flask-smorest `Blueprint` + `MethodView` pair per resource — `shifts`, `oncall`, `leave`, `users`,
-`shift_types`), `schemas/` (one marshmallow `Schema` per resource, used both for response
+`shift_types`, `groups`), `schemas/` (one marshmallow `Schema` per resource, used both for response
 serialization and to auto-generate the OpenAPI spec), `setup.py` (the one-time blueprint wiring
-above), `errors.py`, `rate_limit.py`. **v1 scope is read-only** — `GET` list (paginated, same
-`SettingsService.get_items_per_page()`/`get_max_per_page()` knobs as the admin UI, no new
-pagination system invented) and `GET <id>` for shifts/oncall/leave/users, list-only for
+above), `errors.py`, `rate_limit.py`, `responses.py` (shared `@blp.alt_response` error-doc
+decorator, see below), `docs_view.py` (discovery + Scalar docs, see below). **v1 scope is
+read-only** — `GET` list and `GET <id>` for shifts/oncall/leave/users/groups, list-only for
 shift-types — reusing the existing repositories/services directly (`ShiftRepository`,
-`OnCallRepository`, `LeaveRepository`, `UserRepository`, `ShiftTypeRepository`), no business logic
-duplicated. Write endpoints are a deliberate v1 omission (would require re-validating the same
-conflict/weekend/leave rules already encapsulated in the service layer for `/api/*`), not an
-oversight — extend here first if that need materializes, don't build a third parallel API surface.
+`OnCallRepository`, `LeaveRepository`, `UserRepository`, `ShiftTypeRepository`,
+`GroupRepository`), no business logic duplicated. Write endpoints are a deliberate v1 omission
+(would require re-validating the same conflict/weekend/leave rules already encapsulated in the
+service layer for `/api/*`), not an oversight — extend here first if that need materializes, don't
+build a third parallel API surface.
+
+**Pagination and filtering** (1.2.0 maturity pass). Shifts/oncall/leave/users are paginated
+(`{"items", "page", "pages", "per_page", "total"}`, same `SettingsService.get_items_per_page()`/
+`get_max_per_page()` knobs as the admin UI); shift-types/groups are deliberately **not** (small
+configuration resources, documented as such rather than claimed-paginated). `/api/v1/users/` used
+to be a bare unpaginated array — a documented breaking change, see `CHANGELOG.md`. Every list
+endpoint accepts `user_id`/`group_id` filters, shifts additionally `shift_type_id`, and
+shifts/oncall/leave a `start`/`end` date-range filter using **overlap semantics**
+(`resource.start < requested_end AND resource.end > requested_start`, each bound independently
+optional) — the repositories (`ShiftRepository`/`OnCallRepository`/`LeaveRepository.list_paginated()`)
+already supported all of this server-side before 1.2.0; the resources just never passed the
+arguments through. `app/api/schemas/filter_schema.py`'s `DateRangeFilterMixin`/
+`UserGroupFilterMixin` back every per-resource `*QueryArgsSchema` (composed via multiple
+inheritance with `PageQueryArgsSchema`); `DateRangeFilterMixin`'s `@validates_schema` rejects
+`start > end` with a `422`. `UserRepository.list_paginated(page, per_page, group_id=None)` is the
+one genuinely new repository method this pass added (every other resource's filtering was pure
+wiring).
+
+**ServiceAccount scopes** (1.2.0). `ServiceAccount.scopes` (`Text`, JSON-encoded list) restricts a
+token to a subset of `AVAILABLE_SCOPES` (`read:shifts`/`read:oncall`/`read:leave`/`read:users`/
+`read:shift_types`/`read:groups`, plus the `read:*` wildcard) — **empty/`None` means full access**,
+same "empty list = everything" convention as `NotificationTarget.categories`, so every
+ServiceAccount that existed before this column was added keeps its current (full) access with no
+backfill migration needed. `ServiceAccount.has_scope(scope)` checks it;
+`app/auth/service_account_auth.py::require_scope(scope)` is a `before_request` hook registered
+per-blueprint via `configure_blueprint(blp, scope=...)` (runs after `resolve_service_account`, so
+`g.service_account` is already set) — a missing scope aborts `403`. Admin-editable at
+`/admin/service-accounts` (checkbox list, no box checked = full access, same convention as the
+notification-target category checkboxes).
+
+`GET /api/v1/groups/[/<id>]` (1.2.0, `app/api/resources/groups.py`) resolves the `group_id` values
+already present on shifts/on-calls/leaves/users — previously unresolvable through the public API.
+Reuses `GroupRepository.get_all()`/`get_by_id()` (`app/repositories/user_repository.py`),
+unpaginated like shift-types.
+
 `GET /api/v1/oncall/current[?group_id=]` (`app/api/resources/oncall.py`) is the one v1 endpoint
 that isn't a plain list/detail: resolves the currently active on-call shift(s) via
 `OnCallRepository.list_active()` (same `start_time <= org_now() <= end_time` comparison as
 `OnCall.is_active()`, expressed as a SQL predicate), for monitoring/alerting integrations (the
 motivating case was Canopsis) that need "who's on-call right now" without pulling the full list
-and re-implementing the org-timezone/active-window logic themselves. `group_id` omitted → a JSON
-array (0+ items — more than one only possible in `per_group` on-call scheduling mode); `group_id`
-given → a single object, either the active shift (with the user's `name`/`email`/`group_id`
-inlined, no second `/api/v1/users/<id>` call needed) or `{"active": false}`. Because the response
-shape genuinely changes with `group_id`, this route doesn't fit flask-smorest's one-schema-per-
-route model (`@blp.response(schema)` normally re-serializes whatever the view returns) — the view
-instead builds and returns its own `flask.jsonify(...)` `Response` object, and `@blp.response` is
-kept purely for OpenAPI documentation: per `flask_smorest.Blueprint.response`'s own docstring, "If
-the decorated function returns a Response object, the schema and status_code parameters are only
-used to document the resource" — confirmed by reading `flask_smorest/response.py` directly, not
-assumed. (An earlier attempt stacked `@blp.alt_response` to document the array/object/`{"active":
-false}` shapes as three separate OpenAPI response entries under the same `200` — flask-smorest
-merges same-status-code docs into one entry rather than keeping them distinct, and reusing one
-example `dict` object across those decorators let that merge mutate it in place, corrupting the
-generated example; reverted to one schema — every field but `active` marked `allow_none` — plus
-the shape nuance spelled out in the response `description` instead.) Every `/api/v1/oncall/*`
-`start_time`/`end_time` (list, detail, and this endpoint) is a timezone-aware ISO 8601 string
-(`timezone_helpers.org_aware()`, the org's `default_timezone` `Setting` as the UTC offset,
-e.g. `2026-09-11T21:00:00+02:00`) — every other v1 resource's datetime/date fields are unaffected.
-`UserSchema` deliberately excludes every sensitive/preference field (`password_hash`, `ics_token`,
-`apprise_*_target_ids`, `timezone`/`language`/`date_format`/`time_format`, notification opt-outs) —
-same public contract as the internal `/api/users` endpoint, plus `group_id`.
+and re-implementing the org-timezone/active-window logic themselves. **As of 1.2.0, always returns
+the same stable shape**, `{"items": [...], "count": N}` — `items` is empty when nothing is active,
+and can hold more than one entry when `group_id` is omitted (`per_group` scheduling mode) or when
+more than one on-call is genuinely concurrent within a given group (a rare admin-created overlap).
+This replaced an earlier design (documented in 1.1.1) where the response *type* changed with
+`group_id` (array vs. single object vs. `{"active": false}`) — unsafe for generated clients, a
+documented breaking change in `CHANGELOG.md`. Because the exact `items` contents can't be
+statically typed as one nested model the way a plain list endpoint can, the view still builds and
+returns its own `flask.jsonify(...)` `Response` object rather than a plain dict, and `@blp.response`
+is kept purely for OpenAPI documentation: per `flask_smorest.Blueprint.response`'s own docstring,
+"If the decorated function returns a Response object, the schema and status_code parameters are
+only used to document the resource" — confirmed by reading `flask_smorest/response.py` directly,
+not assumed. Every `/api/v1/oncall/*` `start_time`/`end_time` (list, detail, and this endpoint) is
+a timezone-aware ISO 8601 string (`timezone_helpers.org_aware()`, the org's `default_timezone`
+`Setting` as the UTC offset, e.g. `2026-09-11T21:00:00+02:00`); as of 1.2.0 `/api/v1/shifts/*`
+`start_time`/`end_time` get the identical treatment (previously a naive `fields.DateTime`, an
+inconsistency with oncall's own contract). `UserSchema` deliberately excludes every sensitive/
+preference field (`password_hash`, `ics_token`, `apprise_*_target_ids`, `timezone`/`language`/
+`date_format`/`time_format`, notification opt-outs) — same public contract as the internal
+`/api/users` endpoint, plus `group_id`.
+
+**Error envelope** (1.2.0). Every non-2xx response (400/401/403/404/405/422/429/500/502/503/504)
+is now `{"error": {"code", "message", "details"}}` — `code` is a stable machine-readable value
+(`not_found`, `validation_error`, `rate_limited`, ...), replacing the previous flat
+`{"message": "..."}` shape (a documented breaking change). `app/api/errors.py::json_error_handler`
+now also covers 422/429 (previously excluded, relying on flask-smorest's/Flask-Limiter's own
+default shapes) — safe to do per-blueprint-and-code because Flask's error-handler precedence
+("blueprint+code > app+code > blueprint+class > app+class") means this module's per-code blueprint
+handler wins over flask-smorest's own app-level *class*-based `HTTPException` handler
+(`flask_smorest.error_handler.ErrorHandlerMixin._register_error_handlers`), so nothing needs to be
+monkeypatched — only the final shape changes, the underlying validation/rate-limit data
+(`error.data["messages"]`, `error.description`) is read the same way as before.
+`app/api/responses.py::document_errors()` applies the matching `@blp.alt_response` set
+(401/403/429 always, 404 on detail views, 422 on filtered list views) per operation, all sharing
+one `PublicApiErrorSchema` (`app/api/schemas/error_schema.py` — named to avoid an apispec name
+collision with flask-smorest's own internal `ErrorSchema`).
 
 Rate limiting (`app/api/rate_limit.py::service_account_key()`) keys Flask-Limiter by
 `g.service_account.id` rather than IP — the first use of `@limiter.limit()` on an individual route
-in this app (until now only the app-wide `RATELIMIT_DEFAULT` existed). CSRF: every blueprint in
-`app/api/resources/` is exempted via `csrf.exempt(blp)` in `create_app()` — safe only because this
-API never accepts cookie-based auth, so the cross-site-request-with-a-valid-cookie risk CSRF
-protects against doesn't apply here.
+in this app (until now only the app-wide `RATELIMIT_DEFAULT` existed). **As of 1.2.0, the limit
+itself is admin-configurable** (`API_RATE_LIMIT` env var, default unchanged,
+`"60 per minute, 1000 per day"`) rather than a hardcoded Python constant — validated eagerly at
+startup (`app/config/base.py::validate_rate_limit_string()`, via the same `limits.parse_many()`
+parser Flask-Limiter itself uses) so a typo'd value fails loudly at boot, not silently or on the
+first request. Since `@limiter.limit()` decorators are applied at import time (before any app
+exists, and this module is imported once per process while `create_app()` runs many times in
+tests), the configured value can't be baked into the decorator — `app/api/rate_limit.py::api_rate_limit()`
+is a *callable* limit value instead (`current_app.config["API_RATE_LIMIT"]`), which Flask-Limiter
+evaluates per-request; this is also the hook point a future per-ServiceAccount rate-limit override
+would extend, without needing to touch every resource file again. `RATE_LIMIT_STORAGE_URI` (default
+`memory://`, also admin-configurable) is Flask-Limiter's own counter storage backend — shared
+`app.config["RATELIMIT_STORAGE_URI"]`/`limiter.init_app(app)` mechanism as `RATELIMIT_DEFAULT`;
+`memory://` counters are per-process only, an admin can point this at `redis://...` for a
+multi-worker/multi-replica deployment (the `redis` Python package itself isn't a required
+dependency — install it only if you use this). CSRF: every blueprint in `app/api/resources/` is
+exempted via `csrf.exempt(blp)` in `create_app()` — safe only because this API never accepts
+cookie-based auth, so the cross-site-request-with-a-valid-cookie risk CSRF protects against doesn't
+apply here.
 
 OpenAPI: `GET /api/v1/openapi.json` is generated **automatically** from the marshmallow schemas on
 every app start — unlike `Docs/api/openapi.yaml` (internal `/api/*`, hand-maintained, already
-known to drift), this one structurally cannot go stale. `OPENAPI_SWAGGER_UI_PATH`/
-`OPENAPI_REDOC_PATH`/`OPENAPI_RAPIDOC_PATH` are deliberately left unset in `app/api/__init__.py`:
-flask-smorest's default interactive UIs pull JS/CSS from a CDN not in `CSP_POLICY`
-(`app/__init__.py`), and relaxing the CSP for this alone wasn't judged worth it — only the raw spec
-is served, importable into an external Swagger UI/Postman/Insomnia. `/admin/service-accounts`
+known to drift), this one structurally cannot go stale. As of 1.2.0 it also carries a full `info`
+block (title/version/description/license/contact), `externalDocs`, a `servers` entry (from
+`PUBLIC_BASE_URL` when set, else a safe relative `/` — never an internal container hostname), the
+`ServiceAccountBearer` Bearer security scheme applied globally, and a stable `operationId`/
+`summary`/`description` on every operation — all built as one static dict,
+`app.config["API_SPEC_OPTIONS"]`, computed fresh inside `init_api(app)` on every `create_app()`
+call (safe across the many app instances a test run builds; deliberately *not* built by calling
+`api.spec.components.security_scheme()` imperatively, which would need its own duplicate-
+registration guard against that same repeated-`create_app()` reality). `OPENAPI_SWAGGER_UI_PATH`/
+`OPENAPI_REDOC_PATH`/`OPENAPI_RAPIDOC_PATH` are still deliberately left unset in
+`app/api/__init__.py`: flask-smorest's default interactive UIs pull JS/CSS from CDNs not in
+`CSP_POLICY` (`app/__init__.py`). Interactive documentation is instead served from
+**`GET /api/v1/docs`** (1.2.0, `app/api/docs_view.py`, a plain Flask view, not a flask-smorest
+resource) — [Scalar](https://github.com/scalar/scalar)'s standalone JS bundle loaded from
+`cdn.jsdelivr.net`, an origin already CSP-whitelisted for FullCalendar, so **no CSP change was
+needed**; Scalar reads the spec's own `securitySchemes` to wire up its Authorize button
+automatically. Gated by `PUBLIC_API_DOCS_ENABLED` (default on); the raw spec stays reachable either
+way. `GET /api/v1` (same module) is a small discovery document (`name`/`version`/`openapi`/
+`documentation`, all relative paths). `/admin/service-accounts`
 (`app/routes/admin_service_account_routes.py`) is the admin CRUD page — same pattern as
 `admin_notification_target_routes.py` (list/add/edit/delete, `AuditService.log()` on every mutation
 under the `service_account.*` namespace, secret never in `details`/logs). Regeneration
 (`regenerate_service_account_secret`) and creation both render `service_account_created.html`
 directly in the same response (not a redirect, which would have nowhere safe to carry the plaintext
 token) — the one-time-reveal screen. `edit_service_account` only touches name/description/
-`expires_at`; the secret itself is immutable outside create/regenerate, matching how a GitHub PAT
-can be renamed but never "edited" in place.
+`expires_at`/`scopes`; the secret itself is immutable outside create/regenerate, matching how a
+GitHub PAT can be renamed but never "edited" in place.
 
 ### Frontend
 

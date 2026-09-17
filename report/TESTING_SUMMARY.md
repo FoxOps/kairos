@@ -2,9 +2,16 @@
 
 ## 📊 Global Overview
 
-- **Last updated**: September 16, 2026 (1.1.1 release QA protocol pass)
-- **Total number of tests**: 2008 (1113 unit + 863 integration + 32 e2e)
-- **Tests passing**: 2008 ✅
+- **Last updated**: September 17, 2026 (1.2.0 - Public API v1 maturity pass)
+- **Total number of tests**: 2071 (1121 unit + 918 integration + 32 e2e) -
+  up from 2008 (1113/863/32) after the public API maturity pass added
+  `tests/integration/test_api_v1_groups.py`,
+  `test_api_scopes.py`, `test_api_rate_limiting.py`,
+  `test_openapi_contract.py`, `test_api_discovery_docs.py`, plus new
+  cases in `test_api_v1_routes.py`/`test_admin_service_account_routes.py`
+  and `tests/unit/test_user_repository.py`/`test_config.py`
+  (`TestApiRateLimitConfig`) - see `CHANGELOG.md`'s `[Unreleased]` entry.
+- **Tests passing**: 2071 ✅
 - **Tests failing**: 0
 - **Code coverage**: **99%** (`--cov=app`) - the new planner rework
   (`app/models/generation_run.py`, `app/utils/automation/planner/**`) landed
@@ -15,7 +22,9 @@
 - **Formatting (black)**: compliant
 - **Security (bandit)**: 0 findings in `app/` (all flagged items are test-only fixture literals - mock passwords/tokens)
 - **Dependencies (pip-audit)**: 0 known vulnerabilities
-- **Duplicate code (`find_duplicates.py`)**: none detected
+- **Duplicate code (`find_duplicates.py`)**: 1 pre-existing group (`actor` property,
+  `app/models/audit_log.py`/`app/models/generation_run.py`, unrelated to this pass) - verified,
+  not introduced here
 
 ---
 

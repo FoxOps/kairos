@@ -7,6 +7,66 @@ versions match the bare (no `v` prefix) git tags this project actually
 pushes, e.g. `1.1.0`, not `v1.1.0` — see `.github/workflows/tests.yml`'s
 tag trigger for why.
 
+## [Unreleased]
+
+Public API v1 (`/api/v1/*`) maturity pass - OpenAPI contract
+correctness, server-side filtering, a new `groups` resource,
+configurable rate limits, ServiceAccount scopes, and interactive
+documentation. See [`Docs/api/API.md`](Docs/api/API.md#public-api-v1-service-accounts)
+for the full contract.
+
+### Added
+- `GET /api/v1/groups/[/<id>]` - resolves the `group_id` values already
+  present on shifts/on-calls/leaves/users to a name (previously
+  unresolvable through the public API). Unpaginated, like `shift-types`.
+- Server-side filtering on every public API list endpoint:
+  `user_id`/`group_id` on shifts/on-call/leave/users, `start`/`end`
+  date-range (overlap semantics) on shifts/on-call/leave, `shift_type_id`
+  on shifts. Invalid filters (`start` after `end`, an unparseable date)
+  return `422`. Previously these repository-level filters existed but
+  were never wired up to the public API resources.
+- ServiceAccount read scopes (`read:shifts`/`read:oncall`/`read:leave`/
+  `read:users`/`read:shift_types`/`read:groups`, or `read:*`),
+  admin-editable at `/admin/service-accounts`. No scope checked = full
+  access, the default and unchanged behavior for every ServiceAccount
+  that existed before this change. A token used outside its granted
+  scopes gets `403`.
+- `API_RATE_LIMIT` env var - the public API's per-ServiceAccount rate
+  limit (previously a hardcoded Python constant) is now
+  administrator-configurable, default unchanged
+  (`60 per minute, 1000 per day`). `RATE_LIMIT_STORAGE_URI` env var -
+  Flask-Limiter counter storage backend (default `memory://`,
+  unchanged), can be pointed at `redis://...` for a multi-worker/
+  multi-replica deployment.
+- `GET /api/v1` - small discovery document (name/version/links).
+- `GET /api/v1/docs` - interactive Scalar documentation, served from an
+  already-CSP-whitelisted CDN origin (no CSP change). Gated by
+  `PUBLIC_API_DOCS_ENABLED` (default on); the raw
+  `/api/v1/openapi.json` stays reachable regardless.
+- Generated OpenAPI document now includes `servers` (from
+  `PUBLIC_BASE_URL`, or a safe relative `/`), a `ServiceAccountBearer`
+  Bearer security scheme applied globally, stable `operationId`/
+  `summary`/`description` on every operation, explicit types/formats on
+  every field (duration fields are now numeric, not untyped; every
+  datetime is `format: date-time`), and documented `401`/`403`/`404`/
+  `422`/`429` responses per operation.
+
+### Changed (breaking)
+- `GET /api/v1/oncall/current` now **always** returns
+  `{"items": [...], "count": N}`, regardless of `group_id` - previously
+  the response type changed (array vs. single object vs.
+  `{"active": false}`) depending on `group_id` and the number of
+  matches, which was unsafe for generated clients.
+- `GET /api/v1/users/` is now **paginated** (`{"items", "page", "pages",
+  "per_page", "total"}`, same envelope as shifts/oncall/leave), and
+  accepts a `group_id` filter - previously a bare unpaginated array.
+- Every public API error response body changed shape, from
+  `{"message": "..."}` to
+  `{"error": {"code", "message", "details"}}` - `code` is a stable
+  machine-readable value (`not_found`, `validation_error`,
+  `rate_limited`, ...), `details` carries structured per-field detail
+  for `422`.
+
 ## [1.1.1] — 2026-09-16
 
 ### Added

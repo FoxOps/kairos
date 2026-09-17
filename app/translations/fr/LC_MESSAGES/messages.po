@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-09-16 21:07+0200\n"
+"POT-Creation-Date: 2026-09-17 04:42+0200\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: fr <LL@li.org>\n"
@@ -18,12 +18,12 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: app/__init__.py:508 app/routes/auth.py:255
+#: app/__init__.py:524 app/routes/auth.py:255
 #: app/templates/auth/update_profile.html:15
 msgid "Vous devez choisir un nouveau mot de passe avant de continuer."
 msgstr "Vous devez choisir un nouveau mot de passe avant de continuer."
 
-#: app/__init__.py:555
+#: app/__init__.py:571
 msgid "Veuillez vous connecter pour accéder à cette page."
 msgstr "Veuillez vous connecter pour accéder à cette page."
 
@@ -332,29 +332,29 @@ msgstr "Notification de test envoyée avec succès !"
 msgid "Échec du test : %(error)s"
 msgstr "Échec du test : %(error)s"
 
-#: app/routes/admin_service_account_routes.py:40
-#: app/routes/admin_service_account_routes.py:76
+#: app/routes/admin_service_account_routes.py:54
+#: app/routes/admin_service_account_routes.py:93
 msgid "Le nom est obligatoire."
 msgstr "Le nom est obligatoire."
 
-#: app/routes/admin_service_account_routes.py:46
-#: app/routes/admin_service_account_routes.py:87
+#: app/routes/admin_service_account_routes.py:60
+#: app/routes/admin_service_account_routes.py:104
 msgid "Date d'expiration invalide."
 msgstr "Date d'expiration invalide."
 
-#: app/routes/admin_service_account_routes.py:96
+#: app/routes/admin_service_account_routes.py:116
 msgid "Compte de service modifié avec succès !"
 msgstr "Compte de service modifié avec succès !"
 
-#: app/routes/admin_service_account_routes.py:133
+#: app/routes/admin_service_account_routes.py:156
 msgid "Compte de service révoqué."
 msgstr "Compte de service révoqué."
 
-#: app/routes/admin_service_account_routes.py:136
+#: app/routes/admin_service_account_routes.py:159
 msgid "Compte de service réactivé."
 msgstr "Compte de service réactivé."
 
-#: app/routes/admin_service_account_routes.py:150
+#: app/routes/admin_service_account_routes.py:173
 msgid "Compte de service supprimé avec succès !"
 msgstr "Compte de service supprimé avec succès !"
 
@@ -1812,7 +1812,7 @@ msgstr "Enregistrer le congé"
 #: app/templates/admin/automation/rules.html:72
 #: app/templates/admin/automation/rules.html:93
 #: app/templates/admin/edit_group.html:35
-#: app/templates/admin/edit_service_account.html:38
+#: app/templates/admin/edit_service_account.html:52
 #: app/templates/admin/edit_shift_type.html:41
 #: app/templates/admin/edit_user.html:57
 #: app/templates/admin/macros/settings_card.html:54
@@ -1836,11 +1836,11 @@ msgstr "Annuler et retourner à la liste"
 #: app/templates/admin/_notification_target_form.html:65
 #: app/templates/admin/_notification_target_form.html:66
 #: app/templates/admin/add_group.html:34
-#: app/templates/admin/add_service_account.html:42
+#: app/templates/admin/add_service_account.html:55
 #: app/templates/admin/add_shift_type.html:43
 #: app/templates/admin/add_user.html:63 app/templates/admin/edit_group.html:37
 #: app/templates/admin/edit_group.html:38
-#: app/templates/admin/edit_service_account.html:40
+#: app/templates/admin/edit_service_account.html:54
 #: app/templates/admin/edit_shift_type.html:43
 #: app/templates/admin/edit_shift_type.html:44
 #: app/templates/admin/edit_user.html:59 app/templates/admin/edit_user.html:60
@@ -2144,7 +2144,7 @@ msgstr "Laissez vide pour accepter le shift sans rien proposer en retour."
 
 #: app/templates/admin/groups.html:39
 #: app/templates/admin/notification_targets.html:48
-#: app/templates/admin/service_accounts.html:41
+#: app/templates/admin/service_accounts.html:42
 #: app/templates/admin/shift_types.html:35 app/templates/admin/swaps.html:79
 #: app/templates/admin/swaps.html:150 app/templates/admin/users.html:42
 #: app/templates/confirm_swap.html:42 app/templates/leave.html:70
@@ -3021,7 +3021,7 @@ msgstr "Ex: Synchronisation des shifts vers Zapier"
 
 #: app/templates/admin/add_service_account.html:26
 #: app/templates/admin/edit_service_account.html:26
-#: app/templates/admin/service_accounts.html:40
+#: app/templates/admin/service_accounts.html:41
 msgid "Expiration"
 msgstr "Expiration"
 
@@ -3030,7 +3030,19 @@ msgstr "Expiration"
 msgid "Optionnel : laissez vide pour un jeton sans expiration."
 msgstr "Optionnel : laissez vide pour un jeton sans expiration."
 
-#: app/templates/admin/add_service_account.html:34
+#: app/templates/admin/add_service_account.html:32
+#: app/templates/admin/edit_service_account.html:32
+msgid "Portées (scopes)"
+msgstr "Portées (scopes)"
+
+#: app/templates/admin/add_service_account.html:41
+#: app/templates/admin/edit_service_account.html:42
+msgid ""
+"Aucune portée cochée = accès complet (toutes les ressources en lecture)."
+msgstr ""
+"Aucune portée cochée = accès complet (toutes les ressources en lecture)."
+
+#: app/templates/admin/add_service_account.html:47
 msgid ""
 "Le jeton d'accès (secret) sera affiché une seule fois après la création. "
 "Notez-le immédiatement : il ne pourra plus jamais être ré-affiché."
@@ -3038,7 +3050,7 @@ msgstr ""
 "Le jeton d'accès (secret) sera affiché une seule fois après la création. "
 "Notez-le immédiatement : il ne pourra plus jamais être ré-affiché."
 
-#: app/templates/admin/add_service_account.html:40
+#: app/templates/admin/add_service_account.html:53
 #: app/utils/helpers/js_translations.py:36
 msgid "Créer"
 msgstr "Créer"
@@ -3450,11 +3462,11 @@ msgstr "Modifier une cible de notification"
 msgid "Modifier un compte de service"
 msgstr "Modifier un compte de service"
 
-#: app/templates/admin/edit_service_account.html:32
+#: app/templates/admin/edit_service_account.html:46
 msgid "Jeton : "
 msgstr "Jeton : "
 
-#: app/templates/admin/edit_service_account.html:33
+#: app/templates/admin/edit_service_account.html:47
 msgid ""
 "Le secret ne peut pas être modifié ici — utilisez la régénération depuis la "
 "liste des comptes."
@@ -3557,13 +3569,13 @@ msgstr "Fait partie de l'astreinte"
 
 #: app/templates/admin/groups.html:49 app/templates/admin/groups.html:56
 #: app/templates/admin/notification_targets.html:70
-#: app/templates/admin/service_accounts.html:55
+#: app/templates/admin/service_accounts.html:66
 msgid "Oui"
 msgstr "Oui"
 
 #: app/templates/admin/groups.html:51 app/templates/admin/groups.html:58
 #: app/templates/admin/notification_targets.html:70
-#: app/templates/admin/service_accounts.html:55
+#: app/templates/admin/service_accounts.html:66
 msgid "Non"
 msgstr "Non"
 
@@ -3601,9 +3613,9 @@ msgstr "Supprimer le groupe %(name)s"
 #: app/templates/admin/notification_targets.html:76
 #: app/templates/admin/notification_targets.html:78
 #: app/templates/admin/notification_targets.html:111
-#: app/templates/admin/service_accounts.html:63
-#: app/templates/admin/service_accounts.html:65
-#: app/templates/admin/service_accounts.html:98
+#: app/templates/admin/service_accounts.html:74
+#: app/templates/admin/service_accounts.html:76
+#: app/templates/admin/service_accounts.html:109
 #: app/templates/admin/shift_types.html:73 app/templates/admin/users.html:94
 msgid "Modifier"
 msgstr "Modifier"
@@ -3612,9 +3624,9 @@ msgstr "Modifier"
 #: app/templates/admin/notification_targets.html:91
 #: app/templates/admin/notification_targets.html:96
 #: app/templates/admin/notification_targets.html:113
-#: app/templates/admin/service_accounts.html:79
-#: app/templates/admin/service_accounts.html:84
-#: app/templates/admin/service_accounts.html:100
+#: app/templates/admin/service_accounts.html:90
+#: app/templates/admin/service_accounts.html:95
+#: app/templates/admin/service_accounts.html:111
 #: app/templates/admin/shift_types.html:74 app/templates/admin/users.html:95
 #: app/utils/helpers/js_translations.py:66
 msgid "Supprimer"
@@ -3659,7 +3671,7 @@ msgid "Toutes"
 msgstr "Toutes"
 
 #: app/templates/admin/notification_targets.html:69
-#: app/templates/admin/service_accounts.html:46
+#: app/templates/admin/service_accounts.html:47
 #, python-format
 msgid "Basculer l'activation de %(name)s"
 msgstr "Basculer l'activation de %(name)s"
@@ -3781,34 +3793,42 @@ msgid "Jeton"
 msgstr "Jeton"
 
 #: app/templates/admin/service_accounts.html:38
+msgid "Portées"
+msgstr "Portées"
+
+#: app/templates/admin/service_accounts.html:39
 msgid "Actif"
 msgstr "Actif"
 
-#: app/templates/admin/service_accounts.html:39
+#: app/templates/admin/service_accounts.html:40
 msgid "Dernière utilisation"
 msgstr "Dernière utilisation"
 
-#: app/templates/admin/service_accounts.html:59
-#: app/templates/admin/service_accounts.html:60
+#: app/templates/admin/service_accounts.html:54
+msgid "Accès complet"
+msgstr "Accès complet"
+
+#: app/templates/admin/service_accounts.html:70
+#: app/templates/admin/service_accounts.html:71
 msgid "Jamais"
 msgstr "Jamais"
 
-#: app/templates/admin/service_accounts.html:62
+#: app/templates/admin/service_accounts.html:73
 #, python-format
 msgid "Actions pour le compte %(name)s"
 msgstr "Actions pour le compte %(name)s"
 
-#: app/templates/admin/service_accounts.html:65
+#: app/templates/admin/service_accounts.html:76
 #, python-format
 msgid "Modifier le compte %(name)s"
 msgstr "Modifier le compte %(name)s"
 
-#: app/templates/admin/service_accounts.html:69
-#: app/templates/admin/service_accounts.html:74
+#: app/templates/admin/service_accounts.html:80
+#: app/templates/admin/service_accounts.html:85
 msgid "Régénérer le secret"
 msgstr "Régénérer le secret"
 
-#: app/templates/admin/service_accounts.html:73
+#: app/templates/admin/service_accounts.html:84
 #, python-format
 msgid ""
 "Régénérer le secret de %(name)s ? L'ancien jeton cessera immédiatement de "
@@ -3817,38 +3837,38 @@ msgstr ""
 "Régénérer le secret de %(name)s ? L'ancien jeton cessera immédiatement de "
 "fonctionner."
 
-#: app/templates/admin/service_accounts.html:74
+#: app/templates/admin/service_accounts.html:85
 #, python-format
 msgid "Régénérer le secret de %(name)s"
 msgstr "Régénérer le secret de %(name)s"
 
-#: app/templates/admin/service_accounts.html:83
+#: app/templates/admin/service_accounts.html:94
 #, python-format
 msgid "Êtes-vous sûr de vouloir supprimer le compte %(name)s ?"
 msgstr "Êtes-vous sûr de vouloir supprimer le compte %(name)s ?"
 
-#: app/templates/admin/service_accounts.html:84
+#: app/templates/admin/service_accounts.html:95
 #, python-format
 msgid "Supprimer le compte %(name)s"
 msgstr "Supprimer le compte %(name)s"
 
-#: app/templates/admin/service_accounts.html:98
+#: app/templates/admin/service_accounts.html:109
 msgid "Modifier le nom, la description ou l'expiration"
 msgstr "Modifier le nom, la description ou l'expiration"
 
-#: app/templates/admin/service_accounts.html:99
+#: app/templates/admin/service_accounts.html:110
 msgid "Régénérer"
 msgstr "Régénérer"
 
-#: app/templates/admin/service_accounts.html:99
+#: app/templates/admin/service_accounts.html:110
 msgid "Générer un nouveau secret, invalidant l'ancien"
 msgstr "Générer un nouveau secret, invalidant l'ancien"
 
-#: app/templates/admin/service_accounts.html:100
+#: app/templates/admin/service_accounts.html:111
 msgid "Supprimer définitivement le compte"
 msgstr "Supprimer définitivement le compte"
 
-#: app/templates/admin/service_accounts.html:104
+#: app/templates/admin/service_accounts.html:115
 msgid "Aucun compte de service configuré."
 msgstr "Aucun compte de service configuré."
 

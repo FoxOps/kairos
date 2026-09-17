@@ -39,3 +39,19 @@ def resolve_service_account() -> None:
 
     g.service_account = service_account
     ServiceAccountRepository.touch_last_used(service_account)
+
+
+def require_scope(scope: str):
+    """Returns a before_request callable that aborts with a JSON 403 if
+    the authenticated ServiceAccount (g.service_account, already set by
+    resolve_service_account - registered first, see
+    app/api/setup.py::configure_blueprint) lacks the given scope. One
+    scope per resource blueprint (read:shifts, read:oncall, ...) - see
+    app/models/service_account.py::AVAILABLE_SCOPES."""
+
+    def _require_scope() -> None:
+        service_account = getattr(g, "service_account", None)
+        if service_account is not None and not service_account.has_scope(scope):
+            abort(403, message=f"This token does not have the '{scope}' scope.")
+
+    return _require_scope

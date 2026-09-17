@@ -57,10 +57,13 @@ login_manager.login_message_category = "danger"
 # flash in this app) instead of freezing in whatever locale happened
 # to be active at create_app() time.
 login_manager.localize_callback = gettext
-# storage_uri set explicitly (single-process deployment, see
-# docker/entrypoint.sh's gunicorn --workers 1) so Flask-Limiter doesn't
-# fall back to its own default and warn about it on every init.
-limiter = Limiter(key_func=get_remote_address, storage_uri="memory://")
+# storage_uri is set from app.config["RATELIMIT_STORAGE_URI"] at
+# init_app() time below (RATE_LIMIT_STORAGE_URI env var, default
+# memory:// - single-process deployment, see docker/entrypoint.sh's
+# gunicorn --workers 1), not hardcoded here, so an admin can point it at
+# a shared backend (e.g. redis://) for multi-worker/multi-replica
+# deployments without code changes.
+limiter = Limiter(key_func=get_remote_address)
 csrf = CSRFProtect()
 compress = Compress()
 babel = Babel()
@@ -347,6 +350,19 @@ def create_app(config_object: str | None = None):
         )
     else:
         limiter.enabled = False
+    # Read at init_app() time below like RATELIMIT_DEFAULT above -
+    # RATE_LIMIT_STORAGE_URI env var (default memory://), see
+    # app/config/base.py. Set unconditionally (not gated by
+    # RATE_LIMIT_ENABLED): Flask-Limiter builds its storage backend from
+    # this key regardless of whether limiting is currently enabled.
+    app.config["RATELIMIT_STORAGE_URI"] = app.config.get(
+        "RATE_LIMIT_STORAGE_URI", "memory://"
+    )
+    # Lets Flask-Limiter add its own Retry-After (+ X-RateLimit-*) response
+    # headers on a 429, computed from the actual breached limit's reset
+    # time - not something this app fabricates itself. Harmless when
+    # limiting is disabled (limiter.enabled gates the injection too).
+    app.config["RATELIMIT_HEADERS_ENABLED"] = True
 
     # Initialize the extensions
     db.init_app(app)

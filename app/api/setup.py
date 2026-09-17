@@ -22,10 +22,18 @@ init_api().
 from flask_smorest import Blueprint
 
 from app.api.errors import JSON_ERROR_CODES, json_error_handler
-from app.auth.service_account_auth import resolve_service_account
+from app.auth.service_account_auth import require_scope, resolve_service_account
 
 
-def configure_blueprint(blp: Blueprint) -> None:
+def configure_blueprint(blp: Blueprint, scope: str | None = None) -> None:
+    """scope: one of app.models.service_account.AVAILABLE_SCOPES, required
+    for every resource that gates access by scope (every real resource
+    blueprint) - registered after resolve_service_account so
+    g.service_account is already set when it runs. Left optional only for
+    non-resource blueprints that authenticate but expose no scoped data
+    (none exist today, kept for API symmetry)."""
     blp.before_request(resolve_service_account)
+    if scope is not None:
+        blp.before_request(require_scope(scope))
     for code in JSON_ERROR_CODES:
         blp.register_error_handler(code, json_error_handler)

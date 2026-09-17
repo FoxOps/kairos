@@ -125,51 +125,132 @@ schema. Fields worth remembering for the API:
 ## Public API v1 (service accounts)
 
 **A second API surface, distinct from everything above** — do not
-confuse the two authentication mechanisms. Designed for
-third-party integrations (Zapier, external scripts, reporting
-tools), not for the application's own frontend (which continues to
-use the internal `/api/*` API above, session cookie).
+confuse the two authentication mechanisms. Designed for real
+third-party integrations (monitoring tools, reporting systems,
+automation scripts, dashboards, calendar/infrastructure integrations,
+Postman, Scalar, generated SDKs), not for the application's own
+frontend (which continues to use the internal `/api/*` API above,
+session cookie). Strictly **read-only** — no `POST`/`PUT`/`PATCH`/
+`DELETE` — and treated as a stable external contract: operation IDs,
+response shapes, and pagination/filtering conventions are meant to
+stay stable across releases; a breaking change is called out
+explicitly in [`CHANGELOG.md`](../../CHANGELOG.md).
+
+### Discovery, base URL, documentation
 
 - **Base URL**: `/api/v1/*` — a prefix deliberately distinct from
-  `/api/*` (internal API) to avoid any collision.
-- **Authentication**: `Authorization: Bearer <token>` header,
-  never a session cookie. The token is generated from
-  `/admin/service-accounts` (admin-only) and shown in
-  clear text **only once**, at creation or regeneration — it
-  is never shown again afterward (only a truncated prefix stays
-  visible in the list, for identification). A missing, invalid,
-  revoked, or expired token returns `401` with a JSON body
-  `{"message": "..."}`  — never an HTML redirect, unlike the
-  classic `/api/*`/HTML routes.
+  `/api/*` (internal API) to avoid any collision. The generated
+  OpenAPI document's `servers` entry uses `PUBLIC_BASE_URL` (see
+  [`ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md))
+  when configured, or a relative `/` otherwise — never an internal
+  container hostname.
+- **`GET /api/v1`**: a small discovery document
+  (`{"name", "version", "openapi", "documentation"}`) — the entry
+  point for a client that only knows the base URL.
+- **`GET /api/v1/openapi.json`**: an OpenAPI 3.0.3 spec **automatically
+  generated** from the marshmallow schemas (`app/api/schemas/`) on
+  every startup — unlike [`openapi.yaml`](openapi.yaml) above (internal
+  API, hand-maintained), it cannot drift out of sync with the real
+  code. Always reachable, regardless of `PUBLIC_API_DOCS_ENABLED` below.
+- **`GET /api/v1/docs`**: interactive [Scalar](https://github.com/scalar/scalar)
+  documentation (Authorize button wired to the Bearer scheme below,
+  reads `/api/v1/openapi.json` directly), served from
+  `cdn.jsdelivr.net` — no CSP relaxation needed, that origin is already
+  whitelisted for FullCalendar. Gated by `PUBLIC_API_DOCS_ENABLED`
+  (default on); the raw spec above stays reachable either way.
+
+### Authentication and scopes
+
+- **Bearer token**: `Authorization: Bearer <token>` header, never a
+  session cookie. The token is generated from
+  `/admin/service-accounts` (admin-only) and shown in clear text
+  **only once**, at creation or regeneration — it is never shown
+  again afterward (only a truncated prefix stays visible in the list,
+  for identification).
+- **Scopes**: each ServiceAccount can optionally be restricted to a
+  subset of `read:shifts`, `read:oncall`, `read:leave`, `read:users`,
+  `read:shift_types`, `read:groups` (or the wildcard `read:*`),
+  editable from the same admin page. **No scope checked means full
+  access** — the default for a new account, and unchanged for every
+  account that existed before scopes were introduced (no forced
+  restriction on upgrade). A valid token used against a resource
+  outside its granted scopes gets `403`.
 - **CSRF**: not applicable — this API never accepts a cookie, so
   no `X-CSRFToken` is required.
-- **Rate limiting**: keyed by service account identity (not by IP),
-  `60 requests/minute, 1000/day` by default.
-- **v1 scope**: **read-only**. `GET /api/v1/shifts[/<id>]`,
-  `GET /api/v1/oncall[/<id>]`, `GET /api/v1/leave[/<id>]`,
-  `GET /api/v1/users[/<id>]`, `GET /api/v1/shift-types`. Lists are
-  paginated (`?page=`, `?per_page=`), with the same default
-  settings as the admin UI (`items_per_page`/`max_per_page`, `/admin/settings`).
-  Write support is not planned for v1 — a future enhancement if a
-  real need arises, not an oversight.
+
+### Rate limiting
+
+Requests are rate-limited **per ServiceAccount** (keyed by account
+identity, not by IP — two integrations behind the same NAT/proxy don't
+share a quota as long as they use different tokens), via
+`API_RATE_LIMIT` (default `60 per minute, 1000 per day`) —
+**administrator-configurable**, not a fixed protocol constant; see
+[`ENVIRONMENT_VARIABLES.md`](../reference/ENVIRONMENT_VARIABLES.md).
+`RATE_LIMIT_ENABLED=false` disables this limit too (both share the
+same switch). A breached limit returns `429` in the error envelope
+below; `Retry-After`/`X-RateLimit-*` headers are included when
+Flask-Limiter can reliably compute them (`RATE_LIMIT_STORAGE_URI`, also
+admin-configurable, controls whether counters are shared across
+multiple worker processes — see the same reference doc).
+
+### Resources
+
+- `GET /api/v1/shifts/[/<id>]`, `GET /api/v1/oncall/[/<id>]`,
+  `GET /api/v1/leave/[/<id>]`, `GET /api/v1/users/[/<id>]` — paginated
+  lists (`?page=`, `?per_page=`, same `items_per_page`/`max_per_page`
+  defaults as the admin UI), each filterable by `user_id`, `group_id`,
+  and (shifts/oncall/leave only) `start`/`end` date range. Date-range
+  filtering uses **overlap semantics**: a resource that starts before
+  the requested range but continues into it is still returned
+  (`resource.start < requested_end AND resource.end > requested_start`,
+  each bound independently optional). Shifts additionally accept
+  `shift_type_id`. An invalid range (`start` after `end`) or an
+  unparseable date returns `422`.
+- `GET /api/v1/shift-types/`, `GET /api/v1/groups/[/<id>]` —
+  deliberately **unpaginated** (small configuration resources, not
+  documented as paginated). `groups` resolves the `group_id` values
+  already present on shifts/on-calls/leaves/users to a name.
 - **`GET /api/v1/oncall/current[?group_id=]`**: the currently active
-  on-call shift(s), for monitoring/alerting integrations that need
+  on-call period(s), for monitoring/alerting integrations that need
   "who's on-call right now" without pulling the full list and
   re-implementing the timezone/active-window comparison themselves.
-  Without `group_id`: a JSON array (0+ items — more than one only in
-  `per_group` on-call scheduling mode). With `group_id`: a single
-  object, either the active shift or `{"active": false}` — unless more
-  than one on-call is genuinely concurrent within that group (a rare
-  admin-created overlap), in which case it falls back to the same
-  array shape rather than silently dropping one. Every
-  `/api/v1/oncall/*` `start_time`/`end_time` (list, detail, and this
-  endpoint) is a timezone-aware ISO 8601 string using the org's
-  `default_timezone` `Setting` (e.g. `2026-09-11T21:00:00+02:00`).
-- **Machine-readable documentation**: `GET /api/v1/openapi.json`, an
-  OpenAPI 3.0.3 spec **automatically generated** from the
-  marshmallow schemas (`app/api/schemas/`) on every startup — unlike
-  [`openapi.yaml`](openapi.yaml) above (internal API), it cannot
-  drift out of sync with the real code. No interactive Swagger/Redoc UI
-  is served by the application (the site's strict CSP doesn't
-  whitelist the CDN these UIs need by default) — import `openapi.json`
-  into an external Swagger UI/Postman/Insomnia to explore it visually.
+  Always the same stable shape, `{"items": [...], "count": N}` —
+  `items` is empty when nothing is active, and can hold more than one
+  entry when `group_id` is omitted (`per_group` on-call scheduling
+  mode) or when more than one on-call is genuinely concurrent within a
+  given group (a rare admin-created overlap) — a client never has to
+  branch on the JSON type.
+- Every `/api/v1/shifts/*`/`/api/v1/oncall/*` `start_time`/`end_time`
+  is a timezone-aware ISO 8601/RFC 3339 string using the org's
+  `default_timezone` `Setting` (e.g. `2026-09-11T21:00:00+02:00`) — an
+  explicit UTC offset, never an ambiguous naive timestamp.
+  `/api/v1/oncall/current`'s `timezone` field carries the IANA name
+  those offsets were computed from (e.g. `Europe/Paris`).
+
+### Errors
+
+Every non-2xx response uses the same envelope:
+
+```json
+{
+  "error": {
+    "code": "not_found",
+    "message": "Shift not found.",
+    "details": null
+  }
+}
+```
+
+`code` is one of `bad_request`, `unauthorized`, `forbidden`,
+`not_found`, `method_not_allowed`, `validation_error`, `rate_limited`,
+`internal_error`, `service_unavailable` — stable, safe to switch on in
+a generated client. `validation_error` (`422`) populates `details`
+with per-field messages, e.g. `{"query": {"page": ["..."]}}`.
+
+### Example
+
+```bash
+curl \
+  -H 'Authorization: Bearer KAIROS_TOKEN' \
+  'https://kairos.example.com/api/v1/oncall/current?group_id=2'
+```

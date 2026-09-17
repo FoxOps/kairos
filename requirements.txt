@@ -92,3 +92,8 @@ apprise==1.12.0
 # transitives de ce fichier).
 flask-smorest==0.47.0
 marshmallow==4.3.0
+
+# Test-only: validates the generated /api/v1/openapi.json is well-formed
+# OpenAPI 3.0.3, not just JSON with the right top-level keys - see
+# tests/integration/test_openapi_contract.py.
+openapi-spec-validator==0.9.0

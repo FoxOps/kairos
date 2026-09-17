@@ -74,6 +74,41 @@ class TestAddServiceAccount:
         with test_app.app_context():
             assert ServiceAccount.query.count() == 0
 
+    def test_no_scopes_checked_means_full_access(self, test_app, logged_in_client):
+        logged_in_client.post(
+            "/admin/service-accounts/add",
+            data={"name": "Zapier"},
+            follow_redirects=True,
+        )
+        with test_app.app_context():
+            sa = ServiceAccount.query.filter_by(name="Zapier").first()
+            assert sa.get_scopes() == []
+            assert sa.has_scope("read:oncall") is True
+
+    def test_checked_scopes_are_persisted_and_restrict_access(
+        self, test_app, logged_in_client
+    ):
+        logged_in_client.post(
+            "/admin/service-accounts/add",
+            data={"name": "Zapier", "scopes": ["read:shifts", "read:leave"]},
+            follow_redirects=True,
+        )
+        with test_app.app_context():
+            sa = ServiceAccount.query.filter_by(name="Zapier").first()
+            assert set(sa.get_scopes()) == {"read:shifts", "read:leave"}
+            assert sa.has_scope("read:shifts") is True
+            assert sa.has_scope("read:oncall") is False
+
+    def test_unknown_scope_value_is_ignored(self, test_app, logged_in_client):
+        logged_in_client.post(
+            "/admin/service-accounts/add",
+            data={"name": "Zapier", "scopes": ["read:shifts", "write:everything"]},
+            follow_redirects=True,
+        )
+        with test_app.app_context():
+            sa = ServiceAccount.query.filter_by(name="Zapier").first()
+            assert sa.get_scopes() == ["read:shifts"]
+
 
 class TestEditServiceAccount:
     def test_requires_admin(self, test_app, non_admin_client):
@@ -107,6 +142,26 @@ class TestEditServiceAccount:
             refreshed = ServiceAccountRepository.get_by_id(sa_id)
             assert refreshed.name == "Zapier renamed"
             assert refreshed.description == "New description"
+
+    def test_updates_scopes(self, test_app, logged_in_client):
+        with test_app.app_context():
+            sa, _ = ServiceAccountService.create_account("Zapier")
+            db.session.commit()
+            sa_id = sa.id
+
+        resp = logged_in_client.post(
+            f"/admin/service-accounts/edit/{sa_id}",
+            data={"name": "Zapier", "scopes": ["read:users"]},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with test_app.app_context():
+            from app.repositories.service_account_repository import (
+                ServiceAccountRepository,
+            )
+
+            refreshed = ServiceAccountRepository.get_by_id(sa_id)
+            assert refreshed.get_scopes() == ["read:users"]
 
     def test_does_not_expose_secret_in_form(self, test_app, logged_in_client):
         with test_app.app_context():
