@@ -7,6 +7,24 @@ from app import db
 from app.models import User
 
 
+class TestLoginRequiredFlashTranslation:
+    def test_login_message_renders_in_english(self, test_app, client):
+        """Found during 1.1.1 release QA: login_manager.login_message
+        was a raw, untracked string literal - pybabel extract never
+        found it (only calls to a recognized keyword are scanned), so
+        the catalog entry went obsolete and English visitors always
+        saw the raw French text. Now wrapped in the N_ extraction
+        marker (app/__init__.py)."""
+        with test_app.app_context():
+            from app.services import SettingsService
+
+            SettingsService.set_default_language("en")
+
+        resp = client.get("/dashboard", follow_redirects=True)
+        assert b"Please log in to access this page." in resp.data
+        assert b"Veuillez vous connecter" not in resp.data
+
+
 class TestGetLocaleResolution:
     def test_defaults_to_fr_for_anonymous_visitor(self, test_app, client):
         # current_user needs a real request context (not just an app

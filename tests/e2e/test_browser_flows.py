@@ -242,8 +242,8 @@ class TestDeleteConfirmationModal:
         assert row.count() > 0
 
         row.locator(".js-confirm-delete").first.click()
-        page.wait_for_selector(".modal.modal-open")
-        page.click(".modal.modal-open button:has-text('Annuler')")
+        page.wait_for_selector("dialog.modal[open]")
+        page.click("dialog.modal[open] button:has-text('Annuler')")
         page.wait_for_timeout(200)
 
         # Still on /leave (no navigation triggered), leave still present.
@@ -260,8 +260,8 @@ class TestDeleteConfirmationModal:
         assert row.count() > 0
 
         row.locator(".js-confirm-delete").first.click()
-        page.wait_for_selector(".modal.modal-open")
-        page.click(".modal.modal-open button:has-text('Confirmer')")
+        page.wait_for_selector("dialog.modal[open]")
+        page.click("dialog.modal[open] button:has-text('Confirmer')")
         page.wait_for_load_state("networkidle")
 
         assert page.locator("tr", has_text="05/04/2031").count() == 0

@@ -63,3 +63,9 @@ def org_now() -> datetime:
     organization's configured default_timezone by the server's UTC
     offset - the bug this function exists to avoid reintroducing)."""
     return datetime.now(_org_timezone()).replace(tzinfo=None)
+
+
+def org_aware(dt: datetime) -> datetime:
+    """Naive org-tz wall clock -> aware datetime in the org's configured
+    timezone, for API serialization (ISO 8601 with UTC offset)."""
+    return dt.replace(tzinfo=_org_timezone())

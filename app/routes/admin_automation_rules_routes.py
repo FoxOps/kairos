@@ -30,7 +30,6 @@ from app.services import AutomationRuleAdminService, SettingsService
 from app.services.shift_type_service import ShiftTypeService
 from app.utils.automation.rules import (
     RULE_TYPES,
-    MandatoryShiftRule,
     OnCallAnchorRule,
     OnCallShiftOverlapRule,
     OnCallSpacingRule,
@@ -131,24 +130,11 @@ def automation_rules_dashboard():
         elif section == "staffing_limits":
             limits = {}
             for shift_type in ShiftTypeService.list_all():
-                min_value = _parse_int(request.form.get(f"min_{shift_type.id}", ""))
                 max_value = _parse_int(request.form.get(f"max_{shift_type.id}", ""))
-                if min_value is not None or max_value is not None:
-                    limits[shift_type.id] = (min_value, max_value)
+                if max_value is not None:
+                    limits[shift_type.id] = max_value
             error = AutomationRuleAdminService.save_staffing_limits(limits, group=group)
             _flash_result(error, _("Effectifs enregistrés"))
-
-        elif section == "mandatory_shift":
-            ids = [
-                _parse_int(i) for i in request.form.getlist("mandatory_shift_type_ids")
-            ]
-            if None in ids:
-                flash(_("Erreur : sélection invalide"), "danger")
-            else:
-                error = AutomationRuleAdminService.save_mandatory_shift(
-                    ids, group=group
-                )
-                _flash_result(error, _("Créneaux obligatoires enregistrés"))
 
         elif section == "rest_after_oncall":
             hours = _parse_int(request.form.get("min_rest_hours", ""))
@@ -177,6 +163,11 @@ def automation_rules_dashboard():
             error = SettingsService.set_oncall_scheduling_mode(mode)
             _flash_result(error, _("Mode de planification des astreintes enregistré"))
 
+        elif section == "new_automation_engine_enabled":
+            enabled = request.form.get("enabled") == "on"
+            error = SettingsService.set_new_automation_engine_enabled(enabled)
+            _flash_result(error, _("Réglage du moteur d'automatisation enregistré"))
+
         return redirect(
             url_for(
                 "admin.automation_rules_dashboard",
@@ -195,7 +186,7 @@ def automation_rules_dashboard():
     shift_types = ShiftTypeService.list_all()
     weekday_choices = list(enumerate(_weekday_labels()))
     staffing_limits = {
-        shift_type.id: StaffingLimitsRule.get_limits(shift_type.id, group=group)
+        shift_type.id: StaffingLimitsRule.get_max(shift_type.id, group=group)
         for shift_type in shift_types
     }
     overrides = (
@@ -219,9 +210,9 @@ def automation_rules_dashboard():
         oncall_spacing=OnCallSpacingRule.resolve(group=group),
         oncall_anchor=OnCallAnchorRule.resolve(group=group),
         staffing_limits=staffing_limits,
-        mandatory_shift=MandatoryShiftRule.resolve(group=group),
         rest_after_oncall=RestAfterOnCallRule.resolve(group=group),
         oncall_shift_overlap=OnCallShiftOverlapRule.resolve(group=group),
         shift_scheduling_mode=SettingsService.get_shift_scheduling_mode(),
         oncall_scheduling_mode=SettingsService.get_oncall_scheduling_mode(),
+        new_automation_engine_enabled=SettingsService.get_new_automation_engine_enabled(),
     )

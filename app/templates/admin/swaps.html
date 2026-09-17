@@ -17,9 +17,9 @@
     <div class="flex flex-wrap gap-2 mb-4" role="group" aria-label="{{ _("Actions globales") }}">
         <form method="POST" action="{{ url_for('admin.purge_swaps') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn btn-ghost btn-sm" type="submit"
+            <button class="btn btn-ghost btn-sm js-confirm-delete" type="submit"
                     aria-label="{{ _("Purger l'historique complet des échanges terminés") }}" title="{{ _("Purger l'historique complet des échanges terminés") }}"
-                    onclick="return confirm('{{ _("Supprimer définitivement toutes les demandes terminées (approuvées, rejetées ou annulées), tous utilisateurs confondus ?") }}');">
+                    data-confirm-message="{{ _("Supprimer définitivement toutes les demandes terminées (approuvées, rejetées ou annulées), tous utilisateurs confondus ?") }}">
                 <i class="fas fa-broom" aria-hidden="true"></i> {{ _("Purger l'historique (tous utilisateurs)") }}
             </button>
         </form>
@@ -103,17 +103,17 @@
                         <div class="flex flex-nowrap gap-2" role="group" aria-label="{{ _("Actions pour la demande de %(name)s", name=swap.requester.name if swap.requester else _("un utilisateur supprimé")) }}">
                             <form method="POST" action="{{ url_for('admin.approve_swap', swap_request_id=swap.id) }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button class="btn btn-success btn-sm" type="submit"
+                                <button class="btn btn-success btn-sm js-confirm-delete" type="submit"
                                         aria-label="{{ _("Approuver la demande") }}" title="{{ _("Approuver la demande") }}"
-                                        onclick="return confirm('{{ _("Approuver cet échange ? Les shifts seront réassignés immédiatement.") }}');">
+                                        data-confirm-message="{{ _("Approuver cet échange ? Les shifts seront réassignés immédiatement.") }}">
                                     <i class="fas fa-check" aria-hidden="true"></i> {{ _("Approuver") }}
                                 </button>
                             </form>
                             <form method="POST" action="{{ url_for('admin.reject_swap', swap_request_id=swap.id) }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button class="btn btn-error btn-sm" type="submit"
+                                <button class="btn btn-error btn-sm js-confirm-delete" type="submit"
                                         aria-label="{{ _("Rejeter la demande") }}" title="{{ _("Rejeter la demande") }}"
-                                        onclick="return confirm('{{ _("Rejeter cette demande d'échange ?") }}');">
+                                        data-confirm-message="{{ _("Rejeter cette demande d'échange ?") }}">
                                     <i class="fas fa-times" aria-hidden="true"></i> {{ _("Rejeter") }}
                                 </button>
                             </form>
@@ -173,9 +173,9 @@
                     <td>
                         <form method="POST" action="{{ url_for('admin.revert_swap', swap_request_id=swap.id) }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button class="btn btn-warning btn-sm" type="submit"
+                            <button class="btn btn-warning btn-sm js-confirm-delete" type="submit"
                                     aria-label="{{ _("Annuler l'échange approuvé") }}" title="{{ _("Annuler l'échange approuvé") }}"
-                                    onclick="return confirm('{{ _("Annuler cet échange ? Les shifts seront réassignés à leurs propriétaires d'origine.") }}');">
+                                    data-confirm-message="{{ _("Annuler cet échange ? Les shifts seront réassignés à leurs propriétaires d'origine.") }}">
                                 <i class="fas fa-rotate-left" aria-hidden="true"></i> {{ _("Annuler") }}
                             </button>
                         </form>

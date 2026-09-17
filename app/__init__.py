@@ -13,15 +13,16 @@ New structure:
 - Routes organized into blueprints in app/routes/
 """
 
+import logging
 import os
 
 from flask import Flask, render_template
-from flask_babel import Babel
+from flask_babel import Babel, gettext
 from flask_compress import Compress
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_login import LOGIN_MESSAGE, LoginManager
+from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_talisman import Talisman
@@ -32,10 +33,30 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 # Extension initialization
 # ---------------------------------------------------------------------------
 
+
+def N_(message: str) -> str:
+    """Identity marker (Babel's default `N_` extraction keyword) - flags
+    a string for `pybabel extract` without translating it immediately.
+    Needed for login_message below: a plain string literal assignment
+    is invisible to extraction (only calls to a recognized keyword are
+    scanned), which silently dropped this msgid from the catalogs
+    (found stale/obsolete during 1.1.1 release QA - English users saw
+    the raw French text since gettext() had no live translation for
+    an untracked msgid)."""
+    return message
+
+
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
 login_manager.login_message_category = "danger"
+# login_message below is set to the raw (French) msgid, never pre-
+# translated - localize_callback runs it through gettext() lazily,
+# inside unauthorized()'s own per-request context, so it resolves to
+# whichever locale that specific requester is in (same as every other
+# flash in this app) instead of freezing in whatever locale happened
+# to be active at create_app() time.
+login_manager.localize_callback = gettext
 # storage_uri set explicitly (single-process deployment, see
 # docker/entrypoint.sh's gunicorn --workers 1) so Flask-Limiter doesn't
 # fall back to its own default and warn about it on every init.
@@ -43,6 +64,44 @@ limiter = Limiter(key_func=get_remote_address, storage_uri="memory://")
 csrf = CSRFProtect()
 compress = Compress()
 babel = Babel()
+
+
+def _compile_missing_translation_catalogs() -> None:
+    """Compile any .po catalog under app/translations/ that has no matching
+    .mo file yet.
+
+    .mo files are gitignored build artifacts - normally produced by
+    `docker/Dockerfile` (image build) or the test suite's own autouse
+    fixture. A plain `python run.py` bare-metal start goes through
+    neither, so a fresh checkout silently renders every locale as
+    French forever (Flask-Babel falls back to the msgid when no
+    compiled catalog exists) - confirmed in production QA. This is a
+    cheap, idempotent safety net: a no-op once catalogs are compiled,
+    a few milliseconds otherwise.
+    """
+    from babel.messages.mofile import write_mo
+    from babel.messages.pofile import read_po
+
+    translations_dir = os.path.join(os.path.dirname(__file__), "translations")
+    if not os.path.isdir(translations_dir):
+        return
+
+    for locale in sorted(os.listdir(translations_dir)):
+        po_path = os.path.join(translations_dir, locale, "LC_MESSAGES", "messages.po")
+        mo_path = os.path.join(translations_dir, locale, "LC_MESSAGES", "messages.mo")
+        if os.path.exists(po_path) and not os.path.exists(mo_path):
+            try:
+                with open(po_path, "rb") as po_file:
+                    catalog = read_po(po_file, locale=locale)
+                with open(mo_path, "wb") as mo_file:
+                    write_mo(mo_file, catalog)
+            except Exception:  # noqa: BLE001 - never block startup over this
+                logging.getLogger(__name__).warning(
+                    "Could not compile translation catalog %s - this locale will fall "
+                    "back to French. Run 'make babel-compile' manually.",
+                    po_path,
+                    exc_info=True,
+                )
 
 
 def get_locale() -> str:
@@ -295,6 +354,7 @@ def create_app(config_object: str | None = None):
     login_manager.init_app(app)
     limiter.init_app(app)
     csrf.init_app(app)
+    _compile_missing_translation_catalogs()
     babel.init_app(app, locale_selector=get_locale)
     # Flask-Babel auto-injects _/gettext/ngettext as Jinja globals (and
     # the {% trans %} extension), but NOT get_locale() itself - register
@@ -484,10 +544,16 @@ def create_app(config_object: str | None = None):
         login_manager.login_view = "auth.login"
         # login_manager is a module-level singleton reused by every
         # create_app() call in the same process (tests included) -
-        # explicitly restore Flask-Login's default, otherwise an
-        # earlier call in OIDC mode (branch above) leaves login_message
-        # at None here too.
-        login_manager.login_message = LOGIN_MESSAGE
+        # explicitly restore this default, otherwise an earlier call in
+        # OIDC mode (branch above) leaves login_message at None here
+        # too. Raw French msgid (not Flask-Login's own English
+        # LOGIN_MESSAGE constant, and not pre-wrapped in _() here
+        # either - see localize_callback above for why) so it renders
+        # in French/English exactly like every other flash in the app,
+        # instead of always being English regardless of locale.
+        login_manager.login_message = N_(
+            "Veuillez vous connecter pour accéder à cette page."
+        )
 
     # Store the global instance for backward compatibility
     _app = app

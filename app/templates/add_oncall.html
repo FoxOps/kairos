@@ -24,9 +24,9 @@
                 </fieldset>
 
                 <fieldset class="fieldset">
-                    <legend class="fieldset-legend">{{ _("Date de début (vendredi)") }} <span class="text-error">*</span></legend>
+                    <legend class="fieldset-legend">{{ _("Date de début") }} <span class="text-error">*</span></legend>
                     <input class="input w-full validator" type="date" id="start_date" name="start_date" required aria-required="true" aria-describedby="start-date-help">
-                    <p class="text-sm text-base-content/70" id="start-date-help">{{ _("L'astreinte commence le vendredi à 21h et se termine le vendredi suivant à 07h.") }}</p>
+                    <p class="text-sm text-base-content/70" id="start-date-help">{{ _("Le jour et les horaires sont ceux configurés pour le groupe de l'utilisateur sélectionné (comportement historique par défaut tant qu'aucune règle n'est enregistrée : vendredi 21h à vendredi suivant 07h). Voir la page Règles d'automatisation.") }}</p>
                 </fieldset>
 
                 <div class="flex gap-2" role="group" aria-label="{{ _("Actions du formulaire") }}">

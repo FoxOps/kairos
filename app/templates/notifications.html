@@ -18,8 +18,8 @@
         </form>
         <form method="POST" action="{{ url_for('main.purge_notifications') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="btn btn-ghost btn-sm" type="submit" aria-label="{{ _("Purger les notifications lues") }}" title="{{ _("Purger les notifications lues") }}"
-                    onclick="return confirm('{{ _("Supprimer définitivement toutes les notifications lues ?") }}');">
+            <button class="btn btn-ghost btn-sm js-confirm-delete" type="submit" aria-label="{{ _("Purger les notifications lues") }}" title="{{ _("Purger les notifications lues") }}"
+                    data-confirm-message="{{ _("Supprimer définitivement toutes les notifications lues ?") }}">
                 <i class="fas fa-broom" aria-hidden="true"></i> {{ _("Purger les notifications lues") }}
             </button>
         </form>

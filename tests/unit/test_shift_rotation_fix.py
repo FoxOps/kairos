@@ -17,10 +17,26 @@ from app.utils.automation import AdvancedShiftAutomation
 
 @pytest.fixture
 def app_context():
-    """Create an app context for the tests."""
-    app = create_app()
-    app.config["TESTING"] = True
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+    """Create an app context for the tests.
+
+    Real bug found while investigating flaky failures under `pytest -n
+    auto`: this used to call `create_app()` (defaulting to
+    `app.config.Config`, production-shaped) and override
+    `SQLALCHEMY_DATABASE_URI` to `sqlite:///:memory:` *after* the fact -
+    Flask-SQLAlchemy 3.x binds the engine at `db.init_app()` time
+    (inside `create_app()`, before this fixture ever runs), so that
+    late override was silently ignored and every test here was actually
+    hitting the real `instance/app.db` file the whole time. Harmless
+    when run alone (each test's own create_all()/drop_all() serialize
+    against that one file), but under `-n auto` multiple xdist worker
+    *processes* all hit that same physical file concurrently -
+    `UNIQUE constraint failed` (two workers inserting the same row) and
+    `no such table` (one worker's drop_all() racing another's query)
+    both reproduced reliably this way. `create_app('app.config.TestingConfig')`
+    sets the in-memory URI at construction time, before `db.init_app()`
+    ever reads it - the same pattern every other test in this suite
+    already uses via conftest.py's `test_app` fixture."""
+    app = create_app("app.config.TestingConfig")
 
     with app.app_context():
         db.create_all()

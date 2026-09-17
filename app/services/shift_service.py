@@ -14,6 +14,7 @@ from app import db
 from app.models import Shift, ShiftType, User
 from app.repositories.shift_repository import ShiftRepository, ShiftTypeRepository
 from app.services.audit_service import AuditService
+from app.utils.automation.rules import WeekendDefinitionRule
 from app.utils.helpers import (
     can_add_shift,
     check_shift_rule_violations,
@@ -57,7 +58,7 @@ class ShiftService:
         shifts_added = []
 
         while current_date <= end_date:
-            if current_date.weekday() >= 5:
+            if WeekendDefinitionRule.is_weekend(current_date, group=user.group):
                 current_date += timedelta(days=1)
                 continue
 
@@ -71,7 +72,12 @@ class ShiftService:
                 hour=shift_type.end_hour
             )
             ShiftRepository.create(
-                user.id, shift_type.id, start_time, end_time, current_date
+                user.id,
+                shift_type.id,
+                start_time,
+                end_time,
+                current_date,
+                group_id=user.group_id,
             )
             shifts_added.append(current_date.strftime("%d/%m/%Y"))
             current_date += timedelta(days=1)
@@ -137,14 +143,19 @@ class ShiftService:
     ) -> tuple[Shift | None, str | None]:
         """Create a shift from the drag & drop API. Returns (shift, error_message)."""
         on_date = start_time.date()
-        if on_date.weekday() >= 5:
+        if WeekendDefinitionRule.is_weekend(on_date, group=user.group):
             return None, _("Impossible de créer un shift pour un week-end")
 
         if not can_add_shift(user, on_date, shift_type):
             return None, _("Conflit détecté pour ce shift")
 
         shift = ShiftRepository.create(
-            user.id, shift_type.id, start_time, end_time, on_date
+            user.id,
+            shift_type.id,
+            start_time,
+            end_time,
+            on_date,
+            group_id=user.group_id,
         )
         db.session.commit()
         AuditService.log(
@@ -174,15 +185,21 @@ class ShiftService:
             return None, _("Shift non trouvé")
 
         new_date = new_start.date()
-        if new_date.weekday() >= 5:
-            return None, _("Impossible de déplacer vers un week-end (samedi/dimanche)")
 
+        # Resolved before the weekend check below so a simultaneous
+        # reassignment to a different group validates against that
+        # group's own configured weekend, not the shift's original
+        # owner's - same "resolve against the effective/target user"
+        # rule as every other check in this method.
         if new_user_id is not None and new_user_id != shift.user_id:
             effective_user = db.session.get(User, new_user_id)
             if not effective_user:
                 return None, _("Utilisateur non trouvé")
         else:
             effective_user = shift.user
+
+        if WeekendDefinitionRule.is_weekend(new_date, group=effective_user.group):
+            return None, _("Impossible de déplacer vers un week-end (samedi/dimanche)")
 
         if new_shift_type_id is not None and new_shift_type_id != shift.shift_type_id:
             effective_shift_type = ShiftTypeRepository.get_by_id(new_shift_type_id)
@@ -244,6 +261,7 @@ class ShiftService:
         shift.date = new_date
         shift.user_id = effective_user.id
         shift.shift_type_id = effective_shift_type.id
+        shift.group_id = effective_user.group_id
         db.session.commit()
 
         details = f"{original_user_name} -> {new_date.strftime('%d/%m/%Y')}"

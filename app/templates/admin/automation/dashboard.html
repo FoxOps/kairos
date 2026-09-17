@@ -2,6 +2,8 @@
 {% from "admin/macros/settings_card.html" import settings_section %}
 {% from "macros/breadcrumbs.html" import breadcrumbs %}
 
+{% block title %}{{ _("Automatisation") }} - Kairos{% endblock %}
+
 {% block admin_content %}
 <section class="p-3 md:p-4 max-w-6xl mx-auto">
     {{ breadcrumbs([
@@ -57,7 +59,7 @@
     <div class="card card-sm bg-base-100 shadow-md mb-6">
         <div class="card-body">
             <h2 class="text-lg font-semibold"><i class="fas fa-sliders" aria-hidden="true"></i> {{ _("Règles d'automatisation") }}</h2>
-            <p>{{ _("Configurer les règles utilisées par la génération : créneaux, week-end, espacement des astreintes, effectifs minimum/maximum, créneaux obligatoires, repos après astreinte.") }}</p>
+            <p>{{ _("Configurer les règles utilisées par la génération : créneaux, week-end, espacement des astreintes, effectif maximum, repos après astreinte.") }}</p>
             <div class="mt-3">
                 <a class="btn btn-primary btn-sm" href="{{ url_for('admin.automation_rules_dashboard') }}">
                     <i class="fas fa-sliders"></i> {{ _("Configurer") }}
@@ -143,7 +145,7 @@
         </div>
         <div class="collapse-content">
             <div class="flex flex-col gap-2">
-                <p><strong>{{ _("Règles configurables :") }}</strong> {{ _("Les règles utilisées par la génération (créneaux, définition du week-end, espacement des astreintes, effectifs, créneaux obligatoires, repos après astreinte) se configurent sur la page") }} <a class="link" href="{{ url_for('admin.automation_rules_dashboard') }}">{{ _("Règles d'automatisation") }}</a>, {{ _("globalement ou avec une valeur spécifique par groupe.") }}</p>
+                <p><strong>{{ _("Règles configurables :") }}</strong> {{ _("Les règles utilisées par la génération (créneaux, définition du week-end, espacement des astreintes, effectif maximum, repos après astreinte) se configurent sur la page") }} <a class="link" href="{{ url_for('admin.automation_rules_dashboard') }}">{{ _("Règles d'automatisation") }}</a>, {{ _("globalement ou avec une valeur spécifique par groupe.") }}</p>
                 <p><strong>{{ _("Mode de planification :") }}</strong> {{ _("Shifts et astreintes ont chacun un mode indépendant, réglable sur la même page : \"Commune\" (une seule rotation partagée par tous les groupes, le comportement historique) ou \"Par groupe\" (chaque groupe a sa propre rotation indépendante, avec ses propres statistiques ci-dessus).") }}</p>
                 <p><strong>{{ _("Génération automatique des shifts :") }}</strong> {{ _("Après la génération des astreintes, les shifts sont automatiquement créés selon les créneaux configurés et la rotation des rôles.") }}</p>
                 <p><strong>{{ _("Rafraîchissement manuel :") }}</strong> {{ _("Utilisez le bouton \"Rafraîchir les shifts\" pour recalculer les shifts si vous avez modifié manuellement les astreintes, sans relancer toute la rotation.") }}</p>

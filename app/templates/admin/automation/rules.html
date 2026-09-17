@@ -15,9 +15,9 @@
         <i class="fas fa-sliders" aria-hidden="true"></i> {{ _("Règles d'automatisation") }}
     </h1>
 
-    <div class="bg-base-200 rounded-box p-3 mb-4 flex flex-wrap items-center gap-3">
-        <i class="fas fa-users-rectangle text-lg text-primary" aria-hidden="true"></i>
-        <form method="GET" action="{{ url_for('admin.automation_rules_dashboard') }}" class="flex-1 flex flex-wrap items-center gap-3">
+    <div class="bg-base-200 rounded-box p-3 mb-4 flex flex-col gap-2">
+        <form method="GET" action="{{ url_for('admin.automation_rules_dashboard') }}" class="flex flex-wrap items-center gap-3">
+            <i class="fas fa-users-rectangle text-lg text-primary" aria-hidden="true"></i>
             <label class="font-semibold" for="group_id">{{ _("Portée éditée") }}</label>
             <select class="select select-sm w-auto" id="group_id" name="group_id" onchange="this.form.submit()">
                 <option value="" {% if not selected_group %}selected{% endif %}>{{ _("Organisation (par défaut)") }}</option>
@@ -30,9 +30,9 @@
             </noscript>
         </form>
         {% if selected_group %}
-        <span class="text-sm">{{ _("Édition des réglages du groupe : %(name)s", name=selected_group.name) }}</span>
+        <span class="text-sm pl-1">{{ _("Édition des réglages du groupe : %(name)s", name=selected_group.name) }}</span>
         {% else %}
-        <span class="text-sm">{{ _("Édition des réglages par défaut de l'organisation") }}</span>
+        <span class="text-sm pl-1">{{ _("Édition des réglages par défaut de l'organisation") }}</span>
         {% endif %}
     </div>
 
@@ -73,6 +73,26 @@
                     </button>
                 </form>
             </div>
+        </div>
+    </div>
+
+    <div class="card card-sm bg-base-100 shadow-md mb-4 border border-warning">
+        <div class="card-body gap-2">
+            <h2 class="font-semibold flex items-center gap-2"><i class="fas fa-triangle-exclamation text-warning" aria-hidden="true"></i> {{ _("Moteur d'automatisation") }}</h2>
+            <p class="text-sm text-base-content/70">
+                {{ _("Nouveau moteur de planification (aperçu \"Dry Run\" déjà basé dessus). Une fois activé, les actions \"Générer\" et \"Recalculer les shifts\" de la page Automatisation l'utilisent aussi pour écrire réellement en base, ainsi que le rééquilibrage automatique après une absence. Désactiver ce réglage revient immédiatement à l'ancien moteur, sans modification de code.") }}
+            </p>
+            <form method="POST" action="{{ url_for('admin.automation_rules_dashboard') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="section" value="new_automation_engine_enabled">
+                <label class="label cursor-pointer justify-start gap-2" for="new_automation_engine_enabled">
+                    <input type="checkbox" class="checkbox checkbox-warning" id="new_automation_engine_enabled" name="enabled" {% if new_automation_engine_enabled %}checked{% endif %}>
+                    <span>{{ _("Utiliser le nouveau moteur pour la génération réelle") }}</span>
+                </label>
+                <button class="btn btn-warning btn-sm mt-2" type="submit">
+                    <i class="fas fa-save" aria-hidden="true"></i> {{ _("Enregistrer") }}
+                </button>
+            </form>
         </div>
     </div>
 
@@ -120,13 +140,12 @@
     </fieldset>
     {% endcall %}
 
-    {% call settings_form_card(_("Effectif minimum/maximum par créneau"), "fa-users", "staffing_limits", url_for('admin.automation_rules_dashboard'), group_id=group_id, description=_("Laisser vide = pas de limite."), badge_html=(override_badge(overrides.get("staffing_limits")) if selected_group else none)) %}
+    {% call settings_form_card(_("Effectif maximum par créneau"), "fa-users", "staffing_limits", url_for('admin.automation_rules_dashboard'), group_id=group_id, description=_("Laisser vide = pas de limite. Le créneau de rotation et le créneau d'astreinte (configurés ci-dessus) sont déjà couverts automatiquement par la génération - inutile de leur fixer un minimum."), badge_html=(override_badge(overrides.get("staffing_limits")) if selected_group else none)) %}
     <div class="overflow-x-auto">
         <table class="table">
             <thead>
                 <tr>
                     <th>{{ _("Type de shift") }}</th>
-                    <th>{{ _("Minimum") }}</th>
                     <th>{{ _("Maximum") }}</th>
                 </tr>
             </thead>
@@ -134,26 +153,12 @@
                 {% for st in shift_types %}
                 <tr>
                     <td>{{ st.label }}</td>
-                    <td><input type="number" class="input input-sm w-24" name="min_{{ st.id }}" min="0" value="{{ staffing_limits[st.id].min if staffing_limits[st.id].min is not none else '' }}"></td>
-                    <td><input type="number" class="input input-sm w-24" name="max_{{ st.id }}" min="0" value="{{ staffing_limits[st.id].max if staffing_limits[st.id].max is not none else '' }}"></td>
+                    <td><input type="number" class="input input-sm w-24" name="max_{{ st.id }}" min="0" value="{{ staffing_limits[st.id] if staffing_limits[st.id] is not none else '' }}"></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    {% endcall %}
-
-    {% call settings_form_card(_("Créneaux obligatoires"), "fa-triangle-exclamation", "mandatory_shift", url_for('admin.automation_rules_dashboard'), group_id=group_id, description=_("Un créneau obligatoire non pourvu déclenche une alerte distincte, sans jamais bloquer la génération."), badge_html=(override_badge(overrides.get("mandatory_shift")) if selected_group else none)) %}
-    <fieldset class="fieldset">
-        <div class="flex flex-wrap gap-3">
-            {% for st in shift_types %}
-            <label class="label cursor-pointer gap-2">
-                <input type="checkbox" class="checkbox" name="mandatory_shift_type_ids" value="{{ st.id }}" {% if st.id in mandatory_shift.shift_type_ids %}checked{% endif %}>
-                {{ st.label }}
-            </label>
-            {% endfor %}
-        </div>
-    </fieldset>
     {% endcall %}
     {% endcall %}
 

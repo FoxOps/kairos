@@ -96,7 +96,11 @@ def live_server_url():
 
     server_thread = threading.Thread(
         target=lambda: app.run(
-            host="127.0.0.1", port=port, use_reloader=False, debug=False
+            host="127.0.0.1",
+            port=port,
+            use_reloader=False,
+            debug=False,
+            threaded=True,
         ),
         daemon=True,
     )
@@ -142,7 +146,11 @@ def oidc_live_servers():
     idp_app = create_mock_oidc_provider(idp_port)
     idp_thread = threading.Thread(
         target=lambda: idp_app.run(
-            host="127.0.0.1", port=idp_port, use_reloader=False, debug=False
+            host="127.0.0.1",
+            port=idp_port,
+            use_reloader=False,
+            debug=False,
+            threaded=True,
         ),
         daemon=True,
     )
@@ -193,7 +201,11 @@ def oidc_live_servers():
 
     app_thread = threading.Thread(
         target=lambda: app.run(
-            host="127.0.0.1", port=app_port, use_reloader=False, debug=False
+            host="127.0.0.1",
+            port=app_port,
+            use_reloader=False,
+            debug=False,
+            threaded=True,
         ),
         daemon=True,
     )

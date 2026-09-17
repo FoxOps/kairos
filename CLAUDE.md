@@ -88,6 +88,32 @@ help text, to avoid the install cost for contributors who don't need it). Keep s
 versions identical across all three requirements files when bumping a dependency that appears in
 more than one.
 
+A third workflow, `.github/workflows/docker-dev-build.yml` ("Docker Dev Build"), is the inverse of
+`docker-release.yml`: also `workflow_dispatch`-only, but restricted to **any branch except `main`**
+(a `require-not-main` job fails loudly if run from `main` — a dev build off `main` would tag
+production's own commit with build metadata it should never carry) and also calls `tests.yml` as a
+reusable gate (`needs:`) before building. Exists to answer "is this test container actually running
+the latest commit on this branch?" — see `Docs/reference/VERSIONING.md`. Version is disposable
+SemVer build metadata, `<APP_VERSION_DEFAULT>+dev.<run_number>.<short_sha>` (base extracted from
+`app/utils/health.py`, `+` never affects SemVer precedence/ordering so this can never collide with
+or outrank a real release version; the run number is Actions' own free monotonically-increasing
+counter, no hand-maintained one to keep in sync across branches). Pushes
+`ghcr.io/foxops/kairos:dev-<branch>-<short_sha>` (one exact build) and the floating
+`ghcr.io/foxops/kairos:dev` tag (newest dev build across any branch, convenient "just give me the
+latest test image" — same idea as `:latest` but scoped to dev builds, never mixed with it — never
+`:latest` itself, that tag stays reserved for `docker-release.yml`). A final `cleanup-old-dev-builds`
+job deletes `dev-*`-tagged package versions past the 5 newest, via a hand-rolled `gh api` script —
+deliberately **not** `actions/delete-package-versions@v5` (used here previously): a real incident,
+confirmed via that run's own log, where the action deleted a *production* release version despite
+`ignore-versions` being configured to protect exactly that pattern — root-caused to an undocumented
+interaction between two of that action's inputs (`num-old-versions-to-delete`/`min-versions-to-keep`)
+that this workflow never intentionally set, with no per-item detail in the action's own log to fully
+diagnose the exact mechanism from the outside. The replacement is deliberately an explicit allow-list,
+not a deny-list: a package version is only ever a deletion *candidate* if every one of its tags
+matches `^dev-` — a version carrying `latest`, a bare release tag, or the floating `dev` tag is
+excluded before any counting happens, so it structurally cannot be selected regardless of
+sorting/counting behavior.
+
 ## Commands
 
 ```bash
@@ -135,8 +161,22 @@ never actually run in this repo (`reports/` didn't exist) and already diverged f
 (its own `ruff check` skipped `--config=.ruff.toml`). `find-duplicates` (`scripts/find_duplicates.py`)
 was the only genuinely non-redundant piece of that old bug-hunt block and is kept as its own target.
 
-Default admin created on first run: `admin@kairos.local` / `admin123` (override via
-`DEFAULT_ADMIN_EMAIL` / `DEFAULT_ADMIN_PASSWORD` env vars).
+Default admin created on first run: `admin@kairos.local` (override via `DEFAULT_ADMIN_EMAIL`).
+Password is `admin123` only because `.env.example`/`docker/.env.example` ship
+`DEFAULT_ADMIN_PASSWORD=admin123` uncommented as a documented quick-start convenience value — if
+that var is unset (e.g. an operator sets env vars directly instead of copying the example file,
+which is what this file's own Deployment section recommends for production), `create_default_data()`
+(`run.py`, shared by both the bare-metal and Docker bootstrap paths — see below) generates a random
+password via `secrets.token_urlsafe(16)` and prints it once, at creation time, to stdout/log —
+there is no other way to retrieve it, and the account's `must_change_password` flag can't help since
+it only takes effect *after* a successful first login. Real bug found and fixed during production
+QA (2026-08-27): `docker/init_database.py` used to duplicate this bootstrap logic by hand with a
+literally hardcoded password, never reading `DEFAULT_ADMIN_PASSWORD` at all, and `run.py`'s own
+auto-generated-password branch never printed anything — every Docker deployment got the exact same
+known password regardless of `.env`, and every bare-metal install without the env var set was
+permanently locked out. Fixed by making `docker/init_database.py` delegate to `run.py`'s
+`create_default_data()` instead of duplicating it, and by adding the missing print statement — both
+paths now behave identically.
 
 ## Architecture
 
@@ -452,8 +492,10 @@ category, distinct from the pre-existing `[WARN]` "unfilled slot" case; stays wi
 "leave unfilled + notify, never block" philosophy, see "Automation" in the Done section of
 `ROADMAP.md` — no new blocking mechanism), `rest_after_oncall` (`min_rest_hours` between a user's
 on-call ending and a shift starting), and `oncall_shift_overlap` (blocks a shift/on-call overlapping
-the same user's existing on-call/shift — **on by default**, unlike the other 3, since an unblocked
-overlap is a data-integrity problem, not a preference). The last 3 are wired into `can_add_shift()`/
+the same user's existing on-call/shift — on by default at introduction, since an unblocked
+overlap looked like a data-integrity problem, not a preference; **flipped to off by default in the
+1.1.1 automation-engine-rework cycle** — a week-long on-call naturally overlaps normal shift hours,
+so that's expected, not a conflict, unless a group opts back into the stricter behavior). The last 3 are wired into `can_add_shift()`/
 `can_add_oncall()` (`app/utils/helpers/common_helpers.py`, via `check_shift_rule_violations()`/
 `check_oncall_rule_violations()`), resurrecting `_has_overlapping_oncall`/`_get_overlapping_shift`/
 `_get_overlapping_oncall` — 3 helpers that existed but were never called from production code before
@@ -462,6 +504,45 @@ previously skipped these checks entirely, same class of pre-existing gap already
 leave check in those methods. `can_add_shift()`'s third parameter changed from an unused
 `shift_type_id` string (every real caller actually passed `shift_type.name`, silently inert) to the
 `ShiftType` object itself, now genuinely used.
+
+**`mandatory_shift` was later removed entirely, and `staffing_limits` is now max-only** (this
+paragraph previously described 4 new rule types with a min/max `staffing_limits` shape — corrected):
+a 2026-08-27 production report ("some shifts stay unfilled even though the rules allow it") traced
+to `mandatory_shift`/`staffing_limits.min` re-checking coverage for the two role-governed shift
+types (`ShiftSlotsRule`'s `rotation`/`oncall` slots) independently of the generation algorithm's own
+guarantees — `assign_shift_slots_for_day()` (`app/utils/automation/planner/shift_planner.py`)
+already guarantees a `rotation` slot fill whenever anyone is available (fallback "rule 7") and an
+`oncall` slot fill whenever that week's on-call holder belongs to the shift scope being planned; a
+separate admin-configured minimum/mandatory layer on top only produced false "unfilled" alerts when
+shift and on-call scoping didn't line up (e.g. `shift_scheduling_mode="per_group"` with
+`oncall_scheduling_mode="shared"` and a scope narrower than the on-call pool), without adding any
+real coverage guarantee the algorithm didn't already provide. `mandatory_shift`
+(`app/utils/automation/rules/mandatory_shift.py`, `MandatoryShiftRule`) was deleted outright;
+`staffing_limits` (`app/utils/automation/rules/staffing_limits.py`, `StaffingLimitsRule`) kept —
+`max` is a real, distinct concept (headcount cap, still enforced both at generation time and at
+manual shift-creation time via `shift_violates_staffing_max`) — but dropped `min`, so `params` is
+now `{"<shift_type_id>": int|None}` (a flat max value) instead of `{"<shift_type_id>": {"min":..,
+"max":..}}`. `/admin/automation/rules`'s "Créneaux obligatoires" card is gone and "Effectif
+minimum/maximum par créneau" is now "Effectif maximum par créneau" — the min/mandatory knobs were
+also the exact UI confusion the reporting user flagged directly ("the min/max setting for a slot is
+confusing users"). Both engines' aggregate-alert machinery for this (`_mandatory_coverage_gap_names`/
+`_check_mandatory_coverage`/`_staffing_min_gap_names`/`_check_staffing_min_coverage` in
+`AdvancedShiftAutomation`; `_mandatory_and_staffing_min_gaps()` in `shift_planner.py`) was removed
+with it — see the two paragraphs below for the aggregation history this superseded, kept for context
+on the `[ALERT]`-tag convention and the flood-of-messages fix, both still relevant to
+`rest_after_oncall`/`oncall_week` messages. A second, independent bug found in the same investigation
+(`oncall_planner.py`'s "keep whoever's already published" minimal-perturbation bias, and a
+rotation-phase epoch only reset when the configured order's content changed) made the configured
+rotation order not actually win on regenerate even when unrelated to the above — both fixed the same
+session; see `[[project-automation-engine-rework]]`. Follow-up fix (2026-09): `generate_full()`'s
+call to `save_rotation_order()` still reset the epoch to real wall-clock `date.today()`
+unconditionally, so `rotation_order[0]` only actually landed on offset 0 *for the window being
+generated* when that window happened to start near real "today" — a dry-run preview or backfill for
+a period far from today (or a test suite using fixed dates, exactly how this was caught) silently
+picked an unrelated offset instead. `generate_full()` now passes `reference_date=start_date` to
+`save_rotation_order()` (a new optional parameter, default `date.today()` — unchanged behavior for
+the explicit "Sauvegarder l'ordre" action, which has no generation window in mind), so the window's
+own first anchor deterministically gets offset 0 regardless of when the call actually runs.
 
 **Message severity tags, not emoji.** `app/utils/automation/`'s generated messages used to encode
 severity as a leading emoji, stripped before ever reaching `flash()`/a template — this app doesn't
@@ -475,10 +556,13 @@ Unicode ranges, same severity mapping as before.
 control whether generation pools every eligible `Group` into one shared rotation (the only behavior
 that ever existed before this feature) or runs one independent generation pass per eligible `Group`
 — separately for shifts and for on-calls, since a team's on-call rotation doesn't have to be scoped
-the same way as its shift rotation. `AutomationAdminService.generate_full()` branches on each
-independently: `oncall_scheduling_mode="per_group"` loops over every on-call-eligible `Group`;
-`shift_scheduling_mode="per_group"` loops over every schedule-eligible `Group`; either one calls the
-*same* single-group code path once per group and concatenates results — the core solver
+the same way as its shift rotation. On the **legacy engine**
+(`AutomationAdminService._generate_full_legacy`/`_refresh_shifts_legacy` — still the default
+production path, see "the new pure planner" below for the newer alternative),
+`generate_full()` branches on each independently: `oncall_scheduling_mode="per_group"` loops
+over every on-call-eligible `Group`; `shift_scheduling_mode="per_group"` loops over every
+schedule-eligible `Group`; either one calls the *same* single-group code path once per group and
+concatenates results — the core solver
 (`_solve_max_filled_weeks`, `AvailabilityIndex`, `determine_shift_for_user`'s rule logic) is
 untouched, only the query layer that decides "who is eligible" gained an optional `group` parameter
 (threaded through `get_users_in_schedule_groups`/`get_available_users_for_date`/`get_oncall_for_date`/
@@ -545,8 +629,10 @@ unlike the period-wide generation entry points. The main calendar also gained a 
 `/admin/automation` (`app/utils/automation/status.py::get_automation_status()`) shows both an
 org-wide summary (unchanged) and a per-group breakdown card for every `Group`
 (`GroupRepository.get_all()`) — `oncall_count`/`shift_count` scoped via
-`OnCallRepository.count_for_group()`/`ShiftRepository.count_for_group()` (joined through
-`User.group_id`, since neither model has its own `group_id` column), `oncall_eligible_users`/
+`OnCallRepository.count_for_group()`/`ShiftRepository.count_for_group()` (joined through the live
+`User.group_id`, same convention as every other group-scoped query in these repositories — not the
+`group_id` snapshot column `Shift`/`OnCall` gained in 1.1.1, which exists for a different purpose,
+see "The new pure planner engine" below), `oncall_eligible_users`/
 `shift_eligible_users` via the same group-aware helpers used by generation. Computed
 unconditionally regardless of `shift_scheduling_mode`/`oncall_scheduling_mode` — a `Shift`/`OnCall`
 row's group membership is real independent of how generation currently pools groups together, so
@@ -560,6 +646,45 @@ every other group-aware helper in this module. The page's "Aide" section was als
 mention the rule engine and the two independent scheduling modes — it used to hardcode "13h-21h
 pour l'astreinte" as if that were fixed, which stopped being true once `shift_slots` became
 admin-configurable.
+
+### The new pure planner engine
+
+A from-scratch rewrite of the generation algorithm, landed across 7 phases in the 1.1.1 cycle
+(`app/utils/automation/planner/`: `adapters.py`, `diff.py`, `fairness.py`, `oncall_planner.py`,
+`plan_schedule.py`, `presentation.py`, `rotation.py`, `rule_resolution.py`, `shift_planner.py`,
+`types.py`). Computes a plan as **data** first (a `SchedulePlan`: proposed shifts/on-calls, a diff
+against current DB state, messages, an `input_fingerprint`), then applies it separately and
+atomically via `AutomationApplyService.apply_plan()` — the opposite of the legacy engine
+(`AdvancedShiftAutomation`/`OnCallAutomation`)'s read-modify-write-as-you-go approach. `GenerationRun`
+(`app/models/generation_run.py`) records one row per apply attempt (`outcome`: `"applied"`/
+`"failed"`/`"partial"`, `input_fingerprint`, `error_detail`) — not an audit-trail substitute
+(`AuditService.log()` still fires separately after a successful commit), this exists so a support
+engineer can correlate "did apply run against a stale plan" independent of the general-purpose
+audit log. `Shift`/`OnCall` also gained a `locked` column (`app/utils/automation/planner/`
+excludes a locked row from its candidate pool entirely and never reassigns it — `PlanningRequest.
+locked_shifts` — no admin UI sets this yet, so it's always `False`/a no-op today) and a `group_id`
+column — **not** a general group-membership field (group counting/filtering everywhere else in
+this codebase still joins through the live `User.group_id`, see `/admin/automation`'s status page
+above) but a point-in-time snapshot the planner uses for its own scoping/locking, since a user's
+`group_id` is a live, mutable FK that could otherwise retroactively change which scope an
+already-generated row belongs to.
+
+**Still off by default in production** — this is not a completed cutover. `SettingsService.
+get_new_automation_engine_enabled()` (a `Setting`, admin-editable via the "Moteur d'automatisation"
+card on `/admin/automation/rules`, no env var fallback, same brand-new-concept pattern as
+`default_language`) gates 3 call sites: `AutomationAdminService.generate_full()`'s `dry_run=False`
+branch, `refresh_shifts()`, and (phase 7 follow-up) `AdvancedShiftAutomation.
+rebalance_after_leave()`'s `dry_run=False` call — all 3 fall back to the legacy engine
+(`_generate_full_legacy`/`_refresh_shifts_legacy`/the pre-existing per-day/per-section SAVEPOINT
+code) when the toggle is off, which is the default, so **the legacy engine is still what actually
+runs in production today**. The one exception: `generate_full()`'s `dry_run=True` branch (the
+"Aperçu (Dry Run)" preview) always uses the new planner regardless of this toggle (phase 6) — a
+diagnostic legacy-vs-new comparison mode (`scripts/compare_automation_engines.py`, phase 4,
+deliberately diagnostic-only: disagreement between the two engines is the point of the tool, not a
+failure, since the legacy engine's own dry-run preview was already known to diverge from what real
+generation produces) confirmed the new planner's preview is trustworthy even before an admin opts
+into it for real writes. Flipping the toggle back off rolls back to legacy immediately, with no
+code revert needed, if a production issue surfaces post-cutover.
 
 ### In-app notifications
 
@@ -794,6 +919,30 @@ shift-types — reusing the existing repositories/services directly (`ShiftRepos
 duplicated. Write endpoints are a deliberate v1 omission (would require re-validating the same
 conflict/weekend/leave rules already encapsulated in the service layer for `/api/*`), not an
 oversight — extend here first if that need materializes, don't build a third parallel API surface.
+`GET /api/v1/oncall/current[?group_id=]` (`app/api/resources/oncall.py`) is the one v1 endpoint
+that isn't a plain list/detail: resolves the currently active on-call shift(s) via
+`OnCallRepository.list_active()` (same `start_time <= org_now() <= end_time` comparison as
+`OnCall.is_active()`, expressed as a SQL predicate), for monitoring/alerting integrations (the
+motivating case was Canopsis) that need "who's on-call right now" without pulling the full list
+and re-implementing the org-timezone/active-window logic themselves. `group_id` omitted → a JSON
+array (0+ items — more than one only possible in `per_group` on-call scheduling mode); `group_id`
+given → a single object, either the active shift (with the user's `name`/`email`/`group_id`
+inlined, no second `/api/v1/users/<id>` call needed) or `{"active": false}`. Because the response
+shape genuinely changes with `group_id`, this route doesn't fit flask-smorest's one-schema-per-
+route model (`@blp.response(schema)` normally re-serializes whatever the view returns) — the view
+instead builds and returns its own `flask.jsonify(...)` `Response` object, and `@blp.response` is
+kept purely for OpenAPI documentation: per `flask_smorest.Blueprint.response`'s own docstring, "If
+the decorated function returns a Response object, the schema and status_code parameters are only
+used to document the resource" — confirmed by reading `flask_smorest/response.py` directly, not
+assumed. (An earlier attempt stacked `@blp.alt_response` to document the array/object/`{"active":
+false}` shapes as three separate OpenAPI response entries under the same `200` — flask-smorest
+merges same-status-code docs into one entry rather than keeping them distinct, and reusing one
+example `dict` object across those decorators let that merge mutate it in place, corrupting the
+generated example; reverted to one schema — every field but `active` marked `allow_none` — plus
+the shape nuance spelled out in the response `description` instead.) Every `/api/v1/oncall/*`
+`start_time`/`end_time` (list, detail, and this endpoint) is a timezone-aware ISO 8601 string
+(`timezone_helpers.org_aware()`, the org's `default_timezone` `Setting` as the UTC offset,
+e.g. `2026-09-11T21:00:00+02:00`) — every other v1 resource's datetime/date fields are unaffected.
 `UserSchema` deliberately excludes every sensitive/preference field (`password_hash`, `ics_token`,
 `apprise_*_target_ids`, `timezone`/`language`/`date_format`/`time_format`, notification opt-outs) —
 same public contract as the internal `/api/users` endpoint, plus `group_id`.
@@ -1112,10 +1261,20 @@ with 0 empty/0 fuzzy entries without a manual pass. `en.po` carries the real tra
 prints a reminder to check `en.po` for new empty/fuzzy entries after every run. `.mo` files are
 compiled build artifacts, gitignored (`*.mo`/`*.pot`) — `docker/Dockerfile` runs `pybabel compile`
 during the image build, and `tests/conftest.py`'s session-scoped autouse `_compile_babel_catalogs`
-fixture does the same before the test suite runs. Without one of these, a fresh checkout has no
-`en.mo`, and Flask-Babel silently falls back to the French `msgid` even when `default_language`
-is set to `"en"` — the exact bug class `TestEnCatalogTranslation` in `tests/integration/test_i18n.py`
-exists to catch. That test (and the 1000+ other pre-existing tests) stay green through this policy
+fixture does the same before the test suite runs. Real bug found in production QA: neither of
+those two paths covers a plain bare-metal `python run.py` start (this repo's own documented
+quick-start), so a fresh checkout following those exact steps silently rendered every locale as
+French forever, with no error anywhere — `Flask-Babel` falls back to the French `msgid` when no
+compiled catalog exists, even with `default_language`/a user's own preference set to `"en"`.
+Fixed with a safety net, not a docs-only patch: `app/__init__.py::_compile_missing_translation_catalogs()`
+runs on every `create_app()` call, right before `babel.init_app()` — compiles any `.po` whose `.mo`
+is missing (via `babel.messages.pofile.read_po`/`mofile.write_mo`, the same primitives `pybabel
+compile` itself uses), a no-op once catalogs exist. This covers `python run.py`, `flask run`, and
+gunicorn alike; Docker/tests keep compiling up front as before, so this only ever fires as a
+fallback. `make babel-compile` remains the fast, no-Flask-import way to do this manually (e.g. in
+CI or before running lint/tests directly). This is the exact bug class `TestEnCatalogTranslation`
+in `tests/integration/test_i18n.py` exists to catch. That test (and the 1000+ other pre-existing
+tests) stay green through this policy
 change with zero modifications needed: `BABEL_DEFAULT_LOCALE = "fr"` +
 `FALLBACK_DEFAULT_LANGUAGE = "fr"` mean `get_locale()` resolves to `"fr"` in every fixture-built test
 app, and an explicit `msgstr = msgid` renders byte-identical to the old empty-`msgstr`-falls-back-to-

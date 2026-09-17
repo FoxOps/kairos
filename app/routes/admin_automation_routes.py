@@ -40,8 +40,8 @@ def _classify_automation_message(
     """Returns (category, message with its leading "[TAG] " marker
     stripped)."""
     if "[ALERT]" in msg:
-        # Elevated severity (MandatoryShiftRule: a slot flagged
-        # mandatory went unfilled) - always "danger", regardless of
+        # Elevated severity (a rest_after_oncall violation hard-blocked
+        # by _evaluate_safety) - always "danger", regardless of
         # default_category, so it's visually distinct from the
         # ordinary "[WARN] unfilled slot" case even on the
         # shift-messages path (whose default_category is "info").

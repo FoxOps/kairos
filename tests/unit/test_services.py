@@ -615,9 +615,13 @@ class TestShiftService:
     ):
         """Regression test: the drag & drop path used to skip the new
         configurable automation-rule checks entirely - same class of
-        gap as the pre-existing leave check above."""
-        from app.models import OnCall
+        gap as the pre-existing leave check above. oncall_shift_overlap
+        no longer blocks by default (on-call coexists with shifts), so
+        this test explicitly opts into the stricter behavior to keep
+        exercising the drag & drop path's rule-check wiring."""
+        from app.models import AutomationRule, OnCall
 
+        AutomationRule.set("oncall_shift_overlap", {"block": True})
         target_day = _next_weekday()
         new_start = datetime.combine(target_day, datetime.min.time()).replace(
             hour=test_shift_type.start_hour
@@ -644,7 +648,7 @@ class TestShiftService:
         from app.models import AutomationRule
 
         target_day = _next_weekday()
-        AutomationRule.set("staffing_limits", {str(test_shift_type.id): {"max": 1}})
+        AutomationRule.set("staffing_limits", {str(test_shift_type.id): 1})
         other_shift = Shift(
             date=target_day,
             start_time=datetime.combine(target_day, datetime.min.time()),
@@ -704,6 +708,29 @@ class TestOnCallService:
         assert error is None
         assert oncall is not None
         assert oncall.start_time.hour == 21
+
+    def test_add_oncall_uses_configured_anchor_hours(self, test_app, test_user):
+        """Found during 1.1.1 release QA: the weekday check already
+        respected OnCallAnchorRule, but start_time/end_time were still
+        hardcoded to 21h/07h regardless of the rule's own configured
+        start_hour/end_hour."""
+        from app.models import AutomationRule
+
+        AutomationRule.set(
+            "oncall_anchor",
+            {"weekday": 4, "start_hour": 18, "end_hour": 6},
+            group=test_user.group,
+        )
+        db.session.commit()
+
+        friday = _next_friday()
+        start = datetime.combine(friday, datetime.min.time())
+
+        oncall, error = OnCallService.add_oncall(test_user, start)
+        assert error is None
+        assert oncall is not None
+        assert oncall.start_time.hour == 18
+        assert oncall.end_time.hour == 6
 
     def test_add_oncall_success(self, test_app, test_user):
         friday = _next_friday()
@@ -876,7 +903,14 @@ class TestOnCallService:
         self, test_app, test_user, test_oncall, test_shift_type
     ):
         """Regression test: same class of gap as the leave check above,
-        for the new configurable oncall_shift_overlap rule."""
+        for the configurable oncall_shift_overlap rule.
+        oncall_shift_overlap no longer blocks by default (on-call
+        coexists with shifts), so this test explicitly opts into the
+        stricter behavior to keep exercising the drag & drop path's
+        rule-check wiring."""
+        from app.models import AutomationRule
+
+        AutomationRule.set("oncall_shift_overlap", {"block": True})
         friday = _next_friday()
         new_start = datetime.combine(friday, datetime.min.time()).replace(hour=21)
         new_end = new_start + timedelta(days=7, hours=-14)

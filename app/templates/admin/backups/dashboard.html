@@ -1,6 +1,8 @@
 {% extends "admin/base_admin.html" %}
 {% from "macros/breadcrumbs.html" import breadcrumbs %}
 
+{% block title %}{{ _("Sauvegardes") }} - Kairos{% endblock %}
+
 {% block admin_content %}
 <section class="p-3 md:p-4 max-w-6xl mx-auto">
     {{ breadcrumbs([

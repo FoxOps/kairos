@@ -19,6 +19,9 @@ organized by domain:
 - AutomationRule: AutomationRule (configurable automation rules engine - org
   default + per-Group override, see app/utils/automation/rules/ - distinct
   from AutomationConfig, which only stores the on-call rotation order)
+- GenerationRun: GenerationRun (one row per AutomationApplyService.apply_plan()
+  attempt - see app/services/automation_apply_service.py - not an audit
+  trail substitute, AuditLog is still written separately on success)
 """
 
 from app.models.app_notification import AppNotification
@@ -26,6 +29,7 @@ from app.models.audit_log import AuditLog
 from app.models.automation_config import AutomationConfig
 from app.models.automation_rule import AutomationRule
 from app.models.base import BaseModel
+from app.models.generation_run import GenerationRun
 from app.models.leave import Leave
 from app.models.notification_log import NotificationLog
 from app.models.notification_target import NotificationTarget
@@ -53,4 +57,5 @@ __all__ = [
     "AuditLog",
     "NotificationTarget",
     "ServiceAccount",
+    "GenerationRun",
 ]

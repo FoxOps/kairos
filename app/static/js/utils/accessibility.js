@@ -64,11 +64,19 @@ export function focusElement(element) {
  * @param {Function} onCancel - Function to run if the user cancels
  */
 export function confirmActionAccessible(message, onConfirm, onCancel) {
-    // Build an accessible modal
-    const modal = document.createElement('div');
-    modal.className = 'modal modal-open';
-    modal.setAttribute('role', 'dialog');
-    modal.setAttribute('aria-modal', 'true');
+    // Build an accessible modal. A native <dialog> (not a plain div), same
+    // convention as the calendar's click-to-edit modals
+    // (fullcalendar-config.js::openEditModal) - found during 1.1.1 release
+    // QA: this used to be a plain div appended to document.body, which
+    // rendered *behind* an already-open native <dialog>'s browser top
+    // layer whenever a delete was confirmed from inside one of those
+    // modals (e.g. deleteEvent() there calls this while the shift/on-call/
+    // leave edit modal is still open) - completely invisible and
+    // unreachable by mouse, no z-index can win against the top layer.
+    // A native <dialog> gets its own top-layer slot, stacking correctly
+    // above whichever dialog was already open.
+    const modal = document.createElement('dialog');
+    modal.className = 'modal';
     modal.setAttribute('aria-labelledby', 'confirmation-title');
 
     // Only static markup lives in innerHTML: the message (which may be
@@ -88,19 +96,14 @@ export function confirmActionAccessible(message, onConfirm, onCancel) {
                 <button class="btn btn-primary" aria-label="${getString('confirm')}" role="button">${getString('confirm')}</button>
             </div>
         </div>
-        <div class="modal-backdrop" role="button" tabindex="0" aria-label="${getString('close')}"></div>
     `;
     modal.querySelector('p.py-4').textContent = message;
 
     document.body.appendChild(modal);
 
-    // Focus the Confirm button
     const confirmBtn = modal.querySelector('.btn-primary');
     const cancelBtn = modal.querySelector('.modal-action .btn:not(.btn-primary)');
     const closeBtn = modal.querySelector('.btn-circle');
-    const background = modal.querySelector('.modal-backdrop');
-
-    focusElement(confirmBtn);
 
     // Wire up event handlers
     const handleConfirm = () => {
@@ -116,7 +119,25 @@ export function confirmActionAccessible(message, onConfirm, onCancel) {
     confirmBtn.addEventListener('click', handleConfirm);
     cancelBtn.addEventListener('click', handleCancel);
     closeBtn.addEventListener('click', handleCancel);
-    background.addEventListener('click', handleCancel);
+    // Clicking the dialog's own backdrop area (native <dialog>, same
+    // pattern as openEditModal) - e.target is the dialog itself only when
+    // the click landed outside modal-box.
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            handleCancel();
+        }
+    });
+    // Native Escape-to-close ('cancel' event) still needs to run onCancel
+    // and actually remove the dialog from the DOM, not just close it.
+    modal.addEventListener('cancel', (e) => {
+        e.preventDefault();
+        handleCancel();
+    });
+
+    modal.showModal();
+    // Explicit focus on Confirm, overriding the browser's own default
+    // (first focusable element - which would otherwise be the × button).
+    focusElement(confirmBtn);
 
     // Handle keyboard navigation
     confirmBtn.addEventListener('keydown', (e) => {
