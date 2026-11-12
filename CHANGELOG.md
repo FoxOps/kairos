@@ -93,7 +93,8 @@ for the full contract.
   to both last week's and next week's on-call holder. With that slot
   capped at 1 person (`staffing_limits`), the second one got no shift
   at all. Now: last week's on-call holder gets it; if they're not in
-  the group, next week's holder; otherwise the rotation-order
+  the group, next week's holder (on a transition Friday, the person
+  whose on-call starts that evening); otherwise the rotation-order
   fallback.
 - A user who would exceed a slot's staffing maximum now gets the
   default slot instead of being dropped for the day. They are left

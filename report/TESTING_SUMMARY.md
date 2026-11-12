@@ -4,7 +4,7 @@
 
 - **Last updated**: November 12, 2026 (1.2.0 - legacy scheduling engine
   removed, planner rotation-slot fix)
-- **Total number of tests**: 1990 (1044 unit + 914 integration + 32 e2e) -
+- **Total number of tests**: 1991 (1045 unit + 914 integration + 32 e2e) -
   down from 2071 (1121/918/32): legacy-engine-only tests went with
   `AdvancedShiftAutomation`/`OnCallAutomation` (`test_advanced_shift_automation.py`,
   `test_shift_rotation_fix.py`, `test_automation_full.py`,
@@ -16,7 +16,7 @@
   report - see `report/1.2.0/BUG_HUNT_1.2.0.md`. Every generation-path
   integration test now exercises the planner (they ran the legacy engine
   before, since the cutover toggle defaulted to off).
-- **Tests passing**: 1990 ✅
+- **Tests passing**: 1991 ✅
 - **Tests failing**: 0
 - **Code coverage**: **99%** (`--cov=app`, 37 uncovered lines of 7226)
 - **Lint (ruff)**: clean - **0 errors**
@@ -78,7 +78,7 @@ tests/
 ├── conftest.py                      # Fixture chain: test_app, client, logged_in_client
 ├── fixtures/                        # test_user, test_group, test_shift, test_leave, test_oncall...
 │
-├── unit/                            # 1044 tests - isolated components, no HTTP
+├── unit/                            # 1045 tests - isolated components, no HTTP
 │   ├── test_service_account_model.py     # ServiceAccount: SHA-256 token/hash, is_valid()
 │   ├── test_service_account_repository.py
 │   ├── test_service_account_service.py   # create/revoke/regenerate + audit trail

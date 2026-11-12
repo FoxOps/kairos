@@ -50,9 +50,25 @@
    - **Defence in depth:** a user over their slot's staffing maximum
      now falls back to the default slot. They are dropped only if the
      default slot is full too.
+   - **Transition Fridays:** when last week's holder is out of scope,
+     the admin's correction gives the rotation slot to the person whose
+     on-call starts that same evening. A guard that only credited
+     on-calls starting after the day itself excluded them, so those
+     Fridays fell to the rotation-order fallback. In the original run
+     that only matched on some Fridays, by coincidence of the
+     fallback's offset (Nov 27 wrong, Dec 25 right). The guard was
+     removed.
    - **Regression tests:** `tests/unit/test_planner_rotation_slot_priority.py`
      reproduces the production configuration (Nov 16 2026 to Jan 8 2027)
-     and asserts the admin's corrected schedule day by day.
+     and asserts the admin's corrected schedule day by day. It includes
+     a transition-Friday test whose fallback offset can't coincide with
+     the expected answer.
+   - **End-to-end check:** the production configuration was recreated
+     in a database, with a balanced on-call history before Nov 13, and
+     "Générer" was run through `AutomationAdminService.generate_full`
+     for Nov 13 2026 to Jan 8 2027. All 40 working days match the
+     admin's corrected screenshots, on-calls follow the rotation order,
+     and the run produced no warnings or notifications.
 
 2. **The first week of a window couldn't see its real "last week"
    on-call holder.** Severity: medium. In
@@ -163,7 +179,7 @@
 
 ## Result
 
-- 1990 tests passing (1044 unit, 914 integration, 32 e2e).
+- 1991 tests passing (1045 unit, 914 integration, 32 e2e).
 - ruff, mypy, black and bandit (`app/`) clean.
 - `pip-audit`: 0 known vulnerabilities.
 - fr/en catalogs: 0 empty, 0 fuzzy.

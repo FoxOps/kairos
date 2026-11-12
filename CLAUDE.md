@@ -687,7 +687,8 @@ tie-break depends on the unsorted order); role-slot ShiftType resolution to
 record.
 
 **Rotation slot (07h-15h) rule** (`shift_planner.py::assign_shift_slots_for_day()`, confirmed by
-the admin in 1.2.0): last week's on-call holder if in scope, else next week's, else the
+the admin in 1.2.0): last week's on-call holder if in scope, else next week's (on a transition
+Friday: the holder starting that evening - no "strictly after today" guard), else the
 rotation-order fallback ("rule 7") — a *priority*, never a union (the union, from commit b2a225c,
 gave the slot to two people; with `staffing_limits` capping it at 1, the second got no shift at
 all, Mon–Thu every other week — production report). On-call holder gets the on-call slot, everyone

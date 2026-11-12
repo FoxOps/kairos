@@ -301,3 +301,34 @@ def test_day_with_every_user_on_leave_is_reported_no_available_user():
     )
     assert fragment.proposed == ()
     assert [u.kind for u in fragment.unfilled] == ["no_available_user"]
+
+
+def test_transition_friday_uses_incoming_holder_when_last_week_out_of_scope():
+    """Friday Nov 27: pierre (covering week) holds the on-call slot,
+    last week's holder julien is SOCLE (out of scope) - the admin's
+    correction puts benjamin, whose on-call starts that same evening, on
+    the rotation slot. The rotation-order fallback here would pick
+    morgan (offset 0 at this epoch), so this can't pass by coincidence -
+    the original nov26 run only matched on some Fridays because of the
+    fallback's rotation offset."""
+    friday = date(2026, 11, 27)
+    fragment = plan_shifts_for_scope(
+        start_date=friday,
+        end_date=friday,
+        group_id=RUN,
+        oncall_group_ids=(None,),
+        eligible_users=RUN_USERS,
+        proposed_oncalls=PROPOSED_ONCALLS,
+        existing_oncalls=(),
+        existing_leaves=(),
+        locked=frozenset(),
+        published={},
+        rotation_order=(MORGAN, PIERRE, BENJAMIN),
+        rotation_anchor_epoch=friday,
+        rules=RUN_RULES,
+    )
+    assert {s.user_id: s.shift_type_id for s in fragment.proposed} == {
+        BENJAMIN.id: ROTATION_TYPE,
+        MORGAN.id: DEFAULT_TYPE,
+        PIERRE.id: ONCALL_TYPE,
+    }

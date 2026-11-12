@@ -308,16 +308,17 @@ def plan_shifts_for_scope(
             oncall_user_ids_by_friday.get(last_week_friday, ())
         )
 
-        # Forward-looking (second-choice) half of rule 2 - only credited
-        # if that on-call genuinely starts after `day`: on a transition
-        # Friday, `day + 7 days` can land on
-        # the tail end of an on-call that started that same evening,
-        # which is not a genuinely future one.
+        # Forward-looking (second-choice) half of rule 2: the holder of
+        # the on-call week after the covering one. On a transition
+        # Friday that is the on-call starting that same evening - which
+        # is exactly who the admin's own correction puts on the
+        # rotation slot when last week's holder is out of scope (1.2.0
+        # production report: a former "only if it starts after `day`"
+        # guard excluded them, leaving that Friday to the rotation-order
+        # fallback, which only matched by coincidence of its offset).
         next_week_friday = _covering_friday(day + timedelta(days=7), rules)
-        oncall_user_ids_next_week = (
-            frozenset(oncall_user_ids_by_friday.get(next_week_friday, ()))
-            if next_week_friday > day
-            else frozenset()
+        oncall_user_ids_next_week = frozenset(
+            oncall_user_ids_by_friday.get(next_week_friday, ())
         )
 
         published_slot_by_user = {
