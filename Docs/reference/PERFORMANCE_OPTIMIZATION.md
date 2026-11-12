@@ -35,15 +35,15 @@ request — without it, rendering a page with many shifts/on-calls would
 run one `Setting.get()` per row instead of one per request, since these
 resolvers are called once per displayed item. The two scheduling-mode
 getters were added by the configurable automation rules engine and
-initially missed this pattern: `AdvancedShiftAutomation`/
-`check_shift_rule_violations()` (`app/utils/helpers/common_helpers.py`)
+initially missed this pattern: the (since-removed, 1.2.0) legacy
+`AdvancedShiftAutomation`/`check_shift_rule_violations()` (`app/utils/helpers/common_helpers.py`)
 call them once per day/per user inside a generation or validation loop
 — caught and fixed as part of the 1.1.0 optimization pass.
 
 **`AutomationRuleType.resolve()`** (`app/utils/automation/rules/base.py`
 — the base class every rule type in `app/utils/automation/rules/`
 inherits, so this one fix covers all of them) is cached the same way,
-keyed by `(rule_type, group_id)`: `AdvancedShiftAutomation`'s shift-slot
+keyed by `(rule_type, group_id)`: the (since-removed, 1.2.0) legacy `AdvancedShiftAutomation`'s shift-slot
 resolution and mandatory/staffing-coverage checks call it once per
 user/per day inside `generate_daily_shifts()`, and
 `generate_full_schedule()` separately recomputes the same coverage gaps

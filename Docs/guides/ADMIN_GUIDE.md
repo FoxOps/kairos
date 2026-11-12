@@ -617,7 +617,7 @@ historical hardcoded behavior, so nothing changes for you until you
 actually edit a rule. See "Configurable Automation Rules" below for how
 to use that page, including per-group overrides.
 
-#### On-call (`app/utils/automation/oncall_automation.py`)
+#### On-call (`app/utils/automation/planner/oncall_planner.py`)
 
 - Each on-call period lasts 7 days, from the start day/hour to the same
   weekday one week later — configurable via the **Ancrage de la semaine
@@ -630,22 +630,27 @@ to use that page, including per-group overrides.
   configurable via the **Espacement minimum entre astreintes** rule
   (defaults to 2 weeks) — checked against every on-call the user has
   (past and future), not just their single most recent one.
-- When on-calls are wiped and regenerated for a period (the automatic
-  rebalance after a leave is added, and "Rafraîchir > Régénérer
-  entièrement" - never the "Générer" button, an explicit full reset)
-  each week prefers keeping the user it already had, instead of
-  replaying the rotation order from scratch - minimizes how much of an
-  already-working schedule gets reshuffled on every rebalance. Not a
-  guarantee: a week whose occupant has a real conflict (on leave,
-  overlapping another on-call) falls back to the rotation order for
-  that week exactly like before.
+- When on-calls are regenerated for a period ("Générer", "Rafraîchir >
+  Régénérer entièrement", or the automatic rebalance after a leave
+  overlapping an on-call), the configured rotation order decides each
+  week — the user a week already had is **not** kept just because they
+  were there. To keep existing on-calls (including manual ones) and only
+  fill empty weeks, use "Rafraîchir > Combler les trous".
 
-#### Shifts (`app/utils/automation/advanced_shift_automation.py`)
+#### Shifts (`app/utils/automation/planner/shift_planner.py`)
 
 - Which `ShiftType` covers which role (the on-call-adjacent slot, the
   rotation slot, the default slot) is set by the **Créneaux de shift**
   rule — manage the shift types themselves on the **Types de shift**
   page first, then point this rule at them.
+- Each working day: whoever is on-call that week gets the on-call slot;
+  the rotation slot goes to **last week's** on-call person, or — if
+  they're not in the group being planned — to **next week's** on-call
+  person; everyone else gets the default slot.
+- If a slot is already at its **Effectif maximum par créneau**, the
+  extra person gets the default slot instead (they are only left
+  without a shift if the default slot is full too - reported as a
+  warning in the generation result).
 - Minimum coverage on the rotation slot is enforced separately from the
   per-user rotation rules above: if none of them puts anyone on that
   slot for a given day, one available person is reassigned to it - the
@@ -696,16 +701,12 @@ This covers the main "Générer / rafraîchir le planning" action, gap
 filling, period refresh, and the automatic rebalance after a leave is
 added — every generation entry point.
 
-- **Moteur d'automatisation** (its own card, also org-wide, not
-  group-scoped): a toggle for a rewritten generation engine introduced
-  in 1.1.1 (computes a plan as data first, then applies it atomically,
-  instead of the previous read-modify-write-as-you-go approach). **Off
-  by default** — real "Générer"/"Rafraîchir" and the automatic
-  leave-rebalance keep using the previous engine until this is
-  switched on; flipping it back off rolls back without needing a
-  redeploy if an issue surfaces. The "Aperçu (Dry Run)" preview always
-  uses the new engine regardless of this toggle, since a diagnostic
-  comparison confirmed it matches the previous engine's output.
+- There is no longer a **Moteur d'automatisation** card: since 1.2.0
+  the generation engine introduced in 1.1.1 (plan computed as data
+  first, then applied atomically) is the only one - "Générer",
+  "Rafraîchir", the "Aperçu (Dry Run)" preview and the automatic
+  leave-rebalance all use it, so the preview always matches what
+  "Générer" writes.
 
 ---
 

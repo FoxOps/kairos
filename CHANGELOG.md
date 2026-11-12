@@ -9,6 +9,10 @@ tag trigger for why.
 
 ## [Unreleased]
 
+Planner-only automation (legacy engine removed), a schedule-generation
+fix from production, and dependency security bumps - see "Removed"/
+"Fixed"/"Security" below.
+
 Public API v1 (`/api/v1/*`) maturity pass - OpenAPI contract
 correctness, server-side filtering, a new `groups` resource,
 configurable rate limits, ServiceAccount scopes, and interactive
@@ -66,6 +70,58 @@ for the full contract.
   machine-readable value (`not_found`, `validation_error`,
   `rate_limited`, ...), `details` carries structured per-field detail
   for `422`.
+
+### Removed
+- **The legacy scheduling engine.** The planner introduced in 1.1.1 is
+  now the only shift/on-call generation engine, for "Générer",
+  "Recalculer les shifts" and the automatic rebalance after a leave.
+  The "Moteur d'automatisation" toggle on `/admin/automation/rules`
+  and `scripts/compare_automation_engines.py` are gone. An existing
+  `new_automation_engine_enabled` setting row is ignored, so no
+  migration is needed. **Behaviour change** for any instance that
+  never turned the toggle on (it defaulted to off): real generation
+  now uses the planner, which the "Aperçu (Dry Run)" preview already
+  used, so the schedule you get now matches the preview. One visible
+  difference: "Régénérer entièrement" follows the configured rotation
+  order and no longer keeps each week's existing on-call holder. Use
+  "Combler les trous" to keep existing on-calls. See
+  [`report/1.2.0/BUG_HUNT_1.2.0.md`](report/1.2.0/BUG_HUNT_1.2.0.md).
+
+### Fixed
+- **Generated schedules missing a person on Mon–Thu of every other
+  week** (production report). The rotation slot (07h-15h) used to go
+  to both last week's and next week's on-call holder. With that slot
+  capped at 1 person (`staffing_limits`), the second one got no shift
+  at all. Now: last week's on-call holder gets it; if they're not in
+  the group, next week's holder; otherwise the rotation-order
+  fallback.
+- A user who would exceed a slot's staffing maximum now gets the
+  default slot instead of being dropped for the day. They are left
+  unassigned only if the default slot is full too.
+- The first week of a generation now sees the on-call already
+  published right before it as "last week's on-call".
+- The "Aucun shift généré automatiquement (aucun utilisateur
+  disponible)" notification fired for days where users *were*
+  available but a slot's staffing maximum was reached. It now fires
+  only for days where every eligible user is absent, a case the
+  planner used to drop silently. A reached staffing maximum is
+  reported as a `[WARN]` in the generation result only.
+- Three planner bugs that could delete data, found while removing the
+  legacy engine. They were hidden because the planner was off by
+  default:
+  - With `per_group` on-calls, another group's concurrent on-call
+    could be deleted (rows without a `group_id` snapshot collided).
+  - The on-call ending on the window's first anchor day was deleted,
+    for example when appending a second generation right after a
+    first one.
+  - Shifts of a group toggled out of the schedule were deleted on
+    regeneration.
+
+### Security
+- Bumped `Werkzeug` 3.1.8 → 3.1.9, `Authlib` 1.7.2 → 1.9.1 and `black`
+  26.5.1 → 26.10.1. `pip-audit` reported 11 known vulnerabilities in
+  these packages, and the weekly `Tests` workflow had been failing on
+  that since 2026-10-12.
 
 ## [1.1.1] — 2026-09-16
 

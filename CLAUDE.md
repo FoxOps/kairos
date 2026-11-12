@@ -317,10 +317,11 @@ Routes in `app/routes/` (both the `main` and `admin` blueprints, split across mu
 in `main.py`/`admin.py`) parse the request, call a service, and turn the result into a
 flash/redirect/JSON response; services call repositories for data access and encapsulate validation
 (e.g. `can_add_shift`) and cross-cutting effects (e.g. shift rebalance after a leave change).
-`app/utils/automation/` (`OnCallAutomation`, `AdvancedShiftAutomation` — a previous generic
-`ShiftAutomation`/`BusinessRules` engine was removed as dead code after confirming zero real
-callers; see `report/` for the investigation) is a pre-existing business-logic layer used directly
-by services rather than being duplicated. `NotificationService` is the one service with no route calling it — it's invoked
+`app/utils/automation/` (the pure planner `planner/`, the rule engine `rules/`, DB lookups
+`queries.py`, `status.py` — the legacy `OnCallAutomation`/`AdvancedShiftAutomation` engine was
+removed in 1.2.0, see "The new pure planner engine" below; an even earlier generic
+`ShiftAutomation`/`BusinessRules` engine was removed as dead code before that) is a business-logic
+layer used directly by services rather than being duplicated. `NotificationService` is the one service with no route calling it — it's invoked
 by the standalone cron scripts `scripts/send_shift_notifications.py`/`send_oncall_notifications.py`.
 `BackupService` (`app/services/backup_service.py`) is the exception in the other direction — it's
 `app/` code that imports from `scripts/` (`scripts/backup_config.py`/`backup_database.py`), safe
@@ -556,10 +557,11 @@ Unicode ranges, same severity mapping as before.
 control whether generation pools every eligible `Group` into one shared rotation (the only behavior
 that ever existed before this feature) or runs one independent generation pass per eligible `Group`
 — separately for shifts and for on-calls, since a team's on-call rotation doesn't have to be scoped
-the same way as its shift rotation. On the **legacy engine**
-(`AutomationAdminService._generate_full_legacy`/`_refresh_shifts_legacy` — still the default
-production path, see "the new pure planner" below for the newer alternative),
-`generate_full()` branches on each independently: `oncall_scheduling_mode="per_group"` loops
+the same way as its shift rotation. On the planner (the only engine since 1.2.0), each mode
+decides the scopes `planner/adapters.py::build_planning_request()` plans — `(None,)` for
+"shared", one scope per eligible `Group` for "per_group" — and the paragraph below describes how
+the now-removed **legacy engine** did the same thing (kept for history): `generate_full()`
+branched on each independently: `oncall_scheduling_mode="per_group"` loops
 over every on-call-eligible `Group`; `shift_scheduling_mode="per_group"` loops over every
 schedule-eligible `Group`; either one calls the *same* single-group code path once per group and
 concatenates results — the core solver
@@ -669,22 +671,40 @@ above) but a point-in-time snapshot the planner uses for its own scoping/locking
 `group_id` is a live, mutable FK that could otherwise retroactively change which scope an
 already-generated row belongs to.
 
-**Still off by default in production** — this is not a completed cutover. `SettingsService.
-get_new_automation_engine_enabled()` (a `Setting`, admin-editable via the "Moteur d'automatisation"
-card on `/admin/automation/rules`, no env var fallback, same brand-new-concept pattern as
-`default_language`) gates 3 call sites: `AutomationAdminService.generate_full()`'s `dry_run=False`
-branch, `refresh_shifts()`, and (phase 7 follow-up) `AdvancedShiftAutomation.
-rebalance_after_leave()`'s `dry_run=False` call — all 3 fall back to the legacy engine
-(`_generate_full_legacy`/`_refresh_shifts_legacy`/the pre-existing per-day/per-section SAVEPOINT
-code) when the toggle is off, which is the default, so **the legacy engine is still what actually
-runs in production today**. The one exception: `generate_full()`'s `dry_run=True` branch (the
-"Aperçu (Dry Run)" preview) always uses the new planner regardless of this toggle (phase 6) — a
-diagnostic legacy-vs-new comparison mode (`scripts/compare_automation_engines.py`, phase 4,
-deliberately diagnostic-only: disagreement between the two engines is the point of the tool, not a
-failure, since the legacy engine's own dry-run preview was already known to diverge from what real
-generation produces) confirmed the new planner's preview is trustworthy even before an admin opts
-into it for real writes. Flipping the toggle back off rolls back to legacy immediately, with no
-code revert needed, if a production issue surfaces post-cutover.
+**The only engine since 1.2.0.** The legacy engine (`AdvancedShiftAutomation`/
+`OnCallAutomation`), its `new_automation_engine_enabled` cutover toggle ("Moteur
+d'automatisation" card) and `scripts/compare_automation_engines.py` were removed once the
+planner was declared fully tested — don't reintroduce a fallback engine. `generate_full()`
+(preview and real), `refresh_shifts()` and `AutomationAdminService.rebalance_after_leave()`
+(leave-triggered, `apply_plan(atomic=False)`) all plan through it. Survivors of the legacy code
+moved unchanged: the on-call solver (`AvailabilityIndex`, snapshot-only now,
+`_solve_max_filled_weeks`) to `planner/oncall_solver.py`; eligibility/rotation-order/gap/
+regeneration-start queries to `app/utils/automation/queries.py` (kept as-is rather than folded
+into `UserRepository`, whose `get_for_schedule_group()` sorts by name while the planner's rule-7
+tie-break depends on the unsorted order); role-slot ShiftType resolution to
+`rules/shift_slots.py::get_shift_type_for_role()`. A leftover `new_automation_engine_enabled`
+`Setting` row is simply never read (no migration). `report/1.2.0/BUG_HUNT_1.2.0.md` has the full
+record.
+
+**Rotation slot (07h-15h) rule** (`shift_planner.py::assign_shift_slots_for_day()`, confirmed by
+the admin in 1.2.0): last week's on-call holder if in scope, else next week's, else the
+rotation-order fallback ("rule 7") — a *priority*, never a union (the union, from commit b2a225c,
+gave the slot to two people; with `staffing_limits` capping it at 1, the second got no shift at
+all, Mon–Thu every other week — production report). On-call holder gets the on-call slot, everyone
+else the default slot. A user over their slot's staffing max falls back to the default slot, only
+unfilled (`staffing_max_reached`, a `[WARN]` flash only) if that's full too; a day where every
+eligible user is on leave is a `no_available_user` unfilled requirement — the only cause of the
+"aucun utilisateur disponible" admin notification. "Last week's" holder also comes from
+already-published on-calls before the window (`existing_oncalls`), not just this plan's own.
+
+**Adapter diff-scoping rule** (`planner/adapters.py`, three data-loss bugs fixed in 1.2.0 that the
+toggle had hidden): only rows this request can re-propose may appear in `published_oncalls`/
+`published_shifts`, or the diff marks them `removed` and `apply_plan` deletes them. Concretely:
+on-calls only if anchored inside `[start_date, end_date]` (the datetime-overlap query also returns
+the previous week's, ending 07:00 on the first anchor day) and only if their scope is planned (a
+row without a `group_id` snapshot falls back to its user's live group — two `(friday, None)` keys
+used to collide in "per_group" mode); shifts only for users in a planned shift scope (a group
+toggled out of the schedule kept losing its shifts).
 
 ### In-app notifications
 
@@ -1500,7 +1520,7 @@ back the routes this feature removed.
 wrappers (repository call + commit + one `AuditService.log("shift.bulk_delete"/"oncall.bulk_delete", ...)`,
 same audit action names as before, now covering every case the old 4/2 routes covered).
 `LeaveService.delete_filtered()` is different on purpose: `LeaveService.delete_leave()` triggers a
-full shift rebalance (`AdvancedShiftAutomation.rebalance_after_leave`) per leave, so a raw bulk SQL
+full shift rebalance (`AutomationAdminService.rebalance_after_leave`) per leave, so a raw bulk SQL
 `DELETE` would silently skip it and leave stale shift assignments for the affected users/dates —
 `delete_filtered()` instead fetches `LeaveRepository.list_filtered()` and loops `delete_leave()` per
 match (each iteration already commits + audits `leave.delete` + rebalances). Slower than
