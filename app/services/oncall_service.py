@@ -176,7 +176,7 @@ class OnCallService:
         # if any) - a simultaneous reassignment to a different group
         # must be validated against that group's own configured anchor
         # day, matching how OnCallAnchorRule.resolve(group=group) is
-        # used everywhere else (oncall_automation.py).
+        # used everywhere else (planner/rule_resolution.py).
         anchor_weekday = OnCallAnchorRule.resolve(group=effective_user.group)["weekday"]
         if new_start.weekday() != anchor_weekday:
             return None, _(

@@ -1,7 +1,7 @@
 """Configurable weekend definition - which weekdays shift generation
 treats as non-working days. Replaces the previously hardcoded
-`date.weekday() >= 5` (Saturday/Sunday) checks in
-AdvancedShiftAutomation."""
+`date.weekday() >= 5` (Saturday/Sunday) checks in the former legacy
+generation engine."""
 
 from datetime import date
 

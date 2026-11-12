@@ -1,5 +1,5 @@
 """Phase 3 scenario tests for _solve_max_filled_weeks's fairness_key
-extension (app/utils/automation/oncall_automation.py):
+extension (app/utils/automation/planner/oncall_solver.py):
 
 1. fairness_key=None (every pre-existing caller) must reproduce the
    legacy solver's output exactly - a regression guard protecting the
@@ -12,7 +12,7 @@ extension (app/utils/automation/oncall_automation.py):
 
 from datetime import date, datetime
 
-from app.utils.automation.oncall_automation import (
+from app.utils.automation.planner.oncall_solver import (
     AvailabilityIndex,
     _solve_max_filled_weeks,
 )

@@ -1,15 +1,13 @@
 """
 Automation utilities for Kairos.
 
-This module provides automation functionality for shifts and on-call rotations.
+Shift/on-call generation lives in the pure planner
+(app/utils/automation/planner/), fed by the rule engine
+(app/utils/automation/rules/) and the DB lookups in queries.py.
 """
 
-from app.utils.automation.advanced_shift_automation import AdvancedShiftAutomation
-from app.utils.automation.oncall_automation import OnCallAutomation
 from app.utils.automation.status import get_automation_status
 
 __all__ = [
-    "AdvancedShiftAutomation",
-    "OnCallAutomation",
     "get_automation_status",
 ]

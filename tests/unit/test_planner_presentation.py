@@ -2,9 +2,8 @@
 type)/rule_type with a count and date range, never one per individual
 day. Real production bug: a multi-month generation run with a
 recurring gap flooded the admin with one flash toast per occurrence
-(sometimes hundreds) - see AdvancedShiftAutomation.generate_full_schedule()'s
-own docstring for the equivalent fix already applied to the legacy
-engine; this module (phase 6+ new planner) had never had it."""
+(sometimes hundreds) - the former legacy engine had already fixed this
+the same way; the planner's presentation layer had never had it."""
 
 from datetime import date, datetime, timezone
 

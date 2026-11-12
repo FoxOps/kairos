@@ -1,14 +1,8 @@
-"""Translates a pure SchedulePlan into the legacy-shaped presentation
-objects/messages every real-generation call site needs to hand back to
-its own caller without changing any downstream template/route -
-originally built inline in AutomationAdminService for the phase 6/7
-generate_full()/refresh_shifts() cutovers, moved here (a neutral module
-both app/services/ and app/utils/automation/ can import from) once
-AdvancedShiftAutomation.rebalance_after_leave()'s own new-engine cutover
-needed the exact same logic - app/utils/ must never import from
-app/services/ (the reverse of this app's normal routes -> services ->
-repositories/utils layering), so keeping this only on
-AutomationAdminService was no longer an option.
+"""Translates a pure SchedulePlan into the presentation objects/messages
+every generation call site (AutomationAdminService.generate_full()/
+refresh_shifts()/rebalance_after_leave()) hands back to its own caller
+for the downstream templates/routes. Lives in app/utils/ (a neutral
+module) so it stays importable without depending on app/services/.
 
 Shared rather than duplicated so preview and real-apply results across
 every call site render/notify identically for the exact same plan/apply
@@ -64,8 +58,7 @@ def _date_range_suffix(dates: list) -> tuple[int, str, str]:
 
 
 def plan_messages(plan: SchedulePlan) -> tuple[list, list, list, list]:
-    """Builds the same "[TAG] text" message strings the legacy engine
-    produces (admin_automation_routes.py's own
+    """Builds "[TAG] text" message strings (admin_automation_routes.py's own
     _classify_automation_message() already parses this exact
     convention) from a plan's unfilled/violations. Returns
     (oncall_messages, oncall_unfilled_dates, shift_messages,
@@ -77,11 +70,7 @@ def plan_messages(plan: SchedulePlan) -> tuple[list, list, list, list]:
     generation run with a recurring gap (before shift_planner.py's own
     rest_after_oncall/"oncall" role_slot fix, a rest_after_oncall
     exclusion firing on literally every transition Friday) flooded the
-    admin with one flash toast per occurrence, sometimes hundreds. AdvancedShiftAutomation.
-    generate_full_schedule()/OnCallAutomation.generate_oncall_schedule()
-    (the legacy engine) already solved this exact problem the same way
-    (see their own docstrings) - this is that same fix, ported to the
-    new planner's presentation layer, which had never had it. Full
+    admin with one flash toast per occurrence, sometimes hundreds. Full
     per-day detail is not lost - it's what the calendar itself already
     shows, and _notify_shift_unfilled_if_any()/_notify_oncall_gap_if_any()
     (admin_automation_routes.py) still record every individual date on

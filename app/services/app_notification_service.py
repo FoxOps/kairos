@@ -195,9 +195,9 @@ class AppNotificationService:
     def notify_admins_oncall_gap(dates: list[date]) -> None:
         """No user satisfies the legal 2-week on-call spacing constraint
         (or is free of leave/overlap) for these Fridays - automatic
-        generation (OnCallAutomation.generate_oncall_schedule(), called
-        either interactively from /admin/automation or automatically by
-        AdvancedShiftAutomation.rebalance_after_leave()) deliberately
+        generation (the planner, run either interactively from
+        /admin/automation or automatically by
+        AutomationAdminService.rebalance_after_leave()) deliberately
         leaves them unassigned rather than assigning someone in
         violation of the legal constraint. Manual admin assignment is
         needed. Call only after the triggering generation's own commit
@@ -225,7 +225,7 @@ class AppNotificationService:
     @staticmethod
     def notify_admins_shift_gap(dates: list[date]) -> None:
         """Regenerating shifts for one or more of these dates raised an
-        unexpected error (AdvancedShiftAutomation.rebalance_after_leave(),
+        unexpected error (AutomationAdminService.rebalance_after_leave(),
         called automatically after a leave is added/modified) - each
         failing date is isolated in its own SAVEPOINT so it doesn't roll
         back the days that regenerated successfully, but that date's
@@ -290,7 +290,7 @@ class AppNotificationService:
         period_start: date, period_end: date
     ) -> None:
         """The on-call regeneration section of
-        AdvancedShiftAutomation.rebalance_after_leave() raised an
+        AutomationAdminService.rebalance_after_leave() raised an
         unexpected error for this period - isolated in its own SAVEPOINT
         so it doesn't roll back the shift days regenerated alongside it,
         but the on-calls for this period are left exactly as they were

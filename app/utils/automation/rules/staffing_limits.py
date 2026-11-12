@@ -1,7 +1,5 @@
 """Configurable maximum headcount per ShiftType. No prior hardcoded
-equivalent exists for this - AdvancedShiftAutomation only has the
-1-person/2-person special-case branches (unrelated, not made
-configurable here) and leave_keeps_minimum_headcount() (a floor-of-1
+equivalent existed for this - only leave_keeps_minimum_headcount() (a floor-of-1
 check scoped to leave creation, not per-shift-type). Enforced at
 creation time by app/utils/helpers/common_helpers.py's can_add_shift()
 - see check_shift_rule_violations().

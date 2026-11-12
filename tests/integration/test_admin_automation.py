@@ -372,9 +372,9 @@ class TestAutomationFull:
         self, logged_in_client, test_user, second_user
     ):
         """Real user report: shift generation can also fail to find
-        anyone available for a day (no exception - AdvancedShiftAutomation
-        .generate_daily_shifts()'s own "aucun utilisateur disponible"
-        business-rule case) and this was never surfaced as an admin
+        anyone available for a day (no exception - the planner's own
+        "no_available_user" unfilled requirement, every eligible user on
+        leave) and this was never surfaced as an admin
         notification, unlike the equivalent on-call gap case above."""
         from app.models import Leave
 
@@ -439,7 +439,7 @@ class TestAutomationFullAppendedGeneration:
     on-calls generated this way looked fine per the flash messages, but
     the concern was whether the second call correctly sees the first
     call's already-committed data - both for the on-call 2-week spacing
-    constraint and for AdvancedShiftAutomation's "was on-call last week"
+    constraint and for the planner's "was on-call last week"
     07h-15h rotation rule at the exact boundary between the two calls."""
 
     def test_second_generate_after_first_has_no_gap_and_correct_boundary_rotation(
@@ -765,20 +765,22 @@ class TestAutomationFullRefreshOncallMode:
         assert preserved is not None
         assert preserved.user_id == second_user.id
 
-    def test_regenerate_mode_prefers_existing_valid_assignment(
+    def test_regenerate_mode_follows_rotation_order_not_existing_assignment(
         self, logged_in_client, test_user, second_user
     ):
-        """ "Régénérer entièrement" wipes and recomputes every on-call in
-        the period, but now prefers keeping each week's existing
-        occupant over blindly replaying the rotation order (minimal-
-        perturbation - see OnCallAutomation.capture_existing_assignments()
-        and _generate_for_fridays()'s preferred_assignments) - a manual
-        assignment that's still valid (no conflict) survives the
-        regenerate rather than being needlessly reshuffled. Supersedes
-        the old test_regenerate_mode_replaces_oncalls, which asserted
-        the opposite (any pre-existing assignment always gets replaced)
-        - that was the behavior this feature deliberately changes, not
-        a contract worth preserving."""
+        """ "Régénérer entièrement" re-solves every non-locked on-call in
+        the period from the configured rotation order - deliberately no
+        bias toward each week's existing occupant (planner/
+        oncall_planner.py: the 1.1.1 "the configured order must win on
+        regenerate" fix). Preserving existing on-calls is what
+        "fill_gaps" is for (see test above). Before 1.2.0 this asserted
+        the legacy engine's opposite minimal-perturbation contract."""
+        from app.utils.automation import queries
+        from app.utils.automation.planner.rotation import rotate
+        from app.utils.automation.planner.rule_resolution import (
+            resolve_rotation_epoch,
+        )
+
         today = date.today()
         start_date = today
         while start_date.weekday() != 4:
@@ -788,15 +790,23 @@ class TestAutomationFullRefreshOncallMode:
         manual_start_time = datetime.combine(start_date, datetime.min.time()).replace(
             hour=21
         )
-        manual_oncall = OnCall(
-            user_id=second_user.id,
-            start_time=manual_start_time,
-            end_time=datetime.combine(
-                start_date + timedelta(days=7), datetime.min.time()
-            ).replace(hour=7),
+        db.session.add(
+            OnCall(
+                user_id=second_user.id,
+                start_time=manual_start_time,
+                end_time=datetime.combine(
+                    start_date + timedelta(days=7), datetime.min.time()
+                ).replace(hour=7),
+            )
         )
-        db.session.add(manual_oncall)
         db.session.commit()
+
+        with logged_in_client.application.app_context():
+            expected_user_id = rotate(
+                tuple(queries.get_rotation_order()),
+                start_date,
+                resolve_rotation_epoch(),
+            )[0].id
 
         response = logged_in_client.post(
             "/admin/automation/full",
@@ -809,25 +819,16 @@ class TestAutomationFullRefreshOncallMode:
             follow_redirects=True,
         )
         assert response.status_code == 200
-        # second_user has no conflict on this week, so they're kept
-        # (the row may have been replaced by a freshly generated one
-        # reusing the same primary key, so check the assignment, not
-        # row survival by id).
-        assert (
-            OnCall.query.filter_by(
-                user_id=second_user.id, start_time=manual_start_time
-            ).first()
-            is not None
-        )
+        week = OnCall.query.filter_by(start_time=manual_start_time).all()
+        assert [o.user_id for o in week] == [expected_user_id]
 
     def test_regenerate_mode_replaces_assignment_with_a_real_conflict(
         self, logged_in_client, test_user, second_user
     ):
-        """The minimal-perturbation preference is not a special case:
-        a preferred user with a real conflict on that exact week (here,
-        their own leave) is filtered out like any other candidate -
-        regenerate must still fall back to a valid rotation-order
-        candidate instead of leaving the week unfillable."""
+        """The week's existing occupant has a real conflict on that exact
+        week (here, their own leave) - regenerate must still fall back to
+        a valid rotation-order candidate instead of leaving the week
+        unfillable."""
         from app.models import Leave
 
         # logged_in_client's own admin ("Login User") is in an

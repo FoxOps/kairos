@@ -1,8 +1,7 @@
 """Phase 7 follow-up: build_planning_request(restrict_to_group_id=...)
 narrows oncall_groups/schedule_groups to at most that one group under
 "per_group" mode - built for
-AdvancedShiftAutomation.rebalance_after_leave()'s own cutover, which
-must never replan every other group's schedule just because one user
+AutomationAdminService.rebalance_after_leave(), which must never replan every other group's schedule just because one user
 in one group took a leave."""
 
 from datetime import date

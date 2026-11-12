@@ -17,7 +17,7 @@ from app.repositories.leave_repository import LeaveRepository
 from app.services.app_notification_service import AppNotificationService
 from app.services.apprise_notification_service import AppriseNotificationService
 from app.services.audit_service import AuditService
-from app.utils.automation.advanced_shift_automation import AdvancedShiftAutomation
+from app.services.automation_admin_service import AutomationAdminService
 from app.utils.helpers import can_add_leave, leave_keeps_minimum_headcount
 from app.utils.logging import get_logger
 
@@ -207,7 +207,7 @@ class LeaveService:
                 failed_shift_dates,
                 failed_oncall_period,
                 unfilled_shift_dates,
-            ) = AdvancedShiftAutomation.rebalance_after_leave(leave, dry_run=False)
+            ) = AutomationAdminService.rebalance_after_leave(leave)
             # rebalance_after_leave's own commit() already succeeded at
             # this point (an exception would have skipped straight to
             # the except branch below) - safe to notify now, never

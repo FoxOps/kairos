@@ -2,9 +2,9 @@
 proposes on-call assignments for one scope (one group, or the shared/
 org-wide scope) at a time.
 
-Ports the week-construction and candidate-filtering logic from
-oncall_automation.py's _fridays_in_range()/_generate_for_fridays(),
-with two deliberate behavior changes:
+Ported the week-construction and candidate-filtering logic from the
+legacy engine's _fridays_in_range()/_generate_for_fridays() (removed in
+1.2.0), with two deliberate behavior changes:
 
 - The rotation offset for a given Friday is rotation.rotate()'s
   absolute_week_index(), not an enumerate() position local to this
@@ -13,7 +13,7 @@ with two deliberate behavior changes:
   depending on what date range happened to be requested).
 - Preferred/published/locked assignments are keyed by
   (friday, group_id), not friday alone - fixes defect #7
-  (OnCallAutomation.capture_existing_assignments() returning a single
+  (the legacy capture_existing_assignments() returning a single
   {date: user_id} dict, so two groups with concurrent on-calls on the
   same Friday would silently overwrite each other).
 
@@ -24,7 +24,7 @@ already-loaded snapshot data via PlanningRequest.
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
-from app.utils.automation.oncall_automation import (
+from app.utils.automation.planner.oncall_solver import (
     AvailabilityIndex,
     _solve_max_filled_weeks,
 )
@@ -44,10 +44,8 @@ def _fridays_in_range(
     start_date: date, end_date: date, anchor_weekday: int
 ) -> list[date]:
     """Every on-call anchor weekday from the first one on/after
-    start_date through end_date, inclusive - pure port of
-    oncall_automation.py's module-level function of the same name,
-    minus its DB-touching rule resolution (anchor_weekday is passed in
-    already resolved)."""
+    start_date through end_date, inclusive (anchor_weekday is passed in
+    already resolved - no DB-touching rule resolution here)."""
     days_ahead = (anchor_weekday - start_date.weekday()) % 7
     current = start_date + timedelta(days=days_ahead)
     fridays = []
@@ -261,7 +259,7 @@ def merge_oncall_fragments(
     group_id here (not just friday) is what lets two groups have
     concurrent on-calls on the same Friday without one overwriting the
     other - the exact defect a single un-grouped {date: user_id} dict
-    used to have (OnCallAutomation.capture_existing_assignments)."""
+    used to have (the legacy engine's capture_existing_assignments)."""
     merged: dict[tuple[date, int | None], int] = {}
     for group_id, fragment in fragments.items():
         for proposed in fragment.proposed:

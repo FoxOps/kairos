@@ -364,60 +364,21 @@ class TestNPlusOneQueries:
                 _ = leave.user.name
         assert len(queries) == 1, "LeaveRepository.list_for_user: expected joinedload"
 
-    def test_generate_oncall_schedule_query_count_stable_across_period_length(
+    def test_planner_query_count_stable_across_period_length(
         self, test_app, test_group, test_user, second_user
     ):
-        """Regression test: before AvailabilityIndex (see
-        app/utils/automation/oncall_automation.py), find_next_available_user
-        and check_oncall_constraint queried the database for every
-        candidate tested for every week (up to 3 queries/candidate) - a
-        several-month generation climbed to 1500+ queries."""
-        from app.utils.automation import OnCallAutomation
+        """N+1 guard for the planner (the only generation engine since
+        1.2.0 - it replaced two legacy-engine guards here). Every input
+        is bulk-loaded once by planner/adapters.py, rules are resolved
+        once per scope (AutomationRuleType.resolve()'s flask.g cache,
+        only active inside a request context), and the on-call solver
+        works on in-memory AvailabilityIndex snapshots - so a 6-month
+        preview must not issue queries proportional to its number of
+        weeks/days compared to a 1-month one (the legacy engine once
+        climbed to 1500+ queries for a several-month run)."""
+        from app.services import AutomationAdminService
 
-        start_date = date(2024, 1, 5)  # Friday
-
-        with count_queries() as short_queries:
-            oncalls_short, _, _u1 = OnCallAutomation.generate_oncall_schedule(
-                start_date, start_date + timedelta(days=28), dry_run=True
-            )
-        assert len(oncalls_short) > 0
-
-        with count_queries() as long_queries:
-            oncalls_long, _, _u2 = OnCallAutomation.generate_oncall_schedule(
-                start_date, start_date + timedelta(days=180), dry_run=True
-            )
-        assert len(oncalls_long) > len(oncalls_short)
-
-        # ~26 more weeks (180 vs 28 days) shouldn't add queries
-        # proportional to the number of weeks - just the bulk preload
-        # (bounded by the number of eligible users).
-        assert len(long_queries) <= len(short_queries) + 5, (
-            f"{len(short_queries)} queries for {len(oncalls_short)} on-calls, "
-            f"{len(long_queries)} for {len(oncalls_long)} on-calls - "
-            "possible N+1 (broken AvailabilityIndex?)"
-        )
-
-    def test_generate_full_schedule_query_count_stable_across_period_length(
-        self, test_app, test_group
-    ):
-        """Regression test: AutomationRuleType.resolve() (backing
-        get_shift_type_for_slot()'s shift-slot resolution) used to hit
-        the DB on every call - once per assigned user per day inside
-        generate_daily_shifts() - so a multi-week generation run issued
-        a query per rule per day instead of one per rule for the whole
-        run. Now cached on
-        flask.g per (rule_type, group_id) for the request - see
-        AutomationRuleType.resolve() in
-        app/utils/automation/rules/base.py. Only measurable inside a
-        real request context (has_request_context() gates the cache -
-        outside one, e.g. a cron script, every call stays uncached by
-        design, since nothing outside a request can safely share it
-        across calls)."""
-        from app.utils.automation import AdvancedShiftAutomation
-
-        # 3+ users so the "normal case" branch runs (one
-        # get_shift_type_for_slot() call per assigned user per day).
-        for i in range(4):
+        for i in range(3):
             db.session.add(
                 User(
                     name=f"U{i}",
@@ -429,26 +390,31 @@ class TestNPlusOneQueries:
         db.session.commit()
 
         start_date = date(2024, 1, 8)  # Monday
-        # ~5 weeks: enough business days that an uncached, once-per-day
-        # (or once-per-user-per-day) resolve() would produce dozens of
-        # automation_rules queries if the cache weren't working.
-        end_date = start_date + timedelta(days=34)
+
+        # Warm-up: the first call also fetch-or-creates the role-slot
+        # ShiftType rows (rules/shift_slots.py) - not part of what's
+        # being compared below.
+        with test_app.test_request_context("/"):
+            AutomationAdminService.generate_full(
+                start_date, start_date + timedelta(days=7), [], dry_run=True
+            )
 
         with test_app.test_request_context("/"):
-            with count_queries() as queries:
-                shifts, _, _ = AdvancedShiftAutomation.generate_full_schedule(
-                    start_date, end_date, dry_run=True
+            with count_queries() as short_queries:
+                short = AutomationAdminService.generate_full(
+                    start_date, start_date + timedelta(days=28), [], dry_run=True
                 )
-        assert len(shifts) > 20  # sanity check: the period actually generated shifts
+        with test_app.test_request_context("/"):
+            with count_queries() as long_queries:
+                long = AutomationAdminService.generate_full(
+                    start_date, start_date + timedelta(days=180), [], dry_run=True
+                )
 
-        rule_queries = [q for q in queries if "automation_rules" in q]
-        # One query per distinct rule type actually resolved during this
-        # run (weekend_definition, shift_slots - each cached after its
-        # first resolve()), not one per day or per assigned user.
-        assert 0 < len(rule_queries) <= 6, (
-            f"{len(rule_queries)} automation_rules queries for a "
-            f"{(end_date - start_date).days + 1}-day run generating "
-            f"{len(shifts)} shifts - rule resolution not cached per request?"
+        assert len(long.oncalls) > len(short.oncalls) > 0
+        assert len(long.shifts) > len(short.shifts) > 0
+        assert len(long_queries) <= len(short_queries) + 5, (
+            f"{len(short_queries)} queries for a 1-month preview, "
+            f"{len(long_queries)} for a 6-month one - possible N+1"
         )
 
     def test_dashboard_get_stats_query_count_stable_across_shift_count(

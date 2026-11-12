@@ -49,7 +49,7 @@ class TestGenerateFullSchedulingMode:
         # Pooled: exactly one on-call for the single Friday, drawn from
         # both groups' users combined.
         assert len(result.oncalls) == 1
-        assert result.oncalls[0].user_id in {user_a.id, user_b.id}
+        assert result.oncalls[0].user.id in {user_a.id, user_b.id}
 
     def test_per_group_mode_runs_independent_generation_per_group(
         self, test_app, test_group
@@ -72,7 +72,7 @@ class TestGenerateFullSchedulingMode:
 
         # Independent: each group ran its own solve for the same
         # Friday, so both users end up on-call concurrently.
-        assert {o.user_id for o in result.oncalls} == {user_a.id, user_b.id}
+        assert {o.user.id for o in result.oncalls} == {user_a.id, user_b.id}
         assert len(result.oncalls) == 2
 
     def test_shift_mode_does_not_affect_oncall_pooling(self, test_app, test_group):
@@ -98,7 +98,7 @@ class TestGenerateFullSchedulingMode:
         # On-call mode is still "shared" (default): pooled, one on-call
         # for the Friday, despite shift mode being "per_group".
         assert len(result.oncalls) == 1
-        assert result.oncalls[0].user_id in {user_a.id, user_b.id}
+        assert result.oncalls[0].user.id in {user_a.id, user_b.id}
 
 
 class TestRefreshShiftsSchedulingMode:
@@ -188,16 +188,15 @@ class TestRefreshShiftsSchedulingMode:
     def test_shift_recompute_per_group_mode_runs_independently(
         self, test_app, test_group
     ):
-        """With no on-call context, the 2-person special case forces
-        SHIFT_07_15 for both people (see handle_two_users_case()); the
-        3+ pooled branch instead defaults everyone to SHIFT_09_17
-        (determine_shift_for_user() rule 3) except one person bumped to
-        07h-15h for minimum coverage (rule 7). 2 groups of 2 users each:
-        under "per_group", each pair independently hits the 2-person
-        branch -> all 4 end up on 07h-15h. Under "shared", the pooled
-        4-person pass hits the 3+ branch instead -> only 1 of the 4 is
-        on 07h-15h. This difference is the proof the loop actually ran
-        once per group instead of pooling everyone into one pass."""
+        """With no on-call context, every scope gets exactly one
+        rotation-slot (07h-15h) person (the planner's rule 7 fallback),
+        everyone else the default slot. 2 groups of 2 users each: under
+        "per_group", each group is its own scope -> 2 people on
+        07h-15h. Under "shared", the pooled 4-person scope -> only 1.
+        This difference is the proof the planner actually ran once per
+        group instead of pooling everyone into one pass. (Before 1.2.0
+        this asserted the legacy engine's 2-person special case, which
+        put both people of a pair on 07h-15h.)"""
         from app.models import Shift
         from app.services import SettingsService
         from app.services.automation_admin_service import AutomationAdminService
@@ -217,7 +216,7 @@ class TestRefreshShiftsSchedulingMode:
 
         shifts = Shift.query.all()
         assert len(shifts) == 4
-        assert all(s.start_time.hour == 7 for s in shifts)
+        assert sum(1 for s in shifts if s.start_time.hour == 7) == 2
 
     def test_shift_recompute_shared_mode_pools(self, test_app, test_group):
         from app.models import Shift

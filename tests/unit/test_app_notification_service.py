@@ -213,8 +213,8 @@ class TestPurgeRead:
 
 
 class TestNotifyAdminsOncallGap:
-    """Regression tests: OnCallAutomation.generate_oncall_schedule() no
-    longer assigns an on-call in violation of the legal 2-week spacing
+    """Regression tests: on-call generation (the planner) never
+    assigns an on-call in violation of the legal 2-week spacing
     constraint as a last resort - it leaves the week unassigned instead
     and the caller notifies admins so they can fill the gap manually."""
 
@@ -254,8 +254,8 @@ class TestNotifyAdminsOncallGap:
 
 class TestNotifyAdminsShiftGap:
     """Bug hunt regression: a per-day shift regeneration failure inside
-    AdvancedShiftAutomation.rebalance_after_leave() is now isolated to
-    that day (SAVEPOINT) instead of discarding the whole ±30-day
+    AutomationAdminService.rebalance_after_leave() is isolated to
+    that day (per-entry SAVEPOINT) instead of discarding the whole ±30-day
     rebalance - admins still need to know which day needs manual
     attention."""
 
@@ -294,8 +294,7 @@ class TestNotifyAdminsShiftGap:
 class TestNotifyAdminsShiftUnfilled:
     """Real user report: when shift automation can't find anyone
     available for a day (a business-rule case, not an exception -
-    AdvancedShiftAutomation.generate_daily_shifts()'s own "[WARN] Aucun
-    shift généré" case), admins were never notified at all - only
+    the planner's "no_available_user" unfilled requirement), admins were never notified at all - only
     notify_admins_shift_gap() (the *exception* case) existed, so a
     silent "nobody available" gap had no admin-facing signal anywhere,
     unlike the equivalent on-call case (notify_admins_oncall_gap)."""
@@ -334,8 +333,8 @@ class TestNotifyAdminsShiftUnfilled:
 
 class TestNotifyAdminsOncallRegenFailure:
     """Bug hunt regression: a failure in the on-call regeneration
-    section of AdvancedShiftAutomation.rebalance_after_leave() is now
-    isolated (SAVEPOINT) from the shift days regenerated alongside it -
+    part of AutomationAdminService.rebalance_after_leave() is isolated
+    (per-entry SAVEPOINT) from the shift days regenerated alongside it -
     admins still need to know the on-call period needs manual
     attention."""
 

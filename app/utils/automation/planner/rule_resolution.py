@@ -13,7 +13,6 @@ from datetime import date
 
 from app import db
 from app.models import AutomationConfig, Group
-from app.utils.automation.advanced_shift_automation import AdvancedShiftAutomation
 from app.utils.automation.planner.types import ResolvedRules
 from app.utils.automation.rules import (
     OnCallAnchorRule,
@@ -22,6 +21,12 @@ from app.utils.automation.rules import (
     RestAfterOnCallRule,
     StaffingLimitsRule,
     WeekendDefinitionRule,
+)
+from app.utils.automation.rules.shift_slots import (
+    DEFAULT_KEY,
+    ONCALL_KEY,
+    ROTATION_KEY,
+    get_shift_type_for_role,
 )
 
 
@@ -32,20 +37,11 @@ def _resolve_one(group: Group | None) -> ResolvedRules:
     staffing = StaffingLimitsRule.resolve(group=group)
     rest = RestAfterOnCallRule.resolve(group=group)
     overlap = OnCallShiftOverlapRule.resolve(group=group)
-    # Reuses get_shift_type_for_slot() - the exact same resolution
-    # (configured id, falling back to fetch-or-create by hours if the
-    # id no longer exists) already used by the legacy generation path -
-    # so the planner's role-slot ShiftTypes are never a second,
-    # divergent source of truth.
-    oncall_shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(
-        AdvancedShiftAutomation.SHIFT_13_21, group=group
-    )
-    rotation_shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(
-        AdvancedShiftAutomation.SHIFT_07_15, group=group
-    )
-    default_shift_type = AdvancedShiftAutomation.get_shift_type_for_slot(
-        AdvancedShiftAutomation.SHIFT_09_17, group=group
-    )
+    # Configured id, falling back to fetch-or-create by hours if the id
+    # no longer exists - see get_shift_type_for_role().
+    oncall_shift_type = get_shift_type_for_role(ONCALL_KEY, group=group)
+    rotation_shift_type = get_shift_type_for_role(ROTATION_KEY, group=group)
+    default_shift_type = get_shift_type_for_role(DEFAULT_KEY, group=group)
 
     return ResolvedRules(
         oncall_anchor_weekday=anchor["weekday"],

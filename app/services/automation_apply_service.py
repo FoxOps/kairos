@@ -34,8 +34,8 @@ class ApplyResult:
     # Only ever populated when apply_plan(atomic=False) - one
     # (ScheduleDiffEntry, error message) pair per diff entry whose own
     # SAVEPOINT rolled back. `success` stays True even when this is
-    # non-empty (mirrors AdvancedShiftAutomation.rebalance_after_leave()'s
-    # legacy contract: only a setup-step failure is a real failure -
+    # non-empty (AutomationAdminService.rebalance_after_leave()'s
+    # contract: only a setup-step failure is a real failure -
     # a per-entry failure is the caller's own signal to notify about,
     # not an overall failure).
     failed_entries: list = field(default_factory=list)
@@ -71,7 +71,7 @@ class AutomationApplyService:
     - `atomic=True` (generate_full/refresh_shifts, admin-button-
       triggered): one transaction for the whole plan, any exception
       rolls back everything, outcome is "applied" or "failed".
-    - `atomic=False` (AdvancedShiftAutomation.rebalance_after_leave(),
+    - `atomic=False` (AutomationAdminService.rebalance_after_leave(),
       the automatic Leave-triggered rebalance - unattended, no admin
       retry button): each diff entry gets its own SAVEPOINT
       (`db.session.begin_nested()`), so one bad entry (e.g. a
@@ -214,7 +214,7 @@ class AutomationApplyService:
             # apply time - not proposed.group_id, which is the
             # generation SCOPE (None in "shared" mode) - matching the
             # established meaning of this column everywhere else
-            # (legacy engine, manual creation service layer): a
+            # (manual creation service layer): a
             # point-in-time snapshot of who was actually assigned,
             # never the pool they were drawn from.
             user = db.session.get(User, proposed.user_id)

@@ -70,8 +70,8 @@ class ResolvedRules:
     oncall_shift_overlap_block: bool
     # Each role slot's resolved ShiftType id plus its (start_hour,
     # end_hour) - resolved once by rule_resolution.py (which may create
-    # a fallback ShiftType row, same as
-    # AdvancedShiftAutomation.get_shift_type_for_slot()), so the pure
+    # a fallback ShiftType row, see
+    # rules/shift_slots.py::get_shift_type_for_role()), so the pure
     # shift planner never needs its own ShiftType lookup to build a
     # ProposedShift's actual start_time/end_time.
     oncall_shift_type_id: int
@@ -218,7 +218,7 @@ class PlanningRequest:
     # On-call planning's own Friday search (oncall_planner._fridays_in_range)
     # legitimately needs `start_date` widened to the covering Friday when a
     # caller's literal requested start falls mid-on-call-week (see
-    # OnCallAutomation.align_regeneration_start) - otherwise the boundary
+    # queries.align_regeneration_start) - otherwise the boundary
     # week's already-published on-call would be misdiffed as "removed"
     # (present in published_oncalls via a true datetime-overlap fetch, but
     # never re-proposed since the Friday-date search starts too late to see

@@ -2,7 +2,7 @@
 same person. Replaces the previously hardcoded `2` (weeks), duplicated
 in AvailabilityIndex.meets_spacing_constraint and the local
 meets_spacing() closure in _solve_max_filled_weeks
-(app/utils/automation/oncall_automation.py)."""
+(app/utils/automation/planner/oncall_solver.py)."""
 
 from app.utils.automation.rules.base import AutomationRuleType
 

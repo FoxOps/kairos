@@ -304,10 +304,10 @@ def leave_keeps_minimum_headcount(
     0 for any covered business day. Only applies to users eligible for
     shifts - a leave for someone outside these groups doesn't affect
     this headcount."""
-    from app.utils.automation.advanced_shift_automation import AdvancedShiftAutomation
+    from app.utils.automation.queries import get_schedule_users
     from app.utils.automation.rules import WeekendDefinitionRule
 
-    schedule_users = AdvancedShiftAutomation.get_users_in_schedule_groups()
+    schedule_users = get_schedule_users()
     schedule_user_ids = {u.id for u in schedule_users}
 
     if user.id not in schedule_user_ids:

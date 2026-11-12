@@ -1,7 +1,6 @@
 """Configurable on-call week anchor - which weekday/hour an on-call
 period starts and ends on. Replaces the previously hardcoded Friday
-21:00 -> Friday 07:00 window (app/utils/automation/oncall_automation.py,
-app/utils/automation/advanced_shift_automation.py,
+21:00 -> Friday 07:00 window (former legacy generation engine,
 app/utils/automation/status.py)."""
 
 from app.utils.automation.rules.base import AutomationRuleType

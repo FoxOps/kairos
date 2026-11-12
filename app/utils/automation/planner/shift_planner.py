@@ -2,9 +2,9 @@
 proposes shift assignments for one scope (one group, or the shared/
 org-wide scope) at a time.
 
-Replaces AdvancedShiftAutomation.generate_daily_shifts()'s three
+Replaced the legacy engine's generate_daily_shifts() three
 count-based special-case branches (1 available user, 2 available
-users, 3+ available users - see its class docstring, rules 1/2/3/4/6/7)
+users, 3+ available users; legacy engine removed in 1.2.0)
 with one uniform algorithm (assign_shift_slots_for_day() below) that
 produces the same result for the same inputs regardless of headcount -
 fixing audit defect #10 (fixed special-case branching instead of
@@ -30,7 +30,7 @@ the narrowed-to-present candidate list by the day's absolute week index
 (rotation.rotate(), the same date-derived mechanism used for on-call
 rotation - see rotation.py) rather than always picking the same
 present candidate - the identical staleness bug that commit's own
-_ensure_minimum_07_15_coverage fix addressed in the legacy engine
+_ensure_minimum_07_15_coverage fix addressed in the former legacy engine
 (confirmed there by direct reproduction: 60 weeks, one of 3 group
 members never once selected).
 
@@ -58,7 +58,7 @@ from app.utils.automation.rules.predicates import shift_violates_rest_after_onca
 # break ties among otherwise-equally-eligible rotation-slot candidates -
 # an internal solver detail, not a business rule, so it is not exposed
 # as a setting (same category as the branch-and-bound search's own
-# node cap in oncall_automation.py).
+# node cap in oncall_solver.py).
 _SLOT_RANK = {"default": 0, "rotation": 1, "oncall": 2}
 
 
@@ -308,10 +308,9 @@ def plan_shifts_for_scope(
             oncall_user_ids_by_friday.get(last_week_friday, ())
         )
 
-        # Symmetric forward-looking half of rule 2 - only credited if
-        # that on-call genuinely starts after `day` (mirrors
-        # AdvancedShiftAutomation.get_upcoming_oncall_user()'s own
-        # guard): on a transition Friday, `day + 7 days` can land on
+        # Forward-looking (second-choice) half of rule 2 - only credited
+        # if that on-call genuinely starts after `day`: on a transition
+        # Friday, `day + 7 days` can land on
         # the tail end of an on-call that started that same evening,
         # which is not a genuinely future one.
         next_week_friday = _covering_friday(day + timedelta(days=7), rules)
@@ -382,11 +381,9 @@ def plan_shifts_for_scope(
             ):
                 # role_slot == "oncall" is deliberately exempt: that
                 # slot IS the on-call user's own coverage shift for the
-                # day their on-call starts/ends (see
-                # AdvancedShiftAutomation.get_oncall_for_date()'s
-                # docstring - the departing holder is still "this
-                # week's on-call for shift purposes" on the transition
-                # Friday) - not a second, independent assignment that
+                # day their on-call starts/ends (the departing holder
+                # is still "this week's on-call for shift purposes" on
+                # the transition Friday - see _covering_friday()) - not a second, independent assignment that
                 # rest could meaningfully apply to. Real bug found in
                 # production: with rest_after_oncall configured (any
                 # legally-required rest value, e.g. 11h), the gap
@@ -505,9 +502,9 @@ def _last_oncall_end_before(
 
 
 def _covering_friday(day: date, rules: ResolvedRules) -> date:
-    """The anchor date of the on-call week covering `day`, generalizing
-    AdvancedShiftAutomation.get_oncall_for_date()'s "Monday minus N
-    days" computation to any configured anchor weekday."""
+    """The anchor date of the on-call week covering `day`: that week's
+    Monday minus N days, for any configured anchor weekday - so on a
+    transition Friday it is still the departing holder's week."""
     days_before_monday = (0 - rules.oncall_anchor_weekday) % 7
     week_monday = day - timedelta(days=day.weekday())
     return week_monday - timedelta(days=days_before_monday)

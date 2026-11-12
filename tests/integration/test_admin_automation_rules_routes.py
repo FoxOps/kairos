@@ -250,36 +250,25 @@ class TestSchedulingModeSection:
         assert SettingsService.get_shift_scheduling_mode() == "shared"
 
 
-class TestNewAutomationEngineEnabledSection:
-    def test_defaults_to_disabled(self, logged_in_client):
-        from app.services import SettingsService
+class TestAutomationEngineToggleRemoved:
+    """1.2.0 removed the legacy engine and its "Moteur d'automatisation"
+    cutover toggle - the planner is the only engine."""
 
-        assert SettingsService.get_new_automation_engine_enabled() is False
+    def test_rules_page_no_longer_shows_the_engine_toggle(self, logged_in_client):
+        response = logged_in_client.get("/admin/automation/rules")
+        assert response.status_code == 200
+        assert b"new_automation_engine_enabled" not in response.data
 
-    def test_checking_the_box_enables_it(self, logged_in_client):
+    def test_stale_toggle_form_post_is_a_harmless_no_op(self, logged_in_client):
+        from app.models import Setting
+
         response = logged_in_client.post(
             "/admin/automation/rules",
             data={"section": "new_automation_engine_enabled", "enabled": "on"},
             follow_redirects=True,
         )
         assert response.status_code == 200
-
-        from app.services import SettingsService
-
-        assert SettingsService.get_new_automation_engine_enabled() is True
-
-    def test_omitting_the_checkbox_disables_it(self, logged_in_client):
-        from app.services import SettingsService
-
-        SettingsService.set_new_automation_engine_enabled(True)
-
-        response = logged_in_client.post(
-            "/admin/automation/rules",
-            data={"section": "new_automation_engine_enabled"},
-            follow_redirects=True,
-        )
-        assert response.status_code == 200
-        assert SettingsService.get_new_automation_engine_enabled() is False
+        assert Setting.get("new_automation_engine_enabled") is None
 
 
 class TestGroupScopedRuleEditing:

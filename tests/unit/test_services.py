@@ -972,7 +972,7 @@ class TestLeaveService:
     ):
         """Regression test: when rebalance_after_leave() reports Friday
         dates left unassigned (legal 2-week on-call spacing constraint,
-        see AdvancedShiftAutomation.rebalance_after_leave), LeaveService
+        see AutomationAdminService.rebalance_after_leave), LeaveService
         must notify admins - but only after rebalance_after_leave's own
         commit has actually succeeded (it always has, by the time this
         return value is available)."""
@@ -980,7 +980,7 @@ class TestLeaveService:
 
         gap_date = date(2026, 8, 21)
         with patch(
-            "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
+            "app.services.leave_service.AutomationAdminService.rebalance_after_leave",
             return_value=([], ["some message"], [gap_date], [], [], []),
         ):
             LeaveService.add_leave(
@@ -997,7 +997,7 @@ class TestLeaveService:
         self, test_app, admin_user, test_user, second_user
     ):
         """Bug hunt regression: a per-day shift regeneration failure
-        (isolated to that day, see AdvancedShiftAutomation.
+        (isolated to that day, see AutomationAdminService.
         rebalance_after_leave's docstring) must still reach admins,
         distinctly from the "no eligible user" oncall-gap case above -
         this one means an unexpected error happened, not just a
@@ -1006,7 +1006,7 @@ class TestLeaveService:
 
         failed_date = date(2026, 8, 21)
         with patch(
-            "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
+            "app.services.leave_service.AutomationAdminService.rebalance_after_leave",
             return_value=([], ["some message"], [], [failed_date], [], []),
         ):
             LeaveService.add_leave(
@@ -1024,14 +1024,14 @@ class TestLeaveService:
     ):
         """Bug hunt regression: a failure in the on-call regeneration
         section itself (isolated from the shift days, see
-        AdvancedShiftAutomation.rebalance_after_leave's docstring) must
+        AutomationAdminService.rebalance_after_leave's docstring) must
         still reach admins."""
         from app.models import AppNotification
 
         period_start = date(2026, 8, 1)
         period_end = date(2026, 9, 1)
         with patch(
-            "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
+            "app.services.leave_service.AutomationAdminService.rebalance_after_leave",
             return_value=(
                 [],
                 ["some message"],
@@ -1063,7 +1063,7 @@ class TestLeaveService:
 
         unfilled_date = date(2026, 8, 21)
         with patch(
-            "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
+            "app.services.leave_service.AutomationAdminService.rebalance_after_leave",
             return_value=([], ["some message"], [], [], [], [unfilled_date]),
         ):
             LeaveService.add_leave(
@@ -1090,12 +1090,12 @@ class TestLeaveService:
 
     def test_rebalance_after_leave_exception_is_caught(self, test_app, test_leave):
         """_rebalance_after_leave()'s own except branch - only reached
-        by a failure in AdvancedShiftAutomation.rebalance_after_leave's
+        by a failure in AutomationAdminService.rebalance_after_leave's
         setup step itself (its per-day/per-section failures are already
         isolated and reported without raising, see the method's own
         docstring), so exercised here via a direct mock."""
         with patch(
-            "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
+            "app.services.leave_service.AutomationAdminService.rebalance_after_leave",
             side_effect=RuntimeError("boom"),
         ):
             deleted, rebalance_failed = LeaveService.api_delete(test_leave.id)

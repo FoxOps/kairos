@@ -19,9 +19,9 @@ from datetime import date, datetime, timedelta
 from werkzeug.security import generate_password_hash
 
 from app import db
-from app.models import AutomationRule, Group, OnCall, ShiftType, User
-from app.utils.automation.advanced_shift_automation import AdvancedShiftAutomation
-from app.utils.automation.oncall_automation import OnCallAutomation
+from app.models import AutomationConfig, AutomationRule, Group, OnCall, ShiftType, User
+from app.utils.automation import queries
+from app.utils.automation.planner import build_planning_request, plan_schedule
 
 
 def _make_user(name, email, group):
@@ -45,7 +45,7 @@ class TestGetEligibleUsersGroupScoping:
         u1 = _make_user("A", "a@test.com", test_group)
         u2 = _make_user("B", "b@test.com", other_group)
 
-        eligible = OnCallAutomation.get_eligible_users()
+        eligible = queries.get_oncall_users()
         assert {u.id for u in eligible} == {u1.id, u2.id}
 
     def test_group_given_restricts_to_that_group(self, test_app, test_group):
@@ -55,7 +55,7 @@ class TestGetEligibleUsersGroupScoping:
         u1 = _make_user("A", "a@test.com", test_group)
         _make_user("B", "b@test.com", other_group)
 
-        eligible = OnCallAutomation.get_eligible_users(group=test_group)
+        eligible = queries.get_oncall_users(group=test_group)
         assert {u.id for u in eligible} == {u1.id}
 
 
@@ -67,11 +67,29 @@ class TestGetUsersInScheduleGroupsGroupScoping:
         u1 = _make_user("A", "a@test.com", test_group)
         _make_user("B", "b@test.com", other_group)
 
-        users = AdvancedShiftAutomation.get_users_in_schedule_groups(group=test_group)
+        users = queries.get_schedule_users(group=test_group)
         assert {u.id for u in users} == {u1.id}
 
 
-class TestGenerateOnCallScheduleGroupScoping:
+def _plan(start_date, end_date):
+    """Both scheduling modes "per_group" - one independent planning pass
+    per Group, the mode every test below is about."""
+    from app.services import SettingsService
+
+    SettingsService.set_shift_scheduling_mode("per_group")
+    SettingsService.set_oncall_scheduling_mode("per_group")
+    return plan_schedule(build_planning_request(start_date, end_date))
+
+
+def _oncalls_for(plan, group):
+    return [o for o in plan.oncalls if o.group_id == group.id]
+
+
+def _shifts_for(plan, group):
+    return [s for s in plan.shifts if s.group_id == group.id]
+
+
+class TestPlannerOnCallGroupScoping:
     def test_two_groups_get_independent_rotations(self, test_app, test_group):
         """The key observable behavior of per_group mode for on-calls:
         each participating group runs its own full weekly rotation, so
@@ -84,19 +102,10 @@ class TestGenerateOnCallScheduleGroupScoping:
         u2 = _make_user("B", "b@test.com", other_group)
 
         friday = date(2023, 12, 1)
-        next_friday = friday + timedelta(days=7)
+        plan = _plan(friday, friday)
 
-        oncalls_a, _msgs_a, _unfilled_a = OnCallAutomation.generate_oncall_schedule(
-            friday, next_friday, dry_run=False, group=test_group
-        )
-        oncalls_b, _msgs_b, _unfilled_b = OnCallAutomation.generate_oncall_schedule(
-            friday, next_friday, dry_run=False, group=other_group
-        )
-
-        assert len(oncalls_a) == 1
-        assert oncalls_a[0].user_id == u1.id
-        assert len(oncalls_b) == 1
-        assert oncalls_b[0].user_id == u2.id
+        assert [o.user_id for o in _oncalls_for(plan, test_group)] == [u1.id]
+        assert [o.user_id for o in _oncalls_for(plan, other_group)] == [u2.id]
 
     def test_rotation_order_ids_outside_group_are_ignored(self, test_app, test_group):
         other_group = Group(name="Other", is_part_of_oncall=True)
@@ -104,59 +113,15 @@ class TestGenerateOnCallScheduleGroupScoping:
         db.session.commit()
         u1 = _make_user("A", "a@test.com", test_group)
         u2 = _make_user("B", "b@test.com", other_group)
+        AutomationConfig.set_rotation_order([u2.id, u1.id])
 
         friday = date(2023, 12, 1)
-        oncalls, _msgs, _unfilled = OnCallAutomation.generate_oncall_schedule(
-            friday,
-            friday,
-            rotation_order_ids=[u2.id, u1.id],
-            dry_run=False,
-            group=test_group,
-        )
+        plan = _plan(friday, friday)
 
-        assert len(oncalls) == 1
-        assert oncalls[0].user_id == u1.id
+        assert [o.user_id for o in _oncalls_for(plan, test_group)] == [u1.id]
 
 
-class TestGetOnCallForDateGroupScoping:
-    def test_does_not_return_a_different_groups_concurrent_oncall(
-        self, test_app, test_group
-    ):
-        """Regression test: in per_group mode, two groups can have a
-        concurrent on-call for the same anchor week - get_oncall_for_date()
-        must not let group A's shift-role determination (rule 1, the
-        13h-21h slot) pick up group B's on-call by an unscoped
-        `.first()`, which would misattribute the slot within group A's
-        own generation."""
-        other_group = Group(name="Other", is_part_of_oncall=True)
-        db.session.add(other_group)
-        db.session.commit()
-        user_a = _make_user("A", "a@test.com", test_group)
-        user_b = _make_user("B", "b@test.com", other_group)
-
-        anchor_start = datetime(2023, 12, 1, 21, 0)  # Friday 21:00
-        anchor_end = anchor_start + timedelta(days=7, hours=-14)
-        db.session.add(
-            OnCall(user_id=user_a.id, start_time=anchor_start, end_time=anchor_end)
-        )
-        db.session.add(
-            OnCall(user_id=user_b.id, start_time=anchor_start, end_time=anchor_end)
-        )
-        db.session.commit()
-
-        monday = date(2023, 12, 4)
-        oncall_for_a = AdvancedShiftAutomation.get_oncall_for_date(
-            monday, group=test_group
-        )
-        oncall_for_b = AdvancedShiftAutomation.get_oncall_for_date(
-            monday, group=other_group
-        )
-
-        assert oncall_for_a.user_id == user_a.id
-        assert oncall_for_b.user_id == user_b.id
-
-
-class TestGenerateFullScheduleGroupScoping:
+class TestPlannerShiftGroupScoping:
     def test_two_groups_get_independent_shift_generation(self, test_app, test_group):
         other_group = Group(name="Other", is_part_of_schedule=True)
         db.session.add(other_group)
@@ -165,16 +130,10 @@ class TestGenerateFullScheduleGroupScoping:
         u2 = _make_user("B", "b@test.com", other_group)
 
         monday = date(2023, 12, 4)
+        plan = _plan(monday, monday)
 
-        shifts_a, _msgs_a, _unfilled_a = AdvancedShiftAutomation.generate_full_schedule(
-            monday, monday, dry_run=False, group=test_group
-        )
-        shifts_b, _msgs_b, _unfilled_b = AdvancedShiftAutomation.generate_full_schedule(
-            monday, monday, dry_run=False, group=other_group
-        )
-
-        assert {s.user_id for s in shifts_a} == {u1.id}
-        assert {s.user_id for s in shifts_b} == {u2.id}
+        assert {s.user_id for s in _shifts_for(plan, test_group)} == {u1.id}
+        assert {s.user_id for s in _shifts_for(plan, other_group)} == {u2.id}
 
 
 class TestWeekendDefinitionRuleValueGroupScoping:
@@ -196,15 +155,10 @@ class TestWeekendDefinitionRuleValueGroupScoping:
             "weekend_definition", {"weekend_days": [0]}, group=test_group
         )
 
-        shifts_a, _msgs_a, _unfilled_a = AdvancedShiftAutomation.generate_full_schedule(
-            monday, monday, dry_run=False, group=test_group
-        )
-        shifts_b, _msgs_b, _unfilled_b = AdvancedShiftAutomation.generate_full_schedule(
-            monday, monday, dry_run=False, group=other_group
-        )
+        plan = _plan(monday, monday)
 
-        assert shifts_a == []
-        assert len(shifts_b) == 1
+        assert _shifts_for(plan, test_group) == []
+        assert len(_shifts_for(plan, other_group)) == 1
 
 
 class TestShiftSlotsRuleValueGroupScoping:
@@ -232,17 +186,10 @@ class TestShiftSlotsRuleValueGroupScoping:
         )
 
         monday = date(2023, 12, 4)
-        # Only 1 user available per group -> the "sole user" path, which
-        # always resolves the rotation-slot role (SHIFT_07_15).
-        shifts_a, _msgs_a, _unfilled_a = AdvancedShiftAutomation.generate_full_schedule(
-            monday, monday, dry_run=False, group=test_group
-        )
-        shifts_b, _msgs_b, _unfilled_b = AdvancedShiftAutomation.generate_full_schedule(
-            monday, monday, dry_run=False, group=other_group
-        )
+        plan = _plan(monday, monday)
 
-        assert shifts_a[0].shift_type_id == custom_type.id
-        assert shifts_b[0].shift_type_id != custom_type.id
+        assert _shifts_for(plan, test_group)[0].shift_type_id == custom_type.id
+        assert _shifts_for(plan, other_group)[0].shift_type_id != custom_type.id
 
 
 class TestOnCallAnchorRuleValueGroupScoping:
@@ -263,22 +210,16 @@ class TestOnCallAnchorRuleValueGroupScoping:
             group=test_group,
         )
 
-        monday = date(2023, 12, 4)
-        friday = date(2023, 12, 1)
+        plan = _plan(date(2023, 12, 1), date(2023, 12, 4))
 
-        oncalls_a, _msgs_a, _unfilled_a = OnCallAutomation.generate_oncall_schedule(
-            monday, monday, dry_run=False, group=test_group
-        )
-        oncalls_b, _msgs_b, _unfilled_b = OnCallAutomation.generate_oncall_schedule(
-            friday, friday, dry_run=False, group=other_group
-        )
-
-        assert len(oncalls_a) == 1
-        assert oncalls_a[0].user_id == u1.id
-        assert oncalls_a[0].start_time == datetime(2023, 12, 4, 21, 0)
-        assert len(oncalls_b) == 1
-        assert oncalls_b[0].user_id == u2.id
-        assert oncalls_b[0].start_time == datetime(2023, 12, 1, 21, 0)
+        oncalls_a = _oncalls_for(plan, test_group)
+        oncalls_b = _oncalls_for(plan, other_group)
+        assert [(o.user_id, o.start_time) for o in oncalls_a] == [
+            (u1.id, datetime(2023, 12, 4, 21, 0))
+        ]
+        assert [(o.user_id, o.start_time) for o in oncalls_b] == [
+            (u2.id, datetime(2023, 12, 1, 21, 0))
+        ]
 
 
 class TestOnCallSpacingRuleValueGroupScoping:
@@ -297,15 +238,16 @@ class TestOnCallSpacingRuleValueGroupScoping:
         AutomationRule.set("oncall_spacing", {"min_spacing_weeks": 0}, group=test_group)
 
         friday = date(2023, 12, 1)
-        next_friday = friday + timedelta(days=7)
+        plan = _plan(friday, friday + timedelta(days=7))
 
-        oncalls_a, _msgs_a, unfilled_a = OnCallAutomation.generate_oncall_schedule(
-            friday, next_friday, dry_run=False, group=test_group
-        )
-
+        oncalls_a = _oncalls_for(plan, test_group)
         assert len(oncalls_a) == 2
-        assert unfilled_a == []
         assert {o.user_id for o in oncalls_a} == {u1.id}
+        assert not [
+            u
+            for u in plan.unfilled
+            if u.kind == "oncall_week" and u.group_id == test_group.id
+        ]
 
 
 class TestGetAutomationStatusGroupScoping:

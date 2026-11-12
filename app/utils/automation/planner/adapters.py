@@ -5,8 +5,8 @@ of the two files in the planner package allowed to touch the DB/ORM -
 anything themselves.
 
 Every field is derived by reusing existing, already-tested functions
-verbatim (`OnCallAutomation.get_eligible_users`/`get_rotation_order`,
-`AdvancedShiftAutomation.get_users_in_schedule_groups`,
+verbatim (`app/utils/automation/queries.py`'s `get_oncall_users`/
+`get_schedule_users`/`get_rotation_order`,
 `SettingsService`'s scheduling-mode getters, `rule_resolution.py`) -
 this module contains no new business logic, only translation into the
 planner's own data shapes.
@@ -19,8 +19,7 @@ from app.models import AutomationConfig, Group, Leave, OnCall
 from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository
 from app.services.settings_service import SettingsService
-from app.utils.automation.advanced_shift_automation import AdvancedShiftAutomation
-from app.utils.automation.oncall_automation import OnCallAutomation
+from app.utils.automation import queries
 from app.utils.automation.planner.rule_resolution import (
     resolve_rotation_epoch,
     resolve_rules_for_groups,
@@ -58,14 +57,13 @@ def build_planning_request(
     restrict_to_group_id: int | None = None,
 ) -> PlanningRequest:
     """The DB-to-PlanningRequest boundary. Read-only - never writes
-    anything. Reproduces the exact scoping/eligibility/rotation logic
-    `AutomationAdminService.generate_full()`/`refresh_shifts()` already
-    use, so a `PlanningRequest` built here plans over the same
-    population the legacy engine would.
+    anything. Owns the scoping/eligibility/rotation logic for every
+    generation entry point (`AutomationAdminService.generate_full()`/
+    `refresh_shifts()`/`rebalance_after_leave()`).
 
     `shift_start_date`: pass the caller's literal (unwidened) requested
     start when `start_date` itself has been widened to a covering Friday
-    (see OnCallAutomation.align_regeneration_start) for on-call boundary
+    (see queries.align_regeneration_start) for on-call boundary
     correctness - see PlanningRequest.shift_start_date's own docstring
     for why shift planning must not inherit that widening. `None` (every
     call site through phase 6) means "no widening happened, use
@@ -74,15 +72,13 @@ def build_planning_request(
     unchanged behavior.
 
     `restrict_to_group_id`: narrows oncall_groups/schedule_groups to at
-    most that one group id, mirroring how
-    AdvancedShiftAutomation.rebalance_after_leave()'s legacy code scopes
-    itself to the leave owner's own Group under "per_group" mode instead
-    of replanning every other group's schedule too. Only has an effect
+    most that one group id - AutomationAdminService.rebalance_after_leave()
+    scopes itself to the leave owner's own Group under "per_group" mode
+    instead of replanning every other group's schedule too. Only has an effect
     when the relevant scheduling mode is "per_group" (oncall_groups/
     schedule_groups is otherwise always `(None,)`, "shared" mode's one
-    pooled scope, which a single group id cannot meaningfully narrow -
-    same reasoning the legacy code already applies via its own
-    `... if mode == "per_group" else None` fallback). Expressed as an
+    pooled scope, which a single group id cannot meaningfully narrow).
+    Expressed as an
     intersection with the normal eligible-groups computation, not a
     separate lookup - a group ineligible for that scope still narrows to
     an empty tuple, exactly like today's behavior when no groups are
@@ -109,17 +105,11 @@ def build_planning_request(
             )
 
     eligible_oncall_users = {
-        group_id: _user_refs(
-            OnCallAutomation.get_eligible_users(group=_group_or_none(group_id))
-        )
+        group_id: _user_refs(queries.get_oncall_users(group=_group_or_none(group_id)))
         for group_id in oncall_groups
     }
     eligible_shift_users = {
-        group_id: _user_refs(
-            AdvancedShiftAutomation.get_users_in_schedule_groups(
-                group=_group_or_none(group_id)
-            )
-        )
+        group_id: _user_refs(queries.get_schedule_users(group=_group_or_none(group_id)))
         for group_id in schedule_groups
     }
 
@@ -131,7 +121,7 @@ def build_planning_request(
     all_group_ids = tuple(dict.fromkeys((*oncall_groups, *schedule_groups)))
     rotation_order = {
         group_id: _user_refs(
-            OnCallAutomation.get_rotation_order(
+            queries.get_rotation_order(
                 rotation_order_ids=rotation_order_ids,
                 group=_group_or_none(group_id),
             )
@@ -214,17 +204,44 @@ def build_planning_request(
         overlapping_oncalls = [
             o for o in overlapping_oncalls if o.user_id in all_user_ids
         ]
-    published_oncalls = {
-        (
-            o.start_time.date(),
-            None if oncall_mode_is_shared else o.group_id,
-        ): o.user_id
+
+    def _oncall_scope(o) -> int | None:
+        # A row without a group_id snapshot (created manually, or before
+        # the column existed) falls back to its user's live group. Real
+        # bug (1.2.0, found while removing the legacy engine): keyed by
+        # the raw None snapshot, two groups' concurrent on-calls for the
+        # same Friday collided on (friday, None) in "per_group" mode -
+        # one silently overwrote the other in this dict, and the plan
+        # then marked it "removed", deleting another group's on-call.
+        if oncall_mode_is_shared:
+            return None
+        if o.group_id is not None:
+            return o.group_id
+        return o.user.group_id if o.user is not None else None
+
+    # Only on-calls whose scope this request actually plans can be
+    # diffed - anything else would be "published but never re-proposed"
+    # and deleted (e.g. another group's on-call under
+    # restrict_to_group_id, or a group no longer on-call-eligible).
+    #
+    # Also only on-calls anchored inside the window: the datetime-overlap
+    # query above also returns the week right before start_date (it ends
+    # 07:00 on the window's first anchor day), which the planner never
+    # re-proposes. Real bug (1.2.0, found while removing the legacy
+    # engine): it was diffed "removed" and deleted - appending a second
+    # generation right after a first one silently deleted the first
+    # one's earlier on-call. Such a week is history, already carried by
+    # existing_oncalls above (rest/spacing/"last week" lookups).
+    scoped_oncalls = [
+        (o, _oncall_scope(o))
         for o in overlapping_oncalls
+        if o.start_time.date() >= start_date and _oncall_scope(o) in oncall_groups
+    ]
+    published_oncalls = {
+        (o.start_time.date(), scope): o.user_id for o, scope in scoped_oncalls
     }
     locked_oncalls = frozenset(
-        (o.start_time.date(), None if oncall_mode_is_shared else o.group_id)
-        for o in overlapping_oncalls
-        if o.locked
+        (o.start_time.date(), scope) for o, scope in scoped_oncalls if o.locked
     )
 
     # Fetched over [effective_shift_start, end_date], NOT the (possibly
@@ -238,13 +255,19 @@ def build_planning_request(
     shifts_in_range = ShiftRepository.list_in_date_range_with_user(
         effective_shift_start, end_date
     )
-    if restrict_to_group_id is not None:
-        # Same reasoning as overlapping_oncalls above: a shift belonging
-        # to a user outside this request's own restricted population
-        # would otherwise be misdiffed as "removed" (published, but
-        # eligible_shift_users never includes that user under the
-        # restriction, so no scope ever re-proposes it) and deleted.
-        shifts_in_range = [s for s in shifts_in_range if s.user_id in all_user_ids]
+    # Same reasoning as scoped_oncalls above: a shift belonging to a user
+    # no planned shift scope includes (outside restrict_to_group_id, or
+    # in a group toggled out of the schedule since the shift was made)
+    # would otherwise be misdiffed as "removed" - published, never
+    # re-proposed - and deleted. Real bug (1.2.0): the restriction case
+    # was already handled, the "group no longer schedule-eligible" one
+    # was not (the legacy engine's scoped delete covered it).
+    planned_shift_user_ids = {
+        u.id for users in eligible_shift_users.values() for u in users
+    }
+    shifts_in_range = [
+        s for s in shifts_in_range if s.user_id in planned_shift_user_ids
+    ]
     published_shifts = {(s.date, s.user_id): s.shift_type_id for s in shifts_in_range}
     locked_shifts = frozenset((s.date, s.user_id) for s in shifts_in_range if s.locked)
 
