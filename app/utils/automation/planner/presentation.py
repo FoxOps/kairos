@@ -110,13 +110,33 @@ def plan_messages(plan: SchedulePlan) -> tuple[list, list, list, list]:
             oncall_unfilled_dates.append(unfilled.date)
             continue
 
-        shift_unfilled_dates.append(unfilled.date)
+        if unfilled.kind == "no_available_user":
+            shift_unfilled_dates.append(unfilled.date)
+            continue
+
+        # staffing_max: flash [WARN] only, never shift_unfilled_dates
+        # (the "aucun utilisateur disponible" notification) - users WERE
+        # available, the admin's own cap was reached (see
+        # AppNotificationService.notify_admins_shift_unfilled()).
         shift_type = None
         if unfilled.detail:
             shift_type = db.session.get(ShiftType, int(unfilled.detail))
         label = shift_type.label if shift_type else unfilled.detail
 
         staffing_max_gap_dates[label].append(unfilled.date)
+
+    if shift_unfilled_dates:
+        count, start, end = _date_range_suffix(shift_unfilled_dates)
+        shift_messages.append(
+            _(
+                "[WARN] Aucun utilisateur disponible (absences) : %(count)s "
+                "jour(s) sans shift entre le %(start)s et le %(end)s - "
+                "assignation manuelle nécessaire.",
+                count=count,
+                start=start,
+                end=end,
+            )
+        )
 
     if oncall_unfilled_dates:
         count, start, end = _date_range_suffix(oncall_unfilled_dates)

@@ -113,7 +113,7 @@ class ProposedShift:
 
 @dataclass(frozen=True)
 class UnfilledRequirement:
-    kind: Literal["oncall_week", "staffing_max"]
+    kind: Literal["oncall_week", "staffing_max", "no_available_user"]
     date: date
     group_id: int | None
     reason_code: str

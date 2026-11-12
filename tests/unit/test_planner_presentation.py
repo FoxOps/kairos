@@ -63,7 +63,28 @@ def test_repeated_staffing_max_gaps_for_the_same_shift_type_produce_one_message(
     assert "13h-21h" in shift_messages[0]
     assert "02/01/2026" in shift_messages[0]
     assert "30/01/2026" in shift_messages[0]
-    assert shift_unfilled == [u.date for u in unfilled]
+    # Users WERE available - never routed into the "aucun utilisateur
+    # disponible" notification (1.2.0 production report).
+    assert shift_unfilled == []
+
+
+def test_no_available_user_days_feed_the_unfilled_notification(test_app):
+    unfilled = tuple(
+        UnfilledRequirement(
+            kind="no_available_user",
+            date=date(2026, 1, d),
+            group_id=None,
+            reason_code="no_available_user",
+        )
+        for d in (5, 6)
+    )
+
+    _, _, shift_messages, shift_unfilled = plan_messages(_plan(unfilled=unfilled))
+
+    assert shift_unfilled == [date(2026, 1, 5), date(2026, 1, 6)]
+    assert len(shift_messages) == 1
+    assert shift_messages[0].startswith("[WARN]")
+    assert "05/01/2026" in shift_messages[0]
 
 
 def test_different_shift_types_produce_separate_messages(test_app):

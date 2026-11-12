@@ -253,10 +253,16 @@ class AppNotificationService:
 
     @staticmethod
     def notify_admins_shift_unfilled(dates: list[date]) -> None:
-        """No one was available for these weekdays - AdvancedShiftAutomation
-        .generate_daily_shifts()'s own business-rule case (not an
-        exception, nothing to roll back: the day genuinely has zero
-        shifts). Distinct from notify_admins_shift_gap() above (an actual
+        """No one was available for these weekdays (every eligible user on
+        leave) - the planner's "no_available_user" UnfilledRequirement
+        (shift_planner.py; not an exception, nothing to roll back: the
+        day genuinely has zero shifts). Deliberately NOT raised for a
+        staffing_limits maximum being reached: that used to be routed
+        here too, so this "aucun utilisateur disponible" text was shown
+        for days where users were available but over their slot's cap
+        (1.2.0 production report) - that case is a flash [WARN] only
+        (plan_messages()), since manual assignment would breach the
+        admin's own cap anyway. Distinct from notify_admins_shift_gap() above (an actual
         exception, day left untouched) - the wording here reflects that
         the day *was* processed and is now legitimately empty. Call only
         after the triggering generation's own commit has actually

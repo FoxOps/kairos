@@ -14,13 +14,17 @@ does - see rules/predicates.py, used here too) and defect #8/#9
 (weekend definition and every other rule value always resolved through
 ResolvedRules, never hardcoded).
 
-Rule 2 (rotation slot) is symmetric - both last week's AND next week's
-on-call get it, matching AdvancedShiftAutomation.determine_shift_for_user()/
-get_upcoming_oncall_user() (fixed on this same branch, see commit
-b2a225c: without the forward-looking half, a group whose on-call turns
-are sparse relative to other groups sharing the same rotation pool
-would fall through to the static default slot every week, never
-varying). The rule 7 fallback (guaranteeing at least one rotation-slot
+Rule 2 (rotation slot) is a priority, not a symmetric union: last
+week's on-call holder gets it; only when nobody from last week is in
+this scope does next week's holder get it instead. The forward-looking
+half exists so a group whose on-call turns are sparse relative to other
+groups sharing the same rotation pool doesn't fall through to the
+static default slot every week (commit b2a225c) - but it used to apply
+*in addition to* last week's holder, giving the rotation slot to two
+people at once. Real production bug (1.2.0, report/1.2.0/BUG_HUNT_1.2.0.md):
+with that slot capped at 1 via staffing_limits, the second one was
+dropped for the whole day - no shift at all, Mon-Thu of every other
+week. The rule 7 fallback (guaranteeing at least one rotation-slot
 person when neither half of rule 2 matches anyone present) also rotates
 the narrowed-to-present candidate list by the day's absolute week index
 (rotation.rotate(), the same date-derived mechanism used for on-call
@@ -94,9 +98,10 @@ def assign_shift_slots_for_day(
        plan_shifts_for_scope()'s own docstring for the real bug this
        fixes - a single-id parameter structurally cannot represent
        that).
-    2. Any remaining available user who was on-call last week OR will be
-       on-call next week gets "rotation" (symmetric - see module
-       docstring for why the forward-looking half matters).
+    2. Any remaining available user who was on-call last week gets
+       "rotation"; only if none of them is available, next week's
+       on-call holder(s) get it instead (priority, not a union - see
+       module docstring for the real bug a union caused).
     3. If nobody has "rotation" yet, one remaining available user is
        picked for it (rule 7: at least one rotation-slot person every
        day) - preferring whoever already had it in the published
@@ -120,9 +125,12 @@ def assign_shift_slots_for_day(
         if candidate_id in available_by_id:
             slot_by_user[candidate_id] = "oncall"
 
-    for candidate_id in oncall_user_ids_last_week | oncall_user_ids_next_week:
-        if candidate_id in available_by_id and candidate_id not in slot_by_user:
-            slot_by_user[candidate_id] = "rotation"
+    for candidates in (oncall_user_ids_last_week, oncall_user_ids_next_week):
+        for candidate_id in sorted(candidates):
+            if candidate_id in available_by_id and candidate_id not in slot_by_user:
+                slot_by_user[candidate_id] = "rotation"
+        if any(slot == "rotation" for slot in slot_by_user.values()):
+            break
 
     if not any(slot == "rotation" for slot in slot_by_user.values()):
         remaining = [u for u in available_users if u.id not in slot_by_user]
@@ -236,6 +244,30 @@ def plan_shifts_for_scope(
     # single Friday hold more than one concurrently on-call user (see
     # this function's own docstring for why that's required).
     oncall_user_ids_by_friday: dict[date, set[int]] = {}
+    # Already-published on-calls outside the window (the adapter
+    # excludes in-window ones - those are re-proposed) seed the same
+    # anchor -> holders index, so the window's first week can see its
+    # real "last week" holder. Proposed entries below override them for
+    # the same anchor. Keyed by scope like proposed_oncalls: in shared
+    # on-call mode (`(None,)`) every one counts, else only the ones
+    # snapshotted under a relevant group.
+    oncall_mode_is_shared = oncall_group_ids == (None,)
+    for oncall in existing_oncalls:
+        if not oncall_mode_is_shared and oncall.group_id not in oncall_group_ids:
+            continue
+        start_day = oncall.start_time.date()
+        anchor = start_day - timedelta(
+            days=(start_day.weekday() - rules.oncall_anchor_weekday) % 7
+        )
+        oncall_user_ids_by_friday.setdefault(anchor, set()).add(oncall.user_id)
+    proposed_anchors = {
+        friday
+        for (friday, oc_group_id) in proposed_oncalls
+        if oc_group_id in oncall_group_ids
+    }
+    for anchor in proposed_anchors:
+        oncall_user_ids_by_friday.pop(anchor, None)
+
     for (friday, oc_group_id), user_id in proposed_oncalls.items():
         if oc_group_id not in oncall_group_ids:
             continue
@@ -258,6 +290,15 @@ def plan_shifts_for_scope(
             for user in eligible_users
             if not _is_on_leave(user.id, day, existing_leaves)
         )
+        if eligible_users and not available_today:
+            unfilled.append(
+                UnfilledRequirement(
+                    kind="no_available_user",
+                    date=day,
+                    group_id=group_id,
+                    reason_code="no_available_user",
+                )
+            )
 
         oncall_user_ids_today = frozenset(
             oncall_user_ids_by_friday.get(_covering_friday(day, rules), ())
@@ -384,14 +425,16 @@ def plan_shifts_for_scope(
                 )
                 continue
 
-            max_limit = rules.staffing_limits.get(shift_type_id)
-            if max_limit is not None:
-                current_count = sum(
-                    1
-                    for s in proposed
-                    if s.date == day and s.shift_type_id == shift_type_id
-                )
-                if current_count >= max_limit:
+            explanation = (f"role slot: {role_slot}",)
+            if _slot_is_full(proposed, day, shift_type_id, rules):
+                # Over the slot's staffing max: fall back to the default
+                # slot rather than dropping the user for the whole day
+                # (real production bug, see module docstring) - only a
+                # full default slot too leaves them genuinely unfilled.
+                default_type_id, default_hours = slot_shift_type["default"]
+                if role_slot == "default" or _slot_is_full(
+                    proposed, day, default_type_id, rules
+                ):
                     unfilled.append(
                         UnfilledRequirement(
                             kind="staffing_max",
@@ -402,6 +445,11 @@ def plan_shifts_for_scope(
                         )
                     )
                     continue
+                explanation = (
+                    f"role slot: {role_slot} full (staffing max) - default slot instead",
+                )
+                role_slot = "default"
+                shift_type_id, (start_hour, end_hour) = default_type_id, default_hours
 
             published_shift_type_id = published.get((day, user.id))
             change_type = (
@@ -420,7 +468,7 @@ def plan_shifts_for_scope(
                     group_id,
                     role_slot,
                     change_type,
-                    (f"role slot: {role_slot}",),
+                    explanation,
                 )
             )
 
@@ -429,6 +477,18 @@ def plan_shifts_for_scope(
     return ShiftPlanFragment(
         proposed=tuple(proposed), unfilled=tuple(unfilled), violations=tuple(violations)
     )
+
+
+def _slot_is_full(
+    proposed: list[ProposedShift], day: date, shift_type_id: int, rules: ResolvedRules
+) -> bool:
+    max_limit = rules.staffing_limits.get(shift_type_id)
+    if max_limit is None:
+        return False
+    current_count = sum(
+        1 for s in proposed if s.date == day and s.shift_type_id == shift_type_id
+    )
+    return current_count >= max_limit
 
 
 def _last_oncall_end_before(
