@@ -536,7 +536,7 @@ def test_f16_single_day_leave_ics_spans_the_whole_day(test_app):
     assert event.decoded("dtend") == date(2026, 1, 8)
 
 
-def test_fresh_migrations_have_schema_drift(test_app):
+def test_f18_fresh_migrations_match_model_metadata(test_app):
     from alembic.autogenerate import compare_metadata
     from alembic.migration import MigrationContext
     from flask_migrate import upgrade
@@ -545,7 +545,7 @@ def test_fresh_migrations_have_schema_drift(test_app):
     upgrade(directory="migrations")
     with db.engine.connect() as connection:
         diffs = compare_metadata(MigrationContext.configure(connection), db.metadata)
-    assert len(diffs) == 3, diffs  # remove old index, replace nonunique token index
+    assert diffs == []
 
 
 def test_f07_second_plan_of_same_window_refused_as_stale(test_app):
