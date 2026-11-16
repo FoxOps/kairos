@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-12 16:48+0100\n"
+"POT-Creation-Date: 2026-11-16 21:39+0100\n"
 "PO-Revision-Date: 2026-07-15 23:08+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: en <LL@li.org>\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: app/__init__.py:524 app/routes/auth.py:255
+#: app/__init__.py:524 app/routes/auth.py:278
 #: app/templates/auth/update_profile.html:15
 msgid "Vous devez choisir un nouveau mot de passe avant de continuer."
 msgstr "You must choose a new password before continuing."
@@ -31,11 +31,11 @@ msgstr "Please log in to access this page."
 msgid "Accès refusé : vous devez être administrateur."
 msgstr "Access denied: you must be an administrator."
 
-#: app/auth/decorators.py:91 app/routes/admin_automation_routes.py:218
-#: app/routes/admin_automation_routes.py:322
+#: app/auth/decorators.py:91 app/routes/admin_automation_routes.py:224
+#: app/routes/admin_automation_routes.py:346
 #: app/routes/admin_group_routes.py:89
 #: app/routes/admin_shift_type_routes.py:111
-#: app/routes/admin_user_routes.py:121 app/routes/auth.py:458
+#: app/routes/admin_user_routes.py:121 app/routes/auth.py:481
 #: app/routes/leave_routes.py:122 app/routes/leave_routes.py:155
 #: app/routes/leave_routes.py:191 app/routes/leave_routes.py:230
 #: app/routes/oncall_routes.py:97 app/routes/oncall_routes.py:116
@@ -50,24 +50,24 @@ msgstr "Error: %(val0)s"
 msgid "Accès refusé : vous ne pouvez modifier que vos propres données."
 msgstr "Access denied: you can only modify your own data."
 
-#: app/auth/oidc_auth.py:385
+#: app/auth/oidc_auth.py:411
 msgid "Erreur d'authentification : état invalide."
 msgstr "Authentication error: invalid state."
 
-#: app/auth/oidc_auth.py:394
+#: app/auth/oidc_auth.py:420
 #, python-format
 msgid "Erreur d'authentification : %(error)s."
 msgstr "Authentication error: %(error)s."
 
-#: app/auth/oidc_auth.py:402
+#: app/auth/oidc_auth.py:428
 msgid "Erreur d'authentification : échec de l'échange du code."
 msgstr "Authentication error: failed to exchange the code."
 
-#: app/auth/oidc_auth.py:410
+#: app/auth/oidc_auth.py:436
 msgid "Erreur d'authentification : jeton invalide."
 msgstr "Authentication error: invalid token."
 
-#: app/auth/oidc_auth.py:425
+#: app/auth/oidc_auth.py:451
 msgid "Erreur d'authentification : impossible de récupérer l'email."
 msgstr "Authentication error: could not fetch the email."
 
@@ -88,11 +88,11 @@ msgstr ""
 msgid "%(count)s entrée(s) d'historique purgée(s)."
 msgstr "%(count)s history entry(ies) purged."
 
-#: app/routes/admin_automation_routes.py:69 app/services/leave_service.py:219
+#: app/routes/admin_automation_routes.py:70 app/services/leave_service.py:221
 msgid "Génération d'astreintes incomplète"
 msgstr "Incomplete on-call generation"
 
-#: app/routes/admin_automation_routes.py:71
+#: app/routes/admin_automation_routes.py:72
 #, python-format
 msgid ""
 "Aucun utilisateur disponible dans le respect du délai légal de 2 semaines "
@@ -101,11 +101,11 @@ msgstr ""
 "No user available within the legal 2-week spacing constraint for: %(dates)s."
 " Manual assignment required in /admin/automation."
 
-#: app/routes/admin_automation_routes.py:86 app/services/leave_service.py:268
+#: app/routes/admin_automation_routes.py:87 app/services/leave_service.py:270
 msgid "Génération de shifts incomplète"
 msgstr "Incomplete shift generation"
 
-#: app/routes/admin_automation_routes.py:88
+#: app/routes/admin_automation_routes.py:89
 #, python-format
 msgid ""
 "Aucun utilisateur disponible pour générer un shift pour : %(dates)s. "
@@ -114,44 +114,52 @@ msgstr ""
 "No user available to generate a shift for: %(dates)s. Manual assignment "
 "required in /admin/automation."
 
-#: app/routes/admin_automation_routes.py:181
-#: app/routes/admin_automation_routes.py:285
+#: app/routes/admin_automation_routes.py:173
+msgid "Mode d'astreinte invalide."
+msgstr "Invalid on-call mode."
+
+#: app/routes/admin_automation_routes.py:187
+#: app/routes/admin_automation_routes.py:309
 #, python-format
 msgid "%(oncalls_deleted)s astreintes existantes supprimées pour la période"
 msgstr "%(oncalls_deleted)s existing on-calls deleted for the period"
 
-#: app/routes/admin_automation_routes.py:196
+#: app/routes/admin_automation_routes.py:202
 #, python-format
 msgid "%(deleted)s shifts existants supprimés pour la période"
 msgstr "%(deleted)s existing shifts deleted for the period"
 
-#: app/routes/admin_automation_routes.py:209
+#: app/routes/admin_automation_routes.py:215
 #, python-format
 msgid "%(val0)s shifts régénérés avec succès !"
 msgstr "%(val0)s shifts successfully regenerated!"
 
-#: app/routes/admin_automation_routes.py:215
-#: app/routes/admin_automation_routes.py:320
+#: app/routes/admin_automation_routes.py:221
+#: app/routes/admin_automation_routes.py:344
 #, python-format
 msgid "Format de date invalide : %(val0)s"
 msgstr "Invalid date format: %(val0)s"
 
-#: app/routes/admin_automation_routes.py:234
+#: app/routes/admin_automation_routes.py:241
+msgid "Sélectionnez au moins une personne à inclure dans la rotation."
+msgstr "Select at least one person to include in the rotation."
+
+#: app/routes/admin_automation_routes.py:253
 #, python-format
 msgid "Erreur lors de la sauvegarde de l'ordre : %(error)s"
 msgstr "Error saving the order: %(error)s"
 
-#: app/routes/admin_automation_routes.py:242
+#: app/routes/admin_automation_routes.py:261
 msgid ""
 "Ordre de rotation enregistré ! Utilisez le bouton 'Générer' pour appliquer."
 msgstr "Rotation order saved! Use the 'Generate' button to apply it."
 
-#: app/routes/admin_automation_routes.py:293
+#: app/routes/admin_automation_routes.py:317
 #, python-format
 msgid "%(shifts_deleted)s shifts existants supprimés pour la période"
 msgstr "%(shifts_deleted)s existing shifts deleted for the period"
 
-#: app/routes/admin_automation_routes.py:311
+#: app/routes/admin_automation_routes.py:335
 #, python-format
 msgid ""
 "Régénération complète terminée pour la période du %(strftime)s au "
@@ -486,79 +494,85 @@ msgstr "Public registration is disabled. Use OIDC authentication."
 msgid "L'inscription publique est désactivée. Contactez l'administrateur."
 msgstr "Public registration is disabled. Contact the administrator."
 
-#: app/routes/auth.py:113
+#: app/routes/auth.py:116
+msgid ""
+"La connexion par mot de passe est désactivée. Utilisez l'authentification "
+"SSO."
+msgstr "Password login is disabled. Use SSO authentication."
+
+#: app/routes/auth.py:132
 msgid "Email et mot de passe sont obligatoires."
 msgstr "Email and password are required."
 
-#: app/routes/auth.py:131
+#: app/routes/auth.py:150
 msgid "Connexion réussie !"
 msgstr "Login successful!"
 
-#: app/routes/auth.py:145
+#: app/routes/auth.py:164
 msgid "Email ou mot de passe incorrect."
 msgstr "Incorrect email or password."
 
-#: app/routes/auth.py:164
+#: app/routes/auth.py:187
 msgid "La connexion OIDC n'est pas disponible pour le moment."
 msgstr "OIDC login is not available at the moment."
 
-#: app/routes/auth.py:188
+#: app/routes/auth.py:211
 msgid "La connexion OIDC a échoué. Veuillez réessayer."
 msgstr "OIDC login failed. Please try again."
 
-#: app/routes/auth.py:198
+#: app/routes/auth.py:221
 msgid "Connexion OIDC réussie !"
 msgstr "OIDC login successful!"
 
-#: app/routes/auth.py:223
+#: app/routes/auth.py:246
 msgid "Vous avez été déconnecté."
 msgstr "You have been logged out."
 
-#: app/routes/auth.py:262
+#: app/routes/auth.py:285
 msgid "Le nom et l'email sont obligatoires."
 msgstr "Name and email are required."
 
-#: app/routes/auth.py:271
+#: app/routes/auth.py:294
 msgid "Cet email est déjà utilisé par un autre utilisateur."
 msgstr "This email is already used by another user."
 
-#: app/routes/auth.py:284
+#: app/routes/auth.py:307
 msgid "Le mot de passe actuel est obligatoire pour changer de mot de passe."
 msgstr "The current password is required to change your password."
 
-#: app/routes/auth.py:291
+#: app/routes/auth.py:314
 msgid "Le mot de passe actuel est incorrect."
 msgstr "The current password is incorrect."
 
-#: app/routes/auth.py:295
+#: app/routes/auth.py:318
 msgid "Les nouveaux mots de passe ne correspondent pas."
 msgstr "The new passwords do not match."
 
-#: app/routes/auth.py:315
+#: app/routes/auth.py:338
 msgid "Votre profil a été mis à jour avec succès !"
 msgstr "Your profile has been successfully updated!"
 
-#: app/routes/auth.py:341
+#: app/routes/auth.py:364
 msgid "Fuseau horaire invalide."
 msgstr "Invalid timezone."
 
-#: app/routes/auth.py:347
+#: app/routes/auth.py:370
 msgid "Langue invalide."
 msgstr "Invalid language."
 
-#: app/routes/auth.py:353
+#: app/routes/auth.py:376
 msgid "Format de date invalide."
 msgstr "Invalid date format."
 
-#: app/routes/auth.py:359
+#: app/routes/auth.py:382
 msgid "Format d'heure invalide."
 msgstr "Invalid time format."
 
-#: app/routes/auth.py:408
+#: app/routes/auth.py:431
 msgid "Vos paramètres ont été mis à jour avec succès !"
 msgstr "Your settings have been successfully updated!"
 
-#: app/routes/auth.py:455
+#: app/routes/auth.py:478
 msgid "Token ICS régénéré avec succès !"
 msgstr "ICS token successfully regenerated!"
 
@@ -694,7 +708,7 @@ msgid "Aucune astreinte sélectionnée."
 msgstr "No on-call selected."
 
 #: app/routes/oncall_routes.py:202 app/routes/oncall_routes.py:225
-#: app/services/oncall_service.py:166
+#: app/services/oncall_service.py:157
 msgid "Astreinte non trouvée"
 msgstr "On-call not found"
 
@@ -746,12 +760,12 @@ msgstr "No shift selected."
 msgid "Données manquantes"
 msgstr "Missing data"
 
-#: app/routes/shift_routes.py:274 app/services/oncall_service.py:171
-#: app/services/shift_service.py:197
+#: app/routes/shift_routes.py:274 app/services/oncall_service.py:162
+#: app/services/shift_service.py:233
 msgid "Utilisateur non trouvé"
 msgstr "User not found"
 
-#: app/routes/shift_routes.py:281 app/services/shift_service.py:207
+#: app/routes/shift_routes.py:281 app/services/shift_service.py:243
 msgid "Type de shift non trouvé"
 msgstr "Shift type not found"
 
@@ -761,7 +775,7 @@ msgid "Format invalide: %(val0)s"
 msgstr "Invalid format: %(val0)s"
 
 #: app/routes/shift_routes.py:340 app/routes/shift_routes.py:417
-#: app/services/shift_service.py:185
+#: app/services/shift_service.py:217
 msgid "Shift non trouvé"
 msgstr "Shift not found"
 
@@ -919,7 +933,22 @@ msgstr "This is a test notification sent from /admin/notification-targets."
 msgid "Échec de l'envoi (voir les logs pour le détail)."
 msgstr "Send failed (see the logs for details)."
 
-#: app/services/automation_admin_service.py:555
+#: app/services/automation_admin_service.py:271
+#, python-format
+msgid ""
+"Impossible d'enregistrer l'ordre de rotation, génération annulée : %(error)s"
+msgstr "Could not save the rotation order, generation cancelled: %(error)s"
+
+#: app/services/automation_admin_service.py:621
+#, python-format
+msgid ""
+"[ERROR] Rééquilibrage après congé refusé, aucune modification appliquée : "
+"%(error)s - action manuelle nécessaire"
+msgstr ""
+"[ERROR] Leave rebalance refused, no change applied: %(error)s - manual "
+"action required"
+
+#: app/services/automation_admin_service.py:641
 #, python-format
 msgid ""
 "[ERROR] Échec de la régénération du %(date)s : %(error)s - ce jour n'a pas "
@@ -928,7 +957,7 @@ msgstr ""
 "[ERROR] Failed to regenerate %(date)s: %(error)s - this day was not changed,"
 " manual action required"
 
-#: app/services/automation_admin_service.py:568
+#: app/services/automation_admin_service.py:654
 #, python-format
 msgid ""
 "[ERROR] Échec de la régénération des astreintes pour la période %(start)s - "
@@ -996,7 +1025,7 @@ msgstr ""
 "Not possible: available staff would drop to 0 on at least one day of this "
 "period"
 
-#: app/services/leave_service.py:221
+#: app/services/leave_service.py:223
 #, python-format
 msgid ""
 "Aucun utilisateur disponible dans le respect du délai légal de 2 semaines "
@@ -1007,11 +1036,11 @@ msgstr ""
 "(rebalancing after a leave). Manual assignment required in "
 "/admin/automation."
 
-#: app/services/leave_service.py:234
+#: app/services/leave_service.py:236
 msgid "Régénération de shifts incomplète"
 msgstr "Incomplete shift regeneration"
 
-#: app/services/leave_service.py:236
+#: app/services/leave_service.py:238
 #, python-format
 msgid ""
 "Échec de la régénération automatique des shifts pour : %(dates)s "
@@ -1022,11 +1051,11 @@ msgstr ""
 "leave). These days were not changed. Manual assignment required in "
 "/admin/automation."
 
-#: app/services/leave_service.py:252
+#: app/services/leave_service.py:254
 msgid "Régénération d'astreintes échouée"
 msgstr "On-call regeneration failed"
 
-#: app/services/leave_service.py:254
+#: app/services/leave_service.py:256
 #, python-format
 msgid ""
 "Échec de la régénération automatique des astreintes pour la période du "
@@ -1037,7 +1066,7 @@ msgstr ""
 "%(end)s (rebalancing after a leave). These on-calls were not changed. Manual"
 " assignment required in /admin/automation."
 
-#: app/services/leave_service.py:270
+#: app/services/leave_service.py:272
 #, python-format
 msgid ""
 "Aucun utilisateur disponible pour générer un shift pour : %(dates)s "
@@ -1077,31 +1106,9 @@ msgstr "On-call reminder send failure"
 msgid "Le rappel d'astreinte pour %(email)s n'a pas pu être envoyé."
 msgstr "The on-call reminder for %(email)s could not be sent."
 
-#: app/services/oncall_service.py:57
+#: app/services/oncall_service.py:53
 msgid "L'astreinte doit commencer le jour configuré pour ce groupe."
 msgstr "The on-call must start on the day configured for this group."
-
-#: app/services/oncall_service.py:71
-msgid ""
-"Impossible d'ajouter cette astreinte (période déjà couverte ou congé sur la "
-"période)."
-msgstr ""
-"Unable to add this on-call (period already covered or leave during this "
-"period)."
-
-#: app/services/oncall_service.py:183
-msgid "L'astreinte doit commencer le jour configuré pour ce groupe"
-msgstr "The on-call must start on the day configured for this group"
-
-#: app/services/oncall_service.py:197
-#, python-format
-msgid "Une astreinte existe déjà pour %(name)s pendant cette période"
-msgstr "An on-call already exists for %(name)s during this period"
-
-#: app/services/oncall_service.py:209
-#, python-format
-msgid "%(name)s est en congé pendant cette période"
-msgstr "%(name)s is on leave during this period"
 
 #: app/services/schedule_service.py:100 app/utils/export/ics_exporter.py:71
 #, python-format
@@ -1162,27 +1169,32 @@ msgstr "Retention duration cannot be negative"
 msgid "La durée d'expiration doit être positive"
 msgstr "The expiry duration must be positive"
 
-#: app/services/shift_service.py:147
+#: app/services/shift_service.py:30
+msgid "La fin du shift doit être postérieure à son début."
+msgstr "The shift must end after it starts."
+
+#: app/services/shift_service.py:32
+msgid "Un shift doit commencer et se terminer le même jour."
+msgstr "A shift must start and end on the same day."
+
+#: app/services/shift_service.py:162
 msgid "Impossible de créer un shift pour un week-end"
 msgstr "Unable to create a shift for a weekend"
 
-#: app/services/shift_service.py:150
-msgid "Conflit détecté pour ce shift"
-msgstr "Conflict detected for this shift"
+#: app/services/shift_service.py:166 app/services/shift_service.py:272
+#: app/services/swap_service.py:83
+#, python-format
+msgid "%(name)s est en congé le %(date)s"
+msgstr "%(name)s is on leave on %(date)s"
 
-#: app/services/shift_service.py:202
-msgid "Impossible de déplacer vers un week-end (samedi/dimanche)"
-msgstr "Unable to move to a weekend (Saturday/Sunday)"
-
-#: app/services/shift_service.py:222
+#: app/services/shift_service.py:172 app/services/shift_service.py:258
 #, python-format
 msgid "Un shift existe déjà pour %(name)s le %(date)s"
 msgstr "A shift already exists for %(name)s on %(date)s"
 
-#: app/services/shift_service.py:236 app/services/swap_service.py:75
-#, python-format
-msgid "%(name)s est en congé le %(date)s"
-msgstr "%(name)s is on leave on %(date)s"
+#: app/services/shift_service.py:238
+msgid "Impossible de déplacer vers un week-end (samedi/dimanche)"
+msgstr "Unable to move to a weekend (Saturday/Sunday)"
 
 #: app/services/shift_type_service.py:27 app/services/shift_type_service.py:53
 msgid "Un type de shift avec ce nom existe déjà."
@@ -1209,50 +1221,60 @@ msgid ""
 msgstr ""
 "Cannot delete this shift type: it is used by a configured automation rule."
 
-#: app/services/swap_service.py:63
+#: app/services/swap_service.py:71
 msgid "Shift introuvable"
 msgstr "Shift not found"
 
-#: app/services/swap_service.py:65
+#: app/services/swap_service.py:73
 msgid "Utilisateur cible introuvable"
 msgstr "Target user not found"
 
-#: app/services/swap_service.py:67
+#: app/services/swap_service.py:75
 msgid "Ce shift ne vous appartient plus"
 msgstr "This shift no longer belongs to you"
 
-#: app/services/swap_service.py:69
+#: app/services/swap_service.py:77
 msgid "Impossible de proposer un échange à vous-même"
 msgstr "Unable to propose a swap to yourself"
 
-#: app/services/swap_service.py:71
+#: app/services/swap_service.py:79
 msgid "Le shift proposé en retour n'appartient plus à cet utilisateur"
 msgstr "The shift requested in return no longer belongs to this user"
 
-#: app/services/swap_service.py:85
+#: app/services/swap_service.py:93
 #, python-format
 msgid "%(name)s a déjà un autre shift le %(date)s"
 msgstr "%(name)s already has another shift on %(date)s"
 
-#: app/services/swap_service.py:92
+#: app/services/swap_service.py:100
 #, python-format
 msgid "Vous êtes en congé le %(date)s"
 msgstr "You are on leave on %(date)s"
 
-#: app/services/swap_service.py:97
+#: app/services/swap_service.py:105
 #, python-format
 msgid "Vous avez déjà un autre shift le %(date)s"
 msgstr "You already have another shift on %(date)s"
 
-#: app/services/swap_service.py:117
+#: app/services/swap_service.py:125
+#, python-format
+msgid "Le shift du %(date)s est verrouillé et ne peut pas être échangé"
+msgstr "The shift on %(date)s is locked and cannot be swapped"
+
+#: app/services/swap_service.py:130
+#, python-format
+msgid "Le %(date)s est un jour non travaillé pour %(name)s"
+msgstr "%(date)s is a non-working day for %(name)s"
+
+#: app/services/swap_service.py:179
 msgid "Une demande est déjà en attente pour ce shift"
 msgstr "A request is already pending for this shift"
 
-#: app/services/swap_service.py:139
+#: app/services/swap_service.py:201
 msgid "Nouvelle demande d'échange de shift"
 msgstr "New shift swap request"
 
-#: app/services/swap_service.py:141
+#: app/services/swap_service.py:203
 #, python-format
 msgid ""
 "%(requester)s propose un échange de shift à %(target)s, en attente de sa "
@@ -1261,19 +1283,19 @@ msgstr ""
 "%(requester)s is offering a shift swap to %(target)s, awaiting their "
 "confirmation."
 
-#: app/services/swap_service.py:163 app/services/swap_service.py:207
+#: app/services/swap_service.py:225 app/services/swap_service.py:269
 msgid "Cette demande n'est plus en attente de votre confirmation"
 msgstr "This request is no longer awaiting your confirmation"
 
-#: app/services/swap_service.py:165 app/services/swap_service.py:209
+#: app/services/swap_service.py:227 app/services/swap_service.py:271
 msgid "Cette demande ne vous est pas destinée"
 msgstr "This request is not addressed to you"
 
-#: app/services/swap_service.py:186
+#: app/services/swap_service.py:248
 msgid "Échange de shift confirmé par le destinataire"
 msgstr "Shift swap confirmed by the recipient"
 
-#: app/services/swap_service.py:188
+#: app/services/swap_service.py:250
 #, python-format
 msgid ""
 "%(target)s a confirmé l'échange proposé par %(requester)s, en attente de "
@@ -1282,53 +1304,53 @@ msgstr ""
 "%(target)s confirmed the swap proposed by %(requester)s, awaiting admin "
 "approval."
 
-#: app/services/swap_service.py:223
+#: app/services/swap_service.py:285
 msgid "Échange de shift décliné par le destinataire"
 msgstr "Shift swap declined by the recipient"
 
-#: app/services/swap_service.py:225
+#: app/services/swap_service.py:287
 #, python-format
 msgid "%(target)s a décliné la proposition d'échange de %(requester)s."
 msgstr "%(target)s declined %(requester)s's swap proposal."
 
-#: app/services/swap_service.py:238
+#: app/services/swap_service.py:300
 msgid "Cette demande n'est plus en attente"
 msgstr "This request is no longer pending"
 
-#: app/services/swap_service.py:241
+#: app/services/swap_service.py:303
 msgid "Seul le demandeur ou un administrateur peut annuler cette demande"
 msgstr "Only the requester or an administrator can cancel this request"
 
-#: app/services/swap_service.py:260 app/services/swap_service.py:371
+#: app/services/swap_service.py:322 app/services/swap_service.py:444
 msgid "Cette demande n'est pas en attente de validation admin"
 msgstr "This request is not awaiting admin approval"
 
-#: app/services/swap_service.py:270
+#: app/services/swap_service.py:332
 #, python-format
 msgid "Échange invalide, réessayez de le rejeter : %(error)s"
 msgstr "Invalid swap, try rejecting it again: %(error)s"
 
-#: app/services/swap_service.py:289
+#: app/services/swap_service.py:352
 msgid "Échange de shift approuvé"
 msgstr "Shift swap approved"
 
-#: app/services/swap_service.py:291
+#: app/services/swap_service.py:354
 #, python-format
 msgid "%(requester)s <-> %(target)s : échange approuvé par %(admin)s."
 msgstr "%(requester)s <-> %(target)s: swap approved by %(admin)s."
 
-#: app/services/swap_service.py:313
+#: app/services/swap_service.py:377
 msgid "Seul un échange approuvé peut être annulé"
 msgstr "Only an approved swap can be reverted"
 
-#: app/services/swap_service.py:318
+#: app/services/swap_service.py:382
 msgid ""
 "Le shift a changé depuis l'approbation, annulation impossible "
 "automatiquement"
 msgstr ""
 "The shift has changed since approval, automatic reversion is not possible"
 
-#: app/services/swap_service.py:328
+#: app/services/swap_service.py:392
 msgid ""
 "Le shift retourné a changé depuis l'approbation, annulation impossible "
 "automatiquement"
@@ -1336,11 +1358,16 @@ msgstr ""
 "The returned shift has changed since approval, automatic reversion is not "
 "possible"
 
-#: app/services/swap_service.py:348
+#: app/services/swap_service.py:402
+#, python-format
+msgid "Annulation impossible : %(error)s"
+msgstr "Cannot revert: %(error)s"
+
+#: app/services/swap_service.py:421
 msgid "Échange de shift annulé"
 msgstr "Shift swap reverted"
 
-#: app/services/swap_service.py:350
+#: app/services/swap_service.py:423
 #, python-format
 msgid ""
 "%(requester)s <-> %(target)s : échange approuvé annulé par %(admin)s, shifts"
@@ -1349,11 +1376,11 @@ msgstr ""
 "%(requester)s <-> %(target)s: approved swap reverted by %(admin)s, original "
 "shifts restored."
 
-#: app/services/swap_service.py:385
+#: app/services/swap_service.py:458
 msgid "Échange de shift rejeté"
 msgstr "Shift swap rejected"
 
-#: app/services/swap_service.py:387
+#: app/services/swap_service.py:460
 #, python-format
 msgid "%(requester)s <-> %(target)s : demande rejetée par %(admin)s."
 msgstr "%(requester)s <-> %(target)s: request rejected by %(admin)s."
@@ -1426,12 +1453,12 @@ msgstr "Unauthorized"
 msgid "Vous devez être authentifié pour accéder à cette page."
 msgstr "You must be authenticated to access this page."
 
-#: app/templates/401.html:7 app/templates/auth/login.html:56
-#: app/templates/auth/login.html:58 app/templates/macros/errors.html:60
+#: app/templates/401.html:7 app/templates/auth/login.html:59
+#: app/templates/auth/login.html:61 app/templates/macros/errors.html:60
 msgid "Se connecter"
 msgstr "Log in"
 
-#: app/templates/401.html:7 app/templates/auth/login.html:64
+#: app/templates/401.html:7 app/templates/auth/login.html:68
 #: app/templates/auth/profile.html:53 app/templates/macros/errors.html:30
 msgid "Retour à l'accueil"
 msgstr "Back to home"
@@ -3108,7 +3135,7 @@ msgstr "E.g.: John Smith"
 msgid "Exemple : Jean Dupont"
 msgstr "Example: John Smith"
 
-#: app/templates/admin/add_user.html:35 app/templates/auth/login.html:30
+#: app/templates/admin/add_user.html:35 app/templates/auth/login.html:33
 msgid "Adresse email"
 msgstr "Email address"
 
@@ -3134,7 +3161,7 @@ msgstr "Select a group"
 msgid "Sélectionnez le groupe auquel l'utilisateur appartiendra."
 msgstr "Select the group the user will belong to."
 
-#: app/templates/admin/add_user.html:52 app/templates/auth/login.html:40
+#: app/templates/admin/add_user.html:52 app/templates/auth/login.html:43
 msgid "Mot de passe"
 msgstr "Password"
 
@@ -4787,11 +4814,11 @@ msgstr "No messages for on-calls."
 msgid "Aucun message pour les shifts."
 msgstr "No messages for shifts."
 
-#: app/templates/admin/automation/full_dry_run.html:169
+#: app/templates/admin/automation/full_dry_run.html:174
 msgid "Confirmer et sauvegarder tout"
 msgstr "Confirm and save everything"
 
-#: app/templates/admin/automation/full_dry_run.html:173
+#: app/templates/admin/automation/full_dry_run.html:178
 msgid "Retour à la configuration"
 msgstr "Back to configuration"
 
@@ -5153,35 +5180,35 @@ msgstr "Log in with OIDC"
 msgid "Se connecter avec SSO"
 msgstr "Log in with SSO"
 
-#: app/templates/auth/login.html:24
+#: app/templates/auth/login.html:25
 msgid "ou"
 msgstr "or"
 
-#: app/templates/auth/login.html:34
+#: app/templates/auth/login.html:37
 msgid "votre@email.com"
 msgstr "your@email.com"
 
-#: app/templates/auth/login.html:36
+#: app/templates/auth/login.html:39
 msgid "Exemple : votre@email.com"
 msgstr "Example: your@email.com"
 
-#: app/templates/auth/login.html:44
+#: app/templates/auth/login.html:47
 msgid "Votre mot de passe"
 msgstr "Your password"
 
-#: app/templates/auth/login.html:46
+#: app/templates/auth/login.html:49
 msgid "Votre mot de passe doit contenir au moins 12 caractères."
 msgstr "Your password must contain at least 12 characters."
 
-#: app/templates/auth/login.html:52
+#: app/templates/auth/login.html:55
 msgid "Se souvenir de moi"
 msgstr "Remember me"
 
-#: app/templates/auth/login.html:64
+#: app/templates/auth/login.html:68
 msgid "Retour à la page d'accueil"
 msgstr "Back to the home page"
 
-#: app/templates/auth/login.html:73
+#: app/templates/auth/login.html:77
 msgid ""
 "Gestion des plannings, astreintes et congés d'équipe - simple, claire, et "
 "disponible où que vous soyez."
@@ -5412,7 +5439,7 @@ msgstr "Breadcrumb"
 msgid "Se déconnecter"
 msgstr "Log out"
 
-#: app/utils/automation/planner/presentation.py:121
+#: app/utils/automation/planner/presentation.py:129
 #, python-format
 msgid ""
 "[WARN] Aucun utilisateur disponible (absences) : %(count)s jour(s) sans "
@@ -5421,7 +5448,7 @@ msgstr ""
 "[WARN] No user available (absences): %(count)s day(s) without a shift "
 "between %(start)s and %(end)s - manual assignment required."
 
-#: app/utils/automation/planner/presentation.py:134
+#: app/utils/automation/planner/presentation.py:142
 #, python-format
 msgid ""
 "[WARN] %(count)s astreintes non générées entre le %(start)s et le %(end)s "
@@ -5430,7 +5457,7 @@ msgstr ""
 "[WARN] %(count)s on-calls not generated between %(start)s and %(end)s (legal"
 " spacing constraint not met) - manual assignment required."
 
-#: app/utils/automation/planner/presentation.py:147
+#: app/utils/automation/planner/presentation.py:155
 #, python-format
 msgid ""
 "[WARN] Effectif maximum déjà atteint pour \"%(name)s\" à %(count)s reprises "
@@ -5439,7 +5466,26 @@ msgstr ""
 "[WARN] Maximum staffing already reached for \"%(name)s\" %(count)s times "
 "between %(start)s and %(end)s - manual assignment required."
 
-#: app/utils/automation/planner/presentation.py:170
+#: app/utils/automation/planner/presentation.py:169
+#, python-format
+msgid ""
+"[WARN] Créneau de rotation non couvert (aucun remplaçant ne respecte les "
+"règles) : %(count)s jour(s) entre le %(start)s et le %(end)s - assignation "
+"manuelle nécessaire."
+msgstr ""
+"[WARN] Rotation slot not covered (no replacement satisfies the rules): "
+"%(count)s day(s) between %(start)s and %(end)s - manual assignment required."
+
+#: app/utils/automation/planner/presentation.py:193
+#, python-format
+msgid ""
+"%(tag)s Chevauchement astreinte/shift interdit : %(count)s shift(s) non "
+"affecté(s) entre le %(start)s et le %(end)s."
+msgstr ""
+"%(tag)s On-call/shift overlap not allowed: %(count)s shift(s) not assigned "
+"between %(start)s and %(end)s."
+
+#: app/utils/automation/planner/presentation.py:203
 #, python-format
 msgid ""
 "%(tag)s Repos insuffisant après astreinte : %(count)s shift(s) non "
@@ -5464,7 +5510,75 @@ msgstr "Type: %(type)s"
 msgid "Utilisateur: %(name)s"
 msgstr "User: %(name)s"
 
-#: app/utils/helpers/common_helpers.py:528
+#: app/utils/helpers/common_helpers.py:401
+msgid "La fin de l'astreinte doit être postérieure à son début."
+msgstr "The on-call duty must end after it starts."
+
+#: app/utils/helpers/common_helpers.py:410
+#, python-format
+msgid ""
+"L'astreinte doit commencer un %(day)s à %(hour)sh (jour et heure configurés "
+"pour ce groupe)."
+msgstr ""
+"The on-call duty must start on a %(day)s at %(hour)s:00 (day and time "
+"configured for this group)."
+
+#: app/utils/helpers/common_helpers.py:420
+#, python-format
+msgid ""
+"L'astreinte doit se terminer le %(end)s (fin hebdomadaire configurée pour ce"
+" groupe)."
+msgstr ""
+"The on-call duty must end on %(end)s (weekly end configured for this group)."
+
+#: app/utils/helpers/common_helpers.py:428
+#, python-format
+msgid "%(name)s est en congé du %(start)s au %(end)s."
+msgstr "%(name)s is on leave from %(start)s to %(end)s."
+
+#: app/utils/helpers/common_helpers.py:442
+#, python-format
+msgid "%(name)s a déjà une astreinte du %(start)s au %(end)s."
+msgstr "%(name)s already has an on-call duty from %(start)s to %(end)s."
+
+#: app/utils/helpers/common_helpers.py:461
+#, python-format
+msgid ""
+"Espacement minimum de %(weeks)s semaine(s) entre deux astreintes non "
+"respecté : %(name)s est déjà d'astreinte du %(start)s au %(end)s."
+msgstr ""
+"Minimum spacing of %(weeks)s week(s) between two on-call duties not met: "
+"%(name)s is already on call from %(start)s to %(end)s."
+
+#: app/utils/helpers/common_helpers.py:477
+msgid "lundi"
+msgstr "Monday"
+
+#: app/utils/helpers/common_helpers.py:478
+msgid "mardi"
+msgstr "Tuesday"
+
+#: app/utils/helpers/common_helpers.py:479
+msgid "mercredi"
+msgstr "Wednesday"
+
+#: app/utils/helpers/common_helpers.py:480
+msgid "jeudi"
+msgstr "Thursday"
+
+#: app/utils/helpers/common_helpers.py:481
+msgid "vendredi"
+msgstr "Friday"
+
+#: app/utils/helpers/common_helpers.py:482
+msgid "samedi"
+msgstr "Saturday"
+
+#: app/utils/helpers/common_helpers.py:483
+msgid "dimanche"
+msgstr "Sunday"
+
+#: app/utils/helpers/common_helpers.py:629
 #, python-format
 msgid ""
 "Impossible d'ajouter ce shift : effectif maximum (%(max)s) déjà atteint pour"
@@ -5473,12 +5587,12 @@ msgstr ""
 "Cannot add this shift: maximum headcount (%(max)s) already reached for this "
 "slot."
 
-#: app/utils/helpers/common_helpers.py:545
+#: app/utils/helpers/common_helpers.py:647
 #, python-format
 msgid "Impossible d'ajouter ce shift : chevauche une astreinte de %(name)s."
 msgstr "Cannot add this shift: overlaps an on-call of %(name)s."
 
-#: app/utils/helpers/common_helpers.py:563
+#: app/utils/helpers/common_helpers.py:665
 #, python-format
 msgid ""
 "Impossible d'ajouter ce shift : %(name)s doit se reposer %(hours)sh après "
@@ -5486,7 +5600,7 @@ msgid ""
 msgstr ""
 "Cannot add this shift: %(name)s must rest %(hours)sh after their on-call."
 
-#: app/utils/helpers/common_helpers.py:604
+#: app/utils/helpers/common_helpers.py:711
 #, python-format
 msgid "Impossible d'ajouter cette astreinte : chevauche un shift de %(name)s."
 msgstr "Cannot add this on-call: overlaps a shift of %(name)s."
@@ -6306,3 +6420,22 @@ msgstr "The password must not contain your email address."
 
 #~ msgid "[OK] Aucune astreinte manquante sur cette période."
 #~ msgstr "[OK] No missing on-calls for this period."
+
+#~ msgid ""
+#~ "Impossible d'ajouter cette astreinte (période déjà couverte ou congé sur la "
+#~ "période)."
+#~ msgstr ""
+#~ "Unable to add this on-call (period already covered or leave during this "
+#~ "period)."
+
+#~ msgid "L'astreinte doit commencer le jour configuré pour ce groupe"
+#~ msgstr "The on-call must start on the day configured for this group"
+
+#~ msgid "Une astreinte existe déjà pour %(name)s pendant cette période"
+#~ msgstr "An on-call already exists for %(name)s during this period"
+
+#~ msgid "%(name)s est en congé pendant cette période"
+#~ msgstr "%(name)s is on leave during this period"
+
+#~ msgid "Conflit détecté pour ce shift"
+#~ msgstr "Conflict detected for this shift"
