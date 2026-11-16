@@ -108,6 +108,9 @@ def plan_oncalls_for_scope(
     locked: frozenset[tuple[date, int | None]],
     published: dict[tuple[date, int | None], int],
     rules: ResolvedRules,
+    published_intervals: (
+        dict[tuple[date, int | None], tuple[datetime, datetime]] | None
+    ) = None,
 ) -> OnCallPlanFragment:
     """Plans on-call assignments for one scope over [start_date, end_date].
     `rotation_order` is this scope's eligible-user rotation order - an
@@ -122,10 +125,6 @@ def plan_oncalls_for_scope(
     if not fridays:
         return OnCallPlanFragment(proposed=(), unfilled=())
 
-    index = AvailabilityIndex.from_snapshots(
-        existing_oncalls, existing_leaves, min_spacing_weeks=rules.oncall_spacing_weeks
-    )
-
     weeks: list[tuple[date, datetime, datetime]] = []
     for friday in fridays:
         start_time = datetime.combine(friday, datetime.min.time()).replace(
@@ -134,7 +133,33 @@ def plan_oncalls_for_scope(
         end_time = datetime.combine(
             friday + timedelta(days=7), datetime.min.time()
         ).replace(hour=rules.oncall_anchor_end_hour)
+        interval = (published_intervals or {}).get((friday, group_id))
+        if (friday, group_id) in locked and interval is not None:
+            # A locked week keeps its real persisted interval.
+            start_time, end_time = interval
         weeks.append((friday, start_time, end_time))
+
+    # Locked weeks are fixed occupancy, not candidates: seed their
+    # holders into the same index the solver checks spacing/conflicts
+    # against, and into the fairness prior counts (audit F04 - they used
+    # to be carried through only *after* solving, so the solver could
+    # give the same holder the adjacent week, e.g. fill_gaps double-
+    # booking an already-published holder 14h after their week ended).
+    locked_snapshots = tuple(
+        OnCallSnapshot(
+            user_id=published[(friday, group_id)],
+            group_id=group_id,
+            start_time=start_time,
+            end_time=end_time,
+        )
+        for friday, start_time, end_time in weeks
+        if (friday, group_id) in locked and (friday, group_id) in published
+    )
+    index = AvailabilityIndex.from_snapshots(
+        existing_oncalls + locked_snapshots,
+        existing_leaves,
+        min_spacing_weeks=rules.oncall_spacing_weeks,
+    )
 
     locked_week_indices: set[int] = set()
     week_candidates: list[list[UserRef]] = []
@@ -159,7 +184,7 @@ def plan_oncalls_for_scope(
 
     relevant_user_ids = {user.id for user in rotation_order}
     prior_counts = {user.id: 0 for user in rotation_order}
-    for snapshot in existing_oncalls:
+    for snapshot in existing_oncalls + locked_snapshots:
         if snapshot.user_id in relevant_user_ids:
             prior_counts[snapshot.user_id] = prior_counts.get(snapshot.user_id, 0) + 1
 

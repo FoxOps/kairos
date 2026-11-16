@@ -103,6 +103,19 @@ class AutomationConfig(BaseModel):
         cls.set_config("oncall_rotation_order", rotation_order, commit=commit)
 
     @classmethod
+    def get_rotation_excluded(cls) -> list:
+        """User ids the admin explicitly unticked ("Inclure") on the
+        rotation form - kept out of on-call rotation entirely (audit F13:
+        they used to be re-appended at the end of the order). Stored
+        separately from the order itself so a user who joins an eligible
+        group later is still included by default."""
+        return cls.get_config("oncall_rotation_excluded", [])
+
+    @classmethod
+    def set_rotation_excluded(cls, excluded_ids: list, commit: bool = True):
+        cls.set_config("oncall_rotation_excluded", excluded_ids, commit=commit)
+
+    @classmethod
     def get_rotation_epoch(cls) -> date:
         """Reference date for on-call rotation-order phase (see
         app/utils/automation/planner/rotation.py::absolute_week_index) -

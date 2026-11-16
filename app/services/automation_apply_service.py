@@ -1,13 +1,20 @@
 """
 AutomationApplyService for Kairos.
 
-Phase 5 of the automation engine rework: applies a pure SchedulePlan
-(app/utils/automation/planner/) to the database inside one atomic
-transaction. Not wired into any route yet (phase 6/7 do that) - this
-service can be exercised directly (or by scripts/tests) but nothing in
-production calls it.
+Applies a pure SchedulePlan (app/utils/automation/planner/) to the
+database - the single write path of every generation entry point
+(AutomationAdminService.generate_full()/refresh_shifts()/
+rebalance_after_leave()).
+
+Stale-plan protection (audit F07): applies are serialized (process lock
+plus a row lock on databases that support SELECT ... FOR UPDATE), and a
+plan carrying a state_fingerprint is re-checked against a fresh rebuild
+of its request right before any write - a leave, assignment or
+population change since planning refuses the plan instead of applying
+decisions computed against a schedule that no longer exists.
 """
 
+import threading
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 
@@ -30,7 +37,12 @@ class ApplyResult:
     shifts_created: int = 0
     shifts_deleted: int = 0
     shifts_reassigned: int = 0
+    oncalls_updated: int = 0
+    shifts_updated: int = 0
     error: str | None = None
+    # True when the plan was refused because the schedule changed since
+    # it was computed (audit F07) - the caller should replan.
+    stale: bool = False
     # Only ever populated when apply_plan(atomic=False) - one
     # (ScheduleDiffEntry, error message) pair per diff entry whose own
     # SAVEPOINT rolled back. `success` stays True even when this is
@@ -57,6 +69,50 @@ def _find_oncall(user_id: int, day: date) -> OnCall | None:
 
 def _find_shift(user_id: int, day: date) -> Shift | None:
     return Shift.query.filter_by(user_id=user_id, date=day).first()
+
+
+# One apply at a time per process (Gunicorn runs threads in one worker).
+_APPLY_LOCK = threading.Lock()
+_APPLY_LOCK_KEY = "schedule_apply_lock"
+
+
+def _acquire_schedule_row_lock() -> None:
+    """Cross-process serialization on engines with row locks
+    (PostgreSQL/MySQL): SELECT ... FOR UPDATE on a sentinel config row,
+    held until this transaction's commit/rollback. SQLite ignores FOR
+    UPDATE but serializes writers itself."""
+    from app.models import AutomationConfig
+
+    row = (
+        AutomationConfig.query.filter_by(config_key=_APPLY_LOCK_KEY)
+        .with_for_update()
+        .first()
+    )
+    if row is None:
+        AutomationConfig.set_config(_APPLY_LOCK_KEY, "1", commit=True)
+        AutomationConfig.query.filter_by(
+            config_key=_APPLY_LOCK_KEY
+        ).with_for_update().first()
+
+
+def _stale_reason(plan: SchedulePlan) -> str | None:
+    if not plan.state_fingerprint:
+        return None
+    from app.utils.automation.planner.adapters import build_planning_request
+    from app.utils.automation.planner.plan_schedule import state_fingerprint
+
+    fresh = build_planning_request(
+        plan.start_date,
+        plan.end_date,
+        shift_start_date=plan.shift_start_date,
+        restrict_to_group_id=plan.restrict_to_group_id,
+    )
+    if state_fingerprint(fresh) != plan.state_fingerprint:
+        return (
+            "stale plan: the schedule, leaves or eligible users changed "
+            "since this plan was computed - replan before applying"
+        )
+    return None
 
 
 class AutomationApplyService:
@@ -96,6 +152,28 @@ class AutomationApplyService:
                 + "; ".join(plan.safe_to_apply_reasons),
             )
 
+        with _APPLY_LOCK:
+            _acquire_schedule_row_lock()
+            stale = _stale_reason(plan)
+            if stale is not None:
+                db.session.rollback()
+                run = GenerationRun(
+                    start_date=plan.start_date,
+                    end_date=plan.end_date,
+                    input_fingerprint=plan.input_fingerprint,
+                    outcome="failed",
+                    error_detail=stale,
+                    actor_id=actor.id if actor else None,
+                )
+                db.session.add(run)
+                db.session.commit()
+                return ApplyResult(
+                    success=False, generation_run_id=run.id, error=stale, stale=True
+                )
+            return AutomationApplyService._apply_unlocked(plan, actor, atomic)
+
+    @staticmethod
+    def _apply_unlocked(plan: SchedulePlan, actor: User | None, atomic: bool):
         proposed_oncalls_by_key = {(o.friday, o.group_id): o for o in plan.oncalls}
         proposed_shifts_by_key = {(s.date, s.user_id): s for s in plan.shifts}
 
@@ -191,6 +269,16 @@ class AutomationApplyService:
     def _apply_oncall_entry(
         entry, proposed_oncalls_by_key, result: ApplyResult
     ) -> None:
+        if entry.change_type == "updated":
+            proposed = proposed_oncalls_by_key[(entry.date, entry.group_id)]
+            existing = _find_oncall(proposed.user_id, entry.date)
+            if existing is not None:
+                existing.start_time = proposed.start_time
+                existing.end_time = proposed.end_time
+                db.session.flush()
+                result.oncalls_updated += 1
+            return
+
         if entry.change_type in ("removed", "reassigned"):
             existing = _find_oncall(entry.published_user_id, entry.date)
             if existing is not None:
@@ -231,6 +319,16 @@ class AutomationApplyService:
 
     @staticmethod
     def _apply_shift_entry(entry, proposed_shifts_by_key, result: ApplyResult) -> None:
+        if entry.change_type == "updated":
+            proposed = proposed_shifts_by_key[(entry.date, entry.proposed_user_id)]
+            existing = _find_shift(proposed.user_id, entry.date)
+            if existing is not None:
+                existing.start_time = proposed.start_time
+                existing.end_time = proposed.end_time
+                db.session.flush()
+                result.shifts_updated += 1
+            return
+
         if entry.change_type in ("removed", "reassigned"):
             user_id = entry.published_user_id or entry.proposed_user_id
             existing = _find_shift(user_id, entry.date)

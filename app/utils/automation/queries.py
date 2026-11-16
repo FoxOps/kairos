@@ -36,13 +36,18 @@ def get_schedule_users(group: Group | None = None) -> list[User]:
 
 
 def get_rotation_order(
-    rotation_order_ids: list[int] | None = None, group: Group | None = None
+    rotation_order_ids: list[int] | None = None,
+    group: Group | None = None,
+    excluded_ids: list[int] | None = None,
 ) -> list[User]:
     """On-call-eligible users (see get_oncall_users()) in the configured
     rotation order: ids from `rotation_order_ids` first (ineligible ids
-    silently dropped), then every remaining eligible user by name.
-    Without `rotation_order_ids`, plain name order."""
-    eligible_users = get_oncall_users(group=group)
+    silently dropped), then every remaining eligible user by name -
+    except `excluded_ids`, the users an admin explicitly unticked, who
+    are left out entirely (audit F13). Without `rotation_order_ids`,
+    plain name order (still minus `excluded_ids`)."""
+    excluded = set(excluded_ids or ())
+    eligible_users = [u for u in get_oncall_users(group=group) if u.id not in excluded]
     if not eligible_users or not rotation_order_ids:
         return eligible_users
 

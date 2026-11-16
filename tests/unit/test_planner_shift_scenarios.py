@@ -217,7 +217,7 @@ def test_rest_after_oncall_still_blocks_shift_right_after_a_past_on_call():
 def test_rest_after_oncall_never_excludes_the_oncall_role_slot_itself():
     """Real production bug: the departing on-call holder is still "this
     week's on-call for shift purposes" on the transition Friday (see
-    shift_planner._covering_friday()) and gets
+    shift_planner._covering_anchor()) and gets
     role_slot "oncall" (the mandatory on-call coverage shift) that same
     day - right when their own on-call just ended that morning. With
     any rest_after_oncall configured, the small same-day gap (here 6h:

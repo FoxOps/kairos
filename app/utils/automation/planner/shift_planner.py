@@ -39,6 +39,7 @@ already-loaded snapshot data via PlanningRequest.
 """
 
 from bisect import bisect_right
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
@@ -51,15 +52,12 @@ from app.utils.automation.planner.types import (
     UnfilledRequirement,
     UserRef,
 )
-from app.utils.automation.rules.predicates import shift_violates_rest_after_oncall
+from app.utils.automation.rules.predicates import (
+    intervals_overlap,
+    shift_violates_rest_after_oncall,
+)
 
-# Undesirability rank used only for this module's own fairness
-# weighting (FairnessMetrics.undesirable_shift_count_by_user) and to
-# break ties among otherwise-equally-eligible rotation-slot candidates -
-# an internal solver detail, not a business rule, so it is not exposed
-# as a setting (same category as the branch-and-bound search's own
-# node cap in oncall_solver.py).
-_SLOT_RANK = {"default": 0, "rotation": 1, "oncall": 2}
+Interval = tuple[datetime, datetime]
 
 
 @dataclass(frozen=True)
@@ -172,6 +170,8 @@ def plan_shifts_for_scope(
     rotation_order: tuple[UserRef, ...],
     rotation_anchor_epoch: date,
     rules: ResolvedRules,
+    proposed_oncall_intervals: dict[tuple[date, int | None], Interval] | None = None,
+    published_intervals: dict[tuple[date, int], Interval] | None = None,
 ) -> ShiftPlanFragment:
     """Plans shift assignments for one scope over [start_date, end_date].
     `proposed_oncalls` is the in-memory (friday, group_id) -> user_id map
@@ -216,7 +216,22 @@ def plan_shifts_for_scope(
     when oncall_scheduling_mode is "shared"; else `(group_id,)` when
     this shift scope is itself per-group; else (this shift scope is
     "shared" but on-call is "per_group") every oncall-eligible group id
-    (`request.oncall_groups`)."""
+    (`request.oncall_groups`).
+
+    `proposed_oncall_intervals` carries the on-call phase's *actual*
+    proposed start/end per key (audit F11: rebuilding them from this
+    shift scope's own anchor rules disagrees with the on-call proposal
+    whenever the on-call scope has different anchor/end-hour overrides);
+    `published_intervals` the published shifts' real start/end, so a
+    locked row is carried through with its real hours (audit F20/F12).
+    Both optional - absent means "derive from rules" (pure-planner unit
+    tests).
+
+    Every hard constraint (rest_after_oncall, the optional
+    oncall_shift_overlap block) is checked on the user's *final*
+    interval, after any staffing-max fallback (audit F19), and a
+    rotation slot lost to such an exclusion is re-covered by another
+    feasible user when one exists (audit F10)."""
     proposed: list[ProposedShift] = []
     unfilled: list[UnfilledRequirement] = []
     violations: list[RuleViolation] = []
@@ -235,8 +250,14 @@ def plan_shifts_for_scope(
     # in the planning window must not count as already-ended for a shift
     # earlier in the window - see _last_oncall_end_before().
     oncall_ends_by_user: dict[int, list[datetime]] = {}
+    # Full intervals too, for the optional oncall_shift_overlap block
+    # (audit F06: the resolved flag used to have no consumer here).
+    oncall_intervals_by_user: dict[int, list[Interval]] = {}
     for oncall in existing_oncalls:
         oncall_ends_by_user.setdefault(oncall.user_id, []).append(oncall.end_time)
+        oncall_intervals_by_user.setdefault(oncall.user_id, []).append(
+            (oncall.start_time, oncall.end_time)
+        )
 
     # Every proposed on-call relevant to this shift scope, grouped by
     # its own anchor Friday - a plain dict lookup instead of an
@@ -271,13 +292,49 @@ def plan_shifts_for_scope(
     for (friday, oc_group_id), user_id in proposed_oncalls.items():
         if oc_group_id not in oncall_group_ids:
             continue
-        end_time = datetime.combine(
-            friday + timedelta(days=7), datetime.min.time()
-        ).replace(hour=rules.oncall_anchor_end_hour)
-        oncall_ends_by_user.setdefault(user_id, []).append(end_time)
+        interval = (proposed_oncall_intervals or {}).get((friday, oc_group_id))
+        if interval is None:
+            interval = (
+                datetime.combine(friday, datetime.min.time()).replace(
+                    hour=rules.oncall_anchor_start_hour
+                ),
+                datetime.combine(
+                    friday + timedelta(days=7), datetime.min.time()
+                ).replace(hour=rules.oncall_anchor_end_hour),
+            )
+        oncall_ends_by_user.setdefault(user_id, []).append(interval[1])
+        oncall_intervals_by_user.setdefault(user_id, []).append(interval)
         oncall_user_ids_by_friday.setdefault(friday, set()).add(user_id)
     for ends in oncall_ends_by_user.values():
         ends.sort()
+
+    def _exclusion_rule(
+        user_id: int, role_slot: str, shift_start: datetime, shift_end: datetime
+    ) -> str | None:
+        """The hard constraint `user_id`'s *final* interval breaks, if any.
+        role_slot == "oncall" is exempt from rest_after_oncall: that slot
+        IS the on-call user's own coverage shift for the day their
+        on-call starts/ends (the departing holder is still "this week's
+        on-call for shift purposes" on the transition Friday - see
+        _covering_anchor()), not a second, independent assignment rest
+        could meaningfully apply to. Real production bug: with any
+        rest_after_oncall configured, the 07:00 -> 13:00 gap tripped the
+        check on every transition Friday, leaving the on-call shift
+        permanently unfilled. The exemption only holds while the final
+        slot is still "oncall" - a fallback to "default" is an ordinary
+        shift and gets rest-checked like any other (audit F19)."""
+        if role_slot != "oncall" and shift_violates_rest_after_oncall(
+            shift_start,
+            _last_oncall_end_before(user_id, shift_start, oncall_ends_by_user),
+            rules.rest_after_oncall_hours,
+        ):
+            return "rest_after_oncall"
+        if rules.oncall_shift_overlap_block and any(
+            intervals_overlap(shift_start, shift_end, oc_start, oc_end)
+            for oc_start, oc_end in oncall_intervals_by_user.get(user_id, ())
+        ):
+            return "oncall_shift_overlap"
+        return None
 
     day = start_date
     while day <= end_date:
@@ -301,9 +358,9 @@ def plan_shifts_for_scope(
             )
 
         oncall_user_ids_today = frozenset(
-            oncall_user_ids_by_friday.get(_covering_friday(day, rules), ())
+            oncall_user_ids_by_friday.get(_covering_anchor(day, rules), ())
         )
-        last_week_friday = _covering_friday(day - timedelta(days=7), rules)
+        last_week_friday = _covering_anchor(day - timedelta(days=7), rules)
         oncall_user_ids_last_week = frozenset(
             oncall_user_ids_by_friday.get(last_week_friday, ())
         )
@@ -316,7 +373,7 @@ def plan_shifts_for_scope(
         # production report: a former "only if it starts after `day`"
         # guard excluded them, leaving that Friday to the rotation-order
         # fallback, which only matched by coincidence of its offset).
-        next_week_friday = _covering_friday(day + timedelta(days=7), rules)
+        next_week_friday = _covering_anchor(day + timedelta(days=7), rules)
         oncall_user_ids_next_week = frozenset(
             oncall_user_ids_by_friday.get(next_week_friday, ())
         )
@@ -338,7 +395,15 @@ def plan_shifts_for_scope(
             published_slot_by_user,
         )
 
-        for user in available_today:
+        # Locked rows first (stable order otherwise): they occupy their
+        # slot whatever happens, so they must count against staffing_max
+        # before any unlocked user is placed (audit F20: a locked row met
+        # late in the loop used to push its slot over the cap).
+        ordered_today = sorted(available_today, key=lambda u: (day, u.id) not in locked)
+        today_start_index = len(proposed)
+        rotation_lost_to_rule = False
+
+        for user in ordered_today:
             if (day, user.id) in locked:
                 published_shift_type_id = published.get((day, user.id))
                 if published_shift_type_id is None:
@@ -353,14 +418,15 @@ def plan_shifts_for_scope(
                     )
                     continue
                 role_slot = _role_slot_for_shift_type(published_shift_type_id, rules)
-                start_hour, end_hour = slot_shift_type[role_slot][1]
+                locked_interval = (published_intervals or {}).get((day, user.id))
+                if locked_interval is None:
+                    locked_interval = _slot_interval(day, slot_shift_type[role_slot][1])
                 proposed.append(
                     _build_proposed_shift(
                         day,
                         user.id,
                         published_shift_type_id,
-                        start_hour,
-                        end_hour,
+                        locked_interval,
                         group_id,
                         role_slot,
                         "unchanged",
@@ -369,59 +435,9 @@ def plan_shifts_for_scope(
                 )
                 continue
 
-            role_slot = slot_by_user[user.id]
-            shift_type_id, (start_hour, end_hour) = slot_shift_type[role_slot]
-            shift_start = datetime.combine(day, datetime.min.time()).replace(
-                hour=start_hour
-            )
-
-            if role_slot != "oncall" and shift_violates_rest_after_oncall(
-                shift_start,
-                _last_oncall_end_before(user.id, shift_start, oncall_ends_by_user),
-                rules.rest_after_oncall_hours,
-            ):
-                # role_slot == "oncall" is deliberately exempt: that
-                # slot IS the on-call user's own coverage shift for the
-                # day their on-call starts/ends (the departing holder
-                # is still "this week's on-call for shift purposes" on
-                # the transition Friday - see _covering_friday()) - not a second, independent assignment that
-                # rest could meaningfully apply to. Real bug found in
-                # production: with rest_after_oncall configured (any
-                # legally-required rest value, e.g. 11h), the gap
-                # between an on-call ending 07:00 and this same slot
-                # starting 13:00 (6h) tripped the check on literally
-                # every single transition Friday, forever, leaving the
-                # mandatory on-call shift permanently unfilled - shift
-                # and on-call for the SAME user are meant to coexist,
-                # only shift-shift and on-call-on-call conflicts are
-                # meant to block (rest_after_oncall still applies below
-                # to "rotation"/"default" slots, its actual intended
-                # target: an unrelated regular shift assigned too soon
-                # after an on-call week).
-                # "warning", not "hard_blocked": this user is already
-                # excluded from this one day right below (continue) -
-                # same non-fatal, self-mitigated shape as a staffing_max
-                # gap, expected to fire routinely (every
-                # transition Friday where the departing on-call holder
-                # would otherwise get the same-day rotation slot - see
-                # test_rest_after_oncall_violation_produces_shift_message).
-                # "hard_blocked" is reserved for _evaluate_safety's own
-                # defense-in-depth cases (plan_schedule.py) - it aborts
-                # the ENTIRE apply, which a single routine per-day
-                # exclusion must never do (real bug: it used to, making
-                # any org with rest_after_oncall configured unable to
-                # ever apply a multi-month generation).
-                violations.append(
-                    RuleViolation(
-                        severity="warning",
-                        rule_type="rest_after_oncall",
-                        group_id=group_id,
-                        date=day,
-                        user_id=user.id,
-                        message="rest_after_oncall violated - user excluded from this day",
-                    )
-                )
-                continue
+            selected_slot = slot_by_user[user.id]
+            role_slot = selected_slot
+            shift_type_id, hours = slot_shift_type[role_slot]
 
             explanation = (f"role slot: {role_slot}",)
             if _slot_is_full(proposed, day, shift_type_id, rules):
@@ -447,33 +463,148 @@ def plan_shifts_for_scope(
                     f"role slot: {role_slot} full (staffing max) - default slot instead",
                 )
                 role_slot = "default"
-                shift_type_id, (start_hour, end_hour) = default_type_id, default_hours
+                shift_type_id, hours = default_type_id, default_hours
 
-            published_shift_type_id = published.get((day, user.id))
-            change_type = (
-                "unchanged"
-                if published_shift_type_id == shift_type_id
-                else ("reassigned" if published_shift_type_id is not None else "added")
-            )
+            # Hard constraints run on the FINAL interval, after any
+            # fallback above (audit F19: rest used to be checked on the
+            # originally selected slot only, so a fallback to an earlier
+            # default slot - or an on-call holder losing their exemption -
+            # could persist an insufficient-rest shift).
+            interval = _slot_interval(day, hours)
+            broken_rule = _exclusion_rule(user.id, role_slot, *interval)
+            if broken_rule is not None:
+                # "warning", not "hard_blocked": this user is excluded
+                # from this one day right here - a routine, self-
+                # mitigated outcome. "hard_blocked" is reserved for
+                # _evaluate_safety's own defense-in-depth cases
+                # (plan_schedule.py) - it aborts the ENTIRE apply, which a
+                # single per-day exclusion must never do (real bug: it
+                # used to, making any org with rest_after_oncall
+                # configured unable to apply a multi-month generation).
+                violations.append(
+                    RuleViolation(
+                        severity="warning",
+                        rule_type=broken_rule,
+                        group_id=group_id,
+                        date=day,
+                        user_id=user.id,
+                        message=f"{broken_rule} violated - user excluded from this day",
+                    )
+                )
+                if selected_slot == "rotation":
+                    rotation_lost_to_rule = True
+                continue
 
             proposed.append(
                 _build_proposed_shift(
                     day,
                     user.id,
                     shift_type_id,
-                    start_hour,
-                    end_hour,
+                    interval,
                     group_id,
                     role_slot,
-                    change_type,
+                    _change_type(published.get((day, user.id)), shift_type_id),
                     explanation,
                 )
+            )
+
+        if rotation_lost_to_rule:
+            _repair_rotation_coverage(
+                day,
+                proposed,
+                today_start_index,
+                unfilled,
+                group_id,
+                locked,
+                published,
+                rotation_order,
+                rotation_anchor_epoch,
+                rules,
+                slot_shift_type["rotation"],
+                _exclusion_rule,
             )
 
         day += timedelta(days=1)
 
     return ShiftPlanFragment(
         proposed=tuple(proposed), unfilled=tuple(unfilled), violations=tuple(violations)
+    )
+
+
+def _change_type(published_shift_type_id: int | None, shift_type_id: int) -> str:
+    if published_shift_type_id == shift_type_id:
+        return "unchanged"
+    return "reassigned" if published_shift_type_id is not None else "added"
+
+
+def _slot_interval(day: date, hours: tuple[int, int]) -> Interval:
+    start_hour, end_hour = hours
+    midnight = datetime.combine(day, datetime.min.time())
+    return midnight.replace(hour=start_hour), midnight.replace(hour=end_hour)
+
+
+def _repair_rotation_coverage(
+    day: date,
+    proposed: list[ProposedShift],
+    today_start_index: int,
+    unfilled: list[UnfilledRequirement],
+    group_id: int | None,
+    locked: frozenset[tuple[date, int]],
+    published: dict[tuple[date, int], int],
+    rotation_order: tuple[UserRef, ...],
+    rotation_anchor_epoch: date,
+    rules: ResolvedRules,
+    rotation_slot: tuple[int, tuple[int, int]],
+    exclusion_rule: Callable[[int, str, datetime, datetime], str | None],
+) -> None:
+    """The user picked for the rotation slot was excluded by a hard
+    constraint (rest/overlap): promote another feasible user already on
+    the default slot today instead of leaving rotation coverage missing
+    while they sit on 09-17 (audit F10). Candidates follow the day's
+    rotated order, the same priority rule 7 uses. Nobody feasible ->
+    an explicit role_uncovered requirement, never a silent gap."""
+    rotation_type_id, rotation_hours = rotation_slot
+    if any(s.role_slot == "rotation" for s in proposed[today_start_index:]):
+        return
+    if _slot_is_full(proposed, day, rotation_type_id, rules):
+        return  # The admin's own cap - not a coverage gap.
+
+    rotated = rotate(rotation_order, day, rotation_anchor_epoch)
+    rank = {u.id: i for i, u in enumerate(rotated)}
+    candidates = sorted(
+        (
+            (index, s)
+            for index, s in enumerate(proposed)
+            if index >= today_start_index
+            and s.role_slot == "default"
+            and (day, s.user_id) not in locked
+        ),
+        key=lambda item: rank.get(item[1].user_id, len(rank)),
+    )
+    interval = _slot_interval(day, rotation_hours)
+    for index, current in candidates:
+        if exclusion_rule(current.user_id, "rotation", *interval) is not None:
+            continue
+        proposed[index] = _build_proposed_shift(
+            day,
+            current.user_id,
+            rotation_type_id,
+            interval,
+            group_id,
+            "rotation",
+            _change_type(published.get((day, current.user_id)), rotation_type_id),
+            ("role slot: rotation (re-covered after a rule exclusion)",),
+        )
+        return
+
+    unfilled.append(
+        UnfilledRequirement(
+            kind="role_uncovered",
+            date=day,
+            group_id=group_id,
+            reason_code="rotation_uncovered",
+            detail=str(rotation_type_id),
+        )
     )
 
 
@@ -502,13 +633,17 @@ def _last_oncall_end_before(
     return ends[idx - 1] if idx > 0 else None
 
 
-def _covering_friday(day: date, rules: ResolvedRules) -> date:
-    """The anchor date of the on-call week covering `day`: that week's
-    Monday minus N days, for any configured anchor weekday - so on a
-    transition Friday it is still the departing holder's week."""
-    days_before_monday = (0 - rules.oncall_anchor_weekday) % 7
-    week_monday = day - timedelta(days=day.weekday())
-    return week_monday - timedelta(days=days_before_monday)
+def _covering_anchor(day: date, rules: ResolvedRules) -> date:
+    """The anchor date of the on-call week covering `day`: the latest
+    configured anchor weekday strictly before `day`, so on a transition
+    day (the anchor weekday itself) it is still the departing holder's
+    week. Identical to the former Monday-relative formula for a Friday
+    anchor on working days, but correct for any anchor weekday (audit
+    F11: with a Wednesday anchor, Thursday used to resolve to the
+    *previous* Wednesday, so the current holder never got the oncall
+    role)."""
+    days_back = (day.weekday() - rules.oncall_anchor_weekday) % 7 or 7
+    return day - timedelta(days=days_back)
 
 
 def _role_slot_for_shift_type(shift_type_id: int, rules: ResolvedRules) -> str:
@@ -523,15 +658,13 @@ def _build_proposed_shift(
     day: date,
     user_id: int,
     shift_type_id: int,
-    start_hour: int,
-    end_hour: int,
+    interval: Interval,
     group_id: int | None,
     role_slot: str,
     change_type: str,
     explanation: tuple[str, ...],
 ) -> ProposedShift:
-    start_time = datetime.combine(day, datetime.min.time()).replace(hour=start_hour)
-    end_time = datetime.combine(day, datetime.min.time()).replace(hour=end_hour)
+    start_time, end_time = interval
     return ProposedShift(
         date=day,
         user_id=user_id,
