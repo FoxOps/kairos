@@ -17,8 +17,10 @@ decisions computed against a schedule that no longer exists.
 import threading
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
+from typing import cast
 
 from sqlalchemy import update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.exc import IntegrityError
 
 from app import db
@@ -90,11 +92,17 @@ def _acquire_schedule_write_lock() -> None:
     from app.models import AutomationConfig
 
     def _touch() -> int:
-        return db.session.execute(
-            update(AutomationConfig)
-            .where(AutomationConfig.config_key == _APPLY_LOCK_KEY)
-            .values(config_value=AutomationConfig.config_value)
-        ).rowcount
+        # An UPDATE always yields a CursorResult (rowcount); Session.execute()
+        # is just typed with the generic Result.
+        result = cast(
+            CursorResult,
+            db.session.execute(
+                update(AutomationConfig)
+                .where(AutomationConfig.config_key == _APPLY_LOCK_KEY)
+                .values(config_value=AutomationConfig.config_value)
+            ),
+        )
+        return result.rowcount
 
     if _touch():
         return
