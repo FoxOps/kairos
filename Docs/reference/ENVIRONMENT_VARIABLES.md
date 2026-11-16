@@ -184,7 +184,8 @@ copy browsable via `/admin/audit-log`.
 | `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | OIDC client credentials | ✅ If `OIDC_ENABLED=true` |
 | `OIDC_REDIRECT_URI` | Callback URL, must be registered on the provider side | ✅ If `OIDC_ENABLED=true` |
 | `OIDC_POST_LOGOUT_REDIRECT_URI` | Redirect URL after RP-initiated logout | ❌ No |
-| `OIDC_DISABLE_BASIC_AUTH` | Hides the email/password form (`true`/`false`) | ❌ No |
+| `OIDC_DISABLE_BASIC_AUTH` | SSO-only mode: hides the email/password form and refuses any password login POST (`true`/`false`, default `true`) | ❌ No |
+| `OIDC_TRUST_UNVERIFIED_EMAIL` | Allow the *first* SSO login of an existing local account even when the IdP sends `email_verified=false` (default `false`). ⚠️ Only enable it if users can't set their own email at the IdP - otherwise anyone claiming a victim's email could take over their local account. Typical case: a Keycloak realm where only admins create users, which default to "Email verified: Off". Already-bound accounts and brand-new SSO users are never affected. | ❌ No |
 | `OIDC_EMAIL_CLAIM` / `OIDC_NAME_CLAIM` / `OIDC_USERNAME_CLAIM` | Token claim mapping (defaults: `email`, `name`, `preferred_username`) | ❌ No |
 | `OIDC_GROUPS_CLAIM` / `OIDC_ROLES_CLAIM` | Optional sync of local groups/roles | ❌ No |
 | `OIDC_SIGNATURE_ALGORITHMS` | Token signature algorithm (default `RS256`) | ❌ No |

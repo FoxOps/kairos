@@ -61,6 +61,11 @@ automated tests), and used for real team scheduling.
   slot rule — last week's on-call holder first, next week's second —
   and three adapter bugs that could delete data, see
   `report/1.2.0/BUG_HUNT_1.2.0.md`)
+- 1.2.0 external audit (`report/1.2.0/AUDIT_REPORT_1.2.0.md`): all 19
+  active findings fixed — hard rules checked on final intervals, locked
+  occupancy reserved, stale-plan refusal at apply time, one validator
+  for manual on-call writes, safe swaps, SSO-only bypass closed and SSO
+  accounts bound to issuer+subject (`report/1.2.0/AUDIT_FIXES_1.2.0.md`)
 
 **Access & integration**
 - Session login and SSO/OIDC (Keycloak, Okta, Auth0-compatible
