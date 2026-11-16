@@ -86,9 +86,11 @@ class TestGenerateFullPersistsRotationOrder:
     clicking "Générer"/"Prévisualiser" without a separate, easy-to-miss
     prior "Sauvegarder l'ordre" click silently fell back to alphabetical
     order, and AutomationConfig could stay empty forever. generate_full()
-    must now persist rotation_order_ids itself on every call."""
+    must use rotation_order_ids itself on every call: a real run persists
+    it; a dry run plans with it without persisting anything (audit F14 -
+    a preview must not reset the rotation phase later runs depend on)."""
 
-    def test_dry_run_persists_the_submitted_order_without_a_separate_save(
+    def test_generate_persists_the_submitted_order_without_a_separate_save(
         self, test_app
     ):
         from app.models import AutomationConfig
@@ -104,7 +106,14 @@ class TestGenerateFullPersistsRotationOrder:
             rotation_order_ids=[u.id for u in users],
             dry_run=True,
         )
+        assert AutomationConfig.get_rotation_order() == []
 
+        AutomationAdminService.generate_full(
+            date(2026, 9, 4),
+            date(2026, 9, 17),
+            rotation_order_ids=[u.id for u in users],
+            dry_run=False,
+        )
         assert AutomationConfig.get_rotation_order() == [u.id for u in users]
 
     def test_dry_run_first_on_call_matches_rotation_order_first_entry(self, test_app):

@@ -11,6 +11,7 @@ from flask_babel import gettext as _
 
 from app import db
 from app.auth.decorators import admin_required
+from app.models import AutomationConfig
 from app.repositories.user_repository import GroupRepository
 from app.routes.admin import admin_bp
 from app.services import (
@@ -225,9 +226,22 @@ def automation_full():
             rotation_order_ids = AutomationAdminService.parse_rotation_order_from_form(
                 request.form
             )
+            rotation_excluded_ids = (
+                AutomationAdminService.parse_rotation_exclusions_from_form(request.form)
+            )
+            if not rotation_order_ids:
+                # Unticking everyone used to silently mean "everyone, by
+                # name" - refused now that unticked means excluded (F13).
+                flash(
+                    _("Sélectionnez au moins une personne à inclure dans la rotation."),
+                    "danger",
+                )
+                return redirect(url_for("admin.automation_full"))
 
             if action == "save_order":
-                error = AutomationAdminService.save_rotation_order(rotation_order_ids)
+                error = AutomationAdminService.save_rotation_order(
+                    rotation_order_ids, excluded_ids=rotation_excluded_ids
+                )
                 if error:
                     flash(
                         _(
@@ -252,7 +266,11 @@ def automation_full():
                 dry_run = action == "dry_run"
 
                 result = AutomationAdminService.generate_full(
-                    start_date, end_date, rotation_order_ids, dry_run
+                    start_date,
+                    end_date,
+                    rotation_order_ids,
+                    dry_run,
+                    excluded_ids=rotation_excluded_ids,
                 )
 
                 if dry_run:
@@ -277,6 +295,7 @@ def automation_full():
                         start_date=start_date,
                         end_date=end_date,
                         rotation_order_ids=rotation_order_ids,
+                        rotation_excluded_ids=rotation_excluded_ids,
                     )
                 else:
                     if result.oncalls_deleted:
@@ -355,5 +374,6 @@ def automation_full():
         start_date_default=start_date_default,
         end_date_default=end_date_default,
         current_rotation_order=current_rotation_order,
+        rotation_excluded=AutomationConfig.get_rotation_excluded(),
         prefill_oncall_mode=prefill_oncall_mode,
     )

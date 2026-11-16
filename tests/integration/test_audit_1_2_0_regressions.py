@@ -98,11 +98,44 @@ def test_f03_manual_oncall_move_enforces_spacing(test_app):
     assert row is None and "Espacement minimum" in e
 
 
-def test_unchecked_rotation_user_is_added_back(test_app):
+def test_f13_unchecked_rotation_user_is_excluded(test_app):
     _, us = seed()
-    assert us[3].id in [
-        u.id for u in queries.get_rotation_order([u.id for u in us[:3]])
+    order = [
+        u.id
+        for u in queries.get_rotation_order(
+            [u.id for u in us[:3]], excluded_ids=[us[3].id]
+        )
     ]
+    assert us[3].id not in order
+
+
+def test_f13_new_user_not_in_saved_order_still_included(test_app):
+    _, us = seed()
+    order = [
+        u.id
+        for u in queries.get_rotation_order([u.id for u in us[:3]], excluded_ids=[])
+    ]
+    assert order[-1] == us[3].id
+
+
+def test_f13_form_exclusion_persisted_and_planned(test_app):
+    from types import SimpleNamespace
+
+    from app.models import AutomationConfig
+
+    _, us = seed()
+    form = {f"rotation_order_{u.id}": str(i) for i, u in enumerate(us, 1)}
+    form.update({f"include_{u.id}": "1" for u in us[:3]})
+    assert Admin.parse_rotation_exclusions_from_form(
+        SimpleNamespace(keys=form.keys, get=form.get, items=form.items)
+    ) == [us[3].id]
+    ids = [u.id for u in us[:3]]
+    Admin.generate_full(
+        date(2026, 1, 2), date(2026, 3, 27), ids, False, excluded_ids=[us[3].id]
+    )
+    assert AutomationConfig.get_rotation_excluded() == [us[3].id]
+    assert OnCall.query.filter_by(user_id=us[3].id).count() == 0
+    assert OnCall.query.count() > 0
 
 
 def test_f04_locked_week_constrains_spacing_solver():
@@ -212,13 +245,30 @@ def test_f12_shift_time_edits_visible_to_diff_and_repaired(test_app):
     assert db.session.get(Shift, row.id).start_time == proposed.start_time
 
 
-def test_preview_mutates_rotation_config(test_app):
-    _, us = seed()
-    Admin.generate_full(date(2026, 1, 2), date(2026, 1, 9), [u.id for u in us], True)
+def test_f14_preview_does_not_mutate_rotation_config(test_app):
     from app.models import AutomationConfig
 
-    assert AutomationConfig.get_rotation_epoch() == date(2026, 1, 2)
-    assert AutomationConfig.get_rotation_order() == [u.id for u in us]
+    _, us = seed()
+    before_epoch = AutomationConfig.get_rotation_epoch()
+    preview = Admin.generate_full(
+        date(2026, 1, 2), date(2026, 1, 9), [u.id for u in reversed(us)], True
+    )
+    assert AutomationConfig.get_rotation_epoch() == before_epoch
+    assert AutomationConfig.get_rotation_order() == []
+    assert OnCall.query.count() == 0
+    # ...but the preview itself used the form's order: first pick = us[3].
+    assert preview.oncalls[0].user.id == us[3].id
+
+
+def test_f14_save_failure_aborts_generation(test_app, monkeypatch):
+    _, us = seed()
+    monkeypatch.setattr(
+        Admin, "save_rotation_order", staticmethod(lambda *a, **k: "boom")
+    )
+    with pytest.raises(RuntimeError):
+        Admin.generate_full(
+            date(2026, 1, 2), date(2026, 1, 9), [u.id for u in us], False
+        )
     assert OnCall.query.count() == 0
 
 
@@ -748,3 +798,25 @@ def test_f10_leave_minimum_is_per_group_in_per_group_mode(test_app):
     SettingsService.set_shift_scheduling_mode("per_group")
     # Per-group: Solo is their group's last available worker.
     assert not leave_keeps_minimum_headcount(solo, monday, monday)
+
+
+def test_f13_route_renders_excluded_user_unticked(logged_in_client):
+    from app.models import AutomationConfig
+
+    _, us = seed()
+    AutomationConfig.set_rotation_order([u.id for u in us[:3]])
+    AutomationConfig.set_rotation_excluded([us[3].id])
+    html = logged_in_client.get("/admin/automation/full").get_data(as_text=True)
+    assert f'name="include_{us[3].id}" value="1" >' in html
+    assert f'name="include_{us[0].id}" value="1" checked>' in html
+
+
+def test_f13_route_refuses_empty_selection(logged_in_client):
+    from app.models import AutomationConfig
+
+    _, us = seed()
+    data = {f"rotation_order_{u.id}": str(i) for i, u in enumerate(us, 1)}
+    data.update(action="save_order", start_date="2026-01-02", end_date="2026-01-09")
+    resp = logged_in_client.post("/admin/automation/full", data=data)
+    assert resp.status_code == 302
+    assert AutomationConfig.get_rotation_order() == []
