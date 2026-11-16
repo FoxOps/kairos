@@ -12,6 +12,8 @@ from collections.abc import Callable, Iterable, Sequence
 from datetime import date, datetime
 from typing import Protocol, TypeVar
 
+from app.utils.automation.rules.predicates import oncall_violates_spacing
+
 
 class _HasId(Protocol):
     """Structural type for _solve_max_filled_weeks()'s candidates - the
@@ -221,16 +223,13 @@ def _solve_max_filled_weeks(
     nodes_explored = 0
 
     def meets_spacing(user_id: int, start_time: datetime, end_time: datetime) -> bool:
-        for existing_start, existing_end in intervals.get(user_id, []):
-            if existing_end <= start_time:
-                gap_days = (start_time - existing_end).days
-            elif existing_start >= end_time:
-                gap_days = (existing_start - end_time).days
-            else:
-                continue
-            if gap_days / 7 < min_spacing_weeks:
-                return False
-        return True
+        # Same predicate as the manual creation/move path (audit F03).
+        return not any(
+            oncall_violates_spacing(
+                start_time, end_time, existing_start, existing_end, min_spacing_weeks
+            )
+            for existing_start, existing_end in intervals.get(user_id, [])
+        )
 
     def recurse(week_index: int, filled_count: int) -> None:
         nonlocal nodes_explored, best_count, best_assignment

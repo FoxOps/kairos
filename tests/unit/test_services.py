@@ -494,7 +494,7 @@ class TestShiftService:
             test_user, test_shift_type, start, start + timedelta(hours=8)
         )
         assert shift is None
-        assert "Conflit" in error
+        assert "existe déjà" in error
 
     def test_api_update_rejects_weekend(self, test_app, test_shift):
         saturday = date.today()
@@ -758,7 +758,7 @@ class TestOnCallService:
 
         oncall, error = OnCallService.add_oncall(test_user, start)
         assert oncall is None
-        assert "Impossible" in error
+        assert "a déjà une astreinte" in error
 
     def test_api_delete_success_and_missing(self, test_app, test_oncall):
         assert OnCallService.api_delete(test_oncall.id) is True
@@ -792,7 +792,7 @@ class TestOnCallService:
             test_oncall.id, new_start, new_start + timedelta(days=7)
         )
         assert oncall is None
-        assert "jour configuré" in error
+        assert "jour et heure configurés" in error
 
     def test_api_update_accepts_configured_non_friday_anchor(
         self, test_app, test_user, test_oncall
@@ -914,13 +914,17 @@ class TestOnCallService:
         friday = _next_friday()
         new_start = datetime.combine(friday, datetime.min.time()).replace(hour=21)
         new_end = new_start + timedelta(days=7, hours=-14)
+        # The Monday inside the moved on-call - a real interval overlap
+        # (audit F06: a shift on the anchor Friday itself, before 21h, no
+        # longer counts).
+        monday = friday + timedelta(days=3)
         db.session.add(
             Shift(
-                date=friday,
-                start_time=datetime.combine(friday, datetime.min.time()).replace(
+                date=monday,
+                start_time=datetime.combine(monday, datetime.min.time()).replace(
                     hour=test_shift_type.start_hour
                 ),
-                end_time=datetime.combine(friday, datetime.min.time()).replace(
+                end_time=datetime.combine(monday, datetime.min.time()).replace(
                     hour=test_shift_type.end_hour
                 ),
                 user_id=test_user.id,

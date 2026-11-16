@@ -516,12 +516,14 @@ class TestCanAddOnCallNewRules:
         from app.models import AutomationRule
 
         AutomationRule.set("oncall_shift_overlap", {"block": True})
+        # Monday 4 Dec, inside the Friday 1 Dec 21h -> Friday 8 Dec 07h
+        # on-call: a real interval overlap.
         shift = Shift(
             user_id=test_user.id,
             shift_type_id=test_shift_type.id,
-            start_time=datetime(2023, 12, 1, 7, 0),
-            end_time=datetime(2023, 12, 1, 15, 0),
-            date=date(2023, 12, 1),
+            start_time=datetime(2023, 12, 4, 7, 0),
+            end_time=datetime(2023, 12, 4, 15, 0),
+            date=date(2023, 12, 4),
         )
         db.session.add(shift)
         db.session.commit()
@@ -529,6 +531,29 @@ class TestCanAddOnCallNewRules:
         start_time = datetime(2023, 12, 1, 21, 0)  # Friday 21h
         end_time = start_time + timedelta(days=7, hours=-14)
         assert can_add_oncall(test_user, start_time, end_time) is False
+
+    def test_boundary_day_shift_not_an_overlap(
+        self, test_app, test_user, test_shift_type
+    ):
+        """Audit F06: the check compares actual intervals - a 07-15 shift on
+        the Friday the on-call only starts at 21h doesn't overlap it."""
+        from app.models import AutomationRule
+
+        AutomationRule.set("oncall_shift_overlap", {"block": True})
+        db.session.add(
+            Shift(
+                user_id=test_user.id,
+                shift_type_id=test_shift_type.id,
+                start_time=datetime(2023, 12, 1, 7, 0),
+                end_time=datetime(2023, 12, 1, 15, 0),
+                date=date(2023, 12, 1),
+            )
+        )
+        db.session.commit()
+
+        start_time = datetime(2023, 12, 1, 21, 0)
+        end_time = start_time + timedelta(days=7, hours=-14)
+        assert can_add_oncall(test_user, start_time, end_time) is True
 
 
 class TestCanAddLeave:

@@ -8,7 +8,7 @@ verified at revision B kept their original positive assertion.
 """
 
 from dataclasses import replace
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 import pytest
 
@@ -77,13 +77,25 @@ def shifts(users, day=date(2026, 1, 5), **kw):
     return plan_shifts_for_scope(**args)
 
 
-def test_manual_oncall_ignores_spacing(test_app):
+def test_f03_manual_oncall_enforces_spacing_with_explicit_reason(test_app):
     _, us = seed()
     a, e = OnCallService.add_oncall(us[0], date(2026, 1, 2))
     assert a and not e
     b, e = OnCallService.add_oncall(us[0], date(2026, 1, 9))
-    assert b and not e
-    assert b.start_time - a.end_time == timedelta(hours=14)
+    assert b is None and "Espacement minimum de 2 semaine(s)" in e
+    # Three weeks later respects the default 2-week spacing.
+    c, e = OnCallService.add_oncall(us[0], date(2026, 1, 23))
+    assert c and not e
+
+
+def test_f03_manual_oncall_move_enforces_spacing(test_app):
+    _, us = seed()
+    a, _e = OnCallService.add_oncall(us[0], date(2026, 1, 2))
+    b, _e = OnCallService.add_oncall(us[0], date(2026, 1, 23))
+    row, e = OnCallService.api_update(
+        b.id, datetime(2026, 1, 9, 21), datetime(2026, 1, 16, 7)
+    )
+    assert row is None and "Espacement minimum" in e
 
 
 def test_unchecked_rotation_user_is_added_back(test_app):
@@ -235,14 +247,23 @@ def test_ineligible_groups_existing_rows_preserved(test_app):
     assert plan.safe_to_apply
 
 
-def test_end_before_start_accepted(test_app):
+def test_f09_oncall_end_before_start_rejected(test_app):
     _, us = seed()
     row, e = OnCallService.add_oncall(us[0], date(2026, 1, 2))
     assert row
-    row, e = OnCallService.api_update(
+    updated, e = OnCallService.api_update(
         row.id, datetime(2026, 1, 2, 21), datetime(2026, 1, 1, 7)
     )
-    assert not e and row.end_time < row.start_time
+    assert updated is None and "postérieure" in e
+
+
+def test_f09_oncall_resize_off_weekly_end_rejected(test_app):
+    _, us = seed()
+    row, e = OnCallService.add_oncall(us[0], date(2026, 1, 2))
+    updated, e = OnCallService.api_update(
+        row.id, datetime(2026, 1, 2, 21), datetime(2026, 1, 5, 7)
+    )
+    assert updated is None and "fin hebdomadaire" in e
 
 
 def test_f04_fill_gaps_does_not_doublebook_published_holder(test_app):
@@ -259,7 +280,7 @@ def test_f04_fill_gaps_does_not_doublebook_published_holder(test_app):
     assert OnCall.query.filter_by(user_id=us[0].id).count() == 1
 
 
-def test_shift_update_checks_type_hours_not_actual_hours(test_app):
+def test_f09_shift_create_checks_actual_hours(test_app):
     _, us = seed()
     t = ShiftType(name="synthetic", label="Synthetic", start_hour=13, end_hour=21)
     db.session.add(t)
@@ -276,7 +297,19 @@ def test_shift_update_checks_type_hours_not_actual_hours(test_app):
     row, e = ShiftService.api_create(
         us[0], t, datetime(2026, 1, 2, 8), datetime(2026, 1, 2, 16)
     )
-    assert row and not e  # Actual 1h rest, validation used type's 13:00 (6h).
+    # Actual 1h rest is checked, not the type's nominal 13:00 (6h).
+    assert row is None and "reposer" in e
+
+
+def test_f09_shift_end_before_start_rejected(test_app):
+    _, us = seed()
+    t = ShiftType(name="synthetic", label="Synthetic", start_hour=9, end_hour=17)
+    db.session.add(t)
+    db.session.commit()
+    row, e = ShiftService.api_create(
+        us[0], t, datetime(2026, 1, 5, 17), datetime(2026, 1, 5, 9)
+    )
+    assert row is None and "postérieure" in e
 
 
 def _oidc_sync(claims):
@@ -691,3 +724,27 @@ def test_leave_api_reports_success_when_locked_rebalance_is_unsafe(test_app):
     )
     assert updated is not None and error is None and not rebalance_failed
     assert Shift.query.filter_by(id=row.id).count() == 1
+
+
+def test_f10_leave_minimum_is_per_group_in_per_group_mode(test_app):
+    from app.utils.helpers import leave_keeps_minimum_headcount
+
+    a = Group(name="Solo", is_part_of_oncall=True, is_part_of_schedule=True)
+    b = Group(name="Pair", is_part_of_oncall=True, is_part_of_schedule=True)
+    db.session.add_all([a, b])
+    db.session.flush()
+    solo = User(name="Solo", email="solo@example.invalid", group_id=a.id)
+    db.session.add_all(
+        [
+            solo,
+            User(name="Pair 1", email="p1@example.invalid", group_id=b.id),
+            User(name="Pair 2", email="p2@example.invalid", group_id=b.id),
+        ]
+    )
+    db.session.commit()
+    monday = date(2026, 1, 5)
+    # Shared mode: the pooled headcount (3) allows it.
+    assert leave_keeps_minimum_headcount(solo, monday, monday)
+    SettingsService.set_shift_scheduling_mode("per_group")
+    # Per-group: Solo is their group's last available worker.
+    assert not leave_keeps_minimum_headcount(solo, monday, monday)

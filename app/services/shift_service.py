@@ -22,6 +22,17 @@ from app.utils.helpers import (
 )
 
 
+def _shift_interval_error(start_time: datetime, end_time: datetime) -> str | None:
+    """A shift is a same-day interval with a positive duration - its
+    `date` column is derived from start_time (audit F09: the calendar API
+    used to persist an end before the start)."""
+    if end_time <= start_time:
+        return _("La fin du shift doit être postérieure à son début.")
+    if end_time.date() != start_time.date():
+        return _("Un shift doit commencer et se terminer le même jour.")
+    return None
+
+
 class ShiftService:
     """Business logic for shifts."""
 
@@ -143,11 +154,32 @@ class ShiftService:
     ) -> tuple[Shift | None, str | None]:
         """Create a shift from the drag & drop API. Returns (shift, error_message)."""
         on_date = start_time.date()
+        interval_error = _shift_interval_error(start_time, end_time)
+        if interval_error is not None:
+            return None, interval_error
+
         if WeekendDefinitionRule.is_weekend(on_date, group=user.group):
             return None, _("Impossible de créer un shift pour un week-end")
 
-        if not can_add_shift(user, on_date, shift_type):
-            return None, _("Conflit détecté pour ce shift")
+        if is_user_on_leave(user.id, on_date):
+            return None, _(
+                "%(name)s est en congé le %(date)s",
+                name=user.name,
+                date=on_date.strftime("%d/%m/%Y"),
+            )
+        if ShiftRepository.find_conflict(user.id, on_date):
+            return None, _(
+                "Un shift existe déjà pour %(name)s le %(date)s",
+                name=user.name,
+                date=on_date.strftime("%d/%m/%Y"),
+            )
+        # Rest/overlap against the actual datetimes about to be saved,
+        # not the ShiftType's nominal hours (audit F09).
+        violation = check_shift_rule_violations(
+            user, on_date, shift_type, start_time=start_time, end_time=end_time
+        )
+        if violation is not None:
+            return None, violation
 
         shift = ShiftRepository.create(
             user.id,
@@ -183,6 +215,10 @@ class ShiftService:
         shift = ShiftRepository.get_by_id(shift_id)
         if not shift:
             return None, _("Shift non trouvé")
+
+        interval_error = _shift_interval_error(new_start, new_end)
+        if interval_error is not None:
+            return None, interval_error
 
         new_date = new_start.date()
 
@@ -244,7 +280,12 @@ class ShiftService:
         # rest_after_oncall, oncall_shift_overlap) - the creation path
         # already goes through can_add_shift(), which calls this too.
         violation = check_shift_rule_violations(
-            effective_user, new_date, effective_shift_type, exclude_shift_id=shift_id
+            effective_user,
+            new_date,
+            effective_shift_type,
+            exclude_shift_id=shift_id,
+            start_time=new_start,
+            end_time=new_end,
         )
         if violation is not None:
             return None, violation

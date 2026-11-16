@@ -303,11 +303,18 @@ def leave_keeps_minimum_headcount(
     available headcount (users in schedule groups, excluding leave) to
     0 for any covered business day. Only applies to users eligible for
     shifts - a leave for someone outside these groups doesn't affect
-    this headcount."""
+    this headcount.
+
+    Scoped like generation itself: in "per_group" shift scheduling mode
+    only the requester's own group counts (audit F10 - another group's
+    availability used to let a group's last eligible worker take leave,
+    although that group's schedule is planned on its own)."""
+    from app.services import SettingsService
     from app.utils.automation.queries import get_schedule_users
     from app.utils.automation.rules import WeekendDefinitionRule
 
-    schedule_users = get_schedule_users()
+    per_group = SettingsService.get_shift_scheduling_mode() == "per_group"
+    schedule_users = get_schedule_users(group=user.group if per_group else None)
     schedule_user_ids = {u.id for u in schedule_users}
 
     if user.id not in schedule_user_ids:
@@ -365,34 +372,116 @@ def can_add_oncall(user=None, start_time=None, end_time=None):
     if start_time is None or end_time is None:
         return False
 
-    # On-call must start on the group's configured anchor day/hour
-    # (OnCallAnchorRule, default Friday 21:00) - was previously
-    # hardcoded here independently of OnCallService.add_oncall()'s own
-    # (now also fixed) anchor check, silently rejecting a legitimately
-    # configured non-Friday group.
-    from app.utils.automation.rules import OnCallAnchorRule
+    return oncall_validation_error(user, start_time, end_time) is None
+
+
+def oncall_validation_error(user, start_time, end_time, exclude_oncall_id=None):
+    """The single validator for a manual on-call create/move: returns a
+    translated message naming the exact rule the interval breaks, else
+    None. Same hard rules automatic generation applies (audit F03/F09 -
+    manual writes used to skip spacing, accept an end before the start,
+    and only check the anchor weekday on a move):
+
+    - positive duration;
+    - starts on the configured anchor weekday *and* hour, ends at the
+      configured weekly end (OnCallAnchorRule, the target user's group);
+    - no leave over the period;
+    - no other overlapping on-call for the user;
+    - oncall_spacing: at least N weeks from the user's other on-calls,
+      both directions (same predicate as the planner's solver);
+    - oncall_shift_overlap block, on actual shift intervals.
+
+    `exclude_oncall_id`: the on-call being moved, ignored for the
+    overlap/spacing checks."""
+    from app.services import SettingsService
+    from app.utils.automation.rules import OnCallAnchorRule, OnCallSpacingRule
+    from app.utils.automation.rules.predicates import oncall_violates_spacing
+
+    if end_time <= start_time:
+        return _("La fin de l'astreinte doit être postérieure à son début.")
 
     anchor = OnCallAnchorRule.resolve(group=user.group)
     if (
         start_time.weekday() != anchor["weekday"]
         or start_time.hour != anchor["start_hour"]
+        or start_time.minute != 0
     ):
-        return False
+        return _(
+            "L'astreinte doit commencer un %(day)s à %(hour)sh (jour et heure "
+            "configurés pour ce groupe).",
+            day=_weekday_name(anchor["weekday"]),
+            hour=anchor["start_hour"],
+        )
+    expected_end = datetime.combine(
+        start_time.date() + timedelta(days=7), datetime.min.time()
+    ).replace(hour=anchor["end_hour"])
+    if end_time != expected_end:
+        return _(
+            "L'astreinte doit se terminer le %(end)s (fin hebdomadaire "
+            "configurée pour ce groupe).",
+            end=format_datetime(expected_end),
+        )
 
-    # The user can't have an on-call while on leave over the period
-    if _get_overlapping_leave(user.id, start_time.date(), end_time.date()):
-        return False
+    leave = _get_overlapping_leave(user.id, start_time.date(), end_time.date())
+    if leave is not None:
+        return _(
+            "%(name)s est en congé du %(start)s au %(end)s.",
+            name=user.name,
+            start=format_date(leave.start_date),
+            end=format_date(leave.end_date),
+        )
 
-    # Check if user already has an on-call overlapping with this period
-    overlapping_oncall = OnCall.query.filter(
-        OnCall.user_id == user.id,
-        OnCall.start_time <= end_time,
-        OnCall.end_time >= start_time,
-    ).first()
-    if overlapping_oncall is not None:
-        return False
+    others = OnCall.query.filter(OnCall.user_id == user.id)
+    if exclude_oncall_id is not None:
+        others = others.filter(OnCall.id != exclude_oncall_id)
+    others = others.order_by(OnCall.start_time).all()
 
-    return check_oncall_rule_violations(user, start_time, end_time) is None
+    for other in others:
+        if other.start_time <= end_time and other.end_time >= start_time:
+            return _(
+                "%(name)s a déjà une astreinte du %(start)s au %(end)s.",
+                name=user.name,
+                start=format_datetime(other.start_time),
+                end=format_datetime(other.end_time),
+            )
+
+    spacing_group = (
+        user.group
+        if SettingsService.get_oncall_scheduling_mode() == "per_group"
+        else None
+    )
+    min_spacing_weeks = OnCallSpacingRule.resolve(group=spacing_group)[
+        "min_spacing_weeks"
+    ]
+    for other in others:
+        if oncall_violates_spacing(
+            start_time, end_time, other.start_time, other.end_time, min_spacing_weeks
+        ):
+            return _(
+                "Espacement minimum de %(weeks)s semaine(s) entre deux "
+                "astreintes non respecté : %(name)s est déjà d'astreinte du "
+                "%(start)s au %(end)s.",
+                weeks=min_spacing_weeks,
+                name=user.name,
+                start=format_datetime(other.start_time),
+                end=format_datetime(other.end_time),
+            )
+
+    return check_oncall_rule_violations(
+        user, start_time, end_time, exclude_oncall_id=exclude_oncall_id
+    )
+
+
+def _weekday_name(weekday: int) -> str:
+    return [
+        _("lundi"),
+        _("mardi"),
+        _("mercredi"),
+        _("jeudi"),
+        _("vendredi"),
+        _("samedi"),
+        _("dimanche"),
+    ][weekday]
 
 
 # ---------------------------------------------------------------------------
@@ -476,7 +565,14 @@ def _get_overlapping_oncall(user_id, start_date, end_date):
 # ---------------------------------------------------------------------------
 
 
-def check_shift_rule_violations(user, date, shift_type=None, exclude_shift_id=None):
+def check_shift_rule_violations(
+    user,
+    date,
+    shift_type=None,
+    exclude_shift_id=None,
+    start_time=None,
+    end_time=None,
+):
     """Returns a translated error message if creating/moving a shift
     for `user` on `date` into `shift_type` would violate a configured
     automation rule (staffing_limits max, rest_after_oncall,
@@ -494,7 +590,12 @@ def check_shift_rule_violations(user, date, shift_type=None, exclude_shift_id=No
     creation/move stays consistent with what generation would have
     produced. "shared" (the default) always resolves org-wide, exactly
     today's behavior, regardless of whether a Group override happens
-    to exist in the database."""
+    to exist in the database.
+
+    `start_time`/`end_time`: the shift's *actual* interval, when the
+    caller is about to persist arbitrary datetimes (calendar API create/
+    drag/resize) - rest/overlap are checked against what gets saved, not
+    the ShiftType's nominal hours (audit F09). Omitted = nominal hours."""
     if shift_type is None:
         return None
 
@@ -530,12 +631,13 @@ def check_shift_rule_violations(user, date, shift_type=None, exclude_shift_id=No
                 max=max_limit,
             )
 
-    start_time = datetime.combine(date, datetime.min.time()).replace(
-        hour=shift_type.start_hour
-    )
-    end_time = datetime.combine(date, datetime.min.time()).replace(
-        hour=shift_type.end_hour
-    )
+    if start_time is None or end_time is None:
+        start_time = datetime.combine(date, datetime.min.time()).replace(
+            hour=shift_type.start_hour
+        )
+        end_time = datetime.combine(date, datetime.min.time()).replace(
+            hour=shift_type.end_hour
+        )
 
     block_oncall_overlap = OnCallShiftOverlapRule.resolve(group=group)["block"]
     if block_oncall_overlap and shift_violates_oncall_overlap(
@@ -594,9 +696,14 @@ def check_oncall_rule_violations(user, start_time, end_time, exclude_oncall_id=N
 
     block_oncall_overlap = OnCallShiftOverlapRule.resolve(group=group)["block"]
     if block_oncall_overlap:
-        overlapping_shift = _get_overlapping_shift(
-            user.id, start_time.date(), end_time.date()
-        )
+        # Actual shift intervals, not inclusive calendar dates (audit F06:
+        # a 09-17 shift on the day an on-call ends at 07:00 doesn't
+        # overlap it, and used to be rejected anyway).
+        overlapping_shift = Shift.query.filter(
+            Shift.user_id == user.id,
+            Shift.start_time < end_time,
+            Shift.end_time > start_time,
+        ).first()
         if oncall_violates_shift_overlap(
             overlapping_shift is not None, block_oncall_overlap
         ):
