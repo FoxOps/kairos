@@ -33,11 +33,48 @@ class UserManager:
         email = user_data["email"]
         # Use 'name' as the primary field, falling back to 'username' or email
         name = user_data.get("name") or user_data.get("username") or email.split("@")[0]
+        issuer = user_data.get("issuer") or None
+        subject = user_data.get("sub") or None
 
         logger.info(f"[OIDC Sync] Starting sync for: {email}")
 
-        # Look up the existing user by email
-        user = User.query.filter_by(email=email).first()
+        # Audit F02: identity is (issuer, sub), not email. Without a
+        # subject there is nothing stable to bind to - fail closed.
+        if not subject:
+            logger.error(f"[OIDC Sync] Refused {email}: userinfo has no 'sub' claim")
+            return None
+
+        user = User.query.filter_by(oidc_issuer=issuer, oidc_subject=subject).first()
+        if user is None:
+            user = User.query.filter_by(email=email).first()
+            if user is not None:
+                if user.oidc_subject is not None:
+                    # Already bound to a *different* SSO identity that just
+                    # happens to present the same email now.
+                    logger.error(
+                        f"[OIDC Sync] Refused {email}: local account {user.id} "
+                        "is bound to another SSO identity"
+                    )
+                    return None
+                if (
+                    user_data.get("email_verified") is False
+                    and not OIDCConfig.TRUST_UNVERIFIED_EMAIL
+                ):
+                    # First SSO login of a pre-existing local account: only
+                    # link it if the IdP vouches for the email. A new
+                    # account (no local match, below) needs no such check -
+                    # it carries no privileges anyone could take over.
+                    logger.error(
+                        f"[OIDC Sync] Refused {email}: email_verified=false, "
+                        "cannot link to existing local account "
+                        "(see OIDC_TRUST_UNVERIFIED_EMAIL)"
+                    )
+                    return None
+                user.oidc_issuer = issuer
+                user.oidc_subject = subject
+                logger.info(
+                    f"[OIDC Sync] Bound local account {user.id} to SSO identity"
+                )
 
         if user:
             logger.info(f"[OIDC Sync] Existing user found: {email} (ID: {user.id})")
@@ -67,6 +104,8 @@ class UserManager:
                 email=email,
                 name=name,
                 is_admin=False,  # OIDC users are not admin by default
+                oidc_issuer=issuer,
+                oidc_subject=subject,
             )
 
             # Find the default group

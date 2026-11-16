@@ -8,6 +8,7 @@ Authlib is a modern, maintained library for OIDC authentication,
 replacing the older flask-oidc library.
 """
 
+import hmac
 import logging
 
 from authlib.integrations.flask_client import OAuth
@@ -32,6 +33,7 @@ class OIDCAuthLib:
         self.token_endpoint = None
         self.userinfo_endpoint = None
         self.end_session_endpoint = None
+        self.issuer = None
         if app:
             self.init_app(app)
 
@@ -54,6 +56,7 @@ class OIDCAuthLib:
         self.token_endpoint = None
         self.userinfo_endpoint = None
         self.end_session_endpoint = None
+        self.issuer = None
 
         self.oauth = OAuth(app)
         self._configure_oauth()
@@ -101,6 +104,10 @@ class OIDCAuthLib:
                 self.token_endpoint = discovery_doc.get("token_endpoint")
                 self.userinfo_endpoint = discovery_doc.get("userinfo_endpoint")
                 self.end_session_endpoint = discovery_doc.get("end_session_endpoint")
+                # The discovered `issuer` is the value the provider itself
+                # puts in `iss` - the stable half of the (issuer, sub) pair
+                # a local account is bound to (see UserManager).
+                self.issuer = discovery_doc.get("issuer") or issuer_url
 
                 if OIDCConfig.INTERNAL_ISSUER:
                     # The discovery document was fetched via the internal
@@ -203,8 +210,8 @@ class OIDCAuthLib:
             # Store the state in the session
             session["oidc_state"] = state
 
-            logger.info(f"Generated state: {state}")
-            logger.info(f"State stored in session: {session.get('oidc_state')}")
+            # Never log the state value itself: it's a CSRF-style secret.
+            logger.info("OIDC state generated and stored in session")
 
             from urllib.parse import urlencode
 
@@ -361,6 +368,21 @@ class OIDCAuthLib:
             if roles_claim and roles_claim in user_info:
                 user_data["roles"] = user_info[roles_claim]
 
+            # Stable external identity (audit F02): a local account is bound
+            # to (issuer, sub), never to the email alone, since an IdP may
+            # let a user pick an email it hasn't verified.
+            if user_info.get("sub"):
+                user_data["sub"] = str(user_info["sub"])
+            if "email_verified" in user_info:
+                verified = user_info["email_verified"]
+                # Some providers serialize it as a string ("false").
+                if isinstance(verified, str):
+                    verified = verified.strip().lower() == "true"
+                user_data["email_verified"] = bool(verified)
+            issuer = self.issuer or (OIDCConfig.ISSUER or "").rstrip("/")
+            if issuer:
+                user_data["issuer"] = issuer
+
         return user_data
 
     def handle_oauth_callback(self, request):
@@ -374,13 +396,17 @@ class OIDCAuthLib:
 
         # Verify the state
         state = request.args.get("state")
-        session_state = session.get("oidc_state")
+        # Single-use: popped whatever the outcome, so a captured callback
+        # URL can't be replayed against the same session.
+        session_state = session.pop("oidc_state", None)
 
-        logger.info(f"[callback] state received: {state}")
-        logger.info(f"[callback] state in session: {session_state}")
-        logger.info(f"[callback] state == session_state: {state == session_state}")
+        state_ok = bool(state and session_state) and hmac.compare_digest(
+            str(state), str(session_state)
+        )
+        # Only the comparison outcome is logged, never the values.
+        logger.info(f"[callback] state valid: {state_ok}")
 
-        if not state or state != session_state:
+        if not state_ok:
             logger.error("Invalid OIDC state")
             flash(_("Erreur d'authentification : état invalide."), "danger")
             return None
@@ -443,7 +469,10 @@ class OIDCAuthLib:
             logger.info(f"OIDC user logged in: {user.email}")
             return user
         else:
-            logger.error(f"Could not sync OIDC user: {user_data}")
+            logger.error(
+                f"Could not sync OIDC user: {user_data.get('email')} "
+                f"(sub={user_data.get('sub')})"
+            )
             return None
 
     def build_logout_url(self, post_logout_redirect_uri=None):
