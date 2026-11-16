@@ -379,7 +379,9 @@ class OIDCAuthLib:
                 if isinstance(verified, str):
                     verified = verified.strip().lower() == "true"
                 user_data["email_verified"] = bool(verified)
-            issuer = self.issuer or (OIDCConfig.ISSUER or "").rstrip("/")
+            # Trailing slash normalized: a cosmetic OIDC_ISSUER/discovery
+            # difference must not unbind every account at once.
+            issuer = (self.issuer or OIDCConfig.ISSUER or "").rstrip("/")
             if issuer:
                 user_data["issuer"] = issuer
 
@@ -400,8 +402,10 @@ class OIDCAuthLib:
         # URL can't be replayed against the same session.
         session_state = session.pop("oidc_state", None)
 
+        # Bytes, not str: compare_digest raises TypeError on non-ASCII str
+        # input, which a crafted ?state= would turn into a 500.
         state_ok = bool(state and session_state) and hmac.compare_digest(
-            str(state), str(session_state)
+            str(state).encode(), str(session_state).encode()
         )
         # Only the comparison outcome is logged, never the values.
         logger.info(f"[callback] state valid: {state_ok}")

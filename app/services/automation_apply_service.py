@@ -18,6 +18,9 @@ import threading
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 
+from sqlalchemy import update
+from sqlalchemy.exc import IntegrityError
+
 from app import db
 from app.models import OnCall, Shift, User
 from app.models.generation_run import GenerationRun
@@ -76,23 +79,34 @@ _APPLY_LOCK = threading.Lock()
 _APPLY_LOCK_KEY = "schedule_apply_lock"
 
 
-def _acquire_schedule_row_lock() -> None:
-    """Cross-process serialization on engines with row locks
-    (PostgreSQL/MySQL): SELECT ... FOR UPDATE on a sentinel config row,
-    held until this transaction's commit/rollback. SQLite ignores FOR
-    UPDATE but serializes writers itself."""
+def _acquire_schedule_write_lock() -> None:
+    """Cross-process serialization: a no-op UPDATE on a sentinel config
+    row, as the first statement of a fresh transaction. That is a row
+    lock on PostgreSQL/MySQL and the database-wide RESERVED write lock on
+    SQLite, held until this transaction's commit/rollback - so the stale
+    check below and the writes that follow it can't interleave with
+    another worker's apply (a read-only SELECT ... FOR UPDATE would leave
+    SQLite multi-worker deployments unprotected)."""
     from app.models import AutomationConfig
 
-    row = (
-        AutomationConfig.query.filter_by(config_key=_APPLY_LOCK_KEY)
-        .with_for_update()
-        .first()
-    )
-    if row is None:
-        AutomationConfig.set_config(_APPLY_LOCK_KEY, "1", commit=True)
-        AutomationConfig.query.filter_by(
-            config_key=_APPLY_LOCK_KEY
-        ).with_for_update().first()
+    def _touch() -> int:
+        return db.session.execute(
+            update(AutomationConfig)
+            .where(AutomationConfig.config_key == _APPLY_LOCK_KEY)
+            .values(config_value=AutomationConfig.config_value)
+        ).rowcount
+
+    if _touch():
+        return
+    # First apply ever: create the sentinel. Two processes racing here
+    # both INSERT - the unique config_key makes one fail, which simply
+    # re-selects the row the other created.
+    try:
+        db.session.add(AutomationConfig(config_key=_APPLY_LOCK_KEY, config_value="1"))
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+    _touch()
 
 
 def _stale_reason(plan: SchedulePlan) -> str | None:
@@ -153,8 +167,20 @@ class AutomationApplyService:
             )
 
         with _APPLY_LOCK:
-            _acquire_schedule_row_lock()
-            stale = _stale_reason(plan)
+            # End the transaction the plan was built in (its only pending
+            # writes are fallback ShiftType rows the plan itself refers
+            # to), so the lock below is the first statement of a fresh
+            # transaction, and drop every cached object: the stale check
+            # must re-read the DB, not the session's identity map or a
+            # REPEATABLE READ snapshot taken at planning time.
+            try:
+                db.session.commit()
+                _acquire_schedule_write_lock()
+                db.session.expire_all()
+                stale = _stale_reason(plan)
+            except Exception as e:  # noqa: BLE001 - converted into a typed result
+                db.session.rollback()
+                return ApplyResult(success=False, error=str(e))
             if stale is not None:
                 db.session.rollback()
                 run = GenerationRun(

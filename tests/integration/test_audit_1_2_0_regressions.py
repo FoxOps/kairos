@@ -880,3 +880,50 @@ def test_f13_route_refuses_empty_selection(logged_in_client):
     resp = logged_in_client.post("/admin/automation/full", data=data)
     assert resp.status_code == 302
     assert AutomationConfig.get_rotation_order() == []
+
+
+def test_f07_stale_check_sees_updates_made_outside_the_session(test_app):
+    """A leave edited by another request (here: raw SQL, bypassing this
+    session's identity map) must still make the plan stale."""
+    from sqlalchemy import text
+
+    from app.services.automation_apply_service import AutomationApplyService
+
+    _, us = seed()
+    leave = Leave(
+        user_id=us[0].id, start_date=date(2026, 3, 2), end_date=date(2026, 3, 2)
+    )
+    db.session.add(leave)
+    db.session.commit()
+    plan = plan_schedule(build_planning_request(date(2026, 1, 2), date(2026, 1, 2)))
+    uid = plan.oncalls[0].user_id
+    db.session.execute(
+        text(
+            "UPDATE leave SET start_date = :d, end_date = :d, user_id = :u WHERE id = :id"
+        ),
+        {"d": date(2026, 1, 5), "u": uid, "id": leave.id},
+    )
+    result = AutomationApplyService.apply_plan(plan)
+    assert not result.success and result.stale
+
+
+def test_f01_non_ascii_state_is_a_clean_refusal(test_app, client):
+    with client.session_transaction() as session:
+        session["oidc_state"] = "expected"
+    resp = client.get("/oidc/callback?state=%C3%A9&code=x")
+    assert resp.status_code == 302
+
+
+def test_f02_issuer_trailing_slash_does_not_unbind(test_app, monkeypatch):
+    from app.auth.oidc_auth import OIDCAuthLib
+
+    _, us = seed()
+    auth = OIDCAuthLib()
+    auth.issuer = "https://idp.example/realms/k"
+    data = auth.extract_user_info_from_token({}, {"email": us[0].email, "sub": "kc-1"})
+    from app.auth.user_manager import UserManager
+
+    UserManager().sync_user_from_oidc(data)
+    auth.issuer = "https://idp.example/realms/k/"
+    data = auth.extract_user_info_from_token({}, {"email": us[0].email, "sub": "kc-1"})
+    assert UserManager().sync_user_from_oidc(data).id == us[0].id
