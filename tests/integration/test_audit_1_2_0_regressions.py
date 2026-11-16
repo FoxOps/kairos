@@ -432,12 +432,8 @@ def test_f02_missing_subject_refused(test_app):
     assert _oidc_sync({"email": "nosub@example.invalid"}) is None
 
 
-def test_swapping_same_day_shifts_hits_unique_constraint(test_app):
-    _, us = seed()
-    from sqlalchemy.exc import IntegrityError
-
+def _same_day_swap(us, **shift_kwargs):
     from app.models import SwapRequest
-    from app.services.swap_service import SwapService
 
     t = ShiftType(name="synthetic", label="Synthetic", start_hour=9, end_hour=17)
     db.session.add(t)
@@ -450,6 +446,7 @@ def test_swapping_same_day_shifts_hits_unique_constraint(test_app):
             date=date(2026, 1, 5),
             start_time=datetime(2026, 1, 5, 9),
             end_time=datetime(2026, 1, 5, 17),
+            **shift_kwargs,
         )
         for u in us[:2]
     ]
@@ -464,9 +461,63 @@ def test_swapping_same_day_shifts_hits_unique_constraint(test_app):
     )
     db.session.add(req)
     db.session.commit()
-    with pytest.raises(IntegrityError):
-        SwapService.approve_swap(req, us[2])
-    db.session.rollback()
+    return rows, req
+
+
+def test_f15_same_day_swap_approves_and_reverts(test_app):
+    from app.services.swap_service import SwapService
+
+    _, us = seed()
+    rows, req = _same_day_swap(us)
+    assert SwapService.approve_swap(req, us[2]) is None
+    assert db.session.get(Shift, rows[0].id).user_id == us[1].id
+    assert db.session.get(Shift, rows[1].id).user_id == us[0].id
+    assert db.session.get(Shift, rows[0].id).date == date(2026, 1, 5)
+    assert SwapService.revert_swap(req, us[2]) is None
+    assert db.session.get(Shift, rows[0].id).user_id == us[0].id
+
+
+def test_f15_swap_updates_group_snapshot_to_new_owner(test_app):
+    from app.services.swap_service import SwapService
+
+    g, us = seed()
+    other = Group(name="Other", is_part_of_oncall=True, is_part_of_schedule=True)
+    db.session.add(other)
+    db.session.flush()
+    us[1].group_id = other.id
+    db.session.commit()
+    rows, req = _same_day_swap(us)
+    assert SwapService.approve_swap(req, us[2]) is None
+    assert db.session.get(Shift, rows[0].id).group_id == other.id
+    assert db.session.get(Shift, rows[1].id).group_id == g.id
+
+
+def test_f15_swap_refuses_locked_shift(test_app):
+    from app.services.swap_service import SwapService
+
+    _, us = seed()
+    rows, req = _same_day_swap(us, locked=True)
+    error = SwapService.approve_swap(req, us[2])
+    assert error and "verrouillé" in error
+
+
+def test_f15_swap_enforces_rest_after_oncall(test_app):
+    from app.services.swap_service import SwapService
+
+    _, us = seed()
+    db.session.add(
+        OnCall(
+            user_id=us[1].id,
+            group_id=us[1].group_id,
+            start_time=datetime(2025, 12, 29, 21),
+            end_time=datetime(2026, 1, 5, 7),
+        )
+    )
+    db.session.commit()
+    AutomationRule.set("rest_after_oncall", {"min_rest_hours": 11})
+    rows, req = _same_day_swap(us)
+    error = SwapService.approve_swap(req, us[2])
+    assert error and "reposer" in error
 
 
 def test_single_day_leave_ics_has_zero_duration(test_app):
