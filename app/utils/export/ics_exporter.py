@@ -5,7 +5,7 @@ This module provides functions to export shifts, on-call duties, and leaves
 to ICS format for calendar integration.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from flask_babel import gettext as _
@@ -75,13 +75,13 @@ def generate_ics_standard(events, calendar_name="Kairos", tz_name="Europe/Paris"
         elif event_type == "Leave":
             title = _("Congé - %(name)s", name=event_obj.user.name)
             description = _("Utilisateur: %(name)s", name=event_obj.user.name)
-            # For Leave, we need to handle dates (not datetimes)
-            start_time = datetime.combine(
-                event_obj.start_date, datetime.min.time()
-            ).replace(tzinfo=tz)
-            end_time = datetime.combine(
-                event_obj.end_date, datetime.min.time()
-            ).replace(tzinfo=tz)
+            # All-day event (VALUE=DATE, no TZID): Leave dates are inclusive,
+            # RFC 5545's DTEND is exclusive - so DTEND is the day *after*
+            # end_date (audit F16: midnight-to-midnight timed events used
+            # to drop the leave's last day, a one-day leave had zero
+            # duration).
+            start_time = event_obj.start_date
+            end_time = event_obj.end_date + timedelta(days=1)
         else:
             # Unknown type, skip
             continue

@@ -520,19 +520,20 @@ def test_f15_swap_enforces_rest_after_oncall(test_app):
     assert error and "reposer" in error
 
 
-def test_single_day_leave_ics_has_zero_duration(test_app):
+def test_f16_single_day_leave_ics_spans_the_whole_day(test_app):
     _, us = seed()
     from icalendar import Calendar
 
     from app.utils.export.ics_exporter import export_to_ics
 
     row = Leave(
-        user_id=us[0].id, start_date=date(2026, 1, 5), end_date=date(2026, 1, 5)
+        user_id=us[0].id, start_date=date(2026, 1, 5), end_date=date(2026, 1, 7)
     )
     db.session.add(row)
     db.session.commit()
     event = Calendar.from_ical(export_to_ics([row])).walk("VEVENT")[0]
-    assert event.decoded("dtstart") == event.decoded("dtend")
+    assert event.decoded("dtstart") == date(2026, 1, 5)
+    assert event.decoded("dtend") == date(2026, 1, 8)
 
 
 def test_fresh_migrations_have_schema_drift(test_app):
