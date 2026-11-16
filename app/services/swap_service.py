@@ -155,7 +155,7 @@ class SwapService:
         for offset, (moved, _owner) in enumerate(assignments):
             moved.date = _PARKING_DATE + timedelta(days=offset)
         db.session.flush()
-        for (moved, owner), real_date in zip(assignments, original_dates):
+        for (moved, owner), real_date in zip(assignments, original_dates, strict=True):
             moved.user_id = owner.id
             moved.group_id = owner.group_id
             moved.date = real_date
