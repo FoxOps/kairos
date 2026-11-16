@@ -189,7 +189,9 @@ class LeaveService:
 
     @staticmethod
     def _rebalance_after_leave(leave: Leave) -> list | None:
-        """Rebalance the shifts affected by a leave. None on failure.
+        """Rebalance the shifts affected by a leave. None on failure -
+        including a partial one (failed_shift_dates/failed_oncall_period
+        non-empty), after admins have been notified.
 
         A per-day/per-section failure inside rebalance_after_leave (e.g.
         a unique-constraint race on one specific day) no longer aborts
@@ -275,6 +277,12 @@ class LeaveService:
                         ),
                     ),
                 )
+            if failed_shift_dates or failed_oncall_period:
+                # Admins were notified above; the caller must not report
+                # the rebalance as a success either (audit F21: an unsafe
+                # plan used to come back as rebalance_failed=False with the
+                # unapplied proposal as "regenerated" shifts).
+                return None
             return regenerated_shifts
         except Exception:
             logger.exception(

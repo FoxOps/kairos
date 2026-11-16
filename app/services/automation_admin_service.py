@@ -499,15 +499,20 @@ class AutomationAdminService:
         shift_period_end = leave.end_date
 
         if overlapping_oncalls:
-            # Find the period to cover: from the first Friday before
-            # the leave to the last Friday after the leave ends + 30
-            # days (to cover the whole on-call).
+            # Find the period to cover: from the first anchor day before
+            # the leave to the last anchor day after the leave ends + 30
+            # days (to cover the whole on-call). The anchor weekday is the
+            # leave owner's group's configured one, not a hardcoded Friday
+            # (audit F11).
+            from app.utils.automation.rules import OnCallAnchorRule
+
+            anchor_weekday = OnCallAnchorRule.resolve(group=leave.user.group)["weekday"]
             first_friday = leave.start_date
-            while first_friday.weekday() != 4:  # 4 = Friday
+            while first_friday.weekday() != anchor_weekday:
                 first_friday -= timedelta(days=1)
 
             last_friday = leave.end_date
-            while last_friday.weekday() != 4:
+            while last_friday.weekday() != anchor_weekday:
                 last_friday += timedelta(days=1)
 
             shift_period_start = first_friday - timedelta(days=30)
@@ -594,6 +599,40 @@ class AutomationAdminService:
 
         failed_shift_dates: list = []
         failed_oncall_period: list = []
+
+        if not apply_result.success:
+            # The whole plan was refused before any write (unsafe - e.g.
+            # a locked shift on a day the new leave covers - or stale).
+            # Nothing was rebalanced: report it as a failure for the
+            # leave's own days instead of returning the *proposal* as if
+            # it had been applied (audit F21).
+            failed_shift_dates = [
+                day
+                for day in (
+                    leave.start_date + timedelta(days=offset)
+                    for offset in range((leave.end_date - leave.start_date).days + 1)
+                )
+                if shift_period_start <= day <= shift_period_end
+            ]
+            if overlapping_oncalls:
+                failed_oncall_period = [shift_period_start, shift_period_end]
+            messages.append(
+                _(
+                    "[ERROR] Rééquilibrage après congé refusé, aucune "
+                    "modification appliquée : %(error)s - action manuelle "
+                    "nécessaire",
+                    error=apply_result.error,
+                )
+            )
+            return (
+                [],
+                messages,
+                unfilled_oncall_dates,
+                failed_shift_dates,
+                failed_oncall_period,
+                unfilled_shift_dates,
+            )
+
         for entry, error in apply_result.failed_entries:
             if entry.kind == "shift":
                 failed_shift_dates.append(entry.date)

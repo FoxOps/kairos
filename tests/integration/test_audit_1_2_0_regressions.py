@@ -756,7 +756,7 @@ def test_f20_locked_shift_keeps_real_interval():
     assert f.proposed[0].change_type == "unchanged"
 
 
-def test_leave_rebalance_silently_ignores_unsafe_apply(test_app):
+def test_f21_leave_rebalance_reports_unsafe_apply(test_app):
     _, us = seed()
     Admin.generate_full(date(2026, 1, 5), date(2026, 1, 5), [u.id for u in us], False)
     row = Shift.query.filter_by(user_id=us[0].id).first()
@@ -766,9 +766,13 @@ def test_leave_rebalance_silently_ignores_unsafe_apply(test_app):
     )
     db.session.add(leave)
     db.session.commit()
-    result = Admin.rebalance_after_leave(leave)
+    regenerated, messages, _u, failed_shift_dates, _p, _s = Admin.rebalance_after_leave(
+        leave
+    )
     assert Shift.query.filter_by(id=row.id).count() == 1
-    assert not result[2] and not result[3] and not result[4] and not result[5]
+    assert regenerated == []
+    assert failed_shift_dates == [date(2026, 1, 5)]
+    assert any(m.startswith("[ERROR]") for m in messages)
 
 
 def test_pre_window_oncall_is_used_for_role():
@@ -808,10 +812,13 @@ def test_f19_fallback_rest_violation_not_persisted_through_refresh(test_app):
     assert Shift.query.filter_by(date=date(2026, 1, 9)).count() == len(us) - 1
 
 
-def test_leave_api_reports_success_when_locked_rebalance_is_unsafe(test_app):
+def test_f21_leave_api_reports_failure_when_locked_rebalance_is_unsafe(test_app):
     _, us = seed()
+    from app.models import AppNotification
     from app.services.leave_service import LeaveService
 
+    us[3].is_admin = True
+    db.session.commit()
     Admin.generate_full(date(2026, 1, 5), date(2026, 1, 5), [u.id for u in us], False)
     row = Shift.query.filter_by(user_id=us[0].id).one()
     row.locked = True
@@ -819,11 +826,12 @@ def test_leave_api_reports_success_when_locked_rebalance_is_unsafe(test_app):
     leave, regenerated = LeaveService.add_leave(
         us[0], date(2026, 1, 5), date(2026, 1, 5)
     )
-    assert leave is not None and regenerated is not None
+    assert leave is not None and regenerated is None
     updated, error, rebalance_failed = LeaveService.api_update(
         leave.id, leave.start_date, leave.end_date
     )
-    assert updated is not None and error is None and not rebalance_failed
+    assert updated is not None and error is None and rebalance_failed
+    assert AppNotification.query.filter_by(user_id=us[3].id).count() >= 1
     assert Shift.query.filter_by(id=row.id).count() == 1
 
 

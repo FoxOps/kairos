@@ -167,6 +167,11 @@ def automation_full():
             start_date_str = request.form.get("start_date")
             end_date_str = request.form.get("end_date")
             oncall_mode = request.form.get("oncall_mode", "none")
+            # Anything unknown used to fall through to the destructive
+            # "regenerate" behavior.
+            if oncall_mode not in ("none", "fill_gaps", "regenerate"):
+                flash(_("Mode d'astreinte invalide."), "danger")
+                return redirect(url_for("admin.automation_full", mode="refresh"))
 
             try:
                 start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
