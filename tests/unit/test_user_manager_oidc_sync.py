@@ -24,7 +24,11 @@ class TestSyncUserFromOidcInvalidData:
 class TestSyncUserFromOidcNewUser:
     def test_creates_new_user_with_default_group(self, test_app, user_manager):
         user = user_manager.sync_user_from_oidc(
-            {"email": "new-oidc-user@example.com", "sub": "new-oidc-user@example.com", "name": "New OIDC User"}
+            {
+                "email": "new-oidc-user@example.com",
+                "sub": "new-oidc-user@example.com",
+                "name": "New OIDC User",
+            }
         )
 
         assert user is not None
@@ -43,7 +47,11 @@ class TestSyncUserFromOidcNewUser:
         db.session.commit()
 
         user = user_manager.sync_user_from_oidc(
-            {"email": "another@example.com", "sub": "another@example.com", "name": "Another"}
+            {
+                "email": "another@example.com",
+                "sub": "another@example.com",
+                "name": "Another",
+            }
         )
 
         assert user.group_id == existing_default.id
@@ -51,14 +59,20 @@ class TestSyncUserFromOidcNewUser:
 
     def test_falls_back_to_username_when_no_name_claim(self, test_app, user_manager):
         user = user_manager.sync_user_from_oidc(
-            {"email": "user2@example.com", "sub": "user2@example.com", "username": "user2handle"}
+            {
+                "email": "user2@example.com",
+                "sub": "user2@example.com",
+                "username": "user2handle",
+            }
         )
         assert user.name == "user2handle"
 
     def test_falls_back_to_email_local_part_when_no_name_or_username(
         self, test_app, user_manager
     ):
-        user = user_manager.sync_user_from_oidc({"email": "justme@example.com", "sub": "justme@example.com"})
+        user = user_manager.sync_user_from_oidc(
+            {"email": "justme@example.com", "sub": "justme@example.com"}
+        )
         assert user.name == "justme"
 
     def test_roles_claim_admin_grants_is_admin(
@@ -67,7 +81,8 @@ class TestSyncUserFromOidcNewUser:
         monkeypatch.setattr(OIDCConfig, "ROLES_CLAIM", "roles")
         user = user_manager.sync_user_from_oidc(
             {
-                "email": "admin-oidc@example.com", "sub": "admin-oidc@example.com",
+                "email": "admin-oidc@example.com",
+                "sub": "admin-oidc@example.com",
                 "name": "Admin OIDC",
                 "roles": ["admin"],
             }
@@ -79,7 +94,12 @@ class TestSyncUserFromOidcNewUser:
     ):
         monkeypatch.setattr(OIDCConfig, "ROLES_CLAIM", "roles")
         user = user_manager.sync_user_from_oidc(
-            {"email": "user-oidc@example.com", "sub": "user-oidc@example.com", "name": "User OIDC", "roles": ["viewer"]}
+            {
+                "email": "user-oidc@example.com",
+                "sub": "user-oidc@example.com",
+                "name": "User OIDC",
+                "roles": ["viewer"],
+            }
         )
         assert user.is_admin is False
 
@@ -89,7 +109,8 @@ class TestSyncUserFromOidcNewUser:
         monkeypatch.setattr(OIDCConfig, "ROLES_CLAIM", "roles")
         user = user_manager.sync_user_from_oidc(
             {
-                "email": "single-role@example.com", "sub": "single-role@example.com",
+                "email": "single-role@example.com",
+                "sub": "single-role@example.com",
                 "name": "Single Role",
                 "roles": "admin",
             }
@@ -111,7 +132,8 @@ class TestSyncUserFromOidcNewUser:
         with caplog.at_level("INFO", logger="app.auth.user_manager"):
             user = user_manager.sync_user_from_oidc(
                 {
-                    "email": "grouped-oidc@example.com", "sub": "grouped-oidc@example.com",
+                    "email": "grouped-oidc@example.com",
+                    "sub": "grouped-oidc@example.com",
                     "name": "Grouped OIDC",
                     "groups": "engineering",
                 }
@@ -136,7 +158,8 @@ class TestSyncUserFromOidcGroupsClaimExistingUser:
         with caplog.at_level("INFO", logger="app.auth.user_manager"):
             user = user_manager.sync_user_from_oidc(
                 {
-                    "email": "existing-grouped@example.com", "sub": "existing-grouped@example.com",
+                    "email": "existing-grouped@example.com",
+                    "sub": "existing-grouped@example.com",
                     "name": "Existing Grouped",
                     "groups": ["engineering", "oncall"],
                 }
@@ -155,7 +178,11 @@ class TestSyncUserFromOidcExistingUser:
         existing_id = existing.id
 
         user = user_manager.sync_user_from_oidc(
-            {"email": "existing@example.com", "sub": "existing@example.com", "name": "Updated Name"}
+            {
+                "email": "existing@example.com",
+                "sub": "existing@example.com",
+                "name": "Updated Name",
+            }
         )
 
         assert user.id == existing_id
@@ -174,7 +201,11 @@ class TestSyncUserFromOidcExistingUser:
         original_hash = existing.password_hash
 
         user = user_manager.sync_user_from_oidc(
-            {"email": "local@example.com", "sub": "local@example.com", "name": "Local User"}
+            {
+                "email": "local@example.com",
+                "sub": "local@example.com",
+                "name": "Local User",
+            }
         )
 
         assert user.password_hash == original_hash
@@ -195,7 +226,8 @@ class TestSyncUserFromOidcExistingUser:
 
         user = user_manager.sync_user_from_oidc(
             {
-                "email": "promoted@example.com", "sub": "promoted@example.com",
+                "email": "promoted@example.com",
+                "sub": "promoted@example.com",
                 "name": "Promoted User",
                 "roles": ["admin"],
             }
@@ -222,7 +254,8 @@ class TestSyncUserFromOidcExistingUser:
 
         user = user_manager.sync_user_from_oidc(
             {
-                "email": "demoted@example.com", "sub": "demoted@example.com",
+                "email": "demoted@example.com",
+                "sub": "demoted@example.com",
                 "name": "Demoted User",
                 "roles": ["viewer"],
             }
