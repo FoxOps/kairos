@@ -55,6 +55,9 @@ def build_planning_request(
     end_date: date,
     shift_start_date: date | None = None,
     restrict_to_group_id: int | None = None,
+    rotation_order_override: list[int] | None = None,
+    rotation_excluded_override: list[int] | None = None,
+    rotation_epoch_override: date | None = None,
 ) -> PlanningRequest:
     """The DB-to-PlanningRequest boundary. Read-only - never writes
     anything. Owns the scoping/eligibility/rotation logic for every
@@ -82,7 +85,13 @@ def build_planning_request(
     intersection with the normal eligible-groups computation, not a
     separate lookup - a group ineligible for that scope still narrows to
     an empty tuple, exactly like today's behavior when no groups are
-    eligible at all."""
+    eligible at all.
+
+    `rotation_*_override`: plan with this order/exclusion list/epoch
+    instead of the persisted AutomationConfig values - a dry-run preview
+    passes what's on the admin's form without writing it anywhere (audit
+    F14: previews used to persist the order and reset the epoch). `None`
+    = read the persisted value."""
     effective_shift_start = shift_start_date or start_date
     oncall_groups = _scoped_group_ids(
         SettingsService.get_oncall_scheduling_mode() == "per_group",
@@ -117,13 +126,23 @@ def build_planning_request(
     # planning's own rule-7 fallback (assign_shift_slots_for_day) reads
     # PlanningRequest.rotation_order.get(group_id, ()) too, not just
     # the on-call solver.
-    rotation_order_ids = AutomationConfig.get_rotation_order()
+    rotation_order_ids = (
+        rotation_order_override
+        if rotation_order_override is not None
+        else AutomationConfig.get_rotation_order()
+    )
+    rotation_excluded_ids = (
+        rotation_excluded_override
+        if rotation_excluded_override is not None
+        else AutomationConfig.get_rotation_excluded()
+    )
     all_group_ids = tuple(dict.fromkeys((*oncall_groups, *schedule_groups)))
     rotation_order = {
         group_id: _user_refs(
             queries.get_rotation_order(
                 rotation_order_ids=rotation_order_ids,
                 group=_group_or_none(group_id),
+                excluded_ids=rotation_excluded_ids,
             )
         )
         for group_id in all_group_ids
@@ -240,6 +259,12 @@ def build_planning_request(
     published_oncalls = {
         (o.start_time.date(), scope): o.user_id for o, scope in scoped_oncalls
     }
+    # Real persisted intervals, so the diff can see an edited start/end
+    # (audit F12) and a locked row is carried with its real hours.
+    published_oncall_intervals = {
+        (o.start_time.date(), scope): (o.start_time, o.end_time)
+        for o, scope in scoped_oncalls
+    }
     locked_oncalls = frozenset(
         (o.start_time.date(), scope) for o, scope in scoped_oncalls if o.locked
     )
@@ -269,6 +294,9 @@ def build_planning_request(
         s for s in shifts_in_range if s.user_id in planned_shift_user_ids
     ]
     published_shifts = {(s.date, s.user_id): s.shift_type_id for s in shifts_in_range}
+    published_shift_intervals = {
+        (s.date, s.user_id): (s.start_time, s.end_time) for s in shifts_in_range
+    }
     locked_shifts = frozenset((s.date, s.user_id) for s in shifts_in_range if s.locked)
 
     return PlanningRequest(
@@ -279,7 +307,11 @@ def build_planning_request(
         eligible_oncall_users=eligible_oncall_users,
         eligible_shift_users=eligible_shift_users,
         rotation_order=rotation_order,
-        rotation_anchor_epoch=resolve_rotation_epoch(),
+        rotation_anchor_epoch=(
+            rotation_epoch_override
+            if rotation_epoch_override is not None
+            else resolve_rotation_epoch()
+        ),
         existing_oncalls=existing_oncalls,
         existing_leaves=existing_leaves,
         published_oncalls=published_oncalls,
@@ -292,4 +324,7 @@ def build_planning_request(
         locked_shifts=locked_shifts,
         resolved_rules=resolve_rules_for_groups(all_group_ids),
         shift_start_date=shift_start_date,
+        published_oncall_intervals=published_oncall_intervals,
+        published_shift_intervals=published_shift_intervals,
+        restrict_to_group_id=restrict_to_group_id,
     )

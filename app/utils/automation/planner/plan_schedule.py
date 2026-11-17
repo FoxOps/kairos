@@ -18,7 +18,7 @@ preview, so the two could disagree)."""
 
 import hashlib
 import json
-from dataclasses import fields, is_dataclass
+from dataclasses import fields, is_dataclass, replace
 from datetime import date, datetime, timezone
 
 from app.utils.automation.planner.diff import compute_diff
@@ -95,7 +95,7 @@ def _evaluate_safety(
             )
 
     for entry in diff:
-        if entry.change_type not in ("reassigned", "removed"):
+        if entry.change_type not in ("reassigned", "removed", "updated"):
             continue
         if entry.kind == "oncall" and (entry.date, entry.group_id) in locked_oncalls:
             reasons.append(
@@ -135,8 +135,17 @@ def plan_schedule(request: PlanningRequest) -> SchedulePlan:
             locked=request.locked_oncalls,
             published=request.published_oncalls,
             rules=request.resolved_rules[group_id],
+            published_intervals=request.published_oncall_intervals,
         )
         for group_id in request.oncall_groups
+    }
+    # Each proposed on-call's actual interval, carried into shift
+    # planning as-is (audit F11) instead of being rebuilt there from the
+    # shift scope's own anchor rules.
+    proposed_oncall_intervals = {
+        (o.friday, group_id): (o.start_time, o.end_time)
+        for group_id, fragment in oncall_fragments.items()
+        for o in fragment.proposed
     }
 
     # Merged in-memory, fed directly into shift planning below - never
@@ -183,12 +192,26 @@ def plan_schedule(request: PlanningRequest) -> SchedulePlan:
             rotation_order=request.rotation_order.get(group_id, ()),
             rotation_anchor_epoch=request.rotation_anchor_epoch,
             rules=request.resolved_rules[group_id],
+            proposed_oncall_intervals=proposed_oncall_intervals,
+            published_intervals=request.published_shift_intervals,
         )
         for group_id in request.schedule_groups
     }
 
-    oncalls = tuple(o for f in oncall_fragments.values() for o in f.proposed)
-    shifts = tuple(s for f in shift_fragments.values() for s in f.proposed)
+    oncalls = tuple(
+        _mark_interval_update(
+            o, request.published_oncall_intervals.get((o.friday, o.group_id))
+        )
+        for f in oncall_fragments.values()
+        for o in f.proposed
+    )
+    shifts = tuple(
+        _mark_interval_update(
+            s, request.published_shift_intervals.get((s.date, s.user_id))
+        )
+        for f in shift_fragments.values()
+        for s in f.proposed
+    )
     unfilled = tuple(u for f in oncall_fragments.values() for u in f.unfilled) + tuple(
         u for f in shift_fragments.values() for u in f.unfilled
     )
@@ -197,7 +220,16 @@ def plan_schedule(request: PlanningRequest) -> SchedulePlan:
     diff = compute_diff(
         oncalls, shifts, request.published_oncalls, request.published_shifts
     )
-    fairness = compute_fairness_metrics(oncalls, shifts)
+    fairness = compute_fairness_metrics(
+        oncalls,
+        shifts,
+        eligible_oncall_user_ids=_population(
+            request.rotation_order, request.oncall_groups
+        ),
+        eligible_shift_user_ids=_population(
+            request.eligible_shift_users, request.schedule_groups
+        ),
+    )
     safe_to_apply, safe_to_apply_reasons = _evaluate_safety(
         violations, diff, request.locked_oncalls, request.locked_shifts
     )
@@ -215,4 +247,60 @@ def plan_schedule(request: PlanningRequest) -> SchedulePlan:
         safe_to_apply=safe_to_apply,
         safe_to_apply_reasons=safe_to_apply_reasons,
         input_fingerprint=_fingerprint(request),
+        state_fingerprint=state_fingerprint(request),
+        shift_start_date=request.shift_start_date,
+        restrict_to_group_id=request.restrict_to_group_id,
     )
+
+
+def _population(users_by_scope: dict, scopes: tuple) -> list[int]:
+    return list(
+        dict.fromkeys(u.id for scope in scopes for u in users_by_scope.get(scope, ()))
+    )
+
+
+def _mark_interval_update(proposed, published_interval):
+    """An otherwise-"unchanged" row whose persisted start/end differ from
+    the proposed interval becomes "updated" (audit F12: such edits were
+    invisible to the diff, so regeneration never repaired them)."""
+    if (
+        proposed.change_type == "unchanged"
+        and published_interval is not None
+        and published_interval != (proposed.start_time, proposed.end_time)
+    ):
+        return replace(proposed, change_type="updated")
+    return proposed
+
+
+# Request fields derived from current DB state (rows, leaves, populations,
+# configured order) - as opposed to the caller-tunable ones (rules,
+# extra locks some callers add via dataclasses.replace()).
+_STATE_FIELDS = (
+    "start_date",
+    "end_date",
+    "shift_start_date",
+    "oncall_groups",
+    "schedule_groups",
+    "eligible_oncall_users",
+    "eligible_shift_users",
+    "rotation_order",
+    "existing_oncalls",
+    "existing_leaves",
+    "published_oncalls",
+    "published_shifts",
+    "published_oncall_intervals",
+    "published_shift_intervals",
+)
+
+
+def state_fingerprint(request: PlanningRequest) -> str:
+    """Hash of the DB-derived part of `request` - compared by
+    AutomationApplyService.apply_plan() against a fresh rebuild right
+    before writing (audit F07): any leave, assignment or population
+    change since planning makes the plan stale."""
+    payload = json.dumps(
+        {name: _to_jsonable(getattr(request, name)) for name in _STATE_FIELDS},
+        sort_keys=True,
+        default=str,
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()

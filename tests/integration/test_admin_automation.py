@@ -147,7 +147,7 @@ class TestAutomationFull:
         monkeypatch.setattr(
             AutomationAdminService,
             "save_rotation_order",
-            lambda ids: "erreur simulée",
+            lambda ids, **kwargs: "erreur simulée",
         )
 
         response = logged_in_client.post(

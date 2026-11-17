@@ -38,6 +38,12 @@ class AutomationRule(BaseModel):
     """
 
     __tablename__ = "automation_rules"
+    # Created by migration b8e2f4a91c6d for resolve_params()'s
+    # (rule_type, group_id) lookup - declared here too so the model and a
+    # freshly migrated schema agree (audit F18).
+    __table_args__ = (
+        db.Index("ix_automation_rules_rule_type_group_id", "rule_type", "group_id"),
+    )
 
     group_id = db.Column(
         db.Integer, db.ForeignKey("groups.id"), nullable=True, index=True

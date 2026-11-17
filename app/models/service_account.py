@@ -63,11 +63,16 @@ class ServiceAccount(BaseModel):
     """
 
     __tablename__ = "service_account"
+    __table_args__ = (db.UniqueConstraint("token_hash"),)
 
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
     token_prefix = db.Column(db.String(16), nullable=False, index=True)
-    token_hash = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    # Uniqueness via an explicit constraint plus a plain lookup index -
+    # exactly what migration b94031831198 creates (audit F18: declaring
+    # unique=True/index=True here described a single unique *index*
+    # instead, so a fresh migrated schema drifted from the model).
+    token_hash = db.Column(db.String(64), nullable=False, index=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True, index=True)
     expires_at = db.Column(db.DateTime, nullable=True)
     last_used_at = db.Column(db.DateTime, nullable=True)

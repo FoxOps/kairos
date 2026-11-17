@@ -90,6 +90,7 @@ def plan_messages(plan: SchedulePlan) -> tuple[list, list, list, list]:
     shift_unfilled_dates: list = []
 
     staffing_max_gap_dates: dict = defaultdict(list)
+    role_uncovered_dates: list = []
 
     for unfilled in plan.unfilled:
         if unfilled.reason_code == "locked_but_no_published_assignment":
@@ -101,6 +102,13 @@ def plan_messages(plan: SchedulePlan) -> tuple[list, list, list, list]:
 
         if unfilled.kind == "no_available_user":
             shift_unfilled_dates.append(unfilled.date)
+            continue
+
+        if unfilled.kind == "role_uncovered":
+            # Users were available, but nobody could take the rotation
+            # slot without breaking a hard rule (shift_planner.py's
+            # _repair_rotation_coverage) - a [WARN], like staffing_max.
+            role_uncovered_dates.append(unfilled.date)
             continue
 
         # staffing_max: flash [WARN] only, never shift_unfilled_dates
@@ -154,19 +162,44 @@ def plan_messages(plan: SchedulePlan) -> tuple[list, list, list, list]:
             )
         )
 
-    # The only rule_type any planner module currently raises a
-    # RuleViolation for is rest_after_oncall (shift_planner.py) -
-    # always shift-scoped. A future rule type producing on-call-side
-    # violations would need its own branch here.
-    violation_dates_by_severity: dict = defaultdict(list)
-    for violation in plan.violations:
-        violation_dates_by_severity[violation.severity].append(violation.date)
-
-    for severity, dates in violation_dates_by_severity.items():
-        count, start, end = _date_range_suffix(dates)
-        tag = "[ALERT]" if severity == "hard_blocked" else "[WARN]"
+    if role_uncovered_dates:
+        count, start, end = _date_range_suffix(role_uncovered_dates)
         shift_messages.append(
             _(
+                "[WARN] Créneau de rotation non couvert (aucun remplaçant "
+                "ne respecte les règles) : %(count)s jour(s) entre le "
+                "%(start)s et le %(end)s - assignation manuelle nécessaire.",
+                count=count,
+                start=start,
+                end=end,
+            )
+        )
+
+    # Both rule types shift_planner.py raises a RuleViolation for
+    # (rest_after_oncall, oncall_shift_overlap) are shift-scoped. A
+    # future rule type producing on-call-side violations would need its
+    # own branch here.
+    violation_dates: dict = defaultdict(list)
+    for violation in plan.violations:
+        violation_dates[(violation.rule_type, violation.severity)].append(
+            violation.date
+        )
+
+    for (rule_type, severity), dates in violation_dates.items():
+        count, start, end = _date_range_suffix(dates)
+        tag = "[ALERT]" if severity == "hard_blocked" else "[WARN]"
+        if rule_type == "oncall_shift_overlap":
+            message = _(
+                "%(tag)s Chevauchement astreinte/shift interdit : %(count)s "
+                "shift(s) non affecté(s) entre le %(start)s et le "
+                "%(end)s.",
+                tag=tag,
+                count=count,
+                start=start,
+                end=end,
+            )
+        else:
+            message = _(
                 "%(tag)s Repos insuffisant après astreinte : %(count)s "
                 "shift(s) non affecté(s) entre le %(start)s et le "
                 "%(end)s.",
@@ -175,6 +208,6 @@ def plan_messages(plan: SchedulePlan) -> tuple[list, list, list, list]:
                 start=start,
                 end=end,
             )
-        )
+        shift_messages.append(message)
 
     return oncall_messages, oncall_unfilled_dates, shift_messages, shift_unfilled_dates

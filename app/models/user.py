@@ -90,6 +90,11 @@ class User(BaseModel, UserMixin):
     """
 
     __tablename__ = "user"
+    __table_args__ = (
+        db.UniqueConstraint(
+            "oidc_issuer", "oidc_subject", name="uq_user_oidc_identity"
+        ),
+    )
 
     name = db.Column(db.String(80), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -116,6 +121,13 @@ class User(BaseModel, UserMixin):
     oncall_notifications_enabled = db.Column(db.Boolean, nullable=False, default=True)
     apprise_shift_target_ids = db.Column(db.Text, nullable=True)
     apprise_oncall_target_ids = db.Column(db.Text, nullable=True)
+    # External SSO identity this account is bound to (audit F02). A local
+    # account is matched by (oidc_issuer, oidc_subject) once bound - never
+    # by email alone, since an IdP may hand out an unverified email. Both
+    # NULL = never logged in via SSO (or a pre-binding legacy account,
+    # bound on its next SSO login, see UserManager.sync_user_from_oidc).
+    oidc_issuer = db.Column(db.String(255), nullable=True)
+    oidc_subject = db.Column(db.String(255), nullable=True)
 
     # Relationships
     shifts = db.relationship(

@@ -100,7 +100,26 @@ def login():
     # infinite redirect loop (ERR_TOO_MANY_REDIRECTS in the browser),
     # making the app entirely inaccessible as long as SSO is broken. See
     # tests/integration/test_oidc_routes.py for the regression test.
-    if is_basic_auth_disabled() and not request.args.get("oidc_error"):
+    basic_auth_disabled = is_basic_auth_disabled()
+    if basic_auth_disabled and request.method == "POST":
+        # SSO-only mode: a local password POST is refused outright, whatever
+        # the query string carries. oidc_error only exists to render the
+        # error page without the redirect loop above - it must never reopen
+        # the credential check (audit F01: POST /login?oidc_error=1 used to
+        # log a local account in, bypassing the IdP's MFA/access policy).
+        AuditService.log(
+            "auth.login_failure",
+            details="basic auth disabled",
+        )
+        flash(
+            _(
+                "La connexion par mot de passe est désactivée. Utilisez l'authentification SSO."
+            ),
+            "danger",
+        )
+        return redirect(url_for("auth.oidc_login"))
+
+    if basic_auth_disabled and not request.args.get("oidc_error"):
         # Redirect to OIDC login
         return redirect(url_for("auth.oidc_login"))
 
@@ -144,7 +163,11 @@ def login():
             )
             flash(_("Email ou mot de passe incorrect."), "danger")
 
-    return render_template("auth/login.html", oidc_enabled=OIDCConfig.ENABLED)
+    return render_template(
+        "auth/login.html",
+        oidc_enabled=OIDCConfig.ENABLED,
+        basic_auth_disabled=basic_auth_disabled,
+    )
 
 
 @auth_bp.route("/oidc/login")

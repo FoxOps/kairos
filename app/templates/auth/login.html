@@ -21,9 +21,12 @@
                     <span>{{ _("Se connecter avec SSO") }}</span>
                 </a>
 
+                {% if not basic_auth_disabled %}
                 <div class="divider text-sm text-base-content/70">{{ _("ou") }}</div>
                 {% endif %}
+                {% endif %}
 
+                {% if not basic_auth_disabled %}
                 <form method="POST" action="{{ url_for('auth.login') }}" aria-labelledby="page-title" class="flex flex-col gap-4">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div>
@@ -58,6 +61,7 @@
                         <span>{{ _("Se connecter") }}</span>
                     </button>
                 </form>
+                {% endif %}
 
                 <div class="text-center mt-4">
                     <p class="text-sm">

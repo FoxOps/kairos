@@ -117,8 +117,63 @@ for the full contract.
     first one.
   - Shifts of a group toggled out of the schedule were deleted on
     regeneration.
+- **1.2.0 audit findings** (see
+  [`report/1.2.0/AUDIT_REPORT_1.2.0.md`](report/1.2.0/AUDIT_REPORT_1.2.0.md)
+  and the fix mapping in
+  [`report/1.2.0/AUDIT_FIXES_1.2.0.md`](report/1.2.0/AUDIT_FIXES_1.2.0.md)):
+  - Generation checks rest after on-call on each shift's *final* hours,
+    after a staffing-max fallback (an under-rested shift could be
+    saved), enforces the optional "on-call/shift overlap" block, counts
+    locked shifts against staffing maxima first, and re-covers the
+    rotation slot when its holder is excluded by a rule (else a new
+    `[WARN]` "créneau de rotation non couvert").
+  - Locked on-call weeks now constrain the spacing search ("Combler les
+    trous" could give the same person two weeks 14h apart).
+  - Any on-call anchor weekday now gives the right person the on-call
+    shift role; the anchor day itself stays the outgoing holder's, as
+    with Friday.
+  - Regeneration detects and repairs shifts/on-calls whose hours were
+    edited by hand.
+  - A plan computed before a leave/assignment/population change is
+    refused at apply time instead of being applied stale; concurrent
+    applies are serialized.
+  - Manual on-call creation/moves enforce the configured spacing,
+    positive duration, anchor day *and* hour and weekly end; shift API
+    create/move validate the actual hours saved. Every rejection says
+    which rule blocked it.
+  - Shift swaps validate locks, weekend and the configured
+    staffing/rest/overlap rules; a same-day reciprocal swap no longer
+    fails on a database constraint; the shift's group snapshot follows
+    its new owner; reverting re-validates.
+  - Leave rebalance refused as unsafe (e.g. locked shift on the new
+    leave's day) is reported as a failure and notified, not as success.
+  - Leave minimum headcount is per group in `per_group` shift mode.
+  - Leave ICS export: all-day events, last day no longer dropped.
+  - Fairness metrics include eligible users with zero assignments.
+  - Model indexes aligned with the migrated schema.
+
+### Changed
+- Unticking "Inclure" on the rotation order form now **excludes** the
+  person from on-call rotation (it used to put them back at the end).
+  People joining an eligible group later are included by default.
+- "Aperçu (Dry Run)" no longer saves the rotation order or resets the
+  rotation phase; only "Générer" does.
+- An on-call can no longer be resized in the calendar to end anywhere
+  but its configured weekly end.
 
 ### Security
+- **SSO-only mode bypass** (audit F01): with `OIDC_DISABLE_BASIC_AUTH`,
+  `POST /login?oidc_error=1` still accepted a local password. Password
+  POSTs are now always refused in SSO-only mode.
+- **SSO account takeover via unverified email** (audit F02): local
+  accounts are now bound to the IdP identity (issuer + `sub`, migration
+  `7d2c1e9a5b30`); the first SSO login of an existing local account is
+  refused when the IdP marks the email unverified, unless the new
+  `OIDC_TRUST_UNVERIFIED_EMAIL=true` is set. **Upgrade note (Keycloak):**
+  users created by an admin default to "Email verified: Off" - turn it on
+  for accounts that already exist in Kairos, or set the flag if users
+  can't choose their own email. OIDC `state` values are no longer
+  logged, and the state is single-use.
 - Bumped `Werkzeug` 3.1.8 → 3.1.9, `Authlib` 1.7.2 → 1.9.1 and `black`
   26.5.1 → 26.10.1. `pip-audit` reported 11 known vulnerabilities in
   these packages, and the weekly `Tests` workflow had been failing on

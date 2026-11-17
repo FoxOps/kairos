@@ -1759,6 +1759,39 @@ are gone, replaced by the shared partial's own generic `Kairos.copyByTarget(even
 `/schedule`/`/oncall`/`/leave` already used) — only `copyToken()` (the raw-token input, unrelated to
 this feature) remains in that file.
 
+### 1.2.0 audit fixes — invariants to keep
+
+From `report/1.2.0/AUDIT_FIXES_1.2.0.md` (each one has a `test_fNN_*` in
+`tests/integration/test_audit_1_2_0_regressions.py`). Don't regress them:
+- **SSO identity** is `(User.oidc_issuer, User.oidc_subject)`, never the email alone
+  (`UserManager.sync_user_from_oidc`). `email_verified=false` only blocks the
+  *first* link of an existing local account, unless `OIDC_TRUST_UNVERIFIED_EMAIL` is
+  set. In SSO-only mode a password POST to `/login` is always refused, and
+  `oidc_error` only renders the error page.
+- **Planner hard rules run on the final interval.** Rest and the optional overlap
+  block are checked after any staffing-max fallback. Locked shifts are placed first
+  and keep their real interval. Locked on-call weeks are seeded into the solver.
+  A rotation slot lost to a rule is re-covered, or reported as `role_uncovered`.
+  The covering on-call week is `_covering_anchor()`, and the anchor day itself
+  belongs to the outgoing holder for every anchor weekday.
+- **Diff sees intervals.** `ChangeType` `"updated"` covers same holder/type with
+  different hours, and is applied in place.
+- **Stale plans are refused.** `apply_plan` compares `SchedulePlan.state_fingerprint`
+  with a fresh rebuild under a lock (`ApplyResult.stale`). A plan built from a
+  hand-modified `PlanningRequest` keeps the original request's fingerprint, so only
+  DB-derived fields belong in `plan_schedule._STATE_FIELDS`.
+- **Manual writes** use `common_helpers.oncall_validation_error()` (spacing, anchor
+  day+hour, weekly end, leave, overlap, each rejection with an explicit message) and
+  `check_shift_rule_violations(..., start_time=, end_time=)` on actual datetimes.
+- **Rotation "Inclure"** unticked = excluded (`AutomationConfig` key
+  `oncall_rotation_excluded`). A dry run persists nothing: it passes
+  `rotation_*_override` to `build_planning_request`.
+- **Swaps** go through `SwapService._exchange_owners` (two-step, same-day safe;
+  the snapshot follows the new owner), and revert re-validates.
+- **Leave ICS** = `VALUE=DATE` all-day events with an exclusive DTEND.
+- **Models must match migrations:** `test_f18_fresh_migrations_match_model_metadata`
+  asserts zero autogenerate diffs.
+
 ## Testing conventions
 
 `tests/conftest.py` defines the fixture chain: `test_app` builds a fresh app via

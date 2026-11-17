@@ -14,11 +14,7 @@ from app import db
 from app.models import OnCall, User
 from app.repositories.oncall_repository import OnCallRepository
 from app.services.audit_service import AuditService
-from app.utils.helpers import (
-    _get_overlapping_leave,
-    can_add_oncall,
-    check_oncall_rule_violations,
-)
+from app.utils.helpers import oncall_validation_error
 
 
 class OnCallService:
@@ -64,14 +60,11 @@ class OnCallService:
             start_date + timedelta(days=7), datetime.min.time()
         ).replace(hour=anchor["end_hour"])
 
-        if not can_add_oncall(user, start_time, end_time):
-            return (
-                None,
-                _(
-                    "Impossible d'ajouter cette astreinte (période déjà couverte "
-                    "ou congé sur la période)."
-                ),
-            )
+        # The exact rule that blocks it, not a generic message (audit F03:
+        # spacing used to be skipped here entirely).
+        error = oncall_validation_error(user, start_time, end_time)
+        if error is not None:
+            return None, error
 
         oncall = OnCallRepository.create(
             user.id, start_time, end_time, group_id=user.group_id
@@ -159,8 +152,6 @@ class OnCallService:
         on-call person - `new_user_id`, optional, default None = "keep
         current", so the drag/resize call site - which never sends it -
         is unaffected). Returns (oncall, error_message)."""
-        from app.utils.automation.rules import OnCallAnchorRule
-
         oncall = OnCallRepository.get_by_id(oncall_id)
         if not oncall:
             return None, _("Astreinte non trouvée")
@@ -172,49 +163,13 @@ class OnCallService:
         else:
             effective_user = oncall.user
 
-        # Resolved against the *target* group (the reassignment target,
-        # if any) - a simultaneous reassignment to a different group
-        # must be validated against that group's own configured anchor
-        # day, matching how OnCallAnchorRule.resolve(group=group) is
-        # used everywhere else (planner/rule_resolution.py).
-        anchor_weekday = OnCallAnchorRule.resolve(group=effective_user.group)["weekday"]
-        if new_start.weekday() != anchor_weekday:
-            return None, _(
-                "L'astreinte doit commencer le jour configuré pour ce groupe"
-            )
-
-        # Every check below runs against the *effective* user (the
-        # reassignment target, if any) - not the on-call's original
-        # owner - since that's the actual point of allowing
-        # reassignment through this method.
-        conflict = OnCallRepository.find_conflict(
-            effective_user.id, new_start, new_end, exclude_id=oncall_id
-        )
-        if conflict:
-            return (
-                None,
-                _(
-                    "Une astreinte existe déjà pour %(name)s pendant cette période",
-                    name=effective_user.name,
-                ),
-            )
-
-        # Originally missing: the creation path (add_oncall) goes through
-        # can_add_oncall(), which also checks leave over the period - drag
-        # & drop didn't (same class of bug as ShiftService.api_update).
-        if _get_overlapping_leave(effective_user.id, new_start.date(), new_end.date()):
-            return (
-                None,
-                _(
-                    "%(name)s est en congé pendant cette période",
-                    name=effective_user.name,
-                ),
-            )
-
-        # Same class of gap, for the configurable oncall_shift_overlap
-        # rule - the creation path (add_oncall) already goes through
-        # can_add_oncall(), which calls this too.
-        violation = check_oncall_rule_violations(
+        # Same validator as creation, against the *effective* user (the
+        # reassignment target, if any) and that user's group's anchor
+        # rule: positive duration, anchor day+hour, configured weekly
+        # end, leave, overlapping on-call, spacing, shift overlap (audit
+        # F03/F09: a move used to check the weekday only, so an end
+        # before the start or a 14h gap to the next week went through).
+        violation = oncall_validation_error(
             effective_user, new_start, new_end, exclude_oncall_id=oncall_id
         )
         if violation is not None:

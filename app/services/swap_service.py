@@ -9,6 +9,8 @@ thin: they parse the request, call this service, and turn the result
 into a flash message / redirect / JSON response.
 """
 
+from datetime import date, timedelta
+
 from flask_babel import gettext as _
 
 from app import db
@@ -17,10 +19,16 @@ from app.repositories.swap_request_repository import SwapRequestRepository
 from app.services.app_notification_service import AppNotificationService
 from app.services.apprise_notification_service import AppriseNotificationService
 from app.services.audit_service import AuditService
-from app.utils.helpers import is_user_on_leave
+from app.utils.automation.rules import WeekendDefinitionRule
+from app.utils.helpers import check_shift_rule_violations, is_user_on_leave
 from app.utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+# Placeholder date rows are parked on mid-exchange (see
+# SwapService._exchange_owners) - never a real schedule date, and the
+# rows never leave the transaction there.
+_PARKING_DATE = date(1900, 1, 1)
 
 
 class SwapService:
@@ -97,7 +105,61 @@ class SwapService:
                     "Vous avez déjà un autre shift le %(date)s", date=target_shift.date
                 )
 
+        # The resulting schedule must satisfy the same configured rules a
+        # manual move would (audit F15: swaps used to skip lock, weekend,
+        # staffing, rest and overlap checks entirely).
+        sides = [(shift, target_user)]
+        if target_shift is not None:
+            sides.append((target_shift, requester))
+        for moved_shift, new_owner in sides:
+            error = SwapService._new_owner_error(moved_shift, new_owner)
+            if error is not None:
+                return error
+
         return None
+
+    @staticmethod
+    def _new_owner_error(moved_shift: Shift, new_owner: User) -> str | None:
+        if moved_shift.locked:
+            return _(
+                "Le shift du %(date)s est verrouillé et ne peut pas être échangé",
+                date=moved_shift.date,
+            )
+        if WeekendDefinitionRule.is_weekend(moved_shift.date, group=new_owner.group):
+            return _(
+                "Le %(date)s est un jour non travaillé pour %(name)s",
+                date=moved_shift.date,
+                name=new_owner.name,
+            )
+        return check_shift_rule_violations(
+            new_owner,
+            moved_shift.date,
+            moved_shift.shift_type,
+            exclude_shift_id=moved_shift.id,
+            start_time=moved_shift.start_time,
+            end_time=moved_shift.end_time,
+        )
+
+    @staticmethod
+    def _exchange_owners(assignments: list[tuple[Shift, User]]) -> None:
+        """Reassigns each shift to its new owner, updating the group_id
+        snapshot to that owner's group (the snapshot follows whoever
+        actually holds the shift).
+
+        Two-step on purpose (audit F15): a same-day reciprocal exchange
+        has no valid single-UPDATE ordering under the immediate
+        uq_shift_user_date constraint (whichever row moves first
+        collides with the other). Each row is first parked on a distinct
+        placeholder date, then given its new owner and real date back."""
+        original_dates = [moved.date for moved, _owner in assignments]
+        for offset, (moved, _owner) in enumerate(assignments):
+            moved.date = _PARKING_DATE + timedelta(days=offset)
+        db.session.flush()
+        for (moved, owner), real_date in zip(assignments, original_dates, strict=True):
+            moved.user_id = owner.id
+            moved.group_id = owner.group_id
+            moved.date = real_date
+        db.session.flush()
 
     @staticmethod
     def request_swap(
@@ -270,9 +332,10 @@ class SwapService:
                 "Échange invalide, réessayez de le rejeter : %(error)s", error=error
             )
 
-        swap_request.shift.user_id = swap_request.target_user_id
+        assignments = [(swap_request.shift, swap_request.target_user)]
         if swap_request.target_shift is not None:
-            swap_request.target_shift.user_id = swap_request.requester_id
+            assignments.append((swap_request.target_shift, swap_request.requester))
+        SwapService._exchange_owners(assignments)
 
         swap_request.mark_reviewed(admin.id, SwapRequest.APPROVED)
         db.session.commit()
@@ -304,10 +367,11 @@ class SwapService:
         """Revert an already-approved exchange: reassigns the shifts back
         to their original owners. None on success.
 
-        Unlike approve_swap, this does not re-validate the usual business
-        rules (leave, another shift that day): it just puts each shift
-        back with its pre-exchange owner, which was by definition a valid
-        situation.
+        Re-validates the reversed exchange like an approval would (audit
+        F15): the pre-exchange situation was valid *then*, but a leave or
+        another assignment may have appeared since - a revert onto it is
+        refused with the reason instead of failing on the unique
+        constraint or silently breaking a rule.
         """
         if swap_request.status != SwapRequest.APPROVED:
             return _("Seul un échange approuvé peut être annulé")
@@ -329,9 +393,18 @@ class SwapService:
                 "impossible automatiquement"
             )
 
-        shift.user_id = swap_request.requester_id
+        # The reversed exchange: the target currently holds `shift`, the
+        # requester `target_shift` - same checks with the roles swapped.
+        error = SwapService._validation_error(
+            swap_request.target_user, shift, swap_request.requester, target_shift
+        )
+        if error:
+            return _("Annulation impossible : %(error)s", error=error)
+
+        assignments = [(shift, swap_request.requester)]
         if target_shift is not None:
-            target_shift.user_id = swap_request.target_user_id
+            assignments.append((target_shift, swap_request.target_user))
+        SwapService._exchange_owners(assignments)
 
         swap_request.mark_reviewed(admin.id, SwapRequest.REVERTED)
         db.session.commit()

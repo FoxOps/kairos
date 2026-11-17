@@ -87,7 +87,7 @@
                                     </div>
                                     <div class="include-checkbox">
                                         <label class="label cursor-pointer justify-start gap-2">
-                                            <input type="checkbox" class="checkbox" name="include_{{ user.id }}" value="1" checked>
+                                            <input type="checkbox" class="checkbox" name="include_{{ user.id }}" value="1" {% if user.id not in rotation_excluded %}checked{% endif %}>
                                             {{ _("Inclure") }}
                                         </label>
                                     </div>
@@ -108,7 +108,7 @@
                                     </div>
                                     <div class="include-checkbox">
                                         <label class="label cursor-pointer justify-start gap-2">
-                                            <input type="checkbox" class="checkbox" name="include_{{ user.id }}" value="1" checked>
+                                            <input type="checkbox" class="checkbox" name="include_{{ user.id }}" value="1" {% if user.id not in rotation_excluded %}checked{% endif %}>
                                             {{ _("Inclure") }}
                                         </label>
                                     </div>
@@ -128,7 +128,7 @@
                                 </div>
                                 <div class="include-checkbox">
                                     <label class="label cursor-pointer justify-start gap-2">
-                                        <input type="checkbox" class="checkbox" name="include_{{ user.id }}" value="1" checked>
+                                        <input type="checkbox" class="checkbox" name="include_{{ user.id }}" value="1" {% if user.id not in rotation_excluded %}checked{% endif %}>
                                         {{ _("Inclure") }}
                                     </label>
                                 </div>

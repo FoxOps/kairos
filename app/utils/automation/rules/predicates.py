@@ -18,6 +18,28 @@ def intervals_overlap(
     return start_a < end_b and start_b < end_a
 
 
+def oncall_violates_spacing(
+    start_time: datetime,
+    end_time: datetime,
+    other_start: datetime,
+    other_end: datetime,
+    min_spacing_weeks: int,
+) -> bool:
+    """True if the on-call [start_time, end_time) sits closer than
+    `min_spacing_weeks` (in whole days / 7) to the same user's other
+    on-call [other_start, other_end), in either time direction. Exactly
+    the planner solver's own rule (oncall_solver.py) - overlapping
+    intervals are not a spacing question (callers reject them as a
+    conflict first)."""
+    if other_end <= start_time:
+        gap_days = (start_time - other_end).days
+    elif other_start >= end_time:
+        gap_days = (other_start - end_time).days
+    else:
+        return False
+    return gap_days / 7 < min_spacing_weeks
+
+
 def shift_violates_staffing_max(current_count: int, max_limit: int | None) -> bool:
     """True if `current_count` already-assigned shifts for the same
     slot/day meet or exceed `max_limit` (staffing_limits.max) - None

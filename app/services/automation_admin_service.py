@@ -84,8 +84,22 @@ class AutomationAdminService:
         return [u["user_id"] for u in user_data_sorted if u["include"]]
 
     @staticmethod
+    def parse_rotation_exclusions_from_form(form) -> list[int]:
+        """Users listed on the rotation form (`rotation_order_{id}`) whose
+        "Inclure" box is unticked - excluded from on-call rotation, not
+        just moved to the end (audit F13)."""
+        return [
+            int(key.replace("rotation_order_", ""))
+            for key in form.keys()
+            if key.startswith("rotation_order_")
+            and form.get(f"include_{key.replace('rotation_order_', '')}", "0") != "1"
+        ]
+
+    @staticmethod
     def save_rotation_order(
-        rotation_order_ids: list[int], reference_date: date | None = None
+        rotation_order_ids: list[int],
+        reference_date: date | None = None,
+        excluded_ids: list[int] | None = None,
     ) -> str | None:
         """Returns error_message, or None on success. Called both by the
         explicit "Sauvegarder l'ordre" action AND by generate_full()
@@ -160,6 +174,12 @@ class AutomationAdminService:
                 reference_date or date.today(), commit=False
             )
             AutomationConfig.set_rotation_order(rotation_order_ids, commit=False)
+            # `excluded_ids=None` (callers that don't post the form) keeps
+            # the persisted exclusion list as-is.
+            if excluded_ids is not None:
+                AutomationConfig.set_rotation_excluded(
+                    sorted(set(excluded_ids) - set(rotation_order_ids)), commit=False
+                )
             db.session.commit()
             return None
         except Exception as e:
@@ -194,6 +214,7 @@ class AutomationAdminService:
         end_date: date,
         rotation_order_ids: list[int],
         dry_run: bool,
+        excluded_ids: list[int] | None = None,
     ) -> GenerateResult:
         """Business logic for the "generate"/"dry_run" actions of
         admin_automation_routes.py::automation_full() - full on-calls +
@@ -223,19 +244,42 @@ class AutomationAdminService:
         start near the real wall-clock date. Passing start_date makes the
         window's own first anchor deterministically get offset 0,
         regardless of when the call actually runs - see
-        save_rotation_order()'s own docstring for the full reasoning."""
-        AutomationAdminService.save_rotation_order(
-            rotation_order_ids, reference_date=start_date
-        )
+        save_rotation_order()'s own docstring for the full reasoning.
 
+        A dry run persists nothing (audit F14): it plans with the form's
+        order/exclusions and the epoch a real run would set, passed as
+        request overrides - so a preview of some other period can no
+        longer shift the rotation phase later refreshes/rebalances use.
+        A real run persists first and aborts if that save fails, rather
+        than generating with a stale order."""
         if dry_run:
-            plan = AutomationAdminService._build_plan(start_date, end_date)
+            plan = AutomationAdminService._build_plan(
+                start_date,
+                end_date,
+                rotation_order_override=rotation_order_ids,
+                rotation_excluded_override=excluded_ids,
+                rotation_epoch_override=start_date,
+            )
             return AutomationAdminService._generate_result_from_plan(plan, dry_run=True)
+
+        error = AutomationAdminService.save_rotation_order(
+            rotation_order_ids, reference_date=start_date, excluded_ids=excluded_ids
+        )
+        if error is not None:
+            raise RuntimeError(
+                _(
+                    "Impossible d'enregistrer l'ordre de rotation, génération "
+                    "annulée : %(error)s",
+                    error=error,
+                )
+            )
 
         return AutomationAdminService._generate_full_apply(start_date, end_date)
 
     @staticmethod
-    def _build_plan(start_date: date, end_date: date) -> SchedulePlan:
+    def _build_plan(
+        start_date: date, end_date: date, **rotation_overrides
+    ) -> SchedulePlan:
         """Shared by generate_full()'s preview branch and
         _generate_full_apply() below, so the preview an admin sees
         and what "Générer" actually applies are always built from the
@@ -251,7 +295,10 @@ class AutomationAdminService:
         the two must NOT share the same effective start."""
         oncall_regen_start = queries.align_regeneration_start(start_date)
         request = build_planning_request(
-            oncall_regen_start, end_date, shift_start_date=start_date
+            oncall_regen_start,
+            end_date,
+            shift_start_date=start_date,
+            **rotation_overrides,
         )
         return plan_schedule(request)
 
@@ -452,15 +499,20 @@ class AutomationAdminService:
         shift_period_end = leave.end_date
 
         if overlapping_oncalls:
-            # Find the period to cover: from the first Friday before
-            # the leave to the last Friday after the leave ends + 30
-            # days (to cover the whole on-call).
+            # Find the period to cover: from the first anchor day before
+            # the leave to the last anchor day after the leave ends + 30
+            # days (to cover the whole on-call). The anchor weekday is the
+            # leave owner's group's configured one, not a hardcoded Friday
+            # (audit F11).
+            from app.utils.automation.rules import OnCallAnchorRule
+
+            anchor_weekday = OnCallAnchorRule.resolve(group=leave.user.group)["weekday"]
             first_friday = leave.start_date
-            while first_friday.weekday() != 4:  # 4 = Friday
+            while first_friday.weekday() != anchor_weekday:
                 first_friday -= timedelta(days=1)
 
             last_friday = leave.end_date
-            while last_friday.weekday() != 4:
+            while last_friday.weekday() != anchor_weekday:
                 last_friday += timedelta(days=1)
 
             shift_period_start = first_friday - timedelta(days=30)
@@ -547,6 +599,40 @@ class AutomationAdminService:
 
         failed_shift_dates: list = []
         failed_oncall_period: list = []
+
+        if not apply_result.success:
+            # The whole plan was refused before any write (unsafe - e.g.
+            # a locked shift on a day the new leave covers - or stale).
+            # Nothing was rebalanced: report it as a failure for the
+            # leave's own days instead of returning the *proposal* as if
+            # it had been applied (audit F21).
+            failed_shift_dates = [
+                day
+                for day in (
+                    leave.start_date + timedelta(days=offset)
+                    for offset in range((leave.end_date - leave.start_date).days + 1)
+                )
+                if shift_period_start <= day <= shift_period_end
+            ]
+            if overlapping_oncalls:
+                failed_oncall_period = [shift_period_start, shift_period_end]
+            messages.append(
+                _(
+                    "[ERROR] Rééquilibrage après congé refusé, aucune "
+                    "modification appliquée : %(error)s - action manuelle "
+                    "nécessaire",
+                    error=apply_result.error,
+                )
+            )
+            return (
+                [],
+                messages,
+                unfilled_oncall_dates,
+                failed_shift_dates,
+                failed_oncall_period,
+                unfilled_shift_dates,
+            )
+
         for entry, error in apply_result.failed_entries:
             if entry.kind == "shift":
                 failed_shift_dates.append(entry.date)

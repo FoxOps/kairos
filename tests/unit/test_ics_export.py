@@ -86,10 +86,10 @@ class TestICSExport:
 
         ics_content = _generate_ics_leaves([leave])
 
-        # Check that the leave is an all-day event
-        assert "DTSTART" in ics_content
-        assert "DTEND" in ics_content
-        assert "Europe/Paris" in ics_content
+        # All-day event, exclusive DTEND = day after the inclusive end_date
+        # (audit F16).
+        assert "DTSTART;VALUE=DATE:20231210" in ics_content
+        assert "DTEND;VALUE=DATE:20231216" in ics_content
 
     def test_generate_ics_multiple_shifts(self, test_app, test_user, test_shift_type):
         """Test exporting several shifts."""
@@ -339,7 +339,9 @@ class TestICSTimezoneCorrectness:
         # org's canonical timezone, never a per-viewer one.
         assert "DTSTART;TZID=America/New_York:20231201T090000" in ics_ny
 
-    def test_leave_all_day_event_also_gets_tzid(self, test_app, test_user):
+    def test_leave_all_day_event_is_floating_date(self, test_app, test_user):
+        """A date-valued all-day event carries no TZID (RFC 5545: it is the
+        same calendar day for every viewer) - unlike shifts/on-calls."""
         with test_app.app_context():
             leave = Leave(
                 user_id=test_user.id,
@@ -351,7 +353,8 @@ class TestICSTimezoneCorrectness:
 
             ics_content = _generate_ics_leaves([leave])
 
-        assert "DTSTART;TZID=Europe/Paris:" in ics_content
+        assert "DTSTART;VALUE=DATE:20231210" in ics_content
+        assert "DTSTART;TZID=" not in ics_content
 
     def test_add_missing_timezones_does_not_crash_on_empty_calendar(self, test_app):
         with test_app.app_context():

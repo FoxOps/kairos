@@ -3,7 +3,15 @@ never blocking (safe_to_apply is computed separately in
 plan_schedule.py from violations/locked-slot integrity, not from
 fairness). Surfaced on SchedulePlan so an admin reviewing a preview can
 see whether an equal-coverage plan is also a balanced one, per the
-audit's "equal-coverage plans with different fairness" scenario."""
+audit's "equal-coverage plans with different fairness" scenario.
+
+Scope of what is measured (audit F17): counts over *this plan's window
+only* (no history horizon), across every eligible user passed in -
+including those who receive nothing, so a lopsided plan can't hide
+behind a stddev computed over its assignees alone. The shift weights
+below are role-slot labels, not user preference or legal burden."""
+
+from collections.abc import Iterable
 
 from app.utils.automation.planner.types import (
     FairnessMetrics,
@@ -11,10 +19,8 @@ from app.utils.automation.planner.types import (
     ProposedShift,
 )
 
-# Same undesirability rank used by shift_planner.py's own fallback tie
-# break - kept in one place conceptually, duplicated as a constant here
-# only because importing it would create a needless cross-module
-# coupling for a single dict literal.
+# Undesirability weight per role slot - an internal descriptive heuristic,
+# not a business rule (not exposed as a setting).
 _SLOT_RANK = {"default": 0, "rotation": 1, "oncall": 2}
 
 
@@ -29,12 +35,20 @@ def _stddev(values: list[float]) -> float:
 def compute_fairness_metrics(
     oncalls: tuple[ProposedOnCall, ...],
     shifts: tuple[ProposedShift, ...],
+    eligible_oncall_user_ids: Iterable[int] = (),
+    eligible_shift_user_ids: Iterable[int] = (),
 ) -> FairnessMetrics:
-    oncall_count_by_user: dict[int, int] = {}
+    """`eligible_*_user_ids`: the population the counts are measured
+    over - every one of them appears in the result, with 0 when the plan
+    gives them nothing. Users absent from it but present in the plan
+    (e.g. a locked row) are still counted."""
+    oncall_count_by_user: dict[int, int] = dict.fromkeys(eligible_oncall_user_ids, 0)
     for o in oncalls:
         oncall_count_by_user[o.user_id] = oncall_count_by_user.get(o.user_id, 0) + 1
 
-    undesirable_shift_count_by_user: dict[int, int] = {}
+    undesirable_shift_count_by_user: dict[int, int] = dict.fromkeys(
+        eligible_shift_user_ids, 0
+    )
     for s in shifts:
         weight = _SLOT_RANK.get(s.role_slot, 0)
         if weight:
@@ -42,18 +56,15 @@ def compute_fairness_metrics(
                 undesirable_shift_count_by_user.get(s.user_id, 0) + weight
             )
 
-    # "Adherence" here means how much of the on-call plan matches what
-    # was already published (unchanged/added, i.e. not a reassignment
-    # of an existing published slot) - a proxy for schedule stability,
-    # not a literal check against the configured rotation order (that
-    # would require re-deriving rotate() with the same epoch here,
-    # which this metric deliberately avoids to stay a pure post-hoc
-    # summary of the plan's own already-computed change_type values).
+    # Share of the on-call plan that doesn't reassign an already-published
+    # slot (unchanged/added) - schedule *stability*, deliberately not
+    # called "rotation adherence": a wholly new plan scores 1.0 whatever
+    # order it follows.
     if oncalls:
         stable = sum(1 for o in oncalls if o.change_type in ("unchanged", "added"))
-        rotation_adherence_ratio = stable / len(oncalls)
+        assignment_stability_ratio = stable / len(oncalls)
     else:
-        rotation_adherence_ratio = 1.0
+        assignment_stability_ratio = 1.0
 
     return FairnessMetrics(
         oncall_count_by_user=oncall_count_by_user,
@@ -62,5 +73,5 @@ def compute_fairness_metrics(
         undesirable_shift_stddev=_stddev(
             list(undesirable_shift_count_by_user.values())
         ),
-        rotation_adherence_ratio=rotation_adherence_ratio,
+        assignment_stability_ratio=assignment_stability_ratio,
     )

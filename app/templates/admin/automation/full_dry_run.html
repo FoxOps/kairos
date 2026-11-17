@@ -165,6 +165,11 @@
             <input type="hidden" name="rotation_order_{{ user_id }}" value="{{ loop.index }}">
             <input type="hidden" name="include_{{ user_id }}" value="1">
             {% endfor %}
+            {# Unticked users travel too (no include_ field), so confirming
+               the preview keeps them excluded. #}
+            {% for user_id in rotation_excluded_ids %}
+            <input type="hidden" name="rotation_order_{{ user_id }}" value="{{ rotation_order_ids|length + loop.index }}">
+            {% endfor %}
             <button type="submit" class="btn btn-primary">
                 <i class="fas fa-save"></i> {{ _("Confirmer et sauvegarder tout") }}
             </button>
