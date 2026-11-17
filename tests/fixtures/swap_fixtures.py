@@ -18,7 +18,14 @@ def _next_weekday(from_date: date) -> date:
 @pytest.fixture
 def test_swap_shift(test_app, test_user, test_shift_type):
     """An upcoming shift owned by test_user, eligible to be offered for swap."""
+    # Never a Friday: reciprocal-swap tests put the target's shift on the
+    # *next* day, which must be a working day too - swap validation
+    # rejects a shift moved onto the new owner's weekend. On a Friday
+    # this fixture made those tests fail only on certain days of the
+    # week (the 1.2.0 Docker Release run started on a Tuesday).
     shift_date = _next_weekday(date.today() + timedelta(days=3))
+    if shift_date.weekday() == 4:
+        shift_date += timedelta(days=3)
     shift = Shift(
         date=shift_date,
         start_time=datetime.combine(shift_date, datetime.min.time()),
