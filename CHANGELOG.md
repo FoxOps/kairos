@@ -7,11 +7,12 @@ versions match the bare (no `v` prefix) git tags this project actually
 pushes, e.g. `1.1.0`, not `v1.1.0` — see `.github/workflows/tests.yml`'s
 tag trigger for why.
 
-## [Unreleased]
+## [1.2.0] — 2026-11-17
 
 Planner-only automation (legacy engine removed), a schedule-generation
-fix from production, and dependency security bumps - see "Removed"/
-"Fixed"/"Security" below.
+fix from production, the fixes for every finding of the 1.2.0 external
+audit, and dependency security bumps - see "Removed"/"Fixed"/"Changed"/
+"Security" below.
 
 Public API v1 (`/api/v1/*`) maturity pass - OpenAPI contract
 correctness, server-side filtering, a new `groups` resource,
