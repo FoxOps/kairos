@@ -31,6 +31,19 @@ class UserRepository:
         return User.query.order_by(User.name).all()
 
     @staticmethod
+    def list_paginated(page: int, per_page: int, group_id: int | None = None):
+        """Backs the public API's GET /api/v1/users/ (app/api/resources/
+        users.py) - database-level group_id filtering, same
+        query-then-.paginate() shape as ShiftRepository/OnCallRepository/
+        LeaveRepository.list_paginated()."""
+        query = User.query
+        if group_id is not None:
+            query = query.filter(User.group_id == group_id)
+        return query.order_by(User.name).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+
+    @staticmethod
     def get_for_schedule_group() -> list[User]:
         """Users belonging to a group that participates in the schedule."""
         return (

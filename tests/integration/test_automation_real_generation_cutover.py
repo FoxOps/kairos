@@ -1,24 +1,15 @@
-"""Phase 7 tests: with SettingsService.get_new_automation_engine_enabled()
-on, AutomationAdminService.generate_full(dry_run=False) and
-refresh_shifts() route real writes through the new planner +
-AutomationApplyService.apply_plan() instead of the legacy engine. Off
-(the default), both keep using the legacy engine unchanged - this is a
-rollback-without-a-code-revert toggle, not a one-way migration.
+"""AutomationAdminService.generate_full(dry_run=False) and
+refresh_shifts() write through the planner + AutomationApplyService.
+apply_plan() (the only engine since 1.2.0 - the legacy engine and its
+cutover toggle were removed).
 
 Also covers a real bug found while building this: PlanningRequest's
 single start_date used to drive both on-call Friday search (which
 legitimately needs widening to the covering Friday) and the shift
 day-loop start (which must NOT widen, or real generation would touch/
 delete shift rows before the caller's literal requested start) - see
-PlanningRequest.shift_start_date.
-
-AdvancedShiftAutomation.rebalance_after_leave() (the automatic
-leave-triggered rebalance) is ALSO gated by this same toggle, as of the
-phase 7 follow-up - see test_leave_rebalance_new_engine.py for its own
-dedicated coverage (it needed a non-atomic, per-entry-isolated
-apply_plan() mode, since its legacy per-day/per-section SAVEPOINT
-isolation has no equivalent in apply_plan()'s default all-or-nothing
-transaction model)."""
+PlanningRequest.shift_start_date. The leave-triggered rebalance has its
+own coverage in test_leave_rebalance_new_engine.py."""
 
 from datetime import date, datetime
 
@@ -28,8 +19,6 @@ from app import db
 from app.models import Group, OnCall, Shift, User
 from app.models.generation_run import GenerationRun
 from app.services.automation_admin_service import AutomationAdminService
-from app.services.leave_service import LeaveService
-from app.services.settings_service import SettingsService
 
 
 def _make_group(name, **kwargs):
@@ -53,28 +42,10 @@ def _make_user(name, email, group):
 
 
 class TestGenerateFullRealGenerationCutover:
-    def test_toggle_off_keeps_using_legacy_engine(self, test_app):
+    def test_applies_via_planner_and_records_generation_run(self, test_app):
         group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
         for i in range(3):
             _make_user(f"U{i}", f"u{i}@x.com", group)
-
-        AutomationAdminService.generate_full(
-            date(2026, 9, 7), date(2026, 9, 18), rotation_order_ids=[], dry_run=False
-        )
-
-        # The legacy engine never writes a GenerationRun row - only
-        # AutomationApplyService.apply_plan() does.
-        assert GenerationRun.query.count() == 0
-        assert OnCall.query.count() > 0
-        assert Shift.query.count() > 0
-
-    def test_toggle_on_applies_via_new_engine_and_records_generation_run(
-        self, test_app
-    ):
-        group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
-        for i in range(3):
-            _make_user(f"U{i}", f"u{i}@x.com", group)
-        SettingsService.set_new_automation_engine_enabled(True)
 
         result = AutomationAdminService.generate_full(
             date(2026, 9, 7), date(2026, 9, 18), rotation_order_ids=[], dry_run=False
@@ -96,7 +67,6 @@ class TestGenerateFullRealGenerationCutover:
         group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
         for i in range(3):
             _make_user(f"U{i}", f"u{i}@x.com", group)
-        SettingsService.set_new_automation_engine_enabled(True)
 
         wednesday = date(2026, 9, 9)
         assert wednesday.weekday() == 2
@@ -117,7 +87,6 @@ class TestGenerateFullRealGenerationCutover:
         it - the diff/apply must still treat it as unchanged."""
         group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
         users = [_make_user(f"U{i}", f"u{i}@x.com", group) for i in range(3)]
-        SettingsService.set_new_automation_engine_enabled(True)
 
         boundary_oncall = OnCall(
             user_id=users[0].id,
@@ -155,7 +124,6 @@ class TestGenerateFullRealGenerationCutover:
         group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
         for i in range(3):
             _make_user(f"U{i}", f"u{i}@x.com", group)
-        SettingsService.set_new_automation_engine_enabled(True)
 
         monkeypatch.setattr(
             automation_apply_service.AutomationApplyService,
@@ -188,7 +156,6 @@ class TestRefreshShiftsRealGenerationCutover:
     def test_none_mode_leaves_oncalls_completely_untouched(self, test_app):
         group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
         users = [_make_user(f"U{i}", f"u{i}@x.com", group) for i in range(3)]
-        SettingsService.set_new_automation_engine_enabled(True)
 
         existing_oncall = OnCall(
             user_id=users[0].id,
@@ -213,7 +180,6 @@ class TestRefreshShiftsRealGenerationCutover:
     def test_fill_gaps_mode_preserves_existing_and_fills_missing_friday(self, test_app):
         group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
         users = [_make_user(f"U{i}", f"u{i}@x.com", group) for i in range(3)]
-        SettingsService.set_new_automation_engine_enabled(True)
 
         existing_oncall = OnCall(
             user_id=users[0].id,
@@ -240,7 +206,6 @@ class TestRefreshShiftsRealGenerationCutover:
         group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
         for i in range(3):
             _make_user(f"U{i}", f"u{i}@x.com", group)
-        SettingsService.set_new_automation_engine_enabled(True)
 
         result = AutomationAdminService.refresh_shifts(
             date(2026, 9, 7), date(2026, 9, 18), oncall_mode="regenerate"
@@ -248,20 +213,3 @@ class TestRefreshShiftsRealGenerationCutover:
 
         assert OnCall.query.count() > 0
         assert result.oncall_messages_category == "danger"
-
-
-class TestRebalanceAfterLeaveToggleGating:
-    def test_toggle_off_never_uses_apply_plan(self, test_app):
-        """Default (off): rebalance_after_leave() stays on its legacy
-        per-day/per-section SAVEPOINT code - see
-        test_leave_rebalance_new_engine.py for the toggle-on path."""
-        group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
-        users = [_make_user(f"U{i}", f"u{i}@x.com", group) for i in range(3)]
-
-        leave, regenerated_shifts = LeaveService.add_leave(
-            users[0], date(2026, 9, 8), date(2026, 9, 10)
-        )
-
-        assert leave is not None
-        assert regenerated_shifts is not None
-        assert GenerationRun.query.count() == 0

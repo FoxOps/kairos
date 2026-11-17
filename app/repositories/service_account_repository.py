@@ -35,6 +35,7 @@ class ServiceAccountRepository:
         token_prefix: str,
         token_hash: str,
         expires_at: datetime | None = None,
+        scopes: list[str] | None = None,
     ) -> ServiceAccount:
         service_account = ServiceAccount(
             name=name,
@@ -44,6 +45,7 @@ class ServiceAccountRepository:
             is_active=True,
             expires_at=expires_at,
         )
+        service_account.set_scopes(scopes)
         db.session.add(service_account)
         return service_account
 

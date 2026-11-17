@@ -494,7 +494,7 @@ class TestShiftService:
             test_user, test_shift_type, start, start + timedelta(hours=8)
         )
         assert shift is None
-        assert "Conflit" in error
+        assert "existe déjà" in error
 
     def test_api_update_rejects_weekend(self, test_app, test_shift):
         saturday = date.today()
@@ -758,7 +758,7 @@ class TestOnCallService:
 
         oncall, error = OnCallService.add_oncall(test_user, start)
         assert oncall is None
-        assert "Impossible" in error
+        assert "a déjà une astreinte" in error
 
     def test_api_delete_success_and_missing(self, test_app, test_oncall):
         assert OnCallService.api_delete(test_oncall.id) is True
@@ -792,7 +792,7 @@ class TestOnCallService:
             test_oncall.id, new_start, new_start + timedelta(days=7)
         )
         assert oncall is None
-        assert "jour configuré" in error
+        assert "jour et heure configurés" in error
 
     def test_api_update_accepts_configured_non_friday_anchor(
         self, test_app, test_user, test_oncall
@@ -914,13 +914,17 @@ class TestOnCallService:
         friday = _next_friday()
         new_start = datetime.combine(friday, datetime.min.time()).replace(hour=21)
         new_end = new_start + timedelta(days=7, hours=-14)
+        # The Monday inside the moved on-call - a real interval overlap
+        # (audit F06: a shift on the anchor Friday itself, before 21h, no
+        # longer counts).
+        monday = friday + timedelta(days=3)
         db.session.add(
             Shift(
-                date=friday,
-                start_time=datetime.combine(friday, datetime.min.time()).replace(
+                date=monday,
+                start_time=datetime.combine(monday, datetime.min.time()).replace(
                     hour=test_shift_type.start_hour
                 ),
-                end_time=datetime.combine(friday, datetime.min.time()).replace(
+                end_time=datetime.combine(monday, datetime.min.time()).replace(
                     hour=test_shift_type.end_hour
                 ),
                 user_id=test_user.id,
@@ -972,7 +976,7 @@ class TestLeaveService:
     ):
         """Regression test: when rebalance_after_leave() reports Friday
         dates left unassigned (legal 2-week on-call spacing constraint,
-        see AdvancedShiftAutomation.rebalance_after_leave), LeaveService
+        see AutomationAdminService.rebalance_after_leave), LeaveService
         must notify admins - but only after rebalance_after_leave's own
         commit has actually succeeded (it always has, by the time this
         return value is available)."""
@@ -980,7 +984,7 @@ class TestLeaveService:
 
         gap_date = date(2026, 8, 21)
         with patch(
-            "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
+            "app.services.leave_service.AutomationAdminService.rebalance_after_leave",
             return_value=([], ["some message"], [gap_date], [], [], []),
         ):
             LeaveService.add_leave(
@@ -997,7 +1001,7 @@ class TestLeaveService:
         self, test_app, admin_user, test_user, second_user
     ):
         """Bug hunt regression: a per-day shift regeneration failure
-        (isolated to that day, see AdvancedShiftAutomation.
+        (isolated to that day, see AutomationAdminService.
         rebalance_after_leave's docstring) must still reach admins,
         distinctly from the "no eligible user" oncall-gap case above -
         this one means an unexpected error happened, not just a
@@ -1006,7 +1010,7 @@ class TestLeaveService:
 
         failed_date = date(2026, 8, 21)
         with patch(
-            "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
+            "app.services.leave_service.AutomationAdminService.rebalance_after_leave",
             return_value=([], ["some message"], [], [failed_date], [], []),
         ):
             LeaveService.add_leave(
@@ -1024,14 +1028,14 @@ class TestLeaveService:
     ):
         """Bug hunt regression: a failure in the on-call regeneration
         section itself (isolated from the shift days, see
-        AdvancedShiftAutomation.rebalance_after_leave's docstring) must
+        AutomationAdminService.rebalance_after_leave's docstring) must
         still reach admins."""
         from app.models import AppNotification
 
         period_start = date(2026, 8, 1)
         period_end = date(2026, 9, 1)
         with patch(
-            "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
+            "app.services.leave_service.AutomationAdminService.rebalance_after_leave",
             return_value=(
                 [],
                 ["some message"],
@@ -1063,7 +1067,7 @@ class TestLeaveService:
 
         unfilled_date = date(2026, 8, 21)
         with patch(
-            "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
+            "app.services.leave_service.AutomationAdminService.rebalance_after_leave",
             return_value=([], ["some message"], [], [], [], [unfilled_date]),
         ):
             LeaveService.add_leave(
@@ -1090,12 +1094,12 @@ class TestLeaveService:
 
     def test_rebalance_after_leave_exception_is_caught(self, test_app, test_leave):
         """_rebalance_after_leave()'s own except branch - only reached
-        by a failure in AdvancedShiftAutomation.rebalance_after_leave's
+        by a failure in AutomationAdminService.rebalance_after_leave's
         setup step itself (its per-day/per-section failures are already
         isolated and reported without raising, see the method's own
         docstring), so exercised here via a direct mock."""
         with patch(
-            "app.services.leave_service.AdvancedShiftAutomation.rebalance_after_leave",
+            "app.services.leave_service.AutomationAdminService.rebalance_after_leave",
             side_effect=RuntimeError("boom"),
         ):
             deleted, rebalance_failed = LeaveService.api_delete(test_leave.id)

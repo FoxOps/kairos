@@ -24,6 +24,7 @@ from app.utils.helpers.common_helpers import (
     is_user_on_leave,
     is_user_on_shift,
     leave_keeps_minimum_headcount,
+    oncall_validation_error,
 )
 from app.utils.helpers.timezone_helpers import to_org_timezone, to_viewer_timezone
 
@@ -41,6 +42,7 @@ __all__ = [
     "is_user_on_shift",
     "is_user_on_leave",
     "leave_keeps_minimum_headcount",
+    "oncall_validation_error",
     "build_shift_type_color_map",
     "build_group_color_map",
     "_has_overlapping_oncall",

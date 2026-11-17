@@ -5,7 +5,7 @@ tests' own assertions either - the same helper works for every
 headcount), and a custom (non Mon-Fri) weekend definition is honored
 with no hardcoded fallback. No DB/app context needed - pure functions."""
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from app.utils.automation.planner.shift_planner import (
     assign_shift_slots_for_day,
@@ -87,12 +87,13 @@ def test_two_users_oncall_gets_oncall_other_gets_rotation():
     assert result[2] == "rotation"
 
 
-def test_next_week_oncall_gets_rotation_slot_symmetric_with_last_week():
-    """Rule 2 is symmetric: a user who will be on-call NEXT week gets
-    the rotation slot exactly like one who was on-call LAST week -
-    matters whenever this group's on-call turns are sparse relative to
-    other groups sharing the same rotation pool (see module docstring,
-    commit b2a225c)."""
+def test_next_week_oncall_gets_rotation_slot_when_no_last_week_holder():
+    """Rule 2's second choice: with nobody from last week in scope, the
+    user who will be on-call NEXT week gets the rotation slot - matters
+    whenever this group's on-call turns are sparse relative to other
+    groups sharing the same rotation pool (see module docstring, commit
+    b2a225c). Last week's holder takes precedence when present - see
+    test_planner_rotation_slot_priority.py."""
     a, b, c = UserRef(1, "A", None), UserRef(2, "B", None), UserRef(3, "C", None)
     users = (a, b, c)
     result = assign_shift_slots_for_day(
@@ -216,7 +217,7 @@ def test_rest_after_oncall_still_blocks_shift_right_after_a_past_on_call():
 def test_rest_after_oncall_never_excludes_the_oncall_role_slot_itself():
     """Real production bug: the departing on-call holder is still "this
     week's on-call for shift purposes" on the transition Friday (see
-    AdvancedShiftAutomation.get_oncall_for_date()'s docstring) and gets
+    shift_planner._covering_anchor()) and gets
     role_slot "oncall" (the mandatory on-call coverage shift) that same
     day - right when their own on-call just ended that morning. With
     any rest_after_oncall configured, the small same-day gap (here 6h:
@@ -254,6 +255,11 @@ def test_rest_after_oncall_never_excludes_the_oncall_role_slot_itself():
 
 
 class _OnCallStub:
+    """Minimal OnCallSnapshot stand-in: a standard Friday 21:00 ->
+    Friday 07:00 on-call week ending at `end_time`."""
+
     def __init__(self, user_id, end_time):
         self.user_id = user_id
+        self.group_id = None
         self.end_time = end_time
+        self.start_time = end_time - timedelta(days=6, hours=10)

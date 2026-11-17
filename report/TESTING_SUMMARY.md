@@ -2,20 +2,31 @@
 
 ## 📊 Global Overview
 
-- **Last updated**: September 16, 2026 (1.1.1 release QA protocol pass)
-- **Total number of tests**: 2008 (1113 unit + 863 integration + 32 e2e)
-- **Tests passing**: 2008 ✅
+- **Last updated**: November 12, 2026 (1.2.0 - legacy scheduling engine
+  removed, planner rotation-slot fix)
+- **Total number of tests**: 1991 (1045 unit + 914 integration + 32 e2e) -
+  down from 2071 (1121/918/32): legacy-engine-only tests went with
+  `AdvancedShiftAutomation`/`OnCallAutomation` (`test_advanced_shift_automation.py`,
+  `test_shift_rotation_fix.py`, `test_automation_full.py`,
+  `test_compare_automation_engines.py`, `test_planner_availability_index_snapshots.py`,
+  most of `test_automation.py`/`test_automation_unit.py`, the toggle tests);
+  engine-agnostic ones were ported to the planner (`test_leave_rebalance.py`,
+  `test_automation_queries.py`, `test_automation_group_scoping.py`), and
+  `test_planner_rotation_slot_priority.py` was added for the production
+  report - see `report/1.2.0/BUG_HUNT_1.2.0.md`. Every generation-path
+  integration test now exercises the planner (they ran the legacy engine
+  before, since the cutover toggle defaulted to off).
+- **Tests passing**: 1991 ✅
 - **Tests failing**: 0
-- **Code coverage**: **99%** (`--cov=app`) - the new planner rework
-  (`app/models/generation_run.py`, `app/utils/automation/planner/**`) landed
-  with a handful of uncovered lines (error/edge branches); see
-  `report/1.1.1/BUG_HUNT_1.1.1.md`
+- **Code coverage**: **99%** (`--cov=app`, 37 uncovered lines of 7226)
 - **Lint (ruff)**: clean - **0 errors**
 - **Types (mypy)**: clean - **0 errors**
 - **Formatting (black)**: compliant
 - **Security (bandit)**: 0 findings in `app/` (all flagged items are test-only fixture literals - mock passwords/tokens)
 - **Dependencies (pip-audit)**: 0 known vulnerabilities
-- **Duplicate code (`find_duplicates.py`)**: none detected
+- **Duplicate code (`find_duplicates.py`)**: 1 pre-existing group (`actor` property,
+  `app/models/audit_log.py`/`app/models/generation_run.py`, unrelated to this pass) - verified,
+  not introduced here
 
 ---
 
@@ -67,16 +78,17 @@ tests/
 ├── conftest.py                      # Fixture chain: test_app, client, logged_in_client
 ├── fixtures/                        # test_user, test_group, test_shift, test_leave, test_oncall...
 │
-├── unit/                            # 1082 tests - isolated components, no HTTP
+├── unit/                            # 1045 tests - isolated components, no HTTP
 │   ├── test_service_account_model.py     # ServiceAccount: SHA-256 token/hash, is_valid()
 │   ├── test_service_account_repository.py
 │   ├── test_service_account_service.py   # create/revoke/regenerate + audit trail
 │   ├── test_models.py               # User, Group, Shift, OnCall, Leave, ShiftType, NotificationLog
 │   ├── test_repositories.py         # Data access layer
 │   ├── test_services.py             # Business logic layer
-│   ├── test_automation*.py          # Shift/on-call business rules (3 files)
-│   ├── test_advanced_shift_automation.py
-│   ├── test_shift_rotation_fix.py
+│   ├── test_automation*.py          # Solver, queries, group scoping, rule types, per-group service
+│   ├── test_planner_*.py            # Pure planner (shift/on-call scenarios, rotation-slot
+│   │                                 #   priority, fairness, presentation)
+│   ├── test_leave_rebalance.py      # AutomationAdminService.rebalance_after_leave()
 │   ├── test_decorators_unit.py
 │   ├── test_helpers.py
 │   ├── test_ics_export.py
@@ -94,7 +106,7 @@ tests/
 │   ├── test_backup_service.py       # BackupService (/admin/backups support layer)
 │   └── test_settings_service.py     # SettingsService (timezone, language, date/time formats...)
 │
-├── integration/                     # 818 tests - Flask routes, test client
+├── integration/                     # 914 tests - Flask routes, test client
 │   ├── test_routes.py, test_*_priority.py, test_*_coverage.py
 │   ├── test_admin_*.py              # Admin routes (users/groups/shift-types/automation/backups,
 │   │                                 #   service accounts)

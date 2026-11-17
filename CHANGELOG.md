@@ -7,6 +7,178 @@ versions match the bare (no `v` prefix) git tags this project actually
 pushes, e.g. `1.1.0`, not `v1.1.0` — see `.github/workflows/tests.yml`'s
 tag trigger for why.
 
+## [Unreleased]
+
+Planner-only automation (legacy engine removed), a schedule-generation
+fix from production, and dependency security bumps - see "Removed"/
+"Fixed"/"Security" below.
+
+Public API v1 (`/api/v1/*`) maturity pass - OpenAPI contract
+correctness, server-side filtering, a new `groups` resource,
+configurable rate limits, ServiceAccount scopes, and interactive
+documentation. See [`Docs/api/API.md`](Docs/api/API.md#public-api-v1-service-accounts)
+for the full contract.
+
+### Added
+- `GET /api/v1/groups/[/<id>]` - resolves the `group_id` values already
+  present on shifts/on-calls/leaves/users to a name (previously
+  unresolvable through the public API). Unpaginated, like `shift-types`.
+- Server-side filtering on every public API list endpoint:
+  `user_id`/`group_id` on shifts/on-call/leave/users, `start`/`end`
+  date-range (overlap semantics) on shifts/on-call/leave, `shift_type_id`
+  on shifts. Invalid filters (`start` after `end`, an unparseable date)
+  return `422`. Previously these repository-level filters existed but
+  were never wired up to the public API resources.
+- ServiceAccount read scopes (`read:shifts`/`read:oncall`/`read:leave`/
+  `read:users`/`read:shift_types`/`read:groups`, or `read:*`),
+  admin-editable at `/admin/service-accounts`. No scope checked = full
+  access, the default and unchanged behavior for every ServiceAccount
+  that existed before this change. A token used outside its granted
+  scopes gets `403`.
+- `API_RATE_LIMIT` env var - the public API's per-ServiceAccount rate
+  limit (previously a hardcoded Python constant) is now
+  administrator-configurable, default unchanged
+  (`60 per minute, 1000 per day`). `RATE_LIMIT_STORAGE_URI` env var -
+  Flask-Limiter counter storage backend (default `memory://`,
+  unchanged), can be pointed at `redis://...` for a multi-worker/
+  multi-replica deployment.
+- `GET /api/v1` - small discovery document (name/version/links).
+- `GET /api/v1/docs` - interactive Scalar documentation, served from an
+  already-CSP-whitelisted CDN origin (no CSP change). Gated by
+  `PUBLIC_API_DOCS_ENABLED` (default on); the raw
+  `/api/v1/openapi.json` stays reachable regardless.
+- Generated OpenAPI document now includes `servers` (from
+  `PUBLIC_BASE_URL`, or a safe relative `/`), a `ServiceAccountBearer`
+  Bearer security scheme applied globally, stable `operationId`/
+  `summary`/`description` on every operation, explicit types/formats on
+  every field (duration fields are now numeric, not untyped; every
+  datetime is `format: date-time`), and documented `401`/`403`/`404`/
+  `422`/`429` responses per operation.
+
+### Changed (breaking)
+- `GET /api/v1/oncall/current` now **always** returns
+  `{"items": [...], "count": N}`, regardless of `group_id` - previously
+  the response type changed (array vs. single object vs.
+  `{"active": false}`) depending on `group_id` and the number of
+  matches, which was unsafe for generated clients.
+- `GET /api/v1/users/` is now **paginated** (`{"items", "page", "pages",
+  "per_page", "total"}`, same envelope as shifts/oncall/leave), and
+  accepts a `group_id` filter - previously a bare unpaginated array.
+- Every public API error response body changed shape, from
+  `{"message": "..."}` to
+  `{"error": {"code", "message", "details"}}` - `code` is a stable
+  machine-readable value (`not_found`, `validation_error`,
+  `rate_limited`, ...), `details` carries structured per-field detail
+  for `422`.
+
+### Removed
+- **The legacy scheduling engine.** The planner introduced in 1.1.1 is
+  now the only shift/on-call generation engine, for "Générer",
+  "Recalculer les shifts" and the automatic rebalance after a leave.
+  The "Moteur d'automatisation" toggle on `/admin/automation/rules`
+  and `scripts/compare_automation_engines.py` are gone. An existing
+  `new_automation_engine_enabled` setting row is ignored, so no
+  migration is needed. **Behaviour change** for any instance that
+  never turned the toggle on (it defaulted to off): real generation
+  now uses the planner, which the "Aperçu (Dry Run)" preview already
+  used, so the schedule you get now matches the preview. One visible
+  difference: "Régénérer entièrement" follows the configured rotation
+  order and no longer keeps each week's existing on-call holder. Use
+  "Combler les trous" to keep existing on-calls. See
+  [`report/1.2.0/BUG_HUNT_1.2.0.md`](report/1.2.0/BUG_HUNT_1.2.0.md).
+
+### Fixed
+- **Generated schedules missing a person on Mon–Thu of every other
+  week** (production report). The rotation slot (07h-15h) used to go
+  to both last week's and next week's on-call holder. With that slot
+  capped at 1 person (`staffing_limits`), the second one got no shift
+  at all. Now: last week's on-call holder gets it; if they're not in
+  the group, next week's holder (on a transition Friday, the person
+  whose on-call starts that evening); otherwise the rotation-order
+  fallback.
+- A user who would exceed a slot's staffing maximum now gets the
+  default slot instead of being dropped for the day. They are left
+  unassigned only if the default slot is full too.
+- The first week of a generation now sees the on-call already
+  published right before it as "last week's on-call".
+- The "Aucun shift généré automatiquement (aucun utilisateur
+  disponible)" notification fired for days where users *were*
+  available but a slot's staffing maximum was reached. It now fires
+  only for days where every eligible user is absent, a case the
+  planner used to drop silently. A reached staffing maximum is
+  reported as a `[WARN]` in the generation result only.
+- Three planner bugs that could delete data, found while removing the
+  legacy engine. They were hidden because the planner was off by
+  default:
+  - With `per_group` on-calls, another group's concurrent on-call
+    could be deleted (rows without a `group_id` snapshot collided).
+  - The on-call ending on the window's first anchor day was deleted,
+    for example when appending a second generation right after a
+    first one.
+  - Shifts of a group toggled out of the schedule were deleted on
+    regeneration.
+- **1.2.0 audit findings** (see
+  [`report/1.2.0/AUDIT_REPORT_1.2.0.md`](report/1.2.0/AUDIT_REPORT_1.2.0.md)
+  and the fix mapping in
+  [`report/1.2.0/AUDIT_FIXES_1.2.0.md`](report/1.2.0/AUDIT_FIXES_1.2.0.md)):
+  - Generation checks rest after on-call on each shift's *final* hours,
+    after a staffing-max fallback (an under-rested shift could be
+    saved), enforces the optional "on-call/shift overlap" block, counts
+    locked shifts against staffing maxima first, and re-covers the
+    rotation slot when its holder is excluded by a rule (else a new
+    `[WARN]` "créneau de rotation non couvert").
+  - Locked on-call weeks now constrain the spacing search ("Combler les
+    trous" could give the same person two weeks 14h apart).
+  - Any on-call anchor weekday now gives the right person the on-call
+    shift role; the anchor day itself stays the outgoing holder's, as
+    with Friday.
+  - Regeneration detects and repairs shifts/on-calls whose hours were
+    edited by hand.
+  - A plan computed before a leave/assignment/population change is
+    refused at apply time instead of being applied stale; concurrent
+    applies are serialized.
+  - Manual on-call creation/moves enforce the configured spacing,
+    positive duration, anchor day *and* hour and weekly end; shift API
+    create/move validate the actual hours saved. Every rejection says
+    which rule blocked it.
+  - Shift swaps validate locks, weekend and the configured
+    staffing/rest/overlap rules; a same-day reciprocal swap no longer
+    fails on a database constraint; the shift's group snapshot follows
+    its new owner; reverting re-validates.
+  - Leave rebalance refused as unsafe (e.g. locked shift on the new
+    leave's day) is reported as a failure and notified, not as success.
+  - Leave minimum headcount is per group in `per_group` shift mode.
+  - Leave ICS export: all-day events, last day no longer dropped.
+  - Fairness metrics include eligible users with zero assignments.
+  - Model indexes aligned with the migrated schema.
+
+### Changed
+- Unticking "Inclure" on the rotation order form now **excludes** the
+  person from on-call rotation (it used to put them back at the end).
+  People joining an eligible group later are included by default.
+- "Aperçu (Dry Run)" no longer saves the rotation order or resets the
+  rotation phase; only "Générer" does.
+- An on-call can no longer be resized in the calendar to end anywhere
+  but its configured weekly end.
+
+### Security
+- **SSO-only mode bypass** (audit F01): with `OIDC_DISABLE_BASIC_AUTH`,
+  `POST /login?oidc_error=1` still accepted a local password. Password
+  POSTs are now always refused in SSO-only mode.
+- **SSO account takeover via unverified email** (audit F02): local
+  accounts are now bound to the IdP identity (issuer + `sub`, migration
+  `7d2c1e9a5b30`); the first SSO login of an existing local account is
+  refused when the IdP marks the email unverified, unless the new
+  `OIDC_TRUST_UNVERIFIED_EMAIL=true` is set. **Upgrade note (Keycloak):**
+  users created by an admin default to "Email verified: Off" - turn it on
+  for accounts that already exist in Kairos, or set the flag if users
+  can't choose their own email. OIDC `state` values are no longer
+  logged, and the state is single-use.
+- Bumped `Werkzeug` 3.1.8 → 3.1.9, `Authlib` 1.7.2 → 1.9.1 and `black`
+  26.5.1 → 26.10.1. `pip-audit` reported 11 known vulnerabilities in
+  these packages, and the weekly `Tests` workflow had been failing on
+  that since 2026-10-12.
+
 ## [1.1.1] — 2026-09-16
 
 ### Added

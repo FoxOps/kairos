@@ -12,6 +12,7 @@ all_blueprints: list = []
 # resource module) - the imports themselves are the registration
 # mechanism, order doesn't matter.
 from app.api.resources import (  # noqa: E402,F401
+    groups,
     leave,
     oncall,
     shift_types,

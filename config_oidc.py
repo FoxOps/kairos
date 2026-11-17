@@ -58,6 +58,7 @@ class OIDCConfig:
     SIGNATURE_ALGORITHMS = None
     SCOPE = None
     DISABLE_BASIC_AUTH = None
+    TRUST_UNVERIFIED_EMAIL = None
 
     @classmethod
     def load_config(cls):
@@ -100,6 +101,18 @@ class OIDCConfig:
         )
         cls.SCOPE = os.environ.get("OIDC_SCOPE") or "openid profile email"
         cls.DISABLE_BASIC_AUTH = get_bool_from_env("OIDC_DISABLE_BASIC_AUTH", True)
+        # Escape hatch for the first SSO login of a pre-existing *local*
+        # account (the only case where email_verified matters - see
+        # UserManager.sync_user_from_oidc): when true, an email the IdP
+        # explicitly flags email_verified=false may still be linked to the
+        # matching local account. Only enable it if the IdP never lets a
+        # user set an arbitrary email themselves (e.g. a Keycloak realm
+        # where only admins create users - which default to "Email
+        # verified: Off"). Off by default: otherwise anyone able to claim a
+        # victim's email at the IdP could take over their local account.
+        cls.TRUST_UNVERIFIED_EMAIL = get_bool_from_env(
+            "OIDC_TRUST_UNVERIFIED_EMAIL", False
+        )
 
         # Debug logging
         logger.info(f"OIDC Config loaded - ENABLED: {cls.ENABLED}")
@@ -138,6 +151,7 @@ class OIDCConfig:
             "OIDC_ROLES_CLAIM": cls.ROLES_CLAIM,
             "OIDC_SIGNATURE_ALGORITHMS": cls.SIGNATURE_ALGORITHMS,
             "OIDC_SCOPE": cls.SCOPE,
+            "OIDC_TRUST_UNVERIFIED_EMAIL": cls.TRUST_UNVERIFIED_EMAIL,
             "OIDC_DISABLE_BASIC_AUTH": cls.DISABLE_BASIC_AUTH,
         }
 

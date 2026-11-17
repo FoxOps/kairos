@@ -230,8 +230,8 @@ class TestApplyPlanRollback:
 
 
 class TestApplyPlanNonAtomic:
-    """Phase 7 follow-up: apply_plan(atomic=False), used by
-    AdvancedShiftAutomation.rebalance_after_leave()'s own cutover - each
+    """apply_plan(atomic=False), used by
+    AutomationAdminService.rebalance_after_leave() - each
     diff entry gets its own SAVEPOINT instead of one transaction for the
     whole plan, so one bad entry doesn't discard every other entry's
     already-applied change."""

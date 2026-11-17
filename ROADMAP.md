@@ -1,6 +1,6 @@
 # Roadmap
 
-**Current version: 1.1.1** — feature-complete, tested (2000+
+**Current version: 1.2.0** — feature-complete, tested (2000+
 automated tests), and used for real team scheduling.
 
 ## ✅ Done
@@ -54,12 +54,18 @@ automated tests), and used for real team scheduling.
 - A rewritten, pure generation planner (`app/utils/automation/planner/`):
   computes a plan (a `GenerationRun`) as data first, then applies it
   atomically, instead of the legacy engine's read-modify-write-as-you-go
-  approach. Dry-run preview always uses it; real generation/refresh/
-  leave-rebalance stay on the legacy engine until an admin opts in via
-  the **Moteur d'automatisation** toggle on `/admin/automation/rules`
-  (off by default — a diagnostic legacy-vs-new comparison mode confirmed
-  parity, and the toggle lets a production rollback happen without a
-  code revert if an issue surfaces post-cutover)
+  approach. Since 1.2.0 the **only** engine: the legacy engine, its
+  **Moteur d'automatisation** cutover toggle and the legacy-vs-new
+  comparison script were removed, and generation/refresh/preview/
+  leave-rebalance all use the planner (1.2.0 also fixed its rotation
+  slot rule — last week's on-call holder first, next week's second —
+  and three adapter bugs that could delete data, see
+  `report/1.2.0/BUG_HUNT_1.2.0.md`)
+- 1.2.0 external audit (`report/1.2.0/AUDIT_REPORT_1.2.0.md`): all 19
+  active findings fixed — hard rules checked on final intervals, locked
+  occupancy reserved, stale-plan refusal at apply time, one validator
+  for manual on-call writes, safe swaps, SSO-only bypass closed and SSO
+  accounts bound to issuer+subject (`report/1.2.0/AUDIT_FIXES_1.2.0.md`)
 
 **Access & integration**
 - Session login and SSO/OIDC (Keycloak, Okta, Auth0-compatible

@@ -374,3 +374,49 @@ class TestMySQLDriverAvailable:
         uri = normalize_database_uri("mysql://user:pass@localhost:3306/testdb")
         engine = create_engine(uri)
         assert engine.dialect.driver == "pymysql"
+
+
+class TestApiRateLimitConfig:
+    """API_RATE_LIMIT/RATE_LIMIT_STORAGE_URI (app/config/base.py) -
+    configurable per-ServiceAccount public API rate limit, see
+    app/api/rate_limit.py::api_rate_limit()."""
+
+    @staticmethod
+    def _reload_config():
+        import sys
+
+        if "app.config.base" in sys.modules:
+            del sys.modules["app.config.base"]
+        from app.config.base import Config
+
+        return Config
+
+    def test_default_when_unset(self, monkeypatch):
+        monkeypatch.delenv("API_RATE_LIMIT", raising=False)
+        Config = self._reload_config()
+        assert Config.API_RATE_LIMIT == "60 per minute, 1000 per day"
+
+    def test_custom_value_from_env(self, monkeypatch):
+        monkeypatch.setenv("API_RATE_LIMIT", "300 per minute, 10000 per day")
+        Config = self._reload_config()
+        assert Config.API_RATE_LIMIT == "300 per minute, 10000 per day"
+
+    def test_invalid_value_fails_at_import(self, monkeypatch):
+        """Must fail loudly at startup, never silently fall back to the
+        default for an explicitly-set-but-invalid value."""
+        monkeypatch.setenv("API_RATE_LIMIT", "not a valid limit")
+        try:
+            self._reload_config()
+            raise AssertionError("expected RuntimeError for invalid API_RATE_LIMIT")
+        except RuntimeError as exc:
+            assert "API_RATE_LIMIT" in str(exc)
+
+    def test_storage_uri_default(self, monkeypatch):
+        monkeypatch.delenv("RATE_LIMIT_STORAGE_URI", raising=False)
+        Config = self._reload_config()
+        assert Config.RATE_LIMIT_STORAGE_URI == "memory://"
+
+    def test_storage_uri_from_env(self, monkeypatch):
+        monkeypatch.setenv("RATE_LIMIT_STORAGE_URI", "redis://localhost:6379/0")
+        Config = self._reload_config()
+        assert Config.RATE_LIMIT_STORAGE_URI == "redis://localhost:6379/0"

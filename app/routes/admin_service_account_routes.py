@@ -10,6 +10,7 @@ from flask import abort, flash, redirect, render_template, request, url_for
 from flask_babel import gettext as _
 
 from app.auth.decorators import admin_required, handle_form_errors
+from app.models.service_account import AVAILABLE_SCOPES
 from app.repositories.service_account_repository import ServiceAccountRepository
 from app.routes.admin import admin_bp
 from app.services import ServiceAccountService
@@ -19,6 +20,16 @@ def _parse_expires_at(value: str) -> datetime | None:
     if not value:
         return None
     return datetime.strptime(value, "%Y-%m-%d")
+
+
+def _parse_scopes(form) -> list[str] | None:
+    """None means full access (read:*) - same "no box checked = everything"
+    convention as NotificationTarget.categories
+    (_notification_target_form.html): an admin who submits with no scope
+    checked gets full access rather than an accidentally-locked-out token
+    with zero permissions."""
+    selected = [s for s in form.getlist("scopes") if s in AVAILABLE_SCOPES]
+    return selected or None
 
 
 @admin_bp.route("/admin/service-accounts")
@@ -46,8 +57,9 @@ def add_service_account():
             flash(_("Date d'expiration invalide."), "danger")
             return redirect(url_for("admin.add_service_account"))
 
+        scopes = _parse_scopes(request.form)
         service_account, full_token = ServiceAccountService.create_account(
-            name, description, expires_at
+            name, description, expires_at, scopes
         )
         return render_template(
             "admin/service_account_created.html",
@@ -55,7 +67,9 @@ def add_service_account():
             full_token=full_token,
         )
 
-    return render_template("admin/add_service_account.html")
+    return render_template(
+        "admin/add_service_account.html", available_scopes=AVAILABLE_SCOPES
+    )
 
 
 @admin_bp.route(
@@ -92,12 +106,18 @@ def edit_service_account(service_account_id):
                 )
             )
 
-        ServiceAccountService.rename(service_account, name, description, expires_at)
+        scopes = _parse_scopes(request.form)
+        ServiceAccountService.rename(
+            service_account, name, description, expires_at, scopes
+        )
         flash(_("Compte de service modifié avec succès !"), "success")
         return redirect(url_for("admin.list_service_accounts"))
 
     return render_template(
-        "admin/edit_service_account.html", service_account=service_account
+        "admin/edit_service_account.html",
+        service_account=service_account,
+        available_scopes=AVAILABLE_SCOPES,
+        current_scopes=service_account.get_scopes(),
     )
 
 

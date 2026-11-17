@@ -16,7 +16,10 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Literal
 
-ChangeType = Literal["unchanged", "added", "removed", "reassigned"]
+# "updated": same holder (and, for a shift, same type), but the persisted
+# start/end differ from the proposed interval (audit F12) - applied by
+# rewriting the times in place.
+ChangeType = Literal["unchanged", "added", "removed", "reassigned", "updated"]
 
 # ---------------------------------------------------------------------------
 # Snapshot inputs - hand-buildable in tests, no DB access required.
@@ -70,8 +73,8 @@ class ResolvedRules:
     oncall_shift_overlap_block: bool
     # Each role slot's resolved ShiftType id plus its (start_hour,
     # end_hour) - resolved once by rule_resolution.py (which may create
-    # a fallback ShiftType row, same as
-    # AdvancedShiftAutomation.get_shift_type_for_slot()), so the pure
+    # a fallback ShiftType row, see
+    # rules/shift_slots.py::get_shift_type_for_role()), so the pure
     # shift planner never needs its own ShiftType lookup to build a
     # ProposedShift's actual start_time/end_time.
     oncall_shift_type_id: int
@@ -113,7 +116,7 @@ class ProposedShift:
 
 @dataclass(frozen=True)
 class UnfilledRequirement:
-    kind: Literal["oncall_week", "staffing_max"]
+    kind: Literal["oncall_week", "staffing_max", "no_available_user", "role_uncovered"]
     date: date
     group_id: int | None
     reason_code: str
@@ -136,7 +139,7 @@ class FairnessMetrics:
     oncall_count_stddev: float = 0.0
     undesirable_shift_count_by_user: dict[int, int] = field(default_factory=dict)
     undesirable_shift_stddev: float = 0.0
-    rotation_adherence_ratio: float = 1.0
+    assignment_stability_ratio: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -163,6 +166,15 @@ class SchedulePlan:
     safe_to_apply: bool
     safe_to_apply_reasons: tuple[str, ...] = ()
     input_fingerprint: str = ""
+    # Hash of the DB-derived inputs only (published/existing rows,
+    # leaves, populations, rotation order) - recomputed by
+    # AutomationApplyService.apply_plan() right before writing, so a plan
+    # computed against a since-changed schedule is refused instead of
+    # applied (audit F07). Empty = no check (hand-built test plans).
+    state_fingerprint: str = ""
+    # Arguments to rebuild the same request from the DB at apply time.
+    shift_start_date: date | None = None
+    restrict_to_group_id: int | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -218,7 +230,7 @@ class PlanningRequest:
     # On-call planning's own Friday search (oncall_planner._fridays_in_range)
     # legitimately needs `start_date` widened to the covering Friday when a
     # caller's literal requested start falls mid-on-call-week (see
-    # OnCallAutomation.align_regeneration_start) - otherwise the boundary
+    # queries.align_regeneration_start) - otherwise the boundary
     # week's already-published on-call would be misdiffed as "removed"
     # (present in published_oncalls via a true datetime-overlap fetch, but
     # never re-proposed since the Friday-date search starts too late to see
@@ -228,3 +240,17 @@ class PlanningRequest:
     # look further back. `None` (every phase 4-6 call site) means "use
     # start_date for shifts too" - today's behavior, unchanged.
     shift_start_date: date | None = None
+
+    # Real persisted (start_time, end_time) per published key, so the
+    # diff detects edited intervals ("updated") and locked rows are
+    # carried with their real hours (audit F12/F20).
+    published_oncall_intervals: dict[
+        tuple[date, int | None], tuple[datetime, datetime]
+    ] = field(default_factory=dict)
+    published_shift_intervals: dict[tuple[date, int], tuple[datetime, datetime]] = (
+        field(default_factory=dict)
+    )
+
+    # build_planning_request()'s own restriction argument, recorded so
+    # apply_plan() can rebuild the same request for its stale check.
+    restrict_to_group_id: int | None = None

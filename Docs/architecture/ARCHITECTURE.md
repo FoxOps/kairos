@@ -137,9 +137,9 @@ app/
 │                          # backup,swap,settings,audit,notification_target,
 │                          # service_account}_routes.py, export.py
 ├── utils/
-│   ├── automation/         # AdvancedShiftAutomation (legacy shift generation
-│   │                      # engine, still the default production path),
-│   │                      # OnCallAutomation, status, rules/ (one class
+│   ├── automation/         # planner/ (the generation engine - the legacy
+│   │                      # AdvancedShiftAutomation/OnCallAutomation were
+│   │                      # removed in 1.2.0), queries.py, status, rules/ (one class
 │   │                      # per configurable rule type - weekend_definition,
 │   │                      # oncall_anchor, oncall_spacing, oncall_shift_overlap,
 │   │                      # rest_after_oncall, shift_slots, staffing_limits

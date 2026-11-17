@@ -1,13 +1,18 @@
 """Configurable shift slot roles - which ShiftType plays each of the 3
-roles AdvancedShiftAutomation assigns (see its class docstring, rules
-1-3): the on-call slot, the rotation slot (previous week's on-call
-person), and the default slot. References existing ShiftType rows
-(reusing the /admin/shift-types admin page) instead of duplicating
-hour inputs - see AdvancedShiftAutomation.get_shift_type_for_slot()
-for the resolution this feeds, which also fixes a pre-existing bug
-where get_shift_type_by_hours() matched by hours instead of id."""
+roles the planner assigns (app/utils/automation/planner/shift_planner.py):
+the on-call slot, the rotation slot (last/next week's on-call person),
+and the default slot. References existing ShiftType rows (reusing the
+/admin/shift-types admin page) instead of duplicating hour inputs - see
+get_shift_type_for_role() below for the resolution this feeds, which
+also fixes a pre-existing bug where get_shift_type_by_hours() matched
+by hours instead of id."""
+
+from typing import TYPE_CHECKING
 
 from app.utils.automation.rules.base import AutomationRuleType
+
+if TYPE_CHECKING:
+    from app.models import ShiftType
 
 ONCALL_KEY = "oncall_shift_type_id"
 ROTATION_KEY = "rotation_shift_type_id"
@@ -39,12 +44,8 @@ class ShiftSlotsRule(AutomationRuleType):
 
     @classmethod
     def default_params(cls) -> dict:
-        from app.utils.automation.advanced_shift_automation import (
-            AdvancedShiftAutomation,
-        )
-
         return {
-            key: AdvancedShiftAutomation.get_shift_type_by_hours(*hours).id
+            key: get_shift_type_by_hours(*hours).id
             for key, hours in _LEGACY_HOURS.items()
         }
 
@@ -80,3 +81,46 @@ class ShiftSlotsRule(AutomationRuleType):
             ):
                 return True
         return False
+
+
+def get_shift_type_by_hours(start_hour: int, end_hour: int) -> "ShiftType":
+    """Fetch or create a ShiftType by its hours - only the fallback for
+    an unconfigured (or dangling) shift_slots rule, never the primary
+    lookup (see get_shift_type_for_role())."""
+    from app import db
+    from app.models import ShiftType
+
+    shift_type = ShiftType.query.filter_by(
+        start_hour=start_hour, end_hour=end_hour
+    ).first()
+    if shift_type:
+        return shift_type
+
+    new_shift_type = ShiftType(
+        name=f"{start_hour:02d}-{end_hour:02d}",
+        label=f"{start_hour:02d}h-{end_hour:02d}h",
+        start_hour=start_hour,
+        end_hour=end_hour,
+    )
+    db.session.add(new_shift_type)
+    db.session.flush()  # To get the ID
+    return new_shift_type
+
+
+def get_shift_type_for_role(role_key: str, group=None) -> "ShiftType":
+    """The configured ShiftType for one of the 3 roles (ONCALL_KEY/
+    ROTATION_KEY/DEFAULT_KEY) via ShiftSlotsRule, by id - never
+    re-derived from raw hours: editing a referenced ShiftType's hours
+    via /admin/shift-types used to make an hours-based lookup miss the
+    edited row and silently mint an orphaning duplicate. Falls back to
+    the historical hours-based fetch-or-create only if the configured
+    id no longer exists (e.g. deleted outside the delete-protection
+    guard), rather than crash."""
+    from app import db
+    from app.models import ShiftType
+
+    shift_type_id = ShiftSlotsRule.resolve(group=group)[role_key]
+    shift_type = db.session.get(ShiftType, shift_type_id)
+    if shift_type is not None:
+        return shift_type
+    return get_shift_type_by_hours(*_LEGACY_HOURS[role_key])

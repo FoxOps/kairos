@@ -10,8 +10,7 @@ from typing import TYPE_CHECKING, Any
 from app.models import OnCall, Shift
 from app.repositories.oncall_repository import OnCallRepository
 from app.repositories.shift_repository import ShiftRepository
-from app.utils.automation.advanced_shift_automation import AdvancedShiftAutomation
-from app.utils.automation.oncall_automation import OnCallAutomation
+from app.utils.automation import queries
 from app.utils.automation.rules import OnCallAnchorRule
 
 if TYPE_CHECKING:
@@ -53,10 +52,8 @@ def get_automation_status(
         shift_count = ShiftRepository.count_for_group(group.id)
 
     # Count eligible users
-    oncall_eligible = len(OnCallAutomation.get_eligible_users(group=group))
-    shift_eligible = len(
-        AdvancedShiftAutomation.get_users_in_schedule_groups(group=group)
-    )
+    oncall_eligible = len(queries.get_oncall_users(group=group))
+    shift_eligible = len(queries.get_schedule_users(group=group))
 
     next_oncall_date = None
     if include_next_available:

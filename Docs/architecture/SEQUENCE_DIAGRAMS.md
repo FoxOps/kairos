@@ -72,7 +72,7 @@ sequenceDiagram
     participant R as leave_routes.py
     participant LS as LeaveService
     participant LR as LeaveRepository
-    participant ASA as AdvancedShiftAutomation
+    participant AAS as AutomationAdminService
     participant DB as Database
 
     U->>R: POST /leave/add (user_id, start_date, end_date)
@@ -86,9 +86,9 @@ sequenceDiagram
         LS->>LR: create(user_id, start_date, end_date)
         LR->>DB: INSERT Leave
         LS->>DB: commit()
-        LS->>ASA: rebalance_after_leave(leave, dry_run=False)
-        Note over ASA: Recalculates shifts (and on-calls,<br/>if the leave overlaps one) affected<br/>by the absence
-        ASA-->>LS: (regenerated_shifts, messages, unfilled_oncall_dates)
+        LS->>AAS: rebalance_after_leave(leave)
+        Note over AAS: Plans shifts (and on-calls, if the leave<br/>overlaps one) through the planner, then<br/>apply_plan(atomic=False) - per-entry SAVEPOINTs
+        AAS-->>LS: (regenerated_shifts, messages, unfilled_oncall_dates, ...)
         opt unfilled_oncall_dates is non-empty
             Note over LS: No user could be assigned within the<br/>legal 2-week on-call spacing rule -<br/>notifies admins instead of forcing an assignment
         end

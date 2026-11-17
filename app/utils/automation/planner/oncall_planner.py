@@ -2,9 +2,9 @@
 proposes on-call assignments for one scope (one group, or the shared/
 org-wide scope) at a time.
 
-Ports the week-construction and candidate-filtering logic from
-oncall_automation.py's _fridays_in_range()/_generate_for_fridays(),
-with two deliberate behavior changes:
+Ported the week-construction and candidate-filtering logic from the
+legacy engine's _fridays_in_range()/_generate_for_fridays() (removed in
+1.2.0), with two deliberate behavior changes:
 
 - The rotation offset for a given Friday is rotation.rotate()'s
   absolute_week_index(), not an enumerate() position local to this
@@ -13,7 +13,7 @@ with two deliberate behavior changes:
   depending on what date range happened to be requested).
 - Preferred/published/locked assignments are keyed by
   (friday, group_id), not friday alone - fixes defect #7
-  (OnCallAutomation.capture_existing_assignments() returning a single
+  (the legacy capture_existing_assignments() returning a single
   {date: user_id} dict, so two groups with concurrent on-calls on the
   same Friday would silently overwrite each other).
 
@@ -24,7 +24,7 @@ already-loaded snapshot data via PlanningRequest.
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
-from app.utils.automation.oncall_automation import (
+from app.utils.automation.planner.oncall_solver import (
     AvailabilityIndex,
     _solve_max_filled_weeks,
 )
@@ -44,10 +44,8 @@ def _fridays_in_range(
     start_date: date, end_date: date, anchor_weekday: int
 ) -> list[date]:
     """Every on-call anchor weekday from the first one on/after
-    start_date through end_date, inclusive - pure port of
-    oncall_automation.py's module-level function of the same name,
-    minus its DB-touching rule resolution (anchor_weekday is passed in
-    already resolved)."""
+    start_date through end_date, inclusive (anchor_weekday is passed in
+    already resolved - no DB-touching rule resolution here)."""
     days_ahead = (anchor_weekday - start_date.weekday()) % 7
     current = start_date + timedelta(days=days_ahead)
     fridays = []
@@ -110,6 +108,9 @@ def plan_oncalls_for_scope(
     locked: frozenset[tuple[date, int | None]],
     published: dict[tuple[date, int | None], int],
     rules: ResolvedRules,
+    published_intervals: (
+        dict[tuple[date, int | None], tuple[datetime, datetime]] | None
+    ) = None,
 ) -> OnCallPlanFragment:
     """Plans on-call assignments for one scope over [start_date, end_date].
     `rotation_order` is this scope's eligible-user rotation order - an
@@ -124,10 +125,6 @@ def plan_oncalls_for_scope(
     if not fridays:
         return OnCallPlanFragment(proposed=(), unfilled=())
 
-    index = AvailabilityIndex.from_snapshots(
-        existing_oncalls, existing_leaves, min_spacing_weeks=rules.oncall_spacing_weeks
-    )
-
     weeks: list[tuple[date, datetime, datetime]] = []
     for friday in fridays:
         start_time = datetime.combine(friday, datetime.min.time()).replace(
@@ -136,7 +133,33 @@ def plan_oncalls_for_scope(
         end_time = datetime.combine(
             friday + timedelta(days=7), datetime.min.time()
         ).replace(hour=rules.oncall_anchor_end_hour)
+        interval = (published_intervals or {}).get((friday, group_id))
+        if (friday, group_id) in locked and interval is not None:
+            # A locked week keeps its real persisted interval.
+            start_time, end_time = interval
         weeks.append((friday, start_time, end_time))
+
+    # Locked weeks are fixed occupancy, not candidates: seed their
+    # holders into the same index the solver checks spacing/conflicts
+    # against, and into the fairness prior counts (audit F04 - they used
+    # to be carried through only *after* solving, so the solver could
+    # give the same holder the adjacent week, e.g. fill_gaps double-
+    # booking an already-published holder 14h after their week ended).
+    locked_snapshots = tuple(
+        OnCallSnapshot(
+            user_id=published[(friday, group_id)],
+            group_id=group_id,
+            start_time=start_time,
+            end_time=end_time,
+        )
+        for friday, start_time, end_time in weeks
+        if (friday, group_id) in locked and (friday, group_id) in published
+    )
+    index = AvailabilityIndex.from_snapshots(
+        existing_oncalls + locked_snapshots,
+        existing_leaves,
+        min_spacing_weeks=rules.oncall_spacing_weeks,
+    )
 
     locked_week_indices: set[int] = set()
     week_candidates: list[list[UserRef]] = []
@@ -161,7 +184,7 @@ def plan_oncalls_for_scope(
 
     relevant_user_ids = {user.id for user in rotation_order}
     prior_counts = {user.id: 0 for user in rotation_order}
-    for snapshot in existing_oncalls:
+    for snapshot in existing_oncalls + locked_snapshots:
         if snapshot.user_id in relevant_user_ids:
             prior_counts[snapshot.user_id] = prior_counts.get(snapshot.user_id, 0) + 1
 
@@ -261,7 +284,7 @@ def merge_oncall_fragments(
     group_id here (not just friday) is what lets two groups have
     concurrent on-calls on the same Friday without one overwriting the
     other - the exact defect a single un-grouped {date: user_id} dict
-    used to have (OnCallAutomation.capture_existing_assignments)."""
+    used to have (the legacy engine's capture_existing_assignments)."""
     merged: dict[tuple[date, int | None], int] = {}
     for group_id, fragment in fragments.items():
         for proposed in fragment.proposed:

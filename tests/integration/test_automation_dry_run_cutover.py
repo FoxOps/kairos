@@ -1,8 +1,7 @@
-"""Phase 6 tests: AutomationAdminService.generate_full(dry_run=True)
-routes through the new pure planner (app/utils/automation/planner)
-instead of the legacy engine, via a presentation shim
-(_generate_result_from_plan) that must produce a GenerateResult
-full_dry_run.html can render with zero template changes."""
+"""AutomationAdminService.generate_full(dry_run=True) previews through
+the pure planner (app/utils/automation/planner), via a presentation shim
+(_generate_result_from_plan) whose GenerateResult full_dry_run.html
+renders."""
 
 from datetime import date, datetime
 
@@ -11,7 +10,6 @@ from werkzeug.security import generate_password_hash
 from app import db
 from app.models import Group, OnCall, Shift, User
 from app.services.automation_admin_service import AutomationAdminService
-from app.services.settings_service import SettingsService
 
 
 def _make_group(name, **kwargs):
@@ -80,23 +78,6 @@ class TestGenerateFullDryRunUsesNewEngine:
         assert len(user.shifts) == 0
         assert len(user.on_calls) == 0
 
-    def test_generate_full_legacy_still_directly_callable(self, test_app):
-        """scripts/compare_automation_engines.py needs the actual
-        legacy algorithm reachable even though generate_full() itself
-        no longer routes dry_run=True there - this is the seam that
-        keeps the comparison tool meaningful post-cutover."""
-        group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
-        for i in range(3):
-            _make_user(f"U{i}", f"u{i}@x.com", group)
-
-        legacy_result = AutomationAdminService._generate_full_legacy(
-            date(2026, 9, 4), date(2026, 9, 17), rotation_order_ids=[], dry_run=True
-        )
-        assert legacy_result.dry_run is True
-        # Legacy dry_run never persists either.
-        assert OnCall.query.count() == 0
-        assert Shift.query.count() == 0
-
 
 class TestGenerateFullPersistsRotationOrder:
     """Real production bug: the new engine's rotation order is only
@@ -105,9 +86,11 @@ class TestGenerateFullPersistsRotationOrder:
     clicking "Générer"/"Prévisualiser" without a separate, easy-to-miss
     prior "Sauvegarder l'ordre" click silently fell back to alphabetical
     order, and AutomationConfig could stay empty forever. generate_full()
-    must now persist rotation_order_ids itself on every call."""
+    must use rotation_order_ids itself on every call: a real run persists
+    it; a dry run plans with it without persisting anything (audit F14 -
+    a preview must not reset the rotation phase later runs depend on)."""
 
-    def test_dry_run_persists_the_submitted_order_without_a_separate_save(
+    def test_generate_persists_the_submitted_order_without_a_separate_save(
         self, test_app
     ):
         from app.models import AutomationConfig
@@ -123,7 +106,14 @@ class TestGenerateFullPersistsRotationOrder:
             rotation_order_ids=[u.id for u in users],
             dry_run=True,
         )
+        assert AutomationConfig.get_rotation_order() == []
 
+        AutomationAdminService.generate_full(
+            date(2026, 9, 4),
+            date(2026, 9, 17),
+            rotation_order_ids=[u.id for u in users],
+            dry_run=False,
+        )
         assert AutomationConfig.get_rotation_order() == [u.id for u in users]
 
     def test_dry_run_first_on_call_matches_rotation_order_first_entry(self, test_app):
@@ -153,7 +143,6 @@ class TestGenerateFullPersistsRotationOrder:
         new order's first pick ("minimal perturbation" bias in
         oncall_planner.py, now removed - the configured order must
         always be authoritative for non-locked weeks)."""
-        SettingsService.set_new_automation_engine_enabled(True)
         group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
         users = [_make_user(f"U{i}", f"u{i}@x.com", group) for i in range(4)]
 
@@ -187,7 +176,6 @@ class TestGenerateFullPersistsRotationOrder:
         pick away from order[0] purely from elapsed time, even though
         the order itself was correctly saved and read
         (save_rotation_order() now always resets the epoch)."""
-        SettingsService.set_new_automation_engine_enabled(True)
         group = _make_group("G", is_part_of_schedule=True, is_part_of_oncall=True)
         users = [_make_user(f"U{i}", f"u{i}@x.com", group) for i in range(4)]
 

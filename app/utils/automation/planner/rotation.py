@@ -1,6 +1,7 @@
 """Absolute-week rotation anchoring for the automation planner.
 
-Replaces oncall_automation.py's _generate_for_fridays week_index, which
+Replaced the legacy engine's _generate_for_fridays week_index (removed
+in 1.2.0), which
 is the enumerate() position over that specific call's own local `weeks`
 list - so two different generation calls covering the same Friday (a
 6-month generation vs. six successive monthly ones, or two adjacent

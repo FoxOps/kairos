@@ -35,8 +35,7 @@ class GenerationRun(BaseModel):
             RuleViolation.severity), not a new SQL enum type. "partial"
             is only produced by AutomationApplyService.apply_plan(
             atomic=False) (the per-entry-isolated mode used by
-            AdvancedShiftAutomation.rebalance_after_leave()'s own
-            cutover): at least one diff entry's own SAVEPOINT rolled
+            AutomationAdminService.rebalance_after_leave()): at least one diff entry's own SAVEPOINT rolled
             back while every other entry still committed - see
             error_detail for the failure count.
         error_detail: Populated when outcome != "applied".

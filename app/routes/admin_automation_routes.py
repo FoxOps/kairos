@@ -11,6 +11,7 @@ from flask_babel import gettext as _
 
 from app import db
 from app.auth.decorators import admin_required
+from app.models import AutomationConfig
 from app.repositories.user_repository import GroupRepository
 from app.routes.admin import admin_bp
 from app.services import (
@@ -19,12 +20,9 @@ from app.services import (
     AutomationAdminService,
     SettingsService,
 )
-from app.utils.automation import (
-    OnCallAutomation,
-    get_automation_status,
-)
+from app.utils.automation import get_automation_status, queries
 
-# app/utils/automation/ (AdvancedShiftAutomation/OnCallAutomation) encodes
+# app/utils/automation/planner/presentation.py encodes
 # each generated message's severity as a leading plain-text "[TAG] "
 # marker rather than a separate field - deliberately not emoji, this
 # app never shows emoji anywhere (see test_flash_message_icons.py).
@@ -101,7 +99,7 @@ def _notify_shift_unfilled_if_any(unfilled_dates):
 def automation_dashboard():
     """Automation dashboard."""
     status = get_automation_status()
-    oncall_gaps = OnCallAutomation.detect_oncall_gaps()
+    oncall_gaps = queries.detect_oncall_gaps()
 
     shift_scheduling_mode = SettingsService.get_shift_scheduling_mode()
     oncall_scheduling_mode = SettingsService.get_oncall_scheduling_mode()
@@ -154,8 +152,8 @@ def automation_full():
       behaviour) - shifts are recomputed from whatever on-calls already
       exist, even manually modified ones.
     - "fill_gaps": before recomputing shifts, fills any Friday in the
-      period that has no on-call at all (OnCallAutomation.
-      fill_oncall_gaps) - existing on-calls, including manually
+      period that has no on-call at all (already-published on-calls
+      are locked in the plan) - existing on-calls, including manually
       assigned ones, are never touched or reassigned, only genuinely
       empty weeks get a new one.
     - "regenerate": deletes and fully regenerates on-calls for the
@@ -169,6 +167,11 @@ def automation_full():
             start_date_str = request.form.get("start_date")
             end_date_str = request.form.get("end_date")
             oncall_mode = request.form.get("oncall_mode", "none")
+            # Anything unknown used to fall through to the destructive
+            # "regenerate" behavior.
+            if oncall_mode not in ("none", "fill_gaps", "regenerate"):
+                flash(_("Mode d'astreinte invalide."), "danger")
+                return redirect(url_for("admin.automation_full", mode="refresh"))
 
             try:
                 start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
@@ -228,9 +231,22 @@ def automation_full():
             rotation_order_ids = AutomationAdminService.parse_rotation_order_from_form(
                 request.form
             )
+            rotation_excluded_ids = (
+                AutomationAdminService.parse_rotation_exclusions_from_form(request.form)
+            )
+            if not rotation_order_ids:
+                # Unticking everyone used to silently mean "everyone, by
+                # name" - refused now that unticked means excluded (F13).
+                flash(
+                    _("Sélectionnez au moins une personne à inclure dans la rotation."),
+                    "danger",
+                )
+                return redirect(url_for("admin.automation_full"))
 
             if action == "save_order":
-                error = AutomationAdminService.save_rotation_order(rotation_order_ids)
+                error = AutomationAdminService.save_rotation_order(
+                    rotation_order_ids, excluded_ids=rotation_excluded_ids
+                )
                 if error:
                     flash(
                         _(
@@ -255,7 +271,11 @@ def automation_full():
                 dry_run = action == "dry_run"
 
                 result = AutomationAdminService.generate_full(
-                    start_date, end_date, rotation_order_ids, dry_run
+                    start_date,
+                    end_date,
+                    rotation_order_ids,
+                    dry_run,
+                    excluded_ids=rotation_excluded_ids,
                 )
 
                 if dry_run:
@@ -280,6 +300,7 @@ def automation_full():
                         start_date=start_date,
                         end_date=end_date,
                         rotation_order_ids=rotation_order_ids,
+                        rotation_excluded_ids=rotation_excluded_ids,
                     )
                 else:
                     if result.oncalls_deleted:
@@ -324,7 +345,7 @@ def automation_full():
             except Exception as e:
                 flash(_("Erreur : %(val0)s", val0=str(e)), "danger")
 
-    oncall_users = OnCallAutomation.get_eligible_users()
+    oncall_users = queries.get_oncall_users()
     current_rotation_order = AutomationAdminService.get_rotation_order()
 
     today = date.today()
@@ -358,5 +379,6 @@ def automation_full():
         start_date_default=start_date_default,
         end_date_default=end_date_default,
         current_rotation_order=current_rotation_order,
+        rotation_excluded=AutomationConfig.get_rotation_excluded(),
         prefill_oncall_mode=prefill_oncall_mode,
     )

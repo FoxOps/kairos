@@ -10,5 +10,21 @@ from marshmallow import Schema, fields, validate
 
 
 class PageQueryArgsSchema(Schema):
-    page = fields.Int(load_default=1, validate=validate.Range(min=1))
-    per_page = fields.Int(load_default=None, validate=validate.Range(min=1))
+    page = fields.Int(
+        load_default=1,
+        validate=validate.Range(min=1),
+        metadata={"description": "Page number, starting at 1."},
+    )
+    per_page = fields.Int(
+        load_default=None,
+        validate=validate.Range(min=1),
+        metadata={
+            "description": (
+                "Number of records per page. When omitted, the "
+                "instance-configured default is used (admin-editable at "
+                "/admin/settings, items_per_page). The effective value is "
+                "capped at the instance-configured maximum (max_per_page) "
+                "- both are runtime settings, not fixed protocol constants."
+            )
+        },
+    )

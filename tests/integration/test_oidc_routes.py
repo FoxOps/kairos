@@ -133,7 +133,7 @@ class TestOidcCallbackRoute:
     def test_login_user_failure_flashes_error(self, test_app, oidc_mode, client):
         with patch(
             "app.routes.auth.oidc_auth.handle_oauth_callback",
-            return_value={"email": "user@example.com"},
+            return_value={"email": "user@example.com", "sub": "user@example.com"},
         ), patch("app.routes.auth.oidc_auth.login_user", return_value=None):
             resp = client.get("/oidc/callback?state=s1&code=abc", follow_redirects=True)
 
@@ -158,7 +158,11 @@ class TestOidcCallbackRoute:
         # network call) so the session actually gets established.
         with patch(
             "app.routes.auth.oidc_auth.handle_oauth_callback",
-            return_value={"email": "oidc-user@example.com", "name": "OIDC User"},
+            return_value={
+                "email": "oidc-user@example.com",
+                "sub": "oidc-user@example.com",
+                "name": "OIDC User",
+            },
         ):
             resp = client.get("/oidc/callback?state=s1&code=abc", follow_redirects=True)
 
@@ -265,7 +269,11 @@ class TestOidcOptionalMode:
 
         with patch(
             "app.routes.auth.oidc_auth.handle_oauth_callback",
-            return_value={"email": "oidc-optional@example.com", "name": "OIDC User"},
+            return_value={
+                "email": "oidc-optional@example.com",
+                "sub": "oidc-optional@example.com",
+                "name": "OIDC User",
+            },
         ):
             resp = client.get("/oidc/callback?state=s1&code=abc", follow_redirects=True)
 

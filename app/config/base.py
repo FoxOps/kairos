@@ -129,6 +129,28 @@ def normalize_database_uri(database_uri: str) -> str:
     return rewritten_prefix + database_uri.split("://", 1)[1]
 
 
+def validate_rate_limit_string(env_var: str, value: str) -> str:
+    """
+    Validates a Flask-Limiter-format rate limit string (e.g. "60 per
+    minute, 1000 per day") using the same parser Flask-Limiter itself
+    uses internally (limits.parse_many). Raises RuntimeError with a
+    clear message identifying the offending env var/value on failure -
+    an admin who sets API_RATE_LIMIT/RATE_LIMIT_DEFAULT to a typo'd
+    value must find out at startup, not have it silently ignored or
+    fail obscurely on the first request that hits the decorator.
+    """
+    from limits import parse_many
+
+    try:
+        parse_many(value)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"Invalid {env_var} value {value!r}: not a valid Flask-Limiter "
+            f"rate limit string (e.g. '60 per minute, 1000 per day'). {exc}"
+        ) from exc
+    return value
+
+
 # ---------------------------------------------------------------------------
 # Base Configuration Class
 # ---------------------------------------------------------------------------
@@ -175,6 +197,13 @@ class Config:
     # app/services/settings_service.py::SettingsService.get_public_base_url().
     PUBLIC_BASE_URL: str | None = os.environ.get("PUBLIC_BASE_URL") or None
 
+    # Serves interactive Scalar documentation for the public API at
+    # GET /api/v1/docs (app/api/docs_view.py). The raw spec
+    # (/api/v1/openapi.json) stays available either way - this only
+    # gates the HTML page. Default on; an admin who'd rather not expose
+    # even a documentation page publicly can turn it off.
+    PUBLIC_API_DOCS_ENABLED: bool = get_bool_from_env("PUBLIC_API_DOCS_ENABLED", True)
+
     # Debug Mode (should be False in production)
     DEBUG: bool = get_bool_from_env("FLASK_DEBUG", False)
 
@@ -183,8 +212,33 @@ class Config:
 
     # Rate Limiting Configuration
     RATE_LIMIT_ENABLED: bool = get_bool_from_env("RATE_LIMIT_ENABLED", True)
-    RATE_LIMIT_DEFAULT: str = (
-        os.environ.get("RATE_LIMIT_DEFAULT") or "200 per day, 50 per hour"
+    RATE_LIMIT_DEFAULT: str = validate_rate_limit_string(
+        "RATE_LIMIT_DEFAULT",
+        os.environ.get("RATE_LIMIT_DEFAULT") or "200 per day, 50 per hour",
+    )
+
+    # Public API (/api/v1/*) rate limit, applied per ServiceAccount (see
+    # app/api/rate_limit.py::api_rate_limit/service_account_key) - deliberately
+    # separate from RATE_LIMIT_DEFAULT above, which is the app-wide default
+    # policy for every other route. "60 per minute, 1000 per day" is the
+    # backwards-compatible default this app has always used, now
+    # admin-configurable without a rebuild.
+    API_RATE_LIMIT: str = validate_rate_limit_string(
+        "API_RATE_LIMIT",
+        os.environ.get("API_RATE_LIMIT") or "60 per minute, 1000 per day",
+    )
+
+    # Flask-Limiter counter storage backend (limits library syntax). memory://
+    # (default) is per-process only - correct for a single-worker deployment
+    # (see docker/entrypoint.sh's gunicorn --workers 1) but NOT shared across
+    # multiple workers/replicas, so each process enforces its own independent
+    # quota in that case. Point this at redis://host:port/db (or another
+    # backend the "limits" package supports) to share counters across
+    # processes - requires installing the matching optional dependency
+    # (e.g. the "redis" package) yourself; not installed by default so
+    # single-instance deployments don't carry that weight for nothing.
+    RATE_LIMIT_STORAGE_URI: str = (
+        os.environ.get("RATE_LIMIT_STORAGE_URI") or "memory://"
     )
 
     # Session Configuration

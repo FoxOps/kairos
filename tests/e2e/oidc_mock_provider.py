@@ -107,6 +107,7 @@ def create_mock_oidc_provider(port: int) -> Flask:
     @app.route("/userinfo")
     def userinfo():
         return {
+            "sub": "mock-subject-oidc-e2e-user",
             "email": MOCK_USER_EMAIL,
             "name": MOCK_USER_NAME,
             "preferred_username": "oidc-e2e-user",

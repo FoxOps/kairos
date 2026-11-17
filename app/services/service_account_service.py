@@ -22,13 +22,18 @@ class ServiceAccountService:
 
     @staticmethod
     def create_account(
-        name: str, description: str | None = None, expires_at: datetime | None = None
+        name: str,
+        description: str | None = None,
+        expires_at: datetime | None = None,
+        scopes: list[str] | None = None,
     ) -> tuple[ServiceAccount, str]:
         """Returns (service_account, full_token) - full_token is shown
-        to the admin exactly once and never persisted anywhere."""
+        to the admin exactly once and never persisted anywhere. scopes
+        None/empty means full access (read:*), see
+        ServiceAccount.has_scope()."""
         full_token, prefix, token_hash = ServiceAccount.generate_token()
         service_account = ServiceAccountRepository.create(
-            name, description, prefix, token_hash, expires_at
+            name, description, prefix, token_hash, expires_at, scopes
         )
         db.session.commit()
 
@@ -46,10 +51,12 @@ class ServiceAccountService:
         name: str,
         description: str | None,
         expires_at: datetime | None,
+        scopes: list[str] | None = None,
     ) -> None:
         service_account.name = name
         service_account.description = description
         service_account.expires_at = expires_at
+        service_account.set_scopes(scopes)
         db.session.commit()
 
         AuditService.log(
